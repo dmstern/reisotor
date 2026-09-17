@@ -6,6 +6,7 @@ import Button from './primitives/Button.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { useBuildInfoStore } from '../stores/buildInfo';
+import { formatInline } from '../utils/richText';
 
 const pwaUpdate = usePwaUpdateStore();
 const buildInfoStore = useBuildInfoStore();
@@ -25,10 +26,34 @@ watch(
 
 const loading = computed(() => pwaUpdate.showChangelogDialog && !buildInfoStore.buildInfo);
 
+const groups = computed(() => {
+  return buildInfoStore.buildInfo?.changelog?.groups ?? [];
+});
+
 const notes = computed(() => {
   const rawNotes = buildInfoStore.buildInfo?.changelog?.notes ?? [];
   return rawNotes.map((n) => (n.startsWith('- ') ? n.slice(2).trim() : n.trim())).filter(Boolean);
 });
+
+const hasNotes = computed(() => groups.value.length > 0 || notes.value.length > 0);
+
+const EMOJI_PREFIX_REGEX =
+  /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*/u;
+
+function parseNote(rawNote: string): { bullet: string; html: string } {
+  const clean = rawNote.startsWith('- ') ? rawNote.slice(2).trim() : rawNote.trim();
+  const match = clean.match(EMOJI_PREFIX_REGEX);
+  if (match) {
+    return {
+      bullet: match[1],
+      html: formatInline(clean.slice(match[0].length)),
+    };
+  }
+  return {
+    bullet: '✨',
+    html: formatInline(clean),
+  };
+}
 
 function onClose() {
   pwaUpdate.dismissChangelogDialog();
@@ -53,14 +78,33 @@ function goToSettings() {
         <p class="loading-text">Lade Versionshinweise…</p>
       </div>
 
-      <div v-else-if="notes.length > 0" class="notes-container">
+      <div v-else-if="hasNotes" class="notes-container">
         <p class="changelog-intro">Das ist neu in dieser Version:</p>
-        <ul class="changelog-list">
-          <li v-for="(note, idx) in notes" :key="idx" class="changelog-item">
-            <span class="note-bullet" aria-hidden="true">✨</span>
-            <span class="note-text">{{ note }}</span>
-          </li>
-        </ul>
+        <div class="changelog-scroll-area">
+          <template v-if="groups.length > 0">
+            <section v-for="group in groups" :key="group.title" class="changelog-group">
+              <h4 class="changelog-group-title">{{ group.title }}</h4>
+              <ul class="changelog-list">
+                <li
+                  v-for="(item, idx) in group.notes.map(parseNote)"
+                  :key="idx"
+                  class="changelog-item"
+                >
+                  <span class="note-bullet" aria-hidden="true">{{ item.bullet }}</span>
+                  <!-- eslint-disable-next-line vue/no-v-html -->
+                  <span class="note-text" v-html="item.html"></span>
+                </li>
+              </ul>
+            </section>
+          </template>
+          <ul v-else class="changelog-list">
+            <li v-for="(item, idx) in notes.map(parseNote)" :key="idx" class="changelog-item">
+              <span class="note-bullet" aria-hidden="true">{{ item.bullet }}</span>
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span class="note-text" v-html="item.html"></span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div v-else class="empty-state">
@@ -116,15 +160,40 @@ function goToSettings() {
   margin: 0;
 }
 
-.changelog-list {
-  list-style: none;
-  padding: 0;
-  margin: var(--space-1) 0;
+.changelog-scroll-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 48vh;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.changelog-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  max-height: 45vh;
-  overflow-y: auto;
+}
+
+.changelog-group-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.changelog-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .changelog-item {
@@ -141,13 +210,18 @@ function goToSettings() {
 }
 
 .note-bullet {
-  font-size: 1rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
   line-height: 1.4;
 }
 
 .note-text {
   flex: 1;
+}
+
+.note-text :deep(strong) {
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .empty-state {
