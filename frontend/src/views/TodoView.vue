@@ -556,27 +556,18 @@ function isOverdue(item: TodoItem) {
 
               <div class="item-meta">
                 <PendingSyncBadge v-if="item._pending" />
-                <Badge
-                  v-if="item.priority === 'high'"
-                  variant="danger"
-                  size="sm"
-                  class="priority-badge"
-                  title="Hohe Priorität"
-                >
-                  Hoch
-                </Badge>
-                <span
-                  v-else
-                  class="priority"
-                  :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
-                >
-                  <AppIcon
-                    :icon="ACTION_ICONS.priorityDot"
-                    :size="10"
-                    :color="PRIORITY_META[item.priority].color"
-                    group="actions"
-                  />
+                <span v-if="item.note" class="note" :title="item.note">
+                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
+                  {{ item.note }}
                 </span>
+                <Badge
+                  v-if="groupBy !== 'period' && periodFor(item)"
+                  size="sm"
+                  class="period-badge"
+                >
+                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
+                  {{ PERIOD_META[periodFor(item)!] }}
+                </Badge>
                 <Badge
                   v-if="item.due_date"
                   :variant="isOverdue(item) ? 'danger' : 'default'"
@@ -597,17 +588,17 @@ function isOverdue(item: TodoItem) {
                 >
                   {{ userAvatar(item.assigned_to_user_id) }}
                 </span>
-                <Badge
-                  v-if="groupBy !== 'period' && periodFor(item)"
-                  size="sm"
-                  class="period-badge"
+                <span
+                  class="priority"
+                  :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
+                  :aria-label="`Priorität: ${PRIORITY_META[item.priority].label}`"
                 >
-                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
-                  {{ PERIOD_META[periodFor(item)!] }}
-                </Badge>
-                <span v-if="item.note" class="note" :title="item.note">
-                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
-                  {{ item.note }}
+                  <AppIcon
+                    :icon="ACTION_ICONS.priorityDot"
+                    :size="10"
+                    :color="PRIORITY_META[item.priority].color"
+                    group="actions"
+                  />
                 </span>
               </div>
 
@@ -844,9 +835,18 @@ function isOverdue(item: TodoItem) {
   justify-content: flex-end;
 }
 
+:deep(.checkable-list-item__actions),
+:deep(.row-actions) {
+  margin-left: 0;
+}
+
 .priority {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .due-badge,

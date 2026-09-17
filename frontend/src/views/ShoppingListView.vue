@@ -820,6 +820,11 @@ async function quickAddToGroup(group: Group, label: string) {
   justify-content: flex-end;
 }
 
+:deep(.checkable-list-item__actions),
+:deep(.row-actions) {
+  margin-left: 0;
+}
+
 .shop-badge,
 .period-badge {
   display: inline-flex;
