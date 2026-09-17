@@ -200,8 +200,11 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       issueNumber: 999,
     } as unknown as T;
   }
-  if (path === '/images' && method === 'POST') {
-    return { url: String(body?.data ?? '') } as unknown as T;
+  if ((path === '/images' || path === '/diary/images') && method === 'POST') {
+    return {
+      url: String(body?.data ?? ''),
+      original_name: String(body?.filename ?? 'Bild'),
+    } as unknown as T;
   }
 
   // --- Trip members & region info ---

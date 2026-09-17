@@ -53,6 +53,18 @@ watch(
   }
 );
 
+function isImage(item: AttachmentPreviewItem): boolean {
+  if (item.mime_type && item.mime_type.startsWith('image/')) {
+    return true;
+  }
+  const name = item.original_name || item.filename || '';
+  return (
+    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) ||
+    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(item.url) ||
+    item.url.startsWith('data:image/')
+  );
+}
+
 function normalize(
   item: Attachment | AttachmentPreviewItem | string,
   index: number
@@ -66,19 +78,14 @@ function normalize(
   }
   return {
     ...item,
-    original_name: item.original_name || item.filename || `Anhang ${index + 1}`,
+    original_name:
+      item.original_name ||
+      item.filename ||
+      (isImage(item as AttachmentPreviewItem) ? `Bild ${index + 1}` : `Anhang ${index + 1}`),
   };
 }
 
 const normalizedList = computed(() => props.items.map((item, idx) => normalize(item, idx)));
-
-function isImage(item: AttachmentPreviewItem): boolean {
-  if (item.mime_type && item.mime_type.startsWith('image/')) {
-    return true;
-  }
-  const name = item.original_name || item.filename || '';
-  return /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) || item.url.startsWith('data:image/');
-}
 
 const ROTATIONS = [-2.5, 2, -1.5, 2.5, -2, 1.8];
 function itemRotation(index: number): number {

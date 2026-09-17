@@ -82,6 +82,19 @@ onUnmounted(() => {
   resetAnimationState();
 });
 
+function isImage(attachment: AttachmentPreviewItem | null): boolean {
+  if (!attachment) return false;
+  if (attachment.mime_type && attachment.mime_type.startsWith('image/')) {
+    return true;
+  }
+  const name = attachment.original_name || attachment.filename || '';
+  return (
+    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) ||
+    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(attachment.url) ||
+    attachment.url.startsWith('data:image/')
+  );
+}
+
 function normalizeAttachment(
   item: Attachment | AttachmentPreviewItem | string,
   index: number
@@ -95,7 +108,10 @@ function normalizeAttachment(
   }
   return {
     ...item,
-    original_name: item.original_name || item.filename || `Anhang ${index + 1}`,
+    original_name:
+      item.original_name ||
+      item.filename ||
+      (isImage(item as AttachmentPreviewItem) ? `Bild ${index + 1}` : `Anhang ${index + 1}`),
   };
 }
 
@@ -149,15 +165,6 @@ const visibleSlides = computed(() => {
     },
   ];
 });
-
-function isImage(attachment: AttachmentPreviewItem | null): boolean {
-  if (!attachment) return false;
-  if (attachment.mime_type && attachment.mime_type.startsWith('image/')) {
-    return true;
-  }
-  const name = attachment.original_name || attachment.filename || '';
-  return /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) || attachment.url.startsWith('data:image/');
-}
 
 // --- Smoothe & Stabile Swipe- und Slide-Animation ---
 const isDragging = ref(false);

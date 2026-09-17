@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { api } from '../api/client';
-import type { DiaryComment, DiaryEntry, DiaryLike, Excursion, Spot, User } from '../api/types';
+import type {
+  DiaryComment,
+  DiaryEntry,
+  DiaryImage,
+  DiaryLike,
+  Excursion,
+  Spot,
+  User,
+} from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
@@ -69,7 +77,7 @@ const showForm = ref(false);
 const emptyForm = () => ({
   title: '',
   content: '',
-  images: [] as string[],
+  images: [] as DiaryImage[],
   excursion_ids: [] as number[],
   spot_ids: [] as number[],
   date: localDateStr(new Date()),
@@ -86,13 +94,13 @@ const editUploadError = ref('');
 const editFileInputRef = ref<HTMLInputElement | null>(null);
 
 const diaryPreviewOpen = ref(false);
-const diaryPreviewImages = ref<string[]>([]);
+const diaryPreviewImages = ref<DiaryImage[]>([]);
 const diaryPreviewIndex = ref(0);
 const diaryPreviewEditable = ref(false);
 const diaryPreviewOnRemove = ref<((idx: number) => void) | null>(null);
 
 function openDiaryPreview(
-  images: string[],
+  images: DiaryImage[],
   index: number,
   editable = false,
   onRemove?: (idx: number) => void
@@ -127,7 +135,7 @@ const myDraft = computed(
   () => entries.value.find((e) => e.is_draft && e.author_id === auth.user?.id) ?? null
 );
 
-function hasEntryContent(f: { title: string; content: string; images: string[] }) {
+function hasEntryContent(f: { title: string; content: string; images: DiaryImage[] }) {
   return f.title.trim().length > 0 || !isEmptyRichText(f.content) || f.images.length > 0;
 }
 
@@ -332,7 +340,7 @@ function commentItemsFor(entryId: number) {
  *  und vermeidet serverseitige Bildverarbeitung auf dem ressourcenschwachen Pi. */
 async function uploadFiles(
   fileList: FileList | null,
-  target: { images: string[] },
+  target: { images: DiaryImage[] },
   uploadingRef: typeof uploading,
   errorRef: typeof uploadError
 ) {
@@ -343,8 +351,14 @@ async function uploadFiles(
   try {
     for (const file of files) {
       const compressed = await compressImage(file);
-      const { url } = await api.post<{ url: string }>('/diary/images', { data: compressed });
-      target.images.push(url);
+      const res = await api.post<{ url: string; original_name?: string }>('/diary/images', {
+        data: compressed,
+        filename: file.name,
+      });
+      target.images.push({
+        url: res.url,
+        original_name: res.original_name || file.name,
+      });
     }
   } catch {
     errorRef.value = 'Bild-Upload fehlgeschlagen. Bitte erneut versuchen.';
@@ -365,7 +379,7 @@ function onEditFilesSelected(event: Event) {
   input.value = '';
 }
 
-function removeImage(target: { images: string[] }, index: number) {
+function removeImage(target: { images: DiaryImage[] }, index: number) {
   target.images.splice(index, 1);
 }
 
