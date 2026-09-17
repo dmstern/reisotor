@@ -374,21 +374,24 @@ async function quickAddToGroup(group: Group, label: string) {
 <template>
   <div class="page shopping-page" v-if="!loading">
     <div class="page-header-row">
-      <div class="page-title-group">
-        <h1>Einkaufsliste</h1>
-        <div class="progress-pill-group">
-          <Badge
-            :variant="
-              progress.checked === progress.total && progress.total > 0 ? 'success' : 'primary'
-            "
-            size="sm"
-          >
-            {{ progress.checked }}/{{ progress.total }} gekauft
-          </Badge>
-          <span v-if="progress.total > 0" class="progress-percentage">
-            {{ Math.round((progress.checked / progress.total) * 100) }}%
-          </span>
+      <div class="page-header-top">
+        <div class="page-title-group">
+          <h1>Einkaufsliste</h1>
+          <div class="progress-pill-group">
+            <Badge
+              :variant="
+                progress.checked === progress.total && progress.total > 0 ? 'success' : 'primary'
+              "
+              size="sm"
+            >
+              {{ progress.checked }}/{{ progress.total }} gekauft
+            </Badge>
+            <span v-if="progress.total > 0" class="progress-percentage">
+              {{ Math.round((progress.checked / progress.total) * 100) }}%
+            </span>
+          </div>
         </div>
+        <CompletedToggle v-model="uiSettings.hideCompletedShopping" />
       </div>
       <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
         <div
@@ -481,7 +484,6 @@ async function quickAddToGroup(group: Group, label: string) {
           <option value="period">nach Zeitraum</option>
         </Select>
       </div>
-      <CompletedToggle v-model="uiSettings.hideCompletedShopping" />
     </div>
 
     <div class="groups-grid">
@@ -660,6 +662,14 @@ async function quickAddToGroup(group: Group, label: string) {
 <style scoped>
 .page-header-row {
   margin-bottom: var(--space-3);
+}
+
+.page-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .page-title-group {

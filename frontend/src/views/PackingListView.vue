@@ -262,10 +262,11 @@ async function quickAdd(list: ListGroup, label: string) {
 
 <template>
   <div class="page packing-page" v-if="!loading">
-    <h1>Packliste</h1>
-
-    <div class="filter-row">
-      <CompletedToggle v-model="uiSettings.hideCompletedPacking" />
+    <div class="page-header-row">
+      <div class="page-header-top">
+        <h1>Packliste</h1>
+        <CompletedToggle v-model="uiSettings.hideCompletedPacking" />
+      </div>
     </div>
 
     <div class="lists-grid">
@@ -405,13 +406,16 @@ async function quickAdd(list: ListGroup, label: string) {
 </template>
 
 <style scoped>
-.filter-row {
+.page-header-row {
+  margin-bottom: var(--space-4);
+}
+
+.page-header-top {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-  font-size: 0.9rem;
 }
 
 :deep(.quick-add-row) {

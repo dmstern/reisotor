@@ -378,21 +378,24 @@ function isOverdue(item: TodoItem) {
 <template>
   <div class="page todo-page" v-if="!loading">
     <div class="page-header-row">
-      <div class="page-title-group">
-        <h1>ToDo</h1>
-        <div class="progress-pill-group">
-          <Badge
-            :variant="
-              progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'
-            "
-            size="sm"
-          >
-            {{ progress.done }}/{{ progress.total }} erledigt
-          </Badge>
-          <span v-if="progress.total > 0" class="progress-percentage">
-            {{ Math.round((progress.done / progress.total) * 100) }}%
-          </span>
+      <div class="page-header-top">
+        <div class="page-title-group">
+          <h1>ToDo</h1>
+          <div class="progress-pill-group">
+            <Badge
+              :variant="
+                progress.done === progress.total && progress.total > 0 ? 'success' : 'primary'
+              "
+              size="sm"
+            >
+              {{ progress.done }}/{{ progress.total }} erledigt
+            </Badge>
+            <span v-if="progress.total > 0" class="progress-percentage">
+              {{ Math.round((progress.done / progress.total) * 100) }}%
+            </span>
+          </div>
         </div>
+        <CompletedToggle v-model="uiSettings.hideCompletedTodos" />
       </div>
       <div v-if="progress.total > 0" class="header-progress-track" aria-hidden="true">
         <div
@@ -501,7 +504,6 @@ function isOverdue(item: TodoItem) {
           <option v-if="users.length > 1" value="assignee">nach Bearbeiter:in</option>
         </Select>
       </div>
-      <CompletedToggle v-model="uiSettings.hideCompletedTodos" />
     </div>
 
     <div class="groups-grid">
@@ -686,6 +688,14 @@ function isOverdue(item: TodoItem) {
 <style scoped>
 .page-header-row {
   margin-bottom: var(--space-3);
+}
+
+.page-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .page-title-group {
