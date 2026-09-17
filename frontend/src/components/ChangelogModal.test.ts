@@ -79,6 +79,47 @@ describe('ChangelogModal', () => {
     cleanUp();
   });
 
+  it('renders grouped changelog notes with group titles when groups exist', async () => {
+    const pwaUpdate = usePwaUpdateStore();
+    const buildInfoStore = useBuildInfoStore();
+    buildInfoStore.buildInfo = {
+      version: '1.4.0',
+      ref: 'abc',
+      builtAt: '2026-09-17T18:00:00Z',
+      changelog: {
+        version: '1.4.0',
+        date: '2026-09-17',
+        notes: ['🔔 **Update-Dialoge**: Neue Dialoge', '🗺️ **Touren**: Kartenanzeige optimiert'],
+        groups: [
+          {
+            title: 'Design & Navigation',
+            notes: ['🔔 **Update-Dialoge**: Neue Dialoge'],
+          },
+          {
+            title: 'Spots & Touren',
+            notes: ['🗺️ **Touren**: Kartenanzeige optimiert'],
+          },
+        ],
+      },
+      repoUrl: '',
+      hostingLocation: '',
+      environment: 'production',
+    };
+    pwaUpdate.showChangelogDialog = true;
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+
+    expect(document.body.innerHTML).toContain('Design &amp; Navigation');
+    expect(document.body.innerHTML).toContain('Spots &amp; Touren');
+    expect(document.body.innerHTML).toContain('Update-Dialoge');
+    expect(document.body.innerHTML).toContain('Kartenanzeige optimiert');
+    expect(document.body.innerHTML).toContain('🔔');
+    expect(document.body.innerHTML).toContain('🗺️');
+
+    cleanUp();
+  });
+
   it('renders fallback when no changelog notes exist', async () => {
     const pwaUpdate = usePwaUpdateStore();
     const buildInfoStore = useBuildInfoStore();
