@@ -69,7 +69,13 @@ test.describe('Accessibility (a11y)', () => {
 
     test('calendar page accessibility scan', async ({ page }) => {
       await page.goto('/calendar');
-      await expect(page.getByRole('heading', { name: 'Kalender' })).toBeVisible();
+      const tab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+      if ((await tab.count()) > 0 && (await tab.getAttribute('aria-expanded')) === 'false') {
+        await tab.click();
+      }
+      await expect(
+        page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })
+      ).toBeVisible();
 
       const results = await scanPageA11y(page);
       expect(results.violations, formatViolations(results.violations)).toEqual([]);
