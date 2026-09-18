@@ -125,5 +125,33 @@ for (const [viewportName, viewport] of Object.entries({
         await expectNoOverlap(markers.nth(i), sheet);
       }
     });
+
+    test('beim Maximieren der Schublade ("voll") bleibt der Kartenausschnitt unverändert', async ({
+      page,
+    }) => {
+      await page.goto('/excursions');
+      const sheet = page.locator('.spots-col');
+      await expect(sheet).toBeVisible();
+      await expect(sheet).not.toHaveClass(/full/);
+      await expect(sheet).not.toHaveClass(/collapsed/);
+
+      const marker = page.locator('.leaflet-marker-icon').first();
+      await expect(marker).toBeVisible();
+      await page.waitForTimeout(400);
+
+      const initialBox = await marker.boundingBox();
+      expect(initialBox).not.toBeNull();
+
+      // Schublade auf "voll" vergrößern
+      await page.getByRole('button', { name: 'Spots-Liste weiter hochschieben' }).click();
+      await expect(sheet).toHaveClass(/full/);
+      await page.waitForTimeout(400);
+
+      // Nach dem Wechsel auf 'full' darf sich der Kartenausschnitt nicht geändert haben
+      const fullBox = await marker.boundingBox();
+      expect(fullBox).not.toBeNull();
+      expect(fullBox!.y).toBeCloseTo(initialBox!.y, 0);
+      expect(fullBox!.x).toBeCloseTo(initialBox!.x, 0);
+    });
   });
 }
