@@ -498,7 +498,11 @@ const cardRotation = computed(() => {
         />
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded }">
+      <div
+        v-if="isAccommodation || (creatorLabel && !expanded)"
+        class="spot-accordion"
+        :class="{ 'is-expanded': expanded }"
+      >
         <div class="spot-accordion-inner accordion-stagger">
           <DetailRow v-if="creatorLabel && !expanded" label="Von">
             {{ creatorLabel }}
@@ -914,6 +918,10 @@ const cardRotation = computed(() => {
   transition:
     grid-template-rows 0.3s ease,
     visibility 0s linear 0.3s;
+}
+
+.spot-accordion:not(.is-expanded) {
+  display: none;
 }
 
 .spot-accordion.is-expanded {
@@ -1361,6 +1369,10 @@ const cardRotation = computed(() => {
   z-index: 2;
   width: 100%;
   box-sizing: border-box;
+}
+
+.spot-card.expanded .card-footer-row:not(:has(.file-attachments, .spot-layover-badge)) {
+  display: none;
 }
 
 .card-footer-left {
