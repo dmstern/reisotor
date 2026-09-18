@@ -239,5 +239,83 @@ for (const [viewportName, viewport] of Object.entries({
       expect(cardBox!.y).toBeGreaterThanOrEqual(sheetBox!.y);
       expect(cardBox!.y).toBeLessThan(sheetBox!.y + sheetBox!.height);
     });
+
+    test('erneuter Klick auf "Auf Karte anzeigen" zentriert Tour nach Kartenbewegung erneut und Umschalten auf andere Tour funktioniert direkt', async ({
+      page,
+    }) => {
+      await page.goto('/excursions');
+      const sheet = page.locator('.spots-col');
+      await expect(sheet).toBeVisible();
+
+      // Touren-Ansicht wählen
+      const filterToggle = page.locator('.filter-toggle-row');
+      if (await filterToggle.isVisible()) await filterToggle.click();
+      await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
+
+      // Erste Tour fokussieren
+      const tour1 = page.locator('.excursion-card', { hasText: 'Sightseeing-Tag Belém' });
+      await expect(tour1).toBeVisible();
+      await tour1.locator('h3').click();
+      await expect(tour1).toHaveClass(/expanded/);
+
+      const showBtn1 = tour1.getByRole('button', { name: 'Auf Karte anzeigen' });
+      await showBtn1.click();
+      await expect(sheet).toHaveClass(/partial/);
+      await page.waitForTimeout(400);
+
+      const marker = page.locator('.leaflet-marker-icon').first();
+      await expect(marker).toBeVisible();
+      const initialBox = await marker.boundingBox();
+      expect(initialBox).not.toBeNull();
+
+      // Karte manuell verschieben
+      const mapWrap = page.locator('.map-wrap');
+      await mapWrap.dragTo(mapWrap, {
+        sourcePosition: { x: 200, y: 100 },
+        targetPosition: { x: 200, y: 250 },
+      });
+      await page.waitForTimeout(400);
+
+      const movedBox = await marker.boundingBox();
+      expect(movedBox).not.toBeNull();
+      expect(Math.abs(movedBox!.y - initialBox!.y)).toBeGreaterThan(40);
+
+      // Schublade wieder maximieren
+      const stepUpBtn = page.getByRole('button', { name: 'Spots-Liste weiter hochschieben' });
+      await stepUpBtn.click();
+      await expect(sheet).toHaveClass(/full/);
+
+      // Erneut dieselbe Tour auf der Karte fokussieren -> muss wieder re-zentriert werden
+      await showBtn1.click();
+      await expect(sheet).toHaveClass(/partial/);
+      await page.waitForTimeout(400);
+
+      const recenteredBox = await marker.boundingBox();
+      expect(recenteredBox).not.toBeNull();
+      expect(recenteredBox!.y).toBeCloseTo(initialBox!.y, 0);
+      expect(recenteredBox!.x).toBeCloseTo(initialBox!.x, 0);
+
+      // Schublade erneut vergrößern und direkt andere Tour fokussieren (ohne vorherigen Fokus zu entfernen)
+      await stepUpBtn.click();
+      await expect(sheet).toHaveClass(/full/);
+
+      const tour2 = page.locator('.excursion-card', { hasText: 'Panoramatour Alfama & Belém' });
+      await expect(tour2).toBeVisible();
+      await tour2.locator('h3').click();
+      await expect(tour2).toHaveClass(/expanded/);
+
+      const showBtn2 = tour2.getByRole('button', { name: 'Auf Karte anzeigen' });
+      await expect(showBtn2).toBeVisible();
+      await showBtn2.click();
+
+      await expect(sheet).toHaveClass(/partial/);
+      await page.waitForTimeout(400);
+
+      const tour2Markers = page.locator('.leaflet-marker-icon');
+      expect(await tour2Markers.count()).toBeGreaterThan(0);
+      const tour2Box = await tour2Markers.first().boundingBox();
+      expect(tour2Box).not.toBeNull();
+      expect(tour2Box!.x !== initialBox!.x || tour2Box!.y !== initialBox!.y).toBe(true);
+    });
   });
 }
