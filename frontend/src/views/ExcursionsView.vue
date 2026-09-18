@@ -2059,10 +2059,11 @@ function sheetHeightPx(state: SheetState): number {
   const navbarBottomOffset = parseFloat(rootStyle.getPropertyValue('--navbar-bottom-offset')) || 0;
 
   // In der CSS-Klasse .full ist bottom = 0.
-  // In .collapsed und .partial ist bottom = var(--space-2) + var(--navbar-bottom-offset).
+  // In .collapsed und .partial ist bottom = var(--space-3) + var(--navbar-bottom-offset).
   // Damit die Schublade oben nicht in den Header ragt, muss ihre maximale Höhe
   // um diesen bottom-Abstand reduziert werden.
-  const bottomOffset = state === 'full' ? 0 : 8 + navbarBottomOffset;
+  const drawerGap = parseFloat(rootStyle.getPropertyValue('--space-3')) || 12;
+  const bottomOffset = state === 'full' ? 0 : drawerGap + navbarBottomOffset;
 
   const maxAvailable = Math.max(
     160,
@@ -4250,24 +4251,17 @@ async function deleteEditingSpot() {
      nicht die JS-Berechnung in sheetHeightPx() – die greift nur während eines aktiven Ziehens/beim
      Einrasten, nicht für diesen ruhenden Grundzustand. */
   --sheet-max-height: calc(100% - var(--app-header-height, 56px) - 8px);
-  /* Feste Randbreite als Skalierungsfaktor statt echter Breitenänderung (left/right/width) - ein
-     schwankender Layout-Breite hatte SpotCard.vue/ExcursionCard.vue's Titelzeile (~16px zwischen
-     eingeklappt/ausgefahren) knapp an ihrer Umbruch-Schwelle vorbei-/dagegenlaufen lassen, je
-     nachdem in welchem Sheet-Zustand man gerade war - wirkte beim Ziehen wie ein hässlicher
-     Layout-Sprung (Nutzer-Feedback), obwohl der tatsächlich verfügbare Platz sich kaum geändert
-     hatte. 0.96 statt eines exakt aus --space-2 berechneten Faktors (der bräuchte die tatsächliche
-     Elementbreite, die in reinem CSS ohne Container-Query-Units auf sich selbst nicht verfügbar
-     ist) - 4% Schrumpfung liegt für die üblichen Mobil-Breiten (360-430px) nah genug an den
-     früheren 8px/Seite dran, ohne sich auf einen bestimmten Gerätewert zu verlassen. */
-  --sheet-collapsed-scale: 0.96;
   position: absolute;
-  left: 0;
-  right: 0;
+  /* Links und rechts auf var(--space-4) ausgerichtet, exakt identisch mit der mobilen NavBar-Pille
+     (die ebenfalls max-width: calc(100vw - var(--space-4) * 2) und margin-inline: auto hat), sodass
+     Drawer und NavBar auf denselben Fluchtlinien liegen. */
+  left: var(--space-4);
+  right: var(--space-4);
   /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf
-     0) schwebt das Sheet mit demselben Abstand nach unten wie zu den Seiten (--space-2, siehe
-     transform:scaleX() weiter unten) plus dem Abstand der unteren NavBar (--navbar-bottom-offset).
-     Dadurch liegt der zugeklappte Drawer immer oberhalb der unteren NavBar und wird nie von ihr verdeckt (#303). */
-  bottom: calc(var(--space-2) + var(--navbar-bottom-offset, 0px));
+     0) schwebt das Sheet mit einem sauberen Abstand (--space-3) über der unteren NavBar
+     (--navbar-bottom-offset). Dadurch kleben Drawer und NavBar nicht aneinander und der Drawer wird
+     nie von ihr verdeckt (#303). */
+  bottom: calc(var(--space-3) + var(--navbar-bottom-offset, 0px));
   z-index: 5;
   pointer-events: auto;
   display: flex;
@@ -4281,27 +4275,11 @@ async function deleteEditingSpot() {
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-lg);
   height: min(46vh, var(--sheet-max-height));
-  /* Wie bei Apple Maps' Suchleisten-Schublade: solange nicht ganz hochgezogen (collapsed/partial,
-     .full überschreibt beide Werte unten auf scaleX(1)/nur obere Ecken), schwebt das Sheet als
-     eigene, rundum gerundete Karte mit sichtbarem Rand zum Bildschirmrand statt randlos - wirkte
-     vorher im Vergleich zu eng an den Bildschirmrand gequetscht. transform:scaleX() (statt left/
-     right, siehe --sheet-collapsed-scale oben) hält die tatsächliche Layout-Breite dabei konstant
-     (transform wirkt nur beim Zeichnen/Compositing, nicht beim Layout) - genau das verhindert den
-     Umbruch-Sprung oben. transform-origin bleibt beim Default (50% 50%): schrumpft dadurch
-     symmetrisch von beiden Seiten, wie es die vorherigen gleich großen left/right-Werte auch taten.
-     WICHTIG: .picker-backdrop/.picker-menu (Kategorie-/Status-/Info-Dropdowns, Template weiter
-     unten) sind deshalb per <Teleport to="body"> aus diesem Element herausgelöst - jedes transform
-     außer none macht ein Element sonst zum Containing Block für seine position:fixed-Nachfahren
-     (CSS-Spezifikation), das hätte deren viewport-weites Backdrop auf die Sheet-Fläche eingeschränkt
-     (siehe DESIGN.md, Abschnitt "Zieh-Interaktionen", für die ausführliche Begründung). */
-  transform: scaleX(var(--sheet-collapsed-scale));
-  /* Alle drei Eigenschaften mit derselben weicheren Einrast-Kurve (siehe DESIGN.md, "Zieh-
-     Interaktionen") statt nur height - transform/border-radius wechseln beim Hoch-/Runterziehen
-     gemeinsam mit der Höhe, sollen deshalb auch gleich smooth ankommen statt einzeln rauszustechen. */
   transition:
     height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    left 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    right 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
   /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
@@ -4339,12 +4317,13 @@ async function deleteEditingSpot() {
 
 /* Ganz hochgezogen: wie bei Apple erst jetzt randlos volle Breite UND -höhe (kein Abstand mehr nach
    unten, sonst wie collapsed/partial), nur noch oben gerundete Ecken (statt der rundum gerundeten
-   "schwebenden Karte" oben) - Übergang läuft über dieselben bottom/transform/border-radius-
+   "schwebenden Karte" oben) - Übergang läuft über dieselben bottom/left/right/border-radius-
    Transitions wie an .spots-col selbst. Reicht unten bis var(--navbar-bottom-offset, 0px) hoch,
    damit die Navbar nicht überfahren wird. */
 .spots-col.full {
+  left: 0;
+  right: 0;
   bottom: 0;
-  transform: scaleX(1);
   border-left: 0;
   border-right: 0;
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
@@ -4620,6 +4599,7 @@ async function deleteEditingSpot() {
     .spots-col.full {
       position: absolute;
       left: var(--space-4);
+      right: auto;
       top: var(--space-4);
       bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
       height: auto;
@@ -4628,6 +4608,7 @@ async function deleteEditingSpot() {
       background: var(--color-surface);
       border-radius: var(--radius-md-squircle);
       corner-shape: squircle;
+      border: 1px solid var(--color-border);
       box-shadow: var(--shadow-md);
       width: var(--spots-col-width);
       /* Hält mindestens 380px Freiraum am rechten Rand von .app-main frei,

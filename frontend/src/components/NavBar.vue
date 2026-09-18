@@ -33,10 +33,6 @@ const iconStyle = useIconStyleStore();
 const navEl = ref<HTMLElement | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 
-const isMapRoute = computed(
-  () => route.path.includes('/excursions') || route.name === 'excursions'
-);
-
 function updateOffset() {
   if (props.embedded) {
     document.documentElement.style.setProperty('--navbar-offset', '0px');
@@ -45,14 +41,10 @@ function updateOffset() {
   }
   const height = navEl.value ? navEl.value.getBoundingClientRect().height : 0;
   // Die schwebende Pille hat zusätzlich zu ihrer eigenen Höhe noch einen Rand-Abstand zum
-  // Viewport-Rand (var(--space-4) bzw. var(--space-3) in der Karten-View) - der muss mit in den
-  // reservierten Content-Abstand einfließen, sonst würde scrollbarer Inhalt optisch bis unter die
-  // Pille statt sauber darüber enden.
-  const isMap = isMapRoute.value;
-  const gapVar = isMap ? '--space-3' : '--space-4';
+  // Viewport-Rand (var(--space-4)) - der muss mit in den reservierten Content-Abstand einfließen,
+  // sonst würde scrollbarer Inhalt optisch bis unter die Pille statt sauber darüber enden.
   const floatingGap =
-    parseFloat(getComputedStyle(document.documentElement).getPropertyValue(gapVar)) ||
-    (isMap ? 12 : 16);
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-4')) || 16;
   document.documentElement.style.setProperty('--navbar-offset', '0px');
   document.documentElement.style.setProperty(
     '--navbar-bottom-offset',
@@ -209,11 +201,7 @@ function onLinkClick(event: MouseEvent) {
 </script>
 
 <template>
-  <nav
-    ref="navEl"
-    class="navbar"
-    :class="[props.embedded ? 'embedded' : 'floating-bottom', { 'in-map-view': isMapRoute }]"
-  >
+  <nav ref="navEl" class="navbar" :class="props.embedded ? 'embedded' : 'floating-bottom'">
     <div class="links" ref="linksEl">
       <!-- Gleitende Hervorhebung hinter den Links (siehe updateHighlight() oben) - ein einzelnes
            Element statt einer Hintergrundfarbe je aktivem .link, damit sich beim Wechseln eine
@@ -351,13 +339,6 @@ function onLinkClick(event: MouseEvent) {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
-}
-
-/* In der Karten-View (ExcursionsView): Ausrichtung und Randabstand auf var(--space-3) (12px)
-   belassen, damit die Navbar exakt mit der Breite des Spots Drawers / Sheets übereinstimmt. */
-.navbar.floating-bottom.in-map-view {
-  bottom: var(--space-3);
-  max-width: calc(100vw - 24px);
 }
 
 .navbar.floating-bottom::-webkit-scrollbar {
