@@ -575,6 +575,11 @@ async function quickAdd(list: ListGroup, label: string) {
   min-width: 0;
 }
 
+.list-section:focus-within {
+  position: relative;
+  z-index: 5;
+}
+
 .list-header {
   display: flex;
   justify-content: space-between;

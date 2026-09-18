@@ -232,6 +232,7 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 <style>
 .card {
+  position: relative;
   isolation: isolate;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
@@ -245,6 +246,10 @@ function handleCardKeydown(event: KeyboardEvent) {
     border-color 0.2s ease,
     box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:focus-within {
+  z-index: 5;
 }
 
 .card.new-highlight {

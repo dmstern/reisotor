@@ -785,11 +785,17 @@ function hasTodoMeta(item: TodoItem): boolean {
 
 /* Progressives Schnelleingabe-Formular */
 .add-form {
+  position: relative;
+  z-index: 1;
   margin-bottom: var(--space-4);
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.add-form:focus-within {
+  z-index: 5;
 }
 
 .quick-input-row {
@@ -902,6 +908,11 @@ function hasTodoMeta(item: TodoItem): boolean {
 
 .group-section {
   min-width: 0;
+}
+
+.group-section:focus-within {
+  position: relative;
+  z-index: 5;
 }
 
 .group-section h2 {

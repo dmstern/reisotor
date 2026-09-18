@@ -140,6 +140,11 @@ defineOptions({
   align-items: center;
 }
 
+.combobox.open,
+.combobox:focus-within {
+  z-index: 20;
+}
+
 .combobox :deep(.combobox-input),
 .combobox :deep(input) {
   width: 100%;
@@ -179,7 +184,7 @@ defineOptions({
   top: calc(100% + 2px);
   left: 0;
   right: 0;
-  z-index: 20;
+  z-index: 1000;
   list-style: none;
   margin: 0;
   padding: 4px 0;

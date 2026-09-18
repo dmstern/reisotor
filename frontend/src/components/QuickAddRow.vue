@@ -98,6 +98,8 @@ function onBlur(event: FocusEvent) {
 
 <style scoped>
 .quick-add-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   padding: 8px 12px;
@@ -109,7 +111,9 @@ function onBlur(event: FocusEvent) {
     box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.quick-add-row.expanded {
+.quick-add-row.expanded,
+.quick-add-row:focus-within {
+  z-index: 5;
   padding: 12px 14px;
 }
 

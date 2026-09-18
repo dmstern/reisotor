@@ -45,6 +45,11 @@ const id = useId();
   min-width: 0;
 }
 
+.form-field:focus-within {
+  position: relative;
+  z-index: 10;
+}
+
 .form-field-label {
   display: flex;
   align-items: center;
