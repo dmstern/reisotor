@@ -3802,10 +3802,9 @@ async function deleteEditingSpot() {
                       :cy="dot.y"
                       r="4.5"
                       :style="{
-                        fill:
-                          i === tourLines.get(grp.excursion.id)!.dots.length - 1
-                            ? 'var(--color-primary)'
-                            : 'var(--tour-theme-color, var(--color-primary))',
+                        fill: dot.isEnd
+                          ? 'var(--color-primary)'
+                          : 'var(--tour-theme-color, var(--color-primary))',
                         stroke: 'var(--color-surface)',
                         strokeWidth: '2px',
                       }"
