@@ -18,14 +18,7 @@ import 'leaflet/dist/leaflet.css';
 // geladen sein.
 import 'leaflet-rotate';
 import { api } from '../api/client';
-import type {
-  Excursion,
-  LocationTrack,
-  ScheduleItem,
-  TrackPoint,
-  TrackVisibility,
-  User,
-} from '../api/types';
+import type { Excursion, LocationTrack, ScheduleItem, TrackPoint, User } from '../api/types';
 import { buildDayStations } from '../utils/dayStations';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useTripStore } from '../stores/trip';
@@ -402,42 +395,25 @@ async function chooseShareDuration(duration: ShareDuration) {
   await locationSharing.setDuration(duration);
 }
 
-// Standort-Aufzeichnung (stores/trackRecording.ts): läuft (wie die Standort-Freigabe oben) app-weit
-// unabhängig von dieser Kartenansicht – Klick öffnet nur die Start-Auswahl bzw. beendet direkt eine
-// bereits laufende Aufzeichnung, gleiches Teleport-Menü-Muster wie beim Share-Button.
-const recordMenuOpen = ref(false);
-const recordButtonRef = ref<HTMLButtonElement | null>(null);
-const recordMenuStyle = ref({ top: '0px', left: '0px' });
+// Standort-Aufzeichnung (stores/trackRecording.ts): 1-Tap-Schnellschalter auf der Karte (Option B).
+// Startet die Aufzeichnung direkt (privat) bzw. beendet sie sofort, wenn sie bereits läuft.
 const showTrackRecordingWarningModal = ref(false);
-const pendingRecordVisibility = ref<TrackVisibility>('private');
 const trackWarningDismissed = usePersistedRef<boolean>(
   'reisotor-track-recording-warning-acknowledged',
   false
 );
 
-async function toggleRecordMenu(event?: MouseEvent) {
+async function toggleRecord() {
   if (trackRecording.recording) {
     await trackRecording.stop();
     return;
   }
-  if (!recordMenuOpen.value) {
-    recordMenuStyle.value = computeTeleportMenuPosition(recordButtonRef, event, 216);
-    recordMenuOpen.value = true;
-  } else {
-    recordMenuOpen.value = false;
-  }
-}
-
-// Ist gerade eine Tour auf der Karte fokussiert (drawers.mapFocusExcursionId, siehe
-// focusedExcursion unten), wird eine neu gestartete Aufzeichnung automatisch mit ihr verknüpft –
-// diskreter, kontextabhängiger Weg für die "optional an eine Tour koppeln"-Anforderung, ohne ein
-// zusätzliches Auswahl-Steuerelement im ohnehin schon kleinen Menü zu brauchen.
-async function chooseRecordVisibility(visibility: TrackVisibility) {
-  recordMenuOpen.value = false;
   if (trackWarningDismissed.value) {
-    await trackRecording.start({ visibility, excursionId: drawers.mapFocusExcursionId });
+    await trackRecording.start({
+      visibility: 'private',
+      excursionId: drawers.mapFocusExcursionId,
+    });
   } else {
-    pendingRecordVisibility.value = visibility;
     showTrackRecordingWarningModal.value = true;
   }
 }
@@ -445,7 +421,7 @@ async function chooseRecordVisibility(visibility: TrackVisibility) {
 async function startRecordingConfirmed() {
   showTrackRecordingWarningModal.value = false;
   await trackRecording.start({
-    visibility: pendingRecordVisibility.value,
+    visibility: 'private',
     excursionId: drawers.mapFocusExcursionId,
   });
 }
@@ -678,11 +654,11 @@ const visiblePoints = computed(() => {
   const excursion = focusedExcursion.value;
   if (excursion) {
     const excursionKeys = excursionStationKeys(excursion.spot_ids);
-    return filteredPoints.value.filter((p) => p.origin !== 'spot' || excursionKeys.includes(p.key));
+    return points.value.filter((p) => p.origin !== 'spot' || excursionKeys.includes(p.key));
   }
   if (drawers.mapFocusDate) {
     const keys = new Set(focusedDateStations.value.map((s) => s.key));
-    return filteredPoints.value.filter((p) => p.origin !== 'spot' || keys.has(p.key));
+    return points.value.filter((p) => p.origin !== 'spot' || keys.has(p.key));
   }
   return filteredPoints.value;
 });
@@ -857,9 +833,14 @@ function checkFocusOutOfBounds() {
   let focusedLatLngs: [number, number][] = [];
 
   if (focusedExcursion.value) {
-    focusedLatLngs = visiblePoints.value
-      .filter((p) => p.origin === 'spot')
-      .map((p) => [p.lat, p.lng]);
+    const excursionStations = resolveStations(
+      excursionStationKeys(focusedExcursion.value.spot_ids),
+      spotsStore.spots,
+      travelItems.value
+    );
+    focusedLatLngs = excursionStations
+      .filter((s) => s.lat != null && s.lng != null)
+      .map((s) => [s.lat as number, s.lng as number]);
   } else if (drawers.mapFocusDate) {
     focusedLatLngs = focusedDateStations.value
       .filter((s) => s.lat != null && s.lng != null)
@@ -877,21 +858,20 @@ function checkFocusOutOfBounds() {
   const coveredBottomPx = props.coveredBottomPx ?? 0;
   const mapSize = map.getSize();
 
-  let isAnyOutOfBounds = false;
-  for (const [lat, lng] of focusedLatLngs) {
-    const pt = map.latLngToContainerPoint([lat, lng]);
-    if (
-      pt.x < coveredLeftPx ||
-      pt.x > mapSize.x ||
-      pt.y < 0 ||
-      pt.y > mapSize.y - coveredBottomPx
-    ) {
-      isAnyOutOfBounds = true;
-      break;
-    }
-  }
+  const isOutOfBounds = (lat: number, lng: number) => {
+    const pt = map!.latLngToContainerPoint([lat, lng]);
+    return (
+      pt.x < coveredLeftPx || pt.x > mapSize.x || pt.y < 0 || pt.y > mapSize.y - coveredBottomPx
+    );
+  };
 
-  if (isAnyOutOfBounds) {
+  // Für Einzelpunkte (Spot) reicht ein einzelner Punkt. Für Mehrelement-Fokus (Tour, Tag, Track)
+  // wird der Fokus erst verlassen, wenn ALLE Punkte aus dem sichtbaren Bereich gescrollt wurden –
+  // sonst würde ein leichtes Verschieben der Karte oder Hereinzoomen sofort den ganzen Tour-Fokus
+  // killen, obwohl die Stationen noch aktiv betrachtet werden.
+  const areAllOutOfBounds = focusedLatLngs.every(([lat, lng]) => isOutOfBounds(lat, lng));
+
+  if (areAllOutOfBounds) {
     drawers.mapFocusExcursionId = null;
     drawers.mapFocusDate = null;
     drawers.mapFocusKey = null;
@@ -912,6 +892,9 @@ function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
   const coveredLeftPx = props.coveredLeftPx ?? 0;
   if (!coveredBottomPx && !coveredLeftPx) {
     map.setView(latlng, zoom, { animate: false });
+    setTimeout(() => {
+      isProgrammaticMove = false;
+    }, 100);
     return;
   }
   // Direkte Projektions-Rechnung statt map.setView()+map.panBy(): der Zielpunkt soll nicht im
@@ -928,13 +911,17 @@ function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
     zoom
   );
   map.setView(shiftedCenter, zoom, { animate: false });
+  setTimeout(() => {
+    isProgrammaticMove = false;
+  }, 100);
 }
 
 // Wie centerOnPoint() oben, aber für einen ganzen Ausschnitt (mehrere Punkte): Leaflets eigene
 // fitBounds()-padding-Option wirkt standardmäßig symmetrisch auf alle vier Seiten - Leaflet
 // unterstützt für genau diesen ungleichen Fall aber bereits eingebautes asymmetrisches Padding über
 // paddingTopLeft/paddingBottomRight, das reicht hier vollständig aus, ohne die project()/unproject()-
-// Rechnung von centerOnPoint() zu duplizieren.
+// Rechnung von centerOnPoint() zu duplizieren. animate: false stellt analog zu centerOnPoint()
+// sicher, dass der Kartenausschnitt auch bei rascher Wiederholung sofort deterministisch zentriert wird.
 function fitBoundsWithCoveredBottom(bounds: L.LatLngBoundsExpression) {
   if (!map) return;
   isProgrammaticMove = true;
@@ -943,7 +930,12 @@ function fitBoundsWithCoveredBottom(bounds: L.LatLngBoundsExpression) {
   map.fitBounds(bounds, {
     paddingTopLeft: [32 + coveredLeftPx, 32],
     paddingBottomRight: [32, 32 + coveredBottomPx],
+    maxZoom: 15,
+    animate: false,
   });
+  setTimeout(() => {
+    isProgrammaticMove = false;
+  }, 100);
 }
 
 function renderMarkers() {
@@ -969,11 +961,12 @@ function renderMarkers() {
   // gegenseitig aus) – zoomt gezielt auf die Stationen des Ausflugs statt auf alle sichtbaren
   // Punkte (die z. B. auch Unterkunft/Reise zur Orientierung enthalten können).
   const excursion = focusedExcursion.value;
-  const excursionLatLngs: L.LatLngExpression[] = excursion
-    ? visiblePoints.value
-        .filter((p) => p.origin === 'spot')
-        .map((p): L.LatLngExpression => [p.lat, p.lng])
+  const excursionStations = excursion
+    ? resolveStations(excursionStationKeys(excursion.spot_ids), spotsStore.spots, travelItems.value)
     : [];
+  const excursionLatLngs: L.LatLngExpression[] = excursionStations
+    .filter((s) => s.lat != null && s.lng != null)
+    .map((s): L.LatLngExpression => [s.lat as number, s.lng as number]);
 
   const dateLatLngs: L.LatLngExpression[] =
     !excursion && drawers.mapFocusDate
@@ -1337,7 +1330,6 @@ onMounted(async () => {
   // Automatische Fokus-Rücksetzung, wenn die Nutzerin manuell von fokussierten Orten wegscrolled
   map.on('moveend', () => {
     if (isProgrammaticMove) {
-      isProgrammaticMove = false;
       return;
     }
     checkFocusOutOfBounds();
@@ -1580,7 +1572,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
            Kartenansicht weiter - Klick öffnet bei Nicht-Aufzeichnung nur die Start-Auswahl, beendet
            bei laufender Aufzeichnung direkt (kein Menü nötig). -->
       <IconButton
-        ref="recordButtonRef"
         variant="floating"
         shape="circle"
         class="fit-btn record-btn"
@@ -1588,7 +1579,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
-        @click="toggleRecordMenu($event)"
+        @click="toggleRecord"
       />
       <Teleport to="body">
         <template v-if="focusMenuOpen">
@@ -1686,25 +1677,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             />
           </PickerMenu>
         </template>
-        <template v-if="recordMenuOpen">
-          <PickerMenu :style="recordMenuStyle" @close="recordMenuOpen = false">
-            <p v-if="focusedExcursion" class="picker-menu-hint">
-              <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{
-                focusedExcursion.title
-              }}" gekoppelt
-            </p>
-            <DropdownItem
-              :icon="ACTION_ICONS.private"
-              label="Privat aufzeichnen"
-              @click="chooseRecordVisibility('private')"
-            />
-            <DropdownItem
-              :icon="ACTION_ICONS.shared"
-              label="Geteilt aufzeichnen"
-              @click="chooseRecordVisibility('shared')"
-            />
-          </PickerMenu>
-        </template>
       </Teleport>
       <TrackRecordingWarningModal
         v-model="showTrackRecordingWarningModal"
@@ -1750,6 +1722,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       >
         <button
           class="focus-banner-toggle-btn"
+          :aria-expanded="isFocusBannerExpanded"
+          :aria-label="
+            isFocusBannerExpanded ? 'Fokus-Banner einklappen' : 'Fokus-Banner ausklappen'
+          "
           @click="isFocusBannerExpanded = !isFocusBannerExpanded"
         >
           <AppIcon
@@ -1983,7 +1959,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   /* Initial-Zustand Mobil: Runder Icon-Button */
   border-radius: var(--radius-pill, 999px);
   corner-shape: round;
-  padding: 4px; /* Gleichmäßiges Padding für den Kreis */
+  padding: 2px; /* Gleichmäßiges Padding für den Kreis */
   width: auto;
   max-width: 44px; /* Limitiert die Breite auf den Button */
   height: 44px;
@@ -1998,7 +1974,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   /* Behalte die runde Pillenform bei, damit der linke Button perfekt reinpasst */
   border-radius: var(--radius-pill, 999px);
   corner-shape: round;
-  padding: 4px 14px 4px 4px;
+  padding: 2px 14px 2px 2px;
 }
 
 .focus-banner-toggle-btn {
@@ -2010,6 +1986,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  margin: 0;
   color: var(--color-primary-dark);
   cursor: pointer;
   flex-shrink: 0;
@@ -2064,7 +2042,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     max-width: calc(100% - 60px);
     border-radius: var(--radius-pill, 999px);
     corner-shape: round;
-    padding: 4px 14px 4px 4px;
+    padding: 2px 14px 2px 2px;
     height: 44px;
   }
 

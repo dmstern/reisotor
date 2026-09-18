@@ -16,7 +16,6 @@ import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
-import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
@@ -70,15 +69,6 @@ const resolvedStations = computed(() =>
 const hasMappedStations = computed(() =>
   resolvedStations.value.some((s) => s.lat != null && s.lng != null)
 );
-
-const fallbackImages = computed(() =>
-  resolvedStations.value.map((s) => s.imageUrl).filter((url): url is string => !!url)
-);
-const showCollage = computed(() => !props.excursion.image_url && fallbackImages.value.length >= 2);
-const displayImage = computed(() => {
-  if (props.excursion.image_url) return props.excursion.image_url;
-  return fallbackImages.value.length === 1 ? fallbackImages.value[0] : null;
-});
 
 const showComments = ref(false);
 
@@ -306,37 +296,34 @@ function onSpotDrop(event: DragEvent) {
     @drop.prevent="onSpotDrop"
   >
     <div class="tour-card-main">
-      <div
-        class="tour-image"
-        :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}"
-      >
-        <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
-        <AppIcon
-          v-else-if="!displayImage"
-          class="placeholder"
-          :size="30"
-          :icon="
-            excursion.role
-              ? travelTypeIconDef(excursion.transport_type)
-              : SECTION_ICON_DEFS.excursions
-          "
-          group="categories"
+      <!-- Linke visuelle Spalte: Polaroid-Stapel (Stationen) im eingeklappten Zustand (#layout) -->
+      <div v-if="!expanded" class="tour-visual-col">
+        <PolaroidStack
+          v-if="resolvedStations.length"
+          class="tour-polaroid-stack"
+          :items="resolvedStations"
+          :expanded="false"
+          :interactive="false"
+          :title="`${resolvedStations.length} Stationen`"
+          aria-hidden="true"
         />
-
-        <!-- Floating Paperclip Badge im eingeklappten Zustand (#396 Pattern) -->
-        <div v-if="!expanded" class="tour-collapsed-attachments">
-          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" collapsed />
+        <div v-else class="tour-placeholder">
+          <AppIcon
+            class="placeholder"
+            :size="26"
+            :icon="
+              excursion.role
+                ? travelTypeIconDef(excursion.transport_type)
+                : SECTION_ICON_DEFS.excursions
+            "
+            group="categories"
+          />
         </div>
 
-        <!-- Floating Edit-Button im aufgeklappten Zustand -->
-        <Transition name="fade">
-          <EditButton
-            v-if="expanded"
-            floating
-            class="tour-image-edit-btn"
-            @click="emit('edit', excursion)"
-          />
-        </Transition>
+        <!-- Floating Paperclip Badge im eingeklappten Zustand (#396 Pattern) -->
+        <div class="tour-collapsed-attachments">
+          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" collapsed />
+        </div>
       </div>
 
       <div class="body">
@@ -387,72 +374,48 @@ function onSpotDrop(event: DragEvent) {
               <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
             </Badge>
             <PendingSyncBadge v-if="excursion._pending" />
+            <Transition name="fade">
+              <EditButton
+                v-if="expanded"
+                small
+                class="tour-edit-btn"
+                @click="emit('edit', excursion)"
+              />
+            </Transition>
           </div>
         </div>
-        <!-- Stationen-Vorschau mit Polaroid-Stapel (#235) -->
+
+        <!-- Strecken- und Zeit-Info (nur im eingeklappten Zustand, im aufgeklappten Zustand in der Header-Meta) -->
         <div
-          v-if="resolvedStations.length"
-          class="tour-stations-preview"
-          :class="{ 'is-fanned-out': expanded }"
+          v-if="
+            !expanded &&
+            (routeLabel || stationsSummaryText || effectiveDepartureTime || effectiveArrivalTime)
+          "
+          class="tour-route-line"
         >
-          <!-- Polaroid-Stapel: Mini-Polaroids im collapsed Zustand, morpht beim Aufklappen -->
-          <PolaroidStack
-            class="tour-polaroid-stack"
-            :items="resolvedStations"
-            :expanded="expanded"
-            :interactive="false"
-            :title="`${resolvedStations.length} Stationen`"
-            aria-hidden="true"
-          />
-
-          <div class="tour-stations-meta" v-if="!expanded">
-            <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
-            <p v-else-if="stationsSummaryText" class="route tour-stations-summary">
-              {{ stationsSummaryText }}
-            </p>
-            <p
-              v-if="
-                (excursion.role || excursion.legs?.length) &&
-                (effectiveDepartureTime || effectiveArrivalTime)
-              "
-              class="departure-arrival"
-            >
-              <span class="time-block" v-if="effectiveDepartureTime">
-                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-                {{ effectiveDepartureTime
-                }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
-                >&nbsp;Uhr
-              </span>
-              <span class="time-block" v-else>
-                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-              </span>
-              <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
-            </p>
-          </div>
-        </div>
-
-        <template v-else>
-          <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
+          <p v-if="routeLabel" class="route" :title="routeLabel">{{ routeLabel }}</p>
           <p
-            v-if="
-              !expanded &&
-              (excursion.role || excursion.legs?.length) &&
-              (effectiveDepartureTime || effectiveArrivalTime)
-            "
-            class="departure-arrival"
+            v-else-if="stationsSummaryText"
+            class="route tour-stations-summary"
+            :title="stationsSummaryText"
           >
+            {{ stationsSummaryText }}
+          </p>
+          <p v-if="effectiveDepartureTime || effectiveArrivalTime" class="departure-arrival">
             <span class="time-block" v-if="effectiveDepartureTime">
-              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
               {{ effectiveDepartureTime
               }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
               >&nbsp;Uhr
             </span>
-            <span class="time-block" v-else>
-              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
+            <span v-else-if="effectiveArrivalTime" class="time-block">
+              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
+              Ankunft {{ effectiveArrivalTime }}&nbsp;Uhr
             </span>
-            <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
+            <span v-if="travelDuration" class="duration-separator">·</span>
+            <span v-if="travelDuration" class="duration">{{ travelDuration }}</span>
           </p>
-        </template>
+        </div>
 
         <!-- Tour-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
         <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
@@ -535,7 +498,10 @@ function onSpotDrop(event: DragEvent) {
               </template>
               <template v-else>
                 <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                <span>Als gemacht markieren</span>
+                <span class="status-text">
+                  <template v-if="expanded">Als gemacht markieren</template>
+                  <template v-else>Gemacht</template>
+                </span>
               </template>
             </button>
           </div>
@@ -659,7 +625,7 @@ function onSpotDrop(event: DragEvent) {
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  min-height: 120px;
+  min-height: 80px;
   border-width: var(--ui-border-width, 1px);
   border-style: solid;
   border-color: var(--excursion-theme-border);
@@ -763,18 +729,17 @@ function onSpotDrop(event: DragEvent) {
   background: var(--excursion-theme-tint);
 }
 
-.tour-image {
-  width: 140px;
+.tour-visual-col {
+  width: 68px;
+  min-width: 68px;
   flex-shrink: 0;
-  align-self: stretch;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  overflow: hidden;
-  background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   position: relative;
+  align-self: flex-start;
+  overflow: visible;
+  padding: 2px 0 0 0;
 }
 
 .tour-type-badge {
@@ -783,24 +748,33 @@ function onSpotDrop(event: DragEvent) {
   letter-spacing: 0.04em;
 }
 
-.placeholder {
-  font-size: 2rem;
+.tour-placeholder {
+  width: 54px;
+  height: 64px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-primary-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tour-placeholder .placeholder {
+  font-size: 1.75rem;
   color: var(--excursion-theme-color);
   opacity: 0.7;
 }
 
-.tour-image-edit-btn {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 2;
+.tour-edit-btn {
+  flex-shrink: 0;
 }
 
 .tour-collapsed-attachments {
   position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 3;
+  top: 2px;
+  left: 2px;
+  z-index: 6;
 }
 
 .tour-collapsed-attachments :deep(.file-attachments) {
@@ -814,7 +788,7 @@ function onSpotDrop(event: DragEvent) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -838,14 +812,19 @@ function onSpotDrop(event: DragEvent) {
 
 .card-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.3;
   color: var(--color-text);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+  overflow-wrap: break-word;
   transition:
     font-size 0.2s ease,
     color 0.2s ease;
@@ -854,21 +833,18 @@ function onSpotDrop(event: DragEvent) {
 .excursion-card.expanded .card-title {
   font-size: 1.125rem;
   line-height: 1.3;
-  white-space: normal;
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .card-title-meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   font-size: 0.8125rem;
   color: var(--color-text-muted);
   flex-wrap: wrap;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .overlay-author {
@@ -882,8 +858,9 @@ function onSpotDrop(event: DragEvent) {
 .card-badge-group {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-1);
+  margin-top: 1px;
 }
 
 .show-on-map-btn {
@@ -906,61 +883,13 @@ function onSpotDrop(event: DragEvent) {
     margin 0.28s ease;
 }
 
-/* Unten statt oben rechts positioniert (#210, analog zu SpotCard.vue) */
-.status {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  max-width: calc(100% - var(--space-4));
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  box-sizing: border-box;
-  /* Beim Aufklappen: Text entfaltet sich erst, wenn Banner Breite gewonnen hat */
-  transition:
-    width 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-    height 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-    padding 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-    gap 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-    border-radius 0.28s ease 0.08s;
-}
-
-.status-text {
-  display: inline-block;
-  opacity: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  transition: opacity 0.2s ease 0.14s;
-}
-
-.status.planned,
-.status.status-done {
-  color: var(--color-success);
-}
-
-:root[data-theme='dark'] .status {
-  background: rgba(35, 34, 32, 0.85);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .status {
-    background: rgba(35, 34, 32, 0.85);
-  }
-}
-
 .card-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
 }
 
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
@@ -1002,8 +931,12 @@ function onSpotDrop(event: DragEvent) {
   corner-shape: round;
   padding: 3px 10px;
   font-size: 0.75rem;
+  font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -1032,14 +965,23 @@ function onSpotDrop(event: DragEvent) {
 .done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
-  background: var(--excursion-theme-tint);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
   border-color: var(--color-success);
 }
 
-.card-actions .done-toggle.status {
-  position: static;
-  bottom: auto;
-  right: auto;
+.done-toggle.active:hover,
+.done-toggle.status-done:hover {
+  background: color-mix(in srgb, var(--color-success) 22%, transparent);
+}
+
+.status-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .calendar-drag-handle:active,
@@ -1276,9 +1218,13 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .route {
-  overflow-wrap: anywhere;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .departure-arrival {
@@ -1287,45 +1233,32 @@ function onSpotDrop(event: DragEvent) {
   flex-wrap: wrap;
   gap: 4px;
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
   color: var(--color-text-muted);
 }
 
-.time-block {
-  display: flex;
+.departure-arrival .time-block {
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
 }
 
-.duration {
+.departure-arrival .duration-separator {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.departure-arrival .duration {
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-/* Stationen-Vorschau mit Polaroid-Stapel (#235) */
-.tour-stations-preview {
+.tour-route-line {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin: var(--space-1) 0;
-  position: relative;
-  transition:
-    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-    margin 0.35s ease,
-    opacity 0.25s ease;
-}
-
-.tour-stations-preview.is-fanned-out {
-  max-height: 0;
-  margin: 0;
-  opacity: 0;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.tour-polaroid-stack {
-  margin-right: 6px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
@@ -1355,6 +1288,29 @@ function onSpotDrop(event: DragEvent) {
       0 6px 16px rgba(0, 0, 0, 0.55),
       0 2px 5px rgba(0, 0, 0, 0.3);
   }
+}
+
+:deep(.tour-polaroid-stack) {
+  width: 54px;
+  height: 64px;
+}
+
+:deep(.tour-polaroid-stack .polaroid-tile) {
+  width: 48px;
+  height: 58px;
+  padding: 2px 2px 8px 2px;
+}
+
+:deep(.tour-polaroid-stack .polaroid-photo-frame) {
+  height: 38px;
+}
+
+:deep(.tour-polaroid-stack .polaroid-chin) {
+  height: 10px;
+}
+
+:deep(.tour-polaroid-stack .polaroid-caption) {
+  font-size: 0.42rem;
 }
 
 .tour-attachments-wrap {
@@ -1395,52 +1351,47 @@ function onSpotDrop(event: DragEvent) {
   transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
 }
 
-@container spots-col (max-width: 480px) {
+@container spots-col (max-width: 360px) {
   .tour-card-main {
     padding: 8px 10px 8px 8px;
     gap: 8px;
   }
 
-  .tour-image {
-    width: 76px;
-    border-radius: var(--radius-sm-squircle);
+  .tour-visual-col {
+    width: 52px;
+    min-width: 52px;
   }
 
-  .tour-image .placeholder {
-    font-size: 1.5rem;
+  .tour-placeholder {
+    width: 42px;
+    height: 52px;
+  }
+
+  .tour-placeholder .placeholder {
+    font-size: 1.25rem;
   }
 
   .card-title {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
   }
 
   .excursion-card.expanded .card-title {
     font-size: 1rem;
   }
 
-  .excursion-card:not(.expanded) .card-actions {
-    display: none;
-  }
-
-  .tour-stations-preview {
-    gap: var(--space-2);
-    margin: 2px 0;
-  }
-
   :deep(.tour-polaroid-stack) {
-    width: 46px;
-    height: 56px;
-    margin-right: 4px;
+    width: 42px;
+    height: 52px;
   }
 
   :deep(.tour-polaroid-stack .polaroid-tile) {
-    width: 42px;
-    height: 52px;
-    padding: 2px 2px 8px 2px;
+    width: 38px;
+    height: 48px;
+    padding: 2px 2px 6px 2px;
   }
 
   :deep(.tour-polaroid-stack .polaroid-photo-frame) {
-    height: 34px;
+    height: 30px;
   }
 
   :deep(.tour-polaroid-stack .polaroid-chin) {
@@ -1448,11 +1399,11 @@ function onSpotDrop(event: DragEvent) {
   }
 
   :deep(.tour-polaroid-stack .polaroid-caption) {
-    font-size: 0.4rem;
+    font-size: 0.38rem;
   }
 
   .tour-note-container:not(.is-expanded) {
-    max-height: 1.4em;
+    max-height: 1.35em;
   }
 
   .tour-note-container.is-expanded {
@@ -1482,20 +1433,26 @@ function onSpotDrop(event: DragEvent) {
     line-clamp: unset;
     display: block;
   }
+
+  .done-toggle {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+  }
+
+  .calendar-drag-handle {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .excursion-card,
   .body,
   .excursion-accordion,
-  .status,
-  .status-text,
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
   .excursion-accordion-inner > *,
   .polaroid-tile,
-  .tour-stations-preview,
-  .tour-stations-preview.is-fanned-out .polaroid-tile,
   .tour-note-container {
     transform: none !important;
     transition: opacity 0.15s ease !important;
