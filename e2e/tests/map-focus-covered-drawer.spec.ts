@@ -153,5 +153,91 @@ for (const [viewportName, viewport] of Object.entries({
       expect(fullBox!.y).toBeCloseTo(initialBox!.y, 0);
       expect(fullBox!.x).toBeCloseTo(initialBox!.x, 0);
     });
+
+    test('beim Klick auf "Auf Karte anzeigen" bei einer Tour wird die Tour-Kachel im geschrumpften Drawer ans obere Ende gescrollt', async ({
+      page,
+    }) => {
+      await page.goto('/excursions');
+      const sheet = page.locator('.spots-col');
+      await expect(sheet).toBeVisible();
+
+      // Touren-Ansicht wählen
+      const filterToggle = page.locator('.filter-toggle-row');
+      if (await filterToggle.isVisible()) await filterToggle.click();
+      await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
+      await page.waitForTimeout(300);
+
+      // Schublade auf "voll" vergrößern
+      await page.getByRole('button', { name: 'Spots-Liste weiter hochschieben' }).click();
+      await expect(sheet).toHaveClass(/full/);
+      await page.waitForTimeout(400);
+
+      const cards = page.locator('.excursion-card');
+      const count = await cards.count();
+      expect(count).toBeGreaterThanOrEqual(2);
+
+      // Eine spätere Tour auswählen (nicht die allererste)
+      const targetCard = cards.nth(Math.min(2, count - 1));
+      await targetCard.scrollIntoViewIfNeeded();
+      await targetCard.locator('h3').click();
+      await expect(targetCard).toHaveClass(/expanded/);
+
+      const showBtn = targetCard.getByRole('button', { name: 'Auf Karte anzeigen' });
+      await expect(showBtn).toBeVisible();
+
+      // "Auf Karte anzeigen" anklicken
+      await showBtn.click();
+
+      // Schublade schrumpft auf "partial" und Kachel wird sichtbar ans obere Ende gescrollt
+      await expect(sheet).toHaveClass(/partial/);
+      await page.waitForTimeout(600);
+
+      const sheetBox = await sheet.boundingBox();
+      const cardBox = await targetCard.boundingBox();
+      expect(sheetBox).not.toBeNull();
+      expect(cardBox).not.toBeNull();
+      expect(cardBox!.y).toBeGreaterThanOrEqual(sheetBox!.y);
+      expect(cardBox!.y).toBeLessThan(sheetBox!.y + sheetBox!.height);
+    });
+
+    test('beim Klick auf "Auf Karte anzeigen" bei einem Spot wird die Spot-Kachel im geschrumpften Drawer ans obere Ende gescrollt', async ({
+      page,
+    }) => {
+      await page.goto('/excursions');
+      const sheet = page.locator('.spots-col');
+      await expect(sheet).toBeVisible();
+
+      // Schublade auf "voll" vergrößern
+      await page.getByRole('button', { name: 'Spots-Liste weiter hochschieben' }).click();
+      await expect(sheet).toHaveClass(/full/);
+      await page.waitForTimeout(400);
+
+      const cards = page.locator('.spot-card');
+      const count = await cards.count();
+      expect(count).toBeGreaterThanOrEqual(3);
+
+      // Einen späteren Spot auswählen
+      const targetCard = cards.nth(Math.min(3, count - 1));
+      await targetCard.scrollIntoViewIfNeeded();
+      await targetCard.locator('h3').click();
+      await expect(targetCard).toHaveClass(/expanded/);
+
+      const showBtn = targetCard.getByRole('button', { name: 'Auf Karte anzeigen' });
+      await expect(showBtn).toBeVisible();
+
+      // "Auf Karte anzeigen" anklicken
+      await showBtn.click();
+
+      // Schublade schrumpft auf "partial" und Kachel wird sichtbar ans obere Ende gescrollt
+      await expect(sheet).toHaveClass(/partial/);
+      await page.waitForTimeout(600);
+
+      const sheetBox = await sheet.boundingBox();
+      const cardBox = await targetCard.boundingBox();
+      expect(sheetBox).not.toBeNull();
+      expect(cardBox).not.toBeNull();
+      expect(cardBox!.y).toBeGreaterThanOrEqual(sheetBox!.y);
+      expect(cardBox!.y).toBeLessThan(sheetBox!.y + sheetBox!.height);
+    });
   });
 }
