@@ -107,8 +107,9 @@ onUnmounted(() => {
       <defs>
         <!-- Master Farbverlauf Pink -> Orange -->
         <linearGradient :id="`${uid}-mainGrad`" x1="0.1" y1="1" x2="0.9" y2="0">
-          <stop offset="0%" stop-color="#d81b60" />
-          <stop offset="45%" stop-color="#e91e63" />
+          <stop offset="0%" stop-color="#db1c97" />
+          <stop offset="25%" stop-color="#eb198c" />
+          <stop offset="55%" stop-color="#f2367d" />
           <stop offset="100%" stop-color="#ff9800" />
         </linearGradient>
 
@@ -122,8 +123,9 @@ onUnmounted(() => {
           gradientUnits="userSpaceOnUse"
           gradientTransform="translate(2.1628,0.9144)"
         >
-          <stop offset="0%" stop-color="#d81b60" />
-          <stop offset="45%" stop-color="#e91e63" />
+          <stop offset="0%" stop-color="#db1c97" />
+          <stop offset="25%" stop-color="#eb198c" />
+          <stop offset="55%" stop-color="#f2367d" />
           <stop offset="100%" stop-color="#ff9800" />
         </linearGradient>
 
@@ -137,8 +139,9 @@ onUnmounted(() => {
           gradientTransform="matrix(0.87825,0,0,1.13863,7.4818,-8.7331)"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stop-color="#d81b60" />
-          <stop offset="45%" stop-color="#e91e63" />
+          <stop offset="0%" stop-color="#db1c97" />
+          <stop offset="25%" stop-color="#eb198c" />
+          <stop offset="55%" stop-color="#f2367d" />
           <stop offset="100%" stop-color="#ff9800" />
         </linearGradient>
 
@@ -152,8 +155,9 @@ onUnmounted(() => {
           gradientTransform="scale(1.60357,0.62361)"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stop-color="#d81b60" />
-          <stop offset="45%" stop-color="#e91e63" />
+          <stop offset="0%" stop-color="#db1c97" />
+          <stop offset="25%" stop-color="#eb198c" />
+          <stop offset="55%" stop-color="#f2367d" />
           <stop offset="100%" stop-color="#ff9800" />
         </linearGradient>
 
@@ -167,8 +171,9 @@ onUnmounted(() => {
           gradientTransform="matrix(0.67082,0,0,1.49071,-0.2,-84.7517)"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stop-color="#d81b60" />
-          <stop offset="45%" stop-color="#e91e63" />
+          <stop offset="0%" stop-color="#db1c97" />
+          <stop offset="25%" stop-color="#eb198c" />
+          <stop offset="55%" stop-color="#f2367d" />
           <stop offset="100%" stop-color="#ff9800" />
         </linearGradient>
 
@@ -181,9 +186,45 @@ onUnmounted(() => {
           gradientTransform="matrix(1.22474,0,0,0.8165,-0.2,-84.7517)"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stop-color="#d81b60" />
-          <stop offset="45%" stop-color="#e91e63" />
+          <stop offset="0%" stop-color="#db1c97" />
+          <stop offset="25%" stop-color="#eb198c" />
+          <stop offset="55%" stop-color="#f2367d" />
           <stop offset="100%" stop-color="#ff9800" />
+        </linearGradient>
+
+        <!-- 3D Edge Highlights (Vector Light from Above) -->
+        <linearGradient :id="`${uid}-pinTopGleam`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.75" />
+          <stop offset="50%" stop-color="#ffffff" stop-opacity="0.35" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient :id="`${uid}-pinTopBloom`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2" />
+          <stop offset="60%" stop-color="#ffffff" stop-opacity="0.08" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient :id="`${uid}-pinInnerGleam`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+          <stop offset="50%" stop-color="#ffffff" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.6" />
+        </linearGradient>
+        <linearGradient :id="`${uid}-pinInnerBloom`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+          <stop offset="50%" stop-color="#ffffff" stop-opacity="0.08" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.2" />
+        </linearGradient>
+        <linearGradient :id="`${uid}-headTopGleam`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+          <stop offset="50%" stop-color="#ffffff" stop-opacity="0.35" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient :id="`${uid}-headTopBloom`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient :id="`${uid}-antennaBallGleam`" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
         </linearGradient>
 
         <!-- Hintergrund-Farbverläufe (Circle & Full) -->
@@ -402,6 +443,36 @@ onUnmounted(() => {
           d="M 243.97335,91.193652 A 120,120 0 0 0 132.1628,210.91435 c 0,110 90,190 105,205 10,10 20,10 30,0 15,-15 105,-95 105,-205 A 120,120 0 0 0 243.97335,91.193652 Z m 8.18945,41.720698 a 78,78 0 0 1 78,78 78,78 0 0 1 -78,78 78,78 0 0 1 -78,-78 78,78 0 0 1 78,-78 z"
         />
 
+        <!-- Pin 3D Edge Glanz (Licht von oben) -->
+        <path
+          d="M 144.5,160.7 A 118.8,118.8 0 0 1 359.8,160.7"
+          fill="none"
+          :stroke="`url(#${uid}-pinTopBloom)`"
+          stroke-width="4.5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M 144.5,160.7 A 118.8,118.8 0 0 1 359.8,160.7"
+          fill="none"
+          :stroke="`url(#${uid}-pinTopGleam)`"
+          stroke-width="2.2"
+          stroke-linecap="round"
+        />
+        <path
+          d="M 183.6,250.5 A 79.2,79.2 0 0 0 320.7,250.5"
+          fill="none"
+          :stroke="`url(#${uid}-pinInnerBloom)`"
+          stroke-width="4.5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M 183.6,250.5 A 79.2,79.2 0 0 0 320.7,250.5"
+          fill="none"
+          :stroke="`url(#${uid}-pinInnerGleam)`"
+          stroke-width="2.0"
+          stroke-linecap="round"
+        />
+
         <!-- Antenne -->
         <g class="antenna" transform="translate(1.0972,2.5602)">
           <rect
@@ -418,6 +489,29 @@ onUnmounted(() => {
             cy="65.25"
             r="8"
             :fill="`url(#${uid}-linearGradient79)`"
+          />
+          <!-- Antenna 3D Glanz (Licht von oben) -->
+          <path
+            d="M 247.8,73 A 2.2,2.2 0 0 1 251.8,73"
+            fill="none"
+            :stroke="`url(#${uid}-antennaBallGleam)`"
+            stroke-width="1.0"
+            stroke-linecap="round"
+          />
+          <path
+            d="M 243.65,61.7 A 7.1,7.1 0 0 1 255.95,61.7"
+            fill="none"
+            :stroke="`url(#${uid}-antennaBallGleam)`"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            opacity="0.3"
+          />
+          <path
+            d="M 243.65,61.7 A 7.1,7.1 0 0 1 255.95,61.7"
+            fill="none"
+            :stroke="`url(#${uid}-antennaBallGleam)`"
+            stroke-width="1.3"
+            stroke-linecap="round"
           />
         </g>
 
@@ -444,6 +538,22 @@ onUnmounted(() => {
             rx="35"
             :fill="`url(#${uid}-linearGradient80)`"
             class="head-visor"
+          />
+
+          <!-- Robot Head 3D Glanz (Licht von oben) -->
+          <path
+            d="M 194.4,195.7 A 33.8,33.8 0 0 1 225,176.2 L 275,176.2 A 33.8,33.8 0 0 1 305.6,195.7"
+            fill="none"
+            :stroke="`url(#${uid}-headTopBloom)`"
+            stroke-width="4.5"
+            stroke-linecap="round"
+          />
+          <path
+            d="M 194.4,195.7 A 33.8,33.8 0 0 1 225,176.2 L 275,176.2 A 33.8,33.8 0 0 1 305.6,195.7"
+            fill="none"
+            :stroke="`url(#${uid}-headTopGleam)`"
+            stroke-width="2.0"
+            stroke-linecap="round"
           />
 
           <!-- Schüchterne Roboter-Wangen (Blush bei verdeckten Augen) -->
