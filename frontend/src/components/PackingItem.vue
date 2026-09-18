@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import type { PackingItem } from '../api/types';
 import { isFullyPacked as isFullyPackedItem } from '../utils/packing';
-import DeleteButton from './DeleteButton.vue';
 import EditButton from './EditButton.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import CheckableListItem from './primitives/CheckableListItem.vue';
@@ -10,7 +9,6 @@ import CheckableListItem from './primitives/CheckableListItem.vue';
 const props = defineProps<{ item: PackingItem; highlighted?: boolean }>();
 const emit = defineEmits<{
   (e: 'update-counts', item: PackingItem, laidOutCount: number, packedCount: number): void;
-  (e: 'remove', id: number): void;
   (e: 'edit', item: PackingItem): void;
 }>();
 
@@ -97,106 +95,122 @@ const tallyGroups = computed<number[]>(() => {
 
 <template>
   <CheckableListItem :done="isFullyPacked" :highlighted="highlighted">
-    <div class="main">
-      <button
-        v-if="item.quantity <= 1"
-        type="button"
-        class="state-toggle"
-        :class="singleState"
-        role="checkbox"
-        :aria-checked="singleState === 'packed'"
-        :aria-label="`${item.label}: ${singleState === 'none' ? 'ungepackt' : singleState === 'laidOut' ? 'rausgelegt' : 'eingepackt'}`"
-        :title="
-          singleState === 'none'
-            ? 'Ungepackt – klicken für rausgelegt'
-            : singleState === 'laidOut'
-              ? 'Rausgelegt – klicken für eingepackt'
-              : 'Eingepackt – klicken zum Zurücksetzen'
-        "
-        @click="cycleSingleState"
-      >
-        <span v-if="singleState === 'laidOut'" class="laid-out-mark"></span>
-      </button>
-      <button
-        v-else
-        type="button"
-        class="state-toggle"
-        :class="{ packed: isFullyPacked }"
-        role="checkbox"
-        :aria-checked="isFullyPacked"
-        :aria-label="`${item.label}: alle ${item.quantity} Exemplare ${isFullyPacked ? 'eingepackt – klicken zum Zurücksetzen' : 'auf einmal einpacken'}`"
-        :title="
-          isFullyPacked ? 'Alle eingepackt – klicken zum Zurücksetzen' : 'Alle auf einmal einpacken'
-        "
-        @click="toggleAllPacked"
-      ></button>
-      <span class="label" :class="{ 'row__text--done': isFullyPacked, 'text-done': isFullyPacked }">
-        {{ item.label }}
-        <span v-if="item.quantity > 1" class="qty">×{{ item.quantity }}</span>
-      </span>
-      <PendingSyncBadge v-if="item._pending" />
-    </div>
+    <div class="item-main">
+      <div class="main">
+        <button
+          v-if="item.quantity <= 1"
+          type="button"
+          class="state-toggle"
+          :class="singleState"
+          role="checkbox"
+          :aria-checked="singleState === 'packed'"
+          :aria-label="`${item.label}: ${singleState === 'none' ? 'ungepackt' : singleState === 'laidOut' ? 'rausgelegt' : 'eingepackt'}`"
+          :title="
+            singleState === 'none'
+              ? 'Ungepackt – klicken für rausgelegt'
+              : singleState === 'laidOut'
+                ? 'Rausgelegt – klicken für eingepackt'
+                : 'Eingepackt – klicken zum Zurücksetzen'
+          "
+          @click="cycleSingleState"
+        >
+          <span v-if="singleState === 'laidOut'" class="laid-out-mark"></span>
+        </button>
+        <button
+          v-else
+          type="button"
+          class="state-toggle"
+          :class="{ packed: isFullyPacked }"
+          role="checkbox"
+          :aria-checked="isFullyPacked"
+          :aria-label="`${item.label}: alle ${item.quantity} Exemplare ${isFullyPacked ? 'eingepackt – klicken zum Zurücksetzen' : 'auf einmal einpacken'}`"
+          :title="
+            isFullyPacked
+              ? 'Alle eingepackt – klicken zum Zurücksetzen'
+              : 'Alle auf einmal einpacken'
+          "
+          @click="toggleAllPacked"
+        ></button>
+        <span
+          class="label"
+          :class="{ 'row__text--done': isFullyPacked, 'text-done': isFullyPacked }"
+        >
+          {{ item.label }}
+          <span v-if="item.quantity > 1" class="qty">×{{ item.quantity }}</span>
+        </span>
+        <PendingSyncBadge v-if="item._pending" />
+      </div>
 
-    <div v-if="item.quantity > 1" class="tally-control">
-      <button
-        type="button"
-        class="tally-pill"
-        :class="{ laidOut: !isFullyPacked && item.laid_out_count > 0, packed: isFullyPacked }"
-        role="checkbox"
-        :aria-checked="isFullyPacked"
-        :aria-label="
-          isFullyPacked
-            ? `${item.label}: eingepackt – klicken zum Zurücksetzen`
-            : `${item.label}: ${item.laid_out_count}/${item.quantity} rausgelegt`
-        "
-        :title="
-          isFullyPacked
-            ? 'Eingepackt – klicken zum Zurücksetzen'
-            : item.laid_out_count < item.quantity
-              ? 'Nächstes Exemplar rausgelegt'
-              : 'Alle rausgelegt – klicken zum Einpacken'
-        "
-        @click="incrementMulti"
-      >
-        <template v-if="!isFullyPacked">
-          <span class="tally-marks">
-            <span class="tally-group" v-for="(size, i) in tallyGroups" :key="i">
-              <span class="tally-stroke" v-for="n in Math.min(size, 4)" :key="n"></span>
-              <span class="tally-stroke tally-diagonal" v-if="size === 5"></span>
+      <div v-if="item.quantity > 1" class="tally-control">
+        <button
+          type="button"
+          class="tally-pill"
+          :class="{ laidOut: !isFullyPacked && item.laid_out_count > 0, packed: isFullyPacked }"
+          role="checkbox"
+          :aria-checked="isFullyPacked"
+          :aria-label="
+            isFullyPacked
+              ? `${item.label}: eingepackt – klicken zum Zurücksetzen`
+              : `${item.label}: ${item.laid_out_count}/${item.quantity} rausgelegt`
+          "
+          :title="
+            isFullyPacked
+              ? 'Eingepackt – klicken zum Zurücksetzen'
+              : item.laid_out_count < item.quantity
+                ? 'Nächstes Exemplar rausgelegt'
+                : 'Alle rausgelegt – klicken zum Einpacken'
+          "
+          @click="incrementMulti"
+        >
+          <template v-if="!isFullyPacked">
+            <span class="tally-marks">
+              <span class="tally-group" v-for="(size, i) in tallyGroups" :key="i">
+                <span class="tally-stroke" v-for="n in Math.min(size, 4)" :key="n"></span>
+                <span class="tally-stroke tally-diagonal" v-if="size === 5"></span>
+              </span>
+              <span v-if="!tallyGroups.length" class="tally-empty">–</span>
             </span>
-            <span v-if="!tallyGroups.length" class="tally-empty">–</span>
-          </span>
-          <span class="tally-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
-          <span v-if="allLaidOut" class="laid-out-mark" aria-hidden="true"></span>
-          <span v-else class="tally-plus" aria-hidden="true">+</span>
-        </template>
-      </button>
-      <button
-        v-if="item.laid_out_count > 0 || item.packed_count > 0"
-        type="button"
-        class="tally-minus"
-        aria-label="Einen Schritt zurück"
-        title="Einen Schritt zurück"
-        @click="decrementMulti"
-      >
-        −
-      </button>
+            <span class="tally-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
+            <span v-if="allLaidOut" class="laid-out-mark" aria-hidden="true"></span>
+            <span v-else class="tally-plus" aria-hidden="true">+</span>
+          </template>
+        </button>
+        <button
+          v-if="item.laid_out_count > 0 || item.packed_count > 0"
+          type="button"
+          class="tally-minus"
+          aria-label="Einen Schritt zurück"
+          title="Einen Schritt zurück"
+          @click="decrementMulti"
+        >
+          −
+        </button>
+      </div>
     </div>
 
     <template #actions>
       <EditButton small @click="emit('edit', item)" />
-      <DeleteButton small @click="emit('remove', item.id)" />
     </template>
   </CheckableListItem>
 </template>
 
 <style scoped>
+.item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .main {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .state-toggle {
@@ -206,6 +220,7 @@ const tallyGroups = computed<number[]>(() => {
   width: 20px;
   height: 20px;
   margin: 0;
+  margin-top: 1.5px;
   padding: 0;
   border: 2px solid var(--color-border);
   border-radius: 6px;
@@ -259,14 +274,22 @@ const tallyGroups = computed<number[]>(() => {
 }
 
 .label {
+  flex: 1;
   min-width: 0;
-  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+  word-break: normal;
+  text-wrap: pretty;
+  hyphens: auto;
 }
 
 .qty {
   color: var(--color-text-muted);
   font-size: 0.85rem;
   margin-left: 2px;
+  white-space: nowrap;
 }
 
 .tally-control {

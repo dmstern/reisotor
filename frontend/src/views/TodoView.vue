@@ -11,7 +11,6 @@ import { hashHighlightId } from '../utils/hashHighlight';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
-import DeleteButton from '../components/DeleteButton.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
@@ -379,6 +378,13 @@ function closeEditForm() {
   editingItem.value = null;
 }
 
+async function deleteEditingItem() {
+  if (!editingItem.value) return;
+  const id = editingItem.value.id;
+  closeEditForm();
+  await remove(id);
+}
+
 async function remove(id: number) {
   await api.delete(`/todos/${id}`);
   items.value = items.value.filter((i) => i.id !== id);
@@ -393,6 +399,12 @@ function formatDate(d: string | null) {
 function isOverdue(item: TodoItem) {
   if (!item.due_date || item.done) return false;
   return item.due_date < toLocalDateString(new Date());
+}
+
+function hasTodoMeta(item: TodoItem): boolean {
+  return Boolean(
+    item._pending || item.due_date || (groupBy.value !== 'period' && periodFor(item)) || item.note
+  );
 }
 </script>
 
@@ -541,44 +553,62 @@ function isOverdue(item: TodoItem) {
               :done="!!item.done"
               :highlighted="highlightedIds.has(item.id)"
             >
-              <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-              <label :for="'todo-item-' + item.id" class="check">
-                <Checkbox
-                  :id="'todo-item-' + item.id"
-                  :checked="!!item.done"
-                  @change="toggleDone(item)"
-                />
-                <span
-                  class="item-title title"
-                  :class="{ 'row__text--done': item.done, 'text-done': item.done }"
-                >
-                  {{ item.title }}
-                </span>
-              </label>
+              <div class="item-main">
+                <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+                <label :for="'todo-item-' + item.id" class="check">
+                  <Checkbox
+                    :id="'todo-item-' + item.id"
+                    :checked="!!item.done"
+                    @change="toggleDone(item)"
+                  />
+                  <span
+                    v-if="item.priority"
+                    class="priority"
+                    :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
+                    :aria-label="`Priorität: ${PRIORITY_META[item.priority].label}`"
+                  >
+                    <AppIcon
+                      :icon="ACTION_ICONS.priorityDot"
+                      :size="10"
+                      :color="PRIORITY_META[item.priority].color"
+                      group="actions"
+                    />
+                  </span>
+                  <span
+                    class="item-title title"
+                    :class="{ 'row__text--done': item.done, 'text-done': item.done }"
+                  >
+                    {{ item.title }}
+                  </span>
+                </label>
 
-              <div class="item-meta">
-                <PendingSyncBadge v-if="item._pending" />
-                <span v-if="item.note" class="note" :title="item.note">
-                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
-                  {{ item.note }}
-                </span>
-                <Badge
-                  v-if="groupBy !== 'period' && periodFor(item)"
-                  size="sm"
-                  class="period-badge"
-                >
-                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
-                  {{ PERIOD_META[periodFor(item)!] }}
-                </Badge>
-                <Badge
-                  v-if="item.due_date"
-                  :variant="isOverdue(item) ? 'danger' : 'default'"
-                  size="sm"
-                  class="due-badge"
-                >
-                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="11" group="formFields" />
-                  {{ formatDate(item.due_date) }}
-                </Badge>
+                <div v-if="hasTodoMeta(item)" class="item-meta">
+                  <PendingSyncBadge v-if="item._pending" />
+                  <Badge
+                    v-if="item.due_date"
+                    :variant="isOverdue(item) ? 'danger' : 'default'"
+                    size="sm"
+                    class="due-badge"
+                  >
+                    <AppIcon :icon="FORM_FIELD_ICONS.date" :size="11" group="formFields" />
+                    <span>{{ formatDate(item.due_date) }}</span>
+                  </Badge>
+                  <Badge
+                    v-if="groupBy !== 'period' && periodFor(item)"
+                    size="sm"
+                    class="period-badge"
+                  >
+                    <AppIcon :icon="FORM_FIELD_ICONS.period" :size="11" group="formFields" />
+                    <span>{{ PERIOD_META[periodFor(item)!] }}</span>
+                  </Badge>
+                  <span v-if="item.note" class="note" :title="item.note">
+                    <AppIcon :icon="FORM_FIELD_ICONS.note" :size="11" group="formFields" />
+                    <span class="note-text">{{ item.note }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <template #actions>
                 <span
                   v-if="
                     users.length > 1 &&
@@ -590,23 +620,7 @@ function isOverdue(item: TodoItem) {
                 >
                   {{ userAvatar(item.assigned_to_user_id) }}
                 </span>
-                <span
-                  class="priority"
-                  :title="`Priorität: ${PRIORITY_META[item.priority].label}`"
-                  :aria-label="`Priorität: ${PRIORITY_META[item.priority].label}`"
-                >
-                  <AppIcon
-                    :icon="ACTION_ICONS.priorityDot"
-                    :size="10"
-                    :color="PRIORITY_META[item.priority].color"
-                    group="actions"
-                  />
-                </span>
-              </div>
-
-              <template #actions>
                 <EditButton small @click="startEdit(item)" />
-                <DeleteButton small @click="remove(item.id)" />
               </template>
             </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
@@ -695,6 +709,15 @@ function isOverdue(item: TodoItem) {
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            :icon="ACTION_ICONS.delete"
+            @click="deleteEditingItem"
+          >
+            Löschen
+          </Button>
           <div class="spacer"></div>
           <Button type="submit">Speichern</Button>
         </div>
@@ -912,34 +935,26 @@ function isOverdue(item: TodoItem) {
   padding: 0;
 }
 
+.item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .check {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   cursor: pointer;
-  flex: 1 1 0;
   min-width: 0;
+  width: 100%;
 }
 
-.item-title {
-  min-width: 0;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-.item-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.check :deep(.checkbox) {
   flex-shrink: 0;
-  margin-left: auto;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-:deep(.checkable-list-item__actions),
-:deep(.row-actions) {
-  margin-left: 0;
+  margin-top: 1.5px;
 }
 
 .priority {
@@ -949,6 +964,28 @@ function isOverdue(item: TodoItem) {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.item-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+  word-break: normal;
+  text-wrap: pretty;
+  hyphens: auto;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px 8px;
+  flex-wrap: wrap;
+  margin-left: 28px;
+  min-width: 0;
 }
 
 .due-badge,
@@ -956,6 +993,15 @@ function isOverdue(item: TodoItem) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
+}
+
+.due-badge span,
+.period-badge span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .assignee-avatar-pill {
@@ -974,10 +1020,25 @@ function isOverdue(item: TodoItem) {
 
 .note {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   font-size: 0.82rem;
   color: var(--color-text-muted);
+  max-width: 100%;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.note :deep(.app-icon),
+.note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.note-text {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .edit-form {

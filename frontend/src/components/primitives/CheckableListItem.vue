@@ -42,12 +42,12 @@ withDefaults(
 .checkable-list-item,
 .row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: var(--space-2);
-  padding: var(--space-2);
+  padding: 9px var(--space-2);
   border-bottom: 1px solid var(--color-border);
+  min-width: 0;
 }
 
 .checkable-list-item:last-child,
@@ -95,8 +95,10 @@ withDefaults(
 .checkable-list-item__actions,
 :deep(.row-actions) {
   display: flex;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
   margin-left: auto;
+  align-self: flex-start;
 }
 </style>

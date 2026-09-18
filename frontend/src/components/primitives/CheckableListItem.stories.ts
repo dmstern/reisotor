@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 import CheckableListItem from './CheckableListItem.vue';
 import Checkbox from './Checkbox.vue';
 import EditButton from '../EditButton.vue';
-import DeleteButton from '../DeleteButton.vue';
 import { ref } from 'vue';
 
 const meta: Meta<typeof CheckableListItem> = {
@@ -26,7 +25,7 @@ type Story = StoryObj<typeof CheckableListItem>;
 
 export const Default: Story = {
   render: (args) => ({
-    components: { CheckableListItem, Checkbox, EditButton, DeleteButton },
+    components: { CheckableListItem, Checkbox, EditButton },
     setup() {
       const checked = ref(false);
       return { args, checked };
@@ -40,7 +39,6 @@ export const Default: Story = {
           </label>
           <template #actions>
             <EditButton small />
-            <DeleteButton small />
           </template>
         </CheckableListItem>
       </ul>
@@ -53,7 +51,7 @@ export const Done: Story = {
     done: true,
   },
   render: (args) => ({
-    components: { CheckableListItem, Checkbox, EditButton, DeleteButton },
+    components: { CheckableListItem, Checkbox, EditButton },
     setup() {
       const checked = ref(true);
       return { args, checked };
@@ -67,7 +65,6 @@ export const Done: Story = {
           </label>
           <template #actions>
             <EditButton small />
-            <DeleteButton small />
           </template>
         </CheckableListItem>
       </ul>
@@ -80,7 +77,7 @@ export const Highlighted: Story = {
     highlighted: true,
   },
   render: (args) => ({
-    components: { CheckableListItem, Checkbox, EditButton, DeleteButton },
+    components: { CheckableListItem, Checkbox, EditButton },
     setup() {
       const checked = ref(false);
       return { args, checked };
@@ -94,7 +91,6 @@ export const Highlighted: Story = {
           </label>
           <template #actions>
             <EditButton small />
-            <DeleteButton small />
           </template>
         </CheckableListItem>
       </ul>
