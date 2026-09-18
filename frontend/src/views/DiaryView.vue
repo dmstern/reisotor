@@ -46,6 +46,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import AttachmentPreviewModal from '../components/AttachmentPreviewModal.vue';
 import AttachmentThumbnails from '../components/AttachmentThumbnails.vue';
+import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import PolaroidStack from '../components/primitives/PolaroidStack.vue';
 import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
@@ -631,102 +632,70 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           @click="(idx) => openDiaryPreview(form.images, idx, true, (i) => removeImage(form, i))"
           @remove="(idx) => removeImage(form, idx)"
         />
-        <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
-          <legend>
-            <Button
-              type="button"
-              variant="ghost"
-              class="picker-toggle"
-              :aria-expanded="showExcursionPicker"
-              @click="showExcursionPicker = !showExcursionPicker"
-            >
-              <span
-                ><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
-                Touren zuordnen<span v-if="form.excursion_ids.length" class="picker-count">
-                  ({{ form.excursion_ids.length }} ausgewählt)</span
-                ></span
-              >
+        <CollapsibleFieldset
+          v-if="excursionsStore.excursions.length"
+          v-model="showExcursionPicker"
+          label="Touren zuordnen"
+          :count="
+            form.excursion_ids.length ? `(${form.excursion_ids.length} ausgewählt)` : undefined
+          "
+          :icon="SECTION_ICON_DEFS.excursions"
+          icon-group="navigation"
+        >
+          <label
+            :for="`diary-excursion-${ex.id}`"
+            v-for="ex in pickerExcursions(form.date)"
+            :key="ex.id"
+            class="excursion-option"
+          >
+            <Checkbox
+              :id="`diary-excursion-${ex.id}`"
+              :value="ex.id"
+              v-model="form.excursion_ids"
+            />
+            <span class="excursion-option-title">{{ ex.title }}</span>
+            <span v-if="ex.date === form.date" class="excursion-option-badge recommended">
+              <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
+              diesem Tag geplant
+            </span>
+          </label>
+        </CollapsibleFieldset>
+
+        <CollapsibleFieldset
+          v-if="spotsStore.spots.length"
+          v-model="showSpotPicker"
+          label="Spots zuordnen"
+          :count="form.spot_ids.length ? `(${form.spot_ids.length} ausgewählt)` : undefined"
+          :icon="FORM_FIELD_ICONS.location"
+          icon-group="formFields"
+        >
+          <Button
+            v-for="spot in pickerSpots(form.date)"
+            :key="spot.id"
+            type="button"
+            class="excursion-option spot-option-btn"
+            @click="toggleSpot(spot.id, form)"
+          >
+            <span class="excursion-option-title">
               <AppIcon
-                :icon="ACTION_ICONS.chevronDown"
+                :icon="spotCategoryMeta(spot.category).tabler"
                 :size="14"
-                group="actions"
-                class="caret"
-                :class="{ closed: !showExcursionPicker }"
+                group="categories"
               />
-            </Button>
-          </legend>
-          <template v-if="showExcursionPicker">
-            <label
-              :for="`diary-excursion-${ex.id}`"
-              v-for="ex in pickerExcursions(form.date)"
-              :key="ex.id"
-              class="excursion-option"
+              {{ spot.title }}
+            </span>
+            <span v-if="form.spot_ids.includes(spot.id)" class="excursion-option-badge">
+              <AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt
+            </span>
+            <span
+              v-else-if="spotAlreadyPlanned(spot.id, form.date)"
+              class="excursion-option-badge recommended"
             >
-              <Checkbox
-                :id="`diary-excursion-${ex.id}`"
-                :value="ex.id"
-                v-model="form.excursion_ids"
-              />
-              <span class="excursion-option-title">{{ ex.title }}</span>
-              <span v-if="ex.date === form.date" class="excursion-option-badge recommended"
-                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
-                an diesem Tag geplant</span
-              >
-            </label>
-          </template>
-        </fieldset>
-        <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
-          <legend>
-            <Button
-              type="button"
-              variant="ghost"
-              class="picker-toggle"
-              :aria-expanded="showSpotPicker"
-              @click="showSpotPicker = !showSpotPicker"
-            >
-              <span
-                ><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots
-                zuordnen<span v-if="form.spot_ids.length" class="picker-count">
-                  ({{ form.spot_ids.length }} ausgewählt)</span
-                ></span
-              >
-              <AppIcon
-                :icon="ACTION_ICONS.chevronDown"
-                :size="14"
-                group="actions"
-                class="caret"
-                :class="{ closed: !showSpotPicker }"
-              />
-            </Button>
-          </legend>
-          <template v-if="showSpotPicker">
-            <Button
-              v-for="spot in pickerSpots(form.date)"
-              :key="spot.id"
-              type="button"
-              class="excursion-option spot-option-btn"
-              @click="toggleSpot(spot.id, form)"
-            >
-              <span class="excursion-option-title">
-                <AppIcon
-                  :icon="spotCategoryMeta(spot.category).tabler"
-                  :size="14"
-                  group="categories"
-                />
-                {{ spot.title }}
-              </span>
-              <span v-if="form.spot_ids.includes(spot.id)" class="excursion-option-badge"
-                ><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span
-              >
-              <span
-                v-else-if="spotAlreadyPlanned(spot.id, form.date)"
-                class="excursion-option-badge recommended"
-                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
-                an diesem Tag geplant</span
-              >
-            </Button>
-          </template>
-        </fieldset>
+              <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
+              diesem Tag geplant
+            </span>
+          </Button>
+        </CollapsibleFieldset>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
           <div class="spacer"></div>
@@ -919,98 +888,68 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           "
           @remove="(idx) => removeImage(editForm, idx)"
         />
-        <fieldset v-if="excursionsStore.excursions.length" class="excursion-picker">
-          <legend>
-            <Button
-              type="button"
-              variant="ghost"
-              class="picker-toggle"
-              :aria-expanded="editShowExcursionPicker"
-              @click="editShowExcursionPicker = !editShowExcursionPicker"
-            >
-              <span
-                ><AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
-                Touren zuordnen<span v-if="editForm.excursion_ids.length" class="picker-count">
-                  ({{ editForm.excursion_ids.length }} ausgewählt)</span
-                ></span
-              >
+        <CollapsibleFieldset
+          v-if="excursionsStore.excursions.length"
+          v-model="editShowExcursionPicker"
+          label="Touren zuordnen"
+          :count="
+            editForm.excursion_ids.length
+              ? `(${editForm.excursion_ids.length} ausgewählt)`
+              : undefined
+          "
+          :icon="SECTION_ICON_DEFS.excursions"
+          icon-group="navigation"
+        >
+          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+          <label
+            v-for="ex in pickerExcursions(editForm.date)"
+            :key="ex.id"
+            class="excursion-option"
+          >
+            <Checkbox :value="ex.id" v-model="editForm.excursion_ids" />
+            <span class="excursion-option-title">{{ ex.title }}</span>
+            <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended">
+              <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
+              diesem Tag geplant
+            </span>
+          </label>
+        </CollapsibleFieldset>
+
+        <CollapsibleFieldset
+          v-if="spotsStore.spots.length"
+          v-model="editShowSpotPicker"
+          label="Spots zuordnen"
+          :count="editForm.spot_ids.length ? `(${editForm.spot_ids.length} ausgewählt)` : undefined"
+          :icon="FORM_FIELD_ICONS.location"
+          icon-group="formFields"
+        >
+          <Button
+            v-for="spot in pickerSpots(editForm.date)"
+            :key="spot.id"
+            type="button"
+            class="excursion-option spot-option-btn"
+            @click="toggleSpot(spot.id, editForm)"
+          >
+            <span class="excursion-option-title">
               <AppIcon
-                :icon="ACTION_ICONS.chevronDown"
+                :icon="spotCategoryMeta(spot.category).tabler"
                 :size="14"
-                group="actions"
-                class="caret"
-                :class="{ closed: !editShowExcursionPicker }"
+                group="categories"
               />
-            </Button>
-          </legend>
-          <template v-if="editShowExcursionPicker">
-            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-            <label
-              v-for="ex in pickerExcursions(editForm.date)"
-              :key="ex.id"
-              class="excursion-option"
+              {{ spot.title }}
+            </span>
+            <span v-if="editForm.spot_ids.includes(spot.id)" class="excursion-option-badge">
+              <AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt
+            </span>
+            <span
+              v-else-if="spotAlreadyPlanned(spot.id, editForm.date)"
+              class="excursion-option-badge recommended"
             >
-              <Checkbox :value="ex.id" v-model="editForm.excursion_ids" />
-              <span class="excursion-option-title">{{ ex.title }}</span>
-              <span v-if="ex.date === editForm.date" class="excursion-option-badge recommended"
-                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
-                an diesem Tag geplant</span
-              >
-            </label>
-          </template>
-        </fieldset>
-        <fieldset v-if="spotsStore.spots.length" class="excursion-picker">
-          <legend>
-            <Button
-              type="button"
-              variant="ghost"
-              class="picker-toggle"
-              :aria-expanded="editShowSpotPicker"
-              @click="editShowSpotPicker = !editShowSpotPicker"
-            >
-              <span
-                ><AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Spots
-                zuordnen<span v-if="editForm.spot_ids.length" class="picker-count">
-                  ({{ editForm.spot_ids.length }} ausgewählt)</span
-                ></span
-              >
-              <AppIcon
-                :icon="ACTION_ICONS.chevronDown"
-                :size="14"
-                group="actions"
-                class="caret"
-                :class="{ closed: !editShowSpotPicker }"
-              />
-            </Button>
-          </legend>
-          <template v-if="editShowSpotPicker">
-            <Button
-              v-for="spot in pickerSpots(editForm.date)"
-              :key="spot.id"
-              type="button"
-              class="excursion-option spot-option-btn"
-              @click="toggleSpot(spot.id, editForm)"
-            >
-              <span class="excursion-option-title">
-                <AppIcon
-                  :icon="spotCategoryMeta(spot.category).tabler"
-                  :size="14"
-                  group="categories"
-                />
-                {{ spot.title }}
-              </span>
-              <span v-if="editForm.spot_ids.includes(spot.id)" class="excursion-option-badge"
-                ><AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt</span
-              >
-              <span
-                v-else-if="spotAlreadyPlanned(spot.id, editForm.date)"
-                class="excursion-option-badge recommended"
-                ><AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen –
-                an diesem Tag geplant</span
-              >
-            </Button>
-          </template>
-        </fieldset>
+              <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
+              diesem Tag geplant
+            </span>
+          </Button>
+        </CollapsibleFieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
           <Button
@@ -1063,61 +1002,6 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 
 .file-input-hidden {
   display: none;
-}
-
-.excursion-picker {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: var(--space-2) var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.excursion-picker legend {
-  width: 100%;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  padding: 0;
-}
-
-/* Klickbarer Legend-Ersatz statt reinem Text (siehe showExcursionPicker/showSpotPicker im Script) -
-   Standard-Button-Look zurückgesetzt, damit er wie eine Legend statt wie ein Button wirkt, volle
-   Breite als Klick-/Tap-Fläche. */
-.picker-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  background: none;
-  border: none;
-  /* Gleiches Muster/derselbe Fix wie ExcursionsView.vue's .tracks-toggle/.filter-toggle-row (#139) -
-     der globale button-Selektor überschreibt sonst mit seinem Grund-Schatten. */
-  box-shadow: none;
-  padding: 4px;
-  margin: 0;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  text-align: left;
-}
-
-.picker-count {
-  font-weight: 400;
-}
-
-.caret {
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
-}
-
-.caret.closed {
-  transform: rotate(-90deg);
 }
 
 .excursion-option {

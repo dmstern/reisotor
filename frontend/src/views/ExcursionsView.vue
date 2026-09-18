@@ -89,6 +89,7 @@ import AppIcon from '../components/AppIcon.vue';
 import AnimatedText from '../components/AnimatedText.vue';
 import Button from '../components/primitives/Button.vue';
 import ButtonGroup from '../components/primitives/ButtonGroup.vue';
+import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
@@ -2990,61 +2991,40 @@ async function deleteEditingSpot() {
                 <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
                 Anreise/Abreise/Weiterreise werden mindestens Start- und Zielstation benötigt.
               </p>
-              <fieldset v-if="spotsStore.spots.length" class="collapsible-fieldset">
-                <legend>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="collapsible-toggle"
-                    :aria-expanded="
-                      editingExcursion !== null
-                        ? showEditExcursionSpotsSection
-                        : showExcursionSpotsSection
-                    "
-                    @click="
-                      editingExcursion !== null
-                        ? (showEditExcursionSpotsSection = !showEditExcursionSpotsSection)
-                        : (showExcursionSpotsSection = !showExcursionSpotsSection)
-                    "
-                  >
-                    <span>
-                      <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                      Stationen &amp; Route
-                      <span v-if="activeExcursionForm.spot_ids.length" class="picker-count">
-                        ({{ activeExcursionForm.spot_ids.length }} zugeordnet)</span
-                      >
-                    </span>
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="14"
-                      group="actions"
-                      class="caret"
-                      :class="{
-                        closed: !(editingExcursion !== null
-                          ? showEditExcursionSpotsSection
-                          : showExcursionSpotsSection),
-                      }"
-                    />
-                  </Button>
-                </legend>
-                <div
-                  v-if="
-                    editingExcursion !== null
-                      ? showEditExcursionSpotsSection
-                      : showExcursionSpotsSection
-                  "
-                  class="collapsible-content"
-                >
-                  <SpotOrderPicker
-                    v-model="activeExcursionForm.spot_ids"
-                    v-model:legs="activeExcursionForm.legs"
-                    v-model:destination="activeExcursionForm.destination_spot_id"
-                    :spots="spotsStore.spots"
-                    :like-count="spotsStore.likeCountFor"
-                    :users="users"
-                  />
-                </div>
-              </fieldset>
+              <CollapsibleFieldset
+                v-if="spotsStore.spots.length"
+                :model-value="
+                  editingExcursion !== null
+                    ? showEditExcursionSpotsSection
+                    : showExcursionSpotsSection
+                "
+                label="Stationen & Route"
+                :count="
+                  activeExcursionForm.spot_ids.length
+                    ? `(${activeExcursionForm.spot_ids.length} zugeordnet)`
+                    : undefined
+                "
+                :icon="FORM_FIELD_ICONS.location"
+                icon-group="formFields"
+                @update:model-value="
+                  (val) => {
+                    if (editingExcursion !== null) {
+                      showEditExcursionSpotsSection = val;
+                    } else {
+                      showExcursionSpotsSection = val;
+                    }
+                  }
+                "
+              >
+                <SpotOrderPicker
+                  v-model="activeExcursionForm.spot_ids"
+                  v-model:legs="activeExcursionForm.legs"
+                  v-model:destination="activeExcursionForm.destination_spot_id"
+                  :spots="spotsStore.spots"
+                  :like-count="spotsStore.likeCountFor"
+                  :users="users"
+                />
+              </CollapsibleFieldset>
               <FileAttachments
                 v-if="editingExcursion"
                 domain="ideas"
@@ -3225,139 +3205,101 @@ async function deleteEditingSpot() {
                   </FormField>
                 </div>
               </template>
-              <fieldset class="collapsible-fieldset location-fieldset">
-                <legend>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="collapsible-toggle"
-                    :aria-expanded="
-                      editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
-                    "
-                    @click="
-                      editingSpot !== null
-                        ? (showEditSpotLocationSection = !showEditSpotLocationSection)
-                        : (showSpotLocationSection = !showSpotLocationSection)
-                    "
-                  >
-                    <span>
-                      <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                      Standort (optional)
-                    </span>
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="14"
-                      group="actions"
-                      class="caret"
-                      :class="{
-                        closed: !(editingSpot !== null
-                          ? showEditSpotLocationSection
-                          : showSpotLocationSection),
-                      }"
-                    />
-                  </Button>
-                </legend>
-                <div
-                  v-if="
-                    editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
-                  "
-                  class="collapsible-content"
-                >
-                  <p class="hint">
-                    Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
-                  </p>
-                  <CheckboxCard
-                    id="spotFormIsHome"
-                    v-model="activeSpotForm.is_home"
-                    variant="muted"
-                    :icon="ACTION_ICONS.home"
-                    label="Heimat-Seite"
-                    description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
+              <CollapsibleFieldset
+                :model-value="
+                  editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
+                "
+                label="Standort (optional)"
+                :icon="FORM_FIELD_ICONS.location"
+                icon-group="formFields"
+                class="location-fieldset"
+                content-class="location-fieldset-content"
+                @update:model-value="
+                  (val) => {
+                    if (editingSpot !== null) {
+                      showEditSpotLocationSection = val;
+                    } else {
+                      showSpotLocationSection = val;
+                    }
+                  }
+                "
+              >
+                <p class="hint">
+                  Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
+                </p>
+                <CheckboxCard
+                  id="spotFormIsHome"
+                  v-model="activeSpotForm.is_home"
+                  variant="muted"
+                  :icon="ACTION_ICONS.home"
+                  label="Heimat-Seite"
+                  description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
+                />
+                <FormField icon="maps" label="Maps-Link (Google/Apple)">
+                  <Input
+                    v-model="activeSpotForm.maps_link"
+                    type="url"
+                    placeholder="Maps-Link (Google/Apple) (optional)"
+                    @blur="editingSpot !== null ? checkEditSpotMapsLink() : checkSpotMapsLink()"
                   />
-                  <FormField icon="maps" label="Maps-Link (Google/Apple)">
-                    <Input
-                      v-model="activeSpotForm.maps_link"
-                      type="url"
-                      placeholder="Maps-Link (Google/Apple) (optional)"
-                      @blur="editingSpot !== null ? checkEditSpotMapsLink() : checkSpotMapsLink()"
-                    />
-                  </FormField>
-                  <p
-                    v-if="
-                      (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
-                      true
-                    "
-                    class="hint success"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                    erkannt – erscheint auf der Karte
-                  </p>
-                  <p
-                    v-if="
-                      (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
-                      false
-                    "
-                    class="hint"
-                  >
-                    Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks
-                    funktionieren).
-                  </p>
-                  <p
-                    v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
-                    class="hint error"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                    konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
-                    um ihn manuell zu setzen.
-                  </p>
-                  <fieldset class="collapsible-fieldset">
-                    <legend>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        class="collapsible-toggle picker-toggle"
-                        :aria-expanded="editingSpot !== null ? editSpotPickerOpen : spotPickerOpen"
-                        @click="
-                          editingSpot !== null
-                            ? (editSpotPickerOpen = !editSpotPickerOpen)
-                            : (spotPickerOpen = !spotPickerOpen)
-                        "
-                      >
-                        <span>
-                          <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
-                          Standort manuell setzen
-                        </span>
-                        <AppIcon
-                          :icon="ACTION_ICONS.chevronDown"
-                          :size="14"
-                          group="actions"
-                          class="caret"
-                          :class="{
-                            closed: !(editingSpot !== null ? editSpotPickerOpen : spotPickerOpen),
-                          }"
-                        />
-                      </Button>
-                    </legend>
-                    <div
-                      v-if="editingSpot !== null ? editSpotPickerOpen : spotPickerOpen"
-                      class="collapsible-content"
-                    >
-                      <LocationPicker
-                        v-if="editingSpot !== null"
-                        v-model="editSpotManualPin"
-                        :center="spotPickerCenter"
-                        :reference-points="editSpotReferencePoints"
-                      />
-                      <LocationPicker
-                        v-else
-                        v-model="spotManualPin"
-                        :center="spotPickerCenter"
-                        :reference-points="spotReferencePoints"
-                      />
-                    </div>
-                  </fieldset>
-                </div>
-              </fieldset>
+                </FormField>
+                <p
+                  v-if="
+                    (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
+                    true
+                  "
+                  class="hint success"
+                >
+                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
+                  erkannt – erscheint auf der Karte
+                </p>
+                <p
+                  v-if="
+                    (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
+                    false
+                  "
+                  class="hint"
+                >
+                  Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks
+                  funktionieren).
+                </p>
+                <p
+                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
+                  class="hint error"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                  konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
+                  um ihn manuell zu setzen.
+                </p>
+                <CollapsibleFieldset
+                  :model-value="editingSpot !== null ? editSpotPickerOpen : spotPickerOpen"
+                  label="Standort manuell setzen"
+                  :icon="ACTION_ICONS.myLocation"
+                  icon-group="actions"
+                  @update:model-value="
+                    (val) => {
+                      if (editingSpot !== null) {
+                        editSpotPickerOpen = val;
+                      } else {
+                        spotPickerOpen = val;
+                      }
+                    }
+                  "
+                >
+                  <LocationPicker
+                    v-if="editingSpot !== null"
+                    v-model="editSpotManualPin"
+                    :center="spotPickerCenter"
+                    :reference-points="editSpotReferencePoints"
+                  />
+                  <LocationPicker
+                    v-else
+                    v-model="spotManualPin"
+                    :center="spotPickerCenter"
+                    :reference-points="spotReferencePoints"
+                  />
+                </CollapsibleFieldset>
+              </CollapsibleFieldset>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
                   v-model="activeSpotForm.note"
@@ -3368,229 +3310,209 @@ async function deleteEditingSpot() {
               </FormField>
               <!-- Kombiniertes "Einplanen"-Fieldset: Touren zuordnen + Datum einplanen in einem
                    Bereich, damit klar wird, dass beide Konzepte Alternativen zum selben Zweck sind. -->
-              <fieldset class="collapsible-fieldset">
-                <legend>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    class="collapsible-toggle"
-                    :aria-expanded="showSpotScheduleSection"
-                    @click="showSpotScheduleSection = !showSpotScheduleSection"
+              <CollapsibleFieldset
+                v-model="showSpotScheduleSection"
+                label="Einplanen"
+                :icon="FORM_FIELD_ICONS.date"
+                icon-group="formFields"
+              >
+                <template #count>
+                  <span
+                    v-if="activeSpotForm.tourTitles.length || editSpotScheduledItems.length"
+                    class="picker-count"
                   >
-                    <span>
-                      <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-                      Einplanen
-                      <template
-                        v-if="activeSpotForm.tourTitles.length || editSpotScheduledItems.length"
-                      >
-                        <span class="picker-count">
-                          ({{
-                            [
-                              activeSpotForm.tourTitles.length
-                                ? `${activeSpotForm.tourTitles.length} ${activeSpotForm.tourTitles.length === 1 ? 'Tour' : 'Touren'}`
-                                : '',
-                              editSpotScheduledItems.length && editingSpot !== null
-                                ? `${editSpotScheduledItems.length} ${editSpotScheduledItems.length === 1 ? 'Termin' : 'Termine'}`
-                                : '',
-                            ]
-                              .filter(Boolean)
-                              .join(', ')
-                          }})</span
+                    ({{
+                      [
+                        activeSpotForm.tourTitles.length
+                          ? `${activeSpotForm.tourTitles.length} ${activeSpotForm.tourTitles.length === 1 ? 'Tour' : 'Touren'}`
+                          : '',
+                        editSpotScheduledItems.length && editingSpot !== null
+                          ? `${editSpotScheduledItems.length} ${editSpotScheduledItems.length === 1 ? 'Termin' : 'Termine'}`
+                          : '',
+                      ]
+                        .filter(Boolean)
+                        .join(', ')
+                    }})
+                  </span>
+                </template>
+                <p class="schedule-hint">
+                  <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
+                  Ordne den Spot einer Tour zu oder plane ihn direkt für ein Datum ein (ohne Tour).
+                </p>
+
+                <!-- Oben: Datum-Hinzufügen-Button (nur im Edit-Modus) & Tour-zuordnen-Combobox -->
+                <div class="schedule-controls">
+                  <div v-if="editingSpot !== null" class="schedule-actions-row">
+                    <button
+                      ref="addScheduleBtnRef"
+                      type="button"
+                      class="add-schedule-btn"
+                      title="Zu einem Datum einplanen"
+                      @click="toggleAddSchedulePopover($event)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
+                      <span>Datum hinzufügen</span>
+                    </button>
+                    <Teleport to="body">
+                      <template v-if="addSchedulePopoverOpen">
+                        <PickerMenu
+                          class="add-schedule-popover"
+                          :style="addScheduleMenuStyle"
+                          @close="addSchedulePopoverOpen = false"
                         >
-                      </template>
-                    </span>
-                    <AppIcon
-                      :icon="ACTION_ICONS.chevronDown"
-                      :size="14"
-                      group="actions"
-                      class="caret"
-                      :class="{ closed: !showSpotScheduleSection }"
-                    />
-                  </Button>
-                </legend>
-                <div v-if="showSpotScheduleSection" class="collapsible-content">
-                  <p class="schedule-hint">
-                    <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
-                    Ordne den Spot einer Tour zu oder plane ihn direkt für ein Datum ein (ohne
-                    Tour).
-                  </p>
-
-                  <!-- Oben: Datum-Hinzufügen-Button (nur im Edit-Modus) & Tour-zuordnen-Combobox -->
-                  <div class="schedule-controls">
-                    <div v-if="editingSpot !== null" class="schedule-actions-row">
-                      <button
-                        ref="addScheduleBtnRef"
-                        type="button"
-                        class="add-schedule-btn"
-                        title="Zu einem Datum einplanen"
-                        @click="toggleAddSchedulePopover($event)"
-                      >
-                        <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
-                        <span>Datum hinzufügen</span>
-                      </button>
-                      <Teleport to="body">
-                        <template v-if="addSchedulePopoverOpen">
-                          <PickerMenu
-                            class="add-schedule-popover"
-                            :style="addScheduleMenuStyle"
-                            @close="addSchedulePopoverOpen = false"
+                          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+                          <label
+                            style="
+                              display: block;
+                              font-size: 0.85rem;
+                              font-weight: 500;
+                              margin-bottom: var(--space-2);
+                            "
                           >
-                            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-                            <label
+                            <span>Datum auswählen:</span>
+                            <Input
+                              type="date"
+                              v-model="addScheduleDateVal"
+                              class="field-input"
                               style="
-                                display: block;
-                                font-size: 0.85rem;
-                                font-weight: 500;
-                                margin-bottom: var(--space-2);
+                                width: 100%;
+                                margin-top: var(--space-2);
+                                margin-bottom: var(--space-3);
                               "
+                              @keyup.enter="submitAddSpotToDate"
+                            />
+                          </label>
+                          <ButtonGroup align="end" no-margin>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              small
+                              @click="addSchedulePopoverOpen = false"
                             >
-                              <span>Datum auswählen:</span>
-                              <Input
-                                type="date"
-                                v-model="addScheduleDateVal"
-                                class="field-input"
-                                style="
-                                  width: 100%;
-                                  margin-top: var(--space-2);
-                                  margin-bottom: var(--space-3);
-                                "
-                                @keyup.enter="submitAddSpotToDate"
-                              />
-                            </label>
-                            <ButtonGroup align="end" no-margin>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                small
-                                @click="addSchedulePopoverOpen = false"
-                              >
-                                Abbrechen
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="primary"
-                                small
-                                :disabled="!addScheduleDateVal"
-                                @click="submitAddSpotToDate"
-                              >
-                                Hinzufügen
-                              </Button>
-                            </ButtonGroup>
-                          </PickerMenu>
-                        </template>
-                      </Teleport>
-                    </div>
-                    <div v-else class="new-spot-schedule-row">
-                      <FormField icon="date" label="Direkt für Datum einplanen (optional)">
-                        <Input
-                          type="date"
-                          v-model="spotForm.scheduledDate"
-                          placeholder="Datum auswählen"
-                        />
-                      </FormField>
-                    </div>
-
-                    <!-- Tour zuordnen (Combobox, in beiden Modi: Neu + Edit) -->
-                    <TourAssignPicker
-                      v-model="activeSpotForm.tourTitles"
-                      :tour-options="allTourTitles"
-                      :category="activeSpotForm.category"
-                      :is-home="activeSpotForm.is_home"
-                      :hide-chips="true"
-                      :hide-hint="true"
-                    />
+                              Abbrechen
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="primary"
+                              small
+                              :disabled="!addScheduleDateVal"
+                              @click="submitAddSpotToDate"
+                            >
+                              Hinzufügen
+                            </Button>
+                          </ButtonGroup>
+                        </PickerMenu>
+                      </template>
+                    </Teleport>
+                  </div>
+                  <div v-else class="new-spot-schedule-row">
+                    <FormField icon="date" label="Direkt für Datum einplanen (optional)">
+                      <Input
+                        type="date"
+                        v-model="spotForm.scheduledDate"
+                        placeholder="Datum auswählen"
+                      />
+                    </FormField>
                   </div>
 
-                  <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
-                  <div
-                    v-if="
-                      activeSpotForm.tourTitles.length ||
-                      (editingSpot !== null && editSpotScheduledItems.length)
-                    "
-                    class="assign-chips"
+                  <!-- Tour zuordnen (Combobox, in beiden Modi: Neu + Edit) -->
+                  <TourAssignPicker
+                    v-model="activeSpotForm.tourTitles"
+                    :tour-options="allTourTitles"
+                    :category="activeSpotForm.category"
+                    :is-home="activeSpotForm.is_home"
+                    :hide-chips="true"
+                    :hide-hint="true"
+                  />
+                </div>
+
+                <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
+                <div
+                  v-if="
+                    activeSpotForm.tourTitles.length ||
+                    (editingSpot !== null && editSpotScheduledItems.length)
+                  "
+                  class="assign-chips"
+                >
+                  <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
+                  <span
+                    v-for="title in activeSpotForm.tourTitles"
+                    :key="'tour-' + title"
+                    class="assign-chip tour-chip"
+                    :class="isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour'"
                   >
-                    <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
-                    <span
-                      v-for="title in activeSpotForm.tourTitles"
-                      :key="'tour-' + title"
-                      class="assign-chip tour-chip"
-                      :class="isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour'"
-                    >
-                      <span class="assign-chip-action">
-                        <AppIcon
-                          :icon="
-                            isTourTravel(title)
-                              ? SECTION_ICON_DEFS.travel
-                              : SECTION_ICON_DEFS.excursions
-                          "
-                          :size="12"
-                          group="navigation"
-                        />
-                        <span class="assign-chip-label">
-                          {{ title
-                          }}<template v-if="getTourDate(title)">
-                            &nbsp;·&nbsp;{{ formatDate(getTourDate(title)!) }}</template
-                          >
-                        </span>
+                    <span class="assign-chip-action">
+                      <AppIcon
+                        :icon="
+                          isTourTravel(title)
+                            ? SECTION_ICON_DEFS.travel
+                            : SECTION_ICON_DEFS.excursions
+                        "
+                        :size="12"
+                        group="navigation"
+                      />
+                      <span class="assign-chip-label">
+                        {{ title
+                        }}<template v-if="getTourDate(title)">
+                          &nbsp;·&nbsp;{{ formatDate(getTourDate(title)!) }}</template
+                        >
                       </span>
+                    </span>
+                    <button
+                      type="button"
+                      class="assign-chip-remove"
+                      :aria-label="`Von '${title}' entfernen`"
+                      title="Entfernen"
+                      @click="removeTourTitle(title)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+                    </button>
+                  </span>
+
+                  <!-- Termin-Chips: grau (--color-calendar-appointment), nur im Edit-Modus -->
+                  <template v-if="editingSpot !== null">
+                    <span
+                      v-for="item in editSpotScheduledItems"
+                      :key="'sched-' + item.id"
+                      class="assign-chip assign-chip--schedule"
+                      :class="{ 'is-done': !!item.done }"
+                    >
+                      <button
+                        type="button"
+                        class="assign-chip-done-toggle"
+                        :title="item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'"
+                        :aria-label="
+                          item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
+                        "
+                        @click.stop="toggleScheduledItemDone(item)"
+                      >
+                        <AppIcon
+                          :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
+                          :size="13"
+                          group="actions"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        class="assign-chip-action"
+                        title="Termin im Kalender öffnen"
+                        @click="openScheduledItemDetail(item)"
+                      >
+                        <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
+                      </button>
                       <button
                         type="button"
                         class="assign-chip-remove"
-                        :aria-label="`Von '${title}' entfernen`"
-                        title="Entfernen"
-                        @click="removeTourTitle(title)"
+                        :aria-label="`Termin am ${formatDate(item.date)} entfernen`"
+                        title="Termin entfernen"
+                        @click="removeScheduledItemFromSpot(item)"
                       >
                         <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
                       </button>
                     </span>
-
-                    <!-- Termin-Chips: grau (--color-calendar-appointment), nur im Edit-Modus -->
-                    <template v-if="editingSpot !== null">
-                      <span
-                        v-for="item in editSpotScheduledItems"
-                        :key="'sched-' + item.id"
-                        class="assign-chip assign-chip--schedule"
-                        :class="{ 'is-done': !!item.done }"
-                      >
-                        <button
-                          type="button"
-                          class="assign-chip-done-toggle"
-                          :title="
-                            item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
-                          "
-                          :aria-label="
-                            item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
-                          "
-                          @click.stop="toggleScheduledItemDone(item)"
-                        >
-                          <AppIcon
-                            :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
-                            :size="13"
-                            group="actions"
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          class="assign-chip-action"
-                          title="Termin im Kalender öffnen"
-                          @click="openScheduledItemDetail(item)"
-                        >
-                          <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="assign-chip-remove"
-                          :aria-label="`Termin am ${formatDate(item.date)} entfernen`"
-                          title="Termin entfernen"
-                          @click="removeScheduledItemFromSpot(item)"
-                        >
-                          <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
-                        </button>
-                      </span>
-                    </template>
-                  </div>
+                  </template>
                 </div>
-              </fieldset>
+              </CollapsibleFieldset>
               <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
               <DraftStatusBar
                 :status="
@@ -4837,12 +4759,6 @@ async function deleteEditingSpot() {
   color: var(--color-danger);
 }
 
-.picker-toggle {
-  align-self: flex-start;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-}
-
 .edit-form {
   display: flex;
   flex-direction: column;
@@ -4864,75 +4780,22 @@ async function deleteEditingSpot() {
   flex: 1;
 }
 
-.collapsible-fieldset {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  padding: var(--space-2) var(--space-3) var(--space-3);
-  margin: var(--space-2) 0;
-  background: var(--color-bg);
-}
-
-.collapsible-fieldset:not(:has(.collapsible-content)) {
-  border-color: transparent;
-  background: transparent;
-  padding: 0;
-  margin: var(--space-1) 0;
-}
-
-.collapsible-fieldset legend {
-  padding: 0 var(--space-1);
-  margin: 0;
-}
-
-.collapsible-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 4px 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-text);
-  background: var(--color-surface) !important;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: pointer;
-  box-shadow: none;
-}
-
-.collapsible-toggle:hover {
-  background: var(--color-hover) !important;
-}
-
-.collapsible-toggle .picker-count {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-.collapsible-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.location-fieldset .collapsible-content {
+.location-fieldset-content {
   gap: var(--space-4, 16px);
 }
 
-.location-fieldset .hint {
+.location-fieldset-content .hint {
   margin: 0;
   line-height: 1.5;
 }
 
-.location-fieldset .checkbox-option {
+.location-fieldset-content .checkbox-option {
   padding: var(--space-1-5, 6px) 0;
   line-height: 1.45;
 }
 
-.location-fieldset :deep(.form-field),
-.location-fieldset .form-field {
+.location-fieldset-content :deep(.form-field),
+.location-fieldset-content .form-field {
   margin-top: var(--space-2);
   margin-bottom: var(--space-2);
   gap: var(--space-2);

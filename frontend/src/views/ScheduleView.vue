@@ -29,6 +29,7 @@ import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import DropdownItem from '../components/primitives/DropdownItem.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
 import DetailRow from '../components/primitives/DetailRow.vue';
@@ -1372,49 +1373,35 @@ function formatDate(date: string) {
         <FormField icon="note" label="Notiz">
           <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
         </FormField>
-        <fieldset class="collapsible-fieldset">
-          <legend>
-            <Button
-              type="button"
-              variant="ghost"
-              class="collapsible-toggle"
-              :aria-expanded="showAddDetailsSection"
-              @click="showAddDetailsSection = !showAddDetailsSection"
-            >
-              <span>
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!newLinkKey"
-                  >, Maps-Link</template
-                >)
-              </span>
-              <AppIcon
-                :icon="ACTION_ICONS.chevronDown"
-                :size="14"
-                group="actions"
-                class="caret"
-                :class="{ closed: !showAddDetailsSection }"
-              />
-            </Button>
-          </legend>
-          <div v-if="showAddDetailsSection" class="collapsible-content">
-            <div class="row">
-              <FormField icon="date" label="Enddatum" v-slot="{ id }">
-                <Input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
-              </FormField>
-              <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-                <Input :id="id" v-model="newEndTime" type="time" />
-              </FormField>
-            </div>
-            <FormField v-if="!newLinkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
-              <Input
-                :id="id"
-                v-model="newMapsLink"
-                type="url"
-                placeholder="Maps-Link (Google/Apple) (optional)"
-              />
+        <CollapsibleFieldset
+          v-model="showAddDetailsSection"
+          :icon="FORM_FIELD_ICONS.period"
+          icon-group="formFields"
+        >
+          <template #label>
+            <span>
+              Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!newLinkKey"
+                >, Maps-Link</template
+              >)
+            </span>
+          </template>
+          <div class="row">
+            <FormField icon="date" label="Enddatum" v-slot="{ id }">
+              <Input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
+            </FormField>
+            <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
+              <Input :id="id" v-model="newEndTime" type="time" />
             </FormField>
           </div>
-        </fieldset>
+          <FormField v-if="!newLinkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="newMapsLink"
+              type="url"
+              placeholder="Maps-Link (Google/Apple) (optional)"
+            />
+          </FormField>
+        </CollapsibleFieldset>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
           <div class="spacer"></div>
@@ -1483,49 +1470,35 @@ function formatDate(date: string) {
             expandable
           />
         </FormField>
-        <fieldset class="collapsible-fieldset">
-          <legend>
-            <Button
-              type="button"
-              variant="ghost"
-              class="collapsible-toggle"
-              :aria-expanded="showEditDetailsSection"
-              @click="showEditDetailsSection = !showEditDetailsSection"
-            >
-              <span>
-                <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-                Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!editForm.linkKey"
-                  >, Maps-Link</template
-                >)
-              </span>
-              <AppIcon
-                :icon="ACTION_ICONS.chevronDown"
-                :size="14"
-                group="actions"
-                class="caret"
-                :class="{ closed: !showEditDetailsSection }"
-              />
-            </Button>
-          </legend>
-          <div v-if="showEditDetailsSection" class="collapsible-content">
-            <div class="row">
-              <FormField icon="date" label="Enddatum" v-slot="{ id }">
-                <Input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
-              </FormField>
-              <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-                <Input :id="id" v-model="editForm.endTime" type="time" />
-              </FormField>
-            </div>
-            <FormField v-if="!editForm.linkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
-              <Input
-                :id="id"
-                v-model="editForm.mapsLink"
-                type="url"
-                placeholder="Maps-Link (Google/Apple) (optional)"
-              />
+        <CollapsibleFieldset
+          v-model="showEditDetailsSection"
+          :icon="FORM_FIELD_ICONS.period"
+          icon-group="formFields"
+        >
+          <template #label>
+            <span>
+              Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!editForm.linkKey"
+                >, Maps-Link</template
+              >)
+            </span>
+          </template>
+          <div class="row">
+            <FormField icon="date" label="Enddatum" v-slot="{ id }">
+              <Input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
+            </FormField>
+            <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
+              <Input :id="id" v-model="editForm.endTime" type="time" />
             </FormField>
           </div>
-        </fieldset>
+          <FormField v-if="!editForm.linkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="editForm.mapsLink"
+              type="url"
+              placeholder="Maps-Link (Google/Apple) (optional)"
+            />
+          </FormField>
+        </CollapsibleFieldset>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
@@ -2050,61 +2023,6 @@ function formatDate(date: string) {
 .edit-form .row > * {
   flex: 1;
   min-width: 140px;
-}
-
-.collapsible-fieldset {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  padding: var(--space-2) var(--space-3) var(--space-3);
-  margin: var(--space-1) 0;
-  background: var(--color-bg);
-}
-
-.collapsible-fieldset:not(:has(.collapsible-content)) {
-  border-color: transparent;
-  background: transparent;
-  padding: 0;
-}
-
-.collapsible-fieldset legend {
-  padding: 0 var(--space-1);
-  margin: 0;
-}
-
-.collapsible-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 4px 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-text);
-  background: var(--color-surface) !important;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: pointer;
-  box-shadow: none;
-}
-
-.collapsible-toggle:hover {
-  background: var(--color-hover) !important;
-}
-
-.collapsible-toggle .caret {
-  transition: transform 0.2s ease;
-}
-
-.collapsible-toggle .caret.closed {
-  transform: rotate(-90deg);
-}
-
-.collapsible-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
 }
 
 /* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
