@@ -854,6 +854,9 @@ async function exportBackup() {
             <span class="card-reset-btn-label">Zurücksetzen</span>
           </Button>
         </div>
+        <p class="hint">
+          Wähle zwischen hellem, dunklem oder an das Betriebssystem angepasstem Farbschema.
+        </p>
         <ThemeModeSelect variant="block" />
       </div>
 
