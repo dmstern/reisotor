@@ -29,7 +29,10 @@ const props = defineProps<{
   locationError?: boolean;
   initialTab?: 'general' | 'settings';
 }>();
-const emit = defineEmits<{ (e: 'submit', data: TripFormData): void }>();
+const emit = defineEmits<{
+  (e: 'submit', data: TripFormData): void;
+  (e: 'delete'): void;
+}>();
 
 const TABS: TabBarItem[] = [
   { key: 'general', label: 'Allgemein', icon: ACTION_ICONS.edit },
@@ -38,6 +41,7 @@ const TABS: TabBarItem[] = [
 
 const activeTab = ref<'general' | 'settings'>(props.initialTab ?? 'general');
 const showTabs = computed(() => Boolean(props.initial));
+const canDelete = computed(() => Boolean(props.initial));
 
 function blankForm(): TripFormData {
   return {
@@ -306,6 +310,16 @@ function onSubmit() {
     </div>
 
     <div class="actions-row">
+      <Button
+        v-if="canDelete"
+        type="button"
+        variant="danger"
+        size="sm"
+        :icon="ACTION_ICONS.delete"
+        @click="emit('delete')"
+      >
+        Löschen
+      </Button>
       <div class="spacer"></div>
       <Button type="submit">{{ submitLabel ?? 'Speichern' }}</Button>
     </div>

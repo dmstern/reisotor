@@ -8,7 +8,6 @@ import type { Trip } from '../api/types';
 import Modal from './Modal.vue';
 import TripForm from './TripForm.vue';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import TripMembersDialog from './TripMembersDialog.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
@@ -209,7 +208,6 @@ function openMembers(trip: Trip) {
                   }
                 "
               />
-              <DeleteButton small @click="onDelete(trip)" />
             </div>
           </div>
           <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
@@ -259,6 +257,7 @@ function openMembers(trip: Trip) {
             : undefined
         "
         @submit="onSubmit"
+        @delete="onDelete"
       />
     </Modal>
 
@@ -370,10 +369,10 @@ function openMembers(trip: Trip) {
 
 /* #193: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - der
    Dropdown-Container selbst trägt bereits --shadow-md (siehe .dropdown oben), ein zusätzlicher
-   Schatten je Listenzeile/Aktions-Button (Trip-Auswahl, Mitglieder/Bearbeiten/Löschen, "+ Neuer
+   Schatten je Listenzeile/Aktions-Button (Trip-Auswahl, Mitglieder/Bearbeiten, "+ Neuer
    Urlaub") wirkte dadurch doppelt erhoben und "doof" (Issue #193). Trifft dank Vues Vererbung des
-   Scope-Attributs an Kind-Komponenten-Root-Elementen auch EditButton.vue/DeleteButton.vue, deren
-   <button> jeweils das Root-Element ist. */
+   Scope-Attributs an Kind-Komponenten-Root-Elementen auch EditButton.vue, dessen <button> das
+   Root-Element ist. */
 .dropdown button {
   box-shadow: none;
 }

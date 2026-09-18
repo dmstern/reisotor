@@ -8,7 +8,6 @@ import type { Trip } from '../api/types';
 import Modal from '../components/Modal.vue';
 import TripForm from '../components/TripForm.vue';
 import EditButton from '../components/EditButton.vue';
-import DeleteButton from '../components/DeleteButton.vue';
 import TripMembersDialog from '../components/TripMembersDialog.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
@@ -81,7 +80,6 @@ function openMembers(trip: Trip) {
             @click="openMembers(trip)"
           />
           <EditButton small @click="openEdit(trip)" />
-          <DeleteButton small @click="onDelete(trip)" />
         </div>
       </Card>
     </div>
@@ -121,6 +119,7 @@ function openMembers(trip: Trip) {
             : undefined
         "
         @submit="onSubmit"
+        @delete="onDelete"
       />
     </Modal>
 
