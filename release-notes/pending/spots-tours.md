@@ -11,3 +11,5 @@
 - 🎞️ **Flüssige Card-Animationen**: Harmonisches Aufklappen von Spots und Touren mit gleitendem Titel und platzsparendem Kopfbereich.
 - 📲 **Interaktive Foto- & Dokumenten-Vorschau**: In der Vollbild-Vorschau von Anhängen und Bildern kann jetzt flüssig per Wischgeste zwischen den Dateien gewechselt werden.
 - ☑️ **Flexibler "Gemacht"-Status für Termine**: Spots mit mehreren geplanten Terminen können differenziert pro Reisetag als besucht abgehakt werden; schnelles Datums-Popover für ungeplante Spots und Touren.
+- 📍 **Standortaufzeichnungen („Tracks“)**: Aufzeichnungen erhalten einen eigenen, aufgeräumten Reiter in der Ausflugsansicht samt 1-Tap-Schnellschalter direkt auf der Karte. Aufgezeichnete Strecken lassen sich individuell benennen und flexibel zwischen privat und für Mitreisende geteilt umschalten.
+- 📐 **Kompaktes Kartendesign für Spots & Touren**: Optimierte Bildhöhen, harmonisch integrierte Notizen und nahtlos abgestimmte Abstände am unteren Kartenrand für noch mehr Übersichtlichkeit auf Mobilgeräten und am Desktop.
