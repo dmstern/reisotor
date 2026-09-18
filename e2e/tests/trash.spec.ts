@@ -13,7 +13,10 @@ test('deleting an item shows a toast notification and removes the item', async (
 
   const row = page.locator('li.row', { hasText: 'E2E Undo-Test-Aufgabe' });
   await expect(row).toBeVisible();
-  await row.getByRole('button', { name: 'Löschen' }).click();
+  await row.getByRole('button', { name: 'Bearbeiten' }).click();
+  const editModal = page.locator('.modal', { hasText: 'Aufgabe bearbeiten' });
+  await expect(editModal).toBeVisible();
+  await editModal.getByRole('button', { name: 'Löschen' }).click();
 
   // Nach dem Löschen: Toast-Benachrichtigung erscheint und die Zeile ist entfernt
   const toast = page.locator('.toast-item', {
@@ -31,7 +34,10 @@ test('the trash view (reachable via trip dashboard) lists a deleted item and res
   await page.locator('.add-form button[type="submit"]').click();
   const row = page.locator('li.row', { hasText: 'E2E Papierkorb-Test-Aufgabe' });
   await expect(row).toBeVisible();
-  await row.getByRole('button', { name: 'Löschen' }).click();
+  await row.getByRole('button', { name: 'Bearbeiten' }).click();
+  const editModal = page.locator('.modal', { hasText: 'Aufgabe bearbeiten' });
+  await expect(editModal).toBeVisible();
+  await editModal.getByRole('button', { name: 'Löschen' }).click();
   await page.waitForTimeout(300); // Transition-Group-Übergang abwarten (0.2s, siehe style.css)
   await expect(page.locator('.check', { hasText: 'E2E Papierkorb-Test-Aufgabe' })).toHaveCount(0);
 
