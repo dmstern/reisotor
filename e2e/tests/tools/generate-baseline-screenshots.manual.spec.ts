@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
-import { forceFontDisplayBlock, waitForAppReady } from '../helpers/fonts.js';
+import { forceFontDisplayBlock, waitForAppReady, waitForMapTiles } from '../helpers/fonts.js';
 
 const LANDING_SYNC_MAP: Record<string, string> = {
   'dashboard-desktop-light.png': 'screenshot-dashboard-light.png',
@@ -53,6 +53,24 @@ async function saveScreenshotIfChanged(
   screenshotPath: string,
   options: { fullPage?: boolean; maxDiffPixels?: number } = {}
 ): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
+  // Sicherheitsnetz: Falls Leaflet-Karten auf der Seite gerendert werden, darf NIEMALS ein Screenshot
+  // mit unvollständigen oder noch ladenden Kacheln gespeichert werden.
+  const hasIncompleteTiles = await page.evaluate(() => {
+    const tiles = Array.from(
+      document.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
+    );
+    if (tiles.length === 0) return false;
+    return tiles.some(
+      (img) =>
+        !img.complete || img.naturalWidth === 0 || !img.classList.contains('leaflet-tile-loaded')
+    );
+  });
+  if (hasIncompleteTiles) {
+    throw new Error(
+      `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Nicht alle Leaflet-Kartenkacheln wurden vollständig geladen/gerendert!`
+    );
+  }
+
   // Erhöhte Toleranz (25.000 Pixel entspricht ca. 1.2% bei Full HD), da Anti-Aliasing
   // und Font-Rendering zwischen macOS, Fedora und der CI (Ubuntu Jammy) zehntausende
   // Pixel minimal (Graustufen) abweichen lässt, selbst bei gleicher Fira-Sans-Schriftart.
@@ -221,6 +239,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
 
         await page.goto(view.path);
         await waitForAppReady(page);
+        await waitForMapTiles(page);
 
         // Ensure Calendar drawer is closed on non-dashboard desktop views if it was already open
         if (vp.name === 'desktop' && view.slug !== 'dashboard') {
@@ -254,7 +273,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
               tourCard.scrollIntoView({ block: 'start' });
             }
           });
-          await page.waitForTimeout(600);
+          await waitForMapTiles(page);
         }
 
         // Hide dev elements, banners, install/offline pills, and splash overlays for clean marketing screenshots
@@ -282,6 +301,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             document.documentElement.setAttribute('data-theme', t);
           }, theme);
           await page.waitForTimeout(400);
+          await waitForMapTiles(page);
 
           const screenshotPath = path.join(
             process.cwd(),

@@ -1271,10 +1271,19 @@ onMounted(async () => {
     doubleClickZoom: true,
   });
   map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  mapEl.value?.setAttribute('data-tiles-loading', 'true');
+  const baseTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
     maxZoom: 19,
   }).addTo(map);
+  baseTileLayer.on('loading', () => {
+    mapEl.value?.setAttribute('data-tiles-loading', 'true');
+    mapEl.value?.removeAttribute('data-tiles-loaded');
+  });
+  baseTileLayer.on('load', () => {
+    mapEl.value?.removeAttribute('data-tiles-loading');
+    mapEl.value?.setAttribute('data-tiles-loaded', 'true');
+  });
   // routesLayer vor markersLayer hinzufügen, damit Routen-Linien unter den (klickbaren) Pins
   // liegen statt sie zu verdecken.
   routesLayer = L.layerGroup().addTo(map);
