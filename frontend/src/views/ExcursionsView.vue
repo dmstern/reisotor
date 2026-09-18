@@ -93,7 +93,6 @@ import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vu
 import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
-import Accordion from '../components/primitives/Accordion.vue';
 import Select from '../components/primitives/Select.vue';
 import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Input from '../components/primitives/Input.vue';
@@ -121,9 +120,6 @@ const tracksStore = useTracksStore();
 const trackRecording = useTrackRecordingStore();
 const iconStyle = useIconStyleStore();
 const isDesktop = useIsDesktop();
-
-const tracksSectionOpen = ref(false);
-
 function trackTitle(track: LocationTrack): string {
   return track.title || `Aufzeichnung vom ${formatDateTime(track.started_at)}`;
 }
@@ -132,6 +128,13 @@ function trackDurationLabel(track: LocationTrack): string {
   if (!track.ended_at) return '';
   const ms = new Date(track.ended_at).getTime() - new Date(track.started_at).getTime();
   return formatDurationShort(ms);
+}
+
+function onTrackShowOnMap(trackId: number) {
+  if (isSheetOverlayMode.value && sheetState.value === 'full') {
+    sheetState.value = 'partial';
+  }
+  drawers.openMapForTrack(trackId);
 }
 
 async function toggleTrackVisibility(track: LocationTrack) {
@@ -819,7 +822,7 @@ const sortMode = usePersistedRef<'alpha' | 'likes' | 'date'>(
 // in "Ohne Tour". Reise-Etappen (Touren mit gesetzter role) sind seit #176 ganz normale Einträge
 // dieser "Touren"-Gruppierung - die früher dritte Toggle-Option "Reise" (#175, TravelSection.vue)
 // wurde dadurch redundant und ist seit #196 wieder entfernt.
-const groupMode = usePersistedRef<'category' | 'tours'>(
+const groupMode = usePersistedRef<'category' | 'tours' | 'tracks'>(
   'reisotor-excursions-group-mode',
   'category'
 );
@@ -828,7 +831,8 @@ const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
 // Spots UND Touren (beide "ideas", #176: role-getaggte Touren sind keine eigene Domäne mehr) teilen
 // sich diese eine Sicht, tracken in liveSync aber als getrennte Domänen. Nur die gerade aktive
 // Gruppierung wird als gesehen markiert (initial in onMounted unten, danach bei jedem Wechsel hier).
-function markSeenForGroupMode(mode: 'category' | 'tours') {
+function markSeenForGroupMode(mode: 'category' | 'tours' | 'tracks') {
+  if (mode === 'tracks') return;
   const domain = mode === 'category' ? 'spots' : 'ideas';
   for (const id of liveSync.markSeen(domain)) highlightedIds.value.add(id);
 }
@@ -938,6 +942,8 @@ function applyRouteQuery() {
 
   if (q.group === 'tours') {
     groupMode.value = 'tours';
+  } else if (q.group === 'tracks') {
+    groupMode.value = 'tracks';
   } else if (q.group === 'category') {
     groupMode.value = 'category';
   } else if (q.group === 'travel') {
@@ -989,6 +995,8 @@ function updateRouteQuery() {
 
   if (groupMode.value === 'tours') {
     newQuery.group = 'tours';
+  } else if (groupMode.value === 'tracks') {
+    newQuery.group = 'tracks';
   } else {
     delete newQuery.group;
   }
@@ -1110,6 +1118,7 @@ function sortedCategoryKeys(categories: Iterable<string>): string[] {
 }
 
 const spotGroups = computed(() => {
+  if (groupMode.value === 'tracks') return [];
   const groups = new Map<string, SpotsGroupItem[]>();
   if (groupMode.value === 'tours') {
     const isTourRoleMatch = (role: IdeaRole | null | undefined) => {
@@ -1536,6 +1545,9 @@ function scrollToSpot(id: number) {
 // unsichtbar. Öffnet deshalb (Google-Maps-Stil) mindestens "angeschnitten", rührt einen bereits
 // weiter geöffneten Zustand (partial/full) aber nicht an (#104).
 function onFocusSpotFromMap(spotId: number) {
+  if (groupMode.value === 'tracks') {
+    groupMode.value = 'category';
+  }
   expandedSpotId.value = spotId;
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
   if (groupMode.value === 'tours') {
@@ -2454,12 +2466,26 @@ function onExcursionShowOnMap(excursionId: number) {
 // eingeklapptem Sheet wäre sie dann aber unsichtbar, deshalb hier automatisch mindestens
 // "angeschnitten" aufklappen.
 watch(
-  () => [drawers.mapFocusDate, drawers.mapFocusExcursionId, drawers.mapFocusKey],
-  ([date, excId, key]) => {
-    if (date != null || excId != null || key != null) {
+  () => [
+    drawers.mapFocusDate,
+    drawers.mapFocusExcursionId,
+    drawers.mapFocusKey,
+    drawers.mapFocusTrackId,
+  ],
+  ([date, excId, key, trackId]) => {
+    if (date != null || excId != null || key != null || trackId != null) {
       if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
         sheetState.value = 'partial';
       }
+    }
+  }
+);
+
+watch(
+  () => [drawers.mapFocusTrackId, drawers.focusVersion],
+  ([trackId]) => {
+    if (trackId != null && isSheetOverlayMode.value) {
+      groupMode.value = 'tracks';
     }
   }
 );
@@ -2803,8 +2829,10 @@ async function deleteEditingSpot() {
           <div class="header">
             <h2>
               <AnimatedText
-                :text="groupMode === 'tours' ? 'Touren' : 'Spots'"
-                :options="['Spots', 'Touren']"
+                :text="
+                  groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
+                "
+                :options="['Spots', 'Touren', 'Tracks']"
                 :direction="groupMode === 'tours' ? 'up' : 'down'"
               />
               <!-- Der frühere, immer sichtbare Erklärtext nahm spürbar Platz weg, v. a. auf mobile
@@ -2816,8 +2844,20 @@ async function deleteEditingSpot() {
                   ref="descriptionBtnRef"
                   type="button"
                   class="info-btn"
-                  :title="groupMode === 'tours' ? 'Was sind Touren?' : 'Was sind Spots?'"
-                  :aria-label="groupMode === 'tours' ? 'Was sind Touren?' : 'Was sind Spots?'"
+                  :title="
+                    groupMode === 'tours'
+                      ? 'Was sind Touren?'
+                      : groupMode === 'tracks'
+                        ? 'Was sind Tracks?'
+                        : 'Was sind Spots?'
+                  "
+                  :aria-label="
+                    groupMode === 'tours'
+                      ? 'Was sind Touren?'
+                      : groupMode === 'tracks'
+                        ? 'Was sind Tracks?'
+                        : 'Was sind Spots?'
+                  "
                   @click="toggleDescription($event)"
                 >
                   <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
@@ -2840,6 +2880,17 @@ async function deleteEditingSpot() {
                           Wege auf der Karte anzuzeigen.
                         </p>
                       </template>
+                      <template v-else-if="groupMode === 'tracks'">
+                        <p>
+                          <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du
+                          kannst sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder
+                          Touren zuordnen.
+                        </p>
+                        <p class="popover-tip">
+                          💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf
+                          „Aufzeichnen“ oder direkt über den Button auf der Karte.
+                        </p>
+                      </template>
                       <template v-else>
                         <p>
                           <strong>Spots</strong> sind einzelne Orte (Restaurants,
@@ -2854,10 +2905,8 @@ async function deleteEditingSpot() {
                   </template>
                 </Teleport>
               </span>
-              <!-- #155: der Spots/Touren-Umschalter saß bisher als "Gruppieren"-Zeile in der grünen
-               .filter-bar weiter unten (siehe dortiger Kommentar-Rest) - direkt neben der
-               Drawer-Überschrift ist er als primäre Weiche dieser Ansicht (bestimmt sowohl den
-               Überschriftstext oben als auch den Hinzufügen-Button rechts) besser aufgehoben. -->
+              <!-- #155: der Spots/Touren/Tracks-Umschalter sitzt direkt neben der
+               Drawer-Überschrift als primäre Weiche dieser Ansicht. -->
               <SegmentedToggle
                 v-model="groupMode"
                 :options="[
@@ -2875,42 +2924,61 @@ async function deleteEditingSpot() {
                     iconGroup: 'navigation',
                     dot: liveSync.hasUnseen('ideas'),
                   },
+                  {
+                    value: 'tracks',
+                    label: 'Tracks',
+                    icon: ACTION_ICONS.history,
+                    iconGroup: 'actions',
+                  },
                 ]"
               />
             </h2>
             <div class="header-actions">
               <Button
-                type="button"
-                variant="secondary"
                 size="sm"
-                class="record-button"
-                :class="{ recording: trackRecording.recording }"
-                :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg aufzeichnen'"
-                :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Weg aufzeichnen'"
-                @click="onRecordButtonClick"
+                class="add-button"
+                :class="{ recording: groupMode === 'tracks' && trackRecording.recording }"
+                :variant="groupMode === 'tracks' && trackRecording.recording ? 'danger' : 'primary'"
+                :aria-label="
+                  groupMode === 'tracks'
+                    ? trackRecording.recording
+                      ? 'Aufzeichnung beenden'
+                      : 'Weg aufzeichnen'
+                    : groupMode === 'tours'
+                      ? 'Neue Tour'
+                      : 'Neuer Spot'
+                "
+                @click="
+                  groupMode === 'tracks'
+                    ? onRecordButtonClick()
+                    : groupMode === 'tours'
+                      ? openExcursionForm()
+                      : (showSpotForm = true)
+                "
               >
                 <AppIcon
                   :icon="
-                    trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart
+                    groupMode === 'tracks'
+                      ? trackRecording.recording
+                        ? ACTION_ICONS.recordStop
+                        : ACTION_ICONS.recordStart
+                      : ACTION_ICONS.add
                   "
                   :size="14"
                   group="actions"
                 />
-                <span class="record-button__label">
-                  {{ trackRecording.recording ? 'Beenden' : 'Aufzeichnen' }}
-                </span>
-              </Button>
-              <Button
-                size="sm"
-                class="add-button"
-                :aria-label="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
-                @click="groupMode === 'tours' ? openExcursionForm() : (showSpotForm = true)"
-              >
-                <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
                 <span class="add-button__label">
                   <AnimatedText
-                    :text="groupMode === 'tours' ? 'Neue Tour' : 'Neuer Spot'"
-                    :options="['Neuer Spot', 'Neue Tour']"
+                    :text="
+                      groupMode === 'tracks'
+                        ? trackRecording.recording
+                          ? 'Beenden'
+                          : 'Aufzeichnen'
+                        : groupMode === 'tours'
+                          ? 'Neue Tour'
+                          : 'Neuer Spot'
+                    "
+                    :options="['Neuer Spot', 'Neue Tour', 'Aufzeichnen', 'Beenden']"
                     :direction="groupMode === 'tours' ? 'up' : 'down'"
                   />
                 </span>
@@ -2922,92 +2990,6 @@ async function deleteEditingSpot() {
               <span class="recording-pulse-dot" aria-hidden="true"></span>
               <span class="recording-banner-text">Standortaufzeichnung aktiv</span>
             </div>
-          </div>
-
-          <!-- Standort-Aufzeichnungen (stores/tracks.ts): eigene, geteilte und mit anderen geteilte
-           Tracks - Start/Stop selbst passiert auf der Karte (TripMap.vue's ⏺️-Button), hier nur die
-           Übersicht + nachträgliches Teilen/Löschen. Eingeklappt per Default, damit die für die
-           meiste Zeit relevantere Spots-Liste nicht verdrängt wird - genau wie .filter-bar oben. -->
-          <div class="tracks-section" v-if="tracksStore.tracks.length">
-            <button
-              type="button"
-              class="tracks-toggle"
-              :aria-expanded="tracksSectionOpen"
-              @click="tracksSectionOpen = !tracksSectionOpen"
-            >
-              <span class="tracks-toggle-label">
-                <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> Aufzeichnungen
-                ({{ tracksStore.tracks.length }})
-              </span>
-              <AppIcon
-                :icon="ACTION_ICONS.chevronDown"
-                :size="14"
-                group="actions"
-                class="caret"
-                :class="{ closed: !tracksSectionOpen }"
-              />
-            </button>
-            <Accordion :expanded="tracksSectionOpen">
-              <ul class="tracks-list accordion-stagger">
-                <li
-                  v-for="(track, index) in tracksStore.tracks"
-                  :key="track.id"
-                  class="track-row staggered-item"
-                  :style="{ '--stagger-idx': index, '--stagger-total': tracksStore.tracks.length }"
-                  :class="{ active: Number(drawers.mapFocusTrackId) === Number(track.id) }"
-                >
-                  <button
-                    type="button"
-                    class="track-row-main"
-                    @click="drawers.openMapForTrack(track.id)"
-                  >
-                    <span class="track-row-title">{{ trackTitle(track) }}</span>
-                    <span class="track-row-meta">
-                      <span v-if="!track.ended_at">
-                        <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" />
-                        läuft
-                      </span>
-                      <span v-else-if="trackDurationLabel(track)">
-                        <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
-                        {{ trackDurationLabel(track) }}
-                      </span>
-                    </span>
-                  </button>
-                  <template v-if="track.user_id === auth.user?.id">
-                    <button
-                      type="button"
-                      class="track-icon-btn"
-                      :title="
-                        track.visibility === 'shared'
-                          ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
-                          : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
-                      "
-                      :aria-label="
-                        track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'
-                      "
-                      @click="toggleTrackVisibility(track)"
-                    >
-                      <AppIcon
-                        :icon="
-                          track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private
-                        "
-                        :size="15"
-                        group="actions"
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      class="track-icon-btn"
-                      title="Aufzeichnung löschen"
-                      aria-label="Aufzeichnung löschen"
-                      @click="removeTrack(track.id)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
-                    </button>
-                  </template>
-                </li>
-              </ul>
-            </Accordion>
           </div>
 
           <!-- Touren-Formular: für BEIDE Gruppierungen ("Touren" und "Reise") dasselbe Modal/Modell -
@@ -3134,7 +3116,10 @@ async function deleteEditingSpot() {
 
           <div
             class="filter-bar"
-            v-if="filterCategoryOptions.length || excursionsStore.excursions.length"
+            v-if="
+              groupMode !== 'tracks' &&
+              (filterCategoryOptions.length || excursionsStore.excursions.length)
+            "
           >
             <SearchFilterBar
               v-model:search-query="searchQuery"
@@ -3679,36 +3664,38 @@ async function deleteEditingSpot() {
             </button>
           </div>
 
-          <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
-            <ExcursionCard
-              v-if="grp.excursion"
-              :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
-              class="tour-group-card"
-              :excursion="grp.excursion"
-              :highlighted="
-                highlightedIds.has(grp.excursion.id) || dayFocusHighlightedIds.has(grp.excursion.id)
-              "
-              :creator-label="creatorLabel(grp.excursion.created_by)"
-              :like-count="excursionLikesFor(grp.excursion.id).length"
-              :liked="excursionLikedByMe(grp.excursion.id)"
-              :comments="excursionCommentItemsFor(grp.excursion.id)"
-              :stations="spotsStore.spots"
-              :travel-items="travelItems"
-              :expanded="expandedExcursionId === grp.excursion.id"
-              @edit="startEditExcursion"
-              @toggle-like="toggleExcursionLike(grp.excursion.id)"
-              @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
-              @remove-comment="removeExcursionComment"
-              @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
-              @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
-              @open="expandedExcursionId = grp.excursion.id"
-              @close="expandedExcursionId = null"
-            />
-            <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
-              <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
-              {{ grp.category }}
-            </h3>
-            <!-- Tour-Gruppe: eingerückte, per gebogener gestrichelter SVG-Linie verbundene vertikale Liste
+          <template v-if="groupMode !== 'tracks'">
+            <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
+              <ExcursionCard
+                v-if="grp.excursion"
+                :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
+                class="tour-group-card"
+                :excursion="grp.excursion"
+                :highlighted="
+                  highlightedIds.has(grp.excursion.id) ||
+                  dayFocusHighlightedIds.has(grp.excursion.id)
+                "
+                :creator-label="creatorLabel(grp.excursion.created_by)"
+                :like-count="excursionLikesFor(grp.excursion.id).length"
+                :liked="excursionLikedByMe(grp.excursion.id)"
+                :comments="excursionCommentItemsFor(grp.excursion.id)"
+                :stations="spotsStore.spots"
+                :travel-items="travelItems"
+                :expanded="expandedExcursionId === grp.excursion.id"
+                @edit="startEditExcursion"
+                @toggle-like="toggleExcursionLike(grp.excursion.id)"
+                @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
+                @remove-comment="removeExcursionComment"
+                @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
+                @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
+                @open="expandedExcursionId = grp.excursion.id"
+                @close="expandedExcursionId = null"
+              />
+              <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
+                <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
+                {{ grp.category }}
+              </h3>
+              <!-- Tour-Gruppe: eingerückte, per gebogener gestrichelter SVG-Linie verbundene vertikale Liste
              statt des normalen Karten-Grids (siehe .tour-station-wrap/.tour-station-line unten, #100)
              - die Reihenfolge entspricht spotGroups' Sortierung nach der echten Tour-Reihenfolge
              (spot_ids), macht den Rundgang direkt sichtbar. Ersetzt die früheren Mini-Stations-Chips
@@ -3716,324 +3703,271 @@ async function deleteEditingSpot() {
              erscheinen). Das Wrapper-Div (nur bei Touren-Gruppierung gebraucht) ist position:relative
              und dadurch offsetParent der Spot-Karten - recomputeTourLine() liest deren offsetTop/
              offsetHeight direkt relativ dazu aus (siehe dortiger Kommentar). -->
-            <div
-              class="tour-station-accordion"
-              :class="{ 'is-expanded': !grp.excursion || expandedExcursionId === grp.excursion.id }"
-              :inert="!!(grp.excursion && expandedExcursionId !== grp.excursion.id)"
-            >
-              <div class="tour-station-accordion-inner">
-                <div
-                  class="tour-station-wrap"
-                  :class="{
-                    'is-tour': grp.excursion,
-                    'single-col': grp.excursion && getTourCols(grp.excursion.id) === 1,
-                  }"
-                  :style="{
-                    '--tour-theme-color': grp.excursion?.role
-                      ? 'var(--color-travel)'
-                      : 'var(--color-tour)',
-                    '--tour-theme-tint': grp.excursion?.role
-                      ? 'var(--color-travel-tint)'
-                      : 'var(--color-tour-tint)',
-                  }"
-                  :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
-                >
-                  <svg
-                    v-if="grp.excursion && tourLines.get(grp.excursion.id)"
-                    class="tour-station-line"
-                    :width="tourLines.get(grp.excursion.id)!.width"
-                    :height="tourLines.get(grp.excursion.id)!.height"
-                    aria-hidden="true"
-                  >
-                    <defs>
-                      <linearGradient
-                        v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
-                        :id="`tour-gradient-hin-${grp.excursion.id}`"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stop-color="var(--tour-theme-color, var(--color-primary))"
-                        />
-                        <stop offset="100%" stop-color="var(--color-primary)" />
-                      </linearGradient>
-                      <linearGradient
-                        v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
-                        :id="`tour-gradient-rueck-${grp.excursion.id}`"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stop-color="var(--tour-theme-color, var(--color-primary))"
-                        />
-                        <stop offset="100%" stop-color="var(--color-primary)" />
-                      </linearGradient>
-                    </defs>
-
-                    <path
-                      v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
-                      :d="tourLines.get(grp.excursion.id)!.hinwegPath!.d"
-                      fill="none"
-                      :style="{ stroke: `url(#tour-gradient-hin-${grp.excursion.id})` }"
-                      stroke-width="3"
-                      stroke-dasharray="6,6"
-                      stroke-linecap="round"
-                    />
-                    <path
-                      v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
-                      :d="tourLines.get(grp.excursion.id)!.rueckwegPath!.d"
-                      fill="none"
-                      :style="{ stroke: `url(#tour-gradient-rueck-${grp.excursion.id})` }"
-                      stroke-width="3"
-                      stroke-dasharray="6,6"
-                      stroke-linecap="round"
-                    />
-
-                    <circle
-                      v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
-                      :key="'dot-' + i"
-                      :cx="dot.x"
-                      :cy="dot.y"
-                      r="4.5"
-                      :style="{
-                        fill: dot.isEnd
-                          ? 'var(--color-primary)'
-                          : 'var(--tour-theme-color, var(--color-primary))',
-                        stroke: 'var(--color-surface)',
-                        strokeWidth: '2px',
-                      }"
-                    />
-                  </svg>
-
-                  <!-- Touren: Schlangen-Layout (Serpentine / S-Kurve) mit adaptiver Spaltenanzahl -->
+              <div
+                class="tour-station-accordion"
+                :class="{
+                  'is-expanded': !grp.excursion || expandedExcursionId === grp.excursion.id,
+                }"
+                :inert="!!(grp.excursion && expandedExcursionId !== grp.excursion.id)"
+              >
+                <div class="tour-station-accordion-inner">
                   <div
-                    v-if="grp.excursion"
-                    class="tour-serpentine-wrap"
-                    :style="{
-                      '--tour-cols': getTourCols(grp.excursion.id),
-                      '--tour-conn-width': '76px',
+                    class="tour-station-wrap"
+                    :class="{
+                      'is-tour': grp.excursion,
+                      'single-col': grp.excursion && getTourCols(grp.excursion.id) === 1,
                     }"
+                    :style="{
+                      '--tour-theme-color': grp.excursion?.role
+                        ? 'var(--color-travel)'
+                        : 'var(--color-tour)',
+                      '--tour-theme-tint': grp.excursion?.role
+                        ? 'var(--color-travel-tint)'
+                        : 'var(--color-tour-tint)',
+                    }"
+                    :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
                   >
+                    <svg
+                      v-if="grp.excursion && tourLines.get(grp.excursion.id)"
+                      class="tour-station-line"
+                      :width="tourLines.get(grp.excursion.id)!.width"
+                      :height="tourLines.get(grp.excursion.id)!.height"
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <linearGradient
+                          v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
+                          :id="`tour-gradient-hin-${grp.excursion.id}`"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stop-color="var(--tour-theme-color, var(--color-primary))"
+                          />
+                          <stop offset="100%" stop-color="var(--color-primary)" />
+                        </linearGradient>
+                        <linearGradient
+                          v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
+                          :id="`tour-gradient-rueck-${grp.excursion.id}`"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stop-color="var(--tour-theme-color, var(--color-primary))"
+                          />
+                          <stop offset="100%" stop-color="var(--color-primary)" />
+                        </linearGradient>
+                      </defs>
+
+                      <path
+                        v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
+                        :d="tourLines.get(grp.excursion.id)!.hinwegPath!.d"
+                        fill="none"
+                        :style="{ stroke: `url(#tour-gradient-hin-${grp.excursion.id})` }"
+                        stroke-width="3"
+                        stroke-dasharray="6,6"
+                        stroke-linecap="round"
+                      />
+                      <path
+                        v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
+                        :d="tourLines.get(grp.excursion.id)!.rueckwegPath!.d"
+                        fill="none"
+                        :style="{ stroke: `url(#tour-gradient-rueck-${grp.excursion.id})` }"
+                        stroke-width="3"
+                        stroke-dasharray="6,6"
+                        stroke-linecap="round"
+                      />
+
+                      <circle
+                        v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
+                        :key="'dot-' + i"
+                        :cx="dot.x"
+                        :cy="dot.y"
+                        r="4.5"
+                        :style="{
+                          fill: dot.isEnd
+                            ? 'var(--color-primary)'
+                            : 'var(--tour-theme-color, var(--color-primary))',
+                          stroke: 'var(--color-surface)',
+                          strokeWidth: '2px',
+                        }"
+                      />
+                    </svg>
+
+                    <!-- Touren: Schlangen-Layout (Serpentine / S-Kurve) mit adaptiver Spaltenanzahl -->
                     <div
-                      v-for="row in getTourRows(grp.excursion, grp.items)"
-                      :key="`row-${grp.excursion.id}-${row.rowIndex}`"
-                      class="tour-serpentine-row-wrap"
+                      v-if="grp.excursion"
+                      class="tour-serpentine-wrap"
+                      :style="{
+                        '--tour-cols': getTourCols(grp.excursion.id),
+                        '--tour-conn-width': '76px',
+                      }"
                     >
                       <div
-                        class="tour-serpentine-row"
-                        :class="{
-                          'is-rtl': row.isRtl,
-                          'is-ltr': !row.isRtl,
-                          'single-col': getTourCols(grp.excursion.id) === 1,
-                        }"
+                        v-for="row in getTourRows(grp.excursion, grp.items)"
+                        :key="`row-${grp.excursion.id}-${row.rowIndex}`"
+                        class="tour-serpentine-row-wrap"
                       >
-                        <template v-for="cell in row.cells" :key="cell.key">
-                          <!-- Spot-Kachel -->
-                          <div v-if="cell.type === 'spot'" class="tour-spot-cell">
-                            <SpotCard
-                              :ref="(el) => setSpotRef(cell.spot.id, el)"
-                              class="staggered-spot"
-                              :data-spot-id="cell.spot.id"
-                              :style="[
-                                {
-                                  '--stagger-idx': cell.globalIndex,
-                                  '--stagger-total': grp.items.length,
-                                },
-                              ]"
-                              :spot="cell.spot"
-                              :excursion-context="{
-                                id: grp.excursion.id,
-                                isDestination: grp.excursion.destination_spot_id === cell.spot.id,
-                                hasDestination: grp.excursion.destination_spot_id != null,
-                              }"
-                              @toggle-destination="
-                                toggleExcursionDestination(grp.excursion, cell.spot.id)
-                              "
-                              :highlighted="
-                                highlightedIds.has(cell.spot.id) ||
-                                dayFocusHighlightedIds.has(cell.spot.id)
-                              "
-                              :expanded="expandedSpotId === cell.spot.id"
-                              :scheduled-date="spotScheduledDates.get(cell.spot.id) ?? null"
-                              :creator-label="creatorLabel(cell.spot.created_by)"
-                              :payer-label="creatorLabel(cell.spot.paid_by_user_id)"
-                              :like-count="spotsStore.likeCountFor(cell.spot.id)"
-                              :liked="spotsStore.likedByMe(cell.spot.id, auth.user?.id)"
-                              :comments="spotCommentItemsFor(cell.spot.id)"
-                              :group-mode="groupMode"
-                              :tour-options="allTourTitles"
-                              :has-multiple-members="users.length > 1"
-                              :layover-minutes="
-                                cell.globalIndex > 0 && cell.globalIndex < grp.items.length - 1
-                                  ? getTourLayover(grp.excursion, grp.items, cell.globalIndex)
-                                  : null
-                              "
-                              @edit="startEditSpot"
-                              @toggle-like="toggleSpotLike(cell.spot.id)"
-                              @submit-comment="
-                                (content) => submitSpotComment(cell.spot.id, content)
-                              "
-                              @remove-comment="removeSpotComment"
-                              @open="onSpotCardOpen(cell.spot)"
-                              @close="onSpotCardClose"
-                              @show-on-map="onSpotShowOnMap(cell.spot)"
-                              @assign-tour="(title) => assignSpotToTourTitle(cell.spot.id, title)"
-                            />
-                          </div>
-
-                          <!-- Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) -->
-                          <div
-                            v-else-if="cell.type === 'leg-horizontal'"
-                            class="tour-leg-connector is-horizontal"
-                            :class="{ 'is-rtl': cell.isRtl }"
-                          >
-                            <!-- Teilstrecke existiert -->
-                            <div
-                              v-if="cell.leg"
-                              class="tour-leg-pill is-horizontal-leg"
-                              tabindex="0"
-                              role="button"
-                              :title="getLegTooltip(cell.leg, cell.fromSpot, cell.toSpot)"
-                              :aria-label="`Teilstrecke von ${cell.fromSpot.title} nach ${cell.toSpot.title} bearbeiten`"
-                              @click.stop="
-                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                              "
-                              @keydown.enter.self="
-                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                              "
-                              @keydown.space.self.prevent="
-                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                              "
-                            >
-                              <span class="leg-pill-icon">
-                                {{ travelTypeIcon(cell.leg.transport_type ?? null) }}
-                              </span>
-                              <span v-if="getLegDurationParts(cell.leg)" class="leg-pill-duration">
-                                <span
-                                  v-for="(part, pIdx) in getLegDurationParts(cell.leg)"
-                                  :key="pIdx"
-                                  class="leg-duration-part"
-                                >
-                                  {{ part }}
-                                </span>
-                              </span>
-                              <span v-else-if="cell.leg.departure_time" class="leg-pill-duration">
-                                <span class="leg-duration-part">{{ cell.leg.departure_time }}</span>
-                              </span>
-                              <span v-if="cell.leg.amount != null" class="leg-pill-cost">
-                                {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
-                              </span>
+                        <div
+                          class="tour-serpentine-row"
+                          :class="{
+                            'is-rtl': row.isRtl,
+                            'is-ltr': !row.isRtl,
+                            'single-col': getTourCols(grp.excursion.id) === 1,
+                          }"
+                        >
+                          <template v-for="cell in row.cells" :key="cell.key">
+                            <!-- Spot-Kachel -->
+                            <div v-if="cell.type === 'spot'" class="tour-spot-cell">
+                              <SpotCard
+                                :ref="(el) => setSpotRef(cell.spot.id, el)"
+                                class="staggered-spot"
+                                :data-spot-id="cell.spot.id"
+                                :style="[
+                                  {
+                                    '--stagger-idx': cell.globalIndex,
+                                    '--stagger-total': grp.items.length,
+                                  },
+                                ]"
+                                :spot="cell.spot"
+                                :excursion-context="{
+                                  id: grp.excursion.id,
+                                  isDestination: grp.excursion.destination_spot_id === cell.spot.id,
+                                  hasDestination: grp.excursion.destination_spot_id != null,
+                                }"
+                                @toggle-destination="
+                                  toggleExcursionDestination(grp.excursion, cell.spot.id)
+                                "
+                                :highlighted="
+                                  highlightedIds.has(cell.spot.id) ||
+                                  dayFocusHighlightedIds.has(cell.spot.id)
+                                "
+                                :expanded="expandedSpotId === cell.spot.id"
+                                :scheduled-date="spotScheduledDates.get(cell.spot.id) ?? null"
+                                :creator-label="creatorLabel(cell.spot.created_by)"
+                                :payer-label="creatorLabel(cell.spot.paid_by_user_id)"
+                                :like-count="spotsStore.likeCountFor(cell.spot.id)"
+                                :liked="spotsStore.likedByMe(cell.spot.id, auth.user?.id)"
+                                :comments="spotCommentItemsFor(cell.spot.id)"
+                                :group-mode="groupMode === 'tours' ? 'tours' : 'category'"
+                                :tour-options="allTourTitles"
+                                :has-multiple-members="users.length > 1"
+                                :layover-minutes="
+                                  cell.globalIndex > 0 && cell.globalIndex < grp.items.length - 1
+                                    ? getTourLayover(grp.excursion, grp.items, cell.globalIndex)
+                                    : null
+                                "
+                                @edit="startEditSpot"
+                                @toggle-like="toggleSpotLike(cell.spot.id)"
+                                @submit-comment="
+                                  (content) => submitSpotComment(cell.spot.id, content)
+                                "
+                                @remove-comment="removeSpotComment"
+                                @open="onSpotCardOpen(cell.spot)"
+                                @close="onSpotCardClose"
+                                @show-on-map="onSpotShowOnMap(cell.spot)"
+                                @assign-tour="(title) => assignSpotToTourTitle(cell.spot.id, title)"
+                              />
                             </div>
 
-                            <!-- Keine Teilstrecke erfasst -> kleiner Add-Button -->
-                            <button
-                              v-else
-                              type="button"
-                              class="tour-leg-add-btn is-horizontal-leg"
-                              title="Teilstrecke erfassen"
-                              :aria-label="`Teilstrecke zwischen ${cell.fromSpot.title} und ${cell.toSpot.title} erfassen`"
-                              @click.stop="
-                                openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                              "
+                            <!-- Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) -->
+                            <div
+                              v-else-if="cell.type === 'leg-horizontal'"
+                              class="tour-leg-connector is-horizontal"
+                              :class="{ 'is-rtl': cell.isRtl }"
                             >
-                              <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
-                              <span class="leg-add-text">Teilstrecke</span>
-                            </button>
-                          </div>
-                        </template>
-                      </div>
-
-                      <!-- Zeilenumbruch-Verbinder (Zentriert zwischen den Kacheln auf der gestrichelten Linie) -->
-                      <div
-                        v-if="row.rowBreak"
-                        class="tour-row-break"
-                        :class="[
-                          'align-' + row.rowBreak.alignSide,
-                          { 'single-col': getTourCols(grp.excursion.id) === 1 },
-                        ]"
-                      >
-                        <div class="tour-row-break-inner">
-                          <!-- Teilstrecke existiert -->
-                          <div
-                            v-if="row.rowBreak.leg"
-                            :key="`leg-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`"
-                            class="tour-leg-pill is-row-break"
-                            tabindex="0"
-                            role="button"
-                            :title="
-                              getLegTooltip(
-                                row.rowBreak.leg,
-                                row.rowBreak.fromSpot,
-                                row.rowBreak.toSpot
-                              )
-                            "
-                            :aria-label="`Teilstrecke von ${row.rowBreak.fromSpot.title} nach ${row.rowBreak.toSpot.title} bearbeiten`"
-                            @click.stop="
-                              openCardLegModal(
-                                grp.excursion,
-                                row.rowBreak.fromSpot,
-                                row.rowBreak.toSpot
-                              )
-                            "
-                            @keydown.enter.self="
-                              openCardLegModal(
-                                grp.excursion,
-                                row.rowBreak.fromSpot,
-                                row.rowBreak.toSpot
-                              )
-                            "
-                            @keydown.space.self.prevent="
-                              openCardLegModal(
-                                grp.excursion,
-                                row.rowBreak.fromSpot,
-                                row.rowBreak.toSpot
-                              )
-                            "
-                          >
-                            <span class="leg-pill-icon">
-                              {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
-                            </span>
-                            <span v-if="row.rowBreak.leg.transport_type" class="leg-pill-type">
-                              {{ row.rowBreak.leg.transport_type }}
-                            </span>
-                            <span
-                              v-if="getLegDurationParts(row.rowBreak.leg)"
-                              class="leg-pill-duration"
-                            >
-                              <span
-                                v-for="(part, pIdx) in getLegDurationParts(row.rowBreak.leg)"
-                                :key="pIdx"
-                                class="leg-duration-part"
+                              <!-- Teilstrecke existiert -->
+                              <div
+                                v-if="cell.leg"
+                                class="tour-leg-pill is-horizontal-leg"
+                                tabindex="0"
+                                role="button"
+                                :title="getLegTooltip(cell.leg, cell.fromSpot, cell.toSpot)"
+                                :aria-label="`Teilstrecke von ${cell.fromSpot.title} nach ${cell.toSpot.title} bearbeiten`"
+                                @click.stop="
+                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                                "
+                                @keydown.enter.self="
+                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                                "
+                                @keydown.space.self.prevent="
+                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                                "
                               >
-                                {{ part }}
-                              </span>
-                            </span>
-                            <span
-                              v-else-if="row.rowBreak.leg.departure_time"
-                              class="leg-pill-duration"
-                            >
-                              <span class="leg-duration-part">{{
-                                row.rowBreak.leg.departure_time
-                              }}</span>
-                            </span>
-                            <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
-                              {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
-                            </span>
-                          </div>
+                                <span class="leg-pill-icon">
+                                  {{ travelTypeIcon(cell.leg.transport_type ?? null) }}
+                                </span>
+                                <span
+                                  v-if="getLegDurationParts(cell.leg)"
+                                  class="leg-pill-duration"
+                                >
+                                  <span
+                                    v-for="(part, pIdx) in getLegDurationParts(cell.leg)"
+                                    :key="pIdx"
+                                    class="leg-duration-part"
+                                  >
+                                    {{ part }}
+                                  </span>
+                                </span>
+                                <span v-else-if="cell.leg.departure_time" class="leg-pill-duration">
+                                  <span class="leg-duration-part">{{
+                                    cell.leg.departure_time
+                                  }}</span>
+                                </span>
+                                <span v-if="cell.leg.amount != null" class="leg-pill-cost">
+                                  {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
+                                </span>
+                              </div>
 
-                          <!-- Keine Teilstrecke am Umbruch erfasst -->
-                          <div v-else class="tour-leg-add-wrap">
-                            <button
-                              type="button"
-                              class="tour-leg-add-btn is-row-break"
-                              title="Teilstrecke erfassen"
-                              :aria-label="`Teilstrecke zwischen ${row.rowBreak.fromSpot.title} und ${row.rowBreak.toSpot.title} erfassen`"
+                              <!-- Keine Teilstrecke erfasst -> kleiner Add-Button -->
+                              <button
+                                v-else
+                                type="button"
+                                class="tour-leg-add-btn is-horizontal-leg"
+                                title="Teilstrecke erfassen"
+                                :aria-label="`Teilstrecke zwischen ${cell.fromSpot.title} und ${cell.toSpot.title} erfassen`"
+                                @click.stop="
+                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
+                                "
+                              >
+                                <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
+                                <span class="leg-add-text">Teilstrecke</span>
+                              </button>
+                            </div>
+                          </template>
+                        </div>
+
+                        <!-- Zeilenumbruch-Verbinder (Zentriert zwischen den Kacheln auf der gestrichelten Linie) -->
+                        <div
+                          v-if="row.rowBreak"
+                          class="tour-row-break"
+                          :class="[
+                            'align-' + row.rowBreak.alignSide,
+                            { 'single-col': getTourCols(grp.excursion.id) === 1 },
+                          ]"
+                        >
+                          <div class="tour-row-break-inner">
+                            <!-- Teilstrecke existiert -->
+                            <div
+                              v-if="row.rowBreak.leg"
+                              :key="`leg-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`"
+                              class="tour-leg-pill is-row-break"
+                              tabindex="0"
+                              role="button"
+                              :title="
+                                getLegTooltip(
+                                  row.rowBreak.leg,
+                                  row.rowBreak.fromSpot,
+                                  row.rowBreak.toSpot
+                                )
+                              "
+                              :aria-label="`Teilstrecke von ${row.rowBreak.fromSpot.title} nach ${row.rowBreak.toSpot.title} bearbeiten`"
                               @click.stop="
                                 openCardLegModal(
                                   grp.excursion,
@@ -4041,94 +3975,222 @@ async function deleteEditingSpot() {
                                   row.rowBreak.toSpot
                                 )
                               "
+                              @keydown.enter.self="
+                                openCardLegModal(
+                                  grp.excursion,
+                                  row.rowBreak.fromSpot,
+                                  row.rowBreak.toSpot
+                                )
+                              "
+                              @keydown.space.self.prevent="
+                                openCardLegModal(
+                                  grp.excursion,
+                                  row.rowBreak.fromSpot,
+                                  row.rowBreak.toSpot
+                                )
+                              "
                             >
-                              <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
-                              <span class="leg-add-text">Teilstrecke erfassen</span>
-                            </button>
+                              <span class="leg-pill-icon">
+                                {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
+                              </span>
+                              <span v-if="row.rowBreak.leg.transport_type" class="leg-pill-type">
+                                {{ row.rowBreak.leg.transport_type }}
+                              </span>
+                              <span
+                                v-if="getLegDurationParts(row.rowBreak.leg)"
+                                class="leg-pill-duration"
+                              >
+                                <span
+                                  v-for="(part, pIdx) in getLegDurationParts(row.rowBreak.leg)"
+                                  :key="pIdx"
+                                  class="leg-duration-part"
+                                >
+                                  {{ part }}
+                                </span>
+                              </span>
+                              <span
+                                v-else-if="row.rowBreak.leg.departure_time"
+                                class="leg-pill-duration"
+                              >
+                                <span class="leg-duration-part">{{
+                                  row.rowBreak.leg.departure_time
+                                }}</span>
+                              </span>
+                              <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
+                                {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
+                              </span>
+                            </div>
+
+                            <!-- Keine Teilstrecke am Umbruch erfasst -->
+                            <div v-else class="tour-leg-add-wrap">
+                              <button
+                                type="button"
+                                class="tour-leg-add-btn is-row-break"
+                                title="Teilstrecke erfassen"
+                                :aria-label="`Teilstrecke zwischen ${row.rowBreak.fromSpot.title} und ${row.rowBreak.toSpot.title} erfassen`"
+                                @click.stop="
+                                  openCardLegModal(
+                                    grp.excursion,
+                                    row.rowBreak.fromSpot,
+                                    row.rowBreak.toSpot
+                                  )
+                                "
+                              >
+                                <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
+                                <span class="leg-add-text">Teilstrecke erfassen</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- Nicht-Touren (z. B. "Ohne Tour"): Standard-Grid -->
-                  <TransitionGroup v-else tag="div" name="list" class="grid cards">
-                    <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
-                      <SpotCard
-                        :ref="(el) => setSpotRef(item.spot.id, el)"
-                        class="staggered-spot"
-                        :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
-                        :spot="item.spot"
-                        :highlighted="
-                          highlightedIds.has(item.spot.id) ||
-                          dayFocusHighlightedIds.has(item.spot.id)
-                        "
-                        :expanded="expandedSpotId === item.spot.id"
-                        :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
-                        :creator-label="creatorLabel(item.spot.created_by)"
-                        :payer-label="creatorLabel(item.spot.paid_by_user_id)"
-                        :like-count="spotsStore.likeCountFor(item.spot.id)"
-                        :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-                        :comments="spotCommentItemsFor(item.spot.id)"
-                        :group-mode="groupMode"
-                        :tour-options="allTourTitles"
-                        :has-multiple-members="users.length > 1"
-                        @edit="startEditSpot"
-                        @toggle-like="toggleSpotLike(item.spot.id)"
-                        @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-                        @remove-comment="removeSpotComment"
-                        @open="onSpotCardOpen(item.spot)"
-                        @close="onSpotCardClose"
-                        @show-on-map="onSpotShowOnMap(item.spot)"
-                        @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
-                      />
-                    </template>
-                  </TransitionGroup>
+                    <!-- Nicht-Touren (z. B. "Ohne Tour"): Standard-Grid -->
+                    <TransitionGroup v-else tag="div" name="list" class="grid cards">
+                      <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
+                        <SpotCard
+                          :ref="(el) => setSpotRef(item.spot.id, el)"
+                          class="staggered-spot"
+                          :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
+                          :spot="item.spot"
+                          :highlighted="
+                            highlightedIds.has(item.spot.id) ||
+                            dayFocusHighlightedIds.has(item.spot.id)
+                          "
+                          :expanded="expandedSpotId === item.spot.id"
+                          :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
+                          :creator-label="creatorLabel(item.spot.created_by)"
+                          :payer-label="creatorLabel(item.spot.paid_by_user_id)"
+                          :like-count="spotsStore.likeCountFor(item.spot.id)"
+                          :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
+                          :comments="spotCommentItemsFor(item.spot.id)"
+                          :group-mode="groupMode === 'tours' ? 'tours' : 'category'"
+                          :tour-options="allTourTitles"
+                          :has-multiple-members="users.length > 1"
+                          @edit="startEditSpot"
+                          @toggle-like="toggleSpotLike(item.spot.id)"
+                          @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+                          @remove-comment="removeSpotComment"
+                          @open="onSpotCardOpen(item.spot)"
+                          @close="onSpotCardClose"
+                          @show-on-map="onSpotShowOnMap(item.spot)"
+                          @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
+                        />
+                      </template>
+                    </TransitionGroup>
+                  </div>
                 </div>
               </div>
-            </div>
-            <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
+              <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
              kein Spot zugeordnet (grp.excursion.spot_ids selbst leer, unabhängig von Kategorie-/
              Status-Filter), oder es sind welche zugeordnet, aber der aktive Filter blendet sie
              gerade alle aus (grp.items kommt aus filteredSpotItems, spot_ids aus der Excursion
              selbst bleibt dabei unangetastet) - ohne diese Unterscheidung wirkte eine reine
              Filter-Situation fälschlich wie eine leere Tour. -->
-            <p
-              v-if="
-                grp.excursion &&
-                !grp.items.length &&
-                grp.excursion.spot_ids.length &&
-                (categoryFilter.length || statusFilter.length)
-              "
-              class="empty"
-            >
-              Die zugeordneten Spots sind gerade durch den Kategorie-/Status-Filter ausgeblendet –
-              Filter zurücksetzen, um sie wieder zu sehen.
-            </p>
-            <p v-else-if="grp.excursion && !grp.items.length" class="empty">
-              Noch keine Spots zugeordnet – ziehe eine Spot-Karte hierher oder wähle diese Tour beim
-              Bearbeiten eines Spots über "Tour zuordnen".
-            </p>
-          </section>
-          <div v-if="!spotGroups.length" class="empty-state-wrap">
-            <p class="empty">
-              <template v-if="hasActiveFilters">
-                Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen Filter oder
-                Suchbegriffe gefunden.
-              </template>
-              <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
-              <template v-else> Noch keine Spots angelegt. </template>
-            </p>
-            <Button
-              v-if="hasActiveFilters"
-              variant="secondary"
-              size="sm"
-              class="clear-filters-btn"
-              @click="clearAllFilters"
-            >
-              <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-              <span>Filter zurücksetzen</span>
-            </Button>
+              <p
+                v-if="
+                  grp.excursion &&
+                  !grp.items.length &&
+                  grp.excursion.spot_ids.length &&
+                  (categoryFilter.length || statusFilter.length)
+                "
+                class="empty"
+              >
+                Die zugeordneten Spots sind gerade durch den Kategorie-/Status-Filter ausgeblendet –
+                Filter zurücksetzen, um sie wieder zu sehen.
+              </p>
+              <p v-else-if="grp.excursion && !grp.items.length" class="empty">
+                Noch keine Spots zugeordnet – ziehe eine Spot-Karte hierher oder wähle diese Tour
+                beim Bearbeiten eines Spots über "Tour zuordnen".
+              </p>
+            </section>
+            <div v-if="!spotGroups.length" class="empty-state-wrap">
+              <p class="empty">
+                <template v-if="hasActiveFilters">
+                  Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen Filter
+                  oder Suchbegriffe gefunden.
+                </template>
+                <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
+                <template v-else> Noch keine Spots angelegt. </template>
+              </p>
+              <Button
+                v-if="hasActiveFilters"
+                variant="secondary"
+                size="sm"
+                class="clear-filters-btn"
+                @click="clearAllFilters"
+              >
+                <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+                <span>Filter zurücksetzen</span>
+              </Button>
+            </div>
+          </template>
+
+          <div v-else class="tracks-tab-content">
+            <div v-if="!tracksStore.tracks.length" class="empty-state-wrap tracks-empty-state">
+              <p class="empty">
+                Noch keine Tracks aufgezeichnet.<br />
+                <span class="empty-subtext">
+                  Starte eine Aufzeichnung über den Button oben oder direkt auf der Karte.
+                </span>
+              </p>
+            </div>
+            <div v-else class="tracks-view">
+              <ul class="tracks-list">
+                <li
+                  v-for="track in tracksStore.tracks"
+                  :key="track.id"
+                  class="track-row"
+                  :class="{ active: Number(drawers.mapFocusTrackId) === Number(track.id) }"
+                >
+                  <button type="button" class="track-row-main" @click="onTrackShowOnMap(track.id)">
+                    <span class="track-row-title">{{ trackTitle(track) }}</span>
+                    <span class="track-row-meta">
+                      <span v-if="!track.ended_at" class="track-meta-live">
+                        <span class="recording-pulse-dot" aria-hidden="true"></span>
+                        Aufzeichnung läuft
+                      </span>
+                      <span v-else-if="trackDurationLabel(track)">
+                        <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
+                        {{ trackDurationLabel(track) }}
+                      </span>
+                    </span>
+                  </button>
+                  <template v-if="track.user_id === auth.user?.id">
+                    <button
+                      type="button"
+                      class="track-icon-btn"
+                      :title="
+                        track.visibility === 'shared'
+                          ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
+                          : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
+                      "
+                      :aria-label="
+                        track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'
+                      "
+                      @click="toggleTrackVisibility(track)"
+                    >
+                      <AppIcon
+                        :icon="
+                          track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private
+                        "
+                        :size="15"
+                        group="actions"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      class="track-icon-btn track-icon-btn--delete"
+                      title="Aufzeichnung löschen"
+                      aria-label="Aufzeichnung löschen"
+                      @click="removeTrack(track.id)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
+                    </button>
+                  </template>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
@@ -4343,12 +4405,8 @@ async function deleteEditingSpot() {
 
   .header-actions {
     width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-2);
   }
 
-  .record-button,
   .add-button {
     width: 100%;
     justify-content: center;
@@ -4357,7 +4415,7 @@ async function deleteEditingSpot() {
 }
 
 /* Auf extrem schmalem Drawer (<= 320px) kompaktere Polsterung & kleinere Schrift, damit
-   Titel, Toggle und beide Aktionsbuttons selbst bei 280px ohne Umbruch oder Abschneiden Platz haben. */
+   Titel, Toggle und Aktionsbutton selbst bei 280px ohne Umbruch oder Abschneiden Platz haben. */
 @container spots-col (max-width: 320px) {
   .header h2 {
     font-size: 1.15rem;
@@ -4375,7 +4433,6 @@ async function deleteEditingSpot() {
     gap: 3px;
   }
 
-  .record-button,
   .add-button {
     padding: 6px 6px;
     gap: 3px;
@@ -4748,13 +4805,11 @@ async function deleteEditingSpot() {
   gap: var(--space-2);
 }
 
-.record-button,
 .add-button {
   gap: var(--space-1);
   white-space: nowrap;
 }
 
-.record-button__label,
 .add-button__label {
   display: inline-flex;
   align-items: center;
@@ -4770,6 +4825,11 @@ async function deleteEditingSpot() {
   background: var(--color-danger);
   border-color: var(--color-danger);
   color: #fff;
+}
+
+.header-actions button.recording:hover {
+  background: color-mix(in srgb, var(--color-danger) 85%, black);
+  border-color: color-mix(in srgb, var(--color-danger) 85%, black);
 }
 
 .subheader {
@@ -5394,72 +5454,59 @@ async function deleteEditingSpot() {
   corner-shape: squircle;
 }
 
-/* Steuerung (Ein-/Ausklappen), daher --color-primary-tint statt --color-surface - gleiches Prinzip
-   wie .filter-bar oben (siehe DESIGN.md, Abschnitt "Steuerungselement vs. Dateninhalt"). */
-.tracks-section {
-  margin: 0 0 var(--space-3);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  background: var(--color-primary-tint);
-  overflow: hidden;
+/* Tracks-Tab im Drawer (eigene, geteilte und mit anderen geteilte GPS-Aufzeichnungen) */
+.tracks-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
-.tracks-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  background: none;
-  border: none;
-  /* Gleiches Muster/derselbe Fix wie .filter-toggle-row oben (#139) - auch hier überschreibt der
-     globale button-Selektor sonst mit seinem Grund-Schatten. */
-  box-shadow: none;
-  padding: var(--space-2) var(--space-3);
-  font: inherit;
+.tracks-empty-state {
+  margin-top: var(--space-6);
+}
+
+.empty-subtext {
+  display: inline-block;
+  margin-top: var(--space-2);
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-  cursor: pointer;
-  text-align: left;
+  color: var(--color-text-muted);
 }
 
-.tracks-toggle-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.tracks-view {
+  padding: 0;
 }
 
-.tracks-toggle .caret {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tracks-toggle .caret.closed {
-  transform: rotate(-90deg);
-}
-
-/* Dateninhalt (je eine echte Aufzeichnung), daher --color-surface statt der Steuerungsfarbe der
-   umgebenden .tracks-section - gleiches Prinzip wie SpotCard.vue/ExcursionCard.vue. */
 .tracks-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   margin: 0;
-  padding: var(--space-2);
+  padding: 0;
   list-style: none;
 }
 
 .track-row {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   background: var(--color-surface);
-  border-radius: var(--radius-sm-squircle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  transition: box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-2) var(--space-3);
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.track-row:hover {
+  border-color: var(--color-primary-light, var(--color-border));
 }
 
 .track-row.active {
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-primary);
 }
 
@@ -5468,16 +5515,16 @@ async function deleteEditingSpot() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   background: none;
   border: none;
-  padding: var(--space-1) var(--space-2);
+  padding: 0;
   text-align: left;
   cursor: pointer;
 }
 
 .track-row-title {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-text);
   overflow: hidden;
@@ -5486,22 +5533,26 @@ async function deleteEditingSpot() {
 }
 
 .track-row-meta {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.track-row-meta span {
+.track-meta-live {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  color: var(--color-danger);
+  font-weight: 600;
 }
 
 .track-icon-btn {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  margin-right: var(--space-1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5509,12 +5560,22 @@ async function deleteEditingSpot() {
   background: none;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .track-icon-btn:hover {
   background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.track-icon-btn--delete:hover {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger);
 }
 
 /* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe

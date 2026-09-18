@@ -18,14 +18,7 @@ import 'leaflet/dist/leaflet.css';
 // geladen sein.
 import 'leaflet-rotate';
 import { api } from '../api/client';
-import type {
-  Excursion,
-  LocationTrack,
-  ScheduleItem,
-  TrackPoint,
-  TrackVisibility,
-  User,
-} from '../api/types';
+import type { Excursion, LocationTrack, ScheduleItem, TrackPoint, User } from '../api/types';
 import { buildDayStations } from '../utils/dayStations';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useTripStore } from '../stores/trip';
@@ -402,42 +395,25 @@ async function chooseShareDuration(duration: ShareDuration) {
   await locationSharing.setDuration(duration);
 }
 
-// Standort-Aufzeichnung (stores/trackRecording.ts): läuft (wie die Standort-Freigabe oben) app-weit
-// unabhängig von dieser Kartenansicht – Klick öffnet nur die Start-Auswahl bzw. beendet direkt eine
-// bereits laufende Aufzeichnung, gleiches Teleport-Menü-Muster wie beim Share-Button.
-const recordMenuOpen = ref(false);
-const recordButtonRef = ref<HTMLButtonElement | null>(null);
-const recordMenuStyle = ref({ top: '0px', left: '0px' });
+// Standort-Aufzeichnung (stores/trackRecording.ts): 1-Tap-Schnellschalter auf der Karte (Option B).
+// Startet die Aufzeichnung direkt (privat) bzw. beendet sie sofort, wenn sie bereits läuft.
 const showTrackRecordingWarningModal = ref(false);
-const pendingRecordVisibility = ref<TrackVisibility>('private');
 const trackWarningDismissed = usePersistedRef<boolean>(
   'reisotor-track-recording-warning-acknowledged',
   false
 );
 
-async function toggleRecordMenu(event?: MouseEvent) {
+async function toggleRecord() {
   if (trackRecording.recording) {
     await trackRecording.stop();
     return;
   }
-  if (!recordMenuOpen.value) {
-    recordMenuStyle.value = computeTeleportMenuPosition(recordButtonRef, event, 216);
-    recordMenuOpen.value = true;
-  } else {
-    recordMenuOpen.value = false;
-  }
-}
-
-// Ist gerade eine Tour auf der Karte fokussiert (drawers.mapFocusExcursionId, siehe
-// focusedExcursion unten), wird eine neu gestartete Aufzeichnung automatisch mit ihr verknüpft –
-// diskreter, kontextabhängiger Weg für die "optional an eine Tour koppeln"-Anforderung, ohne ein
-// zusätzliches Auswahl-Steuerelement im ohnehin schon kleinen Menü zu brauchen.
-async function chooseRecordVisibility(visibility: TrackVisibility) {
-  recordMenuOpen.value = false;
   if (trackWarningDismissed.value) {
-    await trackRecording.start({ visibility, excursionId: drawers.mapFocusExcursionId });
+    await trackRecording.start({
+      visibility: 'private',
+      excursionId: drawers.mapFocusExcursionId,
+    });
   } else {
-    pendingRecordVisibility.value = visibility;
     showTrackRecordingWarningModal.value = true;
   }
 }
@@ -445,7 +421,7 @@ async function chooseRecordVisibility(visibility: TrackVisibility) {
 async function startRecordingConfirmed() {
   showTrackRecordingWarningModal.value = false;
   await trackRecording.start({
-    visibility: pendingRecordVisibility.value,
+    visibility: 'private',
     excursionId: drawers.mapFocusExcursionId,
   });
 }
@@ -1580,7 +1556,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
            Kartenansicht weiter - Klick öffnet bei Nicht-Aufzeichnung nur die Start-Auswahl, beendet
            bei laufender Aufzeichnung direkt (kein Menü nötig). -->
       <IconButton
-        ref="recordButtonRef"
         variant="floating"
         shape="circle"
         class="fit-btn record-btn"
@@ -1588,7 +1563,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
         :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
-        @click="toggleRecordMenu($event)"
+        @click="toggleRecord"
       />
       <Teleport to="body">
         <template v-if="focusMenuOpen">
@@ -1683,25 +1658,6 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               :icon="ACTION_ICONS.forever"
               label="Dauerhaft"
               @click="chooseShareDuration('forever')"
-            />
-          </PickerMenu>
-        </template>
-        <template v-if="recordMenuOpen">
-          <PickerMenu :style="recordMenuStyle" @close="recordMenuOpen = false">
-            <p v-if="focusedExcursion" class="picker-menu-hint">
-              <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" /> wird an „{{
-                focusedExcursion.title
-              }}" gekoppelt
-            </p>
-            <DropdownItem
-              :icon="ACTION_ICONS.private"
-              label="Privat aufzeichnen"
-              @click="chooseRecordVisibility('private')"
-            />
-            <DropdownItem
-              :icon="ACTION_ICONS.shared"
-              label="Geteilt aufzeichnen"
-              @click="chooseRecordVisibility('shared')"
             />
           </PickerMenu>
         </template>
