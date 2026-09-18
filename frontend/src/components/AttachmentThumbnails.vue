@@ -48,6 +48,9 @@ const STACK_ANGLES = [-2, 6, -7, 8];
 const STACK_X_OFFSETS = [0, 4, -5, 6];
 const STACK_Y_OFFSETS = [0, -1, 2, 1];
 
+let cachedTileOffsets: { centerX: number; centerY: number; width: number }[] = [];
+let cachedStackedHeight = 78;
+
 function clearActiveAnimation() {
   if (activeAnimTimeout !== null) {
     clearTimeout(activeAnimTimeout);
@@ -74,12 +77,26 @@ async function expandToFanned() {
     return;
   }
 
-  // 1. Positionen der Kacheln im gestapelten Zustand erfassen
+  // 1. Positionen der Kacheln im gestapelten Zustand erfassen (relativ zum Container)
   const stackTiles = rootRef.value.querySelectorAll<HTMLElement>(
     '.thumbnails-stacked-container .polaroid-tile'
   );
-  const tileRects = Array.from(stackTiles).map((el) => el.getBoundingClientRect());
-  const initialHeight = rootRef.value.getBoundingClientRect().height;
+  const rootRectBefore = rootRef.value.getBoundingClientRect();
+  const tileOffsets = Array.from(stackTiles).map((el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      centerX: r.left + r.width / 2 - rootRectBefore.left,
+      centerY: r.top + r.height / 2 - rootRectBefore.top,
+      width: r.width,
+    };
+  });
+  const initialHeight = rootRectBefore.height;
+  if (tileOffsets.length > 0) {
+    cachedTileOffsets = tileOffsets;
+  }
+  if (initialHeight > 0) {
+    cachedStackedHeight = initialHeight;
+  }
 
   // 2. Aufgefächerten Zustand mounten
   isCollapsing.value = false;
@@ -92,30 +109,29 @@ async function expandToFanned() {
   const removeThumbs = rootRef.value.querySelectorAll<HTMLElement>('.remove-thumb');
   const headerBar = rootRef.value.querySelector<HTMLElement>('.fanned-header-bar');
 
-  if (!fannedWraps.length || !tileRects.length) return;
+  if (!fannedWraps.length || !tileOffsets.length) return;
 
-  const targetHeight = rootRef.value.getBoundingClientRect().height;
+  const rootRectAfter = rootRef.value.getBoundingClientRect();
+  const targetHeight = rootRectAfter.height;
 
-  // 3. FLIP Invert: Kacheln sofort an der Position des Stapels initialisieren
+  // 3. FLIP Invert: Kacheln sofort an der relativen Position des Stapels initialisieren
   fannedWraps.forEach((wrap, i) => {
-    const tileRect = tileRects[Math.min(i, tileRects.length - 1)];
+    const tile = tileOffsets[Math.min(i, tileOffsets.length - 1)];
     const cardRect = wrap.getBoundingClientRect();
 
-    const tileCenterX = tileRect.left + tileRect.width / 2;
-    const tileCenterY = tileRect.top + tileRect.height / 2;
-    const cardCenterX = cardRect.left + cardRect.width / 2;
-    const cardCenterY = cardRect.top + cardRect.height / 2;
+    const cardCenterX = cardRect.left + cardRect.width / 2 - rootRectAfter.left;
+    const cardCenterY = cardRect.top + cardRect.height / 2 - rootRectAfter.top;
 
-    const dx = tileCenterX - cardCenterX;
-    const dy = tileCenterY - cardCenterY;
-    const scale = tileRect.width / (cardRect.width || 1);
+    const dx = tile.centerX - cardCenterX;
+    const dy = tile.centerY - cardCenterY;
+    const scale = tile.width / (cardRect.width || 1);
     const stackRot = STACK_ANGLES[Math.min(i, STACK_ANGLES.length - 1)] || 0;
 
     wrap.style.transformOrigin = 'center center';
     wrap.style.transition = 'none';
     wrap.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${stackRot}deg) scale(${scale})`;
     wrap.style.zIndex = String(fannedWraps.length - i);
-    if (i >= tileRects.length) {
+    if (i >= tileOffsets.length) {
       wrap.style.opacity = '0';
     }
   });
@@ -133,7 +149,7 @@ async function expandToFanned() {
   }
 
   rootRef.value.style.height = `${initialHeight}px`;
-  rootRef.value.style.overflow = 'hidden';
+  rootRef.value.style.overflow = 'visible';
 
   // 4. In den nächsten Frames die Animation flüssig starten (FLIP Play)
   requestAnimationFrame(() => {
@@ -195,7 +211,7 @@ async function expandToFanned() {
 }
 
 function collapseToStacked() {
-  if (!isFanned.value && !isCollapsing.value) return;
+  if (!isFanned.value || isCollapsing.value) return;
   clearActiveAnimation();
 
   if (isReducedMotion() || !rootRef.value) {
@@ -216,92 +232,115 @@ function collapseToStacked() {
 
   isCollapsing.value = true;
 
-  const currentHeight = rootRef.value.getBoundingClientRect().height;
-  const containerRect = rootRef.value.getBoundingClientRect();
+  const currentRootRect = rootRef.value.getBoundingClientRect();
+  const currentHeight = currentRootRect.height;
 
-  // Ziel-Position des Stapels (oben links, padding 4px)
-  const stackLeft = containerRect.left + 4;
-  const stackTop = containerRect.top + 4;
-  const tileBaseCenterX = stackLeft + 29;
-  const tileBaseCenterY = stackTop + 33;
-  const stackedHeight = 78;
-
+  // WICHTIG: Die Containerhöhe wird während des Fluges der Kacheln NICHT geschrumpft!
+  // Dadurch bleibt der Platz für den Stapel-Fächer während der Animation erhalten,
+  // kein Vertikal-Neuzentrieren, kein Scroll-Shift und kein Abschneiden per overflow: hidden.
   rootRef.value.style.height = `${currentHeight}px`;
-  rootRef.value.style.overflow = 'hidden';
-  rootRef.value.style.transition = 'height 0.4s cubic-bezier(0.32, 0.72, 0, 1)';
+  rootRef.value.style.overflow = 'visible';
+  rootRef.value.style.transition = 'none';
 
-  requestAnimationFrame(() => {
-    if (!rootRef.value) return;
+  // Ziel-Position des Stapels RELATIV zu rootRef:
+  // .thumbnails-stacked-container hat padding 4px top/left
+  // .polaroid-tile hat top 2px, left 3px, width 52px, height 62px
+  // -> Center X = 4 + 3 + 26 = 33px
+  // -> Center Y = 4 + 2 + 31 = 37px
+  const baseTileCenterX = cachedTileOffsets[0]?.centerX ?? 33;
+  const baseTileCenterY = cachedTileOffsets[0]?.centerY ?? 37;
+  const stackedHeight = cachedStackedHeight > 0 ? cachedStackedHeight : 78;
 
-    rootRef.value.style.height = `${stackedHeight}px`;
+  // Header-Bar und Remove-Buttons sofort sanft ausblenden
+  if (headerBar) {
+    headerBar.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+    headerBar.style.opacity = '0';
+    headerBar.style.transform = 'translate3d(0, -6px, 0)';
+  }
 
-    if (headerBar) {
-      headerBar.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
-      headerBar.style.opacity = '0';
-      headerBar.style.transform = 'translate3d(0, -6px, 0)';
+  removeThumbs.forEach((thumb) => {
+    thumb.style.transition = 'transform 0.16s ease, opacity 0.14s ease';
+    thumb.style.transform = 'scale(0)';
+    thumb.style.opacity = '0';
+  });
+
+  // Kacheln in den Stapel fliegen lassen (mit lokaler, verschiebungsresistenter Koordinatenberechnung):
+  fannedWraps.forEach((wrap, i) => {
+    const cardRect = wrap.getBoundingClientRect();
+    const cardCenterX = cardRect.left + cardRect.width / 2 - currentRootRect.left;
+    const cardCenterY = cardRect.top + cardRect.height / 2 - currentRootRect.top;
+
+    const targetCenterX =
+      cachedTileOffsets[i]?.centerX ?? baseTileCenterX + (STACK_X_OFFSETS[i % 4] || 0);
+    const targetCenterY =
+      cachedTileOffsets[i]?.centerY ?? baseTileCenterY + (STACK_Y_OFFSETS[i % 4] || 0);
+    const targetRot = STACK_ANGLES[i % 4] || 0;
+    const isDoc = !isImage(normalizedList.value[i]);
+    const targetWidth = cachedTileOffsets[i]?.width ?? (isDoc ? 44 : 52);
+    const targetScale = targetWidth / (cardRect.width || 1);
+
+    const dx = targetCenterX - cardCenterX;
+    const dy = targetCenterY - cardCenterY;
+
+    const reverseIndex = fannedWraps.length - 1 - i;
+    const delay = reverseIndex * 20;
+
+    wrap.style.transformOrigin = 'center center';
+    wrap.style.zIndex = String(fannedWraps.length - i);
+    wrap.style.transition = `transform 0.32s cubic-bezier(0.25, 1, 0.5, 1) ${delay}ms, opacity 0.26s ease ${delay}ms`;
+    wrap.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${targetRot}deg) scale(${targetScale})`;
+    if (i >= 4) {
+      wrap.style.opacity = '0';
     }
+  });
 
-    removeThumbs.forEach((thumb) => {
-      thumb.style.transition = 'transform 0.16s ease, opacity 0.14s ease';
-      thumb.style.transform = 'scale(0)';
-      thumb.style.opacity = '0';
-    });
+  // Flugdauer der Kacheln (stabil und zügig)
+  const flightDuration = Math.min(420, (fannedWraps.length - 1) * 20 + 320);
 
-    fannedWraps.forEach((wrap, i) => {
-      const cardRect = wrap.getBoundingClientRect();
-      const cardCenterX = cardRect.left + cardRect.width / 2;
-      const cardCenterY = cardRect.top + cardRect.height / 2;
-
-      const targetCenterX = tileBaseCenterX + (STACK_X_OFFSETS[i % 4] || 0);
-      const targetCenterY = tileBaseCenterY + (STACK_Y_OFFSETS[i % 4] || 0);
-      const targetRot = STACK_ANGLES[i % 4] || 0;
-      const targetScale = 52 / (cardRect.width || 1);
-
-      const dx = targetCenterX - cardCenterX;
-      const dy = targetCenterY - cardCenterY;
-
-      const reverseIndex = fannedWraps.length - 1 - i;
-      const delay = reverseIndex * 24;
-
-      wrap.style.transformOrigin = 'center center';
-      wrap.style.zIndex = String(fannedWraps.length - i);
-      wrap.style.transition = `transform 0.38s cubic-bezier(0.25, 1, 0.5, 1) ${delay}ms, opacity 0.3s ease ${delay}ms`;
-      wrap.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${targetRot}deg) scale(${targetScale})`;
-      if (i >= 4) {
-        wrap.style.opacity = '0';
-      }
-    });
-
-    const totalDuration = Math.min(550, (fannedWraps.length - 1) * 24 + 400);
-    activeAnimTimeout = window.setTimeout(() => {
+  activeAnimTimeout = window.setTimeout(() => {
+    if (!rootRef.value) {
       isFanned.value = false;
       isCollapsing.value = false;
+      return;
+    }
 
-      if (rootRef.value) {
-        rootRef.value.style.height = '';
-        rootRef.value.style.overflow = '';
-        rootRef.value.style.transition = '';
-      }
-      if (headerBar) {
-        headerBar.style.transition = '';
-        headerBar.style.transform = '';
-        headerBar.style.opacity = '';
-      }
-      fannedWraps.forEach((wrap) => {
-        wrap.style.transition = '';
-        wrap.style.transform = '';
-        wrap.style.opacity = '';
-        wrap.style.transformOrigin = '';
-        wrap.style.zIndex = '';
-      });
-      removeThumbs.forEach((thumb) => {
-        thumb.style.transition = '';
-        thumb.style.transform = '';
-        thumb.style.opacity = '';
-      });
-      activeAnimTimeout = null;
-    }, totalDuration);
-  });
+    // 1. Kacheln sind am Ziel angekommen: Zustand auf gestapelt wechseln
+    isFanned.value = false;
+    isCollapsing.value = false;
+
+    // 2. Jetzt, wo der Stapel oben fertig ist, schrumpft die Resthöhe sanft auf die Stapelhöhe
+    requestAnimationFrame(() => {
+      if (!rootRef.value) return;
+      rootRef.value.style.transition = 'height 0.26s cubic-bezier(0.32, 0.72, 0, 1)';
+      rootRef.value.style.height = `${stackedHeight}px`;
+
+      activeAnimTimeout = window.setTimeout(() => {
+        if (rootRef.value) {
+          rootRef.value.style.height = '';
+          rootRef.value.style.overflow = '';
+          rootRef.value.style.transition = '';
+        }
+        if (headerBar) {
+          headerBar.style.transition = '';
+          headerBar.style.transform = '';
+          headerBar.style.opacity = '';
+        }
+        fannedWraps.forEach((wrap) => {
+          wrap.style.transition = '';
+          wrap.style.transform = '';
+          wrap.style.opacity = '';
+          wrap.style.transformOrigin = '';
+          wrap.style.zIndex = '';
+        });
+        removeThumbs.forEach((thumb) => {
+          thumb.style.transition = '';
+          thumb.style.transform = '';
+          thumb.style.opacity = '';
+        });
+        activeAnimTimeout = null;
+      }, 280);
+    });
+  }, flightDuration);
 }
 
 watch(
@@ -377,7 +416,12 @@ const stackTooltip = computed(() => {
 </script>
 
 <template>
-  <div v-if="normalizedList.length" ref="rootRef" class="attachment-thumbnails">
+  <div
+    v-if="normalizedList.length"
+    ref="rootRef"
+    class="attachment-thumbnails"
+    :class="{ 'is-collapsing': isCollapsing }"
+  >
     <!-- 1. STATUS: GESTAPELT (Mini Polaroid Stack mit Büroklammer) -->
     <div v-if="!isFanned && !isCollapsing" class="thumbnails-stacked-container">
       <PolaroidStack
@@ -514,6 +558,10 @@ const stackTooltip = computed(() => {
   margin-bottom: var(--space-3);
   position: relative;
   box-sizing: border-box;
+}
+
+.attachment-thumbnails.is-collapsing {
+  pointer-events: none;
 }
 
 /* ==========================================================================
