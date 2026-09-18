@@ -341,6 +341,7 @@ async function toggleDone(item: TodoItem) {
     title: item.title,
     assigned_to_user_id: item.assigned_to_user_id,
     due_date: item.due_date ?? undefined,
+    period: item.period ?? undefined,
     priority: item.priority,
     note: item.note ?? undefined,
     done: !item.done,
