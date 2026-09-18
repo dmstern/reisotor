@@ -84,7 +84,7 @@ export const TOAST_TIMEOUT_OPTIONS = [
 
 export function getPresetGlassValues(style: GlassStyle) {
   if (style === 'glass') {
-    return { opacity: 85, blur: 12 };
+    return { opacity: 42, blur: 6 };
   } else if (style === 'frosted') {
     return { opacity: 80, blur: 24 };
   } else if (style === 'opaque') {
@@ -155,21 +155,31 @@ function loadGlassStyle(): GlassStyle {
 }
 
 function loadGlassOpacity(): number {
+  const style = loadGlassStyle();
+  if (style !== 'custom') {
+    const preset = getPresetGlassValues(style);
+    if (preset) return preset.opacity;
+  }
   const stored = safeLocalStorageGet(GLASS_OPACITY_KEY);
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
     if (!isNaN(parsed) && parsed >= 20 && parsed <= 100) return parsed;
   }
-  return 85;
+  return 42;
 }
 
 function loadGlassBlur(): number {
+  const style = loadGlassStyle();
+  if (style !== 'custom') {
+    const preset = getPresetGlassValues(style);
+    if (preset) return preset.blur;
+  }
   const stored = safeLocalStorageGet(GLASS_BLUR_KEY);
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
     if (!isNaN(parsed) && parsed >= 0 && parsed <= 30) return parsed;
   }
-  return 12;
+  return 6;
 }
 
 function loadPrimaryColor(): string {
@@ -368,15 +378,27 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       ) {
         glassStyle.value = stored.glassStyle;
       }
-      if (
-        typeof stored.glassOpacity === 'number' &&
-        stored.glassOpacity >= 20 &&
-        stored.glassOpacity <= 100
-      ) {
-        glassOpacity.value = stored.glassOpacity;
-      }
-      if (typeof stored.glassBlur === 'number' && stored.glassBlur >= 0 && stored.glassBlur <= 30) {
-        glassBlur.value = stored.glassBlur;
+      if (glassStyle.value !== 'custom') {
+        const preset = getPresetGlassValues(glassStyle.value);
+        if (preset) {
+          glassOpacity.value = preset.opacity;
+          glassBlur.value = preset.blur;
+        }
+      } else {
+        if (
+          typeof stored.glassOpacity === 'number' &&
+          stored.glassOpacity >= 20 &&
+          stored.glassOpacity <= 100
+        ) {
+          glassOpacity.value = stored.glassOpacity;
+        }
+        if (
+          typeof stored.glassBlur === 'number' &&
+          stored.glassBlur >= 0 &&
+          stored.glassBlur <= 30
+        ) {
+          glassBlur.value = stored.glassBlur;
+        }
       }
       if (stored.primaryColor && /^#[0-9a-fA-F]{6}$/.test(stored.primaryColor)) {
         primaryColor.value = stored.primaryColor;
