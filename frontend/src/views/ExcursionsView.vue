@@ -2487,6 +2487,7 @@ function onSpotShowOnMap(spot: Spot) {
 // Tour-Karte im mobilen Drawer ans obere Ende des sichtbaren Bereichs.
 function onExcursionShowOnMap(excursionId: number) {
   sheetState.value = 'partial';
+  expandedExcursionId.value = excursionId;
   drawers.openMapForExcursion(excursionId);
   if (isSheetOverlayMode.value) {
     nextTick(() => {
