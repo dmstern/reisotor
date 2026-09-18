@@ -86,10 +86,23 @@ test.describe('Standort-Aufzeichnung', () => {
 
     // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt. aria-label statt Emoji-Text
     // (group="actions" rendert seit #168 immer SVG, siehe ExcursionsView.vue).
-    const visibilityBtn = trackRow.locator('.track-icon-btn').first();
-    await expect(visibilityBtn).toHaveAttribute('aria-label', 'Mit allen teilen');
+    const visibilityBtn = trackRow.locator('[aria-label="Mit allen teilen"]');
+    await expect(visibilityBtn).toBeVisible();
     await visibilityBtn.click();
-    await expect(visibilityBtn).toHaveAttribute('aria-label', 'Teilen zurücknehmen');
+    await expect(trackRow.locator('[aria-label="Teilen zurücknehmen"]')).toBeVisible();
+
+    // Track bearbeiten: Name vergeben
+    const editBtn = trackRow.locator('[aria-label="Aufzeichnung bearbeiten"]');
+    await expect(editBtn).toBeVisible();
+    await editBtn.click();
+
+    const trackModal = page.locator('.modal', { hasText: 'Aufzeichnung bearbeiten' });
+    await expect(trackModal).toBeVisible();
+    await trackModal.getByPlaceholder('z. B. Wanderung zur Berghütte').fill('Morgenrunde');
+    await trackModal.getByRole('button', { name: 'Speichern' }).click();
+    await expect(trackModal).not.toBeVisible();
+
+    await expect(trackRow.locator('.track-row-title')).toHaveText('Morgenrunde');
   });
 
   // Pausieren (z. B. Stromsparen bei längerem Aufenthalt an einem Ort, Nutzer-Anforderung) hängt
