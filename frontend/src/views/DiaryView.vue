@@ -30,7 +30,6 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatDate } from '../utils/dateFormat';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
-import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -512,6 +511,14 @@ async function closeEditForm() {
   editingEntry.value = null;
 }
 
+async function deleteEditingEntry() {
+  if (!editingEntry.value) return;
+  const id = editingEntry.value.id;
+  editDraft.clear();
+  editingEntry.value = null;
+  await removeEntry(id);
+}
+
 async function removeEntry(id: number) {
   await api.delete(`/diary/${id}`);
   entries.value = entries.value.filter((e) => e.id !== id);
@@ -757,11 +764,6 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           <PendingSyncBadge v-if="entry._pending" />
           <div class="entry-actions">
             <EditButton small @click="startEdit(entry)" />
-            <DeleteButton
-              v-if="entry.author_id === auth.user?.id"
-              small
-              @click="removeEntry(entry.id)"
-            />
           </div>
         </header>
 
@@ -1011,6 +1013,16 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         </fieldset>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
+          <Button
+            v-if="editingEntry?.author_id === auth.user?.id"
+            type="button"
+            variant="danger"
+            size="sm"
+            :icon="ACTION_ICONS.delete"
+            @click="deleteEditingEntry"
+          >
+            Löschen
+          </Button>
           <div class="spacer"></div>
           <Button type="submit">{{
             editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern'

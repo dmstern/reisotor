@@ -11,7 +11,6 @@ import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { isEmptyRichText } from '../utils/richText';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
-import DeleteButton from '../components/DeleteButton.vue';
 import SocialRow from '../components/SocialRow.vue';
 import Comments from '../components/Comments.vue';
 import FileAttachments from '../components/FileAttachments.vue';
@@ -235,6 +234,14 @@ async function closeEditForm() {
   editingNote.value = null;
 }
 
+async function deleteEditingNote() {
+  if (!editingNote.value) return;
+  const id = editingNote.value.id;
+  editDraft.clear();
+  editingNote.value = null;
+  await remove(id);
+}
+
 async function remove(id: number) {
   error.value = '';
   try {
@@ -272,7 +279,6 @@ async function remove(id: number) {
           <PendingSyncBadge v-if="note._pending" />
           <div class="note-actions">
             <EditButton small @click="startEdit(note)" />
-            <DeleteButton small @click="remove(note.id)" />
           </div>
         </div>
         <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
@@ -315,6 +321,15 @@ async function remove(id: number) {
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            :icon="ACTION_ICONS.delete"
+            @click="deleteEditingNote"
+          >
+            Löschen
+          </Button>
           <div class="spacer"></div>
           <Button type="submit">{{
             editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern'
