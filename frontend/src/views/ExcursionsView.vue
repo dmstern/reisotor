@@ -19,6 +19,7 @@ import type {
   ExcursionLike,
   IdeaRole,
   LocationTrack,
+  TrackVisibility,
   ScheduleItem,
   Spot,
   User,
@@ -141,6 +142,40 @@ async function toggleTrackVisibility(track: LocationTrack) {
   await tracksStore.update(track.id, {
     visibility: track.visibility === 'shared' ? 'private' : 'shared',
   });
+}
+
+const editingTrack = ref<LocationTrack | null>(null);
+const editTrackTitle = ref('');
+const editTrackVisibility = ref<TrackVisibility>('private');
+
+function startEditTrack(track: LocationTrack) {
+  editingTrack.value = track;
+  editTrackTitle.value = track.title ?? '';
+  editTrackVisibility.value = track.visibility;
+}
+
+function closeEditTrack() {
+  editingTrack.value = null;
+}
+
+async function submitEditTrack() {
+  if (!editingTrack.value) return;
+  const rawTitle = editTrackTitle.value.trim();
+  const title = rawTitle ? rawTitle : null;
+  await tracksStore.update(editingTrack.value.id, {
+    title,
+    visibility: editTrackVisibility.value,
+  });
+  closeEditTrack();
+}
+
+async function deleteEditingTrack() {
+  if (!editingTrack.value) return;
+  const confirmed = window.confirm('Möchtest du diese Aufzeichnung wirklich löschen?');
+  if (!confirmed) return;
+  const id = editingTrack.value.id;
+  closeEditTrack();
+  await removeTrack(id);
 }
 
 async function removeTrack(id: number) {
@@ -4160,6 +4195,15 @@ async function deleteEditingSpot() {
                     <button
                       type="button"
                       class="track-icon-btn"
+                      title="Aufzeichnung bearbeiten"
+                      aria-label="Aufzeichnung bearbeiten"
+                      @click="startEditTrack(track)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.edit" :size="15" group="actions" />
+                    </button>
+                    <button
+                      type="button"
+                      class="track-icon-btn"
                       :title="
                         track.visibility === 'shared'
                           ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
@@ -4198,6 +4242,51 @@ async function deleteEditingSpot() {
             v-model="showTrackRecordingWarningModal"
             @confirm="startRecordingConfirmed"
           />
+
+          <!-- Aufzeichnung bearbeiten (Name, Sichtbarkeit) -->
+          <Modal
+            :model-value="editingTrack !== null"
+            title="Aufzeichnung bearbeiten"
+            @update:model-value="(v) => !v && closeEditTrack()"
+          >
+            <form class="edit-form" @submit.prevent="submitEditTrack">
+              <FormField icon="title" label="Name (optional)">
+                <Input
+                  v-model="editTrackTitle"
+                  type="text"
+                  placeholder="z. B. Wanderung zur Berghütte"
+                  :maxlength="100"
+                />
+              </FormField>
+              <FormField icon="visibility" label="Sichtbarkeit">
+                <Select v-model="editTrackVisibility">
+                  <option value="private">🔒 Nur für mich sichtbar (privat)</option>
+                  <option value="shared">👥 Für alle Mitreisenden sichtbar</option>
+                </Select>
+              </FormField>
+              <div class="actions-row">
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  :icon="ACTION_ICONS.delete"
+                  @click="deleteEditingTrack"
+                >
+                  Löschen
+                </Button>
+                <div class="spacer"></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="btn-cancel"
+                  @click="closeEditTrack"
+                >
+                  Abbrechen
+                </Button>
+                <Button type="submit">Speichern</Button>
+              </div>
+            </form>
+          </Modal>
 
           <!-- Schnelles Bearbeiten einer Teilstrecke direkt aus der Leg-Card (#361) -->
           <LegTransportModal
