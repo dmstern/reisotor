@@ -4411,10 +4411,21 @@ async function deleteEditingSpot() {
 }
 
 /* Im collapsed-Zustand ist die Anfasser-Zeile der komplette sichtbare Inhalt der Pille (siehe
-   .spots-col.collapsed oben) - bekommt deshalb symmetrisches Polster (auch unten) statt der
-   normalen 0, die davon ausgeht, dass darunter noch .spots-col-body folgt. */
+   .spots-col.collapsed oben) - volle Höhe (100%), zentriertes Flex-Layout und seitliches Polster
+   (var(--space-3) = 16px), damit die runden 30px-Stufenbuttons (mit 1px Rand) nach oben, unten und
+   zu den Seiten exakt denselben 17px-Abstand zur Außenkante der 64px-Pille (Radius 32px) haben und
+   sich perfekt konzentrisch in die Kappen schmiegen. */
 .spots-col.collapsed .sheet-handle-row {
-  padding-bottom: var(--space-3);
+  height: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 0 var(--space-3);
+}
+
+.spots-col.collapsed .sheet-handle {
+  padding: 0;
+  margin: 0;
+  justify-content: center;
 }
 
 .sheet-handle {

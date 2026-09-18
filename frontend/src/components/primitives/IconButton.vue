@@ -46,7 +46,7 @@ const emit = defineEmits<{
     class="icon-btn"
     @click="emit('click', $event)"
   >
-    <slot />
+    <slot v-if="$slots.default" />
   </Button>
 </template>
 
