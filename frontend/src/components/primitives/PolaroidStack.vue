@@ -638,6 +638,21 @@ function handleClick(e: Event) {
   z-index: 5;
 }
 
+@keyframes paperclipAttach {
+  0% {
+    transform: translate3d(0, -12px, 0) rotate(-14deg);
+    opacity: 0;
+  }
+  65% {
+    transform: translate3d(0, 1px, 0) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-6deg);
+    opacity: 1;
+  }
+}
+
 /* Büroklammer am oberen Rand */
 .polaroid-paperclip-wrap {
   position: absolute;
@@ -648,6 +663,13 @@ function handleClick(e: Event) {
   z-index: 7;
   pointer-events: none;
   transform: rotate(-6deg);
+  animation: paperclipAttach 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polaroid-paperclip-wrap {
+    animation: none;
+  }
 }
 
 .polaroid-paperclip {
