@@ -206,12 +206,12 @@ const previewTodos = computed(() => {
 
 .todo-empty-box {
   font-size: 0.46rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .todo-empty-text {
   font-size: 0.46rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 

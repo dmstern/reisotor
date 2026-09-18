@@ -210,7 +210,7 @@ const btnClasses = computed(() => [
 
 .btn--primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-contrast, white);
   border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   box-shadow: var(--shadow-sm);
 }
@@ -286,7 +286,7 @@ const btnClasses = computed(() => [
 
 .btn--card-action:hover:not(:disabled) {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-contrast, white);
   border-color: var(--color-primary);
 }
 
@@ -316,7 +316,7 @@ const btnClasses = computed(() => [
 .btn--floating.is-active,
 .btn--floating.active {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-contrast, white);
   border-color: var(--color-primary);
 }
 

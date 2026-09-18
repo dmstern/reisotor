@@ -14,6 +14,17 @@ import AxeBuilder from '@axe-core/playwright';
 const checkContrast = Boolean(process.env.CHECK_CONTRAST);
 
 async function scanPageA11y(page: Page) {
+  await page.evaluate(() => document.fonts.ready);
+  await page
+    .evaluate(() => {
+      const finiteAnims = document.getAnimations().filter((a) => {
+        const it = a.effect?.getTiming()?.iterations;
+        return it !== Infinity && it !== undefined;
+      });
+      return Promise.all(finiteAnims.map((a) => a.finished));
+    })
+    .catch(() => {});
+
   const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']);
   if (!checkContrast) {
     builder.disableRules(['color-contrast']);
@@ -62,6 +73,7 @@ test.describe('Accessibility (a11y)', () => {
     test('dashboard page accessibility scan', async ({ page }) => {
       await page.goto('/');
       await expect(page.locator('.tile-btn', { hasText: 'Kalender' })).toBeVisible();
+      await expect(page.locator('.animate-cascade-children > *:last-child')).toBeVisible();
 
       const results = await scanPageA11y(page);
       expect(results.violations, formatViolations(results.violations)).toEqual([]);

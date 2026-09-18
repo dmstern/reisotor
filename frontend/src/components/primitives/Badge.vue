@@ -63,13 +63,13 @@ withDefaults(
 
 .badge--danger {
   background: var(--color-danger-tint);
-  color: var(--color-danger);
+  color: var(--color-danger-dark, var(--color-danger));
   border-color: transparent;
 }
 
 .badge--accent {
   background: var(--color-highlight);
-  color: var(--color-accent);
+  color: var(--color-accent-dark, var(--color-accent));
   border-color: var(--color-highlight-border);
 }
 

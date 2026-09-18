@@ -128,20 +128,20 @@ const dayNum = computed(() => {
 
 .day-chip.active {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-primary-contrast, #fff);
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-sm);
 }
 
 .day-chip.active .day-chip-weekday {
-  color: rgba(255, 255, 255, 0.85);
+  color: color-mix(in srgb, var(--color-primary-contrast, #fff) 85%, transparent);
 }
 
 .day-chip.active .day-chip-num {
-  color: #fff;
+  color: var(--color-primary-contrast, #fff);
 }
 
 .day-chip.active .day-chip-dot {
-  background: #fff;
+  background: var(--color-primary-contrast, #fff);
 }
 </style>
