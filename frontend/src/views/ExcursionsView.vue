@@ -2285,9 +2285,13 @@ const canCollapseSheet = computed(() => sheetState.value !== 'collapsed');
 // dahinter, weil map.setView() die Karten-MITTE nimmt, nicht die tatsächlich sichtbare Restfläche
 // oberhalb des Sheets. Nur auf mobile relevant (Desktop: eigene Spalte statt Overlay, siehe
 // @container weiter unten im CSS).
-const currentSheetHeightPx = computed(
-  () => sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value)
-);
+// Beim Maximieren der Schublade ('full') bleibt oben nur ein extrem schmaler Kartenstreifen übrig.
+// Hier wird der Kartenausschnitt bewusst nicht weiter nach oben gestaucht/neu ausgerichtet, sondern
+// der zuletzt verwendete Ausschnitt (Höhe von 'partial') beibehalten.
+const currentSheetHeightPx = computed(() => {
+  const targetState = sheetState.value === 'full' ? 'partial' : sheetState.value;
+  return sheetHeightPx(targetState);
+});
 
 const appMainWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
 const spotsColRightPx = ref(
