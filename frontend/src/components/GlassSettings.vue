@@ -34,8 +34,8 @@ function selectPreset(val: string) {
 const isDefault = computed(() => {
   return (
     uiSettings.glassStyle === 'glass' &&
-    uiSettings.glassOpacity === 85 &&
-    uiSettings.glassBlur === 12
+    uiSettings.glassOpacity === 42 &&
+    uiSettings.glassBlur === 6
   );
 });
 
@@ -44,7 +44,7 @@ function resetGlass() {
 }
 
 function onSliderChange() {
-  if (uiSettings.glassOpacity === 85 && uiSettings.glassBlur === 12) {
+  if (uiSettings.glassOpacity === 42 && uiSettings.glassBlur === 6) {
     uiSettings.glassStyle = 'glass';
   } else if (uiSettings.glassOpacity === 80 && uiSettings.glassBlur === 24) {
     uiSettings.glassStyle = 'frosted';
@@ -338,10 +338,10 @@ const previewStyle = computed(() => {
   padding: 10px 24px;
   border-radius: 999px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  background: rgb(255 255 255 / var(--preview-glass-opacity, 0.85));
-  border: 1px solid rgb(232 226 217 / calc(var(--preview-glass-opacity, 0.85) * 0.9));
-  backdrop-filter: blur(var(--preview-glass-blur, 12px)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--preview-glass-blur, 12px)) saturate(180%);
+  background: rgb(255 255 255 / var(--preview-glass-opacity, 0.42));
+  border: 1px solid rgb(232 226 217 / calc(var(--preview-glass-opacity, 0.42) * 0.9));
+  backdrop-filter: blur(var(--preview-glass-blur, 6px)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--preview-glass-blur, 6px)) saturate(180%);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -352,14 +352,14 @@ const previewStyle = computed(() => {
 
 :root[data-theme='dark'] .preview-glass-pill,
 [data-theme='dark'] .preview-glass-pill {
-  background: rgb(35 34 32 / var(--preview-glass-opacity, 0.85));
-  border-color: rgb(56 53 47 / calc(var(--preview-glass-opacity, 0.85) * 0.9));
+  background: rgb(35 34 32 / var(--preview-glass-opacity, 0.42));
+  border-color: rgb(56 53 47 / calc(var(--preview-glass-opacity, 0.42) * 0.9));
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .preview-glass-pill {
-    background: rgb(35 34 32 / var(--preview-glass-opacity, 0.85));
-    border-color: rgb(56 53 47 / calc(var(--preview-glass-opacity, 0.85) * 0.9));
+    background: rgb(35 34 32 / var(--preview-glass-opacity, 0.42));
+    border-color: rgb(56 53 47 / calc(var(--preview-glass-opacity, 0.42) * 0.9));
   }
 }
 

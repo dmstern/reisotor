@@ -103,12 +103,17 @@ export function useTripEditor() {
     closeForm();
   }
 
-  async function onDelete(trip: Trip) {
+  async function onDelete(trip?: Trip) {
+    const target = trip ?? editingTrip.value;
+    if (!target) return;
     const confirmed = window.confirm(
-      `Urlaub "${trip.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Touren, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`
+      `Urlaub "${target.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Touren, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`
     );
     if (!confirmed) return;
-    await tripStore.deleteTrip(trip.id);
+    if (editingTrip.value?.id === target.id) {
+      closeForm();
+    }
+    await tripStore.deleteTrip(target.id);
   }
 
   return {

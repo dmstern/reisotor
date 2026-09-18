@@ -21,6 +21,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import { useToast } from '../composables/useToast';
 import { sortWithDoneLast } from '../composables/useCheckedSort';
 import { isFullyPacked } from '../utils/packing';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -237,6 +238,13 @@ async function submitEdit() {
   editingItem.value = null;
 }
 
+async function deleteEditingItem() {
+  if (!editingItem.value) return;
+  const id = editingItem.value.id;
+  editingItem.value = null;
+  await remove(id);
+}
+
 async function remove(id: number) {
   await api.delete(`/packing/${id}`);
   items.value = items.value.filter((i) => i.id !== id);
@@ -369,7 +377,6 @@ async function quickAdd(list: ListGroup, label: string) {
                 :item="item"
                 :highlighted="highlightedIds.has(item.id)"
                 @update-counts="updateCounts"
-                @remove="remove"
                 @edit="startEdit"
               />
             </TransitionGroup>
@@ -432,6 +439,15 @@ async function quickAdd(list: ListGroup, label: string) {
           </Select>
         </FormField>
         <div class="actions-row">
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            :icon="ACTION_ICONS.delete"
+            @click="deleteEditingItem"
+          >
+            Löschen
+          </Button>
           <div class="spacer"></div>
           <Button type="submit">Speichern</Button>
         </div>
@@ -557,6 +573,11 @@ async function quickAdd(list: ListGroup, label: string) {
 
 .list-section {
   min-width: 0;
+}
+
+.list-section:focus-within {
+  position: relative;
+  z-index: 5;
 }
 
 .list-header {

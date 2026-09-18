@@ -10,6 +10,7 @@ import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 
 import CheckboxCard from './primitives/CheckboxCard.vue';
+import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import { IconCloud } from '@tabler/icons-vue';
@@ -29,7 +30,10 @@ const props = defineProps<{
   locationError?: boolean;
   initialTab?: 'general' | 'settings';
 }>();
-const emit = defineEmits<{ (e: 'submit', data: TripFormData): void }>();
+const emit = defineEmits<{
+  (e: 'submit', data: TripFormData): void;
+  (e: 'delete'): void;
+}>();
 
 const TABS: TabBarItem[] = [
   { key: 'general', label: 'Allgemein', icon: ACTION_ICONS.edit },
@@ -38,6 +42,7 @@ const TABS: TabBarItem[] = [
 
 const activeTab = ref<'general' | 'settings'>(props.initialTab ?? 'general');
 const showTabs = computed(() => Boolean(props.initial));
+const canDelete = computed(() => Boolean(props.initial));
 
 function blankForm(): TripFormData {
   return {
@@ -169,106 +174,66 @@ function onSubmit() {
         />
       </label>
 
-      <fieldset class="collapsible-fieldset">
-        <legend>
-          <Button
-            type="button"
-            variant="ghost"
-            class="collapsible-toggle"
-            :aria-expanded="showOptional"
-            @click="showOptional = !showOptional"
-          >
-            <span>Optionale Angaben</span>
-            <AppIcon
-              :icon="ACTION_ICONS.chevronDown"
-              :size="14"
-              group="actions"
-              class="caret"
-              :class="{ open: showOptional }"
-            />
-          </Button>
-        </legend>
-        <div v-if="showOptional" class="collapsible-content">
-          <div class="dates-row">
-            <label for="auto-id-1788301175440-12">
-              Start (optional)
-              <Input id="auto-id-1788301175440-12" v-model="form.start_date" type="date" />
-            </label>
-            <label for="auto-id-1788301175440-13">
-              Ende (optional)
-              <Input id="auto-id-1788301175440-13" v-model="form.end_date" type="date" />
-            </label>
-          </div>
-          <p v-if="dateError" class="hint error">
-            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-            {{ dateError }}
-          </p>
+      <CollapsibleFieldset v-model="showOptional" label="Optionale Angaben">
+        <div class="dates-row">
+          <label for="auto-id-1788301175440-12">
+            Start (optional)
+            <Input id="auto-id-1788301175440-12" v-model="form.start_date" type="date" />
+          </label>
+          <label for="auto-id-1788301175440-13">
+            Ende (optional)
+            <Input id="auto-id-1788301175440-13" v-model="form.end_date" type="date" />
+          </label>
+        </div>
+        <p v-if="dateError" class="hint error">
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+          {{ dateError }}
+        </p>
 
-          <label for="auto-id-1788301175440-14">
-            Ziel (optional)
+        <label for="auto-id-1788301175440-14">
+          Ziel (optional)
+          <Input
+            id="auto-id-1788301175440-14"
+            v-model="form.destination"
+            type="text"
+            placeholder="z. B. Toskana"
+          />
+        </label>
+
+        <Card class="location-box">
+          <span class="field-label">Standort (optional)</span>
+          <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
+          <label for="auto-id-1788301175440-15">
+            Maps-Link (Google/Apple)
             <Input
-              id="auto-id-1788301175440-14"
-              v-model="form.destination"
-              type="text"
-              placeholder="z. B. Toskana"
+              id="auto-id-1788301175440-15"
+              v-model="form.maps_link"
+              type="url"
+              @blur="checkMapsLink"
             />
           </label>
-
-          <Card class="location-box">
-            <span class="field-label">Standort (optional)</span>
-            <p class="hint">
-              Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.
-            </p>
-            <label for="auto-id-1788301175440-15">
-              Maps-Link (Google/Apple)
-              <Input
-                id="auto-id-1788301175440-15"
-                v-model="form.maps_link"
-                type="url"
-                @blur="checkMapsLink"
-              />
-            </label>
-            <p v-if="mapsLinkResolved === true" class="hint success">
-              <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-              erkannt – erscheint auf der Karte
-            </p>
-            <p v-if="mapsLinkResolved === false" class="hint">
-              Standort konnte nicht automatisch erkannt werden.
-            </p>
-            <p v-if="locationError" class="hint error">
-              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-              konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um
-              ihn manuell zu setzen.
-            </p>
-            <fieldset class="collapsible-fieldset">
-              <legend>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  class="collapsible-toggle picker-toggle"
-                  :aria-expanded="pickerOpen"
-                  @click="pickerOpen = !pickerOpen"
-                >
-                  <span>
-                    <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
-                    Standort manuell setzen
-                  </span>
-                  <AppIcon
-                    :icon="ACTION_ICONS.chevronDown"
-                    :size="14"
-                    group="actions"
-                    class="caret"
-                    :class="{ open: pickerOpen }"
-                  />
-                </Button>
-              </legend>
-              <div v-if="pickerOpen" class="collapsible-content">
-                <LocationPicker v-model="manualPin" />
-              </div>
-            </fieldset>
-          </Card>
-        </div>
-      </fieldset>
+          <p v-if="mapsLinkResolved === true" class="hint success">
+            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
+            – erscheint auf der Karte
+          </p>
+          <p v-if="mapsLinkResolved === false" class="hint">
+            Standort konnte nicht automatisch erkannt werden.
+          </p>
+          <p v-if="locationError" class="hint error">
+            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte
+            auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell
+            zu setzen.
+          </p>
+          <CollapsibleFieldset
+            v-model="pickerOpen"
+            label="Standort manuell setzen"
+            :icon="ACTION_ICONS.myLocation"
+            icon-group="actions"
+          >
+            <LocationPicker v-model="manualPin" />
+          </CollapsibleFieldset>
+        </Card>
+      </CollapsibleFieldset>
     </div>
 
     <div v-if="showTabs && activeTab === 'settings'" class="tab-content settings-tab">
@@ -306,6 +271,16 @@ function onSubmit() {
     </div>
 
     <div class="actions-row">
+      <Button
+        v-if="canDelete"
+        type="button"
+        variant="danger"
+        size="sm"
+        :icon="ACTION_ICONS.delete"
+        @click="emit('delete')"
+      >
+        Löschen
+      </Button>
       <div class="spacer"></div>
       <Button type="submit">{{ submitLabel ?? 'Speichern' }}</Button>
     </div>
@@ -376,79 +351,6 @@ label,
   align-items: center;
   gap: 4px;
   color: var(--color-danger);
-}
-
-.collapsible-fieldset {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  padding: var(--space-2) var(--space-3) var(--space-3);
-  margin: var(--space-2) 0;
-  background: var(--color-bg);
-}
-
-.collapsible-fieldset:not(:has(.collapsible-content)) {
-  border-color: transparent;
-  background: transparent;
-  padding: 0;
-  margin: var(--space-1) 0;
-}
-
-.collapsible-fieldset legend {
-  padding: 0 var(--space-1);
-  margin: 0;
-}
-
-.collapsible-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 4px 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-text);
-  background: var(--color-surface) !important;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: pointer;
-  box-shadow: none;
-}
-
-.collapsible-toggle:hover {
-  background: var(--color-hover) !important;
-}
-
-.collapsible-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.caret {
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
-}
-
-.caret.open {
-  transform: rotate(180deg);
-}
-
-.picker-toggle {
-  align-self: flex-start;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-}
-
-.picker-caret {
-  margin-left: 4px;
-  opacity: 0.6;
-  transition: transform 0.15s ease;
-}
-
-.picker-caret.open {
-  transform: rotate(180deg);
 }
 
 .dates-row {

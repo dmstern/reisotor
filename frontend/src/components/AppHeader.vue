@@ -65,7 +65,12 @@ onUnmounted(() => {
 });
 
 const profileTitle = computed(() => {
-  if (!connectivity.isOnline) return 'Offline – Einstellungen';
+  if (!connectivity.isOnline) {
+    if (connectivity.syncing || connectivity.checking) {
+      return 'Verbinde… – Einstellungen';
+    }
+    return 'Offline – Einstellungen';
+  }
   if (connectivity.pendingCount > 0) {
     return `${connectivity.pendingCount} ausstehende Synchronisation(en) – Einstellungen`;
   }
@@ -105,9 +110,10 @@ const profileTitle = computed(() => {
             to="/settings"
             class="profile-link"
             :class="{
-              'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
+              'is-online': connectivity.isOnline,
               'is-offline': !connectivity.isOnline,
-              'is-retrying': connectivity.syncing || connectivity.checking,
+              'is-retrying':
+                !connectivity.isOnline && (connectivity.syncing || connectivity.checking),
             }"
             :title="profileTitle"
           >
@@ -188,7 +194,7 @@ const profileTitle = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-4);
+  padding: var(--space-2) var(--space-4) 0;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -211,7 +217,10 @@ const profileTitle = computed(() => {
     0 4px 16px rgba(0, 0, 0, 0.25),
     0 1px 3px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  padding: 4px 12px 4px 5px;
+  padding: 3px 14px 3px 3px;
+  height: 44px;
+  box-sizing: border-box;
+  position: relative;
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
@@ -219,10 +228,6 @@ const profileTitle = computed(() => {
 
 .brand:hover {
   opacity: 0.85;
-}
-
-.brand {
-  position: relative;
 }
 
 .brand::after {
@@ -266,10 +271,6 @@ const profileTitle = computed(() => {
   max-width: 100%;
   min-width: 0;
   position: relative;
-}
-
-.floating-island.has-nav {
-  margin-top: var(--space-2);
 }
 
 .switcher {
@@ -355,12 +356,21 @@ const profileTitle = computed(() => {
     0 4px 16px rgba(0, 0, 0, 0.25),
     0 1px 3px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  padding: 3px 6px;
+  padding: 3px 3px 3px 8px;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 .header-actions :deep(.bell-btn),
 .header-actions :deep(.recording-pill-btn) {
   position: relative;
+}
+
+.header-actions :deep(.bell-btn) {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .header-actions :deep(.bell-btn)::after,
@@ -375,14 +385,18 @@ const profileTitle = computed(() => {
 }
 
 .logo {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  display: block;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .wordmark {
   font-weight: 700;
   color: var(--color-primary-dark);
   font-size: 1.1rem;
+  line-height: 1;
 }
 
 @media (max-width: 1200px) {
@@ -390,13 +404,8 @@ const profileTitle = computed(() => {
     display: none;
   }
   .brand {
-    padding: 4px;
-  }
-}
-
-@media (max-width: 1023px) {
-  .header-row {
-    padding: var(--space-2) var(--space-4) 0;
+    padding: 3px;
+    width: 44px;
   }
 }
 
@@ -409,6 +418,8 @@ const profileTitle = computed(() => {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     padding: 0;
+    height: auto;
+    width: auto;
   }
 
   .header-pill {
@@ -427,7 +438,9 @@ const profileTitle = computed(() => {
       0 4px 16px rgba(0, 0, 0, 0.25),
       0 1px 3px rgba(0, 0, 0, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    padding: 3px 6px;
+    padding: 3px;
+    height: 44px;
+    box-sizing: border-box;
     pointer-events: auto;
   }
 
@@ -442,6 +455,7 @@ const profileTitle = computed(() => {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     padding: 0;
+    height: auto;
   }
 
   .header-actions {
@@ -451,6 +465,7 @@ const profileTitle = computed(() => {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     padding: 0;
+    height: auto;
   }
 }
 
@@ -458,14 +473,15 @@ const profileTitle = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--color-primary-tint);
   text-decoration: none;
   flex-shrink: 0;
   transition:
     background 0.15s ease,
+    border-color 0.2s ease,
     filter 0.2s ease;
   position: relative;
   box-sizing: border-box;
@@ -509,10 +525,16 @@ const profileTitle = computed(() => {
     var(--color-success) 90deg,
     transparent 180deg
   );
-  animation: spin 1s linear infinite;
+  animation: spin 1.5s linear infinite;
   mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff calc(100% - 2px));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff 0);
   opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-link.is-retrying::before {
+    animation: none;
+  }
 }
 
 @keyframes spin {
@@ -581,7 +603,7 @@ const profileTitle = computed(() => {
 }
 
 .avatar {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   line-height: 1;
 }
 </style>

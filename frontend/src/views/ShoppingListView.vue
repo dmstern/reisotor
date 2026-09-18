@@ -7,7 +7,6 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { PERIOD_META } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
-import DeleteButton from '../components/DeleteButton.vue';
 import Combobox from '../components/Combobox.vue';
 import FormField from '../components/FormField.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -99,7 +98,7 @@ const editDraft = useDraftAutosave(
   computed(() => editingItem.value !== null)
 );
 
-const showNewDetails = ref(false);
+const showNewDetails = usePersistedRef('reisotor-shopping-show-details', false);
 
 watch(
   () => newDraft.restored.value,
@@ -316,6 +315,13 @@ function closeEditForm() {
   editingItem.value = null;
 }
 
+async function deleteEditingItem() {
+  if (!editingItem.value) return;
+  const id = editingItem.value.id;
+  closeEditForm();
+  await remove(id);
+}
+
 async function remove(id: number) {
   await api.delete(`/shopping/${id}`);
   items.value = items.value.filter((i) => i.id !== id);
@@ -337,7 +343,7 @@ async function addItem() {
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
-  showNewDetails.value = false;
+  // Details bleiben bewusst im aktuellen Zustand (geöffnet oder geschlossen) erhalten.
   // Shop/Zeitraum bleiben bewusst stehen (siehe usePersistedRef oben) - praktisch, wenn mehrere
   // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
   // Vorbelegung fürs nächste Öffnen der Liste.
@@ -379,6 +385,16 @@ async function quickAddToGroup(group: Group, label: string) {
     period,
   });
   items.value.push(created);
+}
+
+function hasItemMeta(item: ShoppingItem): boolean {
+  return Boolean(
+    item._pending ||
+    (groupBy.value !== 'shop' && item.shop) ||
+    (groupBy.value !== 'period' && item.period) ||
+    item.link ||
+    item.note
+  );
 }
 </script>
 
@@ -502,7 +518,7 @@ async function quickAddToGroup(group: Group, label: string) {
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
-    <div class="groups-grid">
+    <div class="groups-grid" :class="{ 'groups-grid--masonry masonry': groupBy === 'shop' }">
       <section
         class="group-section animate-cascade"
         v-for="(group, index) in groupedItems"
@@ -521,49 +537,52 @@ async function quickAddToGroup(group: Group, label: string) {
               :done="!!item.checked"
               :highlighted="highlightedIds.has(item.id)"
             >
-              <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-              <label :for="'shopping-item-' + item.id" class="check">
-                <Checkbox
-                  :id="'shopping-item-' + item.id"
-                  :checked="!!item.checked"
-                  @change="toggle(item)"
-                />
-                <span
-                  class="item-title"
-                  :class="{ 'row__text--done': item.checked, 'text-done': item.checked }"
-                >
-                  {{ item.label }}
-                </span>
-              </label>
+              <div class="item-main">
+                <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+                <label :for="'shopping-item-' + item.id" class="check">
+                  <Checkbox
+                    :id="'shopping-item-' + item.id"
+                    :checked="!!item.checked"
+                    @change="toggle(item)"
+                  />
+                  <span
+                    class="item-title"
+                    :class="{ 'row__text--done': item.checked, 'text-done': item.checked }"
+                  >
+                    {{ item.label }}
+                  </span>
+                </label>
 
-              <div class="item-meta">
-                <PendingSyncBadge v-if="item._pending" />
-                <Badge v-if="groupBy !== 'shop' && item.shop" size="sm" class="shop-badge">
-                  <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="12" group="formFields" />
-                  {{ item.shop }}
-                </Badge>
-                <Badge v-if="groupBy !== 'period' && item.period" size="sm" class="period-badge">
-                  <AppIcon :icon="FORM_FIELD_ICONS.period" :size="12" group="formFields" />
-                  {{ PERIOD_META[item.period] }}
-                </Badge>
-                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
-                  <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" /> Link
-                </a>
-                <span v-if="item.note" class="note" :title="item.note">
-                  <AppIcon :icon="FORM_FIELD_ICONS.note" :size="12" group="formFields" />
-                  {{ item.note }}
-                </span>
+                <div v-if="hasItemMeta(item)" class="item-meta">
+                  <PendingSyncBadge v-if="item._pending" />
+                  <Badge v-if="groupBy !== 'shop' && item.shop" size="sm" class="shop-badge">
+                    <AppIcon :icon="FORM_FIELD_ICONS.shop" :size="12" group="formFields" />
+                    <span>{{ item.shop }}</span>
+                  </Badge>
+                  <Badge v-if="groupBy !== 'period' && item.period" size="sm" class="period-badge">
+                    <AppIcon :icon="FORM_FIELD_ICONS.period" :size="12" group="formFields" />
+                    <span>{{ PERIOD_META[item.period] }}</span>
+                  </Badge>
+                  <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="link">
+                    <AppIcon :icon="FORM_FIELD_ICONS.link" :size="12" group="formFields" /> Link
+                  </a>
+                  <span v-if="item.note" class="note" :title="item.note">
+                    <AppIcon :icon="FORM_FIELD_ICONS.note" :size="12" group="formFields" />
+                    <span class="note-text">{{ item.note }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <template #actions>
                 <div
-                  v-if="users.length > 1 && groupBy !== 'buyer'"
-                  class="buyer-avatar-picker"
-                  :title="
-                    item.assigned_to_user_id
-                      ? `Käufer:in: ${userName(item.assigned_to_user_id)}`
-                      : 'Käufer:in zuweisen'
+                  v-if="
+                    users.length > 1 && groupBy !== 'buyer' && userAvatar(item.assigned_to_user_id)
                   "
+                  class="buyer-avatar-picker"
+                  :title="`Käufer:in: ${userName(item.assigned_to_user_id)}`"
                 >
                   <span class="avatar-display" aria-hidden="true">
-                    {{ userAvatar(item.assigned_to_user_id) || '👤' }}
+                    {{ userAvatar(item.assigned_to_user_id) }}
                   </span>
                   <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
                   <select
@@ -572,17 +591,13 @@ async function quickAddToGroup(group: Group, label: string) {
                     :value="item.assigned_to_user_id ?? ''"
                     @change="reassign(item, $event)"
                   >
-                    <option value="">👤 Nicht zugewiesen</option>
+                    <option value="">Nicht zugewiesen</option>
                     <option v-for="u in users" :key="u.id" :value="String(u.id)">
                       {{ u.avatar }} {{ u.username }}
                     </option>
                   </select>
                 </div>
-              </div>
-
-              <template #actions>
                 <EditButton small @click="startEdit(item)" />
-                <DeleteButton small @click="remove(item.id)" />
               </template>
             </CheckableListItem>
             <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
@@ -667,6 +682,15 @@ async function quickAddToGroup(group: Group, label: string) {
         </FormField>
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            :icon="ACTION_ICONS.delete"
+            @click="deleteEditingItem"
+          >
+            Löschen
+          </Button>
           <div class="spacer"></div>
           <Button type="submit">Speichern</Button>
         </div>
@@ -734,11 +758,17 @@ async function quickAddToGroup(group: Group, label: string) {
 
 /* Progressives Schnelleingabe-Formular */
 .add-form {
+  position: relative;
+  z-index: 1;
   margin-bottom: var(--space-4);
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.add-form:focus-within {
+  z-index: 5;
 }
 
 .quick-input-row {
@@ -772,8 +802,10 @@ async function quickAddToGroup(group: Group, label: string) {
 .inline-submit-btn {
   position: absolute;
   right: 6px;
-  top: 50%;
-  translate: 0 -50%;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  translate: none;
   width: 32px;
   height: 32px;
   min-width: 32px;
@@ -797,10 +829,13 @@ async function quickAddToGroup(group: Group, label: string) {
 }
 
 .inline-submit-btn:hover:not(:disabled) {
+  translate: none;
   scale: 1.05;
 }
 
 .inline-submit-btn:active:not(:disabled) {
+  translate: none;
+  transform: none;
   scale: 0.95;
 }
 
@@ -848,6 +883,15 @@ async function quickAddToGroup(group: Group, label: string) {
   min-width: 0;
 }
 
+.groups-grid--masonry > .group-section {
+  margin-bottom: 0;
+}
+
+.group-section:focus-within {
+  position: relative;
+  z-index: 5;
+}
+
 .group-section h2 {
   font-size: 0.95rem;
   color: var(--color-primary-dark);
@@ -879,34 +923,47 @@ async function quickAddToGroup(group: Group, label: string) {
   padding: 0;
 }
 
+.item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .check {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   cursor: pointer;
-  flex: 1 1 0;
   min-width: 0;
+  width: 100%;
+}
+
+.check :deep(.checkbox) {
+  flex-shrink: 0;
+  margin-top: 1.5px;
 }
 
 .item-title {
+  flex: 1;
   min-width: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--color-text);
   overflow-wrap: break-word;
-  word-break: break-word;
+  word-break: normal;
+  text-wrap: pretty;
+  hyphens: auto;
 }
 
 .item-meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
-  margin-left: auto;
+  gap: 4px 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-:deep(.checkable-list-item__actions),
-:deep(.row-actions) {
-  margin-left: 0;
+  margin-left: 28px;
+  min-width: 0;
 }
 
 .shop-badge,
@@ -914,6 +971,15 @@ async function quickAddToGroup(group: Group, label: string) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
+}
+
+.shop-badge span,
+.period-badge span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .link {
@@ -921,14 +987,37 @@ async function quickAddToGroup(group: Group, label: string) {
   align-items: center;
   gap: 4px;
   font-size: 0.82rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  flex-shrink: 0;
+}
+
+.link:hover {
+  color: var(--color-primary-dark);
 }
 
 .note {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   font-size: 0.82rem;
   color: var(--color-text-muted);
+  max-width: 100%;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.note :deep(.app-icon),
+.note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.note-text {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .buyer-avatar-picker {
@@ -980,15 +1069,26 @@ async function quickAddToGroup(group: Group, label: string) {
   padding: var(--space-2) 0;
 }
 
-/* Desktop: Gruppen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen –
-   auto-fit/minmax statt einer festen Spaltenzahl, damit sich die Spaltenzahl der tatsächlichen
-   Fensterbreite und Anzahl an Gruppen anpasst. Exakt dasselbe Muster wie PackingListView.vue. */
+/* Desktop: Klassisches Grid für Einkäufer- und Zeitraum-Gruppierungen (nebeneinander aufgeteilt,
+   ohne ineinander zu schachteln). Nur bei Shop-Gruppierung wird Masonry (CSS Multi-Column) genutzt,
+   um unschöne Höhenlöcher durch viele unterschiedlich lange Shop-Listen zu vermeiden. */
 @media (min-width: 900px) {
   .groups-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     align-items: start;
     gap: var(--space-4);
+  }
+
+  .groups-grid--masonry {
+    display: block;
+    column-width: 360px;
+    column-gap: var(--space-4);
+  }
+
+  .groups-grid--masonry > .group-section {
+    break-inside: avoid;
+    margin-bottom: var(--space-4);
   }
 }
 </style>

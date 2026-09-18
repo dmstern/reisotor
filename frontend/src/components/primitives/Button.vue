@@ -90,9 +90,9 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
-      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
-    <slot />
+    <slot v-if="hasDefaultSlot()" />
   </RouterLink>
   <a
     v-else-if="href"
@@ -106,9 +106,9 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
-      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
-    <slot />
+    <slot v-if="hasDefaultSlot()" />
   </a>
   <component
     v-else-if="as"
@@ -122,9 +122,9 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
-      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
-    <slot />
+    <slot v-if="hasDefaultSlot()" />
   </component>
   <button
     v-else
@@ -139,9 +139,9 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
-      :size="size === 'sm' ? 15 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
-    <slot />
+    <slot v-if="hasDefaultSlot()" />
   </button>
 </template>
 
@@ -336,6 +336,7 @@ const btnClasses = computed(() => [
 .btn--icon-only,
 .btn.icon-only {
   padding: 0;
+  gap: 0;
   flex-shrink: 0;
   width: 38px;
   height: 38px;

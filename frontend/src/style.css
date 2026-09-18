@@ -86,8 +86,8 @@
      maximierte Schublade (Drawer.vue) auch dort Platz für die NavBar freihält. */
   --navbar-bottom-offset: 0px;
   --ui-border-width: 1px;
-  --glass-opacity: 0.85;
-  --glass-blur: 12px;
+  --glass-opacity: 0.42;
+  --glass-blur: 6px;
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
   --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));

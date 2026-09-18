@@ -48,13 +48,23 @@ const visible = defineModel<boolean>('visible', { default: false });
 
 .toggle-visibility {
   position: absolute;
-  top: 50%;
   right: 4px;
-  transform: translateY(-50%);
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  height: 32px;
+  translate: none;
+  transform: none;
   color: var(--color-text-muted);
 }
 
-.toggle-visibility:hover {
+.toggle-visibility:hover:not(:disabled) {
+  translate: none;
   color: var(--color-text);
+}
+
+.toggle-visibility:active:not(:disabled) {
+  translate: none;
+  transform: none;
 }
 </style>

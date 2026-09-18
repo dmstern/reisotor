@@ -32,6 +32,7 @@
     "dompurify": "^3.4.13",
     "leaflet": "^1.9.4",
     "leaflet-rotate": "^0.2.8",
+    "piexifjs": "^1.0.6",
     "pinia": "^2.2.4",
     "vue": "^3.5.12",
     "vue-router": "^4.4.5"
@@ -42,6 +43,7 @@
     "@storybook/vue3-vite": "^8.6.18",
     "@types/dompurify": "^3.0.5",
     "@types/leaflet": "^1.9.12",
+    "@types/piexifjs": "^1.0.0",
     "@vitejs/plugin-vue": "^5.1.4",
     "jsdom": "^30.0.1",
     "rolldown-vite": "^7.3.1",
