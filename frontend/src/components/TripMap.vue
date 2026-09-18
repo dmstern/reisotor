@@ -1750,6 +1750,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       >
         <button
           class="focus-banner-toggle-btn"
+          :aria-expanded="isFocusBannerExpanded"
+          :aria-label="
+            isFocusBannerExpanded ? 'Fokus-Banner einklappen' : 'Fokus-Banner ausklappen'
+          "
           @click="isFocusBannerExpanded = !isFocusBannerExpanded"
         >
           <AppIcon
@@ -1983,7 +1987,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   /* Initial-Zustand Mobil: Runder Icon-Button */
   border-radius: var(--radius-pill, 999px);
   corner-shape: round;
-  padding: 4px; /* Gleichmäßiges Padding für den Kreis */
+  padding: 2px; /* Gleichmäßiges Padding für den Kreis */
   width: auto;
   max-width: 44px; /* Limitiert die Breite auf den Button */
   height: 44px;
@@ -1998,7 +2002,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   /* Behalte die runde Pillenform bei, damit der linke Button perfekt reinpasst */
   border-radius: var(--radius-pill, 999px);
   corner-shape: round;
-  padding: 4px 14px 4px 4px;
+  padding: 2px 14px 2px 2px;
 }
 
 .focus-banner-toggle-btn {
@@ -2010,6 +2014,8 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  margin: 0;
   color: var(--color-primary-dark);
   cursor: pointer;
   flex-shrink: 0;
@@ -2064,7 +2070,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     max-width: calc(100% - 60px);
     border-radius: var(--radius-pill, 999px);
     corner-shape: round;
-    padding: 4px 14px 4px 4px;
+    padding: 2px 14px 2px 2px;
     height: 44px;
   }
 
