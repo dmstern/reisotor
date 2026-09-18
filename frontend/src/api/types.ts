@@ -26,6 +26,8 @@ export interface Trip {
   image_url: string | null;
   packing_category_required: number;
   weather_model: string;
+  country_code?: string | null;
+  country_name?: string | null;
   /** Ob die anlegende Person im eingeschränkten Modus ist (Issue #96) – steuert den
    *  3-Mitglieder-Deckel in TripMembersDialog.vue. */
   owner_restricted?: boolean;

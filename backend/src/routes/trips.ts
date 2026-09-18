@@ -188,6 +188,14 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       );
     }
 
+    // Bei geändertem Standort auch gecachte Ländercodes leeren, damit GET /region-info das neue Land
+    // per Reverse-Geocoding auflöst statt veraltete Währung/Reisehinweise anzuzeigen.
+    if (locationChanged) {
+      db.prepare('UPDATE trips SET country_code = NULL, country_name = NULL WHERE id = ?').run(
+        req.params.id
+      );
+    }
+
     return db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
   });
 
@@ -210,10 +218,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Reiseregion-Infos fürs Dashboard (Sprache/Währung/Wechselkurs/Reisewarnung, siehe
-  // utils/regionInfo.ts). country_code/country_name werden einmalig per Reverse-Geocoding aus
-  // lat/lng ermittelt und dauerhaft in trips persistiert – nur neu aufgelöst, wenn diese noch
-  // fehlen (ändert sich der Urlaubsort später, wird PUT /trips/:id NICHT rückwirkend erneut
-  // auflösen; das wäre ein seltener Fall und der Nutzer kann den Urlaub bei Bedarf neu anlegen).
+  // utils/regionInfo.ts). country_code/country_name werden per Reverse-Geocoding aus
+  // lat/lng ermittelt und dauerhaft in trips persistiert – ändert sich der Urlaubsort später
+  // in PUT /trips/:id, werden sie geleert und hier automatisch für das neue Reiseziel neu aufgelöst.
   app.get<{ Params: { id: string }; Querystring: { home_currency?: string } }>(
     '/trips/:id/region-info',
     async (req, reply) => {
