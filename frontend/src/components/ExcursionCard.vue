@@ -965,8 +965,13 @@ function onSpotDrop(event: DragEvent) {
 .done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
-  background: var(--excursion-theme-tint);
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
   border-color: var(--color-success);
+}
+
+.done-toggle.active:hover,
+.done-toggle.status-done:hover {
+  background: color-mix(in srgb, var(--color-success) 22%, transparent);
 }
 
 .status-text {
