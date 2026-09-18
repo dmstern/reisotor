@@ -3026,11 +3026,6 @@ async function deleteEditingSpot() {
               class="edit-form"
               @submit.prevent="editingExcursion !== null ? submitEditExcursion() : addExcursion()"
             >
-              <CoverImagePicker
-                v-model="activeExcursionForm.image_url"
-                :placeholder-icon="SECTION_ICON_DEFS.excursions"
-                modal-title="Tour-Bild bearbeiten"
-              />
               <FormField icon="title" label="Titel">
                 <Input
                   v-model="activeExcursionForm.title"

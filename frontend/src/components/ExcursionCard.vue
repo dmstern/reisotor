@@ -16,7 +16,6 @@ import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
-import SpotImageCollage from './SpotImageCollage.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
@@ -70,15 +69,6 @@ const resolvedStations = computed(() =>
 const hasMappedStations = computed(() =>
   resolvedStations.value.some((s) => s.lat != null && s.lng != null)
 );
-
-const fallbackImages = computed(() =>
-  resolvedStations.value.map((s) => s.imageUrl).filter((url): url is string => !!url)
-);
-const showCollage = computed(() => !props.excursion.image_url && fallbackImages.value.length >= 2);
-const displayImage = computed(() => {
-  if (props.excursion.image_url) return props.excursion.image_url;
-  return fallbackImages.value.length === 1 ? fallbackImages.value[0] : null;
-});
 
 const showComments = ref(false);
 
@@ -306,37 +296,34 @@ function onSpotDrop(event: DragEvent) {
     @drop.prevent="onSpotDrop"
   >
     <div class="tour-card-main">
-      <div
-        class="tour-image"
-        :style="displayImage ? { backgroundImage: `url(${displayImage})` } : {}"
-      >
-        <SpotImageCollage v-if="showCollage" :images="fallbackImages" />
-        <AppIcon
-          v-else-if="!displayImage"
-          class="placeholder"
-          :size="30"
-          :icon="
-            excursion.role
-              ? travelTypeIconDef(excursion.transport_type)
-              : SECTION_ICON_DEFS.excursions
-          "
-          group="categories"
+      <!-- Linke visuelle Spalte: Polaroid-Stapel (Stationen) im eingeklappten Zustand (#layout) -->
+      <div v-if="!expanded" class="tour-visual-col">
+        <PolaroidStack
+          v-if="resolvedStations.length"
+          class="tour-polaroid-stack"
+          :items="resolvedStations"
+          :expanded="false"
+          :interactive="false"
+          :title="`${resolvedStations.length} Stationen`"
+          aria-hidden="true"
         />
-
-        <!-- Floating Paperclip Badge im eingeklappten Zustand (#396 Pattern) -->
-        <div v-if="!expanded" class="tour-collapsed-attachments">
-          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" collapsed />
+        <div v-else class="tour-placeholder">
+          <AppIcon
+            class="placeholder"
+            :size="26"
+            :icon="
+              excursion.role
+                ? travelTypeIconDef(excursion.transport_type)
+                : SECTION_ICON_DEFS.excursions
+            "
+            group="categories"
+          />
         </div>
 
-        <!-- Floating Edit-Button im aufgeklappten Zustand -->
-        <Transition name="fade">
-          <EditButton
-            v-if="expanded"
-            floating
-            class="tour-image-edit-btn"
-            @click="emit('edit', excursion)"
-          />
-        </Transition>
+        <!-- Floating Paperclip Badge im eingeklappten Zustand (#396 Pattern) -->
+        <div class="tour-collapsed-attachments">
+          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" collapsed />
+        </div>
       </div>
 
       <div class="body">
@@ -387,55 +374,31 @@ function onSpotDrop(event: DragEvent) {
               <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
             </Badge>
             <PendingSyncBadge v-if="excursion._pending" />
+            <Transition name="fade">
+              <EditButton
+                v-if="expanded"
+                small
+                class="tour-edit-btn"
+                @click="emit('edit', excursion)"
+              />
+            </Transition>
           </div>
         </div>
-        <!-- Stationen-Vorschau mit Polaroid-Stapel (#235) -->
+
+        <!-- Strecken- und Zeit-Info (nur im eingeklappten Zustand, im aufgeklappten Zustand in der Header-Meta) -->
         <div
-          v-if="resolvedStations.length"
-          class="tour-stations-preview"
-          :class="{ 'is-fanned-out': expanded }"
+          v-if="
+            !expanded &&
+            (routeLabel || stationsSummaryText || effectiveDepartureTime || effectiveArrivalTime)
+          "
+          class="tour-route-line"
         >
-          <!-- Polaroid-Stapel: Mini-Polaroids im collapsed Zustand, morpht beim Aufklappen -->
-          <PolaroidStack
-            class="tour-polaroid-stack"
-            :items="resolvedStations"
-            :expanded="expanded"
-            :interactive="false"
-            :title="`${resolvedStations.length} Stationen`"
-            aria-hidden="true"
-          />
-
-          <div class="tour-stations-meta" v-if="!expanded">
-            <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
-            <p v-else-if="stationsSummaryText" class="route tour-stations-summary">
-              {{ stationsSummaryText }}
-            </p>
-            <p
-              v-if="
-                (excursion.role || excursion.legs?.length) &&
-                (effectiveDepartureTime || effectiveArrivalTime)
-              "
-              class="departure-arrival"
-            >
-              <span class="time-block" v-if="effectiveDepartureTime">
-                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-                {{ effectiveDepartureTime
-                }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
-                >&nbsp;Uhr
-              </span>
-              <span class="time-block" v-else>
-                <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-              </span>
-              <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
-            </p>
-          </div>
-        </div>
-
-        <template v-else>
-          <p v-if="!expanded && routeLabel" class="route">{{ routeLabel }}</p>
+          <p v-if="routeLabel" class="route">{{ routeLabel }}</p>
+          <p v-else-if="stationsSummaryText" class="route tour-stations-summary">
+            {{ stationsSummaryText }}
+          </p>
           <p
             v-if="
-              !expanded &&
               (excursion.role || excursion.legs?.length) &&
               (effectiveDepartureTime || effectiveArrivalTime)
             "
@@ -452,7 +415,7 @@ function onSpotDrop(event: DragEvent) {
             </span>
             <span v-if="travelDuration" class="duration">({{ travelDuration }})</span>
           </p>
-        </template>
+        </div>
 
         <!-- Tour-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
         <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
@@ -659,7 +622,7 @@ function onSpotDrop(event: DragEvent) {
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  min-height: 120px;
+  min-height: 80px;
   border-width: var(--ui-border-width, 1px);
   border-style: solid;
   border-color: var(--excursion-theme-border);
@@ -763,18 +726,17 @@ function onSpotDrop(event: DragEvent) {
   background: var(--excursion-theme-tint);
 }
 
-.tour-image {
-  width: 140px;
+.tour-visual-col {
+  width: 72px;
+  min-width: 72px;
   flex-shrink: 0;
-  align-self: stretch;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  overflow: hidden;
-  background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  align-self: center;
+  overflow: visible;
+  padding: 4px 0;
 }
 
 .tour-type-badge {
@@ -783,17 +745,36 @@ function onSpotDrop(event: DragEvent) {
   letter-spacing: 0.04em;
 }
 
-.placeholder {
-  font-size: 2rem;
+.tour-placeholder {
+  width: 58px;
+  height: 68px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-primary-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tour-placeholder .placeholder {
+  font-size: 1.75rem;
   color: var(--excursion-theme-color);
   opacity: 0.7;
 }
 
-.tour-image-edit-btn {
+.tour-edit-btn {
+  flex-shrink: 0;
+}
+
+.tour-collapsed-attachments {
   position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 2;
+  top: -4px;
+  left: -2px;
+  z-index: 6;
+}
+
+.tour-collapsed-attachments :deep(.file-attachments) {
+  margin-top: 0;
 }
 
 .tour-collapsed-attachments {
@@ -1303,29 +1284,10 @@ function onSpotDrop(event: DragEvent) {
   white-space: nowrap;
 }
 
-/* Stationen-Vorschau mit Polaroid-Stapel (#235) */
-.tour-stations-preview {
+.tour-route-line {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin: var(--space-1) 0;
-  position: relative;
-  transition:
-    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-    margin 0.35s ease,
-    opacity 0.25s ease;
-}
-
-.tour-stations-preview.is-fanned-out {
-  max-height: 0;
-  margin: 0;
-  opacity: 0;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.tour-polaroid-stack {
-  margin-right: 6px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
@@ -1401,13 +1363,18 @@ function onSpotDrop(event: DragEvent) {
     gap: 8px;
   }
 
-  .tour-image {
-    width: 76px;
-    border-radius: var(--radius-sm-squircle);
+  .tour-visual-col {
+    width: 58px;
+    min-width: 58px;
   }
 
-  .tour-image .placeholder {
-    font-size: 1.5rem;
+  .tour-placeholder {
+    width: 46px;
+    height: 56px;
+  }
+
+  .tour-placeholder .placeholder {
+    font-size: 1.3rem;
   }
 
   .card-title {
@@ -1422,15 +1389,9 @@ function onSpotDrop(event: DragEvent) {
     display: none;
   }
 
-  .tour-stations-preview {
-    gap: var(--space-2);
-    margin: 2px 0;
-  }
-
   :deep(.tour-polaroid-stack) {
     width: 46px;
     height: 56px;
-    margin-right: 4px;
   }
 
   :deep(.tour-polaroid-stack .polaroid-tile) {
@@ -1494,8 +1455,6 @@ function onSpotDrop(event: DragEvent) {
   .show-on-map-btn .btn-label,
   .excursion-accordion-inner > *,
   .polaroid-tile,
-  .tour-stations-preview,
-  .tour-stations-preview.is-fanned-out .polaroid-tile,
   .tour-note-container {
     transform: none !important;
     transition: opacity 0.15s ease !important;
