@@ -194,7 +194,7 @@ const profileTitle = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-4);
+  padding: var(--space-2) var(--space-4) 0;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -271,10 +271,6 @@ const profileTitle = computed(() => {
   max-width: 100%;
   min-width: 0;
   position: relative;
-}
-
-.floating-island.has-nav {
-  margin-top: var(--space-2);
 }
 
 .switcher {
@@ -410,12 +406,6 @@ const profileTitle = computed(() => {
   .brand {
     padding: 3px;
     width: 44px;
-  }
-}
-
-@media (max-width: 1023px) {
-  .header-row {
-    padding: var(--space-2) var(--space-4) 0;
   }
 }
 
