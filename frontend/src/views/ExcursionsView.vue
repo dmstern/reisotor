@@ -1269,6 +1269,31 @@ function setCategoryRef(category: string, el: Element | ComponentPublicInstance 
   if (domEl) categoryRefs.set(category, domEl);
   else categoryRefs.delete(category);
 }
+const excursionRefs = new Map<number, HTMLElement>();
+function setExcursionRef(id: number, el: Element | ComponentPublicInstance | null) {
+  const domEl = resolveDomElement(el);
+  if (domEl) excursionRefs.set(id, domEl);
+  else excursionRefs.delete(id);
+}
+function setTourCardRef(
+  category: string,
+  excursionId: number,
+  el: Element | ComponentPublicInstance | null
+) {
+  setCategoryRef(category, el);
+  setExcursionRef(excursionId, el);
+}
+function scrollToExcursion(id: number) {
+  const el = excursionRefs.get(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  const grp = spotGroups.value.find((g) => g.excursion?.id === id);
+  if (grp) {
+    categoryRefs.get(grp.category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 // Ref auf die eingebettete Karte (TripMap.vue): scrollToCategory() lässt bei Klick auf eine
 // Kategorie-Nav-Pille zusätzlich die Karte auf alle Punkte dieser Kategorie zoomen (siehe
 // TripMap.vue's defineExpose(focusCategory)) – dieselbe Kategorie-Kopplung wie beim Filter oben.
@@ -1512,8 +1537,16 @@ function scrollToSpot(id: number) {
 // weiter geöffneten Zustand (partial/full) aber nicht an (#104).
 function onFocusSpotFromMap(spotId: number) {
   expandedSpotId.value = spotId;
-  if (sheetState.value === 'collapsed') sheetState.value = 'partial';
-  scrollToSpot(spotId);
+  if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
+  if (groupMode.value === 'tours') {
+    const parentExcursion = excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
+    if (parentExcursion) {
+      expandedExcursionId.value = parentExcursion.id;
+    }
+  }
+  nextTick(() => {
+    scrollToSpot(spotId);
+  });
 }
 
 // Touren-Stationsliste (siehe .tour-station-wrap/.tour-station-line im Template/CSS unten, #100):
@@ -1954,10 +1987,9 @@ watch(expandedExcursionId, (newId, oldId) => {
 function onFocusExcursionFromMap(excursionId: number) {
   groupMode.value = 'tours';
   expandedExcursionId.value = excursionId;
-  if (sheetState.value === 'collapsed') sheetState.value = 'partial';
+  if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
   nextTick(() => {
-    const grp = spotGroups.value.find((g) => g.excursion?.id === excursionId);
-    if (grp) categoryRefs.get(grp.category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToExcursion(excursionId);
   });
 }
 
@@ -2392,10 +2424,28 @@ function onSpotCardClose() {
 // "Auf Karte anzeigen"-Button (Mini- wie aufgeklappte Karte, siehe SpotCard.vue) – schrumpft das
 // Sheet auf "angeschnitten" (Google-Maps-Stil, genug sichtbare Kartenfläche für den fokussierten
 // Punkt) UND zentriert/vergrößert den Pin (drawers.openMapAt), unabhängig vom Aufklapp-Zustand der
-// Karte selbst.
+// Karte selbst. Scrollt die fokussierte Karte im Mobil-Drawer an den oberen Rand (#109, #381).
 function onSpotShowOnMap(spot: Spot) {
   sheetState.value = 'partial';
   drawers.openMapAt(`spot-${spot.id}`);
+  if (isSheetOverlayMode.value) {
+    nextTick(() => {
+      scrollToSpot(spot.id);
+    });
+  }
+}
+
+// "Auf Karte anzeigen"-Button für Touren (siehe ExcursionCard.vue) – analog zu onSpotShowOnMap
+// schrumpft das Sheet auf "angeschnitten", visualisiert die Tour auf der Karte und scrollt die
+// Tour-Karte im mobilen Drawer ans obere Ende des sichtbaren Bereichs.
+function onExcursionShowOnMap(excursionId: number) {
+  sheetState.value = 'partial';
+  drawers.openMapForExcursion(excursionId);
+  if (isSheetOverlayMode.value) {
+    nextTick(() => {
+      scrollToExcursion(excursionId);
+    });
+  }
 }
 
 // Ein Tag-/Ausflug-Fokus (ScheduleView.vue's "🗺️ Tag auf Karte anzeigen" bzw. ExcursionCard.vue's
@@ -2409,6 +2459,32 @@ watch(
     if (date != null || excId != null || key != null) {
       if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
         sheetState.value = 'partial';
+      }
+    }
+  }
+);
+
+watch(
+  () => [drawers.mapFocusExcursionId, drawers.focusVersion],
+  ([excId]) => {
+    if (excId != null && isSheetOverlayMode.value) {
+      groupMode.value = 'tours';
+      nextTick(() => {
+        scrollToExcursion(excId);
+      });
+    }
+  }
+);
+
+watch(
+  () => [drawers.mapFocusKey, drawers.focusVersion],
+  ([key]) => {
+    if (typeof key === 'string' && key.startsWith('spot-') && isSheetOverlayMode.value) {
+      const spotId = Number(key.replace('spot-', ''));
+      if (!Number.isNaN(spotId)) {
+        nextTick(() => {
+          scrollToSpot(spotId);
+        });
       }
     }
   }
@@ -2437,12 +2513,8 @@ watch(
 
       nextTick(() => {
         if (groupMode.value === 'tours' && matchingExcursions.length > 0) {
-          const firstExcursion = matchingExcursions[0];
-          const catRef = categoryRefs.get(`tour-${firstExcursion.id}`);
-          if (catRef) {
-            catRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-          }
+          scrollToExcursion(matchingExcursions[0].id);
+          return;
         }
         if (matchingSpotIds.length > 0) {
           scrollToSpot(matchingSpotIds[0]);
@@ -3615,7 +3687,7 @@ async function deleteEditingSpot() {
           <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
             <ExcursionCard
               v-if="grp.excursion"
-              :ref="(el) => setCategoryRef(grp.category, el)"
+              :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
               class="tour-group-card"
               :excursion="grp.excursion"
               :highlighted="
@@ -3633,7 +3705,7 @@ async function deleteEditingSpot() {
               @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
               @remove-comment="removeExcursionComment"
               @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
-              @show-on-map="drawers.openMapForExcursion(grp.excursion.id)"
+              @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
               @open="expandedExcursionId = grp.excursion.id"
               @close="expandedExcursionId = null"
             />
