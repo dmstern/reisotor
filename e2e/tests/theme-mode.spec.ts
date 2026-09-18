@@ -32,6 +32,23 @@ test.describe('Erscheinungsbild: Hell/Dunkel/Systemeinstellung', () => {
     await expect(page.locator('html')).not.toHaveAttribute('data-theme');
   });
 
+  test('Custom Dropdown Menü öffnet sich und erlaubt Auswahl per Klick', async ({ page }) => {
+    await page.goto('/settings?tab=app');
+    const trigger = page.locator('.theme-dropdown-trigger');
+    await expect(trigger).toBeVisible();
+
+    // Menü öffnen
+    await trigger.click();
+    const menu = page.locator('.theme-picker-menu');
+    await expect(menu).toBeVisible();
+
+    // Option 'Dunkel' auswählen
+    await menu.locator('button', { hasText: 'Dunkel' }).click();
+    await expect(menu).not.toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(trigger).toContainText('Dunkel');
+  });
+
   test.describe('nicht angemeldet', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
