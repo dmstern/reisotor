@@ -155,7 +155,7 @@ const timeStr = computed(() => {
   font-size: 0.38rem;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: #3b82f6;
+  color: #1d4ed8;
 }
 
 :root[data-theme='dark'] .ticket-code {
@@ -211,7 +211,17 @@ const timeStr = computed(() => {
 
 .route-arrow {
   font-size: 0.44rem;
+  color: #64748b;
+}
+
+:root[data-theme='dark'] .route-arrow {
   color: #94a3b8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .route-arrow {
+    color: #94a3b8;
+  }
 }
 
 .ticket-time {
@@ -285,7 +295,17 @@ const timeStr = computed(() => {
 .stub-tag {
   font-size: 0.36rem;
   font-weight: 800;
+  color: #475569;
+}
+
+:root[data-theme='dark'] .stub-tag {
   color: #94a3b8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .stub-tag {
+    color: #94a3b8;
+  }
 }
 
 .barcode {

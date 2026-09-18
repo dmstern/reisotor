@@ -126,10 +126,10 @@ anlegen, nicht als lokaler Wert in der Komponente.
 | `--color-border`           | Standard Trennlinien & dezente Ränder        | `#e8e2d9`  | `#38352f` |
 | `--color-border-strong`    | Eingabefelder, Selects, Secondary-Buttons    | `#d5cabc`  | `#4a453c` |
 | `--color-text`             | Primäre Textfarbe                            | `#2b2a28`  | `#f2efe9` |
-| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel            | `#726e66`  | `#a8a29a` |
-| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)         | `#9141ac`  | `#c061cb` |
-| `--color-primary-dark`     | Hover-Status für Marken-Farbe                | `#7b3793`  | `#c974d2` |
-| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges  | `#f6eff9`  | `#352538` |
+| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel            | `#66625b`  | `#a8a29a` |
+| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)         | `#9141ac`  | `#cf77dd` |
+| `--color-primary-dark`     | Hover-Status für Marken-Farbe                | `#7b3793`  | `#d68ee3` |
+| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges  | `#f4ecf7`  | `#352538` |
 | `--color-hover`            | Hover-Hintergrund & Muted-Surface            | `#f4f1ec`  | `#2a2823` |
 | `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent    | `#e08e45`  | `#f0a05a` |
 | `--color-danger`           | Gefahr / Löschen / Warnungen                 | `#c1503f`  | `#e0685a` |
@@ -138,7 +138,7 @@ anlegen, nicht als lokaler Wert in der Komponente.
 | `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots) | `#eb6834`  | `#f08254` |
 | `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)  | `#1baf7a`  | `#2ecb91` |
 | `--color-highlight`        | Highlight-Fläche für Notizen                 | `#fff4e8`  | `#332a1c` |
-| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                   | `#5b6ee1`  | `#8b98f0` |
+| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                   | `#485acf`  | `#8b98f0` |
 
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.

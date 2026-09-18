@@ -20,18 +20,18 @@ export const ColorPalette: Story = {
             { var: '--color-border', name: 'Standard-Rand', light: '#e8e2d9', dark: '#38352f' },
             { var: '--color-border-strong', name: 'Feld-Rand', light: '#d5cabc', dark: '#4a453c' },
             { var: '--color-text', name: 'Text Haupt', light: '#2b2a28', dark: '#f2efe9' },
-            { var: '--color-text-muted', name: 'Text Gedämpft', light: '#726e66', dark: '#a8a29a' },
+            { var: '--color-text-muted', name: 'Text Gedämpft', light: '#66625b', dark: '#a8a29a' },
           ],
         },
         {
           name: 'Marke & Steuerung',
           tokens: [
-            { var: '--color-primary', name: 'Marken-Farbe', light: '#9141AC', dark: '#c061cb' },
-            { var: '--color-primary-dark', name: 'Hover-Farbe', light: '#7b3793', dark: '#c974d2' },
+            { var: '--color-primary', name: 'Marken-Farbe', light: '#9141AC', dark: '#cf77dd' },
+            { var: '--color-primary-dark', name: 'Hover-Farbe', light: '#7b3793', dark: '#d68ee3' },
             {
               var: '--color-primary-tint',
               name: 'Leichter Akzentton',
-              light: '#f6eff9',
+              light: '#f4ecf7',
               dark: '#352538',
             },
             { var: '--color-hover', name: 'Hover-Fläche', light: '#f4f1ec', dark: '#2a2823' },
@@ -64,7 +64,7 @@ export const ColorPalette: Story = {
             {
               var: '--color-accent-secondary',
               name: 'Indigo-Akzent',
-              light: '#5b6ee1',
+              light: '#485acf',
               dark: '#8b98f0',
             },
           ],

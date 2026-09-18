@@ -276,10 +276,16 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 /* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth
-   oben) – gedämpft statt ausgeblendet, damit z. B. ein Termin am Monatsübergang trotzdem sichtbar
-   und antippbar bleibt, nur eben erkennbar als "nicht der aktuell im Fokus stehende Monat". */
+   oben) – dezent abgesetzt statt per harter Deckkraft gedämpft, damit Text und Wetterwerte WCAG AA
+   Kontrastanforderungen (4.5:1) für interaktive Zellen erfüllen und Termine lesbar bleiben. */
 .day.other-month {
-  opacity: 0.38;
+  background: color-mix(in srgb, var(--color-surface) 60%, var(--color-hover));
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+
+.day.other-month .num {
+  color: var(--color-text-muted);
 }
 
 .day-head {
@@ -360,7 +366,7 @@ function onDrop(event: DragEvent, date: string) {
 
 .day.today .num {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
   font-weight: 700;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }

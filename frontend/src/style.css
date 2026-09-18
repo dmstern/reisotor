@@ -95,10 +95,12 @@
   --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
-  --color-text-muted: #726e66;
+  --color-text-muted: #66625b;
   --color-primary: #9141ac;
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
+  --color-primary-contrast: #ffffff;
   --color-accent: #e08e45;
+  --color-accent-dark: #92400e;
   --color-warning: #d97706;
   --color-warning-tint: #fffbeb;
   --color-warning-dark: #92400e;
@@ -116,11 +118,11 @@
   --color-like-border: #e879f9;
 
   /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe */
-  --color-primary-tint: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   --color-hover: #f4f1ec;
   --color-highlight: #fff4e8;
   --color-highlight-border: #f0d3ac;
-  --color-accent-secondary: #5b6ee1;
+  --color-accent-secondary: #485acf;
   --color-accent-secondary-bg: #eef0fd;
 
   /* Tour-/Ausflugs-Farben (Single Source of Truth für Tour-Kacheln, Kalender-Einträge
@@ -293,9 +295,11 @@
     --color-border: #38352f;
     --color-text: #f2efe9;
     --color-text-muted: #a8a29a;
-    --color-primary: #c061cb;
+    --color-primary: #cf77dd;
     --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
+    --color-primary-contrast: #181715;
     --color-accent: #f0a05a;
+    --color-accent-dark: #f5af72;
     --color-warning: #f59e0b;
     --color-warning-tint: #2e2315;
     --color-warning-dark: #fef3c7;
@@ -351,9 +355,11 @@
   --color-border: #38352f;
   --color-text: #f2efe9;
   --color-text-muted: #a8a29a;
-  --color-primary: #c061cb;
+  --color-primary: #cf77dd;
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, white);
+  --color-primary-contrast: #181715;
   --color-accent: #f0a05a;
+  --color-accent-dark: #f5af72;
   --color-danger: #e0685a;
   --color-danger-tint: #2e1816;
   --color-danger-dark: #fca5a5;
@@ -404,10 +410,12 @@
   --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
-  --color-text-muted: #726e66;
+  --color-text-muted: #66625b;
   --color-primary: #9141ac;
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
+  --color-primary-contrast: #ffffff;
   --color-accent: #e08e45;
+  --color-accent-dark: #92400e;
   --color-warning: #d97706;
   --color-danger: #c1503f;
   --color-danger-tint: #fef2f2;
@@ -416,11 +424,11 @@
   --color-warning-tint: #fffbeb;
   --color-warning-dark: #b45309;
   --color-success: #3f8f5c;
-  --color-primary-tint: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  --color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   --color-hover: #f4f1ec;
   --color-highlight: #fff4e8;
   --color-highlight-border: #f0d3ac;
-  --color-accent-secondary: #5b6ee1;
+  --color-accent-secondary: #485acf;
   --color-accent-secondary-bg: #eef0fd;
   --color-tour: #eb6834;
   --color-tour-dark: #d95826;
@@ -719,12 +727,6 @@ p + .btn {
   animation-delay: var(--stagger-delay, 0ms);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-cascade {
-    animation: none !important;
-    transition: none !important;
-  }
-}
 .animate-cascade-children > * {
   animation: cascade-up-bounce 0.52s cubic-bezier(0.34, 1.35, 0.64, 1) both;
 }
@@ -802,6 +804,16 @@ p + .btn {
 }
 .animate-cascade-children > *:nth-child(25) {
   animation-delay: 1440ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cascade,
+  .animate-cascade-children > * {
+    animation: none !important;
+    animation-delay: 0s !important;
+    transition: none !important;
+    opacity: 1 !important;
+  }
 }
 
 /*
