@@ -8,28 +8,87 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 
 [🌍👉 Demo 👈🎒](https://dmstern.github.io/reisotor/)
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/screenshots/dashboard-desktop-dark.png">
+    <img src="./docs/screenshots/dashboard-desktop-light.png" alt="Reisotor Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" />
+  </picture>
+</p>
+
+## 📸 Eindrücke
+
+<details open>
+<summary><b>🗺️ Spots, Touren & Entdeckungen auf der Karte</b></summary>
+<br />
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/screenshots/spots-desktop-dark.png">
+    <img src="./docs/screenshots/spots-desktop-light.png" alt="Reisotor Spots & Karte" width="100%" style="border-radius: 8px;" />
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/screenshots/tour-desktop-dark.png">
+    <img src="./docs/screenshots/tour-desktop-light.png" alt="Reisotor Tour-Planung mit Etappen" width="100%" style="border-radius: 8px;" />
+  </picture>
+</p>
+</details>
+
+<details>
+<summary><b>📅 Kalender, Zeitplan & Tagesablauf</b></summary>
+<br />
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/screenshots/calendar-desktop-dark.png">
+    <img src="./docs/screenshots/calendar-desktop-light.png" alt="Reisotor Kalender-Wochenansicht" width="100%" style="border-radius: 8px;" />
+  </picture>
+</p>
+</details>
+
+<details>
+<summary><b>💶 Gemeinsames Budget & transparente Abrechnung</b></summary>
+<br />
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/screenshots/budget-desktop-dark.png">
+    <img src="./docs/screenshots/budget-desktop-light.png" alt="Reisotor Budget & Abrechnung" width="100%" style="border-radius: 8px;" />
+  </picture>
+</p>
+</details>
+
+<details>
+<summary><b>📱 Unterwegs auf dem Smartphone (Responsive & Offline-PWA)</b></summary>
+<br />
+
+<p align="center">
+  <img src="./docs/screenshots/dashboard-mobile-light.png" alt="Mobile Dashboard" width="31%" style="border-radius: 8px; margin-right: 1.5%;" />
+  <img src="./docs/screenshots/spots-mobile-light.png" alt="Mobile Spots" width="31%" style="border-radius: 8px; margin-right: 1.5%;" />
+  <img src="./docs/screenshots/calendar-mobile-light.png" alt="Mobile Kalender" width="31%" style="border-radius: 8px;" />
+</p>
+</details>
+
 ## Features
 
-- 🏠 **Übersicht/Dashboard** mit Countdown, nächstem Programmpunkt, Packlisten- und Budget-Kurzstatus
-- 📅 **Ablauf/Kalender**: Wochenansicht über den ganzen Reisezeitraum, Termine mit Uhrzeit & Notiz, Drag & Drop von geplanten Ideen direkt auf einen Tag
-- 🧳 **Packliste**: eigene Liste pro Nutzer:in + eine gemeinsame Liste, Kategorien mit Autovervollständigung
-- 🛒 **Einkaufsliste**: gemeinsame Liste mit optionaler Käufer:in-Zuweisung, Filter danach, Produktlinks
-- 🎒 **Ausflugsideen**: Status Idee/Geplant/Verworfen, optionaler Google-Maps-Link (erscheint dann automatisch auf der Karte)
-- 🗺️ **Spots & Karte**: Restaurants, Sehenswürdigkeiten etc. mit Koordinaten, alles zusammen auf einer Leaflet/OpenStreetMap-Karte
-- 🛏️ **Unterkunft**: mehrere Einträge möglich, mit Zeitraum, Check-in/-out, Kosten
-- ✈️ **Reise/Transport**: Flug-/Zug-Infos (Zeiten, Gepäck, Sitzplatz), Kosten
-- 💶 **Budget**: Ziel- und Kategorienbudgets, Ausgaben und Überweisungen, automatische Saldo-/Schulden-Berechnung (Splitwise-artig)
-- 📔 **Tagebuch**: Einträge mit Bildern, Likes und Kommentaren
-- 📝 **Notizen**: freier Bereich für alles Sonstige, mit einfachem Rich-Text (fett/kursiv/Listen/Auto-Links)
-- 📎 **Anhänge**: Dateien/Bilder direkt an Reise-, Unterkunfts-, Notiz-, Kalender- und Budget-Einträge hängen
-- 🌍 **Reiseregion-Infos**: Sprache, Währung, aktueller Wechselkurs zur eigenen Heimatwährung und Reisehinweise direkt im Dashboard
-- 📍 **Live-Standort**: Mitglieder können ihren aktuellen Standort auf der Karte teilen
-- 🔔 **Echtzeit-Zusammenarbeit**: Änderungen anderer Mitglieder erscheinen live (ohne Neuladen), inkl. Anwesenheitsanzeige und optionalen Push-Benachrichtigungen
-- 📴 **Offline-fähig**: als App installierbar (Icon auf Startbildschirm bei iOS/Android/Desktop), lädt auch ohne Internetverbindung; zuletzt geladene Daten bleiben einsehbar, Änderungen werden bei Wiederverbindung automatisch nachgereicht
-- 🗑️ **Papierkorb**: gelöschte Einträge lassen sich rückgängig machen (60-Sekunden-Fenster direkt an Ort und Stelle) oder später im Papierkorb wiederherstellen
-- 👥 **Mitgliedschaft & Einladung**: offene Registrierung per E-Mail, Zugriff auf einen Urlaub aber nur für eingeladene Mitglieder (Autocomplete-Suche nach Benutzername/E-Mail)
-- ⚙️ **Einstellungen**: Emoji-Avatar, Passwort ändern, Kalender-Einstellungen (Wochenanfang, Datumsformat)
-- 💾 **Backup**: vollständiger Datenexport als ZIP-Archiv (Datenbank + Dateianhänge)
+- 🏠 **Übersicht/Dashboard**: Intuitiver Schnellüberblick mit Reise-Countdown, anstehenden Terminen, Packlisten- und Budgetstatus sowie Live-Wetter
+- 🗺️ **Spots & interaktive Karte**: Spots (Sehenswürdigkeiten, Unterkünfte, Gastronomie) mit Geokoordinaten, Öffnungszeiten, Leaflet/OpenStreetMap-Integration und Emoji-Markern
+- 🥾 **Touren & GPX-Tracks**: Mehretappen-Touren mit Drag&Drop-Stationen, GPX-Track-Upload, Höhenprofilen, Anfahrt-Berechnung und Live-Track-Aufzeichnung direkt im Browser
+- 📅 **Ablauf & Kalender**: Floating-Drawer auf Desktop und eigenständige Mobil-Ansicht; Wochenablauf, Termine, Fälligkeiten und Drag & Drop von Ausflügen
+- 🌦️ **Wetter & Unwetterwarnungen**: 14-Tage-Wettervorhersage, automatische Tagesstationen und amtliche Unwetterwarnungen (DWD, NWS, Open-Meteo)
+- 📋 **Zentrale Listen (Packliste, Einkauf, ToDos)**: Zusammengefasste Listen-Ansicht (`/listen`) mit Rollen, Fälligkeiten, Prioritäten und Zuweisungen
+- 💶 **Gemeinsames Budget**: Ziel- und Kategorienbudgets, Ausgaben, Überweisungen und automatischer Schuldenausgleich (Splitwise-artig)
+- 📔 **Tagebuch**: Reiseberichte mit Bildern, Reaktionen und Kommentaren
+- 📝 **Notizen & Dateianhänge**: Rich-Text-Notizen (fett/kursiv/Listen/Links) und universeller Datei-Upload für Buchungsbestätigungen und Tickets
+- 🌍 **Reiseregion-Infos**: Landessprache, lokale Währung inklusive tagesaktueller Wechselkurse zur Heimatwährung sowie Sicherheitshinweise
+- 📍 **Live-Standort & Präsenz**: Optionale Live-Standortfreigabe für Mitreisende, Anwesenheits-Avatare und Tipp-Indikatoren
+- ⚡ **Echtzeit-Synchronisation**: SSE-basierter Live-Sync zwischen allen Mitgliedern – Änderungen erscheinen sofort ohne Neuladen
+- 📴 **Offline-fähige PWA**: Vollständig als App installierbar (iOS/Android/Desktop), lokaler Cache und automatische Nachsynchronisation bei Verbindungsaufbau
+- 🗑️ **Papierkorb mit Undo**: 60-Sekunden-Rückgängig-Funktion direkt an Ort und Stelle sowie dauerhafter Papierkorb zur Wiederherstellung
+- 🎨 **Modernes Design**: Dark Mode & Light Mode, optimierte Glassmorphism-Oberflächen, Gestensteuerung und barrierefreie Kontraste
+- 🛡️ **Nutzerverwaltung & Rechte**: Integrierte Admin-Kontoverwaltung, temporäre Passwörter, konfigurierbare Registrierung und ZIP-Vollbackups
 
 ## Struktur
 
