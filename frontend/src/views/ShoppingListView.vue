@@ -98,7 +98,7 @@ const editDraft = useDraftAutosave(
   computed(() => editingItem.value !== null)
 );
 
-const showNewDetails = ref(false);
+const showNewDetails = usePersistedRef('reisotor-shopping-show-details', false);
 
 watch(
   () => newDraft.restored.value,
@@ -343,7 +343,7 @@ async function addItem() {
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
-  showNewDetails.value = false;
+  // Details bleiben bewusst im aktuellen Zustand (geöffnet oder geschlossen) erhalten.
   // Shop/Zeitraum bleiben bewusst stehen (siehe usePersistedRef oben) - praktisch, wenn mehrere
   // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
   // Vorbelegung fürs nächste Öffnen der Liste.

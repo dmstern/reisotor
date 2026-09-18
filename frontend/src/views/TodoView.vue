@@ -137,7 +137,7 @@ const editDraft = useDraftAutosave(
   computed(() => editingItem.value !== null)
 );
 
-const showNewDetails = ref(false);
+const showNewDetails = usePersistedRef('reisotor-todo-show-details', false);
 
 watch(
   () => newDraft.restored.value,
@@ -296,7 +296,7 @@ async function addItem() {
   items.value.push(created);
   lastAssignee.value = newForm.value.assigned_to_user_id;
   newForm.value = emptyForm();
-  showNewDetails.value = false;
+  // Details bleiben bewusst im aktuellen Zustand (geöffnet oder geschlossen) erhalten.
   newDraft.clear();
 }
 
