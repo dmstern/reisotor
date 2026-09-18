@@ -518,7 +518,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
       <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
     </form>
 
-    <div class="groups-grid">
+    <div class="groups-grid masonry">
       <section
         class="group-section animate-cascade"
         v-for="(group, index) in groupedItems"
@@ -881,6 +881,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
 
 .group-section {
   min-width: 0;
+  margin-bottom: 0;
 }
 
 .group-section:focus-within {
@@ -1065,15 +1066,19 @@ function hasItemMeta(item: ShoppingItem): boolean {
   padding: var(--space-2) 0;
 }
 
-/* Desktop: Gruppen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen –
-   auto-fit/minmax statt einer festen Spaltenzahl, damit sich die Spaltenzahl der tatsächlichen
-   Fensterbreite und Anzahl an Gruppen anpasst. Exakt dasselbe Muster wie PackingListView.vue. */
+/* Desktop: Gruppen in Masonry-Spalten (CSS Multi-Column) nebeneinander anordnen, um den
+   vorhandenen Platz optimal zu nutzen und unschöne Höhenlöcher durch unterschiedlich lange
+   Listen zu vermeiden (siehe style.css .masonry). */
 @media (min-width: 900px) {
   .groups-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    align-items: start;
-    gap: var(--space-4);
+    display: block;
+    column-width: 360px;
+    column-gap: var(--space-4);
+  }
+
+  .groups-grid > .group-section {
+    break-inside: avoid;
+    margin-bottom: var(--space-4);
   }
 }
 </style>
