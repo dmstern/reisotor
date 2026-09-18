@@ -33,11 +33,8 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(recordBtn).not.toHaveClass(/active/);
 
     await recordBtn.click();
-    const menu = page.locator('.picker-menu', { hasText: 'Privat aufzeichnen' });
-    await expect(menu).toBeVisible();
-    await menu.getByRole('button', { name: 'Privat aufzeichnen' }).click();
 
-    // Hinweis-Modal für Standort-Aufzeichnung bestätigen (erscheint nun auch beim Klick auf die Optionen auf der Karte)
+    // Hinweis-Modal für Standort-Aufzeichnung bestätigen (erscheint beim ersten Klick)
     const warningModal = page.locator('.track-warning-modal');
     if (await warningModal.isVisible()) {
       await warningModal.getByRole('button', { name: 'Aufzeichnung starten' }).click();
@@ -71,14 +68,13 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(recordBtn).not.toHaveClass(/active/, { timeout: 10_000 });
     await expect(recordingPill).not.toBeVisible();
 
-    // Aufzeichnungen-Liste in ExcursionsView.vue - keine feste Gesamtanzahl erwarten (die e2e-Suite
-    // teilt sich eine DB über alle Spec-Dateien hinweg, siehe playwright.config.ts), stattdessen die
-    // gerade erstellte Zeile über ihre Sortierung finden: GET /tracks liefert neueste zuerst
-    // (routes/tracks.ts), die eigene Aufzeichnung ist also immer die erste.
-    const tracksToggle = page.locator('.tracks-toggle');
-    await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
-    await expect(tracksToggle).toContainText(/Aufzeichnungen \(\d+\)/);
-    await tracksToggle.click();
+    // Aufzeichnungen-Liste in ExcursionsView.vue: Im Drawer auf den Tab "Tracks" wechseln.
+    // Keine feste Gesamtanzahl erwarten (die e2e-Suite teilt sich eine DB über alle Spec-Dateien
+    // hinweg, siehe playwright.config.ts), stattdessen die gerade erstellte Zeile über ihre Sortierung
+    // finden: GET /tracks liefert neueste zuerst (routes/tracks.ts), die eigene Aufzeichnung ist also immer die erste.
+    const tracksTab = page.locator('.segmented-toggle button').filter({ hasText: 'Tracks' });
+    await expect(tracksTab).toBeVisible({ timeout: 10_000 });
+    await tracksTab.click();
 
     // Dauer-Text statt Emoji-Zeichen prüfen: das Icon davor (group="actions") rendert seit #168
     // immer SVG statt Emoji (siehe stores/iconStyle.ts).
@@ -110,7 +106,6 @@ test.describe('Standort-Aufzeichnung', () => {
     const recordBtn = page.locator('.record-btn');
     await expect(recordBtn).toBeVisible({ timeout: 10_000 });
     await recordBtn.click();
-    await page.getByRole('button', { name: 'Privat aufzeichnen' }).click();
 
     const warningModal = page.locator('.track-warning-modal');
     if (await warningModal.isVisible()) {
@@ -177,9 +172,9 @@ test.describe('Standort-Aufzeichnung', () => {
     await expect(recordBtn).not.toHaveClass(/active/, { timeout: 10_000 });
     await expect(recordingPill).not.toBeVisible();
 
-    const tracksToggle = page.locator('.tracks-toggle');
-    await expect(tracksToggle).toBeVisible({ timeout: 10_000 });
-    await tracksToggle.click();
+    const tracksTab = page.locator('.segmented-toggle button').filter({ hasText: 'Tracks' });
+    await expect(tracksTab).toBeVisible({ timeout: 10_000 });
+    await tracksTab.click();
     await expect(
       page.locator('.track-row').filter({ hasText: '0 Min.' }).first().locator('.track-row-meta')
     ).toContainText(/Min\.|Std\./);
