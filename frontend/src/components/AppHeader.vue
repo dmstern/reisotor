@@ -65,7 +65,12 @@ onUnmounted(() => {
 });
 
 const profileTitle = computed(() => {
-  if (!connectivity.isOnline) return 'Offline – Einstellungen';
+  if (!connectivity.isOnline) {
+    if (connectivity.syncing || connectivity.checking) {
+      return 'Verbinde… – Einstellungen';
+    }
+    return 'Offline – Einstellungen';
+  }
   if (connectivity.pendingCount > 0) {
     return `${connectivity.pendingCount} ausstehende Synchronisation(en) – Einstellungen`;
   }
@@ -105,9 +110,10 @@ const profileTitle = computed(() => {
             to="/settings"
             class="profile-link"
             :class="{
-              'is-online': connectivity.isOnline && !connectivity.syncing && !connectivity.checking,
+              'is-online': connectivity.isOnline,
               'is-offline': !connectivity.isOnline,
-              'is-retrying': connectivity.syncing || connectivity.checking,
+              'is-retrying':
+                !connectivity.isOnline && (connectivity.syncing || connectivity.checking),
             }"
             :title="profileTitle"
           >
@@ -466,6 +472,7 @@ const profileTitle = computed(() => {
   flex-shrink: 0;
   transition:
     background 0.15s ease,
+    border-color 0.2s ease,
     filter 0.2s ease;
   position: relative;
   box-sizing: border-box;
@@ -509,10 +516,16 @@ const profileTitle = computed(() => {
     var(--color-success) 90deg,
     transparent 180deg
   );
-  animation: spin 1s linear infinite;
+  animation: spin 1.5s linear infinite;
   mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff calc(100% - 2px));
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff 0);
   opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-link.is-retrying::before {
+    animation: none;
+  }
 }
 
 @keyframes spin {
