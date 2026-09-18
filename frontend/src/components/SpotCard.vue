@@ -412,11 +412,44 @@ const cardRotation = computed(() => {
         group="categories"
       />
 
-      <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button -->
+      <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button, Titel, Metadaten und Notiz -->
       <Transition name="overlay-fade">
         <div v-if="expanded" class="image-expanded-overlay">
           <div class="overlay-top-row">
             <EditButton floating class="overlay-edit-btn" @click="emit('edit', spot)" />
+          </div>
+          <div class="overlay-bottom-content">
+            <div class="card-title-block is-expanded">
+              <h3 class="card-title" :title="spot.title">{{ spot.title }}</h3>
+              <div
+                v-if="
+                  creatorLabel ||
+                  (isAccommodation && (spot.start_date || spot.end_date)) ||
+                  spot.address
+                "
+                class="card-title-meta"
+              >
+                <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+                <span
+                  v-if="isAccommodation && (spot.start_date || spot.end_date)"
+                  class="overlay-submeta"
+                >
+                  {{ formatAccommodationDate(spot.start_date) || '?' }} –
+                  {{ formatAccommodationDate(spot.end_date) || '?' }}
+                </span>
+                <span v-else-if="spot.address" class="overlay-submeta">
+                  {{ spot.address }}
+                </span>
+              </div>
+            </div>
+            <!-- Spot-Notiz im Image Banner unterhalb vom Spot-Titel -->
+            <div v-if="spot.note" class="overlay-note" @click.stop>
+              <RichTextDisplay
+                class="note is-banner"
+                :content="spot.note"
+                :format="spot.note_format"
+              />
+            </div>
           </div>
         </div>
       </Transition>
@@ -429,42 +462,20 @@ const cardRotation = computed(() => {
     </div>
 
     <div class="body">
-      <!-- Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header -->
-      <div class="card-title-block">
-        <h3 class="card-title" :title="spot.title">{{ spot.title }}</h3>
-        <Transition name="fade">
-          <div
-            v-if="
-              expanded &&
-              (creatorLabel ||
-                (isAccommodation && (spot.start_date || spot.end_date)) ||
-                spot.address)
-            "
-            class="card-title-meta"
-          >
-            <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-            <span
-              v-if="isAccommodation && (spot.start_date || spot.end_date)"
-              class="overlay-submeta"
-            >
-              {{ formatAccommodationDate(spot.start_date) || '?' }} –
-              {{ formatAccommodationDate(spot.end_date) || '?' }}
-            </span>
-            <span v-else-if="spot.address" class="overlay-submeta">
-              {{ spot.address }}
-            </span>
-          </div>
-        </Transition>
-      </div>
-      <!-- Spot-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
-      <div v-if="spot.note" class="spot-note-container" :class="{ 'is-expanded': expanded }">
-        <RichTextDisplay
-          class="note is-clamped"
-          :class="{ 'is-expanded': expanded }"
-          :content="spot.note"
-          :format="spot.note_format"
-        />
-      </div>
+      <!-- Einheitlicher Card-Titel und Notiz im Body (nur im eingeklappten Zustand) -->
+      <template v-if="!expanded">
+        <div class="card-title-block">
+          <h3 class="card-title" :title="spot.title">{{ spot.title }}</h3>
+        </div>
+        <!-- Spot-Notiz: Trunkiert mit Ellipsis im collapsed Zustand (#235) -->
+        <div v-if="spot.note" class="spot-note-container">
+          <RichTextDisplay
+            class="note is-clamped"
+            :content="spot.note"
+            :format="spot.note_format"
+          />
+        </div>
+      </template>
 
       <!-- Eigene, explizite Aktionen (#109, #381) – nur im aufgeklappten Zustand sichtbar -->
       <div class="map-actions" v-if="expanded && spot.lat != null && spot.lng != null">
@@ -657,12 +668,46 @@ const cardRotation = computed(() => {
                   <span>Besucht</span>
                 </template>
               </button>
+
+              <!-- Expanded Social Actions: Fließt nahtlos im Aktionen-Raster mit (schließt Leerräume bei Umbrüchen) -->
+              <div v-if="expanded" class="card-social-actions is-expanded">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="comment-btn"
+                  :class="{ 'has-comments': comments.length > 0, active: showComments }"
+                  aria-label="Kommentare anzeigen"
+                  :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
+                  @click.stop="showComments = !showComments"
+                >
+                  <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
+                  <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="like-btn"
+                  :class="{ liked }"
+                  :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+                  :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
+                  @click.stop="emit('toggle-like')"
+                >
+                  <AppIcon
+                    :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+                    :size="15"
+                    group="actions"
+                  />
+                  <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Untere Zeile (Footer): Umsteigezeit/Anhänge links, Social Actions rechts (nutzt beide Ecken optimal aus) -->
+      <!-- Untere Zeile (Footer): Umsteigezeit/Anhänge links, Social Actions im collapsed Zustand -->
       <div
         class="card-footer-row"
         :class="{ 'is-expanded': expanded, 'has-layover': layoverMinutes != null }"
@@ -692,23 +737,7 @@ const cardRotation = computed(() => {
           </Badge>
         </div>
 
-        <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
-          <Transition name="comment-pop">
-            <Button
-              v-if="expanded"
-              type="button"
-              variant="ghost"
-              size="sm"
-              class="comment-btn"
-              :class="{ 'has-comments': comments.length > 0, active: showComments }"
-              aria-label="Kommentare anzeigen"
-              :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
-              @click.stop="showComments = !showComments"
-            >
-              <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
-              <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
-            </Button>
-          </Transition>
+        <div v-if="!expanded" class="card-social-actions">
           <Button
             type="button"
             variant="ghost"
@@ -875,7 +904,7 @@ const cardRotation = computed(() => {
 }
 
 .spot-card.expanded .image {
-  height: 200px;
+  height: 165px;
 }
 
 .spot-accordion {
@@ -946,7 +975,7 @@ const cardRotation = computed(() => {
   pointer-events: none;
 }
 
-/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Autor & Metadaten */
+/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Autor, Notiz & Metadaten */
 .image-expanded-overlay {
   position: absolute;
   inset: 0;
@@ -956,9 +985,10 @@ const cardRotation = computed(() => {
   padding: var(--space-3);
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(0, 0, 0, 0.15) 35%,
-    rgba(0, 0, 0, 0.85) 100%
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.15) 25%,
+    rgba(0, 0, 0, 0.6) 55%,
+    rgba(0, 0, 0, 0.92) 100%
   );
   border-radius: inherit;
   pointer-events: none;
@@ -973,6 +1003,97 @@ const cardRotation = computed(() => {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+}
+
+.overlay-bottom-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.overlay-bottom-content .card-title-block.is-expanded {
+  margin-bottom: 0;
+  padding-right: 0;
+  transform: none;
+}
+
+.overlay-bottom-content .card-title {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.overlay-bottom-content .card-title-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  flex-wrap: wrap;
+}
+
+.overlay-note {
+  margin-top: 2px;
+  overflow: hidden;
+  max-height: 2.7em;
+}
+
+.note.is-banner {
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note.is-banner :deep(.richtext) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+}
+
+.note.is-banner :deep(p),
+.note.is-banner :deep(div) {
+  display: inline;
+  margin: 0;
+  color: inherit;
+}
+
+.note.is-banner :deep(p + p::before),
+.note.is-banner :deep(div + div::before) {
+  content: ' ';
+}
+
+.note.is-banner :deep(a) {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+.note.is-banner :deep(strong),
+.note.is-banner :deep(b) {
+  color: #ffffff;
 }
 
 .overlay-edit-btn {
@@ -1129,39 +1250,15 @@ const cardRotation = computed(() => {
   gap: var(--space-2);
 }
 
-/* Einheitlicher Card-Titel: gleitet beim Expandieren nahtlos vom Body in den Cover-Header */
+/* Card-Titel im Body (nur im eingeklappten Zustand gerendert) */
 .card-title-block {
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: var(--space-2);
-  padding-right: 90px;
-  transform: translate3d(0, 0, 0);
-  transition:
-    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    margin-bottom 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-  pointer-events: none;
-}
-
-.card-title-block > * {
-  pointer-events: auto;
-}
-
-.spot-card:not(.expanded) .card-title-block {
   margin-bottom: 2px;
-}
-
-.spot-card.expanded .card-title-block {
-  transform: translateY(calc(-100% - var(--space-3) * 2));
-  margin-bottom: -24px;
-  padding-left: calc(var(--space-3) - var(--space-1));
-  padding-right: calc(var(--space-3) - var(--space-1));
-}
-
-.spot-card.expanded .card-title-block:has(.card-title-meta) {
-  margin-bottom: -44px;
+  padding-right: 90px;
 }
 
 .card-title {
@@ -1175,62 +1272,16 @@ const cardRotation = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition:
-    color 0.28s ease,
-    font-size 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    line-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-    text-shadow 0.28s ease;
 }
 
-.spot-card.expanded .card-title {
-  color: #ffffff;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.card-title-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-  flex-wrap: wrap;
-}
-
-/* Spot-Notiz: Fließender Übergang zwischen 1-zeiligem Teaser und kompakter 2-3-zeiliger Höhe (#235) */
+/* Spot-Notiz im Body: kompakter 1-zeiliger Teaser (#235) */
 .spot-note-container {
   display: block;
   position: relative;
-  margin-top: 2px;
+  margin-top: 0;
   overflow: hidden;
   flex-shrink: 0;
-  min-height: 1.4em;
-  transition:
-    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-    margin 0.25s ease;
-}
-
-.spot-card:not(.expanded) .spot-note-container {
-  margin-top: 0;
-}
-
-.spot-card.expanded .spot-note-container {
-  margin-top: 0;
-}
-
-.spot-note-container:not(.is-expanded) {
   max-height: 1.5em;
-}
-
-.spot-note-container.is-expanded {
-  max-height: 4.5em;
 }
 
 .note {
@@ -1253,12 +1304,6 @@ const cardRotation = computed(() => {
   color: var(--color-text-muted);
 }
 
-.note.is-clamped.is-expanded {
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  color: var(--color-text);
-}
-
 .note.is-clamped :deep(.richtext) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -1266,11 +1311,6 @@ const cardRotation = computed(() => {
   line-clamp: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.note.is-clamped.is-expanded :deep(.richtext) {
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
 }
 
 .note.is-clamped :deep(p),
@@ -1417,6 +1457,14 @@ const cardRotation = computed(() => {
   flex-shrink: 0;
 }
 
+.card-social-actions.is-expanded {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
 /* Im zugeklappten Zustand sitzt der Like-Button absolut unten rechts im Card-Body,
    damit mehrzeilige Aktionen ihn nicht nach unten aus dem sichtbaren Bereich schieben (#383) */
 .spot-card:not(.expanded) .card-social-actions {
@@ -1497,8 +1545,14 @@ const cardRotation = computed(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   margin-top: 2px;
+}
+
+.map-actions :deep(.btn--card-action) {
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  gap: 4px;
 }
 
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle: .calendar-drag-handle (Pointer-Events,
@@ -1725,7 +1779,23 @@ const cardRotation = computed(() => {
   }
 
   .spot-card.expanded .image {
-    height: 160px;
+    height: 145px;
+  }
+
+  .image-expanded-overlay {
+    padding: var(--space-2);
+  }
+
+  .overlay-bottom-content .card-title {
+    font-size: 0.95rem;
+    line-height: 1.2;
+  }
+
+  .note.is-banner {
+    font-size: 0.74rem;
+    line-height: 1.25;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
   }
 
   .body {
@@ -1781,12 +1851,8 @@ const cardRotation = computed(() => {
     right: var(--space-2);
   }
 
-  .spot-note-container:not(.is-expanded) {
+  .spot-note-container {
     max-height: 1.4em;
-  }
-
-  .spot-note-container.is-expanded {
-    max-height: 2.8em;
   }
 
   .note.is-clamped {
@@ -1796,19 +1862,9 @@ const cardRotation = computed(() => {
     line-height: 1.3;
   }
 
-  .note.is-clamped.is-expanded {
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-
   .note.is-clamped :deep(.richtext) {
     -webkit-line-clamp: 1;
     line-clamp: 1;
-  }
-
-  .note.is-clamped.is-expanded :deep(.richtext) {
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
   }
 
   .mobile-only-accordion {
