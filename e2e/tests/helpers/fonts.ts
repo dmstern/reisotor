@@ -29,20 +29,50 @@ export async function forceFontDisplayBlock(page: Page): Promise<void> {
  *  bevor Screenshots aufgenommen werden. */
 export async function waitForAppReady(page: Page): Promise<void> {
   await page
-    .locator('#splash')
-    .waitFor({ state: 'detached', timeout: 10_000 })
-    .catch(() => {});
-  await page
-    .locator('.splash')
-    .waitFor({ state: 'detached', timeout: 10_000 })
-    .catch(() => {});
-  await page
-    .locator('.loading-state')
+    .locator('#splash, .splash, .loading-state, .view-loading')
     .waitFor({ state: 'detached', timeout: 10_000 })
     .catch(() => {});
   await page
     .locator('.app-main, .budget-page, .dashboard, .page')
     .first()
     .waitFor({ state: 'attached', timeout: 10_000 });
+  await page.waitForTimeout(500);
+}
+
+/** Stellt sicher, dass Leaflet-Kartenkacheln (OpenStreetMap) vollständig geladen und gerendert sind,
+ *  bevor Screenshots aufgenommen werden. Verhindert weiße/unvollständige Kacheln im Screenshot. */
+export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<void> {
+  const hasMapContainer =
+    (await page.locator('.trip-map-container, .trip-map, .leaflet-container').count()) > 0;
+  if (!hasMapContainer) return;
+
+  // 1. Warten, bis der Leaflet-Kartencontainer gerendert und sichtbar ist
+  await page.locator('.leaflet-container').first().waitFor({ state: 'visible', timeout: 10_000 });
+
+  // 2. Warten, bis alle Kacheln vollständig heruntergeladen, dekodiert und gerendert wurden
+  await page.waitForFunction(
+    () => {
+      const mapContainers = Array.from(
+        document.querySelectorAll<HTMLElement>('.leaflet-container')
+      );
+      if (mapContainers.length === 0) return false;
+
+      const isAnyLoading = mapContainers.some((el) => el.hasAttribute('data-tiles-loading'));
+      if (isAnyLoading) return false;
+
+      const tiles = Array.from(
+        document.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
+      );
+      if (tiles.length === 0) return false;
+
+      return tiles.every(
+        (img) =>
+          img.complete && img.naturalWidth > 0 && img.classList.contains('leaflet-tile-loaded')
+      );
+    },
+    { timeout: timeoutMs }
+  );
+
+  // 3. Settle-Puffer für Leaflets CSS-Opacity-Transition (0.2s linear) & Compositing
   await page.waitForTimeout(500);
 }
