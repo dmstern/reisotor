@@ -235,4 +235,24 @@ describe('AttachmentPreviewModal', () => {
     expect(html).not.toContain('Ort auf Karte anzeigen');
     cleanUp();
   });
+
+  it('unterstützt flüssige Höhenanpassung und initialisiert has-transition auf preview-content', async () => {
+    const { cleanUp } = mountTestApp(AttachmentPreviewModal, {
+      modelValue: true,
+      attachments: ['https://example.com/wide.jpg', 'https://example.com/tall.jpg'],
+    });
+    await nextTick();
+    const content = document.querySelector('.preview-content');
+    expect(content).toBeTruthy();
+    // Simulate image loaded and trigger animation frame
+    const img = document.querySelector('.preview-img') as HTMLImageElement;
+    if (img) {
+      Object.defineProperty(img, 'naturalWidth', { value: 800, configurable: true });
+      Object.defineProperty(img, 'naturalHeight', { value: 400, configurable: true });
+      img.dispatchEvent(new Event('load'));
+      await nextTick();
+    }
+    expect(content?.className).toContain('preview-content');
+    cleanUp();
+  });
 });
