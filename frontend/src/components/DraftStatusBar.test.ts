@@ -9,9 +9,9 @@ describe('DraftStatusBar', () => {
     setActivePinia(createPinia());
   });
 
-  function renderStatus(props: Record<string, unknown>) {
+  function renderStatus(props: InstanceType<typeof DraftStatusBar>['$props']) {
     const app = createApp({
-      render: () => h(DraftStatusBar, props as any),
+      render: () => h(DraftStatusBar, props),
     });
     app.use(createPinia());
     return renderToString(app);

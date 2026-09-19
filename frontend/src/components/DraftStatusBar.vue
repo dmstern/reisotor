@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance } from 'vue';
 import type { DraftStatus } from '../composables/useDraftAutosave';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     status: DraftStatus;
     restored?: boolean;
