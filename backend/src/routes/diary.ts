@@ -83,6 +83,9 @@ const selectDiaryCommentWithTripStmt = db.prepare(
    WHERE diary_comments.id = ?`
 );
 const deleteDiaryCommentStmt = db.prepare('DELETE FROM diary_comments WHERE id = ?');
+const updateDiaryCommentStmt = db.prepare(
+  'UPDATE diary_comments SET content = ?, updated_at = ? WHERE id = ?'
+);
 
 // Zuordnung Tagebucheintrag -> Ausflüge (m:n, analog syncExcursionSpots in ideas.ts): wird bei
 // jedem Anlegen/Bearbeiten komplett neu geschrieben statt gedifft – kleine Anzahl Zeilen pro Eintrag.
@@ -426,4 +429,23 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     deleteDiaryCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
+
+  app.put<{ Params: { id: string }; Body: CommentBody }>(
+    '/diary/comments/:id',
+    async (req, reply) => {
+      const content = req.body?.content?.trim();
+      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      const comment = selectDiaryCommentWithTripStmt.get(req.params.id) as
+        { id: number; author_id: number; trip_id: number } | undefined;
+      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+      if (comment.author_id !== req.session.userId) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
+      }
+      updateDiaryCommentStmt.run(content, new Date().toISOString(), req.params.id);
+      return selectDiaryCommentByIdStmt.get(req.params.id);
+    }
+  );
 };

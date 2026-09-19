@@ -206,6 +206,9 @@ const selectIdeaCommentAuthStmt = db.prepare(
    WHERE idea_comments.id = ?`
 );
 const deleteIdeaCommentStmt = db.prepare('DELETE FROM idea_comments WHERE id = ?');
+const updateIdeaCommentStmt = db.prepare(
+  'UPDATE idea_comments SET content = ?, updated_at = ? WHERE id = ?'
+);
 const selectSpotTitleByIdForLegsStmt = db.prepare('SELECT title FROM spots WHERE id = ?');
 
 function syncExcursionSpots(ideaId: number, spotIds: number[]) {
@@ -849,4 +852,23 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     deleteIdeaCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
+
+  app.put<{ Params: { id: string }; Body: CommentBody }>(
+    '/ideas/comments/:id',
+    async (req, reply) => {
+      const content = req.body?.content?.trim();
+      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      const comment = selectIdeaCommentAuthStmt.get(req.params.id) as
+        { id: number; author_id: number; trip_id: number } | undefined;
+      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+      if (comment.author_id !== req.session.userId) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
+      }
+      updateIdeaCommentStmt.run(content, new Date().toISOString(), req.params.id);
+      return selectIdeaCommentByIdStmt.get(req.params.id);
+    }
+  );
 };

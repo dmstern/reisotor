@@ -338,7 +338,10 @@ function spotCommentItemsFor(spotId: number) {
     avatar: author(c.author_id)?.avatar ?? '❓',
     username: author(c.author_id)?.username ?? '?',
     content: c.content,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
+    canEdit: c.author_id === auth.user?.id,
   }));
 }
 async function toggleSpotLike(spotId: number) {
@@ -349,6 +352,9 @@ async function submitSpotComment(spotId: number, content: string) {
 }
 async function removeSpotComment(id: number) {
   await spotsStore.removeComment(id);
+}
+async function updateSpotComment(id: number, content: string) {
+  await spotsStore.updateComment(id, content);
 }
 
 // --- Likes/Kommentare Touren (weiterhin an ideas/idea_likes/idea_comments gebunden, siehe
@@ -370,7 +376,10 @@ function excursionCommentItemsFor(ideaId: number) {
     avatar: author(c.author_id)?.avatar ?? '❓',
     username: author(c.author_id)?.username ?? '?',
     content: c.content,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
+    canEdit: c.author_id === auth.user?.id,
   }));
 }
 async function toggleExcursionLike(ideaId: number) {
@@ -390,6 +399,13 @@ async function submitExcursionComment(ideaId: number, content: string) {
 async function removeExcursionComment(id: number) {
   await api.delete(`/ideas/comments/${id}`);
   excursionComments.value = excursionComments.value.filter((c) => c.id !== id);
+}
+async function updateExcursionComment(id: number, content: string) {
+  const updated = await api.put<ExcursionComment>(`/ideas/comments/${id}`, { content });
+  const idx = excursionComments.value.findIndex((c) => c.id === id);
+  if (idx !== -1) {
+    excursionComments.value[idx] = updated;
+  }
 }
 
 // --- Touren anlegen/bearbeiten/löschen (aus der früheren Ausflüge-Schublade, views/
@@ -3723,6 +3739,7 @@ async function deleteEditingSpot() {
                 @toggle-like="toggleExcursionLike(grp.excursion.id)"
                 @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
                 @remove-comment="removeExcursionComment"
+                @update-comment="updateExcursionComment"
                 @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
                 @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
                 @open="expandedExcursionId = grp.excursion.id"
@@ -3906,6 +3923,7 @@ async function deleteEditingSpot() {
                                   (content) => submitSpotComment(cell.spot.id, content)
                                 "
                                 @remove-comment="removeSpotComment"
+                                @update-comment="updateSpotComment"
                                 @open="onSpotCardOpen(cell.spot)"
                                 @close="onSpotCardClose"
                                 @show-on-map="onSpotShowOnMap(cell.spot)"
@@ -4108,6 +4126,7 @@ async function deleteEditingSpot() {
                           @toggle-like="toggleSpotLike(item.spot.id)"
                           @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
                           @remove-comment="removeSpotComment"
+                          @update-comment="updateSpotComment"
                           @open="onSpotCardOpen(item.spot)"
                           @close="onSpotCardClose"
                           @show-on-map="onSpotShowOnMap(item.spot)"

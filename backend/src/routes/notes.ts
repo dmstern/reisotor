@@ -61,6 +61,9 @@ const selectNoteCommentAuthStmt = db.prepare(
    WHERE note_comments.id = ?`
 );
 const deleteNoteCommentStmt = db.prepare('DELETE FROM note_comments WHERE id = ?');
+const updateNoteCommentStmt = db.prepare(
+  'UPDATE note_comments SET content = ?, updated_at = ? WHERE id = ?'
+);
 
 export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notes', async (req, reply) => {
@@ -224,4 +227,23 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     deleteNoteCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
+
+  app.put<{ Params: { id: string }; Body: CommentBody }>(
+    '/notes/comments/:id',
+    async (req, reply) => {
+      const content = req.body?.content?.trim();
+      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      const comment = selectNoteCommentAuthStmt.get(req.params.id) as
+        { id: number; author_id: number; trip_id: number } | undefined;
+      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+      if (comment.author_id !== req.session.userId) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
+      }
+      updateNoteCommentStmt.run(content, new Date().toISOString(), req.params.id);
+      return selectNoteCommentByIdStmt.get(req.params.id);
+    }
+  );
 };

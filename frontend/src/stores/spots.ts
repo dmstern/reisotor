@@ -128,6 +128,12 @@ export const useSpotsStore = defineStore('spots', () => {
     spotComments.value = spotComments.value.filter((c) => c.id !== id);
   }
 
+  async function updateComment(id: number, content: string) {
+    const updated = await api.put<SpotComment>(`/spots/comments/${id}`, { content });
+    spotComments.value = spotComments.value.map((c) => (c.id === id ? updated : c));
+    return updated;
+  }
+
   /** Setzt/entfernt den "gemacht"-Status, unabhängig von geplant/ungeplant (siehe
    *  ExcursionsView.vue's clientseitig aus schedule_items abgeleitetem Status) - eigener Endpunkt
    *  statt eines vollen update(), damit ein Toggle nicht alle anderen Felder erneut mitschicken muss. */
@@ -169,6 +175,7 @@ export const useSpotsStore = defineStore('spots', () => {
     toggleLike,
     submitComment,
     removeComment,
+    updateComment,
     setDone,
   };
 });

@@ -118,7 +118,10 @@ function commentItemsFor(noteId: number) {
     avatar: author(c.author_id)?.avatar ?? '❓',
     username: author(c.author_id)?.username ?? '?',
     content: c.content,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
+    canEdit: c.author_id === auth.user?.id,
   }));
 }
 
@@ -144,6 +147,14 @@ async function submitComment(noteId: number, content: string) {
 async function removeComment(id: number) {
   await api.delete(`/notes/comments/${id}`);
   comments.value = comments.value.filter((c) => c.id !== id);
+}
+
+async function updateComment(id: number, content: string) {
+  const updated = await api.put<NoteComment>(`/notes/comments/${id}`, { content });
+  const idx = comments.value.findIndex((c) => c.id === id);
+  if (idx !== -1) {
+    comments.value[idx] = updated;
+  }
 }
 
 function authorLabel(id: number | null) {
@@ -303,6 +314,7 @@ async function remove(id: number) {
             :comments="commentItemsFor(note.id)"
             @submit="(content) => submitComment(note.id, content)"
             @remove="removeComment"
+            @update="updateComment"
           />
         </Accordion>
       </Card>

@@ -162,7 +162,8 @@ CREATE TABLE IF NOT EXISTS diary_comments (
   entry_id INTEGER NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
   author_id INTEGER NOT NULL REFERENCES users(id),
   content TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  updated_at TEXT
 );
 
 -- Zuordnung Tagebucheintrag <-> Ausflug (m:n): ein Eintrag kann z. B. mehrere an diesem Tag
@@ -210,7 +211,8 @@ CREATE TABLE IF NOT EXISTS idea_comments (
   idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
   author_id INTEGER NOT NULL REFERENCES users(id),
   content TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  updated_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS note_likes (
@@ -226,7 +228,8 @@ CREATE TABLE IF NOT EXISTS note_comments (
   note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
   author_id INTEGER NOT NULL REFERENCES users(id),
   content TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  updated_at TEXT
 );
 
 -- travel_items wird NICHT mehr hier angelegt (#176: vollständige Ablösung durch ideas mit
@@ -304,7 +307,8 @@ CREATE TABLE IF NOT EXISTS spot_comments (
   spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
   author_id INTEGER NOT NULL REFERENCES users(id),
   content TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  updated_at TEXT
 );
 
 -- Persistenter Session-Store (sessionStore.ts) statt @fastify/session-Default (nur Arbeitsspeicher
@@ -1772,3 +1776,10 @@ if (ideasWithTransport.length > 0) {
   }
 }
 ensureColumn('todo_items', 'period', 'TEXT');
+// Kommentar-Bearbeitung: updated_at für alle 4 Kommentar-Tabellen (spot_comments,
+// idea_comments, note_comments, diary_comments), damit erkennbar ist, ob und wann
+// ein Kommentar nachträglich bearbeitet wurde.
+ensureColumn('spot_comments', 'updated_at', 'TEXT');
+ensureColumn('idea_comments', 'updated_at', 'TEXT');
+ensureColumn('note_comments', 'updated_at', 'TEXT');
+ensureColumn('diary_comments', 'updated_at', 'TEXT');

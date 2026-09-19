@@ -333,7 +333,10 @@ function commentItemsFor(entryId: number) {
     avatar: c.author_avatar ?? author(c.author_id)?.avatar ?? '❓',
     username: c.author_username ?? author(c.author_id)?.username ?? '?',
     content: c.content,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
+    canEdit: c.author_id === auth.user?.id,
   }));
 }
 
@@ -554,6 +557,14 @@ async function submitComment(entryId: number, content: string) {
 async function removeComment(id: number) {
   await api.delete(`/diary/comments/${id}`);
   comments.value = comments.value.filter((c) => c.id !== id);
+}
+
+async function updateComment(id: number, content: string) {
+  const updated = await api.put<DiaryComment>(`/diary/comments/${id}`, { content });
+  const idx = comments.value.findIndex((c) => c.id === id);
+  if (idx !== -1) {
+    comments.value[idx] = updated;
+  }
 }
 
 function hasMapContent(entry: DiaryEntry): boolean {
@@ -834,6 +845,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             :comments="commentItemsFor(entry.id)"
             @submit="(content) => submitComment(entry.id, content)"
             @remove="removeComment"
+            @update="updateComment"
           />
         </Accordion>
       </article>

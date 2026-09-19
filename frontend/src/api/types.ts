@@ -236,6 +236,7 @@ export interface ExcursionComment {
   author_avatar?: string;
   content: string;
   created_at: string;
+  updated_at?: string | null;
 }
 
 /** 'private' (Standard beim Start) ist nur für die aufzeichnende Person sichtbar, 'shared' für alle
@@ -355,6 +356,7 @@ export interface SpotComment {
   author_avatar?: string;
   content: string;
   created_at: string;
+  updated_at?: string | null;
 }
 
 export interface BudgetExpense {
@@ -459,6 +461,7 @@ export interface NoteComment {
   author_avatar?: string;
   content: string;
   created_at: string;
+  updated_at?: string | null;
 }
 
 export interface DiaryImageItem {
@@ -509,6 +512,7 @@ export interface DiaryComment {
   author_avatar?: string;
   content: string;
   created_at: string;
+  updated_at?: string | null;
 }
 
 /** Domänen, die Datei-Anhänge (Tickets/Dokumente) tragen können – siehe FileAttachments.vue.
