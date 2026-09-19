@@ -83,8 +83,10 @@ const insertMembership = db.prepare(
   'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)'
 );
 const membershipNow = new Date().toISOString();
-insertMembership.run(tripId, user1.id, membershipNow);
-insertMembership.run(tripId, user2.id, membershipNow);
+const allUsers = db.prepare('SELECT id FROM users').all() as { id: number }[];
+for (const u of allUsers) {
+  insertMembership.run(tripId, u.id, membershipNow);
+}
 
 // --- Budget: Kategorien-Allokationen des automatisch angelegten "Gemeinsamen Budgets" befüllen ---
 const sharedBudgetId = ensureDefaultSharedBudget(tripId);
