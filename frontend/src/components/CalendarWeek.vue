@@ -258,19 +258,50 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 /* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
-:global(body.is-dragging-calendar) .day {
+:global(body.is-dragging-calendar .day) {
   background: var(--color-scheduled-tint);
-  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-scheduled) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-scheduled) 50%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-scheduled) 30%, transparent),
+    0 2px 8px -2px color-mix(in srgb, var(--color-scheduled) 20%, transparent);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
-:global(body.is-dragging-calendar) .day.in-trip {
-  background: color-mix(in srgb, var(--color-scheduled) 12%, var(--color-surface));
+:global(body.is-dragging-calendar .day.in-trip) {
+  background: color-mix(in srgb, var(--color-scheduled) 16%, var(--color-surface));
+  border-color: var(--color-scheduled);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-scheduled) 50%, transparent),
+    0 4px 14px -2px color-mix(in srgb, var(--color-scheduled) 35%, transparent);
+  animation: calendar-drop-pulse 2.2s ease-in-out infinite alternate;
 }
 
-:global(body.is-dragging-calendar) .day:hover {
-  background: color-mix(in srgb, var(--color-scheduled) 20%, var(--color-surface));
-  transform: translateY(-1px);
+@keyframes calendar-drop-pulse {
+  0% {
+    box-shadow:
+      0 0 0 1.5px color-mix(in srgb, var(--color-scheduled) 40%, transparent),
+      0 3px 10px -2px color-mix(in srgb, var(--color-scheduled) 25%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2.5px var(--color-scheduled),
+      0 6px 18px -1px color-mix(in srgb, var(--color-scheduled) 45%, transparent);
+  }
+}
+
+:global(body.is-dragging-calendar .day:hover),
+:global(body.is-dragging-calendar .day.drag-over) {
+  background: color-mix(in srgb, var(--color-scheduled) 28%, var(--color-surface));
+  border-color: var(--color-scheduled);
+  box-shadow:
+    0 0 0 3px var(--color-scheduled),
+    0 8px 22px -2px color-mix(in srgb, var(--color-scheduled) 55%, transparent);
+  transform: translateY(-2px) scale(1.02);
+  z-index: 5;
 }
 
 /* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth

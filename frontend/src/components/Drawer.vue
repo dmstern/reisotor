@@ -625,4 +625,15 @@ onBeforeUnmount(() => {
     display: none;
   }
 }
+
+/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gezogen wird (#drag) */
+:global(body.is-dragging-calendar .drawer.left .drawer-panel) {
+  border-right-color: var(--color-scheduled);
+  box-shadow:
+    4px 0 24px -2px color-mix(in srgb, var(--color-scheduled) 40%, transparent),
+    0 0 0 1.5px color-mix(in srgb, var(--color-scheduled) 30%, transparent);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
 </style>

@@ -570,7 +570,7 @@ async function toggleExcursionDestination(excursion: Excursion, spotId: number) 
 }
 async function addSpotToExcursion(excursionId: number, spotId: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (!excursion) return;
+  if (!excursion || excursion.spot_ids.includes(spotId)) return;
   await excursionsStore.update(excursionId, {
     title: excursion.title,
     image_url: excursion.image_url ?? undefined,

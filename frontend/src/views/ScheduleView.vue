@@ -348,6 +348,10 @@ onMounted(async () => {
   // Urlaub komplett in der Vergangenheit/Zukunft ohne nahe ToDo-Fälligkeiten), zum Urlaubsstart.
   if (!goToDate(toLocalDateString(new Date())) && trip.value?.start_date) {
     goToDate(trip.value.start_date);
+    selectedDate.value = trip.value.start_date;
+    activeJumpTarget.value = 'trip';
+  } else {
+    activeJumpTarget.value = 'today';
   }
   loading.value = false;
 });
@@ -577,10 +581,12 @@ function nextMonth() {
 }
 
 function prevPage() {
+  activeJumpTarget.value = null;
   if (granularity.value === 'month') prevMonth();
   else pageOffset.value = clampOffset(pageOffset.value - weeksPerPage.value);
 }
 function nextPage() {
+  activeJumpTarget.value = null;
   if (granularity.value === 'month') nextMonth();
   else pageOffset.value = clampOffset(pageOffset.value + weeksPerPage.value);
 }
@@ -625,14 +631,43 @@ function goToDate(dateIso: string): boolean {
   return true;
 }
 
+// Aktiver Sprung-Fokus ('today' | 'trip' | null) für die optische Hervorhebung der Buttons (#audit)
+const activeJumpTarget = ref<'today' | 'trip' | null>(null);
+
+const isTodayActive = computed(() => {
+  const today = toLocalDateString(new Date());
+  const todayVisible = visibleWeeks.value.some((week) => week.some((day) => day.date === today));
+  if (!todayVisible) return false;
+  if (activeJumpTarget.value === 'today') return true;
+  if (activeJumpTarget.value === 'trip') return false;
+  return selectedDate.value === today;
+});
+
+const isTripActive = computed(() => {
+  if (!trip.value?.start_date) return false;
+  const tripStartDate = trip.value.start_date;
+  const tripStartVisible = visibleWeeks.value.some((week) =>
+    week.some((day) => day.date === tripStartDate)
+  );
+  if (!tripStartVisible) return false;
+  if (activeJumpTarget.value === 'trip') return true;
+  if (activeJumpTarget.value === 'today') return false;
+  return selectedDate.value === tripStartDate;
+});
+
 function jumpToToday() {
+  activeJumpTarget.value = 'today';
   const today = toLocalDateString(new Date());
   goToDate(today);
   selectDay(today);
 }
 
 function goToTripDates() {
-  if (trip.value?.start_date) goToDate(trip.value.start_date);
+  activeJumpTarget.value = 'trip';
+  if (trip.value?.start_date) {
+    goToDate(trip.value.start_date);
+    selectDay(trip.value.start_date);
+  }
 }
 
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));
@@ -660,6 +695,14 @@ const selectedDateWeatherEntries = computed(() =>
 // danach zusätzlich den "gemacht"-Status, siehe finishPendingSchedule.
 function selectDay(date: string) {
   selectedDate.value = date;
+  const today = toLocalDateString(new Date());
+  if (date === today) {
+    activeJumpTarget.value = 'today';
+  } else if (trip.value?.start_date && date === trip.value.start_date) {
+    activeJumpTarget.value = 'trip';
+  } else {
+    activeJumpTarget.value = null;
+  }
   const pending = drawers.pendingSchedule;
   if (!pending) return;
   void finishPendingSchedule(pending, date);
@@ -1138,10 +1181,23 @@ function formatDate(date: string) {
 
       <div class="toolbar-actions-row">
         <div class="jump-row">
-          <Button variant="secondary" size="sm" @click="jumpToToday">
+          <Button
+            variant="secondary"
+            size="sm"
+            :active="isTodayActive"
+            title="Zum heutigen Datum springen"
+            @click="jumpToToday"
+          >
             <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
           </Button>
-          <Button variant="secondary" size="sm" v-if="trip?.start_date" @click="goToTripDates">
+          <Button
+            variant="secondary"
+            size="sm"
+            v-if="trip?.start_date"
+            :active="isTripActive"
+            title="Zum Reisezeitraum springen"
+            @click="goToTripDates"
+          >
             <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
           </Button>
         </div>
@@ -1672,6 +1728,17 @@ function formatDate(date: string) {
 
 .weeks {
   padding: var(--space-2);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Leucht-Effekt für den gesamten Kalender-Wochenbereich während des Einplanen-Drags (#drag) */
+:global(body.is-dragging-calendar .weeks) {
+  border-color: color-mix(in srgb, var(--color-scheduled) 60%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-scheduled) 35%, transparent),
+    0 6px 20px -2px color-mix(in srgb, var(--color-scheduled) 25%, transparent);
 }
 
 .calendar-weekday-headers {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { ScheduleItem, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
@@ -229,9 +229,26 @@ function onDragStart(event: DragEvent) {
     event.preventDefault();
     return;
   }
+  drawers.draggingTourSpotId = props.spot.id;
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
+
+function onDragEnd() {
+  drawers.draggingTourSpotId = null;
+}
+
+function onWindowDragEnd() {
+  if (drawers.draggingTourSpotId != null) {
+    drawers.draggingTourSpotId = null;
+  }
+}
+onMounted(() => {
+  window.addEventListener('dragend', onWindowDragEnd);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('dragend', onWindowDragEnd);
+});
 
 // Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen: legt
 // einen mit diesem Spot verknüpften Termin an (siehe stores/schedule.ts) statt (wie früher) im
@@ -571,6 +588,7 @@ const cardRotation = computed(() => {
                 @toggle-tour="onToggleTour"
                 @create-tour="onCreateTour"
                 @dragstart="onDragStart"
+                @dragend="onDragEnd"
               />
               <button
                 v-if="
