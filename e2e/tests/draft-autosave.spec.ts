@@ -93,4 +93,44 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     );
     await expect(modal.locator('.draft-status')).toContainText('Entwurf wiederhergestellt');
   });
+
+  test('ein ungespeicherter Entwurf in der ToDo- und Einkaufsliste kann verworfen werden', async ({
+    page,
+  }) => {
+    // ToDo-Liste
+    await page.goto('/todo');
+    const todoInput = page.locator('.add-form input[placeholder="Neue Aufgabe"]');
+    await todoInput.click();
+    await todoInput.fill('Wanderschuhe imprägnieren');
+    await expect(page.locator('.add-form .draft-status')).toContainText('Entwurf gesichert', {
+      timeout: 4_000,
+    });
+    await expect(page.locator('.add-form .draft-discard-btn')).toBeVisible();
+
+    await page.locator('.add-form .draft-discard-btn').click();
+    await expect(todoInput).toHaveValue('');
+    await expect(page.locator('.add-form .draft-status')).toHaveCount(0);
+
+    await page.reload();
+    await expect(todoInput).toHaveValue('');
+    await expect(page.locator('.add-form .draft-status')).toHaveCount(0);
+
+    // Einkaufsliste
+    await page.goto('/shopping');
+    const shoppingInput = page.locator('.add-form input[placeholder="Neuer Artikel"]');
+    await shoppingInput.click();
+    await shoppingInput.fill('Sonnencreme LSF 50+');
+    await expect(page.locator('.add-form .draft-status')).toContainText('Entwurf gesichert', {
+      timeout: 4_000,
+    });
+    await expect(page.locator('.add-form .draft-discard-btn')).toBeVisible();
+
+    await page.locator('.add-form .draft-discard-btn').click();
+    await expect(shoppingInput).toHaveValue('');
+    await expect(page.locator('.add-form .draft-status')).toHaveCount(0);
+
+    await page.reload();
+    await expect(shoppingInput).toHaveValue('');
+    await expect(page.locator('.add-form .draft-status')).toHaveCount(0);
+  });
 });
