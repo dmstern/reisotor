@@ -636,7 +636,11 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <FormField icon="title" label="Titel" v-slot="{ id }">
           <Input :id="id" v-model="form.title" type="text" placeholder="Titel (optional)" />
         </FormField>
-        <RichTextEditor v-model="form.content" placeholder="Was ist heute passiert?" />
+        <RichTextEditor
+          class="diary-editor"
+          v-model="form.content"
+          placeholder="Was ist heute passiert?"
+        />
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
@@ -893,7 +897,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <FormField icon="title" label="Titel" v-slot="{ id }">
           <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
         </FormField>
-        <RichTextEditor v-model="editForm.content" />
+        <RichTextEditor class="diary-editor" v-model="editForm.content" />
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
@@ -1222,13 +1226,26 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 
 .entry h3 {
   margin: 0 0 var(--space-1);
-  font-size: 1.05rem;
+  font-family: var(--font-diary);
+  font-size: 1.15rem;
+  font-weight: 600;
   color: var(--color-primary-dark);
 }
 
 .content {
   margin: 0 0 var(--space-2);
+  font-family: var(--font-diary);
+  font-size-adjust: from-font;
+  font-size: 1.05rem;
+  line-height: 1.5;
   overflow-wrap: anywhere;
+}
+
+.diary-editor :deep(.richtext-content) {
+  font-family: var(--font-diary);
+  font-size-adjust: from-font;
+  font-size: 1.05rem;
+  line-height: 1.5;
 }
 
 .syntax-hint {

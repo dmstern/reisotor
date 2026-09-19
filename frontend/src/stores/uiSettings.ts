@@ -31,8 +31,58 @@ const BORDER_WIDTH_KEY = 'reisotor-border-width';
 const HIDE_COMPLETED_PACKING_KEY = 'reisotor-hide-completed-packing';
 const HIDE_COMPLETED_TODOS_KEY = 'reisotor-hide-completed-todos';
 const HIDE_COMPLETED_SHOPPING_KEY = 'reisotor-hide-completed-shopping';
+const DIARY_FONT_KEY = 'reisotor-diary-font';
 
 export type GlassStyle = 'glass' | 'frosted' | 'opaque' | 'custom';
+
+export type DiaryFont =
+  | 'architects-daughter'
+  | 'comic-neue'
+  | 'balsamiq-sans'
+  | 'short-stack'
+  | 'patrick-hand'
+  | 'fira-sans';
+
+export interface DiaryFontOption {
+  id: DiaryFont;
+  name: string;
+  fontFamily: string;
+}
+
+export const DEFAULT_DIARY_FONT: DiaryFont = 'architects-daughter';
+
+export const DIARY_FONT_OPTIONS: readonly DiaryFontOption[] = [
+  {
+    id: 'architects-daughter',
+    name: 'Architects Daughter',
+    fontFamily: "'Architects Daughter', cursive, sans-serif",
+  },
+  {
+    id: 'comic-neue',
+    name: 'Comic Neue',
+    fontFamily: "'Comic Neue', cursive, sans-serif",
+  },
+  {
+    id: 'balsamiq-sans',
+    name: 'Balsamiq Sans',
+    fontFamily: "'Balsamiq Sans', cursive, sans-serif",
+  },
+  {
+    id: 'short-stack',
+    name: 'Short Stack',
+    fontFamily: "'Short Stack', cursive, sans-serif",
+  },
+  {
+    id: 'patrick-hand',
+    name: 'Patrick Hand',
+    fontFamily: "'Patrick Hand', cursive, sans-serif",
+  },
+  {
+    id: 'fira-sans',
+    name: 'Fira Sans (App-Schrift)',
+    fontFamily: 'var(--font-sans)',
+  },
+] as const;
 
 export const VIBRANT_PRIMARY_COLOR_PRESETS = [
   { name: 'Türkis', hex: '#2a7f74' },
@@ -238,6 +288,20 @@ export function applyBorderWidth(widthPx: number) {
   document.documentElement.style.setProperty('--ui-border-width', `${widthPx}px`);
 }
 
+function loadDiaryFont(): DiaryFont {
+  const stored = safeLocalStorageGet(DIARY_FONT_KEY);
+  if (stored && DIARY_FONT_OPTIONS.some((o) => o.id === stored)) {
+    return stored as DiaryFont;
+  }
+  return DEFAULT_DIARY_FONT;
+}
+
+export function applyDiaryFont(font: DiaryFont) {
+  if (typeof document === 'undefined') return;
+  const option = DIARY_FONT_OPTIONS.find((o) => o.id === font) ?? DIARY_FONT_OPTIONS[0];
+  document.documentElement.style.setProperty('--font-diary', option.fontFamily);
+}
+
 export interface StoredAppSettings {
   theme?: ThemeMode;
   showActivityToasts?: boolean;
@@ -250,6 +314,7 @@ export interface StoredAppSettings {
   glassBlur?: number;
   primaryColor?: string;
   borderWidth?: number;
+  diaryFont?: DiaryFont;
   navPosition?: {
     desktop?: NavPosition;
     mobile?: NavPosition;
@@ -286,6 +351,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
 
   const primaryColor = ref<string>(loadPrimaryColor());
   const borderWidth = ref<number>(loadBorderWidth());
+  const diaryFont = ref<DiaryFont>(loadDiaryFont());
   const loaded = ref(false);
   let isInternalSync = false;
 
@@ -293,6 +359,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     applyGlassStyle(glassStyle.value, glassOpacity.value, glassBlur.value);
     applyPrimaryColor(primaryColor.value);
     applyBorderWidth(borderWidth.value);
+    applyDiaryFont(diaryFont.value);
   }
 
   function init() {
@@ -322,6 +389,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           glassBlur: glassBlur.value,
           primaryColor: primaryColor.value,
           borderWidth: borderWidth.value,
+          diaryFont: diaryFont.value,
           navPosition: {
             desktop: navPosStore.desktop,
             mobile: navPosStore.mobile,
@@ -415,6 +483,9 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         stored.borderWidth <= 10
       ) {
         borderWidth.value = stored.borderWidth;
+      }
+      if (stored.diaryFont && DIARY_FONT_OPTIONS.some((o) => o.id === stored.diaryFont)) {
+        diaryFont.value = stored.diaryFont;
       }
       if (stored.navPosition) {
         if (stored.navPosition.desktop === 'top' || stored.navPosition.desktop === 'bottom') {
@@ -533,6 +604,11 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     apply();
     persist();
   });
+  watch(diaryFont, (v) => {
+    safeLocalStorageSet(DIARY_FONT_KEY, v);
+    apply();
+    persist();
+  });
 
   // Attach watchers to external stores so changes persist automatically
   const themeStore = useThemeStore();
@@ -591,6 +667,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     glassBlur,
     primaryColor,
     borderWidth,
+    diaryFont,
     loaded,
     load,
     clearOnLogout,

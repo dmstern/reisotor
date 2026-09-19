@@ -72,6 +72,91 @@
   src: url('/fonts/fira-sans-700-italic.woff2') format('woff2');
 }
 
+/* Tagebuch-Schriftarten (selbst gehostet in public/fonts für Offline-Nutzung & ohne Google-Requests):
+   Architects Daughter (neuer Standard für Tagebucheinträge), Comic Neue, Balsamiq Sans, Short Stack,
+   Patrick Hand. */
+@font-face {
+  font-family: 'Architects Daughter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/architects-daughter-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Balsamiq Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/balsamiq-sans-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Balsamiq Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/balsamiq-sans-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Balsamiq Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/balsamiq-sans-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Balsamiq Sans';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/balsamiq-sans-700-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/comic-neue-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/comic-neue-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/comic-neue-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Comic Neue';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/comic-neue-700-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Patrick Hand';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/patrick-hand-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Short Stack';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/short-stack-400.woff2') format('woff2');
+}
+
 :root {
   color-scheme: light;
   interpolate-size: allow-keywords;
@@ -239,6 +324,7 @@
 
   --font-sans:
     'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-diary: 'Architects Daughter', cursive, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.85rem;
   --font-size-md: 1rem;
