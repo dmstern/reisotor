@@ -1119,9 +1119,17 @@ const cardRotation = computed(() => {
 
 .spot-card.expanded .card-badge-group :deep(.category-chip) {
   max-width: 160px;
-  box-shadow: var(--shadow-sm);
-  -webkit-backdrop-filter: blur(4px) brightness(80%);
-  backdrop-filter: blur(4px) brightness(80%);
+  background: color-mix(
+    in srgb,
+    var(--category-color, #9333ea) 22%,
+    rgba(15, 18, 24, 0.85)
+  ) !important;
+  color: color-mix(in srgb, var(--category-color, #9333ea) 18%, #ffffff) !important;
+  border: 1px solid
+    color-mix(in srgb, var(--category-color, #9333ea) 40%, rgba(255, 255, 255, 0.25)) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .body {
