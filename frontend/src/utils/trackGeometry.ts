@@ -67,11 +67,11 @@ export function formatDurationShort(ms: number): string {
   const totalMinutes = Math.round(ms / 60_000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  if (hours > 0) return `${hours} Std. ${minutes} Min.`;
-  return `${minutes} Min.`;
+  if (hours > 0) return `${hours}\u00A0Std. ${minutes}\u00A0Min.`;
+  return `${minutes}\u00A0Min.`;
 }
 
 export function formatDistanceShort(meters: number): string {
-  if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`;
-  return `${Math.round(meters)} m`;
+  if (meters >= 1000) return `${(meters / 1000).toFixed(1)}\u00A0km`;
+  return `${Math.round(meters)}\u00A0m`;
 }

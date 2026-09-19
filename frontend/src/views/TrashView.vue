@@ -81,7 +81,7 @@ function titleFor(entry: TrashEntry): string {
     case 'shopping_item':
       return (d.label as string) || '(ohne Titel)';
     case 'budget_transfer':
-      return `${(d.amount as number).toFixed(2)} € · ${userLabel(d.from_user_id)} → ${userLabel(d.to_user_id)}`;
+      return `${(d.amount as number).toFixed(2)}\u00A0€ · ${userLabel(d.from_user_id)} → ${userLabel(d.to_user_id)}`;
     case 'note':
     case 'diary_entry':
       return (d.title as string | null) || truncate(d.content as string);
@@ -203,8 +203,8 @@ async function emptyTrash() {
       Gelöschte Termine, Ausflüge, Spots und mehr<template v-if="currentTrip?.name">
         aus „{{ currentTrip.name }}“</template
       >
-      bleiben hier für <strong>30 Tage</strong> erhalten, bevor sie automatisch endgültig gelöscht
-      werden. In dieser Zeit lassen sie sich jederzeit wiederherstellen.
+      bleiben hier für <strong class="nobr">30&nbsp;Tage</strong> erhalten, bevor sie automatisch
+      endgültig gelöscht werden. In dieser Zeit lassen sie sich jederzeit wiederherstellen.
     </p>
     <p v-if="error" class="error">{{ error }}</p>
 
@@ -227,7 +227,11 @@ async function emptyTrash() {
           <span class="trash-title">{{ titleFor(entry) }}</span>
           <span class="trash-meta"
             >{{ entry.label }} · Gelöscht am {{ formatDeletedAt(entry.deletedAt) }} (Noch
-            {{ daysRemaining(entry.deletedAt) }} Tage)</span
+            <span class="nobr"
+              >{{ daysRemaining(entry.deletedAt) }}&nbsp;{{
+                daysRemaining(entry.deletedAt) === 1 ? 'Tag' : 'Tage'
+              }}</span
+            >)</span
           >
         </div>
         <div class="trash-actions">

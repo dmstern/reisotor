@@ -28,7 +28,7 @@ const store = useBudgetStore();
         <span class="suggestion-text">
           {{ store.userAvatar(s.from.id) }} <strong>{{ s.from.username }}</strong> schuldet
           {{ store.userAvatar(s.to.id) }} <strong>{{ s.to.username }}</strong> noch
-          <strong class="debt-amount">{{ s.amount.toFixed(2) }} €</strong>
+          <strong class="debt-amount">{{ s.amount.toFixed(2) }}&nbsp;€</strong>
         </span>
         <Button
           variant="secondary"
@@ -45,7 +45,7 @@ const store = useBudgetStore();
       <li v-for="b in store.balances" :key="b.user.id" class="balance-row">
         <span class="balance-user">{{ b.user.avatar }} {{ b.user.username }}</span>
         <Badge :variant="b.net >= 0 ? 'success' : 'danger'">
-          {{ b.net >= 0 ? 'bekommt' : 'schuldet' }} {{ Math.abs(b.net).toFixed(2) }} €
+          {{ b.net >= 0 ? 'bekommt' : 'schuldet' }} {{ Math.abs(b.net).toFixed(2) }}&nbsp;€
         </Badge>
       </li>
     </ul>
@@ -124,6 +124,7 @@ const store = useBudgetStore();
 .debt-amount {
   color: var(--color-accent);
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .settle-btn {

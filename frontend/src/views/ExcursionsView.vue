@@ -1684,11 +1684,11 @@ function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string 
   const parts: string[] = [];
   if (leg.transport_type) parts.push(leg.transport_type);
   if (leg.departure_time || leg.arrival_time) {
-    parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'} Uhr`);
+    parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'}\u00A0Uhr`);
   }
   const dur = getLegDuration(leg);
   if (dur) parts.push(`(${dur})`);
-  if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')} €`);
+  if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')}\u00A0€`);
   parts.push(`• Von: ${fromSpot.title} → Nach: ${toSpot.title}`);
   parts.push('• Klicken zum Bearbeiten');
   return parts.join(' ');
@@ -4008,8 +4008,8 @@ async function deleteEditingSpot() {
                                     cell.leg.departure_time
                                   }}</span>
                                 </span>
-                                <span v-if="cell.leg.amount != null" class="leg-pill-cost">
-                                  {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
+                                <span v-if="cell.leg.amount != null" class="leg-pill-cost nobr">
+                                  {{ cell.leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
                                 </span>
                               </div>
 
@@ -4104,8 +4104,11 @@ async function deleteEditingSpot() {
                                   row.rowBreak.leg.departure_time
                                 }}</span>
                               </span>
-                              <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
-                                {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
+                              <span
+                                v-if="row.rowBreak.leg.amount != null"
+                                class="leg-pill-cost nobr"
+                              >
+                                {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
                               </span>
                             </div>
 

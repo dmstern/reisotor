@@ -277,10 +277,16 @@ const categoryColors = computed(() => {
         >
           <span class="pill-dot" aria-hidden="true"></span>
           <span v-if="budgetStore.remaining < 0">
-            {{ Math.abs(budgetStore.remaining).toFixed(2) }} € über Budget
+            <span class="nobr">{{ Math.abs(budgetStore.remaining).toFixed(2) }}&nbsp;€</span> über
+            Budget
           </span>
           <span v-else>
-            {{ Math.round((budgetStore.totalSpent / budgetStore.grandTotal) * 100) }}% ausgeschöpft
+            <span class="nobr"
+              >{{
+                Math.round((budgetStore.totalSpent / budgetStore.grandTotal) * 100)
+              }}&nbsp;%</span
+            >
+            ausgeschöpft
           </span>
         </span>
       </div>
@@ -306,7 +312,7 @@ const categoryColors = computed(() => {
              positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
              ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
         <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
-          Noch übrig: <strong>{{ budgetStore.remaining.toFixed(2) }} €</strong>
+          Noch übrig: <strong class="nobr">{{ budgetStore.remaining.toFixed(2) }}&nbsp;€</strong>
         </p>
       </Card>
 
