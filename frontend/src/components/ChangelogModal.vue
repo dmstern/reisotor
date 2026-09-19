@@ -6,16 +6,20 @@ import Button from './primitives/Button.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { useBuildInfoStore } from '../stores/buildInfo';
+import { useAuthStore } from '../stores/auth';
 import { formatInline } from '../utils/richText';
 
 const pwaUpdate = usePwaUpdateStore();
 const buildInfoStore = useBuildInfoStore();
+const auth = useAuthStore();
 const router = useRouter();
+
+const isOpen = computed(() => Boolean(auth.user && pwaUpdate.showChangelogDialog));
 
 const title = computed(() => `Was ist neu in v${pwaUpdate.currentVersion}? 🎉`);
 
 watch(
-  () => pwaUpdate.showChangelogDialog,
+  () => isOpen.value,
   (open) => {
     if (open && !buildInfoStore.buildInfo) {
       buildInfoStore.load();
@@ -24,7 +28,7 @@ watch(
   { immediate: true }
 );
 
-const loading = computed(() => pwaUpdate.showChangelogDialog && !buildInfoStore.buildInfo);
+const loading = computed(() => isOpen.value && !buildInfoStore.buildInfo);
 
 const groups = computed(() => {
   return buildInfoStore.buildInfo?.changelog?.groups ?? [];
@@ -66,12 +70,7 @@ function goToSettings() {
 </script>
 
 <template>
-  <Modal
-    :model-value="pwaUpdate.showChangelogDialog"
-    :title="title"
-    size="md"
-    @update:model-value="onClose"
-  >
+  <Modal :model-value="isOpen" :title="title" size="md" @update:model-value="onClose">
     <div class="changelog-modal">
       <div v-if="loading" class="loading-state">
         <LoadingSpinner size="md" />
