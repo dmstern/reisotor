@@ -281,6 +281,8 @@ function onShowOnMap() {
   emit('show-on-map');
 }
 
+const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.id}`);
+
 const scheduledItemsForSpot = computed(() => {
   return scheduleStore.items
     .filter((i) => i.spot_id === props.spot.id && i.date)
@@ -407,6 +409,7 @@ const cardRotation = computed(() => {
     variant="polaroid"
     class="spot-card"
     :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
+    :map-focused="isMapFocused"
     :style="{ '--card-rotate': cardRotation }"
     @click="onCardClick"
   >

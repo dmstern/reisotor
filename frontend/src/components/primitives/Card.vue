@@ -35,6 +35,8 @@ const props = withDefaults(
     bannerPosition?: 'top' | 'left' | 'auto';
     /** Hebt die Karte mit dem Notiz/Live-Sync Highlight-Rand hervor (.new-highlight). */
     highlight?: boolean;
+    /** Hebt die Karte mit einem eleganten Brand-Fokus-Rand hervor (.is-map-focused), wenn sie auf der Karte fokussiert ist. */
+    mapFocused?: boolean;
     /** Akzentfarbe für die 'tile'-Variante (Hex oder CSS var). */
     tileColor?: string;
     /** Alpha-Hex für den Box-Shadow der 'tile'-Variante (Standard: TILE_SHADOW_ALPHA aus widgetColors.ts). */
@@ -53,6 +55,7 @@ const props = withDefaults(
     bannerAlt: '',
     bannerPosition: 'auto',
     highlight: false,
+    mapFocused: false,
     tileColor: '#9141AC',
     tileShadowAlpha: TILE_SHADOW_ALPHA,
     tag: 'div',
@@ -138,6 +141,7 @@ function handleCardKeydown(event: KeyboardEvent) {
         'card--expandable': expandable,
         'card--interactive': interactive,
         'new-highlight': highlight,
+        'is-map-focused': mapFocused,
         'card--has-banner': bannerUrl || $slots.banner,
         'card--banner-left': (bannerUrl || $slots.banner) && effectiveBannerPosition === 'left',
       },
@@ -268,6 +272,50 @@ function handleCardKeydown(event: KeyboardEvent) {
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
   box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.card.is-map-focused {
+  position: relative;
+  z-index: 6;
+  border-color: var(--color-primary) !important;
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 8px 24px -4px color-mix(in srgb, var(--color-primary) 32%, transparent),
+    0 2px 8px -1px color-mix(in srgb, var(--color-primary) 20%, transparent) !important;
+  animation: cardMapFocusPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card.is-map-focused:hover {
+  border-color: var(--color-primary) !important;
+  box-shadow:
+    0 0 0 2.5px var(--color-primary),
+    0 12px 28px -4px color-mix(in srgb, var(--color-primary) 40%, transparent),
+    0 4px 12px -1px color-mix(in srgb, var(--color-primary) 25%, transparent) !important;
+}
+
+@keyframes cardMapFocusPulse {
+  0% {
+    box-shadow:
+      0 0 0 0px var(--color-primary),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 3.5px var(--color-primary),
+      0 0 24px 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--color-primary),
+      0 8px 24px -4px color-mix(in srgb, var(--color-primary) 32%, transparent),
+      0 2px 8px -1px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.is-map-focused {
+    animation: none;
+  }
 }
 </style>
 

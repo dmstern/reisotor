@@ -43,4 +43,13 @@ describe('Card primitive', () => {
     expect(html).toContain('role="button"');
     expect(html).toContain('aria-expanded="true"');
   });
+
+  it('renders mapFocused card with is-map-focused class', async () => {
+    const app = createApp({
+      render: () => h(Card, { mapFocused: true }, () => 'Focused Card'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('is-map-focused');
+    expect(html).toContain('Focused Card');
+  });
 });

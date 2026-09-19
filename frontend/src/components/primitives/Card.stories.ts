@@ -190,6 +190,22 @@ export const Highlighted: Story = {
   }),
 };
 
+export const MapFocused: Story = {
+  args: { mapFocused: true },
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args };
+    },
+    template: `
+      <Card v-bind="args" style="max-width: 400px;">
+        <h3 style="margin: 0 0 8px;">Karten-Fokus (.is-map-focused)</h3>
+        <p style="margin: 0;">Markiert einen Spot oder eine Tour mit einer eleganten Brand-Umrandung und Ambient Glow, sobald er auf der Karte fokussiert wird.</p>
+      </Card>
+    `,
+  }),
+};
+
 export const Interactive: Story = {
   args: {
     interactive: true,

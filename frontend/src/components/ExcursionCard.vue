@@ -63,9 +63,17 @@ const emit = defineEmits<{
 }>();
 
 function onCardClick() {
-  if (props.expanded) emit('close');
-  else emit('open', props.excursion);
+  if (props.expanded) {
+    emit('close');
+    if (drawers.mapFocusExcursionId === props.excursion.id) {
+      drawers.mapFocusExcursionId = null;
+    }
+  } else {
+    emit('open', props.excursion);
+  }
 }
+
+const isMapFocused = computed(() => drawers.mapFocusExcursionId === props.excursion.id);
 
 const resolvedStations = computed(() =>
   resolveStations(excursionStationKeys(props.excursion.spot_ids), props.stations, props.travelItems)
@@ -294,6 +302,7 @@ function onSpotDrop(event: DragEvent) {
       'has-role': !!excursion.role,
       'is-travel': !!excursion.role,
     }"
+    :map-focused="isMapFocused"
     @click="onCardClick"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"

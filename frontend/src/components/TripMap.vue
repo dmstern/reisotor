@@ -18,7 +18,7 @@ import 'leaflet/dist/leaflet.css';
 // geladen sein.
 import 'leaflet-rotate';
 import { api } from '../api/client';
-import type { Excursion, LocationTrack, ScheduleItem, TrackPoint, User } from '../api/types';
+import type { Excursion, LocationTrack, ScheduleItem, Spot, TrackPoint, User } from '../api/types';
 import { buildDayStations } from '../utils/dayStations';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useTripStore } from '../stores/trip';
@@ -285,6 +285,8 @@ function clearFocus() {
     drawers.mapFocusExcursionId = null;
   } else if (drawers.mapFocusDate) {
     drawers.mapFocusDate = null;
+  } else if (drawers.mapFocusKey) {
+    drawers.mapFocusKey = null;
   }
   isFocusBannerExpanded.value = false;
 }
@@ -563,6 +565,15 @@ const vacationPoints = computed(() => filteredPoints.value.filter((p) => !p.home
 const focusedExcursion = computed<Excursion | null>(() => {
   if (drawers.mapFocusExcursionId == null) return null;
   return excursionsStore.excursions.find((e) => e.id === drawers.mapFocusExcursionId) ?? null;
+});
+
+// "Auf Karte anzeigen" aus einer Spot-Karte (SpotCard.vue) oder Pin-Klick auf der Karte
+// fokussiert diesen Spot (drawers.mapFocusKey = 'spot-<id>').
+const focusedSpot = computed<Spot | null>(() => {
+  if (!drawers.mapFocusKey?.startsWith('spot-')) return null;
+  const spotId = Number(drawers.mapFocusKey.replace('spot-', ''));
+  if (Number.isNaN(spotId)) return null;
+  return spotsStore.spots.find((s) => s.id === spotId) ?? null;
 });
 
 // Standort-Aufzeichnung, die gerade auf der Karte gezeigt wird (ExcursionsView.vue's
@@ -1727,7 +1738,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       <div
         class="focus-banner"
         :class="{ 'is-expanded': isFocusBannerExpanded }"
-        v-if="focusedExcursion || drawers.mapFocusDate"
+        v-if="focusedExcursion || drawers.mapFocusDate || focusedSpot"
       >
         <button
           class="focus-banner-toggle-btn"
@@ -1738,14 +1749,24 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           @click="isFocusBannerExpanded = !isFocusBannerExpanded"
         >
           <AppIcon
-            :icon="focusedExcursion ? SECTION_ICON_DEFS.excursions : FORM_FIELD_ICONS.period"
+            :icon="
+              focusedExcursion
+                ? SECTION_ICON_DEFS.excursions
+                : focusedSpot
+                  ? spotCategoryMeta(focusedSpot.category).tabler
+                  : FORM_FIELD_ICONS.period
+            "
             :size="18"
-            :group="focusedExcursion ? 'navigation' : 'formFields'"
+            :group="focusedExcursion ? 'navigation' : focusedSpot ? 'categories' : 'formFields'"
           />
         </button>
         <div class="focus-banner-content">
           <span>{{
-            focusedExcursion ? focusedExcursion.title : formatDate(drawers.mapFocusDate!)
+            focusedExcursion
+              ? focusedExcursion.title
+              : focusedSpot
+                ? focusedSpot.title
+                : formatDate(drawers.mapFocusDate!)
           }}</span>
           <Button variant="card-action" @click="clearFocus">
             <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
