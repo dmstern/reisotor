@@ -315,5 +315,100 @@ describe('trips routes', () => {
       expect(updateRes.statusCode).toBe(200);
       expect(updateRes.json().weather_model).toBe('jma_seamless');
     });
+
+    it('clears country_code and country_name when trip coordinates change in PUT /api/trips/:id', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/trips',
+        headers: { cookie },
+        payload: {
+          name: 'Standort-Wechsel',
+          lat: 48.8566,
+          lng: 2.3522,
+        },
+      });
+      const id = created.json().id;
+
+      // Mock nominatim & restcountries for initial resolve
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) => {
+          if (url.includes('nominatim.openstreetmap.org')) {
+            return Promise.resolve({
+              ok: true,
+              json: () =>
+                Promise.resolve({ address: { country: 'Frankreich', country_code: 'fr' } }),
+            });
+          }
+          if (url.includes('restcountries.com')) {
+            return Promise.resolve({
+              ok: true,
+              json: () =>
+                Promise.resolve([
+                  { languages: { fra: 'French' }, currencies: { EUR: { name: 'Euro' } } },
+                ]),
+            });
+          }
+          return Promise.resolve({ ok: false, status: 503 });
+        })
+      );
+
+      const firstRegionRes = await app.inject({
+        method: 'GET',
+        url: `/api/trips/${id}/region-info`,
+        headers: { cookie },
+      });
+      expect(firstRegionRes.statusCode).toBe(200);
+      expect(firstRegionRes.json().countryName).toBe('Frankreich');
+
+      // Now update location to Norway
+      const updated = await app.inject({
+        method: 'PUT',
+        url: `/api/trips/${id}`,
+        headers: { cookie },
+        payload: {
+          name: 'Standort-Wechsel',
+          lat: 59.9139,
+          lng: 10.7522,
+        },
+      });
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json().country_code).toBeNull();
+      expect(updated.json().country_name).toBeNull();
+
+      // Next region-info call should now resolve to Norway
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) => {
+          if (url.includes('nominatim.openstreetmap.org')) {
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve({ address: { country: 'Norwegen', country_code: 'no' } }),
+            });
+          }
+          if (url.includes('restcountries.com')) {
+            return Promise.resolve({
+              ok: true,
+              json: () =>
+                Promise.resolve([
+                  {
+                    languages: { nor: 'Norwegian' },
+                    currencies: { NOK: { name: 'Norwegian Krone' } },
+                  },
+                ]),
+            });
+          }
+          return Promise.resolve({ ok: false, status: 503 });
+        })
+      );
+
+      const secondRegionRes = await app.inject({
+        method: 'GET',
+        url: `/api/trips/${id}/region-info`,
+        headers: { cookie },
+      });
+      expect(secondRegionRes.statusCode).toBe(200);
+      expect(secondRegionRes.json().countryName).toBe('Norwegen');
+    });
   });
 });

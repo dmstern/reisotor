@@ -17,13 +17,16 @@ import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
+import SocialRow from './SocialRow.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
+import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
+import DoneToggle from './primitives/DoneToggle.vue';
 import FileAttachments from './FileAttachments.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -51,6 +54,8 @@ const emit = defineEmits<{
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
+  (e: 'update-comment', id: number, content: string): void;
+  (e: 'toggle-comment-like', id: number): void;
   (e: 'drop-spot', spotId: number): void;
   (e: 'show-on-map'): void;
   (e: 'open', excursion: Excursion): void;
@@ -459,88 +464,47 @@ function onSpotDrop(event: DragEvent) {
               <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
             </button>
             <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
-            <button
-              type="button"
-              class="done-toggle"
-              :class="{
-                status: !!(excursion.date || excursion.done),
-                planned: !!(excursion.date && !excursion.done),
-                'status-done': !!excursion.done,
-                active: !!excursion.done,
-              }"
-              :aria-pressed="!!excursion.done"
+            <DoneToggle
+              :done="!!excursion.done"
+              :planned="!!excursion.date"
               :aria-label="
                 excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
               "
               :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-              @click.stop="onToggleDone"
+              @click="onToggleDone"
             >
               <template v-if="excursion.done">
-                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                <span class="status-text">
-                  <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
-                  <template v-else>Gemacht</template>
-                  <template v-if="weatherSummary">
-                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                    {{ weatherSummary.tempLabel }}
-                  </template>
-                </span>
+                <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
+                <template v-else>Gemacht</template>
+                <template v-if="weatherSummary">
+                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                  {{ weatherSummary.tempLabel }}
+                </template>
               </template>
               <template v-else-if="excursion.date">
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                <span class="status-text">
-                  Geplant für {{ statusDateLabel }}
-                  <template v-if="weatherSummary">
-                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                    {{ weatherSummary.tempLabel }}
-                  </template>
-                </span>
+                Geplant für {{ statusDateLabel }}
+                <template v-if="weatherSummary">
+                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                  {{ weatherSummary.tempLabel }}
+                </template>
               </template>
               <template v-else>
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                <span class="status-text">
-                  <template v-if="expanded">Als gemacht markieren</template>
-                  <template v-else>Gemacht</template>
-                </span>
+                <template v-if="expanded">Als gemacht markieren</template>
+                <template v-else>Gemacht</template>
               </template>
-            </button>
+            </DoneToggle>
           </div>
 
-          <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
-            <Transition name="comment-pop">
-              <Button
-                v-if="expanded"
-                type="button"
-                variant="ghost"
-                size="sm"
-                class="comment-btn"
-                :class="{ 'has-comments': comments.length > 0, active: showComments }"
-                aria-label="Kommentare anzeigen"
-                :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
-                @click.stop="showComments = !showComments"
-              >
-                <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
-                <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
-              </Button>
-            </Transition>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              class="like-btn"
-              :class="{ liked }"
-              :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-              :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-              @click.stop="emit('toggle-like')"
-            >
-              <AppIcon
-                :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-                :size="15"
-                group="actions"
-              />
-              <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
-            </Button>
-          </div>
+          <SocialRow
+            :class="{ 'is-expanded': expanded }"
+            :like-count="likeCount"
+            :liked="liked"
+            :comment-count="comments.length"
+            :comments-open="showComments"
+            :show-comments-button="expanded"
+            @toggle-like="emit('toggle-like')"
+            @toggle-comments="showComments = !showComments"
+          />
         </div>
 
         <Teleport to="body">
@@ -592,17 +556,16 @@ function onSpotDrop(event: DragEvent) {
           </PickerMenu>
         </Teleport>
 
-        <div class="excursion-accordion" :class="{ 'is-expanded': expanded && showComments }">
-          <div class="excursion-accordion-inner accordion-stagger">
-            <Comments
-              v-if="showComments"
-              :comments="comments"
-              @click.stop
-              @submit="(content) => emit('submit-comment', content)"
-              @remove="(id) => emit('remove-comment', id)"
-            />
-          </div>
-        </div>
+        <Accordion :expanded="expanded && showComments">
+          <Comments
+            :comments="comments"
+            @click.stop
+            @submit="(content) => emit('submit-comment', content)"
+            @remove="(id) => emit('remove-comment', id)"
+            @update="(id, content) => emit('update-comment', id, content)"
+            @toggle-like="(id) => emit('toggle-comment-like', id)"
+          />
+        </Accordion>
       </div>
     </div>
   </Card>
@@ -673,32 +636,6 @@ function onSpotDrop(event: DragEvent) {
 
 .excursion-card.expanded {
   transform: translateY(0) scale(1);
-}
-
-.excursion-accordion {
-  display: grid;
-  grid-template-rows: 0fr;
-  visibility: hidden;
-  /* Beim Zuklappen sofort zusammenfalten (Stufe 1) */
-  transition:
-    grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    visibility 0s linear 0.22s;
-}
-
-.excursion-accordion.is-expanded {
-  grid-template-rows: 1fr;
-  visibility: visible;
-  /* Beim Aufklappen nach Bild-Morph entfalten (Stufe 2) */
-  transition:
-    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
-    visibility 0s linear 0.14s;
-}
-
-.excursion-accordion-inner {
-  overflow: hidden;
-  /* Verhindert Abschneiden des Fokus-Rahmens */
-  padding: 3px;
-  margin: -3px;
 }
 
 .tour-card-main {
@@ -920,68 +857,8 @@ function onSpotDrop(event: DragEvent) {
     box-shadow 0.2s ease;
 }
 
-/* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
-.done-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.done-toggle:hover {
-  background: var(--color-surface);
-  border-color: var(--excursion-theme-color);
-  color: var(--color-text);
-}
-
-.done-toggle.planned {
-  color: var(--color-text);
-  border-color: var(--color-border);
-  background: var(--color-surface);
-}
-
-.done-toggle.planned:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.done-toggle.active,
-.done-toggle.status-done {
-  color: var(--color-success);
-  font-weight: 600;
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
-  border-color: var(--color-success);
-}
-
-.done-toggle.active:hover,
-.done-toggle.status-done:hover {
-  background: color-mix(in srgb, var(--color-success) 22%, transparent);
-}
-
-.status-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+:deep(.done-toggle) {
+  --toggle-hover-border: var(--excursion-theme-color);
 }
 
 .calendar-drag-handle:active,
@@ -1076,61 +953,6 @@ function onSpotDrop(event: DragEvent) {
   margin-top: auto;
   position: relative;
   z-index: 2;
-}
-
-.card-social-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.like-btn,
-.comment-btn {
-  color: var(--color-text-muted);
-}
-
-.like-btn.liked {
-  color: var(--color-like);
-}
-
-.like-btn.liked:hover {
-  background: var(--color-like-tint);
-}
-
-.comment-btn.active,
-.comment-btn.has-comments {
-  color: var(--color-primary);
-}
-
-.social-count {
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-left: 2px;
-}
-
-.comment-pop-enter-active,
-.comment-pop-leave-active {
-  transition:
-    opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1),
-    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1),
-    max-width 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-  overflow: hidden;
-}
-
-.comment-pop-enter-from,
-.comment-pop-leave-to {
-  opacity: 0;
-  max-width: 0;
-  transform: scale(0.85) translateX(6px);
-}
-
-.comment-pop-enter-to,
-.comment-pop-leave-from {
-  opacity: 1;
-  max-width: 65px;
-  transform: scale(1) translateX(0);
 }
 
 .links {
@@ -1334,23 +1156,6 @@ function onSpotDrop(event: DragEvent) {
   margin: 0;
 }
 
-.excursion-accordion-inner > * {
-  transition:
-    opacity 0.2s ease 0s,
-    transform 0.2s ease 0s;
-  opacity: 0;
-  transform: translateY(-12px) scale(0.98);
-}
-
-.excursion-accordion.is-expanded .excursion-accordion-inner > * {
-  transition:
-    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
-}
-
 @container spots-col (max-width: 360px) {
   .tour-card-main {
     padding: 8px 10px 8px 8px;
@@ -1448,10 +1253,8 @@ function onSpotDrop(event: DragEvent) {
 @media (prefers-reduced-motion: reduce) {
   .excursion-card,
   .body,
-  .excursion-accordion,
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
-  .excursion-accordion-inner > *,
   .polaroid-tile,
   .tour-note-container {
     transform: none !important;

@@ -7,13 +7,16 @@ withDefaults(
   defineProps<{
     likeCount: number;
     liked: boolean;
-    commentCount: number;
+    commentCount?: number;
     commentsOpen?: boolean;
     active?: boolean;
+    showCommentsButton?: boolean;
   }>(),
   {
+    commentCount: 0,
     commentsOpen: false,
     active: false,
+    showCommentsButton: true,
   }
 );
 
@@ -23,17 +26,22 @@ const emit = defineEmits<{ (e: 'toggle-like'): void; (e: 'toggle-comments'): voi
 <template>
   <div class="card-social-actions social-row">
     <Button
+      v-if="showCommentsButton"
       type="button"
       variant="ghost"
       size="sm"
       class="comment-btn"
-      :class="{ 'has-comments': commentCount > 0, active: active || commentsOpen }"
+      :class="{ 'has-comments': (commentCount ?? 0) > 0, active: active || commentsOpen }"
       :aria-label="commentsOpen || active ? 'Kommentare ausblenden' : 'Kommentare anzeigen'"
       :title="commentCount ? `${commentCount} Kommentare` : 'Kommentar schreiben'"
       @click.stop="emit('toggle-comments')"
     >
-      <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
-      <span v-if="commentCount > 0" class="social-count">{{ commentCount }}</span>
+      <AppIcon
+        :icon="commentsOpen || active ? ACTION_ICONS.commentFilled : ACTION_ICONS.comment"
+        :size="15"
+        group="actions"
+      />
+      <span v-if="(commentCount ?? 0) > 0" class="social-count">{{ commentCount }}</span>
     </Button>
     <Button
       type="button"

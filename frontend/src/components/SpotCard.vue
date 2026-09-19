@@ -21,11 +21,14 @@ import MapsAppPicker from './MapsAppPicker.vue';
 import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
+import SocialRow from './SocialRow.vue';
 import AppIcon from './AppIcon.vue';
+import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import Badge from './primitives/Badge.vue';
+import DoneToggle from './primitives/DoneToggle.vue';
 import Card from './primitives/Card.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
@@ -65,6 +68,8 @@ const props = defineProps<{
   hasMultipleMembers?: boolean;
   /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
   layoverMinutes?: number | null;
+  /** Reduziert das Kategorie-Badge optional explizit auf sein Icon */
+  iconOnlyCategory?: boolean;
 }>();
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
@@ -84,6 +89,8 @@ const emit = defineEmits<{
   (e: 'toggle-like'): void;
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
+  (e: 'update-comment', id: number, content: string): void;
+  (e: 'toggle-comment-like', id: number): void;
   (e: 'open', spot: Spot): void;
   (e: 'close'): void;
   (e: 'toggle-destination'): void;
@@ -457,7 +464,7 @@ const cardRotation = computed(() => {
 
     <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
     <div class="card-badge-group">
-      <CategoryChip :category="spot.category" />
+      <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
       <PendingSyncBadge v-if="spot._pending" />
     </div>
 
@@ -592,120 +599,65 @@ const cardRotation = computed(() => {
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
               </button>
               <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
-              <button
+              <DoneToggle
                 v-if="!isAccommodation"
                 key="btn-done"
-                type="button"
-                class="done-toggle"
-                :class="{
-                  status: !!(
-                    scheduledDate ||
-                    totalItemsCount > 0 ||
-                    isSpotDone ||
-                    isSpotPartiallyDone
-                  ),
-                  planned: !!(
-                    (scheduledDate || totalItemsCount > 0) &&
-                    !isSpotDone &&
-                    !isSpotPartiallyDone
-                  ),
-                  'status-done': isSpotDone || isSpotPartiallyDone,
-                  active: isSpotDone,
-                }"
-                :aria-pressed="isSpotDone"
+                :done="isSpotDone"
+                :partially-done="isSpotPartiallyDone"
+                :planned="!!(scheduledDate || totalItemsCount > 0)"
                 :aria-label="
                   isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
                 "
                 :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-                @click.stop="expanded ? onToggleDone($event) : onCardClick()"
+                @click="expanded ? onToggleDone($event) : onCardClick()"
               >
                 <template v-if="totalItemsCount > 1">
                   <template v-if="allItemsDone">
-                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                    <span class="status-text">
-                      <template v-if="expanded">Besucht an {{ totalItemsCount }} Tagen</template>
-                      <template v-else>{{ totalItemsCount }}x besucht</template>
-                    </span>
+                    <template v-if="expanded">Besucht an {{ totalItemsCount }} Tagen</template>
+                    <template v-else>{{ totalItemsCount }}x besucht</template>
                   </template>
                   <template v-else-if="doneItemsCount > 0">
-                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                    <span class="status-text">
-                      <template v-if="expanded">
-                        Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
-                      </template>
-                      <template v-else>
-                        {{ doneItemsCount }}/{{ totalItemsCount }} x besucht
-                      </template>
-                    </span>
+                    <template v-if="expanded">
+                      Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                    </template>
+                    <template v-else>
+                      {{ doneItemsCount }}/{{ totalItemsCount }} x besucht
+                    </template>
                   </template>
                   <template v-else>
-                    <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                    <span class="status-text">
-                      <template v-if="expanded">Geplant an {{ totalItemsCount }} Tagen</template>
-                      <template v-else>{{ totalItemsCount }}x geplant</template>
-                    </span>
+                    <template v-if="expanded">Geplant an {{ totalItemsCount }} Tagen</template>
+                    <template v-else>{{ totalItemsCount }}x geplant</template>
                   </template>
                 </template>
                 <template v-else-if="isSpotDone">
-                  <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                  <span class="status-text">
-                    <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
-                    <template v-else>Besucht</template>
-                    <template v-if="dayWeather && scheduledDaysCount <= 1">
-                      · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-                      {{ Math.round(dayWeather.tempMax) }}°
-                    </template>
-                  </span>
+                  <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+                  <template v-else>Besucht</template>
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
                 </template>
                 <template v-else-if="scheduledDate || totalItemsCount === 1">
-                  <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                  <span class="status-text">
-                    Geplant für {{ plannedDateLabel }}
-                    <template v-if="dayWeather && scheduledDaysCount <= 1">
-                      · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-                      {{ Math.round(dayWeather.tempMax) }}°
-                    </template>
-                  </span>
+                  Geplant für {{ plannedDateLabel }}
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
                 </template>
-                <template v-else>
-                  <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                  <span>Besucht</span>
-                </template>
-              </button>
+                <template v-else> Besucht </template>
+              </DoneToggle>
 
               <!-- Expanded Social Actions: Fließt nahtlos im Aktionen-Raster mit (schließt Leerräume bei Umbrüchen) -->
-              <div v-if="expanded" class="card-social-actions is-expanded">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  class="comment-btn"
-                  :class="{ 'has-comments': comments.length > 0, active: showComments }"
-                  aria-label="Kommentare anzeigen"
-                  :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
-                  @click.stop="showComments = !showComments"
-                >
-                  <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
-                  <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  class="like-btn"
-                  :class="{ liked }"
-                  :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-                  :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-                  @click.stop="emit('toggle-like')"
-                >
-                  <AppIcon
-                    :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-                    :size="15"
-                    group="actions"
-                  />
-                  <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
-                </Button>
-              </div>
+              <SocialRow
+                v-if="expanded"
+                class="is-expanded"
+                :like-count="likeCount"
+                :liked="liked"
+                :comment-count="comments.length"
+                :comments-open="showComments"
+                @toggle-like="emit('toggle-like')"
+                @toggle-comments="showComments = !showComments"
+              />
             </div>
           </div>
         </div>
@@ -741,38 +693,25 @@ const cardRotation = computed(() => {
           </Badge>
         </div>
 
-        <div v-if="!expanded" class="card-social-actions">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="like-btn"
-            :class="{ liked }"
-            :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            @click.stop="emit('toggle-like')"
-          >
-            <AppIcon
-              :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-              :size="15"
-              group="actions"
-            />
-            <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
-          </Button>
-        </div>
+        <SocialRow
+          v-if="!expanded"
+          :like-count="likeCount"
+          :liked="liked"
+          :show-comments-button="false"
+          @toggle-like="emit('toggle-like')"
+        />
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded && showComments }">
-        <div class="spot-accordion-inner accordion-stagger">
-          <Comments
-            v-if="showComments"
-            :comments="comments"
-            @click.stop
-            @submit="(content) => emit('submit-comment', content)"
-            @remove="(id) => emit('remove-comment', id)"
-          />
-        </div>
-      </div>
+      <Accordion :expanded="expanded && showComments">
+        <Comments
+          :comments="comments"
+          @click.stop
+          @submit="(content) => emit('submit-comment', content)"
+          @remove="(id) => emit('remove-comment', id)"
+          @update="(id, content) => emit('update-comment', id, content)"
+          @toggle-like="(id) => emit('toggle-comment-like', id)"
+        />
+      </Accordion>
 
       <Teleport to="body">
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
@@ -867,6 +806,7 @@ const cardRotation = computed(() => {
 
 <style scoped>
 .spot-card {
+  container: spot-card / inline-size;
   position: relative;
   z-index: 1;
   isolation: isolate;
@@ -909,34 +849,6 @@ const cardRotation = computed(() => {
 
 .spot-card.expanded .image {
   height: 165px;
-}
-
-.spot-accordion {
-  display: grid;
-  grid-template-rows: 0fr;
-  visibility: hidden;
-  transition:
-    grid-template-rows 0.3s ease,
-    visibility 0s linear 0.3s;
-}
-
-.spot-accordion:not(.is-expanded) {
-  display: none;
-}
-
-.spot-accordion.is-expanded {
-  grid-template-rows: 1fr;
-  visibility: visible;
-  transition:
-    grid-template-rows 0.3s ease,
-    visibility 0s linear 0s;
-}
-
-.spot-accordion-inner {
-  overflow: hidden;
-  /* Verhindert Abschneiden des Fokus-Rahmens */
-  padding: 3px;
-  margin: -3px;
 }
 
 .slide-fade-enter-active,
@@ -1137,57 +1049,6 @@ const cardRotation = computed(() => {
   opacity: 0.85;
 }
 
-/* Status-/Datums-Chip (#106: EIN gemeinsames Badge statt zweier unabhängiger Chips, ersetzt das
-   frühere separate "Gemacht"-Badge) – dasselbe Muster wie ExcursionCard.vue's .status/.status.planned
-   (inkl. Dark-Mode-Override unten), damit beide Karten-Typen optisch konsistent bleiben. Unten statt
-   oben positioniert. Nur sichtbar, wenn geplant oder gemacht (siehe v-if im Template) statt immer einen
-   "Nicht geplant"-Chip zu zeigen – ein Spot muss (anders als ein Ausflug) nicht zwangsläufig einmal
-   eingeplant werden. */
-.status {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  transition:
-    width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    gap 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    border-radius 0.3s ease;
-}
-
-.status-text {
-  display: inline-block;
-  opacity: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  transition: opacity 0.2s ease 0.14s;
-}
-
-.status.planned,
-.status.status-done {
-  color: var(--color-success);
-}
-
-:root[data-theme='dark'] .status {
-  background: rgba(35, 34, 32, 0.85);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .status {
-    background: rgba(35, 34, 32, 0.85);
-  }
-}
-
 /* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
 .card-badge-group {
   position: absolute;
@@ -1220,6 +1081,7 @@ const cardRotation = computed(() => {
 }
 
 .card-badge-group :deep(.category-chip) {
+  max-width: 120px;
   transition:
     background 0.3s ease,
     border-color 0.3s ease,
@@ -1230,6 +1092,7 @@ const cardRotation = computed(() => {
 }
 
 .spot-card.expanded .card-badge-group :deep(.category-chip) {
+  max-width: 160px;
   box-shadow: var(--shadow-sm);
   -webkit-backdrop-filter: blur(4px) brightness(80%);
   backdrop-filter: blur(4px) brightness(80%);
@@ -1266,7 +1129,20 @@ const cardRotation = computed(() => {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 2px;
-  padding-right: 90px;
+  padding-right: 132px;
+}
+
+.spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
+  padding-right: 170px;
+}
+
+.spot-card:not(.expanded):has(.category-chip.is-icon-only) .card-title-block {
+  padding-right: 44px;
+}
+
+.spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.pending-sync-badge)
+  .card-title-block {
+  padding-right: 76px;
 }
 
 .card-title {
@@ -1487,53 +1363,6 @@ const cardRotation = computed(() => {
   z-index: 3;
 }
 
-.like-btn,
-.comment-btn {
-  color: var(--color-text-muted);
-}
-
-.like-btn.liked {
-  color: var(--color-like);
-}
-
-.like-btn.liked:hover {
-  background: var(--color-like-tint);
-}
-
-.comment-btn.active,
-.comment-btn.has-comments {
-  color: var(--color-primary);
-}
-
-.social-count {
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-left: 2px;
-}
-
-.comment-pop-enter-active,
-.comment-pop-leave-active {
-  transition:
-    opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1),
-    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1),
-    max-width 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-  overflow: hidden;
-}
-
-.comment-pop-enter-from,
-.comment-pop-leave-to {
-  opacity: 0;
-  max-width: 0;
-  transform: scale(0.85) translateX(6px);
-}
-
-.comment-pop-enter-to,
-.comment-pop-leave-from {
-  opacity: 1;
-  max-width: 65px;
-  transform: scale(1) translateX(0);
-}
-
 .card-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1658,75 +1487,14 @@ const cardRotation = computed(() => {
   transform: translateY(-0.5px) rotate(8deg) scale(1.15);
 }
 
-/* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
-.done-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.done-toggle:hover {
-  background: var(--color-surface);
-  border-color: var(--color-primary);
-  color: var(--color-text);
-}
-
-.done-toggle.planned {
-  color: var(--color-text);
-  border-color: var(--color-border);
-  background: var(--color-surface);
-}
-
-.done-toggle.planned:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.done-toggle.active,
-.done-toggle.status-done {
-  color: var(--color-success);
-  font-weight: 600;
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
-  border-color: var(--color-success);
-}
-
-.done-toggle.active:hover,
-.done-toggle.status-done:hover {
-  background: color-mix(in srgb, var(--color-success) 22%, transparent);
-}
-
-.card-actions .done-toggle.status {
-  position: static;
-  bottom: auto;
-  right: auto;
-}
-
 /* Virtuelle Touch-Targets (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */
 .calendar-drag-handle,
-.done-toggle,
 .spot-destination-toggle,
 :deep(.tour-assign-btn) {
   position: relative;
 }
 
 .calendar-drag-handle::after,
-.done-toggle::after,
 .spot-destination-toggle::after,
 :deep(.tour-assign-btn)::after {
   content: '';
@@ -1740,7 +1508,6 @@ const cardRotation = computed(() => {
 
 @media (pointer: fine) {
   .calendar-drag-handle::after,
-  .done-toggle::after,
   .spot-destination-toggle::after,
   :deep(.tour-assign-btn)::after {
     display: none;
@@ -1827,7 +1594,11 @@ const cardRotation = computed(() => {
 
   .spot-card:not(.expanded) .card-title-block {
     margin-bottom: 0;
-    padding-right: 90px;
+    padding-right: 125px;
+  }
+
+  .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
+    padding-right: 160px;
   }
 
   .spot-card:not(.expanded) .card-title {
@@ -1933,6 +1704,54 @@ const cardRotation = computed(() => {
   }
 }
 
+/* Auf schmalen Karten (<= 340px, z. B. in Schlangenreihen oder engen Spalten):
+   Kategorie-Badge auf sein Icon reduzieren, um Titel und Badge vor Überlagerung zu schützen
+   und dem Titel die volle Zeilenbreite zu geben. */
+@container spot-card (max-width: 340px) {
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
+    padding: 3px 6px;
+    gap: 0;
+    max-width: none;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge span) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge) {
+    padding: 3px 6px;
+    gap: 0;
+  }
+
+  .spot-card:not(.expanded) .card-title-block {
+    padding-right: 44px;
+  }
+
+  .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
+    padding-right: 76px;
+  }
+}
+
 .spot-accordion {
   display: grid;
   grid-template-rows: 0fr;
@@ -1985,8 +1804,6 @@ const cardRotation = computed(() => {
   .body,
   .spot-accordion,
   .mobile-only-accordion,
-  .status,
-  .status-text,
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
   .spot-accordion-inner > *,

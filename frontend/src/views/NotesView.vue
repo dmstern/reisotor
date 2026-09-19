@@ -22,6 +22,7 @@ import { formatDateTime } from '../utils/dateFormat';
 import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import AppIcon from '../components/AppIcon.vue';
+import Accordion from '../components/primitives/Accordion.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
@@ -117,7 +118,12 @@ function commentItemsFor(noteId: number) {
     avatar: author(c.author_id)?.avatar ?? '❓',
     username: author(c.author_id)?.username ?? '?',
     content: c.content,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
+    canEdit: c.author_id === auth.user?.id,
+    likeCount: c.like_count ?? 0,
+    liked: Boolean(c.liked),
   }));
 }
 
@@ -135,6 +141,31 @@ async function toggleLike(noteId: number) {
   }
 }
 
+async function toggleCommentLike(commentId: number) {
+  const c = comments.value.find((item) => item.id === commentId);
+  if (c) {
+    const wasLiked = Boolean(c.liked);
+    c.liked = !wasLiked;
+    c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+  }
+  try {
+    const result = await api.post<{ liked: boolean; like_count: number }>(
+      `/notes/comments/${commentId}/like`
+    );
+    if (c) {
+      c.liked = result.liked;
+      c.like_count = result.like_count;
+    }
+  } catch (err) {
+    if (c) {
+      const wasLiked = Boolean(c.liked);
+      c.liked = !wasLiked;
+      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+    }
+    throw err;
+  }
+}
+
 async function submitComment(noteId: number, content: string) {
   const created = await api.post<NoteComment>(`/notes/${noteId}/comments`, { content });
   comments.value.push(created);
@@ -143,6 +174,14 @@ async function submitComment(noteId: number, content: string) {
 async function removeComment(id: number) {
   await api.delete(`/notes/comments/${id}`);
   comments.value = comments.value.filter((c) => c.id !== id);
+}
+
+async function updateComment(id: number, content: string) {
+  const updated = await api.put<NoteComment>(`/notes/comments/${id}`, { content });
+  const idx = comments.value.findIndex((c) => c.id === id);
+  if (idx !== -1) {
+    comments.value[idx] = updated;
+  }
 }
 
 function authorLabel(id: number | null) {
@@ -297,12 +336,15 @@ async function remove(id: number) {
             @toggle-comments="toggleComments(note.id)"
           />
         </div>
-        <Comments
-          v-if="openComments.has(note.id)"
-          :comments="commentItemsFor(note.id)"
-          @submit="(content) => submitComment(note.id, content)"
-          @remove="removeComment"
-        />
+        <Accordion :expanded="openComments.has(note.id)">
+          <Comments
+            :comments="commentItemsFor(note.id)"
+            @submit="(content) => submitComment(note.id, content)"
+            @remove="removeComment"
+            @update="updateComment"
+            @toggle-like="toggleCommentLike"
+          />
+        </Accordion>
       </Card>
     </TransitionGroup>
     <EmptyState v-if="!notes.length">Noch keine Notizen.</EmptyState>

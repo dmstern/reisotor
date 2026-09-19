@@ -13,6 +13,7 @@ import type {
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useBudgetStore } from '../stores/budget';
@@ -74,6 +75,7 @@ const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
 const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
+const liveSync = useLiveSyncStore();
 const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const uiSettings = useUiSettingsStore();
@@ -269,6 +271,68 @@ onMounted(async () => {
   loadWeather();
   loadRegionInfo();
 });
+
+// Echtzeit-Sync (siehe stores/liveSync.ts): Widgets aktualisieren, sobald Änderungen eintreffen
+watch(
+  () => liveSync.domainVersion.schedule,
+  async () => {
+    try {
+      schedule.value = await api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`);
+    } catch {
+      // offline / ignorable
+    }
+  }
+);
+watch(
+  () => liveSync.domainVersion.todos,
+  async () => {
+    try {
+      todos.value = await api.get<TodoItem[]>(`/todos?trip_id=${tripId}`);
+    } catch {
+      // offline / ignorable
+    }
+  }
+);
+watch(
+  () => liveSync.domainVersion.packing,
+  async () => {
+    try {
+      packing.value = await api.get<PackingItem[]>(`/packing?trip_id=${tripId}`);
+    } catch {
+      // offline / ignorable
+    }
+  }
+);
+watch(
+  () => liveSync.domainVersion.shopping,
+  async () => {
+    try {
+      shopping.value = await api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`);
+    } catch {
+      // offline / ignorable
+    }
+  }
+);
+watch(
+  () => liveSync.domainVersion.notes,
+  async () => {
+    try {
+      notes.value = await api.get<Note[]>(`/notes?trip_id=${tripId}`);
+    } catch {
+      // offline / ignorable
+    }
+  }
+);
+watch(
+  () => liveSync.domainVersion.diary,
+  async () => {
+    try {
+      diaryEntries.value = await api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`);
+    } catch {
+      // offline / ignorable
+    }
+  }
+);
 
 const todayStr = () => toLocalDateString(new Date());
 

@@ -127,13 +127,44 @@ const insertSpotLikeStmt = db.prepare(
 const insertSpotCommentStmt = db.prepare(
   'INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
 );
-const selectSpotCommentByIdStmt = db.prepare('SELECT * FROM spot_comments WHERE id = ?');
+const selectSpotCommentByIdStmt = db.prepare(
+  `SELECT spot_comments.*,
+     (SELECT COUNT(*) FROM spot_comment_likes WHERE comment_id = spot_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM spot_comment_likes WHERE comment_id = spot_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM spot_comments WHERE id = ?`
+);
+const selectSpotCommentsByTripStmt = db.prepare(
+  `SELECT spot_comments.*,
+     (SELECT COUNT(*) FROM spot_comment_likes WHERE comment_id = spot_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM spot_comment_likes WHERE comment_id = spot_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM spot_comments
+   JOIN spots ON spots.id = spot_comments.spot_id
+   WHERE spots.trip_id = ? AND spots.deleted_at IS NULL
+   ORDER BY spot_comments.created_at ASC, spot_comments.id ASC`
+);
 const selectSpotCommentWithTripStmt = db.prepare(
   `SELECT spot_comments.id, spot_comments.author_id, spots.trip_id FROM spot_comments
    JOIN spots ON spots.id = spot_comments.spot_id
    WHERE spot_comments.id = ?`
 );
 const deleteSpotCommentStmt = db.prepare('DELETE FROM spot_comments WHERE id = ?');
+const updateSpotCommentStmt = db.prepare(
+  'UPDATE spot_comments SET content = ?, updated_at = ? WHERE id = ?'
+);
+const selectSpotCommentLikeStmt = db.prepare(
+  'SELECT id FROM spot_comment_likes WHERE comment_id = ? AND user_id = ?'
+);
+const insertSpotCommentLikeStmt = db.prepare(
+  'INSERT INTO spot_comment_likes (comment_id, user_id, created_at) VALUES (?, ?, ?)'
+);
+const deleteSpotCommentLikeStmt = db.prepare('DELETE FROM spot_comment_likes WHERE id = ?');
+const countSpotCommentLikesStmt = db.prepare(
+  'SELECT COUNT(*) as count FROM spot_comment_likes WHERE comment_id = ?'
+);
 
 const hasScheduleDateStmt = db.prepare(
   `SELECT 1 FROM schedule_items WHERE spot_id = ? AND deleted_at IS NULL
@@ -375,14 +406,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/spots/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare(
-        `SELECT spot_comments.* FROM spot_comments
-         JOIN spots ON spots.id = spot_comments.spot_id
-         WHERE spots.trip_id = ? AND spots.deleted_at IS NULL
-         ORDER BY spot_comments.created_at ASC, spot_comments.id ASC`
-      )
-      .all(req.query.trip_id);
+    return selectSpotCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/spots/:id/like', async (req, reply) => {
@@ -422,7 +446,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       );
       recordActivity(spot.trip_id, 'spots', spot.id, 'commented', req.session.userId!);
       reply.code(201);
-      return selectSpotCommentByIdStmt.get(result.lastInsertRowid);
+      return selectSpotCommentByIdStmt.get(req.session.userId ?? null, result.lastInsertRowid);
     }
   );
 
@@ -438,5 +462,47 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     }
     deleteSpotCommentStmt.run(req.params.id);
     return reply.code(204).send();
+  });
+
+  app.put<{ Params: { id: string }; Body: CommentBody }>(
+    '/spots/comments/:id',
+    async (req, reply) => {
+      const content = req.body?.content?.trim();
+      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      const comment = selectSpotCommentWithTripStmt.get(req.params.id) as
+        { id: number; author_id: number; trip_id: number } | undefined;
+      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+      if (comment.author_id !== req.session.userId) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
+      }
+      updateSpotCommentStmt.run(content, new Date().toISOString(), req.params.id);
+      return selectSpotCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
+    }
+  );
+
+  app.post<{ Params: { id: string } }>('/spots/comments/:id/like', async (req, reply) => {
+    const comment = selectSpotCommentWithTripStmt.get(req.params.id) as
+      { id: number; author_id: number; trip_id: number } | undefined;
+    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    const existing = selectSpotCommentLikeStmt.get(req.params.id, req.session.userId) as
+      { id: number } | undefined;
+
+    let liked: boolean;
+    if (existing) {
+      deleteSpotCommentLikeStmt.run(existing.id);
+      liked = false;
+    } else {
+      insertSpotCommentLikeStmt.run(req.params.id, req.session.userId, new Date().toISOString());
+      recordActivity(comment.trip_id, 'spots', comment.id, 'liked', req.session.userId!);
+      liked = true;
+    }
+
+    const countRow = countSpotCommentLikesStmt.get(req.params.id) as { count: number };
+    return { liked, like_count: countRow.count };
   });
 };

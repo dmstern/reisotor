@@ -9,6 +9,7 @@ import {
 } from '../utils/budgetBalances';
 import { effectiveBudgetTarget, grandTotalTarget } from '../utils/budgetTargets';
 import { useTripStore } from './trip';
+import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
 
 export interface BudgetFormInput {
@@ -43,6 +44,7 @@ export interface TransferInput {
  *  unabhängig von einer Pinia-Instanz testbar bleibt). */
 export const useBudgetStore = defineStore('budget', () => {
   const tripStore = useTripStore();
+  const liveSync = useLiveSyncStore();
   const users = shallowRef<User[]>([]);
   const expenses = shallowRef<BudgetExpense[]>([]);
   const budgets = shallowRef<Budget[]>([]);
@@ -94,6 +96,7 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   watch(() => tripStore.currentTripId, load, { immediate: true });
+  watch(() => liveSync.domainVersion.budget, load);
 
   function reset() {
     users.value = [];

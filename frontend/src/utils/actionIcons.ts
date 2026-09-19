@@ -169,6 +169,7 @@ export type ActionIconKey =
   | 'apple'
   | 'googleMaps'
   | 'comment'
+  | 'commentFilled'
   | 'restore'
   | 'googleCalendar'
   | 'android'
@@ -304,6 +305,12 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'message-circle',
     emoji: '💬',
     outline: IconMessageCircle,
+    filled: IconMessageCircleFilled,
+  },
+  commentFilled: {
+    id: 'message-circle-filled',
+    emoji: '💬',
+    outline: IconMessageCircleFilled,
     filled: IconMessageCircleFilled,
   },
   restore: { id: 'arrow-back-up', emoji: '↩️', outline: IconArrowBackUp },

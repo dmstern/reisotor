@@ -71,7 +71,7 @@ const scrollyFeatures: ScrollyFeature[] = [
       'Unterkünfte, Sehenswürdigkeiten und Ausflugsziele auf der Karte markieren. Die neue Tour-Ansicht verbindet besuchte Stationen mit eleganten Farbverläufen und gestrichelten Linien.',
     highlights: [
       'Visuelle Tour-Pfade mit geschwungenen Verlaufslinien',
-      'Kategorisierte Spots mit Notizen & Bewertungen',
+      'Kategorisierte Spots mit Notizen, Likes & Kommentaren',
       'Offline-fähige Navigation auf der Karte',
       'An- und Abreise mit Tickets und Umsteigezeiten tracken',
     ],

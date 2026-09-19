@@ -152,13 +152,11 @@ function onDrop(event: DragEvent, date: string) {
                tatsächlich klickbare Checkbox würde bei ungünstiger Cursor-Position versehentlich
                statt der Tagesauswahl das Todo abhaken (siehe day-detail-Liste unten für die echte,
                anklickbare Checkbox mit ausreichend Abstand). -->
-          <input
+          <span
             v-if="entry.kind === 'todo'"
-            type="checkbox"
             class="item-checkbox"
-            tabindex="-1"
+            :class="{ checked: entry.done }"
             aria-hidden="true"
-            :checked="entry.done"
           />
           <AppIcon
             v-else
@@ -441,6 +439,7 @@ function onDrop(event: DragEvent, date: string) {
 .item-checkbox {
   appearance: none;
   -webkit-appearance: none;
+  display: inline-block;
   flex-shrink: 0;
   width: 9px;
   height: 9px;
@@ -455,12 +454,14 @@ function onDrop(event: DragEvent, date: string) {
   pointer-events: none;
 }
 
-.item-checkbox:checked {
+.item-checkbox:checked,
+.item-checkbox.checked {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.item-checkbox:checked::after {
+.item-checkbox:checked::after,
+.item-checkbox.checked::after {
   content: '';
   width: 2px;
   height: 5px;

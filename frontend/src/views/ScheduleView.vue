@@ -354,7 +354,16 @@ onMounted(async () => {
 
 // ScheduleView ist nicht mehr Teil des per Urlaub-Id gekeyten <router-view> (jetzt global
 // gemountete Schublade), muss also selbst auf einen Urlaubswechsel reagieren.
-watch(() => tripStore.currentTripId, loadAll);
+watch(
+  () => tripStore.currentTripId,
+  async () => {
+    await loadAll();
+    loadWeather();
+  }
+);
+
+// Aktualisiert Aufgaben/Fälligkeiten im Kalender automatisch, wenn ToDos geändert werden.
+watch(() => liveSync.domainVersion.todos, loadAll);
 
 // Die Kalender-Schublade wird einmalig gemountet und bleibt danach dauerhaft im DOM (siehe
 // App.vue/Drawer.vue) – ohne dieses Signal würde ein nachträglich gesetzter Standort (z. B. über

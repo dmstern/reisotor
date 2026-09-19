@@ -23,6 +23,13 @@ export const Default: Story = {
   },
 };
 
+export const IconOnly: Story = {
+  args: {
+    category: 'Sehenswürdigkeit',
+    iconOnly: true,
+  },
+};
+
 export const AllCategoriesShowcase: Story = {
   render: () => ({
     components: { CategoryChip },

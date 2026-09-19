@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { IconDef } from '../utils/icon';
+import type { IconGroup } from '../stores/iconStyle';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import ButtonGroup from './primitives/ButtonGroup.vue';
@@ -14,12 +14,14 @@ const props = withDefaults(
     modelValue?: string;
     previewImage?: string | null;
     placeholderIcon?: IconDef;
+    iconGroup?: IconGroup;
     modalTitle?: string;
   }>(),
   {
     modelValue: '',
     previewImage: null,
-    placeholderIcon: () => SECTION_ICON_DEFS.dashboard,
+    placeholderIcon: () => ACTION_ICONS.vacation,
+    iconGroup: 'actions',
     modalTitle: 'Bild bearbeiten',
   }
 );
@@ -53,7 +55,7 @@ function removeImage() {
         class="placeholder"
         :size="35"
         :icon="placeholderIcon"
-        group="navigation"
+        :group="iconGroup"
       />
       <div class="banner-actions">
         <Button type="button" variant="ghost" class="banner-edit-btn" @click="showModal = true">

@@ -3,7 +3,7 @@ import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
-defineProps<{ count: number; liked: boolean }>();
+defineProps<{ count: number; liked: boolean; small?: boolean }>();
 const emit = defineEmits<{ (e: 'toggle'): void }>();
 </script>
 
@@ -13,12 +13,16 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
     variant="ghost"
     size="sm"
     class="like-btn"
-    :class="{ liked }"
+    :class="{ liked, small }"
     :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
     :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
     @click.stop="emit('toggle')"
   >
-    <AppIcon :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked" :size="15" group="actions" />
+    <AppIcon
+      :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
+      :size="small ? 14 : 15"
+      group="actions"
+    />
     <span v-if="count > 0" class="social-count">{{ count }}</span>
   </Button>
 </template>
@@ -26,6 +30,12 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
 <style scoped>
 .like-btn {
   color: var(--color-text-muted);
+}
+
+.like-btn.small {
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .like-btn.liked {

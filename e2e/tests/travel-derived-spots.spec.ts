@@ -94,6 +94,6 @@ test('Ein von mehreren Etappen referenzierter Reise-Ort-Spot erscheint nur einma
   // Icon/Kategorie-Chip der gewählten Kategorie (✈️ Flughafen) statt eines festen Flugzeug-Icons
   // pro Etappe - die Karte zeigt hier ein automatisches Kartenausschnitt-Vorschaubild statt des
   // Kategorie-Platzhalters, da beim Anlegen bereits lat/lng bekannt waren (siehe routes/spots.ts).
-  await expect(spotCards.first().locator('.category-chip')).toHaveText('✈️ Flughafen');
-  await expect(spotCards.last().locator('.category-chip')).toHaveText('✈️ Flughafen');
+  await expect(spotCards.first().locator('.category-chip')).toHaveText(/✈️\s*Flughafen/);
+  await expect(spotCards.last().locator('.category-chip')).toHaveText(/✈️\s*Flughafen/);
 });

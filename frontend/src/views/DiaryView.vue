@@ -37,6 +37,7 @@ import DraftStatusBar from '../components/DraftStatusBar.vue';
 import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Accordion from '../components/primitives/Accordion.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
 import Input from '../components/primitives/Input.vue';
@@ -332,7 +333,12 @@ function commentItemsFor(entryId: number) {
     avatar: c.author_avatar ?? author(c.author_id)?.avatar ?? '❓',
     username: c.author_username ?? author(c.author_id)?.username ?? '?',
     content: c.content,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
+    canEdit: c.author_id === auth.user?.id,
+    likeCount: c.like_count ?? 0,
+    liked: Boolean(c.liked),
   }));
 }
 
@@ -553,6 +559,39 @@ async function submitComment(entryId: number, content: string) {
 async function removeComment(id: number) {
   await api.delete(`/diary/comments/${id}`);
   comments.value = comments.value.filter((c) => c.id !== id);
+}
+
+async function updateComment(id: number, content: string) {
+  const updated = await api.put<DiaryComment>(`/diary/comments/${id}`, { content });
+  const idx = comments.value.findIndex((c) => c.id === id);
+  if (idx !== -1) {
+    comments.value[idx] = updated;
+  }
+}
+
+async function toggleCommentLike(commentId: number) {
+  const c = comments.value.find((item) => item.id === commentId);
+  if (c) {
+    const wasLiked = Boolean(c.liked);
+    c.liked = !wasLiked;
+    c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+  }
+  try {
+    const result = await api.post<{ liked: boolean; like_count: number }>(
+      `/diary/comments/${commentId}/like`
+    );
+    if (c) {
+      c.liked = result.liked;
+      c.like_count = result.like_count;
+    }
+  } catch (err) {
+    if (c) {
+      const wasLiked = Boolean(c.liked);
+      c.liked = !wasLiked;
+      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+    }
+    throw err;
+  }
 }
 
 function hasMapContent(entry: DiaryEntry): boolean {
@@ -828,12 +867,15 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           />
         </div>
 
-        <Comments
-          v-if="openComments.has(entry.id)"
-          :comments="commentItemsFor(entry.id)"
-          @submit="(content) => submitComment(entry.id, content)"
-          @remove="removeComment"
-        />
+        <Accordion :expanded="openComments.has(entry.id)">
+          <Comments
+            :comments="commentItemsFor(entry.id)"
+            @submit="(content) => submitComment(entry.id, content)"
+            @remove="removeComment"
+            @update="updateComment"
+            @toggle-like="toggleCommentLike"
+          />
+        </Accordion>
       </article>
     </TransitionGroup>
     <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>

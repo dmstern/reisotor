@@ -159,7 +159,7 @@ function onSubmit() {
     <div v-show="!showTabs || activeTab === 'general'" class="tab-content">
       <CoverImagePicker
         v-model="form.image_url"
-        :placeholder-icon="SECTION_ICON_DEFS.dashboard"
+        :placeholder-icon="ACTION_ICONS.vacation"
         modal-title="Dashboard-Banner bearbeiten"
       />
 
