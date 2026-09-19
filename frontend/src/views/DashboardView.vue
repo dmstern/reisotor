@@ -609,7 +609,14 @@ function formatWeekdayDate(d: string) {
               vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub'
             }}
           </p>
-          <p v-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'" class="hint">
+          <p v-if="!trip?.start_date" class="hint">
+            Hinterlege einen Reisezeitraum beim Urlaub, um hier die Wettervorhersage für die
+            Urlaubstage zu sehen.
+          </p>
+          <p
+            v-else-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'"
+            class="hint"
+          >
             Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
             ~16 Tage ab, schau kurz vorher nochmal vorbei.
           </p>

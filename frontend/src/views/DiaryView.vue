@@ -39,7 +39,9 @@ import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import Input from '../components/primitives/Input.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -744,12 +746,13 @@ function showEntryDayOnMap(entry: DiaryEntry) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="entries">
-      <article
+      <Card
+        tag="article"
         v-for="(entry, index) in entries"
         :key="entry.id"
-        class="card entry animate-cascade"
+        class="entry animate-cascade"
         :style="{ '--stagger-delay': `${index * 60}ms` }"
-        :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
+        :highlight="highlightedIds.has(entry.id)"
       >
         <header class="entry-head">
           <span class="avatar">{{
@@ -876,9 +879,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             @toggle-like="toggleCommentLike"
           />
         </Accordion>
-      </article>
+      </Card>
     </TransitionGroup>
-    <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>
+    <EmptyState v-if="!entries.length">Noch keine Tagebuch-Einträge.</EmptyState>
 
     <Modal
       :model-value="editingEntry !== null"

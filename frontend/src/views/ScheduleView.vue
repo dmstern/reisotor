@@ -1141,7 +1141,7 @@ function formatDate(date: string) {
           <Button variant="secondary" size="sm" @click="jumpToToday">
             <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
           </Button>
-          <Button variant="secondary" size="sm" v-if="trip" @click="goToTripDates">
+          <Button variant="secondary" size="sm" v-if="trip?.start_date" @click="goToTripDates">
             <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
           </Button>
         </div>

@@ -65,13 +65,11 @@ function openMembers(trip: Trip) {
         :key="trip.id"
         class="trip-card animate-cascade"
         :style="{ '--stagger-delay': `${index * 60}ms` }"
-        interactive
-        @click="selectTrip(trip.id)"
       >
-        <button type="button" class="trip-select" @click.stop="selectTrip(trip.id)">
+        <button type="button" class="trip-select" @click="selectTrip(trip.id)">
           {{ trip.name }}
         </button>
-        <div class="row-actions" @click.stop>
+        <div class="row-actions">
           <IconButton
             size="md"
             :icon="FORM_FIELD_ICONS.visibility"
@@ -154,6 +152,13 @@ function openMembers(trip: Trip) {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.trip-card:hover {
+  border-color: var(--color-border-strong);
 }
 
 .trip-select {
@@ -162,7 +167,10 @@ function openMembers(trip: Trip) {
   text-align: left;
   background: none;
   border: none;
-  padding: 0;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
   font-size: 1rem;
   font-weight: 600;
   color: var(--color-text);
@@ -170,6 +178,16 @@ function openMembers(trip: Trip) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.trip-select:hover {
+  color: var(--color-primary);
+}
+
+.trip-select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .row-actions {

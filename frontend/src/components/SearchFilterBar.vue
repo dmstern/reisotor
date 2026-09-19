@@ -467,6 +467,7 @@ function clearFilters() {
   cursor: pointer;
   text-align: center;
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .clear-filters-btn:hover {

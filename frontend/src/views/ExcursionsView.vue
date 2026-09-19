@@ -2201,7 +2201,7 @@ function sheetHeightPx(state: SheetState): number {
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
   if (state === 'partial') return Math.min(window.innerHeight * 0.46, maxAvailable);
-  return Math.min(window.innerHeight * 0.88, maxAvailable);
+  return maxAvailable;
 }
 
 // Schreibt die Sheet-Höhe während des Ziehens direkt aufs Element (statt über eine reaktive
@@ -4525,6 +4525,7 @@ async function deleteEditingSpot() {
   border-left: 0;
   border-right: 0;
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
+  corner-shape: squircle;
   height: min(100vh, var(--sheet-max-height));
 
   .spots-col-body {
@@ -6127,15 +6128,9 @@ async function deleteEditingSpot() {
 }
 
 .assign-chip--schedule.is-done {
-  background: rgba(46, 125, 50, 0.18);
-  border-color: rgba(46, 125, 50, 0.45);
-  color: #2e7d32;
-}
-
-:root[data-theme='dark'] .assign-chip--schedule.is-done {
-  background: rgba(76, 175, 80, 0.18);
-  border-color: rgba(76, 175, 80, 0.45);
-  color: #81c784;
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 45%, transparent);
+  color: var(--color-success);
 }
 
 .assign-chip-done-toggle {

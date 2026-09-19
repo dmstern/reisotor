@@ -584,6 +584,7 @@ const trackStyle = computed(() => {
   overflow: hidden;
   position: relative;
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -625,6 +626,7 @@ const trackStyle = computed(() => {
   justify-content: center;
   overflow: hidden;
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
 .preview-img {
@@ -632,6 +634,7 @@ const trackStyle = computed(() => {
   max-height: 65vh;
   object-fit: contain;
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   display: block;
   user-select: none;
   -webkit-user-drag: none;
@@ -653,6 +656,7 @@ const trackStyle = computed(() => {
   background: var(--color-surface-sunken, rgba(0, 0, 0, 0.03));
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   width: 100%;
   min-height: 220px;
 }

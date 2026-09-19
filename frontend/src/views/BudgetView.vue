@@ -28,6 +28,7 @@ import Card from '../components/primitives/Card.vue';
 import Badge from '../components/primitives/Badge.vue';
 import Input from '../components/primitives/Input.vue';
 import Select from '../components/primitives/Select.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -403,9 +404,9 @@ const categoryColors = computed(() => {
               :budget="budget"
               :category-colors="categoryColors"
             />
-            <p v-if="!budgetStore.budgets.length" key="empty" class="empty">
+            <EmptyState v-if="!budgetStore.budgets.length" key="empty">
               Noch keine Budgets angelegt.
-            </p>
+            </EmptyState>
           </TransitionGroup>
         </Card>
       </div>
@@ -592,6 +593,18 @@ const categoryColors = computed(() => {
         >
           <Select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
             <option value="" disabled>Bezahlt von…</option>
+            <option
+              v-if="
+                editExpenseForm.paid_by_user_id &&
+                !budgetStore.users.some(
+                  (u) => String(u.id) === String(editExpenseForm.paid_by_user_id)
+                )
+              "
+              :value="String(editExpenseForm.paid_by_user_id)"
+              disabled
+            >
+              👤 Ehemaliges Mitglied
+            </option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
             </option>
@@ -840,10 +853,6 @@ const categoryColors = computed(() => {
    eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. */
 .add-form button[type='submit'] {
   flex: 1 1 100%;
-}
-
-.empty {
-  text-align: center;
 }
 
 /* Cards animation on view mount */

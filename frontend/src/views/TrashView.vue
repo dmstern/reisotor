@@ -7,6 +7,7 @@ import { useTripStore } from '../stores/trip';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -208,8 +209,9 @@ async function emptyTrash() {
     <p v-if="error" class="error">{{ error }}</p>
 
     <TransitionGroup tag="ul" name="list" class="trash-list">
-      <li
-        class="card trash-row animate-cascade"
+      <Card
+        tag="li"
+        class="trash-row animate-cascade"
         :class="{ 'is-loading': restoringKey === keyOf(entry) || deletingKey === keyOf(entry) }"
         v-for="(entry, index) in entries"
         :key="keyOf(entry)"
@@ -248,7 +250,7 @@ async function emptyTrash() {
             <span class="hide-on-mobile">Wiederherstellen</span>
           </Button>
         </div>
-      </li>
+      </Card>
     </TransitionGroup>
     <EmptyState v-if="!entries.length">
       <AppIcon :icon="ACTION_ICONS.delete" :size="32" group="actions" />

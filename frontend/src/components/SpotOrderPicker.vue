@@ -676,6 +676,7 @@ function onDeleteLeg() {
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;

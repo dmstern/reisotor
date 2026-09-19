@@ -197,6 +197,7 @@ async function submit() {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
   font-size: 0.95rem;
