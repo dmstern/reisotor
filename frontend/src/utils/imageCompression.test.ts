@@ -6,7 +6,11 @@ import {
   readExifMetadata,
   formatGeoCoordinates,
   extractExifFromUrl,
+  isHeicFile,
+  isHeicBlob,
+  injectMetadataIntoJpeg,
 } from './imageCompression';
+import { isImageFile } from './fileUpload';
 
 async function createTestJpeg(options: {
   width?: number;
@@ -224,5 +228,75 @@ describe('imageCompression EXIF metadata preservation', () => {
     // Aufruf aus Cache
     const cachedMeta = await extractExifFromUrl(testJpeg);
     expect(cachedMeta).toBe(meta);
+  });
+
+  it('isHeicFile erkennt HEIC- und HEIF-Dateien zuverlässig', () => {
+    expect(isHeicFile(new File([], 'IMG_0123.HEIC', { type: 'image/heic' }))).toBe(true);
+    expect(isHeicFile(new File([], 'IMG_0123.heic', { type: '' }))).toBe(true);
+    expect(isHeicFile(new File([], 'photo.heif', { type: 'image/heif' }))).toBe(true);
+    expect(isHeicFile(new File([], 'photo.HEIF', { type: 'application/octet-stream' }))).toBe(true);
+    expect(isHeicFile(new File([], 'photo.jpg', { type: 'image/jpeg' }))).toBe(false);
+    expect(isHeicFile(new File([], 'document.pdf', { type: 'application/pdf' }))).toBe(false);
+  });
+
+  it('isImageFile erkennt Standard-Bilder sowie HEIC/HEIF', () => {
+    expect(isImageFile(new File([], 'photo.jpg', { type: 'image/jpeg' }))).toBe(true);
+    expect(isImageFile(new File([], 'photo.png', { type: 'image/png' }))).toBe(true);
+    expect(isImageFile(new File([], 'photo.webp', { type: 'image/webp' }))).toBe(true);
+    expect(isImageFile(new File([], 'IMG_0001.HEIC', { type: '' }))).toBe(true);
+    expect(isImageFile(new File([], 'IMG_0002.heif', { type: 'application/octet-stream' }))).toBe(
+      true
+    );
+    expect(isImageFile(new File([], 'ticket.pdf', { type: 'application/pdf' }))).toBe(false);
+  });
+
+  it('isHeicBlob erkennt HEIC-Magic-Bytes im Header', async () => {
+    function createMockHeicBlob(brand: string): Blob {
+      const header = new Uint8Array(16);
+      header[3] = 16;
+      header.set([0x66, 0x74, 0x79, 0x70], 4); // 'ftyp'
+      for (let i = 0; i < 4; i++) {
+        header[8 + i] = brand.charCodeAt(i);
+      }
+      return new Blob([header], { type: 'application/octet-stream' });
+    }
+
+    const heicBlob = createMockHeicBlob('heic');
+    expect(await isHeicBlob(heicBlob)).toBe(true);
+
+    const mif1Blob = createMockHeicBlob('mif1');
+    expect(await isHeicBlob(mif1Blob)).toBe(true);
+
+    const randomBlob = new Blob([new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])]);
+    expect(await isHeicBlob(randomBlob)).toBe(false);
+  });
+
+  it('injectMetadataIntoJpeg bettet Metadaten in ein JPEG ein', async () => {
+    const plainJpeg = await createTestJpeg({ width: 100, height: 100 });
+    const targetDate = new Date('2024-09-15T10:20:30');
+    const enriched = injectMetadataIntoJpeg(
+      plainJpeg,
+      {
+        dateTime: targetDate,
+        latitude: 45.4387,
+        longitude: 12.3271,
+        altitude: 12,
+      },
+      { width: 800, height: 600 }
+    );
+
+    expect(enriched).toContain('data:image/jpeg;base64,');
+    const meta = readExifMetadata(enriched);
+    expect(meta).not.toBeNull();
+    expect(meta?.latitude).toBeCloseTo(45.4387, 4);
+    expect(meta?.longitude).toBeCloseTo(12.3271, 4);
+    expect(meta?.altitude).toBe(12);
+    expect(meta?.dateTime?.toISOString()).toContain('2024-09-15');
+
+    // Piexif direkt prüfen: Orientierung 1, Dimensionen angepasst
+    const parsed = piexif.load(enriched);
+    expect(parsed['0th']?.[piexif.ImageIFD.Orientation]).toBe(1);
+    expect(parsed.Exif?.[piexif.ExifIFD.PixelXDimension]).toBe(800);
+    expect(parsed.Exif?.[piexif.ExifIFD.PixelYDimension]).toBe(600);
   });
 });
