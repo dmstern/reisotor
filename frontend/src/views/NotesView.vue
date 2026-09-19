@@ -22,6 +22,7 @@ import { formatDateTime } from '../utils/dateFormat';
 import { useToast } from '../composables/useToast';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import AppIcon from '../components/AppIcon.vue';
+import Accordion from '../components/primitives/Accordion.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
@@ -297,12 +298,13 @@ async function remove(id: number) {
             @toggle-comments="toggleComments(note.id)"
           />
         </div>
-        <Comments
-          v-if="openComments.has(note.id)"
-          :comments="commentItemsFor(note.id)"
-          @submit="(content) => submitComment(note.id, content)"
-          @remove="removeComment"
-        />
+        <Accordion :expanded="openComments.has(note.id)">
+          <Comments
+            :comments="commentItemsFor(note.id)"
+            @submit="(content) => submitComment(note.id, content)"
+            @remove="removeComment"
+          />
+        </Accordion>
       </Card>
     </TransitionGroup>
     <EmptyState v-if="!notes.length">Noch keine Notizen.</EmptyState>

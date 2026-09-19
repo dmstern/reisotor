@@ -37,6 +37,7 @@ import DraftStatusBar from '../components/DraftStatusBar.vue';
 import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
+import Accordion from '../components/primitives/Accordion.vue';
 import Button from '../components/primitives/Button.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
 import Input from '../components/primitives/Input.vue';
@@ -828,12 +829,13 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           />
         </div>
 
-        <Comments
-          v-if="openComments.has(entry.id)"
-          :comments="commentItemsFor(entry.id)"
-          @submit="(content) => submitComment(entry.id, content)"
-          @remove="removeComment"
-        />
+        <Accordion :expanded="openComments.has(entry.id)">
+          <Comments
+            :comments="commentItemsFor(entry.id)"
+            @submit="(content) => submitComment(entry.id, content)"
+            @remove="removeComment"
+          />
+        </Accordion>
       </article>
     </TransitionGroup>
     <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>

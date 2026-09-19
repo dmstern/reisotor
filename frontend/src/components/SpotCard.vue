@@ -21,7 +21,9 @@ import MapsAppPicker from './MapsAppPicker.vue';
 import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
+import SocialRow from './SocialRow.vue';
 import AppIcon from './AppIcon.vue';
+import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
@@ -644,38 +646,16 @@ const cardRotation = computed(() => {
               </DoneToggle>
 
               <!-- Expanded Social Actions: Fließt nahtlos im Aktionen-Raster mit (schließt Leerräume bei Umbrüchen) -->
-              <div v-if="expanded" class="card-social-actions is-expanded">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  class="comment-btn"
-                  :class="{ 'has-comments': comments.length > 0, active: showComments }"
-                  aria-label="Kommentare anzeigen"
-                  :title="comments.length ? `${comments.length} Kommentare` : 'Kommentar schreiben'"
-                  @click.stop="showComments = !showComments"
-                >
-                  <AppIcon :icon="ACTION_ICONS.comment" :size="15" group="actions" />
-                  <span v-if="comments.length > 0" class="social-count">{{ comments.length }}</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  class="like-btn"
-                  :class="{ liked }"
-                  :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-                  :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-                  @click.stop="emit('toggle-like')"
-                >
-                  <AppIcon
-                    :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-                    :size="15"
-                    group="actions"
-                  />
-                  <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
-                </Button>
-              </div>
+              <SocialRow
+                v-if="expanded"
+                class="is-expanded"
+                :like-count="likeCount"
+                :liked="liked"
+                :comment-count="comments.length"
+                :comments-open="showComments"
+                @toggle-like="emit('toggle-like')"
+                @toggle-comments="showComments = !showComments"
+              />
             </div>
           </div>
         </div>
@@ -711,38 +691,23 @@ const cardRotation = computed(() => {
           </Badge>
         </div>
 
-        <div v-if="!expanded" class="card-social-actions">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="like-btn"
-            :class="{ liked }"
-            :aria-label="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            :title="liked ? 'Gefällt mir nicht mehr' : 'Gefällt mir'"
-            @click.stop="emit('toggle-like')"
-          >
-            <AppIcon
-              :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-              :size="15"
-              group="actions"
-            />
-            <span v-if="likeCount > 0" class="social-count">{{ likeCount }}</span>
-          </Button>
-        </div>
+        <SocialRow
+          v-if="!expanded"
+          :like-count="likeCount"
+          :liked="liked"
+          :show-comments-button="false"
+          @toggle-like="emit('toggle-like')"
+        />
       </div>
 
-      <div class="spot-accordion" :class="{ 'is-expanded': expanded && showComments }">
-        <div class="spot-accordion-inner accordion-stagger">
-          <Comments
-            v-if="showComments"
-            :comments="comments"
-            @click.stop
-            @submit="(content) => emit('submit-comment', content)"
-            @remove="(id) => emit('remove-comment', id)"
-          />
-        </div>
-      </div>
+      <Accordion :expanded="expanded && showComments">
+        <Comments
+          :comments="comments"
+          @click.stop
+          @submit="(content) => emit('submit-comment', content)"
+          @remove="(id) => emit('remove-comment', id)"
+        />
+      </Accordion>
 
       <Teleport to="body">
         <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
@@ -880,34 +845,6 @@ const cardRotation = computed(() => {
 
 .spot-card.expanded .image {
   height: 165px;
-}
-
-.spot-accordion {
-  display: grid;
-  grid-template-rows: 0fr;
-  visibility: hidden;
-  transition:
-    grid-template-rows 0.3s ease,
-    visibility 0s linear 0.3s;
-}
-
-.spot-accordion:not(.is-expanded) {
-  display: none;
-}
-
-.spot-accordion.is-expanded {
-  grid-template-rows: 1fr;
-  visibility: visible;
-  transition:
-    grid-template-rows 0.3s ease,
-    visibility 0s linear 0s;
-}
-
-.spot-accordion-inner {
-  overflow: hidden;
-  /* Verhindert Abschneiden des Fokus-Rahmens */
-  padding: 3px;
-  margin: -3px;
 }
 
 .slide-fade-enter-active,
@@ -1420,53 +1357,6 @@ const cardRotation = computed(() => {
   right: var(--space-1);
   margin-left: 0;
   z-index: 3;
-}
-
-.like-btn,
-.comment-btn {
-  color: var(--color-text-muted);
-}
-
-.like-btn.liked {
-  color: var(--color-like);
-}
-
-.like-btn.liked:hover {
-  background: var(--color-like-tint);
-}
-
-.comment-btn.active,
-.comment-btn.has-comments {
-  color: var(--color-primary);
-}
-
-.social-count {
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-left: 2px;
-}
-
-.comment-pop-enter-active,
-.comment-pop-leave-active {
-  transition:
-    opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1),
-    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1),
-    max-width 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-  overflow: hidden;
-}
-
-.comment-pop-enter-from,
-.comment-pop-leave-to {
-  opacity: 0;
-  max-width: 0;
-  transform: scale(0.85) translateX(6px);
-}
-
-.comment-pop-enter-to,
-.comment-pop-leave-from {
-  opacity: 1;
-  max-width: 65px;
-  transform: scale(1) translateX(0);
 }
 
 .card-actions {

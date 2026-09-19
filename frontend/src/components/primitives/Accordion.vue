@@ -46,9 +46,7 @@ withDefaults(defineProps<Props>(), {
   min-height: 0;
   overflow: hidden;
   visibility: hidden;
-  transition:
-    overflow 0s 0.35s,
-    visibility 0s 0.35s;
+  transition: visibility 0s 0.35s;
 }
 
 .accordion.is-expanded .accordion-inner {
