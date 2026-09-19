@@ -65,6 +65,8 @@ const props = defineProps<{
   hasMultipleMembers?: boolean;
   /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
   layoverMinutes?: number | null;
+  /** Reduziert das Kategorie-Badge optional explizit auf sein Icon */
+  iconOnlyCategory?: boolean;
 }>();
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
@@ -457,7 +459,7 @@ const cardRotation = computed(() => {
 
     <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
     <div class="card-badge-group">
-      <CategoryChip :category="spot.category" />
+      <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
       <PendingSyncBadge v-if="spot._pending" />
     </div>
 
@@ -867,6 +869,7 @@ const cardRotation = computed(() => {
 
 <style scoped>
 .spot-card {
+  container: spot-card / inline-size;
   position: relative;
   z-index: 1;
   isolation: isolate;
@@ -1220,6 +1223,7 @@ const cardRotation = computed(() => {
 }
 
 .card-badge-group :deep(.category-chip) {
+  max-width: 120px;
   transition:
     background 0.3s ease,
     border-color 0.3s ease,
@@ -1230,6 +1234,7 @@ const cardRotation = computed(() => {
 }
 
 .spot-card.expanded .card-badge-group :deep(.category-chip) {
+  max-width: 160px;
   box-shadow: var(--shadow-sm);
   -webkit-backdrop-filter: blur(4px) brightness(80%);
   backdrop-filter: blur(4px) brightness(80%);
@@ -1266,7 +1271,20 @@ const cardRotation = computed(() => {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 2px;
-  padding-right: 90px;
+  padding-right: 132px;
+}
+
+.spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
+  padding-right: 170px;
+}
+
+.spot-card:not(.expanded):has(.category-chip.is-icon-only) .card-title-block {
+  padding-right: 44px;
+}
+
+.spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.pending-sync-badge)
+  .card-title-block {
+  padding-right: 76px;
 }
 
 .card-title {
@@ -1827,7 +1845,11 @@ const cardRotation = computed(() => {
 
   .spot-card:not(.expanded) .card-title-block {
     margin-bottom: 0;
-    padding-right: 90px;
+    padding-right: 125px;
+  }
+
+  .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
+    padding-right: 160px;
   }
 
   .spot-card:not(.expanded) .card-title {
@@ -1930,6 +1952,54 @@ const cardRotation = computed(() => {
     opacity: 1;
     transform: translateY(0) scale(1);
     transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
+  }
+}
+
+/* Auf schmalen Karten (<= 340px, z. B. in Schlangenreihen oder engen Spalten):
+   Kategorie-Badge auf sein Icon reduzieren, um Titel und Badge vor Überlagerung zu schützen
+   und dem Titel die volle Zeilenbreite zu geben. */
+@container spot-card (max-width: 340px) {
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
+    padding: 3px 6px;
+    gap: 0;
+    max-width: none;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge span) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge) {
+    padding: 3px 6px;
+    gap: 0;
+  }
+
+  .spot-card:not(.expanded) .card-title-block {
+    padding-right: 44px;
+  }
+
+  .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
+    padding-right: 76px;
   }
 }
 
