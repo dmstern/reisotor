@@ -6,10 +6,20 @@ import { createRouter, createMemoryHistory } from 'vue-router';
 import ChangelogModal from './ChangelogModal.vue';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { useBuildInfoStore } from '../stores/buildInfo';
+import { useAuthStore } from '../stores/auth';
+import type { User } from '../api/types';
 
 vi.mock('virtual:pwa-register', () => ({
   registerSW: vi.fn(() => vi.fn()),
 }));
+
+const mockUser: User = {
+  id: 1,
+  username: 'testuser',
+  avatar: '👤',
+  email: 'test@example.com',
+  must_change_password: false,
+};
 
 describe('ChangelogModal', () => {
   let pinia: ReturnType<typeof createPinia>;
@@ -19,6 +29,8 @@ describe('ChangelogModal', () => {
     document.body.innerHTML = '';
     pinia = createPinia();
     setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.user = mockUser;
     router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -174,6 +186,36 @@ describe('ChangelogModal', () => {
 
     expect(dismissSpy).toHaveBeenCalled();
     expect(pushSpy).toHaveBeenCalledWith({ path: '/settings', query: { tab: 'notifications' } });
+
+    cleanUp();
+  });
+
+  it('does not display modal when user is not logged in', async () => {
+    const auth = useAuthStore();
+    auth.user = null;
+    const pwaUpdate = usePwaUpdateStore();
+    pwaUpdate.showChangelogDialog = true;
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+
+    expect(document.body.innerHTML).not.toContain('Was ist neu in v');
+    cleanUp();
+  });
+
+  it('displays modal when user logs in', async () => {
+    const auth = useAuthStore();
+    auth.user = null;
+    const pwaUpdate = usePwaUpdateStore();
+    pwaUpdate.showChangelogDialog = true;
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+    expect(document.body.innerHTML).not.toContain('Was ist neu in v');
+
+    auth.user = mockUser;
+    await nextTick();
+    expect(document.body.innerHTML).toContain('Was ist neu in v');
 
     cleanUp();
   });
