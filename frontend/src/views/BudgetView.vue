@@ -29,7 +29,9 @@ import Badge from '../components/primitives/Badge.vue';
 import Input from '../components/primitives/Input.vue';
 import Select from '../components/primitives/Select.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
+import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
 const tripStore = useTripStore();
@@ -129,6 +131,7 @@ const showsPrivacyHint = computed(
 
 // --- Ausgaben (Bezahlungen) ---
 const showExpenseForm = ref(false);
+const showExpenseDetails = ref(false);
 const emptyExpenseForm = () => ({
   title: '',
   category: '',
@@ -141,7 +144,22 @@ const emptyExpenseForm = () => ({
 const expenseForm = ref(emptyExpenseForm());
 
 const editingExpense = ref<BudgetExpense | null>(null);
+const showEditExpenseDetails = ref(false);
 const editExpenseForm = ref(emptyExpenseForm());
+
+const expenseDetailsCount = computed(() => {
+  let count = 0;
+  if (expenseForm.value.budget_id) count++;
+  if (expenseForm.value.note) count++;
+  return count > 0 ? count : undefined;
+});
+
+const editExpenseDetailsCount = computed(() => {
+  let count = 0;
+  if (editExpenseForm.value.budget_id) count++;
+  if (editExpenseForm.value.note) count++;
+  return count > 0 ? count : undefined;
+});
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - nur für die Ausgaben-
 // Formulare (Titel/Notiz sind hier Freitext), nicht für Budget-Anlegen/Überweisung/Kategorie-
@@ -151,6 +169,15 @@ const editExpenseDraft = useDraftAutosave(
   () => `budgetExpense:edit:${editingExpense.value?.id}`,
   editExpenseForm,
   computed(() => editingExpense.value !== null)
+);
+
+watch(
+  () => [showExpenseForm.value, expenseForm.value.budget_id, expenseForm.value.note],
+  ([isOpen, budgetId, note]) => {
+    if (isOpen && (budgetId || note)) {
+      showExpenseDetails.value = true;
+    }
+  }
 );
 
 function expenseToBody(f: ReturnType<typeof emptyExpenseForm>) {
@@ -172,11 +199,13 @@ async function submitExpense() {
   await budgetStore.submitExpense(expenseToBody(expenseForm.value));
   expenseForm.value = emptyExpenseForm();
   showExpenseForm.value = false;
+  showExpenseDetails.value = false;
   newExpenseDraft.clear();
 }
 
 function closeExpenseForm() {
   showExpenseForm.value = false;
+  showExpenseDetails.value = false;
   expenseForm.value = emptyExpenseForm();
   newExpenseDraft.clear();
 }
@@ -192,6 +221,7 @@ function startEditExpense(expense: BudgetExpense) {
     note: expense.note ?? '',
     budget_id: expense.budget_id != null ? String(expense.budget_id) : '',
   };
+  showEditExpenseDetails.value = Boolean(expense.budget_id || expense.note);
 }
 
 async function submitEditExpense() {
@@ -200,15 +230,18 @@ async function submitEditExpense() {
   await budgetStore.updateExpense(editingExpense.value.id, expenseToBody(editExpenseForm.value));
   editExpenseDraft.clear();
   editingExpense.value = null;
+  showEditExpenseDetails.value = false;
 }
 
 function closeEditExpenseForm() {
   editExpenseDraft.clear();
   editingExpense.value = null;
+  showEditExpenseDetails.value = false;
 }
 
 // --- Überweisungen ---
 const showTransferForm = ref(false);
+const showTransferDetails = ref(false);
 const emptyTransferForm = () => ({
   from_user_id: '',
   to_user_id: '',
@@ -236,10 +269,12 @@ async function submitTransfer() {
   });
   transferForm.value = emptyTransferForm();
   showTransferForm.value = false;
+  showTransferDetails.value = false;
 }
 
 function closeTransferForm() {
   showTransferForm.value = false;
+  showTransferDetails.value = false;
   transferForm.value = emptyTransferForm();
 }
 
@@ -253,6 +288,7 @@ function useSettlementSuggestion(suggestion: SettlementSuggestion) {
     date: today(),
     note: '',
   };
+  showTransferDetails.value = false;
   showTransferForm.value = true;
 }
 
@@ -339,44 +375,46 @@ const categoryColors = computed(() => {
           <Modal
             :model-value="showNewBudgetForm"
             title="Budget anlegen"
-            full-height
             @update:model-value="(v) => !v && closeNewBudgetForm()"
           >
-            <form class="new-budget-form" @submit.prevent="addBudget">
-              <FormField icon="title" label="Name">
+            <form class="new-budget-form edit-form" @submit.prevent="addBudget">
+              <FormField icon="title" label="Name" v-slot="{ id }">
                 <Input
+                  :id="id"
                   v-model="newBudgetForm.name"
                   type="text"
                   placeholder="Name (z. B. Souvenirs)"
                   required
                 />
               </FormField>
-              <FormField
-                v-if="budgetStore.users.length > 1"
-                icon="visibility"
-                label="Sichtbarkeit"
-                v-slot="{ id }"
-              >
-                <Select :id="id" v-model="newBudgetForm.kind">
-                  <option value="shared">Geteilt (alle sehen ihn)</option>
-                  <option value="personal">Privat (nur eine Person sieht ihn)</option>
-                </Select>
-              </FormField>
-              <FormField
-                v-if="budgetStore.users.length > 1 && newBudgetForm.kind === 'personal'"
-                icon="person"
-                label="Person"
-                v-slot="{ id }"
-              >
-                <Select :id="id" v-model="newBudgetForm.owner_id" required>
-                  <option value="" disabled>Nutzer:in wählen…</option>
-                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                    {{ u.avatar }} {{ u.username }}
-                  </option>
-                </Select>
-              </FormField>
-              <FormField icon="amount" label="Gesamtziel (optional)">
+              <div v-if="budgetStore.users.length > 1" class="row">
+                <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
+                  <Select :id="id" v-model="newBudgetForm.kind">
+                    <option value="shared">Geteilt (alle sehen ihn)</option>
+                    <option value="personal">Privat (nur eine Person sieht ihn)</option>
+                  </Select>
+                </FormField>
+                <FormField
+                  v-if="newBudgetForm.kind === 'personal'"
+                  icon="person"
+                  label="Person"
+                  v-slot="{ id }"
+                >
+                  <Select :id="id" v-model="newBudgetForm.owner_id" required>
+                    <option value="" disabled>Nutzer:in wählen…</option>
+                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                      {{ u.avatar }} {{ u.username }}
+                    </option>
+                  </Select>
+                </FormField>
+              </div>
+              <p v-if="showsPrivacyHint" class="privacy-hint">
+                <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
+                {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
+              </p>
+              <FormField icon="amount" label="Gesamtziel (optional)" v-slot="{ id }">
                 <Input
+                  :id="id"
                   v-model="newBudgetForm.target_amount"
                   type="number"
                   inputmode="decimal"
@@ -384,10 +422,6 @@ const categoryColors = computed(() => {
                   placeholder="Gesamtziel € (optional)"
                 />
               </FormField>
-              <p v-if="showsPrivacyHint" class="privacy-hint">
-                <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
-                {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
-              </p>
               <div class="actions-row">
                 <div class="spacer"></div>
                 <Button type="submit">Anlegen</Button>
@@ -430,58 +464,85 @@ const categoryColors = computed(() => {
           <Modal
             :model-value="showExpenseForm"
             title="Ausgabe eintragen"
-            full-height
             @update:model-value="(v) => !v && closeExpenseForm()"
           >
-            <form class="add-form" @submit.prevent="submitExpense">
-              <FormField icon="title" label="Titel">
-                <Input v-model="expenseForm.title" type="text" placeholder="Titel" required />
-              </FormField>
-              <FormField icon="category" label="Kategorie" v-slot="{ id }">
-                <Combobox
-                  :id="id"
-                  v-model="expenseForm.category"
-                  :options="budgetStore.expenseCategories"
-                  placeholder="Kategorie"
-                />
-              </FormField>
-              <FormField icon="amount" label="Betrag">
+            <form class="edit-form add-form" @submit.prevent="submitExpense">
+              <FormField icon="title" label="Titel" v-slot="{ id }">
                 <Input
-                  v-model="expenseForm.amount"
-                  type="number"
-                  inputmode="decimal"
-                  step="0.01"
-                  placeholder="Betrag"
+                  :id="id"
+                  v-model="expenseForm.title"
+                  type="text"
+                  placeholder="Titel (z. B. Restaurant, Tickets)"
                   required
                 />
               </FormField>
-              <FormField
-                v-if="budgetStore.users.length > 1"
-                icon="shared"
-                label="Bezahlt von"
-                v-slot="{ id }"
+
+              <div class="row">
+                <FormField icon="amount" label="Betrag" v-slot="{ id }">
+                  <Input
+                    :id="id"
+                    v-model="expenseForm.amount"
+                    type="number"
+                    inputmode="decimal"
+                    step="0.01"
+                    placeholder="Betrag €"
+                    required
+                  />
+                </FormField>
+                <FormField icon="category" label="Kategorie" v-slot="{ id }">
+                  <Combobox
+                    :id="id"
+                    v-model="expenseForm.category"
+                    :options="budgetStore.expenseCategories"
+                    placeholder="Kategorie"
+                  />
+                </FormField>
+              </div>
+
+              <div class="row">
+                <FormField
+                  v-if="budgetStore.users.length > 1"
+                  icon="shared"
+                  label="Bezahlt von"
+                  v-slot="{ id }"
+                >
+                  <Select :id="id" v-model="expenseForm.paid_by_user_id" required>
+                    <option value="" disabled>Bezahlt von…</option>
+                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                      {{ u.avatar }} {{ u.username }}
+                    </option>
+                  </Select>
+                </FormField>
+                <FormField icon="date" label="Datum" v-slot="{ id }">
+                  <Input :id="id" v-model="expenseForm.date" type="date" />
+                </FormField>
+              </div>
+
+              <CollapsibleFieldset
+                v-model="showExpenseDetails"
+                label="Weitere Angaben"
+                :count="expenseDetailsCount"
+                :icon="FORM_FIELD_ICONS.pot"
+                icon-group="formFields"
               >
-                <Select :id="id" v-model="expenseForm.paid_by_user_id" required>
-                  <option value="" disabled>Bezahlt von…</option>
-                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                    {{ u.avatar }} {{ u.username }}
-                  </option>
-                </Select>
-              </FormField>
-              <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-                <Select :id="id" v-model="expenseForm.budget_id">
-                  <option value="">Kein Budget</option>
-                  <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
-                    {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
-                  </option>
-                </Select>
-              </FormField>
-              <FormField icon="date" label="Datum">
-                <Input v-model="expenseForm.date" type="date" />
-              </FormField>
-              <FormField icon="note" label="Notiz">
-                <Input v-model="expenseForm.note" type="text" placeholder="Notiz (optional)" />
-              </FormField>
+                <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
+                  <Select :id="id" v-model="expenseForm.budget_id">
+                    <option value="">Kein Budget</option>
+                    <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
+                      {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
+                    </option>
+                  </Select>
+                </FormField>
+                <FormField icon="note" label="Notiz" v-slot="{ id }">
+                  <Input
+                    :id="id"
+                    v-model="expenseForm.note"
+                    type="text"
+                    placeholder="Notiz (optional)"
+                  />
+                </FormField>
+              </CollapsibleFieldset>
+
               <DraftStatusBar
                 :status="newExpenseDraft.status.value"
                 :restored="newExpenseDraft.restored.value"
@@ -513,42 +574,62 @@ const categoryColors = computed(() => {
           <Modal
             :model-value="showTransferForm"
             title="Überweisung eintragen"
-            full-height
             @update:model-value="(v) => !v && closeTransferForm()"
           >
-            <form class="add-form" @submit.prevent="submitTransfer">
-              <FormField icon="person" label="Von" v-slot="{ id }">
-                <Select :id="id" v-model="transferForm.from_user_id" required>
-                  <option value="" disabled>Von…</option>
-                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                    {{ u.avatar }} {{ u.username }}
-                  </option>
-                </Select>
-              </FormField>
-              <FormField icon="person" label="An" v-slot="{ id }">
-                <Select :id="id" v-model="transferForm.to_user_id" required>
-                  <option value="" disabled>An…</option>
-                  <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                    {{ u.avatar }} {{ u.username }}
-                  </option>
-                </Select>
-              </FormField>
-              <FormField icon="amount" label="Betrag">
-                <Input
-                  v-model="transferForm.amount"
-                  type="number"
-                  inputmode="decimal"
-                  step="0.01"
-                  placeholder="Betrag"
-                  required
-                />
-              </FormField>
-              <FormField icon="date" label="Datum">
-                <Input v-model="transferForm.date" type="date" />
-              </FormField>
-              <FormField icon="note" label="Notiz">
-                <Input v-model="transferForm.note" type="text" placeholder="Notiz (optional)" />
-              </FormField>
+            <form class="edit-form add-form" @submit.prevent="submitTransfer">
+              <div class="row">
+                <FormField icon="person" label="Von" v-slot="{ id }">
+                  <Select :id="id" v-model="transferForm.from_user_id" required>
+                    <option value="" disabled>Von…</option>
+                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                      {{ u.avatar }} {{ u.username }}
+                    </option>
+                  </Select>
+                </FormField>
+                <FormField icon="person" label="An" v-slot="{ id }">
+                  <Select :id="id" v-model="transferForm.to_user_id" required>
+                    <option value="" disabled>An…</option>
+                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                      {{ u.avatar }} {{ u.username }}
+                    </option>
+                  </Select>
+                </FormField>
+              </div>
+
+              <div class="row">
+                <FormField icon="amount" label="Betrag" v-slot="{ id }">
+                  <Input
+                    :id="id"
+                    v-model="transferForm.amount"
+                    type="number"
+                    inputmode="decimal"
+                    step="0.01"
+                    placeholder="Betrag €"
+                    required
+                  />
+                </FormField>
+                <FormField icon="date" label="Datum" v-slot="{ id }">
+                  <Input :id="id" v-model="transferForm.date" type="date" />
+                </FormField>
+              </div>
+
+              <CollapsibleFieldset
+                v-model="showTransferDetails"
+                label="Weitere Angaben"
+                :count="transferForm.note ? 1 : undefined"
+                :icon="FORM_FIELD_ICONS.note"
+                icon-group="formFields"
+              >
+                <FormField icon="note" label="Notiz" v-slot="{ id }">
+                  <Input
+                    :id="id"
+                    v-model="transferForm.note"
+                    type="text"
+                    placeholder="Notiz (optional)"
+                  />
+                </FormField>
+              </CollapsibleFieldset>
+
               <div class="actions-row">
                 <div class="spacer"></div>
                 <Button type="submit">Eintragen</Button>
@@ -564,70 +645,97 @@ const categoryColors = computed(() => {
     <Modal
       :model-value="editingExpense !== null"
       title="Ausgabe bearbeiten"
-      full-height
       @update:model-value="(v) => !v && closeEditExpenseForm()"
     >
-      <form class="add-form" @submit.prevent="submitEditExpense">
-        <FormField icon="title" label="Titel">
-          <Input v-model="editExpenseForm.title" type="text" placeholder="Titel" required />
-        </FormField>
-        <FormField icon="category" label="Kategorie" v-slot="{ id }">
-          <Combobox
-            :id="id"
-            v-model="editExpenseForm.category"
-            :options="budgetStore.expenseCategories"
-            placeholder="Kategorie"
-          />
-        </FormField>
-        <FormField icon="amount" label="Betrag">
+      <form class="edit-form add-form" @submit.prevent="submitEditExpense">
+        <FormField icon="title" label="Titel" v-slot="{ id }">
           <Input
-            v-model="editExpenseForm.amount"
-            type="number"
-            inputmode="decimal"
-            step="0.01"
-            placeholder="Betrag"
+            :id="id"
+            v-model="editExpenseForm.title"
+            type="text"
+            placeholder="Titel (z. B. Restaurant, Tickets)"
             required
           />
         </FormField>
-        <FormField
-          v-if="budgetStore.users.length > 1"
-          icon="shared"
-          label="Bezahlt von"
-          v-slot="{ id }"
+
+        <div class="row">
+          <FormField icon="amount" label="Betrag" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="editExpenseForm.amount"
+              type="number"
+              inputmode="decimal"
+              step="0.01"
+              placeholder="Betrag €"
+              required
+            />
+          </FormField>
+          <FormField icon="category" label="Kategorie" v-slot="{ id }">
+            <Combobox
+              :id="id"
+              v-model="editExpenseForm.category"
+              :options="budgetStore.expenseCategories"
+              placeholder="Kategorie"
+            />
+          </FormField>
+        </div>
+
+        <div class="row">
+          <FormField
+            v-if="budgetStore.users.length > 1"
+            icon="shared"
+            label="Bezahlt von"
+            v-slot="{ id }"
+          >
+            <Select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
+              <option value="" disabled>Bezahlt von…</option>
+              <option
+                v-if="
+                  editExpenseForm.paid_by_user_id &&
+                  !budgetStore.users.some(
+                    (u) => String(u.id) === String(editExpenseForm.paid_by_user_id)
+                  )
+                "
+                :value="String(editExpenseForm.paid_by_user_id)"
+                disabled
+              >
+                👤 Ehemaliges Mitglied
+              </option>
+              <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
+                {{ u.avatar }} {{ u.username }}
+              </option>
+            </Select>
+          </FormField>
+          <FormField icon="date" label="Datum" v-slot="{ id }">
+            <Input :id="id" v-model="editExpenseForm.date" type="date" />
+          </FormField>
+        </div>
+
+        <CollapsibleFieldset
+          v-model="showEditExpenseDetails"
+          label="Weitere Angaben"
+          :count="editExpenseDetailsCount"
+          :icon="FORM_FIELD_ICONS.pot"
+          icon-group="formFields"
         >
-          <Select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
-            <option value="" disabled>Bezahlt von…</option>
-            <option
-              v-if="
-                editExpenseForm.paid_by_user_id &&
-                !budgetStore.users.some(
-                  (u) => String(u.id) === String(editExpenseForm.paid_by_user_id)
-                )
-              "
-              :value="String(editExpenseForm.paid_by_user_id)"
-              disabled
-            >
-              👤 Ehemaliges Mitglied
-            </option>
-            <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-              {{ u.avatar }} {{ u.username }}
-            </option>
-          </Select>
-        </FormField>
-        <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-          <Select :id="id" v-model="editExpenseForm.budget_id">
-            <option value="">Kein Budget</option>
-            <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
-              {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
-            </option>
-          </Select>
-        </FormField>
-        <FormField icon="date" label="Datum">
-          <Input v-model="editExpenseForm.date" type="date" />
-        </FormField>
-        <FormField icon="note" label="Notiz">
-          <Input v-model="editExpenseForm.note" type="text" placeholder="Notiz (optional)" />
-        </FormField>
+          <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
+            <Select :id="id" v-model="editExpenseForm.budget_id">
+              <option value="">Kein Budget</option>
+              <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
+                {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
+              </option>
+            </Select>
+          </FormField>
+          <FormField icon="note" label="Notiz" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="editExpenseForm.note"
+              type="text"
+              placeholder="Notiz (optional)"
+            />
+          </FormField>
+        </CollapsibleFieldset>
+
         <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />
         <DraftStatusBar
           :status="editExpenseDraft.status.value"
@@ -797,10 +905,29 @@ const categoryColors = computed(() => {
   margin-bottom: var(--space-3);
 }
 
-.new-budget-form {
+.edit-form {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+}
+
+.edit-form .row {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.edit-form .row > * {
+  flex: 1;
+  min-width: 140px;
+}
+
+.edit-form .actions-row {
+  margin-top: var(--space-2);
+}
+
+.edit-form .actions-row button[type='submit'] {
+  flex: initial;
 }
 
 .privacy-hint {
@@ -826,26 +953,6 @@ const categoryColors = computed(() => {
     align-items: start;
     gap: var(--space-3);
   }
-}
-
-.add-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-
-.add-form .form-field {
-  flex: 1;
-  min-width: 130px;
-}
-
-/* Ohne eigenes FormField-Label würde der Absenden-Button, sobald er in derselben umgebrochenen
-   Flex-Zeile wie ein FormField landet, vom Flex-Default align-items:stretch auf dessen (größere)
-   Höhe gezogen (Konsistenz-Prinzip, siehe DESIGN.md). flex-basis:100% erzwingt stattdessen immer
-   eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. */
-.add-form button[type='submit'] {
-  flex: 1 1 100%;
 }
 
 /* Cards animation on view mount */
