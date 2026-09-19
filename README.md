@@ -74,7 +74,7 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 ## Features
 
 - 🏠 **Übersicht/Dashboard**: Intuitiver Schnellüberblick mit Reise-Countdown, anstehenden Terminen, Packlisten- und Budgetstatus sowie Live-Wetter
-- 🗺️ **Spots & interaktive Karte**: Spots (Sehenswürdigkeiten, Unterkünfte, Gastronomie) mit Geokoordinaten, Adressen, Google-Maps-Verknüpfung, Bewertungen, Besuchsstatus und interaktiver Leaflet/OpenStreetMap-Karte mit Emoji-Markern
+- 🗺️ **Spots & interaktive Karte**: Spots (Sehenswürdigkeiten, Unterkünfte, Gastronomie) mit Geokoordinaten, Adressen, Google-Maps-Verknüpfung, Likes, Kommentaren, Besuchsstatus und interaktiver Leaflet/OpenStreetMap-Karte mit Emoji-Markern
 - 🥾 **Touren & Teilstrecken**: Mehretappen-Touren mit Stationen, Teilstrecken (Verkehrsmittel, Fahr- & Umsteigezeiten, Sitzplätze, Ticketkosten), geschwungenen Serpentinen-Routen und Live-GPS-Track-Aufzeichnung direkt im Browser
 - 📅 **Ablauf & Kalender**: Floating-Drawer auf Desktop und eigenständige Mobil-Ansicht; Wochenablauf, Termine, Fälligkeiten und Drag & Drop von Ausflügen
 - 🌦️ **Wetter & Unwetterwarnungen**: 14-Tage-Wettervorhersage, stündlicher Tagesverlauf, wählbare Wettermodelle (z. B. DWD ICON) und automatische Warnhinweise bei Hitze, Sturm oder Starkregen
