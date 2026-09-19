@@ -89,6 +89,7 @@ function handleClick(event: MouseEvent) {
       :icon="icon"
       :group="iconGroup"
       :size="iconSize"
+      :active="active"
       class="dropdown-item-icon"
     />
     <span class="dropdown-item-label">
@@ -109,6 +110,7 @@ function handleClick(event: MouseEvent) {
       :icon="icon"
       :group="iconGroup"
       :size="iconSize"
+      :active="active"
       class="dropdown-item-icon"
     />
     <span class="dropdown-item-label">
@@ -120,6 +122,7 @@ function handleClick(event: MouseEvent) {
         :icon="trailingIcon"
         :group="trailingIconGroup"
         :size="trailingIconSize"
+        :active="active"
         class="dropdown-item-trailing-icon"
       />
     </slot>
@@ -137,6 +140,7 @@ function handleClick(event: MouseEvent) {
       :icon="icon"
       :group="iconGroup"
       :size="iconSize"
+      :active="active"
       class="dropdown-item-icon"
     />
     <span class="dropdown-item-label">
@@ -148,6 +152,7 @@ function handleClick(event: MouseEvent) {
         :icon="trailingIcon"
         :group="trailingIconGroup"
         :size="trailingIconSize"
+        :active="active"
         class="dropdown-item-trailing-icon"
       />
     </slot>

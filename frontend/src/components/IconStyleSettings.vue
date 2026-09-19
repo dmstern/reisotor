@@ -4,7 +4,6 @@ import {
   useIconStyleStore,
   ICON_GROUP_OPTIONS,
   type IconStyle,
-  type IconVariant,
   type ConfigurableIconGroup,
 } from '../stores/iconStyle';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -28,12 +27,12 @@ const PREVIEW_ICONS = [
   SECTION_ICON_DEFS.budget,
   FORM_FIELD_ICONS.location,
 ];
-// Ein einzelnes, immer gleiches Beispiel-Icon für die Emoji/Symbole- bzw. Outline/Gefüllt-Toggles
+// Ein einzelnes, immer gleiches Beispiel-Icon für die Emoji/Symbole-Toggles
 // je Bereich (statt eines bereichs-spezifischen Icons) - der Bereich ist schon per Zeilen-Label
 // benannt, das Beispiel-Icon soll nur zeigen, WIE die jeweilige Option aussieht.
 const DEMO_ICON = SECTION_ICON_DEFS.calendar;
 
-// forceStyle/forceVariant sorgen dafür, dass jede Option IMMER ihre eigene Darstellung zeigt
+// forceStyle sorgt dafür, dass jede Option IMMER ihre eigene Darstellung zeigt
 // (unabhängig vom aktuell aktiven Wert) - gleiches Prinzip wie die große Vorschau oben.
 const STYLE_OPTIONS = [
   {
@@ -51,24 +50,6 @@ const STYLE_OPTIONS = [
     forceStyle: 'icons' as IconStyle,
   },
 ];
-const VARIANT_OPTIONS = [
-  {
-    value: 'outline',
-    label: 'Outline',
-    icon: DEMO_ICON,
-    iconGroup: 'navigation' as ConfigurableIconGroup,
-    forceStyle: 'icons' as IconStyle,
-    forceVariant: 'outline' as IconVariant,
-  },
-  {
-    value: 'filled',
-    label: 'Gefüllt',
-    icon: DEMO_ICON,
-    iconGroup: 'navigation' as ConfigurableIconGroup,
-    forceStyle: 'icons' as IconStyle,
-    forceVariant: 'filled' as IconVariant,
-  },
-];
 
 // '' statt eines der beiden Werte, wenn die Bereiche aktuell unterschiedlich eingestellt sind -
 // SegmentedToggle blendet die Pille dann komplett aus (siehe dortiger activeIndex-Kommentar),
@@ -84,14 +65,10 @@ const categoriesColorRelevant = computed(() => iconStyle.groups.categories === '
 
 const isDefault = computed(() => {
   const g = iconStyle.groups;
-  const v = iconStyle.variants;
   return (
     g.navigation === 'icons' &&
     g.categories === 'emoji' &&
     g.weather === 'icons' &&
-    v.navigation === 'outline' &&
-    v.categories === 'outline' &&
-    v.weather === 'outline' &&
     iconStyle.navColored &&
     iconStyle.colorizeWeather &&
     iconStyle.colorizeCategories
@@ -169,20 +146,6 @@ const isDefault = computed(() => {
             @update:model-value="
               (v) =>
                 iconStyle.setGroupOverride(group.value as ConfigurableIconGroup, v as IconStyle)
-            "
-          />
-        </div>
-        <div
-          v-if="iconStyle.groups[group.value] === 'icons'"
-          class="group-override-row variant-row"
-        >
-          <span class="group-override-label">Stil</span>
-          <SegmentedToggle
-            :model-value="iconStyle.variants[group.value]"
-            :options="VARIANT_OPTIONS"
-            @update:model-value="
-              (v) =>
-                iconStyle.setGroupVariant(group.value as ConfigurableIconGroup, v as IconVariant)
             "
           />
         </div>
@@ -275,16 +238,6 @@ const isDefault = computed(() => {
 .all-groups-row .group-override-label {
   font-weight: 700;
   color: var(--color-text);
-}
-
-.variant-row {
-  margin-top: var(--space-1);
-  opacity: 0.85;
-}
-
-.variant-row .group-override-label {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
 }
 
 .group-override-label {

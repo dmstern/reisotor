@@ -6,6 +6,7 @@ import {
   IconMoon,
   IconMoonFilled,
   IconDeviceDesktop,
+  IconDeviceDesktopFilled,
 } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 
@@ -30,7 +31,12 @@ export const THEME_MODE_OPTIONS = [
   {
     value: 'system',
     icon: '🖥️',
-    tabler: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop } as IconDef,
+    tabler: {
+      id: 'device-desktop',
+      emoji: '🖥️',
+      outline: IconDeviceDesktop,
+      filled: IconDeviceDesktopFilled,
+    } as IconDef,
     label: 'Systemeinstellung',
   },
 ] as const;

@@ -33,6 +33,7 @@ function selectMode(val: ThemeMode) {
         class="icon-face"
         :size="18"
         :icon="currentOption.tabler"
+        :active="true"
         group="navigation"
         aria-hidden="true"
       />
@@ -61,6 +62,7 @@ function selectMode(val: ThemeMode) {
             <AppIcon
               :icon="currentOption.tabler"
               group="navigation"
+              :active="true"
               :size="18"
               class="theme-trigger-icon"
               aria-hidden="true"

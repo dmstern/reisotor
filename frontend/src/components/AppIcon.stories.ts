@@ -45,6 +45,10 @@ Zentrale Render-Stelle für alle Konzept-Icons der App. Das Icon-System gliedert
       options: [undefined, 'outline', 'filled'],
       description: 'Variante erzwingen (Outline vs. Gefüllt)',
     },
+    active: {
+      control: 'boolean',
+      description: 'Aktiv-Zustand (nutzt gefülltes Icon)',
+    },
     size: {
       control: 'number',
       description: 'Größe in Pixeln',
@@ -61,6 +65,7 @@ Zentrale Render-Stelle für alle Konzept-Icons der App. Das Icon-System gliedert
     color: 'var(--color-text)',
     forceStyle: undefined,
     forceVariant: undefined,
+    active: false,
   },
 };
 

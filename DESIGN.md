@@ -528,25 +528,25 @@ zurück). Drei getrennte, in sich konsistente Icon-Systeme:
   (Einzelfälle ohne Wiederverwendungspotenzial dürfen weiterhin lokal bleiben, siehe
   `LocationPicker.vue`s `OWN_LOCATION_ICON`).
 
-**Icon-Stil UND -Variante pro Bereich einzeln einstellbar**: `AppIcon.vue`s Pflicht-Prop `group`
+**Icon-Stil pro Bereich einzeln einstellbar, Gefüllt-Variante als Aktiv-Status**: `AppIcon.vue`s Pflicht-Prop `group`
 (`IconGroup` aus `stores/iconStyle.ts`: `navigation`, `categories`, `weather`, `formFields`,
-`actions`) ordnet jede Aufrufstelle einem groben Bereich zu. Konfigurierbar sind davon seit Issue
-#168 nur noch `navigation`, `categories` und `weather` (`ICON_GROUP_OPTIONS`/`ConfigurableIconGroup`)
+`actions`) ordnet jede Aufrufstelle einem groben Bereich zu. Konfigurierbar sind davon
+nur `navigation`, `categories` und `weather` (`ICON_GROUP_OPTIONS`/`ConfigurableIconGroup`)
 – `formFields` und `actions` (Formularfelder, Buttons/Aktionen, Status-Labels) liefern bei
-`iconStyle.styleForGroup(group)`/`styleVariantForGroup(group)` immer `'icons'`/`'outline'` und
+`iconStyle.styleForGroup(group)` immer `'icons'` und
 tauchen in der Bereichstabelle nicht mehr auf: Emoji sah bei diesen Interaktionselementen sichtbar
 schlecht aus, deshalb dort erzwungenes SVG statt einer Einstellung. Nie direkt den rohen State in
 einer Komponente lesen, wenn ein `AppIcon` gerendert wird, sonst umgeht das die Bereichs-Erzwingung/
--Einstellung. Die Bereichstabelle in `IconStyleSettings.vue` ist der zentrale, immer sichtbare Teil
+-Einstellung. Die Gefüllt-Variante (`IconDef.filled`) ist bewusst keine globale/bereichsweise
+Benutzereinstellung mehr, sondern wird app-weit konsistent als **Aktiv-Status** genutzt (z. B.
+aktiver Nav-Punkt in der Hauptnavigation, aktiver Tab in der `TabBar`, ausgeklappte Kommentare,
+aktive Segmented-Control-Optionen, aktive Filter- und Toggle-Buttons via `:active`).
+Die Bereichstabelle in `IconStyleSettings.vue` ist der zentrale, immer sichtbare Teil
 der Karte (kein Einklappen mehr) – oben ein "Für alle Bereiche umstellen"-Bulk-Toggle (reiner Setter,
 kein eigener Zustand, betrifft nur die drei konfigurierbaren Bereiche), darunter je
-`ICON_GROUP_OPTIONS`-Eintrag eine Emoji/Symbole-`SegmentedToggle.vue`-Zeile und (nur wenn der Bereich
-auf Symbole steht) eine zweite, kleinere Outline/Gefüllt-Zeile darunter. Beide Toggle-Arten zeigen
-ein Beispiel-Icon je Option (`SegmentedToggle.vue`s optionale `icon`/`iconGroup`/`forceStyle`/
-`forceVariant`-Felder je Option – `forceStyle`/`forceVariant` sorgen dafür, dass eine Option IMMER
-ihre eigene Darstellung zeigt, unabhängig vom aktuell aktiven Wert), auf schmalen Karten
-(`@container`, analog `SpotCard.vue`s `@container spots-col`) bleibt nur noch das Icon, das
-Wort-Label wird ausgeblendet.
+`ICON_GROUP_OPTIONS`-Eintrag eine Emoji/Symbole-`SegmentedToggle.vue`-Zeile. Alle Toggle-Arten zeigen
+ein Beispiel-Icon je Option (`SegmentedToggle.vue`s optionale `icon`/`iconGroup`/`forceStyle`-Felder
+je Option), auf schmalen Karten (`@container`) bleibt nur noch das Icon, das Wort-Label wird ausgeblendet.
 
 **Farbcodierung wiederverwendet, nicht neu erfunden**: `AppIcon.vue`s optionale `color`-Prop
 (Default `currentColor`) überschreibt die Icon-Farbe gezielt an einer Aufrufstelle. Für Symbol-Icons

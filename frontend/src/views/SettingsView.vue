@@ -65,9 +65,11 @@ import {
   IconUserFilled,
   IconUsers,
   IconDeviceDesktop,
+  IconDeviceDesktopFilled,
   IconBell,
   IconBellFilled,
   IconDatabase,
+  IconDatabaseFilled,
   IconInfoCircle,
   IconInfoCircleFilled,
   IconPuzzle,
@@ -114,14 +116,19 @@ const ALL_TABS: { key: Tab; label: string; icon: IconDef; adminOnly?: boolean }[
   {
     key: 'app',
     label: 'App-Einstellungen',
-    icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop },
+    icon: {
+      id: 'device-desktop',
+      emoji: '🖥️',
+      outline: IconDeviceDesktop,
+      filled: IconDeviceDesktopFilled,
+    },
   },
   { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
   { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
   {
     key: 'data',
     label: 'Daten',
-    icon: { id: 'database', emoji: '🗄️', outline: IconDatabase },
+    icon: { id: 'database', emoji: '🗄️', outline: IconDatabase, filled: IconDatabaseFilled },
     adminOnly: true,
   },
   {

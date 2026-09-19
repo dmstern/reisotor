@@ -90,6 +90,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />
@@ -106,6 +107,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />
@@ -122,6 +124,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />
@@ -139,6 +142,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />

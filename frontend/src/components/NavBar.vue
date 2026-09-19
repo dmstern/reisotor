@@ -79,6 +79,18 @@ const isAccommodationActive = computed(() => {
   return categories.includes('Unterkunft');
 });
 
+const isDashboardActive = computed(() => {
+  const targetPath = tripStore.currentTripId ? `/trip/${tripStore.currentTripId}` : '/';
+  return route.path === targetPath || route.path === `${targetPath}/`;
+});
+
+const isCalendarActive = computed(() => {
+  const targetPath = tripStore.currentTripId
+    ? `/trip/${tripStore.currentTripId}/calendar`
+    : '/calendar';
+  return route.path.startsWith(targetPath);
+});
+
 function isLinkActive(link: NavLinkDef): boolean {
   if (link.key === 'accommodation') {
     return isAccommodationActive.value;
@@ -218,12 +230,14 @@ function onLinkClick(event: MouseEvent) {
       <router-link
         :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}` : '/'"
         class="link"
+        :class="{ active: isDashboardActive, 'custom-inactive': !isDashboardActive }"
         @click="onLinkClick"
       >
         <AppIcon
           class="icon"
           :icon="DASHBOARD_LINK.icon"
           group="navigation"
+          :active="isDashboardActive"
           :color="iconStyle.navColored ? NAV_LINK_COLORS.get('dashboard') : undefined"
         />
         <span class="label">{{ DASHBOARD_LINK.label }}</span>
@@ -240,6 +254,7 @@ function onLinkClick(event: MouseEvent) {
       <router-link
         :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/calendar` : '/calendar'"
         class="link mobile-page-link"
+        :class="{ active: isCalendarActive, 'custom-inactive': !isCalendarActive }"
         @click="onLinkClick"
       >
         <span class="icon-wrap">
@@ -247,6 +262,7 @@ function onLinkClick(event: MouseEvent) {
             class="icon"
             :icon="SECTION_ICON_DEFS.calendar"
             group="navigation"
+            :active="isCalendarActive"
             :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
           />
           <UnseenDot v-if="liveSync.hasUnseen('schedule')" />
@@ -266,6 +282,7 @@ function onLinkClick(event: MouseEvent) {
             class="icon"
             :icon="link.icon"
             group="navigation"
+            :active="isLinkActive(link)"
             :color="iconStyle.navColored ? NAV_LINK_COLORS.get(link.key) : undefined"
           />
           <UnseenDot v-if="hasUnseenAny(link)" />

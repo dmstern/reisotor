@@ -60,6 +60,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
         :group="option.iconGroup ?? 'actions'"
         :force-style="option.forceStyle"
         :force-variant="option.forceVariant"
+        :active="option.value === modelValue"
         :size="14"
       />
       <span class="segmented-option-label">{{ option.label }}</span>

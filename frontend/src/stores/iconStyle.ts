@@ -13,11 +13,7 @@ export const ICON_STYLE_OPTIONS = [
 ] as const;
 export type IconStyle = (typeof ICON_STYLE_OPTIONS)[number]['value'];
 
-export const ICON_VARIANT_OPTIONS = [
-  { value: 'outline', label: 'Outline' },
-  { value: 'filled', label: 'Gefüllt' },
-] as const;
-export type IconVariant = (typeof ICON_VARIANT_OPTIONS)[number]['value'];
+export type IconVariant = 'outline' | 'filled';
 
 // Grobe Bereiche, für die sich der Icon-Stil einzeln einstellen lässt (Nutzer-Feedback:
 // "Kategorie-Icons per Emoji, Navigation per Tabler" o. ä. soll möglich sein) - jede
@@ -28,8 +24,7 @@ export type IconVariant = (typeof ICON_VARIANT_OPTIONS)[number]['value'];
 //
 // #168: "Formularfelder" und "Aktionen & Buttons" sind bewusst NICHT (mehr) konfigurierbar -
 // Emoji statt SVG sah dort bei Interaktionselementen (Buttons, Dropdowns, Status-Labels) zu
-// behämmert aus. Diese beiden Bereiche werden unten in styleForGroup/styleVariantForGroup fest auf
-// 'icons'/'outline' erzwungen, statt hier als Einstellungs-Option zu erscheinen.
+// behämmert aus. Diese beiden Bereiche werden unten in styleForGroup fest auf 'icons' erzwungen.
 export const ICON_GROUP_OPTIONS = [
   { value: 'navigation', label: 'Navigation & Dashboard' },
   { value: 'categories', label: 'Kategorien (Kalender, Spots, Reise, Kartenmarker)' },
@@ -38,14 +33,12 @@ export const ICON_GROUP_OPTIONS = [
 export type ConfigurableIconGroup = (typeof ICON_GROUP_OPTIONS)[number]['value'];
 // Zusätzlich zu den konfigurierbaren Bereichen oben gibt es 'formFields'/'actions', die
 // AppIcon.vue-Aufrufstellen weiterhin als `group`-Prop übergeben, deren Stil aber fest auf SVG
-// steht (siehe styleForGroup/styleVariantForGroup unten) statt aus dem Store zu kommen.
+// steht (siehe styleForGroup unten) statt aus dem Store zu kommen.
 export type IconGroup = ConfigurableIconGroup | 'formFields' | 'actions';
 
 // Icon-Stil für die nicht (mehr) konfigurierbaren Bereiche - immer SVG, nie Emoji (#168).
 const FORCED_STYLE: IconStyle = 'icons';
-const FORCED_VARIANT: IconVariant = 'outline';
 
-const DEFAULT_VARIANT: IconVariant = 'outline';
 // Neue Standard-Einstellungen (Issue #74): überall Symbole außer bei Kategorien, die per Default
 // bei Emoji bleiben.
 const DEFAULT_GROUPS: Record<ConfigurableIconGroup, IconStyle> = {
@@ -53,15 +46,9 @@ const DEFAULT_GROUPS: Record<ConfigurableIconGroup, IconStyle> = {
   categories: 'emoji',
   weather: 'icons',
 };
-const DEFAULT_VARIANTS: Record<ConfigurableIconGroup, IconVariant> = {
-  navigation: DEFAULT_VARIANT,
-  categories: DEFAULT_VARIANT,
-  weather: DEFAULT_VARIANT,
-};
 
 interface StoredIconSettings {
   groups: Record<ConfigurableIconGroup, IconStyle>;
-  variants: Record<ConfigurableIconGroup, IconVariant>;
   navColored: boolean;
   colorizeWeather: boolean;
   colorizeCategories: boolean;
@@ -90,7 +77,6 @@ function sanitizePerGroup<T extends string>(
 
 export const useIconStyleStore = defineStore('iconStyle', () => {
   const groups = ref<Record<ConfigurableIconGroup, IconStyle>>({ ...DEFAULT_GROUPS });
-  const variants = ref<Record<ConfigurableIconGroup, IconVariant>>({ ...DEFAULT_VARIANTS });
   const navColoredRaw = ref(true);
   const colorizeWeatherRaw = ref(true);
   const colorizeCategoriesRaw = ref(true);
@@ -104,7 +90,6 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
       .put('/users/me/icon-settings', {
         settings: {
           groups: groups.value,
-          variants: variants.value,
           navColored: navColoredRaw.value,
           colorizeWeather: colorizeWeatherRaw.value,
           colorizeCategories: colorizeCategoriesRaw.value,
@@ -148,7 +133,6 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     try {
       const stored = await api.get<Partial<StoredIconSettings>>('/users/me/icon-settings');
       groups.value = sanitizePerGroup(stored.groups, ICON_STYLE_OPTIONS, DEFAULT_GROUPS);
-      variants.value = sanitizePerGroup(stored.variants, ICON_VARIANT_OPTIONS, DEFAULT_VARIANTS);
       if (typeof stored.navColored === 'boolean') navColoredRaw.value = stored.navColored;
       if (typeof stored.colorizeWeather === 'boolean')
         colorizeWeatherRaw.value = stored.colorizeWeather;
@@ -181,19 +165,8 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     persist();
   }
 
-  function styleVariantForGroup(group: IconGroup): IconVariant {
-    if (group === 'formFields' || group === 'actions') return FORCED_VARIANT;
-    return variants.value[group];
-  }
-
-  function setGroupVariant(group: ConfigurableIconGroup, value: IconVariant) {
-    variants.value = { ...variants.value, [group]: value };
-    persist();
-  }
-
   function resetToDefaults() {
     groups.value = { ...DEFAULT_GROUPS };
-    variants.value = { ...DEFAULT_VARIANTS };
     navColoredRaw.value = true;
     colorizeWeatherRaw.value = true;
     colorizeCategoriesRaw.value = true;
@@ -207,7 +180,6 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
   // angemeldeten Person holt statt der zwischenzeitlich lokal gehaltenen der vorigen.
   function clearOnLogout() {
     groups.value = { ...DEFAULT_GROUPS };
-    variants.value = { ...DEFAULT_VARIANTS };
     navColoredRaw.value = true;
     colorizeWeatherRaw.value = true;
     colorizeCategoriesRaw.value = true;
@@ -216,7 +188,6 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
 
   return {
     groups,
-    variants,
     navColored,
     colorizeWeather,
     colorizeCategories,
@@ -225,8 +196,6 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
     styleForGroup,
     setGroupOverride,
     setAllGroups,
-    styleVariantForGroup,
-    setGroupVariant,
     resetToDefaults,
     clearOnLogout,
   };

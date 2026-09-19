@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
       @click="toggle"
     >
       <span class="tab-icon-wrap">
-        <AppIcon class="tab-icon" :size="18" :icon="icon" group="navigation" />
+        <AppIcon class="tab-icon" :size="18" :icon="icon" group="navigation" :active="open" />
         <UnseenDot v-if="hasUnseen" />
       </span>
       <span class="tab-label">{{ label }}</span>

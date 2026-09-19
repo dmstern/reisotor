@@ -37,7 +37,8 @@ const emit = defineEmits<{ (e: 'toggle-like'): void; (e: 'toggle-comments'): voi
       @click.stop="emit('toggle-comments')"
     >
       <AppIcon
-        :icon="commentsOpen || active ? ACTION_ICONS.commentFilled : ACTION_ICONS.comment"
+        :icon="ACTION_ICONS.comment"
+        :active="commentsOpen || active"
         :size="15"
         group="actions"
       />

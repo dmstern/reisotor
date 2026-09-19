@@ -3711,6 +3711,7 @@ async function deleteEditingSpot() {
                   class="category-nav-icon"
                   :icon="grp.iconDef"
                   group="categories"
+                  :active="activeCategory === grp.category"
                   :color="groupIconColor(grp)"
                 />
                 <span class="category-nav-label">{{ grp.category }}</span>
