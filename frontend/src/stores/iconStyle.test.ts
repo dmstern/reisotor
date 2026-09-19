@@ -28,48 +28,41 @@ describe('useIconStyleStore', () => {
     expect(store.groups.navigation).toBe('icons');
     expect(store.groups.categories).toBe('emoji');
     expect(store.groups.weather).toBe('icons');
-    expect(Object.values(store.variants).every((v) => v === 'outline')).toBe(true);
     expect(store.navColored).toBe(true);
     expect(store.colorizeWeather).toBe(true);
     expect(store.colorizeCategories).toBe(true);
   });
 
-  // #168: 'formFields'/'actions' sind nicht mehr konfigurierbar - styleForGroup/
-  // styleVariantForGroup müssen dort IMMER SVG liefern, unabhängig von jedem gespeicherten Wert.
+  // #168: 'formFields'/'actions' sind nicht mehr konfigurierbar - styleForGroup
+  // muss dort IMMER SVG liefern, unabhängig von jedem gespeicherten Wert.
   it('forces SVG icons for the non-configurable formFields/actions groups', async () => {
     apiGet.mockResolvedValue({});
     const store = useIconStyleStore();
     await store.load();
     expect(store.styleForGroup('formFields')).toBe('icons');
     expect(store.styleForGroup('actions')).toBe('icons');
-    expect(store.styleVariantForGroup('formFields')).toBe('outline');
-    expect(store.styleVariantForGroup('actions')).toBe('outline');
   });
 
   it('falls back to the default per group when a stored value is not a valid option', async () => {
     apiGet.mockResolvedValue({
       groups: { navigation: 'garbage', categories: 'emoji' },
-      variants: { navigation: 'garbage' },
     });
     const store = useIconStyleStore();
     await store.load();
     expect(store.groups.navigation).toBe('icons');
     expect(store.groups.categories).toBe('emoji');
     expect(store.groups.weather).toBe('icons');
-    expect(store.variants.navigation).toBe('outline');
   });
 
-  it('applies stored group/variant overrides from the backend on load()', async () => {
+  it('applies stored group overrides from the backend on load()', async () => {
     apiGet.mockResolvedValue({
       groups: { navigation: 'emoji' },
-      variants: { navigation: 'filled' },
       navColored: false,
     });
     const store = useIconStyleStore();
     await store.load();
     expect(store.groups.navigation).toBe('emoji');
     expect(store.groups.categories).toBe('emoji');
-    expect(store.variants.navigation).toBe('filled');
     expect(store.navColored).toBe(false);
   });
 
@@ -81,7 +74,7 @@ describe('useIconStyleStore', () => {
     expect(apiGet).toHaveBeenCalledTimes(1);
   });
 
-  it('persists per-group style and variant overrides independently to the backend', () => {
+  it('persists per-group style overrides to the backend', () => {
     const store = useIconStyleStore();
     store.setGroupOverride('categories', 'icons');
     expect(apiPut).toHaveBeenLastCalledWith(
@@ -89,15 +82,6 @@ describe('useIconStyleStore', () => {
       expect.objectContaining({
         settings: expect.objectContaining({
           groups: expect.objectContaining({ categories: 'icons' }),
-        }),
-      })
-    );
-    store.setGroupVariant('categories', 'filled');
-    expect(apiPut).toHaveBeenLastCalledWith(
-      '/users/me/icon-settings',
-      expect.objectContaining({
-        settings: expect.objectContaining({
-          variants: expect.objectContaining({ categories: 'filled' }),
         }),
       })
     );
@@ -114,7 +98,6 @@ describe('useIconStyleStore', () => {
   it('resetToDefaults restores the shipped defaults after changes', () => {
     const store = useIconStyleStore();
     store.setAllGroups('emoji');
-    store.setGroupVariant('navigation', 'filled');
     store.navColored = false;
     store.colorizeWeather = false;
     store.colorizeCategories = false;
@@ -123,7 +106,6 @@ describe('useIconStyleStore', () => {
 
     expect(store.groups.categories).toBe('emoji');
     expect(store.groups.navigation).toBe('icons');
-    expect(store.variants.navigation).toBe('outline');
     expect(store.navColored).toBe(true);
     expect(store.colorizeWeather).toBe(true);
     expect(store.colorizeCategories).toBe(true);
