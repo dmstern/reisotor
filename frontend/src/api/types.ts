@@ -237,6 +237,8 @@ export interface ExcursionComment {
   content: string;
   created_at: string;
   updated_at?: string | null;
+  like_count?: number;
+  liked?: boolean | number;
 }
 
 /** 'private' (Standard beim Start) ist nur für die aufzeichnende Person sichtbar, 'shared' für alle
@@ -357,6 +359,8 @@ export interface SpotComment {
   content: string;
   created_at: string;
   updated_at?: string | null;
+  like_count?: number;
+  liked?: boolean | number;
 }
 
 export interface BudgetExpense {
@@ -462,6 +466,8 @@ export interface NoteComment {
   content: string;
   created_at: string;
   updated_at?: string | null;
+  like_count?: number;
+  liked?: boolean | number;
 }
 
 export interface DiaryImageItem {
@@ -513,6 +519,8 @@ export interface DiaryComment {
   content: string;
   created_at: string;
   updated_at?: string | null;
+  like_count?: number;
+  liked?: boolean | number;
 }
 
 /** Domänen, die Datei-Anhänge (Tickets/Dokumente) tragen können – siehe FileAttachments.vue.

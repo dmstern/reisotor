@@ -75,7 +75,23 @@ const insertDiaryCommentStmt = db.prepare(
   'INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
 );
 const selectDiaryCommentByIdStmt = db.prepare(
-  'SELECT diary_comments.*, users.username as author_username, users.avatar as author_avatar FROM diary_comments LEFT JOIN users ON diary_comments.author_id = users.id WHERE diary_comments.id = ?'
+  `SELECT diary_comments.*, users.username as author_username, users.avatar as author_avatar,
+     (SELECT COUNT(*) FROM diary_comment_likes WHERE comment_id = diary_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM diary_comment_likes WHERE comment_id = diary_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM diary_comments LEFT JOIN users ON diary_comments.author_id = users.id WHERE diary_comments.id = ?`
+);
+const selectDiaryCommentsByTripStmt = db.prepare(
+  `SELECT diary_comments.*, u.username as author_username, u.avatar as author_avatar,
+     (SELECT COUNT(*) FROM diary_comment_likes WHERE comment_id = diary_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM diary_comment_likes WHERE comment_id = diary_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM diary_comments LEFT JOIN users u ON diary_comments.author_id = u.id
+   JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
+   WHERE diary_entries.trip_id = ?
+   ORDER BY diary_comments.created_at ASC, diary_comments.id ASC`
 );
 const selectDiaryCommentWithTripStmt = db.prepare(
   `SELECT diary_comments.id, diary_comments.author_id, diary_entries.trip_id FROM diary_comments
@@ -85,6 +101,16 @@ const selectDiaryCommentWithTripStmt = db.prepare(
 const deleteDiaryCommentStmt = db.prepare('DELETE FROM diary_comments WHERE id = ?');
 const updateDiaryCommentStmt = db.prepare(
   'UPDATE diary_comments SET content = ?, updated_at = ? WHERE id = ?'
+);
+const selectDiaryCommentLikeStmt = db.prepare(
+  'SELECT id FROM diary_comment_likes WHERE comment_id = ? AND user_id = ?'
+);
+const insertDiaryCommentLikeStmt = db.prepare(
+  'INSERT INTO diary_comment_likes (comment_id, user_id, created_at) VALUES (?, ?, ?)'
+);
+const deleteDiaryCommentLikeStmt = db.prepare('DELETE FROM diary_comment_likes WHERE id = ?');
+const countDiaryCommentLikesStmt = db.prepare(
+  'SELECT COUNT(*) as count FROM diary_comment_likes WHERE comment_id = ?'
 );
 
 // Zuordnung Tagebucheintrag -> Ausflüge (m:n, analog syncExcursionSpots in ideas.ts): wird bei
@@ -239,14 +265,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/diary/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return db
-      .prepare(
-        `SELECT diary_comments.*, u.username as author_username, u.avatar as author_avatar FROM diary_comments LEFT JOIN users u ON diary_comments.author_id = u.id
-         JOIN diary_entries ON diary_entries.id = diary_comments.entry_id
-         WHERE diary_entries.trip_id = ?
-         ORDER BY diary_comments.created_at ASC, diary_comments.id ASC`
-      )
-      .all(req.query.trip_id);
+    return selectDiaryCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
   // Nimmt ein bereits client-seitig (Canvas-API) verkleinertes/komprimiertes Bild als Data-URL
@@ -412,7 +431,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       );
       recordActivity(entry.trip_id, 'diary', entry.id, 'commented', req.session.userId!);
       reply.code(201);
-      return selectDiaryCommentByIdStmt.get(result.lastInsertRowid);
+      return selectDiaryCommentByIdStmt.get(req.session.userId ?? null, result.lastInsertRowid);
     }
   );
 
@@ -445,7 +464,30 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
           .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
       }
       updateDiaryCommentStmt.run(content, new Date().toISOString(), req.params.id);
-      return selectDiaryCommentByIdStmt.get(req.params.id);
+      return selectDiaryCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
     }
   );
+
+  app.post<{ Params: { id: string } }>('/diary/comments/:id/like', async (req, reply) => {
+    const comment = selectDiaryCommentWithTripStmt.get(req.params.id) as
+      { id: number; author_id: number; trip_id: number } | undefined;
+    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    const existing = selectDiaryCommentLikeStmt.get(req.params.id, req.session.userId) as
+      { id: number } | undefined;
+
+    let liked: boolean;
+    if (existing) {
+      deleteDiaryCommentLikeStmt.run(existing.id);
+      liked = false;
+    } else {
+      insertDiaryCommentLikeStmt.run(req.params.id, req.session.userId, new Date().toISOString());
+      recordActivity(comment.trip_id, 'diary', comment.id, 'liked', req.session.userId!);
+      liked = true;
+    }
+
+    const countRow = countDiaryCommentLikesStmt.get(req.params.id) as { count: number };
+    return { liked, like_count: countRow.count };
+  });
 };

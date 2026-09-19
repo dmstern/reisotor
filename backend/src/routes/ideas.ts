@@ -184,7 +184,12 @@ const selectIdeaLikesByTripStmt = db.prepare(
    WHERE ideas.trip_id = ?`
 );
 const selectIdeaCommentsByTripStmt = db.prepare(
-  `SELECT idea_comments.* FROM idea_comments
+  `SELECT idea_comments.*,
+     (SELECT COUNT(*) FROM idea_comment_likes WHERE comment_id = idea_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM idea_comment_likes WHERE comment_id = idea_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM idea_comments
    JOIN ideas ON ideas.id = idea_comments.idea_id
    WHERE ideas.trip_id = ?
    ORDER BY idea_comments.created_at ASC, idea_comments.id ASC`
@@ -199,7 +204,14 @@ const insertIdeaLikeStmt = db.prepare(
 const insertIdeaCommentStmt = db.prepare(
   'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
 );
-const selectIdeaCommentByIdStmt = db.prepare('SELECT * FROM idea_comments WHERE id = ?');
+const selectIdeaCommentByIdStmt = db.prepare(
+  `SELECT idea_comments.*,
+     (SELECT COUNT(*) FROM idea_comment_likes WHERE comment_id = idea_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM idea_comment_likes WHERE comment_id = idea_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM idea_comments WHERE id = ?`
+);
 const selectIdeaCommentAuthStmt = db.prepare(
   `SELECT idea_comments.id, idea_comments.author_id, ideas.trip_id FROM idea_comments
    JOIN ideas ON ideas.id = idea_comments.idea_id
@@ -208,6 +220,16 @@ const selectIdeaCommentAuthStmt = db.prepare(
 const deleteIdeaCommentStmt = db.prepare('DELETE FROM idea_comments WHERE id = ?');
 const updateIdeaCommentStmt = db.prepare(
   'UPDATE idea_comments SET content = ?, updated_at = ? WHERE id = ?'
+);
+const selectIdeaCommentLikeStmt = db.prepare(
+  'SELECT id FROM idea_comment_likes WHERE comment_id = ? AND user_id = ?'
+);
+const insertIdeaCommentLikeStmt = db.prepare(
+  'INSERT INTO idea_comment_likes (comment_id, user_id, created_at) VALUES (?, ?, ?)'
+);
+const deleteIdeaCommentLikeStmt = db.prepare('DELETE FROM idea_comment_likes WHERE id = ?');
+const countIdeaCommentLikesStmt = db.prepare(
+  'SELECT COUNT(*) as count FROM idea_comment_likes WHERE comment_id = ?'
 );
 const selectSpotTitleByIdForLegsStmt = db.prepare('SELECT title FROM spots WHERE id = ?');
 
@@ -795,7 +817,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return selectIdeaCommentsByTripStmt.all(req.query.trip_id);
+    return selectIdeaCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/ideas/:id/like', async (req, reply) => {
@@ -835,7 +857,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       );
       recordActivity(idea.trip_id, 'ideas', idea.id, 'commented', req.session.userId!);
       reply.code(201);
-      return selectIdeaCommentByIdStmt.get(result.lastInsertRowid);
+      return selectIdeaCommentByIdStmt.get(req.session.userId ?? null, result.lastInsertRowid);
     }
   );
 
@@ -868,7 +890,30 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
           .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
       }
       updateIdeaCommentStmt.run(content, new Date().toISOString(), req.params.id);
-      return selectIdeaCommentByIdStmt.get(req.params.id);
+      return selectIdeaCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
     }
   );
+
+  app.post<{ Params: { id: string } }>('/ideas/comments/:id/like', async (req, reply) => {
+    const comment = selectIdeaCommentAuthStmt.get(req.params.id) as
+      { id: number; author_id: number; trip_id: number } | undefined;
+    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    const existing = selectIdeaCommentLikeStmt.get(req.params.id, req.session.userId) as
+      { id: number } | undefined;
+
+    let liked: boolean;
+    if (existing) {
+      deleteIdeaCommentLikeStmt.run(existing.id);
+      liked = false;
+    } else {
+      insertIdeaCommentLikeStmt.run(req.params.id, req.session.userId, new Date().toISOString());
+      recordActivity(comment.trip_id, 'ideas', comment.id, 'liked', req.session.userId!);
+      liked = true;
+    }
+
+    const countRow = countIdeaCommentLikesStmt.get(req.params.id) as { count: number };
+    return { liked, like_count: countRow.count };
+  });
 };

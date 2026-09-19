@@ -90,6 +90,7 @@ const emit = defineEmits<{
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
   (e: 'update-comment', id: number, content: string): void;
+  (e: 'toggle-comment-like', id: number): void;
   (e: 'open', spot: Spot): void;
   (e: 'close'): void;
   (e: 'toggle-destination'): void;
@@ -708,6 +709,7 @@ const cardRotation = computed(() => {
           @submit="(content) => emit('submit-comment', content)"
           @remove="(id) => emit('remove-comment', id)"
           @update="(id, content) => emit('update-comment', id, content)"
+          @toggle-like="(id) => emit('toggle-comment-like', id)"
         />
       </Accordion>
 

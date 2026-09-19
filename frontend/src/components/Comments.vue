@@ -4,6 +4,7 @@ import Input from './primitives/Input.vue';
 import { ref, nextTick } from 'vue';
 import DeleteButton from './DeleteButton.vue';
 import EditButton from './EditButton.vue';
+import LikeButton from './LikeButton.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDateTime } from '../utils/dateFormat';
@@ -17,6 +18,8 @@ export interface CommentItem {
   updated_at?: string | null;
   canRemove: boolean;
   canEdit?: boolean;
+  likeCount?: number;
+  liked?: boolean;
 }
 
 defineProps<{ comments: CommentItem[] }>();
@@ -24,6 +27,7 @@ const emit = defineEmits<{
   (e: 'submit', content: string): void;
   (e: 'remove', id: number): void;
   (e: 'update', id: number, content: string): void;
+  (e: 'toggle-like', id: number): void;
 }>();
 
 const draft = ref('');
@@ -110,10 +114,13 @@ function formatCommentDate(dateStr?: string): string {
         <span v-else class="comment-text">{{ c.content }}</span>
       </div>
 
-      <div
-        v-if="editingId !== c.id && ((c.canEdit ?? c.canRemove) || c.canRemove)"
-        class="comment-actions"
-      >
+      <div v-if="editingId !== c.id" class="comment-actions">
+        <LikeButton
+          small
+          :count="c.likeCount ?? 0"
+          :liked="c.liked ?? false"
+          @toggle="emit('toggle-like', c.id)"
+        />
         <EditButton v-if="c.canEdit ?? c.canRemove" small @click="startEdit(c)" />
         <DeleteButton v-if="c.canRemove" small @click="emit('remove', c.id)" />
       </div>

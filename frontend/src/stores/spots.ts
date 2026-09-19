@@ -134,6 +134,31 @@ export const useSpotsStore = defineStore('spots', () => {
     return updated;
   }
 
+  async function toggleCommentLike(commentId: number) {
+    const c = spotComments.value.find((item) => item.id === commentId);
+    if (c) {
+      const wasLiked = Boolean(c.liked);
+      c.liked = !wasLiked;
+      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+    }
+    try {
+      const result = await api.post<{ liked: boolean; like_count: number }>(
+        `/spots/comments/${commentId}/like`
+      );
+      if (c) {
+        c.liked = result.liked;
+        c.like_count = result.like_count;
+      }
+    } catch (err) {
+      if (c) {
+        const wasLiked = Boolean(c.liked);
+        c.liked = !wasLiked;
+        c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+      }
+      throw err;
+    }
+  }
+
   /** Setzt/entfernt den "gemacht"-Status, unabhängig von geplant/ungeplant (siehe
    *  ExcursionsView.vue's clientseitig aus schedule_items abgeleitetem Status) - eigener Endpunkt
    *  statt eines vollen update(), damit ein Toggle nicht alle anderen Felder erneut mitschicken muss. */
@@ -176,6 +201,7 @@ export const useSpotsStore = defineStore('spots', () => {
     submitComment,
     removeComment,
     updateComment,
+    toggleCommentLike,
     setDone,
   };
 });

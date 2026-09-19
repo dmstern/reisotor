@@ -38,7 +38,12 @@ const selectNoteLikesByTripStmt = db.prepare(
    WHERE notes.trip_id = ? AND notes.deleted_at IS NULL`
 );
 const selectNoteCommentsByTripStmt = db.prepare(
-  `SELECT note_comments.* FROM note_comments
+  `SELECT note_comments.*,
+     (SELECT COUNT(*) FROM note_comment_likes WHERE comment_id = note_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM note_comment_likes WHERE comment_id = note_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM note_comments
    JOIN notes ON notes.id = note_comments.note_id
    WHERE notes.trip_id = ? AND notes.deleted_at IS NULL
    ORDER BY note_comments.created_at ASC, note_comments.id ASC`
@@ -54,7 +59,14 @@ const insertNoteLikeStmt = db.prepare(
 const insertNoteCommentStmt = db.prepare(
   'INSERT INTO note_comments (note_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
 );
-const selectNoteCommentByIdStmt = db.prepare('SELECT * FROM note_comments WHERE id = ?');
+const selectNoteCommentByIdStmt = db.prepare(
+  `SELECT note_comments.*,
+     (SELECT COUNT(*) FROM note_comment_likes WHERE comment_id = note_comments.id) AS like_count,
+     CASE WHEN EXISTS (
+       SELECT 1 FROM note_comment_likes WHERE comment_id = note_comments.id AND user_id = ?
+     ) THEN 1 ELSE 0 END AS liked
+   FROM note_comments WHERE id = ?`
+);
 const selectNoteCommentAuthStmt = db.prepare(
   `SELECT note_comments.id, note_comments.author_id, notes.trip_id FROM note_comments
    JOIN notes ON notes.id = note_comments.note_id
@@ -63,6 +75,16 @@ const selectNoteCommentAuthStmt = db.prepare(
 const deleteNoteCommentStmt = db.prepare('DELETE FROM note_comments WHERE id = ?');
 const updateNoteCommentStmt = db.prepare(
   'UPDATE note_comments SET content = ?, updated_at = ? WHERE id = ?'
+);
+const selectNoteCommentLikeStmt = db.prepare(
+  'SELECT id FROM note_comment_likes WHERE comment_id = ? AND user_id = ?'
+);
+const insertNoteCommentLikeStmt = db.prepare(
+  'INSERT INTO note_comment_likes (comment_id, user_id, created_at) VALUES (?, ?, ?)'
+);
+const deleteNoteCommentLikeStmt = db.prepare('DELETE FROM note_comment_likes WHERE id = ?');
+const countNoteCommentLikesStmt = db.prepare(
+  'SELECT COUNT(*) as count FROM note_comment_likes WHERE comment_id = ?'
 );
 
 export const notesRoutes: FastifyPluginAsync = async (app) => {
@@ -170,7 +192,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notes/comments', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-    return selectNoteCommentsByTripStmt.all(req.query.trip_id);
+    return selectNoteCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/notes/:id/like', async (req, reply) => {
@@ -210,7 +232,7 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       );
       recordActivity(note.trip_id, 'notes', note.id, 'commented', req.session.userId!);
       reply.code(201);
-      return selectNoteCommentByIdStmt.get(result.lastInsertRowid);
+      return selectNoteCommentByIdStmt.get(req.session.userId ?? null, result.lastInsertRowid);
     }
   );
 
@@ -243,7 +265,30 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
           .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
       }
       updateNoteCommentStmt.run(content, new Date().toISOString(), req.params.id);
-      return selectNoteCommentByIdStmt.get(req.params.id);
+      return selectNoteCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
     }
   );
+
+  app.post<{ Params: { id: string } }>('/notes/comments/:id/like', async (req, reply) => {
+    const comment = selectNoteCommentAuthStmt.get(req.params.id) as
+      { id: number; author_id: number; trip_id: number } | undefined;
+    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    const existing = selectNoteCommentLikeStmt.get(req.params.id, req.session.userId) as
+      { id: number } | undefined;
+
+    let liked: boolean;
+    if (existing) {
+      deleteNoteCommentLikeStmt.run(existing.id);
+      liked = false;
+    } else {
+      insertNoteCommentLikeStmt.run(req.params.id, req.session.userId, new Date().toISOString());
+      recordActivity(comment.trip_id, 'notes', comment.id, 'liked', req.session.userId!);
+      liked = true;
+    }
+
+    const countRow = countNoteCommentLikesStmt.get(req.params.id) as { count: number };
+    return { liked, like_count: countRow.count };
+  });
 };

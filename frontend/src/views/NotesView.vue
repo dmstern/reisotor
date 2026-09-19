@@ -122,6 +122,8 @@ function commentItemsFor(noteId: number) {
     updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
     canEdit: c.author_id === auth.user?.id,
+    likeCount: c.like_count ?? 0,
+    liked: Boolean(c.liked),
   }));
 }
 
@@ -136,6 +138,31 @@ async function toggleLike(noteId: number) {
     likes.value.push({ id: Date.now(), note_id: noteId, user_id: auth.user!.id });
   } else {
     likes.value = likes.value.filter((l) => !(l.note_id === noteId && l.user_id === auth.user!.id));
+  }
+}
+
+async function toggleCommentLike(commentId: number) {
+  const c = comments.value.find((item) => item.id === commentId);
+  if (c) {
+    const wasLiked = Boolean(c.liked);
+    c.liked = !wasLiked;
+    c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+  }
+  try {
+    const result = await api.post<{ liked: boolean; like_count: number }>(
+      `/notes/comments/${commentId}/like`
+    );
+    if (c) {
+      c.liked = result.liked;
+      c.like_count = result.like_count;
+    }
+  } catch (err) {
+    if (c) {
+      const wasLiked = Boolean(c.liked);
+      c.liked = !wasLiked;
+      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+    }
+    throw err;
   }
 }
 
@@ -315,6 +342,7 @@ async function remove(id: number) {
             @submit="(content) => submitComment(note.id, content)"
             @remove="removeComment"
             @update="updateComment"
+            @toggle-like="toggleCommentLike"
           />
         </Accordion>
       </Card>

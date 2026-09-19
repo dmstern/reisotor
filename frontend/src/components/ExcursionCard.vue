@@ -55,6 +55,7 @@ const emit = defineEmits<{
   (e: 'submit-comment', content: string): void;
   (e: 'remove-comment', id: number): void;
   (e: 'update-comment', id: number, content: string): void;
+  (e: 'toggle-comment-like', id: number): void;
   (e: 'drop-spot', spotId: number): void;
   (e: 'show-on-map'): void;
   (e: 'open', excursion: Excursion): void;
@@ -562,6 +563,7 @@ function onSpotDrop(event: DragEvent) {
             @submit="(content) => emit('submit-comment', content)"
             @remove="(id) => emit('remove-comment', id)"
             @update="(id, content) => emit('update-comment', id, content)"
+            @toggle-like="(id) => emit('toggle-comment-like', id)"
           />
         </Accordion>
       </div>

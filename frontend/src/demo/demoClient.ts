@@ -340,6 +340,24 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     return created as unknown as T;
   }
 
+  // --- Comment Likes toggling (/spots/comments/:id/like, /ideas/comments/:id/like, /notes/comments/:id/like, /diary/comments/:id/like) ---
+  const commentLikeMatch = /^\/(spots|ideas|notes|diary)\/comments\/(-?\d+)\/like$/.exec(basePath);
+  if (commentLikeMatch && method === 'POST') {
+    const domain = commentLikeMatch[1];
+    const commentId = Number(commentLikeMatch[2]);
+    const commentsKey = `/${domain}/comments`;
+    const comment = store[commentsKey]?.find((c) => (c as { id: number }).id === commentId) as
+      { id: number; liked?: boolean; like_count?: number } | undefined;
+    if (!comment) {
+      throw new Error('Not found');
+    }
+    const wasLiked = Boolean(comment.liked);
+    comment.liked = !wasLiked;
+    comment.like_count = Math.max(0, ((comment.like_count as number) ?? 0) + (wasLiked ? -1 : 1));
+    persist();
+    return { liked: comment.liked, like_count: comment.like_count } as unknown as T;
+  }
+
   // --- Done toggles (/spots/:id/done, /ideas/:id/done) ---
   const doneMatch = /^\/(spots|ideas)\/(-?\d+)\/done$/.exec(basePath);
   if (doneMatch && method === 'POST') {

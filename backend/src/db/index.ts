@@ -166,6 +166,14 @@ CREATE TABLE IF NOT EXISTS diary_comments (
   updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS diary_comment_likes (
+  id INTEGER PRIMARY KEY,
+  comment_id INTEGER NOT NULL REFERENCES diary_comments(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL,
+  UNIQUE(comment_id, user_id)
+);
+
 -- Zuordnung Tagebucheintrag <-> Ausflug (m:n): ein Eintrag kann z. B. mehrere an diesem Tag
 -- unternommene Ausflüge referenzieren. idea_id, weil Ausflüge intern weiterhin in der
 -- "ideas"-Tabelle liegen (siehe excursion_spots).
@@ -215,6 +223,14 @@ CREATE TABLE IF NOT EXISTS idea_comments (
   updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS idea_comment_likes (
+  id INTEGER PRIMARY KEY,
+  comment_id INTEGER NOT NULL REFERENCES idea_comments(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL,
+  UNIQUE(comment_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS note_likes (
   id INTEGER PRIMARY KEY,
   note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
@@ -230,6 +246,14 @@ CREATE TABLE IF NOT EXISTS note_comments (
   content TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS note_comment_likes (
+  id INTEGER PRIMARY KEY,
+  comment_id INTEGER NOT NULL REFERENCES note_comments(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL,
+  UNIQUE(comment_id, user_id)
 );
 
 -- travel_items wird NICHT mehr hier angelegt (#176: vollständige Ablösung durch ideas mit
@@ -309,6 +333,14 @@ CREATE TABLE IF NOT EXISTS spot_comments (
   content TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS spot_comment_likes (
+  id INTEGER PRIMARY KEY,
+  comment_id INTEGER NOT NULL REFERENCES spot_comments(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL,
+  UNIQUE(comment_id, user_id)
 );
 
 -- Persistenter Session-Store (sessionStore.ts) statt @fastify/session-Default (nur Arbeitsspeicher

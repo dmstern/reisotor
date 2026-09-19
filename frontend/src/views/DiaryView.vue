@@ -337,6 +337,8 @@ function commentItemsFor(entryId: number) {
     updated_at: c.updated_at,
     canRemove: c.author_id === auth.user?.id,
     canEdit: c.author_id === auth.user?.id,
+    likeCount: c.like_count ?? 0,
+    liked: Boolean(c.liked),
   }));
 }
 
@@ -564,6 +566,31 @@ async function updateComment(id: number, content: string) {
   const idx = comments.value.findIndex((c) => c.id === id);
   if (idx !== -1) {
     comments.value[idx] = updated;
+  }
+}
+
+async function toggleCommentLike(commentId: number) {
+  const c = comments.value.find((item) => item.id === commentId);
+  if (c) {
+    const wasLiked = Boolean(c.liked);
+    c.liked = !wasLiked;
+    c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+  }
+  try {
+    const result = await api.post<{ liked: boolean; like_count: number }>(
+      `/diary/comments/${commentId}/like`
+    );
+    if (c) {
+      c.liked = result.liked;
+      c.like_count = result.like_count;
+    }
+  } catch (err) {
+    if (c) {
+      const wasLiked = Boolean(c.liked);
+      c.liked = !wasLiked;
+      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+    }
+    throw err;
   }
 }
 
@@ -846,6 +873,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             @submit="(content) => submitComment(entry.id, content)"
             @remove="removeComment"
             @update="updateComment"
+            @toggle-like="toggleCommentLike"
           />
         </Accordion>
       </article>
