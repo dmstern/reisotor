@@ -84,7 +84,7 @@ function openMembers(trip: Trip) {
       </Card>
     </div>
 
-    <div v-else class="card empty-state">
+    <Card v-else class="empty-state">
       <h2>Willkommen bei Reisotor!</h2>
       <p class="empty">Du hast noch keinen Urlaub geplant.</p>
       <TripForm submit-label="Urlaub anlegen" @submit="onSubmit" />
@@ -93,7 +93,7 @@ function openMembers(trip: Trip) {
         (Symbol <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="14" group="formFields" /> im
         Urlaubs-Menü) per Nutzername einladen.
       </p>
-    </div>
+    </Card>
 
     <Modal
       :model-value="showForm"
@@ -183,6 +183,28 @@ function openMembers(trip: Trip) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  max-height: calc(100dvh - var(--app-header-height, 56px) - var(--space-4) * 2 - 36px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  overscroll-behavior: contain;
+}
+
+.empty-state::-webkit-scrollbar {
+  width: 6px;
+}
+
+.empty-state::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.empty-state::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.empty-state::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 .empty-state h2 {
