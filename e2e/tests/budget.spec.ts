@@ -55,10 +55,10 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   await expect(potCard).toBeVisible();
 
   // Kategorie mit Zielbetrag 100 € anlegen (detaillierter Modus).
-  await potCard.locator('summary').click();
+  await potCard.getByRole('button', { name: 'Kategorie hinzufügen' }).click();
   await potCard.getByPlaceholder('Neue Kategorie').fill('E2E Testkategorie');
   await potCard.getByPlaceholder('Ziel €').fill('100');
-  await potCard.getByRole('button', { name: 'Hinzufügen' }).click();
+  await potCard.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
   await expect(potCard.locator('.category-row')).toHaveCount(1);
 
   await expect(async () => {
