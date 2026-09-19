@@ -619,7 +619,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
     <div class="header">
       <h1>Tagebuch</h1>
       <Button @click="openNewForm"
-        ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Eintrag</Button
+        ><AppIcon :icon="ACTION_ICONS.write" :size="14" group="actions" /> Neuer Eintrag</Button
       >
     </div>
 
