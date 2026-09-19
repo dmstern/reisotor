@@ -73,7 +73,7 @@ import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
 // der Karte-Hauptsicht (ExcursionsView.vue) statt lazy per Schublade ein-/ausgeblendet zu
 // werden – Laden/Neuladen läuft daher nur noch über Datenänderungen (Urlaubswechsel,
 // locationsVersion), nicht mehr über ein "beim Öffnen"-Signal.
-type MapOrigin = 'travel' | 'spot';
+type MapOrigin = 'travel' | 'spot' | 'location';
 
 interface MapPoint {
   key: string;
@@ -287,6 +287,8 @@ function clearFocus() {
     drawers.mapFocusDate = null;
   } else if (drawers.mapFocusKey) {
     drawers.mapFocusKey = null;
+  } else if (drawers.mapFocusLocation) {
+    drawers.mapFocusLocation = null;
   }
   isFocusBannerExpanded.value = false;
 }
@@ -496,6 +498,18 @@ const points = computed<MapPoint[]>(() => {
       });
     }
   }
+  if (drawers.mapFocusLocation) {
+    result.push({
+      key: 'photo-location',
+      origin: 'location',
+      lat: drawers.mapFocusLocation.lat,
+      lng: drawers.mapFocusLocation.lng,
+      title: drawers.mapFocusLocation.title || 'Foto-Standort',
+      icon: FORM_FIELD_ICONS.image,
+      color: '#9141ac',
+      category: 'Foto',
+    });
+  }
   return result;
 });
 
@@ -524,6 +538,7 @@ const filteredPoints = computed(() => {
   const tourRoleFilterActive = props.tourRoleFilter && props.tourRoleFilter.length > 0;
   if (!categoryFilterActive && !statusFilterActive && !tourRoleFilterActive) return points.value;
   return points.value.filter((p) => {
+    if (p.origin === 'location') return true;
     if (categoryFilterActive && !props.categoryFilter!.includes(p.category)) return false;
     if (statusFilterActive && p.origin === 'spot') {
       const spotId = Number(p.key.slice('spot-'.length));
@@ -699,6 +714,10 @@ function onTravelDialogUpdate(v: boolean) {
 // der bisherige Modal-Dialog (unproblematisch, da seltener genutzt als die primäre Spot↔Karte-
 // Kopplung). Die Pin-Vergrößerung (drawers.mapFocusKey) läuft in beiden Fällen weiterhin gleich.
 function handlePointClick(point: MapPoint) {
+  if (point.origin === 'location') {
+    drawers.mapFocusKey = point.key;
+    return;
+  }
   if (point.origin === 'spot') {
     const spotId = Number(point.key.slice('spot-'.length));
     drawers.mapFocusKey = point.key;
@@ -736,6 +755,7 @@ function focusCategory(category: string) {
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
   drawers.mapFocusTrackId = null;
+  drawers.mapFocusLocation = null;
   const catPoints = filteredPoints.value.filter((p) => p.category === category);
   const latLngs = catPoints.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
@@ -754,6 +774,7 @@ function fitAll() {
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
   drawers.mapFocusTrackId = null;
+  drawers.mapFocusLocation = null;
   const latLngs = filteredPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -770,6 +791,7 @@ function fitVacation() {
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
   drawers.mapFocusTrackId = null;
+  drawers.mapFocusLocation = null;
   const latLngs = vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -790,6 +812,7 @@ function fitAccommodations() {
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
   drawers.mapFocusTrackId = null;
+  drawers.mapFocusLocation = null;
   const latLngs = accommodationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -820,6 +843,7 @@ function fitExcursions() {
   drawers.mapFocusDate = null;
   drawers.mapFocusKey = null;
   drawers.mapFocusTrackId = null;
+  drawers.mapFocusLocation = null;
   const latLngs = excursionPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
   if (latLngs.length > 1) {
     fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
@@ -837,7 +861,8 @@ function checkFocusOutOfBounds() {
     drawers.mapFocusExcursionId != null ||
     drawers.mapFocusDate != null ||
     drawers.mapFocusKey != null ||
-    drawers.mapFocusTrackId != null;
+    drawers.mapFocusTrackId != null ||
+    drawers.mapFocusLocation != null;
 
   if (!hasFocus) return;
 
@@ -856,6 +881,8 @@ function checkFocusOutOfBounds() {
     focusedLatLngs = focusedDateStations.value
       .filter((s) => s.lat != null && s.lng != null)
       .map((s) => [s.lat as number, s.lng as number]);
+  } else if (drawers.mapFocusLocation) {
+    focusedLatLngs = [[drawers.mapFocusLocation.lat, drawers.mapFocusLocation.lng]];
   } else if (drawers.mapFocusKey) {
     const p = points.value.find((pt) => pt.key === drawers.mapFocusKey);
     if (p) focusedLatLngs = [[p.lat, p.lng]];
@@ -887,6 +914,7 @@ function checkFocusOutOfBounds() {
     drawers.mapFocusDate = null;
     drawers.mapFocusKey = null;
     drawers.mapFocusTrackId = null;
+    drawers.mapFocusLocation = null;
   }
 }
 
@@ -998,6 +1026,8 @@ function renderMarkers() {
     } else if (excursionLatLngs.length === 1) {
       centerOnPoint(excursionLatLngs[0], 14);
     }
+  } else if (drawers.mapFocusLocation) {
+    centerOnPoint([drawers.mapFocusLocation.lat, drawers.mapFocusLocation.lng], 16);
   } else if (drawers.mapFocusDate && dateLatLngs.length) {
     if (dateLatLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(dateLatLngs));
@@ -1415,6 +1445,16 @@ watch(
   }
 );
 
+// Standort-Fokus (z. B. EXIF-Geolocation eines Fotos aus dem Anhang-Vorschau-Modal)
+watch(
+  () => drawers.mapFocusLocation,
+  () => {
+    renderMarkers();
+    renderRoutes();
+  },
+  { deep: true }
+);
+
 // Erneuter Aufruf von "Auf Karte anzeigen" – zentriert den Ausschnitt auch dann neu,
 // wenn sich die Fokus-Id im Store selbst nicht geändert hat.
 watch(
@@ -1738,7 +1778,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       <div
         class="focus-banner"
         :class="{ 'is-expanded': isFocusBannerExpanded }"
-        v-if="focusedExcursion || drawers.mapFocusDate || focusedSpot"
+        v-if="focusedExcursion || drawers.mapFocusDate || focusedSpot || drawers.mapFocusLocation"
       >
         <button
           class="focus-banner-toggle-btn"
@@ -1754,7 +1794,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
                 ? SECTION_ICON_DEFS.excursions
                 : focusedSpot
                   ? spotCategoryMeta(focusedSpot.category).tabler
-                  : FORM_FIELD_ICONS.period
+                  : drawers.mapFocusLocation
+                    ? FORM_FIELD_ICONS.image
+                    : FORM_FIELD_ICONS.period
             "
             :size="18"
             :group="focusedExcursion ? 'navigation' : focusedSpot ? 'categories' : 'formFields'"
@@ -1766,7 +1808,9 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               ? focusedExcursion.title
               : focusedSpot
                 ? focusedSpot.title
-                : formatDate(drawers.mapFocusDate!)
+                : drawers.mapFocusLocation
+                  ? drawers.mapFocusLocation.title || 'Foto-Standort'
+                  : formatDate(drawers.mapFocusDate!)
           }}</span>
           <Button variant="card-action" @click="clearFocus">
             <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen

@@ -156,4 +156,83 @@ describe('AttachmentPreviewModal', () => {
     expect(document.body.innerHTML).toContain('2 von 2');
     cleanUp();
   });
+
+  it('zeigt Aufnahmedatum und Geolocation an, wenn Metadaten vorhanden sind', async () => {
+    const { cleanUp } = mountTestApp(AttachmentPreviewModal, {
+      modelValue: true,
+      attachments: [
+        {
+          id: 10,
+          url: 'https://example.com/photo.jpg',
+          original_name: 'Urlaubsfoto.jpg',
+          mime_type: 'image/jpeg',
+          metadata: {
+            dateTime: new Date(2026, 6, 15, 14, 32),
+            latitude: 38.6916,
+            longitude: -9.216,
+          },
+        },
+      ],
+    });
+    await nextTick();
+    const text = document.body.textContent;
+    expect(text).toContain('Aufnahmedatum');
+    expect(text).toContain('15.07.2026, 14:32\u00A0Uhr');
+    expect(text).toContain('Standort');
+    expect(text).toContain('38.6916°\u00A0N, 9.2160°\u00A0W');
+    expect(text).toContain('Ort auf Karte anzeigen');
+    expect(text).toContain('In Maps-App öffnen');
+    cleanUp();
+  });
+
+  it('schließt das Modal und fokussiert den Standort auf der Karte bei Klick auf Ort auf Karte anzeigen', async () => {
+    let closed = false;
+    const { cleanUp } = mountTestApp(AttachmentPreviewModal, {
+      modelValue: true,
+      attachments: [
+        {
+          id: 10,
+          url: 'https://example.com/photo.jpg',
+          original_name: 'Urlaubsfoto.jpg',
+          mime_type: 'image/jpeg',
+          metadata: {
+            latitude: 48.1372,
+            longitude: 11.5761,
+          },
+        },
+      ],
+      'onUpdate:modelValue': (val: boolean) => {
+        if (!val) closed = true;
+      },
+    });
+    await nextTick();
+    const showMapBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Ort auf Karte anzeigen')
+    );
+    expect(showMapBtn).toBeTruthy();
+    showMapBtn!.click();
+    await nextTick();
+    expect(closed).toBe(true);
+    cleanUp();
+  });
+
+  it('blendet den EXIF-Metadatenbereich aus, wenn keine Datums- oder Standortdaten vorliegen', async () => {
+    const { cleanUp } = mountTestApp(AttachmentPreviewModal, {
+      modelValue: true,
+      attachments: [
+        {
+          id: 20,
+          url: 'https://example.com/plain.jpg',
+          original_name: 'OhneMetadaten.jpg',
+          mime_type: 'image/jpeg',
+          metadata: null,
+        },
+      ],
+    });
+    await nextTick();
+    const html = document.body.innerHTML;
+    expect(html).not.toContain('preview-exif-card');
+    expect(html).not.toContain('Ort auf Karte anzeigen');
+    cleanUp();
+  });
 });

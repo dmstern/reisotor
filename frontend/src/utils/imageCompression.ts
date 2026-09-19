@@ -177,6 +177,66 @@ export function readExifMetadata(dataUrl: string): ImageExifMetadata | null {
   }
 }
 
+/**
+ * Formatiert Breiten- und Längengrad in eine lesbare, standardisierte Koordinatenangabe
+ * (z. B. "48.1372° N, 11.5755° O").
+ */
+export function formatGeoCoordinates(lat: number, lng: number): string {
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lngDir = lng >= 0 ? 'O' : 'W';
+  const latFormatted = `${Math.abs(lat).toFixed(4)}°\u00A0${latDir}`;
+  const lngFormatted = `${Math.abs(lng).toFixed(4)}°\u00A0${lngDir}`;
+  return `${latFormatted}, ${lngFormatted}`;
+}
+
+const exifCache = new Map<string, Promise<ImageExifMetadata | null>>();
+
+/**
+ * Extrahiert EXIF-Metadaten (Aufnahmedatum, Geolocation) aus einer Bild-URL (Data-URL,
+ * Blob-URL oder HTTP-URL). Verwendet einen internen Cache, um redundante Netzwerkabrufe
+ * beim Durchblättern von Anhängen zu vermeiden.
+ */
+export async function extractExifFromUrl(url: string): Promise<ImageExifMetadata | null> {
+  if (!url) return null;
+  if (exifCache.has(url)) {
+    return exifCache.get(url)!;
+  }
+
+  const promise = (async () => {
+    try {
+      if (url.startsWith('data:image/jp')) {
+        return readExifMetadata(url);
+      }
+      if (url.startsWith('data:')) {
+        return null;
+      }
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const contentType = blob.type || res.headers.get('content-type') || '';
+      if (
+        !contentType.includes('jpeg') &&
+        !contentType.includes('jpg') &&
+        !/\.jpe?g($|\?)/i.test(url)
+      ) {
+        return null;
+      }
+      const dataUrl = await readAsDataUrl(blob);
+      return readExifMetadata(dataUrl);
+    } catch (err) {
+      console.warn('EXIF-Metadaten konnten nicht aus der Bild-URL geladen werden:', err);
+      return null;
+    }
+  })();
+
+  exifCache.set(url, promise);
+  return promise;
+}
+
+export function clearExifCache(): void {
+  exifCache.clear();
+}
+
 /** Verkleinert und komprimiert ein Bild client-seitig über die Canvas-API (nie serverseitig,
  *  damit der ressourcenschwache Raspberry Pi 2 im Backend nicht mit Bildverarbeitung belastet
  *  wird). Erhält vorhandene EXIF-Metadaten (insb. Geo- und Datums-Informationen) und gibt eine

@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import piexif from 'piexifjs';
 import sharp from 'sharp';
-import { transferExif, readExifMetadata } from './imageCompression';
+import {
+  transferExif,
+  readExifMetadata,
+  formatGeoCoordinates,
+  extractExifFromUrl,
+} from './imageCompression';
 
 async function createTestJpeg(options: {
   width?: number;
@@ -188,5 +193,36 @@ describe('imageCompression EXIF metadata preservation', () => {
     expect(meta?.latitude).toBeCloseTo(-33.8688, 4);
     expect(meta?.longitude).toBeCloseTo(-70.6693, 4);
     expect(meta?.altitude).toBe(-15);
+  });
+
+  it('formatGeoCoordinates formatiert Koordinaten korrekt mit Himmelsrichtungen', () => {
+    expect(formatGeoCoordinates(48.1372, 11.5761)).toBe('48.1372°\u00A0N, 11.5761°\u00A0O');
+    expect(formatGeoCoordinates(-33.8688, -70.6693)).toBe('33.8688°\u00A0S, 70.6693°\u00A0W');
+  });
+
+  it('extractExifFromUrl extrahiert Metadaten direkt aus Data-URLs und nutzt Cache', async () => {
+    const testJpeg = await createTestJpeg({
+      exif: {
+        zeroth: {
+          [piexif.ImageIFD.DateTime]: '2026:07:15 14:30:00',
+        },
+        gps: {
+          [piexif.GPSIFD.GPSLatitudeRef]: 'N',
+          [piexif.GPSIFD.GPSLatitude]: piexif.GPSHelper.degToDmsRational(38.6916),
+          [piexif.GPSIFD.GPSLongitudeRef]: 'W',
+          [piexif.GPSIFD.GPSLongitude]: piexif.GPSHelper.degToDmsRational(-9.216),
+        },
+      },
+    });
+
+    const meta = await extractExifFromUrl(testJpeg);
+    expect(meta).not.toBeNull();
+    expect(meta?.latitude).toBeCloseTo(38.6916, 4);
+    expect(meta?.longitude).toBeCloseTo(-9.216, 4);
+    expect(meta?.dateTime).toBeInstanceOf(Date);
+
+    // Aufruf aus Cache
+    const cachedMeta = await extractExifFromUrl(testJpeg);
+    expect(cachedMeta).toBe(meta);
   });
 });

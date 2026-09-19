@@ -2,11 +2,21 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
 import type { Attachment } from '../api/types';
 import Modal from './Modal.vue';
+import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
+import MapsAppPicker from './MapsAppPicker.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { formatFileSize } from '../utils/fileUpload';
+import {
+  extractExifFromUrl,
+  formatGeoCoordinates,
+  type ImageExifMetadata,
+} from '../utils/imageCompression';
+import { useCalendarSettingsStore } from '../stores/calendarSettings';
+import { useDrawersStore } from '../stores/drawers';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 export interface AttachmentPreviewItem {
@@ -16,6 +26,7 @@ export interface AttachmentPreviewItem {
   filename?: string;
   mime_type?: string;
   size_bytes?: number;
+  metadata?: ImageExifMetadata | null;
 }
 
 const props = withDefaults(
@@ -299,6 +310,78 @@ function onRemoveCurrent() {
   }
 }
 
+// --- EXIF Metadaten (Aufnahmedatum & Geolocation) ---
+const drawers = useDrawersStore();
+const currentMetadata = ref<ImageExifMetadata | null>(null);
+const isLoadingMetadata = ref(false);
+
+const hasExifMetadata = computed(() =>
+  Boolean(
+    currentMetadata.value &&
+    (currentMetadata.value.dateTime ||
+      (currentMetadata.value.latitude != null && currentMetadata.value.longitude != null))
+  )
+);
+
+function formatExifDateTime(d: Date): string {
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const calendarSettings = useCalendarSettingsStore();
+  let dateFormatted = `${day}.${month}.${year}`;
+  if (calendarSettings.dateFormat === 'iso') {
+    dateFormatted = `${year}-${month}-${day}`;
+  } else if (calendarSettings.dateFormat === 'us') {
+    dateFormatted = `${month}/${day}/${year}`;
+  }
+  return `${dateFormatted}, ${hours}:${minutes}\u00A0Uhr`;
+}
+
+async function loadMetadataForAttachment(attachment: AttachmentPreviewItem | null) {
+  if (!attachment || !isImage(attachment)) {
+    currentMetadata.value = null;
+    return;
+  }
+  if (attachment.metadata !== undefined) {
+    currentMetadata.value = attachment.metadata;
+    return;
+  }
+  isLoadingMetadata.value = true;
+  try {
+    const meta = await extractExifFromUrl(attachment.url);
+    if (currentAttachment.value?.url === attachment.url) {
+      currentMetadata.value = meta;
+    }
+  } catch {
+    if (currentAttachment.value?.url === attachment.url) {
+      currentMetadata.value = null;
+    }
+  } finally {
+    isLoadingMetadata.value = false;
+  }
+}
+
+watch(
+  () => currentAttachment.value?.url,
+  () => {
+    loadMetadataForAttachment(currentAttachment.value);
+  },
+  { immediate: true }
+);
+
+function onShowLocationOnMap() {
+  if (currentMetadata.value?.latitude == null || currentMetadata.value?.longitude == null) {
+    return;
+  }
+  const lat = currentMetadata.value.latitude;
+  const lng = currentMetadata.value.longitude;
+  const title = currentAttachment.value?.original_name || 'Foto-Standort';
+  emit('update:modelValue', false);
+  drawers.openMapAtLocation(lat, lng, title);
+}
+
 // --- Swipe Logic für Touch-Geräte ---
 function onTouchStart(e: TouchEvent) {
   if (props.attachments.length <= 1 || isAnimating.value) return;
@@ -526,6 +609,67 @@ const trackStyle = computed(() => {
         />
       </div>
 
+      <!-- EXIF Metadaten (Aufnahmedatum & Geolocation) -->
+      <Transition name="exif-card">
+        <div
+          v-if="hasExifMetadata && currentMetadata"
+          class="preview-exif-card"
+          data-testid="preview-exif-card"
+        >
+          <Transition name="exif-content" mode="out-in">
+            <div :key="currentAttachment?.url || String(currentIndex)" class="exif-details">
+              <div v-if="currentMetadata.dateTime" class="exif-item" data-testid="exif-date">
+                <div class="exif-icon-badge" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.time" :size="16" group="formFields" />
+                </div>
+                <div class="exif-text">
+                  <span class="exif-label">Aufnahmedatum</span>
+                  <span class="exif-value">{{ formatExifDateTime(currentMetadata.dateTime) }}</span>
+                </div>
+              </div>
+
+              <div
+                v-if="currentMetadata.latitude != null && currentMetadata.longitude != null"
+                class="exif-item"
+                data-testid="exif-location"
+              >
+                <div class="exif-icon-badge" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.location" :size="16" group="formFields" />
+                </div>
+                <div class="exif-text">
+                  <span class="exif-label">Standort</span>
+                  <span class="exif-value">{{
+                    formatGeoCoordinates(currentMetadata.latitude, currentMetadata.longitude)
+                  }}</span>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <div
+            v-if="currentMetadata.latitude != null && currentMetadata.longitude != null"
+            class="exif-actions"
+          >
+            <Button
+              variant="secondary"
+              size="sm"
+              class="btn-show-map"
+              :icon="FORM_FIELD_ICONS.maps"
+              @click="onShowLocationOnMap"
+            >
+              Ort auf Karte anzeigen
+            </Button>
+            <MapsAppPicker
+              :lat="currentMetadata.latitude"
+              :lng="currentMetadata.longitude"
+              :title="currentAttachment?.original_name || 'Foto-Standort'"
+              size="sm"
+              variant="secondary"
+            />
+          </div>
+        </div>
+      </Transition>
+
       <div class="preview-actions">
         <Button
           v-if="editable"
@@ -684,6 +828,169 @@ const trackStyle = computed(() => {
   color: var(--color-primary);
   word-break: break-all;
   margin: 0;
+}
+
+.preview-exif-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-top: var(--space-3);
+  background: var(--color-surface-sunken, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  transition: border-color var(--duration-fast, 150ms) ease;
+}
+
+.preview-exif-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+/* Smooth Transition für den EXIF-Metadaten-Kasten */
+.exif-card-enter-active {
+  transition:
+    opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    margin-top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+.exif-card-leave-active {
+  transition:
+    opacity 0.22s ease-in,
+    transform 0.22s ease-in,
+    max-height 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+    margin-top 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-top 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-bottom 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+.exif-card-enter-from,
+.exif-card-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.99);
+  max-height: 0;
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  border-color: transparent;
+}
+
+/* Subtle cross-fade for values when switching between attachments */
+.exif-content-enter-active,
+.exif-content-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.exif-content-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.exif-content-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exif-card-enter-active,
+  .exif-card-leave-active,
+  .exif-content-enter-active,
+  .exif-content-leave-active {
+    transition: none !important;
+    max-height: none !important;
+    transform: none !important;
+  }
+}
+
+.exif-details {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.exif-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.exif-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.exif-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.exif-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.exif-value {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+}
+
+.exif-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .preview-exif-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .exif-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .exif-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .preview-actions {

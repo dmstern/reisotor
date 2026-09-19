@@ -2642,9 +2642,10 @@ watch(
     drawers.mapFocusExcursionId,
     drawers.mapFocusKey,
     drawers.mapFocusTrackId,
+    drawers.mapFocusLocation,
   ],
-  ([date, excId, key, trackId]) => {
-    if (date != null || excId != null || key != null || trackId != null) {
+  ([date, excId, key, trackId, loc]) => {
+    if (date != null || excId != null || key != null || trackId != null || loc != null) {
       if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
         sheetState.value = 'partial';
       }
