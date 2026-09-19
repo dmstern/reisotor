@@ -140,4 +140,31 @@ describe('Comments', () => {
     expect(container.querySelector('.delete-btn')).toBeNull();
     cleanUp();
   });
+
+  it('renders like button and emits toggle-like event when clicked', async () => {
+    const onToggleLike = vi.fn();
+    const comments: CommentItem[] = [
+      {
+        id: 5,
+        avatar: '👩',
+        username: 'Alice',
+        content: 'Toller Kommentar',
+        created_at: '2026-06-01T14:30:00Z',
+        canRemove: false,
+        likeCount: 3,
+        liked: true,
+      },
+    ];
+
+    const { container, cleanUp } = mountComments({ comments }, { onToggleLike });
+    const likeBtn = container.querySelector('.like-btn') as HTMLButtonElement | null;
+    expect(likeBtn).not.toBeNull();
+    expect(likeBtn?.classList.contains('liked')).toBe(true);
+    expect(container.querySelector('.social-count')?.textContent).toBe('3');
+
+    likeBtn?.click();
+    await nextTick();
+    expect(onToggleLike).toHaveBeenCalledWith(5);
+    cleanUp();
+  });
 });
