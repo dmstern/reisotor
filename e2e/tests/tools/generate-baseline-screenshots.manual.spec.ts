@@ -222,19 +222,21 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         // Pre-configure localStorage before navigation:
         // - Close calendar drawer on all non-dashboard desktop views to avoid visual redundancy (Requirement R2)
         // - Open calendar drawer on dashboard
-        // - Set spots column width to 560px for tour view to showcase the serpentine layout cleanly
+        // - Set spots drawer width to half of viewport on desktop (960px for 1920px Full HD) for all spots/tour views
         await page.addInitScript(
-          ({ slug }) => {
+          ({ slug, isDesktop }) => {
             if (slug !== 'dashboard') {
               localStorage.setItem('reisotor-drawer-calendar-open', 'false');
             } else {
               localStorage.setItem('reisotor-drawer-calendar-open', 'true');
             }
-            if (slug === 'tour') {
+            if (isDesktop && (slug === 'spots' || slug === 'tour')) {
               localStorage.setItem('reisotor-spots-col-width', '960');
+            } else if (!isDesktop) {
+              localStorage.setItem('reisotor-spots-col-width', '380');
             }
           },
-          { slug: view.slug }
+          { slug: view.slug, isDesktop: vp.name === 'desktop' }
         );
 
         await page.goto(view.path);
@@ -251,6 +253,13 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             await calendarTab.click();
             await page.waitForTimeout(300);
           }
+        }
+
+        // Spots / Tour view specific preparation: wait for spots drawer & map container to be visible
+        if (view.slug === 'spots' || view.slug === 'tour') {
+          await page.locator('.spots-col').waitFor({ state: 'visible', timeout: 15_000 });
+          await page.locator('.leaflet-container').waitFor({ state: 'visible', timeout: 15_000 });
+          await waitForMapTiles(page);
         }
 
         // Tour view specific preparation: trigger map focus on tour & wait for serpentine path & Leaflet settle
