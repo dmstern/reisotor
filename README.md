@@ -43,7 +43,7 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./docs/screenshots/calendar-desktop-dark.png">
-    <img src="./docs/screenshots/calendar-desktop-light.png" alt="Reisotor Kalender-Wochenansicht" width="100%" style="border-radius: 8px;" />
+    <img src="./docs/screenshots/calendar-desktop-light.png" alt="Reisotor Kalender-Schublade & ToDo-Verknüpfung" width="100%" style="border-radius: 8px;" />
   </picture>
 </p>
 </details>

@@ -242,6 +242,82 @@ insertShopping.run(tripId, 'Sonnencreme', user2.id, 0, null, null, 'dm', 'before
 insertShopping.run(tripId, 'Reiseführer Lissabon', user1.id, 1, null, null, null, 'before');
 insertShopping.run(tripId, 'Postkarten', null, 0, null, null, null, 'during');
 
+// --- ToDo-Liste ---
+const insertTodo = db.prepare(
+  `INSERT INTO todo_items (trip_id, title, assigned_to_user_id, due_date, period, priority, note, done)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+insertTodo.run(
+  tripId,
+  'Reisepässe auf Gültigkeit prüfen',
+  user1.id,
+  fmt(addDays(startDate, -7)),
+  'before',
+  'high',
+  'Muss mind. 6 Monate über das Rückreisedatum hinaus gültig sein',
+  1
+);
+insertTodo.run(
+  tripId,
+  'Auslandskrankenversicherung abschließen',
+  user2.id,
+  fmt(addDays(startDate, -5)),
+  'before',
+  'medium',
+  'Versicherungsschein als PDF unter Dokumente hinterlegen',
+  1
+);
+insertTodo.run(
+  tripId,
+  'Online-Check-in für Hinflug durchführen',
+  user1.id,
+  fmt(addDays(startDate, -1)),
+  'before',
+  'high',
+  'Öffnet 24 Stunden vor Abflug auf der Airline-Website',
+  0
+);
+insertTodo.run(
+  tripId,
+  'Pflanzen gießen & Nachbarn Schlüssel geben',
+  user2.id,
+  fmt(addDays(startDate, -1)),
+  'before',
+  'high',
+  'Blumen auf dem Balkon gießen und Briefkasten leeren',
+  0
+);
+insertTodo.run(
+  tripId,
+  'Viva-Viagem-Karten an Metrostation aufladen',
+  null,
+  fmt(addDays(startDate, 1)),
+  'during',
+  'medium',
+  'Am Fahrkartenautomaten am Flughafen oder Rossio-Bahnhof',
+  0
+);
+insertTodo.run(
+  tripId,
+  'Tickets für Mosteiro dos Jerónimos vorab buchen',
+  user1.id,
+  fmt(addDays(startDate, 2)),
+  'during',
+  'medium',
+  'Zeitfenster-Tickets sichern, um langes Anstehen zu vermeiden',
+  0
+);
+insertTodo.run(
+  tripId,
+  'Pastéis de Belém frisch für die Familie besorgen',
+  user2.id,
+  fmt(addDays(endDate, -1)),
+  'during',
+  'low',
+  'Am Abreisetag frisch in der Antiga Confeitaria de Belém holen',
+  0
+);
+
 // --- Ausflugsideen & Spots (Karte) ---
 const insertSpot = db.prepare(
   `INSERT INTO spots (trip_id, title, image_url, category, note, maps_link, lat, lng, address, created_by)
@@ -633,5 +709,5 @@ db.prepare(
 );
 
 console.log(
-  `Demo-Seed abgeschlossen: Trip "${tripId}" mit Unterkunft, Reise, Kalender, Packliste, Einkaufsliste, Ausflug/Spots, Budget, Tagebuch und Notiz angelegt.`
+  `Demo-Seed abgeschlossen: Trip "${tripId}" mit Unterkunft, Reise, Kalender, Packliste, ToDo-Liste, Einkaufsliste, Ausflug/Spots, Budget, Tagebuch und Notiz angelegt.`
 );

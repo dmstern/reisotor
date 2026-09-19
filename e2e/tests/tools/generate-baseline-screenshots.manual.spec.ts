@@ -215,20 +215,84 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         });
       });
 
+      // 3. Intercept todos API calls to ensure due dates match current screenshot timeline (relative to today)
+      await page.route('**/api/todos*', async (route) => {
+        const response = await route.fetch();
+        const json = await response.json();
+        const today = new Date();
+        const fmtDate = (days: number) => {
+          const d = new Date(today);
+          d.setDate(d.getDate() + days);
+          return d.toISOString().slice(0, 10);
+        };
+        if (Array.isArray(json)) {
+          for (const item of json) {
+            if (item.title.includes('Reisepässe')) {
+              item.due_date = fmtDate(-7);
+            } else if (item.title.includes('Auslandskrankenversicherung')) {
+              item.due_date = fmtDate(-4);
+            } else if (item.title.includes('Pflanzen')) {
+              item.due_date = fmtDate(0);
+            } else if (item.title.includes('Check-in')) {
+              item.due_date = fmtDate(0);
+            } else if (item.title.includes('Viva-Viagem')) {
+              item.due_date = fmtDate(1);
+            } else if (item.title.includes('Mosteiro')) {
+              item.due_date = fmtDate(2);
+            } else if (item.title.includes('Pastéis')) {
+              item.due_date = fmtDate(8);
+            }
+          }
+        }
+        await route.fulfill({ json });
+      });
+
+      // 4. Intercept schedule API calls so items align directly within trip days (today .. today + 9)
+      await page.route('**/api/schedule*', async (route) => {
+        const response = await route.fetch();
+        const json = await response.json();
+        const today = new Date();
+        const fmtDate = (days: number) => {
+          const d = new Date(today);
+          d.setDate(d.getDate() + days);
+          return d.toISOString().slice(0, 10);
+        };
+        if (Array.isArray(json)) {
+          for (const item of json) {
+            if (item.title.includes('Hinflug')) {
+              item.date = fmtDate(0);
+            } else if (
+              item.title.includes('Time Out Market') ||
+              item.title.includes('Panoramatour')
+            ) {
+              item.date = fmtDate(1);
+            } else if (item.title.includes('Belém')) {
+              item.date = fmtDate(2);
+            } else if (item.title.includes('Sintra')) {
+              item.date = fmtDate(5);
+            } else if (item.title.includes('Rückflug')) {
+              item.date = fmtDate(9);
+            }
+          }
+        }
+        await route.fulfill({ json });
+      });
+
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await forceFontDisplayBlock(page);
 
         // Pre-configure localStorage before navigation:
-        // - Close calendar drawer on all non-dashboard desktop views to avoid visual redundancy (Requirement R2)
-        // - Open calendar drawer on dashboard
+        // - Close calendar drawer on all desktop views except calendar (including dashboard)
+        // - Open calendar drawer on calendar view on desktop, pulled to 1/3 screen width (640px)
         // - Set spots drawer width to half of viewport on desktop (960px for 1920px Full HD) for all spots/tour views
         await page.addInitScript(
           ({ slug, isDesktop }) => {
-            if (slug !== 'dashboard') {
-              localStorage.setItem('reisotor-drawer-calendar-open', 'false');
-            } else {
+            if (slug === 'calendar' && isDesktop) {
               localStorage.setItem('reisotor-drawer-calendar-open', 'true');
+              localStorage.setItem('reisotor-drawer-calendar-width', '640');
+            } else {
+              localStorage.setItem('reisotor-drawer-calendar-open', 'false');
             }
             if (isDesktop && (slug === 'spots' || slug === 'tour')) {
               localStorage.setItem('reisotor-spots-col-width', '960');
@@ -239,12 +303,14 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
           { slug: view.slug, isDesktop: vp.name === 'desktop' }
         );
 
-        await page.goto(view.path);
+        const targetPath =
+          view.slug === 'calendar' && vp.name === 'desktop' ? '/listen?tab=todo' : view.path;
+        await page.goto(targetPath);
         await waitForAppReady(page);
         await waitForMapTiles(page);
 
-        // Ensure Calendar drawer is closed on non-dashboard desktop views if it was already open
-        if (vp.name === 'desktop' && view.slug !== 'dashboard') {
+        // Ensure Calendar drawer is closed on non-calendar desktop views if it was already open
+        if (vp.name === 'desktop' && view.slug !== 'calendar') {
           const calendarTab = page.locator('.drawer-tab[aria-label*="Kalender"]');
           if (
             (await calendarTab.count()) > 0 &&
@@ -253,6 +319,20 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             await calendarTab.click();
             await page.waitForTimeout(300);
           }
+        }
+
+        // Ensure Calendar drawer is open on desktop calendar screenshot and wait for content
+        if (vp.name === 'desktop' && view.slug === 'calendar') {
+          const calendarTab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+          if (
+            (await calendarTab.count()) > 0 &&
+            (await calendarTab.getAttribute('aria-expanded')) !== 'true'
+          ) {
+            await calendarTab.click();
+            await page.waitForTimeout(300);
+          }
+          await page.locator('.drawer-panel').waitFor({ state: 'visible', timeout: 15_000 });
+          await page.locator('.todo-page').waitFor({ state: 'visible', timeout: 15_000 });
         }
 
         // Spots / Tour view specific preparation: wait for spots drawer & map container to be visible
