@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { TravelItem } from '../../api/types';
 
 const props = defineProps<{
-  nextItem: TravelItem | null;
+  nextItem?: TravelItem | null;
   count: number;
 }>();
 

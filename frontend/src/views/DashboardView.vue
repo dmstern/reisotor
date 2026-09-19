@@ -420,7 +420,7 @@ const nextTravelItem = computed(
   () =>
     [...travelItems.value]
       .filter((t) => t.date && t.date >= todayStr())
-      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0]
+      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0] ?? null
 );
 
 const currentOrNextAccommodation = computed(() => {
