@@ -25,7 +25,7 @@ import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils
 import RichTextEditor from '../components/RichTextEditor.vue';
 import FormField from '../components/FormField.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
-import { compressImage } from '../utils/imageCompression';
+import { compressImage, isHeicFile } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatDate } from '../utils/dateFormat';
 import Modal from '../components/Modal.vue';
@@ -359,13 +359,14 @@ async function uploadFiles(
   try {
     for (const file of files) {
       const compressed = await compressImage(file);
+      const filename = isHeicFile(file) ? file.name.replace(/\.(heic|heif)$/i, '.jpg') : file.name;
       const res = await api.post<{ url: string; original_name?: string }>('/diary/images', {
         data: compressed,
-        filename: file.name,
+        filename,
       });
       target.images.push({
         url: res.url,
-        original_name: res.original_name || file.name,
+        original_name: res.original_name || filename,
       });
     }
   } catch {
@@ -672,7 +673,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             ref="newFileInputRef"
             type="file"
             class="file-input-hidden"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             multiple
             aria-label="Bilder auswählen"
             :disabled="uploading"
@@ -935,7 +936,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             ref="editFileInputRef"
             type="file"
             class="file-input-hidden"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             multiple
             aria-label="Bilder auswählen"
             :disabled="editUploading"

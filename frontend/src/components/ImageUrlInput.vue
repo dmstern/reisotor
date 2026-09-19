@@ -56,7 +56,7 @@ async function onFileSelected(event: Event) {
       <input
         id="auto-id-1788301175437-9"
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         :disabled="uploading"
         @change="onFileSelected"
       />

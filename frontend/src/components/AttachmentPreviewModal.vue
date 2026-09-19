@@ -111,8 +111,8 @@ function isImage(attachment: AttachmentPreviewItem | null): boolean {
   }
   const name = attachment.original_name || attachment.filename || '';
   return (
-    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) ||
-    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(attachment.url) ||
+    /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)$/i.test(name) ||
+    /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)$/i.test(attachment.url) ||
     attachment.url.startsWith('data:image/')
   );
 }

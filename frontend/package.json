@@ -23,6 +23,7 @@
     "generate:icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
+    "@keeratita/heic-converter": "^0.4.1",
     "@tabler/icons": "^3.46.0",
     "@tabler/icons-vue": "^3.46.0",
     "@tiptap/extension-link": "^3.29.2",
@@ -30,6 +31,7 @@
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/vue-3": "^3.29.2",
     "dompurify": "^3.4.13",
+    "exifreader": "^4.45.1",
     "leaflet": "^1.9.4",
     "leaflet-rotate": "^0.2.8",
     "piexifjs": "^1.0.6",

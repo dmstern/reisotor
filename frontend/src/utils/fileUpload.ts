@@ -10,6 +10,14 @@ export function readAsDataUrl(file: Blob): Promise<string> {
   });
 }
 
+export function isImageFile(file: File | Blob): boolean {
+  if (file.type && file.type.startsWith('image/')) return true;
+  if ('name' in file && typeof file.name === 'string') {
+    return /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)$/i.test(file.name);
+  }
+  return false;
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
