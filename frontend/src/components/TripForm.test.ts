@@ -104,4 +104,20 @@ describe('TripForm', () => {
     expect(deleted).toBe(true);
     cleanUp();
   });
+
+  it('renders vacation beach fallback icon instead of home icon in the cover picker placeholder', () => {
+    const { container, cleanUp } = mountForm();
+    const placeholder = container.querySelector('.form-image-banner .placeholder');
+    const hasBeachIcon =
+      placeholder?.classList.contains('tabler-icon-beach') ||
+      placeholder?.querySelector('.tabler-icon-beach') !== null ||
+      placeholder?.textContent?.includes('🏖️');
+    const hasHomeIcon =
+      placeholder?.classList.contains('tabler-icon-home') ||
+      placeholder?.querySelector('.tabler-icon-home') !== null ||
+      placeholder?.textContent?.includes('🏠');
+    expect(hasBeachIcon).toBe(true);
+    expect(hasHomeIcon).toBe(false);
+    cleanUp();
+  });
 });
