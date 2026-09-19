@@ -1375,15 +1375,13 @@ function setTourCardRef(
   setExcursionRef(excursionId, el);
 }
 function scrollToExcursion(id: number) {
-  const el = excursionRefs.get(id);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
-  const grp = spotGroups.value.find((g) => g.excursion?.id === id);
-  if (grp) {
-    categoryRefs.get(grp.category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  scrollToElementInBody(() => {
+    const el = excursionRefs.get(id);
+    if (el) return el;
+    const grp = spotGroups.value.find((g) => g.excursion?.id === id);
+    if (grp) return categoryRefs.get(grp.category) ?? null;
+    return null;
+  });
 }
 // Ref auf die eingebettete Karte (TripMap.vue): scrollToCategory() lässt bei Klick auf eine
 // Kategorie-Nav-Pille zusätzlich die Karte auf alle Punkte dieser Kategorie zoomen (siehe
@@ -1613,12 +1611,7 @@ function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
   else spotRefs.delete(id);
 }
 function scrollToSpot(id: number) {
-  // 'start' statt 'nearest': Ziel ist, dass die Oberkante der Karte exakt am oberen Rand des
-  // sichtbaren Bereichs landet (siehe .spot-card's scroll-margin-top in SpotCard.vue für die
-  // Kompensation der sticky .category-nav) - 'nearest' scrollte zuvor nur das nötige Minimum ohne
-  // definierte Ausrichtung, dadurch landete die Karte je nach vorheriger Scrollposition uneinheitlich
-  // zu weit oben oder unten (#103).
-  spotRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  scrollToElementInBody(() => spotRefs.get(id));
 }
 // Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
 // scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
@@ -2202,6 +2195,101 @@ function sheetHeightPx(state: SheetState): number {
   if (state === 'collapsed') return Math.min(64, maxAvailable);
   if (state === 'partial') return Math.min(window.innerHeight * 0.46, maxAvailable);
   return maxAvailable;
+}
+
+let activeScrollToken = 0;
+
+/**
+ * Scrollt ein Ziel-Element (Spot-Karte oder Touren-Karte) zuverlässig an das obere Ende
+ * des scrollbaren Bereichs in .spots-col-body, unter genauer Berücksichtigung der sticky
+ * Kategorie-Nav-Leiste.
+ *
+ * Im mobilen Drawer-Modus (isSheetOverlayMode):
+ * Falls das Sheet gerade seinen Zustand ändert (z. B. beim Klick auf 'Auf Karte anzeigen',
+ * wodurch sheetState von 'full' oder 'collapsed' auf 'partial' schrumpft/wächst),
+ * MUSS zuerst gewartet werden, bis die CSS-Höhen-Transition des Drawers abgeschlossen ist.
+ * Grund: Solange der Drawer z. B. noch die volle Höhe hat (~760px), deckelt der Browser
+ * scrollTop strikt auf (scrollHeight - clientHeight). Karten im unteren Listenbereich
+ * können daher physikalisch unmöglich an den oberen Rand gescrollt werden. Erst nach dem
+ * Schrumpfen auf 'partial' (~340px) reicht der Scrollbereich aus, um die Karte ganz nach oben
+ * zu bringen. Zudem bricht overflow-y: hidden (das in .partial aktiv ist) gleichzeitige
+ * smooth-scroll-Animationen im WebKit/Blink ab.
+ *
+ * Erst NACH Abschluss der Höhen-Transition (und Einpendeln der Card-Expansion via rAF)
+ * wird die exakte Ziel-Scrollposition berechnet und sauber gescrollt.
+ */
+async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefined) {
+  const token = ++activeScrollToken;
+
+  if (isSheetOverlayMode.value) {
+    const sheet = sheetEl.value;
+    if (sheet) {
+      const expectedHeight = sheetHeightPx(sheetState.value);
+      const currentHeight = sheet.getBoundingClientRect().height;
+      // Falls das Sheet noch animiert / die Höhe noch nicht der Ziel-Höhe entspricht:
+      if (Math.abs(currentHeight - expectedHeight) > 2) {
+        await new Promise<void>((resolve) => {
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
+            sheet.removeEventListener('transitionend', onEnd);
+            clearTimeout(timer);
+            resolve();
+          };
+          const onEnd = (e: TransitionEvent) => {
+            if (
+              e.target === sheet &&
+              (e.propertyName === 'height' || e.propertyName === 'bottom')
+            ) {
+              finish();
+            }
+          };
+          sheet.addEventListener('transitionend', onEnd);
+          const timer = setTimeout(finish, 350);
+        });
+      }
+    }
+    if (token !== activeScrollToken) return;
+
+    // Zwei Frames warten für Card-Expansion (v-if Blöcke / Stationen) & Layout-Stabilisierung:
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    if (token !== activeScrollToken) return;
+  }
+
+  let el = elGetter();
+  if (!el) {
+    await nextTick();
+    if (token !== activeScrollToken) return;
+    el = elGetter();
+  }
+  if (!el) return;
+
+  const body = spotsColBodyEl.value;
+  if (!body) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
+  const bodyRect = body.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  const currentScrollTop = body.scrollTop;
+  const elTopInBody = currentScrollTop + (elRect.top - bodyRect.top);
+
+  let navClearance = 0;
+  const navWrap = categoryNavEl.value?.closest('.category-nav-wrap') as HTMLElement | null;
+  if (navWrap && navWrap.offsetParent !== null) {
+    navClearance = navWrap.getBoundingClientRect().height;
+  } else if (categoryNavEl.value && categoryNavEl.value.offsetParent !== null) {
+    navClearance = categoryNavEl.value.getBoundingClientRect().height;
+  } else if (categoryNavHeight.value) {
+    navClearance = categoryNavHeight.value;
+  }
+
+  // 8px Abstand unterhalb der sticky Nav (oder des Drawer-Kopfs)
+  const spacing = 8;
+  const targetScrollTop = Math.max(0, elTopInBody - navClearance - spacing);
+  body.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
 }
 
 // Schreibt die Sheet-Höhe während des Ziehens direkt aufs Element (statt über eine reaktive
