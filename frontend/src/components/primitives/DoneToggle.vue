@@ -34,6 +34,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     type="button"
     class="done-toggle"
     :class="{
+      status: planned || isDoneOrPartial,
       planned: planned && !isDoneOrPartial,
       'status-done': isDoneOrPartial,
       active: done,
