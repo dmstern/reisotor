@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { Attachment } from '../api/types';
 import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
@@ -59,6 +59,8 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
+      isTransitionReady.value = false;
+      contentHeight.value = null;
       if (
         props.initialIndex !== undefined &&
         props.initialIndex >= 0 &&
@@ -69,9 +71,14 @@ watch(
         currentIndex.value = 0;
       }
       window.addEventListener('keydown', onKeydown);
+      nextTick(() => {
+        updateContentHeight(false);
+      });
     } else {
       window.removeEventListener('keydown', onKeydown);
       resetAnimationState();
+      isTransitionReady.value = false;
+      contentHeight.value = null;
     }
   }
 );
@@ -91,6 +98,10 @@ watch(
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
   resetAnimationState();
+  if (contentResizeObserver) {
+    contentResizeObserver.disconnect();
+    contentResizeObserver = null;
+  }
 });
 
 function isImage(attachment: AttachmentPreviewItem | null): boolean {
@@ -517,6 +528,116 @@ const trackStyle = computed(() => {
     transition: 'none',
   };
 });
+
+// --- Smoothe Höhenanpassung an aktuellen sowie benachbarten Inhalt ---
+const previewContentRef = ref<HTMLElement | null>(null);
+const sliderTrackRef = ref<HTMLElement | null>(null);
+const contentHeight = ref<number | null>(null);
+const isTransitionReady = ref(false);
+
+const contentStyle = computed(() => {
+  if (!contentHeight.value) return {};
+  return {
+    height: `${contentHeight.value}px`,
+  };
+});
+
+function measureSlideHeight(slideEl: HTMLElement): number {
+  const img = slideEl.querySelector<HTMLImageElement>('.preview-img');
+  if (img) {
+    const rect = img.getBoundingClientRect();
+    if (rect.height > 0) {
+      return rect.height;
+    }
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      const containerWidth = previewContentRef.value?.clientWidth || 600;
+      const maxViewportH = typeof window !== 'undefined' ? window.innerHeight * 0.65 : 500;
+      const aspect = img.naturalHeight / img.naturalWidth;
+      return Math.min(containerWidth * aspect, maxViewportH);
+    }
+  }
+  const unsupported = slideEl.querySelector<HTMLElement>('.unsupported-wrapper');
+  if (unsupported) {
+    const rect = unsupported.getBoundingClientRect();
+    return rect.height > 0 ? rect.height : 220;
+  }
+  return 0;
+}
+
+function updateContentHeight(animate = true) {
+  if (!sliderTrackRef.value || !props.modelValue) return;
+
+  const slides = sliderTrackRef.value.querySelectorAll<HTMLElement>('.slider-slide');
+  if (!slides.length) return;
+
+  let maxHeight = 0;
+  slides.forEach((slide) => {
+    const h = measureSlideHeight(slide);
+    if (h > maxHeight) {
+      maxHeight = h;
+    }
+  });
+
+  if (maxHeight <= 0) return;
+
+  const targetH = Math.max(200, Math.round(maxHeight));
+
+  if (!animate) {
+    isTransitionReady.value = false;
+    contentHeight.value = targetH;
+    nextTick(() => {
+      requestAnimationFrame(() => {
+        isTransitionReady.value = true;
+      });
+    });
+  } else {
+    isTransitionReady.value = true;
+    contentHeight.value = targetH;
+  }
+}
+
+function onImageLoad() {
+  updateContentHeight(isTransitionReady.value);
+}
+
+watch(
+  () => visibleSlides.value,
+  () => {
+    nextTick(() => {
+      updateContentHeight(isTransitionReady.value);
+    });
+  },
+  { deep: true }
+);
+
+let contentResizeObserver: ResizeObserver | null = null;
+let lastObservedWidth = 0;
+
+onMounted(() => {
+  if (typeof ResizeObserver !== 'undefined') {
+    contentResizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = Math.round(entry.contentRect.width);
+        if (w > 0 && w !== lastObservedWidth) {
+          lastObservedWidth = w;
+          updateContentHeight(isTransitionReady.value);
+        }
+      }
+    });
+    if (previewContentRef.value) {
+      contentResizeObserver.observe(previewContentRef.value);
+    }
+  }
+});
+
+watch(previewContentRef, (el, oldEl) => {
+  if (oldEl && contentResizeObserver) {
+    contentResizeObserver.unobserve(oldEl);
+  }
+  if (el && contentResizeObserver) {
+    contentResizeObserver.observe(el);
+  }
+});
 </script>
 
 <template>
@@ -557,13 +678,16 @@ const trackStyle = computed(() => {
         />
 
         <div
+          ref="previewContentRef"
           class="preview-content"
           :class="{
             'is-draggable': attachments.length > 1 && !isAnimating,
             'is-dragging': isDragging,
+            'has-transition': isTransitionReady,
           }"
+          :style="contentStyle"
         >
-          <div class="slider-track" :style="trackStyle">
+          <div ref="sliderTrackRef" class="slider-track" :style="trackStyle">
             <div
               v-for="slide in visibleSlides"
               :key="slide.slot"
@@ -576,6 +700,7 @@ const trackStyle = computed(() => {
                   :alt="slide.item.original_name"
                   class="preview-img"
                   draggable="false"
+                  @load="onImageLoad"
                 />
               </div>
               <div v-else-if="slide.item" class="unsupported-wrapper">
@@ -733,6 +858,11 @@ const trackStyle = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.preview-content:not(.has-transition) {
+  transition: none !important;
 }
 
 .preview-content.is-draggable {
@@ -787,6 +917,10 @@ const trackStyle = computed(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .slider-track {
+    transition: none !important;
+  }
+
+  .preview-content {
     transition: none !important;
   }
 }
