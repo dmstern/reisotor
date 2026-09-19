@@ -675,6 +675,7 @@ const trackStyle = computed(() => {
           v-if="editable"
           variant="danger"
           :icon="ACTION_ICONS.delete"
+          :title="isImage(currentAttachment) ? 'Bild entfernen' : 'Anhang löschen'"
           @click="onRemoveCurrent"
         >
           Löschen

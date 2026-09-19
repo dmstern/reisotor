@@ -223,7 +223,7 @@ async function remove(attachment: Attachment) {
       v-model="previewOpen"
       :attachments="attachments"
       :initial-index="previewIndex"
-      :editable="editable"
+      :editable="!auth.user?.restricted"
       @remove="(index) => remove(attachments[index])"
     />
   </div>

@@ -391,6 +391,31 @@ function removeImage(target: { images: DiaryImage[] }, index: number) {
   target.images.splice(index, 1);
 }
 
+async function removeImageFromEntry(entry: DiaryEntry, index: number) {
+  if (auth.user?.restricted) return;
+  const removed = entry.images[index];
+  entry.images.splice(index, 1);
+  const body = {
+    title: entry.title || undefined,
+    content: entry.content,
+    content_format: entry.content_format || 'html',
+    images: entry.images,
+    excursion_ids: entry.excursion_ids ?? [],
+    spot_ids: entry.spot_ids ?? [],
+    date: entry.date,
+    is_draft: Boolean(entry.is_draft),
+  };
+  try {
+    const updated = await api.put<DiaryEntry>(`/diary/${entry.id}`, body);
+    const idx = entries.value.findIndex((e) => e.id === updated.id);
+    if (idx !== -1) entries.value[idx] = updated;
+    sortEntries();
+  } catch (err) {
+    entry.images.splice(index, 0, removed);
+    console.error('Fehler beim Entfernen des Bildes aus dem Tagebucheintrag:', err);
+  }
+}
+
 // "+ Neuer Eintrag": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen
 // zweiten, parallelen Entwurf anzulegen (#89).
 function openNewForm() {
@@ -786,7 +811,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           <PolaroidStack
             :items="entry.images"
             clipped
-            @click="(idx) => openDiaryPreview(entry.images, idx)"
+            @click="
+              (idx) =>
+                openDiaryPreview(entry.images, idx, !auth.user?.restricted, (i) =>
+                  removeImageFromEntry(entry, i)
+                )
+            "
           />
         </div>
 
