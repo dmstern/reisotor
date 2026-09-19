@@ -86,7 +86,7 @@ function openMembers(trip: Trip) {
 
     <div v-else class="card empty-state">
       <h2>Willkommen bei Reisotor!</h2>
-      <p class="empty">Du bist noch keinem Urlaub zugeordnet.</p>
+      <p class="empty">Du hast noch keinen Urlaub geplant.</p>
       <TripForm submit-label="Urlaub anlegen" @submit="onSubmit" />
       <p class="invite-hint">
         Alternativ kann dich ein bestehendes Mitglied eines Urlaubs über die Mitglieder-Verwaltung
