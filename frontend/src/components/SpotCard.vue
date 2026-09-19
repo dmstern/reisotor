@@ -223,8 +223,12 @@ async function onCreateTour(title: string) {
   });
 }
 
-// Natives Drag (Zuordnen zu einer Tour) startet über den Tour-Zuordnen-Anfasser
+// Natives Drag (Zuordnen zu einer Tour) startet über den Tour-Zuordnen-Anfasser (nur in Touren-Ansicht, #audit)
 function onDragStart(event: DragEvent) {
+  if (props.groupMode !== 'tours') {
+    event.preventDefault();
+    return;
+  }
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
@@ -563,6 +567,7 @@ const cardRotation = computed(() => {
             <div class="card-actions">
               <TourAssignDropdown
                 :tours="tourAssignments"
+                :can-drag="groupMode === 'tours'"
                 @toggle-tour="onToggleTour"
                 @create-tour="onCreateTour"
                 @dragstart="onDragStart"
