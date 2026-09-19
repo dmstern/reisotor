@@ -17,7 +17,9 @@ export const useBuildInfoStore = defineStore('buildInfo', () => {
         .then((info) => {
           buildInfo.value = info;
         })
-        .catch(() => {});
+        .catch(() => {
+          loadPromise = null;
+        });
     }
     return loadPromise;
   }

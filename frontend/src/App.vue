@@ -36,7 +36,6 @@ const isDesktop = useIsDesktop();
 const headerNavFits = useHeaderNavFits();
 
 const buildInfoStore = useBuildInfoStore();
-buildInfoStore.load();
 
 watch(
   () => buildInfoStore.buildInfo?.environment,
@@ -77,7 +76,10 @@ watch(
       tripStore.reset();
       budgetStore.reset();
     }
-    if (userId) tripStore.loadTrips();
+    if (userId) {
+      tripStore.loadTrips();
+      buildInfoStore.load();
+    }
   },
   { immediate: true }
 );
@@ -135,7 +137,7 @@ const firstLoadDone = ref(
   <ToastNotification />
   <MustChangePasswordModal v-if="auth.user?.must_change_password" />
   <UpdateAvailableModal />
-  <ChangelogModal />
+  <ChangelogModal v-if="auth.user" />
   <template v-if="!showNav">
     <router-view />
   </template>

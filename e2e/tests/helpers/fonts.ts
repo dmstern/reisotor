@@ -19,7 +19,7 @@ export async function forceFontDisplayBlock(page: Page): Promise<void> {
     const body = await response.text();
     await route.fulfill({
       response,
-      body: body.replace(/font-display:\s*optional/g, 'font-display: block'),
+      body: body.replace(/font-display:\s*(?:optional|swap)/g, 'font-display: block'),
     });
   });
 }
