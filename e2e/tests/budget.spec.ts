@@ -74,6 +74,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
     .fill('E2E Testkategorie');
   await page.locator('.add-form').getByPlaceholder('Betrag').fill('40');
   await selectOptionByText(page.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
+  await page.locator('.modal:visible .collapsible-toggle').click();
   await selectOptionByText(page.locator('.modal:visible .add-form select').nth(1), potName);
   await page.locator('.modal:visible').getByRole('button', { name: 'Eintragen' }).click();
 
@@ -147,6 +148,7 @@ test('a private budget pot stays invisible to another member, but shared expense
   await pageA.getByPlaceholder('Titel').fill(privateExpenseTitle);
   await pageA.locator('.add-form').getByPlaceholder('Betrag').fill('20');
   await selectOptionByText(pageA.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
+  await pageA.locator('.modal:visible .collapsible-toggle').click();
   await selectOptionByText(pageA.locator('.modal:visible .add-form select').nth(1), privatePotName);
   await pageA.locator('.modal:visible').getByRole('button', { name: 'Eintragen' }).click();
   await expect(pageA.locator('.row', { hasText: privateExpenseTitle })).toBeVisible();
