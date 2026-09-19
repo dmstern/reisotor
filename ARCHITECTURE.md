@@ -34,7 +34,7 @@ angewendet — Konventionen dafür siehe "Datenmodell-Änderungen" in `AGENTS.md
 u. a. `trips`, `trip_members`, `schedule_items`, `packing_items`, `ideas` (Ausflugsideen),
 `budget_items`/`budget_transfers`/`budgets`/`budget_allocations`, `shopping_items`, `todo_items`,
 `notes`, `diary_entries` sowie je eigene `*_likes`/`*_comments`-Tabellen für Ausflüge/Notizen/
-Tagebuch/Spots, `spots`/`excursion_spots` (Karte), `tracks` (GPX-Tracks) und
+Tagebuch/Spots, `spots`/`excursion_spots` (Karte), `tracks` (Live-GPS-Tracks) und
 `sessions`. **Unterkunft ist keine eigene Tabelle mehr**: die frühere `accommodation`-Tabelle wurde
 per einmaliger Migration in `spots` verschmolzen — ein Spot der Kategorie "Unterkunft" trägt
 zusätzlich Adresse/Zeitraum/Check-in-out/Kontakt/Kosten-Felder (`spots.address`/`start_date`/
@@ -183,7 +183,7 @@ Eine Zeile pro Domäne, keine Vollständigkeits-Doku.
 | Trips/Mitgliedschaft             | `routes/trips.ts`, `tripAccess.ts`                           | `stores/trip.ts`, `TripSwitcher.vue`, `TripMembersDialog.vue`                         | Trip-CRUD, `requireTripMember()`-Gate, Einladung                                                                                          |
 | Kalender                         | `routes/schedule.ts`                                         | `stores/schedule.ts`, `ScheduleView.vue`, `CalendarWeek.vue`                          | Wochenansicht, Termine, Drag&Drop von Ideen                                                                                               |
 | Listen (Packen/Einkauf/ToDo)     | `routes/packing.ts`, `routes/shopping.ts`, `routes/todos.ts` | `ListenView.vue` (`PackingListView.vue`, `ShoppingListView.vue`, `TodoView.vue`)      | Zentrale Listen-Ansicht (`/listen`) mit Tabs für Packliste, Einkaufsliste und ToDos                                                       |
-| Touren, Tracks & Reise           | `routes/ideas.ts`, `routes/tracks.ts`                        | `stores/excursions.ts`, `stores/tracks.ts`, `ExcursionsView.vue`, `ExcursionCard.vue` | Touren mit Stationen/Etappen, GPX-Track-Upload/-Aufzeichnung; Reise-Etappen werden per 'travel'-Rolle abgeleitet                          |
+| Touren, Tracks & Reise           | `routes/ideas.ts`, `routes/tracks.ts`                        | `stores/excursions.ts`, `stores/tracks.ts`, `ExcursionsView.vue`, `ExcursionCard.vue` | Touren mit Stationen/Etappen, Live-GPS-Track-Aufzeichnung; Reise-Etappen werden per 'travel'-Rolle abgeleitet                             |
 | Spots & Karte (inkl. Unterkunft) | `routes/spots.ts`                                            | `stores/spots.ts`, `TripMap.vue`, `SpotCard.vue`                                      | Koordinaten, Leaflet-Karte, Emoji-`divIcon`s; Unterkunft = Spot-Kategorie mit Zeitraum/Check-in-out/Budget-Sync (keine eigene Route mehr) |
 | Budget                           | `routes/budget.ts`                                           | `stores/budget.ts`, `BudgetView.vue`                                                  | Ziel-/Kategorienbudgets, Splitwise-artige Saldo-Berechnung                                                                                |
 | Tagebuch                         | `routes/diary.ts`                                            | `DiaryView.vue`                                                                       | Einträge mit Bildern, Likes, Kommentaren                                                                                                  |

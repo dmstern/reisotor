@@ -74,16 +74,16 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 ## Features
 
 - 🏠 **Übersicht/Dashboard**: Intuitiver Schnellüberblick mit Reise-Countdown, anstehenden Terminen, Packlisten- und Budgetstatus sowie Live-Wetter
-- 🗺️ **Spots & interaktive Karte**: Spots (Sehenswürdigkeiten, Unterkünfte, Gastronomie) mit Geokoordinaten, Öffnungszeiten, Leaflet/OpenStreetMap-Integration und Emoji-Markern
-- 🥾 **Touren & GPX-Tracks**: Mehretappen-Touren mit Drag&Drop-Stationen, GPX-Track-Upload, Höhenprofilen, Anfahrt-Berechnung und Live-Track-Aufzeichnung direkt im Browser
+- 🗺️ **Spots & interaktive Karte**: Spots (Sehenswürdigkeiten, Unterkünfte, Gastronomie) mit Geokoordinaten, Adressen, Google-Maps-Verknüpfung, Bewertungen, Besuchsstatus und interaktiver Leaflet/OpenStreetMap-Karte mit Emoji-Markern
+- 🥾 **Touren & Teilstrecken**: Mehretappen-Touren mit Stationen, Teilstrecken (Verkehrsmittel, Fahr- & Umsteigezeiten, Sitzplätze, Ticketkosten), geschwungenen Serpentinen-Routen und Live-GPS-Track-Aufzeichnung direkt im Browser
 - 📅 **Ablauf & Kalender**: Floating-Drawer auf Desktop und eigenständige Mobil-Ansicht; Wochenablauf, Termine, Fälligkeiten und Drag & Drop von Ausflügen
-- 🌦️ **Wetter & Unwetterwarnungen**: 14-Tage-Wettervorhersage, automatische Tagesstationen und amtliche Unwetterwarnungen (DWD, NWS, Open-Meteo)
+- 🌦️ **Wetter & Unwetterwarnungen**: 14-Tage-Wettervorhersage, stündlicher Tagesverlauf, wählbare Wettermodelle (z. B. DWD ICON) und automatische Warnhinweise bei Hitze, Sturm oder Starkregen
 - 📋 **Zentrale Listen (Packliste, Einkauf, ToDos)**: Zusammengefasste Listen-Ansicht (`/listen`) mit Rollen, Fälligkeiten, Prioritäten und Zuweisungen
 - 💶 **Gemeinsames Budget**: Ziel- und Kategorienbudgets, Ausgaben, Überweisungen und automatischer Schuldenausgleich (Splitwise-artig)
 - 📔 **Tagebuch**: Reiseberichte mit Bildern, Reaktionen und Kommentaren
 - 📝 **Notizen & Dateianhänge**: Rich-Text-Notizen (fett/kursiv/Listen/Links) und universeller Datei-Upload für Buchungsbestätigungen und Tickets
 - 🌍 **Reiseregion-Infos**: Landessprache, lokale Währung inklusive tagesaktueller Wechselkurse zur Heimatwährung sowie Sicherheitshinweise
-- 📍 **Live-Standort & Präsenz**: Optionale Live-Standortfreigabe für Mitreisende, Anwesenheits-Avatare und Tipp-Indikatoren
+- 📍 **Live-Standort & Präsenz**: Optionale Live-Standortfreigabe für Mitreisende direkt auf der Karte sowie Online-Präsenz-Avatare im Header
 - ⚡ **Echtzeit-Synchronisation**: SSE-basierter Live-Sync zwischen allen Mitgliedern – Änderungen erscheinen sofort ohne Neuladen
 - 📴 **Offline-fähige PWA**: Vollständig als App installierbar (iOS/Android/Desktop), lokaler Cache und automatische Nachsynchronisation bei Verbindungsaufbau
 - 🗑️ **Papierkorb mit Undo**: 60-Sekunden-Rückgängig-Funktion direkt an Ort und Stelle sowie dauerhafter Papierkorb zur Wiederherstellung
