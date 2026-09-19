@@ -9,6 +9,7 @@ import DeleteButton from './DeleteButton.vue';
 import FormField from './FormField.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
+import Accordion from './primitives/Accordion.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
@@ -47,6 +48,7 @@ async function updateTargetAmount() {
   });
 }
 
+const showAddCategory = ref(false);
 const newCategory = ref('');
 const newCategoryAmount = ref('');
 
@@ -59,6 +61,7 @@ async function addCategory() {
   );
   newCategory.value = '';
   newCategoryAmount.value = '';
+  showAddCategory.value = false;
 }
 
 const displayBudgetName = computed(() =>
@@ -138,29 +141,46 @@ function updateAllocationAmount(category: string, value: string) {
       </div>
     </template>
 
-    <details class="add-category">
-      <summary>
-        <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Kategorie hinzufügen
-        (optional)
-      </summary>
-      <form class="add-category-form" @submit.prevent="addCategory">
-        <FormField icon="category" label="Neue Kategorie" v-slot="{ id }">
-          <Input :id="id" v-model="newCategory" type="text" placeholder="Neue Kategorie" />
-        </FormField>
-        <FormField icon="amount" label="Ziel" v-slot="{ id }">
-          <Input
-            :id="id"
-            v-model="newCategoryAmount"
-            type="number"
-            step="0.01"
-            placeholder="Ziel €"
-          />
-        </FormField>
-        <Button type="submit"
-          ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen</Button
-        >
-      </form>
-    </details>
+    <div class="add-category">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="add-category-toggle"
+        :aria-expanded="showAddCategory"
+        @click="showAddCategory = !showAddCategory"
+      >
+        <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
+        <span>Kategorie hinzufügen</span>
+        <AppIcon
+          :icon="ACTION_ICONS.chevronDown"
+          :size="14"
+          group="actions"
+          class="toggle-chevron"
+          :class="{ 'is-open': showAddCategory }"
+        />
+      </Button>
+
+      <Accordion :expanded="showAddCategory" :inert-when-closed="false">
+        <form class="add-category-form" @submit.prevent="addCategory">
+          <FormField icon="category" label="Neue Kategorie" v-slot="{ id }">
+            <Input :id="id" v-model="newCategory" type="text" placeholder="Neue Kategorie" />
+          </FormField>
+          <FormField icon="amount" label="Ziel" v-slot="{ id }">
+            <Input
+              :id="id"
+              v-model="newCategoryAmount"
+              type="number"
+              step="0.01"
+              placeholder="Ziel €"
+            />
+          </FormField>
+          <Button type="submit">
+            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen
+          </Button>
+        </form>
+      </Accordion>
+    </div>
   </Card>
 </template>
 
@@ -257,12 +277,34 @@ function updateAllocationAmount(category: string, value: string) {
 }
 
 .add-category {
-  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 
-.add-category summary {
-  cursor: pointer;
+.add-category-toggle {
+  align-self: flex-start;
   color: var(--color-primary-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  gap: 6px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
+.add-category-toggle:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.toggle-chevron {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: var(--color-text-muted);
+}
+
+.toggle-chevron.is-open {
+  transform: rotate(180deg);
 }
 
 .add-category-form {
@@ -270,7 +312,12 @@ function updateAllocationAmount(category: string, value: string) {
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-1);
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .add-category-form .form-field {
