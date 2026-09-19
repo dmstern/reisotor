@@ -3225,6 +3225,7 @@ async function deleteEditingSpot() {
                 v-model="activeSpotForm.image_url"
                 :preview-image="editingSpot !== null ? editSpotPreviewImage : spotPreviewImage"
                 :placeholder-icon="groupIconDef(activeSpotForm.category)"
+                icon-group="categories"
                 modal-title="Spot-Bild bearbeiten"
               />
               <FormField icon="title" label="Titel">
