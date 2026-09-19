@@ -417,19 +417,19 @@ const categoryColors = computed(() => {
           @use-suggestion="useSettlementSuggestion"
         />
 
-        <!-- Bezahlungen -->
+        <!-- Ausgaben -->
         <Card class="expenses-card">
           <div class="header">
-            <h2>Bezahlungen</h2>
+            <h2>Ausgaben</h2>
             <Button @click="showExpenseForm = true"
-              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Bezahlung
+              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Ausgabe
               eintragen</Button
             >
           </div>
 
           <Modal
             :model-value="showExpenseForm"
-            title="Bezahlung eintragen"
+            title="Ausgabe eintragen"
             full-height
             @update:model-value="(v) => !v && closeExpenseForm()"
           >
@@ -563,7 +563,7 @@ const categoryColors = computed(() => {
 
     <Modal
       :model-value="editingExpense !== null"
-      title="Bezahlung bearbeiten"
+      title="Ausgabe bearbeiten"
       full-height
       @update:model-value="(v) => !v && closeEditExpenseForm()"
     >

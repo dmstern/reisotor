@@ -18,7 +18,7 @@ const { showToast } = useToast();
 
 async function removeExpense(id: number) {
   await store.removeExpense(id);
-  showToast({ message: 'Bezahlung gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
+  showToast({ message: 'Ausgabe gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
 }
 </script>
 
@@ -57,7 +57,7 @@ async function removeExpense(id: number) {
       </div>
     </li>
     <li v-if="!store.expenses.length" key="empty" class="empty">
-      Noch keine Bezahlungen eingetragen.
+      Noch keine Ausgaben eingetragen.
     </li>
   </TransitionGroup>
 </template>

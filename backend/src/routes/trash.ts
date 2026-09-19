@@ -99,7 +99,7 @@ const TRASH_CONFIG: TrashConfig[] = [
   {
     type: 'budget_item',
     table: 'budget_items',
-    label: 'Bezahlung',
+    label: 'Ausgabe',
     // Ausgaben aus einem fremden privaten Budget-Topf dürfen auch gelöscht nicht über den
     // Papierkorb an andere Mitglieder durchsickern (gleiche Regel wie bei GET /budget).
     listQuery: (tripId, userId) =>
