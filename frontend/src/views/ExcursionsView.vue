@@ -2278,16 +2278,25 @@ async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefi
 
   let navClearance = 0;
   const navWrap = categoryNavEl.value?.closest('.category-nav-wrap') as HTMLElement | null;
+  const bodyStyle = getComputedStyle(body);
+  const bodyPaddingTop = parseFloat(bodyStyle.paddingTop) || 0;
+
   if (navWrap && navWrap.offsetParent !== null) {
-    navClearance = navWrap.getBoundingClientRect().height;
+    const navTop = parseFloat(getComputedStyle(navWrap).top) || 0;
+    const navHeight = navWrap.getBoundingClientRect().height;
+    // Wenn navWrap sticky arretiert ist, reicht seine Unterkante bis:
+    navClearance = Math.max(0, bodyPaddingTop + navTop + navHeight);
   } else if (categoryNavEl.value && categoryNavEl.value.offsetParent !== null) {
-    navClearance = categoryNavEl.value.getBoundingClientRect().height;
+    navClearance = bodyPaddingTop + categoryNavEl.value.getBoundingClientRect().height;
   } else if (categoryNavHeight.value) {
-    navClearance = categoryNavHeight.value;
+    navClearance = bodyPaddingTop + categoryNavHeight.value;
+  } else {
+    navClearance = bodyPaddingTop;
   }
 
-  // 8px Abstand unterhalb der sticky Nav (oder des Drawer-Kopfs)
-  const spacing = 8;
+  // 16px (var(--space-3)) Abstand unterhalb der sticky Nav (oder des Drawer-Kopfs),
+  // damit der obere Schatten und Fokus-Rand der Spot-Card vollständig sichtbar bleiben (#audit)
+  const spacing = 16;
   const targetScrollTop = Math.max(0, elTopInBody - navClearance - spacing);
   body.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
 }
