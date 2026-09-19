@@ -325,6 +325,13 @@ function closeEditForm() {
   editingItem.value = null;
 }
 
+function discardEditDraft() {
+  if (!editingItem.value) return;
+  startEdit(editingItem.value);
+  editDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 async function deleteEditingItem() {
   if (!editingItem.value) return;
   const id = editingItem.value.id;
@@ -358,6 +365,15 @@ async function addItem() {
   // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
   // Vorbelegung fürs nächste Öffnen der Liste.
   newDraft.clear();
+}
+
+function discardNewDraft() {
+  newLabel.value = '';
+  newLink.value = '';
+  newNote.value = '';
+  showNewDetails.value = false;
+  newDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 // Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
@@ -525,7 +541,12 @@ function hasItemMeta(item: ShoppingItem): boolean {
         </div>
       </Accordion>
 
-      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+      <DraftStatusBar
+        :status="newDraft.status.value"
+        :restored="newDraft.restored.value"
+        :can-discard="true"
+        @discard="discardNewDraft"
+      />
     </form>
 
     <div class="groups-grid" :class="{ 'groups-grid--masonry masonry': groupBy === 'shop' }">
@@ -700,7 +721,12 @@ function hasItemMeta(item: ShoppingItem): boolean {
         <FormField icon="note" label="Notiz" v-slot="{ id }">
           <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"

@@ -306,6 +306,13 @@ async function addItem() {
   newDraft.clear();
 }
 
+function discardNewDraft() {
+  newForm.value = emptyForm();
+  showNewDetails.value = false;
+  newDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 // Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
 // gruppierte Dimension (Bearbeiter:in oder Zeitraum) ergibt sich aus der Gruppe selbst.
 // Die jeweils andere Dimension (Zuweisung bei Zeitraum-Gruppierung, Zeitraum bei Bearbeiter:innen-Gruppierung)
@@ -383,6 +390,13 @@ async function submitEdit() {
 function closeEditForm() {
   editDraft.clear();
   editingItem.value = null;
+}
+
+function discardEditDraft() {
+  if (!editingItem.value) return;
+  startEdit(editingItem.value);
+  editDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 async function deleteEditingItem() {
@@ -540,7 +554,12 @@ function hasTodoMeta(item: TodoItem): boolean {
         </div>
       </Accordion>
 
-      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+      <DraftStatusBar
+        :status="newDraft.status.value"
+        :restored="newDraft.restored.value"
+        :can-discard="true"
+        @discard="discardNewDraft"
+      />
     </form>
 
     <div class="groups-grid">
@@ -714,7 +733,12 @@ function hasTodoMeta(item: TodoItem): boolean {
         <FormField icon="note" label="Notiz" v-slot="{ id }">
           <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"
