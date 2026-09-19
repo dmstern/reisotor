@@ -65,6 +65,7 @@ const accentSize = computed(() => Math.round(props.size * 0.62));
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .weather-icon-base {
@@ -76,5 +77,9 @@ const accentSize = computed(() => Math.round(props.size * 0.62));
   position: absolute;
   right: -15%;
   bottom: -15%;
+}
+
+:deep(.app-icon) {
+  vertical-align: middle;
 }
 </style>

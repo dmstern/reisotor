@@ -26,6 +26,7 @@ import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import Badge from './primitives/Badge.vue';
+import DoneToggle from './primitives/DoneToggle.vue';
 import Card from './primitives/Card.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
@@ -594,86 +595,53 @@ const cardRotation = computed(() => {
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
               </button>
               <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
-              <button
+              <DoneToggle
                 v-if="!isAccommodation"
                 key="btn-done"
-                type="button"
-                class="done-toggle"
-                :class="{
-                  status: !!(
-                    scheduledDate ||
-                    totalItemsCount > 0 ||
-                    isSpotDone ||
-                    isSpotPartiallyDone
-                  ),
-                  planned: !!(
-                    (scheduledDate || totalItemsCount > 0) &&
-                    !isSpotDone &&
-                    !isSpotPartiallyDone
-                  ),
-                  'status-done': isSpotDone || isSpotPartiallyDone,
-                  active: isSpotDone,
-                }"
-                :aria-pressed="isSpotDone"
+                :done="isSpotDone"
+                :partially-done="isSpotPartiallyDone"
+                :planned="!!(scheduledDate || totalItemsCount > 0)"
                 :aria-label="
                   isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
                 "
                 :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-                @click.stop="expanded ? onToggleDone($event) : onCardClick()"
+                @click="expanded ? onToggleDone($event) : onCardClick()"
               >
                 <template v-if="totalItemsCount > 1">
                   <template v-if="allItemsDone">
-                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                    <span class="status-text">
-                      <template v-if="expanded">Besucht an {{ totalItemsCount }} Tagen</template>
-                      <template v-else>{{ totalItemsCount }}x besucht</template>
-                    </span>
+                    <template v-if="expanded">Besucht an {{ totalItemsCount }} Tagen</template>
+                    <template v-else>{{ totalItemsCount }}x besucht</template>
                   </template>
                   <template v-else-if="doneItemsCount > 0">
-                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                    <span class="status-text">
-                      <template v-if="expanded">
-                        Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
-                      </template>
-                      <template v-else>
-                        {{ doneItemsCount }}/{{ totalItemsCount }} x besucht
-                      </template>
-                    </span>
+                    <template v-if="expanded">
+                      Besucht an {{ doneItemsCount }} von {{ totalItemsCount }} Tagen
+                    </template>
+                    <template v-else>
+                      {{ doneItemsCount }}/{{ totalItemsCount }} x besucht
+                    </template>
                   </template>
                   <template v-else>
-                    <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                    <span class="status-text">
-                      <template v-if="expanded">Geplant an {{ totalItemsCount }} Tagen</template>
-                      <template v-else>{{ totalItemsCount }}x geplant</template>
-                    </span>
+                    <template v-if="expanded">Geplant an {{ totalItemsCount }} Tagen</template>
+                    <template v-else>{{ totalItemsCount }}x geplant</template>
                   </template>
                 </template>
                 <template v-else-if="isSpotDone">
-                  <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                  <span class="status-text">
-                    <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
-                    <template v-else>Besucht</template>
-                    <template v-if="dayWeather && scheduledDaysCount <= 1">
-                      · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-                      {{ Math.round(dayWeather.tempMax) }}°
-                    </template>
-                  </span>
+                  <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+                  <template v-else>Besucht</template>
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
                 </template>
                 <template v-else-if="scheduledDate || totalItemsCount === 1">
-                  <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                  <span class="status-text">
-                    Geplant für {{ plannedDateLabel }}
-                    <template v-if="dayWeather && scheduledDaysCount <= 1">
-                      · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
-                      {{ Math.round(dayWeather.tempMax) }}°
-                    </template>
-                  </span>
+                  Geplant für {{ plannedDateLabel }}
+                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                    · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
+                    {{ Math.round(dayWeather.tempMax) }}°
+                  </template>
                 </template>
-                <template v-else>
-                  <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                  <span>Besucht</span>
-                </template>
-              </button>
+                <template v-else> Besucht </template>
+              </DoneToggle>
 
               <!-- Expanded Social Actions: Fließt nahtlos im Aktionen-Raster mit (schließt Leerräume bei Umbrüchen) -->
               <div v-if="expanded" class="card-social-actions is-expanded">
@@ -1138,57 +1106,6 @@ const cardRotation = computed(() => {
 
 .overlay-submeta {
   opacity: 0.85;
-}
-
-/* Status-/Datums-Chip (#106: EIN gemeinsames Badge statt zweier unabhängiger Chips, ersetzt das
-   frühere separate "Gemacht"-Badge) – dasselbe Muster wie ExcursionCard.vue's .status/.status.planned
-   (inkl. Dark-Mode-Override unten), damit beide Karten-Typen optisch konsistent bleiben. Unten statt
-   oben positioniert. Nur sichtbar, wenn geplant oder gemacht (siehe v-if im Template) statt immer einen
-   "Nicht geplant"-Chip zu zeigen – ein Spot muss (anders als ein Ausflug) nicht zwangsläufig einmal
-   eingeplant werden. */
-.status {
-  position: absolute;
-  bottom: var(--space-2);
-  right: var(--space-2);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  transition:
-    width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    gap 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    border-radius 0.3s ease;
-}
-
-.status-text {
-  display: inline-block;
-  opacity: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  transition: opacity 0.2s ease 0.14s;
-}
-
-.status.planned,
-.status.status-done {
-  color: var(--color-success);
-}
-
-:root[data-theme='dark'] .status {
-  background: rgba(35, 34, 32, 0.85);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .status {
-    background: rgba(35, 34, 32, 0.85);
-  }
 }
 
 /* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
@@ -1676,75 +1593,14 @@ const cardRotation = computed(() => {
   transform: translateY(-0.5px) rotate(8deg) scale(1.15);
 }
 
-/* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
-.done-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.done-toggle:hover {
-  background: var(--color-surface);
-  border-color: var(--color-primary);
-  color: var(--color-text);
-}
-
-.done-toggle.planned {
-  color: var(--color-text);
-  border-color: var(--color-border);
-  background: var(--color-surface);
-}
-
-.done-toggle.planned:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.done-toggle.active,
-.done-toggle.status-done {
-  color: var(--color-success);
-  font-weight: 600;
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
-  border-color: var(--color-success);
-}
-
-.done-toggle.active:hover,
-.done-toggle.status-done:hover {
-  background: color-mix(in srgb, var(--color-success) 22%, transparent);
-}
-
-.card-actions .done-toggle.status {
-  position: static;
-  bottom: auto;
-  right: auto;
-}
-
 /* Virtuelle Touch-Targets (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */
 .calendar-drag-handle,
-.done-toggle,
 .spot-destination-toggle,
 :deep(.tour-assign-btn) {
   position: relative;
 }
 
 .calendar-drag-handle::after,
-.done-toggle::after,
 .spot-destination-toggle::after,
 :deep(.tour-assign-btn)::after {
   content: '';
@@ -1758,7 +1614,6 @@ const cardRotation = computed(() => {
 
 @media (pointer: fine) {
   .calendar-drag-handle::after,
-  .done-toggle::after,
   .spot-destination-toggle::after,
   :deep(.tour-assign-btn)::after {
     display: none;
@@ -2055,8 +1910,6 @@ const cardRotation = computed(() => {
   .body,
   .spot-accordion,
   .mobile-only-accordion,
-  .status,
-  .status-text,
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
   .spot-accordion-inner > *,

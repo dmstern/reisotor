@@ -24,6 +24,7 @@ import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
+import DoneToggle from './primitives/DoneToggle.vue';
 import FileAttachments from './FileAttachments.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -459,51 +460,35 @@ function onSpotDrop(event: DragEvent) {
               <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
             </button>
             <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
-            <button
-              type="button"
-              class="done-toggle"
-              :class="{
-                status: !!(excursion.date || excursion.done),
-                planned: !!(excursion.date && !excursion.done),
-                'status-done': !!excursion.done,
-                active: !!excursion.done,
-              }"
-              :aria-pressed="!!excursion.done"
+            <DoneToggle
+              :done="!!excursion.done"
+              :planned="!!excursion.date"
               :aria-label="
                 excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
               "
               :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-              @click.stop="onToggleDone"
+              @click="onToggleDone"
             >
               <template v-if="excursion.done">
-                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                <span class="status-text">
-                  <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
-                  <template v-else>Gemacht</template>
-                  <template v-if="weatherSummary">
-                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                    {{ weatherSummary.tempLabel }}
-                  </template>
-                </span>
+                <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
+                <template v-else>Gemacht</template>
+                <template v-if="weatherSummary">
+                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                  {{ weatherSummary.tempLabel }}
+                </template>
               </template>
               <template v-else-if="excursion.date">
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                <span class="status-text">
-                  Geplant für {{ statusDateLabel }}
-                  <template v-if="weatherSummary">
-                    · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                    {{ weatherSummary.tempLabel }}
-                  </template>
-                </span>
+                Geplant für {{ statusDateLabel }}
+                <template v-if="weatherSummary">
+                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+                  {{ weatherSummary.tempLabel }}
+                </template>
               </template>
               <template v-else>
-                <AppIcon :icon="ACTION_ICONS.notDone" :size="14" group="actions" />
-                <span class="status-text">
-                  <template v-if="expanded">Als gemacht markieren</template>
-                  <template v-else>Gemacht</template>
-                </span>
+                <template v-if="expanded">Als gemacht markieren</template>
+                <template v-else>Gemacht</template>
               </template>
-            </button>
+            </DoneToggle>
           </div>
 
           <div class="card-social-actions" :class="{ 'is-expanded': expanded }">
@@ -920,68 +905,8 @@ function onSpotDrop(event: DragEvent) {
     box-shadow 0.2s ease;
 }
 
-/* Verschmolzener Status-Toggle (Geplant-Status + Gemacht-Checkbox) */
-.done-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.done-toggle:hover {
-  background: var(--color-surface);
-  border-color: var(--excursion-theme-color);
-  color: var(--color-text);
-}
-
-.done-toggle.planned {
-  color: var(--color-text);
-  border-color: var(--color-border);
-  background: var(--color-surface);
-}
-
-.done-toggle.planned:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.done-toggle.active,
-.done-toggle.status-done {
-  color: var(--color-success);
-  font-weight: 600;
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
-  border-color: var(--color-success);
-}
-
-.done-toggle.active:hover,
-.done-toggle.status-done:hover {
-  background: color-mix(in srgb, var(--color-success) 22%, transparent);
-}
-
-.status-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+:deep(.done-toggle) {
+  --toggle-hover-border: var(--excursion-theme-color);
 }
 
 .calendar-drag-handle:active,
