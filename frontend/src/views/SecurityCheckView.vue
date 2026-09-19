@@ -7,6 +7,7 @@ import { computed, onUnmounted, ref } from 'vue';
 import { useTripStore } from '../stores/trip';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
 
 const tripStore = useTripStore();
 const destinationLabel = computed(
@@ -125,7 +126,7 @@ function startCheck() {
       Sensorik, die kein Fachbuch kennt.
     </p>
 
-    <div class="card robot-card">
+    <Card class="robot-card">
       <ReisotorRobot :phase="phase" />
 
       <p v-if="phase === 'idle'" class="status-line">
@@ -162,7 +163,7 @@ function startCheck() {
               : '🔍 Sicherheit prüfen'
         }}
       </Button>
-    </div>
+    </Card>
 
     <p class="disclaimer">
       Für Sicherheitsfragen jenseits der Reisotor-Zertifizierung hilft auch das Auswärtige Amt

@@ -525,12 +525,22 @@ function formatWeekdayDate(d: string) {
       </p>
       <p v-if="trip">{{ formatTripDateRange(trip.start_date, trip.end_date) }}</p>
       <p v-if="departureCountdown?.phase === 'days'" class="countdown">
-        Noch {{ departureCountdown.days }} {{ departureCountdown.days === 1 ? 'Tag' : 'Tage' }} bis
-        zur Abreise 🎒
+        Noch
+        <span class="nobr"
+          >{{ departureCountdown.days }}&nbsp;{{
+            departureCountdown.days === 1 ? 'Tag' : 'Tage'
+          }}</span
+        >
+        bis zur Abreise 🎒
       </p>
       <p v-else-if="departureCountdown?.phase === 'hours'" class="countdown">
-        Noch {{ departureCountdown.hours }}
-        {{ departureCountdown.hours === 1 ? 'Stunde' : 'Stunden' }} bis zur Abreise 🎒
+        Noch
+        <span class="nobr"
+          >{{ departureCountdown.hours }}&nbsp;{{
+            departureCountdown.hours === 1 ? 'Stunde' : 'Stunden'
+          }}</span
+        >
+        bis zur Abreise 🎒
       </p>
       <p v-else-if="vacationPhase?.phase === 'arrived'" class="countdown">
         Der Urlaub hat begonnen! 🌴
@@ -539,8 +549,13 @@ function formatWeekdayDate(d: string) {
         v-else-if="vacationPhase?.phase === 'ongoing' && uiSettings.showVacationCountdown"
         class="countdown"
       >
-        Noch {{ vacationPhase.daysLeft }} {{ vacationPhase.daysLeft === 1 ? 'Tag' : 'Tage' }} Urlaub
-        🏖️
+        Noch
+        <span class="nobr"
+          >{{ vacationPhase.daysLeft }}&nbsp;{{
+            vacationPhase.daysLeft === 1 ? 'Tag' : 'Tage'
+          }}</span
+        >
+        Urlaub 🏖️
       </p>
       <p v-else-if="vacationPhase?.phase === 'ongoing'" class="countdown">
         Genießt euren Urlaub! 🏖️
@@ -609,7 +624,14 @@ function formatWeekdayDate(d: string) {
               vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub'
             }}
           </p>
-          <p v-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'" class="hint">
+          <p v-if="!trip?.start_date" class="hint">
+            Hinterlege einen Reisezeitraum beim Urlaub, um hier die Wettervorhersage für die
+            Urlaubstage zu sehen.
+          </p>
+          <p
+            v-else-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'"
+            class="hint"
+          >
             Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
             ~16 Tage ab, schau kurz vorher nochmal vorbei.
           </p>
@@ -761,8 +783,10 @@ function formatWeekdayDate(d: string) {
           <AppIcon :icon="ACTION_ICONS.currency" :size="14" group="actions" />
           {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
           <span v-if="regionInfo.exchangeRate != null">
-            · 1 {{ regionInfo.currency.code }} ≈ {{ regionInfo.exchangeRate.toFixed(2) }}
-            {{ homeCurrency.currency }}
+            · <span class="nobr">1&nbsp;{{ regionInfo.currency.code }}</span> ≈
+            <span class="nobr"
+              >{{ regionInfo.exchangeRate.toFixed(2) }}&nbsp;{{ homeCurrency.currency }}</span
+            >
           </span>
         </DetailRow>
         <DetailRow v-if="regionInfo.advisory" label="Sicherheit">

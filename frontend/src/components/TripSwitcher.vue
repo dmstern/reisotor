@@ -393,6 +393,7 @@ function openMembers(trip: Trip) {
   color: var(--color-text);
   cursor: pointer;
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .trip-select:hover {
@@ -423,6 +424,7 @@ function openMembers(trip: Trip) {
   background: none;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   padding: 6px 8px;
   font-size: 0.85rem;
   color: var(--color-primary-dark);
@@ -439,6 +441,7 @@ function openMembers(trip: Trip) {
   background: none;
   border: none;
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   padding: 6px 8px;
   font-size: 0.85rem;
   color: var(--color-text-muted);

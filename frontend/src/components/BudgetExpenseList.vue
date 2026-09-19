@@ -43,7 +43,7 @@ async function removeExpense(id: number) {
           >
         </span>
       </div>
-      <strong class="row-amount">{{ e.amount.toFixed(2) }} €</strong>
+      <strong class="row-amount">{{ e.amount.toFixed(2) }}&nbsp;€</strong>
       <div class="row-actions">
         <template v-if="autoSourceFor(e.id)">
           <Button variant="card-action" :to="autoSourceFor(e.id)!.path">

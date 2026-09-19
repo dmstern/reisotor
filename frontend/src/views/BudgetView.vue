@@ -28,6 +28,7 @@ import Card from '../components/primitives/Card.vue';
 import Badge from '../components/primitives/Badge.vue';
 import Input from '../components/primitives/Input.vue';
 import Select from '../components/primitives/Select.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 
@@ -276,49 +277,47 @@ const categoryColors = computed(() => {
         >
           <span class="pill-dot" aria-hidden="true"></span>
           <span v-if="budgetStore.remaining < 0">
-            {{ Math.abs(budgetStore.remaining).toFixed(2) }} € über Budget
+            <span class="nobr">{{ Math.abs(budgetStore.remaining).toFixed(2) }}&nbsp;€</span> über
+            Budget
           </span>
           <span v-else>
-            {{ Math.round((budgetStore.totalSpent / budgetStore.grandTotal) * 100) }}% ausgeschöpft
+            <span class="nobr"
+              >{{
+                Math.round((budgetStore.totalSpent / budgetStore.grandTotal) * 100)
+              }}&nbsp;%</span
+            >
+            ausgeschöpft
           </span>
         </span>
       </div>
     </div>
 
-    <!-- Summary Row: Gesamt-Übersicht & Wer schuldet wem? nebeneinander auf Desktop -->
-    <div class="budget-summary-grid" :class="{ 'single-col': budgetStore.users.length <= 1 }">
-      <Card class="overview-card">
-        <div class="overview-header">
-          <h2>Gesamt-Übersicht</h2>
-          <Badge v-if="budgetStore.expenses.length">
-            {{ budgetStore.expenses.length }}
-            {{ budgetStore.expenses.length === 1 ? 'Ausgabe' : 'Ausgaben' }}
-          </Badge>
-        </div>
-        <BudgetMeter
-          label="Budget"
-          :spent="budgetStore.totalSpent"
-          :target="budgetStore.grandTotal"
-          color="var(--color-primary-dark)"
-        />
-        <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
-             positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
-             ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
-        <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
-          Noch übrig: <strong>{{ budgetStore.remaining.toFixed(2) }} €</strong>
-        </p>
-      </Card>
-
-      <BudgetSettlementCard
-        v-if="budgetStore.users.length > 1"
-        @use-suggestion="useSettlementSuggestion"
-      />
-    </div>
-
-    <!-- Main Content Grid: Linke Spalte Budgets/Töpfe, Rechte Spalte Bezahlungen & Überweisungen -->
+    <!-- Main Content Grid: Linke Spalte Budgets/Töpfe & Übersicht, Rechte Spalte Bezahlungen, Überweisungen & Abrechnung -->
     <div class="budget-main-grid">
-      <!-- Linke Spalte: Budgets / Töpfe -->
+      <!-- Linke Spalte: Gesamt-Übersicht & Budgets / Töpfe -->
       <div class="budget-col-pots">
+        <Card class="overview-card">
+          <div class="overview-header">
+            <h2>Gesamt-Übersicht</h2>
+            <Badge v-if="budgetStore.expenses.length">
+              {{ budgetStore.expenses.length }}
+              {{ budgetStore.expenses.length === 1 ? 'Ausgabe' : 'Ausgaben' }}
+            </Badge>
+          </div>
+          <BudgetMeter
+            label="Budget"
+            :spent="budgetStore.totalSpent"
+            :target="budgetStore.grandTotal"
+            color="var(--color-primary-dark)"
+          />
+          <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
+               positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
+               ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
+          <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
+            Noch übrig: <strong class="nobr">{{ budgetStore.remaining.toFixed(2) }}&nbsp;€</strong>
+          </p>
+        </Card>
+
         <Card class="pots-card">
           <div class="header">
             <h2>Budgets</h2>
@@ -403,15 +402,21 @@ const categoryColors = computed(() => {
               :budget="budget"
               :category-colors="categoryColors"
             />
-            <p v-if="!budgetStore.budgets.length" key="empty" class="empty">
+            <EmptyState v-if="!budgetStore.budgets.length" key="empty">
               Noch keine Budgets angelegt.
-            </p>
+            </EmptyState>
           </TransitionGroup>
         </Card>
       </div>
 
-      <!-- Rechte Spalte: Bezahlungen & Überweisungen -->
+      <!-- Rechte Spalte: Wer schuldet wem?, Bezahlungen & Überweisungen -->
       <div class="budget-col-transactions">
+        <BudgetSettlementCard
+          v-if="budgetStore.users.length > 1"
+          class="budget-settlement-card"
+          @use-suggestion="useSettlementSuggestion"
+        />
+
         <!-- Bezahlungen -->
         <Card class="expenses-card">
           <div class="header">
@@ -592,6 +597,18 @@ const categoryColors = computed(() => {
         >
           <Select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
             <option value="" disabled>Bezahlt von…</option>
+            <option
+              v-if="
+                editExpenseForm.paid_by_user_id &&
+                !budgetStore.users.some(
+                  (u) => String(u.id) === String(editExpenseForm.paid_by_user_id)
+                )
+              "
+              :value="String(editExpenseForm.paid_by_user_id)"
+              disabled
+            >
+              👤 Ehemaliges Mitglied
+            </option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
             </option>
@@ -690,24 +707,46 @@ const categoryColors = computed(() => {
   }
 }
 
-/* Summary Grid (Top Row) */
-.budget-summary-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+/* Main 2-Column Content Grid:
+   Desktop: Linke Spalte (Gesamt-Übersicht + Budgets), Rechte Spalte (Abrechnung + Bezahlungen + Überweisungen).
+   Dadurch muss die Gesamt-Übersicht nicht künstlich auf die Höhe der Abrechnungskarte gestreckt werden
+   und die Budgets-Kachel rutscht unmittelbar darunter, ohne verschenkten vertikalen Leerraum.
+   Mobil: display: contents löst die Spalten-Wrapper auf, sodass die Karten in logischer Reihenfolge
+   (Gesamt-Übersicht -> Wer schuldet wem? -> Budgets -> Bezahlungen -> Überweisungen) untereinander stehen. */
+.budget-main-grid {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
-  align-items: stretch;
 }
 
 @media (min-width: 960px) {
-  .budget-summary-grid:not(.single-col) {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  .budget-main-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-4);
   }
+}
+
+@media (min-width: 1500px) {
+  .budget-main-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+}
+
+.budget-col-pots,
+.budget-col-transactions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
 }
 
 .overview-card {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: var(--space-2);
   margin-bottom: 0;
 }
 
@@ -732,43 +771,10 @@ const categoryColors = computed(() => {
   height: 14px;
 }
 
-.overview-footer {
-  margin-top: var(--space-1);
-}
-
 .remaining-line {
   margin: var(--space-1) 0 0;
   font-size: 0.9rem;
   color: var(--color-success);
-}
-
-/* Main Content Grid */
-.budget-main-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
-  align-items: start;
-}
-
-@media (min-width: 1040px) {
-  .budget-main-grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 1500px) {
-  .budget-main-grid {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    gap: var(--space-5);
-  }
-}
-
-.budget-col-pots,
-.budget-col-transactions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  min-width: 0;
 }
 
 .budget-page :deep(h2) {
@@ -840,10 +846,6 @@ const categoryColors = computed(() => {
    eine eigene, volle Zeile - Absenden-Button bekommt so app-weit dieselbe, natürliche Höhe. */
 .add-form button[type='submit'] {
   flex: 1 1 100%;
-}
-
-.empty {
-  text-align: center;
 }
 
 /* Cards animation on view mount */

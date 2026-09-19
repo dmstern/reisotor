@@ -349,17 +349,24 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
           .code(400)
           .send({ error: 'Du kannst dich nicht selbst aus dem Urlaub entfernen' });
       }
-      db.prepare('DELETE FROM trip_members WHERE trip_id = ? AND user_id = ?').run(
-        req.params.id,
-        req.params.userId
-      );
-      recordActivity(
-        Number(req.params.id),
-        'members',
-        Number(req.params.userId),
-        'member_removed',
-        req.session.userId!
-      );
+      const tripId = Number(req.params.id);
+      const targetUserId = Number(req.params.userId);
+      db.transaction(() => {
+        db.prepare('DELETE FROM trip_members WHERE trip_id = ? AND user_id = ?').run(
+          tripId,
+          targetUserId
+        );
+        db.prepare(
+          'UPDATE todo_items SET assigned_to_user_id = NULL WHERE trip_id = ? AND assigned_to_user_id = ?'
+        ).run(tripId, targetUserId);
+        db.prepare(
+          'UPDATE shopping_items SET assigned_to_user_id = NULL WHERE trip_id = ? AND assigned_to_user_id = ?'
+        ).run(tripId, targetUserId);
+        db.prepare(
+          'UPDATE packing_items SET owner_id = NULL WHERE trip_id = ? AND owner_id = ?'
+        ).run(tripId, targetUserId);
+      })();
+      recordActivity(tripId, 'members', targetUserId, 'member_removed', req.session.userId!);
       return reply.code(204).send();
     }
   );

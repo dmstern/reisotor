@@ -77,12 +77,12 @@ function travelDuration(item: TravelItem) {
     <DetailRow v-if="item.date || item.departure_time" label="Zeit">
       <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
       {{ item.date || '' }}
-      <span v-if="item.departure_time">
+      <span v-if="item.departure_time" class="nobr">
         · {{ item.departure_time
         }}<template v-if="item.arrival_time">&ndash;{{ item.arrival_time }}</template
         >&nbsp;Uhr
       </span>
-      <span v-if="travelDuration(item)"> ({{ travelDuration(item) }})</span>
+      <span v-if="travelDuration(item)" class="nobr"> ({{ travelDuration(item) }})</span>
     </DetailRow>
     <DetailRow v-if="item.checkin_info" label="Vorher da sein">
       <AppIcon :icon="ACTION_ICONS.duration" :size="14" group="actions" /> {{ item.checkin_info }}
@@ -95,7 +95,7 @@ function travelDuration(item: TravelItem) {
     </DetailRow>
     <DetailRow v-if="item.amount != null" label="Kosten">
       <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
-      {{ item.amount.toFixed(2) }} €
+      <span class="nobr">{{ item.amount.toFixed(2) }}&nbsp;€</span>
       <span v-if="hasMultipleMembers !== false && item.paid_by_user_id">
         · bezahlt von {{ payerLabel }}</span
       >

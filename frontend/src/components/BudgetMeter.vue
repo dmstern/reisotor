@@ -46,7 +46,7 @@ const isOver = computed(() => hasTarget.value && props.spent > props.target);
 const overBy = computed(() => props.spent - props.target);
 
 function fmt(n: number) {
-  return props.format === 'count' ? String(n) : `${n.toFixed(2)} €`;
+  return props.format === 'count' ? String(n) : `${n.toFixed(2)}\u00A0€`;
 }
 </script>
 
@@ -75,7 +75,8 @@ function fmt(n: number) {
     </div>
     <p v-if="!hasTarget" class="no-target">Kein Ziel gesetzt</p>
     <p v-if="isOver" class="over-badge">
-      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> {{ fmt(overBy) }} über
+      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+      <span class="nobr">{{ fmt(overBy) }}</span> über
       {{ format === 'count' ? 'Ziel' : 'Budget' }}
     </p>
   </div>

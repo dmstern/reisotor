@@ -321,12 +321,14 @@ onBeforeUnmount(() => {
   left: 0;
   border-left: none;
   border-radius: 0 var(--radius-sm-squircle) var(--radius-sm-squircle) 0;
+  corner-shape: squircle;
 }
 
 .drawer.right .drawer-tab {
   right: 0;
   border-right: none;
   border-radius: var(--radius-sm-squircle) 0 0 var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 /* Bei ausgeklappter Schublade übernimmt der Schließen-Button (oben im Panel) die Schließen-

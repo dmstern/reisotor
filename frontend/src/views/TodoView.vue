@@ -29,6 +29,7 @@ import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Badge from '../components/primitives/Badge.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -192,19 +193,19 @@ watch(
 function userLabel(id: number | null) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? `${u.avatar} ${u.username}` : null;
+  return u ? `${u.avatar} ${u.username}` : '👤 Ehemaliges Mitglied';
 }
 
 function userAvatar(id: number | null | undefined) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? u.avatar : null;
+  return u ? u.avatar : '👤';
 }
 
 function userName(id: number | null | undefined) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? u.username : null;
+  return u ? u.username : 'Ehemaliges Mitglied';
 }
 
 function sortItems(list: TodoItem[]) {
@@ -256,6 +257,7 @@ const groupedItems = computed<Group[]>(() => {
       },
     ];
   }
+  const memberIds = new Set(users.value.map((u) => u.id));
   const perUser: Group[] = users.value.map((u) => ({
     key: `user-${u.id}`,
     label: `${u.avatar} ${u.username}`,
@@ -264,7 +266,11 @@ const groupedItems = computed<Group[]>(() => {
   const unassigned: Group = {
     key: 'unassigned',
     label: 'Nicht zugewiesen',
-    items: sortItems(items.value.filter((i) => i.assigned_to_user_id == null)),
+    items: sortItems(
+      items.value.filter(
+        (i) => i.assigned_to_user_id == null || !memberIds.has(i.assigned_to_user_id)
+      )
+    ),
   };
   return [...perUser, unassigned];
 });
@@ -624,11 +630,11 @@ function hasTodoMeta(item: TodoItem): boolean {
                 <EditButton small @click="startEdit(item)" />
               </template>
             </CheckableListItem>
-            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
+            <EmptyState v-if="!group.items.length" :key="`${group.key}-empty`" tag="li">
               {{
                 uiSettings.hideCompletedTodos ? 'Keine offenen Aufgaben.' : 'Noch keine Aufgaben.'
               }}
-            </li>
+            </EmptyState>
           </TransitionGroup>
 
           <QuickAddRow
@@ -1057,10 +1063,6 @@ function hasTodoMeta(item: TodoItem): boolean {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.empty {
-  padding: var(--space-2) 0;
 }
 
 /* Desktop: Gruppen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen –

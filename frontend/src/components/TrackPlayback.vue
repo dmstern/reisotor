@@ -86,11 +86,11 @@ const currentTimeLabel = computed(() => {
 <template>
   <div class="track-playback">
     <div class="track-playback-stats">
-      <span
+      <span class="nobr"
         ><AppIcon :icon="ACTION_ICONS.distance" :size="14" group="actions" />
         {{ formatDistanceShort(distance) }}</span
       >
-      <span
+      <span class="nobr"
         ><AppIcon :icon="ACTION_ICONS.duration" :size="14" group="actions" />
         {{ formatDurationShort(duration) }}</span
       >

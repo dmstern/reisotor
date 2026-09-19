@@ -155,17 +155,7 @@ const timeStr = computed(() => {
   font-size: 0.38rem;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: #1d4ed8;
-}
-
-:root[data-theme='dark'] .ticket-code {
-  color: #60a5fa;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .ticket-code {
-    color: #60a5fa;
-  }
+  color: var(--color-accent-secondary);
 }
 
 .ticket-route {
@@ -177,51 +167,21 @@ const timeStr = computed(() => {
 
 .route-point {
   font-size: 0.48rem;
-  color: #475569;
+  color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 32px;
 }
 
-:root[data-theme='dark'] .route-point {
-  color: #cbd5e1;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .route-point {
-    color: #cbd5e1;
-  }
-}
-
 .route-point.bold {
   font-weight: 800;
-  color: #0f172a;
-}
-
-:root[data-theme='dark'] .route-point.bold {
-  color: #f8fafc;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .route-point.bold {
-    color: #f8fafc;
-  }
+  color: var(--color-text);
 }
 
 .route-arrow {
   font-size: 0.44rem;
-  color: #64748b;
-}
-
-:root[data-theme='dark'] .route-arrow {
-  color: #94a3b8;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .route-arrow {
-    color: #94a3b8;
-  }
+  color: var(--color-text-muted);
 }
 
 .ticket-time {

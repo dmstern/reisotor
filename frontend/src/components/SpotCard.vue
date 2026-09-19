@@ -545,7 +545,7 @@ const cardRotation = computed(() => {
             </DetailRow>
             <DetailRow v-if="spot.amount != null" label="Kosten">
               <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
-              {{ spot.amount.toFixed(2) }} €
+              <span class="nobr">{{ spot.amount.toFixed(2) }}&nbsp;€</span>
               <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
                 · bezahlt von {{ payerLabel }}</span
               >

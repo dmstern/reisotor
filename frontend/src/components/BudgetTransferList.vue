@@ -37,7 +37,7 @@ async function removeTransfer(id: number) {
           <span v-if="t.note" class="note">{{ t.note }}</span>
         </span>
       </div>
-      <strong class="row-amount">{{ t.amount.toFixed(2) }} €</strong>
+      <strong class="row-amount">{{ t.amount.toFixed(2) }}&nbsp;€</strong>
       <div class="row-actions">
         <DeleteButton small @click="removeTransfer(t.id)" />
       </div>

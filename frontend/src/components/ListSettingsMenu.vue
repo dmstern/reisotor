@@ -321,6 +321,7 @@ function resetDefaults() {
   cursor: pointer;
   text-align: center;
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   transition:
     background 0.15s ease,
     color 0.15s ease;
