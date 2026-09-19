@@ -1,30 +1,8 @@
 // Backend-Ersatz für den Demo-Build (Issue #172): simuliert GET/POST/PUT/DELETE gegen die
-// Dummy-Daten aus demoData.ts, komplett im Browser (localStorage). Wird von api/client.ts's
+// Dummy-Daten aus demoData.ts, komplett im Browser (in-memory). Wird von api/client.ts's
 // rawRequest() anstelle des echten fetch() aufgerufen, wenn DEMO_MODE aktiv ist - alle
 // aufrufenden Stores/Views bleiben dadurch unverändert.
-import {
-  DEMO_BUDGETS,
-  DEMO_BUDGET_ALLOCATIONS,
-  DEMO_BUDGET_EXPENSES,
-  DEMO_BUDGET_TRANSFERS,
-  DEMO_DIARY,
-  DEMO_EXCURSIONS,
-  DEMO_NOTES,
-  DEMO_PACKING,
-  DEMO_SCHEDULE,
-  DEMO_SHOPPING,
-  DEMO_SPOTS,
-  DEMO_TODOS,
-  DEMO_TRIP,
-  DEMO_USER,
-  DEMO_USERS,
-  DEMO_SPOT_LIKES,
-  DEMO_SPOT_COMMENTS,
-  DEMO_EXCURSION_LIKES,
-  DEMO_EXCURSION_COMMENTS,
-  DEMO_DIARY_LIKES,
-  DEMO_DIARY_COMMENTS,
-} from './demoData';
+import { createDemoData } from './demoData';
 import type { User } from '../api/types';
 
 const STORAGE_KEY = 'reisotor-demo-store';
@@ -32,28 +10,29 @@ const STORAGE_KEY = 'reisotor-demo-store';
 type Collection = Record<string, unknown>[];
 type Store = Record<string, Collection>;
 
-function defaultStore(): Store {
+export function defaultStore(baseDate?: Date): Store {
+  const data = createDemoData(baseDate);
   return {
-    '/trips': structuredClone([DEMO_TRIP]) as unknown as Collection,
-    '/schedule': structuredClone(DEMO_SCHEDULE) as unknown as Collection,
-    '/ideas': structuredClone(DEMO_EXCURSIONS) as unknown as Collection,
-    '/ideas/likes': structuredClone(DEMO_EXCURSION_LIKES) as unknown as Collection,
-    '/ideas/comments': structuredClone(DEMO_EXCURSION_COMMENTS) as unknown as Collection,
-    '/spots': structuredClone(DEMO_SPOTS) as unknown as Collection,
-    '/spots/likes': structuredClone(DEMO_SPOT_LIKES) as unknown as Collection,
-    '/spots/comments': structuredClone(DEMO_SPOT_COMMENTS) as unknown as Collection,
-    '/budget': structuredClone(DEMO_BUDGET_EXPENSES) as unknown as Collection,
-    '/budget/budgets': structuredClone(DEMO_BUDGETS) as unknown as Collection,
-    '/budget/allocations': structuredClone(DEMO_BUDGET_ALLOCATIONS) as unknown as Collection,
-    '/budget/transfers': structuredClone(DEMO_BUDGET_TRANSFERS) as unknown as Collection,
-    '/packing': structuredClone(DEMO_PACKING) as unknown as Collection,
-    '/shopping': structuredClone(DEMO_SHOPPING) as unknown as Collection,
-    '/todos': structuredClone(DEMO_TODOS) as unknown as Collection,
-    '/notes': structuredClone(DEMO_NOTES) as unknown as Collection,
+    '/trips': [data.trip] as unknown as Collection,
+    '/schedule': data.schedule as unknown as Collection,
+    '/ideas': data.excursions as unknown as Collection,
+    '/ideas/likes': data.excursionLikes as unknown as Collection,
+    '/ideas/comments': data.excursionComments as unknown as Collection,
+    '/spots': data.spots as unknown as Collection,
+    '/spots/likes': data.spotLikes as unknown as Collection,
+    '/spots/comments': data.spotComments as unknown as Collection,
+    '/budget': data.budgetExpenses as unknown as Collection,
+    '/budget/budgets': data.budgets as unknown as Collection,
+    '/budget/allocations': data.budgetAllocations as unknown as Collection,
+    '/budget/transfers': data.budgetTransfers as unknown as Collection,
+    '/packing': data.packing as unknown as Collection,
+    '/shopping': data.shopping as unknown as Collection,
+    '/todos': data.todos as unknown as Collection,
+    '/notes': data.notes as unknown as Collection,
     '/notes/comments': [],
-    '/diary': structuredClone(DEMO_DIARY) as unknown as Collection,
-    '/diary/likes': structuredClone(DEMO_DIARY_LIKES) as unknown as Collection,
-    '/diary/comments': structuredClone(DEMO_DIARY_COMMENTS) as unknown as Collection,
+    '/diary': data.diary as unknown as Collection,
+    '/diary/likes': data.diaryLikes as unknown as Collection,
+    '/diary/comments': data.diaryComments as unknown as Collection,
     '/tracks': [],
     '/tracks/points': [],
     '/notifications': [],
@@ -62,39 +41,36 @@ function defaultStore(): Store {
   };
 }
 
-function loadStore(): Store {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Store;
-      // Abwärtskompatibilität für bestehende Demo-Stores ohne neu ergänzte Schlüssel
-      const defaults = defaultStore();
-      for (const key in defaults) {
-        if (!(key in parsed)) parsed[key] = defaults[key];
-      }
-      return parsed;
-    }
-  } catch {
-    // korrupter/deaktivierter localStorage - einfach mit frischem Demo-Datensatz starten.
-  }
-  return defaultStore();
+// Säubern von Altlasten im Browser: frühere Versionen haben den Demo-Store in localStorage
+// abgelegt. Dadurch froren Datumsangaben im August 2026 fest, sodass der Urlaub bei späteren Besuchen
+// in der Vergangenheit lag. Im Demo-Modus werden Daten nun bei jedem Besuch frisch generiert.
+try {
+  localStorage.removeItem(STORAGE_KEY);
+} catch {
+  // korrupter/deaktivierter localStorage - no-op
 }
 
-let store: Store = loadStore();
+let store: Store = defaultStore();
+let currentDemoUsers: User[] = createDemoData().users;
+let currentDemoUser: User = currentDemoUsers[0];
 
 function persist() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  } catch {
-    // localStorage voll/deaktiviert - Demo bleibt für die laufende Session trotzdem nutzbar.
-  }
+  // In-Memory-Store: Änderungen während der laufenden Nutzersitzung bleiben im Speicher
+  // erhalten, ohne in localStorage festzufrieren.
 }
 
 /** Setzt den Demo-Datensatz auf den Ausgangszustand zurück - von DemoModeBanner.vue's
  *  "Demo zurücksetzen"-Aktion aufgerufen. */
-export function resetDemoStore() {
-  store = defaultStore();
-  persist();
+export function resetDemoStore(baseDate?: Date) {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // no-op
+  }
+  store = defaultStore(baseDate);
+  const data = createDemoData(baseDate);
+  currentDemoUsers = data.users;
+  currentDemoUser = currentDemoUsers[0];
 }
 
 function collectionOf(path: string): string {
@@ -149,10 +125,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   const basePath = path.split('?')[0];
 
   // Einzelfall-Endpunkte, die kein einfaches Collection-CRUD sind.
-  if (path === '/auth/me') return structuredClone(DEMO_USER) as unknown as T;
+  if (path === '/auth/me') return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/config') return { registrationMode: 'off' } as unknown as T;
   if (path === '/auth/login' || path === '/auth/register')
-    return structuredClone(DEMO_USER) as unknown as T;
+    return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/logout') return undefined as T;
   if (path === '/build-info') {
     const demoVersion = __APP_VERSION__.includes('(Demo)')
@@ -196,17 +172,17 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   // --- Profile/User settings ---
   if (path === '/users/me/avatar' && method === 'PUT') {
     const avatar = String(body?.avatar ?? '👤');
-    DEMO_USER.avatar = avatar;
-    const meInList = DEMO_USERS.find((u) => u.id === DEMO_USER.id);
+    currentDemoUser.avatar = avatar;
+    const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
     if (meInList) meInList.avatar = avatar;
-    return structuredClone(DEMO_USER) as unknown as T;
+    return structuredClone(currentDemoUser) as unknown as T;
   }
   if (path === '/users/me/username' && method === 'PUT') {
-    const username = String(body?.username ?? DEMO_USER.username);
-    DEMO_USER.username = username;
-    const meInList = DEMO_USERS.find((u) => u.id === DEMO_USER.id);
+    const username = String(body?.username ?? currentDemoUser.username);
+    currentDemoUser.username = username;
+    const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
     if (meInList) meInList.username = username;
-    return structuredClone(DEMO_USER) as unknown as T;
+    return structuredClone(currentDemoUser) as unknown as T;
   }
   if (path === '/users/me/icon-settings') {
     if (method === 'GET') return (store['/users/me/icon-settings']?.[0] ?? {}) as unknown as T;
@@ -233,7 +209,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // --- Trip members & region info ---
   if (/^\/trips\/-?\d+\/members$/.test(basePath)) {
-    return structuredClone(DEMO_USERS) as unknown as T;
+    return structuredClone(currentDemoUsers) as unknown as T;
   }
   if (/^\/trips\/-?\d+\/region-info$/.test(basePath)) {
     return {
@@ -245,7 +221,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     } as unknown as T;
   }
   if (path === '/users') {
-    if (method === 'GET') return structuredClone(DEMO_USERS) as unknown as T;
+    if (method === 'GET') return structuredClone(currentDemoUsers) as unknown as T;
     if (method === 'POST') {
       const newUser = {
         id: Date.now(),
@@ -255,14 +231,14 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
         is_admin: Boolean(body?.is_admin),
         must_change_password: true,
       };
-      DEMO_USERS.push(newUser as unknown as User);
+      currentDemoUsers.push(newUser as unknown as User);
       return structuredClone(newUser) as unknown as T;
     }
   }
   const adminMatch = /^\/users\/(\d+)\/admin$/.exec(basePath);
   if (adminMatch && method === 'PUT') {
     const targetId = Number(adminMatch[1]);
-    const user = DEMO_USERS.find((u) => u.id === targetId);
+    const user = currentDemoUsers.find((u) => u.id === targetId);
     if (user) {
       user.is_admin = Boolean(body?.is_admin);
       return structuredClone(user) as unknown as T;
@@ -271,14 +247,14 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   const deleteUserMatch = /^\/users\/(\d+)$/.exec(basePath);
   if (deleteUserMatch && method === 'DELETE') {
     const targetId = Number(deleteUserMatch[1]);
-    const idx = DEMO_USERS.findIndex((u) => u.id === targetId);
-    if (idx !== -1) DEMO_USERS.splice(idx, 1);
+    const idx = currentDemoUsers.findIndex((u) => u.id === targetId);
+    if (idx !== -1) currentDemoUsers.splice(idx, 1);
     return {} as T;
   }
 
   if (path.startsWith('/users/search')) {
     const q = (new URLSearchParams(path.split('?')[1] ?? '').get('q') ?? '').toLowerCase();
-    return DEMO_USERS.filter((u) => u.username.toLowerCase().includes(q)) as unknown as T;
+    return currentDemoUsers.filter((u) => u.username.toLowerCase().includes(q)) as unknown as T;
   }
 
   // --- Likes toggling (/spots/:id/like, /ideas/:id/like, /notes/:id/like, /diary/:id/like) ---
@@ -298,7 +274,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
     if (!(likesKey in store)) store[likesKey] = [];
     const existingIdx = store[likesKey].findIndex(
-      (item) => item[fkKey] === targetId && item.user_id === DEMO_USER.id
+      (item) => item[fkKey] === targetId && item.user_id === currentDemoUser.id
     );
 
     if (existingIdx !== -1) {
@@ -306,7 +282,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       persist();
       return { liked: false } as unknown as T;
     } else {
-      store[likesKey].push({ id: nextId++, [fkKey]: targetId, user_id: DEMO_USER.id });
+      store[likesKey].push({ id: nextId++, [fkKey]: targetId, user_id: currentDemoUser.id });
       persist();
       return { liked: true } as unknown as T;
     }
@@ -331,7 +307,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const created = {
       id: nextId++,
       [fkKey]: targetId,
-      author_id: DEMO_USER.id,
+      author_id: currentDemoUser.id,
       content: String(body?.content ?? ''),
       created_at: new Date().toISOString(),
     };
@@ -376,7 +352,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const created = {
       id: nextId++,
       trip_id: Number(body?.trip_id ?? 1),
-      user_id: DEMO_USER.id,
+      user_id: currentDemoUser.id,
       excursion_id: (body?.excursion_id as number | null) ?? null,
       title: null,
       visibility: (body?.visibility as string) ?? 'private',

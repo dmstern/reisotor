@@ -184,4 +184,39 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     });
     expect(res.issueUrl).toBeTruthy();
   });
+
+  it('generiert relative Urlaubsdaten in der nahen Zukunft (relativ zu heute)', async () => {
+    const [trip] = await demoRequest<Array<{ start_date: string; end_date: string }>>('/trips');
+    const today = new Date();
+    const expectedStart = new Date(today);
+    expectedStart.setDate(expectedStart.getDate() + 3);
+    const expectedEnd = new Date(today);
+    expectedEnd.setDate(expectedEnd.getDate() + 10);
+
+    expect(trip.start_date).toBe(expectedStart.toISOString().slice(0, 10));
+    expect(trip.end_date).toBe(expectedEnd.toISOString().slice(0, 10));
+  });
+
+  it('räumt veraltete Demo-Store-Einträge aus dem localStorage ab', async () => {
+    localStorage.setItem(
+      'reisotor-demo-store',
+      JSON.stringify({
+        '/trips': [{ id: 1, name: 'Alt', start_date: '2026-08-01', end_date: '2026-08-10' }],
+      })
+    );
+    resetDemoStore();
+    expect(localStorage.getItem('reisotor-demo-store')).toBeNull();
+
+    const [trip] = await demoRequest<Array<{ start_date: string }>>('/trips');
+    expect(trip.start_date).not.toBe('2026-08-01');
+  });
+
+  it('erlaubt das Generieren relativ zu einem benutzerdefinierten Datum', async () => {
+    const customDate = new Date('2027-05-01T12:00:00Z');
+    resetDemoStore(customDate);
+
+    const [trip] = await demoRequest<Array<{ start_date: string; end_date: string }>>('/trips');
+    expect(trip.start_date).toBe('2027-05-04');
+    expect(trip.end_date).toBe('2027-05-11');
+  });
 });
