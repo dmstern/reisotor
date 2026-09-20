@@ -557,6 +557,10 @@ dropColumnIfExists('ideas', 'suggested_by_user_id');
 // einer bereits laufenden Dev-Instanz) schon mit dem alten Schema angelegt wurde.
 ensureColumn('spots', 'title', 'TEXT');
 ensureColumn('spots', 'image_url', 'TEXT');
+ensureColumn('spots', 'category', 'TEXT');
+ensureColumn('spots', 'maps_link', 'TEXT');
+ensureColumn('spots', 'lat', 'REAL');
+ensureColumn('spots', 'lng', 'REAL');
 ensureColumn('spots', 'created_by', 'INTEGER REFERENCES users(id)');
 // Heimat-Seite (unabhängig von der Kategorie – ein Flughafen kann sowohl der heimische Abflughafen
 // als auch der Zielflughafen sein): übernimmt travel_places.is_home (siehe Migration weiter unten,
@@ -1828,3 +1832,19 @@ ensureColumn('spot_comments', 'updated_at', 'TEXT');
 ensureColumn('idea_comments', 'updated_at', 'TEXT');
 ensureColumn('note_comments', 'updated_at', 'TEXT');
 ensureColumn('diary_comments', 'updated_at', 'TEXT');
+
+// Repariere Koordinaten von "Hotel Alfama", falls diese durch früheres Spot-Bearbeiten verloren gingen:
+if (
+  hasTable('spots') &&
+  hasColumn('spots', 'lat') &&
+  hasColumn('spots', 'lng') &&
+  hasColumn('spots', 'category')
+) {
+  db.prepare(
+    `
+    UPDATE spots
+    SET lat = 38.72, lng = -9.12, maps_link = COALESCE(maps_link, 'https://maps.google.com/?q=Alfama+Lissabon')
+    WHERE title = 'Hotel Alfama' AND category = 'Unterkunft' AND lat IS NULL AND lng IS NULL
+  `
+  ).run();
+}

@@ -1179,9 +1179,11 @@ function fitVacation() {
   }
 }
 
-const accommodationPoints = computed(() =>
-  filteredPoints.value.filter((p) => p.category === 'Unterkunft')
+const totalAccommodationsCount = computed(
+  () => spotsStore.spots.filter((s) => s.category === 'Unterkunft').length
 );
+
+const accommodationPoints = computed(() => points.value.filter((p) => p.category === 'Unterkunft'));
 
 // Zoomt/zentriert nur auf die Unterkünfte – praktisch bei mehreren Unterkünften im selben Urlaub
 // (z. B. Roadtrip), um schnell zwischen ihnen zu vergleichen statt Spots/Reise mit anzuzeigen.
@@ -2118,8 +2120,12 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
               :disabled="!accommodationPoints.length"
               :title="
                 !accommodationPoints.length
-                  ? 'Keine Unterkünfte eingetragen'
-                  : 'Auf die Unterkünfte fokussieren'
+                  ? totalAccommodationsCount > 0
+                    ? 'Unterkünfte haben keinen Standort auf der Karte (Standort im Spot per Maps-Link oder Pin festlegen)'
+                    : 'Keine Unterkünfte für diesen Urlaub eingetragen'
+                  : accommodationPoints.length === 1
+                    ? 'Auf die Unterkunft fokussieren'
+                    : 'Auf die Unterkünfte fokussieren'
               "
               :icon="MAP_TOOL_ICONS.accommodation"
               label="Nur Unterkünfte"

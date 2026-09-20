@@ -722,12 +722,14 @@ const spotPickerCenter = computed(() => {
 const spotPreviewImage = computed(() => {
   if (spotForm.value.image_url) return spotForm.value.image_url;
   const parsed = parseLatLngFromMapsLink(spotForm.value.maps_link);
-  return parsed ? tilePreviewUrl(parsed.lat, parsed.lng) : null;
+  const coords = spotManualPin.value ?? parsed;
+  return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
 });
 const editSpotPreviewImage = computed(() => {
   if (editSpotForm.value.image_url) return editSpotForm.value.image_url;
   const parsed = parseLatLngFromMapsLink(editSpotForm.value.maps_link);
-  return parsed ? tilePreviewUrl(parsed.lat, parsed.lng) : null;
+  const coords = editSpotManualPin.value ?? parsed;
+  return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
 });
 
 const spotCategoryOptions = computed(() => {
@@ -2803,17 +2805,37 @@ function checkSpotMapsLink() {
   if (spotForm.value.maps_link) fetchSpotPreview(spotForm.value.maps_link, spotForm);
 }
 function checkEditSpotMapsLink() {
-  editSpotMapsLinkResolved.value = editSpotForm.value.maps_link
-    ? parseLatLngFromMapsLink(editSpotForm.value.maps_link) != null
+  const parsed = editSpotForm.value.maps_link
+    ? parseLatLngFromMapsLink(editSpotForm.value.maps_link)
     : null;
+  editSpotMapsLinkResolved.value = editSpotForm.value.maps_link ? parsed != null : null;
+  if (parsed) editSpotManualPin.value = parsed;
   if (editSpotForm.value.maps_link) fetchSpotPreview(editSpotForm.value.maps_link, editSpotForm);
 }
 
 function spotToBody(
   f: ReturnType<typeof emptySpotForm>,
-  manual?: { lat: number; lng: number } | null
+  manual?: { lat: number; lng: number } | null,
+  fallback?: { lat?: number | null; lng?: number | null }
 ) {
   const parsed = parseLatLngFromMapsLink(f.maps_link);
+  let lat: number | null | undefined;
+  let lng: number | null | undefined;
+  if (manual !== undefined) {
+    if (manual !== null) {
+      lat = manual.lat;
+      lng = manual.lng;
+    } else if (!f.maps_link) {
+      lat = null;
+      lng = null;
+    } else {
+      lat = parsed?.lat ?? undefined;
+      lng = parsed?.lng ?? undefined;
+    }
+  } else {
+    lat = parsed?.lat ?? fallback?.lat ?? undefined;
+    lng = parsed?.lng ?? fallback?.lng ?? undefined;
+  }
   return {
     trip_id: tripId,
     title: f.title.trim(),
@@ -2822,8 +2844,8 @@ function spotToBody(
     note: f.note && !isEmptyRichText(f.note) ? f.note : undefined,
     note_format: 'html' as const,
     maps_link: f.maps_link || undefined,
-    lat: manual?.lat ?? parsed?.lat,
-    lng: manual?.lng ?? parsed?.lng,
+    lat,
+    lng,
     is_home: f.is_home,
     address: f.address || undefined,
     start_date: f.start_date || undefined,
@@ -2952,14 +2974,15 @@ function startEditSpot(spot: Spot) {
     scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
   };
   editSpotMapsLinkResolved.value = null;
-  editSpotManualPin.value = null;
+  editSpotManualPin.value =
+    spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
   editSpotPickerOpen.value = false;
   editSpotLocationError.value = false;
 }
 
 async function submitEditSpot() {
   if (!editingSpot.value || !editSpotForm.value.title.trim()) return;
-  const body = spotToBody(editSpotForm.value, editSpotManualPin.value);
+  const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
   const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
   if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {
