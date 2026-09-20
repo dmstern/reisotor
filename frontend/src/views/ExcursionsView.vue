@@ -2220,10 +2220,12 @@ let activeScrollToken = 0;
  */
 async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefined) {
   const token = ++activeScrollToken;
+  const prefersReduced =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (isSheetOverlayMode.value) {
     const sheet = sheetEl.value;
-    if (sheet) {
+    if (sheet && !prefersReduced) {
       const expectedHeight = sheetHeightPx(sheetState.value);
       const currentHeight = sheet.getBoundingClientRect().height;
       // Falls das Sheet noch animiert / die Höhe noch nicht der Ziel-Höhe entspricht:
@@ -2267,7 +2269,7 @@ async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefi
 
   const body = spotsColBodyEl.value;
   if (!body) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
     return;
   }
 
@@ -2298,7 +2300,7 @@ async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefi
   // damit der obere Schatten und Fokus-Rand der Spot-Card vollständig sichtbar bleiben (#audit)
   const spacing = 16;
   const targetScrollTop = Math.max(0, elTopInBody - navClearance - spacing);
-  body.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+  body.scrollTo({ top: targetScrollTop, behavior: prefersReduced ? 'auto' : 'smooth' });
 }
 
 // Schreibt die Sheet-Höhe während des Ziehens direkt aufs Element (statt über eine reaktive
