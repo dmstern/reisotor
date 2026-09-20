@@ -52,3 +52,40 @@ test('creating a note with the WYSIWYG editor renders formatting, and a pre-exis
   await expect(newCard.locator('.content ul li')).toHaveCount(1);
   await expect(newCard.locator('.content ul li').first()).toHaveText('Erster Listenpunkt');
 });
+
+test('toolbar is only visible when editor is focused', async ({ page }) => {
+  await page.goto('/notes');
+
+  const legacyCard = page.locator('.note-card', { hasText: 'WLAN & Notfallkontakte' });
+  await expect(legacyCard).toBeVisible();
+  await legacyCard.getByRole('button', { name: 'Bearbeiten' }).click();
+
+  const modal = page.locator('.modal');
+  await expect(modal).toBeVisible();
+
+  const toolbar = modal.locator('.richtext-editor .toolbar');
+  const editor = modal.locator('.richtext-content[contenteditable="true"]');
+
+  // Initially: editor is not focused, toolbar must be hidden
+  await expect(toolbar).toBeHidden();
+
+  // Click into editor: editor gains focus, toolbar must be visible
+  await editor.click();
+  await expect(editor).toBeFocused();
+  await expect(toolbar).toBeVisible();
+
+  // Click outside (title input): editor loses focus, toolbar must hide again
+  await modal.locator('input[placeholder="Titel (optional)"]').click();
+  await expect(editor).not.toBeFocused();
+  await expect(toolbar).toBeHidden();
+
+  // Click back into editor: toolbar visible again
+  await editor.click();
+  await expect(editor).toBeFocused();
+  await expect(toolbar).toBeVisible();
+
+  // Clicking a toolbar button keeps focus and keeps toolbar visible
+  await modal.getByRole('button', { name: 'Fett', exact: true }).click();
+  await expect(editor).toBeFocused();
+  await expect(toolbar).toBeVisible();
+});
