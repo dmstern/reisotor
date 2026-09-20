@@ -5,7 +5,7 @@ import Select from './primitives/Select.vue';
 import Textarea from './primitives/Textarea.vue';
 import { ref, watch } from 'vue';
 import { api, ApiError } from '../api/client';
-import { compressImage } from '../utils/imageCompression';
+import { compressImage, isHeicFile } from '../utils/imageCompression';
 import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -51,7 +51,9 @@ async function onScreenshotSelected(event: Event) {
   input.value = '';
   if (!file) return;
   screenshot.value = await compressImage(file);
-  screenshotName.value = file.name;
+  screenshotName.value = isHeicFile(file)
+    ? file.name.replace(/\.(heic|heif)$/i, '.jpg')
+    : file.name;
 }
 
 function removeScreenshot() {
@@ -138,7 +140,7 @@ function close() {
           <input
             id="auto-id-1788301175436-6"
             type="file"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             class="hidden-input"
             @change="onScreenshotSelected"
           />

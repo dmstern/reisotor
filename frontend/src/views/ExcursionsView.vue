@@ -257,19 +257,10 @@ function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null)
 onMounted(async () => {
   applyRouteQuery();
   markSeenForGroupMode(groupMode.value);
-  // Querverweis-Sprung (z. B. aus dem Budget bei einem automatisch aus einer Unterkunft erzeugten
-  // Ausgabe-Eintrag, siehe BudgetView.vue's autoSourceFor()) – dieselbe highlightedIds-Menge wie
-  // oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
+  // Querverweis-Sprung (z. B. aus dem Kalender oder Budget)
   const hashId = hashHighlightId(route.hash, 'spot');
-  if (hashId != null) highlightedIds.value.add(hashId);
-  // #106: Rücksprung aus dem Kalender (ScheduleView.vue's returnToCard()) nach dem Einplanen/
-  // Bestätigen einer Tour - analog zum bestehenden Spot-Hash oben. Deckt seit #196 auch Touren mit
-  // gesetzter role ab (früher eigenes Hash-Präfix "travel-" für die inzwischen entfernte
-  // Reise-Gruppierung - alte "travel-<id>"-Links aus derselben Ära werden hier als Fallback
-  // ebenfalls als Tour-id interpretiert).
   const excursionHashId =
     hashHighlightId(route.hash, 'excursion') ?? hashHighlightId(route.hash, 'travel');
-  if (excursionHashId != null) highlightedIds.value.add(excursionHashId);
   try {
     const [usersRes, likesRes, commentsRes] = await Promise.all([
       api.get<User[]>(`/trips/${tripId}/members`),
@@ -290,10 +281,12 @@ onMounted(async () => {
   }
   if (hashId != null) {
     await nextTick();
+    drawers.openMapAt(`spot-${hashId}`);
     onFocusSpotFromMap(hashId);
   }
   if (excursionHashId != null) {
     await nextTick();
+    drawers.openMapForExcursion(excursionHashId);
     onFocusExcursionFromMap(excursionHashId);
   }
 });
@@ -307,16 +300,37 @@ watch(
     if (!newHash) return;
     const spotId = hashHighlightId(newHash, 'spot');
     if (spotId != null) {
-      highlightedIds.value.add(spotId);
       await nextTick();
+      drawers.openMapAt(`spot-${spotId}`);
       onFocusSpotFromMap(spotId);
       return;
     }
     const excursionId = hashHighlightId(newHash, 'excursion') ?? hashHighlightId(newHash, 'travel');
     if (excursionId != null) {
-      highlightedIds.value.add(excursionId);
       await nextTick();
+      drawers.openMapForExcursion(excursionId);
       onFocusExcursionFromMap(excursionId);
+    }
+  }
+);
+
+watch(
+  () => drawers.mapFocusKey,
+  (newKey) => {
+    if (!newKey && route.hash.startsWith('#spot-')) {
+      router.replace({ path: route.path, query: route.query, hash: '' });
+    }
+  }
+);
+
+watch(
+  () => drawers.mapFocusExcursionId,
+  (newId) => {
+    if (
+      newId == null &&
+      (route.hash.startsWith('#excursion-') || route.hash.startsWith('#travel-'))
+    ) {
+      router.replace({ path: route.path, query: route.query, hash: '' });
     }
   }
 );
@@ -570,7 +584,7 @@ async function toggleExcursionDestination(excursion: Excursion, spotId: number) 
 }
 async function addSpotToExcursion(excursionId: number, spotId: number) {
   const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (!excursion) return;
+  if (!excursion || excursion.spot_ids.includes(spotId)) return;
   await excursionsStore.update(excursionId, {
     title: excursion.title,
     image_url: excursion.image_url ?? undefined,
@@ -708,12 +722,14 @@ const spotPickerCenter = computed(() => {
 const spotPreviewImage = computed(() => {
   if (spotForm.value.image_url) return spotForm.value.image_url;
   const parsed = parseLatLngFromMapsLink(spotForm.value.maps_link);
-  return parsed ? tilePreviewUrl(parsed.lat, parsed.lng) : null;
+  const coords = spotManualPin.value ?? parsed;
+  return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
 });
 const editSpotPreviewImage = computed(() => {
   if (editSpotForm.value.image_url) return editSpotForm.value.image_url;
   const parsed = parseLatLngFromMapsLink(editSpotForm.value.maps_link);
-  return parsed ? tilePreviewUrl(parsed.lat, parsed.lng) : null;
+  const coords = editSpotManualPin.value ?? parsed;
+  return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
 });
 
 const spotCategoryOptions = computed(() => {
@@ -732,15 +748,26 @@ const showEditExcursionSpotsSection = ref(false);
 
 watch(editingSpot, (val) => {
   if (val) {
-    showEditSpotLocationSection.value = !!val.maps_link || !!val.is_home;
+    showEditSpotLocationSection.value =
+      !!val.maps_link || !!val.is_home || !!val.address || (val.lat != null && val.lng != null);
     // Einplanen-Sektion (Touren + Termine) automatisch öffnen, wenn bereits Touren oder Termine
     // vorhanden sind, damit der User den bestehenden Stand sofort sieht.
     showSpotScheduleSection.value =
       editSpotForm.value.tourTitles.length > 0 || editSpotScheduledItems.value.length > 0;
   } else {
+    showEditSpotLocationSection.value = false;
     showSpotScheduleSection.value = false;
   }
 });
+
+watch(
+  () => spotForm.value.category,
+  (newCat, oldCat) => {
+    if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
+      showSpotLocationSection.value = true;
+    }
+  }
+);
 
 function getTourDate(title: string): string | null {
   const tour = excursionsStore.excursions.find(
@@ -1375,15 +1402,13 @@ function setTourCardRef(
   setExcursionRef(excursionId, el);
 }
 function scrollToExcursion(id: number) {
-  const el = excursionRefs.get(id);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
-  const grp = spotGroups.value.find((g) => g.excursion?.id === id);
-  if (grp) {
-    categoryRefs.get(grp.category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  scrollToElementInBody(() => {
+    const el = excursionRefs.get(id);
+    if (el) return el;
+    const grp = spotGroups.value.find((g) => g.excursion?.id === id);
+    if (grp) return categoryRefs.get(grp.category) ?? null;
+    return null;
+  });
 }
 // Ref auf die eingebettete Karte (TripMap.vue): scrollToCategory() lässt bei Klick auf eine
 // Kategorie-Nav-Pille zusätzlich die Karte auf alle Punkte dieser Kategorie zoomen (siehe
@@ -1613,12 +1638,7 @@ function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
   else spotRefs.delete(id);
 }
 function scrollToSpot(id: number) {
-  // 'start' statt 'nearest': Ziel ist, dass die Oberkante der Karte exakt am oberen Rand des
-  // sichtbaren Bereichs landet (siehe .spot-card's scroll-margin-top in SpotCard.vue für die
-  // Kompensation der sticky .category-nav) - 'nearest' scrollte zuvor nur das nötige Minimum ohne
-  // definierte Ausrichtung, dadurch landete die Karte je nach vorheriger Scrollposition uneinheitlich
-  // zu weit oben oder unten (#103).
-  spotRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  scrollToElementInBody(() => spotRefs.get(id));
 }
 // Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
 // scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
@@ -1684,11 +1704,11 @@ function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string 
   const parts: string[] = [];
   if (leg.transport_type) parts.push(leg.transport_type);
   if (leg.departure_time || leg.arrival_time) {
-    parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'} Uhr`);
+    parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'}\u00A0Uhr`);
   }
   const dur = getLegDuration(leg);
   if (dur) parts.push(`(${dur})`);
-  if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')} €`);
+  if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')}\u00A0€`);
   parts.push(`• Von: ${fromSpot.title} → Nach: ${toSpot.title}`);
   parts.push('• Klicken zum Bearbeiten');
   return parts.join(' ');
@@ -2201,7 +2221,113 @@ function sheetHeightPx(state: SheetState): number {
   // .spots-col.collapsed CSS), kein Rest von .spots-col-body ragt mehr hinein.
   if (state === 'collapsed') return Math.min(64, maxAvailable);
   if (state === 'partial') return Math.min(window.innerHeight * 0.46, maxAvailable);
-  return Math.min(window.innerHeight * 0.88, maxAvailable);
+  return maxAvailable;
+}
+
+let activeScrollToken = 0;
+
+/**
+ * Scrollt ein Ziel-Element (Spot-Karte oder Touren-Karte) zuverlässig an das obere Ende
+ * des scrollbaren Bereichs in .spots-col-body, unter genauer Berücksichtigung der sticky
+ * Kategorie-Nav-Leiste.
+ *
+ * Im mobilen Drawer-Modus (isSheetOverlayMode):
+ * Falls das Sheet gerade seinen Zustand ändert (z. B. beim Klick auf 'Auf Karte anzeigen',
+ * wodurch sheetState von 'full' oder 'collapsed' auf 'partial' schrumpft/wächst),
+ * MUSS zuerst gewartet werden, bis die CSS-Höhen-Transition des Drawers abgeschlossen ist.
+ * Grund: Solange der Drawer z. B. noch die volle Höhe hat (~760px), deckelt der Browser
+ * scrollTop strikt auf (scrollHeight - clientHeight). Karten im unteren Listenbereich
+ * können daher physikalisch unmöglich an den oberen Rand gescrollt werden. Erst nach dem
+ * Schrumpfen auf 'partial' (~340px) reicht der Scrollbereich aus, um die Karte ganz nach oben
+ * zu bringen. Zudem bricht overflow-y: hidden (das in .partial aktiv ist) gleichzeitige
+ * smooth-scroll-Animationen im WebKit/Blink ab.
+ *
+ * Erst NACH Abschluss der Höhen-Transition (und Einpendeln der Card-Expansion via rAF)
+ * wird die exakte Ziel-Scrollposition berechnet und sauber gescrollt.
+ */
+async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefined) {
+  const token = ++activeScrollToken;
+  const prefersReduced =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (isSheetOverlayMode.value) {
+    const sheet = sheetEl.value;
+    if (sheet && !prefersReduced) {
+      const expectedHeight = sheetHeightPx(sheetState.value);
+      const currentHeight = sheet.getBoundingClientRect().height;
+      // Falls das Sheet noch animiert / die Höhe noch nicht der Ziel-Höhe entspricht:
+      if (Math.abs(currentHeight - expectedHeight) > 2) {
+        await new Promise<void>((resolve) => {
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
+            sheet.removeEventListener('transitionend', onEnd);
+            clearTimeout(timer);
+            resolve();
+          };
+          const onEnd = (e: TransitionEvent) => {
+            if (
+              e.target === sheet &&
+              (e.propertyName === 'height' || e.propertyName === 'bottom')
+            ) {
+              finish();
+            }
+          };
+          sheet.addEventListener('transitionend', onEnd);
+          const timer = setTimeout(finish, 350);
+        });
+      }
+    }
+    if (token !== activeScrollToken) return;
+
+    // Zwei Frames warten für Card-Expansion (v-if Blöcke / Stationen) & Layout-Stabilisierung:
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    if (token !== activeScrollToken) return;
+  }
+
+  let el = elGetter();
+  if (!el) {
+    await nextTick();
+    if (token !== activeScrollToken) return;
+    el = elGetter();
+  }
+  if (!el) return;
+
+  const body = spotsColBodyEl.value;
+  if (!body) {
+    el.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
+    return;
+  }
+
+  const bodyRect = body.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  const currentScrollTop = body.scrollTop;
+  const elTopInBody = currentScrollTop + (elRect.top - bodyRect.top);
+
+  let navClearance = 0;
+  const navWrap = categoryNavEl.value?.closest('.category-nav-wrap') as HTMLElement | null;
+  const bodyStyle = getComputedStyle(body);
+  const bodyPaddingTop = parseFloat(bodyStyle.paddingTop) || 0;
+
+  if (navWrap && navWrap.offsetParent !== null) {
+    const navTop = parseFloat(getComputedStyle(navWrap).top) || 0;
+    const navHeight = navWrap.getBoundingClientRect().height;
+    // Wenn navWrap sticky arretiert ist, reicht seine Unterkante bis:
+    navClearance = Math.max(0, bodyPaddingTop + navTop + navHeight);
+  } else if (categoryNavEl.value && categoryNavEl.value.offsetParent !== null) {
+    navClearance = bodyPaddingTop + categoryNavEl.value.getBoundingClientRect().height;
+  } else if (categoryNavHeight.value) {
+    navClearance = bodyPaddingTop + categoryNavHeight.value;
+  } else {
+    navClearance = bodyPaddingTop;
+  }
+
+  // 16px (var(--space-3)) Abstand unterhalb der sticky Nav (oder des Drawer-Kopfs),
+  // damit der obere Schatten und Fokus-Rand der Spot-Card vollständig sichtbar bleiben (#audit)
+  const spacing = 16;
+  const targetScrollTop = Math.max(0, elTopInBody - navClearance - spacing);
+  body.scrollTo({ top: targetScrollTop, behavior: prefersReduced ? 'auto' : 'smooth' });
 }
 
 // Schreibt die Sheet-Höhe während des Ziehens direkt aufs Element (statt über eine reaktive
@@ -2510,9 +2636,30 @@ watch(
 // ungewollt wieder auf "angeschnitten").
 function onSpotCardOpen(spot: Spot) {
   expandedSpotId.value = spot.id;
+  if (drawers.mapFocusKey && drawers.mapFocusKey !== `spot-${spot.id}`) {
+    drawers.mapFocusKey = null;
+  }
+  if (drawers.mapFocusExcursionId != null) {
+    drawers.mapFocusExcursionId = null;
+  }
 }
 function onSpotCardClose() {
   expandedSpotId.value = null;
+  drawers.mapFocusKey = null;
+}
+
+function onExcursionCardOpen(excursion: Excursion) {
+  expandedExcursionId.value = excursion.id;
+  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursion.id) {
+    drawers.mapFocusExcursionId = null;
+  }
+  if (drawers.mapFocusKey != null) {
+    drawers.mapFocusKey = null;
+  }
+}
+function onExcursionCardClose() {
+  expandedExcursionId.value = null;
+  drawers.mapFocusExcursionId = null;
 }
 
 // "Auf Karte anzeigen"-Button (Mini- wie aufgeklappte Karte, siehe SpotCard.vue) – schrumpft das
@@ -2554,9 +2701,10 @@ watch(
     drawers.mapFocusExcursionId,
     drawers.mapFocusKey,
     drawers.mapFocusTrackId,
+    drawers.mapFocusLocation,
   ],
-  ([date, excId, key, trackId]) => {
-    if (date != null || excId != null || key != null || trackId != null) {
+  ([date, excId, key, trackId, loc]) => {
+    if (date != null || excId != null || key != null || trackId != null || loc != null) {
       if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
         sheetState.value = 'partial';
       }
@@ -2657,17 +2805,37 @@ function checkSpotMapsLink() {
   if (spotForm.value.maps_link) fetchSpotPreview(spotForm.value.maps_link, spotForm);
 }
 function checkEditSpotMapsLink() {
-  editSpotMapsLinkResolved.value = editSpotForm.value.maps_link
-    ? parseLatLngFromMapsLink(editSpotForm.value.maps_link) != null
+  const parsed = editSpotForm.value.maps_link
+    ? parseLatLngFromMapsLink(editSpotForm.value.maps_link)
     : null;
+  editSpotMapsLinkResolved.value = editSpotForm.value.maps_link ? parsed != null : null;
+  if (parsed) editSpotManualPin.value = parsed;
   if (editSpotForm.value.maps_link) fetchSpotPreview(editSpotForm.value.maps_link, editSpotForm);
 }
 
 function spotToBody(
   f: ReturnType<typeof emptySpotForm>,
-  manual?: { lat: number; lng: number } | null
+  manual?: { lat: number; lng: number } | null,
+  fallback?: { lat?: number | null; lng?: number | null }
 ) {
   const parsed = parseLatLngFromMapsLink(f.maps_link);
+  let lat: number | null | undefined;
+  let lng: number | null | undefined;
+  if (manual !== undefined) {
+    if (manual !== null) {
+      lat = manual.lat;
+      lng = manual.lng;
+    } else if (!f.maps_link) {
+      lat = null;
+      lng = null;
+    } else {
+      lat = parsed?.lat ?? undefined;
+      lng = parsed?.lng ?? undefined;
+    }
+  } else {
+    lat = parsed?.lat ?? fallback?.lat ?? undefined;
+    lng = parsed?.lng ?? fallback?.lng ?? undefined;
+  }
   return {
     trip_id: tripId,
     title: f.title.trim(),
@@ -2676,8 +2844,8 @@ function spotToBody(
     note: f.note && !isEmptyRichText(f.note) ? f.note : undefined,
     note_format: 'html' as const,
     maps_link: f.maps_link || undefined,
-    lat: manual?.lat ?? parsed?.lat,
-    lng: manual?.lng ?? parsed?.lng,
+    lat,
+    lng,
     is_home: f.is_home,
     address: f.address || undefined,
     start_date: f.start_date || undefined,
@@ -2704,6 +2872,7 @@ function closeSpotForm() {
   spotPickerOpen.value = false;
   spotLocationError.value = false;
   spotPendingFixId.value = null;
+  showSpotLocationSection.value = false;
   showSpotScheduleSection.value = false;
   newSpotDraft.clear();
 }
@@ -2805,14 +2974,15 @@ function startEditSpot(spot: Spot) {
     scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
   };
   editSpotMapsLinkResolved.value = null;
-  editSpotManualPin.value = null;
+  editSpotManualPin.value =
+    spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
   editSpotPickerOpen.value = false;
   editSpotLocationError.value = false;
 }
 
 async function submitEditSpot() {
   if (!editingSpot.value || !editSpotForm.value.title.trim()) return;
-  const body = spotToBody(editSpotForm.value, editSpotManualPin.value);
+  const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
   const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
   if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {
@@ -3288,13 +3458,6 @@ async function deleteEditingSpot() {
                 />
               </FormField>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
-                <FormField icon="location" label="Adresse">
-                  <Input
-                    v-model="activeSpotForm.address"
-                    type="text"
-                    placeholder="Adresse (optional)"
-                  />
-                </FormField>
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
                     <Input v-model="activeSpotForm.start_date" type="date" />
@@ -3367,14 +3530,13 @@ async function deleteEditingSpot() {
                 <p class="hint">
                   Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                 </p>
-                <CheckboxCard
-                  id="spotFormIsHome"
-                  v-model="activeSpotForm.is_home"
-                  variant="muted"
-                  :icon="ACTION_ICONS.home"
-                  label="Heimat-Seite"
-                  description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
-                />
+                <FormField icon="location" label="Adresse">
+                  <Input
+                    v-model="activeSpotForm.address"
+                    type="text"
+                    placeholder="Adresse (Straße, Hausnummer, Ort)"
+                  />
+                </FormField>
                 <FormField icon="maps" label="Maps-Link (Google/Apple)">
                   <Input
                     v-model="activeSpotForm.maps_link"
@@ -3439,6 +3601,14 @@ async function deleteEditingSpot() {
                     :reference-points="spotReferencePoints"
                   />
                 </CollapsibleFieldset>
+                <CheckboxCard
+                  id="spotFormIsHome"
+                  v-model="activeSpotForm.is_home"
+                  variant="muted"
+                  :icon="ACTION_ICONS.home"
+                  label="Heimat-Seite"
+                  description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
+                />
               </CollapsibleFieldset>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
@@ -3711,6 +3881,7 @@ async function deleteEditingSpot() {
                   class="category-nav-icon"
                   :icon="grp.iconDef"
                   group="categories"
+                  :active="activeCategory === grp.category"
                   :color="groupIconColor(grp)"
                 />
                 <span class="category-nav-label">{{ grp.category }}</span>
@@ -3774,8 +3945,8 @@ async function deleteEditingSpot() {
                 @toggle-comment-like="toggleExcursionCommentLike"
                 @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
                 @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
-                @open="expandedExcursionId = grp.excursion.id"
-                @close="expandedExcursionId = null"
+                @open="onExcursionCardOpen(grp.excursion)"
+                @close="onExcursionCardClose"
               />
               <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
                 <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
@@ -4008,8 +4179,8 @@ async function deleteEditingSpot() {
                                     cell.leg.departure_time
                                   }}</span>
                                 </span>
-                                <span v-if="cell.leg.amount != null" class="leg-pill-cost">
-                                  {{ cell.leg.amount.toFixed(2).replace('.', ',') }} €
+                                <span v-if="cell.leg.amount != null" class="leg-pill-cost nobr">
+                                  {{ cell.leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
                                 </span>
                               </div>
 
@@ -4104,8 +4275,11 @@ async function deleteEditingSpot() {
                                   row.rowBreak.leg.departure_time
                                 }}</span>
                               </span>
-                              <span v-if="row.rowBreak.leg.amount != null" class="leg-pill-cost">
-                                {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }} €
+                              <span
+                                v-if="row.rowBreak.leg.amount != null"
+                                class="leg-pill-cost nobr"
+                              >
+                                {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
                               </span>
                             </div>
 
@@ -4525,6 +4699,7 @@ async function deleteEditingSpot() {
   border-left: 0;
   border-right: 0;
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
+  corner-shape: squircle;
   height: min(100vh, var(--sheet-max-height));
 
   .spots-col-body {
@@ -6127,15 +6302,9 @@ async function deleteEditingSpot() {
 }
 
 .assign-chip--schedule.is-done {
-  background: rgba(46, 125, 50, 0.18);
-  border-color: rgba(46, 125, 50, 0.45);
-  color: #2e7d32;
-}
-
-:root[data-theme='dark'] .assign-chip--schedule.is-done {
-  background: rgba(76, 175, 80, 0.18);
-  border-color: rgba(76, 175, 80, 0.45);
-  color: #81c784;
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 45%, transparent);
+  color: var(--color-success);
 }
 
 .assign-chip-done-toggle {

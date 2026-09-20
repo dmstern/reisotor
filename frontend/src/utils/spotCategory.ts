@@ -93,7 +93,7 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
   {
     label: 'Sehenswürdigkeit',
     icon: '🏰',
-    color: '#a15be0',
+    color: '#9333ea',
     tabler: { id: 'building-castle', emoji: '🏰', outline: IconBuildingCastle },
   },
   {

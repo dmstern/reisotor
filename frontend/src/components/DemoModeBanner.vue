@@ -31,6 +31,9 @@ function reset() {
 
 <style scoped>
 .demo-banner {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

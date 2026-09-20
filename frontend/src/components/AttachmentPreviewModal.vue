@@ -1,12 +1,23 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { Attachment } from '../api/types';
 import Modal from './Modal.vue';
+import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
+import MapsAppPicker from './MapsAppPicker.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { formatFileSize } from '../utils/fileUpload';
+import {
+  extractExifFromUrl,
+  formatGeoCoordinates,
+  type ImageExifMetadata,
+} from '../utils/imageCompression';
+import { useCalendarSettingsStore } from '../stores/calendarSettings';
+import { useDrawersStore } from '../stores/drawers';
+import { formatDate, toLocalDateString } from '../utils/dateFormat';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 export interface AttachmentPreviewItem {
@@ -16,6 +27,8 @@ export interface AttachmentPreviewItem {
   filename?: string;
   mime_type?: string;
   size_bytes?: number;
+  created_at?: string;
+  metadata?: ImageExifMetadata | null;
 }
 
 const props = withDefaults(
@@ -48,6 +61,8 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
+      isTransitionReady.value = false;
+      contentHeight.value = null;
       if (
         props.initialIndex !== undefined &&
         props.initialIndex >= 0 &&
@@ -58,9 +73,14 @@ watch(
         currentIndex.value = 0;
       }
       window.addEventListener('keydown', onKeydown);
+      nextTick(() => {
+        updateContentHeight(false);
+      });
     } else {
       window.removeEventListener('keydown', onKeydown);
       resetAnimationState();
+      isTransitionReady.value = false;
+      contentHeight.value = null;
     }
   }
 );
@@ -80,6 +100,10 @@ watch(
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
   resetAnimationState();
+  if (contentResizeObserver) {
+    contentResizeObserver.disconnect();
+    contentResizeObserver = null;
+  }
 });
 
 function isImage(attachment: AttachmentPreviewItem | null): boolean {
@@ -89,8 +113,8 @@ function isImage(attachment: AttachmentPreviewItem | null): boolean {
   }
   const name = attachment.original_name || attachment.filename || '';
   return (
-    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) ||
-    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(attachment.url) ||
+    /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)$/i.test(name) ||
+    /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)$/i.test(attachment.url) ||
     attachment.url.startsWith('data:image/')
   );
 }
@@ -299,6 +323,91 @@ function onRemoveCurrent() {
   }
 }
 
+// --- EXIF Metadaten (Aufnahmedatum & Geolocation) ---
+const drawers = useDrawersStore();
+const currentMetadata = ref<ImageExifMetadata | null>(null);
+const isLoadingMetadata = ref(false);
+
+const hasExifMetadata = computed(() =>
+  Boolean(
+    currentMetadata.value &&
+    (currentMetadata.value.dateTime ||
+      (currentMetadata.value.latitude != null && currentMetadata.value.longitude != null))
+  )
+);
+
+function formatExifDateTime(d: Date): string {
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const calendarSettings = useCalendarSettingsStore();
+  let dateFormatted = `${day}.${month}.${year}`;
+  if (calendarSettings.dateFormat === 'iso') {
+    dateFormatted = `${year}-${month}-${day}`;
+  } else if (calendarSettings.dateFormat === 'us') {
+    dateFormatted = `${month}/${day}/${year}`;
+  }
+  return `${dateFormatted}, ${hours}:${minutes}\u00A0Uhr`;
+}
+
+async function loadMetadataForAttachment(attachment: AttachmentPreviewItem | null) {
+  if (!attachment || !isImage(attachment)) {
+    currentMetadata.value = null;
+    return;
+  }
+  if (attachment.metadata !== undefined) {
+    currentMetadata.value = attachment.metadata;
+    return;
+  }
+  isLoadingMetadata.value = true;
+  try {
+    const meta = await extractExifFromUrl(attachment.url);
+    if (currentAttachment.value?.url === attachment.url) {
+      currentMetadata.value = meta;
+    }
+  } catch {
+    if (currentAttachment.value?.url === attachment.url) {
+      currentMetadata.value = null;
+    }
+  } finally {
+    isLoadingMetadata.value = false;
+  }
+}
+
+watch(
+  () => currentAttachment.value?.url,
+  () => {
+    loadMetadataForAttachment(currentAttachment.value);
+  },
+  { immediate: true }
+);
+
+function onShowLocationOnMap() {
+  if (currentMetadata.value?.latitude == null || currentMetadata.value?.longitude == null) {
+    return;
+  }
+  const lat = currentMetadata.value.latitude;
+  const lng = currentMetadata.value.longitude;
+  const title = currentAttachment.value?.original_name || 'Foto-Standort';
+  const imageUrl = currentAttachment.value?.url;
+  const gallery = {
+    attachments: normalizedAttachments.value,
+    initialIndex: currentIndex.value,
+  };
+  let dateBadge: string | undefined;
+  if (currentMetadata.value?.dateTime) {
+    dateBadge = formatDate(toLocalDateString(currentMetadata.value.dateTime), {
+      includeYear: false,
+    });
+  } else if (currentAttachment.value?.created_at) {
+    dateBadge = formatDate(currentAttachment.value.created_at, { includeYear: false });
+  }
+  emit('update:modelValue', false);
+  drawers.openMapAtLocation(lat, lng, title, imageUrl, gallery, dateBadge);
+}
+
 // --- Swipe Logic für Touch-Geräte ---
 function onTouchStart(e: TouchEvent) {
   if (props.attachments.length <= 1 || isAnimating.value) return;
@@ -434,6 +543,116 @@ const trackStyle = computed(() => {
     transition: 'none',
   };
 });
+
+// --- Smoothe Höhenanpassung an aktuellen sowie benachbarten Inhalt ---
+const previewContentRef = ref<HTMLElement | null>(null);
+const sliderTrackRef = ref<HTMLElement | null>(null);
+const contentHeight = ref<number | null>(null);
+const isTransitionReady = ref(false);
+
+const contentStyle = computed(() => {
+  if (!contentHeight.value) return {};
+  return {
+    height: `${contentHeight.value}px`,
+  };
+});
+
+function measureSlideHeight(slideEl: HTMLElement): number {
+  const img = slideEl.querySelector<HTMLImageElement>('.preview-img');
+  if (img) {
+    const rect = img.getBoundingClientRect();
+    if (rect.height > 0) {
+      return rect.height;
+    }
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      const containerWidth = previewContentRef.value?.clientWidth || 600;
+      const maxViewportH = typeof window !== 'undefined' ? window.innerHeight * 0.65 : 500;
+      const aspect = img.naturalHeight / img.naturalWidth;
+      return Math.min(containerWidth * aspect, maxViewportH);
+    }
+  }
+  const unsupported = slideEl.querySelector<HTMLElement>('.unsupported-wrapper');
+  if (unsupported) {
+    const rect = unsupported.getBoundingClientRect();
+    return rect.height > 0 ? rect.height : 220;
+  }
+  return 0;
+}
+
+function updateContentHeight(animate = true) {
+  if (!sliderTrackRef.value || !props.modelValue) return;
+
+  const slides = sliderTrackRef.value.querySelectorAll<HTMLElement>('.slider-slide');
+  if (!slides.length) return;
+
+  let maxHeight = 0;
+  slides.forEach((slide) => {
+    const h = measureSlideHeight(slide);
+    if (h > maxHeight) {
+      maxHeight = h;
+    }
+  });
+
+  if (maxHeight <= 0) return;
+
+  const targetH = Math.max(200, Math.round(maxHeight));
+
+  if (!animate) {
+    isTransitionReady.value = false;
+    contentHeight.value = targetH;
+    nextTick(() => {
+      requestAnimationFrame(() => {
+        isTransitionReady.value = true;
+      });
+    });
+  } else {
+    isTransitionReady.value = true;
+    contentHeight.value = targetH;
+  }
+}
+
+function onImageLoad() {
+  updateContentHeight(isTransitionReady.value);
+}
+
+watch(
+  () => visibleSlides.value,
+  () => {
+    nextTick(() => {
+      updateContentHeight(isTransitionReady.value);
+    });
+  },
+  { deep: true }
+);
+
+let contentResizeObserver: ResizeObserver | null = null;
+let lastObservedWidth = 0;
+
+onMounted(() => {
+  if (typeof ResizeObserver !== 'undefined') {
+    contentResizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = Math.round(entry.contentRect.width);
+        if (w > 0 && w !== lastObservedWidth) {
+          lastObservedWidth = w;
+          updateContentHeight(isTransitionReady.value);
+        }
+      }
+    });
+    if (previewContentRef.value) {
+      contentResizeObserver.observe(previewContentRef.value);
+    }
+  }
+});
+
+watch(previewContentRef, (el, oldEl) => {
+  if (oldEl && contentResizeObserver) {
+    contentResizeObserver.unobserve(oldEl);
+  }
+  if (el && contentResizeObserver) {
+    contentResizeObserver.observe(el);
+  }
+});
 </script>
 
 <template>
@@ -474,13 +693,16 @@ const trackStyle = computed(() => {
         />
 
         <div
+          ref="previewContentRef"
           class="preview-content"
           :class="{
             'is-draggable': attachments.length > 1 && !isAnimating,
             'is-dragging': isDragging,
+            'has-transition': isTransitionReady,
           }"
+          :style="contentStyle"
         >
-          <div class="slider-track" :style="trackStyle">
+          <div ref="sliderTrackRef" class="slider-track" :style="trackStyle">
             <div
               v-for="slide in visibleSlides"
               :key="slide.slot"
@@ -493,6 +715,7 @@ const trackStyle = computed(() => {
                   :alt="slide.item.original_name"
                   class="preview-img"
                   draggable="false"
+                  @load="onImageLoad"
                 />
               </div>
               <div v-else-if="slide.item" class="unsupported-wrapper">
@@ -526,11 +749,73 @@ const trackStyle = computed(() => {
         />
       </div>
 
+      <!-- EXIF Metadaten (Aufnahmedatum & Geolocation) -->
+      <Transition name="exif-card">
+        <div
+          v-if="hasExifMetadata && currentMetadata"
+          class="preview-exif-card"
+          data-testid="preview-exif-card"
+        >
+          <Transition name="exif-content" mode="out-in">
+            <div :key="currentAttachment?.url || String(currentIndex)" class="exif-details">
+              <div v-if="currentMetadata.dateTime" class="exif-item" data-testid="exif-date">
+                <div class="exif-icon-badge" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.time" :size="16" group="formFields" />
+                </div>
+                <div class="exif-text">
+                  <span class="exif-label">Aufnahmedatum</span>
+                  <span class="exif-value">{{ formatExifDateTime(currentMetadata.dateTime) }}</span>
+                </div>
+              </div>
+
+              <div
+                v-if="currentMetadata.latitude != null && currentMetadata.longitude != null"
+                class="exif-item"
+                data-testid="exif-location"
+              >
+                <div class="exif-icon-badge" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.location" :size="16" group="formFields" />
+                </div>
+                <div class="exif-text">
+                  <span class="exif-label">Standort</span>
+                  <span class="exif-value">{{
+                    formatGeoCoordinates(currentMetadata.latitude, currentMetadata.longitude)
+                  }}</span>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <div
+            v-if="currentMetadata.latitude != null && currentMetadata.longitude != null"
+            class="exif-actions"
+          >
+            <Button
+              variant="secondary"
+              size="sm"
+              class="btn-show-map"
+              :icon="FORM_FIELD_ICONS.maps"
+              @click="onShowLocationOnMap"
+            >
+              Ort auf Karte anzeigen
+            </Button>
+            <MapsAppPicker
+              :lat="currentMetadata.latitude"
+              :lng="currentMetadata.longitude"
+              :title="currentAttachment?.original_name || 'Foto-Standort'"
+              size="sm"
+              variant="secondary"
+            />
+          </div>
+        </div>
+      </Transition>
+
       <div class="preview-actions">
         <Button
           v-if="editable"
           variant="danger"
           :icon="ACTION_ICONS.delete"
+          :title="isImage(currentAttachment) ? 'Bild entfernen' : 'Anhang löschen'"
           @click="onRemoveCurrent"
         >
           Löschen
@@ -584,9 +869,15 @@ const trackStyle = computed(() => {
   overflow: hidden;
   position: relative;
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.preview-content:not(.has-transition) {
+  transition: none !important;
 }
 
 .preview-content.is-draggable {
@@ -625,6 +916,7 @@ const trackStyle = computed(() => {
   justify-content: center;
   overflow: hidden;
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
 .preview-img {
@@ -632,6 +924,7 @@ const trackStyle = computed(() => {
   max-height: 65vh;
   object-fit: contain;
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   display: block;
   user-select: none;
   -webkit-user-drag: none;
@@ -639,6 +932,10 @@ const trackStyle = computed(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .slider-track {
+    transition: none !important;
+  }
+
+  .preview-content {
     transition: none !important;
   }
 }
@@ -653,6 +950,7 @@ const trackStyle = computed(() => {
   background: var(--color-surface-sunken, rgba(0, 0, 0, 0.03));
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   width: 100%;
   min-height: 220px;
 }
@@ -680,6 +978,169 @@ const trackStyle = computed(() => {
   color: var(--color-primary);
   word-break: break-all;
   margin: 0;
+}
+
+.preview-exif-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-top: var(--space-3);
+  background: var(--color-surface-sunken, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  transition: border-color var(--duration-fast, 150ms) ease;
+}
+
+.preview-exif-card:hover {
+  border-color: var(--color-border-strong);
+}
+
+/* Smooth Transition für den EXIF-Metadaten-Kasten */
+.exif-card-enter-active {
+  transition:
+    opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    margin-top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+.exif-card-leave-active {
+  transition:
+    opacity 0.22s ease-in,
+    transform 0.22s ease-in,
+    max-height 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+    margin-top 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-top 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    padding-bottom 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+.exif-card-enter-from,
+.exif-card-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.99);
+  max-height: 0;
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  border-color: transparent;
+}
+
+/* Subtle cross-fade for values when switching between attachments */
+.exif-content-enter-active,
+.exif-content-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.exif-content-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.exif-content-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exif-card-enter-active,
+  .exif-card-leave-active,
+  .exif-content-enter-active,
+  .exif-content-leave-active {
+    transition: none !important;
+    max-height: none !important;
+    transform: none !important;
+  }
+}
+
+.exif-details {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.exif-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.exif-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.exif-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.exif-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.exif-value {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+}
+
+.exif-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .preview-exif-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .exif-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .exif-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 .preview-actions {

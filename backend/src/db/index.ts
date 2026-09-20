@@ -557,6 +557,10 @@ dropColumnIfExists('ideas', 'suggested_by_user_id');
 // einer bereits laufenden Dev-Instanz) schon mit dem alten Schema angelegt wurde.
 ensureColumn('spots', 'title', 'TEXT');
 ensureColumn('spots', 'image_url', 'TEXT');
+ensureColumn('spots', 'category', 'TEXT');
+ensureColumn('spots', 'maps_link', 'TEXT');
+ensureColumn('spots', 'lat', 'REAL');
+ensureColumn('spots', 'lng', 'REAL');
 ensureColumn('spots', 'created_by', 'INTEGER REFERENCES users(id)');
 // Heimat-Seite (unabhängig von der Kategorie – ein Flughafen kann sowohl der heimische Abflughafen
 // als auch der Zielflughafen sein): übernimmt travel_places.is_home (siehe Migration weiter unten,
@@ -764,9 +768,22 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 `);
+ensureColumn('attachments', 'trip_id', 'INTEGER REFERENCES trips(id) ON DELETE CASCADE');
 db.exec(
   'CREATE INDEX IF NOT EXISTS idx_attachments_domain_entity ON attachments (domain, entity_id)'
 );
+db.exec('CREATE INDEX IF NOT EXISTS idx_attachments_trip_id ON attachments (trip_id)');
+
+// Backfill für ältere attachments-Zeilen, bei denen trip_id noch NULL ist (#412):
+// trip_id aus der jeweiligen Ziel-Tabelle nachschlagen.
+db.exec(`
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM spots WHERE spots.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'spots';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM notes WHERE notes.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'notes';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM ideas WHERE ideas.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'ideas';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM schedule_items WHERE schedule_items.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'schedule';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM budget_items WHERE budget_items.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'budget';
+  UPDATE attachments SET trip_id = (SELECT ideas.trip_id FROM excursion_legs JOIN ideas ON ideas.id = excursion_legs.idea_id WHERE excursion_legs.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'excursion_legs';
+`);
 
 /** Löscht Anhang-Zeilen + zugehörige Dateien auf der Platte für eine Menge von Objekt-ids einer
  *  Attachment-Domäne (siehe routes/attachments.ts's DOMAIN_TABLE) – aufgerufen, bevor die
@@ -1815,3 +1832,19 @@ ensureColumn('spot_comments', 'updated_at', 'TEXT');
 ensureColumn('idea_comments', 'updated_at', 'TEXT');
 ensureColumn('note_comments', 'updated_at', 'TEXT');
 ensureColumn('diary_comments', 'updated_at', 'TEXT');
+
+// Repariere Koordinaten von "Hotel Alfama", falls diese durch früheres Spot-Bearbeiten verloren gingen:
+if (
+  hasTable('spots') &&
+  hasColumn('spots', 'lat') &&
+  hasColumn('spots', 'lng') &&
+  hasColumn('spots', 'category')
+) {
+  db.prepare(
+    `
+    UPDATE spots
+    SET lat = 38.72, lng = -9.12, maps_link = COALESCE(maps_link, 'https://maps.google.com/?q=Alfama+Lissabon')
+    WHERE title = 'Hotel Alfama' AND category = 'Unterkunft' AND lat IS NULL AND lng IS NULL
+  `
+  ).run();
+}

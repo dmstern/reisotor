@@ -271,6 +271,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       lat = lat ?? existing.lat ?? undefined;
       lng = lng ?? existing.lng ?? undefined;
     }
+    // Wenn lat/lng im Request gar nicht übergeben wurden (undefined), bestehende Koordinaten behalten:
+    if (lat === undefined) lat = existing.lat ?? undefined;
+    if (lng === undefined) lng = existing.lng ?? undefined;
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }

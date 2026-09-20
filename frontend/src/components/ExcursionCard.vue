@@ -63,9 +63,17 @@ const emit = defineEmits<{
 }>();
 
 function onCardClick() {
-  if (props.expanded) emit('close');
-  else emit('open', props.excursion);
+  if (props.expanded) {
+    emit('close');
+    if (drawers.mapFocusExcursionId === props.excursion.id) {
+      drawers.mapFocusExcursionId = null;
+    }
+  } else {
+    emit('open', props.excursion);
+  }
 }
+
+const isMapFocused = computed(() => drawers.mapFocusExcursionId === props.excursion.id);
 
 const resolvedStations = computed(() =>
   resolveStations(excursionStationKeys(props.excursion.spot_ids), props.stations, props.travelItems)
@@ -269,8 +277,17 @@ const spotDragOverCount = ref(0);
 function isStationDrag(event: DragEvent) {
   return !!event.dataTransfer?.types.includes('text/spot-id');
 }
+const isDropCandidate = computed(() => {
+  if (drawers.draggingTourSpotId == null) return false;
+  return !props.excursion.spot_ids.includes(drawers.draggingTourSpotId);
+});
+const isDropDisabled = computed(() => {
+  if (drawers.draggingTourSpotId == null) return false;
+  return props.excursion.spot_ids.includes(drawers.draggingTourSpotId);
+});
+
 function onSpotDragEnter(event: DragEvent) {
-  if (!isStationDrag(event)) return;
+  if (!isStationDrag(event) || isDropDisabled.value) return;
   spotDragOverCount.value++;
 }
 function onSpotDragLeave(event: DragEvent) {
@@ -279,6 +296,7 @@ function onSpotDragLeave(event: DragEvent) {
 }
 function onSpotDrop(event: DragEvent) {
   spotDragOverCount.value = 0;
+  if (isDropDisabled.value) return;
   const rawSpotId = event.dataTransfer?.getData('text/spot-id');
   if (rawSpotId) emit('drop-spot', Number(rawSpotId));
 }
@@ -288,12 +306,16 @@ function onSpotDrop(event: DragEvent) {
   <Card
     class="excursion-card"
     :class="{
-      'drop-target': spotDragOverCount > 0,
+      'drop-candidate': isDropCandidate,
+      'drop-target': spotDragOverCount > 0 && !isDropDisabled,
+      'drop-disabled': isDropDisabled,
       'new-highlight': highlighted,
       expanded,
       'has-role': !!excursion.role,
       'is-travel': !!excursion.role,
     }"
+    :highlight="highlighted"
+    :map-focused="isMapFocused"
     @click="onCardClick"
     @dragover.prevent
     @dragenter.prevent="onSpotDragEnter"
@@ -604,15 +626,53 @@ function onSpotDrop(event: DragEvent) {
 }
 
 /* Leucht-Effekt, wenn der "Tour zuordnen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
-:global(body.is-dragging-tour) .excursion-card {
-  background: var(--excursion-theme-tint);
-  border-color: color-mix(in srgb, var(--excursion-theme-color) 40%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--excursion-theme-color) 20%, transparent);
+:global(body.is-dragging-tour .excursion-card:not(.drop-disabled)),
+.excursion-card.drop-candidate {
+  border-color: var(--color-tour) !important;
+  background: color-mix(in srgb, var(--color-tour) 12%, var(--color-surface)) !important;
+  box-shadow:
+    0 0 0 2px var(--color-tour),
+    0 8px 24px -4px color-mix(in srgb, var(--color-tour) 45%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+  animation: tour-glow-pulse 2.2s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 4;
 }
 
-:global(body.is-dragging-tour) .excursion-card:hover {
-  background: color-mix(in srgb, var(--excursion-theme-color) 20%, var(--color-surface));
-  transform: translateY(-1px);
+@keyframes tour-glow-pulse {
+  0% {
+    box-shadow:
+      0 0 0 2px var(--color-tour),
+      0 6px 18px -4px color-mix(in srgb, var(--color-tour) 35%, transparent),
+      0 2px 6px rgba(0, 0, 0, 0.06);
+    border-color: var(--color-tour);
+  }
+  100% {
+    box-shadow:
+      0 0 0 3px var(--color-tour),
+      0 10px 28px -2px color-mix(in srgb, var(--color-tour) 60%, transparent),
+      0 4px 10px rgba(0, 0, 0, 0.1);
+    border-color: var(--color-tour-dark, var(--color-tour));
+  }
+}
+
+:global(body.is-dragging-tour .excursion-card:not(.drop-disabled):hover),
+:global(body.is-dragging-tour .excursion-card.drop-target),
+.excursion-card.drop-candidate:hover,
+.excursion-card.drop-target {
+  border-color: var(--color-tour) !important;
+  background: color-mix(in srgb, var(--color-tour) 20%, var(--color-surface)) !important;
+  transform: translateY(-2px) scale(1.01);
+  box-shadow:
+    0 0 0 3px var(--color-tour),
+    0 12px 32px -2px color-mix(in srgb, var(--color-tour) 65%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 6;
+}
+
+:global(body.is-dragging-tour .excursion-card.drop-disabled),
+.excursion-card.drop-disabled {
+  opacity: 0.5;
 }
 
 .excursion-card.is-travel,
@@ -647,12 +707,6 @@ function onSpotDrop(event: DragEvent) {
   position: relative;
   padding: 10px 14px 10px 10px;
   gap: 12px;
-}
-
-/* Spot per Drag&Drop aus der Spots-Sicht darauf ablegen (SpotCard.vue ist die Drag-Quelle). */
-.excursion-card.drop-target {
-  border-color: var(--excursion-theme-color);
-  background: var(--excursion-theme-tint);
 }
 
 /* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und

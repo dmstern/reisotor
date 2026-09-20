@@ -18,10 +18,13 @@ export function getMaxDrawerWidth(): number {
 }
 
 function isDesktop() {
-  return window.matchMedia('(min-width: 1024px)').matches;
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(min-width: 1024px)').matches
+    : false;
 }
 
 function loadOpen(key: string): boolean {
+  if (typeof localStorage === 'undefined') return false;
   const stored = localStorage.getItem(key);
   if (stored !== null) return stored === 'true';
   // Noch keine explizite Präferenz gespeichert: auf Desktop standardmäßig ausgeklappt (genug
@@ -30,6 +33,7 @@ function loadOpen(key: string): boolean {
 }
 
 function loadWidth(key: string): number {
+  if (typeof localStorage === 'undefined') return DEFAULT_DRAWER_WIDTH;
   const stored = Number(localStorage.getItem(key));
   const maxAllowed = getMaxDrawerWidth();
   return Number.isFinite(stored) && stored >= MIN_DRAWER_WIDTH && stored <= MAX_DRAWER_WIDTH
@@ -43,6 +47,21 @@ function loadWidth(key: string): number {
 // Schubladen-Toggle mehr nötig. Auf-/Zu-Zustand und Breite der Kalender-Schublade werden hier
 // zentral gehalten (persistiert in localStorage), damit z. B. das Dashboard oder
 // "Auf Karte anzeigen"-Buttons aus beliebigen Sichten sie öffnen können, ohne die Route zu wechseln.
+export interface MapFocusGalleryItem {
+  id?: number;
+  url: string;
+  original_name?: string;
+  filename?: string;
+  mime_type?: string;
+  size_bytes?: number;
+  metadata?: unknown;
+}
+
+export interface MapFocusGallery {
+  attachments: MapFocusGalleryItem[];
+  initialIndex: number;
+}
+
 export const useDrawersStore = defineStore('drawers', () => {
   const calendarOpen = ref(loadOpen(CALENDAR_OPEN_KEY));
   const mapFocusKey = ref<string | null>(null);
@@ -58,6 +77,17 @@ export const useDrawersStore = defineStore('drawers', () => {
   // wird (ExcursionsView.vue's Aufzeichnungen-Liste) – exklusiv zu den drei Fokus-Arten oben,
   // gleiches Muster wie mapFocusExcursionId.
   const mapFocusTrackId = ref<number | null>(null);
+  // Beliebiger Standort (z. B. EXIF-Geolocation eines Fotos), der auf der Karte fokussiert wird.
+  const mapFocusLocation = ref<{
+    lat: number;
+    lng: number;
+    title?: string;
+    imageUrl?: string;
+    dateBadge?: string;
+    gallery?: MapFocusGallery;
+  } | null>(null);
+  // Zeigt alle Fotos mit Geolocation im gesamten Urlaub auf einmal auf der Karte an.
+  const mapFocusAllPhotos = ref(false);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   // Ob die Kalender-Schublade gerade als Vollbild-Overlay maximiert ist (Drawer.vue). Zentral statt
   // lokal im Drawer gehalten (bewusst nicht in localStorage persistiert, flüchtiger UI-Zustand) –
@@ -69,8 +99,10 @@ export const useDrawersStore = defineStore('drawers', () => {
   // und laden deshalb nicht automatisch neu, wenn irgendwo sonst in der App ein Ort mit Maps-Link
   // angelegt/bearbeitet wird. touchLocations() signalisiert genau das – ein Zähler statt Boolean,
   // damit auch zwei schnell aufeinanderfolgende Änderungen zuverlässig je einen watch()-Trigger
-  // auslösen (bei einem Boolean könnte derselbe Wert zweimal gesetzt werden).
   const locationsVersion = ref(0);
+  // Spot-ID, die gerade per "Tour zuordnen"-Anfasser gezogen wird (#drag). Ermöglicht Tour-Karten,
+  // gezielt als Drop-Ziel zu leuchten, wenn der Spot dort noch nicht enthalten ist.
+  const draggingTourSpotId = ref<number | null>(null);
 
   function touchLocations() {
     locationsVersion.value++;
@@ -114,8 +146,12 @@ export const useDrawersStore = defineStore('drawers', () => {
     pendingSchedule.value = null;
   }
 
-  watch(calendarOpen, (v) => localStorage.setItem(CALENDAR_OPEN_KEY, String(v)));
-  watch(calendarWidth, (v) => localStorage.setItem(CALENDAR_WIDTH_KEY, String(v)));
+  watch(calendarOpen, (v) => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(CALENDAR_OPEN_KEY, String(v));
+  });
+  watch(calendarWidth, (v) => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(CALENDAR_WIDTH_KEY, String(v));
+  });
 
   // Mobil ist eine offene Schublade vollflächig und scrollt selbst (siehe Drawer.vue) – ohne diese
   // Sperre könnte die dahinterliegende Seite gleichzeitig mitscrollen (zwei übereinanderliegende
@@ -125,7 +161,8 @@ export const useDrawersStore = defineStore('drawers', () => {
   watch(
     anyOpen,
     (open) => {
-      if (!isDesktop()) document.body.style.overflow = open ? 'hidden' : '';
+      if (typeof document !== 'undefined' && !isDesktop())
+        document.body.style.overflow = open ? 'hidden' : '';
     },
     { immediate: true }
   );
@@ -148,6 +185,8 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;
+    mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -157,6 +196,8 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey.value = null;
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;
+    mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -169,6 +210,8 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey.value = null;
     mapFocusExcursionId.value = null;
     mapFocusTrackId.value = null;
+    mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -180,6 +223,41 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusKey.value = null;
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
+    mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
+    triggerFocusChange();
+    ensureMapRoute();
+  }
+
+  // Zeigt einen konkreten geografischen Ort (z. B. EXIF-Aufnahmeort eines Fotos) auf der Karte.
+  // Optional kann die zugehörige Anhang-Galerie mitgegeben werden, damit ein Klick auf den Foto-Pin
+  // auf der Karte die Galerie am selben Bild wieder öffnet.
+  function openMapAtLocation(
+    lat: number,
+    lng: number,
+    title?: string,
+    imageUrl?: string,
+    gallery?: MapFocusGallery,
+    dateBadge?: string
+  ) {
+    mapFocusLocation.value = { lat, lng, title, imageUrl, gallery, dateBadge };
+    mapFocusKey.value = 'photo-location';
+    mapFocusExcursionId.value = null;
+    mapFocusDate.value = null;
+    mapFocusTrackId.value = null;
+    mapFocusAllPhotos.value = false;
+    triggerFocusChange();
+    ensureMapRoute();
+  }
+
+  // Zeigt alle Fotos mit Geolocation im gesamten Urlaub auf einmal auf der Karte an.
+  function openMapForAllPhotos() {
+    mapFocusAllPhotos.value = true;
+    mapFocusKey.value = null;
+    mapFocusExcursionId.value = null;
+    mapFocusDate.value = null;
+    mapFocusTrackId.value = null;
+    mapFocusLocation.value = null;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -202,15 +280,20 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId,
     mapFocusDate,
     mapFocusTrackId,
+    mapFocusLocation,
+    mapFocusAllPhotos,
     focusVersion,
     calendarWidth,
     maximizedSide,
     locationsVersion,
+    draggingTourSpotId,
     pendingSchedule,
     openCalendar,
     openMapAt,
     openMapForExcursion,
     openMapForTrack,
+    openMapAtLocation,
+    openMapForAllPhotos,
     focusMapOnDate,
     maximize,
     restoreMaximized,

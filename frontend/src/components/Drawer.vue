@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
       @click="toggle"
     >
       <span class="tab-icon-wrap">
-        <AppIcon class="tab-icon" :size="18" :icon="icon" group="navigation" />
+        <AppIcon class="tab-icon" :size="18" :icon="icon" group="navigation" :active="open" />
         <UnseenDot v-if="hasUnseen" />
       </span>
       <span class="tab-label">{{ label }}</span>
@@ -321,12 +321,14 @@ onBeforeUnmount(() => {
   left: 0;
   border-left: none;
   border-radius: 0 var(--radius-sm-squircle) var(--radius-sm-squircle) 0;
+  corner-shape: squircle;
 }
 
 .drawer.right .drawer-tab {
   right: 0;
   border-right: none;
   border-radius: var(--radius-sm-squircle) 0 0 var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 /* Bei ausgeklappter Schublade übernimmt der Schließen-Button (oben im Panel) die Schließen-
@@ -622,5 +624,16 @@ onBeforeUnmount(() => {
   .drawer.maximized .resize-handle {
     display: none;
   }
+}
+
+/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gezogen wird (#drag) */
+:global(body.is-dragging-calendar .drawer.left .drawer-panel) {
+  border-right-color: var(--color-scheduled);
+  box-shadow:
+    4px 0 24px -2px color-mix(in srgb, var(--color-scheduled) 40%, transparent),
+    0 0 0 1.5px color-mix(in srgb, var(--color-scheduled) 30%, transparent);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 </style>

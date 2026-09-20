@@ -109,7 +109,13 @@ function onTabClick(key: string, event: MouseEvent) {
         @click="onTabClick(tab.key, $event)"
       >
         <span class="icon-wrap">
-          <AppIcon class="icon" :icon="tab.icon" :size="16" group="navigation" />
+          <AppIcon
+            class="icon"
+            :icon="tab.icon"
+            :size="16"
+            group="navigation"
+            :active="activeKey === tab.key"
+          />
           <UnseenDot v-if="tab.unseen" />
         </span>
         {{ tab.label }}

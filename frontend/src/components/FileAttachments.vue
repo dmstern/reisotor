@@ -2,8 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Attachment, AttachmentDomain } from '../api/types';
-import { compressImage } from '../utils/imageCompression';
-import { readAsDataUrl } from '../utils/fileUpload';
+import { compressImage, isHeicFile } from '../utils/imageCompression';
+import { readAsDataUrl, isImageFile } from '../utils/fileUpload';
 import Button from './primitives/Button.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
 import AppIcon from './AppIcon.vue';
@@ -106,14 +106,13 @@ async function onFilesSelected(event: Event) {
   error.value = '';
   try {
     for (const file of files) {
-      const data = file.type.startsWith('image/')
-        ? await compressImage(file)
-        : await readAsDataUrl(file);
+      const data = isImageFile(file) ? await compressImage(file) : await readAsDataUrl(file);
+      const filename = isHeicFile(file) ? file.name.replace(/\.(heic|heif)$/i, '.jpg') : file.name;
       const created = await api.post<Attachment>('/attachments', {
         domain: props.domain,
         entity_id: props.entityId,
         data,
-        filename: file.name,
+        filename,
       });
       attachments.value.push(created);
     }
@@ -199,7 +198,7 @@ async function remove(attachment: Attachment) {
           ref="fileInputRef"
           type="file"
           class="file-input-hidden"
-          accept="image/*,application/pdf"
+          accept="image/*,.heic,.heif,application/pdf"
           multiple
           aria-label="Datei auswählen"
           :disabled="uploading"
@@ -223,7 +222,7 @@ async function remove(attachment: Attachment) {
       v-model="previewOpen"
       :attachments="attachments"
       :initial-index="previewIndex"
-      :editable="editable"
+      :editable="!auth.user?.restricted"
       @remove="(index) => remove(attachments[index])"
     />
   </div>

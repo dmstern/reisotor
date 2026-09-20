@@ -33,6 +33,8 @@ const props = withDefaults(
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
 const isExpanded = ref(false);
+const isFocused = ref(false);
+const editorContainerRef = ref<HTMLElement | null>(null);
 
 const hasContent = computed(() => {
   if (!props.modelValue) return false;
@@ -42,9 +44,30 @@ const hasContent = computed(() => {
 
 function expandAndFocus() {
   isExpanded.value = true;
+  isFocused.value = true;
   nextTick(() => {
     editor.value?.commands.focus('end');
   });
+}
+
+function onFocusIn() {
+  isFocused.value = true;
+}
+
+function onFocusOut(event: FocusEvent) {
+  const related = event.relatedTarget as Node | null;
+  if (!editorContainerRef.value?.contains(related)) {
+    isFocused.value = false;
+    if (props.expandable && !hasContent.value) {
+      isExpanded.value = false;
+    }
+  }
+}
+
+function focusEditor() {
+  if (!editor.value?.isFocused) {
+    editor.value?.commands.focus();
+  }
 }
 
 // Gesetzt während des eigenen onUpdate-Emits, siehe Watcher unten - verhindert, dass das direkt
@@ -62,6 +85,19 @@ const editor = useEditor({
   ],
   editorProps: {
     attributes: { class: 'richtext-content richtext' },
+  },
+  onFocus: () => {
+    isFocused.value = true;
+  },
+  onBlur: ({ event }) => {
+    const relatedTarget = (event as FocusEvent)?.relatedTarget as Node | null;
+    if (editorContainerRef.value?.contains(relatedTarget)) {
+      return;
+    }
+    isFocused.value = false;
+    if (props.expandable && !hasContent.value) {
+      isExpanded.value = false;
+    }
   },
   onUpdate: ({ editor }) => {
     syncingFromEditor = true;
@@ -82,6 +118,9 @@ watch(
     }
     if (!editor.value || editor.value.getHTML() === value) return;
     editor.value.commands.setContent(value, { emitUpdate: false });
+    if (!hasContent.value && !isFocused.value) {
+      isExpanded.value = false;
+    }
   }
 );
 
@@ -102,15 +141,17 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
     <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
     <span class="collapsed-placeholder">{{ placeholder || 'Notiz hinzufügen …' }}</span>
   </div>
-  <div v-else class="richtext-editor" :class="{ compact }">
-    <!-- Bewusst immer gerendert (kein v-if="editor") statt erst nach der asynchronen
-         Editor-Initialisierung zu erscheinen - sonst poppt die Toolbar kurz nach dem ersten Render
-         rein und verschiebt den Editor-Inhalt (und alles darunter, z. B. ein Datei-Upload-Feld) nach
-         unten. Führte zu einem echten Layout-Shift beim Öffnen (Fehlklicks bei zu schnellem
-         Interagieren) und genau daraus resultierender E2E-Flakiness (Klicks auf den Editor trafen
-         stattdessen kurzzeitig ein darunterliegendes Element). Buttons bis dahin deaktiviert statt
-         funktionslos anklickbar. -->
-    <div class="toolbar">
+  <div
+    v-else
+    ref="editorContainerRef"
+    class="richtext-editor"
+    :class="{ compact, 'is-focused': isFocused }"
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
+  >
+    <!-- Die Toolbar wird nur angezeigt, wenn der Editor aktiv fokussiert ist.
+         @mousedown.prevent verhindert Fokusverlust beim Klick auf Formatierungs-Buttons. -->
+    <div v-show="isFocused" class="toolbar" @mousedown.prevent>
       <button
         type="button"
         class="toolbar-btn"
@@ -118,6 +159,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Fett"
         aria-label="Fett"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleBold().run()"
       >
         <strong>F</strong>
@@ -129,6 +171,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Kursiv"
         aria-label="Kursiv"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleItalic().run()"
       >
         <em>K</em>
@@ -140,6 +183,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Durchgestrichen"
         aria-label="Durchgestrichen"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleStrike().run()"
       >
         <s>D</s>
@@ -151,6 +195,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Überschrift"
         aria-label="Überschrift"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
       >
         H
@@ -162,6 +207,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Aufzählung"
         aria-label="Aufzählung"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleBulletList().run()"
       >
         •
@@ -173,6 +219,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Nummerierte Liste"
         aria-label="Nummerierte Liste"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleOrderedList().run()"
       >
         1.
@@ -184,6 +231,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Zitat"
         aria-label="Zitat"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleBlockquote().run()"
       >
         "
@@ -195,15 +243,19 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
         title="Code"
         aria-label="Code"
         :disabled="!editor"
+        @mousedown.prevent
         @click="editor?.chain().focus().toggleCode().run()"
       >
         ⌨︎
       </button>
     </div>
-    <editor-content :editor="editor" class="content-scroll" />
-    <p v-if="placeholder && editor?.isEmpty" class="editor-placeholder" aria-hidden="true">
-      {{ placeholder }}
-    </p>
+    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+    <div class="content-scroll" @click="focusEditor">
+      <editor-content :editor="editor" />
+      <p v-if="placeholder && editor?.isEmpty" class="editor-placeholder" aria-hidden="true">
+        {{ placeholder }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -227,6 +279,12 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
   corner-shape: squircle;
   background: var(--color-surface);
   overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.richtext-editor.is-focused,
+.richtext-editor:focus-within {
+  border-color: var(--color-primary);
 }
 
 /* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort
@@ -286,13 +344,19 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 
 .editor-placeholder {
   position: absolute;
-  left: 12px;
-  /* Unter der Toolbar statt am Container-Anfang - der Editor-Inhalt selbst startet dort. */
-  top: 44px;
+  left: var(--space-3);
+  top: var(--space-2);
   margin: 0;
   color: var(--color-text-muted);
   pointer-events: none;
   font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 800px) {
+  .richtext-editor:not(.compact) .editor-placeholder {
+    font-size: 1.05rem;
+  }
 }
 
 /* <editor-content> rendert einen eigenen, ungestylten Wrapper-Div um den tatsächlichen
@@ -302,6 +366,7 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
    Wrapper trotz max-height am Editor selbst kleiner als der Inhalt zu werden, statt ihn zu sprengen -
    genau das macht .content-scroll zum eigentlichen, unabhängig scrollbaren Bereich für lange Texte. */
 .content-scroll {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;

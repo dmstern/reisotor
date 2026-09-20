@@ -84,70 +84,28 @@ const secondPreviewText = computed(() => {
 }
 
 .bottom-note {
-  background: #a7f3d0;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: var(--color-travel-tint);
+  border: 1px solid var(--color-travel-border);
   transform: rotate(-7deg) translate(-4px, 2px);
   z-index: 1;
 }
 
-:root[data-theme='dark'] .bottom-note {
-  background: #064e3b;
-  border-color: rgba(16, 185, 129, 0.4);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .bottom-note {
-    background: #064e3b;
-    border-color: rgba(16, 185, 129, 0.4);
-  }
-}
-
 .middle-note {
-  background: #fed7aa;
-  border: 1px solid rgba(249, 115, 22, 0.2);
+  background: var(--color-tour-tint);
+  border: 1px solid var(--color-tour-border);
   transform: rotate(5deg) translate(3px, -1px);
   z-index: 2;
 }
 
-:root[data-theme='dark'] .middle-note {
-  background: #7c2d12;
-  border-color: rgba(249, 115, 22, 0.4);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .middle-note {
-    background: #7c2d12;
-    border-color: rgba(249, 115, 22, 0.4);
-  }
-}
-
 .top-note {
-  background: linear-gradient(145deg, #fef9c3 0%, #fef08a 100%);
-  border: 1px solid rgba(234, 179, 8, 0.35);
+  background: var(--color-highlight);
+  border: 1px solid var(--color-highlight-border);
   transform: rotate(-1.5deg);
   z-index: 3;
   padding: 12px 7px 6px 8px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-}
-
-:root[data-theme='dark'] .top-note {
-  background: linear-gradient(145deg, #2d2a1a 0%, #3e381b 100%);
-  border-color: rgba(250, 204, 21, 0.35);
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.4),
-    0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .top-note {
-    background: linear-gradient(145deg, #2d2a1a 0%, #3e381b 100%);
-    border-color: rgba(250, 204, 21, 0.35);
-    box-shadow:
-      0 6px 16px rgba(0, 0, 0, 0.4),
-      0 1px 4px rgba(0, 0, 0, 0.3);
-  }
 }
 
 /* Washi-Tape Klebestreifen */

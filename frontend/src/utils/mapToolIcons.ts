@@ -14,6 +14,8 @@ import {
   IconPlayerStop,
   IconPlayerStopFilled,
   IconFocus2,
+  IconCamera,
+  IconCameraFilled,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -28,6 +30,7 @@ export type MapToolIconKey =
   | 'vacation'
   | 'accommodation'
   | 'excursions'
+  | 'photos'
   | 'orientationNorth'
   | 'orientationHeading'
   | 'offlineDownload'
@@ -42,6 +45,7 @@ export const MAP_TOOL_ICONS: Record<MapToolIconKey, IconDef> = {
   vacation: { id: 'beach', emoji: '🏖️', outline: IconBeach },
   accommodation: { id: 'bed', emoji: '🛏️', outline: IconBed, filled: IconBedFilled },
   excursions: { id: 'backpack', emoji: '🎒', outline: IconBackpack },
+  photos: { id: 'photo', emoji: '📸', outline: IconCamera, filled: IconCameraFilled },
   orientationNorth: { id: 'compass', emoji: '🧭', outline: IconCompass, filled: IconCompassFilled },
   orientationHeading: { id: 'telescope', emoji: '🔭', outline: IconTelescope },
   offlineDownload: { id: 'download', emoji: '⬇️', outline: IconDownload },

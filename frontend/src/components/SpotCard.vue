@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { ScheduleItem, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
@@ -223,11 +223,32 @@ async function onCreateTour(title: string) {
   });
 }
 
-// Natives Drag (Zuordnen zu einer Tour) startet über den Tour-Zuordnen-Anfasser
+// Natives Drag (Zuordnen zu einer Tour) startet über den Tour-Zuordnen-Anfasser (nur in Touren-Ansicht, #audit)
 function onDragStart(event: DragEvent) {
+  if (props.groupMode !== 'tours') {
+    event.preventDefault();
+    return;
+  }
+  drawers.draggingTourSpotId = props.spot.id;
   event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 }
+
+function onDragEnd() {
+  drawers.draggingTourSpotId = null;
+}
+
+function onWindowDragEnd() {
+  if (drawers.draggingTourSpotId != null) {
+    drawers.draggingTourSpotId = null;
+  }
+}
+onMounted(() => {
+  window.addEventListener('dragend', onWindowDragEnd);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('dragend', onWindowDragEnd);
+});
 
 // Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen: legt
 // einen mit diesem Spot verknüpften Termin an (siehe stores/schedule.ts) statt (wie früher) im
@@ -280,6 +301,8 @@ function onCardClick() {
 function onShowOnMap() {
   emit('show-on-map');
 }
+
+const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.id}`);
 
 const scheduledItemsForSpot = computed(() => {
   return scheduleStore.items
@@ -407,6 +430,8 @@ const cardRotation = computed(() => {
     variant="polaroid"
     class="spot-card"
     :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
+    :highlight="highlighted"
+    :map-focused="isMapFocused"
     :style="{ '--card-rotate': cardRotation }"
     @click="onCardClick"
   >
@@ -506,7 +531,7 @@ const cardRotation = computed(() => {
       </div>
 
       <div
-        v-if="isAccommodation || (creatorLabel && !expanded)"
+        v-if="isAccommodation || spot.address || (creatorLabel && !expanded)"
         class="spot-accordion"
         :class="{ 'is-expanded': expanded }"
       >
@@ -514,15 +539,15 @@ const cardRotation = computed(() => {
           <DetailRow v-if="creatorLabel && !expanded" label="Von">
             {{ creatorLabel }}
           </DetailRow>
+          <DetailRow v-if="isAccommodation && (spot.start_date || spot.end_date)" label="Zeitraum">
+            <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+            {{ formatAccommodationDate(spot.start_date) || '?' }} –
+            {{ formatAccommodationDate(spot.end_date) || '?' }}
+          </DetailRow>
+          <DetailRow v-if="spot.address" label="Adresse">
+            {{ spot.address }}
+          </DetailRow>
           <template v-if="isAccommodation">
-            <DetailRow v-if="spot.start_date || spot.end_date" label="Zeitraum">
-              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-              {{ formatAccommodationDate(spot.start_date) || '?' }} –
-              {{ formatAccommodationDate(spot.end_date) || '?' }}
-            </DetailRow>
-            <DetailRow v-if="spot.address" label="Adresse">
-              {{ spot.address }}
-            </DetailRow>
             <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out">
               {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
             </DetailRow>
@@ -545,7 +570,7 @@ const cardRotation = computed(() => {
             </DetailRow>
             <DetailRow v-if="spot.amount != null" label="Kosten">
               <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
-              {{ spot.amount.toFixed(2) }} €
+              <span class="nobr">{{ spot.amount.toFixed(2) }}&nbsp;€</span>
               <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
                 · bezahlt von {{ payerLabel }}</span
               >
@@ -560,9 +585,11 @@ const cardRotation = computed(() => {
             <div class="card-actions">
               <TourAssignDropdown
                 :tours="tourAssignments"
+                :can-drag="groupMode === 'tours'"
                 @toggle-tour="onToggleTour"
                 @create-tour="onCreateTour"
                 @dragstart="onDragStart"
+                @dragend="onDragEnd"
               />
               <button
                 v-if="
@@ -1093,9 +1120,17 @@ const cardRotation = computed(() => {
 
 .spot-card.expanded .card-badge-group :deep(.category-chip) {
   max-width: 160px;
-  box-shadow: var(--shadow-sm);
-  -webkit-backdrop-filter: blur(4px) brightness(80%);
-  backdrop-filter: blur(4px) brightness(80%);
+  background: color-mix(
+    in srgb,
+    var(--category-color, #9333ea) 22%,
+    rgba(15, 18, 24, 0.85)
+  ) !important;
+  color: color-mix(in srgb, var(--category-color, #9333ea) 18%, #ffffff) !important;
+  border: 1px solid
+    color-mix(in srgb, var(--category-color, #9333ea) 40%, rgba(255, 255, 255, 0.25)) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .body {

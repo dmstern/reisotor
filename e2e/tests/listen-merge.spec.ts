@@ -69,6 +69,6 @@ test('a calendar cross-reference to a todo lands on the todo tab with the item h
 
   await expect(page).toHaveURL(/\/listen\?tab=todo#todo-\d+/);
   await expect(
-    page.locator('.row.new-highlight', { hasText: 'E2E Listen-Merge Querverweis' })
+    page.locator('.row.is-focused', { hasText: 'E2E Listen-Merge Querverweis' })
   ).toBeVisible();
 });

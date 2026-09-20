@@ -27,6 +27,7 @@ import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Badge from '../components/primitives/Badge.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
@@ -48,6 +49,12 @@ type GroupBy = 'buyer' | 'shop' | 'period';
 const groupBy = usePersistedRef<GroupBy>('reisotor-shopping-group-by', 'buyer');
 
 const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'buyer' : 'shop'));
+
+watch(users, () => {
+  if (users.value.length <= 1 && groupBy.value === 'buyer') {
+    groupBy.value = 'period';
+  }
+});
 
 const groupByOptions = computed(() => {
   const opts = [];
@@ -148,13 +155,13 @@ const UNASSIGNED_SHOP = 'Ohne Shop';
 function userAvatar(id: number | null | undefined) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? u.avatar : null;
+  return u ? u.avatar : '👤';
 }
 
 function userName(id: number | null | undefined) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? u.username : null;
+  return u ? u.username : 'Ehemaliges Mitglied';
 }
 
 function isChecked(item: ShoppingItem) {
@@ -221,6 +228,7 @@ const groupedItems = computed<Group[]>(() => {
     return groups;
   }
   // buyer
+  const memberIds = new Set(users.value.map((u) => u.id));
   const perUser: Group[] = users.value.map((u) => ({
     key: `user-${u.id}`,
     label: `${u.avatar} ${u.username}`,
@@ -233,7 +241,9 @@ const groupedItems = computed<Group[]>(() => {
     key: 'unassigned',
     label: 'Nicht zugewiesen',
     items: sortWithDoneLast(
-      visibleItems.filter((i) => i.assigned_to_user_id == null),
+      visibleItems.filter(
+        (i) => i.assigned_to_user_id == null || !memberIds.has(i.assigned_to_user_id)
+      ),
       isChecked
     ),
   };
@@ -315,6 +325,13 @@ function closeEditForm() {
   editingItem.value = null;
 }
 
+function discardEditDraft() {
+  if (!editingItem.value) return;
+  startEdit(editingItem.value);
+  editDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 async function deleteEditingItem() {
   if (!editingItem.value) return;
   const id = editingItem.value.id;
@@ -348,6 +365,15 @@ async function addItem() {
   // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
   // Vorbelegung fürs nächste Öffnen der Liste.
   newDraft.clear();
+}
+
+function discardNewDraft() {
+  newLabel.value = '';
+  newLink.value = '';
+  newNote.value = '';
+  showNewDetails.value = false;
+  newDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 // Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
@@ -515,7 +541,12 @@ function hasItemMeta(item: ShoppingItem): boolean {
         </div>
       </Accordion>
 
-      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+      <DraftStatusBar
+        :status="newDraft.status.value"
+        :restored="newDraft.restored.value"
+        :can-discard="true"
+        @discard="discardNewDraft"
+      />
     </form>
 
     <div class="groups-grid" :class="{ 'groups-grid--masonry masonry': groupBy === 'shop' }">
@@ -592,6 +623,16 @@ function hasItemMeta(item: ShoppingItem): boolean {
                     @change="reassign(item, $event)"
                   >
                     <option value="">Nicht zugewiesen</option>
+                    <option
+                      v-if="
+                        item.assigned_to_user_id &&
+                        !users.some((u) => u.id === item.assigned_to_user_id)
+                      "
+                      :value="String(item.assigned_to_user_id)"
+                      disabled
+                    >
+                      Ehemaliges Mitglied
+                    </option>
                     <option v-for="u in users" :key="u.id" :value="String(u.id)">
                       {{ u.avatar }} {{ u.username }}
                     </option>
@@ -600,13 +641,13 @@ function hasItemMeta(item: ShoppingItem): boolean {
                 <EditButton small @click="startEdit(item)" />
               </template>
             </CheckableListItem>
-            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
+            <EmptyState v-if="!group.items.length" :key="`${group.key}-empty`" tag="li">
               {{
                 uiSettings.hideCompletedShopping
                   ? 'Keine offenen Einträge.'
                   : 'Noch keine Einträge.'
               }}
-            </li>
+            </EmptyState>
           </TransitionGroup>
 
           <QuickAddRow
@@ -680,7 +721,12 @@ function hasItemMeta(item: ShoppingItem): boolean {
         <FormField icon="note" label="Notiz" v-slot="{ id }">
           <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"
@@ -1063,10 +1109,6 @@ function hasItemMeta(item: ShoppingItem): boolean {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.empty {
-  padding: var(--space-2) 0;
 }
 
 /* Desktop: Klassisches Grid für Einkäufer- und Zeitraum-Gruppierungen (nebeneinander aufgeteilt,

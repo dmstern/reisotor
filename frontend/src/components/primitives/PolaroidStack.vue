@@ -86,15 +86,15 @@ function checkIsImage(item: Record<string, unknown>, url: string | null): boolea
     }
   }
   if (url.startsWith('data:image/')) return true;
-  if (/\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i.test(url)) return true;
+  if (/\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(url)) return true;
   const name =
     (typeof item.original_name === 'string' && item.original_name) ||
     (typeof item.filename === 'string' && item.filename) ||
     '';
-  if (/\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i.test(name)) return true;
+  if (/\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(name)) return true;
   if (
     typeof item.title === 'string' &&
-    /\.(jpe?g|png|webp|gif|svg|avif)(\?.*)?$/i.test(item.title)
+    /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(item.title)
   ) {
     return true;
   }

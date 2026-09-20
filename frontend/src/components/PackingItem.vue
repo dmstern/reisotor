@@ -91,12 +91,22 @@ const tallyGroups = computed<number[]>(() => {
   }
   return groups;
 });
+
+function handleMainClick(e: MouseEvent) {
+  if ((e.target as HTMLElement).closest('button, a, input, select')) return;
+  if (props.item.quantity <= 1) {
+    cycleSingleState();
+  } else {
+    toggleAllPacked();
+  }
+}
 </script>
 
 <template>
   <CheckableListItem :done="isFullyPacked" :highlighted="highlighted">
     <div class="item-main">
-      <div class="main">
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+      <div class="main check" @click="handleMainClick">
         <button
           v-if="item.quantity <= 1"
           type="button"
@@ -132,7 +142,7 @@ const tallyGroups = computed<number[]>(() => {
           @click="toggleAllPacked"
         ></button>
         <span
-          class="label"
+          class="label item-title"
           :class="{ 'row__text--done': isFullyPacked, 'text-done': isFullyPacked }"
         >
           {{ item.label }}
@@ -171,8 +181,12 @@ const tallyGroups = computed<number[]>(() => {
               <span v-if="!tallyGroups.length" class="tally-empty">–</span>
             </span>
             <span class="tally-count">{{ item.laid_out_count }}/{{ item.quantity }}</span>
-            <span v-if="allLaidOut" class="laid-out-mark" aria-hidden="true"></span>
+            <span v-if="allLaidOut" class="tally-ready-icon" aria-hidden="true">✓</span>
             <span v-else class="tally-plus" aria-hidden="true">+</span>
+          </template>
+          <template v-else>
+            <span class="tally-check" aria-hidden="true">✓</span>
+            <span class="tally-count">{{ item.quantity }}/{{ item.quantity }}</span>
           </template>
         </button>
         <button
@@ -205,12 +219,15 @@ const tallyGroups = computed<number[]>(() => {
   gap: var(--space-2);
 }
 
-.main {
+.main,
+.check {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
   flex: 1 1 auto;
   min-width: 0;
+  cursor: pointer;
+  user-select: none;
 }
 
 .state-toggle {
@@ -224,6 +241,7 @@ const tallyGroups = computed<number[]>(() => {
   padding: 0;
   border: 2px solid var(--color-border);
   border-radius: 6px;
+  corner-shape: squircle;
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
@@ -244,14 +262,26 @@ const tallyGroups = computed<number[]>(() => {
   outline-offset: 2px;
 }
 
-.state-toggle.packed,
-.tally-pill.packed {
+.state-toggle.laidOut {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+.laid-out-mark {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  corner-shape: round;
+  background: var(--color-primary);
+}
+
+.state-toggle.packed {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.state-toggle.packed::after,
-.tally-pill.packed::after {
+.state-toggle.packed::after {
   content: '';
   width: 5px;
   height: 10px;
@@ -260,20 +290,8 @@ const tallyGroups = computed<number[]>(() => {
   transform: rotate(45deg) translate(-1px, -1px);
 }
 
-.tally-pill.packed {
-  min-width: 20px;
-  min-height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tally-pill:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.label {
+.label,
+.item-title {
   flex: 1;
   min-width: 0;
   font-size: 0.95rem;
@@ -283,6 +301,7 @@ const tallyGroups = computed<number[]>(() => {
   word-break: normal;
   text-wrap: pretty;
   hyphens: auto;
+  cursor: pointer;
 }
 
 .qty {
@@ -295,37 +314,99 @@ const tallyGroups = computed<number[]>(() => {
 .tally-control {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .tally-pill {
-  display: flex;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 10px;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tally-pill:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+}
+
+.tally-pill:active {
+  transform: scale(0.96);
+}
+
+.tally-pill:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.tally-pill.laidOut {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+}
+
+.tally-pill.laidOut:hover {
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  border-color: var(--color-primary);
+}
+
+.tally-pill.packed {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.tally-pill.packed:hover {
+  background: color-mix(in srgb, var(--color-primary) 88%, #000);
+  border-color: color-mix(in srgb, var(--color-primary) 88%, #000);
 }
 
 .tally-marks {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-height: 14px;
 }
 
 .tally-group {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 2.5px;
 }
 
 /* Gedecktes Grau statt Volltonfarbe: die Striche sollen als Fortschrittsanzeige lesbar, aber nicht
    kontrastreicher als der übrige Zeilentext wirken. */
 .tally-stroke {
   width: 2px;
-  height: 14px;
+  height: 13px;
   background: var(--color-text-muted);
   border-radius: 1px;
+}
+
+.tally-pill.laidOut .tally-stroke {
+  background: color-mix(in srgb, var(--color-primary) 70%, var(--color-text-muted));
 }
 
 /* Der 5. Strich der Gruppe: diagonal über die vorherigen 4, exakt wie eine handgeschriebene
@@ -335,10 +416,14 @@ const tallyGroups = computed<number[]>(() => {
   position: absolute;
   left: -2px;
   top: 50%;
-  width: 20px;
+  width: 18px;
   height: 2px;
   background: var(--color-text-muted);
   transform: translateY(-50%) rotate(-22deg);
+}
+
+.tally-pill.laidOut .tally-diagonal {
+  background: color-mix(in srgb, var(--color-primary) 70%, var(--color-text-muted));
 }
 
 .tally-empty {
@@ -351,33 +436,74 @@ const tallyGroups = computed<number[]>(() => {
   font-weight: 600;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.tally-pill.laidOut .tally-count {
+  color: var(--color-primary);
+}
+
+.tally-pill.packed .tally-count {
+  color: #ffffff;
+}
+
+.tally-check {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.tally-ready-icon {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  line-height: 1;
 }
 
 .tally-plus {
   font-weight: 700;
+  font-size: 0.95rem;
   color: var(--color-primary);
   line-height: 1;
 }
 
 .tally-minus {
+  appearance: none;
+  -webkit-appearance: none;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  border: 2px solid var(--color-border);
-  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
   corner-shape: round;
   background: var(--color-surface);
   color: var(--color-text-muted);
+  font-family: inherit;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .tally-minus:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+}
+
+.tally-minus:active {
+  transform: scale(0.92);
 }
 
 .tally-minus:focus-visible {

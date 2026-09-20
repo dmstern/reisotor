@@ -354,14 +354,6 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             .first()
             .waitFor({ state: 'visible', timeout: 5000 })
             .catch(() => {});
-          await page.evaluate(() => {
-            const tourCard = Array.from(document.querySelectorAll('.tour-group-card')).find((el) =>
-              el.textContent?.includes('Panoramatour')
-            );
-            if (tourCard) {
-              tourCard.scrollIntoView({ block: 'start' });
-            }
-          });
           await waitForMapTiles(page);
         }
 

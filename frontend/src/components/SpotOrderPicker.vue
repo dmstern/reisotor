@@ -337,8 +337,7 @@ function onDeleteLeg() {
                       getLegBetween(station.id, plannedStations[index + 1].id)!
                         .amount!.toFixed(2)
                         .replace('.', ',')
-                    }}
-                    €
+                    }}&nbsp;€
                   </span>
                 </span>
               </template>
@@ -511,6 +510,7 @@ function onDeleteLeg() {
 .leg-cost {
   font-weight: 600;
   color: var(--color-scheduled);
+  white-space: nowrap;
 }
 
 .leg-empty {
@@ -676,6 +676,7 @@ function onDeleteLeg() {
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-text-muted);
   cursor: pointer;
   display: flex;

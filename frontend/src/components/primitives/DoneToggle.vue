@@ -44,7 +44,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     :title="title"
     @click.stop="$emit('click', $event)"
   >
-    <AppIcon v-if="showIcon" :icon="icon" :size="14" group="actions" />
+    <AppIcon v-if="showIcon" :icon="icon" :size="14" group="actions" :active="done" />
     <span class="status-text">
       <slot />
     </span>

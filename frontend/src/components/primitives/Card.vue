@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, useAttrs } from 'vue';
 import type { IconDef } from '../../utils/icon';
 import AppIcon from '../AppIcon.vue';
+import { ACTION_ICONS } from '../../utils/actionIcons';
 import { TILE_SHADOW_ALPHA } from '../../utils/widgetColors';
 
 /**
@@ -35,6 +36,8 @@ const props = withDefaults(
     bannerPosition?: 'top' | 'left' | 'auto';
     /** Hebt die Karte mit dem Notiz/Live-Sync Highlight-Rand hervor (.new-highlight). */
     highlight?: boolean;
+    /** Hebt die Karte mit einem eleganten Brand-Fokus-Rand hervor (.is-map-focused), wenn sie auf der Karte fokussiert ist. */
+    mapFocused?: boolean;
     /** Akzentfarbe für die 'tile'-Variante (Hex oder CSS var). */
     tileColor?: string;
     /** Alpha-Hex für den Box-Shadow der 'tile'-Variante (Standard: TILE_SHADOW_ALPHA aus widgetColors.ts). */
@@ -53,6 +56,7 @@ const props = withDefaults(
     bannerAlt: '',
     bannerPosition: 'auto',
     highlight: false,
+    mapFocused: false,
     tileColor: '#9141AC',
     tileShadowAlpha: TILE_SHADOW_ALPHA,
     tag: 'div',
@@ -120,6 +124,17 @@ function handleCardKeydown(event: KeyboardEvent) {
     handleCardClick(event as unknown as MouseEvent);
   }
 }
+
+const attrs = useAttrs();
+const isNewHighlight = computed(() => {
+  if (props.highlight) return true;
+  const cls = attrs.class;
+  if (!cls) return false;
+  if (typeof cls === 'string') return cls.split(/\s+/).includes('new-highlight');
+  if (Array.isArray(cls)) return cls.includes('new-highlight');
+  if (typeof cls === 'object') return Boolean((cls as Record<string, unknown>)['new-highlight']);
+  return false;
+});
 </script>
 
 <template>
@@ -137,7 +152,8 @@ function handleCardKeydown(event: KeyboardEvent) {
           isExpanded,
         'card--expandable': expandable,
         'card--interactive': interactive,
-        'new-highlight': highlight,
+        'new-highlight': isNewHighlight,
+        'is-map-focused': mapFocused,
         'card--has-banner': bannerUrl || $slots.banner,
         'card--banner-left': (bannerUrl || $slots.banner) && effectiveBannerPosition === 'left',
       },
@@ -159,6 +175,16 @@ function handleCardKeydown(event: KeyboardEvent) {
     @click="handleCardClick"
     @keydown="handleCardKeydown"
   >
+    <!-- Sparkle Badge für Echtzeit-Updates von anderen Nutzern -->
+    <span
+      v-if="isNewHighlight"
+      class="card-sparkle-badge"
+      title="Neu von Mitreisenden hinzugefügt oder geändert"
+      aria-label="Neu aktualisiert"
+    >
+      <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
+    </span>
+
     <!-- Tile Badge Icon (Dashboard Style) -->
     <div
       v-if="variant === 'tile' && (tileIcon || $slots['tile-icon'])"
@@ -255,19 +281,162 @@ function handleCardKeydown(event: KeyboardEvent) {
 .card.new-highlight {
   --new-highlight-radius: var(--radius-md-squircle);
   position: relative;
+  z-index: 5;
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
+  border-color: var(--color-success) !important;
+  box-shadow:
+    0 0 0 2px var(--color-success),
+    0 8px 24px -4px color-mix(in srgb, var(--color-success) 32%, transparent),
+    0 2px 8px -1px color-mix(in srgb, var(--color-success) 20%, transparent) !important;
+  animation: cardNewHighlightPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card.new-highlight::after {
+.card.new-highlight:hover {
+  border-color: var(--color-success) !important;
+  box-shadow:
+    0 0 0 2.5px var(--color-success),
+    0 12px 28px -4px color-mix(in srgb, var(--color-success) 40%, transparent),
+    0 4px 12px -1px color-mix(in srgb, var(--color-success) 25%, transparent) !important;
+}
+
+/* Glanz-Animation für LiveSync-Updates, die sanft von links nach rechts drüberwischt */
+.card.new-highlight::before {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
-  pointer-events: none;
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    color-mix(in srgb, var(--color-success) 24%, rgba(255, 255, 255, 0.45)) 48%,
+    color-mix(in srgb, var(--color-success) 45%, #ffffff) 50%,
+    color-mix(in srgb, var(--color-success) 24%, rgba(255, 255, 255, 0.45)) 52%,
+    transparent 65%
+  );
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  animation: cardGlanceSweep 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+@keyframes cardGlanceSweep {
+  0% {
+    background-position: 130% 0;
+  }
+  35% {
+    background-position: -30% 0;
+  }
+  100% {
+    background-position: -30% 0;
+  }
+}
+
+/* Sparkle-Badge für frische Updates auf Karten */
+.card-sparkle-badge {
+  position: absolute;
+  top: -9px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-success);
+  color: var(--color-success);
+  box-shadow:
+    0 2px 8px -1px color-mix(in srgb, var(--color-success) 40%, transparent),
+    0 0 0 2px var(--color-surface);
+  pointer-events: none;
+  z-index: 10;
+  animation: sparkleTwinkle 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+@keyframes sparkleTwinkle {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  15% {
+    transform: scale(1.18) rotate(14deg);
+  }
+  30% {
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes cardNewHighlightPulse {
+  0% {
+    box-shadow:
+      0 0 0 0px var(--color-success),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 3.5px var(--color-success),
+      0 0 24px 4px color-mix(in srgb, var(--color-success) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--color-success),
+      0 8px 24px -4px color-mix(in srgb, var(--color-success) 32%, transparent),
+      0 2px 8px -1px color-mix(in srgb, var(--color-success) 20%, transparent);
+  }
+}
+
+.card.is-map-focused {
+  position: relative;
+  z-index: 6;
+  border-color: var(--color-primary) !important;
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 8px 24px -4px color-mix(in srgb, var(--color-primary) 32%, transparent),
+    0 2px 8px -1px color-mix(in srgb, var(--color-primary) 20%, transparent) !important;
+  animation: cardMapFocusPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card.is-map-focused:hover {
+  border-color: var(--color-primary) !important;
+  box-shadow:
+    0 0 0 2.5px var(--color-primary),
+    0 12px 28px -4px color-mix(in srgb, var(--color-primary) 40%, transparent),
+    0 4px 12px -1px color-mix(in srgb, var(--color-primary) 25%, transparent) !important;
+}
+
+@keyframes cardMapFocusPulse {
+  0% {
+    box-shadow:
+      0 0 0 0px var(--color-primary),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 3.5px var(--color-primary),
+      0 0 24px 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--color-primary),
+      0 8px 24px -4px color-mix(in srgb, var(--color-primary) 32%, transparent),
+      0 2px 8px -1px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.is-map-focused,
+  .card.new-highlight {
+    animation: none;
+  }
+  .card.new-highlight::before,
+  .card-sparkle-badge {
+    animation: none;
+  }
 }
 </style>
 

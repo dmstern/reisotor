@@ -90,6 +90,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />
@@ -106,6 +107,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />
@@ -114,6 +116,7 @@ const btnClasses = computed(() => [
     v-else-if="as"
     :is="as"
     :aria-label="ariaLabel"
+    :aria-pressed="active ? 'true' : undefined"
     :title="title"
     class="btn"
     :class="btnClasses"
@@ -122,6 +125,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />
@@ -131,6 +135,7 @@ const btnClasses = computed(() => [
     :type="type"
     :disabled="disabled"
     :aria-label="ariaLabel"
+    :aria-pressed="active ? 'true' : undefined"
     :title="title"
     class="btn"
     :class="btnClasses"
@@ -139,6 +144,7 @@ const btnClasses = computed(() => [
       v-if="icon"
       :icon="icon"
       group="actions"
+      :active="active"
       :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
     />
     <slot v-if="hasDefaultSlot()" />
@@ -187,12 +193,6 @@ const btnClasses = computed(() => [
   pointer-events: none !important;
   box-shadow: none !important;
   transform: none !important;
-}
-
-.btn.is-active {
-  background: var(--color-primary-tint);
-  border: var(--ui-border-width, 1.5px) solid var(--color-primary);
-  color: var(--color-primary-dark);
 }
 
 .btn--circle {
@@ -311,6 +311,36 @@ const btnClasses = computed(() => [
 .btn--floating:hover:not(:disabled) {
   background: var(--color-hover);
   box-shadow: var(--shadow-md);
+}
+
+/* Aktiver Zustand für alle Button-Varianten (#audit) */
+.btn.is-active,
+.btn--secondary.is-active,
+.btn--ghost.is-active {
+  background: var(--color-primary-tint);
+  border: var(--ui-border-width, 1.5px) solid var(--color-primary);
+  color: var(--color-primary-dark);
+  box-shadow:
+    0 0 0 1px var(--color-primary),
+    var(--shadow-sm);
+  font-weight: 700;
+}
+
+.btn.is-active:hover:not(:disabled),
+.btn--secondary.is-active:hover:not(:disabled),
+.btn--ghost.is-active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  border-color: var(--color-primary-dark);
+  box-shadow:
+    0 0 0 1px var(--color-primary-dark),
+    var(--shadow-md);
+}
+
+.btn--primary.is-active {
+  background: var(--color-primary-dark);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    var(--shadow-sm);
 }
 
 .btn--floating.is-active,

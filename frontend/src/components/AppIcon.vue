@@ -24,24 +24,27 @@ const props = withDefaults(
     color?: string;
     forceStyle?: IconStyle;
     forceVariant?: IconVariant;
+    active?: boolean;
   }>(),
-  { size: 20, color: 'currentColor' }
+  { size: 20, color: 'currentColor', active: false }
 );
 
 const iconStyle = useIconStyleStore();
-const component = computed(() =>
-  resolveIconComponent(
+const component = computed(() => {
+  const variant: IconVariant = props.forceVariant ?? (props.active ? 'filled' : 'outline');
+  return resolveIconComponent(
     props.icon,
     props.forceStyle ?? iconStyle.styleForGroup(props.group),
-    props.forceVariant ?? iconStyle.styleVariantForGroup(props.group)
-  )
-);
+    variant
+  );
+});
 </script>
 
 <template>
   <span
     v-if="!component"
     class="app-icon app-icon-emoji"
+    :class="{ 'is-active': active }"
     :style="{ fontSize: size + 'px' }"
     aria-hidden="true"
     >{{ icon.emoji }}</span
@@ -50,6 +53,7 @@ const component = computed(() =>
     :is="component"
     v-else
     class="app-icon app-icon-tabler"
+    :class="{ 'is-active': active }"
     :size="size"
     :color="color"
     aria-hidden="true"

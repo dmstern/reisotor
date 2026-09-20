@@ -28,7 +28,7 @@ function markerGlyphHtml(icon: MarkerGlyph, sizePx: number): string {
   if (iconStyle.styleForGroup('categories') === 'emoji') {
     return `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
   }
-  const svg = tablerMarkerSvg(icon.id, iconStyle.styleVariantForGroup('categories'), sizePx);
+  const svg = tablerMarkerSvg(icon.id, 'outline', sizePx);
   return svg
     ? `<span style="color:#fff;display:inline-flex;width:${sizePx}px;height:${sizePx}px;">${svg}</span>`
     : `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
@@ -60,11 +60,72 @@ const iconCache = new Map<string, L.DivIcon>();
 export function cachedEmojiPin(icon: MarkerGlyph, color: string, large = false) {
   const iconStyle = useIconStyleStore();
   const identity = typeof icon === 'string' ? `emoji:${icon}` : `def:${icon.id}`;
-  const key = `${identity}|${iconStyle.styleForGroup('categories')}|${iconStyle.styleVariantForGroup('categories')}|${color}|${large}`;
+  const key = `${identity}|${iconStyle.styleForGroup('categories')}|${color}|${large}`;
   let cached = iconCache.get(key);
   if (!cached) {
     cached = emojiPin(icon, color, large);
     iconCache.set(key, cached);
+  }
+  return cached;
+}
+
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// Marker-Pin mit Foto-Thumbnail für Aufnahmestandorte von Bildern (z. B. aus Notizen/Tagebuch mit
+// EXIF-GPS-Metadaten). Baut auf derselben markanten Teardrop-Pin-Silhouette auf wie emojiPin(),
+// bettet das Foto aber als runden Zuschnitt im Pin-Kopf ein (inkl. 🖼️-Fallback, falls das Bild noch lädt
+// oder nicht verfügbar ist).
+export function imagePin(
+  imageUrl: string,
+  color: string,
+  large = false,
+  dateBadge?: string | null
+) {
+  const size = large ? 56 : 42;
+  const thumbSize = large ? 42 : 30;
+  const fallbackSize = large ? 20 : 14;
+  const safeUrl = escapeHtmlAttr(imageUrl);
+  const badgeHtml = dateBadge
+    ? `<span class="photo-pin-date-badge">${escapeHtmlAttr(dateBadge)}</span>`
+    : '';
+  return L.divIcon({
+    html: `<div class="photo-map-pin-container" style="position:relative;width:${size}px;height:${size}px;display:flex;justify-content:center;">
+      <div class="photo-map-pin ${large ? 'photo-map-pin--large' : ''}" style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
+        transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
+        box-shadow:0 3px 10px rgba(0,0,0,.4);border:2.5px solid white;">
+        <div style="transform:rotate(45deg);width:${thumbSize}px;height:${thumbSize}px;border-radius:50%;overflow:hidden;
+          background:#1a1a1a;display:flex;align-items:center;justify-content:center;position:relative;">
+          <span style="position:absolute;font-size:${fallbackSize}px;line-height:1;user-select:none;">🖼️</span>
+          <img src="${safeUrl}" alt="" style="position:relative;width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;" onerror="this.style.display='none'" />
+        </div>
+      </div>
+      ${badgeHtml}
+    </div>`,
+    className: 'photo-marker-pin',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size + 2],
+  });
+}
+
+const imageIconCache = new Map<string, L.DivIcon>();
+export function cachedImagePin(
+  imageUrl: string,
+  color: string,
+  large = false,
+  dateBadge?: string | null
+) {
+  const key = `${imageUrl}|${color}|${large}|${dateBadge ?? ''}`;
+  let cached = imageIconCache.get(key);
+  if (!cached) {
+    cached = imagePin(imageUrl, color, large, dateBadge);
+    imageIconCache.set(key, cached);
   }
   return cached;
 }

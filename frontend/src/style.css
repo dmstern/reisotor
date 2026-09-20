@@ -949,3 +949,8 @@ p + .btn {
     display: none !important;
   }
 }
+
+/* Verhindert Zeilenumbruch zwischen Zahlenwerten und ihren Einheiten (z. B. 12,50 €, 15 km, 20 Min.) */
+.nobr {
+  white-space: nowrap;
+}

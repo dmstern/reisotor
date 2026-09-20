@@ -123,4 +123,20 @@ describe('LegTransportModal', () => {
 
     cleanUp();
   });
+
+  it('renders collapsible fieldset labeled "Erweiterte Angaben"', async () => {
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: null,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const toggleBtn = document.querySelector('.collapsible-toggle');
+    expect(toggleBtn?.textContent).toContain('Erweiterte Angaben');
+
+    cleanUp();
+  });
 });

@@ -231,4 +231,66 @@ describe('attachments routes', () => {
     expect(getRes.json().length).toBe(1);
     expect(getRes.json()[0].original_name).toBe('train-ticket.png');
   });
+
+  it('GET /attachments?trip_id=... returns all trip attachments and enforces membership', async () => {
+    const owner = await register('martha', 'martha@example.com');
+    const outsider = await register('otto', 'otto@example.com');
+
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: owner.cookie },
+      payload: { name: 'Trip-Wide-Attachments', start_date: '2026-06-01', end_date: '2026-06-10' },
+    });
+    const tripId = tripRes.json().id;
+
+    const noteRes = await app.inject({
+      method: 'POST',
+      url: '/api/notes',
+      headers: { cookie: owner.cookie },
+      payload: { trip_id: tripId, title: 'Notiz', content: 'Inhalt' },
+    });
+    const noteId = noteRes.json().id;
+
+    // Lade Anhang an Notiz hoch
+    await app.inject({
+      method: 'POST',
+      url: '/api/attachments',
+      headers: { cookie: owner.cookie },
+      payload: {
+        domain: 'notes',
+        entity_id: noteId,
+        filename: 'notiz-foto.png',
+        data: `data:image/png;base64,${TINY_PNG_BASE64}`,
+      },
+    });
+
+    // Outsider wird abgewiesen
+    const outsiderRes = await app.inject({
+      method: 'GET',
+      url: `/api/attachments?trip_id=${tripId}`,
+      headers: { cookie: outsider.cookie },
+    });
+    expect(outsiderRes.statusCode).toBe(403);
+
+    // Ungültige trip_id
+    const badIdRes = await app.inject({
+      method: 'GET',
+      url: '/api/attachments?trip_id=invalid',
+      headers: { cookie: owner.cookie },
+    });
+    expect(badIdRes.statusCode).toBe(400);
+
+    // Member erhält alle Anhänge des Trips
+    const memberRes = await app.inject({
+      method: 'GET',
+      url: `/api/attachments?trip_id=${tripId}`,
+      headers: { cookie: owner.cookie },
+    });
+    expect(memberRes.statusCode).toBe(200);
+    const list = memberRes.json();
+    expect(list.length).toBe(1);
+    expect(list[0].original_name).toBe('notiz-foto.png');
+    expect(list[0].domain).toBe('notes');
+  });
 });

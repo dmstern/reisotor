@@ -25,7 +25,7 @@ import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils
 import RichTextEditor from '../components/RichTextEditor.vue';
 import FormField from '../components/FormField.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
-import { compressImage } from '../utils/imageCompression';
+import { compressImage, isHeicFile } from '../utils/imageCompression';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatDate } from '../utils/dateFormat';
 import Modal from '../components/Modal.vue';
@@ -39,7 +39,9 @@ import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import Input from '../components/primitives/Input.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -357,13 +359,14 @@ async function uploadFiles(
   try {
     for (const file of files) {
       const compressed = await compressImage(file);
+      const filename = isHeicFile(file) ? file.name.replace(/\.(heic|heif)$/i, '.jpg') : file.name;
       const res = await api.post<{ url: string; original_name?: string }>('/diary/images', {
         data: compressed,
-        filename: file.name,
+        filename,
       });
       target.images.push({
         url: res.url,
-        original_name: res.original_name || file.name,
+        original_name: res.original_name || filename,
       });
     }
   } catch {
@@ -387,6 +390,31 @@ function onEditFilesSelected(event: Event) {
 
 function removeImage(target: { images: DiaryImage[] }, index: number) {
   target.images.splice(index, 1);
+}
+
+async function removeImageFromEntry(entry: DiaryEntry, index: number) {
+  if (auth.user?.restricted) return;
+  const removed = entry.images[index];
+  entry.images.splice(index, 1);
+  const body = {
+    title: entry.title || undefined,
+    content: entry.content,
+    content_format: entry.content_format || 'html',
+    images: entry.images,
+    excursion_ids: entry.excursion_ids ?? [],
+    spot_ids: entry.spot_ids ?? [],
+    date: entry.date,
+    is_draft: Boolean(entry.is_draft),
+  };
+  try {
+    const updated = await api.put<DiaryEntry>(`/diary/${entry.id}`, body);
+    const idx = entries.value.findIndex((e) => e.id === updated.id);
+    if (idx !== -1) entries.value[idx] = updated;
+    sortEntries();
+  } catch (err) {
+    entry.images.splice(index, 0, removed);
+    console.error('Fehler beim Entfernen des Bildes aus dem Tagebucheintrag:', err);
+  }
 }
 
 // "+ Neuer Eintrag": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen
@@ -649,7 +677,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             ref="newFileInputRef"
             type="file"
             class="file-input-hidden"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             multiple
             aria-label="Bilder auswählen"
             :disabled="uploading"
@@ -748,12 +776,13 @@ function showEntryDayOnMap(entry: DiaryEntry) {
     </Modal>
 
     <TransitionGroup tag="div" name="list" class="entries">
-      <article
+      <Card
+        tag="article"
         v-for="(entry, index) in entries"
         :key="entry.id"
-        class="card entry animate-cascade"
+        class="entry animate-cascade"
         :style="{ '--stagger-delay': `${index * 60}ms` }"
-        :class="{ 'new-highlight': highlightedIds.has(entry.id) }"
+        :highlight="highlightedIds.has(entry.id)"
       >
         <header class="entry-head">
           <span class="avatar">{{
@@ -787,7 +816,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           <PolaroidStack
             :items="entry.images"
             clipped
-            @click="(idx) => openDiaryPreview(entry.images, idx)"
+            @click="
+              (idx) =>
+                openDiaryPreview(entry.images, idx, !auth.user?.restricted, (i) =>
+                  removeImageFromEntry(entry, i)
+                )
+            "
           />
         </div>
 
@@ -880,9 +914,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             @toggle-like="toggleCommentLike"
           />
         </Accordion>
-      </article>
+      </Card>
     </TransitionGroup>
-    <p v-if="!entries.length" class="empty">Noch keine Tagebuch-Einträge.</p>
+    <EmptyState v-if="!entries.length">Noch keine Tagebuch-Einträge.</EmptyState>
 
     <Modal
       :model-value="editingEntry !== null"
@@ -906,7 +940,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             ref="editFileInputRef"
             type="file"
             class="file-input-hidden"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             multiple
             aria-label="Bilder auswählen"
             :disabled="editUploading"

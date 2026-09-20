@@ -113,8 +113,8 @@ const newMapsLink = ref('');
 // Felder), siehe parseLinkKey/linkKeyFor.
 const newLinkKey = ref('');
 const showAddForm = ref(false);
-const showAddDetailsSection = ref(false);
-const showEditDetailsSection = ref(false);
+const showAddLocationSection = ref(false);
+const showEditLocationSection = ref(false);
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): das Create-Formular besteht
 // (anders als in den meisten anderen Domänen) aus lauter einzelnen Refs statt eines Objekt-Refs -
@@ -348,6 +348,10 @@ onMounted(async () => {
   // Urlaub komplett in der Vergangenheit/Zukunft ohne nahe ToDo-Fälligkeiten), zum Urlaubsstart.
   if (!goToDate(toLocalDateString(new Date())) && trip.value?.start_date) {
     goToDate(trip.value.start_date);
+    selectedDate.value = trip.value.start_date;
+    activeJumpTarget.value = 'trip';
+  } else {
+    activeJumpTarget.value = 'today';
   }
   loading.value = false;
 });
@@ -577,10 +581,12 @@ function nextMonth() {
 }
 
 function prevPage() {
+  activeJumpTarget.value = null;
   if (granularity.value === 'month') prevMonth();
   else pageOffset.value = clampOffset(pageOffset.value - weeksPerPage.value);
 }
 function nextPage() {
+  activeJumpTarget.value = null;
   if (granularity.value === 'month') nextMonth();
   else pageOffset.value = clampOffset(pageOffset.value + weeksPerPage.value);
 }
@@ -625,14 +631,43 @@ function goToDate(dateIso: string): boolean {
   return true;
 }
 
+// Aktiver Sprung-Fokus ('today' | 'trip' | null) für die optische Hervorhebung der Buttons (#audit)
+const activeJumpTarget = ref<'today' | 'trip' | null>(null);
+
+const isTodayActive = computed(() => {
+  const today = toLocalDateString(new Date());
+  const todayVisible = visibleWeeks.value.some((week) => week.some((day) => day.date === today));
+  if (!todayVisible) return false;
+  if (activeJumpTarget.value === 'today') return true;
+  if (activeJumpTarget.value === 'trip') return false;
+  return selectedDate.value === today;
+});
+
+const isTripActive = computed(() => {
+  if (!trip.value?.start_date) return false;
+  const tripStartDate = trip.value.start_date;
+  const tripStartVisible = visibleWeeks.value.some((week) =>
+    week.some((day) => day.date === tripStartDate)
+  );
+  if (!tripStartVisible) return false;
+  if (activeJumpTarget.value === 'trip') return true;
+  if (activeJumpTarget.value === 'today') return false;
+  return selectedDate.value === tripStartDate;
+});
+
 function jumpToToday() {
+  activeJumpTarget.value = 'today';
   const today = toLocalDateString(new Date());
   goToDate(today);
   selectDay(today);
 }
 
 function goToTripDates() {
-  if (trip.value?.start_date) goToDate(trip.value.start_date);
+  activeJumpTarget.value = 'trip';
+  if (trip.value?.start_date) {
+    goToDate(trip.value.start_date);
+    selectDay(trip.value.start_date);
+  }
 }
 
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));
@@ -660,6 +695,14 @@ const selectedDateWeatherEntries = computed(() =>
 // danach zusätzlich den "gemacht"-Status, siehe finishPendingSchedule.
 function selectDay(date: string) {
   selectedDate.value = date;
+  const today = toLocalDateString(new Date());
+  if (date === today) {
+    activeJumpTarget.value = 'today';
+  } else if (trip.value?.start_date && date === trip.value.start_date) {
+    activeJumpTarget.value = 'trip';
+  } else {
+    activeJumpTarget.value = null;
+  }
   const pending = drawers.pendingSchedule;
   if (!pending) return;
   void finishPendingSchedule(pending, date);
@@ -742,13 +785,13 @@ function onDropExcursion(date: string, excursionId: number) {
 // Startdatum vorausgefüllt, sonst bleibt das Feld leer und muss manuell gesetzt werden.
 function openAddForm() {
   newStartDate.value = selectedDate.value ?? '';
-  showAddDetailsSection.value = false;
+  showAddLocationSection.value = !!(newLinkKey.value || newLocation.value || newMapsLink.value);
   showAddForm.value = true;
 }
 
 function closeAddForm() {
   showAddForm.value = false;
-  showAddDetailsSection.value = false;
+  showAddLocationSection.value = false;
   newStartDate.value = '';
   newTime.value = '';
   newEndTime.value = '';
@@ -808,9 +851,9 @@ function startEdit(item: ScheduleItem) {
     mapsLink: item.maps_link ?? '',
     linkKey: linkKeyFor(item),
   };
-  showEditDetailsSection.value = !!(
-    editForm.value.endDate ||
-    editForm.value.endTime ||
+  showEditLocationSection.value = !!(
+    editForm.value.linkKey ||
+    editForm.value.location ||
     editForm.value.mapsLink
   );
 }
@@ -847,7 +890,7 @@ async function submitEdit() {
 function closeEditForm() {
   editDraft.clear();
   editingItem.value = null;
-  showEditDetailsSection.value = false;
+  showEditLocationSection.value = false;
 }
 
 function jumpToTrip() {
@@ -857,10 +900,12 @@ function jumpToTrip() {
 function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
   // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/ExcursionsView.vue
-  // nehmen die id über hashHighlightId() zusätzlich in ihre bereits bestehende highlightedIds-Menge
-  // auf, der Router scrollt automatisch zum Element mit dieser id (siehe router/index.ts's
-  // scrollBehavior).
-  else if (entry.kind === 'todo') router.push(`/listen?tab=todo#todo-${entry.todoId}`);
+  // fokussieren das Ziel über hashHighlightId() gezielt in Brand-Farbe, der Router scrollt
+  // automatisch zum Element mit dieser id (siehe router/index.ts's scrollBehavior).
+  else if (entry.kind === 'todo') {
+    drawers.calendarOpen = false;
+    router.push(`/listen?tab=todo#todo-${entry.todoId}`);
+  }
   // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bleibt zwar ein echter,
   // schedule_items-basierter kind:'schedule'-Eintrag (siehe calendarEntries.ts), springt beim Klick
   // aber weiterhin direkt zur Tour-Karte statt den generischen Termin-Dialog zu öffnen - dieselbe
@@ -868,6 +913,8 @@ function openEntry(entry: CalendarEntry) {
   // denselben #excursion-<id>-Hash wie jede andere Tour (ExcursionsView.vue's
   // onFocusExcursionFromMap).
   else if (entry.category === 'travel' && entry.ideaId != null) {
+    drawers.openMapForExcursion(entry.ideaId);
+    drawers.calendarOpen = false;
     router.push(`/excursions#excursion-${entry.ideaId}`);
   } else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
 }
@@ -1033,10 +1080,20 @@ function navigateToLinkedEntity() {
   if (!entry) return;
   viewingItem.value = null;
   if (entry.spotId != null) {
+    drawers.openMapAt(`spot-${entry.spotId}`);
+    drawers.calendarOpen = false;
     router.push(`/excursions#spot-${entry.spotId}`);
   } else if (entry.ideaId != null) {
+    drawers.openMapForExcursion(entry.ideaId);
+    drawers.calendarOpen = false;
     router.push(`/excursions#excursion-${entry.ideaId}`);
   }
+}
+
+function openAccommodationSpot(spotId: number) {
+  drawers.openMapAt(`spot-${spotId}`);
+  drawers.calendarOpen = false;
+  router.push(`/excursions#spot-${spotId}`);
 }
 
 function editViewingItem() {
@@ -1138,10 +1195,23 @@ function formatDate(date: string) {
 
       <div class="toolbar-actions-row">
         <div class="jump-row">
-          <Button variant="secondary" size="sm" @click="jumpToToday">
+          <Button
+            variant="secondary"
+            size="sm"
+            :active="isTodayActive"
+            title="Zum heutigen Datum springen"
+            @click="jumpToToday"
+          >
             <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
           </Button>
-          <Button variant="secondary" size="sm" v-if="trip" @click="goToTripDates">
+          <Button
+            variant="secondary"
+            size="sm"
+            v-if="trip?.start_date"
+            :active="isTripActive"
+            title="Zum Reisezeitraum springen"
+            @click="goToTripDates"
+          >
             <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
           </Button>
         </div>
@@ -1204,16 +1274,18 @@ function formatDate(date: string) {
           </span>
         </div>
 
-        <div
+        <button
+          type="button"
           v-for="acc in dayAccommodations"
           :key="acc.id"
-          class="day-meta-pill acc-pill"
-          :title="`Unterkunft: ${acc.title}`"
+          class="day-meta-pill acc-pill is-clickable"
+          :title="`Unterkunft: ${acc.title} auf Karte anzeigen`"
+          @click="openAccommodationSpot(acc.id)"
         >
           <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" />
           <span class="meta-label">Unterkunft:</span>
           <strong>{{ acc.title }}</strong>
-        </div>
+        </button>
       </div>
 
       <TransitionGroup tag="ul" name="list" class="items">
@@ -1352,55 +1424,50 @@ function formatDate(date: string) {
           </FormField>
         </div>
         <div class="row">
-          <FormField icon="maps" label="Karte" v-slot="{ id }">
-            <Select :id="id" v-model="newLinkKey">
-              <option value="">Kein Spot/keine Tour verknüpft</option>
-              <optgroup label="Spots" v-if="spotsStore.spots.length">
-                <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
-                  {{ s.title }}
-                </option>
-              </optgroup>
-              <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-                <option
-                  v-for="e in excursionsStore.excursions"
-                  :key="`idea:${e.id}`"
-                  :value="`idea:${e.id}`"
-                >
-                  {{ e.title }}
-                </option>
-              </optgroup>
-            </Select>
+          <FormField icon="date" label="Enddatum" v-slot="{ id }">
+            <Input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
           </FormField>
-          <FormField v-if="!newLinkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
-            <Combobox
-              :id="id"
-              v-model="newLocation"
-              :options="placeNames"
-              placeholder="Ort (optional)"
-            />
+          <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
+            <Input :id="id" v-model="newEndTime" type="time" />
           </FormField>
         </div>
-        <FormField icon="note" label="Notiz">
-          <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
-        </FormField>
         <CollapsibleFieldset
-          v-model="showAddDetailsSection"
-          :icon="FORM_FIELD_ICONS.period"
+          v-model="showAddLocationSection"
+          label="Ortsangaben"
+          :icon="FORM_FIELD_ICONS.location"
           icon-group="formFields"
         >
-          <template #label>
-            <span>
-              Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!newLinkKey"
-                >, Maps-Link</template
-              >)
-            </span>
-          </template>
           <div class="row">
-            <FormField icon="date" label="Enddatum" v-slot="{ id }">
-              <Input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
+            <FormField icon="maps" label="Karte" v-slot="{ id }">
+              <Select :id="id" v-model="newLinkKey">
+                <option value="">Kein Spot/keine Tour verknüpft</option>
+                <optgroup label="Spots" v-if="spotsStore.spots.length">
+                  <option
+                    v-for="s in spotsStore.spots"
+                    :key="`spot:${s.id}`"
+                    :value="`spot:${s.id}`"
+                  >
+                    {{ s.title }}
+                  </option>
+                </optgroup>
+                <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+                  <option
+                    v-for="e in excursionsStore.excursions"
+                    :key="`idea:${e.id}`"
+                    :value="`idea:${e.id}`"
+                  >
+                    {{ e.title }}
+                  </option>
+                </optgroup>
+              </Select>
             </FormField>
-            <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-              <Input :id="id" v-model="newEndTime" type="time" />
+            <FormField v-if="!newLinkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
+              <Combobox
+                :id="id"
+                v-model="newLocation"
+                :options="placeNames"
+                placeholder="Ort (optional)"
+              />
             </FormField>
           </div>
           <FormField v-if="!newLinkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
@@ -1412,6 +1479,9 @@ function formatDate(date: string) {
             />
           </FormField>
         </CollapsibleFieldset>
+        <FormField icon="note" label="Notiz">
+          <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
+        </FormField>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
           <div class="spacer"></div>
@@ -1439,65 +1509,55 @@ function formatDate(date: string) {
           </FormField>
         </div>
         <div class="row">
-          <FormField icon="maps" label="Karte" v-slot="{ id }">
-            <Select :id="id" v-model="editForm.linkKey">
-              <option value="">Kein Spot/keine Tour verknüpft</option>
-              <optgroup label="Spots" v-if="spotsStore.spots.length">
-                <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
-                  {{ s.title }}
-                </option>
-              </optgroup>
-              <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-                <option
-                  v-for="e in excursionsStore.excursions"
-                  :key="`idea:${e.id}`"
-                  :value="`idea:${e.id}`"
-                >
-                  {{ e.title }}
-                </option>
-              </optgroup>
-            </Select>
+          <FormField icon="date" label="Enddatum" v-slot="{ id }">
+            <Input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
           </FormField>
-          <FormField
-            v-if="!editForm.linkKey"
-            icon="location"
-            label="Ort (Freitext)"
-            v-slot="{ id }"
-          >
-            <Combobox
-              :id="id"
-              v-model="editForm.location"
-              :options="placeNames"
-              placeholder="Ort (optional)"
-            />
+          <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
+            <Input :id="id" v-model="editForm.endTime" type="time" />
           </FormField>
         </div>
-        <FormField icon="note" label="Notiz">
-          <RichTextEditor
-            v-model="editForm.note"
-            placeholder="Notiz (optional)"
-            compact
-            expandable
-          />
-        </FormField>
         <CollapsibleFieldset
-          v-model="showEditDetailsSection"
-          :icon="FORM_FIELD_ICONS.period"
+          v-model="showEditLocationSection"
+          label="Ortsangaben"
+          :icon="FORM_FIELD_ICONS.location"
           icon-group="formFields"
         >
-          <template #label>
-            <span>
-              Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!editForm.linkKey"
-                >, Maps-Link</template
-              >)
-            </span>
-          </template>
           <div class="row">
-            <FormField icon="date" label="Enddatum" v-slot="{ id }">
-              <Input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
+            <FormField icon="maps" label="Karte" v-slot="{ id }">
+              <Select :id="id" v-model="editForm.linkKey">
+                <option value="">Kein Spot/keine Tour verknüpft</option>
+                <optgroup label="Spots" v-if="spotsStore.spots.length">
+                  <option
+                    v-for="s in spotsStore.spots"
+                    :key="`spot:${s.id}`"
+                    :value="`spot:${s.id}`"
+                  >
+                    {{ s.title }}
+                  </option>
+                </optgroup>
+                <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+                  <option
+                    v-for="e in excursionsStore.excursions"
+                    :key="`idea:${e.id}`"
+                    :value="`idea:${e.id}`"
+                  >
+                    {{ e.title }}
+                  </option>
+                </optgroup>
+              </Select>
             </FormField>
-            <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-              <Input :id="id" v-model="editForm.endTime" type="time" />
+            <FormField
+              v-if="!editForm.linkKey"
+              icon="location"
+              label="Ort (Freitext)"
+              v-slot="{ id }"
+            >
+              <Combobox
+                :id="id"
+                v-model="editForm.location"
+                :options="placeNames"
+                placeholder="Ort (optional)"
+              />
             </FormField>
           </div>
           <FormField v-if="!editForm.linkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
@@ -1509,6 +1569,14 @@ function formatDate(date: string) {
             />
           </FormField>
         </CollapsibleFieldset>
+        <FormField icon="note" label="Notiz">
+          <RichTextEditor
+            v-model="editForm.note"
+            placeholder="Notiz (optional)"
+            compact
+            expandable
+          />
+        </FormField>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
@@ -1672,6 +1740,17 @@ function formatDate(date: string) {
 
 .weeks {
   padding: var(--space-2);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Leucht-Effekt für den gesamten Kalender-Wochenbereich während des Einplanen-Drags (#drag) */
+:global(body.is-dragging-calendar .weeks) {
+  border-color: color-mix(in srgb, var(--color-scheduled) 60%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-scheduled) 35%, transparent),
+    0 6px 20px -2px color-mix(in srgb, var(--color-scheduled) 25%, transparent);
 }
 
 .calendar-weekday-headers {
@@ -1830,6 +1909,18 @@ function formatDate(date: string) {
   background: var(--color-accent-secondary-bg);
   border-color: color-mix(in srgb, var(--color-accent-secondary) 25%, transparent);
   color: var(--color-accent-secondary);
+}
+
+.day-meta-pill.acc-pill.is-clickable {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.day-meta-pill.acc-pill.is-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .meta-label {

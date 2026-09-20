@@ -15,10 +15,16 @@ export interface TourItem {
 // Verschmilzt (#226, #227) den früheren "Auf Tour ziehen"-Drag-Anfasser und das "Tour zuordnen"-
 // Dropdown in ein einziges Steuerelement: Klick öffnet die Touren-Checkliste (zeigt alle Touren mit
 // Checkbox an, Anhaken fügt den Spot hinzu, Abhaken entfernt ihn), Ziehen startet wie gewohnt den
-// Drag&Drop-Vorgang auf eine Tour-Karte.
-defineProps<{
-  tours: TourItem[];
-}>();
+// Drag&Drop-Vorgang auf eine Tour-Karte (nur in Touren-Ansicht via canDrag aktiv, #audit).
+const props = withDefaults(
+  defineProps<{
+    tours: TourItem[];
+    canDrag?: boolean;
+  }>(),
+  {
+    canDrag: false,
+  }
+);
 
 const emit = defineEmits<{
   (e: 'toggle-tour', excursionId: number): void;
@@ -74,11 +80,16 @@ function handleCreate() {
 }
 
 function onDragStart(event: DragEvent) {
+  if (!props.canDrag) {
+    event.preventDefault();
+    return;
+  }
   document.body.classList.add('is-dragging-tour');
   emit('dragstart', event);
 }
 
 function onDragEnd(_event: DragEvent) {
+  if (!props.canDrag) return;
   document.body.classList.remove('is-dragging-tour');
 }
 
@@ -111,14 +122,14 @@ onUnmounted(() => {
       ref="buttonRef"
       type="button"
       class="tour-assign-btn"
-      :class="{ 'is-open': open }"
-      draggable="true"
+      :class="{ 'is-open': open, 'is-draggable': canDrag }"
+      :draggable="canDrag ? 'true' : 'false'"
       :aria-expanded="open"
-      title="Klicken zum Zuordnen / Auf Tour ziehen"
-      aria-label="Tour zuordnen oder auf eine Tour ziehen"
+      :title="canDrag ? 'Klicken zum Zuordnen / Auf Tour ziehen' : 'Tour zuordnen'"
+      :aria-label="canDrag ? 'Tour zuordnen oder auf eine Tour ziehen' : 'Tour zuordnen'"
       @click="toggle($event)"
-      @dragstart="onDragStart"
-      @dragend="onDragEnd"
+      @dragstart="canDrag ? onDragStart($event) : undefined"
+      @dragend="canDrag ? onDragEnd($event) : undefined"
     >
       <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Tour zuordnen
     </button>
@@ -202,13 +213,13 @@ onUnmounted(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 3px 10px 3px 8px;
+  padding: 3px 10px;
   font-size: 0.72rem;
   font-weight: 500;
   color: var(--color-text-muted);
-  cursor: grab;
+  cursor: pointer;
   user-select: none;
-  touch-action: none;
+  touch-action: auto;
   transition:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.18s ease,
@@ -217,10 +228,20 @@ onUnmounted(() => {
     box-shadow 0.2s ease;
 }
 
+.tour-assign-btn.is-draggable {
+  padding: 3px 10px 3px 8px;
+  cursor: grab;
+  touch-action: none;
+}
+
 .tour-assign-btn:active {
+  transform: scale(0.97) translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.tour-assign-btn.is-draggable:active {
   cursor: grabbing;
   transform: scale(0.95) translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .tour-assign-btn:focus-visible {
@@ -228,7 +249,8 @@ onUnmounted(() => {
   outline-offset: 2px;
 }
 
-.tour-assign-btn::before {
+/* Anfasser (Grip-Dots) nur anzeigen, wenn Drag&Drop aktiv ist (#audit) */
+.tour-assign-btn.is-draggable::before {
   content: '';
   flex-shrink: 0;
   width: 6px;
@@ -267,8 +289,8 @@ onUnmounted(() => {
     0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
-.tour-assign-btn:hover::before,
-.tour-assign-btn.is-open::before {
+.tour-assign-btn.is-draggable:hover::before,
+.tour-assign-btn.is-draggable.is-open::before {
   opacity: 1;
   transform: scale(1.25);
 }

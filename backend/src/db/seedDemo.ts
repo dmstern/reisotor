@@ -136,7 +136,7 @@ const hotelAlfamaResult = db
     tripId,
     'Hotel Alfama',
     'Zentrale Lage im Altstadtviertel Alfama, Klimaanlage vorhanden.',
-    null,
+    'https://maps.google.com/?q=Alfama+Lissabon',
     38.72,
     -9.12,
     'Rua dos Caminhos de Ferro 40, 1100-105 Lisboa',

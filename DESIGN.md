@@ -143,10 +143,13 @@ anlegen, nicht als lokaler Wert in der Komponente.
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
 
-**Eine Bedeutung pro Farbe, nicht umgekehrt**: `--color-accent` ist app-weit fest für "Echtzeit-Update
-von jemand anderem / wartet auf etwas / allgemeine Aufmerksamkeit" reserviert (`.new-highlight`,
-`PendingSyncBadge.vue`, `OfflineIndicator.vue`, …) – ein zweites, fachlich unabhängiges Konzept nie
-einfach denselben Ton mitbenutzen lassen, nur weil er ähnlich "passt". Konkret aufgetretener Fall:
+**Eine Bedeutung pro Farbe, nicht umgekehrt**: `--color-success` (Grün) ist app-weit für
+"Neu angelegt oder geändert von anderen Nutzern" reserviert (`.new-highlight` in `Card.vue`,
+`CheckableListItem.vue`, `BudgetExpenseList.vue`, `BudgetTransferList.vue`). Über den Kalender
+oder Querverweise fokussierte Elemente nutzen stattdessen die Markenfarbe `--color-primary`
+(`.is-map-focused` bzw. `.is-focused`). `--color-accent` steht für allgemeine Aufmerksamkeit
+(`PendingSyncBadge.vue`, `OfflineIndicator.vue`, …) – fachlich unabhängige Konzepte nie
+denselben Farbton teilen lassen. Konkret aufgetretener Fall:
 `TripMap.vue`s Tage-Streifen zeigte anfangs ebenfalls `--color-accent` für "an diesem Tag ist etwas
 geplant" – identisch zur Update-Farbe, an der Karte (wo beide Bedeutungen gleichzeitig auftreten
 können: ein Tag kann sowohl geplante Einträge haben als auch gerade frisch synchronisiert worden sein)
@@ -533,25 +536,25 @@ zurück). Drei getrennte, in sich konsistente Icon-Systeme:
   (Einzelfälle ohne Wiederverwendungspotenzial dürfen weiterhin lokal bleiben, siehe
   `LocationPicker.vue`s `OWN_LOCATION_ICON`).
 
-**Icon-Stil UND -Variante pro Bereich einzeln einstellbar**: `AppIcon.vue`s Pflicht-Prop `group`
+**Icon-Stil pro Bereich einzeln einstellbar, Gefüllt-Variante als Aktiv-Status**: `AppIcon.vue`s Pflicht-Prop `group`
 (`IconGroup` aus `stores/iconStyle.ts`: `navigation`, `categories`, `weather`, `formFields`,
-`actions`) ordnet jede Aufrufstelle einem groben Bereich zu. Konfigurierbar sind davon seit Issue
-#168 nur noch `navigation`, `categories` und `weather` (`ICON_GROUP_OPTIONS`/`ConfigurableIconGroup`)
+`actions`) ordnet jede Aufrufstelle einem groben Bereich zu. Konfigurierbar sind davon
+nur `navigation`, `categories` und `weather` (`ICON_GROUP_OPTIONS`/`ConfigurableIconGroup`)
 – `formFields` und `actions` (Formularfelder, Buttons/Aktionen, Status-Labels) liefern bei
-`iconStyle.styleForGroup(group)`/`styleVariantForGroup(group)` immer `'icons'`/`'outline'` und
+`iconStyle.styleForGroup(group)` immer `'icons'` und
 tauchen in der Bereichstabelle nicht mehr auf: Emoji sah bei diesen Interaktionselementen sichtbar
 schlecht aus, deshalb dort erzwungenes SVG statt einer Einstellung. Nie direkt den rohen State in
 einer Komponente lesen, wenn ein `AppIcon` gerendert wird, sonst umgeht das die Bereichs-Erzwingung/
--Einstellung. Die Bereichstabelle in `IconStyleSettings.vue` ist der zentrale, immer sichtbare Teil
+-Einstellung. Die Gefüllt-Variante (`IconDef.filled`) ist bewusst keine globale/bereichsweise
+Benutzereinstellung mehr, sondern wird app-weit konsistent als **Aktiv-Status** genutzt (z. B.
+aktiver Nav-Punkt in der Hauptnavigation, aktiver Tab in der `TabBar`, ausgeklappte Kommentare,
+aktive Segmented-Control-Optionen, aktive Filter- und Toggle-Buttons via `:active`).
+Die Bereichstabelle in `IconStyleSettings.vue` ist der zentrale, immer sichtbare Teil
 der Karte (kein Einklappen mehr) – oben ein "Für alle Bereiche umstellen"-Bulk-Toggle (reiner Setter,
 kein eigener Zustand, betrifft nur die drei konfigurierbaren Bereiche), darunter je
-`ICON_GROUP_OPTIONS`-Eintrag eine Emoji/Symbole-`SegmentedToggle.vue`-Zeile und (nur wenn der Bereich
-auf Symbole steht) eine zweite, kleinere Outline/Gefüllt-Zeile darunter. Beide Toggle-Arten zeigen
-ein Beispiel-Icon je Option (`SegmentedToggle.vue`s optionale `icon`/`iconGroup`/`forceStyle`/
-`forceVariant`-Felder je Option – `forceStyle`/`forceVariant` sorgen dafür, dass eine Option IMMER
-ihre eigene Darstellung zeigt, unabhängig vom aktuell aktiven Wert), auf schmalen Karten
-(`@container`, analog `SpotCard.vue`s `@container spots-col`) bleibt nur noch das Icon, das
-Wort-Label wird ausgeblendet.
+`ICON_GROUP_OPTIONS`-Eintrag eine Emoji/Symbole-`SegmentedToggle.vue`-Zeile. Alle Toggle-Arten zeigen
+ein Beispiel-Icon je Option (`SegmentedToggle.vue`s optionale `icon`/`iconGroup`/`forceStyle`-Felder
+je Option), auf schmalen Karten (`@container`) bleibt nur noch das Icon, das Wort-Label wird ausgeblendet.
 
 **Farbcodierung wiederverwendet, nicht neu erfunden**: `AppIcon.vue`s optionale `color`-Prop
 (Default `currentColor`) überschreibt die Icon-Farbe gezielt an einer Aufrufstelle. Für Symbol-Icons
@@ -670,13 +673,14 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   **Polaroid-Stil & Drehung**: `.card--polaroid` (in `SpotCard.vue`) wird in der Ruheposition ganz leicht schräg rotiert platziert (`--card-rotate`, z. B. `-1.1°` bis `+0.95°` mit stabiler ID-Verteilung), um eine natürliche, fototisch-artige Anordnung zu erzeugen. Beim Aufklappen (`expanded`) richtet sich die Karte auf `0deg` gerade aus.
   **Optischer Hover-Lift ("Anheben")**: Anklickbare Karten (`interactive: true`, `expandable: true`, `ExcursionCard.vue` sowie `.card--polaroid` / `SpotCard.vue`) heben sich beim Hovern spürbar optisch an: sie schweben nach oben (`translateY(-4px)`), skalieren leicht an (`scale(1.015)` bzw. `scale(1.02)`), vertiefen ihren `box-shadow` (`var(--shadow-md)` bzw. tiefer Fotokontaktschatten) und erhöhen den `z-index`, um sich sauber über Nachbarkarten zu legen. Bei Polaroid-Karten entspannt sich zusätzlich der Drehwinkel leicht. Bei `:active` federn sie tastbar zurück (`scale(0.99)`). Im aufgeklappten Zustand (`expanded`) entfällt der Hover-Lift, um die Interaktion mit Innen-Elementen ruhig zu halten.
   **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
-  der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
-  Echtzeit-Highlighting (`highlight` prop / `.new-highlight`).
+  **Echtzeit- & Fokus-Hervorhebungen**:
+  - **Echtzeit-Sync (`highlight` Prop / `.new-highlight`)**: umrandet von anderen Mitgliedern neu angelegte oder geänderte Elemente in Grün (`var(--color-success)`) mit einem samtweichen 2-stufigen Ambient Glow (`0 8px 24px -4px color-mix(in srgb, var(--color-success) 32%, transparent), 0 2px 8px -1px color-mix(in srgb, var(--color-success) 20%, transparent)`), geschmeidiger Eintritts-Puls-Animation (`cardNewHighlightPulse`), einem runden Sparkle-Badge (`.card-sparkle-badge` mit `ACTION_ICONS.sparkles` ✨ und subtilem `sparkleTwinkle`) oben rechts und einer eleganten Glanzanimation (`cardGlanceSweep` via `::before`), die sanft von links nach rechts über die Kartenoberfläche wischt.
+  - **Karten- & Kalender-Fokus (`mapFocused` Prop / `.is-map-focused`)**: umrandet fokussierte Spots und Touren in Brand-Farbe (`var(--color-primary)`) mit 2-stufigem Ambient Glow und Eintritts-Puls-Animation (`cardMapFocusPulse`), synchron zum Fokus-Banner auf der Karte.
 - **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
   `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
 - **`Dropdown.vue`**: Dropdown-Trigger-Container-Primitive. Kapselt `.dropdown`, `.dropdown__button` und `.dropdown__field` gemäß BEM-System mit Slot für Menüs (`PickerMenu.vue`).
 - **`PickerMenu.vue` & `DropdownItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management und Backdrop.
-- **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`) und Echtzeit-Highlighting (`row--highlighted`).
+- **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`), Kalender-Fokus in Brand-Farbe mit Ambient Glow (`row.is-focused`) sowie Echtzeit-Highlighting in Grün mit Ambient Glow (`row.new-highlight`), Sparkle-Badge (`.list-item-sparkle` ✨) und Glanzanimation (`rowGlanceSweep`).
 - **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
 - **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
 - **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.

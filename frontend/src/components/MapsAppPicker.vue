@@ -11,7 +11,21 @@ import { computePopoverPosition } from '../utils/popoverPosition';
 // Eigenständige Komponente (Spot/Unterkunft/Reise): zeigt ein Auswahl-Menü der gängigen Karten-Apps.
 // Nutzt Teleport nach <body> und feste Positionierung (DESIGN.md, Z-Index-Stapelung), damit
 // das Menü weder von Modal.vue's overflow-y:auto noch von Card-/Akkordeon-overflow:hidden abgeschnitten wird.
-const props = defineProps<{ lat: number; lng: number; title: string; mapsLink?: string | null }>();
+const props = withDefaults(
+  defineProps<{
+    lat: number;
+    lng: number;
+    title: string;
+    mapsLink?: string | null;
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
+    size?: 'sm' | 'md' | 'lg';
+  }>(),
+  {
+    mapsLink: null,
+    variant: 'card-action',
+    size: 'sm',
+  }
+);
 const open = ref(false);
 const buttonRef = ref<InstanceType<typeof Button> | null>(null);
 const menuStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
@@ -61,8 +75,9 @@ onUnmounted(() => {
 
 <template>
   <div class="maps-picker" @click.stop>
-    <Button ref="buttonRef" variant="card-action" @click="toggle($event)">
-      <AppIcon :icon="ACTION_ICONS.mapsApp" :size="14" group="actions" /> In Maps-App öffnen
+    <Button ref="buttonRef" :variant="props.variant" :size="props.size" @click="toggle($event)">
+      <AppIcon :icon="ACTION_ICONS.mapsApp" :size="props.size === 'sm' ? 14 : 16" group="actions" />
+      In Maps-App öffnen
     </Button>
     <Teleport to="body">
       <PickerMenu v-if="open" class="maps-picker-menu" :style="menuStyle" @close="close">

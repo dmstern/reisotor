@@ -122,11 +122,10 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
       .toEqual(['icons', 'icons', 'icons']);
   });
 
-  test('Outline/Gefüllt ist pro Bereich einzeln einstellbar, nur sichtbar wenn der Bereich auf Symbole steht', async ({
+  test('Gefüllt-Variante wird automatisch für aktive Navigations-Elemente verwendet, nicht mehr manuell konfigurierbar', async ({
     page,
   }) => {
-    // tests/auth.setup.ts setzt für die restliche Suite bewusst alle Bereiche auf Emoji - hier
-    // gezielt Navigation auf Symbole zurückstellen, um die Varianten-Zeile testen zu können.
+    // Navigation auf Symbole stellen, um Icons statt Emojis zu testen.
     const current = await getIconSettings(page);
     await putIconSettings(page, { ...current, groups: { ...current.groups, navigation: 'icons' } });
     await page.goto('/settings?tab=app');
@@ -135,39 +134,22 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     });
     await expect(iconsCard).toBeVisible();
 
-    const navRow = iconsCard.locator('.group-override-row', { hasText: 'Navigation & Dashboard' });
-    const navVariantRow = iconsCard.locator('.variant-row').first();
-
-    // Navigation steht jetzt auf Symbole -> Variante-Zeile sichtbar.
-    await expect(navVariantRow).toBeVisible();
+    // Keine Varianten-Zeilen (Gefüllt/Outline) mehr in den Einstellungen konfigurierbar
+    await expect(iconsCard.locator('.variant-row')).toHaveCount(0);
 
     const dashboardIcon = () => page.locator('.navbar .link').first().locator('svg.icon');
-    // @tabler/icons-vue setzt fill="none" für Outline-, fill="currentColor" für Filled-Icons
-    // (defaultAttributes.mjs) - Startdefault ist outline.
-    await page.goto('/');
-    await expect(dashboardIcon()).toHaveAttribute('fill', 'none');
+    const listenLink = page.locator('.navbar .link', { hasText: 'Listen' });
+    const listenIcon = () => listenLink.locator('svg.icon');
 
-    await page.goto('/settings?tab=app');
-    await navVariantRow.locator('.segmented-option', { hasText: 'Gefüllt' }).click();
-    await expect
-      .poll(async () => (await getIconSettings(page)).variants?.navigation)
-      .toBe('filled');
-
-    // fill ist nicht mehr 'none' (siehe @tabler/icons-vue's defaultAttributes.mjs) - der exakte Wert
-    // hängt zusätzlich davon ab, ob "Icons in der Navigation einfärben" aktiv ist (Default: an, siehe
-    // stores/iconStyle.ts), deshalb kein fixer Farbwert-Vergleich hier.
+    // Auf dem Dashboard: Dashboard-Link ist aktiv -> Filled (fill !== 'none'), Listen ist inaktiv -> Outline (fill === 'none')
     await page.goto('/');
     await expect(dashboardIcon()).not.toHaveAttribute('fill', 'none');
+    await expect(listenIcon()).toHaveAttribute('fill', 'none');
 
-    // Ein anderer Bereich (Kategorien) bleibt von der Navigation-Varianten-Änderung unberührt (jeder
-    // Bereich trägt einen eigenen, vollständigen Wert - siehe stores/iconStyle.ts's DEFAULT_VARIANTS).
-    await page.goto('/settings?tab=app');
-    expect((await getIconSettings(page)).variants?.categories).toBe('outline');
-
-    // Kategorien steht standardmäßig auf Emoji -> keine Varianten-Zeile für diesen Bereich.
-    const categoriesRow = iconsCard.locator('.group-override-row', { hasText: 'Kategorien' });
-    await expect(categoriesRow).toBeVisible();
-    void navRow;
+    // Nach Navigation zu Listen: Listen ist aktiv -> Filled, Dashboard ist inaktiv -> Outline
+    await page.goto('/listen');
+    await expect(listenIcon()).not.toHaveAttribute('fill', 'none');
+    await expect(dashboardIcon()).toHaveAttribute('fill', 'none');
   });
 
   test('Avatar bleibt Emoji, unabhängig vom Icon-Stil', async ({ page }) => {

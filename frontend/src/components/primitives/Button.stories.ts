@@ -17,11 +17,15 @@ const meta: Meta<typeof Button> = {
     disabled: {
       control: 'boolean',
     },
+    active: {
+      control: 'boolean',
+    },
   },
   args: {
     variant: 'primary',
     size: 'md',
     disabled: false,
+    active: false,
   },
 };
 
@@ -103,5 +107,19 @@ export const Disabled: Story = {
       return { args };
     },
     template: '<Button v-bind="args">Disabled Button</Button>',
+  }),
+};
+
+export const Active: Story = {
+  args: {
+    variant: 'secondary',
+    active: true,
+  },
+  render: (args) => ({
+    components: { Button },
+    setup() {
+      return { args };
+    },
+    template: '<Button v-bind="args">Aktiver Button</Button>',
   }),
 };

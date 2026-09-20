@@ -88,10 +88,22 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
 const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 
 export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
-  app.get<{ Querystring: { domain?: string; entity_id?: string } }>(
+  app.get<{ Querystring: { domain?: string; entity_id?: string; trip_id?: string } }>(
     '/attachments',
     async (req, reply) => {
-      const { domain, entity_id } = req.query;
+      const { domain, entity_id, trip_id } = req.query;
+      if (trip_id != null && !domain && !entity_id) {
+        const tripId = Number(trip_id);
+        if (Number.isNaN(tripId)) {
+          return reply.code(400).send({ error: 'Ungültige trip_id' });
+        }
+        if (!requireTripMember(reply, tripId, req.session.userId)) return;
+        return db
+          .prepare('SELECT * FROM attachments WHERE trip_id = ? ORDER BY created_at ASC')
+          .all(tripId)
+          .map((row) => serialize(row as AttachmentRow));
+      }
+
       if (!domain || !entity_id || !isAttachmentDomain(domain)) {
         return reply.code(400).send({ error: 'domain und entity_id erforderlich' });
       }

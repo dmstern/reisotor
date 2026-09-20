@@ -99,11 +99,12 @@ interface ListGroup {
 }
 
 const lists = computed<ListGroup[]>(() => {
+  const memberIds = new Set(users.value.map((u) => u.id));
   const shared: ListGroup = {
     key: 'shared',
     title: '👥 Gemeinsame Packliste',
     ownerId: null,
-    items: items.value.filter((i) => i.owner_id == null),
+    items: items.value.filter((i) => i.owner_id == null || !memberIds.has(i.owner_id)),
   };
   const perUser: ListGroup[] = users.value.map((u) => ({
     key: `user-${u.id}`,
@@ -113,7 +114,9 @@ const lists = computed<ListGroup[]>(() => {
         : `${u.avatar} Packliste von ${u.username}`,
     ownerId: u.id,
     items: items.value.filter(
-      (i) => i.owner_id === u.id || (users.value.length <= 1 && i.owner_id == null)
+      (i) =>
+        i.owner_id === u.id ||
+        (users.value.length <= 1 && (i.owner_id == null || !memberIds.has(i.owner_id)))
     ),
   }));
 
@@ -433,6 +436,16 @@ async function quickAdd(list: ListGroup, label: string) {
         <FormField v-if="users.length > 1" icon="person" label="Liste" v-slot="{ id }">
           <Select :id="id" v-model="editForm.ownerId">
             <option value="shared">🤝 Gemeinsam</option>
+            <option
+              v-if="
+                editForm.ownerId !== 'shared' &&
+                !users.some((u) => String(u.id) === String(editForm.ownerId))
+              "
+              :value="String(editForm.ownerId)"
+              disabled
+            >
+              👤 Ehemaliges Mitglied
+            </option>
             <option v-for="u in users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.id === auth.user?.id ? 'Meine Liste' : u.username }}
             </option>

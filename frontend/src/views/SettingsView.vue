@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Button from '../components/primitives/Button.vue';
+import Card from '../components/primitives/Card.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import Badge from '../components/primitives/Badge.vue';
 import Select from '../components/primitives/Select.vue';
@@ -65,9 +66,11 @@ import {
   IconUserFilled,
   IconUsers,
   IconDeviceDesktop,
+  IconDeviceDesktopFilled,
   IconBell,
   IconBellFilled,
   IconDatabase,
+  IconDatabaseFilled,
   IconInfoCircle,
   IconInfoCircleFilled,
   IconPuzzle,
@@ -114,14 +117,19 @@ const ALL_TABS: { key: Tab; label: string; icon: IconDef; adminOnly?: boolean }[
   {
     key: 'app',
     label: 'App-Einstellungen',
-    icon: { id: 'device-desktop', emoji: '🖥️', outline: IconDeviceDesktop },
+    icon: {
+      id: 'device-desktop',
+      emoji: '🖥️',
+      outline: IconDeviceDesktop,
+      filled: IconDeviceDesktopFilled,
+    },
   },
   { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
   { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
   {
     key: 'data',
     label: 'Daten',
-    icon: { id: 'database', emoji: '🗄️', outline: IconDatabase },
+    icon: { id: 'database', emoji: '🗄️', outline: IconDatabase, filled: IconDatabaseFilled },
     adminOnly: true,
   },
   {
@@ -588,7 +596,7 @@ async function exportBackup() {
     </div>
 
     <template v-if="activeTab === 'account'">
-      <div class="card">
+      <Card>
         <div class="header account-header">
           <div class="user-info">
             <div class="name-and-status">
@@ -711,9 +719,9 @@ async function exportBackup() {
         <p v-if="avatarSaved" class="hint success">
           Gespeichert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
         </p>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <h2>Passwort ändern</h2>
         <form class="form" @submit.prevent="changePassword">
           <div class="field">
@@ -756,11 +764,11 @@ async function exportBackup() {
             {{ passwordSaving ? 'Speichern…' : 'Passwort speichern' }}
           </Button>
         </form>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'users' && auth.user?.is_admin">
-      <div class="card users-card">
+      <Card class="users-card">
         <div class="card-header-row">
           <h2><AppIcon :icon="USERS_ICON" group="navigation" :size="20" /> Nutzerverwaltung</h2>
           <Button variant="primary" size="sm" @click="showCreateUserDialog = true">
@@ -833,11 +841,11 @@ async function exportBackup() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'app'">
-      <div class="card">
+      <Card>
         <div class="card-header-row">
           <h2>Darstellung</h2>
           <Button
@@ -859,7 +867,7 @@ async function exportBackup() {
           Wähle zwischen hellem, dunklem oder an das Betriebssystem angepasstem Farbschema.
         </p>
         <ThemeModeSelect variant="block" />
-      </div>
+      </Card>
 
       <AccentColorSettings />
 
@@ -871,7 +879,7 @@ async function exportBackup() {
 
       <DiaryFontSettings />
 
-      <div class="card">
+      <Card>
         <div class="card-header-row">
           <h2>Navigation</h2>
           <Button
@@ -955,9 +963,9 @@ async function exportBackup() {
             </div>
           </li>
         </ul>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <div class="card-header-row">
           <h2>
             <AppIcon :icon="DASHBOARD_TILES_ICON" group="navigation" :size="20" /> Dashboard-Kacheln
@@ -1039,9 +1047,9 @@ async function exportBackup() {
             </div>
           </li>
         </ul>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <div class="card-header-row">
           <h2>
             <AppIcon :icon="ACTION_ICONS.vacation" group="navigation" :size="20" /> Urlaubs-Hinweis
@@ -1072,11 +1080,11 @@ async function exportBackup() {
           label="Verbleibende Urlaubstage anzeigen statt festem Hinweis"
           description="Zählt die verbleibenden Tage im Dashboard-Header herunter (z. B. 'Noch 3 Tage Urlaub!'), anstatt eines statischen Grußtextes."
         />
-      </div>
+      </Card>
     </template>
 
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
-      <div id="calendar-settings" class="card">
+      <Card id="calendar-settings">
         <div class="card-header-row">
           <h2>
             <AppIcon :icon="SECTION_ICON_DEFS.calendar" group="navigation" :size="20" /> Kalender
@@ -1127,10 +1135,10 @@ async function exportBackup() {
             </Select>
           </label>
         </div>
-      </div>
+      </Card>
 
       <!-- id als Sprungziel für den "Anbieter wechseln"-Link im Wetter-Widget (DashboardView.vue) -->
-      <div id="weather-provider-settings" class="card">
+      <Card id="weather-provider-settings">
         <div class="card-header-row">
           <h2><AppIcon :icon="WEATHER_SECTION_ICON" group="navigation" :size="20" /> Wetter</h2>
           <Button
@@ -1161,10 +1169,10 @@ async function exportBackup() {
           label="Wetter zuhause für den ganzen Urlaub zeigen"
           description="Blendet die Heimtwetter-Kachel permanent während des gesamten Urlaubs ein (statt erst gegen Ende der Reise)."
         />
-      </div>
+      </Card>
 
       <!-- id als Sprungziel, analog zu #weather-provider-settings oben -->
-      <div id="home-currency-settings" class="card">
+      <Card id="home-currency-settings">
         <div class="card-header-row">
           <h2>
             <AppIcon :icon="ACTION_ICONS.currency" group="navigation" :size="20" /> Heimatwährung
@@ -1200,11 +1208,11 @@ async function exportBackup() {
             </option>
           </Select>
         </label>
-      </div>
+      </Card>
     </div>
 
     <template v-if="activeTab === 'notifications'">
-      <div class="card">
+      <Card>
         <div class="card-header-row">
           <h2><AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Meldungen</h2>
           <Button
@@ -1259,9 +1267,9 @@ async function exportBackup() {
             description="Öffnet automatisch einen Dialog, sobald ein neues App-Update bereitsteht oder eine neue Version frisch installiert wurde."
           />
         </div>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <div class="card-header-row">
           <h2>
             <AppIcon :icon="BELL_ICON" group="navigation" :size="20" /> Push-Benachrichtigungen
@@ -1343,11 +1351,11 @@ async function exportBackup() {
             {{ pushError || notificationPrefs.error }}
           </p>
         </template>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'data'">
-      <div class="card" v-if="auth.user?.is_admin">
+      <Card v-if="auth.user?.is_admin">
         <h2>Datensicherung</h2>
         <p>
           Vor einem Neu-Deployment mit neuen Features könnt ihr hier alle Daten (inklusive Datenbank
@@ -1370,11 +1378,11 @@ async function exportBackup() {
           (Import) erfolgt ab sofort manuell auf dem Server, um einen sicheren Austausch der
           Datenbank (data.sqlite) und der Uploads zu gewährleisten.
         </p>
-      </div>
+      </Card>
     </template>
 
     <template v-if="activeTab === 'about'">
-      <div class="card">
+      <Card>
         <h2>
           <AppIcon :icon="ACTION_ICONS.installApp" group="actions" :size="20" /> Als App
           installieren
@@ -1391,9 +1399,9 @@ async function exportBackup() {
             >Anleitung anzeigen</Button
           >
         </template>
-      </div>
+      </Card>
 
-      <div class="card">
+      <Card>
         <h2><AppIcon :icon="FEEDBACK_ICON" group="navigation" :size="20" /> Feedback</h2>
         <p class="hint intro-hint">
           Bug gefunden oder eine Idee für eine neue Funktion? Landet direkt als Issue im
@@ -1402,9 +1410,9 @@ async function exportBackup() {
         <Button type="button" class="secondary" @click="showFeedbackDialog = true"
           >Feedback geben</Button
         >
-      </div>
+      </Card>
 
-      <div class="card build-info-card">
+      <Card class="build-info-card">
         <div v-if="backendBuildInfo?.changelog">
           <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
           <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
@@ -1428,7 +1436,7 @@ async function exportBackup() {
           :repo-url="backendBuildInfo.repoUrl"
           :hosting-location="backendBuildInfo.hostingLocation"
         />
-      </div>
+      </Card>
     </template>
   </div>
   <ViewLoadingState v-else />

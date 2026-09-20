@@ -1,7 +1,20 @@
 import { ref } from 'vue';
 import type { Meta, StoryObj } from '@storybook/vue3';
-import AttachmentPreviewModal from './AttachmentPreviewModal.vue';
+import AttachmentPreviewModal, { type AttachmentPreviewItem } from './AttachmentPreviewModal.vue';
 import type { Attachment } from '../api/types';
+
+const sampleImageWithExif: AttachmentPreviewItem = {
+  id: 1,
+  url: 'https://picsum.photos/800/600',
+  original_name: 'Strandpromenade.jpg',
+  mime_type: 'image/jpeg',
+  size_bytes: 1024 * 450,
+  metadata: {
+    dateTime: new Date('2026-06-01T14:32:00'),
+    latitude: 38.6916,
+    longitude: -9.216,
+  },
+};
 
 const sampleImageAttachment: Attachment = {
   id: 1,
@@ -149,6 +162,28 @@ export const Editable: Story = {
           :attachments="items"
           :editable="true"
           @remove="onRemove"
+        />
+      </div>
+    `,
+  }),
+};
+
+export const WithExifMetadata: Story = {
+  args: {
+    attachments: [sampleImageWithExif, samplePdfAttachment],
+  },
+  render: (args) => ({
+    components: { AttachmentPreviewModal },
+    setup() {
+      const isOpen = ref(args.modelValue);
+      return { args, isOpen };
+    },
+    template: `
+      <div>
+        <button type="button" @click="isOpen = true">Bild mit EXIF-Metadaten öffnen</button>
+        <AttachmentPreviewModal
+          v-model="isOpen"
+          :attachments="args.attachments"
         />
       </div>
     `,

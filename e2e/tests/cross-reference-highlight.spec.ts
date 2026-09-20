@@ -10,7 +10,7 @@ const seeded = JSON.parse(
 
 // Regressionsnetz für den generalisierten Sprung-und-Hervorhebungs-Mechanismus (siehe
 // utils/hashHighlight.ts): ein Querverweis-Klick soll nicht nur die Ziel-Ansicht öffnen, sondern
-// auch zum referenzierten Element scrollen und es farblich hervorheben (new-highlight-Klasse) –
+// auch zum referenzierten Element scrollen und es farblich im Brand-Fokusrahmen hervorheben (is-map-focused-Klasse) –
 // hier am Beispiel des Kalender-Klicks auf einen mit Datum versehenen Reise-Eintrag
 // (ScheduleView.vue's openEntry(), Ziel seit #196: /excursions#excursion-<id> - eine role-getaggte
 // Tour landet als ganz normale Tour-Gruppe in der "Touren"-Gruppierung (keine eigene
@@ -57,7 +57,7 @@ test('clicking a travel entry in the calendar jumps to and highlights the matchi
   await expect(page).toHaveURL(new RegExp(`/excursions(?:\\?.*)?#excursion-\\d+$`));
   const travelCard = page.locator('.excursion-card', { hasText: title });
   await expect(travelCard).toBeVisible();
-  await expect(travelCard).toHaveClass(/new-highlight/);
+  await expect(travelCard).toHaveClass(/is-map-focused/);
   // Playwright-eigenes toBeInViewport() statt der strikten Vollständig-eingeschlossen-Prüfung aus
   // helpers/layout.ts (die für Überlappungs-/Verdeckungs-Tests gedacht ist): Desktop hat parallel
   // die globale Kalender-Schublade offen (App.vue), die dem Excursions-Inhalt Höhe wegnimmt - der

@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useId } from 'vue';
 import type { IconDef } from '../../utils/icon';
 import type { IconGroup } from '../../stores/iconStyle';
 import AppIcon from '../AppIcon.vue';
 import Checkbox from './Checkbox.vue';
+
+const inputId = useId();
 
 const props = withDefaults(
   defineProps<{
@@ -24,7 +27,7 @@ const props = withDefaults(
     target?: string;
     /** Link-Rel (z. B. 'noopener') */
     rel?: string;
-    /** Multiselect-Modus mit Checkbox (<label for="auto-id-1788301175442-17"> statt <button>/<a>) */
+    /** Multiselect-Modus mit Checkbox (<label :for="inputId"> statt <button>/<a>) */
     multiselect?: boolean;
     /** Checkbox-Zustand für Multiselect */
     checked?: boolean;
@@ -34,8 +37,10 @@ const props = withDefaults(
     trailingIcon?: IconDef;
     /** Icon-Gruppe für nachgestelltes Icon (Standard: 'actions') */
     trailingIconGroup?: IconGroup;
-    /** Icon-Größe für nachgestelltes Icon in Pixeln (Standard: 14) */
+    /** Optionale Icon-Größe für nachgestelltes Icon in Pixeln (Standard: 14) */
     trailingIconSize?: number;
+    /** Tooltip / Mouseover-Text */
+    title?: string;
   }>(),
   {
     iconGroup: 'actions',
@@ -67,12 +72,14 @@ function handleClick(event: MouseEvent) {
   <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
   <label
     v-if="multiselect"
+    :for="inputId"
+    :title="title"
     class="dropdown-item"
     :class="{ 'is-active': active, 'is-disabled': disabled }"
   >
     <slot name="checkbox">
       <Checkbox
-        id="auto-id-1788301175442-17"
+        :id="inputId"
         :checked="checked"
         :disabled="disabled"
         :value="value"
@@ -85,6 +92,7 @@ function handleClick(event: MouseEvent) {
       :icon="icon"
       :group="iconGroup"
       :size="iconSize"
+      :active="active"
       class="dropdown-item-icon"
     />
     <span class="dropdown-item-label">
@@ -96,6 +104,7 @@ function handleClick(event: MouseEvent) {
     :href="href"
     :target="target"
     :rel="rel"
+    :title="title"
     class="dropdown-item"
     :class="{ 'is-active': active, 'is-disabled': disabled }"
     @click="handleClick"
@@ -105,6 +114,7 @@ function handleClick(event: MouseEvent) {
       :icon="icon"
       :group="iconGroup"
       :size="iconSize"
+      :active="active"
       class="dropdown-item-icon"
     />
     <span class="dropdown-item-label">
@@ -116,6 +126,7 @@ function handleClick(event: MouseEvent) {
         :icon="trailingIcon"
         :group="trailingIconGroup"
         :size="trailingIconSize"
+        :active="active"
         class="dropdown-item-trailing-icon"
       />
     </slot>
@@ -124,6 +135,7 @@ function handleClick(event: MouseEvent) {
     v-else
     type="button"
     :disabled="disabled"
+    :title="title"
     class="dropdown-item"
     :class="{ 'is-active': active, 'is-disabled': disabled }"
     @click="handleClick"
@@ -133,6 +145,7 @@ function handleClick(event: MouseEvent) {
       :icon="icon"
       :group="iconGroup"
       :size="iconSize"
+      :active="active"
       class="dropdown-item-icon"
     />
     <span class="dropdown-item-label">
@@ -144,6 +157,7 @@ function handleClick(event: MouseEvent) {
         :icon="trailingIcon"
         :group="trailingIconGroup"
         :size="trailingIconSize"
+        :active="active"
         class="dropdown-item-trailing-icon"
       />
     </slot>

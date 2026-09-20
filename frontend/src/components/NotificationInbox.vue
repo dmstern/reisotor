@@ -438,6 +438,7 @@ function dismissPwaInstall() {
   cursor: pointer;
   padding: 2px 4px;
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .mark-all-btn:hover {

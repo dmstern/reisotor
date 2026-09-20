@@ -375,8 +375,8 @@ function isImage(item: AttachmentPreviewItem): boolean {
   }
   const name = item.original_name || item.filename || '';
   return (
-    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(name) ||
-    /\.(jpe?g|png|webp|gif|svg|avif)$/i.test(item.url) ||
+    /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)$/i.test(name) ||
+    /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)$/i.test(item.url) ||
     item.url.startsWith('data:image/')
   );
 }

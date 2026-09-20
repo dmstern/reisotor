@@ -39,7 +39,11 @@ export function computeBalances(
 ): Balance[] {
   const n = users.length;
   if (n === 0) return [];
-  const sharedExpenses = expenses.filter((e) => isSharedExpense(e, budgets));
+  const memberIds = new Set(users.map((u) => u.id));
+  const sharedExpenses = expenses.filter(
+    (e) =>
+      isSharedExpense(e, budgets) && e.paid_by_user_id != null && memberIds.has(e.paid_by_user_id)
+  );
   const totalSpent = sharedExpenses.reduce((s, e) => s + e.amount, 0);
   const fairShare = totalSpent / n;
   return users.map((u) => {

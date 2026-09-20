@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { TodoItem, TodoPriority, User, Period } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -29,6 +29,7 @@ import Select from '../components/primitives/Select.vue';
 import Input from '../components/primitives/Input.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Badge from '../components/primitives/Badge.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -36,14 +37,26 @@ const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
 const uiSettings = useUiSettingsStore();
 const route = useRoute();
+const router = useRouter();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
 const { showToast } = useToast();
 const users = ref<User[]>([]);
 const loading = ref(true);
 // Von anderen Mitgliedern seit dem letzten Besuch geänderte ToDos (siehe stores/liveSync.ts) –
-// einmalig beim Mounten eingefroren, damit die Hervorhebung nicht sofort wieder verschwindet.
+// einmalig beim Mounten eingefroren, damit die Hervorhebung nicht sofort wieder verschwindet (grün).
 const highlightedIds = ref<Set<number>>(new Set());
+// Durch Kalender-/Hash-Sprung gezielt fokussiertes ToDo (in Brand-Farbe hervorgehoben).
+const focusedTodoId = ref<number | null>(null);
+
+function clearFocusedTodo() {
+  if (focusedTodoId.value != null) {
+    focusedTodoId.value = null;
+    if (route.hash.startsWith('#todo-')) {
+      router.replace({ path: route.path, query: route.query, hash: '' });
+    }
+  }
+}
 
 type GroupBy = 'assignee' | 'period';
 type SortBy = 'due_date' | 'priority' | 'assignee';
@@ -167,12 +180,24 @@ async function load() {
 
 onMounted(() => {
   highlightedIds.value = liveSync.markSeen('todos');
-  // Querverweis-Sprung (z. B. aus dem Kalender, siehe ScheduleView.vue's openEntry()) – dieselbe
-  // highlightedIds-Menge wie oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
+  // Querverweis-Sprung (z. B. aus dem Kalender, siehe ScheduleView.vue's openEntry()) – gezielter
+  // Fokus in Brand-Farbe statt des grünen LiveSync-Neu-Highlights.
   const hashId = hashHighlightId(route.hash, 'todo');
-  if (hashId != null) highlightedIds.value.add(hashId);
+  if (hashId != null) focusedTodoId.value = hashId;
   load();
 });
+
+watch(
+  () => route.hash,
+  (newHash) => {
+    if (!newHash) {
+      focusedTodoId.value = null;
+      return;
+    }
+    const hashId = hashHighlightId(newHash, 'todo');
+    if (hashId != null) focusedTodoId.value = hashId;
+  }
+);
 
 // Aktualisiert die Liste automatisch, wenn ein anderes Mitglied etwas an den ToDos ändert (siehe
 // stores/liveSync.ts) – analog zum bestehenden drawers.locationsVersion-Muster in ScheduleView.vue.
@@ -192,19 +217,19 @@ watch(
 function userLabel(id: number | null) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? `${u.avatar} ${u.username}` : null;
+  return u ? `${u.avatar} ${u.username}` : '👤 Ehemaliges Mitglied';
 }
 
 function userAvatar(id: number | null | undefined) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? u.avatar : null;
+  return u ? u.avatar : '👤';
 }
 
 function userName(id: number | null | undefined) {
   if (id == null) return null;
   const u = users.value.find((u) => u.id === id);
-  return u ? u.username : null;
+  return u ? u.username : 'Ehemaliges Mitglied';
 }
 
 function sortItems(list: TodoItem[]) {
@@ -256,6 +281,7 @@ const groupedItems = computed<Group[]>(() => {
       },
     ];
   }
+  const memberIds = new Set(users.value.map((u) => u.id));
   const perUser: Group[] = users.value.map((u) => ({
     key: `user-${u.id}`,
     label: `${u.avatar} ${u.username}`,
@@ -264,7 +290,11 @@ const groupedItems = computed<Group[]>(() => {
   const unassigned: Group = {
     key: 'unassigned',
     label: 'Nicht zugewiesen',
-    items: sortItems(items.value.filter((i) => i.assigned_to_user_id == null)),
+    items: sortItems(
+      items.value.filter(
+        (i) => i.assigned_to_user_id == null || !memberIds.has(i.assigned_to_user_id)
+      )
+    ),
   };
   return [...perUser, unassigned];
 });
@@ -298,6 +328,13 @@ async function addItem() {
   newForm.value = emptyForm();
   // Details bleiben bewusst im aktuellen Zustand (geöffnet oder geschlossen) erhalten.
   newDraft.clear();
+}
+
+function discardNewDraft() {
+  newForm.value = emptyForm();
+  showNewDetails.value = false;
+  newDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 // Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
@@ -336,6 +373,7 @@ async function quickAddToGroup(group: Group, label: string) {
 }
 
 async function toggleDone(item: TodoItem) {
+  clearFocusedTodo();
   const updated = await api.put<TodoItem>(`/todos/${item.id}`, {
     trip_id: tripId,
     title: item.title,
@@ -351,6 +389,7 @@ async function toggleDone(item: TodoItem) {
 }
 
 function startEdit(item: TodoItem) {
+  clearFocusedTodo();
   editingItem.value = item;
   editForm.value = {
     title: item.title,
@@ -377,6 +416,13 @@ async function submitEdit() {
 function closeEditForm() {
   editDraft.clear();
   editingItem.value = null;
+}
+
+function discardEditDraft() {
+  if (!editingItem.value) return;
+  startEdit(editingItem.value);
+  editDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 async function deleteEditingItem() {
@@ -534,7 +580,12 @@ function hasTodoMeta(item: TodoItem): boolean {
         </div>
       </Accordion>
 
-      <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+      <DraftStatusBar
+        :status="newDraft.status.value"
+        :restored="newDraft.restored.value"
+        :can-discard="true"
+        @discard="discardNewDraft"
+      />
     </form>
 
     <div class="groups-grid">
@@ -553,6 +604,8 @@ function hasTodoMeta(item: TodoItem): boolean {
               :id="`todo-${item.id}`"
               :done="!!item.done"
               :highlighted="highlightedIds.has(item.id)"
+              :focused="focusedTodoId === item.id"
+              @click="clearFocusedTodo"
             >
               <div class="item-main">
                 <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
@@ -624,11 +677,11 @@ function hasTodoMeta(item: TodoItem): boolean {
                 <EditButton small @click="startEdit(item)" />
               </template>
             </CheckableListItem>
-            <li v-if="!group.items.length" :key="`${group.key}-empty`" class="empty">
+            <EmptyState v-if="!group.items.length" :key="`${group.key}-empty`" tag="li">
               {{
                 uiSettings.hideCompletedTodos ? 'Keine offenen Aufgaben.' : 'Noch keine Aufgaben.'
               }}
-            </li>
+            </EmptyState>
           </TransitionGroup>
 
           <QuickAddRow
@@ -708,7 +761,12 @@ function hasTodoMeta(item: TodoItem): boolean {
         <FormField icon="note" label="Notiz" v-slot="{ id }">
           <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
         </FormField>
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"
@@ -1057,10 +1115,6 @@ function hasTodoMeta(item: TodoItem): boolean {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.empty {
-  padding: var(--space-2) 0;
 }
 
 /* Desktop: Gruppen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen –

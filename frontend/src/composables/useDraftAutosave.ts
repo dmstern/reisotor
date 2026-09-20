@@ -132,6 +132,7 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
         .catch(() => {});
     }
     if (timer) clearTimeout(timer);
+    baseline = JSON.stringify(formRef.value);
     status.value = 'idle';
     restored.value = false;
   }

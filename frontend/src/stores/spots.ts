@@ -14,8 +14,8 @@ export interface SpotFormData {
   note?: string;
   note_format?: 'html' | 'legacy';
   maps_link?: string;
-  lat?: number;
-  lng?: number;
+  lat?: number | null;
+  lng?: number | null;
   /** Heimat-Seite (Flughafen/Bahnhof/Zuhause/…), unabhängig von der Kategorie – siehe Spot.is_home
    *  in api/types.ts. Nur für als Reise-Etappen-Ort verwendete Spots relevant. */
   is_home?: boolean;
