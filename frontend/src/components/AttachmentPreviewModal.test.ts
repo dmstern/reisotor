@@ -220,8 +220,57 @@ describe('AttachmentPreviewModal', () => {
       lng: 11.5761,
       title: 'Urlaubsfoto.jpg',
       imageUrl: 'https://example.com/photo.jpg',
+      gallery: {
+        attachments: [
+          {
+            id: 10,
+            url: 'https://example.com/photo.jpg',
+            original_name: 'Urlaubsfoto.jpg',
+            mime_type: 'image/jpeg',
+            metadata: {
+              latitude: 48.1372,
+              longitude: 11.5761,
+            },
+          },
+        ],
+        initialIndex: 0,
+      },
     });
     expect(drawers.mapFocusKey).toBe('photo-location');
+    cleanUp();
+  });
+
+  it('übergibt die vollständige Galerie und den aktuellen Bild-Index an openMapAtLocation', async () => {
+    const { cleanUp } = mountTestApp(AttachmentPreviewModal, {
+      modelValue: true,
+      initialIndex: 1,
+      attachments: [
+        {
+          id: 1,
+          url: 'https://example.com/photo1.jpg',
+          original_name: 'Foto1.jpg',
+        },
+        {
+          id: 2,
+          url: 'https://example.com/photo2.jpg',
+          original_name: 'Foto2.jpg',
+          metadata: {
+            latitude: 45.4387,
+            longitude: 12.3358,
+          },
+        },
+      ],
+    });
+    await nextTick();
+    const showMapBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Ort auf Karte anzeigen')
+    );
+    expect(showMapBtn).toBeTruthy();
+    showMapBtn!.click();
+    await nextTick();
+    const drawers = useDrawersStore();
+    expect(drawers.mapFocusLocation?.gallery?.initialIndex).toBe(1);
+    expect(drawers.mapFocusLocation?.gallery?.attachments).toHaveLength(2);
     cleanUp();
   });
 
