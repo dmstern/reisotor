@@ -113,8 +113,8 @@ const newMapsLink = ref('');
 // Felder), siehe parseLinkKey/linkKeyFor.
 const newLinkKey = ref('');
 const showAddForm = ref(false);
-const showAddDetailsSection = ref(false);
-const showEditDetailsSection = ref(false);
+const showAddLocationSection = ref(false);
+const showEditLocationSection = ref(false);
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): das Create-Formular besteht
 // (anders als in den meisten anderen Domänen) aus lauter einzelnen Refs statt eines Objekt-Refs -
@@ -785,13 +785,13 @@ function onDropExcursion(date: string, excursionId: number) {
 // Startdatum vorausgefüllt, sonst bleibt das Feld leer und muss manuell gesetzt werden.
 function openAddForm() {
   newStartDate.value = selectedDate.value ?? '';
-  showAddDetailsSection.value = false;
+  showAddLocationSection.value = !!(newLinkKey.value || newLocation.value || newMapsLink.value);
   showAddForm.value = true;
 }
 
 function closeAddForm() {
   showAddForm.value = false;
-  showAddDetailsSection.value = false;
+  showAddLocationSection.value = false;
   newStartDate.value = '';
   newTime.value = '';
   newEndTime.value = '';
@@ -851,9 +851,9 @@ function startEdit(item: ScheduleItem) {
     mapsLink: item.maps_link ?? '',
     linkKey: linkKeyFor(item),
   };
-  showEditDetailsSection.value = !!(
-    editForm.value.endDate ||
-    editForm.value.endTime ||
+  showEditLocationSection.value = !!(
+    editForm.value.linkKey ||
+    editForm.value.location ||
     editForm.value.mapsLink
   );
 }
@@ -890,7 +890,7 @@ async function submitEdit() {
 function closeEditForm() {
   editDraft.clear();
   editingItem.value = null;
-  showEditDetailsSection.value = false;
+  showEditLocationSection.value = false;
 }
 
 function jumpToTrip() {
@@ -1424,55 +1424,50 @@ function formatDate(date: string) {
           </FormField>
         </div>
         <div class="row">
-          <FormField icon="maps" label="Karte" v-slot="{ id }">
-            <Select :id="id" v-model="newLinkKey">
-              <option value="">Kein Spot/keine Tour verknüpft</option>
-              <optgroup label="Spots" v-if="spotsStore.spots.length">
-                <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
-                  {{ s.title }}
-                </option>
-              </optgroup>
-              <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-                <option
-                  v-for="e in excursionsStore.excursions"
-                  :key="`idea:${e.id}`"
-                  :value="`idea:${e.id}`"
-                >
-                  {{ e.title }}
-                </option>
-              </optgroup>
-            </Select>
+          <FormField icon="date" label="Enddatum" v-slot="{ id }">
+            <Input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
           </FormField>
-          <FormField v-if="!newLinkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
-            <Combobox
-              :id="id"
-              v-model="newLocation"
-              :options="placeNames"
-              placeholder="Ort (optional)"
-            />
+          <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
+            <Input :id="id" v-model="newEndTime" type="time" />
           </FormField>
         </div>
-        <FormField icon="note" label="Notiz">
-          <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
-        </FormField>
         <CollapsibleFieldset
-          v-model="showAddDetailsSection"
-          :icon="FORM_FIELD_ICONS.period"
+          v-model="showAddLocationSection"
+          label="Ortsangaben"
+          :icon="FORM_FIELD_ICONS.location"
           icon-group="formFields"
         >
-          <template #label>
-            <span>
-              Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!newLinkKey"
-                >, Maps-Link</template
-              >)
-            </span>
-          </template>
           <div class="row">
-            <FormField icon="date" label="Enddatum" v-slot="{ id }">
-              <Input :id="id" v-model="newEndDate" type="date" :min="newStartDate || undefined" />
+            <FormField icon="maps" label="Karte" v-slot="{ id }">
+              <Select :id="id" v-model="newLinkKey">
+                <option value="">Kein Spot/keine Tour verknüpft</option>
+                <optgroup label="Spots" v-if="spotsStore.spots.length">
+                  <option
+                    v-for="s in spotsStore.spots"
+                    :key="`spot:${s.id}`"
+                    :value="`spot:${s.id}`"
+                  >
+                    {{ s.title }}
+                  </option>
+                </optgroup>
+                <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+                  <option
+                    v-for="e in excursionsStore.excursions"
+                    :key="`idea:${e.id}`"
+                    :value="`idea:${e.id}`"
+                  >
+                    {{ e.title }}
+                  </option>
+                </optgroup>
+              </Select>
             </FormField>
-            <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-              <Input :id="id" v-model="newEndTime" type="time" />
+            <FormField v-if="!newLinkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
+              <Combobox
+                :id="id"
+                v-model="newLocation"
+                :options="placeNames"
+                placeholder="Ort (optional)"
+              />
             </FormField>
           </div>
           <FormField v-if="!newLinkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
@@ -1484,6 +1479,9 @@ function formatDate(date: string) {
             />
           </FormField>
         </CollapsibleFieldset>
+        <FormField icon="note" label="Notiz">
+          <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
+        </FormField>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
           <div class="spacer"></div>
@@ -1511,65 +1509,55 @@ function formatDate(date: string) {
           </FormField>
         </div>
         <div class="row">
-          <FormField icon="maps" label="Karte" v-slot="{ id }">
-            <Select :id="id" v-model="editForm.linkKey">
-              <option value="">Kein Spot/keine Tour verknüpft</option>
-              <optgroup label="Spots" v-if="spotsStore.spots.length">
-                <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
-                  {{ s.title }}
-                </option>
-              </optgroup>
-              <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-                <option
-                  v-for="e in excursionsStore.excursions"
-                  :key="`idea:${e.id}`"
-                  :value="`idea:${e.id}`"
-                >
-                  {{ e.title }}
-                </option>
-              </optgroup>
-            </Select>
+          <FormField icon="date" label="Enddatum" v-slot="{ id }">
+            <Input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
           </FormField>
-          <FormField
-            v-if="!editForm.linkKey"
-            icon="location"
-            label="Ort (Freitext)"
-            v-slot="{ id }"
-          >
-            <Combobox
-              :id="id"
-              v-model="editForm.location"
-              :options="placeNames"
-              placeholder="Ort (optional)"
-            />
+          <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
+            <Input :id="id" v-model="editForm.endTime" type="time" />
           </FormField>
         </div>
-        <FormField icon="note" label="Notiz">
-          <RichTextEditor
-            v-model="editForm.note"
-            placeholder="Notiz (optional)"
-            compact
-            expandable
-          />
-        </FormField>
         <CollapsibleFieldset
-          v-model="showEditDetailsSection"
-          :icon="FORM_FIELD_ICONS.period"
+          v-model="showEditLocationSection"
+          label="Ortsangaben"
+          :icon="FORM_FIELD_ICONS.location"
           icon-group="formFields"
         >
-          <template #label>
-            <span>
-              Weitere Angaben (Enddatum, Enduhrzeit<template v-if="!editForm.linkKey"
-                >, Maps-Link</template
-              >)
-            </span>
-          </template>
           <div class="row">
-            <FormField icon="date" label="Enddatum" v-slot="{ id }">
-              <Input :id="id" v-model="editForm.endDate" type="date" :min="editingItem?.date" />
+            <FormField icon="maps" label="Karte" v-slot="{ id }">
+              <Select :id="id" v-model="editForm.linkKey">
+                <option value="">Kein Spot/keine Tour verknüpft</option>
+                <optgroup label="Spots" v-if="spotsStore.spots.length">
+                  <option
+                    v-for="s in spotsStore.spots"
+                    :key="`spot:${s.id}`"
+                    :value="`spot:${s.id}`"
+                  >
+                    {{ s.title }}
+                  </option>
+                </optgroup>
+                <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+                  <option
+                    v-for="e in excursionsStore.excursions"
+                    :key="`idea:${e.id}`"
+                    :value="`idea:${e.id}`"
+                  >
+                    {{ e.title }}
+                  </option>
+                </optgroup>
+              </Select>
             </FormField>
-            <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-              <Input :id="id" v-model="editForm.endTime" type="time" />
+            <FormField
+              v-if="!editForm.linkKey"
+              icon="location"
+              label="Ort (Freitext)"
+              v-slot="{ id }"
+            >
+              <Combobox
+                :id="id"
+                v-model="editForm.location"
+                :options="placeNames"
+                placeholder="Ort (optional)"
+              />
             </FormField>
           </div>
           <FormField v-if="!editForm.linkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
@@ -1581,6 +1569,14 @@ function formatDate(date: string) {
             />
           </FormField>
         </CollapsibleFieldset>
+        <FormField icon="note" label="Notiz">
+          <RichTextEditor
+            v-model="editForm.note"
+            placeholder="Notiz (optional)"
+            compact
+            expandable
+          />
+        </FormField>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
