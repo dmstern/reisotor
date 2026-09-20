@@ -900,9 +900,8 @@ function jumpToTrip() {
 function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
   // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/ExcursionsView.vue
-  // nehmen die id über hashHighlightId() zusätzlich in ihre bereits bestehende highlightedIds-Menge
-  // auf, der Router scrollt automatisch zum Element mit dieser id (siehe router/index.ts's
-  // scrollBehavior).
+  // fokussieren das Ziel über hashHighlightId() gezielt in Brand-Farbe, der Router scrollt
+  // automatisch zum Element mit dieser id (siehe router/index.ts's scrollBehavior).
   else if (entry.kind === 'todo') router.push(`/listen?tab=todo#todo-${entry.todoId}`);
   // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bleibt zwar ein echter,
   // schedule_items-basierter kind:'schedule'-Eintrag (siehe calendarEntries.ts), springt beim Klick

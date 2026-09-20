@@ -143,10 +143,13 @@ anlegen, nicht als lokaler Wert in der Komponente.
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
 
-**Eine Bedeutung pro Farbe, nicht umgekehrt**: `--color-accent` ist app-weit fest für "Echtzeit-Update
-von jemand anderem / wartet auf etwas / allgemeine Aufmerksamkeit" reserviert (`.new-highlight`,
-`PendingSyncBadge.vue`, `OfflineIndicator.vue`, …) – ein zweites, fachlich unabhängiges Konzept nie
-einfach denselben Ton mitbenutzen lassen, nur weil er ähnlich "passt". Konkret aufgetretener Fall:
+**Eine Bedeutung pro Farbe, nicht umgekehrt**: `--color-success` (Grün) ist app-weit für
+"Neu angelegt oder geändert von anderen Nutzern" reserviert (`.new-highlight` in `Card.vue`,
+`CheckableListItem.vue`, `BudgetExpenseList.vue`, `BudgetTransferList.vue`). Über den Kalender
+oder Querverweise fokussierte Elemente nutzen stattdessen die Markenfarbe `--color-primary`
+(`.is-map-focused` bzw. `.is-focused`). `--color-accent` steht für allgemeine Aufmerksamkeit
+(`PendingSyncBadge.vue`, `OfflineIndicator.vue`, …) – fachlich unabhängige Konzepte nie
+denselben Farbton teilen lassen. Konkret aufgetretener Fall:
 `TripMap.vue`s Tage-Streifen zeigte anfangs ebenfalls `--color-accent` für "an diesem Tag ist etwas
 geplant" – identisch zur Update-Farbe, an der Karte (wo beide Bedeutungen gleichzeitig auftreten
 können: ein Tag kann sowohl geplante Einträge haben als auch gerade frisch synchronisiert worden sein)
@@ -666,12 +669,12 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   **Optischer Hover-Lift ("Anheben")**: Anklickbare Karten (`interactive: true`, `expandable: true`, `ExcursionCard.vue` sowie `.card--polaroid` / `SpotCard.vue`) heben sich beim Hovern spürbar optisch an: sie schweben nach oben (`translateY(-4px)`), skalieren leicht an (`scale(1.015)` bzw. `scale(1.02)`), vertiefen ihren `box-shadow` (`var(--shadow-md)` bzw. tiefer Fotokontaktschatten) und erhöhen den `z-index`, um sich sauber über Nachbarkarten zu legen. Bei Polaroid-Karten entspannt sich zusätzlich der Drehwinkel leicht. Bei `:active` federn sie tastbar zurück (`scale(0.99)`). Im aufgeklappten Zustand (`expanded`) entfällt der Hover-Lift, um die Interaktion mit Innen-Elementen ruhig zu halten.
   **Zustände:** `condensed` ist ein **Zustand/Prop** (komprimiertes Padding & schmale Miniatur-Banner links),
   der per `expandable` Prop interaktiv per Klick in die volle/aufgeklappte Ansicht wechselt (`#expanded` Slot, analog zu `SpotCard.vue`/`ExcursionCard.vue` in der Karten-View).
-  Echtzeit-Highlighting (`highlight` prop / `.new-highlight`) sowie **Karten-Fokus & Brand-Umrandung** (`mapFocused` prop / `.is-map-focused` in `SpotCard.vue` und `ExcursionCard.vue`): umrandet fokussierte Spots und Touren mit einem prägnanten 2px Brand-Rand (`var(--color-primary)`), samtweichem Ambient Glow und einer geschmeidigen Eintritts-Puls-Animation (`cardMapFocusPulse`), synchron zum Fokus-Banner auf der Karte.
+  Echtzeit-Highlighting (`highlight` prop / `.new-highlight` in grün `var(--color-success)`) sowie **Karten- & Kalender-Fokus in Brand-Farbe** (`mapFocused` prop / `.is-map-focused` in `SpotCard.vue` und `ExcursionCard.vue`): umrandet fokussierte Spots und Touren mit einem prägnanten 2px Brand-Rand (`var(--color-primary)`), samtweichem Ambient Glow und einer geschmeidigen Eintritts-Puls-Animation (`cardMapFocusPulse`), synchron zum Fokus-Banner auf der Karte.
 - **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
   `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
 - **`Dropdown.vue`**: Dropdown-Trigger-Container-Primitive. Kapselt `.dropdown`, `.dropdown__button` und `.dropdown__field` gemäß BEM-System mit Slot für Menüs (`PickerMenu.vue`).
 - **`PickerMenu.vue` & `DropdownItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management und Backdrop.
-- **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`) und Echtzeit-Highlighting (`row--highlighted`).
+- **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`), Echtzeit-Highlighting in Grün (`row.new-highlight`) und Kalender-Fokus in Brand-Farbe (`row.is-focused`).
 - **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
 - **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
 - **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.

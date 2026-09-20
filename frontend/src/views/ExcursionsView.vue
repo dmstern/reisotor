@@ -257,19 +257,10 @@ function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null)
 onMounted(async () => {
   applyRouteQuery();
   markSeenForGroupMode(groupMode.value);
-  // Querverweis-Sprung (z. B. aus dem Budget bei einem automatisch aus einer Unterkunft erzeugten
-  // Ausgabe-Eintrag, siehe BudgetView.vue's autoSourceFor()) – dieselbe highlightedIds-Menge wie
-  // oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
+  // Querverweis-Sprung (z. B. aus dem Kalender oder Budget)
   const hashId = hashHighlightId(route.hash, 'spot');
-  if (hashId != null) highlightedIds.value.add(hashId);
-  // #106: Rücksprung aus dem Kalender (ScheduleView.vue's returnToCard()) nach dem Einplanen/
-  // Bestätigen einer Tour - analog zum bestehenden Spot-Hash oben. Deckt seit #196 auch Touren mit
-  // gesetzter role ab (früher eigenes Hash-Präfix "travel-" für die inzwischen entfernte
-  // Reise-Gruppierung - alte "travel-<id>"-Links aus derselben Ära werden hier als Fallback
-  // ebenfalls als Tour-id interpretiert).
   const excursionHashId =
     hashHighlightId(route.hash, 'excursion') ?? hashHighlightId(route.hash, 'travel');
-  if (excursionHashId != null) highlightedIds.value.add(excursionHashId);
   try {
     const [usersRes, likesRes, commentsRes] = await Promise.all([
       api.get<User[]>(`/trips/${tripId}/members`),
@@ -290,10 +281,12 @@ onMounted(async () => {
   }
   if (hashId != null) {
     await nextTick();
+    drawers.openMapAt(`spot-${hashId}`);
     onFocusSpotFromMap(hashId);
   }
   if (excursionHashId != null) {
     await nextTick();
+    drawers.openMapForExcursion(excursionHashId);
     onFocusExcursionFromMap(excursionHashId);
   }
 });
@@ -307,16 +300,37 @@ watch(
     if (!newHash) return;
     const spotId = hashHighlightId(newHash, 'spot');
     if (spotId != null) {
-      highlightedIds.value.add(spotId);
       await nextTick();
+      drawers.openMapAt(`spot-${spotId}`);
       onFocusSpotFromMap(spotId);
       return;
     }
     const excursionId = hashHighlightId(newHash, 'excursion') ?? hashHighlightId(newHash, 'travel');
     if (excursionId != null) {
-      highlightedIds.value.add(excursionId);
       await nextTick();
+      drawers.openMapForExcursion(excursionId);
       onFocusExcursionFromMap(excursionId);
+    }
+  }
+);
+
+watch(
+  () => drawers.mapFocusKey,
+  (newKey) => {
+    if (!newKey && route.hash.startsWith('#spot-')) {
+      router.replace({ path: route.path, query: route.query, hash: '' });
+    }
+  }
+);
+
+watch(
+  () => drawers.mapFocusExcursionId,
+  (newId) => {
+    if (
+      newId == null &&
+      (route.hash.startsWith('#excursion-') || route.hash.startsWith('#travel-'))
+    ) {
+      router.replace({ path: route.path, query: route.query, hash: '' });
     }
   }
 );
@@ -2609,9 +2623,30 @@ watch(
 // ungewollt wieder auf "angeschnitten").
 function onSpotCardOpen(spot: Spot) {
   expandedSpotId.value = spot.id;
+  if (drawers.mapFocusKey && drawers.mapFocusKey !== `spot-${spot.id}`) {
+    drawers.mapFocusKey = null;
+  }
+  if (drawers.mapFocusExcursionId != null) {
+    drawers.mapFocusExcursionId = null;
+  }
 }
 function onSpotCardClose() {
   expandedSpotId.value = null;
+  drawers.mapFocusKey = null;
+}
+
+function onExcursionCardOpen(excursion: Excursion) {
+  expandedExcursionId.value = excursion.id;
+  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursion.id) {
+    drawers.mapFocusExcursionId = null;
+  }
+  if (drawers.mapFocusKey != null) {
+    drawers.mapFocusKey = null;
+  }
+}
+function onExcursionCardClose() {
+  expandedExcursionId.value = null;
+  drawers.mapFocusExcursionId = null;
 }
 
 // "Auf Karte anzeigen"-Button (Mini- wie aufgeklappte Karte, siehe SpotCard.vue) – schrumpft das
@@ -3875,8 +3910,8 @@ async function deleteEditingSpot() {
                 @toggle-comment-like="toggleExcursionCommentLike"
                 @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
                 @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
-                @open="expandedExcursionId = grp.excursion.id"
-                @close="expandedExcursionId = null"
+                @open="onExcursionCardOpen(grp.excursion)"
+                @close="onExcursionCardClose"
               />
               <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
                 <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />

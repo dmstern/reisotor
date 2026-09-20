@@ -93,7 +93,7 @@ async function removeExpense(id: number) {
   pointer-events: none;
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+  box-shadow: inset 0 0 0 2px var(--color-success);
 }
 
 .row:last-child {

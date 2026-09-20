@@ -271,7 +271,11 @@ function handleCardKeydown(event: KeyboardEvent) {
   pointer-events: none;
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+  box-shadow: inset 0 0 0 2px var(--color-success);
+}
+
+.card.is-map-focused.new-highlight::after {
+  display: none;
 }
 
 .card.is-map-focused {

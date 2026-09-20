@@ -184,7 +184,7 @@ export const Highlighted: Story = {
     template: `
       <Card v-bind="args" style="max-width: 400px;">
         <h3 style="margin: 0 0 8px;">Frisch aktualisierte Karte</h3>
-        <p style="margin: 0;">Farblicher Akzent-Rand (.new-highlight) markiert Echtzeit-Updates von Mitreisenden.</p>
+        <p style="margin: 0;">Grüner Highlight-Rand (.new-highlight) markiert Echtzeit-Updates von Mitreisenden.</p>
       </Card>
     `,
   }),

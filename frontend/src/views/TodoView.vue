@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { TodoItem, TodoPriority, User, Period } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -37,14 +37,26 @@ const tripStore = useTripStore();
 const liveSync = useLiveSyncStore();
 const uiSettings = useUiSettingsStore();
 const route = useRoute();
+const router = useRouter();
 const tripId = tripStore.currentTripId as number;
 const items = ref<TodoItem[]>([]);
 const { showToast } = useToast();
 const users = ref<User[]>([]);
 const loading = ref(true);
 // Von anderen Mitgliedern seit dem letzten Besuch geänderte ToDos (siehe stores/liveSync.ts) –
-// einmalig beim Mounten eingefroren, damit die Hervorhebung nicht sofort wieder verschwindet.
+// einmalig beim Mounten eingefroren, damit die Hervorhebung nicht sofort wieder verschwindet (grün).
 const highlightedIds = ref<Set<number>>(new Set());
+// Durch Kalender-/Hash-Sprung gezielt fokussiertes ToDo (in Brand-Farbe hervorgehoben).
+const focusedTodoId = ref<number | null>(null);
+
+function clearFocusedTodo() {
+  if (focusedTodoId.value != null) {
+    focusedTodoId.value = null;
+    if (route.hash.startsWith('#todo-')) {
+      router.replace({ path: route.path, query: route.query, hash: '' });
+    }
+  }
+}
 
 type GroupBy = 'assignee' | 'period';
 type SortBy = 'due_date' | 'priority' | 'assignee';
@@ -168,12 +180,24 @@ async function load() {
 
 onMounted(() => {
   highlightedIds.value = liveSync.markSeen('todos');
-  // Querverweis-Sprung (z. B. aus dem Kalender, siehe ScheduleView.vue's openEntry()) – dieselbe
-  // highlightedIds-Menge wie oben, kein zweites Hervorhebungs-System (siehe hashHighlight.ts).
+  // Querverweis-Sprung (z. B. aus dem Kalender, siehe ScheduleView.vue's openEntry()) – gezielter
+  // Fokus in Brand-Farbe statt des grünen LiveSync-Neu-Highlights.
   const hashId = hashHighlightId(route.hash, 'todo');
-  if (hashId != null) highlightedIds.value.add(hashId);
+  if (hashId != null) focusedTodoId.value = hashId;
   load();
 });
+
+watch(
+  () => route.hash,
+  (newHash) => {
+    if (!newHash) {
+      focusedTodoId.value = null;
+      return;
+    }
+    const hashId = hashHighlightId(newHash, 'todo');
+    if (hashId != null) focusedTodoId.value = hashId;
+  }
+);
 
 // Aktualisiert die Liste automatisch, wenn ein anderes Mitglied etwas an den ToDos ändert (siehe
 // stores/liveSync.ts) – analog zum bestehenden drawers.locationsVersion-Muster in ScheduleView.vue.
@@ -349,6 +373,7 @@ async function quickAddToGroup(group: Group, label: string) {
 }
 
 async function toggleDone(item: TodoItem) {
+  clearFocusedTodo();
   const updated = await api.put<TodoItem>(`/todos/${item.id}`, {
     trip_id: tripId,
     title: item.title,
@@ -364,6 +389,7 @@ async function toggleDone(item: TodoItem) {
 }
 
 function startEdit(item: TodoItem) {
+  clearFocusedTodo();
   editingItem.value = item;
   editForm.value = {
     title: item.title,
@@ -578,6 +604,8 @@ function hasTodoMeta(item: TodoItem): boolean {
               :id="`todo-${item.id}`"
               :done="!!item.done"
               :highlighted="highlightedIds.has(item.id)"
+              :focused="focusedTodoId === item.id"
+              @click="clearFocusedTodo"
             >
               <div class="item-main">
                 <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
