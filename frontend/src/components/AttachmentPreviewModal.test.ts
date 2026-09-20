@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { createApp, h, nextTick, type Component } from 'vue';
 import { createPinia } from 'pinia';
+import { useDrawersStore } from '../stores/drawers';
 import AttachmentPreviewModal from './AttachmentPreviewModal.vue';
 
 function mountTestApp(rootComponent: Component, props: Record<string, unknown> = {}) {
@@ -213,6 +214,14 @@ describe('AttachmentPreviewModal', () => {
     showMapBtn!.click();
     await nextTick();
     expect(closed).toBe(true);
+    const drawers = useDrawersStore();
+    expect(drawers.mapFocusLocation).toEqual({
+      lat: 48.1372,
+      lng: 11.5761,
+      title: 'Urlaubsfoto.jpg',
+      imageUrl: 'https://example.com/photo.jpg',
+    });
+    expect(drawers.mapFocusKey).toBe('photo-location');
     cleanUp();
   });
 
