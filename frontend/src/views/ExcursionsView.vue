@@ -746,15 +746,26 @@ const showEditExcursionSpotsSection = ref(false);
 
 watch(editingSpot, (val) => {
   if (val) {
-    showEditSpotLocationSection.value = !!val.maps_link || !!val.is_home;
+    showEditSpotLocationSection.value =
+      !!val.maps_link || !!val.is_home || !!val.address || (val.lat != null && val.lng != null);
     // Einplanen-Sektion (Touren + Termine) automatisch öffnen, wenn bereits Touren oder Termine
     // vorhanden sind, damit der User den bestehenden Stand sofort sieht.
     showSpotScheduleSection.value =
       editSpotForm.value.tourTitles.length > 0 || editSpotScheduledItems.value.length > 0;
   } else {
+    showEditSpotLocationSection.value = false;
     showSpotScheduleSection.value = false;
   }
 });
+
+watch(
+  () => spotForm.value.category,
+  (newCat, oldCat) => {
+    if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
+      showSpotLocationSection.value = true;
+    }
+  }
+);
 
 function getTourDate(title: string): string | null {
   const tour = excursionsStore.excursions.find(
@@ -2839,6 +2850,7 @@ function closeSpotForm() {
   spotPickerOpen.value = false;
   spotLocationError.value = false;
   spotPendingFixId.value = null;
+  showSpotLocationSection.value = false;
   showSpotScheduleSection.value = false;
   newSpotDraft.clear();
 }
@@ -3423,13 +3435,6 @@ async function deleteEditingSpot() {
                 />
               </FormField>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
-                <FormField icon="location" label="Adresse">
-                  <Input
-                    v-model="activeSpotForm.address"
-                    type="text"
-                    placeholder="Adresse (optional)"
-                  />
-                </FormField>
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
                     <Input v-model="activeSpotForm.start_date" type="date" />
@@ -3502,14 +3507,13 @@ async function deleteEditingSpot() {
                 <p class="hint">
                   Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                 </p>
-                <CheckboxCard
-                  id="spotFormIsHome"
-                  v-model="activeSpotForm.is_home"
-                  variant="muted"
-                  :icon="ACTION_ICONS.home"
-                  label="Heimat-Seite"
-                  description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
-                />
+                <FormField icon="location" label="Adresse">
+                  <Input
+                    v-model="activeSpotForm.address"
+                    type="text"
+                    placeholder="Adresse (Straße, Hausnummer, Ort)"
+                  />
+                </FormField>
                 <FormField icon="maps" label="Maps-Link (Google/Apple)">
                   <Input
                     v-model="activeSpotForm.maps_link"
@@ -3574,6 +3578,14 @@ async function deleteEditingSpot() {
                     :reference-points="spotReferencePoints"
                   />
                 </CollapsibleFieldset>
+                <CheckboxCard
+                  id="spotFormIsHome"
+                  v-model="activeSpotForm.is_home"
+                  variant="muted"
+                  :icon="ACTION_ICONS.home"
+                  label="Heimat-Seite"
+                  description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
+                />
               </CollapsibleFieldset>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor

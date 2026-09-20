@@ -531,7 +531,7 @@ const cardRotation = computed(() => {
       </div>
 
       <div
-        v-if="isAccommodation || (creatorLabel && !expanded)"
+        v-if="isAccommodation || spot.address || (creatorLabel && !expanded)"
         class="spot-accordion"
         :class="{ 'is-expanded': expanded }"
       >
@@ -539,15 +539,15 @@ const cardRotation = computed(() => {
           <DetailRow v-if="creatorLabel && !expanded" label="Von">
             {{ creatorLabel }}
           </DetailRow>
+          <DetailRow v-if="isAccommodation && (spot.start_date || spot.end_date)" label="Zeitraum">
+            <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+            {{ formatAccommodationDate(spot.start_date) || '?' }} –
+            {{ formatAccommodationDate(spot.end_date) || '?' }}
+          </DetailRow>
+          <DetailRow v-if="spot.address" label="Adresse">
+            {{ spot.address }}
+          </DetailRow>
           <template v-if="isAccommodation">
-            <DetailRow v-if="spot.start_date || spot.end_date" label="Zeitraum">
-              <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-              {{ formatAccommodationDate(spot.start_date) || '?' }} –
-              {{ formatAccommodationDate(spot.end_date) || '?' }}
-            </DetailRow>
-            <DetailRow v-if="spot.address" label="Adresse">
-              {{ spot.address }}
-            </DetailRow>
             <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out">
               {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
             </DetailRow>
