@@ -17,6 +17,7 @@ import {
 } from '../utils/imageCompression';
 import { useCalendarSettingsStore } from '../stores/calendarSettings';
 import { useDrawersStore } from '../stores/drawers';
+import { formatDate, toLocalDateString } from '../utils/dateFormat';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 export interface AttachmentPreviewItem {
@@ -26,6 +27,7 @@ export interface AttachmentPreviewItem {
   filename?: string;
   mime_type?: string;
   size_bytes?: number;
+  created_at?: string;
   metadata?: ImageExifMetadata | null;
 }
 
@@ -394,8 +396,16 @@ function onShowLocationOnMap() {
     attachments: normalizedAttachments.value,
     initialIndex: currentIndex.value,
   };
+  let dateBadge: string | undefined;
+  if (currentMetadata.value?.dateTime) {
+    dateBadge = formatDate(toLocalDateString(currentMetadata.value.dateTime), {
+      includeYear: false,
+    });
+  } else if (currentAttachment.value?.created_at) {
+    dateBadge = formatDate(currentAttachment.value.created_at, { includeYear: false });
+  }
   emit('update:modelValue', false);
-  drawers.openMapAtLocation(lat, lng, title, imageUrl, gallery);
+  drawers.openMapAtLocation(lat, lng, title, imageUrl, gallery, dateBadge);
 }
 
 // --- Swipe Logic für Touch-Geräte ---

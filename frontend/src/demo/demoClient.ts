@@ -501,9 +501,11 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       const entityId = searchParams.get('entity_id')
         ? Number(searchParams.get('entity_id'))
         : undefined;
+      const tripId = searchParams.get('trip_id') ? Number(searchParams.get('trip_id')) : undefined;
       return structuredClone(
         rawList.filter(
           (item) =>
+            (tripId === undefined || (item as { trip_id?: number }).trip_id === tripId) &&
             (!domain || (item as { domain?: string }).domain === domain) &&
             (entityId === undefined || (item as { entity_id?: number }).entity_id === entityId)
         )

@@ -83,8 +83,11 @@ export const useDrawersStore = defineStore('drawers', () => {
     lng: number;
     title?: string;
     imageUrl?: string;
+    dateBadge?: string;
     gallery?: MapFocusGallery;
   } | null>(null);
+  // Zeigt alle Fotos mit Geolocation im gesamten Urlaub auf einmal auf der Karte an.
+  const mapFocusAllPhotos = ref(false);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   // Ob die Kalender-Schublade gerade als Vollbild-Overlay maximiert ist (Drawer.vue). Zentral statt
   // lokal im Drawer gehalten (bewusst nicht in localStorage persistiert, flüchtiger UI-Zustand) –
@@ -183,6 +186,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;
     mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -193,6 +197,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;
     mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -206,6 +211,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId.value = null;
     mapFocusTrackId.value = null;
     mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -218,6 +224,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
     mapFocusLocation.value = null;
+    mapFocusAllPhotos.value = false;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -230,13 +237,27 @@ export const useDrawersStore = defineStore('drawers', () => {
     lng: number,
     title?: string,
     imageUrl?: string,
-    gallery?: MapFocusGallery
+    gallery?: MapFocusGallery,
+    dateBadge?: string
   ) {
-    mapFocusLocation.value = { lat, lng, title, imageUrl, gallery };
+    mapFocusLocation.value = { lat, lng, title, imageUrl, gallery, dateBadge };
     mapFocusKey.value = 'photo-location';
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;
+    mapFocusAllPhotos.value = false;
+    triggerFocusChange();
+    ensureMapRoute();
+  }
+
+  // Zeigt alle Fotos mit Geolocation im gesamten Urlaub auf einmal auf der Karte an.
+  function openMapForAllPhotos() {
+    mapFocusAllPhotos.value = true;
+    mapFocusKey.value = null;
+    mapFocusExcursionId.value = null;
+    mapFocusDate.value = null;
+    mapFocusTrackId.value = null;
+    mapFocusLocation.value = null;
     triggerFocusChange();
     ensureMapRoute();
   }
@@ -260,6 +281,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     mapFocusDate,
     mapFocusTrackId,
     mapFocusLocation,
+    mapFocusAllPhotos,
     focusVersion,
     calendarWidth,
     maximizedSide,
@@ -271,6 +293,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     openMapForExcursion,
     openMapForTrack,
     openMapAtLocation,
+    openMapForAllPhotos,
     focusMapOnDate,
     maximize,
     restoreMaximized,

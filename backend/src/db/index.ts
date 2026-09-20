@@ -764,9 +764,11 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 `);
+ensureColumn('attachments', 'trip_id', 'INTEGER REFERENCES trips(id) ON DELETE CASCADE');
 db.exec(
   'CREATE INDEX IF NOT EXISTS idx_attachments_domain_entity ON attachments (domain, entity_id)'
 );
+db.exec('CREATE INDEX IF NOT EXISTS idx_attachments_trip_id ON attachments (trip_id)');
 
 /** Löscht Anhang-Zeilen + zugehörige Dateien auf der Platte für eine Menge von Objekt-ids einer
  *  Attachment-Domäne (siehe routes/attachments.ts's DOMAIN_TABLE) – aufgerufen, bevor die
