@@ -770,6 +770,17 @@ db.exec(
 );
 db.exec('CREATE INDEX IF NOT EXISTS idx_attachments_trip_id ON attachments (trip_id)');
 
+// Backfill für ältere attachments-Zeilen, bei denen trip_id noch NULL ist (#412):
+// trip_id aus der jeweiligen Ziel-Tabelle nachschlagen.
+db.exec(`
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM spots WHERE spots.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'spots';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM notes WHERE notes.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'notes';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM ideas WHERE ideas.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'ideas';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM schedule_items WHERE schedule_items.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'schedule';
+  UPDATE attachments SET trip_id = (SELECT trip_id FROM budget_items WHERE budget_items.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'budget';
+  UPDATE attachments SET trip_id = (SELECT ideas.trip_id FROM excursion_legs JOIN ideas ON ideas.id = excursion_legs.idea_id WHERE excursion_legs.id = attachments.entity_id) WHERE trip_id IS NULL AND domain = 'excursion_legs';
+`);
+
 /** Löscht Anhang-Zeilen + zugehörige Dateien auf der Platte für eine Menge von Objekt-ids einer
  *  Attachment-Domäne (siehe routes/attachments.ts's DOMAIN_TABLE) – aufgerufen, bevor die
  *  referenzierenden Zeilen selbst endgültig verschwinden (Papierkorb-Purge unten, Urlaub-Löschung

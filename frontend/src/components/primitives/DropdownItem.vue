@@ -37,8 +37,10 @@ const props = withDefaults(
     trailingIcon?: IconDef;
     /** Icon-Gruppe für nachgestelltes Icon (Standard: 'actions') */
     trailingIconGroup?: IconGroup;
-    /** Icon-Größe für nachgestelltes Icon in Pixeln (Standard: 14) */
+    /** Optionale Icon-Größe für nachgestelltes Icon in Pixeln (Standard: 14) */
     trailingIconSize?: number;
+    /** Tooltip / Mouseover-Text */
+    title?: string;
   }>(),
   {
     iconGroup: 'actions',
@@ -71,6 +73,7 @@ function handleClick(event: MouseEvent) {
   <label
     v-if="multiselect"
     :for="inputId"
+    :title="title"
     class="dropdown-item"
     :class="{ 'is-active': active, 'is-disabled': disabled }"
   >
@@ -101,6 +104,7 @@ function handleClick(event: MouseEvent) {
     :href="href"
     :target="target"
     :rel="rel"
+    :title="title"
     class="dropdown-item"
     :class="{ 'is-active': active, 'is-disabled': disabled }"
     @click="handleClick"
@@ -131,6 +135,7 @@ function handleClick(event: MouseEvent) {
     v-else
     type="button"
     :disabled="disabled"
+    :title="title"
     class="dropdown-item"
     :class="{ 'is-active': active, 'is-disabled': disabled }"
     @click="handleClick"

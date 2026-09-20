@@ -20,6 +20,7 @@ import 'leaflet-rotate';
 import { api } from '../api/client';
 import type {
   Attachment,
+  DiaryEntry,
   Excursion,
   ExcursionLeg,
   LocationTrack,
@@ -348,6 +349,7 @@ function toggleFocusMenu(event?: MouseEvent) {
       WIDE_PICKER_MENU_WIDTH
     );
     focusMenuOpen.value = true;
+    loadAllTripPhotos();
   } else {
     focusMenuOpen.value = false;
   }
@@ -585,33 +587,100 @@ async function loadAllTripPhotos() {
     return;
   }
   try {
-    const attachments = await api
-      .get<Attachment[]>(`/attachments?trip_id=${tripId}`)
-      .catch(() => []);
-    const imageAttachments = attachments.filter((a) => isImageAttachment(a));
-    if (!imageAttachments.length) {
+    const [attachments, diaryEntries] = await Promise.all([
+      api.get<Attachment[]>(`/attachments?trip_id=${tripId}`).catch(() => []),
+      api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`).catch(() => []),
+    ]);
+
+    interface CandidateItem {
+      id?: number;
+      url: string;
+      original_name: string;
+      filename?: string;
+      mime_type?: string;
+      size_bytes?: number;
+      created_at?: string;
+      dateFallback?: string;
+    }
+
+    const seenUrls = new Set<string>();
+    const candidates: CandidateItem[] = [];
+
+    for (const att of attachments) {
+      if (isImageAttachment(att) && att.url && !seenUrls.has(att.url)) {
+        seenUrls.add(att.url);
+        candidates.push({
+          id: att.id,
+          url: att.url,
+          original_name: att.original_name,
+          filename: att.filename,
+          mime_type: att.mime_type,
+          size_bytes: att.size_bytes,
+          created_at: att.created_at,
+          dateFallback: att.created_at,
+        });
+      }
+    }
+
+    for (const entry of diaryEntries) {
+      if (entry.images && entry.images.length) {
+        for (const img of entry.images) {
+          const url = typeof img === 'string' ? img : img.url;
+          if (!url || seenUrls.has(url)) continue;
+          seenUrls.add(url);
+          const original_name =
+            typeof img === 'string'
+              ? url.split('/').pop() || 'Foto'
+              : img.original_name || url.split('/').pop() || 'Foto';
+          candidates.push({
+            url,
+            original_name,
+            filename: url.split('/').pop(),
+            created_at: entry.created_at,
+            dateFallback: entry.date || entry.created_at,
+          });
+        }
+      }
+      if (entry.content && entry.content.includes('<img')) {
+        const matches = entry.content.matchAll(/<img[^>]+src=["']([^"']+)["']/gi);
+        for (const match of matches) {
+          const url = match[1];
+          if (!url || seenUrls.has(url)) continue;
+          seenUrls.add(url);
+          candidates.push({
+            url,
+            original_name: url.split('/').pop() || 'Foto',
+            filename: url.split('/').pop(),
+            created_at: entry.created_at,
+            dateFallback: entry.date || entry.created_at,
+          });
+        }
+      }
+    }
+
+    if (!candidates.length) {
       allTripPhotoPoints.value = [];
       allTripPhotosLoaded.value = true;
       return;
     }
 
     const itemsWithMeta: {
-      att: Attachment;
+      item: CandidateItem;
       meta: ImageExifMetadata;
       timestamp: number;
     }[] = [];
 
     await Promise.all(
-      imageAttachments.map(async (att) => {
+      candidates.map(async (item) => {
         try {
-          const meta = await extractExifFromUrl(att.url);
+          const meta = await extractExifFromUrl(item.url);
           if (meta?.latitude != null && meta?.longitude != null) {
             const timestamp = meta.dateTime
               ? meta.dateTime.getTime()
-              : att.created_at
-                ? new Date(att.created_at).getTime()
+              : item.dateFallback
+                ? new Date(item.dateFallback).getTime()
                 : 0;
-            itemsWithMeta.push({ att, meta, timestamp });
+            itemsWithMeta.push({ item, meta, timestamp });
           }
         } catch {
           // Bild ohne lesbare EXIF-Daten überspringen
@@ -622,32 +691,32 @@ async function loadAllTripPhotos() {
     // Chronologisch sortieren
     itemsWithMeta.sort((a, b) => a.timestamp - b.timestamp);
 
-    const galleryItems: MapFocusGalleryItem[] = itemsWithMeta.map(({ att, meta }) => ({
-      id: att.id,
-      url: att.url,
-      original_name: att.original_name,
-      filename: att.filename,
-      mime_type: att.mime_type,
-      size_bytes: att.size_bytes,
+    const galleryItems: MapFocusGalleryItem[] = itemsWithMeta.map(({ item, meta }) => ({
+      id: item.id,
+      url: item.url,
+      original_name: item.original_name,
+      filename: item.filename,
+      mime_type: item.mime_type,
+      size_bytes: item.size_bytes,
       metadata: meta,
     }));
 
-    allTripPhotoPoints.value = itemsWithMeta.map(({ att, meta }, index) => {
+    allTripPhotoPoints.value = itemsWithMeta.map(({ item, meta }, index) => {
       let dateBadge: string | undefined;
       if (meta.dateTime) {
         dateBadge = formatDateShared(toLocalDateString(meta.dateTime), { includeYear: false });
-      } else if (att.created_at) {
-        dateBadge = formatDateShared(att.created_at, { includeYear: false });
+      } else if (item.dateFallback) {
+        dateBadge = formatDateShared(item.dateFallback, { includeYear: false });
       }
       return {
-        key: `all-photo-${att.id}`,
+        key: `all-photo-${item.id ?? index}-${item.url.slice(-12)}`,
         origin: 'location',
         lat: meta.latitude!,
         lng: meta.longitude!,
-        title: att.original_name || 'Foto-Standort',
+        title: item.original_name || 'Foto-Standort',
         category: 'Foto',
         icon: FORM_FIELD_ICONS.image,
-        imageUrl: att.url,
+        imageUrl: item.url,
         dateBadge,
         color: '#9141ac',
         gallery: {
@@ -681,6 +750,7 @@ watch(excursionPhotoPoints, () => {
 });
 
 function onAttachmentsChanged(e: Event) {
+  loadAllTripPhotos();
   const custom = e as CustomEvent<{ domain: string; entityId: number }>;
   if (
     custom.detail &&
@@ -1812,6 +1882,19 @@ watch(
   { deep: true }
 );
 
+// Alle Fotos mit Standort anzeigen (Fokus-Menü der Karte)
+watch(
+  () => drawers.mapFocusAllPhotos,
+  () => {
+    renderMarkers();
+    renderRoutes();
+  }
+);
+
+watch(allTripPhotoPoints, () => {
+  renderMarkers();
+});
+
 // Erneuter Aufruf von "Auf Karte anzeigen" – zentriert den Ausschnitt auch dann neu,
 // wenn sich die Fokus-Id im Store selbst nicht geändert hat.
 watch(
@@ -1822,6 +1905,9 @@ watch(
     renderRoutes();
     if (focusedTrackPoints.value.length >= 2) {
       renderTracks();
+    }
+    if (drawers.mapFocusAllPhotos) {
+      fitAllPhotos();
     }
   }
 );
@@ -2008,18 +2094,33 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           <PickerMenu wide :style="focusMenuStyle" @close="focusMenuOpen = false">
             <DropdownItem
               :disabled="!filteredPoints.length"
+              :title="
+                !filteredPoints.length
+                  ? 'Keine eingetragenen Orte vorhanden'
+                  : 'Alle eingetragenen Orte auf der Karte anzeigen'
+              "
               :icon="MAP_TOOL_ICONS.fitAll"
               label="Alle eingetragenen Orte anzeigen"
               @click="selectFocus(fitAll)"
             />
             <DropdownItem
               :disabled="!vacationPoints.length"
+              :title="
+                !vacationPoints.length
+                  ? 'Kein Urlaubsort eingetragen'
+                  : 'Auf den Urlaubsort fokussieren'
+              "
               :icon="MAP_TOOL_ICONS.vacation"
               label="Nur Urlaubsort"
               @click="selectFocus(fitVacation)"
             />
             <DropdownItem
               :disabled="!accommodationPoints.length"
+              :title="
+                !accommodationPoints.length
+                  ? 'Keine Unterkünfte eingetragen'
+                  : 'Auf die Unterkünfte fokussieren'
+              "
               :icon="MAP_TOOL_ICONS.accommodation"
               label="Nur Unterkünfte"
               @click="selectFocus(fitAccommodations)"
@@ -2027,12 +2128,26 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
             <DropdownItem
               v-if="excursionsStore.excursions.length"
               :disabled="!excursionPoints.length"
+              :title="
+                !excursionPoints.length
+                  ? 'Keine Tourziele mit Koordinaten vorhanden'
+                  : 'Auf Tourziele fokussieren'
+              "
               :icon="MAP_TOOL_ICONS.excursions"
               label="Nur Tourziele"
               @click="selectFocus(fitExcursions)"
             />
             <DropdownItem
               :disabled="allTripPhotosLoaded && !allTripPhotoPoints.length"
+              :title="
+                !allTripPhotosLoaded
+                  ? 'Fotos werden geladen...'
+                  : !allTripPhotoPoints.length
+                    ? 'Keine Fotos mit Standortinformationen im Urlaub hinterlegt'
+                    : allTripPhotoPoints.length === 1
+                      ? '1 Foto mit Standort auf der Karte anzeigen'
+                      : `${allTripPhotoPoints.length} Fotos mit Standort auf der Karte anzeigen`
+              "
               :icon="MAP_TOOL_ICONS.photos"
               label="Alle Fotos mit Standort"
               @click="selectFocus(focusAllPhotos)"
