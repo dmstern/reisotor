@@ -63,7 +63,12 @@ export const useDrawersStore = defineStore('drawers', () => {
   // gleiches Muster wie mapFocusExcursionId.
   const mapFocusTrackId = ref<number | null>(null);
   // Beliebiger Standort (z. B. EXIF-Geolocation eines Fotos), der auf der Karte fokussiert wird.
-  const mapFocusLocation = ref<{ lat: number; lng: number; title?: string } | null>(null);
+  const mapFocusLocation = ref<{
+    lat: number;
+    lng: number;
+    title?: string;
+    imageUrl?: string;
+  } | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   // Ob die Kalender-Schublade gerade als Vollbild-Overlay maximiert ist (Drawer.vue). Zentral statt
   // lokal im Drawer gehalten (bewusst nicht in localStorage persistiert, flüchtiger UI-Zustand) –
@@ -202,9 +207,9 @@ export const useDrawersStore = defineStore('drawers', () => {
   }
 
   // Zeigt einen konkreten geografischen Ort (z. B. EXIF-Aufnahmeort eines Fotos) auf der Karte.
-  function openMapAtLocation(lat: number, lng: number, title?: string) {
-    mapFocusLocation.value = { lat, lng, title };
-    mapFocusKey.value = null;
+  function openMapAtLocation(lat: number, lng: number, title?: string, imageUrl?: string) {
+    mapFocusLocation.value = { lat, lng, title, imageUrl };
+    mapFocusKey.value = 'photo-location';
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
     mapFocusTrackId.value = null;

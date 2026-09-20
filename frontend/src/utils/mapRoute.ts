@@ -69,6 +69,51 @@ export function cachedEmojiPin(icon: MarkerGlyph, color: string, large = false) 
   return cached;
 }
 
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// Marker-Pin mit Foto-Thumbnail für Aufnahmestandorte von Bildern (z. B. aus Notizen/Tagebuch mit
+// EXIF-GPS-Metadaten). Baut auf derselben markanten Teardrop-Pin-Silhouette auf wie emojiPin(),
+// bettet das Foto aber als runden Zuschnitt im Pin-Kopf ein (inkl. 🖼️-Fallback, falls das Bild noch lädt
+// oder nicht verfügbar ist).
+export function imagePin(imageUrl: string, color: string, large = false) {
+  const size = large ? 56 : 42;
+  const thumbSize = large ? 42 : 30;
+  const fallbackSize = large ? 20 : 14;
+  const safeUrl = escapeHtmlAttr(imageUrl);
+  return L.divIcon({
+    html: `<div class="photo-map-pin ${large ? 'photo-map-pin--large' : ''}" style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
+      transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
+      box-shadow:0 3px 10px rgba(0,0,0,.4);border:2.5px solid white;">
+      <div style="transform:rotate(45deg);width:${thumbSize}px;height:${thumbSize}px;border-radius:50%;overflow:hidden;
+        background:#1a1a1a;display:flex;align-items:center;justify-content:center;position:relative;">
+        <span style="position:absolute;font-size:${fallbackSize}px;line-height:1;user-select:none;">🖼️</span>
+        <img src="${safeUrl}" alt="" style="position:relative;width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;" onerror="this.style.display='none'" />
+      </div>
+    </div>`,
+    className: 'photo-marker-pin',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size + 2],
+  });
+}
+
+const imageIconCache = new Map<string, L.DivIcon>();
+export function cachedImagePin(imageUrl: string, color: string, large = false) {
+  const key = `${imageUrl}|${color}|${large}`;
+  let cached = imageIconCache.get(key);
+  if (!cached) {
+    cached = imagePin(imageUrl, color, large);
+    imageIconCache.set(key, cached);
+  }
+  return cached;
+}
+
 // Für den eigenen Standort auf der Karte (TripMap.vue, Live-Standort): derselbe Pin wie emojiPin(),
 // zusätzlich von einem pulsierenden Ring umgeben (CSS-Animation "map-pulse-ring", siehe TripMap.vue's
 // zweiter, bewusst NICHT scoped-er <style>-Block – Leaflets dynamisch per innerHTML eingefügtes

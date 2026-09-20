@@ -37,6 +37,7 @@ import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import {
   arcRoute,
   cachedEmojiPin,
+  cachedImagePin,
   compassPin,
   LEAFLET_ATTRIBUTION_PREFIX,
 } from '../utils/mapRoute';
@@ -82,6 +83,7 @@ interface MapPoint {
   lng: number;
   title: string;
   icon: IconDef;
+  imageUrl?: string;
   color: string;
   /** Für Kategorie-Filter/-Fokus-Kopplung mit der Spots-Sicht (ExcursionsView.vue): bei Spots die
    *  echte Kategorie (bzw. "Sonstiges", inkl. "Unterkunft" seit deren Verschmelzung in Spots – siehe
@@ -285,10 +287,11 @@ function clearFocus() {
     drawers.mapFocusExcursionId = null;
   } else if (drawers.mapFocusDate) {
     drawers.mapFocusDate = null;
-  } else if (drawers.mapFocusKey) {
-    drawers.mapFocusKey = null;
   } else if (drawers.mapFocusLocation) {
     drawers.mapFocusLocation = null;
+    drawers.mapFocusKey = null;
+  } else if (drawers.mapFocusKey) {
+    drawers.mapFocusKey = null;
   }
   isFocusBannerExpanded.value = false;
 }
@@ -450,7 +453,11 @@ function stopCompass() {
 // Ausflug-Mini-Karte, ExcursionMiniMap.vue) – hier nur noch ein dünner MapPoint-spezifischer
 // Wrapper.
 function iconFor(point: MapPoint) {
-  return cachedEmojiPin(point.icon, point.color, point.key === drawers.mapFocusKey);
+  const isLarge = point.key === drawers.mapFocusKey || point.origin === 'location';
+  if (point.imageUrl) {
+    return cachedImagePin(point.imageUrl, point.color, isLarge);
+  }
+  return cachedEmojiPin(point.icon, point.color, isLarge);
 }
 
 function formatDate(d: string) {
@@ -506,6 +513,7 @@ const points = computed<MapPoint[]>(() => {
       lng: drawers.mapFocusLocation.lng,
       title: drawers.mapFocusLocation.title || 'Foto-Standort',
       icon: FORM_FIELD_ICONS.image,
+      imageUrl: drawers.mapFocusLocation.imageUrl,
       color: '#9141ac',
       category: 'Foto',
     });
@@ -718,6 +726,7 @@ function handlePointClick(point: MapPoint) {
     drawers.mapFocusKey = point.key;
     return;
   }
+  drawers.mapFocusLocation = null;
   if (point.origin === 'spot') {
     const spotId = Number(point.key.slice('spot-'.length));
     drawers.mapFocusKey = point.key;
@@ -1788,7 +1797,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           "
           @click="isFocusBannerExpanded = !isFocusBannerExpanded"
         >
+          <img
+            v-if="!focusedExcursion && !focusedSpot && drawers.mapFocusLocation?.imageUrl"
+            :src="drawers.mapFocusLocation.imageUrl"
+            alt=""
+            class="focus-banner-thumb"
+          />
           <AppIcon
+            v-else
             :icon="
               focusedExcursion
                 ? SECTION_ICON_DEFS.excursions
@@ -2072,6 +2088,15 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   background: var(--color-hover);
 }
 
+.focus-banner-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
 .focus-banner-content {
   display: flex;
   align-items: center;
@@ -2334,5 +2359,18 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
 
 :root[data-theme='dark'] .leaflet-tooltip.map-marker-tooltip::before {
   border-top-color: var(--color-surface);
+}
+
+.photo-marker-pin {
+  background: transparent;
+  border: none;
+}
+
+.photo-map-pin {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.photo-marker-pin:hover .photo-map-pin {
+  transform: rotate(-45deg) scale(1.08);
 }
 </style>
