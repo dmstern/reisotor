@@ -38,6 +38,7 @@ export function defaultStore(baseDate?: Date): Store {
     '/notifications': [],
     '/attachments': [],
     '/users/me/icon-settings': [],
+    '/users/me/app-settings': [],
   };
 }
 
@@ -190,6 +191,18 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       store['/users/me/icon-settings'] = [(body ?? {}) as Record<string, unknown>];
       persist();
       return (body ?? {}) as unknown as T;
+    }
+  }
+  if (path === '/users/me/app-settings') {
+    if (method === 'GET') return (store['/users/me/app-settings']?.[0] ?? {}) as unknown as T;
+    if (method === 'PUT') {
+      const settings =
+        (body as { settings?: Record<string, unknown> })?.settings ??
+        (body as Record<string, unknown>) ??
+        {};
+      store['/users/me/app-settings'] = [settings];
+      persist();
+      return settings as unknown as T;
     }
   }
 

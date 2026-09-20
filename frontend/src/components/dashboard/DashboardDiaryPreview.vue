@@ -310,6 +310,7 @@ const previewDate = computed(() => {
 }
 
 .entry-title {
+  font-family: var(--font-diary);
   font-size: 0.52rem;
   font-weight: 700;
   color: #1e293b;

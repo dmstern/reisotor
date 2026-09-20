@@ -1,6 +1,7 @@
 import {
   IconPencil,
   IconPencilFilled,
+  IconPencilPlus,
   IconTrash,
   IconTrashFilled,
   IconX,
@@ -187,7 +188,8 @@ export type ActionIconKey =
   | 'share'
   | 'browserMenu'
   | 'send'
-  | 'mapsApp';
+  | 'mapsApp'
+  | 'write';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -339,4 +341,5 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   browserMenu: { id: 'dots-vertical', emoji: '⋮', outline: IconDotsVertical },
   send: { id: 'send', emoji: '✈️', outline: IconSend, filled: IconSendFilled },
   mapsApp: { id: 'map-pin-share', emoji: '📍', outline: IconMapPinShare },
+  write: { id: 'pencil-plus', emoji: '✍️', outline: IconPencilPlus },
 };

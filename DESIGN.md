@@ -424,8 +424,13 @@ automatisch bei der nächsten Gelegenheit an einem Button/einer Card mitgezogen 
 
 ## Typografie
 
-`--font-sans` (Fira Sans, selbst gehostet als Latin-Subset-WOFF2 – siehe Kommentar in `style.css`
-oben, funktioniert offline). Keine weiteren Schriftfamilien einführen.
+- `--font-sans` (Fira Sans, selbst gehostet als Latin-Subset-WOFF2 – siehe Kommentar in `style.css`
+  oben, funktioniert offline). Standard-App-Schrift für die Benutzeroberfläche.
+- `--font-diary` (Tagebuch-Schriftart, konfigurierbar pro Nutzer:in über die Einstellungen).
+  Standard ist **Architects Daughter** (`'Architects Daughter', cursive, sans-serif`).
+  Unterstützte Optionen: _Architects Daughter_ (Standard), _Comic Neue_, _Balsamiq Sans_,
+  _Short Stack_, _Patrick Hand_ sowie _Fira Sans (App-Schrift)_. Alle Schriften liegen als optimierte
+  WOFF2-Dateien lokal unter `public/fonts/` (keine externen Google-Fonts-Requests zur Laufzeit).
 
 ### Schriftgrößen-Skala & CSS-Tokens
 

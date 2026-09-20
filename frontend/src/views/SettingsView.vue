@@ -51,6 +51,7 @@ import IconStyleSettings from '../components/IconStyleSettings.vue';
 import GlassSettings from '../components/GlassSettings.vue';
 import AccentColorSettings from '../components/AccentColorSettings.vue';
 import BorderWidthSettings from '../components/BorderWidthSettings.vue';
+import DiaryFontSettings from '../components/DiaryFontSettings.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
@@ -867,6 +868,8 @@ async function exportBackup() {
       <GlassSettings />
 
       <IconStyleSettings />
+
+      <DiaryFontSettings />
 
       <div class="card">
         <div class="card-header-row">
