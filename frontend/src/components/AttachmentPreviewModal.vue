@@ -390,8 +390,12 @@ function onShowLocationOnMap() {
   const lng = currentMetadata.value.longitude;
   const title = currentAttachment.value?.original_name || 'Foto-Standort';
   const imageUrl = currentAttachment.value?.url;
+  const gallery = {
+    attachments: normalizedAttachments.value,
+    initialIndex: currentIndex.value,
+  };
   emit('update:modelValue', false);
-  drawers.openMapAtLocation(lat, lng, title, imageUrl);
+  drawers.openMapAtLocation(lat, lng, title, imageUrl, gallery);
 }
 
 // --- Swipe Logic für Touch-Geräte ---

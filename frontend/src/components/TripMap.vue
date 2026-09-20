@@ -19,6 +19,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
 import { api } from '../api/client';
 import type { Excursion, LocationTrack, ScheduleItem, Spot, TrackPoint, User } from '../api/types';
+import AttachmentPreviewModal, { type AttachmentPreviewItem } from './AttachmentPreviewModal.vue';
 import { buildDayStations } from '../utils/dayStations';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useTripStore } from '../stores/trip';
@@ -715,6 +716,30 @@ function onTravelDialogUpdate(v: boolean) {
   if (!v) drawers.mapFocusKey = null;
 }
 
+const photoPreviewOpen = ref(false);
+const photoPreviewIndex = ref(0);
+
+const photoPreviewAttachments = computed<AttachmentPreviewItem[]>(() => {
+  if (drawers.mapFocusLocation?.gallery?.attachments?.length) {
+    return drawers.mapFocusLocation.gallery.attachments as AttachmentPreviewItem[];
+  }
+  if (drawers.mapFocusLocation?.imageUrl) {
+    return [
+      {
+        url: drawers.mapFocusLocation.imageUrl,
+        original_name: drawers.mapFocusLocation.title || 'Foto-Standort',
+      },
+    ];
+  }
+  return [];
+});
+
+function openPhotoPreview() {
+  if (!photoPreviewAttachments.value.length) return;
+  photoPreviewIndex.value = drawers.mapFocusLocation?.gallery?.initialIndex ?? 0;
+  photoPreviewOpen.value = true;
+}
+
 // Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): bei Spots (inkl. Kategorie
 // "Unterkunft", seit deren Verschmelzung in Spots ganz normale Spots) klappt statt eines eigenen
 // Modal-Dialogs, der die Karte dahinter blockieren würde, die passende Karte in der Spots-Liste auf
@@ -724,6 +749,7 @@ function onTravelDialogUpdate(v: boolean) {
 function handlePointClick(point: MapPoint) {
   if (point.origin === 'location') {
     drawers.mapFocusKey = point.key;
+    openPhotoPreview();
     return;
   }
   drawers.mapFocusLocation = null;
@@ -1791,11 +1817,20 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       >
         <button
           class="focus-banner-toggle-btn"
+          :class="{ 'is-clickable': !!drawers.mapFocusLocation }"
           :aria-expanded="isFocusBannerExpanded"
           :aria-label="
-            isFocusBannerExpanded ? 'Fokus-Banner einklappen' : 'Fokus-Banner ausklappen'
+            drawers.mapFocusLocation
+              ? 'Foto in Galerie öffnen'
+              : isFocusBannerExpanded
+                ? 'Fokus-Banner einklappen'
+                : 'Fokus-Banner ausklappen'
           "
-          @click="isFocusBannerExpanded = !isFocusBannerExpanded"
+          @click="
+            drawers.mapFocusLocation
+              ? openPhotoPreview()
+              : (isFocusBannerExpanded = !isFocusBannerExpanded)
+          "
         >
           <img
             v-if="!focusedExcursion && !focusedSpot && drawers.mapFocusLocation?.imageUrl"
@@ -1819,14 +1854,21 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
           />
         </button>
         <div class="focus-banner-content">
-          <span>{{
+          <button
+            v-if="drawers.mapFocusLocation"
+            type="button"
+            class="focus-title-btn"
+            title="Foto in Galerie öffnen"
+            @click="openPhotoPreview()"
+          >
+            {{ drawers.mapFocusLocation.title || 'Foto-Standort' }}
+          </button>
+          <span v-else>{{
             focusedExcursion
               ? focusedExcursion.title
               : focusedSpot
                 ? focusedSpot.title
-                : drawers.mapFocusLocation
-                  ? drawers.mapFocusLocation.title || 'Foto-Standort'
-                  : formatDate(drawers.mapFocusDate!)
+                : formatDate(drawers.mapFocusDate!)
           }}</span>
           <Button variant="card-action" @click="clearFocus">
             <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
@@ -1871,6 +1913,13 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       @edit="editOpenTravel"
       @show-on-map-from="travelDialogOpen = false"
       @show-on-map-to="travelDialogOpen = false"
+    />
+
+    <AttachmentPreviewModal
+      v-model="photoPreviewOpen"
+      :attachments="photoPreviewAttachments"
+      :initial-index="photoPreviewIndex"
+      :editable="false"
     />
 
     <p v-if="!points.length" class="empty">
@@ -2161,6 +2210,11 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     pointer-events: none; /* Kein Klick auf Desktop */
   }
 
+  .focus-banner-toggle-btn.is-clickable {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
   .tile-download-pill {
     bottom: var(--space-4);
     right: var(--space-4);
@@ -2169,10 +2223,28 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   }
 }
 
-.focus-banner span {
+.focus-banner span,
+.focus-banner .focus-title-btn {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.focus-banner .focus-title-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.focus-banner .focus-title-btn:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* Mobil (Default): schwebt als horizontal scrollbare Leiste über dem unteren Kartenrand (analog zu

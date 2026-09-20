@@ -47,6 +47,21 @@ function loadWidth(key: string): number {
 // Schubladen-Toggle mehr nötig. Auf-/Zu-Zustand und Breite der Kalender-Schublade werden hier
 // zentral gehalten (persistiert in localStorage), damit z. B. das Dashboard oder
 // "Auf Karte anzeigen"-Buttons aus beliebigen Sichten sie öffnen können, ohne die Route zu wechseln.
+export interface MapFocusGalleryItem {
+  id?: number;
+  url: string;
+  original_name?: string;
+  filename?: string;
+  mime_type?: string;
+  size_bytes?: number;
+  metadata?: unknown;
+}
+
+export interface MapFocusGallery {
+  attachments: MapFocusGalleryItem[];
+  initialIndex: number;
+}
+
 export const useDrawersStore = defineStore('drawers', () => {
   const calendarOpen = ref(loadOpen(CALENDAR_OPEN_KEY));
   const mapFocusKey = ref<string | null>(null);
@@ -68,6 +83,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     lng: number;
     title?: string;
     imageUrl?: string;
+    gallery?: MapFocusGallery;
   } | null>(null);
   const calendarWidth = ref(loadWidth(CALENDAR_WIDTH_KEY));
   // Ob die Kalender-Schublade gerade als Vollbild-Overlay maximiert ist (Drawer.vue). Zentral statt
@@ -207,8 +223,16 @@ export const useDrawersStore = defineStore('drawers', () => {
   }
 
   // Zeigt einen konkreten geografischen Ort (z. B. EXIF-Aufnahmeort eines Fotos) auf der Karte.
-  function openMapAtLocation(lat: number, lng: number, title?: string, imageUrl?: string) {
-    mapFocusLocation.value = { lat, lng, title, imageUrl };
+  // Optional kann die zugehörige Anhang-Galerie mitgegeben werden, damit ein Klick auf den Foto-Pin
+  // auf der Karte die Galerie am selben Bild wieder öffnet.
+  function openMapAtLocation(
+    lat: number,
+    lng: number,
+    title?: string,
+    imageUrl?: string,
+    gallery?: MapFocusGallery
+  ) {
+    mapFocusLocation.value = { lat, lng, title, imageUrl, gallery };
     mapFocusKey.value = 'photo-location';
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
