@@ -18,12 +18,23 @@ import 'leaflet/dist/leaflet.css';
 // geladen sein.
 import 'leaflet-rotate';
 import { api } from '../api/client';
-import type { Excursion, LocationTrack, ScheduleItem, Spot, TrackPoint, User } from '../api/types';
+import type {
+  Attachment,
+  Excursion,
+  ExcursionLeg,
+  LocationTrack,
+  ScheduleItem,
+  Spot,
+  TrackPoint,
+  User,
+} from '../api/types';
 import AttachmentPreviewModal, { type AttachmentPreviewItem } from './AttachmentPreviewModal.vue';
 import { buildDayStations } from '../utils/dayStations';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { useTripStore } from '../stores/trip';
-import { useDrawersStore } from '../stores/drawers';
+import { useDrawersStore, type MapFocusGallery, type MapFocusGalleryItem } from '../stores/drawers';
+import { extractExifFromUrl } from '../utils/imageCompression';
+import { isImageAttachment } from '../utils/fileUpload';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useTracksStore } from '../stores/tracks';
@@ -98,6 +109,7 @@ interface MapPoint {
   /** Nur bei origin 'spot' gesetzt (Spot.done) - für den 'done'-Wert im Status-Filter, siehe
    *  filteredPoints unten. Unterkunft-/Reise-Punkte kennen kein "gemacht"-Konzept. */
   done?: boolean;
+  gallery?: MapFocusGallery;
 }
 
 const TRAVEL_COLOR = '#4a3aa7';
@@ -465,6 +477,114 @@ function formatDate(d: string) {
   return formatDateShared(d);
 }
 
+// Bilder, die an die aktuell fokussierte Tour (oder deren Teilstrecken) angehängt sind und
+// über EXIF-Geoinformationen verfügen, werden als interaktive Foto-Pins auf der Karte visualisiert.
+const excursionPhotoPoints = ref<MapPoint[]>([]);
+
+async function loadExcursionPhotoPoints(excursionId: number) {
+  try {
+    const exc = excursionsStore.excursions.find((e) => e.id === excursionId);
+    const [tourAttachments, ...legsAttachmentsArrays] = await Promise.all([
+      api.get<Attachment[]>(`/attachments?domain=ideas&entity_id=${excursionId}`).catch(() => []),
+      ...(exc?.legs ?? [])
+        .filter((leg): leg is ExcursionLeg & { id: number } => leg.id != null)
+        .map((leg) =>
+          api
+            .get<Attachment[]>(`/attachments?domain=excursion_legs&entity_id=${leg.id}`)
+            .catch(() => [])
+        ),
+    ]);
+    if (drawers.mapFocusExcursionId !== excursionId) return;
+
+    const allAttachments = [...tourAttachments, ...legsAttachmentsArrays.flat()];
+    const seenIds = new Set<number>();
+    const uniqueAttachments = allAttachments.filter((a) => {
+      if (seenIds.has(a.id)) return false;
+      seenIds.add(a.id);
+      return true;
+    });
+
+    const imageAttachments = uniqueAttachments.filter((a) => isImageAttachment(a));
+    if (!imageAttachments.length) {
+      excursionPhotoPoints.value = [];
+      return;
+    }
+
+    const galleryItems: MapFocusGalleryItem[] = imageAttachments.map((a) => ({
+      id: a.id,
+      url: a.url,
+      original_name: a.original_name,
+      filename: a.filename,
+      mime_type: a.mime_type,
+      size_bytes: a.size_bytes,
+    }));
+
+    const pointsWithExif: MapPoint[] = [];
+
+    await Promise.all(
+      imageAttachments.map(async (att, index) => {
+        try {
+          const meta = await extractExifFromUrl(att.url);
+          if (meta?.latitude != null && meta?.longitude != null) {
+            galleryItems[index].metadata = meta;
+            pointsWithExif.push({
+              key: `excursion-photo-${att.id}`,
+              origin: 'location',
+              lat: meta.latitude,
+              lng: meta.longitude,
+              title: att.original_name || 'Foto-Standort',
+              category: 'Foto',
+              icon: FORM_FIELD_ICONS.image,
+              imageUrl: att.url,
+              color: '#9141ac',
+              gallery: {
+                attachments: galleryItems,
+                initialIndex: index,
+              },
+            });
+          }
+        } catch {
+          // Bild ohne lesbare EXIF-Daten überspringen
+        }
+      })
+    );
+
+    if (drawers.mapFocusExcursionId === excursionId) {
+      excursionPhotoPoints.value = pointsWithExif;
+    }
+  } catch (err) {
+    console.warn('Fehler beim Laden der Tour-Anhänge für die Karte:', err);
+    excursionPhotoPoints.value = [];
+  }
+}
+
+watch(
+  () => drawers.mapFocusExcursionId,
+  (newId) => {
+    if (newId != null) {
+      loadExcursionPhotoPoints(newId);
+    } else {
+      excursionPhotoPoints.value = [];
+    }
+  },
+  { immediate: true }
+);
+
+watch(excursionPhotoPoints, () => {
+  renderMarkers();
+});
+
+function onAttachmentsChanged(e: Event) {
+  const custom = e as CustomEvent<{ domain: string; entityId: number }>;
+  if (
+    custom.detail &&
+    drawers.mapFocusExcursionId != null &&
+    (custom.detail.domain === 'ideas' || custom.detail.domain === 'excursion_legs')
+  ) {
+    loadExcursionPhotoPoints(drawers.mapFocusExcursionId);
+  }
+}
+
 const points = computed<MapPoint[]>(() => {
   const result: MapPoint[] = [];
   // buildTravelDerivedLocations() deckt nur noch Etappen-Enden OHNE verknüpften Ort ab (Freitext-
@@ -518,6 +638,11 @@ const points = computed<MapPoint[]>(() => {
       color: '#9141ac',
       category: 'Foto',
     });
+  }
+  if (focusedExcursion.value && excursionPhotoPoints.value.length) {
+    for (const pt of excursionPhotoPoints.value) {
+      result.push(pt);
+    }
   }
   return result;
 });
@@ -718,8 +843,12 @@ function onTravelDialogUpdate(v: boolean) {
 
 const photoPreviewOpen = ref(false);
 const photoPreviewIndex = ref(0);
+const activePreviewAttachments = ref<AttachmentPreviewItem[]>([]);
 
 const photoPreviewAttachments = computed<AttachmentPreviewItem[]>(() => {
+  if (activePreviewAttachments.value.length) {
+    return activePreviewAttachments.value;
+  }
   if (drawers.mapFocusLocation?.gallery?.attachments?.length) {
     return drawers.mapFocusLocation.gallery.attachments as AttachmentPreviewItem[];
   }
@@ -734,11 +863,24 @@ const photoPreviewAttachments = computed<AttachmentPreviewItem[]>(() => {
   return [];
 });
 
-function openPhotoPreview() {
+function openPhotoPreview(attachments?: AttachmentPreviewItem[], index?: number) {
+  if (attachments && attachments.length) {
+    activePreviewAttachments.value = attachments;
+    photoPreviewIndex.value = index ?? 0;
+    photoPreviewOpen.value = true;
+    return;
+  }
+  activePreviewAttachments.value = [];
   if (!photoPreviewAttachments.value.length) return;
   photoPreviewIndex.value = drawers.mapFocusLocation?.gallery?.initialIndex ?? 0;
   photoPreviewOpen.value = true;
 }
+
+watch(photoPreviewOpen, (open) => {
+  if (!open) {
+    activePreviewAttachments.value = [];
+  }
+});
 
 // Klick auf einen Pin direkt auf der Karte (nicht in der Stationsliste): bei Spots (inkl. Kategorie
 // "Unterkunft", seit deren Verschmelzung in Spots ganz normale Spots) klappt statt eines eigenen
@@ -749,7 +891,14 @@ function openPhotoPreview() {
 function handlePointClick(point: MapPoint) {
   if (point.origin === 'location') {
     drawers.mapFocusKey = point.key;
-    openPhotoPreview();
+    if (point.gallery) {
+      openPhotoPreview(
+        point.gallery.attachments as AttachmentPreviewItem[],
+        point.gallery.initialIndex
+      );
+    } else {
+      openPhotoPreview();
+    }
     return;
   }
   drawers.mapFocusLocation = null;
@@ -912,6 +1061,11 @@ function checkFocusOutOfBounds() {
     focusedLatLngs = excursionStations
       .filter((s) => s.lat != null && s.lng != null)
       .map((s) => [s.lat as number, s.lng as number]);
+    if (excursionPhotoPoints.value.length) {
+      for (const p of excursionPhotoPoints.value) {
+        focusedLatLngs.push([p.lat, p.lng]);
+      }
+    }
   } else if (drawers.mapFocusDate) {
     focusedLatLngs = focusedDateStations.value
       .filter((s) => s.lat != null && s.lng != null)
@@ -1041,6 +1195,12 @@ function renderMarkers() {
   const excursionLatLngs: L.LatLngExpression[] = excursionStations
     .filter((s) => s.lat != null && s.lng != null)
     .map((s): L.LatLngExpression => [s.lat as number, s.lng as number]);
+
+  if (excursion && excursionPhotoPoints.value.length) {
+    for (const p of excursionPhotoPoints.value) {
+      excursionLatLngs.push([p.lat, p.lng]);
+    }
+  }
 
   const dateLatLngs: L.LatLngExpression[] =
     !excursion && drawers.mapFocusDate
@@ -1330,6 +1490,9 @@ onMounted(async () => {
     api.get<User[]>(`/trips/${tripStore.currentTripId}/members`),
   ]);
   users.value = usersRes;
+  if (typeof window !== 'undefined') {
+    window.addEventListener('attachments-changed', onAttachmentsChanged);
+  }
 
   if (!mapEl.value) return;
   // rotate/touchRotate (leaflet-rotate, siehe Import oben): aktiviert die Zwei-Finger-Drehgeste.
@@ -1429,6 +1592,9 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('attachments-changed', onAttachmentsChanged);
+  }
   resizeObserver?.disconnect();
   resizeObserver = null;
   if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
@@ -1539,7 +1705,12 @@ watch(
 // Ausflugs-Routen neu gezeichnet werden.
 watch(
   () => excursionsStore.excursions,
-  () => renderRoutes(),
+  () => {
+    renderRoutes();
+    if (drawers.mapFocusExcursionId != null) {
+      loadExcursionPhotoPoints(drawers.mapFocusExcursionId);
+    }
+  },
   { deep: true }
 );
 
