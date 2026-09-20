@@ -92,7 +92,7 @@ const modalTitle = computed(() => {
   return `Teilstrecke: ${fromName} → ${toName}`;
 });
 
-const hasOptionalData = computed(() => {
+const hasExtendedData = computed(() => {
   return !!(
     form.value.checkin_info ||
     form.value.seat ||
@@ -191,7 +191,7 @@ function onDelete() {
         </FormField>
       </div>
 
-      <CollapsibleFieldset label="Optionale Angaben" :open-initial="hasOptionalData">
+      <CollapsibleFieldset label="Erweiterte Angaben" :open-initial="hasExtendedData">
         <FormField icon="note" label="Vorher da sein / Treffpunkt">
           <Input
             v-model="form.checkin_info"
