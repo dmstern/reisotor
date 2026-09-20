@@ -88,7 +88,30 @@ withDefaults(
   pointer-events: none;
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-success);
+  box-shadow:
+    inset 0 0 0 2px var(--color-success),
+    0 4px 16px -2px color-mix(in srgb, var(--color-success) 32%, transparent),
+    0 2px 6px -1px color-mix(in srgb, var(--color-success) 20%, transparent);
+  animation: rowNewHighlightPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes rowNewHighlightPulse {
+  0% {
+    box-shadow:
+      inset 0 0 0 0px var(--color-success),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 3.5px var(--color-success),
+      0 0 20px 3px color-mix(in srgb, var(--color-success) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      inset 0 0 0 2px var(--color-success),
+      0 4px 16px -2px color-mix(in srgb, var(--color-success) 32%, transparent),
+      0 2px 6px -1px color-mix(in srgb, var(--color-success) 20%, transparent);
+  }
 }
 
 .checkable-list-item--focused,
@@ -111,18 +134,40 @@ withDefaults(
   pointer-events: none;
   border-radius: var(--focus-radius);
   corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-primary);
+  box-shadow:
+    inset 0 0 0 2px var(--color-primary),
+    0 4px 16px -2px color-mix(in srgb, var(--color-primary) 32%, transparent),
+    0 2px 6px -1px color-mix(in srgb, var(--color-primary) 20%, transparent);
   animation: rowFocusPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes rowFocusPulse {
   0% {
     box-shadow:
+      inset 0 0 0 0px var(--color-primary),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
       inset 0 0 0 3.5px var(--color-primary),
-      0 0 16px 2px color-mix(in srgb, var(--color-primary) 40%, transparent);
+      0 0 20px 3px color-mix(in srgb, var(--color-primary) 45%, transparent);
   }
   100% {
-    box-shadow: inset 0 0 0 2px var(--color-primary);
+    box-shadow:
+      inset 0 0 0 2px var(--color-primary),
+      0 4px 16px -2px color-mix(in srgb, var(--color-primary) 32%, transparent),
+      0 2px 6px -1px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkable-list-item--highlighted::after,
+  .row--highlighted::after,
+  .row.new-highlight::after,
+  .checkable-list-item--focused::after,
+  .row--focused::after,
+  .row.is-focused::after {
+    animation: none;
   }
 }
 

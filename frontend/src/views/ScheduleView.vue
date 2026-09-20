@@ -902,7 +902,10 @@ function openEntry(entry: CalendarEntry) {
   // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/ExcursionsView.vue
   // fokussieren das Ziel über hashHighlightId() gezielt in Brand-Farbe, der Router scrollt
   // automatisch zum Element mit dieser id (siehe router/index.ts's scrollBehavior).
-  else if (entry.kind === 'todo') router.push(`/listen?tab=todo#todo-${entry.todoId}`);
+  else if (entry.kind === 'todo') {
+    drawers.calendarOpen = false;
+    router.push(`/listen?tab=todo#todo-${entry.todoId}`);
+  }
   // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bleibt zwar ein echter,
   // schedule_items-basierter kind:'schedule'-Eintrag (siehe calendarEntries.ts), springt beim Klick
   // aber weiterhin direkt zur Tour-Karte statt den generischen Termin-Dialog zu öffnen - dieselbe
@@ -910,6 +913,8 @@ function openEntry(entry: CalendarEntry) {
   // denselben #excursion-<id>-Hash wie jede andere Tour (ExcursionsView.vue's
   // onFocusExcursionFromMap).
   else if (entry.category === 'travel' && entry.ideaId != null) {
+    drawers.openMapForExcursion(entry.ideaId);
+    drawers.calendarOpen = false;
     router.push(`/excursions#excursion-${entry.ideaId}`);
   } else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
 }
@@ -1075,10 +1080,20 @@ function navigateToLinkedEntity() {
   if (!entry) return;
   viewingItem.value = null;
   if (entry.spotId != null) {
+    drawers.openMapAt(`spot-${entry.spotId}`);
+    drawers.calendarOpen = false;
     router.push(`/excursions#spot-${entry.spotId}`);
   } else if (entry.ideaId != null) {
+    drawers.openMapForExcursion(entry.ideaId);
+    drawers.calendarOpen = false;
     router.push(`/excursions#excursion-${entry.ideaId}`);
   }
+}
+
+function openAccommodationSpot(spotId: number) {
+  drawers.openMapAt(`spot-${spotId}`);
+  drawers.calendarOpen = false;
+  router.push(`/excursions#spot-${spotId}`);
 }
 
 function editViewingItem() {
@@ -1259,16 +1274,18 @@ function formatDate(date: string) {
           </span>
         </div>
 
-        <div
+        <button
+          type="button"
           v-for="acc in dayAccommodations"
           :key="acc.id"
-          class="day-meta-pill acc-pill"
-          :title="`Unterkunft: ${acc.title}`"
+          class="day-meta-pill acc-pill is-clickable"
+          :title="`Unterkunft: ${acc.title} auf Karte anzeigen`"
+          @click="openAccommodationSpot(acc.id)"
         >
           <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" />
           <span class="meta-label">Unterkunft:</span>
           <strong>{{ acc.title }}</strong>
-        </div>
+        </button>
       </div>
 
       <TransitionGroup tag="ul" name="list" class="items">
@@ -1896,6 +1913,18 @@ function formatDate(date: string) {
   background: var(--color-accent-secondary-bg);
   border-color: color-mix(in srgb, var(--color-accent-secondary) 25%, transparent);
   color: var(--color-accent-secondary);
+}
+
+.day-meta-pill.acc-pill.is-clickable {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.day-meta-pill.acc-pill.is-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .meta-label {

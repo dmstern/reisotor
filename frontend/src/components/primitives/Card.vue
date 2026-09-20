@@ -259,23 +259,42 @@ function handleCardKeydown(event: KeyboardEvent) {
 .card.new-highlight {
   --new-highlight-radius: var(--radius-md-squircle);
   position: relative;
+  z-index: 5;
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
+  border-color: var(--color-success) !important;
+  box-shadow:
+    0 0 0 2px var(--color-success),
+    0 8px 24px -4px color-mix(in srgb, var(--color-success) 32%, transparent),
+    0 2px 8px -1px color-mix(in srgb, var(--color-success) 20%, transparent) !important;
+  animation: cardNewHighlightPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card.new-highlight::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: var(--new-highlight-radius);
-  corner-shape: squircle;
-  box-shadow: inset 0 0 0 2px var(--color-success);
+.card.new-highlight:hover {
+  border-color: var(--color-success) !important;
+  box-shadow:
+    0 0 0 2.5px var(--color-success),
+    0 12px 28px -4px color-mix(in srgb, var(--color-success) 40%, transparent),
+    0 4px 12px -1px color-mix(in srgb, var(--color-success) 25%, transparent) !important;
 }
 
-.card.is-map-focused.new-highlight::after {
-  display: none;
+@keyframes cardNewHighlightPulse {
+  0% {
+    box-shadow:
+      0 0 0 0px var(--color-success),
+      0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 3.5px var(--color-success),
+      0 0 24px 4px color-mix(in srgb, var(--color-success) 45%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--color-success),
+      0 8px 24px -4px color-mix(in srgb, var(--color-success) 32%, transparent),
+      0 2px 8px -1px color-mix(in srgb, var(--color-success) 20%, transparent);
+  }
 }
 
 .card.is-map-focused {
@@ -317,7 +336,8 @@ function handleCardKeydown(event: KeyboardEvent) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card.is-map-focused {
+  .card.is-map-focused,
+  .card.new-highlight {
     animation: none;
   }
 }
