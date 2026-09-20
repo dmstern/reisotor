@@ -34,13 +34,34 @@ describe('mapRoute - imagePin and cachedImagePin', () => {
     expect(html).not.toContain('photo"with');
   });
 
-  it('caches icons correctly in cachedImagePin', () => {
+  it('renders dateBadge when provided', () => {
+    const iconWithBadge = imagePin('https://example.com/pic.jpg', '#9141ac', false, '15.07.');
+    const html = iconWithBadge.options.html as string;
+    expect(html).toContain('<span class="photo-pin-date-badge">15.07.</span>');
+
+    const iconWithoutBadge = imagePin('https://example.com/pic.jpg', '#9141ac', false);
+    const htmlWithout = iconWithoutBadge.options.html as string;
+    expect(htmlWithout).not.toContain('photo-pin-date-badge');
+  });
+
+  it('caches icons correctly in cachedImagePin including dateBadge', () => {
     const icon1 = cachedImagePin('https://example.com/pic.jpg', '#9141ac', false);
     const icon2 = cachedImagePin('https://example.com/pic.jpg', '#9141ac', false);
     expect(icon1).toBe(icon2);
 
     const iconLarge = cachedImagePin('https://example.com/pic.jpg', '#9141ac', true);
     expect(iconLarge).not.toBe(icon1);
+
+    const iconWithBadge = cachedImagePin('https://example.com/pic.jpg', '#9141ac', false, '15.07.');
+    expect(iconWithBadge).not.toBe(icon1);
+
+    const iconWithBadge2 = cachedImagePin(
+      'https://example.com/pic.jpg',
+      '#9141ac',
+      false,
+      '15.07.'
+    );
+    expect(iconWithBadge2).toBe(iconWithBadge);
 
     const iconOtherUrl = cachedImagePin('https://example.com/other.jpg', '#9141ac', false);
     expect(iconOtherUrl).not.toBe(icon1);
