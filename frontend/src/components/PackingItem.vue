@@ -106,7 +106,7 @@ function handleMainClick(e: MouseEvent) {
   <CheckableListItem :done="isFullyPacked" :highlighted="highlighted">
     <div class="item-main">
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-      <div class="main" @click="handleMainClick">
+      <div class="main check" @click="handleMainClick">
         <button
           v-if="item.quantity <= 1"
           type="button"
@@ -142,7 +142,7 @@ function handleMainClick(e: MouseEvent) {
           @click="toggleAllPacked"
         ></button>
         <span
-          class="label"
+          class="label item-title"
           :class="{ 'row__text--done': isFullyPacked, 'text-done': isFullyPacked }"
         >
           {{ item.label }}
@@ -219,7 +219,8 @@ function handleMainClick(e: MouseEvent) {
   gap: var(--space-2);
 }
 
-.main {
+.main,
+.check {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
@@ -289,7 +290,8 @@ function handleMainClick(e: MouseEvent) {
   transform: rotate(45deg) translate(-1px, -1px);
 }
 
-.label {
+.label,
+.item-title {
   flex: 1;
   min-width: 0;
   font-size: 0.95rem;
