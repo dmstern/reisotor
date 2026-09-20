@@ -5,6 +5,8 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { useToast } from '../composables/useToast';
 
 defineProps<{
@@ -44,6 +46,15 @@ async function removeExpense(id: number) {
         </span>
       </div>
       <strong class="row-amount">{{ e.amount.toFixed(2) }}&nbsp;€</strong>
+      <!-- Sparkle-Badge für LiveSync-Updates von anderen Nutzern -->
+      <span
+        v-if="highlightedIds.has(e.id)"
+        class="row-sparkle-indicator"
+        title="Neu von Mitreisenden hinzugefügt oder geändert"
+        aria-label="Neu aktualisiert"
+      >
+        <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
+      </span>
       <div class="row-actions">
         <template v-if="autoSourceFor(e.id)">
           <Button variant="card-action" :to="autoSourceFor(e.id)!.path">
@@ -100,6 +111,76 @@ async function removeExpense(id: number) {
   animation: rowNewHighlightPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Glanz-Animation für LiveSync-Updates, die sanft von links nach rechts drüberwischt */
+.row.new-highlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--new-highlight-radius);
+  corner-shape: squircle;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    color-mix(in srgb, var(--color-success) 22%, rgba(255, 255, 255, 0.45)) 48%,
+    color-mix(in srgb, var(--color-success) 45%, #ffffff) 50%,
+    color-mix(in srgb, var(--color-success) 22%, rgba(255, 255, 255, 0.45)) 52%,
+    transparent 65%
+  );
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  animation: rowGlanceSweep 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+@keyframes rowGlanceSweep {
+  0% {
+    background-position: 130% 0;
+  }
+  35% {
+    background-position: -30% 0;
+  }
+  100% {
+    background-position: -30% 0;
+  }
+}
+
+/* Sparkle-Badge für LiveSync-Updates in Ausgabenzeilen */
+.row-sparkle-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-success) 30%, transparent);
+  flex-shrink: 0;
+  margin-left: var(--space-1);
+  margin-right: var(--space-1);
+  align-self: center;
+  pointer-events: none;
+  z-index: 3;
+  animation: sparkleTwinkle 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+@keyframes sparkleTwinkle {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  15% {
+    transform: scale(1.18) rotate(14deg);
+  }
+  30% {
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 @keyframes rowNewHighlightPulse {
   0% {
     box-shadow:
@@ -120,7 +201,9 @@ async function removeExpense(id: number) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .row.new-highlight::after {
+  .row.new-highlight::after,
+  .row.new-highlight::before,
+  .row-sparkle-indicator {
     animation: none;
   }
 }

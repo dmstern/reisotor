@@ -314,6 +314,7 @@ function onSpotDrop(event: DragEvent) {
       'has-role': !!excursion.role,
       'is-travel': !!excursion.role,
     }"
+    :highlight="highlighted"
     :map-focused="isMapFocused"
     @click="onCardClick"
     @dragover.prevent

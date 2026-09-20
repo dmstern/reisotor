@@ -430,6 +430,7 @@ const cardRotation = computed(() => {
     variant="polaroid"
     class="spot-card"
     :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
+    :highlight="highlighted"
     :map-focused="isMapFocused"
     :style="{ '--card-rotate': cardRotation }"
     @click="onCardClick"
