@@ -111,7 +111,7 @@ async function removeExpense(id: number) {
   animation: rowNewHighlightPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Glanz-Animation für LiveSync-Updates, die sanft von links nach rechts drüberwischt */
+/* Glanz-Animation für LiveSync-Updates, die sanft und dezent von links nach rechts drüberwischt */
 .row.new-highlight::before {
   content: '';
   position: absolute;
@@ -122,22 +122,22 @@ async function removeExpense(id: number) {
   z-index: 2;
   background: linear-gradient(
     110deg,
-    transparent 35%,
-    color-mix(in srgb, var(--color-success) 22%, rgba(255, 255, 255, 0.45)) 48%,
-    color-mix(in srgb, var(--color-success) 45%, #ffffff) 50%,
-    color-mix(in srgb, var(--color-success) 22%, rgba(255, 255, 255, 0.45)) 52%,
-    transparent 65%
+    transparent 38%,
+    color-mix(in srgb, var(--color-success) 10%, rgba(255, 255, 255, 0.08)) 48%,
+    color-mix(in srgb, var(--color-success) 18%, rgba(255, 255, 255, 0.16)) 50%,
+    color-mix(in srgb, var(--color-success) 10%, rgba(255, 255, 255, 0.08)) 52%,
+    transparent 62%
   );
   background-size: 260% 100%;
   background-repeat: no-repeat;
-  animation: rowGlanceSweep 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  animation: rowGlanceSweep 4.5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
 
 @keyframes rowGlanceSweep {
   0% {
     background-position: 130% 0;
   }
-  35% {
+  28% {
     background-position: -30% 0;
   }
   100% {

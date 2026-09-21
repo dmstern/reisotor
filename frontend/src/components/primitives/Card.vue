@@ -282,6 +282,7 @@ const isNewHighlight = computed(() => {
   --new-highlight-radius: var(--radius-md-squircle);
   position: relative;
   z-index: 5;
+  overflow: visible;
   border-radius: var(--new-highlight-radius);
   corner-shape: squircle;
   border-color: var(--color-success) !important;
@@ -300,7 +301,7 @@ const isNewHighlight = computed(() => {
     0 4px 12px -1px color-mix(in srgb, var(--color-success) 25%, transparent) !important;
 }
 
-/* Glanz-Animation für LiveSync-Updates, die sanft von links nach rechts drüberwischt */
+/* Glanz-Animation für LiveSync-Updates, die sanft und dezent von links nach rechts drüberwischt */
 .card.new-highlight::before {
   content: '';
   position: absolute;
@@ -311,22 +312,22 @@ const isNewHighlight = computed(() => {
   z-index: 3;
   background: linear-gradient(
     110deg,
-    transparent 35%,
-    color-mix(in srgb, var(--color-success) 24%, rgba(255, 255, 255, 0.45)) 48%,
-    color-mix(in srgb, var(--color-success) 45%, #ffffff) 50%,
-    color-mix(in srgb, var(--color-success) 24%, rgba(255, 255, 255, 0.45)) 52%,
-    transparent 65%
+    transparent 38%,
+    color-mix(in srgb, var(--color-success) 10%, rgba(255, 255, 255, 0.08)) 48%,
+    color-mix(in srgb, var(--color-success) 18%, rgba(255, 255, 255, 0.16)) 50%,
+    color-mix(in srgb, var(--color-success) 10%, rgba(255, 255, 255, 0.08)) 52%,
+    transparent 62%
   );
   background-size: 260% 100%;
   background-repeat: no-repeat;
-  animation: cardGlanceSweep 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  animation: cardGlanceSweep 4.5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
 
 @keyframes cardGlanceSweep {
   0% {
     background-position: 130% 0;
   }
-  35% {
+  28% {
     background-position: -30% 0;
   }
   100% {
