@@ -4711,54 +4711,6 @@ async function deleteEditingSpot() {
   transition: none;
 }
 
-/* Auf schmalen Schubladen-Breiten (<= 600px): zweizeiliger Header – oben Titel links & SegmentedToggle rechts,
-   darunter beide Aktions-Buttons gleichmäßig aufgeteilt über die volle Zeilenbreite mit erhaltenem Label (#312). */
-@container spots-col (max-width: 600px) {
-  .header h2 {
-    width: 100%;
-  }
-
-  .header h2 .segmented-toggle {
-    margin-left: auto;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .add-button {
-    width: 100%;
-    justify-content: center;
-    min-width: 0;
-  }
-}
-
-/* Auf extrem schmalem Drawer (<= 320px) kompaktere Polsterung & kleinere Schrift, damit
-   Titel, Toggle und Aktionsbutton selbst bei 280px ohne Umbruch oder Abschneiden Platz haben. */
-@container spots-col (max-width: 320px) {
-  .header h2 {
-    font-size: 1.15rem;
-    gap: 2px;
-  }
-
-  .header h2 .segmented-toggle {
-    padding: 2px;
-    gap: 1px;
-  }
-
-  .header h2 .segmented-toggle :deep(.segmented-option) {
-    padding: 4px 6px;
-    font-size: 0.78rem;
-    gap: 3px;
-  }
-
-  .add-button {
-    padding: 6px 6px;
-    gap: 3px;
-    font-size: 0.8125rem;
-  }
-}
-
 .sheet-handle-row {
   flex-shrink: 0;
   display: flex;
@@ -5063,6 +5015,11 @@ async function deleteEditingSpot() {
   align-items: center;
   gap: 4px;
   margin: 0;
+  min-width: 0;
+}
+
+.header h2 :deep(.animated-text) {
+  flex-shrink: 0;
 }
 
 /* Feste/gleiche Breite für den "Spots"/"Touren"-Titel, damit der Umschalter beim Wechsel
@@ -5149,6 +5106,121 @@ async function deleteEditingSpot() {
 .header-actions button.recording:hover {
   background: color-mix(in srgb, var(--color-danger) 85%, black);
   border-color: color-mix(in srgb, var(--color-danger) 85%, black);
+}
+
+/* Auf schmalen Schubladen-Breiten (<= 600px): zweizeiliger Header – oben Titel links & SegmentedToggle rechts,
+   darunter beide Aktions-Buttons gleichmäßig aufgeteilt über die volle Zeilenbreite mit erhaltenem Label (#312). */
+@container spots-col (max-width: 600px) {
+  .header h2 {
+    width: 100%;
+  }
+
+  .header h2 .segmented-toggle {
+    margin-left: auto;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .add-button {
+    width: 100%;
+    justify-content: center;
+    min-width: 0;
+  }
+}
+
+/* Auf mobilen Viewports / schmalem Drawer (<= 480px): Der visuelle Titel ("Spots"/"Touren"/"Tracks")
+   wird ausgeblendet (per sr-only für Screenreader/Barrierefreiheit erhalten), da der Umschalter
+   bereits anzeigt, welcher Modus aktiv ist. Dadurch haben die Labels des SegmentedToggle ("Spots",
+   "Touren", "Tracks") voll ausgeschrieben Platz und müssen nicht abgeschnitten oder gekürzt werden. */
+@container spots-col (max-width: 480px) {
+  .header h2 {
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .header h2 :deep(.animated-text) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .header h2 .segmented-toggle {
+    order: 1;
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .header h2 .info-dropdown {
+    order: 2;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h2 {
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .header h2 :deep(.animated-text) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .header h2 .segmented-toggle {
+    order: 1;
+    flex: 1;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .header h2 .info-dropdown {
+    order: 2;
+    flex-shrink: 0;
+  }
+}
+
+/* Auf extrem schmalem Drawer (<= 320px) kompaktere Polsterung & kleinere Schrift, damit
+   Titel, Toggle und Aktionsbutton selbst bei 280px ohne Umbruch oder Abschneiden Platz haben. */
+@container spots-col (max-width: 320px) {
+  .header h2 {
+    font-size: 1.15rem;
+    gap: 2px;
+  }
+
+  .header h2 .segmented-toggle {
+    padding: 2px;
+    gap: 1px;
+  }
+
+  .header h2 .segmented-toggle :deep(.segmented-option) {
+    padding: 4px 6px;
+    font-size: 0.78rem;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .add-button {
+    padding: 6px 6px;
+    gap: 3px;
+    font-size: 0.8125rem;
+  }
 }
 
 .subheader {

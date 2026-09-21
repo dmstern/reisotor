@@ -52,6 +52,8 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
       class="segmented-option"
       :class="{ active: option.value === modelValue }"
       :aria-pressed="option.value === modelValue"
+      :title="option.label"
+      :aria-label="option.label"
       @click="emit('update:modelValue', option.value)"
     >
       <AppIcon
