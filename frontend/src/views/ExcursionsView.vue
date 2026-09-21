@@ -1414,6 +1414,17 @@ function scrollToExcursion(id: number) {
 // Kategorie-Nav-Pille zusätzlich die Karte auf alle Punkte dieser Kategorie zoomen (siehe
 // TripMap.vue's defineExpose(focusCategory)) – dieselbe Kategorie-Kopplung wie beim Filter oben.
 const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
+let programmaticScrollTarget: string | null = null;
+let programmaticScrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function cancelProgrammaticScroll() {
+  programmaticScrollTarget = null;
+  if (programmaticScrollTimeout) {
+    clearTimeout(programmaticScrollTimeout);
+    programmaticScrollTimeout = null;
+  }
+}
+
 function scrollToCategory(category: string) {
   // Sofort setzen statt nur auf den IntersectionObserver (Scrollspy weiter unten) zu warten: bei
   // kurzen Gruppen, die schon vor dem Scrollen alle gleichzeitig im Beobachtungsfenster liegen,
@@ -1422,6 +1433,16 @@ function scrollToCategory(category: string) {
   // Der Observer-Callback unten überschreibt diesen Wert ohnehin wieder, sobald sich die Scrollposition
   // tatsächlich ändert - "in beide Richtungen" bleibt dadurch erhalten.
   activeCategory.value = category;
+  programmaticScrollTarget = category;
+  if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout);
+  programmaticScrollTimeout = setTimeout(() => {
+    programmaticScrollTarget = null;
+  }, 1000);
+
+  nextTick(() => {
+    updateCategoryNavUnderline();
+  });
+
   categoryRefs.get(category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   tripMapRef.value?.focusCategory(category);
 }
@@ -1475,6 +1496,13 @@ function rebuildCategorySectionObserver() {
         if (entry.isIntersecting) intersectingCategories.add(category);
         else intersectingCategories.delete(category);
       }
+      if (programmaticScrollTarget) {
+        if (intersectingCategories.has(programmaticScrollTarget)) {
+          activeCategory.value = programmaticScrollTarget;
+          programmaticScrollTarget = null;
+        }
+        return;
+      }
       const active = spotGroups.value.find((g) => intersectingCategories.has(g.category));
       if (active) activeCategory.value = active.category;
     },
@@ -1503,7 +1531,10 @@ function setNavItemRef(category: string, el: Element | ComponentPublicInstance |
 const underlineLeft = ref(0);
 const underlineWidth = ref(0);
 function updateCategoryNavUnderline() {
-  const activeEl = activeCategory.value ? navItemRefs.get(activeCategory.value) : null;
+  let activeEl = activeCategory.value ? navItemRefs.get(activeCategory.value) : null;
+  if (!activeEl) {
+    activeEl = categoryNavEl.value?.querySelector<HTMLElement>('.category-nav-item.active') ?? null;
+  }
   if (!activeEl) return;
   underlineLeft.value = activeEl.offsetLeft;
   underlineWidth.value = activeEl.offsetWidth;
@@ -1544,6 +1575,7 @@ function setCategoryNavRef(el: Element | ComponentPublicInstance | null) {
     });
     categoryNavResizeObserver.observe(el);
     updateNavArrows();
+    nextTick(updateCategoryNavUnderline);
   }
 }
 // Scrollt in Sprüngen von ~70% der sichtbaren Breite statt der vollen Breite - hält das letzte Item
@@ -1558,7 +1590,12 @@ function scrollNavBy(direction: 1 | -1) {
 // selbst ihre eigene Breite ändert - der ResizeObserver in setCategoryNavRef beobachtet nur DEREN
 // Box, nicht ihren Inhalt/scrollWidth, würde einen dadurch neu scrollbar gewordenen Zustand also
 // nicht von selbst erkennen.
-watch(spotGroups, () => nextTick(updateNavArrows));
+watch(spotGroups, () => {
+  nextTick(() => {
+    updateNavArrows();
+    updateCategoryNavUnderline();
+  });
+});
 watch(activeCategory, () => {
   nextTick(() => {
     updateCategoryNavUnderline();
@@ -1584,6 +1621,7 @@ watch(activeCategory, () => {
   });
 });
 onUnmounted(() => {
+  cancelProgrammaticScroll();
   categorySectionObserver?.disconnect();
   categoryNavResizeObserver?.disconnect();
 });
@@ -3073,6 +3111,8 @@ async function deleteEditingSpot() {
           ref="spotsColBodyEl"
           :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
           @pointerdown="onSheetBodyPointerDown"
+          @wheel.passive="cancelProgrammaticScroll"
+          @touchmove.passive="cancelProgrammaticScroll"
         >
           <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
            Teleport) landet sie hier statt als Overlay über der Karte zu schweben (verdeckte dort
@@ -3867,33 +3907,35 @@ async function deleteEditingSpot() {
               :ref="setCategoryNavRef"
               @scroll="updateNavArrows"
             >
-              <button
-                v-for="grp in spotGroups"
-                :key="grp.category"
-                type="button"
-                class="category-nav-item"
-                :class="{ active: activeCategory === grp.category }"
-                :aria-current="activeCategory === grp.category ? 'true' : undefined"
-                :ref="(el) => setNavItemRef(grp.category, el)"
-                @click="scrollToCategory(grp.category)"
-              >
-                <AppIcon
-                  class="category-nav-icon"
-                  :icon="grp.iconDef"
-                  group="categories"
-                  :active="activeCategory === grp.category"
-                  :color="groupIconColor(grp)"
-                />
-                <span class="category-nav-label">{{ grp.category }}</span>
-              </button>
-              <span
-                class="category-nav-underline"
-                :style="{
-                  transform: `translateX(${underlineLeft}px)`,
-                  width: `${underlineWidth}px`,
-                }"
-                aria-hidden="true"
-              ></span>
+              <div class="category-nav-track">
+                <button
+                  v-for="grp in spotGroups"
+                  :key="grp.category"
+                  type="button"
+                  class="category-nav-item"
+                  :class="{ active: activeCategory === grp.category }"
+                  :aria-current="activeCategory === grp.category ? 'true' : undefined"
+                  :ref="(el) => setNavItemRef(grp.category, el)"
+                  @click="scrollToCategory(grp.category)"
+                >
+                  <AppIcon
+                    class="category-nav-icon"
+                    :icon="grp.iconDef"
+                    group="categories"
+                    :active="activeCategory === grp.category"
+                    :color="groupIconColor(grp)"
+                  />
+                  <span class="category-nav-label">{{ grp.category }}</span>
+                </button>
+                <span
+                  class="category-nav-underline"
+                  :style="{
+                    transform: `translateX(${underlineLeft}px)`,
+                    width: `${underlineWidth}px`,
+                  }"
+                  aria-hidden="true"
+                ></span>
+              </div>
             </nav>
             <!-- Dezente Klick-Flächen statt eines sichtbaren nativen Scrollbalkens (#144, siehe
              .category-nav's scrollbar-width/::-webkit-scrollbar-Reset im CSS) - nur sichtbar, wenn in
@@ -6164,13 +6206,6 @@ async function deleteEditingSpot() {
 }
 
 .category-nav {
-  /* Bleibt selbst positioniert (früher implizit durch position:sticky, das jetzt auf dem Wrapper
-     sitzt) - .category-nav-underline unten ist ein absolut positioniertes Kind INNERHALB dieses
-     scrollenden Elements und muss mit dessen Inhalt mitscrollen (dieselbe Logik wie
-     activeEl.offsetLeft im Script, das ebenfalls relativ zu diesem Element misst). Wäre .category-nav
-     selbst nicht positioniert, würde die Unterstreichung stattdessen relativ zum sticky Wrapper
-     verankert und beim horizontalen Scrollen der Kategorien nicht mitwandern. */
-  position: relative;
   display: flex;
   align-items: center;
   overflow-x: auto;
@@ -6186,6 +6221,13 @@ async function deleteEditingSpot() {
 
 .category-nav::-webkit-scrollbar {
   display: none;
+}
+
+.category-nav-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: max-content;
 }
 
 /* Dezente Klick-Fläche mit Verlauf statt eines vollflächigen, hart abgesetzten Buttons (#144) - der
@@ -6274,6 +6316,7 @@ async function deleteEditingSpot() {
   position: absolute;
   bottom: 0;
   left: 0;
+  z-index: 2;
   height: 2px;
   background: var(--color-primary);
   border-radius: 2px 2px 0 0;

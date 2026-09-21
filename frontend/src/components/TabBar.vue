@@ -87,10 +87,20 @@ watch(
 // liegenden Tab vollständig in Sicht - gleiches Muster wie NavBar.vue's onLinkClick().
 function onTabClick(key: string, event: MouseEvent) {
   emit('select', key);
-  (event.currentTarget as HTMLElement).scrollIntoView({
-    behavior: 'smooth',
-    inline: 'nearest',
-    block: 'nearest',
+  nextTick(() => {
+    updateUnderline();
+    const btn = event.currentTarget as HTMLElement | null;
+    const bar = tabBarEl.value;
+    if (!btn || !bar) return;
+    const btnLeft = btn.offsetLeft;
+    const btnRight = btnLeft + btn.offsetWidth;
+    const viewLeft = bar.scrollLeft;
+    const viewRight = viewLeft + bar.clientWidth;
+    if (btnLeft < viewLeft) {
+      bar.scrollTo({ left: btnLeft, behavior: 'smooth' });
+    } else if (btnRight > viewRight) {
+      bar.scrollTo({ left: btnRight - bar.clientWidth, behavior: 'smooth' });
+    }
   });
 }
 </script>
@@ -98,33 +108,35 @@ function onTabClick(key: string, event: MouseEvent) {
 <template>
   <div class="tab-bar-scroller">
     <div class="tab-bar" role="tablist" ref="tabBarEl" @scroll="updateScrollArrows">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        type="button"
-        class="tab"
-        role="tab"
-        :class="{ active: activeKey === tab.key }"
-        :aria-selected="activeKey === tab.key"
-        @click="onTabClick(tab.key, $event)"
-      >
-        <span class="icon-wrap">
-          <AppIcon
-            class="icon"
-            :icon="tab.icon"
-            :size="16"
-            group="navigation"
-            :active="activeKey === tab.key"
-          />
-          <UnseenDot v-if="tab.unseen" />
-        </span>
-        {{ tab.label }}
-      </button>
-      <span
-        class="tab-underline"
-        :style="{ transform: `translateX(${underlineLeft}px)`, width: `${underlineWidth}px` }"
-        aria-hidden="true"
-      ></span>
+      <div class="tab-bar-track">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          type="button"
+          class="tab"
+          role="tab"
+          :class="{ active: activeKey === tab.key }"
+          :aria-selected="activeKey === tab.key"
+          @click="onTabClick(tab.key, $event)"
+        >
+          <span class="icon-wrap">
+            <AppIcon
+              class="icon"
+              :icon="tab.icon"
+              :size="16"
+              group="navigation"
+              :active="activeKey === tab.key"
+            />
+            <UnseenDot v-if="tab.unseen" />
+          </span>
+          {{ tab.label }}
+        </button>
+        <span
+          class="tab-underline"
+          :style="{ transform: `translateX(${underlineLeft}px)`, width: `${underlineWidth}px` }"
+          aria-hidden="true"
+        ></span>
+      </div>
     </div>
     <!-- Dezente Klick-Flächen mit Verlauf statt eines vollflächigen, hart abgesetzten Buttons (#144)
          - nur sichtbar, wenn in die jeweilige Richtung tatsächlich noch etwas zu scrollen ist. -->
@@ -155,9 +167,6 @@ function onTabClick(key: string, event: MouseEvent) {
 }
 
 .tab-bar {
-  position: relative;
-  display: flex;
-  gap: var(--space-2);
   border-bottom: 1px solid var(--color-border);
   /* Scrollbar statt umbrechend, wenn zu viele/zu lange Tab-Label für die verfügbare Breite reichen
      (z. B. SettingsView.vue's 6 Tabs) - gleiches Muster wie NavBar.vue's mobile Scroll-Leiste, statt
@@ -175,6 +184,14 @@ function onTabClick(key: string, event: MouseEvent) {
 
 .tab-bar::-webkit-scrollbar {
   display: none;
+}
+
+.tab-bar-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: max-content;
 }
 
 /* Dezente Klick-Fläche mit Verlauf statt eines vollflächigen, hart abgesetzten Buttons (#144) - der
@@ -252,6 +269,7 @@ function onTabClick(key: string, event: MouseEvent) {
   position: absolute;
   bottom: 0;
   left: 0;
+  z-index: 2;
   height: 2px;
   background: var(--color-primary);
   border-radius: 2px 2px 0 0;
