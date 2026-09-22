@@ -16,12 +16,13 @@ const checkContrast = Boolean(process.env.CHECK_CONTRAST);
 async function scanPageA11y(page: Page) {
   await page.evaluate(() => document.fonts.ready);
   await page
-    .evaluate(() => {
+    .evaluate(async () => {
+      await new Promise((r) => requestAnimationFrame(r));
       const finiteAnims = document.getAnimations().filter((a) => {
         const it = a.effect?.getTiming()?.iterations;
         return it !== Infinity && it !== undefined;
       });
-      return Promise.all(finiteAnims.map((a) => a.finished));
+      await Promise.allSettled(finiteAnims.map((a) => a.finished));
     })
     .catch(() => {});
 
