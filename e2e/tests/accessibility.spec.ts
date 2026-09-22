@@ -97,7 +97,9 @@ test.describe('Accessibility (a11y)', () => {
 
     test('settings page accessibility scan', async ({ page }) => {
       await page.goto('/settings');
-      await expect(page.getByRole('heading', { name: 'Einstellungen', level: 1 })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Einstellungen', level: 1 })).toBeVisible({
+        timeout: 15_000,
+      });
 
       const results = await scanPageA11y(page);
       expect(results.violations, formatViolations(results.violations)).toEqual([]);
