@@ -120,7 +120,6 @@ const secondPreviewText = computed(() => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
   border-left: 1px dashed rgba(0, 0, 0, 0.15);
   border-right: 1px dashed rgba(0, 0, 0, 0.15);
-  -webkit-backdrop-filter: blur(1px);
   backdrop-filter: blur(1px);
   z-index: 4;
 }

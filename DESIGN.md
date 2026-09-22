@@ -276,7 +276,9 @@ Für frei schwebende Glas-Inseln und Navigationsleisten (`AppHeader.vue`s `.bran
 `.header-actions`, mobile `.header-pill` sowie `NavBar.vue`s `.navbar.floating-bottom`) gibt es
 das Token `--shadow-floating-island` (Alias `--shadow-island`). Es vereint einen weichen Schlagschatten,
 einen scharfen Kontaktschatten und eine helle innere Kantenreflexion (`inset 0 1px 0 ...`) zu einem
-einheitlichen, viewport-übergreifenden Liquid-Glass-Schwebeeffekt.
+einheitlichen, viewport-übergreifenden Liquid-Glass-Schwebeeffekt. Für den Unschärfe-Filter wird
+das Token `backdrop-filter: var(--backdrop-blur-md);` eingesetzt – stets reines Standard-CSS ohne
+manuelle `-webkit-`-Präfixe verwenden (das Autoprefixing übernimmt LightningCSS automatisch).
 
 Für taktile Pillen-Elemente (aktuell: `SegmentedToggle.vue`) gibt es zusätzlich ein zweites,
 "weicheres" Paar – siehe Abschnitt "Weiches Material" weiter unten, nicht mit `--shadow-sm`/`-md`

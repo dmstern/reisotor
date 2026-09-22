@@ -1114,8 +1114,7 @@ const cardRotation = computed(() => {
     border-color 0.3s ease,
     color 0.3s ease,
     box-shadow 0.3s ease,
-    backdrop-filter 0.3s ease,
-    -webkit-backdrop-filter 0.3s ease;
+    backdrop-filter 0.3s ease;
 }
 
 .spot-card.expanded .card-badge-group :deep(.category-chip) {
@@ -1129,7 +1128,6 @@ const cardRotation = computed(() => {
   border: 1px solid
     color-mix(in srgb, var(--category-color, #9333ea) 40%, rgba(255, 255, 255, 0.25)) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 

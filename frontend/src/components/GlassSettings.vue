@@ -341,7 +341,6 @@ const previewStyle = computed(() => {
   background: rgb(255 255 255 / var(--preview-glass-opacity, 0.42));
   border: 1px solid rgb(232 226 217 / calc(var(--preview-glass-opacity, 0.42) * 0.9));
   backdrop-filter: blur(var(--preview-glass-blur, 6px)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--preview-glass-blur, 6px)) saturate(180%);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
