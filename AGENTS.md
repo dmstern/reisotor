@@ -32,6 +32,7 @@ npm run test:frontend   # Frontend Unit-Tests (vitest run)
 npm run test:e2e        # E2E-Tests (playwright test)
 npm run test:a11y       # Accessibility-Tests mit Axe inkl. Farbkontraste (playwright test tests/accessibility.spec.ts)
 npm run test:all        # Backend + Frontend + E2E Tests
+npm run test:audit      # Adversarial UI-Layout Audit mit Viewport- & Drawer-Matrix
 npm run build           # Backend + Frontend Build
 npm run build:backend   # Backend Build (tsc -> backend/dist)
 npm run build:frontend  # Frontend Build (vue-tsc --noEmit + vite build -> frontend/dist)
@@ -65,6 +66,22 @@ Einzelnen Test ausführen: `npx -y vitest run <pfad-zur-datei>` bzw. `npx -y vit
 
 Node.js 20+ sowie `make`/`gcc`/`python3` nötig (native Module `better-sqlite3`, `bcrypt`). Volle
 Setup-/Deploy-/Env-Var-Details: `README.md`.
+
+## Autonome UI-Audit-Kurzbefehle & Trigger-Phrasen
+
+Reisotor besitzt ein spezialisiertes E2E-Layout-Audit-System (`e2e/tests/scratch/audit-template.spec.ts` & `docs/AUDIT_GUIDE.md`), um visuelle Regressionen, Z-Index-Kollisionen und Container-Query-Probleme bei stufenlos verstellbaren Seitenelementen abzufangen. Wenn der Nutzer nach einem UI-, Layout- oder App-Audit fragt, MUSS der Agent sofort folgendes Protokoll autonom ausführen:
+
+1. **Trigger: „Mach ein UI-Audit zu dem Change von eben“** (oder _„UI-Audit machen“_, _„Layout-Audit für die Änderungen“_):
+   - **Route ermitteln:** Prüfe `git status` / `git diff`, ermittle die modifizierte Frontend-Komponente und die Test-Route (`SpotsView.vue` -> `/trip/1/spots`, `ExcursionsView.vue` -> `/trip/1/excursions`, `PackingListView.vue` -> `/trip/1/packing`, `BudgetView.vue` -> `/trip/1/budget`, `DashboardView.vue` -> `/trip/1`, `SettingsView.vue` -> `/settings`, `LoginView.vue` -> `/login`).
+   - **Audit ausführen:** Führe `AUDIT_ROUTE=<route> AUDIT_SCREENSHOTS=true npm run test:audit` aus.
+   - **Prüfung:** Prüfe die 3 Viewports (320px `narrowMobile`, 390px `mobile`, 1280px `desktop` inkl. Drawer-Matrix & 500px Enge-Stresstest). Binde Screenshots in den Walkthrough ein und behebe gefundene Layout-Kollisionen direkt defensiv.
+2. **Trigger: „Mach ein komplettes App-Audit“** (oder _„Full App Audit“_, _„Prerelease App Audit“_, _„Vollständiges UI-Audit“_):
+   - **Niemals monolithisch im selben Kontext!** Teile die App sofort in 4 Domänen auf (Divide & Conquer via Subagents oder geordnet sequentiell):
+     - **Team 1 (Dashboard & Trips):** `/trip/1`, `/trips`
+     - **Team 2 (Spots & Touren):** `/trip/1/spots`, `/trip/1/excursions`
+     - **Team 3 (Listen & Content):** `/trip/1/packing`, `/trip/1/todo`, `/trip/1/diary`
+     - **Team 4 (Finanzen & Auth/Settings):** `/trip/1/budget`, `/settings`, `/profile`, `/login`
+   - Jedes Team führt `AUDIT_ROUTE=<route> npm run test:audit` aus. Erstelle einen konsolidierten Audit-Report. Details siehe `docs/AUDIT_GUIDE.md`.
 
 ## Typecheck, Linting & Formatting
 
@@ -359,38 +376,7 @@ Klassische funktionale E2E- und Unit-Tests sind visuell blind: `expect(btn).toBe
    - **Verbot von `@media` für Inhalts-Komponenten:** Komponenten innerhalb von `.app-main` dürfen Breiten-Entscheidungen nicht über `@media (min-width: ...)` treffen (da `window.innerWidth` unverändert groß bleibt), sondern müssen `@container app-main (min-width: ...)` oder flexibles Flexbox-Wrapping (`flex-wrap: wrap`) nutzen.
    - **Desktop-Audit mit Stufenlos-Matrix:** Bei Desktop-Audits muss das Layout immer sowohl mit **geschlossener**, **normal geöffneter** (`setCalendarDrawerOpen`) als auch **stufenlos breit gezogener** Schublade (`setCalendarDrawerWidth(page, 500)`, `setSpotsColumnWidth`) verifiziert werden, um Enge-Stresszustände abzufangen.
 
-#### Kurzbefehle & Autonome Trigger-Phrasen für KI-Agenten
-
-Der Nutzer muss keine langen Prompts kopieren. Wenn der Nutzer eine der folgenden Phrasen nennt, MUSS der Agent sofort das definierte Protokoll autonom ausführen:
-
-1. **Trigger: _"Mach ein UI-Audit zu dem Change von eben"_ (oder _"UI-Audit machen"_, _"Layout-Audit für die Änderungen"_):**
-   - **Schritt 1 (Route ermitteln):** Prüfe `git status` / `git diff`, um die modifizierte Frontend-Komponente zu ermitteln. Ermittle anhand der Zuordnungstabelle unten die primäre Test-Route (z. B. `SpotsView.vue` -> `/trip/1/spots`, `ExcursionsView.vue` -> `/trip/1/excursions`, `PackingView.vue` -> `/trip/1/packing`).
-   - **Schritt 2 (Audit ausführen):** Führe `AUDIT_ROUTE=<route> AUDIT_SCREENSHOTS=true npm run test:audit` aus.
-   - **Schritt 3 (Sichtprüfung & Walkthrough):** Binde die generierten Screenshots (`e2e/tests/scratch/audit-*.png`) in den Walkthrough ein. Prüfe auf Layout-Glitches, Textumbrüche, abgeschnittene Popovers oder Touch-Target-Probleme.
-   - **Schritt 4 (Defensiv fixen):** Falls ein Fehler gefunden wurde (z. B. horizontaler Overflow oder fehlerhafter Container-Query-Umbruch), behebe ihn direkt und verifiziere erneut.
-
-2. **Trigger: _"Mach ein komplettes App-Audit"_ (oder _"Full App Audit"_, _"Vollständiges UI-Audit"_):**
-   - **Schritt 1 (Kein Monolith):** Niemals als unstrukturierter Mega-Check in einem Durchlauf! Teile die App sofort in die 4 Domänen-Teams auf:
-     - **Team 1 (Dashboard & Trips):** `/trip/1`, `/trips` (`DashboardView.vue`, `TripsView.vue`, Header, Navbar)
-     - **Team 2 (Spots & Touren):** `/trip/1/spots`, `/trip/1/excursions` (`SpotsView.vue`, `ExcursionsView.vue`, Kartenansichten)
-     - **Team 3 (Listen & Content):** `/trip/1/packing`, `/trip/1/todo`, `/trip/1/diary` (`PackingView.vue`, `TodoView.vue`, `DiaryView.vue`)
-     - **Team 4 (Finanzen & Auth/Settings):** `/trip/1/budget`, `/settings`, `/profile`, `/login` (`BudgetView.vue`, `SettingsView.vue`, etc.)
-   - **Schritt 2 (Ausführung):** Starte die Überprüfung der 4 Domänen (entweder parallel via Subagents z. B. per `/teamwork-preview` oder geordnet sequentiell). Für jede Route wird das Test-Template ausgeführt (320px, 390px, 1080px, 1280px + Drawer-Matrix offen/geschlossen/500px).
-   - **Schritt 3 (Zusammenfassung):** Erstelle einen konsolidierten Audit-Report (z. B. als Artefakt) mit Tabellen zu Status, Screenshots und identifizierten Layout-Issues.
-
-##### Standard-Routen-Zuordnung für Views
-
-- `DashboardView.vue` -> `/trip/1`
-- `TripsView.vue` -> `/trips`
-- `SpotsView.vue` -> `/trip/1/spots`
-- `ExcursionsView.vue` -> `/trip/1/excursions`
-- `PackingView.vue` -> `/trip/1/packing`
-- `TodoView.vue` -> `/trip/1/todo`
-- `DiaryView.vue` -> `/trip/1/diary`
-- `BudgetView.vue` -> `/trip/1/budget`
-- `SettingsView.vue` -> `/settings`
-- `ProfileView.vue` -> `/profile`
-- `LoginView.vue` -> `/login`
+_(Zu den autonomen Kurzbefehlen und der Routen-Tabelle siehe den Abschnitt „Autonome UI-Audit-Kurzbefehle & Trigger-Phrasen“ oben sowie `docs/AUDIT_GUIDE.md`)_
 
 #### Detaillierte Prompt-Vorlagen (Optional / Manuell)
 
