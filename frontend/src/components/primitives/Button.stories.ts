@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import Button from './Button.vue';
+import { STRESS_STRINGS, STRESS_CONTAINERS } from '../../stories/stressFixtures';
 
 const meta: Meta<typeof Button> = {
   title: 'Primitives/Button',
@@ -121,5 +122,20 @@ export const Active: Story = {
       return { args };
     },
     template: '<Button v-bind="args">Aktiver Button</Button>',
+  }),
+};
+
+export const StressTest: Story = {
+  render: (args) => ({
+    components: { Button },
+    setup() {
+      return { args, STRESS_STRINGS, STRESS_CONTAINERS };
+    },
+    template: `
+      <div :style="STRESS_CONTAINERS.narrow" style="display: flex; flex-direction: column; gap: 8px;">
+        <Button v-bind="args">{{ STRESS_STRINGS.longWord }}</Button>
+        <Button variant="secondary" v-bind="args">{{ STRESS_STRINGS.specialChars }}</Button>
+      </div>
+    `,
   }),
 };

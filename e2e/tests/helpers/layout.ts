@@ -6,6 +6,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
  *    Desktop-Modus mit geöffneter Kalender-Schublade ab.
  *  - desktop: komfortable Breite, beide Schubladen offen ohne Platznot. */
 export const VIEWPORTS = {
+  narrowMobile: { width: 320, height: 568 },
   mobile: { width: 390, height: 844 },
   narrowDesktop: { width: 1080, height: 900 },
   desktop: { width: 1280, height: 800 },
@@ -175,4 +176,100 @@ export async function expectNoOverlap(a: Locator, b: Locator): Promise<void> {
   expect(overlaps, 'Zwei Elemente überlappen sich geometrisch, obwohl sie das nicht sollten').toBe(
     false
   );
+}
+
+/** Prüft, ob das Layout die Breite des Viewports überschreitet (unerwünschter horizontaler Scrollbalken).
+ *  Besonders kritisch auf mobilen Viewports (320px/390px), um Layout-Breaks und ungewolltes horizontales
+ *  Ausbrechen sofort abzufangen. */
+export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
+  const overflow = await page.evaluate(() => {
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollWidth = Math.max(doc.scrollWidth, body ? body.scrollWidth : 0);
+    const clientWidth = doc.clientWidth;
+    return {
+      scrollWidth,
+      clientWidth,
+      hasOverflow: scrollWidth > clientWidth + 1, // 1px Toleranz für Subpixel-Rundung
+    };
+  });
+  expect(
+    overflow.hasOverflow,
+    `Horizontaler Overflow erkannt: scrollWidth (${overflow.scrollWidth}px) > clientWidth (${overflow.clientWidth}px)`
+  ).toBe(false);
+}
+
+/** Prüft, ob ein interaktives Element (Button, Chip, Icon-Button) die empfohlene Mindest-Touch-Target-
+ *  Größe (Standard: 44x44px laut DESIGN.md und WCAG) einhält. */
+export async function expectMinTouchTarget(locator: Locator, minSize = 44): Promise<void> {
+  const box = await boxOf(locator);
+  const tolerance = 0.5;
+  expect(
+    box.width,
+    `Touch-Target-Breite (${box.width}px) ist kleiner als Mindestmaß ${minSize}px`
+  ).toBeGreaterThanOrEqual(minSize - tolerance);
+  expect(
+    box.height,
+    `Touch-Target-Höhe (${box.height}px) ist kleiner als Mindestmaß ${minSize}px`
+  ).toBeGreaterThanOrEqual(minSize - tolerance);
+}
+
+/** Steuert den Zustand der Kalenderschublade (.drawer auf Desktop >=1024px) gezielt auf offen oder
+ *  geschlossen, um Container-Queries (@container app-main) und Layout-Kollisionen bei reduzierter
+ *  Inhaltsbreite (z. B. 1080px Viewport mit 360px Schublade = 720px Restbreite) zu testen. */
+export async function setCalendarDrawerOpen(page: Page, open: boolean): Promise<void> {
+  const drawer = page.locator('.drawer.left');
+  if ((await drawer.count()) === 0) return; // Auf Mobile (<1024px) existiert keine Schublade
+
+  const isOpen = await drawer.evaluate((el) => el.classList.contains('open'));
+  if (isOpen !== open) {
+    if (open) {
+      // Wenn geschlossen: Klick auf den Tab zum Öffnen
+      await page.locator('.drawer.left .drawer-tab').click();
+    } else {
+      // Wenn geöffnet: Klick auf den Schließen-Button im Header des Panels
+      await page.locator('.drawer.left .close-drawer-btn').click();
+    }
+    await page.waitForTimeout(350); // Pause für die Einrast-Transition der Schublade
+  }
+}
+
+/** Ermittelt die tatsächliche gerenderte Inhaltsbreite des .app-main Containers (Viewport abzüglich
+ *  geöffneter Schubladen). Wichtig zur Validierung von @container app-main Abfragen. */
+export async function getAppMainContentWidth(page: Page): Promise<number> {
+  return await page.evaluate(() => {
+    const el = document.querySelector('.app-main');
+    return el ? el.getBoundingClientRect().width : window.innerWidth;
+  });
+}
+
+/** Verstellt die Breite der Kalenderschublade auf Desktop stufenlos durch Ziehen des Anfassers.
+ *  Erlaubt das Stresstesten extremer Breiten (z. B. Minimum 280px oder Maximum 500px+). */
+export async function setCalendarDrawerWidth(page: Page, targetWidth: number): Promise<void> {
+  await setCalendarDrawerOpen(page, true);
+  const handle = page.locator('.drawer.left .resize-handle');
+  if ((await handle.count()) === 0 || !(await handle.isVisible())) return;
+
+  const box = await boxOf(handle);
+  const deltaX = targetWidth - box.left;
+  await page.mouse.move(box.left + box.width / 2, box.top + 100);
+  await page.mouse.down();
+  await page.mouse.move(box.left + deltaX, box.top + 100, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+}
+
+/** Verstellt die Breite der Spots-Spalte (.spots-col in ExcursionsView) auf Desktop stufenlos durch
+ *  Ziehen des Spalten-Anfassers (.col-resize-handle). */
+export async function setSpotsColumnWidth(page: Page, targetWidth: number): Promise<void> {
+  const handle = page.locator('.col-resize-handle');
+  if ((await handle.count()) === 0 || !(await handle.isVisible())) return;
+
+  const box = await boxOf(handle);
+  const deltaX = targetWidth - box.left;
+  await page.mouse.move(box.left + box.width / 2, box.top + 100);
+  await page.mouse.down();
+  await page.mouse.move(box.left + deltaX, box.top + 100, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(150);
 }

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import Badge from './Badge.vue';
+import { STRESS_STRINGS, STRESS_CONTAINERS } from '../../stories/stressFixtures';
 
 const meta: Meta<typeof Badge> = {
   title: 'Primitives/Badge',
@@ -97,5 +98,20 @@ export const AccentSecondary: Story = {
       return { args };
     },
     template: `<Badge v-bind="args">Admin</Badge>`,
+  }),
+};
+
+export const StressTest: Story = {
+  render: (args) => ({
+    components: { Badge },
+    setup() {
+      return { args, STRESS_STRINGS, STRESS_CONTAINERS };
+    },
+    template: `
+      <div :style="STRESS_CONTAINERS.ultraNarrow" style="display: flex; flex-direction: column; gap: 8px;">
+        <Badge v-bind="args">{{ STRESS_STRINGS.longWord }}</Badge>
+        <Badge variant="accent" v-bind="args">{{ STRESS_STRINGS.specialChars }}</Badge>
+      </div>
+    `,
   }),
 };
