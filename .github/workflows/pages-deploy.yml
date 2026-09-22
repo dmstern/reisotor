@@ -21,6 +21,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Nur ein Pages-Deploy gleichzeitig - ein zweiter, während der erste noch läuft, wird nicht
 # abgebrochen (cancel-in-progress: false), sondern reiht sich hinten an, damit kein halb
 # publizierter Stand live geht.

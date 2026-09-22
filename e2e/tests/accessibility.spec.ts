@@ -5,31 +5,23 @@ import AxeBuilder from '@axe-core/playwright';
  * Automated Accessibility (a11y) Tests using Axe.
  *
  * Runs accessibility checks across core application pages.
- * By default, rules are configured to report violations.
- * To focus automated checks on critical structural ARIA / HTML / Label issues,
- * color contrast checks are excluded by default, but can be enabled on-demand
- * via CHECK_CONTRAST=1 (e.g. `npm run test:a11y:contrast`).
+ * By default, all WCAG 2.0 / 2.1 AA rules (including color contrast) are verified.
  */
-
-const checkContrast = Boolean(process.env.CHECK_CONTRAST);
 
 async function scanPageA11y(page: Page) {
   await page.evaluate(() => document.fonts.ready);
   await page
-    .evaluate(() => {
+    .evaluate(async () => {
+      await new Promise((r) => requestAnimationFrame(r));
       const finiteAnims = document.getAnimations().filter((a) => {
         const it = a.effect?.getTiming()?.iterations;
         return it !== Infinity && it !== undefined;
       });
-      return Promise.all(finiteAnims.map((a) => a.finished));
+      await Promise.allSettled(finiteAnims.map((a) => a.finished));
     })
     .catch(() => {});
 
-  const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']);
-  if (!checkContrast) {
-    builder.disableRules(['color-contrast']);
-  }
-  return builder.analyze();
+  return new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
 }
 
 function formatViolations(
@@ -105,7 +97,9 @@ test.describe('Accessibility (a11y)', () => {
 
     test('settings page accessibility scan', async ({ page }) => {
       await page.goto('/settings');
-      await expect(page.getByRole('heading', { name: 'Einstellungen', level: 1 })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Einstellungen', level: 1 })).toBeVisible({
+        timeout: 15_000,
+      });
 
       const results = await scanPageA11y(page);
       expect(results.violations, formatViolations(results.violations)).toEqual([]);
