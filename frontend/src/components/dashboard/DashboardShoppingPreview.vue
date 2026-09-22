@@ -244,7 +244,7 @@ const percent = computed(() => {
 .receipt-total {
   font-size: 0.34rem;
   font-weight: 800;
-  color: #059669;
+  color: #065f46;
 }
 
 /* Papiertüten-Körper */
