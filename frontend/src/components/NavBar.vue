@@ -349,9 +349,7 @@ function onLinkClick(event: MouseEvent) {
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   -webkit-backdrop-filter: var(--backdrop-blur-md);
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-floating-island);
   z-index: 10;
   overflow-x: auto;
   overflow-y: hidden;

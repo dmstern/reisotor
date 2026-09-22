@@ -304,6 +304,10 @@
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
   --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);
+  --shadow-floating-island:
+    0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --shadow-island: var(--shadow-floating-island);
 
   /* Zweites, "weicheres" Schatten-Paar für taktile Pillen-Elemente (aktuell: SegmentedToggle.vue,
      siehe DESIGN.md Abschnitt "Weiches Material") - getrennt von --shadow-sm/md (die sind für
@@ -426,6 +430,10 @@
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
     --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
+    --shadow-floating-island:
+      0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --shadow-island: var(--shadow-floating-island);
     color-scheme: dark;
   }
 }
@@ -483,6 +491,10 @@
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
   --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-floating-island:
+    0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --shadow-island: var(--shadow-floating-island);
   color-scheme: dark;
 }
 
@@ -532,6 +544,10 @@
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
   --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);
+  --shadow-floating-island:
+    0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --shadow-island: var(--shadow-floating-island);
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
   color-scheme: light;

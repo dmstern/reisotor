@@ -74,6 +74,13 @@ export const ShadowsAndRadiiSystem: Story = {
           shape: 'pill',
           usage: 'Erhöhter Schatten für schwebende SegmentedToggle Thumbs & Pillen',
         },
+        {
+          var: '--shadow-floating-island',
+          radius: 'var(--radius-pill)',
+          shape: 'pill',
+          usage:
+            'Einheitlicher Glass-Elevation-Schatten für schwebende Inseln (Header-Pills, Floating-NavBar)',
+        },
       ];
 
       return { squircleRadii, specialRadii, shadows };
