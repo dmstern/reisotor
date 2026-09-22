@@ -453,7 +453,6 @@ const isNewHighlight = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 

@@ -1562,7 +1562,6 @@ function formatWeekdayDate(d: string) {
   justify-content: center;
   font-size: 1.4rem;
   padding: 0.5rem;
-  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 

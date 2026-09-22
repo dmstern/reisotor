@@ -169,7 +169,6 @@ const profileTitle = computed(() => {
   border-radius: 999px;
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
-  -webkit-backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
   padding: 3px 14px 3px 3px;
@@ -216,7 +215,6 @@ const profileTitle = computed(() => {
   border-radius: 999px;
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
-  -webkit-backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
   padding: var(--space-1);
@@ -303,7 +301,6 @@ const profileTitle = computed(() => {
   border-radius: 999px;
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
-  -webkit-backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
   padding: 3px 3px 3px 8px;
@@ -366,7 +363,6 @@ const profileTitle = computed(() => {
     border: none;
     box-shadow: none;
     backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     padding: 0;
     height: auto;
     width: auto;
@@ -382,7 +378,6 @@ const profileTitle = computed(() => {
     border-radius: 999px;
     background: var(--color-surface-glass);
     backdrop-filter: var(--backdrop-blur-md);
-    -webkit-backdrop-filter: var(--backdrop-blur-md);
     border: 1px solid var(--color-surface-glass-border);
     box-shadow: var(--shadow-floating-island);
     padding: 3px;
@@ -400,7 +395,6 @@ const profileTitle = computed(() => {
     border: none;
     box-shadow: none;
     backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     padding: 0;
     height: auto;
   }
@@ -410,7 +404,6 @@ const profileTitle = computed(() => {
     border: none;
     box-shadow: none;
     backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     padding: 0;
     height: auto;
   }
@@ -474,7 +467,6 @@ const profileTitle = computed(() => {
   );
   animation: spin 1.5s linear infinite;
   mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff calc(100% - 2px));
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff 0);
   opacity: 0.5;
 }
 

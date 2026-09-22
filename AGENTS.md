@@ -193,6 +193,13 @@ Stelle):
 - **Storybook für neue Komponenten**: Beim Erstellen neuer wiederverwendbarer UI-Komponenten
   (`frontend/src/components/*.vue` bzw. `primitives/`) immer direkt eine zugehörige Storybook-Story-Datei
   (`*.stories.ts`) anlegen, damit Zustände isoliert getestet und dokumentiert sind.
+- **Standard-CSS statt manueller Vendor-Präfixe (`backdrop-filter`, `mask` etc.)**:
+  Immer reines Standard-CSS schreiben (`backdrop-filter: ...`, `mask: ...`). Das Build-Tool (`rolldown-vite` mit
+  LightningCSS) übernimmt das zielspezifische Autoprefixing für Safari/WebKit im Production-Build vollautomatisch.
+  Manuell notierte `-webkit-backdrop-filter`- oder `-webkit-mask`-Deklarationen sind verboten (per ESLint-Regel
+  `css-prefix/no-manual-webkit-prefix` erzwungen): Bei manueller Angabe führt eine nachgestellte Vendor-Deklaration
+  dazu, dass LightningCSS die Standard-Eigenschaft wegoptimiert und nur das `-webkit-`-Präfix übrig lässt, was
+  den Effekt in Firefox komplett bricht.
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 

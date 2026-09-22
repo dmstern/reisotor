@@ -361,7 +361,6 @@ const fillTier = computed(() => {
   position: absolute;
   inset: 0;
   background: rgba(255, 255, 255, 0.2);
-  -webkit-backdrop-filter: blur(1.5px);
   backdrop-filter: blur(1.5px);
   z-index: 3;
   pointer-events: none;

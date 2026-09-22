@@ -14,6 +14,51 @@ const a11yWarnRules = Object.fromEntries(
   ])
 );
 
+// Verhindert manuelle -webkit-backdrop-filter oder -webkit-mask Deklarationen in Vue-Styles.
+// LightningCSS (rolldown-vite) übernimmt das Autoprefixing für Safari 16 automatisch.
+// Manuelle Präfixe führen bei falscher Reihenfolge dazu, dass LightningCSS Standard-Eigenschaften
+// verwirft, was Firefox bricht.
+const cssPrefixPlugin = {
+  rules: {
+    'no-manual-webkit-prefix': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Disallow manual -webkit-backdrop-filter and -webkit-mask; use standard properties instead.',
+        },
+        messages: {
+          forbidden:
+            'Do not write manual {{prefix}}. Write standard CSS ({{standard}}) instead; LightningCSS autoprefixes it automatically in production.',
+        },
+      },
+      create(context) {
+        return {
+          Program() {
+            const text = context.sourceCode.getText();
+            const regex = /-(?:webkit)-(backdrop-filter|mask)\s*:/g;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+              const loc = context.sourceCode.getLocFromIndex(match.index);
+              context.report({
+                loc: {
+                  start: loc,
+                  end: { line: loc.line, column: loc.column + match[0].length },
+                },
+                messageId: 'forbidden',
+                data: {
+                  prefix: match[0].trim(),
+                  standard: match[1],
+                },
+              });
+            }
+          },
+        };
+      },
+    },
+  },
+};
+
 export default tseslint.config(
   {
     ignores: [
@@ -35,10 +80,16 @@ export default tseslint.config(
   ...vuejsAccessibility.configs['flat/recommended'],
   {
     files: ['**/*.vue'],
+    plugins: {
+      'css-prefix': cssPrefixPlugin,
+    },
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser,
       },
+    },
+    rules: {
+      'css-prefix/no-manual-webkit-prefix': 'error',
     },
   },
   {

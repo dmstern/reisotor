@@ -248,7 +248,6 @@ async function remove(attachment: Attachment) {
   padding: 3px 8px;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-pill);
   color: #ffffff;
