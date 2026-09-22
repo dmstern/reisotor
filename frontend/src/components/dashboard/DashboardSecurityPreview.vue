@@ -205,7 +205,7 @@ defineProps<{
 .status-label {
   font-size: 0.34rem;
   font-weight: 800;
-  color: #c2410c;
+  color: #7c2d12;
   letter-spacing: 0.5px;
 }
 
