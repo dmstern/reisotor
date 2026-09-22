@@ -4,6 +4,16 @@ import path from 'node:path';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import { forceFontDisplayBlock, waitForAppReady, waitForMapTiles } from '../helpers/fonts.js';
+import {
+  SCREENSHOT_REFERENCE_DATE,
+  SCREENSHOT_TRIP_DATES,
+  SCREENSHOT_TODOS,
+  SCREENSHOT_SCHEDULE,
+  SCREENSHOT_BUDGET_EXPENSES,
+  SCREENSHOT_BUDGET_TRANSFERS,
+  SCREENSHOT_DIARY,
+  SCREENSHOT_WEATHER,
+} from '../../../frontend/src/demo/screenshotData.js';
 
 const LANDING_SYNC_MAP: Record<string, string> = {
   'dashboard-desktop-light.png': 'screenshot-dashboard-light.png',
@@ -105,7 +115,13 @@ async function saveScreenshotIfChanged(
             ? Math.max(300, Math.round(img1.width * img1.height * 0.012))
             : Math.round(img1.width * img1.height * 0.005));
 
-        if (numDiffPixels > effectiveMaxDiff) {
+        if (numDiffPixels > 0 && process.env.FORCE_SCREENSHOTS) {
+          fs.writeFileSync(screenshotPath, newBuffer);
+          console.log(
+            `[Updated: ${numDiffPixels} px diff (forced)] ${path.basename(screenshotPath)}`
+          );
+          result = { status: 'updated', diffPixels: numDiffPixels };
+        } else if (numDiffPixels > effectiveMaxDiff) {
           fs.writeFileSync(screenshotPath, newBuffer);
           console.log(`[Updated: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
           result = { status: 'updated', diffPixels: numDiffPixels };
@@ -164,115 +180,109 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
     test(`Capture screenshots for view: ${view.slug}`, async ({ page }) => {
       test.setTimeout(90000);
 
-      // 1. Intercept trip API calls to set start_date=today, end_date=today+9 (10 days total), and image_url='/demo/lissabon.jpg'
+      // Set fixed clock to SCREENSHOT_REFERENCE_DATE (2026-08-07T10:00:00Z - 1 week before departure)
+      await page.clock.setFixedTime(new Date(SCREENSHOT_REFERENCE_DATE));
+
+      // 1. Intercept trip API calls to set start_date and end_date to static mid-August dates
       await page.route('**/api/trips*', async (route) => {
         const response = await route.fetch();
         const json = await response.json();
-        const today = new Date();
-        const sDate = today.toISOString().slice(0, 10);
-        const endDateObj = new Date(today);
-        endDateObj.setDate(endDateObj.getDate() + 9);
-        const eDate = endDateObj.toISOString().slice(0, 10);
 
         if (Array.isArray(json)) {
           for (const t of json) {
             if (t.id === 1) {
-              t.start_date = sDate;
-              t.end_date = eDate;
+              t.start_date = SCREENSHOT_TRIP_DATES.start;
+              t.end_date = SCREENSHOT_TRIP_DATES.end;
               t.image_url = '/demo/lissabon.jpg';
             }
           }
         } else if (json && typeof json === 'object') {
           if (json.id === 1) {
-            json.start_date = sDate;
-            json.end_date = eDate;
+            json.start_date = SCREENSHOT_TRIP_DATES.start;
+            json.end_date = SCREENSHOT_TRIP_DATES.end;
             json.image_url = '/demo/lissabon.jpg';
           }
         }
         await route.fulfill({ json });
       });
 
-      // 2. Mock Open-Meteo weather forecast with 16 days of varied, realistic weather (spanning all 10 trip days)
+      // 2. Mock Open-Meteo weather forecast with 18 days of static realistic summer weather in Lisbon
       await page.route('**/api.open-meteo.com/**', async (route) => {
-        const today = new Date();
-        const mockWeather = {
-          daily: {
-            time: Array.from({ length: 16 }, (_, i) => {
-              const d = new Date(today);
-              d.setDate(d.getDate() - 1 + i);
-              return d.toISOString().slice(0, 10);
-            }),
-            weathercode: [0, 0, 1, 0, 2, 1, 0, 0, 2, 1, 0, 0, 1, 0, 0, 1],
-            temperature_2m_max: [27, 28, 26, 29, 25, 27, 28, 30, 26, 27, 28, 29, 27, 28, 29, 27],
-            temperature_2m_min: [18, 19, 18, 19, 17, 18, 19, 20, 18, 18, 19, 20, 19, 19, 18, 18],
-            precipitation_probability_max: [5, 5, 10, 0, 20, 10, 5, 0, 15, 10, 5, 0, 10, 5, 0, 5],
-          },
-        };
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(mockWeather),
+          body: JSON.stringify(SCREENSHOT_WEATHER),
         });
       });
 
-      // 3. Intercept todos API calls to ensure due dates match current screenshot timeline (relative to today)
+      // 3. Intercept todos API calls to align due dates with static August timeline
       await page.route('**/api/todos*', async (route) => {
         const response = await route.fetch();
         const json = await response.json();
-        const today = new Date();
-        const fmtDate = (days: number) => {
-          const d = new Date(today);
-          d.setDate(d.getDate() + days);
-          return d.toISOString().slice(0, 10);
-        };
         if (Array.isArray(json)) {
           for (const item of json) {
-            if (item.title.includes('Reisepässe')) {
-              item.due_date = fmtDate(-7);
-            } else if (item.title.includes('Auslandskrankenversicherung')) {
-              item.due_date = fmtDate(-4);
-            } else if (item.title.includes('Pflanzen')) {
-              item.due_date = fmtDate(0);
-            } else if (item.title.includes('Check-in')) {
-              item.due_date = fmtDate(0);
-            } else if (item.title.includes('Viva-Viagem')) {
-              item.due_date = fmtDate(1);
-            } else if (item.title.includes('Mosteiro')) {
-              item.due_date = fmtDate(2);
-            } else if (item.title.includes('Pastéis')) {
-              item.due_date = fmtDate(8);
+            const match = SCREENSHOT_TODOS.find((t) => item.title.includes(t.title.slice(0, 15)));
+            if (match) {
+              item.due_date = match.due_date;
+              item.done = match.done;
             }
           }
         }
         await route.fulfill({ json });
       });
 
-      // 4. Intercept schedule API calls so items align directly within trip days (today .. today + 9)
+      // 4. Intercept schedule API calls so items align with static August trip days
       await page.route('**/api/schedule*', async (route) => {
         const response = await route.fetch();
         const json = await response.json();
-        const today = new Date();
-        const fmtDate = (days: number) => {
-          const d = new Date(today);
-          d.setDate(d.getDate() + days);
-          return d.toISOString().slice(0, 10);
-        };
         if (Array.isArray(json)) {
           for (const item of json) {
-            if (item.title.includes('Hinflug')) {
-              item.date = fmtDate(0);
-            } else if (
-              item.title.includes('Time Out Market') ||
-              item.title.includes('Panoramatour')
-            ) {
-              item.date = fmtDate(1);
-            } else if (item.title.includes('Belém')) {
-              item.date = fmtDate(2);
-            } else if (item.title.includes('Sintra')) {
-              item.date = fmtDate(5);
-            } else if (item.title.includes('Rückflug')) {
-              item.date = fmtDate(9);
+            const match = SCREENSHOT_SCHEDULE.find((s) =>
+              item.title.includes(s.title.slice(0, 15))
+            );
+            if (match) {
+              item.date = match.date;
+              item.time = match.time;
+              item.end_time = match.end_time;
             }
+          }
+        }
+        await route.fulfill({ json });
+      });
+
+      // 5. Intercept budget expenses & transfers to ensure static August dates
+      await page.route('**/api/budget*', async (route) => {
+        const url = route.request().url();
+        const response = await route.fetch();
+        const json = await response.json();
+        if (url.includes('/transfers') && Array.isArray(json)) {
+          for (const item of json) {
+            const match = SCREENSHOT_BUDGET_TRANSFERS.find((t) =>
+              item.note?.includes(t.note?.slice(0, 10) ?? '')
+            );
+            if (match) item.date = match.date;
+          }
+        } else if (Array.isArray(json)) {
+          for (const item of json) {
+            const match = SCREENSHOT_BUDGET_EXPENSES.find((e) =>
+              item.title.includes(e.title.slice(0, 12))
+            );
+            if (match) item.date = match.date;
+          }
+        }
+        await route.fulfill({ json });
+      });
+
+      // 6. Intercept diary API calls to align dates with static August timeline
+      await page.route('**/api/diary*', async (route) => {
+        const response = await route.fetch();
+        const json = await response.json();
+        if (Array.isArray(json)) {
+          for (const item of json) {
+            const match = SCREENSHOT_DIARY.find((d) =>
+              item.title?.includes(d.title?.slice(0, 10) ?? '')
+            );
+            if (match) item.date = match.date;
           }
         }
         await route.fulfill({ json });
@@ -333,6 +343,22 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
           }
           await page.locator('.drawer-panel').waitFor({ state: 'visible', timeout: 15_000 });
           await page.locator('.todo-page').waitFor({ state: 'visible', timeout: 15_000 });
+        }
+
+        // Calendar view specific preparation: focus "Urlaub" instead of "Heute" (Requirement: Urlaub focused in August)
+        if (view.slug === 'calendar') {
+          const vacationBtn = page
+            .locator('.jump-row button')
+            .filter({ hasText: 'Urlaub' })
+            .first();
+          await vacationBtn.waitFor({ state: 'visible', timeout: 15_000 });
+          await vacationBtn.click();
+          await page
+            .locator('.jump-row button.is-active')
+            .filter({ hasText: 'Urlaub' })
+            .first()
+            .waitFor({ state: 'visible', timeout: 5_000 });
+          await page.waitForTimeout(400);
         }
 
         // Spots / Tour view specific preparation: wait for spots drawer & map container to be visible
@@ -400,6 +426,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
 
   test('Capture screenshots for landing page', async ({ page }) => {
     test.setTimeout(180000);
+    await page.clock.setFixedTime(new Date(SCREENSHOT_REFERENCE_DATE));
     await forceFontDisplayBlock(page);
     for (const vp of VIEWPORTS) {
       await page.setViewportSize({ width: vp.width, height: vp.height });

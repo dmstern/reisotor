@@ -272,6 +272,12 @@ Rundung wirkt inkonsistent zu den übrigen Elementen. Bei einer PR-Selbstprüfun
 Mode. Für neue schwebende Elemente (Dropdowns, Tooltips, Cards mit Hebung) eine der beiden Stufen
 verwenden statt eines eigenen `box-shadow`-Werts.
 
+Für frei schwebende Glas-Inseln und Navigationsleisten (`AppHeader.vue`s `.brand`, `.floating-island`,
+`.header-actions`, mobile `.header-pill` sowie `NavBar.vue`s `.navbar.floating-bottom`) gibt es
+das Token `--shadow-floating-island` (Alias `--shadow-island`). Es vereint einen weichen Schlagschatten,
+einen scharfen Kontaktschatten und eine helle innere Kantenreflexion (`inset 0 1px 0 ...`) zu einem
+einheitlichen, viewport-übergreifenden Liquid-Glass-Schwebeeffekt.
+
 Für taktile Pillen-Elemente (aktuell: `SegmentedToggle.vue`) gibt es zusätzlich ein zweites,
 "weicheres" Paar – siehe Abschnitt "Weiches Material" weiter unten, nicht mit `--shadow-sm`/`-md`
 mischen.

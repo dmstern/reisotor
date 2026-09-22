@@ -616,7 +616,7 @@ function onSpotDrop(event: DragEvent) {
   border-color: var(--excursion-theme-border);
   background: var(--color-surface);
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
   transition:
     border-color 0.2s ease,

@@ -18,7 +18,9 @@ import type {
   User,
 } from '../api/types';
 // Statisches Asset aus public/demo/ Lissabon-Panorama für den Demo-Build
-const demoTripBanner = `${import.meta.env.BASE_URL}demo/lissabon.jpg`;
+const baseUrl =
+  typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL ? import.meta.env.BASE_URL : '/';
+const demoTripBanner = `${baseUrl}demo/lissabon.jpg`;
 
 export interface DemoTrip {
   id: number;

@@ -44,24 +44,14 @@ function updateHeaderHeight() {
   document.documentElement.style.setProperty('--app-header-height', `${height}px`);
 }
 
-const isScrolled = ref(false);
-
-function onScroll() {
-  isScrolled.value = window.scrollY > 4;
-}
-
 onMounted(() => {
   resizeObserver = new ResizeObserver(updateHeaderHeight);
   if (headerEl.value) resizeObserver.observe(headerEl.value);
   updateHeaderHeight();
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
 });
 
 onUnmounted(() => {
   resizeObserver?.disconnect();
-  window.removeEventListener('scroll', onScroll);
 });
 
 const profileTitle = computed(() => {
@@ -79,8 +69,7 @@ const profileTitle = computed(() => {
 </script>
 
 <template>
-  <header ref="headerEl" class="app-header" :class="{ 'is-scrolled': isScrolled }">
-    <div class="header-backdrop" aria-hidden="true"></div>
+  <header ref="headerEl" class="app-header">
     <DemoModeBanner v-if="DEMO_MODE" />
     <LoadingIndicator />
     <div class="header-row">
@@ -159,37 +148,6 @@ const profileTitle = computed(() => {
   pointer-events: none;
 }
 
-/* Subtiler Farbverlauf ins Transparente mit Backdrop-Blur hinter den frei schwebenden Nav-Items
-   (Logo, TripSwitcher, Avatar, Notifications): im nicht-gescrollten Zustand unsichtbar (opacity: 0),
-   damit die Elemente weiterhin frei im Raum schweben. Beim Scrollen wird der Hintergrund sanft
-   eingeblendet, sodass unter den Header wandernde Texte/Karten weich weichgezeichnet werden,
-   ohne dass eine harte Box-Kante entsteht. */
-.header-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: -16px;
-  pointer-events: none;
-  z-index: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--color-bg) 0%,
-    color-mix(in srgb, var(--color-bg) 85%, transparent) 55%,
-    transparent 100%
-  );
-  backdrop-filter: var(--backdrop-blur-md);
-  -webkit-backdrop-filter: var(--backdrop-blur-md);
-  mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.25s ease;
-}
-
-.app-header.is-scrolled .header-backdrop {
-  opacity: 1;
-}
-
 .header-row {
   display: flex;
   align-items: center;
@@ -213,10 +171,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   -webkit-backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.25),
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow-floating-island);
   padding: 3px 14px 3px 3px;
   height: 44px;
   box-sizing: border-box;
@@ -263,9 +218,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   -webkit-backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-floating-island);
   padding: var(--space-1);
   pointer-events: auto;
   max-width: 100%;
@@ -352,10 +305,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   -webkit-backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.25),
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow-floating-island);
   padding: 3px 3px 3px 8px;
   height: 44px;
   box-sizing: border-box;
@@ -434,10 +384,7 @@ const profileTitle = computed(() => {
     backdrop-filter: var(--backdrop-blur-md);
     -webkit-backdrop-filter: var(--backdrop-blur-md);
     border: 1px solid var(--color-surface-glass-border);
-    box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.25),
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-floating-island);
     padding: 3px;
     height: 44px;
     box-sizing: border-box;
