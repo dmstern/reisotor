@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import BudgetMeter from './BudgetMeter.vue';
+import { STRESS_STRINGS, STRESS_CONTAINERS } from '../stories/stressFixtures';
 
 const meta: Meta<typeof BudgetMeter> = {
   title: 'Components/Budget & Progress/BudgetMeter',
@@ -54,4 +55,31 @@ export const WithoutTarget: Story = {
     color: '#5b6ee1',
     format: 'currency',
   },
+};
+
+export const StressTest: Story = {
+  render: () => ({
+    components: { BudgetMeter },
+    setup() {
+      return { STRESS_STRINGS, STRESS_CONTAINERS };
+    },
+    template: `
+      <div :style="STRESS_CONTAINERS.narrow" style="display: flex; flex-direction: column; gap: 16px;">
+        <BudgetMeter
+          :label="STRESS_STRINGS.longWord"
+          :spent="999999.99"
+          :target="500000"
+          color="#c1503f"
+          format="currency"
+        />
+        <BudgetMeter
+          :label="STRESS_STRINGS.specialChars"
+          :spent="12345"
+          :target="99999"
+          color="#9141AC"
+          format="count"
+        />
+      </div>
+    `,
+  }),
 };

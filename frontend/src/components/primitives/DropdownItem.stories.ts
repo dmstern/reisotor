@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 import DropdownItem from './DropdownItem.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
+import { STRESS_STRINGS, STRESS_CONTAINERS } from '../../stories/stressFixtures';
 
 const meta: Meta<typeof DropdownItem> = {
   title: 'Primitives/DropdownItem',
@@ -61,4 +62,31 @@ export const WithTrailingIcon: Story = {
     active: true,
     trailingIcon: ACTION_ICONS.done,
   },
+};
+
+export const StressTest: Story = {
+  render: (args) => ({
+    components: { DropdownItem },
+    setup() {
+      return { args, STRESS_STRINGS, STRESS_CONTAINERS, ACTION_ICONS };
+    },
+    template: `
+      <div :style="STRESS_CONTAINERS.narrow" style="display: flex; flex-direction: column; gap: 4px;">
+        <DropdownItem
+          :label="STRESS_STRINGS.longWord"
+          :icon="ACTION_ICONS.edit"
+        />
+        <DropdownItem
+          :label="STRESS_STRINGS.longSentence"
+          :icon="ACTION_ICONS.done"
+          :trailingIcon="ACTION_ICONS.done"
+          active
+        />
+        <DropdownItem
+          :label="STRESS_STRINGS.specialChars"
+          :icon="ACTION_ICONS.apple"
+        />
+      </div>
+    `,
+  }),
 };

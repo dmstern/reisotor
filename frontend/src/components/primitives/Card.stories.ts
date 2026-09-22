@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import Card from './Card.vue';
 import { SECTION_ICON_DEFS } from '../../utils/sectionIcons';
+import { STRESS_STRINGS, STRESS_CONTAINERS } from '../../stories/stressFixtures';
 
 const meta: Meta<typeof Card> = {
   title: 'Primitives/Card',
@@ -271,6 +272,30 @@ export const PolaroidGallery: Story = {
           <div style="height: 120px; background: var(--color-primary-tint); border-radius: 4px; margin-bottom: 8px;" />
           <h4 style="margin: 0 0 4px; font-size: 0.95rem;">{{ p.title }}</h4>
           <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-muted);">{{ p.subtitle }}</p>
+        </Card>
+      </div>
+    `,
+  }),
+};
+
+export const StressTest: Story = {
+  render: (args) => ({
+    components: { Card },
+    setup() {
+      return { args, STRESS_STRINGS, STRESS_CONTAINERS };
+    },
+    template: `
+      <div :style="STRESS_CONTAINERS.narrow">
+        <Card v-bind="args" style="width: 100%;">
+          <h3 style="margin: 0 0 8px; font-size: 1rem; overflow-wrap: anywhere;">
+            {{ STRESS_STRINGS.longWord }}
+          </h3>
+          <p style="margin: 0; font-size: 0.85rem; overflow-wrap: anywhere;">
+            {{ STRESS_STRINGS.longSentence }}
+          </p>
+          <div style="margin-top: 12px; font-size: 0.8rem; color: var(--color-text-muted);">
+            {{ STRESS_STRINGS.specialChars }}
+          </div>
         </Card>
       </div>
     `,

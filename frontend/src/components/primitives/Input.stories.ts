@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import Input from './Input.vue';
+import { STRESS_STRINGS, STRESS_CONTAINERS } from '../../stories/stressFixtures';
 
 const meta: Meta<typeof Input> = {
   title: 'Primitives/Input',
@@ -90,4 +91,20 @@ export const DateInput: Story = {
     type: 'date',
     modelValue: '2026-08-25',
   },
+};
+
+export const StressTest: Story = {
+  render: () => ({
+    components: { Input },
+    setup() {
+      return { STRESS_STRINGS, STRESS_CONTAINERS };
+    },
+    template: `
+      <div :style="STRESS_CONTAINERS.narrow" style="display: flex; flex-direction: column; gap: 12px;">
+        <Input :modelValue="STRESS_STRINGS.longWord" placeholder="Extrem langer Text" />
+        <Input :modelValue="STRESS_STRINGS.specialChars" placeholder="Sonderzeichen" />
+        <Input :placeholder="STRESS_STRINGS.longSentence" />
+      </div>
+    `,
+  }),
 };
