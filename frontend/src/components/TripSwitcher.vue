@@ -406,20 +406,13 @@ function openMembers(trip: Trip) {
   flex-shrink: 0;
 }
 
-.members-btn {
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
 .empty {
   font-size: 0.85rem;
   padding: 6px 8px;
 }
 
 .new-trip-btn {
-  margin-top: 4px;
+  margin-top: var(--space-1);
   text-align: left;
   background: none;
   border: 1px dashed var(--color-border);

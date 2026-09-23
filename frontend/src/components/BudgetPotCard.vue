@@ -123,7 +123,7 @@ function updateAllocationAmount(category: string, value: string) {
           :label="a.category"
           :spent="store.spentFor(budget, a.category)"
           :target="a.amount"
-          :color="categoryColors.get(a.category) ?? '#8a8a86'"
+          :color="categoryColors.get(a.category) ?? 'var(--color-text-muted)'"
           :delay="(idx + 1) * 45"
         />
         <div class="category-edit">

@@ -229,6 +229,11 @@ function close() {
 }
 
 .member-user {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 500;
   color: var(--color-text);
   font-size: 0.95rem;
@@ -245,7 +250,7 @@ function close() {
 .invite-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .hint {

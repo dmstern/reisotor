@@ -382,8 +382,8 @@ function handleClick(e: Event) {
 
 .polaroid-stack.is-interactive:focus-visible .polaroid-tile:first-child {
   box-shadow:
-    0 0 0 2px var(--color-background, #ffffff),
-    0 0 0 4px var(--color-primary, #3b82f6);
+    0 0 0 2px var(--color-bg, var(--color-surface)),
+    0 0 0 4px var(--color-primary);
 }
 
 .polaroid-tile {
@@ -627,7 +627,7 @@ function handleClick(e: Event) {
   position: absolute;
   top: -4px;
   right: -4px;
-  background: var(--polaroid-badge-color, var(--excursion-theme-color, var(--color-tour, #2563eb)));
+  background: var(--polaroid-badge-color, var(--excursion-theme-color, var(--color-tour)));
   color: #ffffff;
   font-size: 0.55rem;
   font-weight: 800;

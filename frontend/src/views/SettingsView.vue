@@ -1334,9 +1334,9 @@ async function exportBackup() {
               >
                 <span class="nav-config-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
                 <span class="nav-config-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
-                <label for="auto-id-1788301175449-33" class="nav-config-visible">
+                <label :for="'push-domain-' + domain" class="nav-config-visible">
                   <Checkbox
-                    id="auto-id-1788301175449-33"
+                    :id="'push-domain-' + domain"
                     :checked="notificationPrefs.preferences?.[domain] ?? true"
                     :aria-label="`${NOTIFICATION_DOMAIN_META[domain].label}-Push aktiv`"
                     @change="
@@ -1553,7 +1553,7 @@ h3 {
 .settings-grid {
   display: grid;
   gap: var(--space-3);
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   margin-bottom: var(--space-4);
 }
 

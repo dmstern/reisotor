@@ -1488,7 +1488,7 @@ function formatWeekdayDate(d: string) {
   text-decoration-style: dotted;
   background: none;
   border: none;
-  padding: 0;
+  padding: 6px 0;
   cursor: pointer;
   font-family: inherit;
 }
@@ -1554,7 +1554,8 @@ function formatWeekdayDate(d: string) {
   transform: translateX(-50%);
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
+  corner-shape: round;
   border: 1px solid var(--color-border);
   box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
   display: flex;

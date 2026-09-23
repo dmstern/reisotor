@@ -158,6 +158,12 @@ const profileTitle = computed(() => {
   z-index: 1;
 }
 
+@media (max-width: 479px) {
+  .header-row {
+    padding: var(--space-2) var(--space-2) 0;
+  }
+}
+
 .brand {
   display: inline-flex;
   align-items: center;

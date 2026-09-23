@@ -100,6 +100,13 @@ const router = createRouter({
       component: () => import('../views/ExcursionsView.vue'),
     },
     {
+      path: '/trip/:tripId/spots',
+      redirect: (to) => ({
+        path: `/trip/${to.params.tripId}/excursions`,
+        query: { ...to.query, group: 'spots' },
+      }),
+    },
+    {
       path: '/trip/:tripId/calendar',
       name: 'calendar',
       component: ScheduleView,
@@ -152,6 +159,7 @@ const router = createRouter({
       name: 'legacy-excursions',
       component: () => import('../views/ExcursionsView.vue'),
     },
+    { path: '/spots', redirect: '/excursions?group=spots' },
     {
       path: '/calendar',
       name: 'legacy-calendar',

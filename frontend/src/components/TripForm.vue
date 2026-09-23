@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, useId } from 'vue';
 import type { TripFormData } from '../stores/trip';
 import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
 import LocationPicker from './LocationPicker.vue';
@@ -62,6 +62,12 @@ const mapsLinkResolved = ref<boolean | null>(null);
 const manualPin = ref<{ lat: number; lng: number } | null>(null);
 const pickerOpen = ref(false);
 const showOptional = ref(false);
+
+const nameId = useId();
+const startDateId = useId();
+const endDateId = useId();
+const destinationId = useId();
+const mapsLinkId = useId();
 
 const dateError = computed(() => {
   if (form.value.start_date && form.value.end_date && form.value.start_date > form.value.end_date) {
@@ -163,10 +169,10 @@ function onSubmit() {
         modal-title="Dashboard-Banner bearbeiten"
       />
 
-      <label for="auto-id-1788301175440-11">
+      <label :for="nameId">
         Name des Urlaubs
         <Input
-          id="auto-id-1788301175440-11"
+          :id="nameId"
           v-model="form.name"
           type="text"
           placeholder="z. B. Italien 2026"
@@ -176,13 +182,13 @@ function onSubmit() {
 
       <CollapsibleFieldset v-model="showOptional" label="Optionale Angaben">
         <div class="dates-row">
-          <label for="auto-id-1788301175440-12">
+          <label :for="startDateId">
             Start (optional)
-            <Input id="auto-id-1788301175440-12" v-model="form.start_date" type="date" />
+            <Input :id="startDateId" v-model="form.start_date" type="date" />
           </label>
-          <label for="auto-id-1788301175440-13">
+          <label :for="endDateId">
             Ende (optional)
-            <Input id="auto-id-1788301175440-13" v-model="form.end_date" type="date" />
+            <Input :id="endDateId" v-model="form.end_date" type="date" />
           </label>
         </div>
         <p v-if="dateError" class="hint error">
@@ -190,10 +196,10 @@ function onSubmit() {
           {{ dateError }}
         </p>
 
-        <label for="auto-id-1788301175440-14">
+        <label :for="destinationId">
           Ziel (optional)
           <Input
-            id="auto-id-1788301175440-14"
+            :id="destinationId"
             v-model="form.destination"
             type="text"
             placeholder="z. B. Toskana"
@@ -203,14 +209,9 @@ function onSubmit() {
         <Card class="location-box">
           <span class="field-label">Standort (optional)</span>
           <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
-          <label for="auto-id-1788301175440-15">
+          <label :for="mapsLinkId">
             Maps-Link (Google/Apple)
-            <Input
-              id="auto-id-1788301175440-15"
-              v-model="form.maps_link"
-              type="url"
-              @blur="checkMapsLink"
-            />
+            <Input :id="mapsLinkId" v-model="form.maps_link" type="url" @blur="checkMapsLink" />
           </label>
           <p v-if="mapsLinkResolved === true" class="hint success">
             <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
@@ -362,14 +363,6 @@ label,
 .dates-row label {
   flex: 1 1 130px;
   min-width: 130px;
-}
-
-.checkbox-label {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 0.9rem;
-  color: var(--color-text);
 }
 
 .location-box {

@@ -258,7 +258,7 @@ async function closeEditForm() {
       // Prüfen, ob Dateianhänge existieren - wenn nein, den leeren Entwurf löschen.
       try {
         const attachments = await api.get<Attachment[]>(
-          `/trips/${tripId}/attachments?domain=notes&entity_id=${editingNote.value.id}`
+          `/attachments?domain=notes&entity_id=${editingNote.value.id}`
         );
         if (attachments.length === 0) {
           await api.delete(`/notes/${editingNote.value.id}`);
@@ -401,17 +401,7 @@ async function remove(id: number) {
 }
 
 .cards {
-  column-width: 240px;
-}
-
-.cards :deep(.list-leave-active) {
-  position: static;
-  width: auto;
-}
-
-.cards :deep(.list-leave-to) {
-  opacity: 0;
-  transform: scale(0.95);
+  column-width: 280px;
 }
 
 .note-card {

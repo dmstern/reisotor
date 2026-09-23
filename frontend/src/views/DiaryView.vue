@@ -1273,6 +1273,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
   font-size: 1.05rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
+  max-width: 75ch;
 }
 
 .diary-editor :deep(.richtext-content) {

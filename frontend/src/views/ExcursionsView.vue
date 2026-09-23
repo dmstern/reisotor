@@ -5277,7 +5277,8 @@ async function deleteEditingSpot() {
   padding: 6px 12px;
   background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-danger);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -5674,7 +5675,8 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: 2px;
   padding: 8px 6px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   width: 100%;
   max-width: 68px;
   text-align: center;
@@ -5724,7 +5726,8 @@ async function deleteEditingSpot() {
   padding: 8px 3px;
   width: 100%;
   max-width: 68px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   text-align: center;
 }
 
@@ -6064,12 +6067,16 @@ async function deleteEditingSpot() {
 .filter-chip button {
   background: none;
   border: none;
-  padding: 2px;
+  padding: 4px;
+  min-width: 24px;
+  min-height: 24px;
   color: inherit;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   line-height: 1;
   display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* display:inline-flex/align-items:center kommen inzwischen aus style.css's globaler button-Regel

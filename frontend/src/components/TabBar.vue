@@ -240,6 +240,7 @@ function onTabClick(key: string, event: MouseEvent) {
   flex-shrink: 0;
   gap: 6px;
   padding: var(--space-2) var(--space-3);
+  min-height: 44px;
   border: none;
   /* Bleibt als reiner Platzhalter (Farbe kommt von .tab-underline) - ohne das würde der Tab beim
      Wechsel 2px in der Höhe springen. */
