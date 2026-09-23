@@ -16,11 +16,17 @@ setup('authenticate', async ({ page }) => {
   await page.getByLabel('Passwort').fill(E2E_PASSWORD);
   await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
 
-  // Nur sichtbar auf dem echten Dashboard (nicht im Onboarding-Screen von App.vue) — schlägt laut
-  // und früh fehl, falls das Demo-Seeding nicht funktioniert hat. .trip-name (Header) statt
-  // getByText(...): der Trip-Name kann zusätzlich in der (auf Desktop standardmäßig offenen)
-  // Kalender-Schublade als synthetischer "Urlaub-Start/-Ende"-Eintrag auftauchen (strict mode).
-  await expect(page.locator('.trip-name', { hasText: seeded.trip.name })).toBeVisible({
+  // Falls mehrere Urlaube existieren (z. B. im SCREENSHOT_MODE), leitet App.vue auf /trips um:
+  // dort den Standard-Urlaub (seeded.trip.name) auswählen, damit das Dashboard geöffnet wird.
+  const tripHeader = page.locator('.trip-name', { hasText: seeded.trip.name });
+  const tripSelectBtn = page.locator('.trip-select', { hasText: seeded.trip.name });
+
+  await Promise.race([
+    tripHeader.waitFor({ state: 'visible', timeout: 15000 }),
+    tripSelectBtn.waitFor({ state: 'visible', timeout: 15000 }).then(() => tripSelectBtn.click()),
+  ]);
+
+  await expect(tripHeader).toBeVisible({
     timeout: 15000,
   });
 

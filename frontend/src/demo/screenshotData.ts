@@ -2,6 +2,7 @@ import type {
   BudgetExpense,
   BudgetTransfer,
   DiaryEntry,
+  Note,
   ScheduleItem,
   TodoItem,
   User,
@@ -58,6 +59,35 @@ export const SCREENSHOT_TRIP: DemoTrip = {
   packing_category_required: 0,
   weather_model: 'ecmwf_ifs025',
 };
+
+export const SCREENSHOT_EXTRA_TRIPS: DemoTrip[] = [
+  {
+    id: 2,
+    name: 'Alpenüberquerung E5',
+    destination: 'Oberstdorf – Meran',
+    start_date: '2026-09-05',
+    end_date: '2026-09-13',
+    maps_link: '',
+    lat: 47.408,
+    lng: 10.279,
+    image_url: '',
+    packing_category_required: 1,
+    weather_model: 'ecmwf_ifs025',
+  },
+  {
+    id: 3,
+    name: 'Wochenende in Amsterdam',
+    destination: 'Amsterdam, Niederlande',
+    start_date: '2026-10-02',
+    end_date: '2026-10-04',
+    maps_link: '',
+    lat: 52.3676,
+    lng: 4.9041,
+    image_url: '',
+    packing_category_required: 0,
+    weather_model: 'ecmwf_ifs025',
+  },
+];
 
 export const SCREENSHOT_TODOS: TodoItem[] = [
   {
@@ -422,3 +452,17 @@ export const SCREENSHOT_WEATHER = {
     precipitation_probability_max: [5, 5, 10, 0, 20, 10, 5, 0, 5, 5, 10, 15, 10, 5, 0, 0, 10, 5],
   },
 };
+
+export const SCREENSHOT_NOTES: Note[] = [
+  {
+    id: 1,
+    trip_id: 1,
+    title: 'WLAN & Notfallkontakte',
+    content: 'Hotel-WLAN: siehe Zimmerkarte. Notfallnummer Portugal: 112.',
+    content_format: 'plain',
+    created_by: 1,
+    created_at: '2026-08-05T11:35:00.000Z',
+    updated_at: null,
+    is_draft: 0,
+  },
+];
