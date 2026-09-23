@@ -16,7 +16,7 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
-    await modal.getByRole('button', { name: 'Standort (optional)' }).click();
+    await modal.getByRole('button', { name: 'Standort', exact: true }).click();
     await modal.getByRole('button', { name: 'Standort manuell setzen' }).click();
 
     const mapDiv = modal.locator('.location-picker-map');
@@ -35,7 +35,7 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
-    await modal.getByRole('button', { name: 'Standort (optional)' }).click();
+    await modal.getByRole('button', { name: 'Standort', exact: true }).click();
     await modal.getByRole('button', { name: 'Standort manuell setzen' }).click();
 
     await modal.locator('.locate-btn').click();

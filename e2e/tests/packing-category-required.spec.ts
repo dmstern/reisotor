@@ -27,7 +27,7 @@ test('toggling the trip setting makes the packing category field required or opt
   const sharedList = page.locator('.list-section', { hasText: 'Gemeinsame Packliste' });
   const quickAddLabel = sharedList.getByPlaceholder('Neuer Gegenstand für 👥 Gemeinsame Packliste');
   await quickAddLabel.click();
-  await expect(sharedList.getByPlaceholder('Kategorie (optional)', { exact: true })).toBeVisible();
+  await expect(sharedList.getByPlaceholder('Kategorie', { exact: true })).toBeVisible();
 
   await quickAddLabel.fill('E2E Ohne Kategorie erlaubt');
   await quickAddLabel.press('Enter');

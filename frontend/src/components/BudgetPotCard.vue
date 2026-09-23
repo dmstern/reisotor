@@ -101,7 +101,7 @@ function updateAllocationAmount(category: string, value: string) {
     />
 
     <label :for="`budget-target-${budget.id}`" class="target-input">
-      Ziel (gesamt, optional)
+      Ziel (gesamt)
       <div class="target-input-row">
         <Input
           :id="`budget-target-${budget.id}`"

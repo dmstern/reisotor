@@ -357,7 +357,7 @@ async function remove(id: number) {
     >
       <form class="add-form" @submit.prevent="submitEdit">
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
         <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />

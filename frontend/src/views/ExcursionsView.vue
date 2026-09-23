@@ -3301,7 +3301,7 @@ async function deleteEditingSpot() {
               class="edit-form"
               @submit.prevent="editingExcursion !== null ? submitEditExcursion() : addExcursion()"
             >
-              <FormField icon="title" label="Titel">
+              <FormField icon="title" label="Titel" required>
                 <Input
                   v-model="activeExcursionForm.title"
                   type="text"
@@ -3312,15 +3312,15 @@ async function deleteEditingSpot() {
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
                   v-model="activeExcursionForm.note"
-                  placeholder="Notiz (optional)"
+                  placeholder="Notiz"
                   compact
                   expandable
                 />
               </FormField>
-              <FormField icon="date" label="Datum (optional – sonst „In Planung“)">
+              <FormField icon="date" label="Datum (sonst „In Planung“)">
                 <Input v-model="activeExcursionForm.date" type="date" />
               </FormField>
-              <FormField icon="tour" label="Rolle (optional)">
+              <FormField icon="tour" label="Rolle">
                 <Select v-model="activeExcursionForm.role">
                   <option value="">🎒 – Normaler Ausflug –</option>
                   <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
@@ -3485,7 +3485,7 @@ async function deleteEditingSpot() {
                 icon-group="categories"
                 modal-title="Spot-Bild bearbeiten"
               />
-              <FormField icon="title" label="Titel">
+              <FormField icon="title" label="Titel" required>
                 <Input v-model="activeSpotForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="category" label="Kategorie">
@@ -3494,7 +3494,7 @@ async function deleteEditingSpot() {
                   :options="spotCategoryOptions"
                   :icon-def-for="(c) => spotCategoryMeta(c).tabler"
                   :color-for="(c) => spotCategoryMeta(c).color"
-                  placeholder="Kategorie (optional, z. B. Restaurant – oder eigene erstellen)"
+                  placeholder="Kategorie (z. B. Restaurant – oder eigene erstellen)"
                 />
               </FormField>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
@@ -3526,7 +3526,7 @@ async function deleteEditingSpot() {
                   <Input
                     v-model="activeSpotForm.contact"
                     type="text"
-                    placeholder="Kontakt (Telefon/E-Mail/Text, optional)"
+                    placeholder="Kontakt (Telefon/E-Mail/Text)"
                   />
                 </FormField>
                 <div class="row">
@@ -3535,7 +3535,7 @@ async function deleteEditingSpot() {
                       v-model="activeSpotForm.amount"
                       type="number"
                       step="0.01"
-                      placeholder="Kosten (€, optional)"
+                      placeholder="Kosten (€)"
                     />
                   </FormField>
                   <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
@@ -3552,7 +3552,7 @@ async function deleteEditingSpot() {
                 :model-value="
                   editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
                 "
-                label="Standort (optional)"
+                label="Standort"
                 :icon="FORM_FIELD_ICONS.location"
                 icon-group="formFields"
                 class="location-fieldset"
@@ -3581,7 +3581,7 @@ async function deleteEditingSpot() {
                   <Input
                     v-model="activeSpotForm.maps_link"
                     type="url"
-                    placeholder="Maps-Link (Google/Apple) (optional)"
+                    placeholder="Maps-Link (Google/Apple)"
                     @blur="editingSpot !== null ? checkEditSpotMapsLink() : checkSpotMapsLink()"
                   />
                 </FormField>
@@ -3653,7 +3653,7 @@ async function deleteEditingSpot() {
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
                   v-model="activeSpotForm.note"
-                  placeholder="Notiz (optional)"
+                  placeholder="Notiz"
                   compact
                   expandable
                 />
@@ -3756,7 +3756,7 @@ async function deleteEditingSpot() {
                     </Teleport>
                   </div>
                   <div v-else class="new-spot-schedule-row">
-                    <FormField icon="date" label="Direkt für Datum einplanen (optional)">
+                    <FormField icon="date" label="Direkt für Datum einplanen">
                       <Input
                         type="date"
                         v-model="spotForm.scheduledDate"
@@ -4521,7 +4521,7 @@ async function deleteEditingSpot() {
             @update:model-value="(v) => !v && closeEditTrack()"
           >
             <form class="edit-form" @submit.prevent="submitEditTrack">
-              <FormField icon="title" label="Name (optional)">
+              <FormField icon="title" label="Name">
                 <Input
                   v-model="editTrackTitle"
                   type="text"

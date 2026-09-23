@@ -113,7 +113,7 @@ function close() {
         </label>
 
         <label for="auto-id-1788301175436-4">
-          Titel
+          Titel <span class="required-indicator" aria-hidden="true">*</span>
           <Input
             id="auto-id-1788301175436-4"
             v-model="form.title"
@@ -125,7 +125,7 @@ function close() {
         </label>
 
         <label for="auto-id-1788301175436-5">
-          Beschreibung
+          Beschreibung <span class="required-indicator" aria-hidden="true">*</span>
           <Textarea
             id="auto-id-1788301175436-5"
             v-model="form.description"

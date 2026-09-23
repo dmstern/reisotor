@@ -27,7 +27,7 @@ test.describe('Unterkunft-Spot: Aktionen, die für eine Unterkunft keinen Sinn e
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
     await modal.getByPlaceholder('Titel').fill(title);
     await modal
-      .getByPlaceholder('Kategorie (optional, z. B. Restaurant – oder eigene erstellen)')
+      .getByPlaceholder('Kategorie (z. B. Restaurant – oder eigene erstellen)')
       .fill('Unterkunft');
     await modal.locator('button[type="submit"]', { hasText: 'Hinzufügen' }).click();
     await expect(page.locator('.spot-card', { hasText: title }).first()).toBeVisible();

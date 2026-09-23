@@ -340,13 +340,13 @@ async function quickAdd(list: ListGroup, label: string) {
               <Combobox
                 v-model="quickAddCategories[list.key]"
                 :options="categories"
-                :placeholder="categoryRequired ? 'Kategorie' : 'Kategorie (optional)'"
+                placeholder="Kategorie"
                 size="sm"
               />
               <Combobox
                 v-model="quickAddSubcategories[list.key]"
                 :options="subcategories"
-                placeholder="Unterkategorie (optional)"
+                placeholder="Unterkategorie"
                 size="sm"
               />
               <label :for="`quick-add-qty-${list.key}`" class="qty-field quick-add-qty">
@@ -404,10 +404,15 @@ async function quickAdd(list: ListGroup, label: string) {
       @update:model-value="(v) => !v && (editingItem = null)"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Gegenstand" v-slot="{ id }">
+        <FormField icon="title" label="Gegenstand" required v-slot="{ id }">
           <Input :id="id" v-model="editForm.label" type="text" placeholder="Gegenstand" required />
         </FormField>
-        <FormField icon="category" label="Kategorie" v-slot="{ id }">
+        <FormField
+          icon="category"
+          label="Kategorie"
+          :required="Boolean(categoryRequired)"
+          v-slot="{ id }"
+        >
           <Combobox
             :id="id"
             v-model="editForm.category"
@@ -420,10 +425,10 @@ async function quickAdd(list: ListGroup, label: string) {
             :id="id"
             v-model="editForm.subcategory"
             :options="subcategories"
-            placeholder="Unterkategorie (optional, z. B. Outfit Tag 1)"
+            placeholder="Unterkategorie (z. B. Outfit Tag 1)"
           />
         </FormField>
-        <FormField icon="amount" label="Anzahl" v-slot="{ id }">
+        <FormField icon="amount" label="Anzahl" required v-slot="{ id }">
           <Input
             :id="id"
             v-model.number="editForm.quantity"

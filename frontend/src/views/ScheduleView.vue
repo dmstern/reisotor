@@ -1412,11 +1412,11 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
-        <FormField icon="title" label="Titel" v-slot="{ id }">
+        <FormField icon="title" label="Titel" required v-slot="{ id }">
           <Input :id="id" v-model="newTitle" type="text" placeholder="Titel" required />
         </FormField>
         <div class="row">
-          <FormField icon="date" label="Startdatum" v-slot="{ id }">
+          <FormField icon="date" label="Startdatum" required v-slot="{ id }">
             <Input :id="id" v-model="newStartDate" type="date" required />
           </FormField>
           <FormField icon="time" label="Startzeit" v-slot="{ id }">
@@ -1462,12 +1462,7 @@ function formatDate(date: string) {
               </Select>
             </FormField>
             <FormField v-if="!newLinkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
-              <Combobox
-                :id="id"
-                v-model="newLocation"
-                :options="placeNames"
-                placeholder="Ort (optional)"
-              />
+              <Combobox :id="id" v-model="newLocation" :options="placeNames" placeholder="Ort" />
             </FormField>
           </div>
           <FormField v-if="!newLinkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
@@ -1475,12 +1470,12 @@ function formatDate(date: string) {
               :id="id"
               v-model="newMapsLink"
               type="url"
-              placeholder="Maps-Link (Google/Apple) (optional)"
+              placeholder="Maps-Link (Google/Apple)"
             />
           </FormField>
         </CollapsibleFieldset>
         <FormField icon="note" label="Notiz">
-          <RichTextEditor v-model="newNote" placeholder="Notiz (optional)" compact expandable />
+          <RichTextEditor v-model="newNote" placeholder="Notiz" compact expandable />
         </FormField>
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
@@ -1497,11 +1492,11 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Titel" v-slot="{ id }">
+        <FormField icon="title" label="Titel" required v-slot="{ id }">
           <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
         <div class="row">
-          <FormField icon="date" label="Startdatum" v-slot="{ id }">
+          <FormField icon="date" label="Startdatum" required v-slot="{ id }">
             <Input :id="id" :model-value="editingItem?.date" type="date" disabled readonly />
           </FormField>
           <FormField icon="time" label="Startzeit" v-slot="{ id }">
@@ -1556,7 +1551,7 @@ function formatDate(date: string) {
                 :id="id"
                 v-model="editForm.location"
                 :options="placeNames"
-                placeholder="Ort (optional)"
+                placeholder="Ort"
               />
             </FormField>
           </div>
@@ -1565,17 +1560,12 @@ function formatDate(date: string) {
               :id="id"
               v-model="editForm.mapsLink"
               type="url"
-              placeholder="Maps-Link (Google/Apple) (optional)"
+              placeholder="Maps-Link (Google/Apple)"
             />
           </FormField>
         </CollapsibleFieldset>
         <FormField icon="note" label="Notiz">
-          <RichTextEditor
-            v-model="editForm.note"
-            placeholder="Notiz (optional)"
-            compact
-            expandable
-          />
+          <RichTextEditor v-model="editForm.note" placeholder="Notiz" compact expandable />
         </FormField>
         <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />

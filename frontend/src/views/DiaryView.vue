@@ -658,11 +658,11 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       @update:model-value="(v) => !v && closeForm()"
     >
       <form class="add-form" @submit.prevent="submitEntry">
-        <FormField icon="date" label="Datum" v-slot="{ id }">
+        <FormField icon="date" label="Datum" required v-slot="{ id }">
           <Input :id="id" v-model="form.date" type="date" required />
         </FormField>
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <Input :id="id" v-model="form.title" type="text" placeholder="Titel (optional)" />
+          <Input :id="id" v-model="form.title" type="text" placeholder="Titel" />
         </FormField>
         <RichTextEditor
           class="diary-editor"
@@ -925,11 +925,11 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
-        <FormField icon="date" label="Datum" v-slot="{ id }">
+        <FormField icon="date" label="Datum" required v-slot="{ id }">
           <Input :id="id" v-model="editForm.date" type="date" required />
         </FormField>
         <FormField icon="title" label="Titel" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel (optional)" />
+          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" />
         </FormField>
         <RichTextEditor class="diary-editor" v-model="editForm.content" />
         <p v-if="auth.user?.restricted" class="hint">

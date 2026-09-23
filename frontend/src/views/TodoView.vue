@@ -500,7 +500,7 @@ function hasTodoMeta(item: TodoItem): boolean {
     <form class="add-form card" @submit.prevent="addItem">
       <div class="quick-input-row">
         <div class="main-input-wrap">
-          <FormField icon="title" label="Aufgabe" v-slot="{ id }">
+          <FormField icon="title" label="Aufgabe" required v-slot="{ id }">
             <div class="input-inline-action-wrap">
               <Input
                 :id="id"
@@ -575,7 +575,7 @@ function hasTodoMeta(item: TodoItem): boolean {
           </FormField>
 
           <FormField icon="note" label="Notiz" v-slot="{ id }">
-            <Input :id="id" v-model="newForm.note" type="text" placeholder="Notiz (optional)" />
+            <Input :id="id" v-model="newForm.note" type="text" placeholder="Notiz" />
           </FormField>
         </div>
       </Accordion>
@@ -729,7 +729,7 @@ function hasTodoMeta(item: TodoItem): boolean {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Titel" v-slot="{ id }">
+        <FormField icon="title" label="Titel" required v-slot="{ id }">
           <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
         </FormField>
         <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
@@ -759,7 +759,7 @@ function hasTodoMeta(item: TodoItem): boolean {
           </Select>
         </FormField>
         <FormField icon="note" label="Notiz" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+          <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz" />
         </FormField>
         <DraftStatusBar
           :status="editDraft.status.value"

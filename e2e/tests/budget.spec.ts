@@ -97,7 +97,7 @@ test('a budget pot with only a target_amount (simple mode) shows a single meter 
   const potName = `E2E Einfacher Topf ${Date.now()}`;
   await page.getByRole('button', { name: 'Budget anlegen' }).click();
   await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(potName);
-  await page.getByPlaceholder('Gesamtziel € (optional)').fill('250');
+  await page.getByPlaceholder('Gesamtziel €').fill('250');
   await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
 
   const potCard = page.locator('.pot-card', { hasText: potName });

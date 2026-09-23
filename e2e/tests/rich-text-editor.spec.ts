@@ -75,7 +75,7 @@ test('toolbar is only visible when editor is focused', async ({ page }) => {
   await expect(toolbar).toBeVisible();
 
   // Click outside (title input): editor loses focus, toolbar must hide again
-  await modal.locator('input[placeholder="Titel (optional)"]').click();
+  await modal.locator('input[placeholder="Titel"]').click();
   await expect(editor).not.toBeFocused();
   await expect(toolbar).toBeHidden();
 

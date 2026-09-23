@@ -679,7 +679,7 @@ async function exportBackup() {
 
         <form class="form username-form" @submit.prevent="changeUsername">
           <label for="auto-id-1788301175449-26">
-            Benutzername
+            Benutzername <span class="required-indicator" aria-hidden="true">*</span>
             <Input
               id="auto-id-1788301175449-26"
               v-model="usernameForm.username"
@@ -726,7 +726,10 @@ async function exportBackup() {
         <form class="form" @submit.prevent="changePassword">
           <div class="field">
             <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-            <label for="profile-current-password">Aktuelles Passwort</label>
+            <label for="profile-current-password">
+              Aktuelles Passwort
+              <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
             <PasswordInput
               id="profile-current-password"
               v-model="passwordForm.currentPassword"
@@ -736,7 +739,10 @@ async function exportBackup() {
           </div>
           <div class="field">
             <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-            <label for="profile-new-password">Neues Passwort</label>
+            <label for="profile-new-password">
+              Neues Passwort
+              <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
             <PasswordInput
               id="profile-new-password"
               v-model="passwordForm.newPassword"
@@ -747,7 +753,10 @@ async function exportBackup() {
           </div>
           <div class="field">
             <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-            <label for="profile-confirm-password">Neues Passwort bestätigen</label>
+            <label for="profile-confirm-password">
+              Neues Passwort bestätigen
+              <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
             <PasswordInput
               id="profile-confirm-password"
               v-model="passwordForm.confirmPassword"

@@ -23,7 +23,7 @@ test.describe('Tagebuch: Datum eines Eintrags', () => {
     const todayValue = await newDateInput.inputValue();
     expect(todayValue).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 
-    await newModal.locator('input[type="text"][placeholder="Titel (optional)"]').fill(todayTitle);
+    await newModal.locator('input[type="text"][placeholder="Titel"]').fill(todayTitle);
     const newEditor = newModal.locator('.richtext-content[contenteditable="true"]');
     await newEditor.click();
     await expect(newEditor).toBeFocused();
@@ -39,7 +39,7 @@ test.describe('Tagebuch: Datum eines Eintrags', () => {
     await page.getByRole('button', { name: 'Neuer Eintrag' }).click();
     const secondModal = page.locator('.modal', { hasText: 'Neuer Tagebucheintrag' });
     await secondModal.locator('input[type="date"]').fill(pastDateStr);
-    await secondModal.locator('input[type="text"][placeholder="Titel (optional)"]').fill(pastTitle);
+    await secondModal.locator('input[type="text"][placeholder="Titel"]').fill(pastTitle);
     const secondEditor = secondModal.locator('.richtext-content[contenteditable="true"]');
     await secondEditor.click();
     await expect(secondEditor).toBeFocused();

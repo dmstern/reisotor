@@ -170,7 +170,7 @@ function onSubmit() {
       />
 
       <label :for="nameId">
-        Name des Urlaubs
+        Name des Urlaubs <span class="required-indicator" aria-hidden="true">*</span>
         <Input
           :id="nameId"
           v-model="form.name"
@@ -183,11 +183,11 @@ function onSubmit() {
       <CollapsibleFieldset v-model="showOptional" label="Optionale Angaben">
         <div class="dates-row">
           <label :for="startDateId">
-            Start (optional)
+            Start
             <Input :id="startDateId" v-model="form.start_date" type="date" />
           </label>
           <label :for="endDateId">
-            Ende (optional)
+            Ende
             <Input :id="endDateId" v-model="form.end_date" type="date" />
           </label>
         </div>
@@ -197,7 +197,7 @@ function onSubmit() {
         </p>
 
         <label :for="destinationId">
-          Ziel (optional)
+          Ziel
           <Input
             :id="destinationId"
             v-model="form.destination"
@@ -207,7 +207,7 @@ function onSubmit() {
         </label>
 
         <Card class="location-box">
-          <span class="field-label">Standort (optional)</span>
+          <span class="field-label">Standort</span>
           <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
           <label :for="mapsLinkId">
             Maps-Link (Google/Apple)

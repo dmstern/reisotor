@@ -378,7 +378,7 @@ const categoryColors = computed(() => {
             @update:model-value="(v) => !v && closeNewBudgetForm()"
           >
             <form class="new-budget-form edit-form" @submit.prevent="addBudget">
-              <FormField icon="title" label="Name" v-slot="{ id }">
+              <FormField icon="title" label="Name" required v-slot="{ id }">
                 <Input
                   :id="id"
                   v-model="newBudgetForm.name"
@@ -398,6 +398,7 @@ const categoryColors = computed(() => {
                   v-if="newBudgetForm.kind === 'personal'"
                   icon="person"
                   label="Person"
+                  required
                   v-slot="{ id }"
                 >
                   <Select :id="id" v-model="newBudgetForm.owner_id" required>
@@ -412,14 +413,14 @@ const categoryColors = computed(() => {
                 <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
                 {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
               </p>
-              <FormField icon="amount" label="Gesamtziel (optional)" v-slot="{ id }">
+              <FormField icon="amount" label="Gesamtziel" v-slot="{ id }">
                 <Input
                   :id="id"
                   v-model="newBudgetForm.target_amount"
                   type="number"
                   inputmode="decimal"
                   step="0.01"
-                  placeholder="Gesamtziel € (optional)"
+                  placeholder="Gesamtziel €"
                 />
               </FormField>
               <div class="actions-row">
@@ -467,7 +468,7 @@ const categoryColors = computed(() => {
             @update:model-value="(v) => !v && closeExpenseForm()"
           >
             <form class="edit-form add-form" @submit.prevent="submitExpense">
-              <FormField icon="title" label="Titel" v-slot="{ id }">
+              <FormField icon="title" label="Titel" required v-slot="{ id }">
                 <Input
                   :id="id"
                   v-model="expenseForm.title"
@@ -478,7 +479,7 @@ const categoryColors = computed(() => {
               </FormField>
 
               <div class="row">
-                <FormField icon="amount" label="Betrag" v-slot="{ id }">
+                <FormField icon="amount" label="Betrag" required v-slot="{ id }">
                   <Input
                     :id="id"
                     v-model="expenseForm.amount"
@@ -504,6 +505,7 @@ const categoryColors = computed(() => {
                   v-if="budgetStore.users.length > 1"
                   icon="shared"
                   label="Bezahlt von"
+                  required
                   v-slot="{ id }"
                 >
                   <Select :id="id" v-model="expenseForm.paid_by_user_id" required>
@@ -534,12 +536,7 @@ const categoryColors = computed(() => {
                   </Select>
                 </FormField>
                 <FormField icon="note" label="Notiz" v-slot="{ id }">
-                  <Input
-                    :id="id"
-                    v-model="expenseForm.note"
-                    type="text"
-                    placeholder="Notiz (optional)"
-                  />
+                  <Input :id="id" v-model="expenseForm.note" type="text" placeholder="Notiz" />
                 </FormField>
               </CollapsibleFieldset>
 
@@ -578,7 +575,7 @@ const categoryColors = computed(() => {
           >
             <form class="edit-form add-form" @submit.prevent="submitTransfer">
               <div class="row">
-                <FormField icon="person" label="Von" v-slot="{ id }">
+                <FormField icon="person" label="Von" required v-slot="{ id }">
                   <Select :id="id" v-model="transferForm.from_user_id" required>
                     <option value="" disabled>Von…</option>
                     <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
@@ -586,7 +583,7 @@ const categoryColors = computed(() => {
                     </option>
                   </Select>
                 </FormField>
-                <FormField icon="person" label="An" v-slot="{ id }">
+                <FormField icon="person" label="An" required v-slot="{ id }">
                   <Select :id="id" v-model="transferForm.to_user_id" required>
                     <option value="" disabled>An…</option>
                     <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
@@ -597,7 +594,7 @@ const categoryColors = computed(() => {
               </div>
 
               <div class="row">
-                <FormField icon="amount" label="Betrag" v-slot="{ id }">
+                <FormField icon="amount" label="Betrag" required v-slot="{ id }">
                   <Input
                     :id="id"
                     v-model="transferForm.amount"
@@ -621,12 +618,7 @@ const categoryColors = computed(() => {
                 icon-group="formFields"
               >
                 <FormField icon="note" label="Notiz" v-slot="{ id }">
-                  <Input
-                    :id="id"
-                    v-model="transferForm.note"
-                    type="text"
-                    placeholder="Notiz (optional)"
-                  />
+                  <Input :id="id" v-model="transferForm.note" type="text" placeholder="Notiz" />
                 </FormField>
               </CollapsibleFieldset>
 
@@ -648,7 +640,7 @@ const categoryColors = computed(() => {
       @update:model-value="(v) => !v && closeEditExpenseForm()"
     >
       <form class="edit-form add-form" @submit.prevent="submitEditExpense">
-        <FormField icon="title" label="Titel" v-slot="{ id }">
+        <FormField icon="title" label="Titel" required v-slot="{ id }">
           <Input
             :id="id"
             v-model="editExpenseForm.title"
@@ -659,7 +651,7 @@ const categoryColors = computed(() => {
         </FormField>
 
         <div class="row">
-          <FormField icon="amount" label="Betrag" v-slot="{ id }">
+          <FormField icon="amount" label="Betrag" required v-slot="{ id }">
             <Input
               :id="id"
               v-model="editExpenseForm.amount"
@@ -685,6 +677,7 @@ const categoryColors = computed(() => {
             v-if="budgetStore.users.length > 1"
             icon="shared"
             label="Bezahlt von"
+            required
             v-slot="{ id }"
           >
             <Select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
@@ -727,12 +720,7 @@ const categoryColors = computed(() => {
             </Select>
           </FormField>
           <FormField icon="note" label="Notiz" v-slot="{ id }">
-            <Input
-              :id="id"
-              v-model="editExpenseForm.note"
-              type="text"
-              placeholder="Notiz (optional)"
-            />
+            <Input :id="id" v-model="editExpenseForm.note" type="text" placeholder="Notiz" />
           </FormField>
         </CollapsibleFieldset>
 

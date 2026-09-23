@@ -110,9 +110,9 @@ test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
   if (await locationToggle.isVisible()) {
     await locationToggle.click();
   }
-  await page.getByPlaceholder('Ort (optional)').fill('Torre de Belém');
+  await page.getByPlaceholder('Ort').fill('Torre de Belém');
 
-  const mapsInput = page.getByPlaceholder('Maps-Link (Google/Apple) (optional)');
+  const mapsInput = page.getByPlaceholder('Maps-Link (Google/Apple)');
   await mapsInput.fill('https://www.google.com/maps/@38.6916,-9.2159,17z');
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
 

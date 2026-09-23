@@ -623,6 +623,12 @@ button {
   font-size: 1rem;
 }
 
+.required-indicator {
+  color: var(--color-danger, #ef4444);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
 /* ========================================================================= */
 /* GLOBAL BASE STYLES ONLY                                                  */
 /* Only document-level resets, typography elements (h1-h6, p, a),          */

@@ -105,7 +105,7 @@ async function submit() {
 <template>
   <Modal :model-value="modelValue" title="Neuen Nutzer anlegen" @update:model-value="close">
     <form @submit.prevent="submit" class="create-user-form">
-      <FormField icon="person" label="Benutzername">
+      <FormField icon="person" label="Benutzername" required>
         <Input
           id="create-username"
           v-model="username"
@@ -115,11 +115,11 @@ async function submit() {
         />
       </FormField>
 
-      <FormField icon="email" label="E-Mail-Adresse (optional)">
+      <FormField icon="email" label="E-Mail-Adresse">
         <Input id="create-email" v-model="email" type="email" placeholder="max@example.com" />
       </FormField>
 
-      <FormField icon="title" label="Initial-Passwort">
+      <FormField icon="title" label="Initial-Passwort" required>
         <PasswordInput
           id="create-password"
           v-model="password"
