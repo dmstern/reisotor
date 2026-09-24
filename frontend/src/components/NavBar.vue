@@ -404,13 +404,14 @@ function onLinkClick(event: MouseEvent) {
   justify-content: center;
   gap: 2px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   color: var(--color-text-muted);
   text-decoration: none;
   font-size: 0.7rem;
   white-space: nowrap;
   min-width: 44px;
+  min-height: 44px;
 }
 
 .link.active,

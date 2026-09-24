@@ -466,7 +466,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
     <form class="add-form card" @submit.prevent="addItem">
       <div class="quick-input-row">
         <div class="main-input-wrap">
-          <FormField icon="title" label="Artikel" v-slot="{ id }">
+          <FormField icon="title" label="Artikel" required v-slot="{ id }">
             <div class="input-inline-action-wrap">
               <Input :id="id" v-model="newLabel" type="text" placeholder="Neuer Artikel" required />
               <Button
@@ -505,12 +505,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
       <Accordion :expanded="showNewDetails" :inert-when-closed="false">
         <div class="form-details-grid">
           <FormField icon="shop" label="Shop" v-slot="{ id }">
-            <Combobox
-              :id="id"
-              v-model="newShop"
-              :options="knownShops"
-              placeholder="Shop/Laden (optional)"
-            />
+            <Combobox :id="id" v-model="newShop" :options="knownShops" placeholder="Shop/Laden" />
           </FormField>
           <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in" v-slot="{ id }">
             <Select :id="id" v-model="newBuyer">
@@ -528,15 +523,10 @@ function hasItemMeta(item: ShoppingItem): boolean {
             </Select>
           </FormField>
           <FormField icon="link" label="Link" v-slot="{ id }">
-            <Input
-              :id="id"
-              v-model="newLink"
-              type="url"
-              placeholder="Link (optional, z. B. Amazon)"
-            />
+            <Input :id="id" v-model="newLink" type="url" placeholder="Link (z. B. Amazon)" />
           </FormField>
           <FormField icon="note" label="Notiz" v-slot="{ id }">
-            <Input :id="id" v-model="newNote" type="text" placeholder="Notiz (optional)" />
+            <Input :id="id" v-model="newNote" type="text" placeholder="Notiz" />
           </FormField>
         </div>
       </Accordion>
@@ -697,7 +687,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Artikel" v-slot="{ id }">
+        <FormField icon="title" label="Artikel" required v-slot="{ id }">
           <Input :id="id" v-model="editForm.label" type="text" placeholder="Artikel" required />
         </FormField>
         <FormField icon="shop" label="Shop" v-slot="{ id }">
@@ -705,7 +695,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
             :id="id"
             v-model="editForm.shop"
             :options="knownShops"
-            placeholder="Shop/Laden (optional)"
+            placeholder="Shop/Laden"
           />
         </FormField>
         <FormField icon="period" label="Zeitraum" v-slot="{ id }">
@@ -716,10 +706,10 @@ function hasItemMeta(item: ShoppingItem): boolean {
           </Select>
         </FormField>
         <FormField icon="link" label="Link" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.link" type="url" placeholder="Link (optional)" />
+          <Input :id="id" v-model="editForm.link" type="url" placeholder="Link" />
         </FormField>
         <FormField icon="note" label="Notiz" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz (optional)" />
+          <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz" />
         </FormField>
         <DraftStatusBar
           :status="editDraft.status.value"
@@ -731,7 +721,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
           <Button
             type="button"
             variant="danger"
-            size="sm"
+            secondary
             :icon="ACTION_ICONS.delete"
             @click="deleteEditingItem"
           >

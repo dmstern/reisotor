@@ -84,10 +84,10 @@ async function onSubmit() {
         Urlaub möglich.
       </p>
 
-      <label for="auto-id-1788301175448-23">
+      <label for="login-username">
         Benutzername
         <Input
-          id="auto-id-1788301175448-23"
+          id="login-username"
           v-model="username"
           type="text"
           autocomplete="username"
@@ -95,15 +95,9 @@ async function onSubmit() {
         />
       </label>
 
-      <label for="auto-id-1788301175448-24" v-if="mode === 'register'">
+      <label for="register-email" v-if="mode === 'register'">
         E-Mail-Adresse
-        <Input
-          id="auto-id-1788301175448-24"
-          v-model="email"
-          type="email"
-          autocomplete="email"
-          required
-        />
+        <Input id="register-email" v-model="email" type="email" autocomplete="email" required />
       </label>
 
       <div class="field">
@@ -152,12 +146,24 @@ async function onSubmit() {
   position: relative;
   min-height: 100vh;
   display: flex;
-  gap: 1rem;
+  gap: var(--space-3);
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
   background: linear-gradient(160deg, var(--color-primary-tint), var(--color-bg) 60%);
+}
+
+.theme-toggle.icon {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
 }
 
 .login-card {
@@ -168,6 +174,12 @@ async function onSubmit() {
   align-items: center;
   gap: var(--space-3);
   text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
 }
 
 .logo {

@@ -108,6 +108,7 @@ export default defineConfig({
         SEED_PASS1: E2E_PASSWORD,
         SEED_USER2: E2E_USERNAME_2,
         SEED_PASS2: E2E_PASSWORD_2,
+        SCREENSHOT_MODE: process.env.SCREENSHOT_MODE ?? '',
       },
     },
     {

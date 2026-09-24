@@ -77,7 +77,7 @@ function openMembers(trip: Trip) {
             aria-label="Mitglieder verwalten"
             @click="openMembers(trip)"
           />
-          <EditButton small @click="openEdit(trip)" />
+          <EditButton @click="openEdit(trip)" />
         </div>
       </Card>
     </div>
@@ -192,7 +192,7 @@ function openMembers(trip: Trip) {
 
 .row-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   flex-shrink: 0;
 }
 

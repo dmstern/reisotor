@@ -19,6 +19,8 @@ const _props = withDefaults(
      * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
      */
     variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
+    /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
+    secondary?: boolean;
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
     size?: 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
@@ -46,6 +48,7 @@ const _props = withDefaults(
   }>(),
   {
     variant: 'primary',
+    secondary: false,
     size: 'md',
     shape: 'squircle',
     active: false,
@@ -64,6 +67,7 @@ const hasDefaultSlot = () =>
 
 const btnClasses = computed(() => [
   `btn--${_props.variant}`,
+  _props.secondary && _props.variant !== 'secondary' ? 'btn--secondary' : undefined,
   _props.size !== 'md' ? `btn--${_props.size}` : undefined,
   _props.shape !== 'squircle' ? `btn--${_props.shape}` : undefined,
   {
@@ -252,7 +256,7 @@ const btnClasses = computed(() => [
 .btn--danger.btn--secondary {
   background: transparent;
   color: var(--color-danger);
-  border-color: var(--color-danger);
+  border: var(--ui-border-width, 1px) solid var(--color-danger);
   box-shadow: none;
 }
 

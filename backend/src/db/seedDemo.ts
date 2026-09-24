@@ -54,9 +54,12 @@ const [user1, user2] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number }
 );
 
-const today = new Date();
-const startDate = addDays(today, 14);
-const endDate = addDays(today, 24);
+const isScreenshotMode =
+  process.env.SCREENSHOT_MODE === '1' || process.env.STATIC_DEMO_DATES === '1';
+
+const today = isScreenshotMode ? new Date('2026-08-07T10:00:00.000Z') : new Date();
+const startDate = isScreenshotMode ? new Date('2026-08-14T00:00:00.000Z') : addDays(today, 14);
+const endDate = isScreenshotMode ? new Date('2026-08-23T00:00:00.000Z') : addDays(today, 24);
 const LISBON = { lat: 38.7223, lng: -9.1393 };
 
 const tripResult = db
@@ -82,10 +85,50 @@ const tripId = tripResult.lastInsertRowid as number;
 const insertMembership = db.prepare(
   'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)'
 );
-const membershipNow = new Date().toISOString();
+const membershipNow = isScreenshotMode ? '2026-08-01T10:00:00.000Z' : new Date().toISOString();
 const allUsers = db.prepare('SELECT id FROM users').all() as { id: number }[];
 for (const u of allUsers) {
   insertMembership.run(tripId, u.id, membershipNow);
+}
+
+if (isScreenshotMode) {
+  // Zusätzliche Urlaube für den Trip-Switcher anlegen (nur angelegt, ohne Datenballast)
+  const extraTrip1 = db
+    .prepare(
+      `INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      'Alpenüberquerung E5',
+      'Oberstdorf – Meran',
+      '2026-09-05',
+      '2026-09-13',
+      null,
+      47.408,
+      10.279,
+      null
+    ).lastInsertRowid as number;
+
+  const extraTrip2 = db
+    .prepare(
+      `INSERT INTO trips (name, destination, start_date, end_date, maps_link, lat, lng, image_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      'Wochenende in Amsterdam',
+      'Amsterdam, Niederlande',
+      '2026-10-02',
+      '2026-10-04',
+      null,
+      52.3676,
+      4.9041,
+      null
+    ).lastInsertRowid as number;
+
+  for (const u of allUsers) {
+    insertMembership.run(extraTrip1, u.id, membershipNow);
+    insertMembership.run(extraTrip2, u.id, membershipNow);
+  }
 }
 
 // --- Budget: Kategorien-Allokationen des automatisch angelegten "Gemeinsamen Budgets" befüllen ---
@@ -402,12 +445,12 @@ const belemSpotId = insertSpot.run(
 db.prepare('INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, ?)').run(
   santaLuziaSpotId,
   user1.id,
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-06T12:00:00.000Z' : new Date().toISOString()
 );
 db.prepare('INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, ?)').run(
   belemSpotId,
   user2.id,
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-06T12:30:00.000Z' : new Date().toISOString()
 );
 db.prepare(
   'INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
@@ -415,7 +458,7 @@ db.prepare(
   belemSpotId,
   user2.id,
   'Unbedingt früh morgens hin, bevor die Reisebusse kommen!',
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-06T14:15:00.000Z' : new Date().toISOString()
 );
 
 // --- Reise/Transport: Hin- und Rückflug (#176: Touren mit gesetzter role statt einer eigenen
@@ -552,7 +595,7 @@ db.prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?
 db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
   panoramaTourId,
   user2.id,
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-06T15:00:00.000Z' : new Date().toISOString()
 );
 db.prepare(
   'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
@@ -560,7 +603,7 @@ db.prepare(
   panoramaTourId,
   user2.id,
   'Die Route ist perfekt für den ersten vollen Tag!',
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-06T16:00:00.000Z' : new Date().toISOString()
 );
 
 // --- Teilstrecken (excursion_legs) für die Panoramatour ---
@@ -663,11 +706,16 @@ db.prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?
 db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
   belemIdeaId,
   user2.id,
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-06T15:30:00.000Z' : new Date().toISOString()
 );
 db.prepare(
   'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
-).run(belemIdeaId, user2.id, 'Klingt gut, sollten wir früh starten!', new Date().toISOString());
+).run(
+  belemIdeaId,
+  user2.id,
+  'Klingt gut, sollten wir früh starten!',
+  isScreenshotMode ? '2026-08-06T16:30:00.000Z' : new Date().toISOString()
+);
 
 // --- Tagebuch ---
 const diaryResult = db
@@ -680,13 +728,13 @@ const diaryResult = db
     'Ankunft in Lissabon',
     'Nach dem Flug direkt ins Hotel und dann noch einen Abendspaziergang durch die Alfama gemacht. Traumhafter Blick vom Miradouro!',
     JSON.stringify(['/demo/lissabon.jpg', '/demo/lissabon.jpg', '/demo/lissabon.jpg']),
-    new Date().toISOString()
+    isScreenshotMode ? '2026-08-14T20:30:00.000Z' : new Date().toISOString()
   );
 const diaryEntryId = diaryResult.lastInsertRowid as number;
 db.prepare('INSERT INTO diary_likes (entry_id, user_id, created_at) VALUES (?, ?, ?)').run(
   diaryEntryId,
   user2.id,
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-14T21:00:00.000Z' : new Date().toISOString()
 );
 db.prepare(
   'INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
@@ -694,7 +742,7 @@ db.prepare(
   diaryEntryId,
   user2.id,
   'Sieht traumhaft aus, ich freu mich schon!',
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-14T21:15:00.000Z' : new Date().toISOString()
 );
 
 // --- Notizen ---
@@ -705,9 +753,45 @@ db.prepare(
   'WLAN & Notfallkontakte',
   'Hotel-WLAN: siehe Zimmerkarte. Notfallnummer Portugal: 112.',
   user1.id,
-  new Date().toISOString()
+  isScreenshotMode ? '2026-08-05T11:35:00.000Z' : new Date().toISOString()
 );
 
+// --- Tracks (Aufzeichnungen) ---
+const trackResult = db
+  .prepare(
+    `INSERT INTO location_tracks (trip_id, user_id, title, visibility, started_at, ended_at)
+     VALUES (?, ?, ?, 'shared', ?, ?)`
+  )
+  .run(
+    tripId,
+    user1.id,
+    'Abendspaziergang am Tejo',
+    isScreenshotMode
+      ? '2026-08-15T18:30:00.000Z'
+      : new Date(today.getTime() - 86400000).toISOString(),
+    isScreenshotMode
+      ? '2026-08-15T19:45:00.000Z'
+      : new Date(today.getTime() - 82000000).toISOString()
+  );
+const trackId = trackResult.lastInsertRowid as number;
+
+const insertPoint = db.prepare(
+  'INSERT INTO location_track_points (track_id, lat, lng, recorded_at, accuracy) VALUES (?, ?, ?, ?, ?)'
+);
+
+const sampleTrackPoints = [
+  { lat: 38.7061, lng: -9.145, t: '2026-08-15T18:30:00.000Z' },
+  { lat: 38.7058, lng: -9.1415, t: '2026-08-15T18:40:00.000Z' },
+  { lat: 38.7071, lng: -9.1365, t: '2026-08-15T18:55:00.000Z' },
+  { lat: 38.7085, lng: -9.1325, t: '2026-08-15T19:15:00.000Z' },
+  { lat: 38.711, lng: -9.128, t: '2026-08-15T19:35:00.000Z' },
+  { lat: 38.7125, lng: -9.124, t: '2026-08-15T19:45:00.000Z' },
+];
+
+for (const p of sampleTrackPoints) {
+  insertPoint.run(trackId, p.lat, p.lng, isScreenshotMode ? p.t : new Date().toISOString(), 5.0);
+}
+
 console.log(
-  `Demo-Seed abgeschlossen: Trip "${tripId}" mit Unterkunft, Reise, Kalender, Packliste, ToDo-Liste, Einkaufsliste, Ausflug/Spots, Budget, Tagebuch und Notiz angelegt.`
+  `Demo-Seed abgeschlossen: Trip "${tripId}" mit Unterkunft, Reise, Kalender, Packliste, ToDo-Liste, Einkaufsliste, Ausflug/Spots, Budget, Tagebuch, Notiz und Tracks angelegt.`
 );

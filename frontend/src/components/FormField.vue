@@ -11,7 +11,18 @@ import AppIcon from './AppIcon.vue';
 // icon: entweder ein Konzept-Key aus FORM_FIELD_ICONS (Normalfall) oder ein fertiges IconDef für
 // Einzelfälle ohne geteiltes Konzept - bewusst kein roher Emoji-String mehr (siehe DESIGN.md
 // "Formularfelder"), damit jede Aufrufstelle zwischen Emoji/Tabler-Icons umschaltbar bleibt.
-const props = defineProps<{ icon?: FormFieldIconKey | IconDef; label: string }>();
+const props = defineProps<{
+  icon?: FormFieldIconKey | IconDef;
+  label: string;
+  required?: boolean;
+}>();
+
+const isRequired = computed(() => Boolean(props.required || props.label.trim().endsWith('*')));
+const displayLabel = computed(() => {
+  const trimmed = props.label.trim();
+  return trimmed.endsWith('*') ? trimmed.slice(0, -1).trim() : props.label;
+});
+
 const resolvedIcon = computed<IconDef | undefined>(() => {
   if (!props.icon) return undefined;
   return typeof props.icon === 'string' ? FORM_FIELD_ICONS[props.icon] : props.icon;
@@ -31,7 +42,8 @@ const id = useId();
         :icon="resolvedIcon"
         group="formFields"
       />
-      {{ label }}
+      {{ displayLabel
+      }}<span v-if="isRequired" class="required-indicator" aria-hidden="true">*</span>
     </label>
     <slot :id="id" />
   </div>
@@ -62,5 +74,11 @@ const id = useId();
 .form-field-icon {
   font-size: 0.95rem;
   line-height: 1;
+}
+
+.required-indicator {
+  color: var(--color-danger, #ef4444);
+  font-weight: 700;
+  margin-left: 1px;
 }
 </style>

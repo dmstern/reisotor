@@ -1941,15 +1941,9 @@ const cardRotation = computed(() => {
 }
 
 .date-check-item.checked {
-  background: rgba(46, 125, 50, 0.08);
-  border-color: rgba(46, 125, 50, 0.4);
-  color: #2e7d32;
-}
-
-:root[data-theme='dark'] .date-check-item.checked {
-  background: rgba(76, 175, 80, 0.15);
-  border-color: rgba(76, 175, 80, 0.4);
-  color: #81c784;
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+  color: var(--color-success);
 }
 
 .date-check-date {

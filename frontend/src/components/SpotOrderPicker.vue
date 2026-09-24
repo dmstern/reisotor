@@ -601,6 +601,10 @@ function onDeleteLeg() {
 
 .spot-title {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.9rem;
 }
 
@@ -620,6 +624,10 @@ function onDeleteLeg() {
 
 .spot-option-title {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .spot-option-likes {

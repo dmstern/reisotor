@@ -50,3 +50,22 @@ export const WithDateIcon: Story = {
     `,
   }),
 };
+
+export const Required: Story = {
+  args: {
+    label: 'Pflichtfeld',
+    icon: 'title',
+    required: true,
+  },
+  render: (args) => ({
+    components: { FormField, Input },
+    setup() {
+      return { args };
+    },
+    template: `
+      <FormField v-bind="args">
+        <Input placeholder="Eingabe erforderlich..." required />
+      </FormField>
+    `,
+  }),
+};

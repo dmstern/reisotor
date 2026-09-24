@@ -147,7 +147,8 @@ const store = useBudgetStore();
   justify-content: space-between;
   font-size: 0.9rem;
   padding: 4px var(--space-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   transition: background 0.15s ease;
 }
 

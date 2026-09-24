@@ -244,6 +244,8 @@ jobs:
         run: npm ci
 
       - name: Generate Screenshots
+        env:
+          SCREENSHOT_MODE: '1'
         run: |
           npm --prefix frontend run build:landing-dist
           npm --prefix e2e run generate:screenshots

@@ -209,6 +209,7 @@ function useOwnLocation() {
       <IconButton
         variant="floating"
         shape="circle"
+        size="lg"
         class="locate-btn"
         :class="{ locating: locatingSelf }"
         :disabled="locatingSelf"

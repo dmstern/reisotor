@@ -684,7 +684,7 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .excursion-card:not(.expanded):hover {
-  transform: translateY(-1px) scale(1.005);
+  transform: translateY(-4px) scale(1.015);
   border-color: var(--excursion-theme-color);
   box-shadow: var(--shadow-md);
   z-index: 5;

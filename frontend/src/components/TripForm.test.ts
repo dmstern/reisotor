@@ -80,6 +80,8 @@ describe('TripForm', () => {
     );
     expect(deleteBtn).toBeDefined();
     expect(deleteBtn?.classList.contains('btn--danger')).toBe(true);
+    expect(deleteBtn?.classList.contains('btn--secondary')).toBe(true);
+    expect(deleteBtn?.classList.contains('btn--sm')).toBe(false);
     cleanUp();
   });
 
