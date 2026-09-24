@@ -721,7 +721,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
           <Button
             type="button"
             variant="danger"
-            size="sm"
+            secondary
             :icon="ACTION_ICONS.delete"
             @click="deleteEditingItem"
           >

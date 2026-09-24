@@ -46,4 +46,13 @@ describe('Button primitive', () => {
     expect(html).toContain('btn--card-action');
     expect(html).toContain('Papierkorb öffnen');
   });
+
+  it('renders btn--danger and btn--secondary when secondary is true with variant danger', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'danger', secondary: true }, () => 'Löschen'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--danger');
+    expect(html).toContain('btn--secondary');
+  });
 });

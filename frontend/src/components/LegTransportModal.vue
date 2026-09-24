@@ -256,17 +256,17 @@ function onDelete() {
       </p>
 
       <div class="actions-row">
-        <div class="spacer"></div>
         <Button
           v-if="canDelete"
           type="button"
           variant="danger"
-          size="sm"
+          secondary
           :icon="ACTION_ICONS.delete"
           @click="onDelete"
         >
           Löschen
         </Button>
+        <div class="spacer"></div>
         <Button
           type="button"
           variant="ghost"

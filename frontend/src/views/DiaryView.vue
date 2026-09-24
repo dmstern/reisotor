@@ -1036,7 +1036,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             v-if="editingEntry?.author_id === auth.user?.id"
             type="button"
             variant="danger"
-            size="sm"
+            secondary
             :icon="ACTION_ICONS.delete"
             @click="deleteEditingEntry"
           >

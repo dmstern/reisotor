@@ -276,7 +276,7 @@ function onSubmit() {
         v-if="canDelete"
         type="button"
         variant="danger"
-        size="sm"
+        secondary
         :icon="ACTION_ICONS.delete"
         @click="emit('delete')"
       >

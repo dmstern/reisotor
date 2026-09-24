@@ -366,7 +366,7 @@ async function remove(id: number) {
           <Button
             type="button"
             variant="danger"
-            size="sm"
+            secondary
             :icon="ACTION_ICONS.delete"
             @click="deleteEditingNote"
           >

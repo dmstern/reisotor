@@ -3393,7 +3393,7 @@ async function deleteEditingSpot() {
                   v-if="editingExcursion !== null"
                   type="button"
                   variant="danger"
-                  size="sm"
+                  secondary
                   :icon="ACTION_ICONS.delete"
                   @click="deleteEditingExcursion"
                 >
@@ -3877,7 +3877,7 @@ async function deleteEditingSpot() {
                   v-if="editingSpot !== null"
                   type="button"
                   variant="danger"
-                  size="sm"
+                  secondary
                   :icon="ACTION_ICONS.delete"
                   @click="deleteEditingSpot"
                 >
@@ -4539,7 +4539,7 @@ async function deleteEditingSpot() {
                 <Button
                   type="button"
                   variant="danger"
-                  size="sm"
+                  secondary
                   :icon="ACTION_ICONS.delete"
                   @click="deleteEditingTrack"
                 >

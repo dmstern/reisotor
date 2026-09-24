@@ -80,6 +80,7 @@ function removeImage() {
             v-if="modelValue"
             type="button"
             variant="danger"
+            secondary
             :icon="ACTION_ICONS.delete"
             @click="removeImage"
           >

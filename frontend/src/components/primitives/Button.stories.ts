@@ -72,6 +72,20 @@ export const Danger: Story = {
   }),
 };
 
+export const DangerSecondary: Story = {
+  args: {
+    variant: 'danger',
+    secondary: true,
+  },
+  render: (args) => ({
+    components: { Button },
+    setup() {
+      return { args };
+    },
+    template: '<Button v-bind="args">Danger Secondary</Button>',
+  }),
+};
+
 export const CardAction: Story = {
   args: {
     variant: 'card-action',

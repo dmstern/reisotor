@@ -10,6 +10,8 @@ defineProps<{
   icon?: IconDef;
   /** Variante: 'ghost', 'secondary', 'danger', 'primary', 'card-action', 'floating' */
   variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'floating';
+  /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
+  secondary?: boolean;
   /** Größe des Buttons: 'sm' (30px), 'md' (38px), 'lg' (46px). */
   size?: 'sm' | 'md' | 'lg';
   /** Form-Variante: 'squircle' (Standard) oder 'circle' (kreisrund). */
@@ -35,6 +37,7 @@ const emit = defineEmits<{
   <Button
     :icon="icon"
     :variant="variant"
+    :secondary="secondary"
     :size="size"
     :shape="shape"
     :active="active"

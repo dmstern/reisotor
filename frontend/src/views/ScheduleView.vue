@@ -1573,7 +1573,7 @@ function formatDate(date: string) {
           <Button
             type="button"
             variant="danger"
-            size="sm"
+            secondary
             :icon="ACTION_ICONS.delete"
             @click="deleteEditingItem"
           >
