@@ -584,17 +584,22 @@ function nextPage() {
 
 // Übernimmt beim Wechsel der Granularität den bisher sichtbaren Zeitraum als neuen Anker, statt
 // unvermittelt zu einem unabhängigen Datum zu springen:
-// - Wechsel zu Monat: übernimmt das ausgewählte Datum (falls sichtbar) bzw. die erste sichtbare Woche
-// - Wechsel zu Woche / 2 Wochen: übernimmt das ausgewählte Datum (falls im Monat) bzw. den 1. des Monats
+// - Wechsel zu Monat: übernimmt selectedDate (falls in der angezeigten Woche) bzw. die angezeigte Woche
+// - Wechsel zu Woche / 2 Wochen: übernimmt selectedDate (falls im angezeigten Monat) bzw. den 1. des Monats
 watch(granularity, (next, prev) => {
   if (next === 'month' && prev !== 'month') {
-    const firstVisible = visibleWeeks.value[0]?.[0]?.date;
-    const isSelectedVisible =
-      selectedDate.value &&
-      visibleWeeks.value.some((w) => w.some((d) => d.date === selectedDate.value));
-    const anchor = isSelectedVisible
-      ? selectedDate.value!
-      : (firstVisible ?? toIso(weekAnchor.value));
+    const weekStartIso = toIso(startOfWeek(weekAnchor.value));
+    const count = prev === 'twoWeeks' ? 14 : 7;
+    const endDate = new Date(startOfWeek(weekAnchor.value));
+    endDate.setDate(endDate.getDate() + count - 1);
+    const weekEndIso = toIso(endDate);
+
+    const isSelectedInWeek =
+      !!selectedDate.value &&
+      selectedDate.value >= weekStartIso &&
+      selectedDate.value <= weekEndIso;
+
+    const anchor = isSelectedInWeek ? selectedDate.value! : toIso(weekAnchor.value);
     monthAnchor.value = startOfMonth(new Date(`${anchor}T00:00:00`));
   } else if (prev === 'month' && next !== 'month') {
     const yearMonth = `${monthAnchor.value.getFullYear()}-${String(monthAnchor.value.getMonth() + 1).padStart(2, '0')}`;
