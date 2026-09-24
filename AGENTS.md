@@ -16,72 +16,19 @@ Arbeits-/Workflow-Konventionen.
 
 ## Setup & Befehle
 
-```bash
-# Root-Convenience-Befehle (können direkt aus dem Wurzelverzeichnis ausgeführt werden)
-npm run dev             # Backend & Frontend parallel starten (concurrently)
-npm run dev:backend     # Nur Backend Dev-Server starten (http://localhost:3000)
-npm run dev:frontend    # Nur Frontend Dev-Server starten (http://localhost:5173)
-npm run dev:demo        # Frontend im backend-losen Demo-Modus starten
-npm run seed            # DB Seed (idempotent, 2 Nutzer + leere Trip-Zeile)
-npm run seed:demo       # DB Seed (kompletter Beispiel-Urlaub)
-npm run typecheck       # Frontend Typecheck (vue-tsc --noEmit)
-npm run typecheck:all   # Typecheck für Frontend + Backend
-npm run test            # Backend & Frontend Unit-Tests
-npm run test:backend    # Backend Unit-Tests (vitest run)
-npm run test:frontend   # Frontend Unit-Tests (vitest run)
-npm run test:e2e        # E2E-Tests (playwright test)
-npm run test:a11y       # Accessibility-Tests mit Axe inkl. Farbkontraste (playwright test tests/accessibility.spec.ts)
-npm run test:all        # Backend + Frontend + E2E Tests
-npm run test:audit      # Adversarial UI-Layout Audit mit Viewport- & Drawer-Matrix
-npm run build           # Backend + Frontend Build
-npm run build:backend   # Backend Build (tsc -> backend/dist)
-npm run build:frontend  # Frontend Build (vue-tsc --noEmit + vite build -> frontend/dist)
-npm run build:demo      # Demo-Mode Statik-Build
-npm run build:landing   # Landingpage Statik-Build
-npm run generate:screenshots:docker # Generiert saubere Prod Baseline-Screenshots in Full HD unter docs/screenshots/ (Cross-OS CI kompatibel)
+Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.json`](package.json) (`npm run dev`, `test`, `build`, `typecheck`, `lint`, `format`, `seed` etc.). Bei Bedarf direkt in `package.json` nachschlagen.
 
-# Backend (Fastify + TypeScript + better-sqlite3, /backend)
-cd backend
-npm install
-npm run seed        # legt 2 Nutzer + leere Trip-Zeile an (idempotent)
-npm run seed:demo   # zusätzlich kompletter Beispiel-Urlaub mit Daten in allen Bereichen
-npm run dev         # tsx watch auf http://localhost:3000
-npm run build       # tsc -> backend/dist
-npm test            # vitest run; npm run test:watch für Watch-Mode
+- **Einzelne Tests ausführen:** `npx -y vitest run <pfad-zur-datei>` bzw. `npx -y vitest run -t "<name>"` (Backend/Frontend) oder `npx -y playwright test <pfad-zur-spec>` (E2E).
+- **Voraussetzungen:** Node.js 20+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md`.
 
-# Frontend (Vite + Vue 3 + TypeScript, /frontend)
-cd frontend
-npm install
-npm run dev      # Vite auf http://localhost:5173, proxied /api ans Backend
-npm run dev:demo # Vite im backend-losen Demo-Modus (Hot-Reloading, kein Backend nötig)
-npm run build    # vue-tsc --noEmit + vite build -> frontend/dist
-npm test         # vitest run
+## UI-Audits & Layout-Testing
 
-# E2E (Playwright, /e2e) — siehe eigener Abschnitt unten
-cd e2e && npm install && npx -y playwright install chromium && npm test
-```
+**Kurz-Befehle für UI-Audits:**
 
-Einzelnen Test ausführen: `npx -y vitest run <pfad-zur-datei>` bzw. `npx -y vitest run -t "<name>"`
-(aus `backend/` oder `frontend/`); für E2E `npx -y playwright test <pfad-zur-spec>` aus `e2e/`.
-
-Node.js 20+ sowie `make`/`gcc`/`python3` nötig (native Module `better-sqlite3`, `bcrypt`). Volle
-Setup-/Deploy-/Env-Var-Details: `README.md`.
-
-## Autonome UI-Audit-Kurzbefehle & Trigger-Phrasen
-
-Reisotor besitzt ein spezialisiertes E2E-Layout-Audit-System (`e2e/tests/scratch/audit-template.spec.ts` & `docs/AUDIT_GUIDE.md`), um visuelle Regressionen, Z-Index-Kollisionen und Container-Query-Probleme bei stufenlos verstellbaren Seitenelementen abzufangen. Wenn der Nutzer nach einem UI-, Layout- oder App-Audit fragt, MUSS der Agent sofort folgendes Protokoll autonom ausführen:
-
-1. **Trigger: „Mach ein UI-Audit zu dem Change von eben“** (oder _„UI-Audit machen“_, _„Layout-Audit für die Änderungen“_):
-   - **Route ermitteln:** Prüfe `git status` / `git diff`, ermittle die modifizierte Frontend-Komponente und die Test-Route (`SpotsView.vue` -> `/trip/1/spots`, `ExcursionsView.vue` -> `/trip/1/excursions`, `PackingListView.vue` -> `/trip/1/packing`, `BudgetView.vue` -> `/trip/1/budget`, `DashboardView.vue` -> `/trip/1`, `SettingsView.vue` -> `/settings`, `LoginView.vue` -> `/login`).
-   - **Audit ausführen:** Führe `AUDIT_ROUTE=<route> AUDIT_SCREENSHOTS=true npm run test:audit` aus.
-   - **Prüfung:** Prüfe die 3 Viewports (320px `narrowMobile`, 390px `mobile`, 1280px `desktop` inkl. Drawer-Matrix & 500px Enge-Stresstest). Binde Screenshots in den Walkthrough ein und behebe gefundene Layout-Kollisionen direkt defensiv.
-2. **Trigger: „Mach ein komplettes App-Audit“** (oder _„Full App Audit“_, _„Prerelease App Audit“_, _„Vollständiges UI-Audit“_):
-   - **Niemals monolithisch im selben Kontext!** Teile die App sofort in 4 Domänen auf (Divide & Conquer via Subagents oder geordnet sequentiell):
-     - **Team 1 (Dashboard & Trips):** `/trip/1`, `/trips`
-     - **Team 2 (Spots & Touren):** `/trip/1/spots`, `/trip/1/excursions`
-     - **Team 3 (Listen & Content):** `/trip/1/packing`, `/trip/1/todo`, `/trip/1/diary`
-     - **Team 4 (Finanzen & Auth/Settings):** `/trip/1/budget`, `/settings`, `/profile`, `/login`
-   - Jedes Team führt `AUDIT_ROUTE=<route> npm run test:audit` aus. Erstelle einen konsolidierten Audit-Report. Details siehe `docs/AUDIT_GUIDE.md`.
+- `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
+- Bei UI-Änderungen: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen
+- **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
+- **Prompt-Vorlagen:** `docs/AUDIT_PROMPTS.md` (Gezielter View-Audit, Pre-Release-Audit via Subagents)
 
 ## Typecheck, Linting & Formatting
 
@@ -100,405 +47,67 @@ npm run lint         # ESLint inkl. vuejs-accessibility
 - Falls `npm run build` abbricht mit `vue-tsc: Kommando nicht gefunden`, zuerst `cd frontend && npm install` ausführen.
 - Falls `npx` zwingend für Befehle genutzt werden muss, immer die Option `-y` mitgeben (`npx -y ...`).
 
-## Sparsam mit Subagenten
-
-Bei klar umrissenen Änderungen in diesem Repo (bekannte Datei(en)/Fehlermeldung, überschaubarer
-Scope) direkt grep/Read/Edit verwenden statt einen Explore-/Plan-Subagenten zu spawnen — jeder
-Spawn re-derived den kompletten Kontext neu und kostet dadurch oft mehr Tokens als die direkte
-Suche selbst. Subagenten bleiben sinnvoll, wenn der Scope tatsächlich unklar/groß ist oder mehrere
-unabhängige Bereiche parallel durchsucht werden müssen — dort leidet sonst die Trefferquote.
-
-## Marketing-Landingpage + Demo-Build (GitHub Pages)
-
-Neben dem normalen `npm run build` (echtes Backend-Deploy, siehe `.github/workflows/ci.yml`)
-gibt es zwei zusätzliche statische Frontend-Builds für GitHub Pages (`frontend/landing.html`+
-`frontend/src/views/LandingView.vue` sowie einen backend-losen Demo-Modus, siehe
-`frontend/src/demo/`), veröffentlicht über `.github/workflows/pages-deploy.yml` bei jedem
-Prod-Release-Tag. `frontend/npm run build:landing`/`build:demo` lokal bauen, `npm run dev:demo`
-(oder `VITE_DEMO_MODE=true npm run dev`) für den Demo-Modus gegen den normalen Dev-Server. Bei PRs mit größeren UI-/Feature-
-Änderungen prüfen, ob `frontend/public/landing/*`-Screenshots und die Feature-Texte in
-`LandingView.vue` noch aktuell sind (Screenshot-Flow: kurze Playwright-Scratch-Spec wie bei den
-PR-Screenshots, siehe unten) — bewusst nur als manueller Hinweis, kein CI-Enforcement.
-
-Beim Neuaufnehmen von `frontend/public/landing/screenshot-dashboard-*`/`screenshot-mobile-*`
-(gegen `VITE_DEMO_MODE=true npm run dev`, siehe oben) auf folgende Checkliste achten — sonst
-schleichen sich Demo-/Dev-Artefakte ein, die im echten Marketing-Bild nichts verloren haben:
-
-- **Wetter sichtbar**: `utils/weather.ts`'s `fetchWeatherForecast()` liefert im Demo-Modus
-  (`DEMO_MODE`) ein festes Fake-Muster statt eines echten Open-Meteo-Fetches (der im Sandbox-Playwright
-  ohne Internetzugriff sonst scheitert und "Wetterdaten konnten nicht geladen werden" zeigt) — sollte
-  das je entfernt/geändert werden, sicherstellen, dass die Wetter-Karte im Screenshot trotzdem gefüllt ist.
-- **Theme-Variante**: je einen Screenshot mit `colorScheme: 'light'` UND `'dark'` aufnehmen
-  (`browser.newPage({ colorScheme })` in Playwright) — `LandingView.vue` bindet sie per
-  `<picture>`/`<source media="(prefers-color-scheme: dark)">` ein.
-- **Demo-Banner ausblenden**: `.demo-banner { display: none !important; }` per
-  `page.addStyleTag(...)` vor dem Screenshot — der Banner ist ein Hinweis für die echte Live-Demo,
-  kein gewollter Bestandteil des Marketing-Bilds.
-- **PWA-Installationshinweis ausblenden**: ebenso `.pwa-pill.install { display: none !important; }`.
-- **Kein DEV-Badge/keine orange Header-Umrandung**: setzt voraus, dass `demoClient.ts`'s
-  `/build-info`-Stub `environment: 'production'` liefert (siehe Issue #219) — bei einem lokalen Demo-
-  Dev-Server sollte das automatisch der Fall sein, sofern `main` aktuell ist.
-
 ## Clean Code, Software-Design & Konsistenz (SoC, SRP, DRY, KISS)
 
-Für alle Änderungen – egal ob neue Features, Refactorings oder Bugfixes – gelten folgende
-Software-Design-Prinzipien als verbindliche Richtschnur:
+Für alle Änderungen gelten folgende Software-Design-Prinzipien als verbindliche Richtschnur:
 
-- **Clean Code**: Code muss selbsterklärend, leicht lesbar und intentionsklar sein.
-  Aussagekräftige Variablen- und Funktionsnamen verwenden, keine magischen Zahlen/Strings ohne
-  Kontext, kleine und fokussierte Funktionen statt monolithischer Blöcke schreiben. Keinen toten
-  Code, auskommentierte Altlasten oder ungenutzte Imports im Codebase hinterlassen.
-- **Separation of Concerns (SoC)**: Klare Trennung der Verantwortlichkeiten:
-  - _Views / Komponenten_: Reine Darstellung, Layout, Zugänglichkeit (ARIA) und Ereignis-Trigger.
-  - _Pinia-Stores (`frontend/src/stores/`)_: Globaler Anwendungs- und UI-Zustand, Caching und Synchronisation.
-  - _Composables & Utils (`frontend/src/utils/`)_: Fachliche Berechnungen, Formatierungen, Parsing und
-    wiederverwendbare Hilfslogik (isoliert testbar, frei von UI-Bindings).
-  - _Primitives (`components/primitives/`)_: Generische UI-Bausteine (Buttons, DropdownItem, PickerMenu,
-    Badges, Cards), entkoppelt von Fachdomänen.
-  - _Backend_: Routen (`backend/src/routes/`) für Request-Handling, Auth-Gating und Validierung;
-    Datenbankintegrität und SQL-Queries in `backend/src/db/`.
-- **Single Responsibility Principle (SRP)**: Jede Komponente, Funktion und jedes Modul hat genau
-  eine klar abgegrenzte Aufgabe. Eine Popover-Komponente kümmert sich um Container, Backdrop und
-  Tastatur-Events, nicht um fachliche Detailaktionen; ein Datumsformatierer formatiert Daten und
-  führt keine Netzwerk-Calls aus.
-- **KISS-Prinzip (Keep It Simple, Stupid) & YAGNI (You Aren't Gonna Need It)**: Immer die einfachste,
-  direkteste Lösung wählen, die das Problem zuverlässig löst. Kein Über-Engineering, keine unnötigen
-  Abstraktionsschichten, Wrapper oder verfrühten Verallgemeinerungen für hypothetische Zukunftsszenarien.
-  Bestehende, bewährte Muster der App (Pinia, Composables, `better-sqlite3`) nutzen statt neue
-  Muster ad hoc einzuführen.
-- **DRY-Prinzip (Don't Repeat Yourself) & Single Source of Truth**: Logik, Datenstrukturen,
-  Berechnungen und Styles dürfen nicht redundant an mehreren Stellen dupliziert werden. Sobald ein
-  Algorithmus, ein Validierungsmuster oder eine UI-Struktur in mehr als einer Komponente gebraucht
-  wird, gehört er in eine gemeinsame Quelle (Composable, Utility-Funktion unter `utils/`, Pinia-Store
-  oder Primitiv-Komponente unter `frontend/src/components/primitives/`).
+- **Clean Code**: Selbsterklärend, leicht lesbar, intentionsklar. Aussagekräftige Namen, keine magischen Zahlen/Strings, kleine fokussierte Funktionen, kein toter Code.
+- **Separation of Concerns (SoC)**: Views → Darstellung/Layout; Pinia-Stores → globaler Zustand; Composables/Utils → fachliche Logik; Primitives → generische UI-Bausteine; Backend → Request-Handling/DB.
+- **SRP**: Jede Komponente/Funktion hat genau eine Aufgabe.
+- **KISS & YAGNI**: Einfachste Lösung wählen, kein Über-Engineering, bestehende App-Muster nutzen.
+- **DRY**: Keine redundanten Kopien. Wiederverwendbare Logik → Composable/Utility/Primitiv-Komponente.
 
-Die App ist über viele Sessions gewachsen; dasselbe Konzept (Icon, Bezeichnung, Layout-/
-Verhaltensmuster, Datenmodell-Feld) taucht oft an mehreren Stellen zugleich auf, ohne dass das
-zentral dokumentiert ist. Bei jeder Änderung an UI-Bausteinen oder am Datenmodell
-(`backend/src/db/index.ts`, `api/types.ts`) deshalb aktiv prüfen, ob dasselbe Muster noch anderswo
-vorkommt (kurz grep auf Icon/Bezeichner/Komponente, nicht nur an der ursprünglich angefragten
-Stelle):
+**Konsistenz-Check bei Änderungen:**
 
-- **Offensichtlich sinnvolle Folgeanpassung** (identisches Icon/Konzept an anderer Stelle, exakt
-  gleiches Bug-Muster, klar auf dieselbe Baustelle begrenzt): direkt mit umsetzen, danach kurz
-  erwähnen, was zusätzlich angepasst wurde — nicht vorher nachfragen.
-- **Unklar, ob gewollt** (könnte an der anderen Stelle bewusst abweichen, größerer Umbau nötig,
-  oder Konsistenz-Potenzial über eine 1:1-Wiederholung hinaus wie eine App-weite Vereinheitlichung
-  mehrerer Views mit bisher unterschiedlichem Muster): die Beobachtung nennen und (z. B. per
-  `AskUserQuestion`) nachfragen statt eigenmächtig zu entscheiden oder mitzuändern.
-
-- **Keine CSS-Kopien zwischen Views ("Scoped styles werden nicht geteilt, daher eigene Kopie"-Anti-Pattern)**:
-  Wenn ein Oberflächen-, Popover- oder Interaktionsmuster (wie Popover-Menüs, Dropdowns, Card-Surfaces,
-  Backdrops, Badges) in mehr als einer Komponente gebraucht wird, darf der CSS-Block NIEMALS in die
-  nächste Datei kopiert werden. Stattdessen immer eine Primitiv-Komponente unter `frontend/src/components/primitives/`
-  verwenden oder extrahieren (z. B. `PickerMenu.vue`, `DropdownItem.vue`, `Card.vue`, `Button.vue`, `Badge.vue`).
-- **Alte Element-Selektoren bereinigen**: Wird ein Bereich auf Primitives umgestellt (z. B. `DropdownItem`
-  oder `Button` statt nativer HTML-Tags), müssen veraltete Selektoren wie `.picker-menu button` oder
-  `.card button` im umgebenden CSS restlos entfernt werden, um Spezifitätskonflikte und Geisterstile zu verhindern.
-- **Proaktives Clean-Code-Refactoring**: Fallen beim Arbeiten an einer Stelle redundante Kopien
-  auf (wie ehemals verstreute `.picker-menu`-Blöcke), diese nicht durch einen weiteren Klon ergänzen,
-  sondern in eine wiederverwendbare Abstraktion überführen.
-- **`style.css` für globale Basis-Stile, Design-Tokens und Layout-Grundgerüste**:
-  `frontend/src/style.css` enthält NUR grundsätzliche, globale Seiten-Styles und Layout-Infos: globale Dokument-Resets, native HTML-Element-Defaults (`html`, `body`, `#app`, `h1`-`h6`, `p`, `a`, Formularelemente wie `button`, `input`, `select`, `textarea`, Fokus-Ringe und `<Transition>`-Klassen), Design-Tokens (`:root`, Theme-Variablen) sowie universelle Layout-Grundklassen (`.page`, `.grid`, `.masonry`).
-  Style für wiederverwendbare Komponenten (wie z. B. `Card.vue`, `Button.vue`, `Badge.vue`, `DropdownItem.vue`, `DetailRow.vue`, `EmptyState.vue` etc.) gehört zwingend in die jeweilige Komponente unter `frontend/src/components/`!
-- **Neue UI-Bausteine, Styling & `DESIGN.md`**: Vor dem Bauen neuer UI-Elemente aktiv im Rest der App
-  nachschauen (grep auf bestehende Komponenten/Klassen), statt Varianten danebenzubauen. Bei neuen
-  UI-Elementen oder sichtbaren UI-Anpassungen stets `DESIGN.md` (Projekt-Root) konsultieren: dort
-  sind Design-Tokens (Farben, Abstände, Squircle-Formen, Schatten, Typografie, Breakpoints), Icons
-  und die Spezifikationen der Primitives verbindlich dokumentiert. Entsteht dabei ein neues, wiederverwendbares
-  Prinzip, dort ergänzen statt es nur implizit im Code zu hinterlassen.
-- **Storybook für neue Komponenten**: Beim Erstellen neuer wiederverwendbarer UI-Komponenten
-  (`frontend/src/components/*.vue` bzw. `primitives/`) immer direkt eine zugehörige Storybook-Story-Datei
-  (`*.stories.ts`) anlegen, damit Zustände isoliert getestet und dokumentiert sind. Für text- oder layout-relevante
-  Komponenten immer eine `StressTest`-Story mit den zentralen Fixtures (`frontend/src/stories/stressFixtures.ts`)
-  beilegen, um extreme Wortlängen (`STRESS_STRINGS.longWord`) und enge Container (`STRESS_CONTAINERS.narrow`) abzutesten.
-- **Standard-CSS statt manueller Vendor-Präfixe (`backdrop-filter`, `mask` etc.)**:
-  Immer reines Standard-CSS schreiben (`backdrop-filter: ...`, `mask: ...`). Das Build-Tool (`rolldown-vite` mit
-  LightningCSS) übernimmt das zielspezifische Autoprefixing für Safari/WebKit im Production-Build vollautomatisch.
-  Manuell notierte `-webkit-backdrop-filter`- oder `-webkit-mask`-Deklarationen sind verboten (per ESLint-Regel
-  `css-prefix/no-manual-webkit-prefix` erzwungen): Bei manueller Angabe führt eine nachgestellte Vendor-Deklaration
-  dazu, dass LightningCSS die Standard-Eigenschaft wegoptimiert und nur das `-webkit-`-Präfix übrig lässt, was
-  den Effekt in Firefox komplett bricht.
+- Grep nach identischen Icons/Konzepten/Mustern im Rest der App
+- Offensichtlich sinnvolle Folgeanpassung → direkt mit umsetzen
+- Unklar ob gewollt → nachfragen statt eigenmächtig entscheiden
+- **Keine CSS-Kopien zwischen Views** → Primitiv-Komponenten verwenden/extrahieren
+- **`style.css` nur für globale Basis-Styles** → Komponenten-Styles gehören in die jeweilige `.vue`-Datei
+- **Neue UI-Bausteine** → `DESIGN.md` konsultieren, Storybook-Story anlegen
+- **Standard-CSS** statt manueller Webkit-Präfixe (LightningCSS macht Autoprefixing)
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 
-Jede Änderung an `backend/src/db/index.ts` (neue/entfernte Spalte oder Tabelle, umgebautes Feld)
-braucht diesen Check, bevor sie als fertig gilt — nicht erst, wenn explizit danach gefragt wird:
+Jede Änderung an `backend/src/db/index.ts` braucht diesen Check:
 
-1. **Ist das schon in Prod live?** Für Staging: `git merge-base origin/main HEAD`. Für Prod (Branch
-   `deploy`, nur über Release-Tags): `git merge-base $(git describe --tags --match 'v*.*.*' --abbrev=0)
-HEAD` — der letzte Tag markiert den zuletzt releaseden Stand. `git diff <dieser-commit> HEAD --
-backend/src/db/index.ts` zeigt, was seitdem am Schema geändert wurde. Alles, was schon vorher drin
-   war, kann echte Nutzdaten auf der echten `data.sqlite` enthalten (aktiv genutzte App, seit der
-   offenen Registrierung potenziell auch von weiteren, eingeladenen Nutzer:innen).
-2. **Rein additiv bleiben, wo möglich.** Neue Spalten/Tabellen nur über `ensureColumn` (nullable
-   oder mit `DEFAULT`) bzw. `CREATE TABLE IF NOT EXISTS` — nie eine bestehende Tabelle mit einer
-   `NOT NULL`-Spalte ohne Default versehen.
-3. **Vor jedem `dropColumnIfExists`/Rename einer schon live gewesenen Spalte: Backfill davor.** Falls
-   die Spalte echte Werte tragen könnte, deren fachliche Bedeutung im neuen Modell woanders landet,
-   muss ein Backfill (`INSERT`/`UPDATE`) diese Werte migrieren, bevor die Spalte fällt — sonst gehen
-   sie beim nächsten Deploy kommentarlos verloren. Muster: `if (hasColumn(table, col)) {
-db.exec('INSERT/UPDATE ...'); dropColumnIfExists(table, col); }` — die Unterkunft→Spots- oder
-   `packing_items.checked`-Migration in `backend/src/db/index.ts` als Vorlage nehmen. Ein reiner
-   No-Op-Drop (Spalte war nie live oder nie befüllt) braucht keinen Backfill.
-4. **Reihenfolge im Skript beachten.** Migrationen laufen beim Backend-Start synchron in
-   Datei-Reihenfolge gegen den _tatsächlichen_ aktuellen DB-Zustand, nicht gegen den Skript-Text. Ein
-   Backfill, der eine Spalte braucht, die selbst erst weiter unten per `ensureColumn` ergänzt wird,
-   muss hinter diese Stelle gesetzt werden — sonst schlägt er auf einer frischen/Test-DB mit `no such
-column` fehl (auf der echten Prod-DB fällt das nicht auf, weil die Spalte dort durch frühere
-   Deploys schon längst existiert).
-5. **Migrationstest ergänzen.** Für jeden Backfill einen Test analog zu
-   `backend/test/unit/dbMigration.test.ts` schreiben: alten Schema-Stand in einer temporären
-   SQLite-Datei nachbauen, `db/index.ts` importieren lassen und prüfen, dass die Daten im neuen
-   Modell wiederzufinden sind.
+1. **Ist das schon in Prod live?** `git merge-base` gegen letzten Release-Tag prüfen
+2. **Rein additiv bleiben:** `ensureColumn` (nullable/DEFAULT), `CREATE TABLE IF NOT EXISTS`
+3. **Vor `dropColumnIfExists`: Backfill** falls Spalte echte Werte haben könnte
+4. **Reihenfolge beachten:** Migrationen laufen gegen tatsächlichen DB-Zustand
+5. **Migrationstest ergänzen** analog zu `backend/test/unit/dbMigration.test.ts`
 
-Der Rollout-Mechanismus dafür existiert schon und braucht keine separate Migrations-Pipeline:
-`deploy.sh` und die Pi-Cronjob-Skripte schließen `*.sqlite*` explizit von `rsync --delete` aus, die
-Datenbank wird also nie überschrieben. Der Backend-Prozess führt `db/index.ts` bei jedem Neustart
-erneut aus, wendet die additiven Migrationen (und ggf. Backfills) automatisch auf die bestehende
-Datei an. Schema-Änderungen im Code committen reicht also aus — kein manueller Migrationsschritt auf
-dem Server nötig.
+Der Rollout-Mechanismus existiert: Backend führt `db/index.ts` bei jedem Start aus, wendet additive Migrationen automatisch an.
 
-## Unit-Tests (`backend/test/`, `frontend/src/**/*.test.ts`)
+## Unit-Tests & E2E-Tests
 
-Vitest auf beiden Seiten, unabhängig konfiguriert (Backend: `backend/vitest.config.ts`; Frontend:
-`test`-Key in `frontend/vite.config.ts`). Laufen ohne Browser/Server, deterministisch und schnell —
-laufen deshalb automatisch in CI, direkt vor dem jeweiligen Build-Schritt in
-`.github/workflows/ci.yml`. Ein fehlschlagender Unit-Test verhindert damit sowohl den
-Staging- als auch den Tag-Produktions-Publish.
+**Unit-Tests:** Vitest (Backend: `:memory:` SQLite pro Datei; Frontend: isoliert). Laufen in CI vor Build. Regressionsnetz für echte Logik, keine Vollabdeckung.
 
-```bash
-cd backend && npm test    # bzw. npm run test:watch für Watch-Mode
-cd frontend && npm test
-```
+**E2E-Tests:** Playwright mit Auto-Server-Start. Eigene Ports (3100/5273), isolierte Test-DB, committet. Accessibility-Tests via Axe (`npm run test:a11y`). Token-sparend nur gezielt nutzen:
 
-Backend-Tests laufen gegen eine isolierte `:memory:`-SQLite-Instanz pro Testdatei (siehe
-`backend/test/helpers/buildTestApp.ts`), nie gegen echte Nutzdaten oder `data.sqlite`. Isolation ist
-bewusst pro Testdatei, nicht pro einzelnem Test (`beforeAll` statt `beforeEach`) — Tests innerhalb
-einer Datei legen dafür jeweils eigene, eindeutig identifizierbare Ressourcen an, statt sich auf eine
-leere Tabelle zu verlassen.
+- `npx -y playwright test <spec>` für einzelne Tests
+- Bei CI-Fehlschlag lokal reproduzieren
+- Scratch-Specs für Ad-hoc-Checks/PR-Screenshots
 
-**Umfang: Regressionsnetz statt Vollabdeckung** (dieselbe Philosophie wie bei E2E unten):
-Regressionsnetz für echte Logik (Berechnungen, Regex-Parsing, Auth-Gating), keine vollständige
-Abdeckung jeder Route/Funktion. Reine CRUD-Routen ohne Verzweigungslogik brauchen i. d. R. keinen
-eigenen Test.
+**Bestehende Tests bei Änderungen immer mit anpassen!** Neue persistente Tests nur vorschlagen, nicht unaufgefordert schreiben. Keine Pixel-Diff-Tests (`toHaveScreenshot()`) in die Haupt-Suite — stattdessen Interaktion + funktionale Assertions. Scratch-Specs vor `page.goto(...)` immer `forceFontDisplayBlock(page)` aufrufen (sonst Fallback-Font statt Fira Sans). Datums-Annahmen aus `e2e/fixtures/seeded-data.json` lesen, nicht hartcodieren.
 
-## E2E-Tests & Accessibility-Tests (`/e2e`)
+## Sparsam mit Subagenten
 
-Ergänzt die schnellen, browserlosen Unit-Tests oben um echte Klick-Interaktionen durch einen
-Browser. Committete Playwright-Suite, die beide Dev-Server automatisch startet und gegen eine frisch
-geseedete, isolierte Test-Datenbank läuft (nie gegen echte Nutzdaten) — läuft identisch lokal, in
-einer Cloud-Sandbox und über die Claude-Mobile-App, da die gesamte Infrastruktur (Server-Autostart,
-Seed-Daten, Login) committet ist. Eigene Ports (Backend 3100, Frontend 5273, über `CORS_ORIGIN` in
-`backend/src/server.ts` konfigurierbar) — kollidiert nicht mit einem laufenden lokalen Dev-Server.
+Bei klar umrissenen Änderungen direkt grep/Read/Edit verwenden statt Explore-/Plan-Subagent spawnen — jeder Spawn re-deriviert kompletten Kontext neu und kostet oft mehr Tokens als direkte Suche. Subagenten bleiben sinnvoll bei unklarem/großem Scope oder parallelen unabhängigen Bereichen.
 
-Inklusive automatisierter Barrierefreiheits-Tests via Axe (`@axe-core/playwright`):
-`npm run test:a11y` testet Kernansichten der Anwendung ad-hoc lokal auf WCAG/ARIA-Konformität.
+## PR-Workflow
 
-Läuft außerdem automatisch in CI (nach den Unit-Tests, vor dem Assemble-Schritt) — bei einem
-Fehlschlag wird als Artefakt der HTML-Report samt Screenshots hochgeladen (`playwright-report`/
-`test-results`).
+**PR-Merge-Regel:** PRs **nicht automatisch mergen** sobald CI grün ist — auf Review/Freigabe des Nutzers warten (visueller Check anhand Screenshots).
 
-**Token-sparend: die volle Suite (`npm test`) nicht routinemäßig lokal laufen lassen.** CI führt sie
-bei jedem Push ohnehin gated aus — ein lokaler Vollauf kostet nur unnötig Tokens (komplette
-Testausgabe landet im Kontextfenster). Lokal stattdessen gezielt einsetzen:
+**Issues schließen:** `Fixes #101`, `Closes #102` etc. (englische Keywords vor jeder Issue-Nummer wiederholen).
 
-- `npx -y playwright test <pfad-zur-spec>` für eine einzelne, gerade geschriebene/geänderte Spec direkt
-  nach dem Schreiben verifizieren.
-- `npm run test:a11y` für Barrierefreiheits-Scans (inkl. `color-contrast`).
-- Einen CI-E2E-Fehlschlag lokal reproduzieren/debuggen.
-- Eine Wegwerf-Spec unter `e2e/tests/scratch/` für Ad-hoc-Checks/PR-Screenshots (siehe unten).
+**Screenshots & visuelle Verifikation im PR:**
 
-```bash
-cd e2e
-npm install                       # einmalig
-npx -y playwright install chromium   # einmalig pro (frischer) Umgebung
-npm test                          # komplette Suite, startet/beendet beide Server automatisch
-npm run test:a11y                 # Accessibility-Scans inkl. Kontrastprüfung (tests/accessibility.spec.ts)
-npx -y playwright show-report        # HTML-Report des letzten Laufs
-```
+- **Baseline-Images (`docs/screenshots/`):** Bilden stets den aktuellen Produktionsstand aller relevanten Ansichten der gesamten App im Git-Repo ab. Sie folgen einem festen Schema (`<view>-desktop-light.png`, `<view>-mobile-dark.png` etc.) und werden bei Änderungen direkt aktualisiert (oder komplett per `npm run generate:screenshots:docker`). **Niemals willkürliche neue Dateinamen erfinden oder blind dort ablegen.** Im PR per Markdown verlinken (GitHub bietet so automatischen Vorher-/Nachher-Bildvergleich im Diff; **Syntax-Falle:** `![Label](URL)` ohne Backticks um die URL).
+- **Scratch-Screenshots für Detail-/Sonderfälle:** Ist eine sichtbare UI-Änderung nicht durch die regulären Baseline-Images abgedeckt (z. B. ein einzelner Dialog, Teilkomponente, Hover-/Fehlerzustand):
+  - Vorher- und Nachher-Screenshot anfertigen und **zuerst direkt im Chat/Walkthrough anzeigen**, damit der Nutzer das Ergebnis vorab prüfen und freigeben kann.
+  - Diese temporären Scratch-Screenshots gehören _nicht_ in `docs/screenshots/`, sondern können per GitHub-CLI (`gh`) als Attachment an den PR angehängt werden.
 
-### Wann einen neuen/aktualisierten Test schreiben?
+**Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für interne Änderungen (Tests, CI, Demo-Daten, Refactoring). **VOR dem Anlegen bestehende Fragmente lesen** und ggf. ergänzen statt doppelt anlegen. Format: Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
 
-Nicht nach jeder Anpassung. Die Suite ist ein Regressionsnetz für die zentralen Abläufe der App
-(Login-Gate, Kalender-Feature, Mitgliedschaft/Einladung, Echtzeit-Sync, …), keine vollständige
-Abdeckung. Einen Test ergänzen/anpassen, wenn eine Änderung sichtbares Nutzerverhalten neu einführt
-oder grundlegend ändert und das wert ist, gegen stille Regression abzusichern. Triviale visuelle/
-Text-Anpassungen brauchen keinen neuen Test.
-
-**Bestehende Tests immer direkt mit anpassen!** Wenn UI-Elemente (z.B. Buttons, Bezeichner, Icons) oder Funktionalitäten geändert, verschoben oder entfernt werden, MUSS die KI bei der Umsetzung **immer selbstständig kurz prüfen**, ob es für diesen Bereich bereits einen existierenden E2E-Test (`e2e/tests/*.spec.ts`) gibt. Ist das der Fall, muss der betroffene Test **direkt im selben Arbeitsschritt mit angepasst werden**, damit die CI danach nicht fehlschlägt.
-Diese Test-Anpassungen müssen stets in einem separaten Commit vorgenommen werden (nach Conventional Commits geprefixt mit z. B. `test(<Context>): `).
-
-**Neue Tests vorschlagen statt automatisch schreiben:** Nur wenn ein komplett neuer Use Case auffällt (neuer Kern-Ablauf, neu gefundener Bug), bei dem sich ein persistenter E2E-Test lohnen würde, dies am Ende kurz erwähnen und fragen, ob der Test **neu** ergänzt werden soll — keine unaufgeforderte Testarbeit für komplett neue Tests.
-
-**Keine Pixel-Diff-Screenshot-Tests** (`toHaveScreenshot()`) oder statischen Overlap-/BoundingBox-Koordinatentests (`elementFromPoint`, `expectNotCoveredBy`) in die Haupt-E2E-Suite aufnehmen — Rendering-/Font-Drift und Subpixel-Verschiebungen machen solche assertions unzuverlässig und erzeugen Fehlalarme. Visuelle Layout-Prüfungen und Überlappungsschutz erfolgen primär über die Regeln in `DESIGN.md` (Abschnitt "Layout-Containment & Z-Index-Stapelung") sowie ad-hoc Scratch-Specs. Stattdessen Interaktion + funktionale Zustands-/Sichtbarkeits-Assertions verwenden.
-
-Datums-Annahmen aus `e2e/fixtures/seeded-data.json` lesen (zur Laufzeit von `global-setup.ts`
-geschrieben), nicht hartcodieren — die Demo-Seed-Termine liegen relativ zu "heute".
-
-### Ad-hoc-Checks ("schau selbst nach, ob X funktioniert/gut aussieht")
-
-Für spontane visuelle Verifikation einer einzelnen Änderung (kein dauerhafter Regressionstest): eine
-kurze Wegwerf-Spec unter `e2e/tests/scratch/` schreiben (gitignored, nie committen), die **vor**
-`page.goto(...)` `forceFontDisplayBlock(page)` (`e2e/tests/helpers/fonts.ts`) aufruft, dann zur
-fraglichen Stelle navigiert, interagiert und `page.screenshot({ path: ... })` aufruft — sonst bleibt
-es in einem frischen, headless Playwright-Kontext praktisch immer dauerhaft bei der Fallback-Schrift
-statt Fira Sans, siehe Kommentar in `fonts.ts` (#197). Mit
-`npx -y playwright test tests/scratch/<name>.spec.ts` ausführen, den Screenshot per Read-Tool selbst
-ansehen und bewerten. Die Wegwerf-**Spec** danach löschen, das erzeugte **PNG** aber aufheben (bleibt
-im gitignoreten `e2e/tests/scratch/`) — bei sichtbaren UI-Änderungen ist das der Kandidat für die
-PR-Screenshots, siehe "Screenshots im PR selbst" unten.
-
-### UI-Qualitätssicherung, Visual Verification & Adversarial Testing
-
-Klassische funktionale E2E- und Unit-Tests sind visuell blind: `expect(btn).toBeVisible()` ist erfüllt, selbst wenn ein Button von einem Sticky Header verdeckt wird, Text auf 320px unglücklich umbricht oder ein Dropdown durch `overflow: hidden` abgeschnitten ist. Um Layout-Regressionen systematisch zu verhindern, gilt für KI-Agenten und Entwickler:
-
-1. **Keine diffusen monolithischen Mega-Prompts ("Geh durch die ganze App und klick alles an"):**
-   Ein vollständiger UI-Check vor großen Meilensteinen oder Releases ist ausdrücklich gewollt und wertvoll, darf aber NIE als ein einziger, unstrukturierter Durchlauf in einem einzigen Kontextfenster beauftragt werden. Solche Aufträge führen bei LLMs zu kombinatorischer Überlastung und blinden Falsch-Positiven ("Alles geprüft, sieht gut aus"). Stattdessen MUSS eine systematische Aufteilung erfolgen (Divide & Conquer – z. B. per Subagent-Team mit `/teamwork-preview` oder `/goal`, aufgeteilt nach Fachdomänen wie Dashboard/Trips, Spots/Touren, Listen/Packen, Budget/Settings, die jeweils isoliert die 3 Viewports auditieren).
-2. **Die 3-Viewport-Regel (`VIEWPORTS` in `e2e/tests/helpers/layout.ts`):**
-   Layouts und interaktive Elemente müssen auf mindestens 3 repräsentativen Bildschirmgrößen verifiziert werden:
-   - `narrowMobile`: **320x568px** (iPhone SE klein / Androids – hier entstehen 80% aller Text-/Icon-Clashes und horizontalen Scrollbalken).
-   - `mobile`: **390x844px** (Standard-Smartphone).
-   - `desktop`: **1280x800px** (Standard-Desktop/Laptop).
-3. **Mathematische Layout-Defensiv-Checks statt visueller Blindheit:**
-   - **Kein horizontaler Overflow:** In Scratch-Specs immer `await expectNoHorizontalOverflow(page)` aus `helpers/layout.ts` aufrufen (`document.documentElement.scrollWidth <= window.innerWidth`). Kein Screen darf auf Mobile seitlich wackeln oder ausbrechen.
-   - **Keine Element-Verdeckung:** Schwebende Menüs, Modals oder wichtige Buttons auf Kollision mit Backdrops oder Headern mittels `expectNotCoveredBy(page, target, blocker)` prüfen.
-   - **Touch-Targets einhalten:** Interaktive Elemente auf Mobile mit `expectMinTouchTarget(locator)` auf mindestens 44x44px absichern.
-4. **Adversarial Scratch-Spec Workflow (`audit-template.spec.ts`):**
-   Für tiefes Testen nach Refactorings die Vorlage `e2e/tests/scratch/audit-template.spec.ts` heranziehen (oder anpassen) und gezielt Stress erzeugen (lange Strings ohne Leerzeichen, leere Listen, geöffnete Menüs).
-5. **Visuelle Screenshots im Walkthrough vor dem Commit:**
-   Bei sichtbaren UI-Modifikationen generiert der Agent vor dem Commit Screenshots (Mobile 375/390px + Desktop 1280px in Light & Dark Mode) und bindet sie ins Walkthrough-Artefakt bzw. die PR-Dokumentation ein. Der menschliche Entwickler kann mit einem 5-Sekunden-Blick prüfen, was kein automatisierter Test erfassen kann.
-6. **Der Drawer-Sonderfall & Container-Queries (`@container app-main`):**
-   Auf Desktop (≥ 1024px) existieren stufenlos in der Breite verstellbare Seitenelemente:
-   - Die globale Kalenderschublade (`Drawer.vue`): stufenlos von **280px bis 860px** verstellbar (Standard: 360px).
-   - Die Spots-Spalte (`.spots-col` in `ExcursionsView.vue`): stufenlos von **280px bis 75cqw** verstellbar (Standard: 380px).
-     Wenn diese Elemente geöffnet und breit gezogen werden, schrumpft die Inhaltsbreite von `.app-main` bzw. der Karte drastisch (von 1280px auf bis zu 340px!).
-   - **Verbot von `@media` für Inhalts-Komponenten:** Komponenten innerhalb von `.app-main` dürfen Breiten-Entscheidungen nicht über `@media (min-width: ...)` treffen (da `window.innerWidth` unverändert groß bleibt), sondern müssen `@container app-main (min-width: ...)` oder flexibles Flexbox-Wrapping (`flex-wrap: wrap`) nutzen.
-   - **Desktop-Audit mit Stufenlos-Matrix:** Bei Desktop-Audits muss das Layout immer sowohl mit **geschlossener**, **normal geöffneter** (`setCalendarDrawerOpen`) als auch **stufenlos breit gezogener** Schublade (`setCalendarDrawerWidth(page, 500)`, `setSpotsColumnWidth`) verifiziert werden, um Enge-Stresszustände abzufangen.
-
-_(Zu den autonomen Kurzbefehlen und der Routen-Tabelle siehe den Abschnitt „Autonome UI-Audit-Kurzbefehle & Trigger-Phrasen“ oben sowie `docs/AUDIT_GUIDE.md`)_
-
-#### Detaillierte Prompt-Vorlagen (Optional / Manuell)
-
-**Prompt 1: Gezielter View-Audit nach Änderungen / Refactorings:**
-
-```text
-Führe einen gezielten Adversarial-UI-Audit für [VIEWNAME, z. B. SpotsView / ExcursionsView] durch:
-1. Nutze die Vorlage unter e2e/tests/scratch/audit-template.spec.ts für die Route [z. B. /trip/1/spots].
-2. Teste die Viewport- & Drawer-Matrix:
-   - narrowMobile (320x568px, iPhone SE) & mobile (390x844px) auf expectNoHorizontalOverflow(page)
-   - narrowDesktop (1080x900px) & desktop (1280x800px) jeweils mit geschlossener, normal geöffneter UND maximal breit gezogener Schublade (setCalendarDrawerWidth(page, 500))
-   - Bei Excursions/Spots: Prüfe zusätzlich stufenlose Verstellung der Spots-Spalte (setSpotsColumnWidth)
-3. Stresse die UI gezielt:
-   - Öffne Modals / Dropdowns und prüfe expectNotCoveredBy() bzw. ob Menüs abgeschnitten werden.
-   - Teste mit langen Strings (Zeilenumbrüche / Text-Overflow) und leeren Zuständen (Empty States).
-   - Prüfe Touch-Targets auf Mobile mit expectMinTouchTarget().
-4. Binde Screenshots der repräsentativen Zustände (Mobile + Desktop, hell/dunkel) in den Walkthrough ein und berichte gefundene Layout-Kollisionen.
-```
-
-**Prompt 2: Umfassender Pre-Release-Audit (vor Meilensteinen / 2.0 Relaunch via Subagents):**
-
-```text
-/teamwork-preview Wir bereiten das Release vor. Führe ein vollständiges, strukturiertes UI- und Layout-Audit durch.
-
-Vorgehensweise:
-1. Teile die Anwendung in 4 parallele Subagents auf:
-   - Team 1: Dashboard, Header, Navbar & Trip-Verwaltung (/trip/1, /trips)
-   - Team 2: Spots, Touren & Kartenansichten (/trip/1/spots, /trip/1/excursions)
-   - Team 3: Listen, Packliste, ToDo, Einkauf & Tagebuch (/trip/1/packing, /trip/1/todo, /trip/1/diary)
-   - Team 4: Budget, Einstellungen, Profil & Auth (/trip/1/budget, /settings, /login)
-2. Jeder Subagent nutzt e2e/tests/scratch/audit-template.spec.ts für seine Routen:
-   - 320x568 (narrowMobile), 390x844 (mobile), 1080x900 (narrowDesktop) und 1280x800 (desktop)
-   - Schubladen-Matrix (Desktop mit offener und geschlossener Schublade)
-   - expectNoHorizontalOverflow(page)
-   - Touch-Targets und Stacking Contexts
-3. Führe die Ergebnisse in einem gemeinsamen Audit-Report zusammen und behebe gefundene Layout-Fehler.
-```
-
-## PR-Merge-Regel
-
-Von Claude Code erstellte PRs gegen `main` **nicht automatisch mergen**, sobald CI grün ist —
-stattdessen offen lassen und auf das Review des Nutzers warten (er checkt bewusst zuerst visuell
-anhand der im PR angehängten Screenshots, siehe unten, statt direkt auf DEV zu
-testen). Explizit auf einen Merge-Wunsch/eine Freigabe des Nutzers warten, auch wenn CI längst grün
-ist. Nicht als Draft (`draft: false`) erstellen.
-
-## Issues per PR automatisch schließen
-
-Behebt ein PR ein oder mehrere GitHub-Issues, gehört ein von GitHub erkanntes Closing-Keyword in den
-PR-Body (nicht nur eine bloße Erwähnung wie "Löst #101" oder "Betrifft #101") — sonst bleiben die
-Issues nach dem Merge offen. GitHub erkennt dafür nur englische Schlüsselwörter unmittelbar vor der
-Issue-Nummer, z. B. `Fixes #101`, `Closes #101`, `Resolves #101`. Bei mehreren Issues in einem PR
-**vor jeder einzelnen Nummer erneut** ein solches Keyword wiederholen, nicht nur einmal vor der
-ersten: `Fixes #101, #102, #103` schließt beim Merge nur `#101` — `Fixes #101, Fixes #102,
-Fixes #103` (bzw. eine Zeile pro Issue) schließt alle drei.
-
-## Screenshots im PR selbst
-
-Jeder PR mit sichtbarer UI-Änderung/sichtbarem Bugfix bekommt Screenshots des betroffenen Bereichs
-direkt im PR (Body oder Kommentar) — in den relevanten Viewports (mind. mobil ~390px UND Desktop
-Full HD ~1920x1080px, bei reiner Desktop- oder Mobil-Änderung reicht der jeweils betroffene Viewport). Zweck: der
-Nutzer soll das Ergebnis direkt auf GitHub sehen können, bevor überhaupt gemergt/deployt wird.
-
-Technisch: Screenshots werden im Repo zentral unter `docs/screenshots/` abgelegt (organisiert nach View, z. B. `dashboard`, `calendar`, `spots`, `lists`, `budget`, `notes`, `diary`, `settings`, `trips`, `landing`). Dateien folgen dem Schema `docs/screenshots/<view>-desktop-light.png`, `<view>-desktop-dark.png`, `<view>-mobile-light.png`, `<view>-mobile-dark.png` (bzw. gezielten Unter-Element-Bezeichnungen bei Bedarf). Eine vollständige Baseline aller Ansichten in sauberer Produktionsdarstellung (ohne DEV-Badges, orange Border oder PWA-Pills) lässt sich jederzeit per `npm run generate:screenshots:docker` neu generieren (dadurch wird sichergestellt, dass das Rendering identisch zur CI-Umgebung ist und der Fail-on-Diff Check auf GitHub nicht fehlschlägt).
-
-Bei UI-Änderungen an einem Bereich MÜSSEN die entsprechenden Screenshots in `docs/screenshots/<filename>.png` (bzw. für alle Ansichten per `npm run generate:screenshots:docker`) IMMER direkt auf dem Feature-Branch aktualisiert und committet werden. Im PR-Body/-Kommentar per Markdown-Bild-Syntax auf die `raw.githubusercontent.com`-/Blob-URL dieser Datei auf dem Feature-Branch verlinken — GitHub rendert das Bild inline und bietet im PR-Diff zusätzlich den automatischen Vorher/Nachher-Bildvergleich. Nach dem Merge bleibt so stets der aktuelle Stand der Dokumentation ohne veraltete PR-Ordner erhalten. Reine Text-/Backend-only-Änderungen brauchen keine Screenshots.
-
-**Syntax-Falle:** `![Label](URL)` — die URL NICHT in Backticks setzen (kein ``![Label](`URL`)``).
-Damit rendert GitHub das Bild nicht inline, sondern zeigt nur einen toten Link/Codeblock. Vor dem
-Absenden den PR-Body kurz auf versehentlich mit Backticks umschlossene Bild-URLs prüfen (v. a. wenn
-mehrere Screenshots im selben Body verlinkt werden — nur eines davon falsch zu formatieren passiert
-leicht).
-
-Dabei bewusst lokal bleiben (Wegwerf-Spec), nicht nach CI verlagern — spart Tokens ohne die
-Trigger-Loop-/Angriffsflächen-Risiken eines CI-Jobs mit Rückschreibrechten auf den PR-Branch. Genauso
-bewusst keine persistenten Specs dafür verwenden: Regressionstests unter `e2e/tests/` sollen bei
-einer verletzten Erwartung rot werden, nicht nebenbei Bilder für ein manuelles Review erzeugen.
-
-## Releases: Commit-Konvention + Release-Notes-Fragmente
-
-`.github/workflows/release.yml` (per `workflow_dispatch` im Actions-Tab oder programmatisch
-auslösbar, siehe README) ermittelt Versions-Bump und Changelog-Text automatisch, statt sie beim
-Release-Ausführen manuell abzufragen. Damit das funktioniert, brauchen **alle** Commits (dieses
-Repo mergt PRs als echten Merge-Commit, nicht Squash — jeder einzelne Commit landet in der
-Historie und wird gescannt) zwei Dinge:
-
-1. **Commit-Betreff lose im Conventional-Commits-Stil**, sofern der Commit eine funktionale
-   Änderung enthält: `feat: …` für neue Features (in der echten App), `fix: …` für Bugfixes,
-   `feat!: …` bzw. ein `BREAKING CHANGE: …`-Absatz im Body für inkompatible Änderungen. Der
-   Release-Workflow scannt alle Commit-Betreffs/-Bodies seit dem letzten Tag: `!`/`BREAKING CHANGE` →
-   Major-Bump, mindestens ein `feat:` → Minor-Bump, sonst Patch-Bump. Rein interne Änderungen
-   (Refactoring, Doku, Tests, Demo-Daten, CI/Pipelines, Tooling) brauchen kein `feat:`-Präfix (sondern
-   `chore:`, `refactor:`, `docs:`, `test:`, `build:` oder kein Präfix) — sie fließen einfach in den
-   Patch-Bump.
-2. **Release-Notes-Fragment nur bei sichtbarer Auswirkung für echte Endnutzer:innen der App**:
-   - **KEIN Fragment anlegen** für interne/begleitende Bereiche: Änderungen an Demo-Daten
-     (`frontend/src/demo/`, `backend/src/db/seedDemo.ts`), CI/CD-Pipelines (`.github/`), Dev-Workflow,
-     Tooling, Build-Skripte, Infrastruktur/Deployment (`deploy.sh`, systemd, Pi-Skripte), Tests,
-     Refactorings oder reine Dokumentation. Diese betreffen nicht die produktive Nutzung der App.
-   - **VOR dem Anlegen bestehende Fragmente prüfen**: Vor dem Erstellen einer neuen Datei unter
-     `release-notes/pending/` immer die dort bereits vorhandenen Dateien lesen! Existiert bereits ein
-     Eintrag für denselben Bereich (z. B. "UI-Konsistenz in Formularfeldern verbessert" oder "Wettervorhersage-Anzeige
-     optimiert"), diesen bestehenden Eintrag ergänzen/zusammenfassen statt ein zweites, ähnliches Fragment
-     danebenzulegen. Ein neues Fragment wird NUR angelegt, wenn die Änderung für Endnutzer:innen tatsächlich
-     neu/interessant ist und noch nicht von bestehenden pending Release Notes abgedeckt wird.
-   - **Verständliche Sprache ohne technische Details**: Die Zielgruppe sind nicht-technisch-versierte
-     Endnutzer:innen. Die Stichpunkte müssen einfach, klar und aus Nutzerperspektive formuliert sein
-     ("Was bedeutet das konkret für die Person, die die App nutzt?"). **Absolut KEINE technischen Details**
-     wie Komponentennamen (z. B. `Button.vue`), Refactoring-Begriffe, PR-/Issue-Nummern (`#123`), CSS-Klassen,
-     Datenbank-Spalten, interne Skripte oder Entwickler-Tools (z. B. Storybook) verwenden!
-   - **Passendes Emoji vor jedem Punkt**: Jeder Stichpunkt MUSS zwingend mit einem thematisch
-     passenden Emoji direkt hinter dem `- ` beginnen (z. B. `- 🔔 **Benachrichtigungen**: ...`,
-     `- 🚀 **Update-Dialog**: ...`, `- ⚙️ **Einstellungen**: ...`), gefolgt von einem Leerzeichen
-     und einem prägnanten, fettgedruckten Stichwort (`**Schlagwort**:`). Dies sorgt für eine
-     lebendige, schnell erfassbare und visuell einheitliche Darstellung im Changelog und im
-     In-App-Changelog-Dialog.
-   - **Fragment-Format**: Eine kleine Markdown-Datei unter `release-notes/pending/<kurzer-slug>.md`
-     anlegen oder anpassen. Die Datei beginnt mit einer Themen-Zwischenüberschrift (z. B. `### Spots & Touren`
-     oder `### Design & Navigation`), gefolgt von den `- `-Stichpunkten in leicht verständlicher
-     Endnutzer-Sprache wie `CHANGELOG.md` (Deutsch), jeweils mit führendem Emoji. Diese Zwischenüberschriften
-     werden im Changelog und in den In-App-Release-Notes als Gruppen-Titel dargestellt.
-   - **Automatischer Fallback**: Gibt es bis zum Release keine gesammelten Fragmente (weil z. B. nur
-     interne Verbesserungen, Demo-Daten oder Pipeline-Updates stattfanden), fasst der Release-Workflow
-     den Release-Eintrag automatisch endnutzerfreundlich als `- 🛠️ Verbesserungen unter der Haube.`
-     zusammen.
+**Commit-Konvention:** `feat:`, `fix:`, `feat!:` für funktionale Änderungen. `chore:`, `refactor:`, `docs:` für interne Änderungen.
