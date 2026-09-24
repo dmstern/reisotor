@@ -7,3 +7,4 @@
 - 🎙️ **Verfeinerte Aufzeichnungs-Pille**: Symmetrisch geschwungene Steuer-Buttons mit konzentrischer Rundung, harmonischen Abständen und perfekt vertikal ausgerichteter Zeitanzeige.
 - 📐 **Pre-Release UI-Feinschliff**: Detailverbesserungen an Kantenrundungen (Squircle-Design), Touch-Bedienflächen auf Smartphones, harmonisch ausgerichteten Aktions-Buttons und verbesserter Lesbarkeit in allen Ansichten.
 - 🗑️ **Harmonische Dialog-Buttons**: Löschen-Buttons in allen Bearbeiten-Dialogen haben nun dieselbe einheitliche Höhe wie der Speichern-Button und nutzen ein dezentes Sekundär-Design mit feiner Kontur, damit sie sich harmonisch und unaufdringlich in die Leiste einfügen.
+- 📅 **Endloses Kalender-Blättern**: Im Kalender kann nun in allen Ansichten (Woche, 2 Wochen und Monat) unbegrenzt in die Vergangenheit und Zukunft geblättert werden.

@@ -414,77 +414,10 @@ function entriesForDate(date: string) {
     .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
 }
 
-// Zeigt nicht nur den Urlaubszeitraum, sondern auch alle Tage, an denen Objekte im Kalender
-// hinterlegt sind (z. B. ToDos oder Reise-Einträge mit Fälligkeits-/Termin-Datum vor Urlaubsbeginn).
-const calendarRange = computed(() => {
-  if (!trip.value) return null;
-  const dates: Date[] = [];
-  if (trip.value.start_date) dates.push(new Date(trip.value.start_date));
-  if (trip.value.end_date) dates.push(new Date(trip.value.end_date));
-  dates.push(...allEntries.value.flatMap((e) => [new Date(e.date), new Date(e.endDate)]));
-  if (dates.length === 0) {
-    dates.push(new Date());
-  }
-  return {
-    start: new Date(Math.min(...dates.map((d) => d.getTime()))),
-    end: new Date(Math.max(...dates.map((d) => d.getTime()))),
-  };
-});
-
-const weeks = computed(() => {
-  if (!calendarRange.value) return [];
-  const { start, end } = calendarRange.value;
-
-  // Wochenanfang respektiert die Einstellung (Standard: Montag, siehe utils/dateFormat.ts).
-  const firstWeekStart = startOfWeek(start);
-
-  const result: {
-    date: string;
-    entries: CalendarEntry[];
-    accommodations: Spot[];
-    weatherEntries: DayWeatherEntry[];
-  }[][] = [];
-  let cursor = new Date(firstWeekStart);
-  let week: {
-    date: string;
-    entries: CalendarEntry[];
-    accommodations: Spot[];
-    weatherEntries: DayWeatherEntry[];
-  }[] = [];
-
-  while (cursor <= end || week.length % 7 !== 0) {
-    const iso = toIso(cursor);
-    week.push({
-      date: iso,
-      entries: entriesForDate(iso),
-      accommodations: accommodationsForDate(iso),
-      weatherEntries: weatherEntriesFor(iso),
-    });
-    if (week.length === 7) {
-      result.push(week);
-      week = [];
-    }
-    cursor = new Date(cursor);
-    cursor.setDate(cursor.getDate() + 1);
-    if (cursor > end && week.length === 0) break;
-  }
-  return result;
-});
-
-// Bei langen Zeitspannen (z. B. ein ToDo mit Fälligkeitsdatum Monate vor dem Urlaub) würde die
-// Schublade sonst eine sehr lange Liste an Wochen rendern – stattdessen wird nur ein Fenster
-// angezeigt, durch das man blättert. Die Fenster-/Schrittgröße ist wählbar: wochenweise oder
-// zweiwochenweise (beides ein gleitendes Fenster über die oben berechneten Wochen), "monatsweise"
-// zeigt dagegen einen ECHTEN Kalendermonat (siehe monthWeeks weiter unten) – ein Kalendermonat lässt
-// sich nicht auf ein festes Wochen-Vielfaches abbilden (4–6 Wochen, je nach Wochentag des 1. und
-// Monatslänge), braucht deshalb eine eigene, von pageOffset/weeksPerPage unabhängige Berechnung.
+// Blättern im Kalender: Die Granularität ist wählbar (Woche, 2 Wochen, Monat). In ALLEN Ansichten
+// kann unbegrenzt in die Vergangenheit und Zukunft geblättert werden.
 type PageGranularity = 'week' | 'twoWeeks' | 'month';
-const WEEKS_PER_PAGE_BY_GRANULARITY: Record<'week' | 'twoWeeks', number> = { week: 1, twoWeeks: 2 };
 const granularity = ref<PageGranularity>('month');
-const weeksPerPage = computed(() =>
-  granularity.value === 'month' ? 4 : WEEKS_PER_PAGE_BY_GRANULARITY[granularity.value]
-);
-const pageOffset = ref(0);
 
 interface DayCell {
   date: string;
@@ -498,9 +431,27 @@ function startOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
-// Anker für die Monatsansicht (1. Tag des gerade angezeigten Monats) – eigenständig vom
-// wochenbasierten pageOffset oben, da "ein Monat" kein festes Wochen-Vielfaches ist.
+// Anker für Monatsansicht (1. des angezeigten Monats) und Wochenansichten (Start der angezeigten Woche).
 const monthAnchor = ref(startOfMonth(new Date()));
+const weekAnchor = ref(startOfWeek(new Date()));
+
+// Erzeugt die 7 Tage einer Kalenderwoche ab dem übergebenen Starttag.
+function buildWeek(weekStartDate: Date): DayCell[] {
+  const result: DayCell[] = [];
+  const cursor = new Date(weekStartDate);
+  for (let i = 0; i < 7; i++) {
+    const iso = toIso(cursor);
+    result.push({
+      date: iso,
+      entries: entriesForDate(iso),
+      accommodations: accommodationsForDate(iso),
+      weatherEntries: weatherEntriesFor(iso),
+      otherMonth: false,
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return result;
+}
 
 // Baut ein vollständiges Kalendermonat-Raster: Wochenanfang der Woche mit dem 1. bis Wochenende der
 // Woche mit dem letzten Tag des Monats (führende/nachfolgende Tage aus Nachbarmonaten füllen das
@@ -540,15 +491,35 @@ const monthLabel = computed(() =>
   monthAnchor.value.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
 );
 
-const visibleWeeks = computed<DayCell[][]>(() =>
-  granularity.value === 'month'
-    ? monthWeeks.value
-    : weeks.value.slice(pageOffset.value, pageOffset.value + weeksPerPage.value)
-);
-const canGoPrev = computed(() => granularity.value === 'month' || pageOffset.value > 0);
-const canGoNext = computed(
-  () => granularity.value === 'month' || pageOffset.value + weeksPerPage.value < weeks.value.length
-);
+const visibleWeeks = computed<DayCell[][]>(() => {
+  if (granularity.value === 'month') {
+    return monthWeeks.value;
+  }
+  const count = granularity.value === 'twoWeeks' ? 2 : 1;
+  const result: DayCell[][] = [];
+  const cursor = new Date(startOfWeek(weekAnchor.value));
+  for (let w = 0; w < count; w++) {
+    result.push(buildWeek(cursor));
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  return result;
+});
+
+// In allen Ansichten kann unbegrenzt vor- und zurückgeblättert werden
+const canGoPrev = computed(() => true);
+const canGoNext = computed(() => true);
+
+const prevPageLabel = computed(() => {
+  if (granularity.value === 'month') return 'Vorheriger Monat';
+  if (granularity.value === 'twoWeeks') return 'Vorherige 2 Wochen';
+  return 'Vorherige Woche';
+});
+
+const nextPageLabel = computed(() => {
+  if (granularity.value === 'month') return 'Nächster Monat';
+  if (granularity.value === 'twoWeeks') return 'Nächste 2 Wochen';
+  return 'Nächste Woche';
+});
 
 const visibleRangeLabel = computed(() => {
   if (granularity.value === 'month') return monthLabel.value;
@@ -557,13 +528,14 @@ const visibleRangeLabel = computed(() => {
   const lastWeek = visibleWeeks.value[visibleWeeks.value.length - 1];
   const last = lastWeek[lastWeek.length - 1]?.date;
   if (!first || !last) return '';
-  const fmt = (d: string) => formatDateShared(d, { includeYear: false });
+  const currentYear = new Date().getFullYear();
+  const firstYear = new Date(`${first}T00:00:00`).getFullYear();
+  const lastYear = new Date(`${last}T00:00:00`).getFullYear();
+  const includeYear =
+    firstYear !== currentYear || lastYear !== currentYear || firstYear !== lastYear;
+  const fmt = (d: string) => formatDateShared(d, { includeYear });
   return `${fmt(first)} – ${fmt(last)}`;
 });
-
-function clampOffset(idx: number) {
-  return Math.min(Math.max(0, weeks.value.length - weeksPerPage.value), Math.max(0, idx));
-}
 
 function prevMonth() {
   monthAnchor.value = new Date(
@@ -582,52 +554,61 @@ function nextMonth() {
 
 function prevPage() {
   activeJumpTarget.value = null;
-  if (granularity.value === 'month') prevMonth();
-  else pageOffset.value = clampOffset(pageOffset.value - weeksPerPage.value);
+  if (granularity.value === 'month') {
+    prevMonth();
+  } else if (granularity.value === 'twoWeeks') {
+    const d = new Date(weekAnchor.value);
+    d.setDate(d.getDate() - 14);
+    weekAnchor.value = startOfWeek(d);
+  } else {
+    const d = new Date(weekAnchor.value);
+    d.setDate(d.getDate() - 7);
+    weekAnchor.value = startOfWeek(d);
+  }
 }
+
 function nextPage() {
   activeJumpTarget.value = null;
-  if (granularity.value === 'month') nextMonth();
-  else pageOffset.value = clampOffset(pageOffset.value + weeksPerPage.value);
+  if (granularity.value === 'month') {
+    nextMonth();
+  } else if (granularity.value === 'twoWeeks') {
+    const d = new Date(weekAnchor.value);
+    d.setDate(d.getDate() + 14);
+    weekAnchor.value = startOfWeek(d);
+  } else {
+    const d = new Date(weekAnchor.value);
+    d.setDate(d.getDate() + 7);
+    weekAnchor.value = startOfWeek(d);
+  }
 }
 
-// Beim Wechsel der Blätter-Granularität bleibt die erste sichtbare Woche als Anker erhalten,
-// nur die Fenstergröße ändert sich – muss aber ggf. neu geklemmt werden, falls das größere
-// Fenster sonst über das Ende des Kalenderbereichs hinausragen würde. Betrifft nur Woche/2 Wochen
-// (weeksPerPage ist für "Monat" konstant 4, siehe oben) – der eigentliche Granularitäts-Wechsel
-// von/zu "Monat" wird über den granularity-Watcher weiter unten synchronisiert.
-watch(weeksPerPage, () => {
-  pageOffset.value = clampOffset(pageOffset.value);
-});
-
 // Übernimmt beim Wechsel der Granularität den bisher sichtbaren Zeitraum als neuen Anker, statt
-// unvermittelt zu einem unabhängigen Datum zu springen: Monat->Woche/2 Wochen übernimmt den ersten
-// Tag des angezeigten Monats, Woche/2 Wochen->Monat den Monat der ersten sichtbaren Woche.
+// unvermittelt zu einem unabhängigen Datum zu springen:
+// - Wechsel zu Monat: übernimmt das ausgewählte Datum (falls sichtbar) bzw. die erste sichtbare Woche
+// - Wechsel zu Woche / 2 Wochen: übernimmt das ausgewählte Datum (falls im Monat) bzw. den 1. des Monats
 watch(granularity, (next, prev) => {
   if (next === 'month' && prev !== 'month') {
-    const anchorDate = selectedDate.value ?? weeks.value[pageOffset.value]?.[0]?.date;
-    if (anchorDate) monthAnchor.value = startOfMonth(new Date(anchorDate));
+    const firstVisible = visibleWeeks.value[0]?.[0]?.date;
+    const isSelectedVisible =
+      selectedDate.value &&
+      visibleWeeks.value.some((w) => w.some((d) => d.date === selectedDate.value));
+    const anchor = isSelectedVisible
+      ? selectedDate.value!
+      : (firstVisible ?? toIso(weekAnchor.value));
+    monthAnchor.value = startOfMonth(new Date(`${anchor}T00:00:00`));
   } else if (prev === 'month' && next !== 'month') {
-    // Gleicher Fallback wie beim allerersten Laden (onMounted unten): liegt der Anker außerhalb des
-    // aktuellen Wochen-Kalenderbereichs (z. B. "heute" vor Urlaubsbeginn), zum Urlaubsstart springen
-    // statt stillschweigend auf der vorherigen Woche-Position stehen zu bleiben.
-    const anchorDate = selectedDate.value ?? toIso(monthAnchor.value);
-    if (!goToDate(anchorDate) && trip.value?.start_date) goToDate(trip.value.start_date);
+    const yearMonth = `${monthAnchor.value.getFullYear()}-${String(monthAnchor.value.getMonth() + 1).padStart(2, '0')}`;
+    const isSelectedInMonth = selectedDate.value?.startsWith(yearMonth);
+    const anchor = isSelectedInMonth ? selectedDate.value! : toIso(monthAnchor.value);
+    weekAnchor.value = startOfWeek(new Date(`${anchor}T00:00:00`));
   }
 });
 
-// Springt so, dass die Woche mit dem übergebenen Datum als erste Woche der Seite sichtbar wird
-// (Woche/2 Wochen) bzw. der entsprechende Monat angezeigt wird (Monat). Gibt zurück, ob das Datum
-// im aktuellen Kalenderbereich gefunden wurde (die Monatsansicht ist unbeschränkt, "findet" also
-// immer).
+// Springt so, dass die Woche mit dem übergebenen Datum angezeigt wird bzw. der entsprechende Monat.
 function goToDate(dateIso: string): boolean {
-  if (granularity.value === 'month') {
-    monthAnchor.value = startOfMonth(new Date(dateIso));
-    return true;
-  }
-  const idx = weeks.value.findIndex((week) => week.some((day) => day.date === dateIso));
-  if (idx === -1) return false;
-  pageOffset.value = clampOffset(idx);
+  const d = new Date(`${dateIso}T00:00:00`);
+  monthAnchor.value = startOfMonth(d);
+  weekAnchor.value = startOfWeek(d);
   return true;
 }
 
@@ -1166,8 +1147,8 @@ function formatDate(date: string) {
             size="sm"
             :disabled="!canGoPrev"
             :icon="ACTION_ICONS.scrollLeft"
-            aria-label="Vorherige Wochen"
-            title="Vorherige Wochen"
+            :aria-label="prevPageLabel"
+            :title="prevPageLabel"
             @click="prevPage"
           />
           <span class="range-label">{{ visibleRangeLabel }}</span>
@@ -1176,8 +1157,8 @@ function formatDate(date: string) {
             size="sm"
             :disabled="!canGoNext"
             :icon="ACTION_ICONS.scrollRight"
-            aria-label="Nächste Wochen"
-            title="Nächste Wochen"
+            :aria-label="nextPageLabel"
+            :title="nextPageLabel"
             @click="nextPage"
           />
         </div>
