@@ -4,8 +4,6 @@ import Combobox from './Combobox.vue';
 import { useBudgetStore } from '../stores/budget';
 import { useSpotsStore } from '../stores/spots';
 import { useTripCategoriesStore } from '../stores/tripCategories';
-import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
-import { SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 
 const props = withDefaults(
   defineProps<{

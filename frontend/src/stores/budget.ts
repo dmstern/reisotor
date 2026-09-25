@@ -12,7 +12,6 @@ import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
 import { useTripCategoriesStore } from './tripCategories';
-import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
 
 export interface BudgetFormInput {
   name: string;

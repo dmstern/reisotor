@@ -54,7 +54,9 @@ const editForm = ref({
 });
 
 const createNameId = useId();
+const createEmojiId = useId();
 const editNameId = useId();
+const editEmojiId = useId();
 
 // Bei Wechsel von tripId oder activeType Store synchronisieren
 watch(
@@ -344,9 +346,15 @@ async function toggleHideStandard(cat: DisplayCategory) {
             </button>
           </div>
 
-          <label class="emoji-field">
+          <label :for="createEmojiId" class="emoji-field">
             <span class="field-label">Emoji</span>
-            <Input v-model="createForm.emoji" type="text" class="emoji-input" :maxlength="4" />
+            <Input
+              :id="createEmojiId"
+              v-model="createForm.emoji"
+              type="text"
+              class="emoji-input"
+              :maxlength="4"
+            />
           </label>
         </div>
 
@@ -389,6 +397,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
         v-model="searchQuery"
         type="search"
         placeholder="Kategorien filtern..."
+        aria-label="Kategorien filtern"
         class="search-input"
       />
     </div>
@@ -510,9 +519,15 @@ async function toggleHideStandard(cat: DisplayCategory) {
                   </button>
                 </div>
 
-                <label class="emoji-field">
+                <label :for="editEmojiId" class="emoji-field">
                   <span class="field-label">Emoji</span>
-                  <Input v-model="editForm.emoji" type="text" class="emoji-input" :maxlength="4" />
+                  <Input
+                    :id="editEmojiId"
+                    v-model="editForm.emoji"
+                    type="text"
+                    class="emoji-input"
+                    :maxlength="4"
+                  />
                 </label>
               </div>
 
