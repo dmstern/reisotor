@@ -104,7 +104,7 @@ function updateAllocationAmount(category: string, value: string) {
       <EditButton small aria-label="Budget bearbeiten" @click="emit('edit', budget)" />
     </div>
 
-    <div class="category-row total-row">
+    <div class="total-row">
       <BudgetMeter
         label="Gesamt"
         :spent="totalSpentForBudget"
@@ -239,14 +239,16 @@ function updateAllocationAmount(category: string, value: string) {
   flex-shrink: 0;
 }
 
-.category-row {
+.category-row,
+.total-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
 
-.category-row :deep(.meter-row) {
+.category-row :deep(.meter-row),
+.total-row :deep(.meter-row) {
   flex: 1;
   min-width: 140px;
 }

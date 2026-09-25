@@ -142,16 +142,22 @@ export const useBudgetStore = defineStore('budget', () => {
   );
   const remaining = computed(() => grandTotal.value - totalSpent.value);
 
-  /** Ausgaben ohne budget_id (u. a. automatisch aus Unterkunft/Reise erzeugte) werden dem
-   *  geteilten Budget anhand des Kategorienamens zugeordnet, damit sie in der Aufschlüsselung
-   *  auftauchen, ohne dass jede Alt-Ausgabe nachträglich manuell zugewiesen werden muss. */
+  /** Berechnet die Ausgaben für eine bestimmte Kategorie innerhalb eines Budgets (Finanzguru-Modell):
+   *  Eine Ausgabe fließt nur dann ein, wenn ihre Kategorie übereinstimmt.
+   *  - Geteilte Budgets (owner_id null) erfassen alle geteilten Ausgaben dieser Kategorie.
+   *  - Private Budgets (owner_id gesetzt) erfassen private Ausgaben dieses Nutzers dieser Kategorie. */
   function spentFor(budget: Budget, category: string) {
+    const normCategory = category.trim().toLowerCase();
     return expenses.value
       .filter((e) => {
-        if (e.budget_id === budget.id) return true;
-        if (e.budget_id == null && budget.owner_id == null && (e.category ?? '') === category)
-          return true;
-        return false;
+        if ((e.category ?? '').trim().toLowerCase() !== normCategory) return false;
+        if (budget.owner_id == null) {
+          return isSharedExpense(e, budgets.value);
+        } else {
+          if (isSharedExpense(e, budgets.value)) return false;
+          if (e.budget_id != null) return e.budget_id === budget.id;
+          return e.paid_by_user_id === budget.owner_id;
+        }
       })
       .reduce((s, e) => s + e.amount, 0);
   }
