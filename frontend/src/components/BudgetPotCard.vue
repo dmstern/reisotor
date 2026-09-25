@@ -11,6 +11,7 @@ import FormField from './FormField.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Accordion from './primitives/Accordion.vue';
+import Combobox from './Combobox.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
@@ -135,6 +136,11 @@ function updateAllocationAmount(category: string, value: string) {
           :target="a.amount"
           :color="categoryColors.get(a.category) ?? 'var(--color-text-muted)'"
           :delay="(idx + 1) * 45"
+          :warning="
+            store.isDuplicateCategory(budget.id, a.category)
+              ? 'Diese Kategorie ist mehreren Budgets zugeordnet – Ausgaben dafür fließen in mehrere Budgets ein.'
+              : undefined
+          "
         />
         <div class="category-edit">
           <Input
@@ -174,7 +180,12 @@ function updateAllocationAmount(category: string, value: string) {
       <Accordion :expanded="showAddCategory" :inert-when-closed="false">
         <form class="add-category-form" @submit.prevent="addCategory">
           <FormField icon="category" label="Neue Kategorie" v-slot="{ id }">
-            <Input :id="id" v-model="newCategory" type="text" placeholder="Neue Kategorie" />
+            <Combobox
+              :id="id"
+              v-model="newCategory"
+              :options="store.expenseCategories"
+              placeholder="Neue Kategorie"
+            />
           </FormField>
           <FormField icon="amount" label="Ziel" v-slot="{ id }">
             <Input

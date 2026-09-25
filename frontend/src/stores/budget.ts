@@ -169,6 +169,43 @@ export const useBudgetStore = defineStore('budget', () => {
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
   });
 
+  /** Liefert ein Set von Schlüsseln `${b.id}:${a.category.toLowerCase()}` für Allokationen,
+   *  deren Kategorie in mindestens zwei Budgets desselben Scopes (geteilt vs. privat desselben
+   *  Nutzers) vorkommt. Ausgaben für solche Kategorien fließen in mehrere Budgets ein. */
+  const duplicateAllocations = computed(() => {
+    const countsByScope = new Map<string, Map<string, number>>();
+
+    for (const a of allocations.value) {
+      const b = budgets.value.find((b) => b.id === a.budget_id);
+      if (!b) continue;
+      const scope = b.owner_id == null ? 'shared' : `user:${b.owner_id}`;
+      let catCounts = countsByScope.get(scope);
+      if (!catCounts) {
+        catCounts = new Map<string, number>();
+        countsByScope.set(scope, catCounts);
+      }
+      const cat = a.category.trim().toLowerCase();
+      catCounts.set(cat, (catCounts.get(cat) ?? 0) + 1);
+    }
+
+    const duplicates = new Set<string>();
+    for (const a of allocations.value) {
+      const b = budgets.value.find((b) => b.id === a.budget_id);
+      if (!b) continue;
+      const scope = b.owner_id == null ? 'shared' : `user:${b.owner_id}`;
+      const catCounts = countsByScope.get(scope);
+      const cat = a.category.trim().toLowerCase();
+      if (catCounts && (catCounts.get(cat) ?? 0) > 1) {
+        duplicates.add(`${b.id}:${cat}`);
+      }
+    }
+    return duplicates;
+  });
+
+  function isDuplicateCategory(budgetId: number, category: string): boolean {
+    return duplicateAllocations.value.has(`${budgetId}:${category.trim().toLowerCase()}`);
+  }
+
   // --- Salden / Schulden (Berechnung in utils/budgetBalances.ts) ---
   const balances = computed(() =>
     computeBalances(users.value, expenses.value, transfers.value, budgets.value)
@@ -276,6 +313,7 @@ export const useBudgetStore = defineStore('budget', () => {
     remaining,
     spentFor,
     expenseCategories,
+    isDuplicateCategory,
     balances,
     settlementSuggestions,
     addBudget,

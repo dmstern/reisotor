@@ -19,6 +19,8 @@ const props = withDefaults(
     delay?: number;
     /** Wenn false, wird die Wachstumsanimation übersprungen (sofort voll dargestellt). */
     animated?: boolean;
+    /** Optionaler Warnhinweis (z. B. wenn Kategorie mehreren Budgets zugeordnet ist). */
+    warning?: string;
   }>(),
   {
     format: 'currency',
@@ -54,7 +56,18 @@ function fmt(n: number) {
   <div class="meter-row" :class="{ 'has-target': hasTarget, 'is-over': isOver }">
     <div class="meter-head">
       <span class="dot" :style="{ background: color }"></span>
-      <span class="label">{{ label }}</span>
+      <span class="label">
+        {{ label }}
+        <span
+          v-if="warning"
+          class="category-warning-icon"
+          :title="warning"
+          :aria-label="warning"
+          tabindex="0"
+        >
+          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+        </span>
+      </span>
       <span class="values">
         <strong>{{ fmt(spent) }}</strong>
         <span v-if="hasTarget" class="of"> / {{ fmt(target) }}</span>
@@ -123,6 +136,21 @@ function fmt(n: number) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.category-warning-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  color: var(--color-warning, #f59e0b);
+  vertical-align: middle;
+  cursor: help;
+}
+
+.category-warning-icon:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .values {
