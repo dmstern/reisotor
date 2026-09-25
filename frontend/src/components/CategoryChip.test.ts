@@ -41,4 +41,15 @@ describe('CategoryChip', () => {
     const htmlUndefined = await mountComponent({ category: undefined });
     expect(htmlUndefined).toBe('<!---->');
   });
+
+  it('renders expense category chip when type is expense', async () => {
+    const app = createApp({
+      render: () => h(CategoryChip, { category: 'Essen & Trinken', type: 'expense' }),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('Essen &amp; Trinken');
+    expect(html).toContain('category-chip');
+    expect(html).toContain('--category-color:#e34948');
+  });
 });
