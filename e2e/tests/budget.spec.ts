@@ -359,3 +359,37 @@ test('displays a warning indicator when a category exists in multiple shared bud
     /mehreren Budgets zugeordnet/
   );
 });
+
+test('displays category icon in combobox input and dropdown options', async ({ page }) => {
+  await page.goto('/budget');
+
+  // Ausgabe-Eintragen-Modal öffnen
+  await page.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+  const modal = page.getByRole('dialog', { name: 'Ausgabe eintragen' });
+  await expect(modal).toBeVisible();
+
+  const categoryInput = modal.getByPlaceholder('Kategorie');
+  await expect(categoryInput).toBeVisible();
+
+  // Zunächst kein führendes Icon im leeren Feld
+  const combobox = modal.locator('.combobox');
+  await expect(combobox).not.toHaveClass(/has-leading-icon/);
+
+  // Auf Feld fokussieren -> Dropdown-Optionen mit Icons erscheinen
+  await categoryInput.focus();
+  const options = modal.locator('.options li');
+  await expect(options.first()).toBeVisible();
+  await expect(options.first().locator('.option-icon')).toBeVisible();
+
+  // Option auswählen, z. B. 'Unterkunft'
+  const opt = options.filter({ hasText: 'Unterkunft' });
+  await opt.click();
+
+  // Im geschlossenen Input ist nun das Icon sichtbar
+  await expect(combobox).toHaveClass(/has-leading-icon/);
+  await expect(combobox.locator('.combobox-leading-icon')).toBeVisible();
+
+  // Modal per Escape schließen
+  await page.keyboard.press('Escape');
+  await expect(modal).not.toBeVisible();
+});
