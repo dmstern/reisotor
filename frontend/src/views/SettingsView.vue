@@ -1059,11 +1059,11 @@ async function exportBackup() {
               Reihenfolge und Sichtbarkeit auf Mobilgeräten ("Übersicht" bleibt immer an erster
               Stelle):
             </p>
-            <ul class="nav-config-list">
+            <ul class="mobile-nav-config-list">
               <li
                 v-for="(entry, index) in navConfig.mobileEntries"
                 :key="'mobile-' + entry.key"
-                class="nav-config-row"
+                class="mobile-nav-config-row"
                 :class="{ disabled: !entry.visible }"
               >
                 <AppIcon
@@ -1825,6 +1825,7 @@ h3 {
 }
 
 .nav-config-list,
+.mobile-nav-config-list,
 .dashboard-config-list,
 .push-domain-list {
   list-style: none;
@@ -1836,6 +1837,7 @@ h3 {
 }
 
 .nav-config-row,
+.mobile-nav-config-row,
 .dashboard-config-row,
 .push-domain-row {
   display: flex;
@@ -1846,6 +1848,7 @@ h3 {
 }
 
 .nav-config-row:last-child,
+.mobile-nav-config-row:last-child,
 .dashboard-config-row:last-child,
 .push-domain-row:last-child {
   border-bottom: none;
