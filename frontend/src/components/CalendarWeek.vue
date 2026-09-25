@@ -185,6 +185,10 @@ function onDrop(event: DragEvent, date: string) {
   margin-bottom: var(--space-1);
 }
 
+.week:last-child {
+  margin-bottom: 0;
+}
+
 .day {
   position: relative;
   background: var(--color-surface);

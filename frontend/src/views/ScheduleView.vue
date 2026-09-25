@@ -1805,8 +1805,8 @@ function formatDate(date: string) {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--space-1);
-  margin-bottom: 4px;
-  padding: 0 4px;
+  margin-bottom: 2px;
+  padding: 0 var(--space-1);
   text-align: center;
 }
 
@@ -1825,6 +1825,7 @@ function formatDate(date: string) {
   overflow: hidden;
   display: grid;
   grid-template-columns: 100%;
+  padding: var(--space-1);
 }
 
 .calendar-weeks-page {
