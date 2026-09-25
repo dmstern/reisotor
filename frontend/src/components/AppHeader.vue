@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useNavPositionStore } from '../stores/navPosition';
+import { useIconStyleStore } from '../stores/iconStyle';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import NavBar from './NavBar.vue';
@@ -14,7 +16,10 @@ import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
 import DemoModeBanner from './DemoModeBanner.vue';
 import AppIcon from './AppIcon.vue';
+import UnseenDot from './primitives/UnseenDot.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 import { useHeaderNavFits } from '../composables/useHeaderNavFits';
@@ -23,15 +28,40 @@ const auth = useAuthStore();
 const tripStore = useTripStore();
 const connectivity = useConnectivityStore();
 const navPosition = useNavPositionStore();
+const iconStyle = useIconStyleStore();
+const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
 const headerNavFits = useHeaderNavFits();
 const route = useRoute();
+const router = useRouter();
 const isMapRoute = computed(() => route.name === 'excursions');
 
 const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
 const showDockedNav = computed(
   () => isDesktop.value && headerNavFits.value && navPosition.desktop === 'top' && showTripNav.value
 );
+
+const calendarTarget = computed(() =>
+  tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/calendar` : '/calendar'
+);
+
+const isCalendarActive = computed(() => {
+  const targetPath = tripStore.currentTripId
+    ? `/trip/${tripStore.currentTripId}/calendar`
+    : '/calendar';
+  return route.path.startsWith(targetPath);
+});
+
+function onCalendarClick(event: MouseEvent) {
+  if (isCalendarActive.value) {
+    event.preventDefault();
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(tripStore.currentTripId ? `/trip/${tripStore.currentTripId}` : '/');
+    }
+  }
+}
 
 // Der Header ist standardmäßig 56px hoch (bzw. höher im Demo-Modus durch den DemoModeBanner) –
 // NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
@@ -94,6 +124,27 @@ const profileTitle = computed(() => {
         </div>
 
         <div class="header-actions">
+          <!-- Kalender-Navigation auf Mobilgeräten (<1024px): zwischen TripSwitcher und Online-Anzeige -->
+          <router-link
+            v-if="!isDesktop && showTripNav"
+            :to="calendarTarget"
+            class="header-calendar-btn"
+            :class="{ active: isCalendarActive }"
+            title="Kalender"
+            aria-label="Kalender"
+            @click="onCalendarClick"
+          >
+            <span class="icon-wrap">
+              <AppIcon
+                :icon="SECTION_ICON_DEFS.calendar"
+                group="navigation"
+                :size="18"
+                :active="isCalendarActive"
+                :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
+              />
+              <UnseenDot v-if="liveSync.hasUnseen('schedule')" />
+            </span>
+          </router-link>
           <TrackRecordingIndicator />
           <PresenceAvatars />
           <NotificationInbox />
@@ -372,6 +423,57 @@ const profileTitle = computed(() => {
   width: 44px;
   height: 44px;
   transform: translate(-50%, -50%);
+}
+
+.header-calendar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.header-calendar-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.header-calendar-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.header-calendar-btn.active {
+  background: var(--color-primary-tint);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-primary-dark);
+}
+
+.header-calendar-btn .icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo {

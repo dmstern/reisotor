@@ -84,13 +84,6 @@ const isDashboardActive = computed(() => {
   return route.path === targetPath || route.path === `${targetPath}/`;
 });
 
-const isCalendarActive = computed(() => {
-  const targetPath = tripStore.currentTripId
-    ? `/trip/${tripStore.currentTripId}/calendar`
-    : '/calendar';
-  return route.path.startsWith(targetPath);
-});
-
 function isLinkActive(link: NavLinkDef): boolean {
   if (link.key === 'accommodation') {
     return isAccommodationActive.value;
@@ -241,33 +234,6 @@ function onLinkClick(event: MouseEvent) {
           :color="iconStyle.navColored ? NAV_LINK_COLORS.get('dashboard') : undefined"
         />
         <span class="label">{{ DASHBOARD_LINK.label }}</span>
-      </router-link>
-      <!-- Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitlich
-           schwebende Lasche erreichbar). Dieselbe ausklapp-Schublade lässt sich auf Mobil aber kaum
-           sinnvoll bedienen (u. a. überlagerte die Lasche dort teils wichtige Inhalte/Buttons) –
-           dort deshalb stattdessen als ganz normaler, fest verlinkter Nav-Punkt auf eine eigene
-           Seite (/calendar – dieselbe Komponente wie in der Schublade, siehe router/index.ts), nur
-           <1024px sichtbar (.mobile-page-link; ab Desktop bleibt es beim bestehenden Nav-Punkt hier,
-           Kalender erreicht man dort weiterhin nur über die Lasche). Direkt nach Übersicht. Touren
-           haben seit ihrer Verschmelzung in die Spots-Sicht ("Karte", /excursions) keinen eigenen
-           Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
-      <router-link
-        :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/calendar` : '/calendar'"
-        class="link mobile-page-link"
-        :class="{ active: isCalendarActive, 'custom-inactive': !isCalendarActive }"
-        @click="onLinkClick"
-      >
-        <span class="icon-wrap">
-          <AppIcon
-            class="icon"
-            :icon="SECTION_ICON_DEFS.calendar"
-            group="navigation"
-            :active="isCalendarActive"
-            :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
-          />
-          <UnseenDot v-if="liveSync.hasUnseen('schedule')" />
-        </span>
-        <span class="label">Kalender</span>
       </router-link>
       <router-link
         v-for="link in visibleLinks"
@@ -436,13 +402,5 @@ function onLinkClick(event: MouseEvent) {
 
 .icon {
   font-size: 1.2rem;
-}
-
-@media (min-width: 1024px) {
-  /* Ab Desktop bleibt es bei den zwei ursprünglichen Nav-Punkten neben "Karte" – Kalender/Touren
-     erreicht man dort weiterhin ausschließlich über die seitliche Lasche (Drawer.vue). */
-  .mobile-page-link {
-    display: none;
-  }
 }
 </style>
