@@ -393,3 +393,36 @@ test('displays category icon in combobox input and dropdown options', async ({ p
   await page.keyboard.press('Escape');
   await expect(modal).not.toBeVisible();
 });
+
+test('collapses and expands categories in a budget pot card', async ({ page }) => {
+  await page.goto('/budget');
+  await expect(page.locator('.budget-page')).toBeVisible();
+
+  // Finde einen Topf mit Kategorien (z. B. das geseedete "Gemeinsames Budget")
+  const potCard = page.locator('.pot-card', { hasText: 'Gemeinsames Budget' });
+  await expect(potCard).toBeVisible();
+
+  // Im Standardzustand ausgeklappt: Kategorien sichtbar, Button hat aria-expanded="true"
+  const collapseBtn = potCard.locator('.collapse-btn');
+  await expect(collapseBtn).toBeVisible();
+  await expect(collapseBtn).toHaveAttribute('aria-expanded', 'true');
+  await expect(potCard.locator('.category-row').first()).toBeVisible();
+
+  // Per Klick auf den Collapse-Button einklappen
+  await collapseBtn.click();
+  await expect(collapseBtn).toHaveAttribute('aria-expanded', 'false');
+  await expect(collapseBtn).toHaveAttribute('aria-label', 'Kategorien ausklappen');
+
+  // Die Kategorien sind nun eingeklappt und nicht mehr sichtbar
+  await expect(potCard.locator('.categories-accordion')).not.toHaveClass(/is-expanded/);
+  await expect(potCard.locator('.category-row').first()).not.toBeVisible();
+
+  // Der Gesamtbalken bleibt weiterhin sichtbar
+  await expect(potCard.locator('.total-row')).toBeVisible();
+
+  // Per Klick auf den pot-head wieder ausklappen
+  await potCard.locator('.pot-head').click();
+  await expect(collapseBtn).toHaveAttribute('aria-expanded', 'true');
+  await expect(potCard.locator('.categories-accordion')).toHaveClass(/is-expanded/);
+  await expect(potCard.locator('.category-row').first()).toBeVisible();
+});
