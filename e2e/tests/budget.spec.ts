@@ -137,9 +137,8 @@ test('a private budget pot stays invisible to another member, but shared expense
   await pageA.getByPlaceholder('Name (z. B. Souvenirs)').fill(privatePotName);
   await selectOptionByText(
     pageA.locator('.new-budget-form select').first(),
-    'Privat (nur eine Person sieht ihn)'
+    'Privat (nur für mich sichtbar)'
   );
-  await selectOptionByText(pageA.locator('.new-budget-form select').nth(1), E2E_USERNAME);
   await pageA.getByRole('button', { name: 'Anlegen', exact: true }).click();
   await expect(pageA.locator('.pot-card', { hasText: privatePotName })).toBeVisible();
 
@@ -216,6 +215,45 @@ test('clicking a settlement suggestion pre-fills the transfer form', async ({ pa
   await expect(transferModal).toBeVisible();
   const amountValue = await transferModal.getByPlaceholder('Betrag').inputValue();
   expect(parseFloat(amountValue)).toBeGreaterThan(0);
+});
+
+test('edits a budget pot details and deletes it from the edit modal', async ({ page }) => {
+  await page.goto('/budget');
+  await expect(page.locator('.budget-page')).toBeVisible();
+
+  const originalName = `E2E Edit Topf ${Date.now()}`;
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
+  await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(originalName);
+  await page.getByPlaceholder('Gesamtziel €').fill('150');
+  await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
+
+  const potCard = page.locator('.pot-card', { hasText: originalName });
+  await expect(potCard).toBeVisible();
+
+  // Bearbeiten-Button anklicken
+  await potCard.getByRole('button', { name: 'Budget bearbeiten' }).click();
+
+  const editModal = page.locator('.modal:visible', { hasText: 'Budget bearbeiten' });
+  await expect(editModal).toBeVisible();
+
+  const updatedName = `${originalName} Aktualisiert`;
+  await editModal.getByPlaceholder('Name (z. B. Souvenirs)').fill(updatedName);
+  await editModal.getByPlaceholder('Gesamtziel €').fill('300');
+  await editModal.getByRole('button', { name: 'Speichern', exact: true }).click();
+
+  await expect(editModal).not.toBeVisible();
+  const updatedPotCard = page.locator('.pot-card', { hasText: updatedName });
+  await expect(updatedPotCard).toBeVisible();
+  await expect(updatedPotCard).toContainText('300.00');
+
+  // Erneut öffnen und über den Löschen-Button im Modal löschen
+  await updatedPotCard.getByRole('button', { name: 'Budget bearbeiten' }).click();
+  const editModalToDelete = page.locator('.modal:visible', { hasText: 'Budget bearbeiten' });
+  await expect(editModalToDelete).toBeVisible();
+  await editModalToDelete.getByRole('button', { name: 'Löschen', exact: true }).click();
+
+  await expect(editModalToDelete).not.toBeVisible();
+  await expect(page.locator('.pot-card', { hasText: updatedName })).toHaveCount(0);
 });
 
 test('nothing overflows the mobile viewport on the budget view', async ({ page }) => {
