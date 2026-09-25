@@ -54,6 +54,13 @@ import { usePersistedRef } from '../composables/usePersistedRef';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
 import {
+  loadStoredSpotsColWidth,
+  saveStoredSpotsColWidth,
+  calcValidSpotsColWidth,
+  MIN_SPOTS_COL_WIDTH,
+  MAX_SPOTS_COL_WIDTH,
+} from '../utils/spotsColWidth';
+import {
   buildTourSerpentineRows,
   buildLoopSegments,
   computeTourLoopPath,
@@ -2154,30 +2161,14 @@ function onFocusExcursionFromMap(excursionId: number) {
 
 // --- Aufteilung Spots-Liste/Karte per Anfasser verschiebbar (nur Desktop-Grid, siehe @container-
 // Query im CSS) ---
-const SPOTS_COL_WIDTH_KEY = 'reisotor-spots-col-width';
-const MIN_SPOTS_COL_WIDTH = 280;
-// Großzügig bemessen (der tatsächliche visuelle Anschlag kommt aus dem CSS, siehe
-// grid-template-columns: min(var(--spots-col-width), 75cqw) ... – container-relativ, damit die
-// Karte auf schmaleren Containern nie komplett verdrängt wird, unabhängig von diesem px-Wert hier).
-const MAX_SPOTS_COL_WIDTH = 1400;
-const DEFAULT_SPOTS_COL_WIDTH = 380;
-
-function loadSpotsColWidth(): number {
-  const stored = Number(localStorage.getItem(SPOTS_COL_WIDTH_KEY));
-  const maxAllowed =
-    typeof window !== 'undefined'
-      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 400)
-      : MAX_SPOTS_COL_WIDTH;
-
-  // Zwinge den gespeicherten Wert in die gültigen Grenzen, damit beim Neuladen
-  // auf einem kleineren Bildschirm der Drawer nicht sofort wieder alles überlagert.
-  if (Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH) {
-    return Math.min(stored, maxAllowed);
-  }
-  return Math.min(DEFAULT_SPOTS_COL_WIDTH, maxAllowed);
-}
-const spotsColWidth = ref(loadSpotsColWidth());
-watch(spotsColWidth, (v) => localStorage.setItem(SPOTS_COL_WIDTH_KEY, String(v)));
+const spotsColWidth = ref(
+  calcValidSpotsColWidth({
+    preferredWidth: loadStoredSpotsColWidth(),
+    availableWidth: typeof window !== 'undefined' ? window.innerWidth : 1024,
+    isDesktop: isDesktop.value,
+  })
+);
+watch(spotsColWidth, (v) => saveStoredSpotsColWidth(v));
 
 // Anfasser zwischen Spots-Liste und Karte (Pointer Events statt separater Maus-/Touch-Handler,
 // analog zu Drawer.vue's Schubladen-Anfasser) – verschiebt das Grid-Spaltenverhältnis, indem er
@@ -2208,7 +2199,10 @@ function onColResizeMove(event: PointerEvent) {
   const delta = event.clientX - colStartX;
   const availableWidth =
     appMainWidth.value || (typeof window !== 'undefined' ? window.innerWidth : 1024);
-  const maxAllowed = Math.min(MAX_SPOTS_COL_WIDTH, availableWidth - 380 - 16);
+  const maxAllowed = Math.max(
+    MIN_SPOTS_COL_WIDTH,
+    Math.min(MAX_SPOTS_COL_WIDTH, availableWidth - 380 - 16)
+  );
   spotsColWidth.value = Math.min(maxAllowed, Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta));
   updateSpotsColRight();
 }
@@ -2604,6 +2598,16 @@ function onWindowResize() {
   if (appMainEl) {
     appMainWidth.value = appMainEl.clientWidth;
   }
+  if (!isSheetOverlayMode.value) {
+    const validWidth = calcValidSpotsColWidth({
+      preferredWidth: spotsColWidth.value,
+      availableWidth: appMainWidth.value,
+      isDesktop: true,
+    });
+    if (spotsColWidth.value !== validWidth) {
+      spotsColWidth.value = validWidth;
+    }
+  }
   updateSpotsColRight();
 }
 
@@ -2614,6 +2618,16 @@ onMounted(() => {
     appMainResizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         appMainWidth.value = entry.contentRect.width;
+      }
+      if (!isSheetOverlayMode.value) {
+        const validWidth = calcValidSpotsColWidth({
+          preferredWidth: spotsColWidth.value,
+          availableWidth: appMainWidth.value,
+          isDesktop: true,
+        });
+        if (spotsColWidth.value !== validWidth) {
+          spotsColWidth.value = validWidth;
+        }
       }
       updateSpotsColRight();
     });
@@ -2656,11 +2670,21 @@ watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpot
 watch(
   isSheetOverlayMode,
   (overlay) => {
+    clearSheetHeightOverride();
     if (!overlay) {
       if (sheetState.value === 'collapsed') {
         sheetState.value = 'partial';
       }
-      clearSheetHeightOverride();
+      // Beim Umschalten auf Desktop automatisch die Desktop-Breite des Spots Drawers
+      // wieder in der zuletzt genutzten bzw. minimalen Breite aktivieren
+      const validWidth = calcValidSpotsColWidth({
+        preferredWidth: loadStoredSpotsColWidth() ?? spotsColWidth.value,
+        availableWidth: appMainWidth.value,
+        isDesktop: true,
+      });
+      if (spotsColWidth.value !== validWidth) {
+        spotsColWidth.value = validWidth;
+      }
     }
   },
   { immediate: true }
@@ -5007,7 +5031,7 @@ async function deleteEditingSpot() {
          damit nicht nur die Floating- und Zoom-Buttons Platz haben, sondern auch der
          Day-Strip unten rechts breit genug bleiben kann. */
       max-width: calc(100% - var(--space-4) - 380px);
-      min-width: min(var(--spots-col-width), 280px);
+      min-width: 280px;
       pointer-events: auto;
 
       display: flex;
@@ -5044,7 +5068,8 @@ async function deleteEditingSpot() {
       display: flex;
       position: absolute;
       left: calc(
-        var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) - 380px)) +
+        var(--space-4) +
+          max(280px, min(var(--spots-col-width), calc(100% - var(--space-4) - 380px))) +
           (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
       );
       top: var(--space-4);
