@@ -105,54 +105,64 @@ function updateAllocationAmount(category: string, value: string) {
       <EditButton small aria-label="Budget bearbeiten" @click="emit('edit', budget)" />
     </div>
 
-    <div class="total-row">
-      <BudgetMeter
-        label="Gesamt"
-        :spent="totalSpentForBudget"
-        :target="effectiveTarget"
-        color="var(--color-primary-dark)"
-      />
-      <div class="category-edit total-edit">
-        <Input
-          :id="`budget-target-${budget.id}`"
-          v-model="targetInput"
-          type="number"
-          step="0.01"
-          size="sm"
-          class="category-amount-input"
-          :aria-label="`Ziel (gesamt) für ${displayBudgetName}`"
-          placeholder="0"
-          @change="updateTargetAmount"
-        />
-        <span v-if="allocations.length" class="btn-spacer" aria-hidden="true"></span>
-      </div>
-    </div>
-
-    <template v-if="!isSimpleMode || allocations.length">
-      <div class="category-row" v-for="(a, idx) in allocations" :key="a.id">
+    <div class="total-section" :class="{ 'has-categories': allocations.length > 0 }">
+      <div class="total-row">
         <BudgetMeter
-          :label="a.category"
-          :spent="store.spentFor(budget, a.category)"
-          :target="a.amount"
-          :color="categoryColors.get(a.category) ?? 'var(--color-text-muted)'"
-          :delay="(idx + 1) * 45"
-          :warning="
-            store.isDuplicateCategory(budget.id, a.category)
-              ? 'Diese Kategorie ist mehreren Budgets zugeordnet – Ausgaben dafür fließen in mehrere Budgets ein.'
-              : undefined
-          "
+          label="Gesamt"
+          :spent="totalSpentForBudget"
+          :target="effectiveTarget"
+          color="var(--color-primary-dark)"
+          :prominent="allocations.length > 0"
         />
-        <div class="category-edit">
+        <div class="category-edit total-edit">
           <Input
+            :id="`budget-target-${budget.id}`"
+            v-model="targetInput"
             type="number"
             step="0.01"
             size="sm"
             class="category-amount-input"
-            :aria-label="`Betrag für Kategorie ${a.category}`"
-            :model-value="String(a.amount)"
-            @change="updateAllocationAmount(a.category, ($event.target as HTMLInputElement).value)"
+            :aria-label="`Ziel (gesamt) für ${displayBudgetName}`"
+            placeholder="0"
+            @change="updateTargetAmount"
           />
-          <DeleteButton small @click="store.removeAllocation(a.id)" />
+          <span v-if="allocations.length" class="btn-spacer" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+
+    <template v-if="!isSimpleMode || allocations.length">
+      <div v-if="allocations.length" class="categories-header">
+        <span class="categories-title">Kategorien</span>
+      </div>
+      <div class="categories-list">
+        <div class="category-row" v-for="(a, idx) in allocations" :key="a.id">
+          <BudgetMeter
+            :label="a.category"
+            :spent="store.spentFor(budget, a.category)"
+            :target="a.amount"
+            :color="categoryColors.get(a.category) ?? 'var(--color-text-muted)'"
+            :delay="(idx + 1) * 45"
+            :warning="
+              store.isDuplicateCategory(budget.id, a.category)
+                ? 'Diese Kategorie ist mehreren Budgets zugeordnet – Ausgaben dafür fließen in mehrere Budgets ein.'
+                : undefined
+            "
+          />
+          <div class="category-edit">
+            <Input
+              type="number"
+              step="0.01"
+              size="sm"
+              class="category-amount-input"
+              :aria-label="`Betrag für Kategorie ${a.category}`"
+              :model-value="String(a.amount)"
+              @change="
+                updateAllocationAmount(a.category, ($event.target as HTMLInputElement).value)
+              "
+            />
+            <DeleteButton small @click="store.removeAllocation(a.id)" />
+          </div>
         </div>
       </div>
     </template>
@@ -248,6 +258,48 @@ function updateAllocationAmount(category: string, value: string) {
   width: 30px;
   height: 30px;
   flex-shrink: 0;
+}
+
+.total-section {
+  width: 100%;
+}
+
+.total-section.has-categories {
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: var(--space-1) var(--space-3);
+  margin-bottom: 2px;
+}
+
+.total-section.has-categories .total-row :deep(.meter-row) {
+  padding: var(--space-1) 0;
+}
+
+.categories-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: 0 4px;
+}
+
+.categories-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  border-left: 2px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
+  margin-left: 6px;
+  padding-left: var(--space-2);
 }
 
 .category-row,

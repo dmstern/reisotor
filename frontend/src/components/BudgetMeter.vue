@@ -21,11 +21,14 @@ const props = withDefaults(
     animated?: boolean;
     /** Optionaler Warnhinweis (z. B. wenn Kategorie mehreren Budgets zugeordnet ist). */
     warning?: string;
+    /** Hebt den Meter optisch hervor (z. B. für Gesamtbudget in Töpfen mit Kategorien). */
+    prominent?: boolean;
   }>(),
   {
     format: 'currency',
     delay: 0,
     animated: true,
+    prominent: false,
   }
 );
 
@@ -53,7 +56,10 @@ function fmt(n: number) {
 </script>
 
 <template>
-  <div class="meter-row" :class="{ 'has-target': hasTarget, 'is-over': isOver }">
+  <div
+    class="meter-row"
+    :class="{ 'has-target': hasTarget, 'is-over': isOver, 'is-prominent': prominent }"
+  >
     <div class="meter-head">
       <span class="dot" :style="{ background: color }"></span>
       <span class="label">
@@ -102,6 +108,34 @@ function fmt(n: number) {
   gap: 4px;
   padding: var(--space-2) 0;
   transition: transform 0.15s ease;
+}
+
+.meter-row.is-prominent {
+  padding: var(--space-1) 0;
+}
+
+.meter-row.is-prominent .label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.meter-row.is-prominent .values {
+  font-size: 0.92rem;
+}
+
+.meter-row.is-prominent .values strong {
+  font-weight: 700;
+}
+
+.meter-row.is-prominent .track {
+  height: 10px;
+}
+
+.meter-row.is-prominent .dot {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 .meter-head {
