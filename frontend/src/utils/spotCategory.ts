@@ -36,19 +36,32 @@ import {
   IconBedFilled,
   IconMapPin,
   IconMapPinFilled,
+  IconFlower,
+  IconPaw,
+  IconPawFilled,
+  IconMoodKid,
+  IconBuildingChurch,
+  IconMasksTheater,
+  IconBallFootball,
+  IconMassage,
+  IconTent,
+  IconParking,
+  IconCash,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
 // Spot-Kategorie ist Freitext (Combobox, eigene Kategorien möglich – analog zu Budget-Kategorien),
 // keine feste Enum. Bekannte Standardkategorien bekommen ein passendes Icon/Farbe; alles andere
 // fällt auf das neutrale "Sonstiges"-Icon zurück (Muster wie assignCategoryColors beim Budget).
-interface CategoryMeta {
+export interface CategoryMeta {
+  label?: string;
   icon: string;
   color: string;
   tabler: IconDef;
+  aliases?: string[];
 }
 
-const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: IconDef }[] = [
+export const KNOWN_CATEGORIES: CategoryMeta[] = [
   {
     label: 'Restaurant',
     icon: '🍽️',
@@ -211,6 +224,77 @@ const KNOWN_CATEGORIES: { label: string; icon: string; color: string; tabler: Ic
     icon: '🛏️',
     color: '#1baf7a',
     tabler: { id: 'bed', emoji: '🛏️', outline: IconBed, filled: IconBedFilled },
+    aliases: ['hotel', 'hostel', 'ferienwohnung', 'airbnb', 'pension', 'resort'],
+  },
+  {
+    label: 'Park & Garten',
+    icon: '🌷',
+    color: '#22c55e',
+    tabler: { id: 'flower', emoji: '🌷', outline: IconFlower },
+    aliases: ['park', 'garten', 'schlosspark', 'botanischer garten', 'stadtpark'],
+  },
+  {
+    label: 'Zoo & Tierpark',
+    icon: '🦁',
+    color: '#ea580c',
+    tabler: { id: 'paw', emoji: '🦁', outline: IconPaw, filled: IconPawFilled },
+    aliases: ['zoo', 'tierpark', 'aquarium', 'safari', 'wildpark'],
+  },
+  {
+    label: 'Spielplatz',
+    icon: '🛝',
+    color: '#f59e0b',
+    tabler: { id: 'mood-kid', emoji: '🛝', outline: IconMoodKid },
+    aliases: ['spielplatz', 'playground'],
+  },
+  {
+    label: 'Kirche & Tempel',
+    icon: '⛪',
+    color: '#64748b',
+    tabler: { id: 'building-church', emoji: '⛪', outline: IconBuildingChurch },
+    aliases: ['kirche', 'tempel', 'dom', 'kathedrale', 'moschee', 'synagoge', 'kloster'],
+  },
+  {
+    label: 'Theater & Bühne',
+    icon: '🎭',
+    color: '#d946ef',
+    tabler: { id: 'masks-theater', emoji: '🎭', outline: IconMasksTheater },
+    aliases: ['theater', 'oper', 'bühne', 'kino', 'musical'],
+  },
+  {
+    label: 'Sport & Fitness',
+    icon: '⚽',
+    color: '#10b981',
+    tabler: { id: 'ball-football', emoji: '⚽', outline: IconBallFootball },
+    aliases: ['sport', 'fitness', 'stadion', 'sportplatz', 'kletterhalle'],
+  },
+  {
+    label: 'Wellness & Therme',
+    icon: '💆',
+    color: '#14b8a6',
+    tabler: { id: 'massage', emoji: '💆', outline: IconMassage },
+    aliases: ['wellness', 'spa', 'therme', 'sauna', 'bad'],
+  },
+  {
+    label: 'Campingplatz',
+    icon: '⛺',
+    color: '#15803d',
+    tabler: { id: 'tent', emoji: '⛺', outline: IconTent },
+    aliases: ['camping', 'campingplatz', 'zeltplatz', 'glamping'],
+  },
+  {
+    label: 'Parkplatz',
+    icon: '🅿️',
+    color: '#2563eb',
+    tabler: { id: 'parking', emoji: '🅿️', outline: IconParking },
+    aliases: ['parkplatz', 'parkhaus', 'parkschein'],
+  },
+  {
+    label: 'Geldautomat & Bank',
+    icon: '🏧',
+    color: '#059669',
+    tabler: { id: 'cash', emoji: '🏧', outline: IconCash },
+    aliases: ['atm', 'geldautomat', 'bank', 'wechselstube'],
   },
 ];
 
@@ -221,9 +305,19 @@ const OTHER_META: CategoryMeta = {
 };
 
 /** Für die Combobox: die Standardkategorien werden immer vorgeschlagen, auch ohne bestehende Spots. */
-export const SPOT_CATEGORY_SUGGESTIONS = KNOWN_CATEGORIES.map((c) => c.label);
+export const SPOT_CATEGORY_SUGGESTIONS = KNOWN_CATEGORIES.map((c) => c.label!).filter(Boolean);
 
-const LOOKUP = new Map(KNOWN_CATEGORIES.map((c) => [c.label.toLowerCase(), c]));
+const LOOKUP = new Map<string, CategoryMeta>();
+for (const cat of KNOWN_CATEGORIES) {
+  if (cat.label) {
+    LOOKUP.set(cat.label.toLowerCase(), cat);
+  }
+  if (cat.aliases) {
+    for (const alias of cat.aliases) {
+      LOOKUP.set(alias.toLowerCase(), cat);
+    }
+  }
+}
 
 // Eigene, frei getippte Kategorien (die Combobox erlaubt das schon immer – kein Enum) bekamen
 // bisher alle dieselbe neutralgraue "Sonstiges"-Optik und waren dadurch auf Karte/Liste visuell
