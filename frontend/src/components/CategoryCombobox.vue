@@ -3,8 +3,9 @@ import { computed, ref } from 'vue';
 import Combobox from './Combobox.vue';
 import { useBudgetStore } from '../stores/budget';
 import { useSpotsStore } from '../stores/spots';
-import { expenseCategoryMeta, EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
-import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
+import { useTripCategoriesStore } from '../stores/tripCategories';
+import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
+import { SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 
 const props = withDefaults(
   defineProps<{
@@ -40,28 +41,26 @@ const comboboxRef = ref<InstanceType<typeof Combobox> | null>(null);
 
 const budgetStore = useBudgetStore();
 const spotsStore = useSpotsStore();
+const tripCategoriesStore = useTripCategoriesStore();
 
 const computedOptions = computed(() => {
   if (props.options) return props.options;
   if (props.type === 'expense') {
     return budgetStore.expenseCategories.length > 0
       ? budgetStore.expenseCategories
-      : EXPENSE_CATEGORY_SUGGESTIONS;
+      : tripCategoriesStore.activeExpenseCategories;
   }
-  const used = spotsStore.spots.map((s) => s.category).filter((c): c is string => !!c);
-  return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
+  return spotsStore.spotCategories.length > 0
+    ? spotsStore.spotCategories
+    : tripCategoriesStore.activeSpotCategories;
 });
 
 function iconDefFor(category: string) {
-  return props.type === 'expense'
-    ? expenseCategoryMeta(category).tabler
-    : spotCategoryMeta(category).tabler;
+  return tripCategoriesStore.categoryMeta(category, props.type).tabler;
 }
 
 function colorFor(category: string) {
-  return props.type === 'expense'
-    ? expenseCategoryMeta(category).color
-    : spotCategoryMeta(category).color;
+  return tripCategoriesStore.categoryMeta(category, props.type).color;
 }
 
 const computedPlaceholder = computed(() => {

@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { spotCategoryMeta } from '../utils/spotCategory';
-import { expenseCategoryMeta } from '../utils/expenseCategory';
+import type { IconDef } from '../utils/icon';
+import { useTripCategoriesStore } from '../stores/tripCategories';
 import AppIcon from './AppIcon.vue';
 import Badge from './primitives/Badge.vue';
 
 // Wiederverwendbarer Kategorie-Chip (Icon + Label, eingefärbt nach spotCategoryMeta oder expenseCategoryMeta)
-// – nutzt das primitive Badge.vue für konsistente Chip-/Badge-Darstellung.
+// – nutzt das primitive Badge.vue für konsistente Chip-/Badge-Darstellung und berücksichtigt Custom-Kategorien.
 const props = withDefaults(
   defineProps<{
     category: string | null | undefined;
     type?: 'spot' | 'expense';
     iconOnly?: boolean;
+    customMeta?: { label: string; icon: string; color: string; tabler: IconDef };
   }>(),
   {
     type: 'spot',
@@ -19,11 +20,12 @@ const props = withDefaults(
   }
 );
 
+const tripCategoriesStore = useTripCategoriesStore();
+
 const meta = computed(() => {
+  if (props.customMeta) return props.customMeta;
   if (!props.category) return null;
-  return props.type === 'expense'
-    ? expenseCategoryMeta(props.category)
-    : spotCategoryMeta(props.category);
+  return tripCategoriesStore.categoryMeta(props.category, props.type);
 });
 </script>
 

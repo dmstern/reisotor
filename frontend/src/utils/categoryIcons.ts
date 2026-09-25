@@ -350,7 +350,7 @@ export function resolveCategoryMeta(
   // 2. Standard-Kategorie-Metadaten
   const fallback = type === 'expense' ? expenseCategoryMeta(name) : spotCategoryMeta(name);
   return {
-    label: fallback.label,
+    label: fallback.label || name,
     icon: fallback.icon,
     color: fallback.color,
     tabler: fallback.tabler,

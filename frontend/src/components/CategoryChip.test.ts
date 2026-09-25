@@ -52,4 +52,23 @@ describe('CategoryChip', () => {
     expect(html).toContain('category-chip');
     expect(html).toContain('--category-color:#e34948');
   });
+
+  it('renders custom category using customMeta', async () => {
+    const app = createApp({
+      render: () =>
+        h(CategoryChip, {
+          category: 'Tauchkurs',
+          customMeta: {
+            label: 'Tauchkurs',
+            icon: '🤿',
+            color: '#0ea5e9',
+            tabler: { id: 'swimming', emoji: '🤿', outline: () => null },
+          },
+        }),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('Tauchkurs');
+    expect(html).toContain('--category-color:#0ea5e9');
+  });
 });

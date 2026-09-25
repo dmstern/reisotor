@@ -9,7 +9,7 @@ import {
   type CategoryIconOption,
 } from '../utils/categoryIcons';
 import { KNOWN_EXPENSE_CATEGORIES } from '../utils/expenseCategory';
-import { KNOWN_SPOT_CATEGORIES } from '../utils/spotCategory';
+import { KNOWN_CATEGORIES as KNOWN_SPOT_CATEGORIES } from '../utils/spotCategory';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
@@ -20,7 +20,6 @@ import Modal from './Modal.vue';
 import CategoryChip from './CategoryChip.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const props = defineProps<{
   tripId: number;
@@ -83,8 +82,10 @@ function openIconPicker(target: 'create' | 'edit') {
 }
 
 // Liste der Standardkategorien des aktiven Typs
-const defaultSuggestions = computed(() => {
-  return activeType.value === 'expense' ? KNOWN_EXPENSE_CATEGORIES : KNOWN_SPOT_CATEGORIES;
+const defaultSuggestions = computed<{ label: string; icon?: string; color?: string }[]>(() => {
+  return activeType.value === 'expense'
+    ? KNOWN_EXPENSE_CATEGORIES
+    : KNOWN_SPOT_CATEGORIES.map((s) => ({ label: s.label || '', icon: s.icon, color: s.color }));
 });
 
 // Kategorien aus dem Store für den aktuellen Typ
@@ -251,7 +252,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
           :aria-selected="activeType === 'expense'"
           @click="activeType = 'expense'"
         >
-          <AppIcon :icon="SECTION_ICON_DEFS.budget" :size="16" group="sections" />
+          <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="16" group="formFields" />
           Ausgaben
         </button>
         <button
@@ -345,7 +346,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
 
           <label class="emoji-field">
             <span class="field-label">Emoji</span>
-            <Input v-model="createForm.emoji" type="text" class="emoji-input" maxlength="4" />
+            <Input v-model="createForm.emoji" type="text" class="emoji-input" :maxlength="4" />
           </label>
         </div>
 
@@ -417,8 +418,8 @@ async function toggleHideStandard(cat: DisplayCategory) {
               }"
             />
 
-            <Badge v-if="cat.isCustom" variant="info" class="kind-badge">Urlaub</Badge>
-            <Badge v-else variant="neutral" class="kind-badge">Standard</Badge>
+            <Badge v-if="cat.isCustom" variant="primary" class="kind-badge">Urlaub</Badge>
+            <Badge v-else variant="default" class="kind-badge">Standard</Badge>
 
             <span class="usage-count" :class="{ 'has-usage': cat.usageCount > 0 }">
               {{ cat.usageCount }} {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }}
@@ -511,7 +512,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
 
                 <label class="emoji-field">
                   <span class="field-label">Emoji</span>
-                  <Input v-model="editForm.emoji" type="text" class="emoji-input" maxlength="4" />
+                  <Input v-model="editForm.emoji" type="text" class="emoji-input" :maxlength="4" />
                 </label>
               </div>
 
