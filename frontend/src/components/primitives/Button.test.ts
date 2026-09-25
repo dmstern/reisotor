@@ -55,4 +55,14 @@ describe('Button primitive', () => {
     expect(html).toContain('btn--danger');
     expect(html).toContain('btn--secondary');
   });
+
+  it('renders btn--card-action and btn--sm when size="sm" is passed with variant="card-action"', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'card-action', size: 'sm' }, () => 'Auf Karte'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--card-action');
+    expect(html).toContain('btn--sm');
+    expect(html).toContain('Auf Karte');
+  });
 });

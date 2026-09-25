@@ -269,7 +269,9 @@ const btnClasses = computed(() => [
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 6px 12px;
+  min-height: 32px;
+  box-sizing: border-box;
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
