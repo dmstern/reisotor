@@ -1674,6 +1674,7 @@ function formatDate(date: string) {
         <Button
           v-if="viewingEntry"
           variant="card-action"
+          size="sm"
           class="calendar-btn"
           title="Zum eigenen Kalender hinzufügen"
           aria-label="Zum eigenen Kalender hinzufügen"

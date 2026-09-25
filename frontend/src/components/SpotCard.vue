@@ -513,6 +513,7 @@ const cardRotation = computed(() => {
       <div class="map-actions" v-if="expanded && spot.lat != null && spot.lng != null">
         <Button
           variant="card-action"
+          size="sm"
           class="show-on-map-btn"
           aria-label="Auf Karte anzeigen"
           title="Auf Karte anzeigen"
@@ -1421,12 +1422,6 @@ const cardRotation = computed(() => {
   align-items: center;
   gap: 6px;
   margin-top: 2px;
-}
-
-.map-actions :deep(.btn--card-action) {
-  font-size: 0.8rem;
-  padding: 3px 8px;
-  gap: 4px;
 }
 
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle: .calendar-drag-handle (Pointer-Events,

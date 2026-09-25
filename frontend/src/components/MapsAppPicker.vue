@@ -75,7 +75,14 @@ onUnmounted(() => {
 
 <template>
   <div class="maps-picker" @click.stop>
-    <Button ref="buttonRef" :variant="props.variant" :size="props.size" @click="toggle($event)">
+    <Button
+      ref="buttonRef"
+      :variant="props.variant"
+      :size="props.size"
+      aria-label="In Maps-App öffnen"
+      title="In Maps-App öffnen"
+      @click="toggle($event)"
+    >
       <AppIcon :icon="ACTION_ICONS.mapsApp" :size="props.size === 'sm' ? 14 : 16" group="actions" />
       In Maps-App öffnen
     </Button>
