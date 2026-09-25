@@ -189,3 +189,43 @@ describe('ideas -> excursion_legs Transport-Backfill', () => {
     expect(legRow.budget_expense_id).toBe(99);
   });
 });
+
+describe('trip_categories Schema-Initialisierung', () => {
+  let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.DB_PATH;
+    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+  });
+
+  it('erstellt die Tabelle trip_categories mit Indizes', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-categories-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='trip_categories'")
+      .all() as { name: string }[];
+    expect(tables.length).toBe(1);
+
+    const columns = db.prepare('PRAGMA table_info(trip_categories)').all() as {
+      name: string;
+      type: string;
+    }[];
+    const columnNames = columns.map((c) => c.name);
+    expect(columnNames).toContain('id');
+    expect(columnNames).toContain('trip_id');
+    expect(columnNames).toContain('type');
+    expect(columnNames).toContain('name');
+    expect(columnNames).toContain('icon');
+    expect(columnNames).toContain('emoji');
+    expect(columnNames).toContain('color');
+    expect(columnNames).toContain('is_hidden');
+  });
+});

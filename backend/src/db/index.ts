@@ -432,6 +432,24 @@ if (!hadTripMembersTable) {
   }
 }
 
+// Kategorien-Verwaltung pro Urlaub (Ausgaben, Spots, Packliste): speichert benutzerdefinierte
+// Kategorien mit eigenem Icon, Emoji und Farbcode sowie Ausblendungen von Standardkategorien.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS trip_categories (
+    id INTEGER PRIMARY KEY,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    icon TEXT,
+    emoji TEXT,
+    color TEXT,
+    is_hidden INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(trip_id, type, name)
+  );
+  CREATE INDEX IF NOT EXISTS idx_trip_categories_trip ON trip_categories (trip_id, type);
+`);
+
 // Standort-Freigabe pro Mitgliedschaft: wählbare Dauer ("dauerhaft"/"1 Woche"/"1 Tag"), siehe
 // routes/realtime.ts's location-share-Endpunkte. NULL = keine Freigabe (Default, entspricht dem
 // bisherigen Verhalten: Broadcast nur solange TripMap.vue selbst gemountet ist). Ein Zeitstempel in
