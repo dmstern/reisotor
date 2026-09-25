@@ -646,6 +646,15 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     { deep: true }
   );
   watch(
+    () => navCfgStore.customMobile,
+    () => persist()
+  );
+  watch(
+    () => navCfgStore.mobileEntries,
+    () => persist(),
+    { deep: true }
+  );
+  watch(
     () => dashCfgStore.entries,
     () => persist(),
     { deep: true }

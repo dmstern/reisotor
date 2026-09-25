@@ -28,7 +28,17 @@ import {
   WEEK_START_OPTIONS,
   DATE_FORMAT_OPTIONS,
 } from '../stores/calendarSettings';
-import { useUiSettingsStore, TOAST_TIMEOUT_OPTIONS } from '../stores/uiSettings';
+import {
+  useUiSettingsStore,
+  TOAST_TIMEOUT_OPTIONS,
+  DEFAULT_PRIMARY_COLOR,
+  DEFAULT_BORDER_WIDTH,
+  DEFAULT_DIARY_FONT,
+  getPresetGlassValues,
+} from '../stores/uiSettings';
+import { useIconStyleStore } from '../stores/iconStyle';
+import { useToast } from '../composables/useToast';
+
 import {
   getExistingSubscription,
   isPushSupported,
@@ -167,6 +177,8 @@ function dashboardTileIcon(key: string) {
 const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
 const uiSettings = useUiSettingsStore();
+const iconStyle = useIconStyleStore();
+const { showToast } = useToast();
 const loading = ref(true);
 const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
@@ -403,6 +415,61 @@ function resetDashboard() {
 const isVacationCountdownDefault = computed(() => !uiSettings.showVacationCountdown);
 function resetVacationCountdown() {
   uiSettings.showVacationCountdown = false;
+}
+
+const isAllAppDefault = computed(() => {
+  const g = iconStyle.groups;
+  const isIconDefault =
+    g.navigation === 'icons' &&
+    g.categories === 'emoji' &&
+    g.weather === 'icons' &&
+    iconStyle.navColored &&
+    iconStyle.colorizeWeather &&
+    iconStyle.colorizeCategories;
+
+  return (
+    isThemeDefault.value &&
+    uiSettings.primaryColor.toLowerCase() === DEFAULT_PRIMARY_COLOR.toLowerCase() &&
+    uiSettings.borderWidth === DEFAULT_BORDER_WIDTH &&
+    uiSettings.glassStyle === 'glass' &&
+    uiSettings.glassOpacity === 42 &&
+    uiSettings.glassBlur === 6 &&
+    isIconDefault &&
+    uiSettings.diaryFont === DEFAULT_DIARY_FONT &&
+    isNavDefault.value &&
+    isDashboardDefault.value &&
+    isVacationCountdownDefault.value
+  );
+});
+
+async function resetAllAppSettings() {
+  if (
+    !window.confirm(
+      'Möchtest du wirklich alle App-Einstellungen auf die Werkseinstellungen zurücksetzen?'
+    )
+  ) {
+    return;
+  }
+
+  theme.reset();
+  uiSettings.primaryColor = DEFAULT_PRIMARY_COLOR;
+  uiSettings.borderWidth = DEFAULT_BORDER_WIDTH;
+  const glassPreset = getPresetGlassValues('glass');
+  if (glassPreset) {
+    uiSettings.glassOpacity = glassPreset.opacity;
+    uiSettings.glassBlur = glassPreset.blur;
+    uiSettings.glassStyle = 'glass';
+  }
+  iconStyle.resetToDefaults();
+  uiSettings.diaryFont = DEFAULT_DIARY_FONT;
+  resetNav();
+  resetDashboard();
+  resetVacationCountdown();
+
+  showToast({
+    message: 'Alle App-Einstellungen wurden auf Werkseinstellungen zurückgesetzt.',
+    type: 'info',
+  });
 }
 
 const isCalendarDefault = computed(
@@ -1167,6 +1234,39 @@ async function exportBackup() {
           description="Zählt die verbleibenden Tage im Dashboard-Header herunter (z. B. 'Noch 3 Tage Urlaub!'), anstatt eines statischen Grußtextes."
         />
       </Card>
+
+      <Card class="factory-reset-card">
+        <div class="factory-reset-inner">
+          <div class="factory-reset-info">
+            <div class="factory-reset-title-row">
+              <AppIcon :icon="ACTION_ICONS.restore" :size="20" group="actions" />
+              <h2>Werkseinstellungen</h2>
+            </div>
+            <p class="hint factory-reset-hint">
+              Setzt alle persönlichen App-Einstellungen (Darstellung, Farben, Rahmendicke,
+              Glas-Effekt, Icons, Schriftart, Navigation, Dashboard-Kacheln und Urlaubs-Hinweis) auf
+              die Standardwerte zurück.
+            </p>
+          </div>
+          <div class="factory-reset-action">
+            <Button
+              variant="secondary"
+              size="md"
+              :icon="ACTION_ICONS.restore"
+              :disabled="isAllAppDefault"
+              :title="
+                isAllAppDefault
+                  ? 'Bereits alle App-Einstellungen auf Standardwerten'
+                  : 'Alle App-Einstellungen auf Werkseinstellungen zurücksetzen'
+              "
+              class="factory-reset-btn"
+              @click="resetAllAppSettings"
+            >
+              <span class="factory-reset-btn-label">Auf Werkseinstellungen zurücksetzen</span>
+            </Button>
+          </div>
+        </div>
+      </Card>
     </template>
 
     <div v-if="activeTab === 'trip'" class="grid settings-grid">
@@ -1764,6 +1864,59 @@ h3 {
 
 .mobile-nav-config-hint {
   margin-bottom: var(--space-3);
+}
+
+.factory-reset-card {
+  margin-top: var(--space-6);
+}
+
+.factory-reset-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.factory-reset-info {
+  flex: 1 1 320px;
+}
+
+.factory-reset-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.factory-reset-title-row h2 {
+  margin: 0;
+}
+
+.factory-reset-hint {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.factory-reset-action {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .factory-reset-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .factory-reset-action {
+    width: 100%;
+  }
+
+  .factory-reset-action :deep(.btn),
+  .factory-reset-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .push-details-toggle {
