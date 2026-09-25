@@ -1464,8 +1464,8 @@ function setTourCardRef(
   setCategoryRef(category, el);
   setExcursionRef(excursionId, el);
 }
-function scrollToExcursion(id: number) {
-  scrollToElementInBody(() => {
+function scrollToExcursion(id: number): Promise<void> {
+  return scrollToElementInBody(() => {
     const el = excursionRefs.get(id);
     if (el) return el;
     const grp = spotGroups.value.find((g) => g.excursion?.id === id);
@@ -1479,8 +1479,11 @@ function scrollToExcursion(id: number) {
 const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
 let programmaticScrollTarget: string | null = null;
 let programmaticScrollTimeout: ReturnType<typeof setTimeout> | null = null;
+let excursionOpenSequenceToken = 0;
 
 function cancelProgrammaticScroll() {
+  excursionOpenSequenceToken++;
+  activeScrollToken++;
   programmaticScrollTarget = null;
   if (programmaticScrollTimeout) {
     clearTimeout(programmaticScrollTimeout);
@@ -1738,8 +1741,8 @@ function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
   if (domEl) spotRefs.set(id, domEl);
   else spotRefs.delete(id);
 }
-function scrollToSpot(id: number) {
-  scrollToElementInBody(() => spotRefs.get(id));
+function scrollToSpot(id: number): Promise<void> {
+  return scrollToElementInBody(() => spotRefs.get(id));
 }
 // Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
 // scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
@@ -2195,17 +2198,77 @@ watch(expandedExcursionId, (newId, oldId) => {
   }
 });
 
+/**
+ * Öffnet eine Tour sequentiell:
+ * 1. Falls zuvor eine andere Tour geöffnet war, wird diese zuerst zugeklappt
+ *    und gewartet, bis die Zuklapp-Transition beendet ist (400ms).
+ * 2. Danach wird die Ziel-Tour aufgeklappt.
+ * 3. Der Spot-Drawer scrollt die neu aufgeklappte Tour an den oberen Rand.
+ * 4. Nach Abschluss der Aufklapp-Transition (400ms) wird die Scrollposition erneut
+ *    berechnet und feinjustiert, sodass die Tour absolut bündig am oberen Ende sitzt.
+ */
+async function openExcursionWithScroll(excursionId: number) {
+  const token = ++excursionOpenSequenceToken;
+
+  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursionId) {
+    drawers.mapFocusExcursionId = null;
+  }
+  if (drawers.mapFocusKey != null) {
+    drawers.mapFocusKey = null;
+  }
+
+  const previousExcursionId = expandedExcursionId.value;
+  if (previousExcursionId === excursionId) {
+    await scrollToExcursion(excursionId);
+    return;
+  }
+
+  const prefersReduced =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 1. Vorherige Tour zuerst einklappen und auf Ende der Collapse-Transition warten
+  if (previousExcursionId != null) {
+    expandedExcursionId.value = null;
+    expandedSpotId.value = null;
+
+    if (!prefersReduced) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 400));
+    } else {
+      await nextTick();
+    }
+
+    if (token !== excursionOpenSequenceToken) return;
+  }
+
+  // 2. Ziel-Tour aufklappen
+  expandedExcursionId.value = excursionId;
+  await nextTick();
+  if (token !== excursionOpenSequenceToken) return;
+
+  // 3. Scrollposition berechnen und Drawer an die Tour scrollen
+  await scrollToExcursion(excursionId);
+  if (token !== excursionOpenSequenceToken) return;
+
+  // 4. Warten, bis die Aufklapp-Transition der neuen Tour durch ist
+  if (!prefersReduced) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 420));
+  } else {
+    await nextTick();
+  }
+  if (token !== excursionOpenSequenceToken) return;
+
+  // 5. Scrollposition nochmal neu berechnen und feinjustieren
+  await scrollToExcursion(excursionId);
+}
+
 // Klick auf den Ausflug-Titel im Karten-Fokus-Panel (TripMap.vue's @focus-excursion) klappt die
 // passende ExcursionCard hier auf und scrollt sie in den Blick – exakt dasselbe Muster wie
 // onFocusSpotFromMap oben. Die Gruppen-Überschrift ist nur bei Touren-Gruppierung eine echte
 // ExcursionCard (siehe spotGroups), deshalb hier ggf. zuerst umschalten.
 function onFocusExcursionFromMap(excursionId: number) {
   groupMode.value = 'tours';
-  expandedExcursionId.value = excursionId;
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
-  nextTick(() => {
-    scrollToExcursion(excursionId);
-  });
+  openExcursionWithScroll(excursionId);
 }
 
 // --- Aufteilung Spots-Liste/Karte per Anfasser verschiebbar (nur Desktop-Grid, siehe @container-
@@ -2767,15 +2830,10 @@ function onSpotCardClose() {
 }
 
 function onExcursionCardOpen(excursion: Excursion) {
-  expandedExcursionId.value = excursion.id;
-  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursion.id) {
-    drawers.mapFocusExcursionId = null;
-  }
-  if (drawers.mapFocusKey != null) {
-    drawers.mapFocusKey = null;
-  }
+  openExcursionWithScroll(excursion.id);
 }
 function onExcursionCardClose() {
+  excursionOpenSequenceToken++;
   expandedExcursionId.value = null;
   drawers.mapFocusExcursionId = null;
 }
