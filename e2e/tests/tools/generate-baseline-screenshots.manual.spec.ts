@@ -135,7 +135,7 @@ async function saveScreenshotIfChanged(
           maxDiffPixels ??
           (img1.width <= 500
             ? Math.max(300, Math.round(img1.width * img1.height * 0.012))
-            : Math.round(img1.width * img1.height * 0.005));
+            : Math.round(img1.width * img1.height * 0.012));
 
         if (numDiffPixels > 0 && process.env.FORCE_SCREENSHOTS) {
           fs.writeFileSync(screenshotPath, newBuffer);
