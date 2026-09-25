@@ -14,8 +14,8 @@ import { useToast } from '../composables/useToast';
 
 export interface BudgetFormInput {
   name: string;
-  owner_id?: number;
-  target_amount?: number;
+  owner_id?: number | null;
+  target_amount?: number | null;
 }
 
 export interface ExpenseInput {
