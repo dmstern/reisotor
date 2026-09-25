@@ -1233,7 +1233,13 @@ function formatDate(date: string) {
             title="Zum heutigen Datum springen"
             @click="jumpToToday"
           >
-            <AppIcon :icon="ACTION_ICONS.today" :size="14" group="actions" /> Heute
+            <AppIcon
+              :icon="ACTION_ICONS.today"
+              :size="14"
+              group="actions"
+              :active="isTodayActive"
+            />
+            Heute
           </Button>
           <Button
             variant="secondary"
@@ -1243,7 +1249,13 @@ function formatDate(date: string) {
             title="Zum Reisezeitraum springen"
             @click="goToTripDates"
           >
-            <AppIcon :icon="ACTION_ICONS.vacation" :size="14" group="actions" /> Urlaub
+            <AppIcon
+              :icon="ACTION_ICONS.vacation"
+              :size="14"
+              group="actions"
+              :active="isTripActive"
+            />
+            Urlaub
           </Button>
         </div>
         <Button size="sm" @click="openAddForm">

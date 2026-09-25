@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject, type ComputedRef } from 'vue';
 import {
   useIconStyleStore,
   type IconGroup,
@@ -26,12 +26,18 @@ const props = withDefaults(
     forceVariant?: IconVariant;
     active?: boolean;
   }>(),
-  { size: 20, color: 'currentColor', active: false }
+  { size: 20, color: 'currentColor', active: undefined }
+);
+
+const injectedButtonActive = inject<ComputedRef<boolean> | undefined>('buttonActive', undefined);
+
+const isActive = computed(() =>
+  props.active !== undefined ? props.active : (injectedButtonActive?.value ?? false)
 );
 
 const iconStyle = useIconStyleStore();
 const component = computed(() => {
-  const variant: IconVariant = props.forceVariant ?? (props.active ? 'filled' : 'outline');
+  const variant: IconVariant = props.forceVariant ?? (isActive.value ? 'filled' : 'outline');
   return resolveIconComponent(
     props.icon,
     props.forceStyle ?? iconStyle.styleForGroup(props.group),
@@ -44,7 +50,7 @@ const component = computed(() => {
   <span
     v-if="!component"
     class="app-icon app-icon-emoji"
-    :class="{ 'is-active': active }"
+    :class="{ 'is-active': isActive }"
     :style="{ fontSize: size + 'px' }"
     aria-hidden="true"
     >{{ icon.emoji }}</span
@@ -53,7 +59,7 @@ const component = computed(() => {
     :is="component"
     v-else
     class="app-icon app-icon-tabler"
-    :class="{ 'is-active': active }"
+    :class="{ 'is-active': isActive }"
     :size="size"
     :color="color"
     aria-hidden="true"

@@ -2,7 +2,7 @@
 import type { IconDef } from '../../utils/icon';
 import { RouterLink, type RouteLocationRaw } from 'vue-router';
 import AppIcon from '../AppIcon.vue';
-import { useSlots, computed, Comment } from 'vue';
+import { useSlots, computed, Comment, provide } from 'vue';
 
 // Button-Primitive für alle Buttons (Formularknöpfe, Aktionsbuttons, Card-Actions, Icon-Only-Buttons) – siehe Issue #239.
 // Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons, sowie Link-Rendering (to/href).
@@ -79,6 +79,11 @@ const btnClasses = computed(() => [
       _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
   },
 ]);
+
+provide(
+  'buttonActive',
+  computed(() => _props.active)
+);
 </script>
 
 <template>

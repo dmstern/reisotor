@@ -1,9 +1,12 @@
 /* eslint-disable vue/one-component-per-file */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createApp, h } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import { renderToString } from 'vue/server-renderer';
 import Button from './Button.vue';
+import AppIcon from '../AppIcon.vue';
+import { ACTION_ICONS } from '../../utils/actionIcons';
 
 describe('Button primitive', () => {
   it('renders a button element by default', async () => {
@@ -64,5 +67,50 @@ describe('Button primitive', () => {
     expect(html).toContain('btn--card-action');
     expect(html).toContain('btn--sm');
     expect(html).toContain('Auf Karte');
+  });
+
+  it('renders filled icon variant when button is active and icon has filled variant', async () => {
+    setActivePinia(createPinia());
+    const app = createApp({
+      render: () =>
+        h(Button, { active: true }, () => [
+          h(AppIcon, { icon: ACTION_ICONS.today, group: 'actions' }),
+          'Heute',
+        ]),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('tabler-icon-calendar-event-filled');
+    expect(html).toContain('Heute');
+  });
+
+  it('renders outline icon variant when button is not active', async () => {
+    setActivePinia(createPinia());
+    const app = createApp({
+      render: () =>
+        h(Button, { active: false }, () => [
+          h(AppIcon, { icon: ACTION_ICONS.today, group: 'actions' }),
+          'Heute',
+        ]),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('tabler-icon-calendar-event');
+    expect(html).not.toContain('tabler-icon-calendar-event-filled');
+  });
+
+  it('gracefully falls back to outline for icons without filled variant (such as vacation) even when button is active', async () => {
+    setActivePinia(createPinia());
+    const app = createApp({
+      render: () =>
+        h(Button, { active: true }, () => [
+          h(AppIcon, { icon: ACTION_ICONS.vacation, group: 'actions' }),
+          'Urlaub',
+        ]),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('tabler-icon-beach');
+    expect(html).toContain('Urlaub');
   });
 });
