@@ -174,7 +174,9 @@ function onSubmit() {
       />
 
       <label :for="nameId">
-        Name des Urlaubs <span class="required-indicator" aria-hidden="true">*</span>
+        <span class="label-text">
+          Name des Urlaubs <span class="required-indicator" aria-hidden="true">*</span>
+        </span>
         <Input
           :id="nameId"
           v-model="form.name"
@@ -340,6 +342,12 @@ label,
   gap: 4px;
   font-size: 0.85rem;
   color: var(--color-text-muted);
+}
+
+.label-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .hint {

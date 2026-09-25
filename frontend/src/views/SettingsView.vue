@@ -747,15 +747,14 @@ async function exportBackup() {
         </div>
 
         <form class="form username-form" @submit.prevent="changeUsername">
-          <label for="auto-id-1788301175449-26">
-            Benutzername <span class="required-indicator" aria-hidden="true">*</span>
-            <Input
-              id="auto-id-1788301175449-26"
-              v-model="usernameForm.username"
-              type="text"
-              required
-            />
-          </label>
+          <div class="field">
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+            <label for="profile-username">
+              Benutzername
+              <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
+            <Input id="profile-username" v-model="usernameForm.username" type="text" required />
+          </div>
           <p v-if="usernameError" class="hint error">{{ usernameError }}</p>
           <p v-if="usernameSaved" class="hint success">
             Benutzername geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
@@ -1971,13 +1970,22 @@ h3 {
   max-width: 320px;
 }
 
-label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(.card-header-row *),
+label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(
+    .card-header-row *
+  ):not(.field *),
 .field {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.field label {
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 2px;
 }
 
 .hint {

@@ -627,6 +627,7 @@ button {
   color: var(--color-danger, #ef4444);
   font-weight: 700;
   margin-left: 2px;
+  display: inline;
 }
 
 /* ========================================================================= */
