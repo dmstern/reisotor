@@ -910,10 +910,10 @@ async function exportBackup() {
         </p>
         <div class="nav-position-row">
           <label for="auto-id-1788301151989-29">
-            Desktop
+            Desktop-Position
             <Select id="auto-id-1788301151989-29" v-model="navPosition.desktop">
-              <option value="top">Oben (im Header)</option>
-              <option value="bottom">Unten (schwebend)</option>
+              <option value="top">Oben</option>
+              <option value="bottom">Unten</option>
             </Select>
           </label>
         </div>
