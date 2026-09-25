@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef, watch } from 'vue';
+import { ref, shallowRef, watch, computed } from 'vue';
 import { api } from '../api/client';
 import type { Spot, SpotComment, SpotLike } from '../api/types';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useScheduleStore } from './schedule';
 import { useToast } from '../composables/useToast';
+import { useTripCategoriesStore } from './tripCategories';
 export interface SpotFormData {
   trip_id: number;
   title: string;
@@ -37,10 +38,17 @@ export interface SpotFormData {
 export const useSpotsStore = defineStore('spots', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
+  const tripCategoriesStore = useTripCategoriesStore();
   const spots = shallowRef<Spot[]>([]);
   const spotLikes = shallowRef<SpotLike[]>([]);
   const spotComments = shallowRef<SpotComment[]>([]);
   const loaded = ref(false);
+
+  const spotCategories = computed(() => {
+    const set = new Set<string>(tripCategoriesStore.activeSpotCategories);
+    spots.value.forEach((s) => s.category && set.add(s.category));
+    return [...set].sort((a, b) => a.localeCompare(b, 'de'));
+  });
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -203,5 +211,6 @@ export const useSpotsStore = defineStore('spots', () => {
     updateComment,
     toggleCommentLike,
     setDone,
+    spotCategories,
   };
 });

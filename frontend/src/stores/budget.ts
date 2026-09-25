@@ -11,6 +11,7 @@ import { effectiveBudgetTarget, grandTotalTarget } from '../utils/budgetTargets'
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
+import { useTripCategoriesStore } from './tripCategories';
 import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
 
 export interface BudgetFormInput {
@@ -46,6 +47,7 @@ export interface TransferInput {
 export const useBudgetStore = defineStore('budget', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
+  const tripCategoriesStore = useTripCategoriesStore();
   const users = shallowRef<User[]>([]);
   const expenses = shallowRef<BudgetExpense[]>([]);
   const budgets = shallowRef<Budget[]>([]);
@@ -164,8 +166,8 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   const expenseCategories = computed(() => {
-    const set = new Set<string>(EXPENSE_CATEGORY_SUGGESTIONS);
-    allocations.value.forEach((a) => set.add(a.category));
+    const set = new Set<string>(tripCategoriesStore.activeExpenseCategories);
+    allocations.value.forEach((a) => a.category && set.add(a.category));
     expenses.value.forEach((e) => e.category && set.add(e.category));
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
   });
