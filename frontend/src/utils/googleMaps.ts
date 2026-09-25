@@ -16,6 +16,8 @@ const PATTERNS: RegExp[] = [
   /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // Google/Apple Maps: ?ll=48.2082,16.3738
   /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, // Google/Apple Maps: ?q=48.2082,16.3738
   /[?&]mlat=(-?\d+\.\d+)&mlon=(-?\d+\.\d+)/, // OpenStreetMap: ?mlat=48.2082&mlon=16.3738 (siehe buildOsmLink unten)
+  /#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/, // OpenStreetMap Hash: #map=16/48.2082/16.3738
+  /geo:(-?\d+\.\d+),(-?\d+\.\d+)/, // RFC 5870 / Android Geo-URI: geo:48.2082,16.3738
 ];
 
 /** Extrahiert Lat/Lng aus gängigen Google-Maps- und Apple-Maps-Link-Formaten. Kurzlinks
@@ -41,6 +43,40 @@ export function parseLatLngFromMapsLink(url: string | null | undefined): LatLng 
     }
   }
   return null;
+}
+
+/** Baut eine Such-URL für Google Maps mit Pin an der Koordinate. */
+export function buildGoogleMapsLink(lat: number, lng: number): string {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+}
+
+/** Baut eine Apple-Maps-URL mit Pin an der Koordinate und optionalem Titel. */
+export function buildAppleMapsLink(lat: number, lng: number, title?: string): string {
+  const query = title ? `&q=${encodeURIComponent(title)}` : '';
+  return `https://maps.apple.com/?ll=${lat},${lng}${query}`;
+}
+
+/** Baut einen generischen Maps-Link, der auf Mobilgeräten (Android/iOS) die Auswahl der
+ *  Karten-App an das Betriebssystem delegiert (System-Auswahldialog oder Standard-App).
+ *  - iOS: maps:// URL-Schema öffnet die native Karten-App.
+ *  - Android / Standard: RFC 5870 geo:-URI öffnet den nativen "Öffnen mit"-App-Chooser. */
+export function buildGenericMapsLink(
+  lat: number,
+  lng: number,
+  title?: string,
+  userAgent?: string
+): string {
+  const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  const isIos = /iPad|iPhone|iPod/.test(ua);
+
+  if (isIos) {
+    const query = title ? `&q=${encodeURIComponent(title)}` : '';
+    return `maps://?ll=${lat},${lng}${query}`;
+  }
+
+  const safeTitle = title ? `(${encodeURIComponent(title.replace(/[()]/g, '').trim())})` : '';
+  const query = safeTitle ? `?q=${lat},${lng}${safeTitle}` : '';
+  return `geo:${lat},${lng}${query}`;
 }
 
 /** Baut die URL einer einzelnen OpenStreetMap-Kachel rund um die Koordinate – dient als
