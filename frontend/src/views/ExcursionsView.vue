@@ -4621,6 +4621,7 @@ async function deleteEditingSpot() {
   /* Mobil: Karte soll unter den schwebenden Header ragen */
   margin-top: calc(-1 * var(--app-header-height, 56px));
   height: calc(100vh - var(--navbar-offset, 0px));
+  height: calc(100dvh - var(--navbar-offset, 0px));
   overflow: hidden;
   padding: 0;
 }
@@ -4671,9 +4672,11 @@ async function deleteEditingSpot() {
   right: var(--space-4);
   /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf
      0) schwebt das Sheet mit einem sauberen Abstand (--space-3) über der unteren NavBar
-     (--navbar-bottom-offset). Dadurch kleben Drawer und NavBar nicht aneinander und der Drawer wird
+     (--navbar-bottom-offset + env(safe-area-inset-bottom)). Dadurch kleben Drawer und NavBar nicht aneinander und der Drawer wird
      nie von ihr verdeckt (#303). */
-  bottom: calc(var(--space-3) + var(--navbar-bottom-offset, 0px));
+  bottom: calc(
+    var(--space-3) + var(--navbar-bottom-offset, 0px) + env(safe-area-inset-bottom, 0px)
+  );
   z-index: 5;
   pointer-events: auto;
   display: flex;
@@ -4741,9 +4744,10 @@ async function deleteEditingSpot() {
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   corner-shape: squircle;
   height: min(100vh, var(--sheet-max-height));
+  height: min(100dvh, var(--sheet-max-height));
 
   .spots-col-body {
-    padding-bottom: var(--navbar-bottom-offset, 0px);
+    padding-bottom: calc(var(--navbar-bottom-offset, 0px) + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -4927,6 +4931,7 @@ async function deleteEditingSpot() {
     position: relative;
     /* Desktop: Wieder normale Höhe, da margin-top=0 */
     height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
+    height: calc(100dvh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
   }
 
   /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */

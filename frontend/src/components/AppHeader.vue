@@ -26,6 +26,7 @@ const navPosition = useNavPositionStore();
 const isDesktop = useIsDesktop();
 const headerNavFits = useHeaderNavFits();
 const route = useRoute();
+const isMapRoute = computed(() => route.name === 'excursions');
 
 const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
 const showDockedNav = computed(
@@ -70,6 +71,7 @@ const profileTitle = computed(() => {
 
 <template>
   <header ref="headerEl" class="app-header">
+    <div v-if="!isMapRoute" class="status-bar-scrim" aria-hidden="true"></div>
     <DemoModeBanner v-if="DEMO_MODE" />
     <LoadingIndicator />
     <div class="header-row">
@@ -152,7 +154,7 @@ const profileTitle = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4) 0;
+  padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-4) 0;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -160,7 +162,42 @@ const profileTitle = computed(() => {
 
 @media (max-width: 479px) {
   .header-row {
-    padding: var(--space-2) var(--space-2) 0;
+    padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-2) 0;
+  }
+}
+
+/* Sanfter Verlauf und Backdrop-Blur hinter dem nativen Geräte-Header (Uhrzeit, Dynamic Island,
+   Akkustand) für scrollbare Ansichten: Verhindert, dass nach oben scrollende Inhalte mit den
+   System-Icons kollidieren, während das Design weich in den Seitenhintergrund übergeht.
+   Wird auf der mobilen Kartenansicht (excursions) per v-if bewusst nicht gerendert, damit die
+   Karte dort randlos dahinterliegt. */
+.status-bar-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(env(safe-area-inset-top, 0px) * 1.25);
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--color-bg) 0%,
+    var(--color-bg) calc(env(safe-area-inset-top, 0px) * 0.6),
+    color-mix(in srgb, var(--color-bg) 80%, transparent) calc(env(safe-area-inset-top, 0px) * 0.9),
+    transparent 100%
+  );
+  backdrop-filter: blur(8px);
+  mask: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(env(safe-area-inset-top, 0px) * 0.65),
+    transparent 100%
+  );
+}
+
+@media (min-width: 1024px) {
+  .status-bar-scrim {
+    display: none;
   }
 }
 
