@@ -8,6 +8,7 @@ import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
 import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useTripStore } from '../stores/trip';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import AppIcon from './AppIcon.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 
@@ -25,6 +26,7 @@ const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
 const tripStore = useTripStore();
 const iconStyle = useIconStyleStore();
+const isDesktop = useIsDesktop();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
@@ -170,7 +172,8 @@ const DASHBOARD_LINK: NavLinkDef = {
 // SettingsView.vue) - ausgeblendete Einträge werden hier bereits rausgefiltert, nicht erst im
 // Template, damit z. B. der "Touren neben Karte"-Sondereinschub unten unverändert funktioniert.
 const visibleLinks = computed<NavLinkDef[]>(() =>
-  navConfig.entries
+  navConfig
+    .getEffectiveEntries(isDesktop.value)
     .filter((e) => e.visible)
     .map((e) => NAV_LINKS.find((l) => l.key === e.key))
     .filter((l): l is NavLinkDef => !!l)

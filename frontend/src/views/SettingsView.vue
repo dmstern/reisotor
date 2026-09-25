@@ -6,6 +6,7 @@ import Badge from '../components/primitives/Badge.vue';
 import Select from '../components/primitives/Select.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
 import CheckboxCard from '../components/primitives/CheckboxCard.vue';
+import Accordion from '../components/primitives/Accordion.vue';
 import Input from '../components/primitives/Input.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -376,6 +377,7 @@ function resetTheme() {
 
 const isNavDefault = computed(() => {
   if (navPosition.desktop !== 'top') return false;
+  if (navConfig.customMobile) return false;
   const defaults = NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
   if (navConfig.entries.length !== defaults.length) return false;
   return navConfig.entries.every(
@@ -972,6 +974,81 @@ async function exportBackup() {
             </div>
           </li>
         </ul>
+
+        <div class="mobile-nav-toggle-wrapper">
+          <CheckboxCard
+            id="nav-custom-mobile-toggle"
+            :model-value="navConfig.customMobile"
+            label="Mobile Navigation separat anpassen"
+            description="Reihenfolge und Sichtbarkeit der Menüpunkte für Smartphones und schmale Bildschirme unabhängig von Desktop festlegen."
+            :icon="ACTION_ICONS.deviceMobile"
+            variant="card"
+            @update:model-value="navConfig.setCustomMobile"
+          />
+        </div>
+
+        <Accordion :expanded="navConfig.customMobile">
+          <div class="mobile-nav-config-section">
+            <p class="hint mobile-nav-config-hint">
+              Reihenfolge und Sichtbarkeit auf Mobilgeräten ("Übersicht" bleibt immer an erster
+              Stelle):
+            </p>
+            <ul class="nav-config-list">
+              <li
+                v-for="(entry, index) in navConfig.mobileEntries"
+                :key="'mobile-' + entry.key"
+                class="nav-config-row"
+                :class="{ disabled: !entry.visible }"
+              >
+                <AppIcon
+                  v-if="navLinkIcon(entry.key)"
+                  class="nav-config-icon"
+                  :icon="navLinkIcon(entry.key)!"
+                  group="navigation"
+                />
+                <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{
+                  navLinkLabel(entry.key)
+                }}</span>
+                <div class="nav-config-actions">
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    :disabled="index === 0"
+                    aria-label="Nach oben verschieben"
+                    title="Nach oben verschieben"
+                    @click="navConfig.moveUp(entry.key, 'mobile')"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
+                  </IconButton>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    :disabled="index === navConfig.mobileEntries.length - 1"
+                    aria-label="Nach unten verschieben"
+                    title="Nach unten verschieben"
+                    @click="navConfig.moveDown(entry.key, 'mobile')"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
+                  </IconButton>
+                  <label :for="'nav-mobile-visible-' + entry.key" class="nav-config-visible">
+                    <Checkbox
+                      :id="'nav-mobile-visible-' + entry.key"
+                      :checked="entry.visible"
+                      :aria-label="`${navLinkLabel(entry.key)} in der mobilen Navigation anzeigen`"
+                      @change="
+                        navConfig.setVisible(
+                          entry.key,
+                          ($event.target as HTMLInputElement).checked,
+                          'mobile'
+                        )
+                      "
+                    />
+                  </label>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </Accordion>
       </Card>
 
       <Card>
@@ -1673,6 +1750,20 @@ h3 {
 .dashboard-config-row:last-child,
 .push-domain-row:last-child {
   border-bottom: none;
+}
+
+.mobile-nav-toggle-wrapper {
+  margin-top: var(--space-4);
+}
+
+.mobile-nav-config-section {
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+}
+
+.mobile-nav-config-hint {
+  margin-bottom: var(--space-3);
 }
 
 .push-details-toggle {

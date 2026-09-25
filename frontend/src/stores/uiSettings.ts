@@ -320,6 +320,8 @@ export interface StoredAppSettings {
     mobile?: NavPosition;
   };
   navConfig?: NavConfigEntry[];
+  customMobileNav?: boolean;
+  navConfigMobile?: NavConfigEntry[];
   dashboardConfig?: DashboardConfigEntry[];
   calendarSettings?: {
     weekStart?: WeekStart;
@@ -395,6 +397,8 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
             mobile: navPosStore.mobile,
           },
           navConfig: navCfgStore.entries,
+          customMobileNav: navCfgStore.customMobile,
+          navConfigMobile: navCfgStore.mobileEntries,
           dashboardConfig: dashCfgStore.entries,
           calendarSettings: {
             weekStart: calSettingsStore.weekStart,
@@ -497,6 +501,12 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       }
       if (Array.isArray(stored.navConfig)) {
         navCfgStore.entries = sanitizeNavEntries(stored.navConfig);
+      }
+      if (typeof stored.customMobileNav === 'boolean') {
+        navCfgStore.customMobile = stored.customMobileNav;
+      }
+      if (Array.isArray(stored.navConfigMobile)) {
+        navCfgStore.mobileEntries = sanitizeNavEntries(stored.navConfigMobile);
       }
       if (Array.isArray(stored.dashboardConfig)) {
         dashCfgStore.entries = sanitizeDashboardEntries(stored.dashboardConfig);

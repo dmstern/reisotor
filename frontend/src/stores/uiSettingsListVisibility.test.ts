@@ -81,4 +81,19 @@ describe('uiSettings list visibility', () => {
 
     expect(store.showUpdateDialogs).toBe(false);
   });
+
+  it('loads customMobileNav and navConfigMobile from server app-settings', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      customMobileNav: true,
+      navConfigMobile: [{ key: 'listen', visible: false }],
+    });
+
+    const store = useUiSettingsStore();
+    await store.load();
+
+    const { useNavConfigStore } = await import('./navConfig');
+    const navStore = useNavConfigStore();
+    expect(navStore.customMobile).toBe(true);
+    expect(navStore.mobileEntries.find((e) => e.key === 'listen')?.visible).toBe(false);
+  });
 });
