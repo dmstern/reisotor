@@ -176,6 +176,20 @@ async function submitEditTrack() {
   closeEditTrack();
 }
 
+async function stopEditingTrack() {
+  if (!editingTrack.value) return;
+  const id = editingTrack.value.id;
+  if (trackRecording.recording && trackRecording.track?.id === id) {
+    await trackRecording.stop();
+  } else {
+    await tracksStore.stopTrack(id);
+  }
+  const updated = tracksStore.tracks.find((t) => t.id === id);
+  if (updated) {
+    editingTrack.value = updated;
+  }
+}
+
 async function deleteEditingTrack() {
   if (!editingTrack.value) return;
   const confirmed = window.confirm('Möchtest du diese Aufzeichnung wirklich löschen?');
@@ -891,19 +905,37 @@ const trackWarningDismissed = usePersistedRef<boolean>(
   false
 );
 
-function onRecordButtonClick() {
+const hasActiveRecording = computed(() => {
+  if (trackRecording.recording) return true;
+  return tracksStore.tracks.some((t) => !t.ended_at && t.user_id === auth.user?.id);
+});
+
+async function onRecordButtonClick() {
   if (trackRecording.recording) {
-    trackRecording.stop();
-  } else if (trackWarningDismissed.value) {
-    trackRecording.start({ visibility: 'private' });
+    await trackRecording.stop();
   } else {
-    showTrackRecordingWarningModal.value = true;
+    const activeTrack = tracksStore.tracks.find((t) => !t.ended_at && t.user_id === auth.user?.id);
+    if (activeTrack) {
+      await tracksStore.stopTrack(activeTrack.id);
+    } else if (trackWarningDismissed.value) {
+      trackRecording.start({ visibility: 'private' });
+    } else {
+      showTrackRecordingWarningModal.value = true;
+    }
   }
 }
 
 function startRecordingConfirmed() {
   showTrackRecordingWarningModal.value = false;
   trackRecording.start({ visibility: 'private' });
+}
+
+async function stopTrackDirect(track: LocationTrack) {
+  if (trackRecording.recording && trackRecording.track?.id === track.id) {
+    await trackRecording.stop();
+  } else {
+    await tracksStore.stopTrack(track.id);
+  }
 }
 
 // Andere bereits gespeicherte Spots als gedimmte Referenzpunkte im manuellen Karten-Picker (siehe
@@ -3378,11 +3410,11 @@ async function deleteEditingSpot() {
               <Button
                 size="sm"
                 class="add-button"
-                :class="{ recording: groupMode === 'tracks' && trackRecording.recording }"
-                :variant="groupMode === 'tracks' && trackRecording.recording ? 'danger' : 'primary'"
+                :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
+                :variant="groupMode === 'tracks' && hasActiveRecording ? 'danger' : 'primary'"
                 :aria-label="
                   groupMode === 'tracks'
-                    ? trackRecording.recording
+                    ? hasActiveRecording
                       ? 'Aufzeichnung beenden'
                       : 'Weg aufzeichnen'
                     : groupMode === 'tours'
@@ -3400,7 +3432,7 @@ async function deleteEditingSpot() {
                 <AppIcon
                   :icon="
                     groupMode === 'tracks'
-                      ? trackRecording.recording
+                      ? hasActiveRecording
                         ? ACTION_ICONS.recordStop
                         : ACTION_ICONS.recordStart
                       : ACTION_ICONS.add
@@ -3412,7 +3444,7 @@ async function deleteEditingSpot() {
                   <AnimatedText
                     :text="
                       groupMode === 'tracks'
-                        ? trackRecording.recording
+                        ? hasActiveRecording
                           ? 'Beenden'
                           : 'Aufzeichnen'
                         : groupMode === 'tours'
@@ -3426,7 +3458,7 @@ async function deleteEditingSpot() {
               </Button>
             </div>
           </div>
-          <div class="subheader" v-if="trackRecording.recording">
+          <div class="subheader" v-if="hasActiveRecording">
             <div class="active-recording-banner">
               <span class="recording-pulse-dot" aria-hidden="true"></span>
               <span class="recording-banner-text">Standortaufzeichnung aktiv</span>
@@ -4637,6 +4669,17 @@ async function deleteEditingSpot() {
                         <span class="recording-pulse-dot" aria-hidden="true"></span>
                         Aufzeichnung läuft
                       </span>
+                      <span
+                        v-else-if="track.end_reason === 'aborted'"
+                        class="track-meta-aborted"
+                        title="Aufzeichnung wurde automatisch abgebrochen"
+                      >
+                        <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+                        Abgebrochen
+                        <template v-if="trackDurationLabel(track)">
+                          · {{ trackDurationLabel(track) }}
+                        </template>
+                      </span>
                       <span v-else-if="trackDurationLabel(track)">
                         <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
                         {{ trackDurationLabel(track) }}
@@ -4644,6 +4687,16 @@ async function deleteEditingSpot() {
                     </span>
                   </button>
                   <template v-if="track.user_id === auth.user?.id">
+                    <button
+                      v-if="!track.ended_at"
+                      type="button"
+                      class="track-icon-btn track-icon-btn--stop"
+                      title="Aufzeichnung beenden"
+                      aria-label="Aufzeichnung beenden"
+                      @click.stop="stopTrackDirect(track)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.recordStop" :size="15" group="actions" />
+                    </button>
                     <button
                       type="button"
                       class="track-icon-btn"
@@ -4702,6 +4755,41 @@ async function deleteEditingSpot() {
             @update:model-value="(v) => !v && closeEditTrack()"
           >
             <form class="edit-form" @submit.prevent="submitEditTrack">
+              <div
+                v-if="editingTrack?.end_reason === 'aborted'"
+                class="track-status-alert track-status-alert--aborted"
+                role="status"
+              >
+                <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
+                <div class="track-status-alert__content">
+                  <span class="track-status-alert__title">Automatisch abgebrochen</span>
+                  <p class="track-status-alert__desc">
+                    Die Aufzeichnung wurde vom System beendet (z. B. durch Bildschirmsperre oder
+                    GPS-Abbruch).
+                  </p>
+                </div>
+              </div>
+              <div
+                v-else-if="editingTrack && !editingTrack.ended_at"
+                class="track-status-alert track-status-alert--running"
+                role="status"
+              >
+                <span class="recording-pulse-dot" aria-hidden="true"></span>
+                <div class="track-status-alert__content">
+                  <span class="track-status-alert__title">Aufzeichnung läuft</span>
+                  <p class="track-status-alert__desc">Diese Aufzeichnung ist aktuell noch aktiv.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  :icon="ACTION_ICONS.recordStop"
+                  @click="stopEditingTrack"
+                >
+                  Aufzeichnung beenden
+                </Button>
+              </div>
+
               <FormField icon="title" label="Name">
                 <Input
                   v-model="editTrackTitle"
@@ -6171,6 +6259,14 @@ async function deleteEditingSpot() {
   font-weight: 600;
 }
 
+.track-meta-aborted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-warning-dark);
+  font-weight: 500;
+}
+
 .track-icon-btn {
   flex-shrink: 0;
   width: 32px;
@@ -6196,9 +6292,61 @@ async function deleteEditingSpot() {
   color: var(--color-text);
 }
 
+.track-icon-btn--stop {
+  color: var(--color-danger);
+}
+
+.track-icon-btn--stop:hover {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger);
+}
+
 .track-icon-btn--delete:hover {
   background: color-mix(in srgb, var(--color-danger) 15%, transparent);
   color: var(--color-danger);
+}
+
+.track-status-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  margin-bottom: var(--space-3);
+  font-size: 0.9rem;
+}
+
+.track-status-alert--aborted {
+  background: var(--color-warning-tint);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning-dark);
+}
+
+.track-status-alert--running {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+  color: var(--color-text);
+  align-items: center;
+}
+
+.track-status-alert__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.track-status-alert__title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.track-status-alert__desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
 }
 
 /* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe

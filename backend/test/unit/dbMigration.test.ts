@@ -229,3 +229,66 @@ describe('trip_categories Schema-Initialisierung', () => {
     expect(columnNames).toContain('is_hidden');
   });
 });
+
+describe('location_tracks.end_reason Migration', () => {
+  let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.DB_PATH;
+    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+  });
+
+  it('ergänzt die Spalte end_reason in einer bestehenden location_tracks Tabelle', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-tracks-migration-test-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL, name TEXT NOT NULL, password TEXT NOT NULL);
+      CREATE TABLE location_tracks (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        excursion_id INTEGER,
+        title TEXT,
+        visibility TEXT NOT NULL DEFAULT 'private',
+        started_at TEXT NOT NULL,
+        ended_at TEXT,
+        deleted_at TEXT
+      );
+    `);
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Test-Trip', '2026-09-01', '2026-09-10')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO users (id, email, name, password) VALUES (1, 'test@example.com', 'Tester', 'secret')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO location_tracks (id, trip_id, user_id, started_at) VALUES (1, 1, 1, '2026-09-25T10:00:00Z')`
+      )
+      .run();
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(location_tracks)').all() as { name: string }[];
+    expect(columns.some((c) => c.name === 'end_reason')).toBe(true);
+
+    const row = db.prepare('SELECT id, end_reason FROM location_tracks WHERE id = 1').get() as {
+      id: number;
+      end_reason: string | null;
+    };
+    expect(row.end_reason).toBeNull();
+  });
+});

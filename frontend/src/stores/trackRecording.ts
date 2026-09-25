@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { api, rawRequest } from '../api/client';
 import { useTripStore } from './trip';
 import { useTracksStore } from './tracks';
+import { useAuthStore } from './auth';
 import type { LocationTrack, TrackVisibility } from '../api/types';
 
 interface BufferedPoint {
@@ -77,6 +78,7 @@ function saveActiveState(state: ActiveState | null) {
 export const useTrackRecordingStore = defineStore('trackRecording', () => {
   const tripStore = useTripStore();
   const tracksStore = useTracksStore();
+  const authStore = useAuthStore();
 
   const track = ref<LocationTrack | null>(null);
   const recording = ref(false);
@@ -86,6 +88,39 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   let watchId: number | null = null;
   let flushTimer: ReturnType<typeof setInterval> | null = null;
   let pendingBuffer: BufferedPoint[] = [];
+  interface WakeLockSentinelLike {
+    release(): Promise<void>;
+    addEventListener(type: string, listener: () => void): void;
+  }
+
+  let wakeLockSentinel: WakeLockSentinelLike | null = null;
+
+  async function acquireWakeLock() {
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator && !wakeLockSentinel) {
+      try {
+        const nav = navigator as Navigator & {
+          wakeLock: { request(type: string): Promise<WakeLockSentinelLike> };
+        };
+        wakeLockSentinel = await nav.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => {
+          wakeLockSentinel = null;
+        });
+      } catch {
+        // Wake lock can fail (low battery, background tab, etc.), safe to ignore
+      }
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLockSentinel) {
+      try {
+        wakeLockSentinel.release();
+      } catch {
+        // ignore
+      }
+      wakeLockSentinel = null;
+    }
+  }
 
   function persistBuffer() {
     if (!track.value) return;
@@ -148,9 +183,13 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
         persistBuffer();
         if (pendingBuffer.length >= FLUSH_POINT_THRESHOLD) flushBuffer();
       },
-      () => {
-        // Zugriff verweigert/fehlgeschlagen - Aufzeichnung bleibt aktiv, der nächste erfolgreiche
-        // Callback (z. B. nach Berechtigungs-Erteilung) sammelt einfach weiter.
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          // Berechtigung dauerhaft entzogen - Aufzeichnung kann nicht fortgesetzt werden
+          abort(
+            'Standortberechtigung wurde verweigert. Aufzeichnung wurde automatisch abgebrochen.'
+          );
+        }
       },
       { enableHighAccuracy: true, maximumAge: 0 }
     );
@@ -198,6 +237,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       });
       startWatch();
       startFlushLoop();
+      acquireWakeLock();
       // stores/tracks.ts bekäme die neue Aufzeichnung sonst erst beim nächsten Trip-Wechsel/Reload
       // mit - eigene Mutationen lösen (anders als bei fremden) keinen liveSync-Refresh aus (siehe
       // stores/tracks.ts's domainVersion-Watch, der genau die eigene actor_user_id herausfiltert).
@@ -209,8 +249,9 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     }
   }
 
-  async function stop() {
+  async function stop(options?: { end_reason?: 'completed' | 'aborted' }) {
     if (!recording.value || !track.value) return;
+    releaseWakeLock();
     stopWatch();
     if (!pendingBuffer.length && navigator.geolocation) {
       await new Promise<void>((resolve) => {
@@ -244,8 +285,9 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       await flushBuffer();
     }
     stopFlushLoop();
+    const endReason = options?.end_reason ?? 'completed';
     try {
-      await api.post(`/tracks/${track.value.id}/stop`);
+      await api.post(`/tracks/${track.value.id}/stop`, { end_reason: endReason });
     } catch {
       // Offline - der Stop-Zeitpunkt landet dann in der normalen Outbox (kleine Einzel-Mutation,
       // anders als die Punkte selbst unproblematisch dafür geeignet) und wird beim nächsten Sync
@@ -262,6 +304,12 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     await tracksStore.load().catch(() => {});
   }
 
+  /** Bricht eine Aufzeichnung mit Status 'aborted' ab (z. B. bei Systemfehlern oder entzogenem Zugriff). */
+  async function abort(reason?: string) {
+    if (reason) startError.value = reason;
+    await stop({ end_reason: 'aborted' });
+  }
+
   /** Pausiert eine laufende Aufzeichnung, ohne sie zu beenden (z. B. Stromsparen, während man länger
    *  an einem Ort bleibt) - GPS-Watch und Flush-Loop stehen still, der Track bleibt offen (kein
    *  POST .../stop). resume() hängt sich später wieder an dieselbe Aufzeichnung. Flusht vor dem
@@ -269,6 +317,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
    *  lokal gepuffert bleibt. */
   async function pause() {
     if (!recording.value || paused.value || !track.value) return;
+    releaseWakeLock();
     stopWatch();
     await flushBuffer();
     stopFlushLoop();
@@ -288,6 +337,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     paused.value = false;
     startWatch();
     startFlushLoop();
+    acquireWakeLock();
     saveActiveState({
       trackId: track.value.id,
       tripId: track.value.trip_id,
@@ -296,51 +346,129 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     });
   }
 
+  /** Synchronisiert eine auf dem Server noch offene Aufzeichnung des aktuellen Nutzers,
+   *  falls der lokale Client-Zustand verloren ging (z. B. nach Browser-Suspension/Reload). */
+  async function syncActiveTrackFromServer(tripId: number) {
+    if (recording.value) return;
+    try {
+      const tracks = await api.get<LocationTrack[]>(`/tracks?trip_id=${tripId}`);
+      const openTrack = tracks.find(
+        (t) => !t.ended_at && authStore.user && t.user_id === authStore.user.id
+      );
+      if (openTrack && !recording.value) {
+        track.value = openTrack;
+        recording.value = true;
+        paused.value = false;
+        pendingBuffer = readBuffer(openTrack.id);
+        saveActiveState({
+          trackId: openTrack.id,
+          tripId,
+          startedAt: openTrack.started_at,
+          paused: false,
+        });
+        startWatch();
+        startFlushLoop();
+        acquireWakeLock();
+      }
+    } catch {
+      // Offline oder Netzwerkfehler
+    }
+  }
+
   /** Stellt eine beim letzten Beenden der App noch laufende (ggf. auch pausierte) Aufzeichnung wieder
    *  her (Reload/App neu geöffnet, während eine Sitzung aktiv war) - inklusive noch nicht gesendeter
    *  Punkte. */
   function restoreOnLoad() {
+    const currentTripId = tripStore.currentTripId;
+    if (currentTripId == null) return;
     const state = loadActiveState();
-    if (!state || state.tripId !== tripStore.currentTripId) return;
-    pendingBuffer = readBuffer(state.trackId);
-    track.value = {
-      id: state.trackId,
-      trip_id: state.tripId,
-      user_id: -1,
-      excursion_id: null,
-      title: null,
-      visibility: 'private',
-      started_at: state.startedAt,
-      ended_at: null,
-    };
-    recording.value = true;
-    // ?? false: localStorage kann noch einen Zustand von vor Einführung des paused-Felds enthalten.
-    paused.value = state.paused ?? false;
-    if (!paused.value) {
-      startWatch();
-      startFlushLoop();
+    if (state && state.tripId === currentTripId) {
+      pendingBuffer = readBuffer(state.trackId);
+      track.value = {
+        id: state.trackId,
+        trip_id: state.tripId,
+        user_id: authStore.user?.id ?? -1,
+        excursion_id: null,
+        title: null,
+        visibility: 'private',
+        started_at: state.startedAt,
+        ended_at: null,
+        end_reason: null,
+      };
+      recording.value = true;
+      // ?? false: localStorage kann noch einen Zustand von vor Einführung des paused-Felds enthalten.
+      paused.value = state.paused ?? false;
+      if (!paused.value) {
+        startWatch();
+        startFlushLoop();
+        acquireWakeLock();
+      }
+      // Echte Track-Metadaten (visibility/excursion_id/user_id) nachladen, damit UI-Zustände (z. B.
+      // ein Sichtbarkeits-Badge) nach einem Reload korrekt sind, statt der obigen Platzhalterzeile.
+      api
+        .get<LocationTrack[]>(`/tracks?trip_id=${state.tripId}`)
+        .then((tracks) => {
+          const found = tracks.find((t) => t.id === state.trackId);
+          if (found) {
+            track.value = found;
+            if (found.ended_at) {
+              // Wurde anderweitig (oder auf einem anderen Tab/Gerät) bereits beendet
+              releaseWakeLock();
+              stopWatch();
+              stopFlushLoop();
+              clearBuffer(state.trackId);
+              saveActiveState(null);
+              track.value = null;
+              recording.value = false;
+              paused.value = false;
+              pendingBuffer = [];
+            }
+          }
+        })
+        .catch(() => {});
+    } else if (!recording.value) {
+      syncActiveTrackFromServer(currentTripId);
     }
-    // Echte Track-Metadaten (visibility/excursion_id/user_id) nachladen, damit UI-Zustände (z. B.
-    // ein Sichtbarkeits-Badge) nach einem Reload korrekt sind, statt der obigen Platzhalterzeile.
-    api
-      .get<LocationTrack[]>(`/tracks?trip_id=${state.tripId}`)
-      .then((tracks) => {
-        const found = tracks.find((t) => t.id === state.trackId);
-        if (found) track.value = found;
-      })
-      .catch(() => {});
   }
 
+  let restoredTripId: number | null = null;
   watch(
     () => tripStore.currentTripId,
-    (tripId, previousTripId) => {
-      // Ein Urlaubswechsel während einer laufenden Aufzeichnung beendet sie NICHT automatisch (der
-      // Track bleibt dem Urlaub zugeordnet, in dem er gestartet wurde) - restoreOnLoad() greift nur
-      // beim initialen Laden (previousTripId noch undefined), nicht bei jedem Wechsel.
-      if (previousTripId === undefined && tripId != null) restoreOnLoad();
+    (tripId) => {
+      if (tripId != null && tripId !== restoredTripId) {
+        restoredTripId = tripId;
+        restoreOnLoad();
+      }
     },
     { immediate: true }
   );
 
-  return { track, recording, paused, startError, start, stop, pause, resume };
+  watch(
+    () => tracksStore.tracks,
+    (tracks) => {
+      if (!recording.value && tripStore.currentTripId != null && authStore.user) {
+        const openTrack = tracks.find((t) => !t.ended_at && t.user_id === authStore.user?.id);
+        if (openTrack) {
+          syncActiveTrackFromServer(tripStore.currentTripId);
+        }
+      }
+    }
+  );
+
+  function onVisibilityChange() {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      if (recording.value && !paused.value) {
+        acquireWakeLock();
+        if (watchId == null) {
+          startWatch();
+        }
+      }
+    }
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange);
+  }
+
+  return { track, recording, paused, startError, start, stop, abort, pause, resume };
 });

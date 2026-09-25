@@ -12,6 +12,7 @@ interface TrackRow {
   visibility: 'private' | 'shared';
   started_at: string;
   ended_at: string | null;
+  end_reason: 'completed' | 'aborted' | null;
   deleted_at: string | null;
 }
 
@@ -128,22 +129,31 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
       .all(track.id);
   });
 
-  app.post<{ Params: { id: string } }>('/tracks/:id/stop', async (req, reply) => {
-    const track = db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(req.params.id) as
-      TrackRow | undefined;
-    if (!track || track.deleted_at) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, track.trip_id, req.session.userId)) return;
-    if (track.user_id !== req.session.userId) {
-      return reply
-        .code(403)
-        .send({ error: 'Nur die aufzeichnende Person kann die Aufzeichnung beenden' });
+  interface StopTrackBody {
+    end_reason?: 'completed' | 'aborted';
+  }
+
+  app.post<{ Params: { id: string }; Body?: StopTrackBody }>(
+    '/tracks/:id/stop',
+    async (req, reply) => {
+      const track = db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(req.params.id) as
+        TrackRow | undefined;
+      if (!track || track.deleted_at) return reply.code(404).send({ error: 'Nicht gefunden' });
+      if (!requireTripMember(reply, track.trip_id, req.session.userId)) return;
+      if (track.user_id !== req.session.userId) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur die aufzeichnende Person kann die Aufzeichnung beenden' });
+      }
+      const endReason = req.body?.end_reason === 'aborted' ? 'aborted' : 'completed';
+      db.prepare('UPDATE location_tracks SET ended_at = ?, end_reason = ? WHERE id = ?').run(
+        new Date().toISOString(),
+        endReason,
+        track.id
+      );
+      return db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(track.id) as TrackRow;
     }
-    db.prepare('UPDATE location_tracks SET ended_at = ? WHERE id = ?').run(
-      new Date().toISOString(),
-      track.id
-    );
-    return db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(track.id) as TrackRow;
-  });
+  );
 
   app.put<{ Params: { id: string }; Body: UpdateTrackBody }>('/tracks/:id', async (req, reply) => {
     const track = db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(req.params.id) as

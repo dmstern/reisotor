@@ -258,6 +258,8 @@ export interface LocationTrack {
   started_at: string;
   /** null = Aufzeichnung läuft noch. */
   ended_at: string | null;
+  /** Grund für das Beenden: 'completed' = regulär durch Nutzer, 'aborted' = automatisch abgebrochen */
+  end_reason?: 'completed' | 'aborted' | null;
   /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
   _pending?: boolean;
 }

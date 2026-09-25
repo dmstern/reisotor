@@ -74,5 +74,28 @@ export const useTracksStore = defineStore('tracks', () => {
     return pointsByTrack.value[trackId] ?? [];
   }
 
-  return { tracks, loaded, pointsByTrack, getPointsForTrack, load, loadPoints, update, remove };
+  async function stopTrack(id: number, options?: { end_reason?: 'completed' | 'aborted' }) {
+    const updated = await api.post<LocationTrack>(`/tracks/${id}/stop`, {
+      end_reason: options?.end_reason ?? 'completed',
+    });
+    const idx = tracks.value.findIndex((t) => t.id === id);
+    if (idx !== -1) {
+      const next = [...tracks.value];
+      next[idx] = updated;
+      tracks.value = next;
+    }
+    return updated;
+  }
+
+  return {
+    tracks,
+    loaded,
+    pointsByTrack,
+    getPointsForTrack,
+    load,
+    loadPoints,
+    update,
+    remove,
+    stopTrack,
+  };
 });

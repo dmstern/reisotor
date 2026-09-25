@@ -1510,6 +1510,7 @@ db.exec(`
     visibility TEXT NOT NULL DEFAULT 'private',
     started_at TEXT NOT NULL,
     ended_at TEXT,
+    end_reason TEXT,
     deleted_at TEXT
   );
 
@@ -1850,6 +1851,8 @@ ensureColumn('spot_comments', 'updated_at', 'TEXT');
 ensureColumn('idea_comments', 'updated_at', 'TEXT');
 ensureColumn('note_comments', 'updated_at', 'TEXT');
 ensureColumn('diary_comments', 'updated_at', 'TEXT');
+// Grund für das Beenden einer Aufzeichnung ('completed' = regulär beendet, 'aborted' = vom System abgebrochen):
+ensureColumn('location_tracks', 'end_reason', 'TEXT');
 
 // Repariere Koordinaten von "Hotel Alfama", falls diese durch früheres Spot-Bearbeiten verloren gingen:
 if (

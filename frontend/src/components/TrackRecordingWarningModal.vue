@@ -51,8 +51,9 @@ function handleConfirm() {
             <AppIcon :icon="ACTION_ICONS.history" :size="15" group="actions" /> App geöffnet lassen
           </h4>
           <p>
-            Da Reisotor im Browser/als PWA läuft, kann die Aufzeichnung pausieren, wenn der Browser
-            im Hintergrund vollständig geschlossen wird.
+            Reisotor hält den Bildschirm während der Aufzeichnung automatisch aktiv (Wake Lock).
+            Wird der Bildschirm manuell gesperrt oder die App beendet, kann die Aufzeichnung vom
+            Browser unterbrochen werden.
           </p>
         </div>
       </div>

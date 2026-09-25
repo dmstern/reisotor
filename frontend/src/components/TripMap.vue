@@ -422,16 +422,25 @@ async function chooseShareDuration(duration: ShareDuration) {
 }
 
 // Standort-Aufzeichnung (stores/trackRecording.ts): 1-Tap-Schnellschalter auf der Karte (Option B).
-// Startet die Aufzeichnung direkt (privat) bzw. beendet sie sofort, wenn sie bereits läuft.
 const showTrackRecordingWarningModal = ref(false);
 const trackWarningDismissed = usePersistedRef<boolean>(
   'reisotor-track-recording-warning-acknowledged',
   false
 );
 
+const isMapRecordingActive = computed(() => {
+  if (trackRecording.recording) return true;
+  return tracksStore.tracks.some((t) => !t.ended_at && t.user_id === auth.user?.id);
+});
+
 async function toggleRecord() {
   if (trackRecording.recording) {
     await trackRecording.stop();
+    return;
+  }
+  const unended = tracksStore.tracks.find((t) => !t.ended_at && t.user_id === auth.user?.id);
+  if (unended) {
+    await tracksStore.stopTrack(unended.id);
     return;
   }
   if (trackWarningDismissed.value) {
@@ -2085,10 +2094,10 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         variant="floating"
         shape="circle"
         class="fit-btn record-btn"
-        :active="trackRecording.recording"
-        :title="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
-        :aria-label="trackRecording.recording ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
-        :icon="trackRecording.recording ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
+        :active="isMapRecordingActive"
+        :title="isMapRecordingActive ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
+        :aria-label="isMapRecordingActive ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
+        :icon="isMapRecordingActive ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
         @click="toggleRecord"
       />
       <Teleport to="body">
