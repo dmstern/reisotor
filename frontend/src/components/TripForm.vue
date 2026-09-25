@@ -16,8 +16,10 @@ import Select from './primitives/Select.vue';
 import { IconCloud } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
+import TripCategorySettings from './TripCategorySettings.vue';
 
 const WEATHER_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
 
@@ -28,7 +30,8 @@ const props = defineProps<{
   initial?: TripFormData;
   submitLabel?: string;
   locationError?: boolean;
-  initialTab?: 'general' | 'settings';
+  initialTab?: 'general' | 'settings' | 'categories';
+  tripId?: number;
 }>();
 const emit = defineEmits<{
   (e: 'submit', data: TripFormData): void;
@@ -38,9 +41,10 @@ const emit = defineEmits<{
 const TABS: TabBarItem[] = [
   { key: 'general', label: 'Allgemein', icon: ACTION_ICONS.edit },
   { key: 'settings', label: 'Einstellungen', icon: ACTION_ICONS.filterSettings },
+  { key: 'categories', label: 'Kategorien', icon: FORM_FIELD_ICONS.category },
 ];
 
-const activeTab = ref<'general' | 'settings'>(props.initialTab ?? 'general');
+const activeTab = ref<'general' | 'settings' | 'categories'>(props.initialTab ?? 'general');
 const showTabs = computed(() => Boolean(props.initial));
 const canDelete = computed(() => Boolean(props.initial));
 
@@ -159,7 +163,7 @@ function onSubmit() {
       :tabs="TABS"
       :active-key="activeTab"
       class="trip-tab-bar"
-      @select="activeTab = $event as 'general' | 'settings'"
+      @select="activeTab = $event as 'general' | 'settings' | 'categories'"
     />
 
     <div v-show="!showTabs || activeTab === 'general'" class="tab-content">
@@ -271,7 +275,11 @@ function onSubmit() {
       />
     </div>
 
-    <div class="actions-row">
+    <div v-if="showTabs && activeTab === 'categories'" class="tab-content categories-tab">
+      <TripCategorySettings v-if="props.tripId" :trip-id="props.tripId" />
+    </div>
+
+    <div v-if="activeTab !== 'categories'" class="actions-row">
       <Button
         v-if="canDelete"
         type="button"
