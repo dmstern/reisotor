@@ -509,6 +509,39 @@ const visibleWeeks = computed<DayCell[][]>(() => {
 const canGoPrev = computed(() => true);
 const canGoNext = computed(() => true);
 
+type CalendarSlideDirection = 'next' | 'prev' | 'fade';
+const slideDirection = ref<CalendarSlideDirection>('next');
+
+const calendarPageKey = computed(() => {
+  if (granularity.value === 'month') {
+    return `month-${monthAnchor.value.getFullYear()}-${monthAnchor.value.getMonth()}`;
+  }
+  return `${granularity.value}-${toIso(weekAnchor.value)}`;
+});
+
+const calendarTransitionName = computed(() => `calendar-slide-${slideDirection.value}`);
+
+function determineSlideDirection(targetIso: string): CalendarSlideDirection {
+  if (granularity.value === 'month') {
+    const targetYearMonth = targetIso.slice(0, 7);
+    const currentYear = monthAnchor.value.getFullYear();
+    const currentMonth = String(monthAnchor.value.getMonth() + 1).padStart(2, '0');
+    const currentYearMonth = `${currentYear}-${currentMonth}`;
+    if (targetYearMonth > currentYearMonth) return 'next';
+    if (targetYearMonth < currentYearMonth) return 'prev';
+    return 'fade';
+  } else {
+    const currentIso = toIso(weekAnchor.value);
+    const count = granularity.value === 'twoWeeks' ? 14 : 7;
+    const end = new Date(weekAnchor.value);
+    end.setDate(end.getDate() + count - 1);
+    const endIso = toIso(end);
+    if (targetIso > endIso) return 'next';
+    if (targetIso < currentIso) return 'prev';
+    return 'fade';
+  }
+}
+
 const prevPageLabel = computed(() => {
   if (granularity.value === 'month') return 'Vorheriger Monat';
   if (granularity.value === 'twoWeeks') return 'Vorherige 2 Wochen';
@@ -553,6 +586,7 @@ function nextMonth() {
 }
 
 function prevPage() {
+  slideDirection.value = 'prev';
   activeJumpTarget.value = null;
   if (granularity.value === 'month') {
     prevMonth();
@@ -568,6 +602,7 @@ function prevPage() {
 }
 
 function nextPage() {
+  slideDirection.value = 'next';
   activeJumpTarget.value = null;
   if (granularity.value === 'month') {
     nextMonth();
@@ -587,6 +622,7 @@ function nextPage() {
 // - Wechsel zu Monat: übernimmt selectedDate (falls in der angezeigten Woche) bzw. die angezeigte Woche
 // - Wechsel zu Woche / 2 Wochen: übernimmt selectedDate (falls im angezeigten Monat) bzw. den 1. des Monats
 watch(granularity, (next, prev) => {
+  slideDirection.value = 'fade';
   if (next === 'month' && prev !== 'month') {
     const weekStartIso = toIso(startOfWeek(weekAnchor.value));
     const count = prev === 'twoWeeks' ? 14 : 7;
@@ -644,6 +680,7 @@ const isTripActive = computed(() => {
 function jumpToToday() {
   activeJumpTarget.value = 'today';
   const today = toLocalDateString(new Date());
+  slideDirection.value = determineSlideDirection(today);
   goToDate(today);
   selectDay(today);
 }
@@ -651,6 +688,7 @@ function jumpToToday() {
 function goToTripDates() {
   activeJumpTarget.value = 'trip';
   if (trip.value?.start_date) {
+    slideDirection.value = determineSlideDirection(trip.value.start_date);
     goToDate(trip.value.start_date);
     selectDay(trip.value.start_date);
   }
@@ -1211,16 +1249,22 @@ function formatDate(date: string) {
       <div class="calendar-weekday-headers" aria-hidden="true">
         <span v-for="h in weekdayHeaders" :key="h" class="weekday-col-header">{{ h }}</span>
       </div>
-      <CalendarWeek
-        v-for="week in visibleWeeks"
-        :key="week[0]?.date"
-        :days="week"
-        :selected-date="selectedDate"
-        :trip-start-date="trip?.start_date"
-        :trip-end-date="trip?.end_date"
-        @select="selectDay"
-        @drop-excursion="onDropExcursion"
-      />
+      <div class="calendar-weeks-viewport">
+        <Transition :name="calendarTransitionName">
+          <div :key="calendarPageKey" class="calendar-weeks-page">
+            <CalendarWeek
+              v-for="week in visibleWeeks"
+              :key="week[0]?.date"
+              :days="week"
+              :selected-date="selectedDate"
+              :trip-start-date="trip?.start_date"
+              :trip-end-date="trip?.end_date"
+              @select="selectDay"
+              @drop-excursion="onDropExcursion"
+            />
+          </div>
+        </Transition>
+      </div>
     </div>
 
     <div class="card day-detail" v-if="selectedDate">
@@ -1749,6 +1793,77 @@ function formatDate(date: string) {
   color: var(--color-text-muted);
   padding: 2px 0;
   line-height: 1.2;
+}
+
+.calendar-weeks-viewport {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 100%;
+}
+
+.calendar-weeks-page {
+  grid-area: 1 / 1;
+  width: 100%;
+  will-change: transform, opacity;
+}
+
+/* Blätter-Animation für den Kalender (Monat, Woche, 2 Wochen) */
+.calendar-slide-next-enter-active,
+.calendar-slide-next-leave-active,
+.calendar-slide-prev-enter-active,
+.calendar-slide-prev-leave-active {
+  transition:
+    transform 0.26s cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 0.22s ease;
+}
+
+.calendar-slide-next-leave-active,
+.calendar-slide-prev-leave-active,
+.calendar-slide-fade-leave-active {
+  pointer-events: none;
+}
+
+.calendar-slide-next-enter-from {
+  transform: translateX(100%);
+  opacity: 0.2;
+}
+
+.calendar-slide-next-leave-to {
+  transform: translateX(-100%);
+  opacity: 0.2;
+}
+
+.calendar-slide-prev-enter-from {
+  transform: translateX(-100%);
+  opacity: 0.2;
+}
+
+.calendar-slide-prev-leave-to {
+  transform: translateX(100%);
+  opacity: 0.2;
+}
+
+.calendar-slide-fade-enter-active,
+.calendar-slide-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.calendar-slide-fade-enter-from,
+.calendar-slide-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-slide-next-enter-active,
+  .calendar-slide-next-leave-active,
+  .calendar-slide-prev-enter-active,
+  .calendar-slide-prev-leave-active,
+  .calendar-slide-fade-enter-active,
+  .calendar-slide-fade-leave-active {
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
 .pending-schedule-banner {
