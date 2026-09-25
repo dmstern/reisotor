@@ -274,7 +274,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
       .get(tripId, type, trimmed) as TripCategoryRow;
 
     category.usage_count = 0;
-    recordActivity(tripId, 'trip', category.id, 'create_category', req.session.userId);
+    recordActivity(tripId, 'trip', category.id, 'create_category', req.session.userId!);
 
     return category;
   });
@@ -372,7 +372,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
       .prepare('SELECT * FROM trip_categories WHERE id = ?')
       .get(categoryId) as TripCategoryRow;
 
-    recordActivity(tripId, 'trip', categoryId, 'update_category', req.session.userId);
+    recordActivity(tripId, 'trip', categoryId, 'update_category', req.session.userId!);
     return updated;
   });
 
@@ -420,7 +420,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
 
     deleteTransaction();
 
-    recordActivity(tripId, 'trip', categoryId, 'delete_category', req.session.userId);
+    recordActivity(tripId, 'trip', categoryId, 'delete_category', req.session.userId!);
     return { success: true };
   });
 
@@ -445,7 +445,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
        ON CONFLICT(trip_id, type, name) DO UPDATE SET is_hidden = excluded.is_hidden`
     ).run(tripId, type, trimmed, hiddenVal);
 
-    recordActivity(tripId, 'trip', null, 'hide_category', req.session.userId);
+    recordActivity(tripId, 'trip', null, 'hide_category', req.session.userId!);
     return { success: true };
   });
 };
