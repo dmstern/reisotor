@@ -309,3 +309,53 @@ test('nothing overflows the mobile viewport on the budget view', async ({ page }
     .filter({ has: page.getByRole('heading', { name: 'Überweisungen' }) });
   await checkNoHorizontalOverflow(transfersCard);
 });
+
+test('displays a warning indicator when a category exists in multiple shared budgets', async ({
+  page,
+}) => {
+  await page.goto('/budget');
+  await expect(page.locator('.budget-page')).toBeVisible();
+
+  const pot1Name = `E2E Multi1 ${Date.now()}`;
+  const pot2Name = `E2E Multi2 ${Date.now()}`;
+  const duplicateCat = `E2E Duplikat ${Date.now()}`;
+
+  // Topf 1 anlegen
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
+  await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(pot1Name);
+  await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
+  const pot1 = page.locator('.pot-card', { hasText: pot1Name });
+  await expect(pot1).toBeVisible();
+
+  // Kategorie in Topf 1 hinzufügen
+  await pot1.getByRole('button', { name: 'Kategorie hinzufügen' }).click();
+  await pot1.getByPlaceholder('Neue Kategorie').fill(duplicateCat);
+  await pot1.getByPlaceholder('Ziel €').fill('50');
+  await pot1.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  await expect(pot1.locator('.category-row')).toHaveCount(1);
+
+  // Zunächst keine Warnung
+  await expect(pot1.locator('.category-warning-icon')).toHaveCount(0);
+
+  // Topf 2 anlegen
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
+  await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(pot2Name);
+  await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
+  const pot2 = page.locator('.pot-card', { hasText: pot2Name });
+  await expect(pot2).toBeVisible();
+
+  // Gleiche Kategorie in Topf 2 hinzufügen
+  await pot2.getByRole('button', { name: 'Kategorie hinzufügen' }).click();
+  await pot2.getByPlaceholder('Neue Kategorie').fill(duplicateCat);
+  await pot2.getByPlaceholder('Ziel €').fill('80');
+  await pot2.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  await expect(pot2.locator('.category-row')).toHaveCount(1);
+
+  // Jetzt muss an beiden Töpfen für diese Kategorie das Warn-Icon sichtbar sein
+  await expect(pot1.locator('.category-warning-icon')).toBeVisible();
+  await expect(pot2.locator('.category-warning-icon')).toBeVisible();
+  await expect(pot1.locator('.category-warning-icon')).toHaveAttribute(
+    'title',
+    /mehreren Budgets zugeordnet/
+  );
+});
