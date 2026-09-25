@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
 import { FORM_FIELD_ICONS, type FormFieldIconKey } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
 
@@ -15,6 +16,8 @@ const props = defineProps<{
   icon?: FormFieldIconKey | IconDef;
   label: string;
   required?: boolean;
+  error?: string;
+  invalid?: boolean;
 }>();
 
 const isRequired = computed(() => Boolean(props.required || props.label.trim().endsWith('*')));
@@ -32,7 +35,7 @@ const id = useId();
 </script>
 
 <template>
-  <div class="form-field">
+  <div class="form-field" :class="{ 'has-error': Boolean(error || invalid) }">
     <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
     <label :for="id" class="form-field-label">
       <AppIcon
@@ -45,7 +48,11 @@ const id = useId();
       {{ displayLabel
       }}<span v-if="isRequired" class="required-indicator" aria-hidden="true">*</span>
     </label>
-    <slot :id="id" />
+    <slot :id="id" :invalid="Boolean(invalid || error)" />
+    <p v-if="error" class="field-error-hint" role="alert">
+      <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+      {{ error }}
+    </p>
   </div>
 </template>
 
@@ -80,5 +87,15 @@ const id = useId();
   color: var(--color-danger, #ef4444);
   font-weight: 700;
   margin-left: 1px;
+}
+
+.field-error-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-danger, #ef4444);
+  font-weight: 500;
 }
 </style>

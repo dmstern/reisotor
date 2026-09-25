@@ -104,6 +104,7 @@ const editDraft = useDraftAutosave(
   editForm,
   computed(() => editingItem.value !== null)
 );
+const editLabelTouched = ref(false);
 
 const showNewDetails = usePersistedRef('reisotor-shopping-show-details', false);
 
@@ -293,6 +294,7 @@ async function reassign(item: ShoppingItem, event: Event) {
 }
 
 function startEdit(item: ShoppingItem) {
+  editLabelTouched.value = false;
   editingItem.value = item;
   editForm.value = {
     label: item.label,
@@ -304,7 +306,11 @@ function startEdit(item: ShoppingItem) {
 }
 
 async function submitEdit() {
-  if (!editingItem.value || !editForm.value.label.trim()) return;
+  if (!editForm.value.label.trim()) {
+    editLabelTouched.value = true;
+    return;
+  }
+  if (!editingItem.value) return;
   const updated = await api.put<ShoppingItem>(`/shopping/${editingItem.value.id}`, {
     label: editForm.value.label.trim(),
     assigned_to_user_id: editingItem.value.assigned_to_user_id,
@@ -321,6 +327,7 @@ async function submitEdit() {
 }
 
 function closeEditForm() {
+  editLabelTouched.value = false;
   editDraft.clear();
   editingItem.value = null;
 }
@@ -687,8 +694,27 @@ function hasItemMeta(item: ShoppingItem): boolean {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Artikel" required v-slot="{ id }">
-          <Input :id="id" v-model="editForm.label" type="text" placeholder="Artikel" required />
+        <FormField
+          icon="title"
+          label="Artikel"
+          required
+          :invalid="editLabelTouched && !editForm.label.trim()"
+          :error="
+            editLabelTouched && !editForm.label.trim()
+              ? 'Dieses Feld muss noch ausgefüllt werden.'
+              : undefined
+          "
+          v-slot="{ id, invalid }"
+        >
+          <Input
+            :id="id"
+            v-model="editForm.label"
+            type="text"
+            placeholder="Artikel"
+            required
+            :invalid="invalid"
+            @blur="editLabelTouched = true"
+          />
         </FormField>
         <FormField icon="shop" label="Shop" v-slot="{ id }">
           <Combobox
@@ -728,7 +754,16 @@ function hasItemMeta(item: ShoppingItem): boolean {
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit">Speichern</Button>
+          <Button
+            type="submit"
+            :disabled="!editForm.label.trim()"
+            :title="
+              !editForm.label.trim()
+                ? 'Bitte gib zuerst einen Namen für den Artikel ein'
+                : undefined
+            "
+            >Speichern</Button
+          >
         </div>
       </form>
     </Modal>

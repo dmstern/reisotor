@@ -120,6 +120,7 @@ const newForm = ref(emptyForm());
 
 const editingItem = ref<TodoItem | null>(null);
 const editForm = ref(emptyForm());
+const editTitleTouched = ref(false);
 
 watch(
   () => newForm.value.due_date,
@@ -389,6 +390,7 @@ async function toggleDone(item: TodoItem) {
 }
 
 function startEdit(item: TodoItem) {
+  editTitleTouched.value = false;
   clearFocusedTodo();
   editingItem.value = item;
   editForm.value = {
@@ -402,7 +404,11 @@ function startEdit(item: TodoItem) {
 }
 
 async function submitEdit() {
-  if (!editingItem.value || !editForm.value.title.trim()) return;
+  if (!editForm.value.title.trim()) {
+    editTitleTouched.value = true;
+    return;
+  }
+  if (!editingItem.value) return;
   const updated = await api.put<TodoItem>(`/todos/${editingItem.value.id}`, {
     ...toBody(editForm.value),
     done: !!editingItem.value.done,
@@ -414,6 +420,7 @@ async function submitEdit() {
 }
 
 function closeEditForm() {
+  editTitleTouched.value = false;
   editDraft.clear();
   editingItem.value = null;
 }
@@ -729,8 +736,27 @@ function hasTodoMeta(item: TodoItem): boolean {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Titel" required v-slot="{ id }">
-          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
+        <FormField
+          icon="title"
+          label="Titel"
+          required
+          :invalid="editTitleTouched && !editForm.title.trim()"
+          :error="
+            editTitleTouched && !editForm.title.trim()
+              ? 'Dieses Feld muss noch ausgefüllt werden.'
+              : undefined
+          "
+          v-slot="{ id, invalid }"
+        >
+          <Input
+            :id="id"
+            v-model="editForm.title"
+            type="text"
+            placeholder="Titel"
+            required
+            :invalid="invalid"
+            @blur="editTitleTouched = true"
+          />
         </FormField>
         <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
           <Select :id="id" v-model="editForm.assigned_to_user_id">
@@ -778,7 +804,16 @@ function hasTodoMeta(item: TodoItem): boolean {
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit">Speichern</Button>
+          <Button
+            type="submit"
+            :disabled="!editForm.title.trim()"
+            :title="
+              !editForm.title.trim()
+                ? 'Bitte gib zuerst einen Titel für die Aufgabe ein'
+                : undefined
+            "
+            >Speichern</Button
+          >
         </div>
       </form>
     </Modal>

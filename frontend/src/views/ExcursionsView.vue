@@ -487,6 +487,31 @@ const activeExcursionForm = computed(() =>
   editingExcursion.value !== null ? editExcursionForm.value : excursionForm.value
 );
 
+const excursionTitleTouched = ref(false);
+const showExcursionTitleError = computed(
+  () => excursionTitleTouched.value && !activeExcursionForm.value.title.trim()
+);
+
+const isExcursionRoleInvalid = computed(() =>
+  Boolean(activeExcursionForm.value.role && activeExcursionForm.value.spot_ids.length < 2)
+);
+
+const canSaveExcursion = computed(
+  () =>
+    !!activeExcursionForm.value.title.trim() &&
+    !isExcursionRoleInvalid.value &&
+    !isExcursionUploadingAttachments.value
+);
+
+const excursionSaveTooltip = computed(() => {
+  if (isExcursionUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (!activeExcursionForm.value.title.trim())
+    return 'Bitte gib zuerst einen Titel für die Tour ein';
+  if (isExcursionRoleInvalid.value)
+    return 'Für Anreise/Abreise/Weiterreise werden mindestens 2 Stationen benötigt';
+  return undefined;
+});
+
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts).
 const newExcursionDraft = useDraftAutosave('excursions:new', excursionForm, showExcursionForm);
 const editExcursionDraft = useDraftAutosave(
@@ -496,12 +521,14 @@ const editExcursionDraft = useDraftAutosave(
 );
 
 function openExcursionForm() {
+  excursionTitleTouched.value = false;
   excursionForm.value = emptyExcursionForm();
   showExcursionSpotsSection.value = false;
   showExcursionForm.value = true;
 }
 
 function closeExcursionForm() {
+  excursionTitleTouched.value = false;
   showExcursionForm.value = false;
   excursionForm.value = emptyExcursionForm();
   newExcursionDraft.clear();
@@ -522,8 +549,8 @@ function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
 }
 
 async function addExcursion() {
-  if (!excursionForm.value.title.trim()) return;
-  if (excursionForm.value.role && excursionForm.value.spot_ids.length < 2) {
+  if (!excursionForm.value.title.trim() || isExcursionRoleInvalid.value) {
+    if (!excursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
   await excursionsStore.create(tourPayload(excursionForm.value));
@@ -531,6 +558,7 @@ async function addExcursion() {
 }
 
 function startEditExcursion(excursion: Excursion) {
+  excursionTitleTouched.value = false;
   editingExcursion.value = excursion.id;
   showEditExcursionSpotsSection.value = false;
   editExcursionForm.value = {
@@ -549,10 +577,10 @@ async function submitEditExcursion() {
   if (
     editingExcursion.value == null ||
     isExcursionUploadingAttachments.value ||
-    !editExcursionForm.value.title.trim()
-  )
-    return;
-  if (editExcursionForm.value.role && editExcursionForm.value.spot_ids.length < 2) {
+    !editExcursionForm.value.title.trim() ||
+    isExcursionRoleInvalid.value
+  ) {
+    if (!editExcursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
   await excursionsStore.update(editingExcursion.value, tourPayload(editExcursionForm.value));
@@ -561,6 +589,7 @@ async function submitEditExcursion() {
 }
 
 function closeEditExcursionForm() {
+  excursionTitleTouched.value = false;
   editExcursionDraft.clear();
   editingExcursion.value = null;
 }
@@ -678,6 +707,26 @@ const editSpotMapsLinkResolved = ref<boolean | null>(null);
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
 const editSpotPickerOpen = ref(false);
 const editSpotLocationError = ref(false);
+
+const spotTitleTouched = ref(false);
+const showSpotTitleError = computed(
+  () => spotTitleTouched.value && !activeSpotForm.value.title.trim()
+);
+
+const canSaveSpot = computed(
+  () => !!activeSpotForm.value.title.trim() && !isSpotUploadingAttachments.value
+);
+
+const spotSaveTooltip = computed(() => {
+  if (isSpotUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (!activeSpotForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Spot ein';
+  return undefined;
+});
+
+function openSpotForm() {
+  spotTitleTouched.value = false;
+  showSpotForm.value = true;
+}
 
 const editSpotScheduledItems = computed(() => {
   if (!editingSpot.value) return [];
@@ -2934,6 +2983,7 @@ function spotToBody(
 }
 
 function closeSpotForm() {
+  spotTitleTouched.value = false;
   showSpotForm.value = false;
   spotForm.value = emptySpotForm();
   spotMapsLinkResolved.value = null;
@@ -2990,7 +3040,10 @@ async function syncSpotTours(spotId: number, desiredTitles: string[]) {
 }
 
 async function addSpot() {
-  if (!spotForm.value.title.trim()) return;
+  if (!spotForm.value.title.trim()) {
+    spotTitleTouched.value = true;
+    return;
+  }
   const body = spotToBody(spotForm.value, spotManualPin.value);
   const result =
     spotPendingFixId.value != null
@@ -3023,6 +3076,7 @@ watch(spotManualPin, (pin) => {
 });
 
 function startEditSpot(spot: Spot) {
+  spotTitleTouched.value = false;
   editingSpot.value = spot;
   editSpotForm.value = {
     title: spot.title,
@@ -3050,8 +3104,11 @@ function startEditSpot(spot: Spot) {
 }
 
 async function submitEditSpot() {
-  if (!editingSpot.value || isSpotUploadingAttachments.value || !editSpotForm.value.title.trim())
+  if (!editSpotForm.value.title.trim()) {
+    spotTitleTouched.value = true;
     return;
+  }
+  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
   const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
   const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
@@ -3067,6 +3124,7 @@ async function submitEditSpot() {
 }
 
 function closeEditSpotForm() {
+  spotTitleTouched.value = false;
   editSpotDraft.clear();
   editingSpot.value = null;
 }
@@ -3278,7 +3336,7 @@ async function deleteEditingSpot() {
                     ? onRecordButtonClick()
                     : groupMode === 'tours'
                       ? openExcursionForm()
-                      : (showSpotForm = true)
+                      : openSpotForm()
                 "
               >
                 <AppIcon
@@ -3333,12 +3391,24 @@ async function deleteEditingSpot() {
               class="edit-form"
               @submit.prevent="editingExcursion !== null ? submitEditExcursion() : addExcursion()"
             >
-              <FormField icon="title" label="Titel" required>
+              <FormField
+                icon="title"
+                label="Titel"
+                required
+                :invalid="showExcursionTitleError"
+                :error="
+                  showExcursionTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined
+                "
+                v-slot="{ id, invalid }"
+              >
                 <Input
+                  :id="id"
                   v-model="activeExcursionForm.title"
                   type="text"
                   placeholder="Titel"
                   required
+                  :invalid="invalid"
+                  @blur="excursionTitleTouched = true"
                 />
               </FormField>
               <FormField icon="note" label="Notiz">
@@ -3434,7 +3504,7 @@ async function deleteEditingSpot() {
                   Löschen
                 </Button>
                 <div class="spacer"></div>
-                <Button type="submit" :disabled="isExcursionUploadingAttachments">{{
+                <Button type="submit" :disabled="!canSaveExcursion" :title="excursionSaveTooltip">{{
                   editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>
               </div>
@@ -3519,8 +3589,23 @@ async function deleteEditingSpot() {
                 icon-group="categories"
                 modal-title="Spot-Bild bearbeiten"
               />
-              <FormField icon="title" label="Titel" required>
-                <Input v-model="activeSpotForm.title" type="text" placeholder="Titel" required />
+              <FormField
+                icon="title"
+                label="Titel"
+                required
+                :invalid="showSpotTitleError"
+                :error="showSpotTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+                v-slot="{ id, invalid }"
+              >
+                <Input
+                  :id="id"
+                  v-model="activeSpotForm.title"
+                  type="text"
+                  placeholder="Titel"
+                  required
+                  :invalid="invalid"
+                  @blur="spotTitleTouched = true"
+                />
               </FormField>
               <FormField icon="category" label="Kategorie">
                 <CategoryCombobox
@@ -3922,7 +4007,7 @@ async function deleteEditingSpot() {
                   Löschen
                 </Button>
                 <div class="spacer"></div>
-                <Button type="submit" :disabled="isSpotUploadingAttachments">{{
+                <Button type="submit" :disabled="!canSaveSpot" :title="spotSaveTooltip">{{
                   editingSpot !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>
               </div>

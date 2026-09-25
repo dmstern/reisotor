@@ -177,6 +177,54 @@ function hasEntryContent(f: { title: string; content: string; images: DiaryImage
   return f.title.trim().length > 0 || !isEmptyRichText(f.content) || f.images.length > 0;
 }
 
+const newEditorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
+const newContentTouched = ref(false);
+const newDateTouched = ref(false);
+
+const isNewContentEmpty = computed(() => isEmptyRichText(form.value.content));
+const showNewContentError = computed(() => newContentTouched.value && isNewContentEmpty.value);
+const isNewDateEmpty = computed(() => !form.value.date);
+const showNewDateError = computed(() => newDateTouched.value && isNewDateEmpty.value);
+
+const canSubmitNewEntry = computed(
+  () => !isNewContentEmpty.value && !isNewDateEmpty.value && !uploading.value
+);
+const newEntrySaveTooltip = computed(() => {
+  if (uploading.value) return 'Bilder werden noch hochgeladen…';
+  if (isNewDateEmpty.value) return 'Bitte wähle ein Datum aus';
+  if (isNewContentEmpty.value) return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
+  return undefined;
+});
+
+const editEditorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
+const editContentTouched = ref(false);
+const editDateTouched = ref(false);
+
+const isEditContentEmpty = computed(() => isEmptyRichText(editForm.value.content));
+const showEditContentError = computed(() => editContentTouched.value && isEditContentEmpty.value);
+const isEditDateEmpty = computed(() => !editForm.value.date);
+const showEditDateError = computed(() => editDateTouched.value && isEditDateEmpty.value);
+
+const canSaveEditEntry = computed(
+  () => !isEditContentEmpty.value && !isEditDateEmpty.value && !editUploading.value
+);
+const editEntrySaveTooltip = computed(() => {
+  if (editUploading.value) return 'Bilder werden noch hochgeladen…';
+  if (isEditDateEmpty.value) return 'Bitte wähle ein Datum aus';
+  if (isEditContentEmpty.value) return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
+  return undefined;
+});
+
+const isEditDraftEmpty = computed(
+  () => Boolean(editingEntry.value?.is_draft) && !hasEntryContent(editForm.value)
+);
+const isEditDeleteDisabled = computed(() => editUploading.value || isEditDraftEmpty.value);
+const editDeleteTooltip = computed(() => {
+  if (editUploading.value) return 'Bilder werden noch hochgeladen…';
+  if (isEditDraftEmpty.value) return 'Neuer Entwurf ist noch leer';
+  return undefined;
+});
+
 // Standardmäßig eingeklappt (siehe Konsistenz-Check-Anlass: die Auswahllisten nahmen auf mobile so
 // viel Platz weg, dass das RichTextEditor-Haupttextfeld nicht mehr sichtbar war) - Zurücksetzen in
 // openNewForm()/startEdit() unten, damit ein neuer Formular-Aufruf nicht die zuletzt aufgeklappte
@@ -506,6 +554,8 @@ async function removeImageFromEntry(entry: DiaryEntry, index: number) {
 // "+ Neuer Eintrag": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen
 // zweiten, parallelen Entwurf anzulegen (#89).
 function openNewForm() {
+  newContentTouched.value = false;
+  newDateTouched.value = false;
   if (myDraft.value) {
     startEdit(myDraft.value);
     return;
@@ -524,7 +574,15 @@ function openNewForm() {
 }
 
 async function submitEntry() {
-  if (uploading.value || isEmptyRichText(form.value.content)) return;
+  if (isNewDateEmpty.value || isNewContentEmpty.value) {
+    if (isNewDateEmpty.value) newDateTouched.value = true;
+    if (isNewContentEmpty.value) {
+      newContentTouched.value = true;
+      newEditorRef.value?.focus();
+    }
+    return;
+  }
+  if (uploading.value) return;
   const body = {
     trip_id: tripId,
     title: form.value.title || undefined,
@@ -573,6 +631,8 @@ async function closeForm() {
 }
 
 function startEdit(entry: DiaryEntry) {
+  editContentTouched.value = false;
+  editDateTouched.value = false;
   editingEntry.value = entry;
   editForm.value = {
     title: entry.title ?? '',
@@ -589,7 +649,15 @@ function startEdit(entry: DiaryEntry) {
 // Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer einen veröffentlichten
 // Eintrag (is_draft:false) - für bereits veröffentlichte Einträge ist das ein No-op, da dort schon 0.
 async function submitEditEntry() {
-  if (!editingEntry.value || editUploading.value || isEmptyRichText(editForm.value.content)) return;
+  if (isEditDateEmpty.value || isEditContentEmpty.value) {
+    if (isEditDateEmpty.value) editDateTouched.value = true;
+    if (isEditContentEmpty.value) {
+      editContentTouched.value = true;
+      editEditorRef.value?.focus();
+    }
+    return;
+  }
+  if (!editingEntry.value || editUploading.value) return;
   const body = {
     title: editForm.value.title || undefined,
     content: editForm.value.content,
@@ -746,17 +814,43 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       @update:model-value="(v) => !v && closeForm()"
     >
       <form class="add-form" @submit.prevent="submitEntry">
-        <FormField icon="date" label="Datum" required v-slot="{ id }">
-          <Input :id="id" v-model="form.date" type="date" required />
+        <FormField
+          icon="date"
+          label="Datum"
+          required
+          :invalid="showNewDateError"
+          :error="showNewDateError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+          v-slot="{ id, invalid }"
+        >
+          <Input
+            :id="id"
+            v-model="form.date"
+            type="date"
+            required
+            :invalid="invalid"
+            @blur="newDateTouched = true"
+          />
         </FormField>
         <FormField icon="title" label="Titel" v-slot="{ id }">
           <Input :id="id" v-model="form.title" type="text" placeholder="Titel" />
         </FormField>
-        <RichTextEditor
-          class="diary-editor"
-          v-model="form.content"
-          placeholder="Was ist heute passiert?"
-        />
+        <FormField
+          icon="note"
+          label="Eintrag"
+          required
+          :invalid="showNewContentError"
+          :error="showNewContentError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+          v-slot="{ invalid }"
+        >
+          <RichTextEditor
+            ref="newEditorRef"
+            class="diary-editor"
+            v-model="form.content"
+            placeholder="Was ist heute passiert?"
+            :invalid="invalid"
+            @blur="newContentTouched = true"
+          />
+        </FormField>
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
@@ -866,7 +960,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
           <div class="spacer"></div>
-          <Button type="submit" :disabled="uploading">Eintragen</Button>
+          <Button type="submit" :disabled="!canSubmitNewEntry" :title="newEntrySaveTooltip">
+            Eintragen
+          </Button>
         </div>
       </form>
     </Modal>
@@ -1021,13 +1117,42 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
-        <FormField icon="date" label="Datum" required v-slot="{ id }">
-          <Input :id="id" v-model="editForm.date" type="date" required />
+        <FormField
+          icon="date"
+          label="Datum"
+          required
+          :invalid="showEditDateError"
+          :error="showEditDateError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+          v-slot="{ id, invalid }"
+        >
+          <Input
+            :id="id"
+            v-model="editForm.date"
+            type="date"
+            required
+            :invalid="invalid"
+            @blur="editDateTouched = true"
+          />
         </FormField>
         <FormField icon="title" label="Titel" v-slot="{ id }">
           <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" />
         </FormField>
-        <RichTextEditor class="diary-editor" v-model="editForm.content" />
+        <FormField
+          icon="note"
+          label="Eintrag"
+          required
+          :invalid="showEditContentError"
+          :error="showEditContentError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+          v-slot="{ invalid }"
+        >
+          <RichTextEditor
+            ref="editEditorRef"
+            class="diary-editor"
+            v-model="editForm.content"
+            :invalid="invalid"
+            @blur="editContentTouched = true"
+          />
+        </FormField>
         <p v-if="auth.user?.restricted" class="hint">
           Eingeschränkter Modus - Kein Datei-Upload möglich
         </p>
@@ -1142,13 +1267,14 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             variant="danger"
             secondary
             :icon="ACTION_ICONS.delete"
-            :disabled="editUploading"
+            :disabled="isEditDeleteDisabled"
+            :title="editDeleteTooltip"
             @click="deleteEditingEntry"
           >
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit" :disabled="editUploading">{{
+          <Button type="submit" :disabled="!canSaveEditEntry" :title="editEntrySaveTooltip">{{
             editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern'
           }}</Button>
         </div>

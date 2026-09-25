@@ -116,6 +116,30 @@ const showAddForm = ref(false);
 const showAddLocationSection = ref(false);
 const showEditLocationSection = ref(false);
 
+const newTitleTouched = ref(false);
+const newStartDateTouched = ref(false);
+const showNewTitleError = computed(() => newTitleTouched.value && !newTitle.value.trim());
+const showNewStartDateError = computed(() => newStartDateTouched.value && !newStartDate.value);
+
+const canAddScheduleItem = computed(() => !!newTitle.value.trim() && !!newStartDate.value);
+const addScheduleItemTooltip = computed(() => {
+  if (!newTitle.value.trim()) return 'Bitte gib zuerst einen Titel für den Termin ein';
+  if (!newStartDate.value) return 'Bitte wähle ein Startdatum aus';
+  return undefined;
+});
+
+const editTitleTouched = ref(false);
+const showEditTitleError = computed(() => editTitleTouched.value && !editForm.value.title.trim());
+
+const canSaveEditScheduleItem = computed(
+  () => !!editForm.value.title.trim() && !isItemUploadingAttachments.value
+);
+const editScheduleItemTooltip = computed(() => {
+  if (isItemUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (!editForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Termin ein';
+  return undefined;
+});
+
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): das Create-Formular besteht
 // (anders als in den meisten anderen Domänen) aus lauter einzelnen Refs statt eines Objekt-Refs -
 // ein schreibbarer computed() bündelt sie zu einem einzigen Ref-kompatiblen Objekt, das die
@@ -809,12 +833,16 @@ function onDropExcursion(date: string, excursionId: number) {
 // ausgewählten Tag gebunden, siehe Vorlage) – ist ein Tag bereits ausgewählt, wird er als
 // Startdatum vorausgefüllt, sonst bleibt das Feld leer und muss manuell gesetzt werden.
 function openAddForm() {
+  newTitleTouched.value = false;
+  newStartDateTouched.value = false;
   newStartDate.value = selectedDate.value ?? '';
   showAddLocationSection.value = !!(newLinkKey.value || newLocation.value || newMapsLink.value);
   showAddForm.value = true;
 }
 
 function closeAddForm() {
+  newTitleTouched.value = false;
+  newStartDateTouched.value = false;
   showAddForm.value = false;
   showAddLocationSection.value = false;
   newStartDate.value = '';
@@ -839,7 +867,11 @@ async function syncExcursionsIfLinked(...ideaIds: (number | null | undefined)[])
 }
 
 async function addItem() {
-  if (!newStartDate.value || !newTitle.value.trim() || tripStore.currentTripId == null) return;
+  if (!newStartDate.value || !newTitle.value.trim() || tripStore.currentTripId == null) {
+    if (!newTitle.value.trim()) newTitleTouched.value = true;
+    if (!newStartDate.value) newStartDateTouched.value = true;
+    return;
+  }
   const parsed = parseLatLngFromMapsLink(newMapsLink.value);
   const { spot_id, idea_id } = parseLinkKey(newLinkKey.value);
   const linked = spot_id != null || idea_id != null;
@@ -865,6 +897,7 @@ async function addItem() {
 }
 
 function startEdit(item: ScheduleItem) {
+  editTitleTouched.value = false;
   editingItem.value = item;
   editForm.value = {
     time: item.time ?? '',
@@ -884,12 +917,11 @@ function startEdit(item: ScheduleItem) {
 }
 
 async function submitEdit() {
-  if (
-    !editingItem.value ||
-    isItemUploadingAttachments.value ||
-    !editForm.value.title.trim() ||
-    tripStore.currentTripId == null
-  )
+  if (!editForm.value.title.trim()) {
+    editTitleTouched.value = true;
+    return;
+  }
+  if (!editingItem.value || isItemUploadingAttachments.value || tripStore.currentTripId == null)
     return;
   const parsed = parseLatLngFromMapsLink(editForm.value.mapsLink);
   const { spot_id, idea_id } = parseLinkKey(editForm.value.linkKey);
@@ -919,6 +951,7 @@ async function submitEdit() {
 }
 
 function closeEditForm() {
+  editTitleTouched.value = false;
   editDraft.clear();
   editingItem.value = null;
   showEditLocationSection.value = false;
@@ -1461,12 +1494,41 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
-        <FormField icon="title" label="Titel" required v-slot="{ id }">
-          <Input :id="id" v-model="newTitle" type="text" placeholder="Titel" required />
+        <FormField
+          icon="title"
+          label="Titel"
+          required
+          :invalid="showNewTitleError"
+          :error="showNewTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+          v-slot="{ id, invalid }"
+        >
+          <Input
+            :id="id"
+            v-model="newTitle"
+            type="text"
+            placeholder="Titel"
+            required
+            :invalid="invalid"
+            @blur="newTitleTouched = true"
+          />
         </FormField>
         <div class="row">
-          <FormField icon="date" label="Startdatum" required v-slot="{ id }">
-            <Input :id="id" v-model="newStartDate" type="date" required />
+          <FormField
+            icon="date"
+            label="Startdatum"
+            required
+            :invalid="showNewStartDateError"
+            :error="showNewStartDateError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+            v-slot="{ id, invalid }"
+          >
+            <Input
+              :id="id"
+              v-model="newStartDate"
+              type="date"
+              required
+              :invalid="invalid"
+              @blur="newStartDateTouched = true"
+            />
           </FormField>
           <FormField icon="time" label="Startzeit" v-slot="{ id }">
             <Input :id="id" v-model="newTime" type="time" />
@@ -1529,7 +1591,9 @@ function formatDate(date: string) {
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
           <div class="spacer"></div>
-          <Button type="submit">Hinzufügen</Button>
+          <Button type="submit" :disabled="!canAddScheduleItem" :title="addScheduleItemTooltip"
+            >Hinzufügen</Button
+          >
         </div>
       </form>
     </Modal>
@@ -1541,8 +1605,23 @@ function formatDate(date: string) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Titel" required v-slot="{ id }">
-          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" required />
+        <FormField
+          icon="title"
+          label="Titel"
+          required
+          :invalid="showEditTitleError"
+          :error="showEditTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+          v-slot="{ id, invalid }"
+        >
+          <Input
+            :id="id"
+            v-model="editForm.title"
+            type="text"
+            placeholder="Titel"
+            required
+            :invalid="invalid"
+            @blur="editTitleTouched = true"
+          />
         </FormField>
         <div class="row">
           <FormField icon="date" label="Startdatum" required v-slot="{ id }">
@@ -1635,7 +1714,12 @@ function formatDate(date: string) {
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit" :disabled="isItemUploadingAttachments">Speichern</Button>
+          <Button
+            type="submit"
+            :disabled="!canSaveEditScheduleItem"
+            :title="editScheduleItemTooltip"
+            >Speichern</Button
+          >
         </div>
       </form>
     </Modal>

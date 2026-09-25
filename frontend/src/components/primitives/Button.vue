@@ -185,12 +185,12 @@ provide(
   user-select: none;
 }
 
-.btn:hover:not(:disabled) {
+.btn:hover:not(:disabled):not(.is-disabled) {
   translate: 0 -1px;
   box-shadow: var(--shadow-md);
 }
 
-.btn:active:not(:disabled) {
+.btn:active:not(:disabled):not(.is-disabled) {
   transform: scale(0.96) translateY(0);
   box-shadow: var(--shadow-sm);
 }
@@ -199,9 +199,12 @@ provide(
 .btn.is-disabled {
   opacity: 0.5;
   cursor: not-allowed !important;
-  pointer-events: none !important;
   box-shadow: none !important;
   transform: none !important;
+}
+
+a.btn.is-disabled {
+  pointer-events: none;
 }
 
 .btn--circle {
