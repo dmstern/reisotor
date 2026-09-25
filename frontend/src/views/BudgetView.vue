@@ -17,7 +17,7 @@ import BudgetSettlementCard from '../components/BudgetSettlementCard.vue';
 import BudgetExpenseList from '../components/BudgetExpenseList.vue';
 import BudgetTransferList from '../components/BudgetTransferList.vue';
 import Modal from '../components/Modal.vue';
-import Combobox from '../components/Combobox.vue';
+import CategoryCombobox from '../components/CategoryCombobox.vue';
 import FormField from '../components/FormField.vue';
 import FileAttachments from '../components/FileAttachments.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -554,10 +554,10 @@ const categoryColors = computed(() => {
                   />
                 </FormField>
                 <FormField icon="category" label="Kategorie" v-slot="{ id }">
-                  <Combobox
+                  <CategoryCombobox
                     :id="id"
                     v-model="expenseForm.category"
-                    :options="budgetStore.expenseCategories"
+                    type="expense"
                     placeholder="Kategorie"
                   />
                 </FormField>
@@ -726,10 +726,10 @@ const categoryColors = computed(() => {
             />
           </FormField>
           <FormField icon="category" label="Kategorie" v-slot="{ id }">
-            <Combobox
+            <CategoryCombobox
               :id="id"
               v-model="editExpenseForm.category"
-              :options="budgetStore.expenseCategories"
+              type="expense"
               placeholder="Kategorie"
             />
           </FormField>

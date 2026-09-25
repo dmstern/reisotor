@@ -5,6 +5,7 @@ import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
+import CategoryChip from './CategoryChip.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useToast } from '../composables/useToast';
@@ -38,7 +39,7 @@ async function removeExpense(id: number) {
         >
         <span class="row-meta">
           <Badge v-if="e.date">{{ e.date }}</Badge>
-          <Badge v-if="e.category">{{ e.category }}</Badge>
+          <CategoryChip v-if="e.category" type="expense" :category="e.category" />
           <Badge v-if="store.users.length > 1"
             >{{ store.userAvatar(e.paid_by_user_id) }}
             {{ store.userName(e.paid_by_user_id) }}</Badge

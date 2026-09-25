@@ -11,6 +11,7 @@ import { effectiveBudgetTarget, grandTotalTarget } from '../utils/budgetTargets'
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
+import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
 
 export interface BudgetFormInput {
   name: string;
@@ -163,7 +164,7 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   const expenseCategories = computed(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(EXPENSE_CATEGORY_SUGGESTIONS);
     allocations.value.forEach((a) => set.add(a.category));
     expenses.value.forEach((e) => e.category && set.add(e.category));
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));

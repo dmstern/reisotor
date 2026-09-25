@@ -11,7 +11,7 @@ import FormField from './FormField.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Accordion from './primitives/Accordion.vue';
-import Combobox from './Combobox.vue';
+import CategoryCombobox from './CategoryCombobox.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
@@ -180,10 +180,10 @@ function updateAllocationAmount(category: string, value: string) {
       <Accordion :expanded="showAddCategory" :inert-when-closed="false">
         <form class="add-category-form" @submit.prevent="addCategory">
           <FormField icon="category" label="Neue Kategorie" v-slot="{ id }">
-            <Combobox
+            <CategoryCombobox
               :id="id"
               v-model="newCategory"
-              :options="store.expenseCategories"
+              type="expense"
               placeholder="Neue Kategorie"
             />
           </FormField>

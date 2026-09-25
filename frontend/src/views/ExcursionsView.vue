@@ -66,7 +66,7 @@ import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
-import Combobox from '../components/Combobox.vue';
+import CategoryCombobox from '../components/CategoryCombobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
@@ -3489,12 +3489,10 @@ async function deleteEditingSpot() {
                 <Input v-model="activeSpotForm.title" type="text" placeholder="Titel" required />
               </FormField>
               <FormField icon="category" label="Kategorie">
-                <Combobox
+                <CategoryCombobox
                   v-model="activeSpotForm.category"
+                  type="spot"
                   :options="spotCategoryOptions"
-                  :icon-def-for="(c) => spotCategoryMeta(c).tabler"
-                  :color-for="(c) => spotCategoryMeta(c).color"
-                  placeholder="Kategorie (z. B. Restaurant – oder eigene erstellen)"
                 />
               </FormField>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
