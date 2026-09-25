@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type {
   DiaryComment,
@@ -43,6 +43,7 @@ import Card from '../components/primitives/Card.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import Input from '../components/primitives/Input.vue';
+import UploadProgressBar from '../components/UploadProgressBar.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -89,12 +90,46 @@ const form = ref(emptyForm());
 const uploading = ref(false);
 const uploadError = ref('');
 const newFileInputRef = ref<HTMLInputElement | null>(null);
+const newUploadCurrent = ref(1);
+const newUploadTotal = ref(0);
+const newUploadFileName = ref('');
+const newUploadPercent = ref(0);
+let newAbortController: AbortController | null = null;
+
+function abortNewUpload() {
+  if (newAbortController) {
+    newAbortController.abort();
+    newAbortController = null;
+  }
+  uploading.value = false;
+  newUploadCurrent.value = 1;
+  newUploadTotal.value = 0;
+  newUploadFileName.value = '';
+  newUploadPercent.value = 0;
+}
 
 const editingEntry = ref<DiaryEntry | null>(null);
 const editForm = ref(emptyForm());
 const editUploading = ref(false);
 const editUploadError = ref('');
 const editFileInputRef = ref<HTMLInputElement | null>(null);
+const editUploadCurrent = ref(1);
+const editUploadTotal = ref(0);
+const editUploadFileName = ref('');
+const editUploadPercent = ref(0);
+let editAbortController: AbortController | null = null;
+
+function abortEditUpload() {
+  if (editAbortController) {
+    editAbortController.abort();
+    editAbortController = null;
+  }
+  editUploading.value = false;
+  editUploadCurrent.value = 1;
+  editUploadTotal.value = 0;
+  editUploadFileName.value = '';
+  editUploadPercent.value = 0;
+}
 
 const diaryPreviewOpen = ref(false);
 const diaryPreviewImages = ref<DiaryImage[]>([]);
@@ -305,6 +340,11 @@ onMounted(async () => {
   loadDiaryWeather();
 });
 
+onUnmounted(() => {
+  abortNewUpload();
+  abortEditUpload();
+});
+
 function author(id: number) {
   return users.value.find((u) => u.id === id);
 }
@@ -350,41 +390,87 @@ async function uploadFiles(
   fileList: FileList | null,
   target: { images: DiaryImage[] },
   uploadingRef: typeof uploading,
-  errorRef: typeof uploadError
+  errorRef: typeof uploadError,
+  tracker: {
+    setAbortController: (ac: AbortController | null) => void;
+    setCurrent: (v: number) => void;
+    setTotal: (v: number) => void;
+    setFileName: (v: string) => void;
+    setPercent: (v: number) => void;
+  }
 ) {
   const files = fileList ? Array.from(fileList) : [];
   if (!files.length) return;
+
+  const controller = new AbortController();
+  tracker.setAbortController(controller);
+  tracker.setTotal(files.length);
+  tracker.setCurrent(1);
+  tracker.setFileName(files[0].name);
+  tracker.setPercent(0);
+
   uploadingRef.value = true;
   errorRef.value = '';
   try {
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      if (controller.signal.aborted) break;
+      const file = files[i];
+      tracker.setCurrent(i + 1);
+      tracker.setFileName(file.name);
+      tracker.setPercent(Math.round((i / files.length) * 100));
+
       const compressed = await compressImage(file);
+      if (controller.signal.aborted) break;
+
+      tracker.setPercent(Math.round(((i + 0.5) / files.length) * 100));
+
       const filename = isHeicFile(file) ? file.name.replace(/\.(heic|heif)$/i, '.jpg') : file.name;
-      const res = await api.post<{ url: string; original_name?: string }>('/diary/images', {
-        data: compressed,
-        filename,
-      });
+      const res = await api.post<{ url: string; original_name?: string }>(
+        '/diary/images',
+        {
+          data: compressed,
+          filename,
+        },
+        { signal: controller.signal }
+      );
+      if (controller.signal.aborted) break;
+
       target.images.push({
         url: res.url,
         original_name: res.original_name || filename,
       });
+      tracker.setPercent(Math.round(((i + 1) / files.length) * 100));
     }
   } catch {
+    if (controller.signal.aborted) return;
     errorRef.value = 'Bild-Upload fehlgeschlagen. Bitte erneut versuchen.';
   } finally {
     uploadingRef.value = false;
+    tracker.setAbortController(null);
   }
 }
 
 function onNewFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
-  uploadFiles(input.files, form.value, uploading, uploadError);
+  uploadFiles(input.files, form.value, uploading, uploadError, {
+    setAbortController: (ac) => (newAbortController = ac),
+    setCurrent: (v) => (newUploadCurrent.value = v),
+    setTotal: (v) => (newUploadTotal.value = v),
+    setFileName: (v) => (newUploadFileName.value = v),
+    setPercent: (v) => (newUploadPercent.value = v),
+  });
   input.value = '';
 }
 
 function onEditFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
-  uploadFiles(input.files, editForm.value, editUploading, editUploadError);
+  uploadFiles(input.files, editForm.value, editUploading, editUploadError, {
+    setAbortController: (ac) => (editAbortController = ac),
+    setCurrent: (v) => (editUploadCurrent.value = v),
+    setTotal: (v) => (editUploadTotal.value = v),
+    setFileName: (v) => (editUploadFileName.value = v),
+    setPercent: (v) => (editUploadPercent.value = v),
+  });
   input.value = '';
 }
 
@@ -438,7 +524,7 @@ function openNewForm() {
 }
 
 async function submitEntry() {
-  if (isEmptyRichText(form.value.content)) return;
+  if (uploading.value || isEmptyRichText(form.value.content)) return;
   const body = {
     trip_id: tripId,
     title: form.value.title || undefined,
@@ -464,6 +550,7 @@ async function submitEntry() {
 // weiterhin keinen Eintrag; markLinkedAsDone() läuft bewusst nicht mit - das "gemacht"-Setzen soll
 // erst beim tatsächlichen Veröffentlichen greifen.
 async function closeForm() {
+  abortNewUpload();
   showForm.value = false;
   if (hasEntryContent(form.value)) {
     const body = {
@@ -502,7 +589,7 @@ function startEdit(entry: DiaryEntry) {
 // Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer einen veröffentlichten
 // Eintrag (is_draft:false) - für bereits veröffentlichte Einträge ist das ein No-op, da dort schon 0.
 async function submitEditEntry() {
-  if (!editingEntry.value || isEmptyRichText(editForm.value.content)) return;
+  if (!editingEntry.value || editUploading.value || isEmptyRichText(editForm.value.content)) return;
   const body = {
     title: editForm.value.title || undefined,
     content: editForm.value.content,
@@ -526,6 +613,7 @@ async function submitEditEntry() {
 // weiterhin als Entwurf (statt die Änderungen zu verwerfen) - bei einem bereits veröffentlichten
 // Eintrag bleibt es wie bisher beim reinen Verwerfen des Bearbeitungs-Zwischenstands.
 async function closeEditForm() {
+  abortEditUpload();
   if (editingEntry.value?.is_draft && hasEntryContent(editForm.value)) {
     const body = {
       title: editForm.value.title || undefined,
@@ -547,7 +635,7 @@ async function closeEditForm() {
 }
 
 async function deleteEditingEntry() {
-  if (!editingEntry.value) return;
+  if (!editingEntry.value || editUploading.value) return;
   const id = editingEntry.value.id;
   editDraft.clear();
   editingEntry.value = null;
@@ -683,15 +771,23 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             :disabled="uploading"
             @change="onNewFilesSelected"
           />
+          <UploadProgressBar
+            v-if="uploading"
+            :current="newUploadCurrent"
+            :total="newUploadTotal"
+            :progress-percent="newUploadPercent"
+            :filename="newUploadFileName"
+            @cancel="abortNewUpload"
+          />
           <Button
+            v-else
             type="button"
             variant="secondary"
             size="sm"
             :icon="FORM_FIELD_ICONS.image"
-            :disabled="uploading"
             @click="newFileInputRef?.click()"
           >
-            {{ uploading ? 'Bilder werden hochgeladen …' : 'Bilder hinzufügen' }}
+            Bilder hinzufügen
           </Button>
         </div>
         <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
@@ -770,7 +866,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
         <div class="actions-row">
           <div class="spacer"></div>
-          <Button type="submit">Eintragen</Button>
+          <Button type="submit" :disabled="uploading">Eintragen</Button>
         </div>
       </form>
     </Modal>
@@ -946,15 +1042,23 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             :disabled="editUploading"
             @change="onEditFilesSelected"
           />
+          <UploadProgressBar
+            v-if="editUploading"
+            :current="editUploadCurrent"
+            :total="editUploadTotal"
+            :progress-percent="editUploadPercent"
+            :filename="editUploadFileName"
+            @cancel="abortEditUpload"
+          />
           <Button
+            v-else
             type="button"
             variant="secondary"
             size="sm"
             :icon="FORM_FIELD_ICONS.image"
-            :disabled="editUploading"
             @click="editFileInputRef?.click()"
           >
-            {{ editUploading ? 'Bilder werden hochgeladen …' : 'Bilder hinzufügen' }}
+            Bilder hinzufügen
           </Button>
         </div>
         <p v-if="editUploadError" class="hint error">{{ editUploadError }}</p>
@@ -1038,12 +1142,13 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             variant="danger"
             secondary
             :icon="ACTION_ICONS.delete"
+            :disabled="editUploading"
             @click="deleteEditingEntry"
           >
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit">{{
+          <Button type="submit" :disabled="editUploading">{{
             editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern'
           }}</Button>
         </div>

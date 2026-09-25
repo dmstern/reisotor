@@ -147,6 +147,7 @@ const newFormBundle = computed<Record<string, unknown>>({
 const newDraft = useDraftAutosave('schedule:new', newFormBundle, showAddForm);
 
 const editingItem = ref<ScheduleItem | null>(null);
+const isItemUploadingAttachments = ref(false);
 const viewingItem = ref<ScheduleItem | null>(null);
 
 watch(
@@ -883,7 +884,13 @@ function startEdit(item: ScheduleItem) {
 }
 
 async function submitEdit() {
-  if (!editingItem.value || !editForm.value.title.trim() || tripStore.currentTripId == null) return;
+  if (
+    !editingItem.value ||
+    isItemUploadingAttachments.value ||
+    !editForm.value.title.trim() ||
+    tripStore.currentTripId == null
+  )
+    return;
   const parsed = parseLatLngFromMapsLink(editForm.value.mapsLink);
   const { spot_id, idea_id } = parseLinkKey(editForm.value.linkKey);
   const linked = spot_id != null || idea_id != null;
@@ -1127,7 +1134,7 @@ function editViewingItem() {
 }
 
 async function deleteEditingItem() {
-  if (!editingItem.value) return;
+  if (!editingItem.value || isItemUploadingAttachments.value) return;
   const ideaId = editingItem.value.idea_id;
   await scheduleStore.remove(editingItem.value.id);
   showToast({ message: 'Termin gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
@@ -1597,7 +1604,12 @@ function formatDate(date: string) {
         <FormField icon="note" label="Notiz">
           <RichTextEditor v-model="editForm.note" placeholder="Notiz" compact expandable />
         </FormField>
-        <FileAttachments v-if="editingItem" domain="schedule" :entity-id="editingItem.id" />
+        <FileAttachments
+          v-if="editingItem"
+          domain="schedule"
+          :entity-id="editingItem.id"
+          v-model:uploading="isItemUploadingAttachments"
+        />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
           <Button
@@ -1605,12 +1617,13 @@ function formatDate(date: string) {
             variant="danger"
             secondary
             :icon="ACTION_ICONS.delete"
+            :disabled="isItemUploadingAttachments"
             @click="deleteEditingItem"
           >
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit">Speichern</Button>
+          <Button type="submit" :disabled="isItemUploadingAttachments">Speichern</Button>
         </div>
       </form>
     </Modal>
@@ -2230,10 +2243,6 @@ function formatDate(date: string) {
 
 .spacer {
   flex: 1;
-}
-
-.actions-row button[type='submit'] {
-  flex: initial;
 }
 
 /* --- Termin-Detail-Badge (#264) --- */

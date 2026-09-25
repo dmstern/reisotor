@@ -965,6 +965,10 @@ p + .btn {
   flex: 1;
 }
 
+.actions-row > :not(.spacer) {
+  flex: initial;
+}
+
 @media (max-width: 600px) {
   /* Blendet Abbrechen-Buttons auf Mobile aus, um Platz für Speichern/Löschen zu schaffen.
      Das Modal lässt sich weiterhin über das Schließen-X rechts oben beenden. */

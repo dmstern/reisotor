@@ -473,6 +473,7 @@ const emptyExcursionForm = () => ({
 const excursionForm = ref(emptyExcursionForm());
 
 const editingExcursion = ref<number | null>(null);
+const isExcursionUploadingAttachments = ref(false);
 const editExcursionForm = ref(emptyExcursionForm());
 
 const activeExcursionForm = computed(() =>
@@ -538,7 +539,12 @@ function startEditExcursion(excursion: Excursion) {
 }
 
 async function submitEditExcursion() {
-  if (editingExcursion.value == null || !editExcursionForm.value.title.trim()) return;
+  if (
+    editingExcursion.value == null ||
+    isExcursionUploadingAttachments.value ||
+    !editExcursionForm.value.title.trim()
+  )
+    return;
   if (editExcursionForm.value.role && editExcursionForm.value.spot_ids.length < 2) {
     return;
   }
@@ -553,7 +559,7 @@ function closeEditExcursionForm() {
 }
 
 async function deleteEditingExcursion() {
-  if (editingExcursion.value === null) return;
+  if (editingExcursion.value === null || isExcursionUploadingAttachments.value) return;
   const id = editingExcursion.value;
   const excursion = excursionsStore.excursions.find((e) => e.id === id);
   if (excursion?.date) {
@@ -643,6 +649,7 @@ const spotLocationError = ref(false);
 const spotPendingFixId = ref<number | null>(null);
 
 const editingSpot = ref<Spot | null>(null);
+const isSpotUploadingAttachments = ref(false);
 const editSpotForm = ref(emptySpotForm());
 
 const activeSpotForm = computed(() =>
@@ -3019,7 +3026,8 @@ function startEditSpot(spot: Spot) {
 }
 
 async function submitEditSpot() {
-  if (!editingSpot.value || !editSpotForm.value.title.trim()) return;
+  if (!editingSpot.value || isSpotUploadingAttachments.value || !editSpotForm.value.title.trim())
+    return;
   const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
   const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
@@ -3044,7 +3052,7 @@ watch(editSpotManualPin, (pin) => {
 });
 
 async function deleteEditingSpot() {
-  if (!editingSpot.value) return;
+  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
   const id = editingSpot.value.id;
   await spotsStore.remove(id);
   drawers.touchLocations();
@@ -3375,6 +3383,7 @@ async function deleteEditingSpot() {
                 v-if="editingExcursion"
                 domain="ideas"
                 :entity-id="editingExcursion"
+                v-model:uploading="isExcursionUploadingAttachments"
               />
               <DraftStatusBar
                 :status="
@@ -3395,12 +3404,13 @@ async function deleteEditingSpot() {
                   variant="danger"
                   secondary
                   :icon="ACTION_ICONS.delete"
+                  :disabled="isExcursionUploadingAttachments"
                   @click="deleteEditingExcursion"
                 >
                   Löschen
                 </Button>
                 <div class="spacer"></div>
-                <Button type="submit">{{
+                <Button type="submit" :disabled="isExcursionUploadingAttachments">{{
                   editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>
               </div>
@@ -3861,7 +3871,12 @@ async function deleteEditingSpot() {
                   </template>
                 </div>
               </CollapsibleFieldset>
-              <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
+              <FileAttachments
+                v-if="editingSpot"
+                domain="spots"
+                :entity-id="editingSpot.id"
+                v-model:uploading="isSpotUploadingAttachments"
+              />
               <DraftStatusBar
                 :status="
                   editingSpot !== null ? editSpotDraft.status.value : newSpotDraft.status.value
@@ -3877,12 +3892,13 @@ async function deleteEditingSpot() {
                   variant="danger"
                   secondary
                   :icon="ACTION_ICONS.delete"
+                  :disabled="isSpotUploadingAttachments"
                   @click="deleteEditingSpot"
                 >
                   Löschen
                 </Button>
                 <div class="spacer"></div>
-                <Button type="submit">{{
+                <Button type="submit" :disabled="isSpotUploadingAttachments">{{
                   editingSpot !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>
               </div>

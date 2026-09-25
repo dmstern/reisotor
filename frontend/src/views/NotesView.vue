@@ -46,6 +46,7 @@ const highlightedIds = ref<Set<number>>(new Set());
 const emptyForm = () => ({ title: '', content: '' });
 
 const editingNote = ref<Note | null>(null);
+const isNoteUploadingAttachments = ref(false);
 const editForm = ref(emptyForm());
 
 // Entwurfs-Zwischenspeicherung (Nutzer-Feedback: Eingaben sollen bei einem App-Absturz nicht
@@ -225,7 +226,12 @@ function startEdit(note: Note) {
 // Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer eine veröffentlichte Notiz
 // (is_draft:false) - für bereits veröffentlichte Notizen ist das ein No-op, da dort schon 0.
 async function submitEdit() {
-  if (!editingNote.value || isEmptyRichText(editForm.value.content)) return;
+  if (
+    !editingNote.value ||
+    isNoteUploadingAttachments.value ||
+    isEmptyRichText(editForm.value.content)
+  )
+    return;
   const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
     title: editForm.value.title || undefined,
     content: editForm.value.content,
@@ -274,7 +280,7 @@ async function closeEditForm() {
 }
 
 async function deleteEditingNote() {
-  if (!editingNote.value) return;
+  if (!editingNote.value || isNoteUploadingAttachments.value) return;
   const id = editingNote.value.id;
   editDraft.clear();
   editingNote.value = null;
@@ -360,7 +366,12 @@ async function remove(id: number) {
           <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" />
         </FormField>
         <RichTextEditor v-model="editForm.content" />
-        <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
+        <FileAttachments
+          v-if="editingNote"
+          domain="notes"
+          :entity-id="editingNote.id"
+          v-model:uploading="isNoteUploadingAttachments"
+        />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
           <Button
@@ -368,12 +379,13 @@ async function remove(id: number) {
             variant="danger"
             secondary
             :icon="ACTION_ICONS.delete"
+            :disabled="isNoteUploadingAttachments"
             @click="deleteEditingNote"
           >
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit">{{
+          <Button type="submit" :disabled="isNoteUploadingAttachments">{{
             editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern'
           }}</Button>
         </div>

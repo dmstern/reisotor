@@ -11,8 +11,13 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { useAuthStore } from '../stores/auth';
 import AttachmentPreviewModal from './AttachmentPreviewModal.vue';
 import AttachmentThumbnails from './AttachmentThumbnails.vue';
+import UploadProgressBar from './UploadProgressBar.vue';
 
 const auth = useAuthStore();
+
+const emit = defineEmits<{
+  (e: 'update:uploading', value: boolean): void;
+}>();
 
 // Wiederverwendbare Datei-Anhänge (Tickets/Dokumente) für Reise/Unterkunft/Notizen/Termine/Budget
 // (siehe backend/src/routes/attachments.ts) – kapselt GET/POST/DELETE /attachments komplett, damit
@@ -41,10 +46,33 @@ const props = withDefaults(
 
 const attachments = ref<Attachment[]>(props.initialAttachments ?? []);
 const uploading = ref(false);
+const currentFile = ref(1);
+const totalFiles = ref(0);
+const currentFileName = ref('');
+const progressPercent = ref(0);
+let abortController: AbortController | null = null;
+
 const error = ref('');
 const previewOpen = ref(false);
 const previewIndex = ref(0);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+
+function setUploading(value: boolean) {
+  uploading.value = value;
+  emit('update:uploading', value);
+}
+
+function abortUpload() {
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
+  setUploading(false);
+  currentFile.value = 1;
+  totalFiles.value = 0;
+  currentFileName.value = '';
+  progressPercent.value = 0;
+}
 
 const badgeTooltip = computed(() => {
   const count = attachments.value.length;
@@ -84,6 +112,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  abortUpload();
   if (typeof window !== 'undefined') {
     window.removeEventListener('attachments-changed', onAttachmentsChanged);
   }
@@ -102,21 +131,45 @@ async function onFilesSelected(event: Event) {
   input.value = '';
   if (!files.length) return;
 
-  uploading.value = true;
+  abortController = new AbortController();
+  totalFiles.value = files.length;
+  currentFile.value = 1;
+  currentFileName.value = files[0].name;
+  progressPercent.value = 0;
+  setUploading(true);
   error.value = '';
+
   try {
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      if (abortController.signal.aborted) break;
+      const file = files[i];
+      currentFile.value = i + 1;
+      currentFileName.value = file.name;
+      progressPercent.value = Math.round((i / files.length) * 100);
+
       const data = isImageFile(file) ? await compressImage(file) : await readAsDataUrl(file);
+      if (abortController.signal.aborted) break;
+
+      progressPercent.value = Math.round(((i + 0.5) / files.length) * 100);
+
       const filename = isHeicFile(file) ? file.name.replace(/\.(heic|heif)$/i, '.jpg') : file.name;
-      const created = await api.post<Attachment>('/attachments', {
-        domain: props.domain,
-        entity_id: props.entityId,
-        data,
-        filename,
-      });
+      const created = await api.post<Attachment>(
+        '/attachments',
+        {
+          domain: props.domain,
+          entity_id: props.entityId,
+          data,
+          filename,
+        },
+        { signal: abortController.signal }
+      );
+      if (abortController.signal.aborted) break;
+
       attachments.value.push(created);
+      progressPercent.value = Math.round(((i + 1) / files.length) * 100);
     }
-    if (typeof window !== 'undefined') {
+
+    if (!abortController.signal.aborted && typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('attachments-changed', {
           detail: { domain: props.domain, entityId: props.entityId },
@@ -124,9 +177,13 @@ async function onFilesSelected(event: Event) {
       );
     }
   } catch {
+    if (abortController?.signal.aborted) {
+      return;
+    }
     error.value = 'Datei-Upload fehlgeschlagen. Bitte erneut versuchen.';
   } finally {
-    uploading.value = false;
+    setUploading(false);
+    abortController = null;
   }
 }
 
@@ -204,15 +261,23 @@ async function remove(attachment: Attachment) {
           :disabled="uploading"
           @change="onFilesSelected"
         />
+        <UploadProgressBar
+          v-if="uploading"
+          :current="currentFile"
+          :total="totalFiles"
+          :progress-percent="progressPercent"
+          :filename="currentFileName"
+          @cancel="abortUpload"
+        />
         <Button
+          v-else
           variant="secondary"
           size="sm"
           :icon="ACTION_ICONS.add"
-          :disabled="uploading"
           type="button"
           @click="fileInputRef?.click()"
         >
-          {{ uploading ? 'Lädt hoch …' : 'Datei hinzufügen' }}
+          Datei hinzufügen
         </Button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>

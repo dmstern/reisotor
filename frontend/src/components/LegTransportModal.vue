@@ -38,6 +38,8 @@ const emit = defineEmits<{
   (e: 'delete'): void;
 }>();
 
+const isLegUploadingAttachments = ref(false);
+
 const form = ref({
   transport_type: 'Zug',
   departure_time: '',
@@ -120,7 +122,7 @@ const canDelete = computed(() => {
 });
 
 function onSave() {
-  if (!props.fromSpot || !props.toSpot) return;
+  if (!props.fromSpot || !props.toSpot || isLegUploadingAttachments.value) return;
   const legData: ExcursionLeg = {
     id: props.leg?.id,
     position: props.leg?.position ?? 0,
@@ -144,6 +146,7 @@ function onSave() {
 }
 
 function onDelete() {
+  if (isLegUploadingAttachments.value) return;
   emit('delete');
   emit('update:modelValue', false);
 }
@@ -249,7 +252,12 @@ function onDelete() {
         </FormField>
       </CollapsibleFieldset>
 
-      <FileAttachments v-if="leg?.id" domain="excursion_legs" :entity-id="leg.id" />
+      <FileAttachments
+        v-if="leg?.id"
+        domain="excursion_legs"
+        :entity-id="leg.id"
+        v-model:uploading="isLegUploadingAttachments"
+      />
       <p v-else class="attachments-hint">
         Anhänge (Tickets, Buchungsbestätigungen etc.) können hochgeladen werden, sobald die Tour
         gespeichert wurde.
@@ -262,6 +270,7 @@ function onDelete() {
           variant="danger"
           secondary
           :icon="ACTION_ICONS.delete"
+          :disabled="isLegUploadingAttachments"
           @click="onDelete"
         >
           Löschen
@@ -271,11 +280,14 @@ function onDelete() {
           type="button"
           variant="ghost"
           class="btn-cancel"
+          :disabled="isLegUploadingAttachments"
           @click="emit('update:modelValue', false)"
         >
           Abbrechen
         </Button>
-        <Button type="submit" variant="primary"> Übernehmen </Button>
+        <Button type="submit" variant="primary" :disabled="isLegUploadingAttachments">
+          Übernehmen
+        </Button>
       </div>
     </form>
   </Modal>

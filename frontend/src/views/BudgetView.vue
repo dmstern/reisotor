@@ -175,6 +175,7 @@ const emptyExpenseForm = () => ({
 const expenseForm = ref(emptyExpenseForm());
 
 const editingExpense = ref<BudgetExpense | null>(null);
+const isExpenseUploadingAttachments = ref(false);
 const showEditExpenseDetails = ref(false);
 const editExpenseForm = ref(emptyExpenseForm());
 
@@ -256,7 +257,12 @@ function startEditExpense(expense: BudgetExpense) {
 }
 
 async function submitEditExpense() {
-  if (!editingExpense.value || !editExpenseForm.value.title.trim() || !editExpenseForm.value.amount)
+  if (
+    !editingExpense.value ||
+    isExpenseUploadingAttachments.value ||
+    !editExpenseForm.value.title.trim() ||
+    !editExpenseForm.value.amount
+  )
     return;
   await budgetStore.updateExpense(editingExpense.value.id, expenseToBody(editExpenseForm.value));
   editExpenseDraft.clear();
@@ -787,14 +793,19 @@ const categoryColors = computed(() => {
           </FormField>
         </CollapsibleFieldset>
 
-        <FileAttachments v-if="editingExpense" domain="budget" :entity-id="editingExpense.id" />
+        <FileAttachments
+          v-if="editingExpense"
+          domain="budget"
+          :entity-id="editingExpense.id"
+          v-model:uploading="isExpenseUploadingAttachments"
+        />
         <DraftStatusBar
           :status="editExpenseDraft.status.value"
           :restored="editExpenseDraft.restored.value"
         />
         <div class="actions-row">
           <div class="spacer"></div>
-          <Button type="submit">Speichern</Button>
+          <Button type="submit" :disabled="isExpenseUploadingAttachments">Speichern</Button>
         </div>
       </form>
     </Modal>
@@ -975,10 +986,6 @@ const categoryColors = computed(() => {
 
 .edit-form .actions-row {
   margin-top: var(--space-2);
-}
-
-.edit-form .actions-row button[type='submit'] {
-  flex: initial;
 }
 
 .privacy-hint {
