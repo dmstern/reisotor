@@ -990,20 +990,13 @@ const categoryColors = computed(() => {
   color: var(--color-text-muted);
 }
 
+/* Budget-Cards werden immer einspaltig untereinander dargestellt, damit ungleiche
+   Höhen durch ein-/ausgeklappte Kategorien keine Lücken im Layout erzeugen */
 .pot-grid {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-/* Auf Desktop / breitem Monitor können Pots innerhalb der Card mehrspaltig sein */
-@media (min-width: 768px) {
-  .pot-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-    align-items: start;
-    gap: var(--space-3);
-  }
+  width: 100%;
 }
 
 /* Cards animation on view mount */

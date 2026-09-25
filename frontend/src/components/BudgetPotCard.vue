@@ -323,6 +323,7 @@ function onTotalSectionClick(e: MouseEvent) {
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
+  width: 100%;
   /* Schmaler als das globale .card-Padding (var(--space-4) = 24px): Pot-Karten stecken bereits in
      der äußeren "Budgets"-Karte (siehe BudgetView.vue) - zwei volle Karten-Paddings ineinander
      ließen auf schmalen Mobilbreiten zu wenig Platz für die Meter-Beschriftungen. */
