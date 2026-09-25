@@ -42,6 +42,10 @@ withDefaults(defineProps<Props>(), {
   grid-template-rows: 1fr;
 }
 
+.accordion:not(.is-expanded) {
+  overflow: hidden;
+}
+
 .accordion-inner {
   min-height: 0;
   overflow: hidden;
@@ -49,7 +53,7 @@ withDefaults(defineProps<Props>(), {
   transition: visibility 0s 0.35s;
 }
 
-.accordion.is-expanded .accordion-inner {
+.accordion.is-expanded > .accordion-inner {
   overflow: visible;
   visibility: visible;
   transition:
@@ -142,7 +146,7 @@ withDefaults(defineProps<Props>(), {
     transition: none;
   }
   .accordion-inner,
-  .accordion.is-expanded .accordion-inner {
+  .accordion.is-expanded > .accordion-inner {
     transition: none;
   }
   :deep(.accordion-stagger > *),

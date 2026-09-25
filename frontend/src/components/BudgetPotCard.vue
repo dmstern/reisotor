@@ -491,7 +491,6 @@ function onTotalSectionClick(e: MouseEvent) {
 .add-category {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
   margin-top: var(--space-1);
 }
 
@@ -525,7 +524,7 @@ function onTotalSectionClick(e: MouseEvent) {
   align-items: flex-end;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
   background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
   border: 1px dashed color-mix(in srgb, var(--color-primary) 20%, transparent);
   border-radius: var(--radius-sm-squircle);
