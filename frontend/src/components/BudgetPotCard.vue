@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Budget } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import BudgetMeter from './BudgetMeter.vue';
+import EditButton from './EditButton.vue';
 import DeleteButton from './DeleteButton.vue';
 import FormField from './FormField.vue';
 import AppIcon from './AppIcon.vue';
@@ -15,6 +16,10 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 const props = defineProps<{
   budget: Budget;
   categoryColors: Map<string, string>;
+}>();
+
+const emit = defineEmits<{
+  (e: 'edit', budget: Budget): void;
 }>();
 
 const store = useBudgetStore();
@@ -39,12 +44,19 @@ const targetInput = ref<string>(
   props.budget.target_amount != null ? String(props.budget.target_amount) : ''
 );
 
+watch(
+  () => props.budget.target_amount,
+  (val) => {
+    targetInput.value = val != null ? String(val) : '';
+  }
+);
+
 async function updateTargetAmount() {
   const value = targetInput.value.trim();
   await store.updateBudget(props.budget.id, {
     name: props.budget.name,
-    owner_id: props.budget.owner_id ?? undefined,
-    target_amount: value ? Number(value) : undefined,
+    owner_id: props.budget.owner_id,
+    target_amount: value ? Number(value) : null,
   });
 }
 
@@ -85,37 +97,35 @@ function updateAllocationAmount(category: string, value: string) {
             ><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template
           >
           <template v-else
-            ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" />
-            {{ store.userAvatar(budget.owner_id) }} {{ store.userName(budget.owner_id) }}</template
+            ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Privat</template
           >
         </span>
       </div>
-      <DeleteButton small @click="store.removeBudget(budget.id)" />
+      <EditButton small aria-label="Budget bearbeiten" @click="emit('edit', budget)" />
     </div>
 
-    <BudgetMeter
-      label="Gesamt"
-      :spent="totalSpentForBudget"
-      :target="effectiveTarget"
-      color="var(--color-primary-dark)"
-    />
-
-    <label :for="`budget-target-${budget.id}`" class="target-input">
-      Ziel (gesamt)
-      <div class="target-input-row">
+    <div class="category-row total-row">
+      <BudgetMeter
+        label="Gesamt"
+        :spent="totalSpentForBudget"
+        :target="effectiveTarget"
+        color="var(--color-primary-dark)"
+      />
+      <div class="category-edit total-edit">
         <Input
           :id="`budget-target-${budget.id}`"
           v-model="targetInput"
           type="number"
           step="0.01"
           size="sm"
-          class="target-input-field"
-          placeholder="z. B. 500"
+          class="category-amount-input"
+          :aria-label="`Ziel (gesamt) für ${displayBudgetName}`"
+          placeholder="0"
           @change="updateTargetAmount"
         />
-        <span>€</span>
+        <span v-if="allocations.length" class="btn-spacer" aria-hidden="true"></span>
       </div>
-    </label>
+    </div>
 
     <template v-if="!isSimpleMode || allocations.length">
       <div class="category-row" v-for="(a, idx) in allocations" :key="a.id">
@@ -194,16 +204,6 @@ function updateAllocationAmount(category: string, value: string) {
      der äußeren "Budgets"-Karte (siehe BudgetView.vue) - zwei volle Karten-Paddings ineinander
      ließen auf schmalen Mobilbreiten zu wenig Platz für die Meter-Beschriftungen. */
   padding: var(--space-3);
-  transition:
-    transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.pot-card:hover {
-  transform: translateY(-1.5px);
-  box-shadow: var(--shadow-sm);
-  border-color: color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
 }
 
 .pot-head {
@@ -233,23 +233,10 @@ function updateAllocationAmount(category: string, value: string) {
   color: var(--color-text-muted);
 }
 
-.target-input {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-}
-
-.target-input-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.target-input-field {
-  width: 120px;
-  max-width: 100%;
+.btn-spacer {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
 }
 
 .category-row {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import type { BudgetExpense } from '../api/types';
+import type { Budget, BudgetExpense } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
@@ -95,39 +95,70 @@ function autoSourceFor(expenseId: number): { label: string; path: string } | nul
 const newBudgetForm = ref({
   name: '',
   kind: 'shared' as 'shared' | 'personal',
-  owner_id: '',
   target_amount: '',
 });
 const showNewBudgetForm = ref(false);
 
 async function addBudget() {
   if (!newBudgetForm.value.name.trim()) return;
-  if (newBudgetForm.value.kind === 'personal' && !newBudgetForm.value.owner_id) return;
   await budgetStore.addBudget(tripId, {
     name: newBudgetForm.value.name.trim(),
-    owner_id:
-      newBudgetForm.value.kind === 'personal' ? Number(newBudgetForm.value.owner_id) : undefined,
+    owner_id: newBudgetForm.value.kind === 'personal' ? auth.user?.id : undefined,
     target_amount: newBudgetForm.value.target_amount
       ? Number(newBudgetForm.value.target_amount)
       : undefined,
   });
-  newBudgetForm.value = { name: '', kind: 'shared', owner_id: '', target_amount: '' };
+  newBudgetForm.value = { name: '', kind: 'shared', target_amount: '' };
   showNewBudgetForm.value = false;
 }
 
 function closeNewBudgetForm() {
   showNewBudgetForm.value = false;
-  newBudgetForm.value = { name: '', kind: 'shared', owner_id: '', target_amount: '' };
+  newBudgetForm.value = { name: '', kind: 'shared', target_amount: '' };
 }
 
-// Hinweis (siehe CLAUDE.md-Plan zur Budget-Überarbeitung): private Budgets sind seit der
-// Privatsphäre-Härtung wirklich nur für die gewählte Person sichtbar - legt man eines im Namen
-// einer/eines anderen Mitreisenden an, verschwindet es danach aus der eigenen Ansicht.
-const showsPrivacyHint = computed(
-  () =>
-    newBudgetForm.value.kind === 'personal' &&
-    Number(newBudgetForm.value.owner_id) !== auth.user?.id
-);
+const editingBudget = ref<Budget | null>(null);
+const editBudgetForm = ref({
+  name: '',
+  kind: 'shared' as 'shared' | 'personal',
+  target_amount: '',
+});
+
+function startEditBudget(budget: Budget) {
+  editingBudget.value = budget;
+  editBudgetForm.value = {
+    name:
+      budget.name === 'Gemeinsames Budget' && budgetStore.users.length <= 1
+        ? 'Hauptbudget'
+        : budget.name,
+    kind: budget.owner_id != null ? 'personal' : 'shared',
+    target_amount: budget.target_amount != null ? String(budget.target_amount) : '',
+  };
+}
+
+function closeEditBudgetForm() {
+  editingBudget.value = null;
+  editBudgetForm.value = { name: '', kind: 'shared', target_amount: '' };
+}
+
+async function submitEditBudget() {
+  if (!editingBudget.value || !editBudgetForm.value.name.trim()) return;
+  await budgetStore.updateBudget(editingBudget.value.id, {
+    name: editBudgetForm.value.name.trim(),
+    owner_id: editBudgetForm.value.kind === 'personal' ? auth.user?.id : null,
+    target_amount: editBudgetForm.value.target_amount
+      ? Number(editBudgetForm.value.target_amount)
+      : null,
+  });
+  editingBudget.value = null;
+}
+
+async function deleteEditingBudget() {
+  if (!editingBudget.value) return;
+  const id = editingBudget.value.id;
+  editingBudget.value = null;
+  await budgetStore.removeBudget(id);
+}
 
 // --- Ausgaben (Bezahlungen) ---
 const showExpenseForm = ref(false);
@@ -365,7 +396,7 @@ const categoryColors = computed(() => {
           <p v-if="budgetStore.users.length > 1" class="hint">
             Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
             aufteilen, um daraus ein Gesamtbudget zusammenzustellen. Geteilte Töpfe sehen alle
-            Mitreisenden, private Töpfe nur die gewählte Person.
+            Mitreisenden, private Töpfe nur du selbst.
           </p>
           <p v-else class="hint">
             Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
@@ -390,29 +421,11 @@ const categoryColors = computed(() => {
               <div v-if="budgetStore.users.length > 1" class="row">
                 <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
                   <Select :id="id" v-model="newBudgetForm.kind">
-                    <option value="shared">Geteilt (alle sehen ihn)</option>
-                    <option value="personal">Privat (nur eine Person sieht ihn)</option>
-                  </Select>
-                </FormField>
-                <FormField
-                  v-if="newBudgetForm.kind === 'personal'"
-                  icon="person"
-                  label="Person"
-                  required
-                  v-slot="{ id }"
-                >
-                  <Select :id="id" v-model="newBudgetForm.owner_id" required>
-                    <option value="" disabled>Nutzer:in wählen…</option>
-                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                      {{ u.avatar }} {{ u.username }}
-                    </option>
+                    <option value="shared">Geteilt (für alle im Urlaub sichtbar)</option>
+                    <option value="personal">Privat (nur für mich sichtbar)</option>
                   </Select>
                 </FormField>
               </div>
-              <p v-if="showsPrivacyHint" class="privacy-hint">
-                <AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Nur
-                {{ budgetStore.userName(Number(newBudgetForm.owner_id)) }} sieht diesen Topf danach.
-              </p>
               <FormField icon="amount" label="Gesamtziel" v-slot="{ id }">
                 <Input
                   :id="id"
@@ -430,12 +443,62 @@ const categoryColors = computed(() => {
             </form>
           </Modal>
 
+          <Modal
+            :model-value="editingBudget !== null"
+            title="Budget bearbeiten"
+            @update:model-value="(v) => !v && closeEditBudgetForm()"
+          >
+            <form class="edit-budget-form edit-form" @submit.prevent="submitEditBudget">
+              <FormField icon="title" label="Name" required v-slot="{ id }">
+                <Input
+                  :id="id"
+                  v-model="editBudgetForm.name"
+                  type="text"
+                  placeholder="Name (z. B. Souvenirs)"
+                  required
+                />
+              </FormField>
+              <div v-if="budgetStore.users.length > 1" class="row">
+                <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
+                  <Select :id="id" v-model="editBudgetForm.kind">
+                    <option value="shared">Geteilt (für alle im Urlaub sichtbar)</option>
+                    <option value="personal">Privat (nur für mich sichtbar)</option>
+                  </Select>
+                </FormField>
+              </div>
+              <FormField icon="amount" label="Gesamtziel" v-slot="{ id }">
+                <Input
+                  :id="id"
+                  v-model="editBudgetForm.target_amount"
+                  type="number"
+                  inputmode="decimal"
+                  step="0.01"
+                  placeholder="Gesamtziel €"
+                />
+              </FormField>
+              <div class="actions-row">
+                <Button
+                  type="button"
+                  variant="danger"
+                  secondary
+                  :icon="ACTION_ICONS.delete"
+                  @click="deleteEditingBudget"
+                >
+                  Löschen
+                </Button>
+                <div class="spacer"></div>
+                <Button type="submit">Speichern</Button>
+              </div>
+            </form>
+          </Modal>
+
           <TransitionGroup tag="div" name="list" class="pot-grid">
             <BudgetPotCard
               v-for="budget in budgetStore.budgets"
               :key="budget.id"
               :budget="budget"
               :category-colors="categoryColors"
+              @edit="startEditBudget"
             />
             <EmptyState v-if="!budgetStore.budgets.length" key="empty">
               Noch keine Budgets angelegt.
