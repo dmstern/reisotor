@@ -42,6 +42,7 @@ npm run lint         # ESLint inkl. vuejs-accessibility
 **Wichtig für AI-Agenten:**
 
 - **Zwingende Formatierung vor jedem Commit:** Da die CI-Pipeline bei Code-Style-Abweichungen (Prettier) fehlschlägt, MUSS vor jedem `git commit` zwingend der Code formatiert werden. Führe dazu immer `npm run format` im Root-Verzeichnis aus, bevor du Änderungen committest. Es ist deutlich sauberer, wenn die korrekte Formatierung direkt Teil deines eigentlichen Feature- oder Bugfix-Commits ist, statt einen zusätzlichen "chore(Format)"-Commit oben auf den PR zu pushen.
+- **Saubere, kleinteilige & semantische Commits:** Niemals alle Änderungen gesammelt in einem riesigen Commit am Ende ("alles in einem Rutsch") zusammenfassen. Immer kleinteilig, sauber und semantisch getrennt committen (Backend, Store, UI, Tests/Docs separat).
 - Immer `npm run typecheck` oder `npm --prefix frontend run typecheck` bzw. `npm run build` nutzen statt Roh-Aufrufen von `npx vue-tsc`.
 - **Niemals interaktive `npx`-Aufrufe ohne `-y` / `--yes` starten!** Falls `npx` Pakete nachinstallieren will, fordert es eine interaktive Bestätigung an (`Need to install the following packages: ... Ok to proceed? (y)`), was in Hintergrundprozessen/Subagenten ohne TTY zum dauerhaften Aufhängen führt.
 - Falls `npm run build` abbricht mit `vue-tsc: Kommando nicht gefunden`, zuerst `cd frontend && npm install` ausführen.
@@ -109,5 +110,7 @@ Bei klar umrissenen Änderungen direkt grep/Read/Edit verwenden statt Explore-/P
   - Diese temporären Scratch-Screenshots gehören _nicht_ in `docs/screenshots/`, sondern können per GitHub-CLI (`gh`) als Attachment an den PR angehängt werden.
 
 **Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für interne Änderungen (Tests, CI, Demo-Daten, Refactoring). **VOR dem Anlegen bestehende Fragmente lesen** und ggf. ergänzen statt doppelt anlegen. Format: Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
+
+**Saubere, kleinteilige & semantische Commits:** Änderungen dürfen **niemals** am Ende gesammelt in einem einzigen riesigen Commit ("alles in einem Rutsch") zusammengefasst werden. Stattdessen immer kleinteilig, sauber und semantisch zusammenhängend committen (z. B. Backend/Datenmodell, Store/Logik, UI/Komponente, Tests/Refactorings separat committen). Jeder Commit muss für sich formatiert (`npm run format`), typgeprüft und funktionsfähig sein.
 
 **Commit-Konvention:** `feat:`, `fix:`, `feat!:` für funktionale Änderungen. `chore:`, `refactor:`, `docs:` für interne Änderungen.
