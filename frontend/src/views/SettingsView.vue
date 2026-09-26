@@ -561,12 +561,22 @@ watch(activeTab, (tab) => {
 
 onMounted(async () => {
   usernameForm.value.username = auth.user?.username ?? '';
-  loading.value = false;
-  buildInfoStore.load();
-  if (auth.user?.is_admin && activeTab.value === 'users') loadUserList();
-  if (pushSupported) {
-    pushEnabled.value = !!(await getExistingSubscription());
-    if (pushEnabled.value) await notificationPrefs.load();
+  try {
+    const promises: Promise<unknown>[] = [uiSettings.load(true), buildInfoStore.load()];
+    if (pushSupported) {
+      promises.push(
+        (async () => {
+          pushEnabled.value = !!(await getExistingSubscription());
+          if (pushEnabled.value) await notificationPrefs.load();
+        })()
+      );
+    }
+    if (auth.user?.is_admin && activeTab.value === 'users') {
+      promises.push(loadUserList());
+    }
+    await Promise.all(promises);
+  } finally {
+    loading.value = false;
   }
 });
 
@@ -1607,7 +1617,7 @@ async function exportBackup() {
       </Card>
     </template>
   </div>
-  <ViewLoadingState v-else />
+  <ViewLoadingState v-else message="Lade Einstellungen…" />
 
   <FeedbackDialog v-model="showFeedbackDialog" />
   <PwaInstallDialog v-model="showPwaInstallDialog" />

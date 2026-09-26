@@ -52,7 +52,7 @@ async function onSubmit() {
     } else {
       await auth.login(username.value, password.value);
     }
-    router.push('/');
+    await router.push('/');
   } catch (err) {
     error.value =
       err instanceof ApiError
@@ -60,7 +60,6 @@ async function onSubmit() {
         : mode.value === 'register'
           ? 'Registrierung fehlgeschlagen'
           : 'Login fehlgeschlagen';
-  } finally {
     loading.value = false;
   }
 }
@@ -114,7 +113,7 @@ async function onSubmit() {
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <Button type="submit" :disabled="loading">
+      <Button type="submit" :loading="loading" :disabled="loading">
         {{
           loading
             ? mode === 'register'

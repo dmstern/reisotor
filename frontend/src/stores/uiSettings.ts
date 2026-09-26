@@ -413,8 +413,8 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       .catch(() => {});
   }
 
-  async function load() {
-    if (loaded.value) return;
+  async function load(force = false) {
+    if (loaded.value && !force) return;
     try {
       const stored = await api.get<Partial<StoredAppSettings>>('/users/me/app-settings');
       isInternalSync = true;

@@ -2,6 +2,7 @@
 import type { IconDef } from '../../utils/icon';
 import { RouterLink, type RouteLocationRaw } from 'vue-router';
 import AppIcon from '../AppIcon.vue';
+import LoadingSpinner from './LoadingSpinner.vue';
 import { useSlots, computed, Comment, provide } from 'vue';
 
 // Button-Primitive für alle Buttons (Formularknöpfe, Aktionsbuttons, Card-Actions, Icon-Only-Buttons) – siehe Issue #239.
@@ -33,6 +34,8 @@ const _props = withDefaults(
     type?: 'button' | 'submit' | 'reset';
     /** Deaktiviert-Zustand. */
     disabled?: boolean;
+    /** Ladezustand: Zeigt einen rotierenden Spinner und deaktiviert Interaktionen. */
+    loading?: boolean;
     /** Zugänglichkeits-Beschriftung (für Icon-only Buttons). */
     ariaLabel?: string;
     /** Tooltip/Titel. */
@@ -54,6 +57,7 @@ const _props = withDefaults(
     active: false,
     type: 'button',
     disabled: false,
+    loading: false,
     iconOnly: false,
     to: undefined,
     href: undefined,
@@ -72,11 +76,16 @@ const btnClasses = computed(() => [
   _props.shape !== 'squircle' ? `btn--${_props.shape}` : undefined,
   {
     'is-disabled': _props.disabled,
+    'is-loading': _props.loading,
     'is-active': _props.active,
     'btn--icon-only':
-      _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
+      _props.iconOnly ||
+      _props.shape === 'circle' ||
+      (!hasDefaultSlot() && (!!_props.icon || _props.loading)),
     'icon-only':
-      _props.iconOnly || _props.shape === 'circle' || (!hasDefaultSlot() && !!_props.icon),
+      _props.iconOnly ||
+      _props.shape === 'circle' ||
+      (!hasDefaultSlot() && (!!_props.icon || _props.loading)),
   },
 ]);
 
@@ -91,12 +100,14 @@ provide(
     v-if="to"
     :to="to"
     :aria-label="ariaLabel"
+    :aria-busy="loading ? 'true' : undefined"
     :title="title"
     class="btn"
     :class="btnClasses"
   >
+    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
     <AppIcon
-      v-if="icon"
+      v-else-if="icon"
       :icon="icon"
       group="actions"
       :active="active"
@@ -108,12 +119,14 @@ provide(
     v-else-if="href"
     :href="href"
     :aria-label="ariaLabel"
+    :aria-busy="loading ? 'true' : undefined"
     :title="title"
     class="btn"
     :class="btnClasses"
   >
+    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
     <AppIcon
-      v-if="icon"
+      v-else-if="icon"
       :icon="icon"
       group="actions"
       :active="active"
@@ -126,12 +139,14 @@ provide(
     :is="as"
     :aria-label="ariaLabel"
     :aria-pressed="active ? 'true' : undefined"
+    :aria-busy="loading ? 'true' : undefined"
     :title="title"
     class="btn"
     :class="btnClasses"
   >
+    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
     <AppIcon
-      v-if="icon"
+      v-else-if="icon"
       :icon="icon"
       group="actions"
       :active="active"
@@ -142,15 +157,17 @@ provide(
   <button
     v-else
     :type="type"
-    :disabled="disabled"
+    :disabled="disabled || loading"
     :aria-label="ariaLabel"
     :aria-pressed="active ? 'true' : undefined"
+    :aria-busy="loading ? 'true' : undefined"
     :title="title"
     class="btn"
     :class="btnClasses"
   >
+    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
     <AppIcon
-      v-if="icon"
+      v-else-if="icon"
       :icon="icon"
       group="actions"
       :active="active"
@@ -203,7 +220,24 @@ provide(
   transform: none !important;
 }
 
-a.btn.is-disabled {
+.btn.is-loading {
+  opacity: 0.85;
+  cursor: wait !important;
+  pointer-events: none;
+}
+
+.btn-spinner {
+  flex-shrink: 0;
+}
+
+.btn--primary:not(.btn--secondary) .btn-spinner,
+.btn--danger:not(.btn--secondary) .btn-spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+a.btn.is-disabled,
+a.btn.is-loading {
   pointer-events: none;
 }
 

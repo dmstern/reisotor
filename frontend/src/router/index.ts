@@ -1,5 +1,9 @@
 import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router';
+import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
+
+export const isNavigating = ref(false);
+export const navigatingTo = ref<string | null>(null);
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useUiSettingsStore } from '../stores/uiSettings';
 // Statisch (nicht dynamisch wie die übrigen Routen) importiert: App.vue bindet dieselbe Komponente
@@ -188,6 +192,9 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to) => {
+  isNavigating.value = true;
+  navigatingTo.value = to.path;
+
   const auth = useAuthStore();
 
   if (!auth.checked) {
@@ -259,6 +266,16 @@ router.beforeEach(async (to) => {
   }
 
   return true;
+});
+
+router.afterEach(() => {
+  isNavigating.value = false;
+  navigatingTo.value = null;
+});
+
+router.onError(() => {
+  isNavigating.value = false;
+  navigatingTo.value = null;
 });
 
 export default router;

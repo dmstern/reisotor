@@ -22,6 +22,8 @@ import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 import { useHeaderNavFits } from '../composables/useHeaderNavFits';
+import { navigatingTo } from '../router';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -33,6 +35,10 @@ const headerNavFits = useHeaderNavFits();
 const route = useRoute();
 const router = useRouter();
 const isMapRoute = computed(() => route.name === 'excursions');
+
+const isOpeningSettings = computed(
+  () => navigatingTo.value === '/settings' || navigatingTo.value?.startsWith('/settings')
+);
 
 const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
 const showDockedNav = computed(() => isDesktop.value && headerNavFits.value && showTripNav.value);
@@ -148,6 +154,7 @@ const profileTitle = computed(() => {
             to="/settings"
             class="profile-link"
             :class="{
+              'is-navigating': isOpeningSettings,
               'is-online': connectivity.isOnline,
               'is-offline': !connectivity.isOnline,
               'is-retrying':
@@ -156,12 +163,17 @@ const profileTitle = computed(() => {
             :title="profileTitle"
           >
             <div class="avatar-wrapper">
-              <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
-              <div v-if="!connectivity.isOnline" class="offline-badge" title="Offline">
+              <LoadingSpinner v-if="isOpeningSettings" size="sm" class="avatar-spinner" />
+              <span v-else class="avatar">{{ auth.user?.avatar || '👤' }}</span>
+              <div
+                v-if="!isOpeningSettings && !connectivity.isOnline"
+                class="offline-badge"
+                title="Offline"
+              >
                 <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
               </div>
               <div
-                v-else-if="connectivity.pendingCount > 0"
+                v-else-if="!isOpeningSettings && connectivity.pendingCount > 0"
                 class="pending-badge"
                 :title="`${connectivity.pendingCount} ausstehende Synchronisation(en)`"
               >
@@ -644,6 +656,17 @@ const profileTitle = computed(() => {
   height: 100%;
   border-radius: 50%;
   background: inherit;
+}
+
+.profile-link.is-navigating {
+  cursor: wait;
+  pointer-events: none;
+}
+
+.avatar-spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
 }
 
 .offline-badge {

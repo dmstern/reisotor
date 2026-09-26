@@ -1,5 +1,5 @@
 /* eslint-disable vue/one-component-per-file */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createApp, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
@@ -112,5 +112,18 @@ describe('Button primitive', () => {
     const html = await renderToString(app);
     expect(html).toContain('tabler-icon-beach');
     expect(html).toContain('Urlaub');
+  });
+
+  it('renders LoadingSpinner and disables button when loading is true', async () => {
+    const app = createApp({
+      render: () => h(Button, { loading: true }, () => 'Speichern'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('is-loading');
+    expect(html).toContain('disabled');
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('spinner');
+    expect(html).toContain('btn-spinner');
+    expect(html).toContain('Speichern');
   });
 });
