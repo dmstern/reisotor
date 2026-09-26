@@ -203,6 +203,7 @@ export default defineConfig({
       }),
   ],
   server: {
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: apiProxyTarget,
