@@ -335,12 +335,12 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 @media (prefers-color-scheme: dark) {
   .modal {
-    --modal-scroll-shadow-color: rgba(0, 0, 0, 0.45);
+    --modal-scroll-shadow-color: rgba(0, 0, 0, 0.2);
   }
 }
 
 :global([data-theme='dark']) .modal {
-  --modal-scroll-shadow-color: rgba(0, 0, 0, 0.45);
+  --modal-scroll-shadow-color: rgba(0, 0, 0, 0.2);
 }
 
 :global([data-theme='light']) .modal {
