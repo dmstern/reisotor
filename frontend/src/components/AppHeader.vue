@@ -402,6 +402,14 @@ const profileTitle = computed(() => {
   box-sizing: border-box;
 }
 
+/* Wenn der Kalender-Button auf Mobilgeräten (<1024px) links in der Pill sitzt,
+   wird das linke Padding von 8px auf 3px reduziert. Dadurch ist der 36px-Kreis-Button
+   zu allen Seiten (oben 3px, unten 3px, links 3px) exakt gleich weit vom Pill-Rand entfernt
+   und schmiegt sich perfekt konzentrisch in die Rundung der 44px-Pill ein. */
+.header-actions:has(.header-calendar-btn) {
+  padding-left: 3px;
+}
+
 .header-actions :deep(.bell-btn),
 .header-actions :deep(.recording-pill-btn) {
   position: relative;
@@ -544,7 +552,8 @@ const profileTitle = computed(() => {
     height: auto;
   }
 
-  .header-actions {
+  .header-actions,
+  .header-actions:has(.header-calendar-btn) {
     background: transparent;
     border: none;
     box-shadow: none;
