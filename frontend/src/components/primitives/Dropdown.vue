@@ -59,6 +59,11 @@ const emit = defineEmits<{
   display: inline-block;
 }
 
+.dropdown--open,
+.dropdown:has([aria-expanded='true']) {
+  z-index: 20;
+}
+
 .dropdown__button.dropdown__field {
   padding: 9px 12px;
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);

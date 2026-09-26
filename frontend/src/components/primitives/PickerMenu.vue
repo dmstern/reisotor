@@ -96,6 +96,7 @@ onUnmounted(() => {
 .picker-backdrop {
   position: fixed;
   inset: 0;
+  z-index: 1000;
   background: transparent;
   animation: picker-backdrop-fade 0.15s ease;
 }
@@ -124,6 +125,7 @@ onUnmounted(() => {
 
 .picker-menu {
   position: fixed;
+  z-index: 1001;
   min-width: 180px;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
@@ -175,6 +177,7 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
+  z-index: 1001;
 }
 
 .picker-menu-wide {

@@ -5,3 +5,4 @@
 - 🏷️ **Pflichtfeld-Markierungen**: Das Sternchen (*) für erforderliche Felder wie Benutzername und Passwort wird nun wieder sauber direkt neben der Beschriftung angezeigt.
 - 🎨 **Farbmodus für Icons**: In den Icon-Einstellungen lässt sich die Farbgebung (Farbig oder Monochrom) für Navigation, Wetter und Kategorien nun über kompakte Umschalter direkt unter den jeweiligen Bereichen festlegen.
 - 🌈 **Alle Akzentfarben auf einen Blick**: Die Trennung zwischen kräftigen und pastellfarbenen Farbtönen wurde vereinfacht – alle 24 vorbereiteten Akzentfarben stehen nun direkt in einer gemeinsamen, übersichtlichen Farbauswahl bereit.
+- 🎨 **Erscheinungsbild-Auswahl**: Das Dropdown-Menü für das Farbschema legt sich beim Ausklappen nun zuverlässig über nachfolgende Einstellungs-Karten, anstatt von ihnen verdeckt zu werden.

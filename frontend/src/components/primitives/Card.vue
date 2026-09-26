@@ -259,7 +259,6 @@ const isNewHighlight = computed(() => {
 <style>
 .card {
   position: relative;
-  isolation: isolate;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
@@ -276,6 +275,13 @@ const isNewHighlight = computed(() => {
 
 .card:focus-within {
   z-index: 5;
+}
+
+/* Karten mit geöffnetem Dropdown/Popover/Picker erhalten Vorrang vor nachfolgenden Karten */
+.card:has(.picker-menu),
+.card:has([aria-expanded='true']),
+.card:has(.is-open) {
+  z-index: 20;
 }
 
 .card.is-map-focused {
