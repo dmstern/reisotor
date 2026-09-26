@@ -10,27 +10,34 @@ import type { IconDef } from '../utils/icon';
 // näher an nativen iOS-Segmented-Controls, ohne eine neue Interaktion (weiterhin ein einzelner
 // Klick pro Option) einzuführen. Generisch für beliebig viele Optionen, aktuell überall mit genau
 // zwei genutzt.
-const props = defineProps<{
-  modelValue: string;
-  // dot: optionaler roter "neu"-Punkt je Option (z. B. Spots/Touren-Umschalter in
-  // ExcursionsView.vue), gleiches Aussehen wie NavBar.vue's .unseen-dot. Optional, bestehende
-  // Verwendungsstellen ohne dot bleiben unverändert.
-  // icon/iconGroup: optionales Icon vor dem Label (siehe utils/icon.ts) statt eines ins Label
-  // eingebackenen Emoji-Zeichens - iconGroup default 'actions', da die meisten Verwendungsstellen
-  // Toggle-/Filter-Buttons sind (siehe stores/iconStyle.ts's ICON_GROUP_OPTIONS).
-  // forceStyle/forceVariant: optional, an das AppIcon durchgereicht (siehe dortige Props) - nötig
-  // für Optionen, die IMMER eine bestimmte Darstellung zeigen sollen (z. B. IconStyleSettings.vue's
-  // Emoji/Symbole- bzw. Outline/Gefüllt-Beispiel-Icons), unabhängig vom aktuell aktiven Store-Wert.
-  options: {
-    value: string;
-    label: string;
-    dot?: boolean;
-    icon?: IconDef;
-    iconGroup?: IconGroup;
-    forceStyle?: IconStyle;
-    forceVariant?: IconVariant;
-  }[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    disabled?: boolean;
+    // dot: optionaler roter "neu"-Punkt je Option (z. B. Spots/Touren-Umschalter in
+    // ExcursionsView.vue), gleiches Aussehen wie NavBar.vue's .unseen-dot. Optional, bestehende
+    // Verwendungsstellen ohne dot bleiben unverändert.
+    // icon/iconGroup: optionales Icon vor dem Label (siehe utils/icon.ts) statt eines ins Label
+    // eingebackenen Emoji-Zeichens - iconGroup default 'actions', da die meisten Verwendungsstellen
+    // Toggle-/Filter-Buttons sind (siehe stores/iconStyle.ts's ICON_GROUP_OPTIONS).
+    // forceStyle/forceVariant: optional, an das AppIcon durchgereicht (siehe dortige Props) - nötig
+    // für Optionen, die IMMER eine bestimmte Darstellung zeigen sollen (z. B. IconStyleSettings.vue's
+    // Emoji/Symbole- bzw. Outline/Gefüllt-Beispiel-Icons), unabhängig vom aktuell aktiven Store-Wert.
+    options: {
+      value: string;
+      label: string;
+      dot?: boolean;
+      icon?: IconDef;
+      iconGroup?: IconGroup;
+      forceStyle?: IconStyle;
+      forceVariant?: IconVariant;
+      disabled?: boolean;
+    }[];
+  }>(),
+  {
+    disabled: false,
+  }
+);
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 
 // -1 (kein Match) statt auf 0 zu klammern, wenn modelValue keiner der options entspricht (z. B.
@@ -42,6 +49,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
 <template>
   <div
     class="segmented-toggle"
+    :class="{ 'is-disabled': disabled }"
     :style="{ '--count': options.length, '--active-index': Math.max(0, activeIndex) }"
   >
     <span v-if="activeIndex !== -1" class="segmented-thumb" aria-hidden="true"></span>
@@ -50,11 +58,15 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
       :key="option.value"
       type="button"
       class="segmented-option"
-      :class="{ active: option.value === modelValue }"
+      :class="{
+        active: option.value === modelValue,
+        'is-disabled': disabled || option.disabled,
+      }"
       :aria-pressed="option.value === modelValue"
       :title="option.label"
       :aria-label="option.label"
-      @click="emit('update:modelValue', option.value)"
+      :disabled="disabled || option.disabled"
+      @click="!disabled && !option.disabled && emit('update:modelValue', option.value)"
     >
       <AppIcon
         v-if="option.icon"
@@ -103,6 +115,19 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   box-shadow: var(--shadow-pill-raised);
   transform: translateX(calc(var(--active-index) * 100%));
   transition: transform 0.2s ease;
+  pointer-events: none;
+}
+
+.segmented-toggle.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.segmented-toggle.is-disabled .segmented-option,
+.segmented-option:disabled,
+.segmented-option.is-disabled {
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .segmented-option {

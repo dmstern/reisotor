@@ -243,12 +243,17 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
       has: page.getByRole('heading', { name: 'Icons', exact: true }),
     });
     await expect(iconsCard).toBeVisible();
-    // Ausgangspunkt: Einfärben aus (Default ist zwar "an", hier gezielt "aus" gesetzt, um den
+    // Ausgangspunkt: Einfärben aus (Default ist zwar "an", hier gezielt auf "Monochrom" gesetzt, um den
     // Kontrast zu prüfen).
-    const navColorCheckbox = iconsCard
-      .locator('.colorize-row', { hasText: 'Icons in der Navigation einfärben' })
-      .locator('input');
-    if (await navColorCheckbox.isChecked()) await navColorCheckbox.uncheck();
+    const navGroup = iconsCard.locator('.group-item', { hasText: 'Navigation & Dashboard' });
+    const monochromeBtn = navGroup.locator('.group-color-row .segmented-option', {
+      hasText: 'Monochrom',
+    });
+    const coloredBtn = navGroup.locator('.group-color-row .segmented-option', {
+      hasText: 'Farbig',
+    });
+
+    await monochromeBtn.click();
     await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(false);
 
     const dashboardIcon = () => page.locator('.navbar .link').first().locator('svg.icon');
@@ -256,11 +261,17 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await expect(dashboardIcon()).toHaveAttribute('stroke', 'currentColor');
 
     await page.goto('/settings?tab=app');
-    await navColorCheckbox.check();
+    await coloredBtn.click();
     await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(true);
 
     await page.goto('/');
     await expect(dashboardIcon()).not.toHaveAttribute('stroke', 'currentColor');
+
+    // Wenn Navigation auf Emoji umgestellt wird, ist der Farb-Toggle deaktiviert
+    await page.goto('/settings?tab=app');
+    await navGroup.locator('.group-style-row .segmented-option', { hasText: 'Emoji' }).click();
+    await expect(coloredBtn).toBeDisabled();
+    await expect(monochromeBtn).toBeDisabled();
   });
 
   test('"Auf Standard-Einstellungen zurücksetzen" stellt Defaults wieder her', async ({ page }) => {

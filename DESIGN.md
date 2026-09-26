@@ -571,8 +571,8 @@ Kachel selbst schon für dieses Widget hat (`frontend/src/utils/widgetColors.ts`
 ursprünglich aus `DashboardView.vue` extrahiert) – kein zweites, eigenes Farbschema fürs Icon
 daneben. `NAV_LINK_COLORS` in derselben Datei überträgt dieselbe Farbzuordnung 1:1 auf die
 NavBar-Icons, aktiv per `iconStyle.navColored` (`usePersistedRef`, localStorage
-`reisotor-icon-nav-colored`, **Default `true`** seit Issue #74). Checkbox dafür in
-`IconStyleSettings.vue` ("Icons in der Navigation einfärben"). Ein neues Widget/ein neuer Nav-Punkt
+`reisotor-icon-nav-colored`, **Default `true`** seit Issue #74). Farbig/Monochrom-Umschalter dafür in
+`IconStyleSettings.vue` (unter Navigation). Ein neues Widget/ein neuer Nav-Punkt
 mit eigenem Farbakzent → in `WIDGET_COLORS` (und ggf. `NAV_LINK_COLORS`) ergänzen, nicht lokal eine
 Hex-Farbe in der Komponente hartkodieren.
 

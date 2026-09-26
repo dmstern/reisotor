@@ -12,8 +12,6 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
-
-import CheckboxCard from './primitives/CheckboxCard.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 
 // Issue #74: die Bereichseinstellungen sind der zentrale, immer sichtbare Teil dieser Karte
@@ -51,6 +49,17 @@ const STYLE_OPTIONS = [
   },
 ];
 
+const COLOR_OPTIONS = [
+  {
+    value: 'colored',
+    label: 'Farbig',
+  },
+  {
+    value: 'monochrome',
+    label: 'Monochrom',
+  },
+];
+
 // '' statt eines der beiden Werte, wenn die Bereiche aktuell unterschiedlich eingestellt sind -
 // SegmentedToggle blendet die Pille dann komplett aus (siehe dortiger activeIndex-Kommentar),
 // statt fälschlich eine der beiden Optionen als "aktiv" zu zeigen.
@@ -59,9 +68,18 @@ const allGroupsValue = computed(() => {
   return values.every((v) => v === values[0]) ? values[0] : '';
 });
 
-const navColorRelevant = computed(() => iconStyle.groups.navigation === 'icons');
-const weatherColorRelevant = computed(() => iconStyle.groups.weather === 'icons');
-const categoriesColorRelevant = computed(() => iconStyle.groups.categories === 'icons');
+function isColorized(group: ConfigurableIconGroup): boolean {
+  if (group === 'navigation') return iconStyle.navColored;
+  if (group === 'weather') return iconStyle.colorizeWeather;
+  return iconStyle.colorizeCategories;
+}
+
+function setColorized(group: ConfigurableIconGroup, value: string) {
+  const colored = value === 'colored';
+  if (group === 'navigation') iconStyle.navColored = colored;
+  else if (group === 'weather') iconStyle.colorizeWeather = colored;
+  else iconStyle.colorizeCategories = colored;
+}
 
 const isDefault = computed(() => {
   const g = iconStyle.groups;
@@ -137,8 +155,8 @@ const isDefault = computed(() => {
         />
       </div>
 
-      <template v-for="group in ICON_GROUP_OPTIONS" :key="group.value">
-        <div class="group-override-row">
+      <div v-for="group in ICON_GROUP_OPTIONS" :key="group.value" class="group-item">
+        <div class="group-override-row group-style-row">
           <span class="group-override-label">{{ group.label }}</span>
           <SegmentedToggle
             :model-value="iconStyle.groups[group.value]"
@@ -149,31 +167,24 @@ const isDefault = computed(() => {
             "
           />
         </div>
-        <CheckboxCard
-          v-if="group.value === 'navigation'"
-          v-model="iconStyle.navColored"
-          class="colorize-row"
-          label="Icons in der Navigation einfärben"
-          :description="`Nutzt dieselben Akzentfarben wie die Dashboard-Kacheln – wirkt sich nur aus, wenn die Navigation auf Symbole steht (aktuell${navColorRelevant ? '' : ' nicht'} der Fall).`"
-          :class="{ dimmed: !navColorRelevant }"
-        />
-        <CheckboxCard
-          v-if="group.value === 'weather'"
-          v-model="iconStyle.colorizeWeather"
-          class="colorize-row"
-          label="Wetter-Icons passend einfärben"
-          :description="`Sonne gelb, Wolken grau, Regen blau, Blitze gelb, … – wirkt sich nur aus, wenn Wetter auf Symbole steht (aktuell${weatherColorRelevant ? '' : ' nicht'} der Fall).`"
-          :class="{ dimmed: !weatherColorRelevant }"
-        />
-        <CheckboxCard
-          v-if="group.value === 'categories'"
-          v-model="iconStyle.colorizeCategories"
-          class="colorize-row"
-          label="Kategorie-Icons einfärben"
-          :description="`Färbt die Icons in Kategorie-Überschriften und der Kategorie-Navigation in derselben Akzentfarbe wie die bunten Kategorie-Badges (die sind immer eingefärbt) – wirkt sich nur aus, wenn Kategorien auf Symbole stehen (aktuell${categoriesColorRelevant ? '' : ' nicht'} der Fall).`"
-          :class="{ dimmed: !categoriesColorRelevant }"
-        />
-      </template>
+        <div
+          class="group-override-row group-color-row"
+          :class="{ 'is-disabled': iconStyle.groups[group.value] === 'emoji' }"
+        >
+          <span class="group-color-label">Farbe</span>
+          <SegmentedToggle
+            :model-value="isColorized(group.value) ? 'colored' : 'monochrome'"
+            :options="COLOR_OPTIONS"
+            :disabled="iconStyle.groups[group.value] === 'emoji'"
+            :title="
+              iconStyle.groups[group.value] === 'emoji'
+                ? 'Nur für Symbole (Tabler) verfügbar'
+                : undefined
+            "
+            @update:model-value="(v) => setColorized(group.value, v)"
+          />
+        </div>
+      </div>
     </div>
   </Card>
 </template>
@@ -226,11 +237,10 @@ const isDefault = computed(() => {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
-  margin-top: var(--space-2);
 }
 
 .all-groups-row {
-  padding-bottom: var(--space-2);
+  padding-bottom: var(--space-3);
   margin-bottom: var(--space-2);
   border-bottom: var(--ui-border-width, 1px) solid var(--color-border);
 }
@@ -245,16 +255,39 @@ const isDefault = computed(() => {
   color: var(--color-text);
 }
 
+.group-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-3);
+}
+
+.group-item:not(:last-child) {
+  border-bottom: var(--ui-border-width, 1px) solid var(--color-border);
+}
+
+.group-color-row {
+  padding-left: var(--space-3);
+}
+
+.group-color-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  transition: opacity 0.15s ease;
+}
+
+.group-color-row.is-disabled .group-color-label {
+  opacity: 0.5;
+}
+
 /* Auf schmalen Karten (Mobil) das Wort-Label der Toggle-Optionen ausblenden, nur das Beispiel-Icon
    bleibt - spart die Breite, die sonst zum Umbruch/Missalignment der Zeile geführt hat. */
 @container (max-width: 380px) {
-  .group-override-row :deep(.segmented-option-label) {
+  .group-style-row :deep(.segmented-option-label),
+  .all-groups-row :deep(.segmented-option-label) {
     display: none;
   }
-}
-
-.colorize-row.dimmed {
-  opacity: 0.6;
 }
 
 .card-header-row {
