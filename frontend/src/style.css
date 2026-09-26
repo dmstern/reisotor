@@ -341,6 +341,21 @@
   --input-height: 44px;
   --input-width: 44px;
   --input-default-width: 44px;
+
+  /* Semantische Z-Index-Ebenen (Single Source of Truth für Stacking-Hierarchien) */
+  --z-canvas: 0;
+  --z-card: 1;
+  --z-card-elevated: 5;
+  --z-map-focus: 6;
+  --z-sticky: 10;
+  --z-nav: 100;
+  --z-header: 110;
+  --z-fab: 120;
+  --z-drawer: 200;
+  --z-dropdown: 500;
+  --z-modal: 1000;
+  --z-popover: 1100;
+  --z-toast: 9999;
 }
 
 /* corner-shape:squircle rendert bei GLEICHEM border-radius-Wert sichtbar WENIGER rund als ein

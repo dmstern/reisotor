@@ -274,19 +274,12 @@ const isNewHighlight = computed(() => {
 }
 
 .card:focus-within {
-  z-index: 5;
-}
-
-/* Karten mit geöffnetem Dropdown/Popover/Picker erhalten Vorrang vor nachfolgenden Karten */
-.card:has(.picker-menu),
-.card:has([aria-expanded='true']),
-.card:has(.is-open) {
-  z-index: 20;
+  z-index: var(--z-card-elevated, 5);
 }
 
 .card.is-map-focused {
   position: relative;
-  z-index: 6;
+  z-index: var(--z-map-focus, 6);
   border-color: var(--color-primary) !important;
   box-shadow:
     0 0 0 2px var(--color-primary),

@@ -27,8 +27,8 @@ withDefaults(
     wide: false,
     position: 'fixed',
     origin: 'top',
-    zIndex: 1001,
-    backdropZIndex: 1000,
+    zIndex: 501,
+    backdropZIndex: 500,
     role: 'menu',
   }
 );
@@ -96,7 +96,7 @@ onUnmounted(() => {
 .picker-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-dropdown, 500);
   background: transparent;
   animation: picker-backdrop-fade 0.15s ease;
 }
@@ -125,7 +125,7 @@ onUnmounted(() => {
 
 .picker-menu {
   position: fixed;
-  z-index: 1001;
+  z-index: calc(var(--z-dropdown, 500) + 1);
   min-width: 180px;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
@@ -177,7 +177,7 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 1001;
+  z-index: calc(var(--z-dropdown, 500) + 1);
 }
 
 .picker-menu-wide {

@@ -198,8 +198,8 @@ const profileTitle = computed(() => {
      selbst eine eigene Stacking-Context bildet – ein hoher z-index innerhalb (z. B. das
      TripSwitcher-Dropdown, z-index:21) wird sonst nur INNERHALB dieser Context verglichen und
      verliert gegen eine Schublade mit höherem Context-z-index, obwohl der Dropdown-Inhalt optisch
-     weit darüber liegen soll. Bleibt unterhalb von Modal.vue (z-index:100). */
-  z-index: 25;
+     weit darüber liegen soll. Bleibt unterhalb von Modal.vue (z-index: var(--z-modal, 1000)). */
+  z-index: var(--z-header, 110);
   background: transparent;
   border-bottom: none;
   box-shadow: none;
