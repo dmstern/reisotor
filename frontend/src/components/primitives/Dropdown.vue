@@ -61,7 +61,7 @@ const emit = defineEmits<{
 
 .dropdown--open,
 .dropdown:has([aria-expanded='true']) {
-  z-index: 20;
+  z-index: var(--z-dropdown, 500);
 }
 
 .dropdown__button.dropdown__field {

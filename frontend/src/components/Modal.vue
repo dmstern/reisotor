@@ -289,7 +289,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: var(--z-modal, 1000);
   padding: var(--space-4);
 }
 
