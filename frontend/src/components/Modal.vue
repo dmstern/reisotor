@@ -83,6 +83,101 @@ function handleKeydown(e: KeyboardEvent) {
 
 let isRegistered = false;
 
+const canScrollUp = ref(false);
+const canScrollDown = ref(false);
+const hasActionsRow = ref(false);
+
+let resizeObserver: ResizeObserver | null = null;
+let mutationObserver: MutationObserver | null = null;
+
+function getScrollElement(): HTMLElement | null {
+  if (!modalRef.value) return null;
+  if (props.fullHeight) {
+    const form = modalRef.value.querySelector<HTMLElement>('.modal-body > form');
+    if (form) return form;
+    const slottedChild = modalRef.value.querySelector<HTMLElement>('.modal-body > *');
+    if (slottedChild && slottedChild.scrollHeight > slottedChild.clientHeight) {
+      return slottedChild;
+    }
+  }
+  return modalRef.value;
+}
+
+function updateScrollState() {
+  const el = getScrollElement();
+  if (!el) {
+    canScrollUp.value = false;
+    canScrollDown.value = false;
+    hasActionsRow.value = false;
+    return;
+  }
+  canScrollUp.value = el.scrollTop > 2;
+  canScrollDown.value = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
+  hasActionsRow.value = Boolean(modalRef.value?.querySelector('.actions-row'));
+}
+
+function onScroll(e: Event) {
+  const target = e.target as HTMLElement | null;
+  const scrollEl = getScrollElement();
+  if (target === scrollEl || target === modalRef.value) {
+    if (!scrollEl) return;
+    canScrollUp.value = scrollEl.scrollTop > 2;
+    canScrollDown.value = scrollEl.scrollTop + scrollEl.clientHeight < scrollEl.scrollHeight - 2;
+  }
+}
+
+function setupScrollObservers() {
+  cleanupScrollObservers();
+  if (!modalRef.value) return;
+
+  modalRef.value.addEventListener('scroll', onScroll, { capture: true, passive: true });
+  window.addEventListener('resize', updateScrollState, { passive: true });
+
+  const scrollEl = getScrollElement();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      updateScrollState();
+    });
+    if (scrollEl) {
+      resizeObserver.observe(scrollEl);
+      for (const child of scrollEl.children) {
+        resizeObserver.observe(child);
+      }
+    }
+    if (modalRef.value && modalRef.value !== scrollEl) {
+      resizeObserver.observe(modalRef.value);
+    }
+  }
+
+  if (typeof MutationObserver !== 'undefined' && scrollEl) {
+    mutationObserver = new MutationObserver(() => {
+      updateScrollState();
+      if (resizeObserver && scrollEl) {
+        for (const child of scrollEl.children) {
+          resizeObserver.observe(child);
+        }
+      }
+    });
+    mutationObserver.observe(scrollEl, { childList: true, subtree: true });
+  }
+
+  updateScrollState();
+}
+
+function cleanupScrollObservers() {
+  if (modalRef.value) {
+    modalRef.value.removeEventListener('scroll', onScroll, { capture: true });
+  }
+  window.removeEventListener('resize', updateScrollState);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  mutationObserver?.disconnect();
+  mutationObserver = null;
+  canScrollUp.value = false;
+  canScrollDown.value = false;
+  hasActionsRow.value = false;
+}
+
 watch(
   () => props.modelValue,
   (open) => {
@@ -96,6 +191,8 @@ watch(
           if (focusables.length > 0) {
             focusables[0].focus();
           }
+          setupScrollObservers();
+          requestAnimationFrame(updateScrollState);
         });
       }
     } else {
@@ -103,10 +200,22 @@ watch(
         isRegistered = false;
         window.removeEventListener('keydown', handleKeydown);
         modalStore.unregister(modalId);
+        cleanupScrollObservers();
       }
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => props.fullHeight,
+  () => {
+    if (props.modelValue) {
+      nextTick(() => {
+        setupScrollObservers();
+      });
+    }
+  }
 );
 
 onUnmounted(() => {
@@ -115,6 +224,7 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleKeydown);
     modalStore.unregister(modalId);
   }
+  cleanupScrollObservers();
 });
 
 const currentZIndex = computed(() => modalStore.getZIndex(modalId));
@@ -128,7 +238,15 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
         <div
           ref="modalRef"
           class="modal"
-          :class="[{ 'full-height': fullHeight }, `size-${size}`]"
+          :class="[
+            {
+              'full-height': fullHeight,
+              'can-scroll-up': canScrollUp,
+              'can-scroll-down': canScrollDown,
+              'has-actions-row': hasActionsRow,
+            },
+            `size-${size}`,
+          ]"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="title && !hideHeader ? titleId : undefined"
@@ -147,7 +265,17 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
             />
           </div>
           <div class="modal-body">
+            <div
+              class="modal-scroll-shadow modal-scroll-shadow--top"
+              :class="{ 'is-visible': canScrollUp }"
+              aria-hidden="true"
+            />
             <slot :close="close" />
+            <div
+              class="modal-scroll-shadow modal-scroll-shadow--bottom"
+              :class="{ 'is-visible': canScrollDown && !hasActionsRow }"
+              aria-hidden="true"
+            />
           </div>
         </div>
       </div>
@@ -191,6 +319,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 }
 
 .modal {
+  --modal-scroll-shadow-color: rgba(43, 42, 40, 0.14);
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-lg-squircle);
@@ -204,6 +333,20 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   transition:
     height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
     max-height 0.35s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .modal {
+    --modal-scroll-shadow-color: rgba(0, 0, 0, 0.45);
+  }
+}
+
+:global([data-theme='dark']) .modal {
+  --modal-scroll-shadow-color: rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme='light']) .modal {
+  --modal-scroll-shadow-color: rgba(43, 42, 40, 0.14);
 }
 
 @media (max-width: 600px) {
@@ -261,6 +404,32 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+.modal-scroll-shadow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 15;
+}
+
+.modal-scroll-shadow--top {
+  top: 0;
+  background: linear-gradient(to bottom, var(--modal-scroll-shadow-color) 0%, transparent 100%);
+}
+
+.modal-scroll-shadow--bottom {
+  bottom: 0;
+  background: linear-gradient(to top, var(--modal-scroll-shadow-color) 0%, transparent 100%);
+}
+
+.modal-scroll-shadow.is-visible {
+  opacity: 1;
 }
 
 /* Slot-Inhalt gehört der aufrufenden View (Notizen/Tagebuch/Spot-/Touren-/Unterkunft-/Reise-
@@ -307,6 +476,28 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
   z-index: 10;
+  transition: box-shadow 0.2s ease;
+}
+
+.modal.full-height .modal-body :slotted(form) .actions-row::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: linear-gradient(to top, var(--modal-scroll-shadow-color) 0%, transparent 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.modal.full-height.can-scroll-down .modal-body :slotted(form) .actions-row {
+  box-shadow: 0 -4px 12px var(--modal-scroll-shadow-color);
+}
+
+.modal.full-height.can-scroll-down .modal-body :slotted(form) .actions-row::before {
+  opacity: 1;
 }
 
 .modal.full-height .modal-body :slotted(form) .actions-row .spacer {
