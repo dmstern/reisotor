@@ -113,6 +113,9 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 5. **Strikte Sparsamkeit bei Subagenten & autonomem Teamwork:**
    - Keine eigenständigen Multi-Agent-Kaskaden oder unbeschränkten autonomen Schleifen (wie `/teamwork-preview` oder offene `/goal`-Tasks ohne klare Abbruchbedingung) starten.
    - Bei klar umrissenen Änderungen direkt `grep_search`/`view_file`/`replace_file_content` nutzen statt Subagenten zu spawnen — jeder Spawn re-deriviert den kompletten Kontext neu. Subagenten bleiben die seltene Ausnahme für isolierte, parallele Lese-Recherchen.
+6. **Keine unaufgeforderten Screenshots (Massiver Token-Treiber):**
+   - Screenshots (Scratch-Specs, Baseline-Updates) dürfen **niemals automatisch oder unaufgefordert** angefertigt werden, sondern ausschließlich auf expliziten Nutzer-Wunsch.
+   - Bilddateien dürfen vom Agenten **niemals mit `view_file` geöffnet werden** (spült ~4.000 multimodale Tokens pro Bild in den Kontext). Bilder nur erzeugen, ablegen und im Chat/Walkthrough per Markdown verlinken.
 
 ## PR-Workflow
 
@@ -120,11 +123,15 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 
 **Issues schließen:** `Fixes #101`, `Closes #102` etc. (englische Keywords vor jeder Issue-Nummer wiederholen).
 
-**Screenshots & visuelle Verifikation im PR:**
+**Screenshots & visuelle Verifikation im PR (Strikte On-Demand-Pflicht):**
 
-- **Baseline-Images (`docs/screenshots/`):** Bilden stets den aktuellen Produktionsstand aller relevanten Ansichten der gesamten App im Git-Repo ab. Sie folgen einem festen Schema (`<view>-desktop-light.png`, `<view>-mobile-dark.png` etc.) und werden bei Änderungen direkt aktualisiert (oder komplett per `npm run generate:screenshots:docker`). **Niemals willkürliche neue Dateinamen erfinden oder blind dort ablegen.** Im PR per Markdown verlinken (GitHub bietet so automatischen Vorher-/Nachher-Bildvergleich im Diff; **Syntax-Falle:** `![Label](URL)` ohne Backticks um die URL).
-- **Scratch-Screenshots für Detail-/Sonderfälle:** Ist eine sichtbare UI-Änderung nicht durch die regulären Baseline-Images abgedeckt (z. B. ein einzelner Dialog, Teilkomponente, Hover-/Fehlerzustand):
-  - Vorher- und Nachher-Screenshot anfertigen und **zuerst direkt im Chat/Walkthrough anzeigen**, damit der Nutzer das Ergebnis vorab prüfen und freigeben kann.
+- **Keine automatischen Screenshots im Standard-Workflow (Token-Schutz):**
+  - Der Agent darf Screenshots (weder Baseline-Updates noch Scratch-Screenshots) **NIEMALS automatisch oder unaufgefordert** anfertigen.
+  - Screenshots werden **ausschließlich auf explizite Aufforderung der Nutzerin / des Nutzers** erstellt (z. B. _"Erstelle bitte Vorher-/Nachher-Screenshots"_ oder _"Aktualisiere die Screenshots"_).
+  - **Kein Selbst-Inspizieren per `view_file`:** Wenn der Nutzer Screenshots anfordert, erzeugt der Agent diese, legt sie ab und verlinkt sie per Markdown (`![Label](URL)`) im Chat oder Walkthrough zur Ansicht. Der Agent ruft **niemals `view_file` auf Bilddateien auf**, da jedes Bild ~4.000 multimodale Tokens in den permanenten Kontext spült. Die visuelle Prüfung erfolgt rein durch das menschliche Auge in der Benutzeroberfläche.
+- **Baseline-Images (`docs/screenshots/`):** Bilden stets den aktuellen Produktionsstand aller relevanten Ansichten der gesamten App im Git-Repo ab (`<view>-desktop-light.png` etc.). Werden nur bei expliziter Aufforderung aktualisiert (oder komplett per `npm run generate:screenshots:docker`). Im PR per Markdown verlinken (GitHub bietet so automatischen Vorher-/Nachher-Bildvergleich im Diff; **Syntax-Falle:** `![Label](URL)` ohne Backticks um die URL).
+- **Scratch-Screenshots für Detail-/Sonderfälle (nur bei expliziter Aufforderung):** Ist eine sichtbare UI-Änderung nicht durch die regulären Baseline-Images abgedeckt (z. B. ein einzelner Dialog, Teilkomponente, Hover-/Fehlerzustand) und der Nutzer wünscht explizit Screenshots:
+  - Vorher- und Nachher-Screenshot anfertigen und **direkt im Chat/Walkthrough verlinken**, damit der Nutzer das Ergebnis prüfen und freigeben kann (ohne dass der Agent sie selbst per `view_file` liest).
   - Diese temporären Scratch-Screenshots gehören _nicht_ in `docs/screenshots/`, sondern können per GitHub-CLI (`gh`) als Attachment an den PR angehängt werden.
 
 **Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für interne Änderungen (Tests, CI, Demo-Daten, Refactoring). **VOR dem Anlegen bestehende Fragmente lesen** und ggf. ergänzen statt doppelt anlegen. Format: Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
