@@ -46,7 +46,7 @@ function selectMode(val: ThemeMode) {
     <template v-else>
       <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
       <label :for="selectId" class="block-label">Erscheinungsbild</label>
-      <div class="theme-dropdown-wrap">
+      <div class="theme-dropdown-wrap" :class="{ 'is-open': isOpen }">
         <button
           type="button"
           class="theme-dropdown-trigger"
@@ -176,6 +176,11 @@ function selectMode(val: ThemeMode) {
   width: 100%;
 }
 
+.theme-dropdown-wrap.is-open,
+.theme-dropdown-wrap:has(.theme-picker-menu) {
+  z-index: 20;
+}
+
 .theme-dropdown-trigger {
   width: 100%;
   display: flex;
@@ -263,6 +268,7 @@ function selectMode(val: ThemeMode) {
   min-width: 100%;
   box-sizing: border-box;
   margin-top: 4px;
+  z-index: 1001;
 }
 
 .theme-hidden-select {
