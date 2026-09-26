@@ -113,7 +113,7 @@ const dayNum = computed(() => {
 }
 
 .day-chip.has-content .day-chip-num {
-  color: var(--color-scheduled);
+  color: var(--color-scheduled-dark, var(--color-scheduled));
 }
 
 .day-chip-dot {
@@ -123,7 +123,7 @@ const dayNum = computed(() => {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-scheduled);
+  background: var(--color-scheduled-dark, var(--color-scheduled));
 }
 
 .day-chip.active {

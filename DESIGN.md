@@ -135,6 +135,7 @@ anlegen, nicht als lokaler Wert in der Komponente.
 | `--color-danger`           | Gefahr / Löschen / Warnungen                 | `#c1503f`  | `#e0685a` |
 | `--color-success`          | Erfolg / Fertig-Status                       | `#3f8f5c`  | `#5cb37e` |
 | `--color-scheduled`        | Geplant (Kalender & Streifen)                | `#1e96d1`  | `#52b8ea` |
+| `--color-scheduled-dark`   | Geplant (Text & Kontrast für Chips/Preise)   | `#0f70a0`  | `#7acaf2` |
 | `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots) | `#eb6834`  | `#f08254` |
 | `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)  | `#1baf7a`  | `#2ecb91` |
 | `--color-highlight`        | Highlight-Fläche für Notizen                 | `#fff4e8`  | `#332a1c` |

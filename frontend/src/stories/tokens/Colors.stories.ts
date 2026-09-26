@@ -50,6 +50,12 @@ export const ColorPalette: Story = {
               dark: '#52b8ea',
             },
             {
+              var: '--color-scheduled-dark',
+              name: 'Geplante Termine (Text & Kontrast)',
+              light: '#0f70a0',
+              dark: '#7acaf2',
+            },
+            {
               var: '--color-tour',
               name: 'Touren / Ausflüge',
               light: '#eb6834',
