@@ -2838,6 +2838,10 @@ onMounted(() => {
     });
     spotsColResizeObserver.observe(sheetEl.value);
   }
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.add('map-view-active');
+    document.body.classList.add('map-view-active');
+  }
   if (typeof window !== 'undefined') {
     window.scrollTo(0, 0);
   }
@@ -2851,6 +2855,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove('map-view-active');
+    document.body.classList.remove('map-view-active');
+  }
   appMainResizeObserver?.disconnect();
   spotsColResizeObserver?.disconnect();
   window.removeEventListener('resize', onWindowResize);
@@ -4958,16 +4966,16 @@ async function deleteEditingSpot() {
 }
 
 /* Mobil (Default) UND Desktop mit stark eingeschränktem .app-main (z. B. beide Schubladen
-   gleichzeitig aufgeklappt, siehe @container weiter unten für die genaue Schwelle): .page wird auf
-   Mobil per position:fixed über das gesamte Sichtfeld (inset:0) gespannt, sodass die Karte randlos
-   und scroll-frei von der oberen Gerätekante (unter Statusbar/Dynamic Island) bis zum unteren
+   gleichzeitig aufgeklappt, siehe @container weiter unten für die genaue Schwelle): .page zieht sich
+   per negativem margin-top unter den transparenten schwebenden Header, sodass die Karte randlos
+   und vollflächig von der oberen Gerätekante (unter Statusbar/Dynamic Island) bis zum unteren
    Bildschirmrand reicht.
-   WICHTIG für Issue #302/#303 & Randlos-Layout: Auf Mobil darf weder --navbar-bottom-offset
-   noch --app-header-height die Höhe der Karte beschränken oder einen negativen margin-top erzeugen,
-   da sonst im iOS-WebKit PWA-Modus ein Chin-Gap bzw. vertikaler Scroll-Überhang entsteht. */
+   Zusammen mit der Klasse .map-view-active auf html/body (siehe onMounted) wird jegliches
+   Überhang-Scrollen des Viewports verhindert. */
 .page {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  margin-top: calc(-1 * var(--app-header-height, 56px));
+  height: 100dvh;
   overflow: hidden;
   padding: 0;
 }

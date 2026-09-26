@@ -571,6 +571,13 @@ body {
   overscroll-behavior-y: contain;
 }
 
+html.map-view-active,
+body.map-view-active {
+  overflow: hidden;
+  height: 100dvh;
+  overscroll-behavior: none;
+}
+
 body {
   font-family: var(--font-sans);
   font-size-adjust: from-font;
