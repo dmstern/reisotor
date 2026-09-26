@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { formatInline, isEmptyRichText, renderRichText } from './richText';
+import { formatInline, isEmptyRichText, renderRichText, stripHtml } from './richText';
 
 // DOMPurify benötigt ein DOM/window-Objekt, das in der Node-Testumgebung nicht verfügbar ist.
 // Da wir hier das Markdown-Rendering testen (nicht DOMPurify selbst), mocken wir es als
@@ -8,6 +8,42 @@ vi.mock('dompurify', () => ({
   default: { sanitize: (html: string) => html },
 }));
 
+describe('stripHtml', () => {
+  it('strips simple paragraph tags', () => {
+    expect(stripHtml('<p>asdfsf</p>')).toBe('asdfsf');
+  });
+
+  it('separates block elements with spaces to prevent words from sticking together', () => {
+    expect(stripHtml('<p>Erster Absatz</p><p>Zweiter Absatz</p>')).toBe(
+      'Erster Absatz Zweiter Absatz'
+    );
+    expect(stripHtml('<ul><li>Eins</li><li>Zwei</li></ul>')).toBe('Eins Zwei');
+    expect(stripHtml('Zeile 1<br>Zeile 2')).toBe('Zeile 1 Zeile 2');
+  });
+
+  it('strips inline tags like strong, em, code, del', () => {
+    expect(stripHtml('<strong>Fett</strong> und <em>kursiv</em> mit <code>Code</code>')).toBe(
+      'Fett und kursiv mit Code'
+    );
+  });
+
+  it('decodes HTML entities', () => {
+    expect(stripHtml('Hallo&nbsp;Welt &amp; &lt;Test&gt; &quot;Zitat&quot; &#39;Single&#39;')).toBe(
+      'Hallo Welt & <Test> "Zitat" \'Single\''
+    );
+  });
+
+  it('handles null, undefined and empty strings safely', () => {
+    expect(stripHtml('')).toBe('');
+    expect(stripHtml(null)).toBe('');
+    expect(stripHtml(undefined)).toBe('');
+  });
+
+  it('normalizes multiple spaces and trims', () => {
+    expect(stripHtml('   <p>   Hallo    Welt   </p>   ')).toBe('Hallo Welt');
+  });
+});
+
 describe('isEmptyRichText', () => {
   it('treats an empty Tiptap paragraph as empty', () => {
     expect(isEmptyRichText('<p></p>')).toBe(true);
@@ -15,6 +51,10 @@ describe('isEmptyRichText', () => {
 
   it('treats whitespace-only paragraphs as empty', () => {
     expect(isEmptyRichText('<p>   </p>')).toBe(true);
+  });
+
+  it('treats non-breaking space paragraphs as empty', () => {
+    expect(isEmptyRichText('<p>&nbsp;</p>')).toBe(true);
   });
 
   it('treats an empty string as empty', () => {

@@ -48,6 +48,40 @@ describe('Dashboard 3D Preview Components', () => {
       expect(html).toContain('washi-tape');
     });
 
+    it('strips HTML tags and renders plain text when notes lack a title', async () => {
+      const app = createTestApp(DashboardNotesPreview, {
+        notes: [
+          {
+            id: 1,
+            trip_id: 1,
+            title: '',
+            content: '<p>Wanderroute planen</p><p>Zweiter Absatz</p>',
+            content_format: 'html',
+            created_by: 1,
+            created_at: '',
+            updated_at: '',
+            is_draft: 0,
+          },
+          {
+            id: 2,
+            trip_id: 1,
+            title: '',
+            content: '<p>Sonnencreme kaufen</p>',
+            content_format: 'html',
+            created_by: 1,
+            created_at: '',
+            updated_at: '',
+            is_draft: 0,
+          },
+        ],
+      });
+      const html = await renderToString(app);
+      expect(html).toContain('Wanderroute planen');
+      expect(html).toContain('Sonnencreme kaufen');
+      expect(html).not.toContain('<p>');
+      expect(html).not.toContain('&lt;p&gt;');
+    });
+
     it('renders placeholder when no notes exist', async () => {
       const app = createTestApp(DashboardNotesPreview, { notes: [] });
       const html = await renderToString(app);
@@ -142,6 +176,25 @@ describe('Dashboard 3D Preview Components', () => {
       expect(html).toContain('Tag am Meer');
       expect(html).toContain('bookmark-ribbon');
       expect(html).toContain('travel-stamp');
+    });
+
+    it('strips HTML tags and renders plain text when diary entry lacks a title', async () => {
+      const app = createTestApp(DashboardDiaryPreview, {
+        entries: [],
+        latestEntry: {
+          id: 1,
+          trip_id: 1,
+          date: '2026-07-15',
+          title: '',
+          content: '<p>Erster Reisetag am Strand</p>',
+          created_by: 1,
+          created_at: '',
+        },
+      });
+      const html = await renderToString(app);
+      expect(html).toContain('Erster Reisetag am Strand');
+      expect(html).not.toContain('<p>');
+      expect(html).not.toContain('&lt;p&gt;');
     });
   });
 

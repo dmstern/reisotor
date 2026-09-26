@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Note } from '../../api/types';
+import { stripHtml } from '../../utils/richText';
 
 const props = defineProps<{
   notes: Note[];
@@ -13,13 +14,15 @@ const latestNote = computed(() => {
 
 const previewText = computed(() => {
   if (!latestNote.value) return 'Notiz schreiben… ✍️';
-  return latestNote.value.title || latestNote.value.content?.slice(0, 35) || 'Notiz';
+  const text = latestNote.value.title?.trim() || stripHtml(latestNote.value.content);
+  return text ? text.slice(0, 35) : 'Notiz';
 });
 
 const secondPreviewText = computed(() => {
   if (props.notes.length > 1) {
     const second = props.notes[1];
-    return second.title || second.content?.slice(0, 25) || '';
+    const text = second.title?.trim() || stripHtml(second.content);
+    return text ? text.slice(0, 25) : '';
   }
   return '';
 });
