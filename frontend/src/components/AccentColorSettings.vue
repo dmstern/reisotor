@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import {
   useUiSettingsStore,
-  VIBRANT_PRIMARY_COLOR_PRESETS,
-  PASTEL_PRIMARY_COLOR_PRESETS,
+  PRIMARY_COLOR_PRESETS,
   DEFAULT_PRIMARY_COLOR,
 } from '../stores/uiSettings';
-import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
@@ -15,19 +13,6 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const uiSettings = useUiSettingsStore();
-
-const paletteMode = ref<'vibrant' | 'soft'>('vibrant');
-
-const PALETTE_TOGGLE_OPTIONS = [
-  { value: 'vibrant', label: 'Kräftig' },
-  { value: 'soft', label: 'Pastell / Sanft' },
-];
-
-const activePresets = computed(() => {
-  return paletteMode.value === 'vibrant'
-    ? VIBRANT_PRIMARY_COLOR_PRESETS
-    : PASTEL_PRIMARY_COLOR_PRESETS;
-});
 
 const isDefault = computed(() => {
   return uiSettings.primaryColor.toLowerCase() === DEFAULT_PRIMARY_COLOR.toLowerCase();
@@ -59,19 +44,10 @@ function resetColor() {
       Wähle deine persönliche Haupt-Akzentfarbe für Buttons, aktive Toggles, Links und Icons.
     </p>
 
-    <!-- Palette Toggle (Kräftig vs Pastell) -->
-    <div class="palette-toggle-wrap">
-      <SegmentedToggle
-        :model-value="paletteMode"
-        :options="PALETTE_TOGGLE_OPTIONS"
-        @update:model-value="(v) => (paletteMode = v as 'vibrant' | 'soft')"
-      />
-    </div>
-
     <!-- Farbauswahl-Grid -->
     <div class="color-presets-grid">
       <button
-        v-for="preset in activePresets"
+        v-for="preset in PRIMARY_COLOR_PRESETS"
         :key="preset.hex"
         type="button"
         class="color-preset-btn"
@@ -118,10 +94,6 @@ function resetColor() {
 </template>
 
 <style scoped>
-.palette-toggle-wrap {
-  margin-top: var(--space-3);
-}
-
 .color-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
