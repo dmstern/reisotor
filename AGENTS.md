@@ -23,25 +23,25 @@ Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.j
 
 ## UI-Audits & Layout-Testing
 
-**Kurz-Befehle für UI-Audits:**
+**Befehle für UI-Audits (Nur bei dedizierten Audits oder expliziter Aufforderung):**
 
 - `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
-- Bei UI-Änderungen: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen
+- Bei gezielten UI-Audits: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen. **Nicht** bei normalen Bugfixes oder kleineren UI-Änderungen im Chat ausführen (erzeugt massive Test-Logs; für Standard-Änderungen reichen fokussierte Unit-Tests).
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
 - **Prompt-Vorlagen:** `docs/AUDIT_PROMPTS.md` (Gezielter View-Audit, Pre-Release-Audit via Subagents)
 
 ## Typecheck, Linting & Formatting
 
-Nach jeder Frontend-Änderung zuerst den günstigsten Check laufen lassen:
+Vor dem Commit gezielt prüfen (am Ende der Aufgabe, nicht nach jedem Zwischenschritt):
 
 ```bash
-npm run typecheck    # aus dem Root (oder cd frontend && npm run typecheck)
-npm run lint         # ESLint inkl. vuejs-accessibility
+npm run typecheck    # Typecheck (Frontend)
+npx -y eslint <geänderte-datei>  # Gezielt nur geänderte Dateien linten statt gesamtes Repo
 ```
 
 **Wichtig für AI-Agenten:**
 
-- **Zwingende Formatierung vor jedem Commit:** Da die CI-Pipeline bei Code-Style-Abweichungen (Prettier) fehlschlägt, MUSS vor jedem `git commit` zwingend der Code formatiert werden. Führe dazu immer `npm run format` im Root-Verzeichnis aus, bevor du Änderungen committest. Es ist deutlich sauberer, wenn die korrekte Formatierung direkt Teil deines eigentlichen Feature- oder Bugfix-Commits ist, statt einen zusätzlichen "chore(Format)"-Commit oben auf den PR zu pushen.
+- **Zwingende Formatierung vor jedem Commit:** Da die CI-Pipeline bei Code-Style-Abweichungen (Prettier) fehlschlägt, MUSS vor jedem `git commit` zwingend der Code formatiert werden. Um hunderte Zeilen unnötigen Terminal-Output im Chat zu vermeiden, formatiere gezielt nur die geänderten Dateien: `npx -y prettier --write <pfad-zur-datei>`. Das Root-Skript `npm run format` (über 600 Dateien) nur nutzen, wenn viele Dateien über das Repo verteilt geändert wurden.
 - **Saubere, semantische Commits:** Niemals fachfremde oder voneinander unabhängige Änderungen gesammelt in einem riesigen "Alles-in-einem-Rutsch"-Commit am Ende zusammenfassen. Ein zusammenhängendes Feature (inklusive benötigtem Backend, Store, UI und zugehörigen Tests) darf und soll zusammenhängend committet werden. Verschiedene fachliche Themen, Refactorings, Agent-Konfigurationen oder unabhängige Features (z. B. Budgets, Karten-Fix, Listen) müssen jedoch zwingend in separaten, semantischen Commits isoliert werden, damit die Git-Historie nachvollziehbar bleibt und Features bei Bedarf sauber einzeln revertiert werden können.
 - Immer `npm run typecheck` oder `npm --prefix frontend run typecheck` bzw. `npm run build` nutzen statt Roh-Aufrufen von `npx vue-tsc`.
 - **Niemals interaktive `npx`-Aufrufe ohne `-y` / `--yes` starten!** Falls `npx` Pakete nachinstallieren will, fordert es eine interaktive Bestätigung an (`Need to install the following packages: ... Ok to proceed? (y)`), was in Hintergrundprozessen/Subagenten ohne TTY zum dauerhaften Aufhängen führt.
@@ -60,12 +60,11 @@ Für alle Änderungen gelten folgende Software-Design-Prinzipien als verbindlich
 
 **Konsistenz-Check bei Änderungen:**
 
-- Grep nach identischen Icons/Konzepten/Mustern im Rest der App
-- Offensichtlich sinnvolle Folgeanpassung → direkt mit umsetzen
-- Unklar ob gewollt → nachfragen statt eigenmächtig entscheiden
+- **Fokus wahren (Kein ungefragter Scope-Creep):** Nur die für die konkrete Aufgabe notwendigen Dateien anpassen. Keine eigenmächtigen Umbauten in weiteren Komponenten starten, nur weil dort ein ähnliches Muster existiert.
+- Bei Unklarheit, ob eine Folgeanpassung gewollt ist → nachfragen statt eigenmächtig den Scope aufblähen.
 - **Keine CSS-Kopien zwischen Views** → Primitiv-Komponenten verwenden/extrahieren
 - **`style.css` nur für globale Basis-Styles** → Komponenten-Styles gehören in die jeweilige `.vue`-Datei
-- **Neue UI-Bausteine** → `DESIGN.md` konsultieren, Storybook-Story anlegen
+- **Neue UI-Bausteine** → `DESIGN.md` konsultieren; Storybook-Stories (`*.stories.ts`) **nur anlegen, wenn explizit im Prompt gefordert**.
 - **Standard-CSS** statt manueller Webkit-Präfixe (LightningCSS macht Autoprefixing)
 
 ## Datenmodell-Änderungen (DB-Migrationen)
@@ -113,6 +112,9 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 5. **Strikte Sparsamkeit bei Subagenten & autonomem Teamwork:**
    - Keine eigenständigen Multi-Agent-Kaskaden oder unbeschränkten autonomen Schleifen (wie `/teamwork-preview` oder offene `/goal`-Tasks ohne klare Abbruchbedingung) starten.
    - Bei klar umrissenen Änderungen direkt `grep_search`/`view_file`/`replace_file_content` nutzen statt Subagenten zu spawnen — jeder Spawn re-deriviert den kompletten Kontext neu. Subagenten bleiben die seltene Ausnahme für isolierte, parallele Lese-Recherchen.
+6. **Keine unaufgeforderten Screenshots (Massiver Token-Treiber):**
+   - Screenshots (Scratch-Specs, Baseline-Updates) dürfen **niemals automatisch oder unaufgefordert** angefertigt werden, sondern ausschließlich auf expliziten Nutzer-Wunsch.
+   - Bilddateien dürfen vom Agenten **niemals mit `view_file` geöffnet werden** (spült ~4.000 multimodale Tokens pro Bild in den Kontext). Bilder nur erzeugen, ablegen und im Chat/Walkthrough per Markdown verlinken.
 
 ## PR-Workflow
 
@@ -120,14 +122,18 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 
 **Issues schließen:** `Fixes #101`, `Closes #102` etc. (englische Keywords vor jeder Issue-Nummer wiederholen).
 
-**Screenshots & visuelle Verifikation im PR:**
+**Screenshots & visuelle Verifikation im PR (Strikte On-Demand-Pflicht):**
 
-- **Baseline-Images (`docs/screenshots/`):** Bilden stets den aktuellen Produktionsstand aller relevanten Ansichten der gesamten App im Git-Repo ab. Sie folgen einem festen Schema (`<view>-desktop-light.png`, `<view>-mobile-dark.png` etc.) und werden bei Änderungen direkt aktualisiert (oder komplett per `npm run generate:screenshots:docker`). **Niemals willkürliche neue Dateinamen erfinden oder blind dort ablegen.** Im PR per Markdown verlinken (GitHub bietet so automatischen Vorher-/Nachher-Bildvergleich im Diff; **Syntax-Falle:** `![Label](URL)` ohne Backticks um die URL).
-- **Scratch-Screenshots für Detail-/Sonderfälle:** Ist eine sichtbare UI-Änderung nicht durch die regulären Baseline-Images abgedeckt (z. B. ein einzelner Dialog, Teilkomponente, Hover-/Fehlerzustand):
-  - Vorher- und Nachher-Screenshot anfertigen und **zuerst direkt im Chat/Walkthrough anzeigen**, damit der Nutzer das Ergebnis vorab prüfen und freigeben kann.
+- **Keine automatischen Screenshots im Standard-Workflow (Token-Schutz):**
+  - Der Agent darf Screenshots (weder Baseline-Updates noch Scratch-Screenshots) **NIEMALS automatisch oder unaufgefordert** anfertigen.
+  - Screenshots werden **ausschließlich auf explizite Aufforderung der Nutzerin / des Nutzers** erstellt (z. B. _"Erstelle bitte Vorher-/Nachher-Screenshots"_ oder _"Aktualisiere die Screenshots"_).
+  - **Kein Selbst-Inspizieren per `view_file`:** Wenn der Nutzer Screenshots anfordert, erzeugt der Agent diese, legt sie ab und verlinkt sie per Markdown (`![Label](URL)`) im Chat oder Walkthrough zur Ansicht. Der Agent ruft **niemals `view_file` auf Bilddateien auf**, da jedes Bild ~4.000 multimodale Tokens in den permanenten Kontext spült. Die visuelle Prüfung erfolgt rein durch das menschliche Auge in der Benutzeroberfläche.
+- **Baseline-Images (`docs/screenshots/`):** Bilden stets den aktuellen Produktionsstand aller relevanten Ansichten der gesamten App im Git-Repo ab (`<view>-desktop-light.png` etc.). Werden nur bei expliziter Aufforderung aktualisiert (oder komplett per `npm run generate:screenshots:docker`). Im PR per Markdown verlinken (GitHub bietet so automatischen Vorher-/Nachher-Bildvergleich im Diff; **Syntax-Falle:** `![Label](URL)` ohne Backticks um die URL).
+- **Scratch-Screenshots für Detail-/Sonderfälle (nur bei expliziter Aufforderung):** Ist eine sichtbare UI-Änderung nicht durch die regulären Baseline-Images abgedeckt (z. B. ein einzelner Dialog, Teilkomponente, Hover-/Fehlerzustand) und der Nutzer wünscht explizit Screenshots:
+  - Vorher- und Nachher-Screenshot anfertigen und **direkt im Chat/Walkthrough verlinken**, damit der Nutzer das Ergebnis prüfen und freigeben kann (ohne dass der Agent sie selbst per `view_file` liest).
   - Diese temporären Scratch-Screenshots gehören _nicht_ in `docs/screenshots/`, sondern können per GitHub-CLI (`gh`) als Attachment an den PR angehängt werden.
 
-**Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für interne Änderungen (Tests, CI, Demo-Daten, Refactoring). **VOR dem Anlegen bestehende Fragmente lesen** und ggf. ergänzen statt doppelt anlegen. Format: Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
+**Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für interne Änderungen (Tests, CI, Demo-Daten, Refactoring). **Duplikate token-sparend vermeiden:** Zuerst kurz die Dateinamen in `release-notes/pending/` auflisten. Falls eine Datei inhaltlich/thematisch ähnlich klingt (z. B. `*budget*` bei Budget-Änderungen), nur diese eine Datei gezielt lesen und ergänzen, statt ein neues Fragment zu erstellen. Nicht blind alle existierenden Fragmente komplett durchlesen. Format: Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
 
 **Saubere, semantische Commits:** Änderungen dürfen **niemals** am Ende über verschiedene Themen hinweg in einem einzigen riesigen Commit ("alles in einem Rutsch") zusammengefasst werden. Stattdessen immer semantisch zusammenhängend committen: Ein Feature oder Bugfix darf und soll Backend-, Store-, UI- und Test-Änderungen in einem gemeinsamen Commit bündeln, sofern sie direkt zusammengehören. Unabhängige Features, unterschiedliche Domänen (z. B. Budgets, Karte, Listen) oder interne Aufgaben (Agent-Konfigurationen, Tooling, Docs) müssen jedoch in getrennten Commits festgehalten werden, um eine saubere, Feature für Feature nachvollzieh- und revertierbare Git-Historie zu gewährleisten. Jeder Commit muss für sich formatiert (`npm run format`), typgeprüft und lauffähig sein.
 
