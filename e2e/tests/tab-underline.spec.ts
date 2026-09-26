@@ -103,6 +103,18 @@ test.describe('Tab and Category Navigation Underline', () => {
     await items.nth(1).click();
     await assertCategoryUnderlineMatchesActive();
 
+    // Verify heading is fully visible below the sticky nav (not obscured)
+    const targetCategory = (await items.nth(1).innerText()).trim();
+    const heading = page
+      .locator('.category-heading, .tour-group-card', { hasText: targetCategory })
+      .first();
+    if ((await heading.count()) > 0) {
+      const navWrap = page.locator('.category-nav-wrap');
+      const navBottom = await navWrap.evaluate((el) => el.getBoundingClientRect().bottom);
+      const headingTop = await heading.evaluate((el) => el.getBoundingClientRect().top);
+      expect(headingTop).toBeGreaterThanOrEqual(navBottom);
+    }
+
     // Click last item
     await items.nth(count - 1).click();
     await assertCategoryUnderlineMatchesActive();

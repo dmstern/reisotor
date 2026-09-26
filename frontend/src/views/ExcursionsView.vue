@@ -1513,9 +1513,9 @@ function excursionForGroupTitle(title: string): Excursion | null {
 }
 
 // Horizontale Kategorie-Navigation (Wolt-Stil): Map statt DOM-`id`, damit Leerzeichen/Umlaute in
-// Kategorienamen ("Aussichtspunkt", "Unterkunft") kein Escaping-Problem sind. scrollIntoView()
-// läuft die scrollenden Vorfahren selbst hoch – landet also automatisch in .spots-col, sobald die
-// Container-Query (≥720px) diese Spalte selbst scrollen lässt, sonst in der normalen Seite.
+// Kategorienamen ("Aussichtspunkt", "Unterkunft") kein Escaping-Problem sind. scrollToElementInBody()
+// scrollt die Zielüberschrift bzw. ExcursionCard unter exakter Berücksichtigung der sticky Nav-Leiste
+// und des Spacings in den sichtbaren Bereich.
 // Ziel kann sowohl eine reine Überschrift (Kategorie-Gruppierung) als auch eine ExcursionCard
 function resolveDomElement(el: Element | ComponentPublicInstance | null): HTMLElement | null {
   if (!el) return null;
@@ -1596,7 +1596,7 @@ function scrollToCategory(category: string) {
     updateCategoryNavUnderline();
   });
 
-  categoryRefs.get(category)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  scrollToElementInBody(() => categoryRefs.get(category));
   tripMapRef.value?.focusCategory(category);
 }
 
