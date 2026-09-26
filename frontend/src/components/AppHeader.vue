@@ -34,7 +34,6 @@ const isDesktop = useIsDesktop();
 const headerNavFits = useHeaderNavFits();
 const route = useRoute();
 const router = useRouter();
-const isMapRoute = computed(() => route.name === 'excursions');
 
 const isOpeningSettings = computed(
   () => navigatingTo.value === '/settings' || navigatingTo.value?.startsWith('/settings')
@@ -103,7 +102,6 @@ const profileTitle = computed(() => {
 
 <template>
   <header ref="headerEl" class="app-header">
-    <div v-if="!isMapRoute" class="status-bar-scrim" aria-hidden="true"></div>
     <DemoModeBanner v-if="DEMO_MODE" />
     <LoadingIndicator />
     <div class="header-row">
@@ -222,41 +220,6 @@ const profileTitle = computed(() => {
 @media (max-width: 479px) {
   .header-row {
     padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-2) 0;
-  }
-}
-
-/* Sanfter Verlauf und Backdrop-Blur hinter dem nativen Geräte-Header (Uhrzeit, Dynamic Island,
-   Akkustand) für scrollbare Ansichten: Verhindert, dass nach oben scrollende Inhalte mit den
-   System-Icons kollidieren, während das Design weich in den Seitenhintergrund übergeht.
-   Wird auf der mobilen Kartenansicht (excursions) per v-if bewusst nicht gerendert, damit die
-   Karte dort randlos dahinterliegt. */
-.status-bar-scrim {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: calc(env(safe-area-inset-top, 0px) * 1.25);
-  pointer-events: none;
-  z-index: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--color-bg) 0%,
-    var(--color-bg) calc(env(safe-area-inset-top, 0px) * 0.6),
-    color-mix(in srgb, var(--color-bg) 80%, transparent) calc(env(safe-area-inset-top, 0px) * 0.9),
-    transparent 100%
-  );
-  backdrop-filter: blur(8px);
-  mask: linear-gradient(
-    to bottom,
-    black 0%,
-    black calc(env(safe-area-inset-top, 0px) * 0.65),
-    transparent 100%
-  );
-}
-
-@media (min-width: 1024px) {
-  .status-bar-scrim {
-    display: none;
   }
 }
 
