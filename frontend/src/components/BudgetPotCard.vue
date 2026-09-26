@@ -6,7 +6,6 @@ import type { Budget } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import BudgetMeter from './BudgetMeter.vue';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import FormField from './FormField.vue';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
@@ -215,7 +214,15 @@ function onTotalSectionClick(e: MouseEvent) {
                   updateAllocationAmount(a.category, ($event.target as HTMLInputElement).value)
                 "
               />
-              <DeleteButton small @click="store.removeAllocation(a.id)" />
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.close"
+                class="remove-category-btn"
+                :title="`Kategorie „${a.category}“ aus dem Budget entfernen`"
+                :aria-label="`Kategorie ${a.category} aus dem Budget entfernen`"
+                @click.stop="store.removeAllocation(a.id)"
+              />
             </div>
           </div>
         </div>
@@ -486,6 +493,17 @@ function onTotalSectionClick(e: MouseEvent) {
 .category-amount-input {
   width: 90px;
   max-width: 30vw;
+}
+
+.remove-category-btn {
+  color: var(--color-text-muted);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.remove-category-btn:hover {
+  color: var(--color-text);
 }
 
 .add-category {
