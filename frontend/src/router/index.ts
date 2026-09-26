@@ -52,9 +52,13 @@ const router = createRouter({
   // Position 0 bei jeder Navigation, um das bisherige Verhalten (Scroll-Position bleibt bei
   // normaler Navigation unangetastet) nicht zu verändern.
   async scrollBehavior(to) {
-    if (!to.hash) return;
-    const found = await waitForElement(to.hash);
-    if (found) return { el: to.hash, behavior: 'smooth' };
+    if (to.hash) {
+      const found = await waitForElement(to.hash);
+      if (found) return { el: to.hash, behavior: 'smooth' };
+    }
+    if (to.path.includes('/excursions') || to.path.includes('/spots')) {
+      return { top: 0, left: 0 };
+    }
   },
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },

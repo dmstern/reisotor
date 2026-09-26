@@ -2838,6 +2838,9 @@ onMounted(() => {
     });
     spotsColResizeObserver.observe(sheetEl.value);
   }
+  if (typeof window !== 'undefined') {
+    window.scrollTo(0, 0);
+  }
   window.addEventListener('resize', onWindowResize);
   updateSpotsColRight();
   nextTick(() => {
