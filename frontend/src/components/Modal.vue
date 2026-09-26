@@ -83,9 +83,8 @@ function handleKeydown(e: KeyboardEvent) {
 
 let isRegistered = false;
 
-const canScrollUp = ref(false);
-const canScrollDown = ref(false);
-const hasActionsRow = ref(false);
+const topShadowRef = ref<HTMLDivElement | null>(null);
+const bottomShadowRef = ref<HTMLDivElement | null>(null);
 
 let resizeObserver: ResizeObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
@@ -104,25 +103,32 @@ function getScrollElement(): HTMLElement | null {
 }
 
 function updateScrollState() {
+  const modalEl = modalRef.value;
+  if (!modalEl) return;
   const el = getScrollElement();
   if (!el) {
-    canScrollUp.value = false;
-    canScrollDown.value = false;
-    hasActionsRow.value = false;
+    modalEl.classList.remove('can-scroll-up', 'can-scroll-down', 'has-actions-row');
+    topShadowRef.value?.classList.remove('is-visible');
+    bottomShadowRef.value?.classList.remove('is-visible');
     return;
   }
-  canScrollUp.value = el.scrollTop > 2;
-  canScrollDown.value = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
-  hasActionsRow.value = Boolean(modalRef.value?.querySelector('.actions-row'));
+  const canUp = el.scrollTop > 2;
+  const canDown = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
+  const hasActions = Boolean(modalEl.querySelector('.actions-row'));
+
+  modalEl.classList.toggle('can-scroll-up', canUp);
+  modalEl.classList.toggle('can-scroll-down', canDown);
+  modalEl.classList.toggle('has-actions-row', hasActions);
+
+  topShadowRef.value?.classList.toggle('is-visible', canUp);
+  bottomShadowRef.value?.classList.toggle('is-visible', canDown && !hasActions);
 }
 
 function onScroll(e: Event) {
   const target = e.target as HTMLElement | null;
   const scrollEl = getScrollElement();
   if (target === scrollEl || target === modalRef.value) {
-    if (!scrollEl) return;
-    canScrollUp.value = scrollEl.scrollTop > 2;
-    canScrollDown.value = scrollEl.scrollTop + scrollEl.clientHeight < scrollEl.scrollHeight - 2;
+    updateScrollState();
   }
 }
 
@@ -167,15 +173,15 @@ function setupScrollObservers() {
 function cleanupScrollObservers() {
   if (modalRef.value) {
     modalRef.value.removeEventListener('scroll', onScroll, { capture: true });
+    modalRef.value.classList.remove('can-scroll-up', 'can-scroll-down', 'has-actions-row');
   }
   window.removeEventListener('resize', updateScrollState);
   resizeObserver?.disconnect();
   resizeObserver = null;
   mutationObserver?.disconnect();
   mutationObserver = null;
-  canScrollUp.value = false;
-  canScrollDown.value = false;
-  hasActionsRow.value = false;
+  topShadowRef.value?.classList.remove('is-visible');
+  bottomShadowRef.value?.classList.remove('is-visible');
 }
 
 watch(
@@ -238,15 +244,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
         <div
           ref="modalRef"
           class="modal"
-          :class="[
-            {
-              'full-height': fullHeight,
-              'can-scroll-up': canScrollUp,
-              'can-scroll-down': canScrollDown,
-              'has-actions-row': hasActionsRow,
-            },
-            `size-${size}`,
-          ]"
+          :class="[{ 'full-height': fullHeight }, `size-${size}`]"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="title && !hideHeader ? titleId : undefined"
@@ -266,14 +264,14 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
           </div>
           <div class="modal-body">
             <div
+              ref="topShadowRef"
               class="modal-scroll-shadow modal-scroll-shadow--top"
-              :class="{ 'is-visible': canScrollUp }"
               aria-hidden="true"
             />
             <slot :close="close" />
             <div
+              ref="bottomShadowRef"
               class="modal-scroll-shadow modal-scroll-shadow--bottom"
-              :class="{ 'is-visible': canScrollDown && !hasActionsRow }"
               aria-hidden="true"
             />
           </div>
