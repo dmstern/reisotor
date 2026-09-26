@@ -395,6 +395,12 @@ const vacationPhase = computed(() =>
   trip.value ? computeVacationPhase(trip.value, now.value) : null
 );
 
+const isTripOver = computed(() => {
+  if (vacationPhase.value?.phase === 'over') return true;
+  if (trip.value?.end_date && trip.value.end_date < todayStr()) return true;
+  return false;
+});
+
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
 const upcomingEntries = computed(() =>
@@ -599,7 +605,7 @@ function formatWeekdayDate(d: string) {
         Genießt euren Urlaub! 🏖️
       </p>
       <p v-else-if="vacationPhase?.phase === 'lastDay'" class="countdown">Letzter Urlaubstag 🌅</p>
-      <p v-else-if="vacationPhase?.phase === 'over'" class="countdown">Der Urlaub ist vorbei 👋</p>
+      <p v-else-if="isTripOver" class="countdown">Der Urlaub ist vorbei 👋</p>
     </header>
 
     <!-- Wetter + Reiseregion in einer Card statt zweier separater: beide sind "Infos über das
@@ -613,12 +619,12 @@ function formatWeekdayDate(d: string) {
         <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
         <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
         <template v-else>
-          <!-- Nach Urlaubsende (vacationPhase === 'over'): Falls ein Heimatort mit Koordinaten
+          <!-- Nach Urlaubsende (isTripOver): Falls ein Heimatort mit Koordinaten
                hinterlegt ist, wird das heutige Wetter zuhause angezeigt (Nutzer:innen sind wieder
                daheim), und das Reiseziel-Wetter transparent als "Heute am Reiseziel" ausgewiesen.
                Vor/während des Urlaubs wird nur das Reiseziel transparent benannt. -->
           <div
-            v-if="vacationPhase?.phase === 'over' && home && todayHomeWeather"
+            v-if="isTripOver && home && todayHomeWeather"
             class="weather-today clickable"
             role="button"
             tabindex="0"
@@ -685,16 +691,9 @@ function formatWeekdayDate(d: string) {
             @keydown.space.prevent="openWeatherDayDialog(todayWeather)"
           >
             <span class="weather-today-label">
-              <AppIcon
-                v-if="vacationPhase?.phase === 'over'"
-                :icon="ACTION_ICONS.vacation"
-                :size="14"
-                group="actions"
-              />
+              <AppIcon v-if="isTripOver" :icon="ACTION_ICONS.vacation" :size="14" group="actions" />
               Heute
-              {{
-                vacationPhase?.phase === 'over' ? overDestinationLabel : destinationLocationLabel
-              }}
+              {{ isTripOver ? overDestinationLabel : destinationLocationLabel }}
             </span>
             <div class="weather-icon-wrapper">
               <WeatherIcon
@@ -725,22 +724,17 @@ function formatWeekdayDate(d: string) {
 
           <p class="weather-section-label">
             <AppIcon
-              :icon="vacationPhase?.phase === 'over' ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
+              :icon="isTripOver ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
               :size="14"
               group="actions"
             />
-            {{
-              vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub'
-            }}
+            {{ isTripOver ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
           </p>
           <p v-if="!trip?.start_date" class="hint">
             Hinterlege einen Reisezeitraum beim Urlaub, um hier die Wettervorhersage für die
             Urlaubstage zu sehen.
           </p>
-          <p
-            v-else-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'"
-            class="hint"
-          >
+          <p v-else-if="!vacationForecastDays.length && !isTripOver" class="hint">
             Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
             ~16 Tage ab, schau kurz vorher nochmal vorbei.
           </p>
@@ -815,7 +809,7 @@ function formatWeekdayDate(d: string) {
       <!-- Unabhängig vom Trip-Maps-Link oben (kein v-if="trip?.lat...", das bezieht sich nur auf
            das Reiseziel) - Zuhause kommt aus einem eigenen, in Reise > Orte per is_home markierten
            Spot (siehe home-Computed, dasselbe Muster wie ScheduleView.vue's Kalender-Wetter). -->
-      <template v-if="home && vacationPhase?.phase !== 'over'">
+      <template v-if="home && !isTripOver">
         <p class="weather-section-label">
           <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause
         </p>
@@ -886,7 +880,7 @@ function formatWeekdayDate(d: string) {
           </div>
         </div>
       </template>
-      <p v-else-if="!home && vacationPhase?.phase !== 'over'" class="hint">
+      <p v-else-if="!home && !isTripOver" class="hint">
         Markiere in der Karte unter Spots einen Spot mit
         <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
         zusätzlich das Wetter zuhause gegen Ende des Urlaubs zu sehen.
