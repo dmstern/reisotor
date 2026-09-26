@@ -509,7 +509,7 @@ function onDeleteLeg() {
 
 .leg-cost {
   font-weight: 600;
-  color: var(--color-scheduled);
+  color: var(--color-scheduled-dark, var(--color-scheduled));
   white-space: nowrap;
 }
 

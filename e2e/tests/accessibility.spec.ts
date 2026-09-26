@@ -49,6 +49,8 @@ function formatViolations(
 }
 
 test.describe('Accessibility (a11y)', () => {
+  test.use({ colorScheme: 'light' });
+
   test.describe('unauthenticated', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -90,6 +92,7 @@ test.describe('Accessibility (a11y)', () => {
       await expect(
         page.getByRole('button', { name: 'Nach Kategorie filtern', exact: true })
       ).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator('.day-chip').first()).toBeVisible({ timeout: 15_000 });
 
       const results = await scanPageA11y(page);
       expect(results.violations, formatViolations(results.violations)).toEqual([]);

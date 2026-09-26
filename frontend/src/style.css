@@ -255,6 +255,7 @@
      beiden Bedeutungen gerade gemeint ist. Sattes/"saftiges" Hellblau statt eines weiteren
      Rot-/Orange-Tons, um maximal von --color-accent/--color-danger abzuheben. */
   --color-scheduled: #1e96d1;
+  --color-scheduled-dark: #0f70a0;
   --color-scheduled-tint: rgba(30, 150, 209, 0.1);
 
   /* Kalender-Kategorie-Farben (Konsistenz mit utils/scheduleCategory.ts):
@@ -418,6 +419,7 @@
     --color-travel-tint: rgba(46, 203, 145, 0.16);
     --color-travel-border: rgba(46, 203, 145, 0.4);
     --color-scheduled: #52b8ea;
+    --color-scheduled-dark: #7acaf2;
     --color-scheduled-tint: rgba(82, 184, 234, 0.14);
     --color-calendar-appointment: #a8a8a4;
     --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
@@ -471,6 +473,7 @@
   --color-accent-secondary: #8b98f0;
   --color-accent-secondary-bg: #23253d;
   --color-scheduled: #52b8ea;
+  --color-scheduled-dark: #7acaf2;
   --color-scheduled-tint: rgba(82, 184, 234, 0.14);
   --color-tour: #f08254;
   --color-tour-dark: #eb6834;
@@ -537,6 +540,7 @@
   --color-border-strong: #d5cabc;
   --color-button-edge: rgba(0, 0, 0, 0.16);
   --color-scheduled: #1e96d1;
+  --color-scheduled-dark: #0f70a0;
   --color-scheduled-tint: rgba(30, 150, 209, 0.1);
   --color-calendar-appointment: #8a8a86;
   --color-calendar-appointment-tint: rgba(138, 138, 134, 0.1);
