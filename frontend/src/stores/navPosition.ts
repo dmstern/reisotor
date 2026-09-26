@@ -1,31 +1,29 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 
 export type NavPosition = 'top' | 'bottom';
 
-const DESKTOP_KEY = 'reisotor-nav-position-desktop';
+const LEGACY_DESKTOP_KEY = 'reisotor-nav-position-desktop';
 
 export const DEFAULT_DESKTOP_NAV_POSITION: NavPosition = 'top';
 
-function loadPosition(key: string, defaultValue: NavPosition): NavPosition {
-  const stored = localStorage.getItem(key);
-  if (stored === 'top' || stored === 'bottom') return stored;
-  return defaultValue;
-}
-
-// Geräte-/Browser-UI-Einstellung (wie der Dark-Mode-Toggle in stores/theme.ts) statt Account-Daten:
-// wird bewusst nur lokal in localStorage gehalten, nicht am User-Datensatz im Backend.
+// Navigations-Position:
+// Auf Desktop ist die Leiste fest im Header verankert ('top' - Floating Island). Das verhindert
+// Kollisionen mit schwebenden Elementen am unteren Bildschirmrand (Kalender-Drawer, Spots-Drawer, Day-Strip).
+// Auf Mobile/schmalen Screens ist sie stets am unteren Rand ('bottom', daumenfreundlich wie native Apps).
 export const useNavPositionStore = defineStore('navPosition', () => {
-  // Auf Desktop kann die Leiste wahlweise im Header ('top') oder schwebend unten ('bottom') sein.
-  // Auf Mobile ist sie stets am unteren Rand ('bottom', daumenfreundlich wie bei nativen Apps).
-  const desktop = ref<NavPosition>(loadPosition(DESKTOP_KEY, DEFAULT_DESKTOP_NAV_POSITION));
+  // Alten localStorage-Key bereinigen, falls vorhanden
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(LEGACY_DESKTOP_KEY);
+  }
+
+  const desktop = ref<NavPosition>('top');
   const mobile = ref<NavPosition>('bottom');
 
   function reset() {
     desktop.value = DEFAULT_DESKTOP_NAV_POSITION;
+    mobile.value = 'bottom';
   }
-
-  watch(desktop, (v) => localStorage.setItem(DESKTOP_KEY, v));
 
   return { desktop, mobile, reset };
 });

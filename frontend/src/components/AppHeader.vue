@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
-import { useNavPositionStore } from '../stores/navPosition';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
@@ -27,7 +26,6 @@ import { useHeaderNavFits } from '../composables/useHeaderNavFits';
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const connectivity = useConnectivityStore();
-const navPosition = useNavPositionStore();
 const iconStyle = useIconStyleStore();
 const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
@@ -37,9 +35,7 @@ const router = useRouter();
 const isMapRoute = computed(() => route.name === 'excursions');
 
 const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
-const showDockedNav = computed(
-  () => isDesktop.value && headerNavFits.value && navPosition.desktop === 'top' && showTripNav.value
-);
+const showDockedNav = computed(() => isDesktop.value && headerNavFits.value && showTripNav.value);
 
 const calendarTarget = computed(() =>
   tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/calendar` : '/calendar'

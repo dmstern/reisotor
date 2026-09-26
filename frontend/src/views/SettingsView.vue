@@ -16,7 +16,6 @@ import { useAuthStore } from '../stores/auth';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useBuildInfoStore } from '../stores/buildInfo';
 import { useThemeStore } from '../stores/theme';
-import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { NAV_LINKS } from '../utils/navLinks';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
@@ -96,7 +95,6 @@ const auth = useAuthStore();
 const connectivity = useConnectivityStore();
 const router = useRouter();
 const route = useRoute();
-const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const _isDesktop = useIsDesktop();
 const dashboardConfig = useDashboardConfigStore();
@@ -388,7 +386,6 @@ function resetTheme() {
 }
 
 const isNavDefault = computed(() => {
-  if (navPosition.desktop !== 'top') return false;
   if (navConfig.customMobile) return false;
   const defaults = NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
   if (navConfig.entries.length !== defaults.length) return false;
@@ -397,7 +394,6 @@ const isNavDefault = computed(() => {
   );
 });
 function resetNav() {
-  navPosition.reset();
   navConfig.reset();
 }
 
@@ -971,19 +967,6 @@ async function exportBackup() {
           >
             <span class="card-reset-btn-label">Zurücksetzen</span>
           </Button>
-        </div>
-        <p class="hint intro-hint">
-          Position der Navigationsleiste für Desktop-Bildschirme (auf Mobilgeräten und schmaleren
-          Bildschirmen wird die Leiste stets am unteren Bildschirmrand platziert).
-        </p>
-        <div class="nav-position-row">
-          <label for="auto-id-1788301151989-29">
-            Desktop-Position
-            <Select id="auto-id-1788301151989-29" v-model="navPosition.desktop">
-              <option value="top">Oben</option>
-              <option value="bottom">Unten</option>
-            </Select>
-          </label>
         </div>
 
         <p class="hint nav-config-hint">

@@ -393,7 +393,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           borderWidth: borderWidth.value,
           diaryFont: diaryFont.value,
           navPosition: {
-            desktop: navPosStore.desktop,
+            desktop: 'top',
             mobile: navPosStore.mobile,
           },
           navConfig: navCfgStore.entries,
@@ -492,9 +492,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         diaryFont.value = stored.diaryFont;
       }
       if (stored.navPosition) {
-        if (stored.navPosition.desktop === 'top' || stored.navPosition.desktop === 'bottom') {
-          navPosStore.desktop = stored.navPosition.desktop;
-        }
+        // Desktop ist immer fest 'top' im Header gedockt. Nur mobile Position wird ggf. übernommen.
         if (stored.navPosition.mobile === 'top' || stored.navPosition.mobile === 'bottom') {
           navPosStore.mobile = stored.navPosition.mobile;
         }
