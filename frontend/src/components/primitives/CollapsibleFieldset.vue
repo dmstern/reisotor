@@ -190,6 +190,11 @@ function toggle() {
 
 .collapsible-anim-inner {
   overflow: hidden;
+  /* 4px Padding + -4px Margin reservieren Platz für Fokus-Rahmen von Kind-Elementen (z. B. Input-Felder
+     mit 2px outline + 1px outline-offset = 3px), damit diese an den Rändern nicht durch overflow: hidden
+     abgeschnitten werden, während der visuelle Inhalt exakt ausgerichtet bleibt. */
+  padding: var(--space-1, 4px);
+  margin: calc(-1 * var(--space-1, 4px));
 }
 
 .collapsible-content {
