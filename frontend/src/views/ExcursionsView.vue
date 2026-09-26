@@ -48,7 +48,12 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useTracksStore } from '../stores/tracks';
 import { useTrackRecordingStore } from '../stores/trackRecording';
 import { useIconStyleStore } from '../stores/iconStyle';
-import { formatDateTime, formatDate } from '../utils/dateFormat';
+import {
+  formatDateTime,
+  formatDate,
+  toLocalDatetimeInputValue,
+  fromLocalDatetimeInputValue,
+} from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useIsDesktop } from '../composables/useIsDesktop';
@@ -153,11 +158,13 @@ async function toggleTrackVisibility(track: LocationTrack) {
 
 const editingTrack = ref<LocationTrack | null>(null);
 const editTrackTitle = ref('');
+const editTrackStartedAt = ref('');
 const editTrackVisibility = ref<TrackVisibility>('private');
 
 function startEditTrack(track: LocationTrack) {
   editingTrack.value = track;
   editTrackTitle.value = track.title ?? '';
+  editTrackStartedAt.value = toLocalDatetimeInputValue(track.started_at);
   editTrackVisibility.value = track.visibility;
 }
 
@@ -169,8 +176,11 @@ async function submitEditTrack() {
   if (!editingTrack.value) return;
   const rawTitle = editTrackTitle.value.trim();
   const title = rawTitle ? rawTitle : null;
+  const startedAt =
+    fromLocalDatetimeInputValue(editTrackStartedAt.value) ?? editingTrack.value.started_at;
   await tracksStore.update(editingTrack.value.id, {
     title,
+    started_at: startedAt,
     visibility: editTrackVisibility.value,
   });
   closeEditTrack();
@@ -4715,6 +4725,21 @@ async function deleteEditingSpot() {
                   <button type="button" class="track-row-main" @click="onTrackShowOnMap(track.id)">
                     <span class="track-row-title">{{ trackTitle(track) }}</span>
                     <span class="track-row-meta">
+                      <span
+                        v-if="!trackTitle(track).includes(formatDateTime(track.started_at))"
+                        class="track-meta-time"
+                      >
+                        {{ formatDateTime(track.started_at) }}
+                        <template
+                          v-if="
+                            !track.ended_at ||
+                            track.end_reason === 'aborted' ||
+                            trackDurationLabel(track)
+                          "
+                        >
+                          ·
+                        </template>
+                      </span>
                       <span v-if="!track.ended_at" class="track-meta-live">
                         <span class="recording-pulse-dot" aria-hidden="true"></span>
                         Aufzeichnung läuft
@@ -4847,6 +4872,9 @@ async function deleteEditingSpot() {
                   placeholder="z. B. Wanderung zur Berghütte"
                   :maxlength="100"
                 />
+              </FormField>
+              <FormField icon="date" label="Aufzeichnungszeitpunkt">
+                <Input v-model="editTrackStartedAt" type="datetime-local" required />
               </FormField>
               <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
                 <TrackVisibilitySelect :id="id" v-model="editTrackVisibility" />

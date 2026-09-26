@@ -109,3 +109,21 @@ export function formatTripDateRange(
 
   return `${formatDate(startDateStr!, { includeYear })} – ${formatDate(endDateStr!, { includeYear })}`;
 }
+
+/** Konvertiert einen ISO-Timestamp in das für <input type="datetime-local"> erforderliche Format
+ *  'YYYY-MM-DDTHH:mm' (in lokaler Zeit des Browsers). */
+export function toLocalDatetimeInputValue(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/** Konvertiert den Wert eines <input type="datetime-local"> ('YYYY-MM-DDTHH:mm') zurück
+ *  in einen ISO-String. Gibt null zurück, wenn der String ungültig oder leer ist. */
+export function fromLocalDatetimeInputValue(val?: string | null): string | null {
+  if (!val) return null;
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}

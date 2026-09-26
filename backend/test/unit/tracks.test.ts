@@ -313,4 +313,72 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     expect(abortRes.json().ended_at).toBeTruthy();
     expect(abortRes.json().end_reason).toBe('aborted');
   });
+
+  it('kann started_at nachträglich anpassen und verschiebt ended_at sowie Punkte synchron', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/tracks',
+      headers: { cookie: ownerCookie },
+      payload: { trip_id: tripId },
+    });
+    const track = create.json() as { id: number; started_at: string };
+    const trackId = track.id;
+
+    // Einen GPS-Punkt anhängen
+    await app.inject({
+      method: 'POST',
+      url: `/api/tracks/${trackId}/points`,
+      headers: { cookie: ownerCookie },
+      payload: {
+        points: [{ lat: 46.5, lng: 8.0, recorded_at: track.started_at, accuracy: 5 }],
+      },
+    });
+
+    // Aufzeichnung beenden
+    const stopRes = await app.inject({
+      method: 'POST',
+      url: `/api/tracks/${trackId}/stop`,
+      headers: { cookie: ownerCookie },
+    });
+    const initialEndedAt = stopRes.json().ended_at as string;
+    const initialDurationMs =
+      new Date(initialEndedAt).getTime() - new Date(track.started_at).getTime();
+
+    // started_at um 1 Stunde nach vorne verschieben
+    const newStartedAt = new Date(
+      new Date(track.started_at).getTime() + 60 * 60 * 1000
+    ).toISOString();
+
+    const updateRes = await app.inject({
+      method: 'PUT',
+      url: `/api/tracks/${trackId}`,
+      headers: { cookie: ownerCookie },
+      payload: {
+        title: 'Angepasste Wanderung',
+        started_at: newStartedAt,
+      },
+    });
+    expect(updateRes.statusCode).toBe(200);
+    const updated = updateRes.json() as {
+      title: string;
+      started_at: string;
+      ended_at: string;
+    };
+    expect(updated.title).toBe('Angepasste Wanderung');
+    expect(updated.started_at).toBe(newStartedAt);
+
+    // Dauer muss unverändert geblieben sein
+    const newDurationMs =
+      new Date(updated.ended_at).getTime() - new Date(updated.started_at).getTime();
+    expect(newDurationMs).toBe(initialDurationMs);
+
+    // Punkte müssen synchron verschoben worden sein
+    const pointsRes = await app.inject({
+      method: 'GET',
+      url: `/api/tracks/${trackId}/points`,
+      headers: { cookie: ownerCookie },
+    });
+    const points = pointsRes.json() as { recorded_at: string }[];
+    expect(points[0].recorded_at).toBe(newStartedAt);
+  });
 });

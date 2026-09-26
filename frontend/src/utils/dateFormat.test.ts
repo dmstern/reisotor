@@ -6,7 +6,9 @@ import {
   formatDateTime,
   formatTripDateRange,
   formatWeekdayDate,
+  fromLocalDatetimeInputValue,
   startOfWeek,
+  toLocalDatetimeInputValue,
 } from './dateFormat';
 import { useCalendarSettingsStore } from '../stores/calendarSettings';
 
@@ -152,5 +154,39 @@ describe('formatTripDateRange (#212)', () => {
 
     useCalendarSettingsStore().dateFormat = 'us';
     expect(formatTripDateRange('2026-08-10', '2026-08-20', now)).toBe('08/10/2026 – 08/20/2026');
+  });
+});
+
+describe('toLocalDatetimeInputValue', () => {
+  it('formats ISO string to YYYY-MM-DDTHH:mm format in local time', () => {
+    const d = new Date(2026, 8, 18, 14, 30); // 18.09.2026 14:30
+    expect(toLocalDatetimeInputValue(d.toISOString())).toBe('2026-09-18T14:30');
+  });
+
+  it('returns empty string for null, undefined or invalid input', () => {
+    expect(toLocalDatetimeInputValue(null)).toBe('');
+    expect(toLocalDatetimeInputValue(undefined)).toBe('');
+    expect(toLocalDatetimeInputValue('')).toBe('');
+    expect(toLocalDatetimeInputValue('invalid-date')).toBe('');
+  });
+});
+
+describe('fromLocalDatetimeInputValue', () => {
+  it('converts YYYY-MM-DDTHH:mm input string to ISO string', () => {
+    const iso = fromLocalDatetimeInputValue('2026-09-18T14:30');
+    expect(iso).toBeTruthy();
+    const parsed = new Date(iso!);
+    expect(parsed.getFullYear()).toBe(2026);
+    expect(parsed.getMonth()).toBe(8);
+    expect(parsed.getDate()).toBe(18);
+    expect(parsed.getHours()).toBe(14);
+    expect(parsed.getMinutes()).toBe(30);
+  });
+
+  it('returns null for null, undefined or empty value', () => {
+    expect(fromLocalDatetimeInputValue(null)).toBeNull();
+    expect(fromLocalDatetimeInputValue(undefined)).toBeNull();
+    expect(fromLocalDatetimeInputValue('')).toBeNull();
+    expect(fromLocalDatetimeInputValue('invalid')).toBeNull();
   });
 });

@@ -27,6 +27,7 @@ interface UpdateTrackBody {
   title?: string | null;
   visibility?: 'private' | 'shared';
   excursion_id?: number | null;
+  started_at?: string;
 }
 
 interface TrackPointInput {
@@ -169,9 +170,50 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
     const visibility = req.body.visibility ?? track.visibility;
     const excursionId =
       req.body.excursion_id !== undefined ? req.body.excursion_id : track.excursion_id;
+
+    let startedAt = track.started_at;
+    let endedAt = track.ended_at;
+
+    if (req.body.started_at !== undefined) {
+      const parsed = new Date(req.body.started_at);
+      if (isNaN(parsed.getTime())) {
+        return reply.code(400).send({ error: 'Ungültiges Datumsformat für started_at' });
+      }
+      const newStartMs = parsed.getTime();
+      const oldStartMs = new Date(track.started_at).getTime();
+      const deltaMs = newStartMs - oldStartMs;
+      startedAt = parsed.toISOString();
+
+      if (deltaMs !== 0) {
+        if (endedAt) {
+          const oldEndMs = new Date(endedAt).getTime();
+          if (!isNaN(oldEndMs)) {
+            endedAt = new Date(oldEndMs + deltaMs).toISOString();
+          }
+        }
+        const points = db
+          .prepare('SELECT id, recorded_at FROM location_track_points WHERE track_id = ?')
+          .all(track.id) as { id: number; recorded_at: string }[];
+        if (points.length > 0) {
+          const updatePoint = db.prepare(
+            'UPDATE location_track_points SET recorded_at = ? WHERE id = ?'
+          );
+          const updateAllPoints = db.transaction((pts: typeof points) => {
+            for (const pt of pts) {
+              const t = new Date(pt.recorded_at).getTime();
+              if (!isNaN(t)) {
+                updatePoint.run(new Date(t + deltaMs).toISOString(), pt.id);
+              }
+            }
+          });
+          updateAllPoints(points);
+        }
+      }
+    }
+
     db.prepare(
-      'UPDATE location_tracks SET title = ?, visibility = ?, excursion_id = ? WHERE id = ?'
-    ).run(title, visibility, excursionId, track.id);
+      'UPDATE location_tracks SET title = ?, visibility = ?, excursion_id = ?, started_at = ?, ended_at = ? WHERE id = ?'
+    ).run(title, visibility, excursionId, startedAt, endedAt, track.id);
     // Erst beim Wechsel auf "geteilt" benachrichtigen/hervorheben (nicht bei jeder sonstigen
     // Bearbeitung wie Titel/Tour-Kopplung) - Domäne 'ideas' wiederverwendet statt einer eigenen
     // LiveDomain, da Aufzeichnungen visuell/organisatorisch in ExcursionsView.vue/der Karte leben
