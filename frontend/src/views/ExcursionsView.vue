@@ -103,7 +103,6 @@ import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Select from '../components/primitives/Select.vue';
 import TrackVisibilitySelect from '../components/TrackVisibilitySelect.vue';
-import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
@@ -815,6 +814,21 @@ const spotCategoryOptions = computed(() => {
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
 });
 
+const SPOT_SIDE_OPTIONS = [
+  {
+    value: 'vacation',
+    label: 'Urlaubsort',
+    icon: ACTION_ICONS.vacation,
+    iconGroup: 'actions' as const,
+  },
+  {
+    value: 'home',
+    label: 'Heimat-Seite',
+    icon: ACTION_ICONS.home,
+    iconGroup: 'actions' as const,
+  },
+];
+
 const showSpotLocationSection = ref(false);
 const showEditSpotLocationSection = ref(false);
 // Kombinierte "Einplanen"-Sektion (Touren + Termine): ersetzt die früheren showSpotToursSection,
@@ -827,7 +841,11 @@ const showEditExcursionSpotsSection = ref(false);
 watch(editingSpot, (val) => {
   if (val) {
     showEditSpotLocationSection.value =
-      !!val.maps_link || !!val.is_home || !!val.address || (val.lat != null && val.lng != null);
+      !!val.maps_link ||
+      !!val.is_home ||
+      val.category?.trim().toLowerCase() === 'zuhause' ||
+      !!val.address ||
+      (val.lat != null && val.lng != null);
     // Einplanen-Sektion (Touren + Termine) automatisch öffnen, wenn bereits Touren oder Termine
     // vorhanden sind, damit der User den bestehenden Stand sofort sieht.
     showSpotScheduleSection.value =
@@ -843,6 +861,32 @@ watch(
   (newCat, oldCat) => {
     if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
       showSpotLocationSection.value = true;
+    }
+    const isNewZuhause = newCat?.trim().toLowerCase() === 'zuhause';
+    const wasZuhause = oldCat?.trim().toLowerCase() === 'zuhause';
+    if (isNewZuhause && !wasZuhause) {
+      spotForm.value.is_home = true;
+      showSpotLocationSection.value = true;
+    } else if (!isNewZuhause && wasZuhause) {
+      spotForm.value.is_home = false;
+    }
+  }
+);
+
+watch(
+  () => editSpotForm.value.category,
+  (newCat, oldCat) => {
+    if (!editingSpot.value) return;
+    if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
+      showEditSpotLocationSection.value = true;
+    }
+    const isNewZuhause = newCat?.trim().toLowerCase() === 'zuhause';
+    const wasZuhause = oldCat?.trim().toLowerCase() === 'zuhause';
+    if (isNewZuhause && !wasZuhause) {
+      editSpotForm.value.is_home = true;
+      showEditSpotLocationSection.value = true;
+    } else if (!isNewZuhause && wasZuhause) {
+      editSpotForm.value.is_home = false;
     }
   }
 );
@@ -3169,13 +3213,14 @@ watch(spotManualPin, (pin) => {
 function startEditSpot(spot: Spot) {
   spotTitleTouched.value = false;
   editingSpot.value = spot;
+  const isZuhause = spot.category?.trim().toLowerCase() === 'zuhause';
   editSpotForm.value = {
     title: spot.title,
     image_url: spot.image_url ?? '',
     maps_link: spot.maps_link ?? '',
     note: spot.note ?? '',
     category: spot.category ?? '',
-    is_home: !!spot.is_home,
+    is_home: isZuhause ? true : !!spot.is_home,
     address: spot.address ?? '',
     start_date: spot.start_date ?? '',
     end_date: spot.end_date ?? '',
@@ -3849,14 +3894,18 @@ async function deleteEditingSpot() {
                     :reference-points="spotReferencePoints"
                   />
                 </CollapsibleFieldset>
-                <CheckboxCard
-                  id="spotFormIsHome"
-                  v-model="activeSpotForm.is_home"
-                  variant="muted"
-                  :icon="ACTION_ICONS.home"
-                  label="Heimat-Seite"
-                  description="z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen"
-                />
+                <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
+                  <span class="spot-side-label">Bereich</span>
+                  <SegmentedToggle
+                    id="spotFormSideToggle"
+                    :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
+                    :options="SPOT_SIDE_OPTIONS"
+                    @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
+                  />
+                  <p class="hint">
+                    z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen
+                  </p>
+                </div>
               </CollapsibleFieldset>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
@@ -5629,6 +5678,22 @@ async function deleteEditingSpot() {
 .location-fieldset-content .checkbox-option {
   padding: var(--space-1-5, 6px) 0;
   line-height: 1.45;
+}
+
+.spot-side-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5, 6px);
+  margin-top: var(--space-2);
+}
+
+.spot-side-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .location-fieldset-content :deep(.form-field),
