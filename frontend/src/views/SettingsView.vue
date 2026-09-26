@@ -562,21 +562,21 @@ watch(activeTab, (tab) => {
 onMounted(async () => {
   usernameForm.value.username = auth.user?.username ?? '';
   try {
-    const promises: Promise<unknown>[] = [uiSettings.load(true), buildInfoStore.load()];
-    if (pushSupported) {
-      promises.push(
-        (async () => {
-          pushEnabled.value = !!(await getExistingSubscription());
-          if (pushEnabled.value) await notificationPrefs.load();
-        })()
-      );
-    }
-    if (auth.user?.is_admin && activeTab.value === 'users') {
-      promises.push(loadUserList());
-    }
-    await Promise.all(promises);
+    await Promise.all([uiSettings.load(true), buildInfoStore.load()]);
   } finally {
     loading.value = false;
+  }
+
+  if (auth.user?.is_admin && activeTab.value === 'users') {
+    loadUserList();
+  }
+  if (pushSupported) {
+    getExistingSubscription()
+      .then(async (sub) => {
+        pushEnabled.value = !!sub;
+        if (pushEnabled.value) await notificationPrefs.load();
+      })
+      .catch(() => {});
   }
 });
 
