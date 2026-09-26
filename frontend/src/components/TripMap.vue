@@ -400,10 +400,10 @@ const shareButtonRef = ref<HTMLButtonElement | null>(null);
 const shareMenuStyle = ref({ top: '0px', left: '0px' });
 
 const shareDurationLabel = computed(() => {
-  if (!locationSharing.shareUntil) return 'Standort teilen';
+  if (locationSharing.activeDuration === 'off' || !locationSharing.shareUntil)
+    return 'Standort teilen';
+  if (locationSharing.activeDuration === 'forever') return 'Standort wird dauerhaft geteilt';
   const until = new Date(locationSharing.shareUntil);
-  const daysLeft = (until.getTime() - Date.now()) / (24 * 60 * 60 * 1000);
-  if (daysLeft > 365) return 'Standort wird dauerhaft geteilt';
   return `Standort geteilt bis ${until.toLocaleDateString('de-DE')}`;
 });
 
@@ -1839,7 +1839,7 @@ onUnmounted(() => {
   // Nicht abbrechen, falls eine app-weite Standort-Freigabe (stores/locationSharing.ts) aktiv ist -
   // die läuft bewusst unabhängig von dieser Ansicht weiter (siehe dortiger Kommentar), ein Verlassen
   // der Kartenansicht darf eine "dauerhaft"/"für eine Woche" gewählte Freigabe nicht beenden.
-  if (!locationSharing.shareUntil) liveSync.stopSharingPosition();
+  if (locationSharing.activeDuration === 'off') liveSync.stopSharingPosition();
   map?.remove();
   map = null;
 });
@@ -2081,7 +2081,7 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         variant="floating"
         shape="circle"
         class="fit-btn share-location-btn"
-        :active="!!locationSharing.shareUntil"
+        :active="locationSharing.activeDuration !== 'off'"
         :title="shareDurationLabel"
         :aria-label="shareDurationLabel"
         :icon="ACTION_ICONS.shareLocation"
@@ -2211,24 +2211,27 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         <template v-if="shareMenuOpen">
           <PickerMenu :style="shareMenuStyle" @close="shareMenuOpen = false">
             <DropdownItem
-              :active="!locationSharing.shareUntil"
+              :active="locationSharing.activeDuration === 'off'"
               :icon="ACTION_ICONS.off"
               label="Nicht teilen"
               @click="chooseShareDuration('off')"
             />
             <DropdownItem
+              :active="locationSharing.activeDuration === 'day'"
               :icon="FORM_FIELD_ICONS.date"
               icon-group="formFields"
               label="Für einen Tag"
               @click="chooseShareDuration('day')"
             />
             <DropdownItem
+              :active="locationSharing.activeDuration === 'week'"
               :icon="FORM_FIELD_ICONS.period"
               icon-group="formFields"
               label="Für eine Woche"
               @click="chooseShareDuration('week')"
             />
             <DropdownItem
+              :active="locationSharing.activeDuration === 'forever'"
               :icon="ACTION_ICONS.forever"
               label="Dauerhaft"
               @click="chooseShareDuration('forever')"
