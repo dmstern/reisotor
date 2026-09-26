@@ -306,7 +306,7 @@ function onLinkClick(event: MouseEvent) {
 .navbar.floating-bottom {
   position: fixed;
   top: auto;
-  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  bottom: var(--space-4);
   left: 0;
   right: 0;
   margin-inline: auto;

@@ -4927,27 +4927,31 @@ async function deleteEditingSpot() {
 }
 
 /* Mobil (Default) UND Desktop mit stark eingeschränktem .app-main (z. B. beide Schubladen
-   gleichzeitig aufgeklappt, siehe @container weiter unten für die genaue Schwelle): .page bekommt
-   eine feste Höhe unterhalb von Kopfzeile und wird zum Positionierungsrahmen für Karte +
-   Bottom-Sheet, die beide position:absolute (nicht mehr position:fixed) sind.
-   WICHTIG für Issue #302/#303: Auf Mobil darf --navbar-bottom-offset NICHT von .page's Höhe
-   abgezogen werden. .page muss sich bis ganz nach unten zum Bildschirmrand erstrecken, damit die
-   Karten-View (.map-col) unter die schwebende/transparente Bottom-NavBar durchgezogen wird und keine
-   harte opake Fläche dahinter entsteht. */
+   gleichzeitig aufgeklappt, siehe @container weiter unten für die genaue Schwelle): .page wird auf
+   Mobil per position:fixed über das gesamte Sichtfeld (inset:0) gespannt, sodass die Karte randlos
+   und scroll-frei von der oberen Gerätekante (unter Statusbar/Dynamic Island) bis zum unteren
+   Bildschirmrand reicht.
+   WICHTIG für Issue #302/#303 & Randlos-Layout: Auf Mobil darf weder --navbar-bottom-offset
+   noch --app-header-height die Höhe der Karte beschränken oder einen negativen margin-top erzeugen,
+   da sonst im iOS-WebKit PWA-Modus ein Chin-Gap bzw. vertikaler Scroll-Überhang entsteht. */
 .page {
-  position: relative;
-  /* Mobil: Karte soll unter den schwebenden Header ragen */
-  margin-top: calc(-1 * var(--app-header-height, 56px));
-  height: calc(100vh - var(--navbar-offset, 0px));
-  height: calc(100dvh - var(--navbar-offset, 0px));
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   padding: 0;
+}
+
+.layout {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 .map-col {
   position: absolute;
   inset: 0;
   z-index: 1;
+  pointer-events: auto;
 }
 
 /* Bottom-Sheet mit drei Rasteinungen (siehe sheetState/onSheetDragStart im Script) – Höhe kommt
@@ -4990,11 +4994,9 @@ async function deleteEditingSpot() {
   right: var(--space-4);
   /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf
      0) schwebt das Sheet mit einem sauberen Abstand (--space-3) über der unteren NavBar
-     (--navbar-bottom-offset + env(safe-area-inset-bottom)). Dadurch kleben Drawer und NavBar nicht aneinander und der Drawer wird
+     (--navbar-bottom-offset). Dadurch kleben Drawer und NavBar nicht aneinander und der Drawer wird
      nie von ihr verdeckt (#303). */
-  bottom: calc(
-    var(--space-3) + var(--navbar-bottom-offset, 0px) + env(safe-area-inset-bottom, 0px)
-  );
+  bottom: calc(var(--space-3) + var(--navbar-bottom-offset, 0px));
   z-index: 5;
   pointer-events: auto;
   display: flex;
@@ -5065,7 +5067,7 @@ async function deleteEditingSpot() {
   height: min(100dvh, var(--sheet-max-height));
 
   .spots-col-body {
-    padding-bottom: calc(var(--navbar-bottom-offset, 0px) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--navbar-bottom-offset, 0px);
   }
 }
 
