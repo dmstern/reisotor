@@ -102,6 +102,7 @@ import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Select from '../components/primitives/Select.vue';
+import TrackVisibilitySelect from '../components/TrackVisibilitySelect.vue';
 import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
@@ -4798,11 +4799,8 @@ async function deleteEditingSpot() {
                   :maxlength="100"
                 />
               </FormField>
-              <FormField icon="visibility" label="Sichtbarkeit">
-                <Select v-model="editTrackVisibility">
-                  <option value="private">🔒 Nur für mich sichtbar (privat)</option>
-                  <option value="shared">👥 Für alle Mitreisenden sichtbar</option>
-                </Select>
+              <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
+                <TrackVisibilitySelect :id="id" v-model="editTrackVisibility" />
               </FormField>
               <div class="actions-row">
                 <Button
