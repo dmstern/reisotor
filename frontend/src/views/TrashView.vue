@@ -12,6 +12,7 @@ import EmptyState from '../components/primitives/EmptyState.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
+import { stripHtml } from '../utils/richText';
 
 // Eintrag aus GET /trash (routes/trash.ts): `data` trägt die komplette, noch nicht formatierte
 // Zeile – jeder Objekttyp braucht eine eigene kleine Extraktionsregel (titleFor unten), da die
@@ -83,8 +84,11 @@ function titleFor(entry: TrashEntry): string {
     case 'budget_transfer':
       return `${(d.amount as number).toFixed(2)}\u00A0€ · ${userLabel(d.from_user_id)} → ${userLabel(d.to_user_id)}`;
     case 'note':
-    case 'diary_entry':
-      return (d.title as string | null) || truncate(d.content as string);
+    case 'diary_entry': {
+      const title = (d.title as string | null)?.trim();
+      const plain = stripHtml(d.content as string | null | undefined);
+      return title || (plain ? truncate(plain) : '(ohne Titel)');
+    }
     default:
       return '(ohne Titel)';
   }

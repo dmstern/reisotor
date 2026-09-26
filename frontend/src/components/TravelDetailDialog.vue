@@ -120,6 +120,7 @@ function travelDuration(item: TravelItem) {
       <Button
         v-if="item.from_lat != null && item.from_lng != null"
         variant="card-action"
+        size="sm"
         @click="emit('show-on-map-from')"
       >
         <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Abflug auf Karte
@@ -135,6 +136,7 @@ function travelDuration(item: TravelItem) {
       <Button
         v-if="item.to_lat != null && item.to_lng != null"
         variant="card-action"
+        size="sm"
         @click="emit('show-on-map-to')"
       >
         <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Ankunft auf Karte

@@ -53,6 +53,39 @@ describe('parseLatLngFromText', () => {
     });
   });
 
+  it('parses an OpenStreetMap ?mlat=&mlon= link', () => {
+    expect(
+      parseLatLngFromText(
+        'https://www.openstreetmap.org/?mlat=48.2082&mlon=16.3738#map=15/48.2082/16.3738'
+      )
+    ).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+  });
+
+  it('parses an OpenStreetMap hash-only link without mlat/mlon', () => {
+    expect(parseLatLngFromText('https://www.openstreetmap.org/#map=16/48.2082/16.3738')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+  });
+
+  it('parses RFC 5870 / Android geo: URIs', () => {
+    expect(parseLatLngFromText('geo:48.2082,16.3738')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+    expect(parseLatLngFromText('geo:48.2082,16.3738?q=Stephansdom')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+    expect(parseLatLngFromText('geo:0,0?q=48.2082,16.3738(Stephansdom)')).toEqual({
+      lat: 48.2082,
+      lng: 16.3738,
+    });
+  });
+
   it('returns null when no pattern matches', () => {
     expect(parseLatLngFromText('https://maps.app.goo.gl/abc123')).toBeNull();
     expect(parseLatLngFromText('not a maps link at all')).toBeNull();

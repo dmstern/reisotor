@@ -48,6 +48,11 @@ import {
   toLocalDateString,
 } from '../utils/dateFormat';
 import { computeDepartureCountdown, computeVacationPhase } from '../utils/departureCountdown';
+import {
+  formatDestinationLocationLabel,
+  formatHomeLocationLabel,
+  formatOverDestinationLabel,
+} from '../utils/weatherLocationLabel';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
@@ -128,8 +133,11 @@ async function loadWeather() {
 
 // "Zuhause" ist (wie im Kalender, siehe ScheduleView.vue) ein Spot mit is_home-Kennzeichnung statt
 // eines eigenen Account-/Trip-Felds - kein Schema-Änderung nötig, dieselbe Quelle wie dort.
+const homeSpot = computed(() =>
+  spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null)
+);
 const home = computed(() => {
-  const p = spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null);
+  const p = homeSpot.value;
   return p ? { lat: p.lat as number, lng: p.lng as number } : null;
 });
 
@@ -171,6 +179,20 @@ watch(
   }
 );
 
+const destinationName = computed(
+  () => trip.value?.destination?.trim() || trip.value?.name?.trim() || ''
+);
+
+const destinationLocationLabel = computed(() =>
+  formatDestinationLocationLabel(trip.value?.destination, trip.value?.name)
+);
+
+const homeLocationLabel = computed(() => formatHomeLocationLabel(homeSpot.value?.title));
+
+const overDestinationLabel = computed(() =>
+  formatOverDestinationLabel(trip.value?.destination, trip.value?.name)
+);
+
 const weatherModelLabel = computed(
   () =>
     WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ??
@@ -178,10 +200,23 @@ const weatherModelLabel = computed(
 );
 
 const selectedWeatherDay = ref<DailyWeather | null>(null);
+const selectedWeatherLocation = ref<{
+  lat?: number | null;
+  lng?: number | null;
+  label: string;
+} | null>(null);
 const weatherDayDialogOpen = ref(false);
 
-function openWeatherDayDialog(day: DailyWeather) {
+function openWeatherDayDialog(
+  day: DailyWeather,
+  loc?: { lat?: number | null; lng?: number | null; label: string }
+) {
   selectedWeatherDay.value = day;
+  selectedWeatherLocation.value = loc ?? {
+    lat: trip.value?.lat,
+    lng: trip.value?.lng,
+    label: destinationName.value || 'Reiseziel',
+  };
   weatherDayDialogOpen.value = true;
 }
 
@@ -360,6 +395,12 @@ const vacationPhase = computed(() =>
   trip.value ? computeVacationPhase(trip.value, now.value) : null
 );
 
+const isTripOver = computed(() => {
+  if (vacationPhase.value?.phase === 'over') return true;
+  if (trip.value?.end_date && trip.value.end_date < todayStr()) return true;
+  return false;
+});
+
 // Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
 // mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
 const upcomingEntries = computed(() =>
@@ -485,6 +526,9 @@ const homeForecastDays = computed(() => {
 // Wetter am Zielort – die Vorhersage deckt dank past_days:1 im Fetch (utils/weather.ts) ohnehin
 // bereits heute mit ab, unabhängig davon, ob der Urlaub selbst schon im 16-Tage-Fenster liegt.
 const todayWeather = computed(() => weatherDays.value?.find((d) => d.date === todayStr()) ?? null);
+const todayHomeWeather = computed(
+  () => homeWeatherDays.value?.find((d) => d.date === todayStr()) ?? null
+);
 
 function formatWeekdayDate(d: string) {
   return formatWeekdayDateShared(d);
@@ -561,7 +605,7 @@ function formatWeekdayDate(d: string) {
         Genießt euren Urlaub! 🏖️
       </p>
       <p v-else-if="vacationPhase?.phase === 'lastDay'" class="countdown">Letzter Urlaubstag 🌅</p>
-      <p v-else-if="vacationPhase?.phase === 'over'" class="countdown">Der Urlaub ist vorbei 👋</p>
+      <p v-else-if="isTripOver" class="countdown">Der Urlaub ist vorbei 👋</p>
     </header>
 
     <!-- Wetter + Reiseregion in einer Card statt zweier separater: beide sind "Infos über das
@@ -575,6 +619,68 @@ function formatWeekdayDate(d: string) {
         <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
         <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
         <template v-else>
+          <!-- Nach Urlaubsende (isTripOver): Falls ein Heimatort mit Koordinaten
+               hinterlegt ist, wird das heutige Wetter zuhause angezeigt (Nutzer:innen sind wieder
+               daheim), und das Reiseziel-Wetter transparent als "Heute am Reiseziel" ausgewiesen.
+               Vor/während des Urlaubs wird nur das Reiseziel transparent benannt. -->
+          <div
+            v-if="isTripOver && home && todayHomeWeather"
+            class="weather-today clickable"
+            role="button"
+            tabindex="0"
+            @click="
+              openWeatherDayDialog(todayHomeWeather, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+              })
+            "
+            @keydown.enter.prevent="
+              openWeatherDayDialog(todayHomeWeather, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+              })
+            "
+            @keydown.space.prevent="
+              openWeatherDayDialog(todayHomeWeather, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+              })
+            "
+          >
+            <span class="weather-today-label">
+              <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" />
+              Heute {{ homeLocationLabel }}
+            </span>
+            <div class="weather-icon-wrapper">
+              <WeatherIcon
+                class="weather-icon"
+                :size="22"
+                :code="todayHomeWeather.weatherCode"
+                :title="weatherCodeMeta(todayHomeWeather.weatherCode).label"
+              />
+              <span
+                v-if="getDayAlert(todayHomeWeather)"
+                class="weather-alert-badge"
+                :class="getDayAlert(todayHomeWeather)!.severity"
+                :title="getDayAlert(todayHomeWeather)!.title"
+              >
+                <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
+              </span>
+            </div>
+            <span class="weather-temp"
+              >{{ Math.round(todayHomeWeather.tempMax) }}° /
+              {{ Math.round(todayHomeWeather.tempMin) }}°</span
+            >
+            <span v-if="todayHomeWeather.precipitationProbability != null" class="weather-rain">
+              <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
+                todayHomeWeather.precipitationProbability
+              }}%
+            </span>
+          </div>
+
           <div
             v-if="todayWeather"
             class="weather-today clickable"
@@ -584,9 +690,11 @@ function formatWeekdayDate(d: string) {
             @keydown.enter.prevent="openWeatherDayDialog(todayWeather)"
             @keydown.space.prevent="openWeatherDayDialog(todayWeather)"
           >
-            <span class="weather-today-label"
-              >Heute{{ trip?.destination ? ` in ${trip.destination}` : '' }}</span
-            >
+            <span class="weather-today-label">
+              <AppIcon v-if="isTripOver" :icon="ACTION_ICONS.vacation" :size="14" group="actions" />
+              Heute
+              {{ isTripOver ? overDestinationLabel : destinationLocationLabel }}
+            </span>
             <div class="weather-icon-wrapper">
               <WeatherIcon
                 class="weather-icon"
@@ -616,22 +724,17 @@ function formatWeekdayDate(d: string) {
 
           <p class="weather-section-label">
             <AppIcon
-              :icon="vacationPhase?.phase === 'over' ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
+              :icon="isTripOver ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
               :size="14"
               group="actions"
             />
-            {{
-              vacationPhase?.phase === 'over' ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub'
-            }}
+            {{ isTripOver ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
           </p>
           <p v-if="!trip?.start_date" class="hint">
             Hinterlege einen Reisezeitraum beim Urlaub, um hier die Wettervorhersage für die
             Urlaubstage zu sehen.
           </p>
-          <p
-            v-else-if="!vacationForecastDays.length && vacationPhase?.phase !== 'over'"
-            class="hint"
-          >
+          <p v-else-if="!vacationForecastDays.length && !isTripOver" class="hint">
             Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
             ~16 Tage ab, schau kurz vorher nochmal vorbei.
           </p>
@@ -706,7 +809,7 @@ function formatWeekdayDate(d: string) {
       <!-- Unabhängig vom Trip-Maps-Link oben (kein v-if="trip?.lat...", das bezieht sich nur auf
            das Reiseziel) - Zuhause kommt aus einem eigenen, in Reise > Orte per is_home markierten
            Spot (siehe home-Computed, dasselbe Muster wie ScheduleView.vue's Kalender-Wetter). -->
-      <template v-if="home">
+      <template v-if="home && !isTripOver">
         <p class="weather-section-label">
           <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause
         </p>
@@ -722,35 +825,62 @@ function formatWeekdayDate(d: string) {
         </p>
         <div v-else class="weather-days">
           <div
-            class="weather-day"
+            class="weather-day clickable"
             v-for="day in homeForecastDays"
             :key="day.date"
-            style="position: relative"
+            role="button"
+            tabindex="0"
+            @click="
+              openWeatherDayDialog(day, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+              })
+            "
+            @keydown.enter.prevent="
+              openWeatherDayDialog(day, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+              })
+            "
+            @keydown.space.prevent="
+              openWeatherDayDialog(day, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+              })
+            "
           >
             <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-            <WeatherIcon
-              class="weather-icon"
-              :size="22"
-              :code="day.weatherCode"
-              :title="weatherCodeMeta(day.weatherCode).label"
-            />
+            <div class="weather-icon-wrapper">
+              <WeatherIcon
+                class="weather-icon"
+                :size="22"
+                :code="day.weatherCode"
+                :title="weatherCodeMeta(day.weatherCode).label"
+              />
+              <span
+                v-if="getDayAlert(day)"
+                class="weather-alert-badge"
+                :class="getDayAlert(day)!.severity"
+                :title="getDayAlert(day)!.title"
+              >
+                <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
+              </span>
+            </div>
             <span class="weather-temp"
               >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
             >
-            <span v-if="day.precipitationProbability != null" class="weather-rain"
-              >💧{{ day.precipitationProbability }}%</span
-            >
-            <span
-              v-if="getDayAlert(day)"
-              class="day-alert-icon"
-              :class="getDayAlert(day)?.severity"
-            >
-              <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+            <span v-if="day.precipitationProbability != null" class="weather-rain">
+              <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
+                day.precipitationProbability
+              }}%
             </span>
           </div>
         </div>
       </template>
-      <p v-else class="hint">
+      <p v-else-if="!home && !isTripOver" class="hint">
         Markiere in der Karte unter Spots einen Spot mit
         <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
         zusätzlich das Wetter zuhause gegen Ende des Urlaubs zu sehen.
@@ -1211,9 +1341,9 @@ function formatWeekdayDate(d: string) {
   <WeatherDayDetailDialog
     v-model="weatherDayDialogOpen"
     :day="selectedWeatherDay"
-    :lat="trip?.lat"
-    :lng="trip?.lng"
-    :location-label="trip?.destination || 'Reiseziel'"
+    :lat="selectedWeatherLocation?.lat ?? trip?.lat"
+    :lng="selectedWeatherLocation?.lng ?? trip?.lng"
+    :location-label="selectedWeatherLocation?.label || destinationName || 'Reiseziel'"
   />
 </template>
 
@@ -1383,6 +1513,9 @@ function formatWeekdayDate(d: string) {
 }
 
 .weather-today-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   flex: 1;
   min-width: 0;
   color: var(--color-text-muted);

@@ -4,6 +4,7 @@ import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsL
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
+import { ensureTripCategory } from './tripCategories.js';
 
 interface SpotBody {
   trip_id: number;
@@ -198,6 +199,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     const body = req.body;
     const { trip_id, title, category, note, maps_link, is_home } = body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+    if (category?.trim()) {
+      ensureTripCategory(trip_id, 'spot', category);
+    }
     let { lat, lng, image_url } = body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
@@ -259,6 +263,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
     const body = req.body;
     const { title, category, note, maps_link, is_home } = body;
+    if (category?.trim()) {
+      ensureTripCategory(existing.trip_id, 'spot', category);
+    }
     let { lat, lng, image_url } = body;
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);

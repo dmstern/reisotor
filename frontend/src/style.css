@@ -627,6 +627,7 @@ button {
   color: var(--color-danger, #ef4444);
   font-weight: 700;
   margin-left: 2px;
+  display: inline;
 }
 
 /* ========================================================================= */
@@ -645,7 +646,9 @@ button {
   /* --navbar-bottom-offset (NavBar.vue) bildet nur die eigene Höhe der NavBar ab (0px, wenn sie oben
      steht) - ohne den zusätzlichen --space-4 klebt der letzte Inhalt sonst randlos an der NavBar
      bzw. bei oben stehender NavBar direkt am Viewport-Rand. */
-  padding-bottom: calc(var(--navbar-bottom-offset, 88px) + var(--space-4));
+  padding-bottom: calc(
+    var(--navbar-bottom-offset, 88px) + var(--space-4) + env(safe-area-inset-bottom, 0px)
+  );
 }
 
 .grid {
@@ -961,6 +964,10 @@ p + .btn {
 
 .actions-row .spacer {
   flex: 1;
+}
+
+.actions-row > :not(.spacer) {
+  flex: initial;
 }
 
 @media (max-width: 600px) {

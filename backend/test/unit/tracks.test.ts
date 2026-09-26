@@ -271,4 +271,46 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     });
     expect(restore.statusCode).toBe(200);
   });
+
+  it('setzt ended_at und end_reason beim Beenden einer Aufzeichnung', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/tracks',
+      headers: { cookie: ownerCookie },
+      payload: { trip_id: tripId },
+    });
+    const trackId = create.json().id as number;
+    expect(create.json().ended_at).toBeNull();
+    expect(create.json().end_reason).toBeNull();
+
+    // Reguläres Beenden
+    const stopRes = await app.inject({
+      method: 'POST',
+      url: `/api/tracks/${trackId}/stop`,
+      headers: { cookie: ownerCookie },
+      payload: { end_reason: 'completed' },
+    });
+    expect(stopRes.statusCode).toBe(200);
+    expect(stopRes.json().ended_at).toBeTruthy();
+    expect(stopRes.json().end_reason).toBe('completed');
+
+    // Abbruch einer neuen Aufzeichnung testen
+    const createAborted = await app.inject({
+      method: 'POST',
+      url: '/api/tracks',
+      headers: { cookie: ownerCookie },
+      payload: { trip_id: tripId },
+    });
+    const abortedId = createAborted.json().id as number;
+
+    const abortRes = await app.inject({
+      method: 'POST',
+      url: `/api/tracks/${abortedId}/stop`,
+      headers: { cookie: ownerCookie },
+      payload: { end_reason: 'aborted' },
+    });
+    expect(abortRes.statusCode).toBe(200);
+    expect(abortRes.json().ended_at).toBeTruthy();
+    expect(abortRes.json().end_reason).toBe('aborted');
+  });
 });

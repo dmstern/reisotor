@@ -113,7 +113,9 @@ function close() {
         </label>
 
         <label for="auto-id-1788301175436-4">
-          Titel <span class="required-indicator" aria-hidden="true">*</span>
+          <span class="label-text">
+            Titel <span class="required-indicator" aria-hidden="true">*</span>
+          </span>
           <Input
             id="auto-id-1788301175436-4"
             v-model="form.title"
@@ -125,7 +127,9 @@ function close() {
         </label>
 
         <label for="auto-id-1788301175436-5">
-          Beschreibung <span class="required-indicator" aria-hidden="true">*</span>
+          <span class="label-text">
+            Beschreibung <span class="required-indicator" aria-hidden="true">*</span>
+          </span>
           <Textarea
             id="auto-id-1788301175436-5"
             v-model="form.description"
@@ -182,6 +186,12 @@ label {
   gap: var(--space-1);
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.label-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .hint {

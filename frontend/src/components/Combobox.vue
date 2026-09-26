@@ -119,6 +119,26 @@ defineExpose({
   },
 });
 
+const selectedIconDef = computed(() => {
+  const val = (props.modelValue ?? '').trim();
+  if (!val) return undefined;
+  return props.iconDefFor?.(val);
+});
+
+const selectedIcon = computed(() => {
+  const val = (props.modelValue ?? '').trim();
+  if (!val) return undefined;
+  return props.iconFor?.(val);
+});
+
+const selectedColor = computed(() => {
+  const val = (props.modelValue ?? '').trim();
+  if (!val) return undefined;
+  return props.colorFor?.(val);
+});
+
+const hasLeadingIcon = computed(() => Boolean(selectedIconDef.value || selectedIcon.value));
+
 defineOptions({
   inheritAttrs: false,
 });
@@ -128,8 +148,25 @@ defineOptions({
   <div
     ref="comboboxRef"
     class="combobox"
-    :class="[{ open, 'flip-up': flipUp }, size !== 'md' ? `combobox--${size}` : undefined]"
+    :class="[
+      { open, 'flip-up': flipUp, 'has-leading-icon': hasLeadingIcon },
+      size !== 'md' ? `combobox--${size}` : undefined,
+    ]"
   >
+    <span
+      v-if="hasLeadingIcon"
+      class="combobox-leading-icon"
+      :style="selectedColor ? { color: selectedColor } : {}"
+      aria-hidden="true"
+    >
+      <AppIcon
+        v-if="selectedIconDef"
+        :icon="selectedIconDef"
+        :size="size === 'sm' ? 14 : size === 'lg' ? 18 : 16"
+        group="categories"
+      />
+      <span v-else>{{ selectedIcon }}</span>
+    </span>
     <Input
       ref="inputRef"
       v-bind="$attrs"
@@ -217,6 +254,42 @@ defineOptions({
 .combobox--lg :deep(.combobox-input),
 .combobox--lg :deep(input) {
   padding-right: 42px;
+}
+
+.combobox-leading-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+  line-height: 1;
+}
+
+.combobox--sm .combobox-leading-icon {
+  left: 8px;
+}
+
+.combobox--lg .combobox-leading-icon {
+  left: 14px;
+}
+
+.combobox.has-leading-icon :deep(.combobox-input),
+.combobox.has-leading-icon :deep(input) {
+  padding-left: 36px;
+}
+
+.combobox--sm.has-leading-icon :deep(.combobox-input),
+.combobox--sm.has-leading-icon :deep(input) {
+  padding-left: 28px;
+}
+
+.combobox--lg.has-leading-icon :deep(.combobox-input),
+.combobox--lg.has-leading-icon :deep(input) {
+  padding-left: 42px;
 }
 
 .combobox-caret {

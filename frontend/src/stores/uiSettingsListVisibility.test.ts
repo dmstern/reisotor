@@ -81,4 +81,38 @@ describe('uiSettings list visibility', () => {
 
     expect(store.showUpdateDialogs).toBe(false);
   });
+
+  it('loads customMobileNav and navConfigMobile from server app-settings', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      customMobileNav: true,
+      navConfigMobile: [{ key: 'listen', visible: false }],
+    });
+
+    const store = useUiSettingsStore();
+    await store.load();
+
+    const { useNavConfigStore } = await import('./navConfig');
+    const navStore = useNavConfigStore();
+    expect(navStore.customMobile).toBe(true);
+    expect(navStore.mobileEntries.find((e) => e.key === 'listen')?.visible).toBe(false);
+  });
+
+  it('triggers persist when mobile nav entries are updated', async () => {
+    const { useNavConfigStore } = await import('./navConfig');
+    const navStore = useNavConfigStore();
+    const uiStore = useUiSettingsStore();
+
+    // Trigger watcher
+    navStore.customMobile = true;
+    await nextTick();
+
+    expect(api.put).toHaveBeenCalledWith(
+      '/users/me/app-settings',
+      expect.objectContaining({
+        settings: expect.objectContaining({
+          customMobileNav: true,
+        }),
+      })
+    );
+  });
 });

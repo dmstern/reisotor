@@ -320,6 +320,8 @@ export interface StoredAppSettings {
     mobile?: NavPosition;
   };
   navConfig?: NavConfigEntry[];
+  customMobileNav?: boolean;
+  navConfigMobile?: NavConfigEntry[];
   dashboardConfig?: DashboardConfigEntry[];
   calendarSettings?: {
     weekStart?: WeekStart;
@@ -391,10 +393,12 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           borderWidth: borderWidth.value,
           diaryFont: diaryFont.value,
           navPosition: {
-            desktop: navPosStore.desktop,
+            desktop: 'top',
             mobile: navPosStore.mobile,
           },
           navConfig: navCfgStore.entries,
+          customMobileNav: navCfgStore.customMobile,
+          navConfigMobile: navCfgStore.mobileEntries,
           dashboardConfig: dashCfgStore.entries,
           calendarSettings: {
             weekStart: calSettingsStore.weekStart,
@@ -409,8 +413,8 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       .catch(() => {});
   }
 
-  async function load() {
-    if (loaded.value) return;
+  async function load(force = false) {
+    if (loaded.value && !force) return;
     try {
       const stored = await api.get<Partial<StoredAppSettings>>('/users/me/app-settings');
       isInternalSync = true;
@@ -488,15 +492,19 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         diaryFont.value = stored.diaryFont;
       }
       if (stored.navPosition) {
-        if (stored.navPosition.desktop === 'top' || stored.navPosition.desktop === 'bottom') {
-          navPosStore.desktop = stored.navPosition.desktop;
-        }
+        // Desktop ist immer fest 'top' im Header gedockt. Nur mobile Position wird ggf. übernommen.
         if (stored.navPosition.mobile === 'top' || stored.navPosition.mobile === 'bottom') {
           navPosStore.mobile = stored.navPosition.mobile;
         }
       }
       if (Array.isArray(stored.navConfig)) {
         navCfgStore.entries = sanitizeNavEntries(stored.navConfig);
+      }
+      if (typeof stored.customMobileNav === 'boolean') {
+        navCfgStore.customMobile = stored.customMobileNav;
+      }
+      if (Array.isArray(stored.navConfigMobile)) {
+        navCfgStore.mobileEntries = sanitizeNavEntries(stored.navConfigMobile);
       }
       if (Array.isArray(stored.dashboardConfig)) {
         dashCfgStore.entries = sanitizeDashboardEntries(stored.dashboardConfig);
@@ -632,6 +640,15 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   );
   watch(
     () => navCfgStore.entries,
+    () => persist(),
+    { deep: true }
+  );
+  watch(
+    () => navCfgStore.customMobile,
+    () => persist()
+  );
+  watch(
+    () => navCfgStore.mobileEntries,
     () => persist(),
     { deep: true }
   );

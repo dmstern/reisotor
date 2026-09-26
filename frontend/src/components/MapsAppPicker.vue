@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, onUnmounted, nextTick } from 'vue';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import {
+  buildAppleMapsLink,
+  buildGenericMapsLink,
+  buildGoogleMapsLink,
+  buildOsmLink,
+} from '../utils/googleMaps';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
 // Eigenständige Komponente (Spot/Unterkunft/Reise): zeigt ein Auswahl-Menü der gängigen Karten-Apps.
@@ -30,6 +36,11 @@ const open = ref(false);
 const buttonRef = ref<InstanceType<typeof Button> | null>(null);
 const menuStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 
+const genericMapsUrl = computed(() => buildGenericMapsLink(props.lat, props.lng, props.title));
+const googleMapsUrl = computed(() => buildGoogleMapsLink(props.lat, props.lng));
+const appleMapsUrl = computed(() => buildAppleMapsLink(props.lat, props.lng, props.title));
+const osmUrl = computed(() => buildOsmLink(props.lat, props.lng, 16));
+
 async function toggle(event?: MouseEvent) {
   if (open.value) {
     open.value = false;
@@ -41,7 +52,7 @@ async function toggle(event?: MouseEvent) {
   if (!triggerEl) return;
 
   // Erste synchrone Berechnung mit geschätzter Menühöhe
-  menuStyle.value = computePopoverPosition(triggerEl, { menuWidth: 216, menuHeight: 120 });
+  menuStyle.value = computePopoverPosition(triggerEl, { menuWidth: 216, menuHeight: 190 });
   open.value = true;
 
   // Nach dem Rendern mit den tatsächlichen DOM-Dimensionen nachjustieren
@@ -75,14 +86,35 @@ onUnmounted(() => {
 
 <template>
   <div class="maps-picker" @click.stop>
-    <Button ref="buttonRef" :variant="props.variant" :size="props.size" @click="toggle($event)">
+    <Button
+      ref="buttonRef"
+      :variant="props.variant"
+      :size="props.size"
+      aria-label="In Maps-App öffnen"
+      title="In Maps-App öffnen"
+      @click="toggle($event)"
+    >
       <AppIcon :icon="ACTION_ICONS.mapsApp" :size="props.size === 'sm' ? 14 : 16" group="actions" />
       In Maps-App öffnen
     </Button>
     <Teleport to="body">
       <PickerMenu v-if="open" class="maps-picker-menu" :style="menuStyle" @close="close">
         <DropdownItem
-          :href="`https://maps.apple.com/?ll=${props.lat},${props.lng}&q=${encodeURIComponent(props.title)}`"
+          :href="genericMapsUrl"
+          :icon="ACTION_ICONS.deviceMobile"
+          label="Standard-Karten-App"
+          @click="close"
+        />
+        <DropdownItem
+          :href="googleMapsUrl"
+          target="_blank"
+          rel="noopener"
+          :icon="ACTION_ICONS.googleMaps"
+          label="Google Maps"
+          @click="close"
+        />
+        <DropdownItem
+          :href="appleMapsUrl"
           target="_blank"
           rel="noopener"
           :icon="ACTION_ICONS.apple"
@@ -90,11 +122,11 @@ onUnmounted(() => {
           @click="close"
         />
         <DropdownItem
-          :href="`https://www.google.com/maps/search/?api=1&query=${props.lat},${props.lng}`"
+          :href="osmUrl"
           target="_blank"
           rel="noopener"
-          :icon="ACTION_ICONS.googleMaps"
-          label="Google Maps"
+          :icon="ACTION_ICONS.openStreetMap"
+          label="OpenStreetMap"
           @click="close"
         />
         <DropdownItem

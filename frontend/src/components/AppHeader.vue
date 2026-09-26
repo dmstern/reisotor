@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useConnectivityStore } from '../stores/connectivity';
-import { useNavPositionStore } from '../stores/navPosition';
+import { useIconStyleStore } from '../stores/iconStyle';
+import { useLiveSyncStore } from '../stores/liveSync';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import TripSwitcher from './TripSwitcher.vue';
 import NavBar from './NavBar.vue';
@@ -14,23 +15,55 @@ import TrackRecordingIndicator from './TrackRecordingIndicator.vue';
 import LoadingIndicator from './LoadingIndicator.vue';
 import DemoModeBanner from './DemoModeBanner.vue';
 import AppIcon from './AppIcon.vue';
+import UnseenDot from './primitives/UnseenDot.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 import { useHeaderNavFits } from '../composables/useHeaderNavFits';
+import { navigatingTo } from '../router';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const connectivity = useConnectivityStore();
-const navPosition = useNavPositionStore();
+const iconStyle = useIconStyleStore();
+const liveSync = useLiveSyncStore();
 const isDesktop = useIsDesktop();
 const headerNavFits = useHeaderNavFits();
 const route = useRoute();
+const router = useRouter();
+const isMapRoute = computed(() => route.name === 'excursions');
+
+const isOpeningSettings = computed(
+  () => navigatingTo.value === '/settings' || navigatingTo.value?.startsWith('/settings')
+);
 
 const showTripNav = computed(() => tripStore.currentTripId != null && route.name !== 'trips');
-const showDockedNav = computed(
-  () => isDesktop.value && headerNavFits.value && navPosition.desktop === 'top' && showTripNav.value
+const showDockedNav = computed(() => isDesktop.value && headerNavFits.value && showTripNav.value);
+
+const calendarTarget = computed(() =>
+  tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/calendar` : '/calendar'
 );
+
+const isCalendarActive = computed(() => {
+  const targetPath = tripStore.currentTripId
+    ? `/trip/${tripStore.currentTripId}/calendar`
+    : '/calendar';
+  return route.path.startsWith(targetPath);
+});
+
+function onCalendarClick(event: MouseEvent) {
+  if (isCalendarActive.value) {
+    event.preventDefault();
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(tripStore.currentTripId ? `/trip/${tripStore.currentTripId}` : '/');
+    }
+  }
+}
 
 // Der Header ist standardmäßig 56px hoch (bzw. höher im Demo-Modus durch den DemoModeBanner) –
 // NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
@@ -70,6 +103,7 @@ const profileTitle = computed(() => {
 
 <template>
   <header ref="headerEl" class="app-header">
+    <div v-if="!isMapRoute" class="status-bar-scrim" aria-hidden="true"></div>
     <DemoModeBanner v-if="DEMO_MODE" />
     <LoadingIndicator />
     <div class="header-row">
@@ -92,6 +126,27 @@ const profileTitle = computed(() => {
         </div>
 
         <div class="header-actions">
+          <!-- Kalender-Navigation auf Mobilgeräten (<1024px): zwischen TripSwitcher und Online-Anzeige -->
+          <router-link
+            v-if="!isDesktop && showTripNav"
+            :to="calendarTarget"
+            class="header-calendar-btn"
+            :class="{ active: isCalendarActive }"
+            title="Kalender"
+            aria-label="Kalender"
+            @click="onCalendarClick"
+          >
+            <span class="icon-wrap">
+              <AppIcon
+                :icon="SECTION_ICON_DEFS.calendar"
+                group="navigation"
+                :size="18"
+                :active="isCalendarActive"
+                :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
+              />
+              <UnseenDot v-if="liveSync.hasUnseen('schedule')" />
+            </span>
+          </router-link>
           <TrackRecordingIndicator />
           <PresenceAvatars />
           <NotificationInbox />
@@ -99,6 +154,7 @@ const profileTitle = computed(() => {
             to="/settings"
             class="profile-link"
             :class="{
+              'is-navigating': isOpeningSettings,
               'is-online': connectivity.isOnline,
               'is-offline': !connectivity.isOnline,
               'is-retrying':
@@ -107,12 +163,17 @@ const profileTitle = computed(() => {
             :title="profileTitle"
           >
             <div class="avatar-wrapper">
-              <span class="avatar">{{ auth.user?.avatar || '👤' }}</span>
-              <div v-if="!connectivity.isOnline" class="offline-badge" title="Offline">
+              <LoadingSpinner v-if="isOpeningSettings" size="sm" class="avatar-spinner" />
+              <span v-else class="avatar">{{ auth.user?.avatar || '👤' }}</span>
+              <div
+                v-if="!isOpeningSettings && !connectivity.isOnline"
+                class="offline-badge"
+                title="Offline"
+              >
                 <AppIcon :icon="ACTION_ICONS.offline" :size="12" group="actions" />
               </div>
               <div
-                v-else-if="connectivity.pendingCount > 0"
+                v-else-if="!isOpeningSettings && connectivity.pendingCount > 0"
                 class="pending-badge"
                 :title="`${connectivity.pendingCount} ausstehende Synchronisation(en)`"
               >
@@ -152,7 +213,7 @@ const profileTitle = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4) 0;
+  padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-4) 0;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
@@ -160,7 +221,42 @@ const profileTitle = computed(() => {
 
 @media (max-width: 479px) {
   .header-row {
-    padding: var(--space-2) var(--space-2) 0;
+    padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-2) 0;
+  }
+}
+
+/* Sanfter Verlauf und Backdrop-Blur hinter dem nativen Geräte-Header (Uhrzeit, Dynamic Island,
+   Akkustand) für scrollbare Ansichten: Verhindert, dass nach oben scrollende Inhalte mit den
+   System-Icons kollidieren, während das Design weich in den Seitenhintergrund übergeht.
+   Wird auf der mobilen Kartenansicht (excursions) per v-if bewusst nicht gerendert, damit die
+   Karte dort randlos dahinterliegt. */
+.status-bar-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(env(safe-area-inset-top, 0px) * 1.25);
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--color-bg) 0%,
+    var(--color-bg) calc(env(safe-area-inset-top, 0px) * 0.6),
+    color-mix(in srgb, var(--color-bg) 80%, transparent) calc(env(safe-area-inset-top, 0px) * 0.9),
+    transparent 100%
+  );
+  backdrop-filter: blur(8px);
+  mask: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(env(safe-area-inset-top, 0px) * 0.65),
+    transparent 100%
+  );
+}
+
+@media (min-width: 1024px) {
+  .status-bar-scrim {
+    display: none;
   }
 }
 
@@ -314,6 +410,14 @@ const profileTitle = computed(() => {
   box-sizing: border-box;
 }
 
+/* Wenn der Kalender-Button auf Mobilgeräten (<1024px) links in der Pill sitzt,
+   wird das linke Padding von 8px auf 3px reduziert. Dadurch ist der 36px-Kreis-Button
+   zu allen Seiten (oben 3px, unten 3px, links 3px) exakt gleich weit vom Pill-Rand entfernt
+   und schmiegt sich perfekt konzentrisch in die Rundung der 44px-Pill ein. */
+.header-actions:has(.header-calendar-btn) {
+  padding-left: 3px;
+}
+
 .header-actions :deep(.bell-btn),
 .header-actions :deep(.recording-pill-btn) {
   position: relative;
@@ -335,6 +439,57 @@ const profileTitle = computed(() => {
   width: 44px;
   height: 44px;
   transform: translate(-50%, -50%);
+}
+
+.header-calendar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.header-calendar-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.header-calendar-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.header-calendar-btn.active {
+  background: var(--color-primary-tint);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-primary-dark);
+}
+
+.header-calendar-btn .icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo {
@@ -405,7 +560,8 @@ const profileTitle = computed(() => {
     height: auto;
   }
 
-  .header-actions {
+  .header-actions,
+  .header-actions:has(.header-calendar-btn) {
     background: transparent;
     border: none;
     box-shadow: none;
@@ -500,6 +656,17 @@ const profileTitle = computed(() => {
   height: 100%;
   border-radius: 50%;
   background: inherit;
+}
+
+.profile-link.is-navigating {
+  cursor: wait;
+  pointer-events: none;
+}
+
+.avatar-spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
 }
 
 .offline-badge {

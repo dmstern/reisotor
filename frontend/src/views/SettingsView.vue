@@ -6,6 +6,7 @@ import Badge from '../components/primitives/Badge.vue';
 import Select from '../components/primitives/Select.vue';
 import Checkbox from '../components/primitives/Checkbox.vue';
 import CheckboxCard from '../components/primitives/CheckboxCard.vue';
+import Accordion from '../components/primitives/Accordion.vue';
 import Input from '../components/primitives/Input.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -15,7 +16,6 @@ import { useAuthStore } from '../stores/auth';
 import { useConnectivityStore } from '../stores/connectivity';
 import { useBuildInfoStore } from '../stores/buildInfo';
 import { useThemeStore } from '../stores/theme';
-import { useNavPositionStore } from '../stores/navPosition';
 import { useNavConfigStore } from '../stores/navConfig';
 import { NAV_LINKS } from '../utils/navLinks';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
@@ -27,7 +27,17 @@ import {
   WEEK_START_OPTIONS,
   DATE_FORMAT_OPTIONS,
 } from '../stores/calendarSettings';
-import { useUiSettingsStore, TOAST_TIMEOUT_OPTIONS } from '../stores/uiSettings';
+import {
+  useUiSettingsStore,
+  TOAST_TIMEOUT_OPTIONS,
+  DEFAULT_PRIMARY_COLOR,
+  DEFAULT_BORDER_WIDTH,
+  DEFAULT_DIARY_FONT,
+  getPresetGlassValues,
+} from '../stores/uiSettings';
+import { useIconStyleStore } from '../stores/iconStyle';
+import { useToast } from '../composables/useToast';
+
 import {
   getExistingSubscription,
   isPushSupported,
@@ -85,7 +95,6 @@ const auth = useAuthStore();
 const connectivity = useConnectivityStore();
 const router = useRouter();
 const route = useRoute();
-const navPosition = useNavPositionStore();
 const navConfig = useNavConfigStore();
 const _isDesktop = useIsDesktop();
 const dashboardConfig = useDashboardConfigStore();
@@ -166,6 +175,8 @@ function dashboardTileIcon(key: string) {
 const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
 const uiSettings = useUiSettingsStore();
+const iconStyle = useIconStyleStore();
+const { showToast } = useToast();
 const loading = ref(true);
 const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
@@ -375,7 +386,7 @@ function resetTheme() {
 }
 
 const isNavDefault = computed(() => {
-  if (navPosition.desktop !== 'top') return false;
+  if (navConfig.customMobile) return false;
   const defaults = NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
   if (navConfig.entries.length !== defaults.length) return false;
   return navConfig.entries.every(
@@ -383,7 +394,6 @@ const isNavDefault = computed(() => {
   );
 });
 function resetNav() {
-  navPosition.reset();
   navConfig.reset();
 }
 
@@ -401,6 +411,61 @@ function resetDashboard() {
 const isVacationCountdownDefault = computed(() => !uiSettings.showVacationCountdown);
 function resetVacationCountdown() {
   uiSettings.showVacationCountdown = false;
+}
+
+const isAllAppDefault = computed(() => {
+  const g = iconStyle.groups;
+  const isIconDefault =
+    g.navigation === 'icons' &&
+    g.categories === 'emoji' &&
+    g.weather === 'icons' &&
+    iconStyle.navColored &&
+    iconStyle.colorizeWeather &&
+    iconStyle.colorizeCategories;
+
+  return (
+    isThemeDefault.value &&
+    uiSettings.primaryColor.toLowerCase() === DEFAULT_PRIMARY_COLOR.toLowerCase() &&
+    uiSettings.borderWidth === DEFAULT_BORDER_WIDTH &&
+    uiSettings.glassStyle === 'glass' &&
+    uiSettings.glassOpacity === 42 &&
+    uiSettings.glassBlur === 6 &&
+    isIconDefault &&
+    uiSettings.diaryFont === DEFAULT_DIARY_FONT &&
+    isNavDefault.value &&
+    isDashboardDefault.value &&
+    isVacationCountdownDefault.value
+  );
+});
+
+async function resetAllAppSettings() {
+  if (
+    !window.confirm(
+      'Möchtest du wirklich alle App-Einstellungen auf die Werkseinstellungen zurücksetzen?'
+    )
+  ) {
+    return;
+  }
+
+  theme.reset();
+  uiSettings.primaryColor = DEFAULT_PRIMARY_COLOR;
+  uiSettings.borderWidth = DEFAULT_BORDER_WIDTH;
+  const glassPreset = getPresetGlassValues('glass');
+  if (glassPreset) {
+    uiSettings.glassOpacity = glassPreset.opacity;
+    uiSettings.glassBlur = glassPreset.blur;
+    uiSettings.glassStyle = 'glass';
+  }
+  iconStyle.resetToDefaults();
+  uiSettings.diaryFont = DEFAULT_DIARY_FONT;
+  resetNav();
+  resetDashboard();
+  resetVacationCountdown();
+
+  showToast({
+    message: 'Alle App-Einstellungen wurden auf Werkseinstellungen zurückgesetzt.',
+    type: 'info',
+  });
 }
 
 const isCalendarDefault = computed(
@@ -496,12 +561,22 @@ watch(activeTab, (tab) => {
 
 onMounted(async () => {
   usernameForm.value.username = auth.user?.username ?? '';
-  loading.value = false;
-  buildInfoStore.load();
-  if (auth.user?.is_admin && activeTab.value === 'users') loadUserList();
+  try {
+    await Promise.all([uiSettings.load(true), buildInfoStore.load()]);
+  } finally {
+    loading.value = false;
+  }
+
+  if (auth.user?.is_admin && activeTab.value === 'users') {
+    loadUserList();
+  }
   if (pushSupported) {
-    pushEnabled.value = !!(await getExistingSubscription());
-    if (pushEnabled.value) await notificationPrefs.load();
+    getExistingSubscription()
+      .then(async (sub) => {
+        pushEnabled.value = !!sub;
+        if (pushEnabled.value) await notificationPrefs.load();
+      })
+      .catch(() => {});
   }
 });
 
@@ -678,15 +753,14 @@ async function exportBackup() {
         </div>
 
         <form class="form username-form" @submit.prevent="changeUsername">
-          <label for="auto-id-1788301175449-26">
-            Benutzername <span class="required-indicator" aria-hidden="true">*</span>
-            <Input
-              id="auto-id-1788301175449-26"
-              v-model="usernameForm.username"
-              type="text"
-              required
-            />
-          </label>
+          <div class="field">
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+            <label for="profile-username">
+              Benutzername
+              <span class="required-indicator" aria-hidden="true">*</span>
+            </label>
+            <Input id="profile-username" v-model="usernameForm.username" type="text" required />
+          </div>
           <p v-if="usernameError" class="hint error">{{ usernameError }}</p>
           <p v-if="usernameSaved" class="hint success">
             Benutzername geändert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
@@ -904,19 +978,6 @@ async function exportBackup() {
             <span class="card-reset-btn-label">Zurücksetzen</span>
           </Button>
         </div>
-        <p class="hint intro-hint">
-          Position der Navigationsleiste für Desktop-Bildschirme (auf Mobilgeräten und schmaleren
-          Bildschirmen wird die Leiste stets am unteren Bildschirmrand platziert).
-        </p>
-        <div class="nav-position-row">
-          <label for="auto-id-1788301151989-29">
-            Desktop
-            <Select id="auto-id-1788301151989-29" v-model="navPosition.desktop">
-              <option value="top">Oben (im Header)</option>
-              <option value="bottom">Unten (schwebend)</option>
-            </Select>
-          </label>
-        </div>
 
         <p class="hint nav-config-hint">
           Reihenfolge und Sichtbarkeit der übrigen Einträge ("Übersicht" bleibt immer an erster
@@ -972,6 +1033,81 @@ async function exportBackup() {
             </div>
           </li>
         </ul>
+
+        <div class="mobile-nav-toggle-wrapper">
+          <CheckboxCard
+            id="nav-custom-mobile-toggle"
+            :model-value="navConfig.customMobile"
+            label="Mobile Navigation separat anpassen"
+            description="Reihenfolge und Sichtbarkeit der Menüpunkte für Smartphones und schmale Bildschirme unabhängig von Desktop festlegen."
+            :icon="ACTION_ICONS.deviceMobile"
+            variant="card"
+            @update:model-value="navConfig.setCustomMobile"
+          />
+        </div>
+
+        <Accordion :expanded="navConfig.customMobile">
+          <div class="mobile-nav-config-section">
+            <p class="hint mobile-nav-config-hint">
+              Reihenfolge und Sichtbarkeit auf Mobilgeräten ("Übersicht" bleibt immer an erster
+              Stelle):
+            </p>
+            <ul class="mobile-nav-config-list">
+              <li
+                v-for="(entry, index) in navConfig.mobileEntries"
+                :key="'mobile-' + entry.key"
+                class="mobile-nav-config-row"
+                :class="{ disabled: !entry.visible }"
+              >
+                <AppIcon
+                  v-if="navLinkIcon(entry.key)"
+                  class="nav-config-icon"
+                  :icon="navLinkIcon(entry.key)!"
+                  group="navigation"
+                />
+                <span class="nav-config-label" :class="{ hidden: !entry.visible }">{{
+                  navLinkLabel(entry.key)
+                }}</span>
+                <div class="nav-config-actions">
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    :disabled="index === 0"
+                    aria-label="Nach oben verschieben"
+                    title="Nach oben verschieben"
+                    @click="navConfig.moveUp(entry.key, 'mobile')"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.chevronUp" :size="14" group="actions" />
+                  </IconButton>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    :disabled="index === navConfig.mobileEntries.length - 1"
+                    aria-label="Nach unten verschieben"
+                    title="Nach unten verschieben"
+                    @click="navConfig.moveDown(entry.key, 'mobile')"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.chevronDown" :size="14" group="actions" />
+                  </IconButton>
+                  <label :for="'nav-mobile-visible-' + entry.key" class="nav-config-visible">
+                    <Checkbox
+                      :id="'nav-mobile-visible-' + entry.key"
+                      :checked="entry.visible"
+                      :aria-label="`${navLinkLabel(entry.key)} in der mobilen Navigation anzeigen`"
+                      @change="
+                        navConfig.setVisible(
+                          entry.key,
+                          ($event.target as HTMLInputElement).checked,
+                          'mobile'
+                        )
+                      "
+                    />
+                  </label>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </Accordion>
       </Card>
 
       <Card>
@@ -1089,6 +1225,39 @@ async function exportBackup() {
           label="Verbleibende Urlaubstage anzeigen statt festem Hinweis"
           description="Zählt die verbleibenden Tage im Dashboard-Header herunter (z. B. 'Noch 3 Tage Urlaub!'), anstatt eines statischen Grußtextes."
         />
+      </Card>
+
+      <Card class="factory-reset-card">
+        <div class="factory-reset-inner">
+          <div class="factory-reset-info">
+            <div class="factory-reset-title-row">
+              <AppIcon :icon="ACTION_ICONS.restore" :size="20" group="actions" />
+              <h2>Werkseinstellungen</h2>
+            </div>
+            <p class="hint factory-reset-hint">
+              Setzt alle persönlichen App-Einstellungen (Darstellung, Farben, Rahmendicke,
+              Glas-Effekt, Icons, Schriftart, Navigation, Dashboard-Kacheln und Urlaubs-Hinweis) auf
+              die Standardwerte zurück.
+            </p>
+          </div>
+          <div class="factory-reset-action">
+            <Button
+              variant="secondary"
+              size="md"
+              :icon="ACTION_ICONS.restore"
+              :disabled="isAllAppDefault"
+              :title="
+                isAllAppDefault
+                  ? 'Bereits alle App-Einstellungen auf Standardwerten'
+                  : 'Alle App-Einstellungen auf Werkseinstellungen zurücksetzen'
+              "
+              class="factory-reset-btn"
+              @click="resetAllAppSettings"
+            >
+              <span class="factory-reset-btn-label">Auf Werkseinstellungen zurücksetzen</span>
+            </Button>
+          </div>
+        </div>
       </Card>
     </template>
 
@@ -1448,7 +1617,7 @@ async function exportBackup() {
       </Card>
     </template>
   </div>
-  <ViewLoadingState v-else />
+  <ViewLoadingState v-else message="Lade Einstellungen…" />
 
   <FeedbackDialog v-model="showFeedbackDialog" />
   <PwaInstallDialog v-model="showPwaInstallDialog" />
@@ -1649,6 +1818,7 @@ h3 {
 }
 
 .nav-config-list,
+.mobile-nav-config-list,
 .dashboard-config-list,
 .push-domain-list {
   list-style: none;
@@ -1660,6 +1830,7 @@ h3 {
 }
 
 .nav-config-row,
+.mobile-nav-config-row,
 .dashboard-config-row,
 .push-domain-row {
   display: flex;
@@ -1670,9 +1841,77 @@ h3 {
 }
 
 .nav-config-row:last-child,
+.mobile-nav-config-row:last-child,
 .dashboard-config-row:last-child,
 .push-domain-row:last-child {
   border-bottom: none;
+}
+
+.mobile-nav-toggle-wrapper {
+  margin-top: var(--space-4);
+}
+
+.mobile-nav-config-section {
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: 1px dashed var(--color-border);
+}
+
+.mobile-nav-config-hint {
+  margin-bottom: var(--space-3);
+}
+
+.factory-reset-card {
+  margin-top: var(--space-6);
+}
+
+.factory-reset-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.factory-reset-info {
+  flex: 1 1 320px;
+}
+
+.factory-reset-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.factory-reset-title-row h2 {
+  margin: 0;
+}
+
+.factory-reset-hint {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.factory-reset-action {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .factory-reset-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .factory-reset-action {
+    width: 100%;
+  }
+
+  .factory-reset-action :deep(.btn),
+  .factory-reset-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .push-details-toggle {
@@ -1727,13 +1966,22 @@ h3 {
   max-width: 320px;
 }
 
-label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(.card-header-row *),
+label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(
+    .card-header-row *
+  ):not(.field *),
 .field {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.field label {
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 2px;
 }
 
 .hint {

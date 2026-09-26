@@ -54,6 +54,13 @@ import { usePersistedRef } from '../composables/usePersistedRef';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
 import {
+  loadStoredSpotsColWidth,
+  saveStoredSpotsColWidth,
+  calcValidSpotsColWidth,
+  MIN_SPOTS_COL_WIDTH,
+  MAX_SPOTS_COL_WIDTH,
+} from '../utils/spotsColWidth';
+import {
   buildTourSerpentineRows,
   buildLoopSegments,
   computeTourLoopPath,
@@ -66,7 +73,7 @@ import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
-import Combobox from '../components/Combobox.vue';
+import CategoryCombobox from '../components/CategoryCombobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
@@ -95,6 +102,7 @@ import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Select from '../components/primitives/Select.vue';
+import TrackVisibilitySelect from '../components/TrackVisibilitySelect.vue';
 import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
@@ -167,6 +175,20 @@ async function submitEditTrack() {
     visibility: editTrackVisibility.value,
   });
   closeEditTrack();
+}
+
+async function stopEditingTrack() {
+  if (!editingTrack.value) return;
+  const id = editingTrack.value.id;
+  if (trackRecording.recording && trackRecording.track?.id === id) {
+    await trackRecording.stop();
+  } else {
+    await tracksStore.stopTrack(id);
+  }
+  const updated = tracksStore.tracks.find((t) => t.id === id);
+  if (updated) {
+    editingTrack.value = updated;
+  }
 }
 
 async function deleteEditingTrack() {
@@ -473,11 +495,37 @@ const emptyExcursionForm = () => ({
 const excursionForm = ref(emptyExcursionForm());
 
 const editingExcursion = ref<number | null>(null);
+const isExcursionUploadingAttachments = ref(false);
 const editExcursionForm = ref(emptyExcursionForm());
 
 const activeExcursionForm = computed(() =>
   editingExcursion.value !== null ? editExcursionForm.value : excursionForm.value
 );
+
+const excursionTitleTouched = ref(false);
+const showExcursionTitleError = computed(
+  () => excursionTitleTouched.value && !activeExcursionForm.value.title.trim()
+);
+
+const isExcursionRoleInvalid = computed(() =>
+  Boolean(activeExcursionForm.value.role && activeExcursionForm.value.spot_ids.length < 2)
+);
+
+const canSaveExcursion = computed(
+  () =>
+    !!activeExcursionForm.value.title.trim() &&
+    !isExcursionRoleInvalid.value &&
+    !isExcursionUploadingAttachments.value
+);
+
+const excursionSaveTooltip = computed(() => {
+  if (isExcursionUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (!activeExcursionForm.value.title.trim())
+    return 'Bitte gib zuerst einen Titel für die Tour ein';
+  if (isExcursionRoleInvalid.value)
+    return 'Für Anreise/Abreise/Weiterreise werden mindestens 2 Stationen benötigt';
+  return undefined;
+});
 
 // Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts).
 const newExcursionDraft = useDraftAutosave('excursions:new', excursionForm, showExcursionForm);
@@ -488,12 +536,14 @@ const editExcursionDraft = useDraftAutosave(
 );
 
 function openExcursionForm() {
+  excursionTitleTouched.value = false;
   excursionForm.value = emptyExcursionForm();
   showExcursionSpotsSection.value = false;
   showExcursionForm.value = true;
 }
 
 function closeExcursionForm() {
+  excursionTitleTouched.value = false;
   showExcursionForm.value = false;
   excursionForm.value = emptyExcursionForm();
   newExcursionDraft.clear();
@@ -514,8 +564,8 @@ function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
 }
 
 async function addExcursion() {
-  if (!excursionForm.value.title.trim()) return;
-  if (excursionForm.value.role && excursionForm.value.spot_ids.length < 2) {
+  if (!excursionForm.value.title.trim() || isExcursionRoleInvalid.value) {
+    if (!excursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
   await excursionsStore.create(tourPayload(excursionForm.value));
@@ -523,6 +573,7 @@ async function addExcursion() {
 }
 
 function startEditExcursion(excursion: Excursion) {
+  excursionTitleTouched.value = false;
   editingExcursion.value = excursion.id;
   showEditExcursionSpotsSection.value = false;
   editExcursionForm.value = {
@@ -538,8 +589,13 @@ function startEditExcursion(excursion: Excursion) {
 }
 
 async function submitEditExcursion() {
-  if (editingExcursion.value == null || !editExcursionForm.value.title.trim()) return;
-  if (editExcursionForm.value.role && editExcursionForm.value.spot_ids.length < 2) {
+  if (
+    editingExcursion.value == null ||
+    isExcursionUploadingAttachments.value ||
+    !editExcursionForm.value.title.trim() ||
+    isExcursionRoleInvalid.value
+  ) {
+    if (!editExcursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
   await excursionsStore.update(editingExcursion.value, tourPayload(editExcursionForm.value));
@@ -548,12 +604,13 @@ async function submitEditExcursion() {
 }
 
 function closeEditExcursionForm() {
+  excursionTitleTouched.value = false;
   editExcursionDraft.clear();
   editingExcursion.value = null;
 }
 
 async function deleteEditingExcursion() {
-  if (editingExcursion.value === null) return;
+  if (editingExcursion.value === null || isExcursionUploadingAttachments.value) return;
   const id = editingExcursion.value;
   const excursion = excursionsStore.excursions.find((e) => e.id === id);
   if (excursion?.date) {
@@ -643,6 +700,7 @@ const spotLocationError = ref(false);
 const spotPendingFixId = ref<number | null>(null);
 
 const editingSpot = ref<Spot | null>(null);
+const isSpotUploadingAttachments = ref(false);
 const editSpotForm = ref(emptySpotForm());
 
 const activeSpotForm = computed(() =>
@@ -664,6 +722,26 @@ const editSpotMapsLinkResolved = ref<boolean | null>(null);
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
 const editSpotPickerOpen = ref(false);
 const editSpotLocationError = ref(false);
+
+const spotTitleTouched = ref(false);
+const showSpotTitleError = computed(
+  () => spotTitleTouched.value && !activeSpotForm.value.title.trim()
+);
+
+const canSaveSpot = computed(
+  () => !!activeSpotForm.value.title.trim() && !isSpotUploadingAttachments.value
+);
+
+const spotSaveTooltip = computed(() => {
+  if (isSpotUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (!activeSpotForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Spot ein';
+  return undefined;
+});
+
+function openSpotForm() {
+  spotTitleTouched.value = false;
+  showSpotForm.value = true;
+}
 
 const editSpotScheduledItems = computed(() => {
   if (!editingSpot.value) return [];
@@ -828,19 +906,37 @@ const trackWarningDismissed = usePersistedRef<boolean>(
   false
 );
 
-function onRecordButtonClick() {
+const hasActiveRecording = computed(() => {
+  if (trackRecording.recording) return true;
+  return tracksStore.tracks.some((t) => !t.ended_at && t.user_id === auth.user?.id);
+});
+
+async function onRecordButtonClick() {
   if (trackRecording.recording) {
-    trackRecording.stop();
-  } else if (trackWarningDismissed.value) {
-    trackRecording.start({ visibility: 'private' });
+    await trackRecording.stop();
   } else {
-    showTrackRecordingWarningModal.value = true;
+    const activeTrack = tracksStore.tracks.find((t) => !t.ended_at && t.user_id === auth.user?.id);
+    if (activeTrack) {
+      await tracksStore.stopTrack(activeTrack.id);
+    } else if (trackWarningDismissed.value) {
+      trackRecording.start({ visibility: 'private' });
+    } else {
+      showTrackRecordingWarningModal.value = true;
+    }
   }
 }
 
 function startRecordingConfirmed() {
   showTrackRecordingWarningModal.value = false;
   trackRecording.start({ visibility: 'private' });
+}
+
+async function stopTrackDirect(track: LocationTrack) {
+  if (trackRecording.recording && trackRecording.track?.id === track.id) {
+    await trackRecording.stop();
+  } else {
+    await tracksStore.stopTrack(track.id);
+  }
 }
 
 // Andere bereits gespeicherte Spots als gedimmte Referenzpunkte im manuellen Karten-Picker (siehe
@@ -1401,8 +1497,8 @@ function setTourCardRef(
   setCategoryRef(category, el);
   setExcursionRef(excursionId, el);
 }
-function scrollToExcursion(id: number) {
-  scrollToElementInBody(() => {
+function scrollToExcursion(id: number): Promise<void> {
+  return scrollToElementInBody(() => {
     const el = excursionRefs.get(id);
     if (el) return el;
     const grp = spotGroups.value.find((g) => g.excursion?.id === id);
@@ -1416,8 +1512,11 @@ function scrollToExcursion(id: number) {
 const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
 let programmaticScrollTarget: string | null = null;
 let programmaticScrollTimeout: ReturnType<typeof setTimeout> | null = null;
+let excursionOpenSequenceToken = 0;
 
 function cancelProgrammaticScroll() {
+  excursionOpenSequenceToken++;
+  activeScrollToken++;
   programmaticScrollTarget = null;
   if (programmaticScrollTimeout) {
     clearTimeout(programmaticScrollTimeout);
@@ -1675,8 +1774,8 @@ function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
   if (domEl) spotRefs.set(id, domEl);
   else spotRefs.delete(id);
 }
-function scrollToSpot(id: number) {
-  scrollToElementInBody(() => spotRefs.get(id));
+function scrollToSpot(id: number): Promise<void> {
+  return scrollToElementInBody(() => spotRefs.get(id));
 }
 // Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
 // scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
@@ -2132,45 +2231,89 @@ watch(expandedExcursionId, (newId, oldId) => {
   }
 });
 
+/**
+ * Öffnet eine Tour sequentiell:
+ * 1. Falls zuvor eine andere Tour geöffnet war, wird diese zuerst zugeklappt
+ *    und gewartet, bis die Zuklapp-Transition beendet ist (400ms).
+ * 2. Danach wird die Ziel-Tour aufgeklappt.
+ * 3. Der Spot-Drawer scrollt die neu aufgeklappte Tour an den oberen Rand.
+ * 4. Nach Abschluss der Aufklapp-Transition (400ms) wird die Scrollposition erneut
+ *    berechnet und feinjustiert, sodass die Tour absolut bündig am oberen Ende sitzt.
+ */
+async function openExcursionWithScroll(excursionId: number) {
+  const token = ++excursionOpenSequenceToken;
+
+  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursionId) {
+    drawers.mapFocusExcursionId = null;
+  }
+  if (drawers.mapFocusKey != null) {
+    drawers.mapFocusKey = null;
+  }
+
+  const previousExcursionId = expandedExcursionId.value;
+  if (previousExcursionId === excursionId) {
+    await scrollToExcursion(excursionId);
+    return;
+  }
+
+  const prefersReduced =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 1. Vorherige Tour zuerst einklappen und auf Ende der Collapse-Transition warten
+  if (previousExcursionId != null) {
+    expandedExcursionId.value = null;
+    expandedSpotId.value = null;
+
+    if (!prefersReduced) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 400));
+    } else {
+      await nextTick();
+    }
+
+    if (token !== excursionOpenSequenceToken) return;
+  }
+
+  // 2. Ziel-Tour aufklappen
+  expandedExcursionId.value = excursionId;
+  await nextTick();
+  if (token !== excursionOpenSequenceToken) return;
+
+  // 3. Scrollposition berechnen und Drawer an die Tour scrollen
+  await scrollToExcursion(excursionId);
+  if (token !== excursionOpenSequenceToken) return;
+
+  // 4. Warten, bis die Aufklapp-Transition der neuen Tour durch ist
+  if (!prefersReduced) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 420));
+  } else {
+    await nextTick();
+  }
+  if (token !== excursionOpenSequenceToken) return;
+
+  // 5. Scrollposition nochmal neu berechnen und feinjustieren
+  await scrollToExcursion(excursionId);
+}
+
 // Klick auf den Ausflug-Titel im Karten-Fokus-Panel (TripMap.vue's @focus-excursion) klappt die
 // passende ExcursionCard hier auf und scrollt sie in den Blick – exakt dasselbe Muster wie
 // onFocusSpotFromMap oben. Die Gruppen-Überschrift ist nur bei Touren-Gruppierung eine echte
 // ExcursionCard (siehe spotGroups), deshalb hier ggf. zuerst umschalten.
 function onFocusExcursionFromMap(excursionId: number) {
   groupMode.value = 'tours';
-  expandedExcursionId.value = excursionId;
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
-  nextTick(() => {
-    scrollToExcursion(excursionId);
-  });
+  openExcursionWithScroll(excursionId);
 }
 
 // --- Aufteilung Spots-Liste/Karte per Anfasser verschiebbar (nur Desktop-Grid, siehe @container-
 // Query im CSS) ---
-const SPOTS_COL_WIDTH_KEY = 'reisotor-spots-col-width';
-const MIN_SPOTS_COL_WIDTH = 280;
-// Großzügig bemessen (der tatsächliche visuelle Anschlag kommt aus dem CSS, siehe
-// grid-template-columns: min(var(--spots-col-width), 75cqw) ... – container-relativ, damit die
-// Karte auf schmaleren Containern nie komplett verdrängt wird, unabhängig von diesem px-Wert hier).
-const MAX_SPOTS_COL_WIDTH = 1400;
-const DEFAULT_SPOTS_COL_WIDTH = 380;
-
-function loadSpotsColWidth(): number {
-  const stored = Number(localStorage.getItem(SPOTS_COL_WIDTH_KEY));
-  const maxAllowed =
-    typeof window !== 'undefined'
-      ? Math.min(MAX_SPOTS_COL_WIDTH, window.innerWidth - 400)
-      : MAX_SPOTS_COL_WIDTH;
-
-  // Zwinge den gespeicherten Wert in die gültigen Grenzen, damit beim Neuladen
-  // auf einem kleineren Bildschirm der Drawer nicht sofort wieder alles überlagert.
-  if (Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH) {
-    return Math.min(stored, maxAllowed);
-  }
-  return Math.min(DEFAULT_SPOTS_COL_WIDTH, maxAllowed);
-}
-const spotsColWidth = ref(loadSpotsColWidth());
-watch(spotsColWidth, (v) => localStorage.setItem(SPOTS_COL_WIDTH_KEY, String(v)));
+const spotsColWidth = ref(
+  calcValidSpotsColWidth({
+    preferredWidth: loadStoredSpotsColWidth(),
+    availableWidth: typeof window !== 'undefined' ? window.innerWidth : 1024,
+    isDesktop: isDesktop.value,
+  })
+);
+watch(spotsColWidth, (v) => saveStoredSpotsColWidth(v));
 
 // Anfasser zwischen Spots-Liste und Karte (Pointer Events statt separater Maus-/Touch-Handler,
 // analog zu Drawer.vue's Schubladen-Anfasser) – verschiebt das Grid-Spaltenverhältnis, indem er
@@ -2201,7 +2344,10 @@ function onColResizeMove(event: PointerEvent) {
   const delta = event.clientX - colStartX;
   const availableWidth =
     appMainWidth.value || (typeof window !== 'undefined' ? window.innerWidth : 1024);
-  const maxAllowed = Math.min(MAX_SPOTS_COL_WIDTH, availableWidth - 380 - 16);
+  const maxAllowed = Math.max(
+    MIN_SPOTS_COL_WIDTH,
+    Math.min(MAX_SPOTS_COL_WIDTH, availableWidth - 380 - 16)
+  );
   spotsColWidth.value = Math.min(maxAllowed, Math.max(MIN_SPOTS_COL_WIDTH, colStartWidth + delta));
   updateSpotsColRight();
 }
@@ -2597,6 +2743,16 @@ function onWindowResize() {
   if (appMainEl) {
     appMainWidth.value = appMainEl.clientWidth;
   }
+  if (!isSheetOverlayMode.value) {
+    const validWidth = calcValidSpotsColWidth({
+      preferredWidth: spotsColWidth.value,
+      availableWidth: appMainWidth.value,
+      isDesktop: true,
+    });
+    if (spotsColWidth.value !== validWidth) {
+      spotsColWidth.value = validWidth;
+    }
+  }
   updateSpotsColRight();
 }
 
@@ -2607,6 +2763,16 @@ onMounted(() => {
     appMainResizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         appMainWidth.value = entry.contentRect.width;
+      }
+      if (!isSheetOverlayMode.value) {
+        const validWidth = calcValidSpotsColWidth({
+          preferredWidth: spotsColWidth.value,
+          availableWidth: appMainWidth.value,
+          isDesktop: true,
+        });
+        if (spotsColWidth.value !== validWidth) {
+          spotsColWidth.value = validWidth;
+        }
       }
       updateSpotsColRight();
     });
@@ -2649,11 +2815,21 @@ watch([isSheetOverlayMode, spotsColWidth, tripMapRef], () => nextTick(updateSpot
 watch(
   isSheetOverlayMode,
   (overlay) => {
+    clearSheetHeightOverride();
     if (!overlay) {
       if (sheetState.value === 'collapsed') {
         sheetState.value = 'partial';
       }
-      clearSheetHeightOverride();
+      // Beim Umschalten auf Desktop automatisch die Desktop-Breite des Spots Drawers
+      // wieder in der zuletzt genutzten bzw. minimalen Breite aktivieren
+      const validWidth = calcValidSpotsColWidth({
+        preferredWidth: loadStoredSpotsColWidth() ?? spotsColWidth.value,
+        availableWidth: appMainWidth.value,
+        isDesktop: true,
+      });
+      if (spotsColWidth.value !== validWidth) {
+        spotsColWidth.value = validWidth;
+      }
     }
   },
   { immediate: true }
@@ -2687,15 +2863,10 @@ function onSpotCardClose() {
 }
 
 function onExcursionCardOpen(excursion: Excursion) {
-  expandedExcursionId.value = excursion.id;
-  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursion.id) {
-    drawers.mapFocusExcursionId = null;
-  }
-  if (drawers.mapFocusKey != null) {
-    drawers.mapFocusKey = null;
-  }
+  openExcursionWithScroll(excursion.id);
 }
 function onExcursionCardClose() {
+  excursionOpenSequenceToken++;
   expandedExcursionId.value = null;
   drawers.mapFocusExcursionId = null;
 }
@@ -2903,6 +3074,7 @@ function spotToBody(
 }
 
 function closeSpotForm() {
+  spotTitleTouched.value = false;
   showSpotForm.value = false;
   spotForm.value = emptySpotForm();
   spotMapsLinkResolved.value = null;
@@ -2959,7 +3131,10 @@ async function syncSpotTours(spotId: number, desiredTitles: string[]) {
 }
 
 async function addSpot() {
-  if (!spotForm.value.title.trim()) return;
+  if (!spotForm.value.title.trim()) {
+    spotTitleTouched.value = true;
+    return;
+  }
   const body = spotToBody(spotForm.value, spotManualPin.value);
   const result =
     spotPendingFixId.value != null
@@ -2992,6 +3167,7 @@ watch(spotManualPin, (pin) => {
 });
 
 function startEditSpot(spot: Spot) {
+  spotTitleTouched.value = false;
   editingSpot.value = spot;
   editSpotForm.value = {
     title: spot.title,
@@ -3019,7 +3195,11 @@ function startEditSpot(spot: Spot) {
 }
 
 async function submitEditSpot() {
-  if (!editingSpot.value || !editSpotForm.value.title.trim()) return;
+  if (!editSpotForm.value.title.trim()) {
+    spotTitleTouched.value = true;
+    return;
+  }
+  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
   const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
   const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
@@ -3035,6 +3215,7 @@ async function submitEditSpot() {
 }
 
 function closeEditSpotForm() {
+  spotTitleTouched.value = false;
   editSpotDraft.clear();
   editingSpot.value = null;
 }
@@ -3044,7 +3225,7 @@ watch(editSpotManualPin, (pin) => {
 });
 
 async function deleteEditingSpot() {
-  if (!editingSpot.value) return;
+  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
   const id = editingSpot.value.id;
   await spotsStore.remove(id);
   drawers.touchLocations();
@@ -3230,11 +3411,11 @@ async function deleteEditingSpot() {
               <Button
                 size="sm"
                 class="add-button"
-                :class="{ recording: groupMode === 'tracks' && trackRecording.recording }"
-                :variant="groupMode === 'tracks' && trackRecording.recording ? 'danger' : 'primary'"
+                :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
+                :variant="groupMode === 'tracks' && hasActiveRecording ? 'danger' : 'primary'"
                 :aria-label="
                   groupMode === 'tracks'
-                    ? trackRecording.recording
+                    ? hasActiveRecording
                       ? 'Aufzeichnung beenden'
                       : 'Weg aufzeichnen'
                     : groupMode === 'tours'
@@ -3246,13 +3427,13 @@ async function deleteEditingSpot() {
                     ? onRecordButtonClick()
                     : groupMode === 'tours'
                       ? openExcursionForm()
-                      : (showSpotForm = true)
+                      : openSpotForm()
                 "
               >
                 <AppIcon
                   :icon="
                     groupMode === 'tracks'
-                      ? trackRecording.recording
+                      ? hasActiveRecording
                         ? ACTION_ICONS.recordStop
                         : ACTION_ICONS.recordStart
                       : ACTION_ICONS.add
@@ -3264,7 +3445,7 @@ async function deleteEditingSpot() {
                   <AnimatedText
                     :text="
                       groupMode === 'tracks'
-                        ? trackRecording.recording
+                        ? hasActiveRecording
                           ? 'Beenden'
                           : 'Aufzeichnen'
                         : groupMode === 'tours'
@@ -3278,7 +3459,7 @@ async function deleteEditingSpot() {
               </Button>
             </div>
           </div>
-          <div class="subheader" v-if="trackRecording.recording">
+          <div class="subheader" v-if="hasActiveRecording">
             <div class="active-recording-banner">
               <span class="recording-pulse-dot" aria-hidden="true"></span>
               <span class="recording-banner-text">Standortaufzeichnung aktiv</span>
@@ -3301,12 +3482,24 @@ async function deleteEditingSpot() {
               class="edit-form"
               @submit.prevent="editingExcursion !== null ? submitEditExcursion() : addExcursion()"
             >
-              <FormField icon="title" label="Titel" required>
+              <FormField
+                icon="title"
+                label="Titel"
+                required
+                :invalid="showExcursionTitleError"
+                :error="
+                  showExcursionTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined
+                "
+                v-slot="{ id, invalid }"
+              >
                 <Input
+                  :id="id"
                   v-model="activeExcursionForm.title"
                   type="text"
                   placeholder="Titel"
                   required
+                  :invalid="invalid"
+                  @blur="excursionTitleTouched = true"
                 />
               </FormField>
               <FormField icon="note" label="Notiz">
@@ -3375,6 +3568,7 @@ async function deleteEditingSpot() {
                 v-if="editingExcursion"
                 domain="ideas"
                 :entity-id="editingExcursion"
+                v-model:uploading="isExcursionUploadingAttachments"
               />
               <DraftStatusBar
                 :status="
@@ -3395,12 +3589,13 @@ async function deleteEditingSpot() {
                   variant="danger"
                   secondary
                   :icon="ACTION_ICONS.delete"
+                  :disabled="isExcursionUploadingAttachments"
                   @click="deleteEditingExcursion"
                 >
                   Löschen
                 </Button>
                 <div class="spacer"></div>
-                <Button type="submit">{{
+                <Button type="submit" :disabled="!canSaveExcursion" :title="excursionSaveTooltip">{{
                   editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>
               </div>
@@ -3485,16 +3680,29 @@ async function deleteEditingSpot() {
                 icon-group="categories"
                 modal-title="Spot-Bild bearbeiten"
               />
-              <FormField icon="title" label="Titel" required>
-                <Input v-model="activeSpotForm.title" type="text" placeholder="Titel" required />
+              <FormField
+                icon="title"
+                label="Titel"
+                required
+                :invalid="showSpotTitleError"
+                :error="showSpotTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+                v-slot="{ id, invalid }"
+              >
+                <Input
+                  :id="id"
+                  v-model="activeSpotForm.title"
+                  type="text"
+                  placeholder="Titel"
+                  required
+                  :invalid="invalid"
+                  @blur="spotTitleTouched = true"
+                />
               </FormField>
               <FormField icon="category" label="Kategorie">
-                <Combobox
+                <CategoryCombobox
                   v-model="activeSpotForm.category"
+                  type="spot"
                   :options="spotCategoryOptions"
-                  :icon-def-for="(c) => spotCategoryMeta(c).tabler"
-                  :color-for="(c) => spotCategoryMeta(c).color"
-                  placeholder="Kategorie (z. B. Restaurant – oder eigene erstellen)"
                 />
               </FormField>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
@@ -3863,7 +4071,12 @@ async function deleteEditingSpot() {
                   </template>
                 </div>
               </CollapsibleFieldset>
-              <FileAttachments v-if="editingSpot" domain="spots" :entity-id="editingSpot.id" />
+              <FileAttachments
+                v-if="editingSpot"
+                domain="spots"
+                :entity-id="editingSpot.id"
+                v-model:uploading="isSpotUploadingAttachments"
+              />
               <DraftStatusBar
                 :status="
                   editingSpot !== null ? editSpotDraft.status.value : newSpotDraft.status.value
@@ -3879,12 +4092,13 @@ async function deleteEditingSpot() {
                   variant="danger"
                   secondary
                   :icon="ACTION_ICONS.delete"
+                  :disabled="isSpotUploadingAttachments"
                   @click="deleteEditingSpot"
                 >
                   Löschen
                 </Button>
                 <div class="spacer"></div>
-                <Button type="submit">{{
+                <Button type="submit" :disabled="!canSaveSpot" :title="spotSaveTooltip">{{
                   editingSpot !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>
               </div>
@@ -4456,6 +4670,17 @@ async function deleteEditingSpot() {
                         <span class="recording-pulse-dot" aria-hidden="true"></span>
                         Aufzeichnung läuft
                       </span>
+                      <span
+                        v-else-if="track.end_reason === 'aborted'"
+                        class="track-meta-aborted"
+                        title="Aufzeichnung wurde automatisch abgebrochen"
+                      >
+                        <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+                        Abgebrochen
+                        <template v-if="trackDurationLabel(track)">
+                          · {{ trackDurationLabel(track) }}
+                        </template>
+                      </span>
                       <span v-else-if="trackDurationLabel(track)">
                         <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
                         {{ trackDurationLabel(track) }}
@@ -4463,6 +4688,16 @@ async function deleteEditingSpot() {
                     </span>
                   </button>
                   <template v-if="track.user_id === auth.user?.id">
+                    <button
+                      v-if="!track.ended_at"
+                      type="button"
+                      class="track-icon-btn track-icon-btn--stop"
+                      title="Aufzeichnung beenden"
+                      aria-label="Aufzeichnung beenden"
+                      @click.stop="stopTrackDirect(track)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.recordStop" :size="15" group="actions" />
+                    </button>
                     <button
                       type="button"
                       class="track-icon-btn"
@@ -4521,6 +4756,41 @@ async function deleteEditingSpot() {
             @update:model-value="(v) => !v && closeEditTrack()"
           >
             <form class="edit-form" @submit.prevent="submitEditTrack">
+              <div
+                v-if="editingTrack?.end_reason === 'aborted'"
+                class="track-status-alert track-status-alert--aborted"
+                role="status"
+              >
+                <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
+                <div class="track-status-alert__content">
+                  <span class="track-status-alert__title">Automatisch abgebrochen</span>
+                  <p class="track-status-alert__desc">
+                    Die Aufzeichnung wurde vom System beendet (z. B. durch Bildschirmsperre oder
+                    GPS-Abbruch).
+                  </p>
+                </div>
+              </div>
+              <div
+                v-else-if="editingTrack && !editingTrack.ended_at"
+                class="track-status-alert track-status-alert--running"
+                role="status"
+              >
+                <span class="recording-pulse-dot" aria-hidden="true"></span>
+                <div class="track-status-alert__content">
+                  <span class="track-status-alert__title">Aufzeichnung läuft</span>
+                  <p class="track-status-alert__desc">Diese Aufzeichnung ist aktuell noch aktiv.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  :icon="ACTION_ICONS.recordStop"
+                  @click="stopEditingTrack"
+                >
+                  Aufzeichnung beenden
+                </Button>
+              </div>
+
               <FormField icon="title" label="Name">
                 <Input
                   v-model="editTrackTitle"
@@ -4529,11 +4799,8 @@ async function deleteEditingSpot() {
                   :maxlength="100"
                 />
               </FormField>
-              <FormField icon="visibility" label="Sichtbarkeit">
-                <Select v-model="editTrackVisibility">
-                  <option value="private">🔒 Nur für mich sichtbar (privat)</option>
-                  <option value="shared">👥 Für alle Mitreisenden sichtbar</option>
-                </Select>
+              <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
+                <TrackVisibilitySelect :id="id" v-model="editTrackVisibility" />
               </FormField>
               <div class="actions-row">
                 <Button
@@ -4623,6 +4890,7 @@ async function deleteEditingSpot() {
   /* Mobil: Karte soll unter den schwebenden Header ragen */
   margin-top: calc(-1 * var(--app-header-height, 56px));
   height: calc(100vh - var(--navbar-offset, 0px));
+  height: calc(100dvh - var(--navbar-offset, 0px));
   overflow: hidden;
   padding: 0;
 }
@@ -4673,9 +4941,11 @@ async function deleteEditingSpot() {
   right: var(--space-4);
   /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf
      0) schwebt das Sheet mit einem sauberen Abstand (--space-3) über der unteren NavBar
-     (--navbar-bottom-offset). Dadurch kleben Drawer und NavBar nicht aneinander und der Drawer wird
+     (--navbar-bottom-offset + env(safe-area-inset-bottom)). Dadurch kleben Drawer und NavBar nicht aneinander und der Drawer wird
      nie von ihr verdeckt (#303). */
-  bottom: calc(var(--space-3) + var(--navbar-bottom-offset, 0px));
+  bottom: calc(
+    var(--space-3) + var(--navbar-bottom-offset, 0px) + env(safe-area-inset-bottom, 0px)
+  );
   z-index: 5;
   pointer-events: auto;
   display: flex;
@@ -4743,9 +5013,10 @@ async function deleteEditingSpot() {
   border-radius: var(--radius-lg-squircle) var(--radius-lg-squircle) 0 0;
   corner-shape: squircle;
   height: min(100vh, var(--sheet-max-height));
+  height: min(100dvh, var(--sheet-max-height));
 
   .spots-col-body {
-    padding-bottom: var(--navbar-bottom-offset, 0px);
+    padding-bottom: calc(var(--navbar-bottom-offset, 0px) + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -4929,6 +5200,7 @@ async function deleteEditingSpot() {
     position: relative;
     /* Desktop: Wieder normale Höhe, da margin-top=0 */
     height: calc(100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
+    height: calc(100dvh - var(--app-header-height, 56px) - var(--navbar-offset, 0px));
   }
 
   /* Auf Desktop ist der Titel visuell ausgeblendet, bleibt aber für Screenreader lesbar */
@@ -4988,7 +5260,7 @@ async function deleteEditingSpot() {
          damit nicht nur die Floating- und Zoom-Buttons Platz haben, sondern auch der
          Day-Strip unten rechts breit genug bleiben kann. */
       max-width: calc(100% - var(--space-4) - 380px);
-      min-width: min(var(--spots-col-width), 280px);
+      min-width: 280px;
       pointer-events: auto;
 
       display: flex;
@@ -5025,7 +5297,8 @@ async function deleteEditingSpot() {
       display: flex;
       position: absolute;
       left: calc(
-        var(--space-4) + min(var(--spots-col-width), calc(100% - var(--space-4) - 380px)) +
+        var(--space-4) +
+          max(280px, min(var(--spots-col-width), calc(100% - var(--space-4) - 380px))) +
           (var(--space-4) - var(--drawer-handle-gap, 12px)) / 2
       );
       top: var(--space-4);
@@ -5984,6 +6257,14 @@ async function deleteEditingSpot() {
   font-weight: 600;
 }
 
+.track-meta-aborted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-warning-dark);
+  font-weight: 500;
+}
+
 .track-icon-btn {
   flex-shrink: 0;
   width: 32px;
@@ -6009,9 +6290,61 @@ async function deleteEditingSpot() {
   color: var(--color-text);
 }
 
+.track-icon-btn--stop {
+  color: var(--color-danger);
+}
+
+.track-icon-btn--stop:hover {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger);
+}
+
 .track-icon-btn--delete:hover {
   background: color-mix(in srgb, var(--color-danger) 15%, transparent);
   color: var(--color-danger);
+}
+
+.track-status-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  margin-bottom: var(--space-3);
+  font-size: 0.9rem;
+}
+
+.track-status-alert--aborted {
+  background: var(--color-warning-tint);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning-dark);
+}
+
+.track-status-alert--running {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+  color: var(--color-text);
+  align-items: center;
+}
+
+.track-status-alert__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.track-status-alert__title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.track-status-alert__desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
 }
 
 /* Je eine Zeile für Sortieren und Filtern, statt einer gemeinsamen umbrechenden Reihe – siehe

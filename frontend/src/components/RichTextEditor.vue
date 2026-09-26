@@ -23,14 +23,19 @@ const props = withDefaults(
     placeholder?: string;
     compact?: boolean;
     expandable?: boolean;
+    invalid?: boolean;
   }>(),
   {
     placeholder: '',
     compact: false,
     expandable: false,
+    invalid: false,
   }
 );
-const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void;
+  (e: 'blur'): void;
+}>();
 
 const isExpanded = ref(false);
 const isFocused = ref(false);
@@ -58,6 +63,7 @@ function onFocusOut(event: FocusEvent) {
   const related = event.relatedTarget as Node | null;
   if (!editorContainerRef.value?.contains(related)) {
     isFocused.value = false;
+    emit('blur');
     if (props.expandable && !hasContent.value) {
       isExpanded.value = false;
     }
@@ -127,6 +133,10 @@ watch(
 function isActive(name: string, attrs?: Record<string, unknown>) {
   return editor.value?.isActive(name, attrs) ?? false;
 }
+
+defineExpose({
+  focus: focusEditor,
+});
 </script>
 
 <template>
@@ -145,7 +155,8 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
     v-else
     ref="editorContainerRef"
     class="richtext-editor"
-    :class="{ compact, 'is-focused': isFocused }"
+    :class="{ compact, 'is-focused': isFocused, 'is-invalid': invalid }"
+    :aria-invalid="invalid || undefined"
     @focusin="onFocusIn"
     @focusout="onFocusOut"
   >
@@ -285,6 +296,17 @@ function isActive(name: string, attrs?: Record<string, unknown>) {
 .richtext-editor.is-focused,
 .richtext-editor:focus-within {
   border-color: var(--color-primary);
+}
+
+.richtext-editor.is-invalid {
+  border-color: var(--color-danger, #ef4444);
+}
+
+.richtext-editor.is-invalid.is-focused,
+.richtext-editor.is-invalid:focus-within {
+  border-color: var(--color-danger, #ef4444);
+  outline: 2px solid var(--color-danger, #ef4444);
+  outline-offset: 1px;
 }
 
 /* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort

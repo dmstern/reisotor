@@ -37,10 +37,21 @@ const REQUEST_TIMEOUT_MS = 8_000;
 export async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const onAbort = () => controller.abort();
+  if (init.signal) {
+    if (init.signal.aborted) {
+      controller.abort();
+    } else {
+      init.signal.addEventListener('abort', onAbort, { once: true });
+    }
+  }
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timeout);
+    if (init.signal) {
+      init.signal.removeEventListener('abort', onAbort);
+    }
   }
 }
 
@@ -193,13 +204,22 @@ const MUTATE_KIND: Record<MutateMethod, 'create' | 'update' | 'delete'> = {
   DELETE: 'delete',
 };
 
-async function mutate<T>(method: MutateMethod, path: string, body?: unknown): Promise<T> {
+async function mutate<T>(
+  method: MutateMethod,
+  path: string,
+  body?: unknown,
+  options?: RequestInit
+): Promise<T> {
   const activity = useRequestActivityStore();
   activity.start(MUTATE_KIND[method]);
   try {
     if (navigator.onLine && !isConfirmedOffline()) {
       try {
-        return await rawRequest<T>(path, { method, body: body ? JSON.stringify(body) : undefined });
+        return await rawRequest<T>(path, {
+          method,
+          body: body ? JSON.stringify(body) : undefined,
+          ...options,
+        });
       } catch (err) {
         if (!isNetworkFailure(err)) throw err;
         setConfirmedOffline(true);
@@ -214,7 +234,9 @@ async function mutate<T>(method: MutateMethod, path: string, body?: unknown): Pr
 
 export const api = {
   get: <T>(path: string) => get<T>(path),
-  post: <T>(path: string, body?: unknown) => mutate<T>('POST', path, body),
-  put: <T>(path: string, body?: unknown) => mutate<T>('PUT', path, body),
-  delete: <T>(path: string) => mutate<T>('DELETE', path),
+  post: <T>(path: string, body?: unknown, options?: RequestInit) =>
+    mutate<T>('POST', path, body, options),
+  put: <T>(path: string, body?: unknown, options?: RequestInit) =>
+    mutate<T>('PUT', path, body, options),
+  delete: <T>(path: string, options?: RequestInit) => mutate<T>('DELETE', path, undefined, options),
 };

@@ -234,6 +234,29 @@ describe('budget routes', () => {
       });
       expect(res.json().target_amount).toBeNull();
     });
+
+    it('allows updating name, target_amount and switching from private to shared', async () => {
+      const { owner, tripId } = await setupTripWithTwoMembers('ta4');
+      const create = await app.inject({
+        method: 'POST',
+        url: '/api/budget/budgets',
+        headers: { cookie: owner.cookie },
+        payload: { trip_id: tripId, name: 'Mein Topf', owner_id: owner.userId, target_amount: 100 },
+      });
+      const id = create.json().id;
+      expect(create.json().owner_id).toBe(owner.userId);
+
+      const update = await app.inject({
+        method: 'PUT',
+        url: `/api/budget/budgets/${id}`,
+        headers: { cookie: owner.cookie },
+        payload: { trip_id: tripId, name: 'Unser Topf', owner_id: null, target_amount: 250 },
+      });
+      expect(update.statusCode).toBe(200);
+      expect(update.json().name).toBe('Unser Topf');
+      expect(update.json().owner_id).toBeNull();
+      expect(update.json().target_amount).toBe(250);
+    });
   });
 
   describe('private budget privacy', () => {

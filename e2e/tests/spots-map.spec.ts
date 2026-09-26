@@ -118,9 +118,19 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
     await card.click();
     await expect(card).toHaveClass(/expanded/);
 
-    // Button "In Maps-App öffnen" klicken
+    // Buttons in .map-actions prüfen: beide müssen einheitlich hoch sein (#audit)
+    const showOnMapBtn = card.getByRole('button', { name: 'Auf Karte anzeigen' });
     const mapsBtn = card.getByRole('button', { name: 'In Maps-App öffnen' });
+    await expect(showOnMapBtn).toBeVisible();
     await expect(mapsBtn).toBeVisible();
+
+    const showOnMapBox = await showOnMapBtn.boundingBox();
+    const mapsBox = await mapsBtn.boundingBox();
+    expect(showOnMapBox).not.toBeNull();
+    expect(mapsBox).not.toBeNull();
+    expect(showOnMapBox!.height).toBe(mapsBox!.height);
+
+    // Button "In Maps-App öffnen" klicken
     await mapsBtn.click();
 
     // Menü per Teleport gerendert und sichtbar

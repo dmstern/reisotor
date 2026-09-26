@@ -18,7 +18,7 @@ Arbeits-/Workflow-Konventionen.
 
 Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.json`](package.json) (`npm run dev`, `test`, `build`, `typecheck`, `lint`, `format`, `seed` etc.). Bei Bedarf direkt in `package.json` nachschlagen.
 
-- **Einzelne Tests ausführen:** `npx -y vitest run <pfad-zur-datei>` bzw. `npx -y vitest run -t "<name>"` (Backend/Frontend) oder `npx -y playwright test <pfad-zur-spec>` (E2E).
+- **Einzelne Tests ausführen (strikte Pflicht für Agenten):** `npx -y vitest run <pfad-zur-datei> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1` (Backend/Frontend) oder `npx -y playwright test <pfad-zur-spec>` (E2E). Niemals gesamte Test-Suiten im Chat ausführen.
 - **Voraussetzungen:** Node.js 20+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md`.
 
 ## UI-Audits & Layout-Testing
@@ -42,6 +42,7 @@ npm run lint         # ESLint inkl. vuejs-accessibility
 **Wichtig für AI-Agenten:**
 
 - **Zwingende Formatierung vor jedem Commit:** Da die CI-Pipeline bei Code-Style-Abweichungen (Prettier) fehlschlägt, MUSS vor jedem `git commit` zwingend der Code formatiert werden. Führe dazu immer `npm run format` im Root-Verzeichnis aus, bevor du Änderungen committest. Es ist deutlich sauberer, wenn die korrekte Formatierung direkt Teil deines eigentlichen Feature- oder Bugfix-Commits ist, statt einen zusätzlichen "chore(Format)"-Commit oben auf den PR zu pushen.
+- **Saubere, semantische Commits:** Niemals fachfremde oder voneinander unabhängige Änderungen gesammelt in einem riesigen "Alles-in-einem-Rutsch"-Commit am Ende zusammenfassen. Ein zusammenhängendes Feature (inklusive benötigtem Backend, Store, UI und zugehörigen Tests) darf und soll zusammenhängend committet werden. Verschiedene fachliche Themen, Refactorings, Agent-Konfigurationen oder unabhängige Features (z. B. Budgets, Karten-Fix, Listen) müssen jedoch zwingend in separaten, semantischen Commits isoliert werden, damit die Git-Historie nachvollziehbar bleibt und Features bei Bedarf sauber einzeln revertiert werden können.
 - Immer `npm run typecheck` oder `npm --prefix frontend run typecheck` bzw. `npm run build` nutzen statt Roh-Aufrufen von `npx vue-tsc`.
 - **Niemals interaktive `npx`-Aufrufe ohne `-y` / `--yes` starten!** Falls `npx` Pakete nachinstallieren will, fordert es eine interaktive Bestätigung an (`Need to install the following packages: ... Ok to proceed? (y)`), was in Hintergrundprozessen/Subagenten ohne TTY zum dauerhaften Aufhängen führt.
 - Falls `npm run build` abbricht mit `vue-tsc: Kommando nicht gefunden`, zuerst `cd frontend && npm install` ausführen.
@@ -91,9 +92,27 @@ Der Rollout-Mechanismus existiert: Backend führt `db/index.ts` bei jedem Start 
 
 **Bestehende Tests bei Änderungen immer mit anpassen!** Neue persistente Tests nur vorschlagen, nicht unaufgefordert schreiben. Keine Pixel-Diff-Tests (`toHaveScreenshot()`) in die Haupt-Suite — stattdessen Interaktion + funktionale Assertions. Scratch-Specs vor `page.goto(...)` immer `forceFontDisplayBlock(page)` aufrufen (sonst Fallback-Font statt Fira Sans). Datums-Annahmen aus `e2e/fixtures/seeded-data.json` lesen, nicht hartcodieren.
 
-## Sparsam mit Subagenten
+## Token-Effizienz & Kontext-Disziplin (Verbindlich)
 
-Bei klar umrissenen Änderungen direkt grep/Read/Edit verwenden statt Explore-/Plan-Subagent spawnen — jeder Spawn re-deriviert kompletten Kontext neu und kostet oft mehr Tokens als direkte Suche. Subagenten bleiben sinnvoll bei unklarem/großem Scope oder parallelen unabhängigen Bereichen.
+Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte Regeln zur Minimierung von Token-Verbrauch und Context-Größe:
+
+1. **Thread-Hygiene & Abschluss-Erinnerung (Keine Endlos-Chats):**
+   - Ein Chat sollte sich auf **genau eine fachlich zusammenhängende Aufgabe** (Feature, Bugfix, Refactoring) beschränken (Richtwert: maximal 30–50 Schritte).
+   - **Verbindliche Aufforderung:** Sobald ein PR/Feature/Bugfix fertiggestellt, committet oder dokumentiert ist, MUSS der Agent am Ende seiner Nachricht explizit folgenden Hinweis geben:
+     > 💡 **Tipp zur Token-Ersparnis:** Diese Aufgabe ist abgeschlossen. Bitte starte für das nächste Thema einen neuen Chat, um unnötigen Kontext-Ballast und Token-Kosten zu vermeiden.
+2. **Keine unfiltrierten Voll-Testsuiten im Chat:**
+   - **NIEMALS** im Agenten-Chat `npm test`, `npm run test:all`, `npm run test:frontend` oder `npm run test:backend` ausführen, wenn nur einzelne Dateien oder Komponenten geändert wurden. Das flutet den Gesprächsverlauf mit hunderten Zeilen unnötigem Reporter-Output.
+   - **Immer gezielt testen:** Ausschließlich die betroffene Datei mit `--bail 1` aufrufen: `npx -y vitest run <pfad-zur-datei> --bail 1`.
+   - Bei E2E: Ausschließlich die konkrete Spec ansteuern: `npx -y playwright test <spec>`.
+3. **Kompakte Terminal-Outputs & Paging-Vermeidung:**
+   - Diffs immer zuerst mit `git diff --stat` prüfen statt riesige Diffs in voller Länge in den Chat zu kippen.
+   - Shell-Befehle mit potenziell langen Listen (`find`, `grep`, `cat`, Logfiles) immer begrenzen (`| head -n 30`) oder dedizierte Tools (`grep_search`, `find_by_name`) mit Parametern nutzen.
+4. **Gezielte Recherche statt explorativer Endlos-Loops:**
+   - Vor blindem Durchsuchen des Codes immer zuerst `ARCHITECTURE.md` und die Code-Map konsultieren statt 10-mal blind per `list_dir` / `grep` das Repo abzusuchen.
+   - Wenn ein Problem nach 2–3 Versuchen nicht gelöst ist: Innehalten, Hypothese formulieren oder gezielte Rückfrage an den Nutzer stellen, statt in einer Schleife 20 weitere Werkzeugaufrufe zu probieren.
+5. **Strikte Sparsamkeit bei Subagenten & autonomem Teamwork:**
+   - Keine eigenständigen Multi-Agent-Kaskaden oder unbeschränkten autonomen Schleifen (wie `/teamwork-preview` oder offene `/goal`-Tasks ohne klare Abbruchbedingung) starten.
+   - Bei klar umrissenen Änderungen direkt `grep_search`/`view_file`/`replace_file_content` nutzen statt Subagenten zu spawnen — jeder Spawn re-deriviert den kompletten Kontext neu. Subagenten bleiben die seltene Ausnahme für isolierte, parallele Lese-Recherchen.
 
 ## PR-Workflow
 
@@ -109,5 +128,7 @@ Bei klar umrissenen Änderungen direkt grep/Read/Edit verwenden statt Explore-/P
   - Diese temporären Scratch-Screenshots gehören _nicht_ in `docs/screenshots/`, sondern können per GitHub-CLI (`gh`) als Attachment an den PR angehängt werden.
 
 **Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für interne Änderungen (Tests, CI, Demo-Daten, Refactoring). **VOR dem Anlegen bestehende Fragmente lesen** und ggf. ergänzen statt doppelt anlegen. Format: Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
+
+**Saubere, semantische Commits:** Änderungen dürfen **niemals** am Ende über verschiedene Themen hinweg in einem einzigen riesigen Commit ("alles in einem Rutsch") zusammengefasst werden. Stattdessen immer semantisch zusammenhängend committen: Ein Feature oder Bugfix darf und soll Backend-, Store-, UI- und Test-Änderungen in einem gemeinsamen Commit bündeln, sofern sie direkt zusammengehören. Unabhängige Features, unterschiedliche Domänen (z. B. Budgets, Karte, Listen) oder interne Aufgaben (Agent-Konfigurationen, Tooling, Docs) müssen jedoch in getrennten Commits festgehalten werden, um eine saubere, Feature für Feature nachvollzieh- und revertierbare Git-Historie zu gewährleisten. Jeder Commit muss für sich formatiert (`npm run format`), typgeprüft und lauffähig sein.
 
 **Commit-Konvention:** `feat:`, `fix:`, `feat!:` für funktionale Änderungen. `chore:`, `refactor:`, `docs:` für interne Änderungen.

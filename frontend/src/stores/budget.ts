@@ -11,11 +11,12 @@ import { effectiveBudgetTarget, grandTotalTarget } from '../utils/budgetTargets'
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
+import { useTripCategoriesStore } from './tripCategories';
 
 export interface BudgetFormInput {
   name: string;
-  owner_id?: number;
-  target_amount?: number;
+  owner_id?: number | null;
+  target_amount?: number | null;
 }
 
 export interface ExpenseInput {
@@ -45,6 +46,7 @@ export interface TransferInput {
 export const useBudgetStore = defineStore('budget', () => {
   const tripStore = useTripStore();
   const liveSync = useLiveSyncStore();
+  const tripCategoriesStore = useTripCategoriesStore();
   const users = shallowRef<User[]>([]);
   const expenses = shallowRef<BudgetExpense[]>([]);
   const budgets = shallowRef<Budget[]>([]);
@@ -142,26 +144,69 @@ export const useBudgetStore = defineStore('budget', () => {
   );
   const remaining = computed(() => grandTotal.value - totalSpent.value);
 
-  /** Ausgaben ohne budget_id (u. a. automatisch aus Unterkunft/Reise erzeugte) werden dem
-   *  geteilten Budget anhand des Kategorienamens zugeordnet, damit sie in der Aufschlüsselung
-   *  auftauchen, ohne dass jede Alt-Ausgabe nachträglich manuell zugewiesen werden muss. */
+  /** Berechnet die Ausgaben für eine bestimmte Kategorie innerhalb eines Budgets (Finanzguru-Modell):
+   *  Eine Ausgabe fließt nur dann ein, wenn ihre Kategorie übereinstimmt.
+   *  - Geteilte Budgets (owner_id null) erfassen alle geteilten Ausgaben dieser Kategorie.
+   *  - Private Budgets (owner_id gesetzt) erfassen private Ausgaben dieses Nutzers dieser Kategorie. */
   function spentFor(budget: Budget, category: string) {
+    const normCategory = category.trim().toLowerCase();
     return expenses.value
       .filter((e) => {
-        if (e.budget_id === budget.id) return true;
-        if (e.budget_id == null && budget.owner_id == null && (e.category ?? '') === category)
-          return true;
-        return false;
+        if ((e.category ?? '').trim().toLowerCase() !== normCategory) return false;
+        if (budget.owner_id == null) {
+          return isSharedExpense(e, budgets.value);
+        } else {
+          if (isSharedExpense(e, budgets.value)) return false;
+          if (e.budget_id != null) return e.budget_id === budget.id;
+          return e.paid_by_user_id === budget.owner_id;
+        }
       })
       .reduce((s, e) => s + e.amount, 0);
   }
 
   const expenseCategories = computed(() => {
-    const set = new Set<string>();
-    allocations.value.forEach((a) => set.add(a.category));
+    const set = new Set<string>(tripCategoriesStore.activeExpenseCategories);
+    allocations.value.forEach((a) => a.category && set.add(a.category));
     expenses.value.forEach((e) => e.category && set.add(e.category));
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
   });
+
+  /** Liefert ein Set von Schlüsseln `${b.id}:${a.category.toLowerCase()}` für Allokationen,
+   *  deren Kategorie in mindestens zwei Budgets desselben Scopes (geteilt vs. privat desselben
+   *  Nutzers) vorkommt. Ausgaben für solche Kategorien fließen in mehrere Budgets ein. */
+  const duplicateAllocations = computed(() => {
+    const countsByScope = new Map<string, Map<string, number>>();
+
+    for (const a of allocations.value) {
+      const b = budgets.value.find((b) => b.id === a.budget_id);
+      if (!b) continue;
+      const scope = b.owner_id == null ? 'shared' : `user:${b.owner_id}`;
+      let catCounts = countsByScope.get(scope);
+      if (!catCounts) {
+        catCounts = new Map<string, number>();
+        countsByScope.set(scope, catCounts);
+      }
+      const cat = a.category.trim().toLowerCase();
+      catCounts.set(cat, (catCounts.get(cat) ?? 0) + 1);
+    }
+
+    const duplicates = new Set<string>();
+    for (const a of allocations.value) {
+      const b = budgets.value.find((b) => b.id === a.budget_id);
+      if (!b) continue;
+      const scope = b.owner_id == null ? 'shared' : `user:${b.owner_id}`;
+      const catCounts = countsByScope.get(scope);
+      const cat = a.category.trim().toLowerCase();
+      if (catCounts && (catCounts.get(cat) ?? 0) > 1) {
+        duplicates.add(`${b.id}:${cat}`);
+      }
+    }
+    return duplicates;
+  });
+
+  function isDuplicateCategory(budgetId: number, category: string): boolean {
+    return duplicateAllocations.value.has(`${budgetId}:${category.trim().toLowerCase()}`);
+  }
 
   // --- Salden / Schulden (Berechnung in utils/budgetBalances.ts) ---
   const balances = computed(() =>
@@ -270,6 +315,7 @@ export const useBudgetStore = defineStore('budget', () => {
     remaining,
     spentFor,
     expenseCategories,
+    isDuplicateCategory,
     balances,
     settlementSuggestions,
     addBudget,

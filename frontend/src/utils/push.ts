@@ -17,8 +17,16 @@ export function isPushSupported(): boolean {
 
 export async function getExistingSubscription(): Promise<PushSubscription | null> {
   if (!isPushSupported()) return null;
-  const registration = await navigator.serviceWorker.ready;
-  return registration.pushManager.getSubscription();
+  try {
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+    ]);
+    if (!registration) return null;
+    return (await registration.pushManager?.getSubscription()) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Fragt Benachrichtigungs-Berechtigung an, abonniert Push beim Browser und meldet das Abonnement

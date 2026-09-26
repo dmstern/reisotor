@@ -8,6 +8,7 @@ import { NAV_LINKS, type NavLinkDef } from '../utils/navLinks';
 import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useTripStore } from '../stores/trip';
+import { useIsDesktop } from '../composables/useIsDesktop';
 import AppIcon from './AppIcon.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 
@@ -25,6 +26,7 @@ const navConfig = useNavConfigStore();
 const liveSync = useLiveSyncStore();
 const tripStore = useTripStore();
 const iconStyle = useIconStyleStore();
+const isDesktop = useIsDesktop();
 
 // Schubladen (Drawer.vue) kleben ebenfalls "oben" fest und müssen wissen, wie viel Platz die
 // NavBar dort tatsächlich einnimmt, um sie nicht zu überdecken – siehe --navbar-offset in
@@ -82,13 +84,6 @@ const isAccommodationActive = computed(() => {
 const isDashboardActive = computed(() => {
   const targetPath = tripStore.currentTripId ? `/trip/${tripStore.currentTripId}` : '/';
   return route.path === targetPath || route.path === `${targetPath}/`;
-});
-
-const isCalendarActive = computed(() => {
-  const targetPath = tripStore.currentTripId
-    ? `/trip/${tripStore.currentTripId}/calendar`
-    : '/calendar';
-  return route.path.startsWith(targetPath);
 });
 
 function isLinkActive(link: NavLinkDef): boolean {
@@ -177,7 +172,8 @@ const DASHBOARD_LINK: NavLinkDef = {
 // SettingsView.vue) - ausgeblendete Einträge werden hier bereits rausgefiltert, nicht erst im
 // Template, damit z. B. der "Touren neben Karte"-Sondereinschub unten unverändert funktioniert.
 const visibleLinks = computed<NavLinkDef[]>(() =>
-  navConfig.entries
+  navConfig
+    .getEffectiveEntries(isDesktop.value)
     .filter((e) => e.visible)
     .map((e) => NAV_LINKS.find((l) => l.key === e.key))
     .filter((l): l is NavLinkDef => !!l)
@@ -241,33 +237,6 @@ function onLinkClick(event: MouseEvent) {
           :color="iconStyle.navColored ? NAV_LINK_COLORS.get('dashboard') : undefined"
         />
         <span class="label">{{ DASHBOARD_LINK.label }}</span>
-      </router-link>
-      <!-- Kalender ist auf Desktop weiterhin eine globale Schublade (App.vue, über die seitlich
-           schwebende Lasche erreichbar). Dieselbe ausklapp-Schublade lässt sich auf Mobil aber kaum
-           sinnvoll bedienen (u. a. überlagerte die Lasche dort teils wichtige Inhalte/Buttons) –
-           dort deshalb stattdessen als ganz normaler, fest verlinkter Nav-Punkt auf eine eigene
-           Seite (/calendar – dieselbe Komponente wie in der Schublade, siehe router/index.ts), nur
-           <1024px sichtbar (.mobile-page-link; ab Desktop bleibt es beim bestehenden Nav-Punkt hier,
-           Kalender erreicht man dort weiterhin nur über die Lasche). Direkt nach Übersicht. Touren
-           haben seit ihrer Verschmelzung in die Spots-Sicht ("Karte", /excursions) keinen eigenen
-           Nav-Punkt mehr - Touren anlegen/Spots zuordnen geht bereits direkt dort. -->
-      <router-link
-        :to="tripStore.currentTripId ? `/trip/${tripStore.currentTripId}/calendar` : '/calendar'"
-        class="link mobile-page-link"
-        :class="{ active: isCalendarActive, 'custom-inactive': !isCalendarActive }"
-        @click="onLinkClick"
-      >
-        <span class="icon-wrap">
-          <AppIcon
-            class="icon"
-            :icon="SECTION_ICON_DEFS.calendar"
-            group="navigation"
-            :active="isCalendarActive"
-            :color="iconStyle.navColored ? NAV_LINK_COLORS.get('calendar') : undefined"
-          />
-          <UnseenDot v-if="liveSync.hasUnseen('schedule')" />
-        </span>
-        <span class="label">Kalender</span>
       </router-link>
       <router-link
         v-for="link in visibleLinks"
@@ -337,7 +306,7 @@ function onLinkClick(event: MouseEvent) {
 .navbar.floating-bottom {
   position: fixed;
   top: auto;
-  bottom: var(--space-4);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   margin-inline: auto;
@@ -436,13 +405,5 @@ function onLinkClick(event: MouseEvent) {
 
 .icon {
   font-size: 1.2rem;
-}
-
-@media (min-width: 1024px) {
-  /* Ab Desktop bleibt es bei den zwei ursprünglichen Nav-Punkten neben "Karte" – Kalender/Touren
-     erreicht man dort weiterhin ausschließlich über die seitliche Lasche (Drawer.vue). */
-  .mobile-page-link {
-    display: none;
-  }
 }
 </style>

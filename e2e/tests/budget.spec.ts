@@ -137,9 +137,8 @@ test('a private budget pot stays invisible to another member, but shared expense
   await pageA.getByPlaceholder('Name (z. B. Souvenirs)').fill(privatePotName);
   await selectOptionByText(
     pageA.locator('.new-budget-form select').first(),
-    'Privat (nur eine Person sieht ihn)'
+    'Privat (nur für mich sichtbar)'
   );
-  await selectOptionByText(pageA.locator('.new-budget-form select').nth(1), E2E_USERNAME);
   await pageA.getByRole('button', { name: 'Anlegen', exact: true }).click();
   await expect(pageA.locator('.pot-card', { hasText: privatePotName })).toBeVisible();
 
@@ -218,6 +217,45 @@ test('clicking a settlement suggestion pre-fills the transfer form', async ({ pa
   expect(parseFloat(amountValue)).toBeGreaterThan(0);
 });
 
+test('edits a budget pot details and deletes it from the edit modal', async ({ page }) => {
+  await page.goto('/budget');
+  await expect(page.locator('.budget-page')).toBeVisible();
+
+  const originalName = `E2E Edit Topf ${Date.now()}`;
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
+  await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(originalName);
+  await page.getByPlaceholder('Gesamtziel €').fill('150');
+  await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
+
+  const potCard = page.locator('.pot-card', { hasText: originalName });
+  await expect(potCard).toBeVisible();
+
+  // Bearbeiten-Button anklicken
+  await potCard.getByRole('button', { name: 'Budget bearbeiten' }).click();
+
+  const editModal = page.locator('.modal:visible', { hasText: 'Budget bearbeiten' });
+  await expect(editModal).toBeVisible();
+
+  const updatedName = `${originalName} Aktualisiert`;
+  await editModal.getByPlaceholder('Name (z. B. Souvenirs)').fill(updatedName);
+  await editModal.getByPlaceholder('Gesamtziel €').fill('300');
+  await editModal.getByRole('button', { name: 'Speichern', exact: true }).click();
+
+  await expect(editModal).not.toBeVisible();
+  const updatedPotCard = page.locator('.pot-card', { hasText: updatedName });
+  await expect(updatedPotCard).toBeVisible();
+  await expect(updatedPotCard).toContainText('300.00');
+
+  // Erneut öffnen und über den Löschen-Button im Modal löschen
+  await updatedPotCard.getByRole('button', { name: 'Budget bearbeiten' }).click();
+  const editModalToDelete = page.locator('.modal:visible', { hasText: 'Budget bearbeiten' });
+  await expect(editModalToDelete).toBeVisible();
+  await editModalToDelete.getByRole('button', { name: 'Löschen', exact: true }).click();
+
+  await expect(editModalToDelete).not.toBeVisible();
+  await expect(page.locator('.pot-card', { hasText: updatedName })).toHaveCount(0);
+});
+
 test('nothing overflows the mobile viewport on the budget view', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
   await page.goto('/budget');
@@ -270,4 +308,121 @@ test('nothing overflows the mobile viewport on the budget view', async ({ page }
     .locator('.card')
     .filter({ has: page.getByRole('heading', { name: 'Überweisungen' }) });
   await checkNoHorizontalOverflow(transfersCard);
+});
+
+test('displays a warning indicator when a category exists in multiple shared budgets', async ({
+  page,
+}) => {
+  await page.goto('/budget');
+  await expect(page.locator('.budget-page')).toBeVisible();
+
+  const pot1Name = `E2E Multi1 ${Date.now()}`;
+  const pot2Name = `E2E Multi2 ${Date.now()}`;
+  const duplicateCat = `E2E Duplikat ${Date.now()}`;
+
+  // Topf 1 anlegen
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
+  await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(pot1Name);
+  await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
+  const pot1 = page.locator('.pot-card', { hasText: pot1Name });
+  await expect(pot1).toBeVisible();
+
+  // Kategorie in Topf 1 hinzufügen
+  await pot1.getByRole('button', { name: 'Kategorie hinzufügen' }).click();
+  await pot1.getByPlaceholder('Neue Kategorie').fill(duplicateCat);
+  await pot1.getByPlaceholder('Ziel €').fill('50');
+  await pot1.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  await expect(pot1.locator('.category-row')).toHaveCount(1);
+
+  // Zunächst keine Warnung
+  await expect(pot1.locator('.category-warning-icon')).toHaveCount(0);
+
+  // Topf 2 anlegen
+  await page.getByRole('button', { name: 'Budget anlegen' }).click();
+  await page.getByPlaceholder('Name (z. B. Souvenirs)').fill(pot2Name);
+  await page.getByRole('button', { name: 'Anlegen', exact: true }).click();
+  const pot2 = page.locator('.pot-card', { hasText: pot2Name });
+  await expect(pot2).toBeVisible();
+
+  // Gleiche Kategorie in Topf 2 hinzufügen
+  await pot2.getByRole('button', { name: 'Kategorie hinzufügen' }).click();
+  await pot2.getByPlaceholder('Neue Kategorie').fill(duplicateCat);
+  await pot2.getByPlaceholder('Ziel €').fill('80');
+  await pot2.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+  await expect(pot2.locator('.category-row')).toHaveCount(1);
+
+  // Jetzt muss an beiden Töpfen für diese Kategorie das Warn-Icon sichtbar sein
+  await expect(pot1.locator('.category-warning-icon')).toBeVisible();
+  await expect(pot2.locator('.category-warning-icon')).toBeVisible();
+  await expect(pot1.locator('.category-warning-icon')).toHaveAttribute(
+    'title',
+    /mehreren Budgets zugeordnet/
+  );
+});
+
+test('displays category icon in combobox input and dropdown options', async ({ page }) => {
+  await page.goto('/budget');
+
+  // Ausgabe-Eintragen-Modal öffnen
+  await page.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+  const modal = page.getByRole('dialog', { name: 'Ausgabe eintragen' });
+  await expect(modal).toBeVisible();
+
+  const categoryInput = modal.getByPlaceholder('Kategorie');
+  await expect(categoryInput).toBeVisible();
+
+  // Zunächst kein führendes Icon im leeren Feld
+  const combobox = modal.locator('.combobox');
+  await expect(combobox).not.toHaveClass(/has-leading-icon/);
+
+  // Auf Feld fokussieren -> Dropdown-Optionen mit Icons erscheinen
+  await categoryInput.focus();
+  const options = modal.locator('.options li');
+  await expect(options.first()).toBeVisible();
+  await expect(options.first().locator('.option-icon')).toBeVisible();
+
+  // Option auswählen, z. B. 'Unterkunft'
+  const opt = options.filter({ hasText: 'Unterkunft' });
+  await opt.click();
+
+  // Im geschlossenen Input ist nun das Icon sichtbar
+  await expect(combobox).toHaveClass(/has-leading-icon/);
+  await expect(combobox.locator('.combobox-leading-icon')).toBeVisible();
+
+  // Modal per Escape schließen
+  await page.keyboard.press('Escape');
+  await expect(modal).not.toBeVisible();
+});
+
+test('collapses and expands categories in a budget pot card', async ({ page }) => {
+  await page.goto('/budget');
+  await expect(page.locator('.budget-page')).toBeVisible();
+
+  // Finde einen Topf mit Kategorien (z. B. das geseedete "Gemeinsames Budget")
+  const potCard = page.locator('.pot-card', { hasText: 'Gemeinsames Budget' });
+  await expect(potCard).toBeVisible();
+
+  // Im Standardzustand ausgeklappt: Kategorien sichtbar, Button hat aria-expanded="true"
+  const collapseBtn = potCard.locator('.collapse-btn');
+  await expect(collapseBtn).toBeVisible();
+  await expect(collapseBtn).toHaveAttribute('aria-expanded', 'true');
+  await expect(potCard.locator('.category-row').first()).toBeVisible();
+
+  // Per Klick auf den Collapse-Button einklappen
+  await collapseBtn.click();
+  await expect(collapseBtn).toHaveAttribute('aria-expanded', 'false');
+  await expect(collapseBtn).toHaveAttribute('aria-label', 'Kategorien ausklappen');
+
+  // Die Kategorien sind nun eingeklappt und nicht mehr sichtbar
+  await expect(potCard.locator('.categories-accordion')).not.toHaveClass(/is-expanded/);
+  await expect(potCard.locator('.category-row').first()).not.toBeVisible();
+
+  // Der Gesamtbalken bleibt weiterhin sichtbar
+  await expect(potCard.locator('.total-row')).toBeVisible();
+
+  // Per Klick auf den pot-head wieder ausklappen
+  await potCard.locator('.pot-head').click();
+  await expect(collapseBtn).toHaveAttribute('aria-expanded', 'true');
+  await expect(potCard.locator('.categories-accordion')).toHaveClass(/is-expanded/);
+  await expect(potCard.locator('.category-row').first()).toBeVisible();
 });

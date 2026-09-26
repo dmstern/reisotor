@@ -98,10 +98,12 @@ import {
   IconInfoCircle,
   IconInfoCircleFilled,
   IconDeviceMobile,
+  IconDeviceMobileFilled,
   IconShare,
   IconDotsVertical,
   IconSend,
   IconSendFilled,
+  IconMap,
   IconMapPinShare,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
@@ -169,6 +171,8 @@ export type ActionIconKey =
   | 'order'
   | 'apple'
   | 'googleMaps'
+  | 'openStreetMap'
+  | 'deviceMobile'
   | 'comment'
   | 'commentFilled'
   | 'restore'
@@ -301,6 +305,13 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   order: { id: 'list-numbers', emoji: '📋', outline: IconListNumbers },
   apple: { id: 'brand-apple', emoji: '🍎', outline: IconBrandApple },
   googleMaps: { id: 'brand-google-maps', emoji: '🗺️', outline: IconBrandGoogleMaps },
+  openStreetMap: { id: 'map', emoji: '🗺️', outline: IconMap },
+  deviceMobile: {
+    id: 'device-mobile',
+    emoji: '📱',
+    outline: IconDeviceMobile,
+    filled: IconDeviceMobileFilled,
+  },
   googleCalendar: { id: 'brand-google', emoji: '📆', outline: IconBrandGoogle },
   android: { id: 'brand-android', emoji: '🤖', outline: IconBrandAndroid },
   comment: {

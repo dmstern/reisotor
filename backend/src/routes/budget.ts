@@ -2,6 +2,7 @@ import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import { db } from '../db/index.js';
 import { isTripMember, requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { ensureTripCategory } from './tripCategories.js';
 
 interface ExpenseBody {
   trip_id: number;
@@ -167,6 +168,9 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     if (!(amount > 0)) return reply.code(400).send({ error: 'Betrag muss größer als 0 sein' });
     if (!requireBudgetAccessIfLinked(reply, budget_id, req.session.userId)) return;
+    if (category?.trim()) {
+      ensureTripCategory(trip_id, 'expense', category);
+    }
     const result = insertBudgetItemStmt.run(
       trip_id,
       title,
@@ -198,6 +202,9 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     const { title, category, amount, paid_by_user_id, date, note, budget_id } = req.body;
     if (!(amount > 0)) return reply.code(400).send({ error: 'Betrag muss größer als 0 sein' });
     if (!requireBudgetAccessIfLinked(reply, budget_id, req.session.userId)) return;
+    if (category?.trim()) {
+      ensureTripCategory(existingExpense.trip_id, 'expense', category);
+    }
     const result = updateBudgetItemStmt.run(
       title,
       category ?? null,
@@ -347,6 +354,7 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     if (!category?.trim()) return reply.code(400).send({ error: 'Kategorie erforderlich' });
     if (amount != null && amount < 0)
       return reply.code(400).send({ error: 'Betrag darf nicht negativ sein' });
+    ensureTripCategory(parentBudget.trip_id, 'expense', category);
     upsertAllocationStmt.run(budget_id, category.trim(), amount || 0);
     return selectAllocationByCategoryStmt.get(budget_id, category.trim());
   });

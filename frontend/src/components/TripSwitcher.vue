@@ -240,6 +240,7 @@ function openMembers(trip: Trip) {
       @update:model-value="(v) => !v && closeForm()"
     >
       <TripForm
+        :trip-id="editingTrip?.id"
         :location-error="tripFormLocationError"
         :initial-tab="tripStore.editTripInitialTab"
         :initial="

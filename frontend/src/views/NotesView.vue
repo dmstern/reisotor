@@ -46,13 +46,38 @@ const highlightedIds = ref<Set<number>>(new Set());
 const emptyForm = () => ({ title: '', content: '' });
 
 const editingNote = ref<Note | null>(null);
+const isNoteUploadingAttachments = ref(false);
 const editForm = ref(emptyForm());
+const editorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
+const noteContentTouched = ref(false);
+
+const isContentEmpty = computed(() => isEmptyRichText(editForm.value.content));
+const showContentError = computed(() => noteContentTouched.value && isContentEmpty.value);
+
+const isNewEmptyDraft = computed(
+  () => Boolean(editingNote.value?.is_draft) && !hasFormContent(editForm.value)
+);
+
+const canSaveNote = computed(() => !isContentEmpty.value && !isNoteUploadingAttachments.value);
+const noteSaveTooltip = computed(() => {
+  if (isNoteUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (isContentEmpty.value) return 'Bitte fülle zuerst den Inhalt der Notiz aus';
+  return undefined;
+});
+
+const isNoteDeleteDisabled = computed(
+  () => isNoteUploadingAttachments.value || isNewEmptyDraft.value
+);
+const noteDeleteTooltip = computed(() => {
+  if (isNoteUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (isNewEmptyDraft.value) return 'Neuer Entwurf ist noch leer';
+  return undefined;
+});
 
 // Entwurfs-Zwischenspeicherung (Nutzer-Feedback: Eingaben sollen bei einem App-Absturz nicht
 // verloren gehen) - siehe composables/useDraftAutosave.ts. draftKey der Edit-Instanz wird erst beim
 // Öffnen ausgewertet (editingNote ist zu dem Zeitpunkt bereits gesetzt), daher als Getter statt
 // eines statischen Strings.
-// Entwurfs-Zwischenspeicherung (Nutzer-Feedback: Eingaben sollen bei einem App-Absturz nicht
 const editDraft = useDraftAutosave(
   () => `notes:edit:${editingNote.value?.id}`,
   editForm,
@@ -198,6 +223,7 @@ function formatDate(iso: string) {
 // zweiten, parallelen Entwurf anzulegen (#89). Ansonsten wird direkt ein neuer Entwurf in
 // der Datenbank angelegt, damit sofort Anhänge (Bilder/Dateien) hochgeladen werden können.
 async function openNew() {
+  noteContentTouched.value = false;
   if (myDraft.value) {
     startEdit(myDraft.value);
   } else {
@@ -218,6 +244,7 @@ async function openNew() {
 }
 
 function startEdit(note: Note) {
+  noteContentTouched.value = false;
   editingNote.value = note;
   editForm.value = { title: note.title ?? '', content: note.content };
 }
@@ -225,7 +252,12 @@ function startEdit(note: Note) {
 // Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer eine veröffentlichte Notiz
 // (is_draft:false) - für bereits veröffentlichte Notizen ist das ein No-op, da dort schon 0.
 async function submitEdit() {
-  if (!editingNote.value || isEmptyRichText(editForm.value.content)) return;
+  if (isContentEmpty.value) {
+    noteContentTouched.value = true;
+    editorRef.value?.focus();
+    return;
+  }
+  if (!editingNote.value || isNoteUploadingAttachments.value) return;
   const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
     title: editForm.value.title || undefined,
     content: editForm.value.content,
@@ -274,7 +306,7 @@ async function closeEditForm() {
 }
 
 async function deleteEditingNote() {
-  if (!editingNote.value) return;
+  if (!editingNote.value || isNoteUploadingAttachments.value) return;
   const id = editingNote.value.id;
   editDraft.clear();
   editingNote.value = null;
@@ -359,8 +391,27 @@ async function remove(id: number) {
         <FormField icon="title" label="Titel" v-slot="{ id }">
           <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" />
         </FormField>
-        <RichTextEditor v-model="editForm.content" />
-        <FileAttachments v-if="editingNote" domain="notes" :entity-id="editingNote.id" />
+        <FormField
+          icon="note"
+          label="Inhalt"
+          required
+          :invalid="showContentError"
+          :error="showContentError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
+          v-slot="{ invalid }"
+        >
+          <RichTextEditor
+            ref="editorRef"
+            v-model="editForm.content"
+            :invalid="invalid"
+            @blur="noteContentTouched = true"
+          />
+        </FormField>
+        <FileAttachments
+          v-if="editingNote"
+          domain="notes"
+          :entity-id="editingNote.id"
+          v-model:uploading="isNoteUploadingAttachments"
+        />
         <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
         <div class="actions-row">
           <Button
@@ -368,12 +419,14 @@ async function remove(id: number) {
             variant="danger"
             secondary
             :icon="ACTION_ICONS.delete"
+            :disabled="isNoteDeleteDisabled"
+            :title="noteDeleteTooltip"
             @click="deleteEditingNote"
           >
             Löschen
           </Button>
           <div class="spacer"></div>
-          <Button type="submit">{{
+          <Button type="submit" :disabled="!canSaveNote" :title="noteSaveTooltip">{{
             editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern'
           }}</Button>
         </div>

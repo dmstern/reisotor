@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import router from './index';
+import router, { isNavigating, navigatingTo } from './index';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 
@@ -181,5 +181,16 @@ describe('Router Deeplinks & Navigation Guards', () => {
     await router.push('/listen?tab=todo');
     expect(router.currentRoute.value.path).toBe('/trip/42/listen');
     expect(router.currentRoute.value.query.tab).toBe('todo');
+  });
+
+  it('resets isNavigating and navigatingTo after navigation completes', async () => {
+    const auth = useAuthStore();
+    auth.user = { id: 1, username: 'test', avatar: '🦊' };
+    auth.checked = true;
+
+    await router.push('/settings');
+    expect(router.currentRoute.value.name).toBe('settings');
+    expect(isNavigating.value).toBe(false);
+    expect(navigatingTo.value).toBeNull();
   });
 });

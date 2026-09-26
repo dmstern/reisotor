@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { DiaryEntry } from '../../api/types';
+import { stripHtml } from '../../utils/richText';
 
 const props = defineProps<{
   entries: DiaryEntry[];
@@ -9,7 +10,8 @@ const props = defineProps<{
 
 const previewText = computed(() => {
   if (!props.latestEntry) return 'Reisebericht schreiben… ✍️';
-  return props.latestEntry.title || props.latestEntry.content?.slice(0, 30) || 'Reisetag';
+  const text = props.latestEntry.title?.trim() || stripHtml(props.latestEntry.content);
+  return text ? text.slice(0, 30) : 'Reisetag';
 });
 
 const previewDate = computed(() => {
