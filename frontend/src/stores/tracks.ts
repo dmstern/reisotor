@@ -9,6 +9,7 @@ export interface TrackUpdateData {
   title?: string | null;
   visibility?: TrackVisibility;
   excursion_id?: number | null;
+  started_at?: string;
 }
 
 // Vergangene Standort-Aufzeichnungen (im Gegensatz zu stores/trackRecording.ts, das die aktuell
@@ -57,6 +58,7 @@ export const useTracksStore = defineStore('tracks', () => {
     if (idx !== -1) {
       const next = [...tracks.value];
       next[idx] = updated;
+      next.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
       tracks.value = next;
     }
     return updated;
