@@ -6285,6 +6285,14 @@ async function deleteEditingSpot() {
   margin: var(--space-1, 4px) 0 var(--space-2, 8px);
   background: var(--color-bg);
   min-inline-size: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .spot-location-fieldset {
+    padding: var(--space-2, 8px);
+  }
 }
 
 .spot-location-body {
@@ -6292,6 +6300,8 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-2, 8px);
   min-inline-size: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .spot-location-legend {

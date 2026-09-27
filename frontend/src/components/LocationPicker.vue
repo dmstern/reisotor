@@ -1021,10 +1021,16 @@ defineExpose({
   flex-direction: column;
   gap: var(--space-2, 8px);
   position: relative;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .location-control-box {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--space-2, 8px);
@@ -1036,13 +1042,16 @@ defineExpose({
 
 .location-control-box.has-details,
 .location-control-box.has-location {
-  padding: var(--space-3, 12px);
+  padding: var(--space-2-5, 10px) var(--space-3, 12px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle, 8px);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
   gap: var(--space-2-5, 10px);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .location-control-box.is-modified {
@@ -1218,7 +1227,10 @@ defineExpose({
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
   margin: 0;
+  box-sizing: border-box;
 }
 
 .status-header {
@@ -1226,6 +1238,8 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2, 8px);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .status-check-circle {
@@ -1259,13 +1273,18 @@ defineExpose({
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .status-meta-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2, 8px);
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
 .status-row-icon {
@@ -1273,17 +1292,20 @@ defineExpose({
   align-items: center;
   justify-content: center;
   width: 18px;
+  min-width: 18px;
   height: 18px;
   flex-shrink: 0;
   color: var(--color-text-muted);
+  margin-top: 1px;
 }
 
 .status-meta-display {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
   gap: var(--space-1-5, 6px);
   min-width: 0;
+  max-width: 100%;
   flex: 1;
 }
 
@@ -1294,6 +1316,7 @@ defineExpose({
   width: 100%;
   flex: 1;
   min-width: 0;
+  max-width: 100%;
 }
 
 .inline-edit-input {
@@ -1313,6 +1336,8 @@ defineExpose({
   opacity: 0.65;
   padding: 2px 4px;
   flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: -1px;
   transition: opacity 0.15s ease;
 }
 
@@ -1337,23 +1362,40 @@ defineExpose({
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text);
+  min-width: 0;
+  flex: 1;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .status-address {
   font-size: 0.82rem;
   color: var(--color-text);
+  min-width: 0;
+  flex: 1;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .status-coords {
   font-size: 0.78rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1363,10 +1405,12 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .inline-category-combobox {
-  min-width: 140px;
+  min-width: 0;
   max-width: 220px;
   flex: 1;
 }
