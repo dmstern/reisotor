@@ -46,7 +46,7 @@ const props = withDefaults(
   defineProps<{
     /** Aktuell ausgewählte Koordinaten (v-model). */
     modelValue: { lat: number; lng: number } | null;
-    /** Spot-Titel (v-model:title) – falls angebunden, fungiert das Feld als Such- & Titelfeld. */
+    /** Spot-Titel (v-model:title) – falls angebunden, wird der Titel in der Status-Übersicht angezeigt und editierbar. */
     title?: string;
     /** Adresse oder Ortsbezeichnung (v-model:address). */
     address?: string;

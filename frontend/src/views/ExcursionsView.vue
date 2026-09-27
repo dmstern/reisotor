@@ -4272,8 +4272,8 @@ async function deleteEditingSpot() {
                 </legend>
                 <div class="spot-location-body">
                   <p class="hint spot-location-hint">
-                    Ort suchen oder Spot-Titel eingeben. Wird für Karte und ggf. Wetter vor Ort
-                    verwendet.
+                    Ort suchen oder auf der Karte wählen sowie Titel, Adresse und Kategorie
+                    anpassen. Wird für Karte und ggf. Wetter vor Ort verwendet.
                   </p>
                   <LocationPicker
                     ref="spotLocationPickerRef"
