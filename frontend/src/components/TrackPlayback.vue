@@ -1,127 +1,363 @@
+<script lang="ts">
+import type { LocationTrack, TrackPoint } from '../api/types';
+
+export const SPEEDS = [1, 2, 5, 10] as const;
+export type PlaybackSpeed = (typeof SPEEDS)[number];
+
+export interface TrackPlaybackProps {
+  track?: LocationTrack | null;
+  title?: string | null;
+  points: TrackPoint[];
+  progress?: number;
+  active?: boolean;
+}
+</script>
+
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue';
-import type { TrackPoint } from '../api/types';
 import {
   formatDistanceShort,
   formatDurationShort,
+  formatElevationShort,
+  formatSpeedShort,
+  trackAverageSpeedKmh,
   trackDistanceMeters,
   trackDurationMs,
+  trackElevation,
 } from '../utils/trackGeometry';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { IconGauge, IconGaugeFilled, IconMountain, IconMountainFilled } from '@tabler/icons-vue';
+import type { IconDef } from '../utils/icon';
 
-// Zeit-Slider für eine aufgezeichnete Route (TripMap.vue zeigt die Route selbst + einen Marker, der
-// hier per v-model:progress gesteuert wird - reine Anzeigekomponente ohne eigenen Store). Die
-// tatsächliche Aufzeichnungsdauer kann Stunden betragen - "Abspielen"
-// rafft das auf eine feste, kurze Animationsdauer statt in Echtzeit abzuspielen (wie bei Google
-// Maps Timeline).
-const PLAYBACK_DURATION_MS = 12_000;
+const SPEED_ICON: IconDef = {
+  id: 'gauge',
+  emoji: '⚡',
+  outline: IconGauge,
+  filled: IconGaugeFilled,
+};
 
-const props = defineProps<{ points: TrackPoint[]; progress: number }>();
-const emit = defineEmits<{ (e: 'update:progress', value: number): void }>();
+const ELEVATION_ICON: IconDef = {
+  id: 'mountain',
+  emoji: '⛰️',
+  outline: IconMountain,
+  filled: IconMountainFilled,
+};
+
+const props = withDefaults(defineProps<TrackPlaybackProps>(), {
+  track: null,
+  title: undefined,
+  progress: 0,
+  active: true,
+});
+
+const emit = defineEmits<{
+  (e: 'update:progress', value: number): void;
+  (e: 'close'): void;
+  (e: 'play'): void;
+  (e: 'pause'): void;
+}>();
+
+const BASE_PLAYBACK_MS = 10_000;
 
 const playing = ref(false);
+const speed = ref<PlaybackSpeed>(1);
 let rafId: number | null = null;
-let playbackStartedAt = 0;
-let playbackStartProgress = 0;
+let lastTickTime = 0;
+let currentProgress = props.progress ?? 0;
 
 function stopAnimation() {
-  if (rafId != null) cancelAnimationFrame(rafId);
-  rafId = null;
-  playing.value = false;
+  if (rafId != null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+  if (playing.value) {
+    playing.value = false;
+    emit('pause');
+  }
 }
 
 function tick(now: number) {
-  const elapsed = now - playbackStartedAt;
-  const delta = elapsed / PLAYBACK_DURATION_MS;
-  const next = Math.min(1, playbackStartProgress + delta);
-  emit('update:progress', next);
-  if (next >= 1) {
+  if (!playing.value) return;
+
+  const dt = Math.max(0, now - lastTickTime);
+  lastTickTime = now;
+
+  const delta = (dt * speed.value) / BASE_PLAYBACK_MS;
+  currentProgress = Math.min(1, currentProgress + delta);
+  emit('update:progress', currentProgress);
+
+  if (currentProgress >= 1) {
     stopAnimation();
     return;
   }
+
   rafId = requestAnimationFrame(tick);
 }
 
 function togglePlay() {
+  if (props.points.length < 2) return;
+
   if (playing.value) {
     stopAnimation();
     return;
   }
-  playbackStartProgress = props.progress >= 1 ? 0 : props.progress;
-  if (props.progress >= 1) emit('update:progress', 0);
+
+  if ((props.progress ?? 0) >= 1) {
+    currentProgress = 0;
+    emit('update:progress', 0);
+  } else {
+    currentProgress = props.progress ?? 0;
+  }
+
   playing.value = true;
-  playbackStartedAt = performance.now();
+  lastTickTime = performance.now();
+  emit('play');
   rafId = requestAnimationFrame(tick);
 }
 
 function onScrub(event: Event) {
   stopAnimation();
-  emit('update:progress', Number((event.target as HTMLInputElement).value) / 1000);
+  const raw = Number((event.target as HTMLInputElement).value);
+  const val = Math.max(0, Math.min(1, Number.isFinite(raw) ? raw : 0));
+  currentProgress = val;
+  emit('update:progress', val);
 }
 
-// Ein Wechsel der angezeigten Aufzeichnung (anderer Track fokussiert) beendet eine laufende
-// Wiedergabe - sonst liefe der Timer gegen die neuen, unpassenden Punkte weiter.
+function setSpeed(s: PlaybackSpeed) {
+  if (SPEEDS.includes(s)) {
+    speed.value = s;
+  }
+}
+
+function cycleSpeed() {
+  const currentIndex = SPEEDS.indexOf(speed.value);
+  const nextIndex = (currentIndex + 1) % SPEEDS.length;
+  setSpeed(SPEEDS[nextIndex]);
+}
+
+watch(
+  () => props.progress,
+  (val) => {
+    if (!playing.value) {
+      currentProgress = val ?? 0;
+    }
+  }
+);
+
 watch(() => props.points, stopAnimation);
+watch(
+  () => props.active,
+  (isActive) => {
+    if (!isActive) stopAnimation();
+  }
+);
 onUnmounted(stopAnimation);
 
-const duration = computed(() => trackDurationMs(props.points));
+// --- Metriken ---
 const distance = computed(() => trackDistanceMeters(props.points));
+const duration = computed(() => trackDurationMs(props.points));
+const avgSpeed = computed(() => trackAverageSpeedKmh(distance.value, duration.value));
+const avgSpeedLabel = computed(() => {
+  if (avgSpeed.value == null || avgSpeed.value <= 0) return '';
+  return formatSpeedShort(avgSpeed.value);
+});
+const elevation = computed(() => trackElevation(props.points));
+const elevationLabel = computed(() => {
+  if (!elevation.value) return '';
+  if (elevation.value.gain === 0 && elevation.value.loss === 0) return '';
+  return formatElevationShort(elevation.value);
+});
 
-const timeFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
-function formatTime(iso?: string) {
-  if (!iso) return '';
-  return timeFormatter.format(new Date(iso));
+// --- Zeitformatierung (mm:ss oder hh:mm:ss) ---
+function formatTimeDisplay(ms: number, forceHours = false): string {
+  if (!Number.isFinite(ms) || ms < 0) ms = 0;
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+
+  if (forceHours || hours > 0) {
+    return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+  }
+  return `${pad(minutes)}:${pad(seconds)}`;
 }
 
-const currentTimeLabel = computed(() => {
-  if (!props.points.length) return '';
+const hasHours = computed(() => duration.value >= 3600_000);
+const currentElapsedMs = computed(() => (props.progress ?? 0) * duration.value);
+const currentElapsedLabel = computed(() =>
+  formatTimeDisplay(currentElapsedMs.value, hasHours.value)
+);
+const totalDurationLabel = computed(() => formatTimeDisplay(duration.value, hasHours.value));
+
+// --- Uhrzeiten der Aufzeichnung (Start/Aktuell/Ende) ---
+const timeOfDayFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
+function formatTimeOfDay(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : timeOfDayFormatter.format(d);
+}
+
+const startTimeOfDay = computed(() => {
+  if (props.points.length > 0) return formatTimeOfDay(props.points[0].recorded_at);
+  if (props.track?.started_at) return formatTimeOfDay(props.track.started_at);
+  return '';
+});
+
+const endTimeOfDay = computed(() => {
+  if (props.points.length > 0)
+    return formatTimeOfDay(props.points[props.points.length - 1].recorded_at);
+  if (props.track?.ended_at) return formatTimeOfDay(props.track.ended_at);
+  return '';
+});
+
+const currentTimeOfDay = computed(() => {
+  if (props.points.length < 2) return '';
   const startMs = new Date(props.points[0].recorded_at).getTime();
   const endMs = new Date(props.points[props.points.length - 1].recorded_at).getTime();
-  const currentMs = startMs + props.progress * (endMs - startMs);
-  return timeFormatter.format(new Date(currentMs));
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return '';
+  const currentMs = startMs + (props.progress ?? 0) * (endMs - startMs);
+  return timeOfDayFormatter.format(new Date(currentMs));
+});
+
+const trackDateLabel = computed(() => {
+  const iso = props.points[0]?.recorded_at ?? props.track?.started_at;
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(d);
+});
+
+const displayTitle = computed(() => props.title || props.track?.title || 'Aufzeichnung');
+
+defineExpose({
+  playing,
+  speed,
+  setSpeed,
+  cycleSpeed,
+  togglePlay,
+  stopAnimation,
 });
 </script>
 
 <template>
-  <div class="track-playback">
-    <div class="track-playback-stats">
-      <span class="nobr"
-        ><AppIcon :icon="ACTION_ICONS.distance" :size="14" group="actions" />
-        {{ formatDistanceShort(distance) }}</span
-      >
-      <span class="nobr"
-        ><AppIcon :icon="ACTION_ICONS.duration" :size="14" group="actions" />
-        {{ formatDurationShort(duration) }}</span
-      >
-    </div>
-    <div class="track-playback-controls">
-      <button
-        type="button"
-        class="playback-btn"
-        :aria-label="playing ? 'Pause' : 'Abspielen'"
-        @click="togglePlay"
-      >
+  <div class="track-playback" role="region" aria-label="Aufzeichnungs-Wiedergabe">
+    <!-- Header: Titel, Datum & Schließen-Button -->
+    <div class="track-playback-header">
+      <div class="track-playback-title-wrap">
         <AppIcon
-          :icon="playing ? ACTION_ICONS.pause : ACTION_ICONS.play"
-          :size="16"
+          :icon="ACTION_ICONS.history"
+          :size="15"
           group="actions"
+          class="track-playback-icon"
         />
-      </button>
+        <span class="track-playback-title">{{ displayTitle }}</span>
+        <span v-if="trackDateLabel" class="track-playback-date">{{ trackDateLabel }}</span>
+      </div>
+      <IconButton
+        class="playback-close-btn"
+        variant="ghost"
+        size="sm"
+        :icon="ACTION_ICONS.close"
+        :aria-label="'Wiedergabe schließen'"
+        title="Schließen"
+        @click="emit('close')"
+      />
+    </div>
+
+    <!-- Metriken-Chips: Distanz, Dauer, Durchschnittsgeschwindigkeit, Höhenmeter -->
+    <div class="track-playback-stats" aria-label="Aufzeichnungs-Statistiken">
+      <span class="metric-chip" data-testid="metric-distance" title="Gesamtdistanz">
+        <AppIcon :icon="ACTION_ICONS.distance" :size="13" group="actions" />
+        <span>{{ formatDistanceShort(distance) }}</span>
+      </span>
+      <span class="metric-chip" data-testid="metric-duration" title="Gesamtdauer">
+        <AppIcon :icon="ACTION_ICONS.duration" :size="13" group="actions" />
+        <span>{{ formatDurationShort(duration) }}</span>
+      </span>
+      <span
+        v-if="avgSpeedLabel"
+        class="metric-chip"
+        data-testid="metric-speed"
+        title="Durchschnittsgeschwindigkeit"
+      >
+        <AppIcon :icon="SPEED_ICON" :size="13" group="actions" />
+        <span>{{ avgSpeedLabel }}</span>
+      </span>
+      <span
+        v-if="elevationLabel"
+        class="metric-chip"
+        data-testid="metric-elevation"
+        title="Höhenmeter (Aufstieg / Abstieg)"
+      >
+        <AppIcon :icon="ELEVATION_ICON" :size="13" group="actions" />
+        <span>{{ elevationLabel }}</span>
+      </span>
+    </div>
+
+    <!-- Playback-Steuerelemente: Play/Pause, Scrubber-Slider, Speed-Gruppe, Zeitanzeige -->
+    <div class="track-playback-controls">
+      <IconButton
+        class="playback-btn"
+        :variant="playing ? 'secondary' : 'primary'"
+        size="sm"
+        shape="squircle"
+        :icon="playing ? ACTION_ICONS.pause : ACTION_ICONS.play"
+        :aria-label="playing ? 'Pause' : 'Abspielen'"
+        :title="playing ? 'Pause' : 'Abspielen'"
+        :disabled="points.length < 2"
+        @click="togglePlay"
+      />
+
       <input
         type="range"
         class="playback-slider"
         min="0"
-        max="1000"
-        :value="progress * 1000"
+        max="1"
+        step="0.001"
+        :value="progress ?? 0"
+        :disabled="points.length < 2"
         @input="onScrub"
         aria-label="Position in der Aufzeichnung"
+        :aria-valuenow="Math.round((progress ?? 0) * 100)"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-valuetext="`${currentElapsedLabel} von ${totalDurationLabel}`"
       />
-      <span class="playback-time">{{ currentTimeLabel }}</span>
+
+      <div class="playback-speed-group" role="group" aria-label="Wiedergabegeschwindigkeit">
+        <button
+          v-for="s in SPEEDS"
+          :key="s"
+          type="button"
+          class="speed-btn"
+          :class="{ active: speed === s }"
+          :aria-pressed="speed === s"
+          :title="`Geschwindigkeit ${s}x`"
+          @click="setSpeed(s)"
+        >
+          {{ s }}x
+        </button>
+      </div>
+
+      <span class="playback-time" aria-live="off">
+        {{ currentElapsedLabel }} / {{ totalDurationLabel }}
+      </span>
     </div>
-    <div class="track-playback-range">
-      <span>{{ points.length ? formatTime(points[0].recorded_at) : '' }}</span>
-      <span>{{ points.length ? formatTime(points[points.length - 1].recorded_at) : '' }}</span>
+
+    <!-- Uhrzeit-Spanne der Aufzeichnung (Start, aktuelle Position, Ende) -->
+    <div v-if="points.length >= 2" class="track-playback-range">
+      <span class="range-time start-time" title="Startzeit">{{ startTimeOfDay }}</span>
+      <span v-if="currentTimeOfDay" class="range-time current-time" title="Aktuelle Uhrzeit">{{
+        currentTimeOfDay
+      }}</span>
+      <span class="range-time end-time" title="Endzeit">{{ endTimeOfDay }}</span>
     </div>
   </div>
 </template>
@@ -130,17 +366,73 @@ const currentTimeLabel = computed(() => {
 .track-playback {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-glass, rgba(255, 255, 255, 0.92));
+  backdrop-filter: var(--backdrop-blur-md);
+  border: 1px solid var(--color-surface-glass-border, var(--color-border));
+  border-radius: var(--radius-md-squircle, 12px);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.12));
+}
+
+.track-playback-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.track-playback-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.track-playback-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.track-playback-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-playback-date {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .track-playback-stats {
   display: flex;
-  gap: var(--space-3);
-  font-size: 0.85rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  white-space: nowrap;
+  line-height: 1.3;
 }
 
 .track-playback-controls {
@@ -149,27 +441,19 @@ const currentTimeLabel = computed(() => {
   gap: var(--space-2);
 }
 
-.playback-btn {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  background: var(--color-primary-tint);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .playback-slider {
   flex: 1;
-  min-width: 0;
+  min-width: 60px;
+  height: 6px;
   accent-color: var(--color-primary);
   border-radius: var(--radius-pill);
   cursor: pointer;
+  outline: none;
+}
+
+.playback-slider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .playback-slider:focus-visible {
@@ -178,17 +462,65 @@ const currentTimeLabel = computed(() => {
   border-radius: var(--radius-pill);
 }
 
+.playback-speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--color-hover);
+  padding: 2px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  border: 1px solid var(--color-border);
+}
+
+.speed-btn {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  padding: 2px 6px;
+  border-radius: calc(var(--radius-sm-squircle) - 2px);
+  corner-shape: squircle;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  line-height: 1.2;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.speed-btn:hover {
+  color: var(--color-text);
+}
+
+.speed-btn.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .playback-time {
   flex: none;
   font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .track-playback-range {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
+  align-items: center;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  padding: 0 2px;
+}
+
+.range-time.current-time {
+  font-weight: 600;
+  color: var(--color-primary-dark, var(--color-primary));
 }
 </style>

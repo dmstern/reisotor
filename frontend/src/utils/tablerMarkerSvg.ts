@@ -14,6 +14,9 @@ import toolsKitchen2Outline from '@tabler/icons/outline/tools-kitchen-2.svg?raw'
 import toolsKitchen2Filled from '@tabler/icons/filled/tools-kitchen-2.svg?raw';
 import coffeeOutline from '@tabler/icons/outline/coffee.svg?raw';
 import targetOutline from '@tabler/icons/outline/target.svg?raw';
+import flagOutline from '@tabler/icons/outline/flag.svg?raw';
+import flagFilled from '@tabler/icons/filled/flag.svg?raw';
+import flagCheckOutline from '@tabler/icons/outline/flag-check.svg?raw';
 import shoppingBagOutline from '@tabler/icons/outline/shopping-bag.svg?raw';
 import buildingBankOutline from '@tabler/icons/outline/building-bank.svg?raw';
 import confettiOutline from '@tabler/icons/outline/confetti.svg?raw';
@@ -63,6 +66,8 @@ const RAW_SVG: Record<string, { outline: string; filled?: string }> = {
   'tools-kitchen-2': { outline: toolsKitchen2Outline, filled: toolsKitchen2Filled },
   coffee: { outline: coffeeOutline },
   target: { outline: targetOutline },
+  flag: { outline: flagOutline, filled: flagFilled },
+  'flag-check': { outline: flagCheckOutline },
   'shopping-bag': { outline: shoppingBagOutline },
   'building-bank': { outline: buildingBankOutline },
   confetti: { outline: confettiOutline, filled: confettiFilled },

@@ -81,6 +81,9 @@ import Modal from '../components/Modal.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
+import TrackShareWarningModal from '../components/TrackShareWarningModal.vue';
+import TourAssignDropdown, { type TourItem } from '../components/TourAssignDropdown.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
 import ResizeHandle from '../components/ResizeHandle.vue';
 import LocationPicker, { type PlaceSearchResult } from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
@@ -159,6 +162,115 @@ const editingTrack = ref<LocationTrack | null>(null);
 const editTrackTitle = ref('');
 const editTrackStartedAt = ref('');
 const editTrackVisibility = ref<TrackVisibility>('private');
+const editTrackExcursionId = ref<number | null>(null);
+
+const showTrackShareWarningModal = ref(false);
+const shareWarningTrackTitle = ref('');
+const shareWarningTourTitle = ref('');
+const pendingShareTrack = ref<LocationTrack | null>(null);
+const pendingTrackTourId = ref<number | null>(null);
+const tracksToShareOnSave = ref(new Set<number>());
+
+const trackTourAssignments = computed<TourItem[]>(() => {
+  return excursionsStore.excursions.map((e) => ({
+    id: e.id,
+    title: e.title,
+    assigned: editTrackExcursionId.value === e.id,
+  }));
+});
+
+const editTrackExcursionTitle = computed(() => {
+  if (editTrackExcursionId.value == null) return null;
+  const exc = excursionsStore.excursions.find((e) => e.id === editTrackExcursionId.value);
+  return exc?.title ?? null;
+});
+
+function onToggleTrackTour(tourId: number) {
+  if (editTrackExcursionId.value === tourId) {
+    editTrackExcursionId.value = null;
+    return;
+  }
+  const tour = excursionsStore.excursions.find((e) => e.id === tourId);
+  const isPrivate =
+    editTrackVisibility.value === 'private' || editingTrack.value?.visibility === 'private';
+  if (isPrivate && users.value.length > 1) {
+    pendingTrackTourId.value = tourId;
+    shareWarningTrackTitle.value =
+      editTrackTitle.value.trim() ||
+      (editingTrack.value ? trackTitle(editingTrack.value) : 'Aufzeichnung');
+    shareWarningTourTitle.value = tour?.title || 'Tour';
+    showTrackShareWarningModal.value = true;
+  } else {
+    editTrackExcursionId.value = tourId;
+  }
+}
+
+async function onCreateTourFromTrack(title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  const newExcursion = await excursionsStore.create({
+    title: trimmed,
+  });
+  onToggleTrackTour(newExcursion.id);
+}
+
+const pendingRowTrackAssign = ref<{ track: LocationTrack; tourId: number } | null>(null);
+
+function trackTourAssignmentsFor(track: LocationTrack): TourItem[] {
+  return excursionsStore.excursions.map((e) => ({
+    id: e.id,
+    title: e.title,
+    assigned: track.excursion_id === e.id,
+  }));
+}
+
+async function onToggleRowTrackTour(track: LocationTrack, tourId: number) {
+  if (track.excursion_id === tourId) {
+    await tracksStore.update(track.id, { excursion_id: null });
+    return;
+  }
+  const tour = excursionsStore.excursions.find((e) => e.id === tourId);
+  if (track.visibility === 'private' && users.value.length > 1) {
+    pendingRowTrackAssign.value = { track, tourId };
+    shareWarningTrackTitle.value = trackTitle(track);
+    shareWarningTourTitle.value = tour?.title || 'Tour';
+    showTrackShareWarningModal.value = true;
+  } else {
+    await tracksStore.update(track.id, { excursion_id: tourId });
+  }
+}
+
+async function onCreateTourFromRowTrack(track: LocationTrack, title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  const newTour = await excursionsStore.create({ title: trimmed });
+  await onToggleRowTrackTour(track, newTour.id);
+}
+
+function onConfirmShareModal() {
+  if (pendingRowTrackAssign.value) {
+    const { track, tourId } = pendingRowTrackAssign.value;
+    tracksStore.update(track.id, { excursion_id: tourId, visibility: 'shared' });
+    pendingRowTrackAssign.value = null;
+  } else if (pendingTrackTourId.value != null) {
+    editTrackExcursionId.value = pendingTrackTourId.value;
+    editTrackVisibility.value = 'shared';
+    pendingTrackTourId.value = null;
+  } else if (pendingShareTrack.value != null) {
+    const trk = pendingShareTrack.value;
+    if (!activeExcursionForm.value.track_ids.includes(trk.id)) {
+      activeExcursionForm.value.track_ids.push(trk.id);
+      tracksToShareOnSave.value.add(trk.id);
+    }
+    pendingShareTrack.value = null;
+  }
+  showTrackShareWarningModal.value = false;
+}
+
+function getTourForTrack(track: LocationTrack): Excursion | undefined {
+  if (track.excursion_id == null) return undefined;
+  return excursionsStore.excursions.find((e) => e.id === track.excursion_id);
+}
 
 const isEditTrackTitleModified = computed(() => {
   if (!editingTrack.value) return false;
@@ -172,16 +284,22 @@ const isEditTrackVisibilityModified = computed(() => {
   if (!editingTrack.value) return false;
   return editTrackVisibility.value !== editingTrack.value.visibility;
 });
+const isEditTrackTourModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackExcursionId.value !== (editingTrack.value.excursion_id ?? null);
+});
 
 function startEditTrack(track: LocationTrack) {
   editingTrack.value = track;
   editTrackTitle.value = track.title ?? '';
   editTrackStartedAt.value = toLocalDatetimeInputValue(track.started_at);
   editTrackVisibility.value = track.visibility;
+  editTrackExcursionId.value = track.excursion_id ?? null;
 }
 
 function closeEditTrack() {
   editingTrack.value = null;
+  pendingTrackTourId.value = null;
 }
 
 async function submitEditTrack() {
@@ -194,6 +312,7 @@ async function submitEditTrack() {
     title,
     started_at: startedAt,
     visibility: editTrackVisibility.value,
+    excursion_id: editTrackExcursionId.value,
   });
   closeEditTrack();
 }
@@ -512,8 +631,38 @@ const emptyExcursionForm = () => ({
   role: '' as IdeaRole | '',
   destination_spot_id: null as number | null,
   legs: [] as ExcursionLeg[],
+  track_ids: [] as number[],
 });
 const excursionForm = ref(emptyExcursionForm());
+
+const showExcursionTracksSection = ref(false);
+const showEditExcursionTracksSection = ref(false);
+
+const selectableTracksForTour = computed(() => {
+  const currentExcursionId = editingExcursion.value;
+  return tracksStore.tracks.filter(
+    (t) => t.excursion_id == null || t.excursion_id === currentExcursionId
+  );
+});
+
+function onToggleTourTrack(trk: LocationTrack) {
+  const isAssigned = activeExcursionForm.value.track_ids.includes(trk.id);
+  if (isAssigned) {
+    activeExcursionForm.value.track_ids = activeExcursionForm.value.track_ids.filter(
+      (id) => id !== trk.id
+    );
+    tracksToShareOnSave.value.delete(trk.id);
+  } else {
+    if (trk.visibility === 'private' && users.value.length > 1) {
+      pendingShareTrack.value = trk;
+      shareWarningTrackTitle.value = trackTitle(trk);
+      shareWarningTourTitle.value = activeExcursionForm.value.title.trim() || 'Tour';
+      showTrackShareWarningModal.value = true;
+    } else {
+      activeExcursionForm.value.track_ids.push(trk.id);
+    }
+  }
+}
 
 const editingExcursion = ref<number | null>(null);
 const isExcursionUploadingAttachments = ref(false);
@@ -594,6 +743,8 @@ function openExcursionForm() {
   excursionTitleTouched.value = false;
   excursionForm.value = emptyExcursionForm();
   showExcursionSpotsSection.value = false;
+  showExcursionTracksSection.value = false;
+  tracksToShareOnSave.value.clear();
   showExcursionForm.value = true;
 }
 
@@ -601,6 +752,7 @@ function closeExcursionForm() {
   excursionTitleTouched.value = false;
   showExcursionForm.value = false;
   excursionForm.value = emptyExcursionForm();
+  tracksToShareOnSave.value.clear();
   newExcursionDraft.clear();
 }
 
@@ -623,7 +775,15 @@ async function addExcursion() {
     if (!excursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
-  await excursionsStore.create(tourPayload(excursionForm.value));
+  const created = await excursionsStore.create(tourPayload(excursionForm.value));
+  for (const trackId of excursionForm.value.track_ids) {
+    const shouldShare = tracksToShareOnSave.value.has(trackId);
+    await tracksStore.update(trackId, {
+      excursion_id: created.id,
+      ...(shouldShare ? { visibility: 'shared' } : {}),
+    });
+  }
+  tracksToShareOnSave.value.clear();
   closeExcursionForm();
 }
 
@@ -631,6 +791,8 @@ function startEditExcursion(excursion: Excursion) {
   excursionTitleTouched.value = false;
   editingExcursion.value = excursion.id;
   showEditExcursionSpotsSection.value = false;
+  showEditExcursionTracksSection.value = false;
+  tracksToShareOnSave.value.clear();
   editExcursionForm.value = {
     title: excursion.title,
     image_url: excursion.image_url ?? '',
@@ -640,6 +802,7 @@ function startEditExcursion(excursion: Excursion) {
     role: excursion.role ?? '',
     destination_spot_id: excursion.destination_spot_id ?? null,
     legs: excursion.legs ? excursion.legs.map((l) => ({ ...l })) : [],
+    track_ids: tracksStore.tracks.filter((t) => t.excursion_id === excursion.id).map((t) => t.id),
   };
 }
 
@@ -653,13 +816,35 @@ async function submitEditExcursion() {
     if (!editExcursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
-  await excursionsStore.update(editingExcursion.value, tourPayload(editExcursionForm.value));
+  const excId = editingExcursion.value;
+  await excursionsStore.update(excId, tourPayload(editExcursionForm.value));
+  const currentAssigned = tracksStore.tracks
+    .filter((t) => t.excursion_id === excId)
+    .map((t) => t.id);
+  const nextAssigned = editExcursionForm.value.track_ids;
+
+  for (const oldId of currentAssigned) {
+    if (!nextAssigned.includes(oldId)) {
+      await tracksStore.update(oldId, { excursion_id: null });
+    }
+  }
+  for (const newId of nextAssigned) {
+    if (!currentAssigned.includes(newId)) {
+      const shouldShare = tracksToShareOnSave.value.has(newId);
+      await tracksStore.update(newId, {
+        excursion_id: excId,
+        ...(shouldShare ? { visibility: 'shared' } : {}),
+      });
+    }
+  }
+  tracksToShareOnSave.value.clear();
   editExcursionDraft.clear();
   editingExcursion.value = null;
 }
 
 function closeEditExcursionForm() {
   excursionTitleTouched.value = false;
+  tracksToShareOnSave.value.clear();
   editExcursionDraft.clear();
   editingExcursion.value = null;
 }
@@ -3835,6 +4020,70 @@ async function deleteEditingSpot() {
                   :users="users"
                 />
               </CollapsibleFieldset>
+              <CollapsibleFieldset
+                v-if="tracksStore.tracks.length"
+                :model-value="
+                  editingExcursion !== null
+                    ? showEditExcursionTracksSection
+                    : showExcursionTracksSection
+                "
+                label="Aufzeichnungen"
+                :count="
+                  activeExcursionForm.track_ids.length
+                    ? `(${activeExcursionForm.track_ids.length} zugeordnet)`
+                    : undefined
+                "
+                :icon="ACTION_ICONS.recordStart"
+                icon-group="actions"
+                @update:model-value="
+                  (val) => {
+                    if (editingExcursion !== null) {
+                      showEditExcursionTracksSection = val;
+                    } else {
+                      showExcursionTracksSection = val;
+                    }
+                  }
+                "
+              >
+                <div class="excursion-tracks-picker">
+                  <p v-if="!selectableTracksForTour.length" class="empty-subtext">
+                    Keine verfügbaren Aufzeichnungen für diesen Urlaub vorhanden.
+                  </p>
+                  <ul v-else class="excursion-tracks-list">
+                    <li
+                      v-for="trk in selectableTracksForTour"
+                      :key="trk.id"
+                      class="excursion-track-item"
+                      :class="{ 'is-selected': activeExcursionForm.track_ids.includes(trk.id) }"
+                    >
+                      <label class="excursion-track-label" :for="`tour-track-${trk.id}`">
+                        <Checkbox
+                          :id="`tour-track-${trk.id}`"
+                          :checked="activeExcursionForm.track_ids.includes(trk.id)"
+                          @change="onToggleTourTrack(trk)"
+                        />
+                        <div class="excursion-track-info">
+                          <span class="excursion-track-name">{{ trackTitle(trk) }}</span>
+                          <span class="excursion-track-meta">
+                            <span>{{ formatDateTime(trk.started_at) }}</span>
+                            <template v-if="trackDurationLabel(trk)">
+                              · <span>{{ trackDurationLabel(trk) }}</span>
+                            </template>
+                            <span
+                              v-if="trk.visibility === 'private'"
+                              class="privacy-pill privacy-pill--private"
+                              title="Aktuell nur für dich sichtbar"
+                            >
+                              <AppIcon :icon="ACTION_ICONS.private" :size="11" group="actions" />
+                              Privat
+                            </span>
+                          </span>
+                        </div>
+                      </label>
+                    </li>
+                  </ul>
+                </div>
+              </CollapsibleFieldset>
               <FileAttachments
                 v-if="editingExcursion"
                 domain="ideas"
@@ -4992,6 +5241,19 @@ async function deleteEditingSpot() {
                         <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
                         {{ trackDurationLabel(track) }}
                       </span>
+                      <span
+                        v-if="getTourForTrack(track)"
+                        class="track-meta-tour"
+                        :title="'Zugeordnete Tour: ' + getTourForTrack(track)?.title"
+                      >
+                        ·
+                        <AppIcon
+                          :icon="SECTION_ICON_DEFS.excursions"
+                          :size="12"
+                          group="navigation"
+                        />
+                        {{ getTourForTrack(track)?.title }}
+                      </span>
                     </span>
                   </button>
                   <template v-if="track.user_id === auth.user?.id">
@@ -5005,6 +5267,11 @@ async function deleteEditingSpot() {
                     >
                       <AppIcon :icon="ACTION_ICONS.recordStop" :size="15" group="actions" />
                     </button>
+                    <TourAssignDropdown
+                      :tours="trackTourAssignmentsFor(track)"
+                      @toggle-tour="(tourId) => onToggleRowTrackTour(track, tourId)"
+                      @create-tour="(title) => onCreateTourFromRowTrack(track, title)"
+                    />
                     <button
                       type="button"
                       class="track-icon-btn"
@@ -5054,6 +5321,14 @@ async function deleteEditingSpot() {
           <TrackRecordingWarningModal
             v-model="showTrackRecordingWarningModal"
             @confirm="startRecordingConfirmed"
+          />
+
+          <!-- Datenschutz-Hinweis bei Zuordnung einer privaten Aufzeichnung zu einer Tour -->
+          <TrackShareWarningModal
+            v-model="showTrackShareWarningModal"
+            :track-title="shareWarningTrackTitle"
+            :tour-title="shareWarningTourTitle"
+            @confirm="onConfirmShareModal"
           />
 
           <!-- Aufzeichnung bearbeiten (Name, Sichtbarkeit) -->
@@ -5124,6 +5399,28 @@ async function deleteEditingSpot() {
                   required
                   :modified="modified"
                 />
+              </FormField>
+              <FormField icon="tour" label="Zugeordnete Tour" :modified="isEditTrackTourModified">
+                <div class="track-tour-assign-field">
+                  <TourAssignDropdown
+                    :tours="trackTourAssignments"
+                    @toggle-tour="onToggleTrackTour"
+                    @create-tour="onCreateTourFromTrack"
+                  />
+                  <span v-if="editTrackExcursionTitle" class="track-tour-selected-badge">
+                    <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
+                    {{ editTrackExcursionTitle }}
+                    <button
+                      type="button"
+                      class="remove-tour-btn"
+                      title="Zuordnung entfernen"
+                      aria-label="Zuordnung entfernen"
+                      @click="editTrackExcursionId = null"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
+                    </button>
+                  </span>
+                </div>
               </FormField>
               <FormField
                 icon="visibility"
@@ -7266,6 +7563,132 @@ async function deleteEditingSpot() {
 
 .assign-chip-remove:hover {
   opacity: 1;
+}
+
+.track-tour-assign-field {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.track-tour-selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 10px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.remove-tour-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  margin-left: 2px;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.remove-tour-btn:hover {
+  opacity: 1;
+}
+
+.track-meta-tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.excursion-tracks-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.excursion-tracks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.excursion-track-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.excursion-track-item:hover {
+  background: var(--color-bg-hover, var(--color-bg-secondary));
+}
+
+.excursion-track-item.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.excursion-track-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  width: 100%;
+}
+
+.excursion-track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.excursion-track-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.excursion-track-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.privacy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.privacy-pill--private {
+  background: var(--color-warning-tint, rgba(234, 179, 8, 0.15));
+  color: var(--color-warning-dark, #a16207);
 }
 </style>
 
