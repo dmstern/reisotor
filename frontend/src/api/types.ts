@@ -271,6 +271,7 @@ export interface TrackPoint {
   lng: number;
   recorded_at: string;
   accuracy: number | null;
+  altitude?: number | null;
 }
 
 /** #176: KEIN eigener Backend-Endpunkt mehr (travel_items/routes/travel.ts entfallen) - eine

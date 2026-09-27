@@ -164,7 +164,13 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
       payload: {
         points: [
           { lat: 48.2, lng: 16.37, recorded_at: '2030-01-02T10:00:00.000Z' },
-          { lat: 48.21, lng: 16.38, recorded_at: '2030-01-02T10:00:10.000Z', accuracy: 5 },
+          {
+            lat: 48.21,
+            lng: 16.38,
+            recorded_at: '2030-01-02T10:00:10.000Z',
+            accuracy: 5,
+            altitude: 250.5,
+          },
         ],
       },
     });
@@ -185,6 +191,46 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     });
     expect(points.json()).toHaveLength(2);
     expect(points.json()[0].lat).toBe(48.2);
+    expect(points.json()[0].altitude).toBeNull();
+    expect(points.json()[1].altitude).toBe(250.5);
+  });
+
+  it('speichert und liefert Höhenwerte (altitude) für Track-Punkte korrekt', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/tracks',
+      headers: { cookie: ownerCookie },
+      payload: { trip_id: tripId },
+    });
+    const trackId = create.json().id as number;
+
+    const appendPoints = await app.inject({
+      method: 'POST',
+      url: `/api/tracks/${trackId}/points`,
+      headers: { cookie: ownerCookie },
+      payload: {
+        points: [
+          { lat: 47.1, lng: 11.2, recorded_at: '2030-01-03T08:00:00.000Z', altitude: 540.2 },
+          { lat: 47.11, lng: 11.21, recorded_at: '2030-01-03T08:00:05.000Z', altitude: 0 },
+          { lat: 47.12, lng: 11.22, recorded_at: '2030-01-03T08:00:10.000Z', altitude: null },
+          { lat: 47.13, lng: 11.23, recorded_at: '2030-01-03T08:00:15.000Z' },
+        ],
+      },
+    });
+    expect(appendPoints.statusCode).toBe(204);
+
+    const pointsRes = await app.inject({
+      method: 'GET',
+      url: `/api/tracks/${trackId}/points`,
+      headers: { cookie: ownerCookie },
+    });
+    expect(pointsRes.statusCode).toBe(200);
+    const points = pointsRes.json();
+    expect(points).toHaveLength(4);
+    expect(points[0].altitude).toBe(540.2);
+    expect(points[1].altitude).toBe(0);
+    expect(points[2].altitude).toBeNull();
+    expect(points[3].altitude).toBeNull();
   });
 
   it('macht eine Aufzeichnung nach dem Umschalten auf "shared" für andere Mitglieder sichtbar', async () => {

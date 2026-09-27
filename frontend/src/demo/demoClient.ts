@@ -405,6 +405,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           (p as { recorded_at?: string }).recorded_at ?? new Date().toISOString()
         ),
         accuracy: (p as { accuracy?: number }).accuracy ?? null,
+        altitude: (p as { altitude?: number | null }).altitude ?? null,
       }));
       store['/tracks/points'].push(...createdPoints);
       persist();
