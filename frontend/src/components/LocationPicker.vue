@@ -1459,11 +1459,12 @@ defineExpose({
 
 .status-meta-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2, 8px);
   min-width: 0;
   max-width: 100%;
   width: 100%;
+  min-height: 36px;
 }
 
 .status-coords-row {
@@ -1483,17 +1484,18 @@ defineExpose({
   height: 18px;
   flex-shrink: 0;
   color: var(--color-text-muted);
-  margin-top: 1px;
+  margin-top: 0;
 }
 
 .status-meta-display {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-start;
   gap: var(--space-1-5, 6px);
   min-width: 0;
   max-width: 100%;
   flex: 1;
+  min-height: 36px;
 }
 
 .status-meta-edit {
@@ -1504,6 +1506,7 @@ defineExpose({
   flex: 1;
   min-width: 0;
   max-width: 100%;
+  min-height: 36px;
 }
 
 .status-meta-row:has(.status-meta-edit) {
@@ -1525,8 +1528,8 @@ defineExpose({
   pointer-events: none;
   padding: 2px 4px;
   flex-shrink: 0;
-  align-self: flex-start;
-  margin-top: -1px;
+  align-self: center;
+  margin-top: 0;
   transition: opacity 0.15s ease;
 }
 
