@@ -223,6 +223,27 @@ describe('fetchPlacePreview', () => {
     });
   });
 
+  it('rejects generic Google Maps icons, default pins and static maps from og:image', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          url: 'https://www.google.com/maps/place/Blumental/@52.5058,13.4211,17z',
+          text: () =>
+            Promise.resolve(
+              '<html><head><meta property="og:image" content="//www.google.com/maps/about/images/icons/maps_512dp.png"></head></html>'
+            ),
+        })
+      )
+    );
+
+    const preview = await fetchPlacePreview('https://maps.app.goo.gl/blumental');
+    expect(preview).toEqual({
+      name: 'Blumental',
+      imageUrl: null,
+    });
+  });
+
   it('returns empty fields when the URL has no /maps/place/ segment or og:image tag', async () => {
     vi.stubGlobal(
       'fetch',

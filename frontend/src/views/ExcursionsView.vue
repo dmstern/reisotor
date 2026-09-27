@@ -3050,15 +3050,31 @@ watch(
   }
 );
 
-// Live-Vorschau (Titel/echtes Foto statt nur des Kartenausschnitts, siehe backend/src/utils/
-// mapsLink.ts's fetchPlacePreview()) - Best-effort, überschreibt nie bereits eingetippte Werte
-// (z. B. wenn der Titel schon vor dem Maps-Link gesetzt wurde). Keine Kategorie-Erkennung: dafür
-// gibt es ohne kostenpflichtige Places-API kein verlässliches Signal.
-async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof emptySpotForm>>) {
-  if (!mapsLink) return;
+let lastPreviewFetchKey = '';
+
+// Live-Vorschau (Titel/Foto aus Wikipedia/Wikimedia oder Maps-Link, siehe backend/src/utils/placePhoto.ts
+// & mapsLink.ts) - Best-effort, überschreibt nie bereits eingetippte Werte (z. B. wenn der Titel oder ein
+// Bild schon manuell gesetzt wurde).
+async function fetchSpotPreview(
+  mapsLink: string,
+  form: Ref<ReturnType<typeof emptySpotForm>>,
+  extra?: { name?: string; lat?: number; lng?: number; city?: string }
+) {
+  if (!mapsLink && !extra?.name) return;
+  const key = `${mapsLink}|${extra?.name || ''}|${extra?.lat || ''}|${extra?.lng || ''}|${extra?.city || ''}`;
+  if (lastPreviewFetchKey === key) return;
+  lastPreviewFetchKey = key;
+
   try {
+    const params = new URLSearchParams();
+    if (mapsLink) params.set('maps_link', mapsLink);
+    if (extra?.name) params.set('name', extra.name);
+    if (extra?.lat != null) params.set('lat', String(extra.lat));
+    if (extra?.lng != null) params.set('lng', String(extra.lng));
+    if (extra?.city) params.set('city', extra.city);
+
     const preview = await api.get<{ name: string | null; imageUrl: string | null }>(
-      `/spots/preview?maps_link=${encodeURIComponent(mapsLink)}`
+      `/spots/preview?${params.toString()}`
     );
     if (preview.name && !form.value.title.trim()) form.value.title = preview.name;
     if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
@@ -3070,7 +3086,12 @@ async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof em
 function onSpotMapsLinkUpdate(val: string) {
   activeSpotForm.value.maps_link = val;
   if (val) {
-    fetchSpotPreview(val, editingSpot.value !== null ? editSpotForm : spotForm);
+    const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
+    fetchSpotPreview(val, editingSpot.value !== null ? editSpotForm : spotForm, {
+      name: activeSpotForm.value.title.trim() || undefined,
+      lat: pin?.lat,
+      lng: pin?.lng,
+    });
   }
 }
 
@@ -3237,6 +3258,17 @@ function onSpotLocationSelect(place: PlaceSearchResult) {
   if (place.category) {
     activeSpotForm.value.category = place.category;
   }
+  lastPreviewFetchKey = '';
+  fetchSpotPreview(
+    activeSpotForm.value.maps_link,
+    editingSpot.value !== null ? editSpotForm : spotForm,
+    {
+      name: place.name,
+      lat: place.lat,
+      lng: place.lng,
+      city: place.city,
+    }
+  );
 }
 
 const spotLocationPickerRef = ref<InstanceType<typeof LocationPicker> | null>(null);

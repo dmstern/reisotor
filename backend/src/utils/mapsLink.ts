@@ -276,15 +276,42 @@ function extractPlaceNameFromUrl(url: string): string | null {
   return name || null;
 }
 
+export function isGenericPlaceholderImage(url: string): boolean {
+  if (!url) return true;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes('maps_512dp') ||
+    lower.includes('maps_64dp') ||
+    lower.includes('maps_icon') ||
+    lower.includes('maps_logo') ||
+    lower.includes('google_maps') ||
+    lower.includes('default_geocode') ||
+    lower.includes('tactile') ||
+    lower.includes('maps/about/images') ||
+    lower.includes('images/branding') ||
+    lower.includes('staticmap') ||
+    lower.includes('googleusercontent.com/a/') ||
+    lower.includes('placeholder')
+  );
+}
+
 // Kein Places-API-Key vorhanden (kostenpflichtig) - das og:image-Meta-Tag der Zielseite ist der
 // einzige ohne Zusatzkosten erreichbare Weg an ein ECHTES Foto des Orts zu kommen (statt nur des
 // Kartenausschnitts aus tilePreviewUrl() oben). Reine Regex statt eines HTML-Parsers, analog zum
 // bestehenden Muster in diesem Modul (parseLatLngFromText) - für ein einzelnes Meta-Tag ausreichend.
+// Generische Google-Maps-Logos und statische Kartenplatzhalter werden strikt gefiltert.
 function extractOgImage(html: string): string | null {
   const match =
     /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(html) ??
     /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i.exec(html);
-  return match ? match[1] : null;
+  if (!match) return null;
+  let url = match[1].trim();
+  if (url.startsWith('//')) {
+    url = 'https:' + url;
+  }
+  if (!isSafeUrl(url)) return null;
+  if (isGenericPlaceholderImage(url)) return null;
+  return url;
 }
 
 /** Best-effort-Vorschau (Titel/Foto) einer Maps-Link-Zielseite für ExcursionsView.vue's

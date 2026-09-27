@@ -122,4 +122,31 @@ describe('spots route coordinate preservation', () => {
     expect(spot.lat).toBeNull();
     expect(spot.lng).toBeNull();
   });
+
+  describe('GET /api/spots/preview', () => {
+    it('returns place name and resolves a photo when name and coordinates are provided', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/spots/preview?name=Stephansdom&lat=48.2085&lng=16.3738&city=Wien',
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const data = res.json();
+      expect(data.name).toBe('Stephansdom');
+      // Should find a photo or null, but never throw 500
+      expect(data).toHaveProperty('imageUrl');
+    });
+
+    it('returns imageUrl null when place has no photo without throwing', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/spots/preview?name=UnbekannterOrtXYZ12345',
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const data = res.json();
+      expect(data.name).toBe('UnbekannterOrtXYZ12345');
+      expect(data.imageUrl).toBeNull();
+    });
+  });
 });
