@@ -1380,17 +1380,18 @@ defineExpose({
   max-width: 100%;
 }
 
+.status-meta-row:has(.status-meta-edit) {
+  align-items: center;
+}
+
+.status-meta-row:has(.status-meta-edit) .status-row-icon {
+  margin-top: 0;
+}
+
 .inline-edit-input {
   flex: 1;
   min-width: 0;
-}
-
-.inline-edit-input :deep(input) {
-  padding: 2px 6px;
-  font-size: 0.8rem;
-  height: 26px;
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  width: 100%;
 }
 
 .inline-edit-btn {
@@ -1475,18 +1476,18 @@ defineExpose({
 
 .inline-category-combobox {
   min-width: 0;
-  max-width: 220px;
   flex: 1;
+  width: 100%;
+  position: relative;
 }
 
-.inline-category-combobox :deep(input) {
-  padding-top: 2px;
-  padding-bottom: 2px;
-  font-size: 0.8rem;
-  height: 26px;
-  min-height: 26px;
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+.inline-category-combobox:focus-within {
+  z-index: 25;
+}
+
+.inline-category-combobox :deep(.combobox) {
+  min-width: 0;
+  width: 100%;
 }
 
 /* Map wrap & Mini map */
