@@ -795,6 +795,8 @@ const isEditSpotLocationModified = computed(() => {
     (editSpotForm.value.address || '').trim() !== (editingSpot.value.address || '').trim();
   const titleChanged =
     (editSpotForm.value.title || '').trim() !== (editingSpot.value.title || '').trim();
+  const mapsLinkChanged =
+    (editSpotForm.value.maps_link || '').trim() !== (editingSpot.value.maps_link || '').trim();
   const categoryChanged =
     (editSpotForm.value.category || '').trim() !== (editingSpot.value.category || '').trim();
   return pinChanged || addressChanged || titleChanged || mapsLinkChanged || categoryChanged;
