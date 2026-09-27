@@ -275,7 +275,12 @@ function handleModalClose(visible: boolean) {
       <div class="image-submodal">
         <!-- Live-Vorschau des aktuellen Bilds im Dialog -->
         <div v-if="effectivePreview" class="dialog-image-preview">
-          <img :src="effectivePreview" alt="Vorschau" class="dialog-preview-img" />
+          <img
+            :src="effectivePreview"
+            alt="Vorschau"
+            class="dialog-preview-img"
+            referrerpolicy="no-referrer"
+          />
           <span v-if="isModified" class="dialog-preview-badge">
             <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
             Bild geändert
