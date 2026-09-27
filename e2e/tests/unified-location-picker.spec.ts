@@ -163,7 +163,7 @@ async function openNewSpotModal(page: Page) {
   }
 
   // Ensure LocationPicker container is visible
-  const picker = modal.locator('.location-picker');
+  const picker = modal.locator('.spot-location-fieldset, .location-picker').first();
   await expect(picker).toBeVisible();
 
   return { modal, picker };
@@ -645,7 +645,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
         const status = getStatusBadge(picker);
         await expect(status).toBeVisible();
-        await expect(status).toContainText('Standort gesetzt');
+        await expect(picker.locator('.spot-location-check-icon, .status-check-icon')).toBeVisible();
       });
 
       test('T1.23: subsequent clicks on different points move marker and update coordinates', async ({
@@ -1135,7 +1135,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         }
       }
 
-      const picker = editModal.locator('.location-picker');
+      const picker = editModal.locator('.spot-location-fieldset, .location-picker').first();
       const clearBtn = getClearButton(picker);
       await expect(clearBtn).toBeVisible();
       await clearBtn.click();

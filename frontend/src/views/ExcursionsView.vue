@@ -3240,6 +3240,21 @@ function onSpotLocationSelect(place: PlaceSearchResult) {
   }
 }
 
+const spotLocationPickerRef = ref<InstanceType<typeof LocationPicker> | null>(null);
+
+const hasSpotLocation = computed(() => {
+  const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
+  return Boolean(pin || activeSpotForm.value.address || activeSpotForm.value.maps_link);
+});
+
+function triggerSpotLocationClear() {
+  if (spotLocationPickerRef.value) {
+    spotLocationPickerRef.value.clear();
+  } else {
+    onSpotLocationClear();
+  }
+}
+
 function onSpotLocationClear() {
   spotManualPin.value = null;
   editSpotManualPin.value = null;
@@ -3767,16 +3782,39 @@ async function deleteEditingSpot() {
               <!-- 1. Standort-Bereich (Suche, Titel, Karte & Bereich) -->
               <fieldset class="spot-location-fieldset spot-location-section">
                 <legend class="spot-location-legend">
-                  <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                  <span>Standort &amp; Titel</span>
+                  <span class="spot-location-legend-title">
+                    <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
+                    <span>Standort &amp; Titel</span>
+                  </span>
+                  <span v-if="hasSpotLocation" class="spot-location-legend-status">
+                    <AppIcon
+                      :icon="ACTION_ICONS.done"
+                      :size="15"
+                      group="actions"
+                      class="spot-location-check-icon"
+                      title="Standort gesetzt"
+                      aria-label="Standort gesetzt"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      class="clear-btn spot-location-clear-btn"
+                      type="button"
+                      @click="triggerSpotLocationClear"
+                    >
+                      Entfernen
+                    </Button>
+                  </span>
                 </legend>
                 <p class="hint spot-location-hint">
                   Ort suchen oder Spot-Titel eingeben. Wird für Karte und ggf. Wetter vor Ort
                   verwendet.
                 </p>
                 <LocationPicker
+                  ref="spotLocationPickerRef"
                   v-model="spotManualPin"
                   v-model:title="activeSpotForm.title"
+                  :hide-status-header="true"
                   :address="activeSpotForm.address"
                   :maps-link="activeSpotForm.maps_link"
                   :proximity-bias="spotPickerCenter"
@@ -5678,6 +5716,33 @@ async function deleteEditingSpot() {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
+}
+
+.spot-location-legend-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5, 6px);
+}
+
+.spot-location-legend-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5, 6px);
+  margin-left: var(--space-1, 4px);
+}
+
+.spot-location-check-icon {
+  color: var(--color-success, #22c55e);
+  display: inline-flex;
+  align-items: center;
+}
+
+.spot-location-clear-btn {
+  font-size: 0.75rem;
+  padding: 1px 7px;
+  height: 22px;
+  min-height: 22px;
+  line-height: 1;
 }
 
 .spot-location-hint {

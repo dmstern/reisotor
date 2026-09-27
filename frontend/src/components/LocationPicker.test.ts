@@ -566,7 +566,7 @@ describe('LocationPicker', () => {
   });
 
   describe('Status Card & Clear Action', () => {
-    it('renders status card with "Standort gesetzt" when modelValue is present', async () => {
+    it('renders status card with check icon and details when modelValue is present', async () => {
       const { container, cleanUp } = mountPicker({
         modelValue: { lat: 48.2082, lng: 16.3738 },
         address: 'Stephansplatz 3, Wien',
@@ -575,7 +575,7 @@ describe('LocationPicker', () => {
 
       const statusCard = container.querySelector('[data-testid="location-status"]');
       expect(statusCard).toBeTruthy();
-      expect(statusCard?.textContent).toContain('Standort gesetzt');
+      expect(statusCard?.querySelector('.status-check-icon')).toBeTruthy();
       expect(statusCard?.textContent).toContain('48.2082');
       expect(statusCard?.textContent).toContain('16.3738');
       expect(statusCard?.textContent).toContain('Stephansplatz 3, Wien');
@@ -584,6 +584,18 @@ describe('LocationPicker', () => {
       expect(clearBtn).toBeTruthy();
       expect(clearBtn?.textContent).toContain('Entfernen');
 
+      cleanUp();
+    });
+
+    it('hides status header when hideStatusHeader is true', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 48.2082, lng: 16.3738 },
+        hideStatusHeader: true,
+      });
+      await nextTick();
+
+      const header = container.querySelector('.status-header');
+      expect(header).toBeNull();
       cleanUp();
     });
 

@@ -64,6 +64,8 @@ const props = withDefaults(
     zoom?: number;
     /** Zusätzliche Orientierungspunkte im Umkreis. */
     referencePoints?: { lat: number; lng: number; icon?: IconDef }[];
+    /** Ob der Status-Header (Haken & Entfernen) ausgeblendet werden soll (z. B. wenn im Fieldset-Legend platziert). */
+    hideStatusHeader?: boolean;
   }>(),
   {
     title: undefined,
@@ -76,6 +78,7 @@ const props = withDefaults(
     zoom: undefined,
     center: undefined,
     referencePoints: () => [],
+    hideStatusHeader: false,
   }
 );
 
@@ -577,19 +580,28 @@ onUnmounted(() => {
   map?.remove();
   map = null;
 });
+
+defineExpose({
+  clear,
+  hasLocation,
+});
 </script>
 
 <template>
   <div class="location-picker">
     <!-- 1. Kombinierte Steuerungsbox für Standort & Suche -->
     <div class="location-control-box" :class="{ 'has-location': hasLocation }">
-      <!-- Visuelle Status-Details ("Standort gesetzt") -->
+      <!-- Visuelle Status-Details -->
       <div v-if="hasLocation" class="location-status hint success" data-testid="location-status">
-        <div class="status-header">
-          <Badge variant="success" size="sm" class="status-badge">
-            <AppIcon :icon="FORM_FIELD_ICONS.location" :size="12" group="formFields" />
-            Standort gesetzt
-          </Badge>
+        <div v-if="!hideStatusHeader" class="status-header">
+          <span class="status-check-circle" title="Standort gesetzt" aria-label="Standort gesetzt">
+            <AppIcon
+              :icon="ACTION_ICONS.done"
+              :size="15"
+              group="actions"
+              class="status-check-icon"
+            />
+          </span>
           <Button variant="secondary" size="sm" class="clear-btn" type="button" @click="clear">
             Entfernen
           </Button>
@@ -1043,10 +1055,13 @@ onUnmounted(() => {
   gap: var(--space-2, 8px);
 }
 
-.status-badge {
+.status-check-circle {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+}
+
+.status-check-icon {
+  color: var(--color-success, #22c55e);
 }
 
 .clear-btn {
