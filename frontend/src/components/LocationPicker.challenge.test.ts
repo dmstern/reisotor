@@ -325,17 +325,18 @@ describe('Adversarial Stress Testing: LocationPicker', () => {
       expect(createdMarkers.length).toBe(1);
       const markerInstance = createdMarkers[0];
 
-      const clearBtn = container.querySelector('button.clear-btn') as HTMLButtonElement;
+      const clearBtn = container.querySelector(
+        'button.clear-btn, button.coords-clear-btn'
+      ) as HTMLButtonElement;
       expect(clearBtn).toBeTruthy();
 
       clearBtn.click();
       await nextTick();
 
-      // All 4 emits fired with empty/null values
+      // ModelValue, mapsLink and clear emit fired, address is preserved
       expect(onUpdateModelValue).toHaveBeenCalledTimes(1);
       expect(onUpdateModelValue).toHaveBeenCalledWith(null);
-      expect(onUpdateAddress).toHaveBeenCalledTimes(1);
-      expect(onUpdateAddress).toHaveBeenCalledWith('');
+      expect(onUpdateAddress).not.toHaveBeenCalled();
       expect(onUpdateMapsLink).toHaveBeenCalledTimes(1);
       expect(onUpdateMapsLink).toHaveBeenCalledWith('');
       expect(onClear).toHaveBeenCalledTimes(1);

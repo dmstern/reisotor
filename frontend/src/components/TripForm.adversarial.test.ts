@@ -336,8 +336,10 @@ describe('TripForm Adversarial & Stress Testing', () => {
       clearBtn.click();
       await nextTick();
 
-      // 3. Status card must be gone
-      expect(container.querySelector('[data-testid="location-status"]')).toBeNull();
+      // 3. Status coordinates must be gone
+      expect(
+        container.querySelector('[data-testid="location-status"] .status-coords-row')
+      ).toBeNull();
 
       // 4. Input should be cleared
       const input = container.querySelector('.location-picker input') as HTMLInputElement;
