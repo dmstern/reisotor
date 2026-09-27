@@ -1145,6 +1145,8 @@ defineExpose({
   top: 12px;
   left: 12px;
   right: 12px;
+  width: auto;
+  box-sizing: border-box;
   z-index: 600;
   display: flex;
   flex-direction: column;
@@ -1331,7 +1333,7 @@ defineExpose({
 /* Polaroid Card */
 .polaroid-card {
   position: absolute;
-  top: 58px;
+  top: 68px;
   left: 12px;
   width: 260px;
   max-width: calc(100% - 24px);
@@ -1339,9 +1341,7 @@ defineExpose({
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle, 12px);
   corner-shape: squircle;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.14),
-    0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -1354,7 +1354,7 @@ defineExpose({
 .polaroid-card.is-modified {
   border-color: var(--color-accent) !important;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.14),
+    var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15)),
     0 0 0 1px var(--color-accent);
 }
 
@@ -1598,7 +1598,7 @@ defineExpose({
 @media (min-width: 581px) {
   .polaroid-card {
     position: absolute;
-    top: 58px;
+    top: 68px;
     left: 12px;
     right: auto;
     width: 260px;
@@ -1609,12 +1609,12 @@ defineExpose({
 @media (max-width: 580px) {
   .polaroid-card {
     position: absolute;
-    top: 58px;
+    top: 68px;
     left: 12px;
     right: 12px;
     width: auto;
     max-width: none;
-    max-height: calc(100% - 70px);
+    max-height: calc(100% - 80px);
     overflow-y: auto;
   }
 

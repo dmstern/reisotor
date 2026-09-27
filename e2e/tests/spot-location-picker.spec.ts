@@ -35,6 +35,8 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
 
     await modal.locator('.locate-btn').click();
-    await expect(modal.locator('.hint.success')).toContainText('48.20820, 16.37380');
+    await expect(modal.locator('[data-testid="location-status"]')).toContainText(
+      '48.20820, 16.37380'
+    );
   });
 });
