@@ -305,6 +305,13 @@ async function closeEditForm() {
   editingNote.value = null;
 }
 
+function discardEditDraft() {
+  if (!editingNote.value) return;
+  startEdit(editingNote.value);
+  editDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 async function deleteEditingNote() {
   if (!editingNote.value || isNoteUploadingAttachments.value) return;
   const id = editingNote.value.id;
@@ -412,7 +419,12 @@ async function remove(id: number) {
           :entity-id="editingNote.id"
           v-model:uploading="isNoteUploadingAttachments"
         />
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"

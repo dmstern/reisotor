@@ -757,6 +757,16 @@ function closeExcursionForm() {
   newExcursionDraft.clear();
 }
 
+function discardNewExcursionDraft() {
+  excursionTitleTouched.value = false;
+  excursionForm.value = emptyExcursionForm();
+  showExcursionSpotsSection.value = false;
+  showExcursionTracksSection.value = false;
+  tracksToShareOnSave.value.clear();
+  newExcursionDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
   return {
     title: form.title.trim(),
@@ -848,6 +858,13 @@ function closeEditExcursionForm() {
   tracksToShareOnSave.value.clear();
   editExcursionDraft.clear();
   editingExcursion.value = null;
+}
+
+function discardEditExcursionDraft() {
+  if (!initialEditingExcursion.value) return;
+  startEditExcursion(initialEditingExcursion.value);
+  editExcursionDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 async function deleteEditingExcursion() {
@@ -3485,6 +3502,22 @@ function closeSpotForm() {
   newSpotDraft.clear();
 }
 
+function discardNewSpotDraft() {
+  spotTitleTouched.value = false;
+  spotForm.value = emptySpotForm();
+  spotManualPin.value = null;
+  editSpotManualPin.value = null;
+  spotLocationError.value = false;
+  spotPendingFixId.value = null;
+  showSpotLocationSection.value = false;
+  showSpotScheduleSection.value = false;
+  isSpotUploadingCoverImage.value = false;
+  spotPreviewImages.value = [];
+  selectedSpotCity.value = null;
+  newSpotDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 // Alle Tour-Titel als Vorschläge für die "Tour zuordnen"-Combobox (TourAssignPicker.vue).
 const allTourTitles = computed(() => excursionsStore.excursions.map((e) => e.title));
 
@@ -3699,6 +3732,13 @@ function closeEditSpotForm() {
   selectedSpotCity.value = null;
   editSpotDraft.clear();
   editingSpot.value = null;
+}
+
+function discardEditSpotDraft() {
+  if (!editingSpot.value) return;
+  startEditSpot(editingSpot.value);
+  editSpotDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 watch(editSpotManualPin, (pin) => {
@@ -4122,6 +4162,12 @@ async function deleteEditingSpot() {
                   editingExcursion !== null
                     ? editExcursionDraft.restored.value
                     : newExcursionDraft.restored.value
+                "
+                :can-discard="true"
+                @discard="
+                  editingExcursion !== null
+                    ? discardEditExcursionDraft()
+                    : discardNewExcursionDraft()
                 "
               />
               <div class="actions-row">
@@ -4682,6 +4728,8 @@ async function deleteEditingSpot() {
                 :restored="
                   editingSpot !== null ? editSpotDraft.restored.value : newSpotDraft.restored.value
                 "
+                :can-discard="true"
+                @discard="editingSpot !== null ? discardEditSpotDraft() : discardNewSpotDraft()"
               />
               <div class="actions-row">
                 <Button

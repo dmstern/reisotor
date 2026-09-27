@@ -857,6 +857,23 @@ function closeAddForm() {
   newDraft.clear();
 }
 
+function discardNewDraft() {
+  newTitleTouched.value = false;
+  newStartDateTouched.value = false;
+  showAddLocationSection.value = false;
+  newStartDate.value = '';
+  newTime.value = '';
+  newEndTime.value = '';
+  newTitle.value = '';
+  newNote.value = '';
+  newEndDate.value = '';
+  newLocation.value = '';
+  newMapsLink.value = '';
+  newLinkKey.value = '';
+  newDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 // Ein direkt über den Schedule-Store angelegter/geänderter/gelöschter, mit einer Tour verknüpfter
 // Termin verändert deren abgeleitetes Datum (schedule_items.idea_id, siehe routes/ideas.ts) –
 // excursionsStore hält davon aber eine eigene, unabhängig geladene Kopie (Excursion.date), die
@@ -955,6 +972,13 @@ function closeEditForm() {
   editDraft.clear();
   editingItem.value = null;
   showEditLocationSection.value = false;
+}
+
+function discardEditDraft() {
+  if (!editingItem.value) return;
+  startEdit(editingItem.value);
+  editDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 function jumpToTrip() {
@@ -1588,7 +1612,12 @@ function formatDate(date: string) {
         <FormField icon="note" label="Notiz">
           <RichTextEditor v-model="newNote" placeholder="Notiz" compact expandable />
         </FormField>
-        <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+        <DraftStatusBar
+          :status="newDraft.status.value"
+          :restored="newDraft.restored.value"
+          :can-discard="true"
+          @discard="discardNewDraft"
+        />
         <div class="actions-row">
           <div class="spacer"></div>
           <Button type="submit" :disabled="!canAddScheduleItem" :title="addScheduleItemTooltip"
@@ -1701,7 +1730,12 @@ function formatDate(date: string) {
           :entity-id="editingItem.id"
           v-model:uploading="isItemUploadingAttachments"
         />
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"

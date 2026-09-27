@@ -630,6 +630,14 @@ async function closeForm() {
   newDraft.clear();
 }
 
+function discardNewDraft() {
+  newContentTouched.value = false;
+  newDateTouched.value = false;
+  form.value = emptyForm();
+  newDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 function startEdit(entry: DiaryEntry) {
   editContentTouched.value = false;
   editDateTouched.value = false;
@@ -700,6 +708,13 @@ async function closeEditForm() {
   }
   editDraft.clear();
   editingEntry.value = null;
+}
+
+function discardEditDraft() {
+  if (!editingEntry.value) return;
+  startEdit(editingEntry.value);
+  editDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 async function deleteEditingEntry() {
@@ -957,7 +972,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             </span>
           </Button>
         </CollapsibleFieldset>
-        <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+        <DraftStatusBar
+          :status="newDraft.status.value"
+          :restored="newDraft.restored.value"
+          :can-discard="true"
+          @discard="discardNewDraft"
+        />
         <div class="actions-row">
           <div class="spacer"></div>
           <Button type="submit" :disabled="!canSubmitNewEntry" :title="newEntrySaveTooltip">
@@ -1259,7 +1279,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             </span>
           </Button>
         </CollapsibleFieldset>
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             v-if="editingEntry?.author_id === auth.user?.id"

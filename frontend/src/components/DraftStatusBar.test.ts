@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+/* eslint-disable vue/one-component-per-file */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createApp, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -48,5 +50,32 @@ describe('DraftStatusBar', () => {
   it('does not render discard button when canDiscard is false', async () => {
     const html = await renderStatus({ status: 'saved', canDiscard: false });
     expect(html).not.toContain('draft-discard-btn');
+  });
+
+  it('emits discard event when discard button is clicked', async () => {
+    let discarded = false;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(DraftStatusBar, {
+          status: 'saved',
+          canDiscard: true,
+          onDiscard: () => {
+            discarded = true;
+          },
+        }),
+    });
+    app.use(createPinia());
+    app.mount(container);
+
+    const btn = container.querySelector('.draft-discard-btn') as HTMLButtonElement | null;
+    expect(btn).not.toBeNull();
+    btn?.click();
+    expect(discarded).toBe(true);
+
+    app.unmount();
+    container.remove();
   });
 });

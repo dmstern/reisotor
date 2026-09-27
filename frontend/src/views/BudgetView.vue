@@ -33,6 +33,7 @@ import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vu
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
+import { useToast } from '../composables/useToast';
 
 const tripStore = useTripStore();
 const auth = useAuthStore();
@@ -40,6 +41,7 @@ const spotsStore = useSpotsStore();
 const excursionsStore = useExcursionsStore();
 const budgetStore = useBudgetStore();
 const liveSync = useLiveSyncStore();
+const { showToast } = useToast();
 const tripId = tripStore.currentTripId as number;
 // Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
 // normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
@@ -242,6 +244,13 @@ function closeExpenseForm() {
   newExpenseDraft.clear();
 }
 
+function discardNewExpenseDraft() {
+  expenseForm.value = emptyExpenseForm();
+  showExpenseDetails.value = false;
+  newExpenseDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 function startEditExpense(expense: BudgetExpense) {
   editingExpense.value = expense;
   editExpenseForm.value = {
@@ -274,6 +283,13 @@ function closeEditExpenseForm() {
   editExpenseDraft.clear();
   editingExpense.value = null;
   showEditExpenseDetails.value = false;
+}
+
+function discardEditExpenseDraft() {
+  if (!editingExpense.value) return;
+  startEditExpense(editingExpense.value);
+  editExpenseDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 // --- Überweisungen ---
@@ -612,6 +628,8 @@ const categoryColors = computed(() => {
               <DraftStatusBar
                 :status="newExpenseDraft.status.value"
                 :restored="newExpenseDraft.restored.value"
+                :can-discard="true"
+                @discard="discardNewExpenseDraft"
               />
               <div class="actions-row">
                 <div class="spacer"></div>
@@ -802,6 +820,8 @@ const categoryColors = computed(() => {
         <DraftStatusBar
           :status="editExpenseDraft.status.value"
           :restored="editExpenseDraft.restored.value"
+          :can-discard="true"
+          @discard="discardEditExpenseDraft"
         />
         <div class="actions-row">
           <div class="spacer"></div>
