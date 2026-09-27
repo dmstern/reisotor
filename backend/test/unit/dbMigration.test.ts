@@ -291,4 +291,51 @@ describe('location_tracks.end_reason Migration', () => {
     };
     expect(row.end_reason).toBeNull();
   });
+
+  it('ergänzt Routing-Spalten auf excursion_legs und legt routing_cache Tabelle an', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-migration-test-routing-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL);
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL);
+      CREATE TABLE excursion_legs (
+        id INTEGER PRIMARY KEY,
+        idea_id INTEGER NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+        position INTEGER NOT NULL DEFAULT 0,
+        from_spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+        to_spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE
+      );
+    `);
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Trip', '2026-09-01', '2026-09-10')`
+      )
+      .run();
+    legacy.prepare(`INSERT INTO ideas (id, trip_id, title) VALUES (1, 1, 'Tour 1')`).run();
+    legacy
+      .prepare(`INSERT INTO spots (id, trip_id, title) VALUES (1, 1, 'Spot A'), (2, 1, 'Spot B')`)
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO excursion_legs (id, idea_id, position, from_spot_id, to_spot_id) VALUES (1, 1, 0, 1, 2)`
+      )
+      .run();
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const legColumns = db.prepare('PRAGMA table_info(excursion_legs)').all() as { name: string }[];
+    expect(legColumns.some((c) => c.name === 'route_geometry')).toBe(true);
+    expect(legColumns.some((c) => c.name === 'distance_meters')).toBe(true);
+    expect(legColumns.some((c) => c.name === 'duration_seconds')).toBe(true);
+    expect(legColumns.some((c) => c.name === 'routing_profile')).toBe(true);
+
+    const cacheColumns = db.prepare('PRAGMA table_info(routing_cache)').all() as { name: string }[];
+    expect(cacheColumns.length).toBeGreaterThan(0);
+    expect(cacheColumns.some((c) => c.name === 'response_json')).toBe(true);
+  });
 });

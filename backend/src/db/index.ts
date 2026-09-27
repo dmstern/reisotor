@@ -313,7 +313,11 @@ CREATE TABLE IF NOT EXISTS excursion_legs (
   note TEXT,
   amount REAL,
   paid_by_user_id INTEGER REFERENCES users(id),
-  budget_expense_id INTEGER REFERENCES budget_items(id)
+  budget_expense_id INTEGER REFERENCES budget_items(id),
+  route_geometry TEXT,
+  distance_meters INTEGER,
+  duration_seconds INTEGER,
+  routing_profile TEXT
 );
 
 -- Likes/Kommentare für Spots (analog idea_likes/idea_comments): ersetzt den bisherigen
@@ -1853,6 +1857,27 @@ ensureColumn('note_comments', 'updated_at', 'TEXT');
 ensureColumn('diary_comments', 'updated_at', 'TEXT');
 // Grund für das Beenden einer Aufzeichnung ('completed' = regulär beendet, 'aborted' = vom System abgebrochen):
 ensureColumn('location_tracks', 'end_reason', 'TEXT');
+
+// OpenRouteService Routing: Exakte Routengeometrien & Reisedauer für Teilstrecken (#361)
+ensureColumn('excursion_legs', 'route_geometry', 'TEXT');
+ensureColumn('excursion_legs', 'distance_meters', 'INTEGER');
+ensureColumn('excursion_legs', 'duration_seconds', 'INTEGER');
+ensureColumn('excursion_legs', 'routing_profile', 'TEXT');
+
+// Caching für Routing-Anfragen (Quota-Schonung & Offline-Verfügbarkeit)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS routing_cache (
+    id INTEGER PRIMARY KEY,
+    from_lat REAL NOT NULL,
+    from_lng REAL NOT NULL,
+    to_lat REAL NOT NULL,
+    to_lng REAL NOT NULL,
+    profile TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_routing_cache_lookup ON routing_cache(profile, from_lat, from_lng, to_lat, to_lng);
+`);
 
 // Repariere Koordinaten von "Hotel Alfama", falls diese durch früheres Spot-Bearbeiten verloren gingen:
 if (

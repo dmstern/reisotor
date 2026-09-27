@@ -25,6 +25,10 @@ interface ExcursionLegInput {
   amount?: number | null;
   paid_by_user_id?: number | null;
   budget_expense_id?: number | null;
+  route_geometry?: string | null;
+  distance_meters?: number | null;
+  duration_seconds?: number | null;
+  routing_profile?: string | null;
 }
 
 interface ExcursionLegRow {
@@ -44,6 +48,10 @@ interface ExcursionLegRow {
   amount: number | null;
   paid_by_user_id: number | null;
   budget_expense_id: number | null;
+  route_geometry: string | null;
+  distance_meters: number | null;
+  duration_seconds: number | null;
+  routing_profile: string | null;
 }
 
 interface IdeaBody {
@@ -108,14 +116,16 @@ const insertExcursionLegStmt = db.prepare(
   `INSERT INTO excursion_legs (
     idea_id, position, from_spot_id, to_spot_id, transport_type,
     departure_time, arrival_time, checkin_info, seat, luggage,
-    ticket_link, note, amount, paid_by_user_id, budget_expense_id
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ticket_link, note, amount, paid_by_user_id, budget_expense_id,
+    route_geometry, distance_meters, duration_seconds, routing_profile
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 const updateExcursionLegStmt = db.prepare(
   `UPDATE excursion_legs SET
     position = ?, from_spot_id = ?, to_spot_id = ?, transport_type = ?,
     departure_time = ?, arrival_time = ?, checkin_info = ?, seat = ?, luggage = ?,
-    ticket_link = ?, note = ?, amount = ?, paid_by_user_id = ?, budget_expense_id = ?
+    ticket_link = ?, note = ?, amount = ?, paid_by_user_id = ?, budget_expense_id = ?,
+    route_geometry = ?, distance_meters = ?, duration_seconds = ?, routing_profile = ?
    WHERE id = ?`
 );
 const selectScheduleByIdeaStmt = db.prepare(
@@ -406,6 +416,10 @@ function syncExcursionLegs(
           leg.amount ?? null,
           leg.paid_by_user_id ?? null,
           budgetExpenseId,
+          leg.route_geometry ?? null,
+          leg.distance_meters ?? null,
+          leg.duration_seconds ?? null,
+          leg.routing_profile ?? null,
           matchingLeg.id
         );
         preservedLegIds.add(matchingLeg.id);
@@ -425,7 +439,11 @@ function syncExcursionLegs(
           leg.note ?? null,
           leg.amount ?? null,
           leg.paid_by_user_id ?? null,
-          budgetExpenseId
+          budgetExpenseId,
+          leg.route_geometry ?? null,
+          leg.distance_meters ?? null,
+          leg.duration_seconds ?? null,
+          leg.routing_profile ?? null
         );
         preservedLegIds.add(insertRes.lastInsertRowid as number);
       }
