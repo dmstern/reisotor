@@ -1637,18 +1637,29 @@ defineExpose({
   flex-shrink: 0;
   align-self: center;
   margin-top: 0;
-  opacity: 0.7;
-  transition: all 0.15s ease;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease;
 }
 
 .status-coords-row:hover .coords-clear-btn,
 .coords-clear-btn:focus-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .coords-clear-btn:hover {
   opacity: 1;
   color: var(--color-danger, #ef4444);
+}
+
+@media (hover: none) {
+  .coords-clear-btn {
+    opacity: 0.85;
+    pointer-events: auto;
+  }
 }
 
 .sub-category-wrap {
