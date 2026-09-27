@@ -721,7 +721,7 @@ defineExpose({
           </Button>
         </div>
         <div class="status-details">
-          <!-- 1. Titel-Zeile mit dezentem Bleistift-Icon -->
+          <!-- 1. Titel-Zeile mit dezentem Titel-Icon (subtitles-edit) -->
           <div v-if="props.title !== undefined" class="status-meta-row status-title-row">
             <span class="status-row-icon" title="Titel" aria-hidden="true">
               <AppIcon :icon="FORM_FIELD_ICONS.title" :size="14" group="formFields" />
