@@ -236,7 +236,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
-  padding: 3px 14px 3px 3px;
+  padding: 4px 14px 3px 3px;
   height: 44px;
   box-sizing: border-box;
   position: relative;
@@ -282,7 +282,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
-  padding: var(--space-1);
+  padding: 5px var(--space-1) var(--space-1);
   pointer-events: auto;
   max-width: 100%;
   min-width: 0;
@@ -368,7 +368,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
-  padding: 3px 3px 3px 6px;
+  padding: 4px 3px 3px 6px;
   height: 44px;
   box-sizing: border-box;
 }
@@ -482,7 +482,7 @@ const profileTitle = computed(() => {
     display: none;
   }
   .brand {
-    padding: 3px;
+    padding: 4px 3px 3px 3px;
     width: 44px;
   }
 }
@@ -511,7 +511,7 @@ const profileTitle = computed(() => {
     backdrop-filter: var(--backdrop-blur-md);
     border: 1px solid var(--color-surface-glass-border);
     box-shadow: var(--shadow-floating-island);
-    padding: 3px;
+    padding: 4px 3px 3px 3px;
     height: 44px;
     box-sizing: border-box;
     pointer-events: auto;
