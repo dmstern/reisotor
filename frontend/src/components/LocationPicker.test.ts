@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/* eslint-disable vue/one-component-per-file */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createApp, h, nextTick, reactive } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -636,6 +637,27 @@ describe('LocationPicker', () => {
 
       cleanUp();
     });
+
+    it('renders orange modified styling and "Standort geändert" badge when modified is true', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 48.2082, lng: 16.3738 },
+        modified: true,
+      });
+      await nextTick();
+
+      const controlBox = container.querySelector('.location-control-box');
+      expect(controlBox?.classList.contains('is-modified')).toBe(true);
+
+      const checkCircle = container.querySelector('.status-check-circle');
+      expect(checkCircle?.classList.contains('is-modified')).toBe(true);
+      expect(checkCircle?.getAttribute('title')).toBe('Standort geändert');
+
+      const badge = container.querySelector('.status-badge-modified');
+      expect(badge).toBeTruthy();
+      expect(badge?.textContent).toBe('Standort geändert');
+
+      cleanUp();
+    });
   });
 
   describe('Mini-Map Leaflet Sync & Map Interaction', () => {
@@ -668,6 +690,64 @@ describe('LocationPicker', () => {
 
       expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 43.7696, lng: 11.2558 });
       expect(onUpdateMapsLink).toHaveBeenCalledWith(expect.stringContaining('43.7696'));
+
+      cleanUp();
+    });
+
+    it('clicking on map performs reverse geocoding and updates address when found', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          formatted_address: 'Stephansplatz 1, 1010 Wien',
+        }),
+      });
+      globalThis.fetch = fetchSpy;
+
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: null, address: 'Alte Adresse' },
+        { 'onUpdate:modelValue': onUpdateModelValue, 'onUpdate:address': onUpdateAddress }
+      );
+      await nextTick();
+
+      const clickHandler = mapClickHandlers[0];
+      clickHandler({ latlng: { lat: 48.2085, lng: 16.3731 } });
+      await nextTick();
+      await vi.runAllTimersAsync();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/places/reverse?lat=48.2085&lng=16.3731'),
+        expect.any(Object)
+      );
+      expect(onUpdateAddress).toHaveBeenCalledWith('Stephansplatz 1, 1010 Wien');
+
+      cleanUp();
+    });
+
+    it('clicking on map clears address when reverse geocode finds no address', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => null,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: { lat: 48.2082, lng: 16.3738 }, address: 'Alte Adresse 123' },
+        { 'onUpdate:modelValue': onUpdateModelValue, 'onUpdate:address': onUpdateAddress }
+      );
+      await nextTick();
+
+      const clickHandler = mapClickHandlers[0];
+      clickHandler({ latlng: { lat: 0, lng: 0 } });
+      await nextTick();
+      await vi.runAllTimersAsync();
+
+      expect(onUpdateAddress).toHaveBeenCalledWith('');
 
       cleanUp();
     });

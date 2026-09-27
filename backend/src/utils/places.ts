@@ -339,3 +339,135 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
     return [];
   }
 }
+
+export interface ReverseGeocodeOptions {
+  lat: number;
+  lng: number;
+  lang?: string;
+}
+
+export interface ReverseGeocodeResult {
+  name: string;
+  formatted_address: string;
+  address: string;
+  lat: number;
+  lng: number;
+  category?: string;
+  osmKey?: string;
+  osmValue?: string;
+  city?: string;
+  country?: string;
+  postcode?: string;
+}
+
+interface ReverseCacheEntry {
+  expiresAt: number;
+  data: ReverseGeocodeResult | null;
+}
+
+const reverseCache = new Map<string, ReverseCacheEntry>();
+
+export function clearReverseCache(): void {
+  reverseCache.clear();
+}
+
+export function setCachedReverse(key: string, data: ReverseGeocodeResult | null): void {
+  if (reverseCache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = reverseCache.keys().next().value;
+    if (oldestKey !== undefined) reverseCache.delete(oldestKey);
+  }
+  reverseCache.set(key, {
+    expiresAt: Date.now() + CACHE_TTL_MS,
+    data,
+  });
+}
+
+export async function reverseGeocode(
+  options: ReverseGeocodeOptions
+): Promise<ReverseGeocodeResult | null> {
+  const { lat, lng } = options;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  const lang = options.lang?.trim() || 'de';
+  const cacheKey = `rev|${lat.toFixed(4)}|${lng.toFixed(4)}|${lang}`;
+  const cached = reverseCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
+  }
+
+  let urlStr = 'https://photon.komoot.io/reverse';
+  if (process.env.PHOTON_API_URL) {
+    try {
+      const u = new URL(process.env.PHOTON_API_URL);
+      u.pathname = u.pathname.replace(/\/api\/?$/, '/reverse');
+      urlStr = u.toString();
+    } catch {
+      // fallback
+    }
+  }
+
+  let url: URL;
+  try {
+    url = new URL(urlStr);
+  } catch {
+    return null;
+  }
+
+  url.searchParams.set('lat', String(lat));
+  url.searchParams.set('lon', String(lng));
+  if (lang) {
+    url.searchParams.set('lang', lang);
+  }
+
+  try {
+    const res = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        'User-Agent': 'Reisotor/1.0',
+        Accept: 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = (await res.json()) as PhotonResponse;
+    if (!data?.features || !Array.isArray(data.features) || data.features.length === 0) {
+      setCachedReverse(cacheKey, null);
+      return null;
+    }
+
+    const feature = data.features[0];
+    const props = feature.properties || {};
+    const name = derivePlaceName(props);
+    const formattedAddress = formatAddress(props);
+
+    if (!formattedAddress && (!name || name === 'Unbekannter Ort')) {
+      setCachedReverse(cacheKey, null);
+      return null;
+    }
+
+    const [lon, featLat] = feature.geometry?.coordinates ?? [lng, lat];
+    const result: ReverseGeocodeResult = {
+      name,
+      formatted_address: formattedAddress || name,
+      address: formattedAddress || name,
+      lat: typeof featLat === 'number' && Number.isFinite(featLat) ? featLat : lat,
+      lng: typeof lon === 'number' && Number.isFinite(lon) ? lon : lng,
+      category: mapOsmToCategory(props.osm_key, props.osm_value) || undefined,
+      osmKey: props.osm_key,
+      osmValue: props.osm_value,
+      city: props.city || props.district || props.locality,
+      country: props.country,
+      postcode: props.postcode,
+    };
+
+    setCachedReverse(cacheKey, result);
+    return result;
+  } catch {
+    return null;
+  }
+}

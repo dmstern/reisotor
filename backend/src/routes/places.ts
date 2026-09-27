@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { searchPlaces } from '../utils/places.js';
+import { searchPlaces, reverseGeocode } from '../utils/places.js';
 
 export const placesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{
@@ -53,4 +53,27 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
       return results;
     }
   );
+
+  app.get<{
+    Querystring: {
+      lat?: string | number;
+      lng?: string | number;
+      lang?: string;
+    };
+  }>('/places/reverse', async (req, reply) => {
+    const rawLat = req.query.lat != null ? Number(req.query.lat) : NaN;
+    const rawLng = req.query.lng != null ? Number(req.query.lng) : NaN;
+
+    if (!Number.isFinite(rawLat) || !Number.isFinite(rawLng)) {
+      return reply.code(400).send({ error: 'Gültige Koordinaten (lat, lng) erforderlich' });
+    }
+
+    const result = await reverseGeocode({
+      lat: rawLat,
+      lng: rawLng,
+      lang: req.query.lang,
+    });
+
+    return result;
+  });
 };

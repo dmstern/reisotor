@@ -16,6 +16,7 @@ const props = withDefaults(
     placeholderIcon?: IconDef;
     iconGroup?: IconGroup;
     modalTitle?: string;
+    modified?: boolean;
   }>(),
   {
     modelValue: '',
@@ -23,6 +24,7 @@ const props = withDefaults(
     placeholderIcon: () => ACTION_ICONS.vacation,
     iconGroup: 'actions',
     modalTitle: 'Bild bearbeiten',
+    modified: false,
   }
 );
 
@@ -48,6 +50,7 @@ function removeImage() {
   <div class="cover-image-picker">
     <div
       class="form-image-banner"
+      :class="{ 'is-modified': modified }"
       :style="effectivePreview ? { backgroundImage: `url(${effectivePreview})` } : {}"
     >
       <AppIcon
@@ -112,6 +115,15 @@ function removeImage() {
   justify-content: space-between;
   padding: var(--space-3);
   overflow: hidden;
+  border: 2px solid transparent;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.form-image-banner.is-modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 .form-image-banner .placeholder {

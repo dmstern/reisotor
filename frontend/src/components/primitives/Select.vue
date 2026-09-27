@@ -13,12 +13,14 @@ withDefaults(
     ariaLabel?: string;
     size?: 'sm' | 'md' | 'lg';
     invalid?: boolean;
+    modified?: boolean;
   }>(),
   {
     disabled: false,
     required: false,
     size: 'md',
     invalid: false,
+    modified: false,
   }
 );
 
@@ -49,6 +51,7 @@ function onChange(event: Event) {
     :class="[
       size !== 'md' ? `select--${size}` : undefined,
       invalid ? 'select--invalid' : undefined,
+      modified ? 'select--modified' : undefined,
     ]"
     @change="onChange"
     @blur="emit('blur', $event)"
@@ -138,6 +141,15 @@ function onChange(event: Event) {
 
 .select--invalid:focus {
   outline-color: var(--color-danger);
+}
+
+.select--modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.select--modified:focus {
+  outline-color: var(--color-accent);
 }
 
 .select--sm {

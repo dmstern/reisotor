@@ -160,6 +160,19 @@ const editTrackTitle = ref('');
 const editTrackStartedAt = ref('');
 const editTrackVisibility = ref<TrackVisibility>('private');
 
+const isEditTrackTitleModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackTitle.value.trim() !== (editingTrack.value.title ?? '').trim();
+});
+const isEditTrackStartedAtModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackStartedAt.value !== toLocalDatetimeInputValue(editingTrack.value.started_at);
+});
+const isEditTrackVisibilityModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackVisibility.value !== editingTrack.value.visibility;
+});
+
 function startEditTrack(track: LocationTrack) {
   editingTrack.value = track;
   editTrackTitle.value = track.title ?? '';
@@ -543,6 +556,40 @@ const editExcursionDraft = useDraftAutosave(
   computed(() => editingExcursion.value !== null)
 );
 
+const initialEditingExcursion = computed(() => {
+  if (editingExcursion.value == null) return null;
+  return excursionsStore.excursions.find((e) => e.id === editingExcursion.value) ?? null;
+});
+
+const isEditTourTitleModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (
+    (editExcursionForm.value.title || '').trim() !==
+    (initialEditingExcursion.value.title || '').trim()
+  );
+});
+
+const isEditTourDateModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (editExcursionForm.value.date || '') !== (initialEditingExcursion.value.date || '');
+});
+
+const isEditTourNoteModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (
+    (editExcursionForm.value.note || '').trim() !==
+    (initialEditingExcursion.value.note || '').trim()
+  );
+});
+
+const isEditTourRoleModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (
+    (editExcursionForm.value.role || '').trim() !==
+    (initialEditingExcursion.value.role || '').trim()
+  );
+});
+
 function openExcursionForm() {
   excursionTitleTouched.value = false;
   excursionForm.value = emptyExcursionForm();
@@ -726,6 +773,87 @@ const editSpotDraft = useDraftAutosave(
 );
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
 const editSpotLocationError = ref(false);
+
+function areCoordsEqual(
+  a: { lat: number; lng: number } | null | undefined,
+  b: { lat: number; lng: number } | null | undefined
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
+}
+
+const isEditSpotLocationModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const initialPin =
+    editingSpot.value.lat != null && editingSpot.value.lng != null
+      ? { lat: editingSpot.value.lat, lng: editingSpot.value.lng }
+      : null;
+  const currentPin = editSpotManualPin.value;
+  const pinChanged = !areCoordsEqual(currentPin, initialPin);
+  const addressChanged =
+    (editSpotForm.value.address || '').trim() !== (editingSpot.value.address || '').trim();
+  const titleChanged =
+    (editSpotForm.value.title || '').trim() !== (editingSpot.value.title || '').trim();
+  const categoryChanged =
+    (editSpotForm.value.category || '').trim() !== (editingSpot.value.category || '').trim();
+  return pinChanged || addressChanged || titleChanged || mapsLinkChanged || categoryChanged;
+});
+
+const isEditSpotSideModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const isZuhause = editingSpot.value.category?.trim().toLowerCase() === 'zuhause';
+  const initialSide = isZuhause ? true : !!editingSpot.value.is_home;
+  return Boolean(editSpotForm.value.is_home) !== initialSide;
+});
+
+const isEditSpotImageModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.image_url || '').trim() !== (editingSpot.value.image_url || '').trim();
+});
+
+const isEditSpotNoteModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.note || '').trim() !== (editingSpot.value.note || '').trim();
+});
+
+const isEditSpotStartDateModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.start_date || '') !== (editingSpot.value.start_date || '');
+});
+
+const isEditSpotEndDateModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.end_date || '') !== (editingSpot.value.end_date || '');
+});
+
+const isEditSpotCheckinModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.checkin || '').trim() !== (editingSpot.value.checkin || '').trim();
+});
+
+const isEditSpotCheckoutModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.checkout || '').trim() !== (editingSpot.value.checkout || '').trim();
+});
+
+const isEditSpotContactModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.contact || '').trim() !== (editingSpot.value.contact || '').trim();
+});
+
+const isEditSpotAmountModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const initialAmount = editingSpot.value.amount != null ? String(editingSpot.value.amount) : '';
+  return (editSpotForm.value.amount || '').trim() !== initialAmount.trim();
+});
+
+const isEditSpotPaidByModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const initialPaid =
+    editingSpot.value.paid_by_user_id != null ? String(editingSpot.value.paid_by_user_id) : '';
+  return (editSpotForm.value.paid_by_user_id || '').trim() !== initialPaid.trim();
+});
 
 const spotTitleTouched = ref(false);
 const showSpotTitleError = computed(
@@ -3616,10 +3744,11 @@ async function deleteEditingSpot() {
                 label="Titel"
                 required
                 :invalid="showExcursionTitleError"
+                :modified="isEditTourTitleModified"
                 :error="
                   showExcursionTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined
                 "
-                v-slot="{ id, invalid }"
+                v-slot="{ id, invalid, modified }"
               >
                 <Input
                   :id="id"
@@ -3628,10 +3757,11 @@ async function deleteEditingSpot() {
                   placeholder="Titel"
                   required
                   :invalid="invalid"
+                  :modified="modified"
                   @blur="excursionTitleTouched = true"
                 />
               </FormField>
-              <FormField icon="note" label="Notiz">
+              <FormField icon="note" label="Notiz" :modified="isEditTourNoteModified">
                 <RichTextEditor
                   v-model="activeExcursionForm.note"
                   placeholder="Notiz"
@@ -3639,11 +3769,21 @@ async function deleteEditingSpot() {
                   expandable
                 />
               </FormField>
-              <FormField icon="date" label="Datum (sonst „In Planung“)">
-                <Input v-model="activeExcursionForm.date" type="date" />
+              <FormField
+                icon="date"
+                label="Datum (sonst „In Planung“)"
+                :modified="isEditTourDateModified"
+                v-slot="{ modified }"
+              >
+                <Input v-model="activeExcursionForm.date" type="date" :modified="modified" />
               </FormField>
-              <FormField icon="tour" label="Rolle">
-                <Select v-model="activeExcursionForm.role">
+              <FormField
+                icon="tour"
+                label="Rolle"
+                :modified="isEditTourRoleModified"
+                v-slot="{ modified }"
+              >
+                <Select v-model="activeExcursionForm.role" :modified="modified">
                   <option value="">🎒 – Normaler Ausflug –</option>
                   <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
                     {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
@@ -3808,24 +3948,39 @@ async function deleteEditingSpot() {
                 :placeholder-icon="groupIconDef(activeSpotForm.category)"
                 icon-group="categories"
                 modal-title="Spot-Bild bearbeiten"
+                :modified="isEditSpotImageModified"
               />
 
               <!-- 1. Standort-Bereich (Suche, Titel, Karte & Bereich) -->
-              <fieldset class="spot-location-fieldset spot-location-section">
+              <fieldset
+                class="spot-location-fieldset spot-location-section"
+                :class="{ 'is-modified': isEditSpotLocationModified }"
+              >
                 <legend class="spot-location-legend">
                   <span class="spot-location-legend-title">
                     <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
                     <span>Standort &amp; Titel</span>
                   </span>
                   <span v-if="hasSpotLocation" class="spot-location-legend-status">
-                    <AppIcon
-                      :icon="ACTION_ICONS.done"
-                      :size="15"
-                      group="actions"
-                      class="spot-location-check-icon"
-                      title="Standort gesetzt"
-                      aria-label="Standort gesetzt"
-                    />
+                    <span
+                      class="spot-location-check-circle"
+                      :class="{ 'is-modified': isEditSpotLocationModified }"
+                      :title="isEditSpotLocationModified ? 'Standort geändert' : 'Standort gesetzt'"
+                      :aria-label="
+                        isEditSpotLocationModified ? 'Standort geändert' : 'Standort gesetzt'
+                      "
+                    >
+                      <AppIcon
+                        :icon="ACTION_ICONS.done"
+                        :size="15"
+                        group="actions"
+                        class="spot-location-check-icon"
+                        :class="{ 'is-modified': isEditSpotLocationModified }"
+                      />
+                    </span>
+                    <span v-if="isEditSpotLocationModified" class="spot-location-badge-modified">
+                      Standort geändert
+                    </span>
                     <Button
                       variant="secondary"
                       size="sm"
@@ -3857,6 +4012,7 @@ async function deleteEditingSpot() {
                   "
                   :title-required="true"
                   :title-invalid="showSpotTitleError"
+                  :modified="isEditSpotLocationModified"
                   @update:address="activeSpotForm.address = $event"
                   @update:maps-link="onSpotMapsLinkUpdate"
                   @select="onSpotLocationSelect"
@@ -3875,8 +4031,21 @@ async function deleteEditingSpot() {
                   konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
                   manuell zu setzen.
                 </p>
-                <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
-                  <span class="spot-side-label">Bereich</span>
+                <div
+                  class="spot-side-field"
+                  :class="{ 'is-modified': isEditSpotSideModified }"
+                  role="group"
+                  aria-label="Bereich des Standorts"
+                >
+                  <span class="spot-side-label">
+                    <span>Bereich</span>
+                    <span
+                      v-if="isEditSpotSideModified"
+                      class="modified-dot"
+                      title="Geändert"
+                      aria-label="Geändert"
+                    />
+                  </span>
                   <SegmentedToggle
                     id="spotFormSideToggle"
                     :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
@@ -3890,47 +4059,87 @@ async function deleteEditingSpot() {
               </fieldset>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <div class="row">
-                  <FormField icon="date" label="Check-in-Datum">
-                    <Input v-model="activeSpotForm.start_date" type="date" />
+                  <FormField
+                    icon="date"
+                    label="Check-in-Datum"
+                    :modified="isEditSpotStartDateModified"
+                    v-slot="{ modified }"
+                  >
+                    <Input v-model="activeSpotForm.start_date" type="date" :modified="modified" />
                   </FormField>
-                  <FormField icon="date" label="Check-out-Datum">
-                    <Input v-model="activeSpotForm.end_date" type="date" />
+                  <FormField
+                    icon="date"
+                    label="Check-out-Datum"
+                    :modified="isEditSpotEndDateModified"
+                    v-slot="{ modified }"
+                  >
+                    <Input v-model="activeSpotForm.end_date" type="date" :modified="modified" />
                   </FormField>
                 </div>
                 <div class="row">
-                  <FormField icon="time" label="Check-in-Zeit">
+                  <FormField
+                    icon="time"
+                    label="Check-in-Zeit"
+                    :modified="isEditSpotCheckinModified"
+                    v-slot="{ modified }"
+                  >
                     <Input
                       v-model="activeSpotForm.checkin"
                       type="text"
                       placeholder="Check-in (z. B. 15:00)"
+                      :modified="modified"
                     />
                   </FormField>
-                  <FormField icon="time" label="Check-out-Zeit">
+                  <FormField
+                    icon="time"
+                    label="Check-out-Zeit"
+                    :modified="isEditSpotCheckoutModified"
+                    v-slot="{ modified }"
+                  >
                     <Input
                       v-model="activeSpotForm.checkout"
                       type="text"
                       placeholder="Check-out (z. B. 11:00)"
+                      :modified="modified"
                     />
                   </FormField>
                 </div>
-                <FormField icon="contact" label="Kontakt">
+                <FormField
+                  icon="contact"
+                  label="Kontakt"
+                  :modified="isEditSpotContactModified"
+                  v-slot="{ modified }"
+                >
                   <Input
                     v-model="activeSpotForm.contact"
                     type="text"
                     placeholder="Kontakt (Telefon/E-Mail/Text)"
+                    :modified="modified"
                   />
                 </FormField>
                 <div class="row">
-                  <FormField icon="amount" label="Kosten">
+                  <FormField
+                    icon="amount"
+                    label="Kosten"
+                    :modified="isEditSpotAmountModified"
+                    v-slot="{ modified }"
+                  >
                     <Input
                       v-model="activeSpotForm.amount"
                       type="number"
                       step="0.01"
                       placeholder="Kosten (€)"
+                      :modified="modified"
                     />
                   </FormField>
-                  <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
-                    <Select v-model="activeSpotForm.paid_by_user_id">
+                  <FormField
+                    v-if="users.length > 1"
+                    icon="shared"
+                    label="Bezahlt von"
+                    :modified="isEditSpotPaidByModified"
+                    v-slot="{ modified }"
+                  >
+                    <Select v-model="activeSpotForm.paid_by_user_id" :modified="modified">
                       <option value="">Bezahlt von –</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">
                         {{ u.avatar }} {{ u.username }}
@@ -3939,7 +4148,7 @@ async function deleteEditingSpot() {
                   </FormField>
                 </div>
               </template>
-              <FormField icon="note" label="Notiz">
+              <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified">
                 <RichTextEditor
                   v-model="activeSpotForm.note"
                   placeholder="Notiz"
@@ -4887,18 +5096,39 @@ async function deleteEditingSpot() {
                 </Button>
               </div>
 
-              <FormField icon="title" label="Name">
+              <FormField
+                icon="title"
+                label="Name"
+                :modified="isEditTrackTitleModified"
+                v-slot="{ modified }"
+              >
                 <Input
                   v-model="editTrackTitle"
                   type="text"
                   placeholder="z. B. Wanderung zur Berghütte"
                   :maxlength="100"
+                  :modified="modified"
                 />
               </FormField>
-              <FormField icon="date" label="Aufzeichnungszeitpunkt">
-                <Input v-model="editTrackStartedAt" type="datetime-local" required />
+              <FormField
+                icon="date"
+                label="Aufzeichnungszeitpunkt"
+                :modified="isEditTrackStartedAtModified"
+                v-slot="{ modified }"
+              >
+                <Input
+                  v-model="editTrackStartedAt"
+                  type="datetime-local"
+                  required
+                  :modified="modified"
+                />
               </FormField>
-              <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
+              <FormField
+                icon="visibility"
+                label="Sichtbarkeit"
+                :modified="isEditTrackVisibilityModified"
+                v-slot="{ id }"
+              >
                 <TrackVisibilitySelect :id="id" v-model="editTrackVisibility" />
               </FormField>
               <div class="actions-row">
@@ -5761,6 +5991,31 @@ async function deleteEditingSpot() {
   align-items: center;
 }
 
+.spot-location-fieldset.is-modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.spot-location-fieldset.is-modified .spot-location-legend {
+  color: var(--color-accent-dark, var(--color-accent));
+}
+
+.spot-location-check-circle {
+  display: inline-flex;
+  align-items: center;
+}
+
+.spot-location-check-circle.is-modified .spot-location-check-icon,
+.spot-location-check-icon.is-modified {
+  color: var(--color-accent, #e08e45);
+}
+
+.spot-location-badge-modified {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-accent-dark, var(--color-accent));
+}
+
 .spot-location-clear-btn {
   font-size: 0.75rem;
   padding: 1px 7px;
@@ -5810,6 +6065,10 @@ async function deleteEditingSpot() {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
+}
+
+.spot-side-field.is-modified .spot-side-label {
+  color: var(--color-accent-dark, var(--color-accent));
 }
 
 .location-fieldset-content :deep(.form-field),

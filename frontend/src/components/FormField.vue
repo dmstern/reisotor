@@ -18,6 +18,7 @@ const props = defineProps<{
   required?: boolean;
   error?: string;
   invalid?: boolean;
+  modified?: boolean;
 }>();
 
 const isRequired = computed(() => Boolean(props.required || props.label.trim().endsWith('*')));
@@ -35,7 +36,10 @@ const id = useId();
 </script>
 
 <template>
-  <div class="form-field" :class="{ 'has-error': Boolean(error || invalid) }">
+  <div
+    class="form-field"
+    :class="{ 'has-error': Boolean(error || invalid), 'is-modified': modified }"
+  >
     <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
     <label :for="id" class="form-field-label">
       <AppIcon
@@ -47,8 +51,9 @@ const id = useId();
       />
       {{ displayLabel
       }}<span v-if="isRequired" class="required-indicator" aria-hidden="true">*</span>
+      <span v-if="modified" class="modified-dot" title="Geändert" aria-label="Geändert" />
     </label>
-    <slot :id="id" :invalid="Boolean(invalid || error)" />
+    <slot :id="id" :invalid="Boolean(invalid || error)" :modified="modified" />
     <p v-if="error" class="field-error-hint" role="alert">
       <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
       {{ error }}
@@ -97,5 +102,29 @@ const id = useId();
   font-size: 0.8rem;
   color: var(--color-danger, #ef4444);
   font-weight: 500;
+}
+
+.form-field.is-modified .form-field-label {
+  color: var(--color-accent-dark, var(--color-accent));
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.form-field.is-modified :deep(.input),
+.form-field.is-modified :deep(.select),
+.form-field.is-modified :deep(.textarea),
+.form-field.is-modified :deep(input:not([type='checkbox']):not([type='radio'])),
+.form-field.is-modified :deep(select),
+.form-field.is-modified :deep(textarea) {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 </style>

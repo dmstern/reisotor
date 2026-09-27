@@ -12,6 +12,7 @@ withDefaults(
     readonly?: boolean;
     maxlength?: number;
     invalid?: boolean;
+    modified?: boolean;
     name?: string;
     id?: string;
     ariaLabel?: string;
@@ -23,6 +24,7 @@ withDefaults(
     required: false,
     readonly: false,
     invalid: false,
+    modified: false,
   }
 );
 
@@ -55,7 +57,10 @@ function onInput(event: Event) {
     :aria-label="ariaLabel"
     :aria-invalid="invalid || undefined"
     class="textarea"
-    :class="[invalid ? 'textarea--invalid' : undefined]"
+    :class="[
+      invalid ? 'textarea--invalid' : undefined,
+      modified ? 'textarea--modified' : undefined,
+    ]"
     @input="onInput"
     @blur="emit('blur', $event)"
     @focus="emit('focus', $event)"
@@ -103,5 +108,14 @@ function onInput(event: Event) {
 
 .textarea--invalid:focus {
   outline-color: var(--color-danger);
+}
+
+.textarea--modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.textarea--modified:focus {
+  outline-color: var(--color-accent);
 }
 </style>

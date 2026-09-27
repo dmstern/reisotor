@@ -40,6 +40,8 @@ withDefaults(
     size?: 'sm' | 'md' | 'lg';
     /** Fehler-/Ungültig-Zustand. */
     invalid?: boolean;
+    /** Geändert-Zustand (orange Markierung). */
+    modified?: boolean;
     /** Automatische Vervollständigung. */
     autocomplete?: string;
     /** Virtual Keyboard Mode ('decimal', 'numeric', 'search', 'email', 'tel', 'url', 'text', 'none'). */
@@ -61,6 +63,7 @@ withDefaults(
     readonly: false,
     size: 'md',
     invalid: false,
+    modified: false,
   }
 );
 
@@ -99,7 +102,11 @@ function onInput(event: Event) {
     :autocorrect="autocorrect"
     :aria-invalid="invalid || undefined"
     class="input"
-    :class="[size !== 'md' ? `input--${size}` : undefined, invalid ? 'input--invalid' : undefined]"
+    :class="[
+      size !== 'md' ? `input--${size}` : undefined,
+      invalid ? 'input--invalid' : undefined,
+      modified ? 'input--modified' : undefined,
+    ]"
     @input="onInput"
     @blur="emit('blur', $event)"
     @focus="emit('focus', $event)"
@@ -146,6 +153,15 @@ function onInput(event: Event) {
 
 .input--invalid:focus {
   outline-color: var(--color-danger);
+}
+
+.input--modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.input--modified:focus {
+  outline-color: var(--color-accent);
 }
 
 .input--sm {

@@ -10,17 +10,21 @@ import {
   mapOsmToCategory,
   searchPlaces,
   setCachedPlaces,
+  reverseGeocode,
+  clearReverseCache,
 } from '../../src/utils/places.js';
 
 describe('places utility (unit)', () => {
   beforeEach(() => {
     clearPlacesCache();
+    clearReverseCache();
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     clearPlacesCache();
+    clearReverseCache();
   });
 
   describe('mapOsmToCategory', () => {
@@ -337,6 +341,70 @@ describe('places utility (unit)', () => {
       expect(results[0].name).toBe('Valid Place');
       expect(results[0].lat).toBe(50.0);
       expect(results[0].lng).toBe(10.0);
+    });
+  });
+
+  describe('reverseGeocode', () => {
+    it('returns formatted address and place name for valid coordinates', async () => {
+      const mockResponse = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [13.3777, 52.5163] },
+            properties: {
+              name: 'Quadriga mit Victoria',
+              street: 'Platz des 18. März',
+              postcode: '10117',
+              city: 'Berlin',
+              country: 'Deutschland',
+              osm_key: 'tourism',
+              osm_value: 'artwork',
+            },
+          },
+        ],
+      };
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(mockResponse),
+          })
+        )
+      );
+
+      const result = await reverseGeocode({ lat: 52.5163, lng: 13.3777 });
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe('Quadriga mit Victoria');
+      expect(result?.formatted_address).toBe('Platz des 18. März, 10117 Berlin, Deutschland');
+      expect(result?.category).toBe('Ausflugsziel');
+    });
+
+    it('returns null when no features are found', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ type: 'FeatureCollection', features: [] }),
+          })
+        )
+      );
+
+      const result = await reverseGeocode({ lat: 0, lng: 0 });
+      expect(result).toBeNull();
+    });
+
+    it('returns null gracefully on network failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network failure')))
+      );
+
+      const result = await reverseGeocode({ lat: 52.5, lng: 13.4 });
+      expect(result).toBeNull();
     });
   });
 });

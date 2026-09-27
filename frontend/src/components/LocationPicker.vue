@@ -72,6 +72,8 @@ const props = withDefaults(
     categoryOptions?: string[];
     /** Ob der Status-Header (Haken & Entfernen) ausgeblendet werden soll (z. B. wenn im Fieldset-Legend platziert). */
     hideStatusHeader?: boolean;
+    /** Ob der Standort gegenüber dem gespeicherten Zustand geändert wurde (orange Hervorhebung). */
+    modified?: boolean;
   }>(),
   {
     title: undefined,
@@ -87,6 +89,7 @@ const props = withDefaults(
     center: undefined,
     referencePoints: () => [],
     hideStatusHeader: false,
+    modified: false,
   }
 );
 
@@ -269,6 +272,39 @@ function handleCategoryBlur() {
   }, 200);
 }
 
+async function reverseGeocodeCoords(lat: number, lng: number) {
+  try {
+    const res = await fetch(`/api/places/reverse?lat=${lat}&lng=${lng}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) {
+      editAddressInput.value = '';
+      emit('update:address', '');
+      return;
+    }
+    const data = (await res.json()) as { formatted_address?: string; address?: string } | null;
+    if (data && (data.formatted_address || data.address)) {
+      const addr = data.formatted_address || data.address || '';
+      editAddressInput.value = addr;
+      emit('update:address', addr);
+    } else {
+      editAddressInput.value = '';
+      emit('update:address', '');
+    }
+  } catch {
+    editAddressInput.value = '';
+    emit('update:address', '');
+  }
+}
+
+function onManualCoordsSet(coords: { lat: number; lng: number }) {
+  placeMarker(coords.lat, coords.lng);
+  selectedPlace.value = null;
+  emit('update:modelValue', coords);
+  emit('update:mapsLink', buildOsmLink(coords.lat, coords.lng));
+  reverseGeocodeCoords(coords.lat, coords.lng);
+}
+
 function placeMarker(lat: number, lng: number) {
   if (!map) return;
   if (marker) {
@@ -282,10 +318,7 @@ function placeMarker(lat: number, lng: number) {
     marker.on('dragend', () => {
       if (!marker) return;
       const latlng = marker.getLatLng();
-      const coords = { lat: latlng.lat, lng: latlng.lng };
-      selectedPlace.value = null;
-      emit('update:modelValue', coords);
-      emit('update:mapsLink', buildOsmLink(coords.lat, coords.lng));
+      onManualCoordsSet({ lat: latlng.lat, lng: latlng.lng });
     });
   }
 }
@@ -334,12 +367,8 @@ function useOwnLocation() {
     (position) => {
       locatingSelf.value = false;
       const { latitude, longitude } = position.coords;
-      const coords = { lat: latitude, lng: longitude };
-      placeMarker(latitude, longitude);
       map?.setView([latitude, longitude], 16);
-      selectedPlace.value = null;
-      emit('update:modelValue', coords);
-      emit('update:mapsLink', buildOsmLink(latitude, longitude));
+      onManualCoordsSet({ lat: latitude, lng: longitude });
     },
     () => {
       locatingSelf.value = false;
@@ -559,11 +588,7 @@ onMounted(async () => {
   startOwnLocation();
 
   map.on('click', (e: L.LeafletMouseEvent) => {
-    const coords = { lat: e.latlng.lat, lng: e.latlng.lng };
-    placeMarker(coords.lat, coords.lng);
-    selectedPlace.value = null;
-    emit('update:modelValue', coords);
-    emit('update:mapsLink', buildOsmLink(coords.lat, coords.lng));
+    onManualCoordsSet({ lat: e.latlng.lat, lng: e.latlng.lng });
   });
 
   resizeObserver = new ResizeObserver(() => map?.invalidateSize());
@@ -623,17 +648,26 @@ defineExpose({
     <!-- 1. Kombinierte Steuerungsbox für Standort & Suche -->
     <div
       class="location-control-box"
-      :class="{ 'has-location': hasLocation, 'has-details': showDetailsBox }"
+      :class="{
+        'has-location': hasLocation,
+        'has-details': showDetailsBox,
+        'is-modified': modified,
+      }"
     >
       <!-- Visuelle Status-Details (immer angezeigt, wenn Titel vorhanden oder Standort gesetzt) -->
       <div
         v-if="showDetailsBox"
         class="location-status"
-        :class="{ 'hint success': hasLocation }"
+        :class="{ 'hint success': hasLocation, 'is-modified': modified }"
         data-testid="location-status"
       >
         <div v-if="!hideStatusHeader && hasLocation" class="status-header">
-          <span class="status-check-circle" title="Standort gesetzt" aria-label="Standort gesetzt">
+          <span
+            class="status-check-circle"
+            :class="{ 'is-modified': modified }"
+            :title="modified ? 'Standort geändert' : 'Standort gesetzt'"
+            :aria-label="modified ? 'Standort geändert' : 'Standort gesetzt'"
+          >
             <AppIcon
               :icon="ACTION_ICONS.done"
               :size="15"
@@ -641,6 +675,7 @@ defineExpose({
               class="status-check-icon"
             />
           </span>
+          <span v-if="modified" class="status-badge-modified">Standort geändert</span>
           <Button variant="secondary" size="sm" class="clear-btn" type="button" @click="clear">
             Entfernen
           </Button>
@@ -956,6 +991,11 @@ defineExpose({
   gap: var(--space-2-5, 10px);
 }
 
+.location-control-box.is-modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
 @media (min-width: 580px) {
   .location-control-box.has-details,
   .location-control-box.has-location {
@@ -1132,6 +1172,16 @@ defineExpose({
 
 .status-check-icon {
   color: var(--color-success, #22c55e);
+}
+
+.status-check-circle.is-modified .status-check-icon {
+  color: var(--color-accent, #e08e45);
+}
+
+.status-badge-modified {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent-dark, var(--color-accent));
 }
 
 .clear-btn {

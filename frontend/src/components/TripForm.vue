@@ -80,6 +80,54 @@ const dateError = computed(() => {
   return '';
 });
 
+function areCoordsEqual(
+  a: { lat: number; lng: number } | null | undefined,
+  b: { lat: number; lng: number } | null | undefined
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
+}
+
+const isLocationModified = computed(() => {
+  if (!props.initial) return false;
+  const initialPin =
+    props.initial.lat != null && props.initial.lng != null
+      ? { lat: props.initial.lat, lng: props.initial.lng }
+      : null;
+  const pinChanged = !areCoordsEqual(manualPin.value, initialPin);
+  const destinationChanged =
+    (form.value.destination || '').trim() !== (props.initial.destination || '').trim();
+  const mapsLinkChanged =
+    (form.value.maps_link || '').trim() !== (props.initial.maps_link || '').trim();
+  return pinChanged || destinationChanged || mapsLinkChanged;
+});
+
+const isNameModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.name || '').trim() !== (props.initial.name || '').trim();
+});
+
+const isStartDateModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.start_date || '') !== (props.initial.start_date || '');
+});
+
+const isEndDateModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.end_date || '') !== (props.initial.end_date || '');
+});
+
+const isImageModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.image_url || '').trim() !== (props.initial.image_url || '').trim();
+});
+
+const isWeatherModelModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.weather_model || '') !== (props.initial.weather_model || '');
+});
+
 watch(
   () => props.initial,
   (initial) => {
@@ -175,6 +223,7 @@ function onSubmit() {
         v-model="form.image_url"
         :placeholder-icon="ACTION_ICONS.vacation"
         modal-title="Dashboard-Banner bearbeiten"
+        :modified="isImageModified"
       />
 
       <label :for="nameId">
@@ -187,6 +236,7 @@ function onSubmit() {
           type="text"
           placeholder="z. B. Italien 2026"
           required
+          :modified="isNameModified"
         />
       </label>
 
@@ -194,11 +244,21 @@ function onSubmit() {
         <div class="dates-row">
           <label :for="startDateId">
             Start
-            <Input :id="startDateId" v-model="form.start_date" type="date" />
+            <Input
+              :id="startDateId"
+              v-model="form.start_date"
+              type="date"
+              :modified="isStartDateModified"
+            />
           </label>
           <label :for="endDateId">
             Ende
-            <Input :id="endDateId" v-model="form.end_date" type="date" />
+            <Input
+              :id="endDateId"
+              v-model="form.end_date"
+              type="date"
+              :modified="isEndDateModified"
+            />
           </label>
         </div>
         <p v-if="dateError" class="hint error">
@@ -206,7 +266,7 @@ function onSubmit() {
           {{ dateError }}
         </p>
 
-        <Card class="location-box">
+        <Card class="location-box" :class="{ 'is-modified': isLocationModified }">
           <span class="field-label">Ziel &amp; Standort</span>
           <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
           <p v-if="locationError" class="hint error">
@@ -219,6 +279,7 @@ function onSubmit() {
             :address="form.destination"
             :maps-link="form.maps_link"
             placeholder="Reiseziel, Stadt oder Maps-Link eingeben..."
+            :modified="isLocationModified"
             @update:address="form.destination = $event"
             @update:maps-link="form.maps_link = $event"
             @select="onLocationSelect"
@@ -241,7 +302,11 @@ function onSubmit() {
         </p>
         <label for="trip-weather-model" class="field-group">
           Wettermodell
-          <Select id="trip-weather-model" v-model="form.weather_model">
+          <Select
+            id="trip-weather-model"
+            v-model="form.weather_model"
+            :modified="isWeatherModelModified"
+          >
             <option
               v-for="option in WEATHER_MODEL_OPTIONS"
               :key="option.value"
@@ -371,6 +436,14 @@ label,
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.location-box.is-modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 .location-box .field-label {

@@ -166,4 +166,62 @@ describe('GET /api/places/search route', () => {
     const parsed = new URL(requestedUrl);
     expect(parsed.searchParams.get('limit')).toBe('10');
   });
+
+  describe('GET /api/places/reverse', () => {
+    it('rejects unauthenticated requests with 401', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/places/reverse?lat=52.5163&lng=13.3777',
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('rejects missing coordinates with 400', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/places/reverse',
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns reverse geocoded place details for valid coordinates', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                type: 'FeatureCollection',
+                features: [
+                  {
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: [13.3777, 52.5163] },
+                    properties: {
+                      name: 'Quadriga mit Victoria',
+                      street: 'Platz des 18. März',
+                      postcode: '10117',
+                      city: 'Berlin',
+                      country: 'Deutschland',
+                    },
+                  },
+                ],
+              }),
+          })
+        )
+      );
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/places/reverse?lat=52.5163&lng=13.3777',
+        headers: { cookie },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const data = res.json();
+      expect(data.name).toBe('Quadriga mit Victoria');
+      expect(data.formatted_address).toBe('Platz des 18. März, 10117 Berlin, Deutschland');
+    });
+  });
 });
