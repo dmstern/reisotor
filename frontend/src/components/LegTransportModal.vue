@@ -12,6 +12,8 @@ import FileAttachments from './FileAttachments.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { api } from '../api/client';
+import type { DirectionsResponse } from '../api/types';
 
 const TRANSPORT_TYPE_OPTIONS = [
   'Zug',
@@ -39,6 +41,31 @@ const emit = defineEmits<{
 }>();
 
 const isLegUploadingAttachments = ref(false);
+const isCalculatingRoute = ref(false);
+const routeCalculationError = ref<string | null>(null);
+const calculatedDistanceMeters = ref<number | null>(null);
+const calculatedDurationSeconds = ref<number | null>(null);
+const routeGeometry = ref<string | null>(null);
+const routingProfile = ref<string | null>(null);
+
+function formatDistance(meters?: number | null): string {
+  if (meters == null) return '';
+  if (meters < 1000) return `${meters} m`;
+  const km = (meters / 1000).toLocaleString('de-DE', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  return `${km} km`;
+}
+
+function formatDuration(seconds?: number | null): string {
+  if (seconds == null) return '';
+  const totalMin = Math.round(seconds / 60);
+  if (totalMin < 60) return `${totalMin} Min.`;
+  const hours = Math.floor(totalMin / 60);
+  const mins = totalMin % 60;
+  return mins > 0 ? `${hours} Std. ${mins} Min.` : `${hours} Std.`;
+}
 
 const form = ref({
   transport_type: 'Zug',
@@ -57,6 +84,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (!open) return;
+    routeCalculationError.value = null;
     if (props.leg) {
       form.value = {
         transport_type: props.leg.transport_type || 'Zug',
@@ -70,6 +98,10 @@ watch(
         amount: props.leg.amount != null ? String(props.leg.amount) : '',
         paid_by_user_id: props.leg.paid_by_user_id != null ? String(props.leg.paid_by_user_id) : '',
       };
+      calculatedDistanceMeters.value = props.leg.distance_meters ?? null;
+      calculatedDurationSeconds.value = props.leg.duration_seconds ?? null;
+      routeGeometry.value = props.leg.route_geometry ?? null;
+      routingProfile.value = props.leg.routing_profile ?? null;
     } else {
       form.value = {
         transport_type: 'Zug',
@@ -83,6 +115,10 @@ watch(
         amount: '',
         paid_by_user_id: '',
       };
+      calculatedDistanceMeters.value = null;
+      calculatedDurationSeconds.value = null;
+      routeGeometry.value = null;
+      routingProfile.value = null;
     }
   },
   { immediate: true }
@@ -93,6 +129,68 @@ const modalTitle = computed(() => {
   const toName = props.toSpot?.title || 'Ziel';
   return `Teilstrecke: ${fromName} → ${toName}`;
 });
+
+const hasCoordinates = computed(() => {
+  return (
+    props.fromSpot?.lat != null &&
+    props.fromSpot?.lng != null &&
+    props.toSpot?.lat != null &&
+    props.toSpot?.lng != null
+  );
+});
+
+const isRoutable = computed(() => {
+  return hasCoordinates.value && ['Auto', 'Fahrrad', 'zu Fuß'].includes(form.value.transport_type);
+});
+
+function updateArrivalTimeFromDuration() {
+  if (!form.value.departure_time || !calculatedDurationSeconds.value) return;
+  const [hours, minutes] = form.value.departure_time.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return;
+  const departureTotalMinutes = hours * 60 + minutes;
+  const durationMinutes = Math.round(calculatedDurationSeconds.value / 60);
+  const arrivalTotalMinutes = (departureTotalMinutes + durationMinutes) % (24 * 60);
+  const arrHours = Math.floor(arrivalTotalMinutes / 60);
+  const arrMinutes = arrivalTotalMinutes % 60;
+  form.value.arrival_time = `${String(arrHours).padStart(2, '0')}:${String(arrMinutes).padStart(2, '0')}`;
+}
+
+async function calculateRoute() {
+  if (!props.fromSpot || !props.toSpot || !hasCoordinates.value) return;
+  isCalculatingRoute.value = true;
+  routeCalculationError.value = null;
+
+  try {
+    const tripId = props.fromSpot.trip_id || props.toSpot.trip_id;
+    const res = await api.post<DirectionsResponse>(`/trips/${tripId}/routes/directions`, {
+      from_lat: props.fromSpot.lat,
+      from_lng: props.fromSpot.lng,
+      to_lat: props.toSpot.lat,
+      to_lng: props.toSpot.lng,
+      transport_type: form.value.transport_type,
+    });
+
+    if (!res.supported || !res.routes?.length) {
+      routeCalculationError.value = res.reason || 'Keine Route gefunden';
+      return;
+    }
+
+    const primary = res.routes[0];
+    calculatedDistanceMeters.value = primary.distance_meters;
+    calculatedDurationSeconds.value = primary.duration_seconds;
+    routeGeometry.value = JSON.stringify(primary.coordinates);
+    routingProfile.value = primary.profile;
+
+    if (form.value.departure_time && !form.value.arrival_time) {
+      updateArrivalTimeFromDuration();
+    }
+  } catch (err: unknown) {
+    routeCalculationError.value =
+      err instanceof Error ? err.message : 'Fehler beim Abrufen der Route';
+  } finally {
+    isCalculatingRoute.value = false;
+  }
+}
 
 const hasExtendedData = computed(() => {
   return !!(
@@ -140,6 +238,10 @@ function onSave() {
     paid_by_user_id:
       form.value.amount && form.value.paid_by_user_id ? Number(form.value.paid_by_user_id) : null,
     budget_expense_id: props.leg?.budget_expense_id,
+    route_geometry: routeGeometry.value,
+    distance_meters: calculatedDistanceMeters.value,
+    duration_seconds: calculatedDurationSeconds.value,
+    routing_profile: routingProfile.value,
   };
   emit('save', legData);
   emit('update:modelValue', false);
@@ -185,12 +287,54 @@ function onDelete() {
         </Select>
       </FormField>
 
+      <!-- Exakte Routen-Berechnung (OpenRouteService) -->
+      <div v-if="isRoutable" class="route-calc-section">
+        <div class="route-calc-header">
+          <div class="route-calc-info">
+            <span class="route-calc-title">🗺️ Exakte Route (OpenRouteService)</span>
+            <span
+              v-if="calculatedDistanceMeters && calculatedDurationSeconds"
+              class="route-calc-stats"
+            >
+              {{ formatDistance(calculatedDistanceMeters) }} •
+              {{ formatDuration(calculatedDurationSeconds) }}
+            </span>
+            <span v-else class="route-calc-hint">
+              Echte Wegeroute, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            :loading="isCalculatingRoute"
+            @click="calculateRoute"
+          >
+            {{ calculatedDistanceMeters ? 'Neu berechnen' : 'Route berechnen' }}
+          </Button>
+        </div>
+        <p v-if="routeCalculationError" class="route-calc-error">⚠️ {{ routeCalculationError }}</p>
+      </div>
+
       <div class="row">
         <FormField icon="time" label="Abfahrt / Abflug">
           <Input v-model="form.departure_time" type="time" />
         </FormField>
         <FormField icon="time" label="Ankunft">
-          <Input v-model="form.arrival_time" type="time" />
+          <div class="arrival-time-wrapper">
+            <Input v-model="form.arrival_time" type="time" />
+            <Button
+              v-if="form.departure_time && calculatedDurationSeconds"
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="btn-calc-arrival"
+              title="Ankunftszeit aus Reisedauer berechnen"
+              @click="updateArrivalTimeFromDuration"
+            >
+              ⏱️ Berechnen
+            </Button>
+          </div>
         </FormField>
       </div>
 
@@ -353,9 +497,75 @@ function onDelete() {
   flex: 1;
 }
 
+.route-calc-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-subtle, var(--color-hover));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
+.route-calc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.route-calc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.route-calc-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.route-calc-stats {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 0.9375rem;
+}
+
+.route-calc-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.route-calc-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-danger, #ef4444);
+}
+
+.arrival-time-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.arrival-time-wrapper :deep(input) {
+  flex: 1;
+}
+
+.btn-calc-arrival {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 @media (max-width: 600px) {
   .row {
     grid-template-columns: 1fr;
+  }
+
+  .route-calc-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

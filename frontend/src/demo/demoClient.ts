@@ -233,6 +233,55 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       advisory: null,
     } as unknown as T;
   }
+  if (/^\/trips\/-?\d+\/routes\/directions$/.test(basePath) && method === 'POST') {
+    const { from_lat, from_lng, to_lat, to_lng, transport_type } = (body ?? {}) as {
+      from_lat?: number;
+      from_lng?: number;
+      to_lat?: number;
+      to_lng?: number;
+      transport_type?: string;
+    };
+    if (from_lat != null && from_lng != null && to_lat != null && to_lng != null) {
+      const dLat = ((to_lat - from_lat) * Math.PI) / 180;
+      const dLng = ((to_lng - from_lng) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((from_lat * Math.PI) / 180) *
+          Math.cos((to_lat * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distKm = 6371 * c;
+      const distance_meters = Math.round(distKm * 1000 * 1.2);
+      let speedKmh = 60;
+      if (transport_type === 'Fahrrad') speedKmh = 18;
+      else if (transport_type === 'zu Fuß') speedKmh = 4.5;
+      const duration_seconds = Math.round((distance_meters / (speedKmh * 1000)) * 3600);
+      return {
+        supported: true,
+        routes: [
+          {
+            coordinates: [
+              [from_lat, from_lng],
+              [
+                from_lat + (to_lat - from_lat) * 0.5 + 0.002,
+                from_lng + (to_lng - from_lng) * 0.5 - 0.002,
+              ],
+              [to_lat, to_lng],
+            ],
+            distance_meters,
+            duration_seconds,
+            profile:
+              transport_type === 'Fahrrad'
+                ? 'cycling-regular'
+                : transport_type === 'zu Fuß'
+                  ? 'foot-walking'
+                  : 'driving-car',
+          },
+        ],
+      } as unknown as T;
+    }
+  }
   if (path === '/users') {
     if (method === 'GET') return structuredClone(currentDemoUsers) as unknown as T;
     if (method === 'POST') {

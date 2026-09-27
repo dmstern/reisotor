@@ -139,4 +139,103 @@ describe('LegTransportModal', () => {
 
     cleanUp();
   });
+
+  it('zeigt Routen-Berechnung bei Koordinaten und Auto/Fahrrad/zu Fuß', async () => {
+    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
+    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
+    const carLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'Auto',
+      departure_time: '10:00',
+      arrival_time: '',
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: spotWithCoordsA,
+      toSpot: spotWithCoordsB,
+      leg: carLeg,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const calcSection = document.querySelector('.route-calc-section');
+    expect(calcSection).not.toBeNull();
+    expect(calcSection?.textContent).toContain('Exakte Route (OpenRouteService)');
+
+    cleanUp();
+  });
+
+  it('berechnet Route per Klick und aktualisiert Ankunftszeit', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.post).mockResolvedValueOnce({
+      supported: true,
+      routes: [
+        {
+          coordinates: [
+            [38.71, -9.14],
+            [38.8, -9.38],
+          ],
+          distance_meters: 30000,
+          duration_seconds: 1800, // 30 Min.
+          profile: 'driving-car',
+        },
+      ],
+    });
+
+    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
+    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
+    const carLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'Auto',
+      departure_time: '14:15',
+      arrival_time: '',
+    };
+
+    let savedLeg: ExcursionLeg | undefined;
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: spotWithCoordsA,
+      toSpot: spotWithCoordsB,
+      leg: carLeg,
+      users: mockUsers,
+      onSave: (leg: ExcursionLeg) => {
+        savedLeg = leg;
+      },
+    });
+    await nextTick();
+
+    const calcBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Route berechnen')
+    );
+    expect(calcBtn).toBeDefined();
+
+    calcBtn?.click();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 10));
+    await nextTick();
+
+    // Distanz und Dauer sollen nun angezeigt werden:
+    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30,0 km');
+    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30 Min.');
+
+    // Ankunftszeit soll von 14:15 + 30m auf 14:45 gesetzt sein:
+    const arrivalInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    expect(arrivalInput?.value).toBe('14:45');
+
+    // Formular absenden
+    const submitBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Übernehmen')
+    );
+    submitBtn?.click();
+    await nextTick();
+
+    expect(savedLeg).toBeDefined();
+    const resultLeg = savedLeg as ExcursionLeg;
+    expect(resultLeg.distance_meters).toBe(30000);
+    expect(resultLeg.duration_seconds).toBe(1800);
+    expect(resultLeg.arrival_time).toBe('14:45');
+
+    cleanUp();
+  });
 });

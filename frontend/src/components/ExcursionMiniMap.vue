@@ -3,14 +3,25 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { ExcursionStation } from '../utils/excursionStations';
-import { arcRoute, cachedEmojiPin } from '../utils/mapRoute';
+import type { ExcursionLeg } from '../api/types';
+import {
+  arcPoints,
+  arcRoute,
+  cachedEmojiPin,
+  getRouteColor,
+  parseRouteGeometry,
+} from '../utils/mapRoute';
 
 // Kleine, eigenständige Leaflet-Instanz für den Ausflug-Detail-Dialog – bewusst lazy erzeugt (erst
 // beim Mounten des Dialogs) und beim Schließen wieder mit map.remove() abgebaut (Pi-2-Ressourcen-
 // Rücksicht), statt dauerhaft im Hintergrund zu laufen wie die große Karte (TripMap.vue). Der
 // Aufrufer liefert bereits gefilterte (lat/lng gesetzt) und in Besuchsreihenfolge sortierte
 // Stationen (nicht zwingend echte Spots, siehe utils/excursionStations.ts).
-const props = defineProps<{ stations: ExcursionStation[]; routeColor?: string }>();
+const props = defineProps<{
+  stations: ExcursionStation[];
+  routeColor?: string;
+  legs?: ExcursionLeg[];
+}>();
 
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
@@ -31,13 +42,30 @@ function render() {
     L.marker(latlng, { icon: cachedEmojiPin(station.tabler, station.color) }).addTo(markersLayer);
   }
 
-  if (coords.length >= 2) {
-    L.polyline(arcRoute(coords), {
-      color: props.routeColor ?? '#e08e45',
-      weight: 3,
-      opacity: 0.65,
-      dashArray: '6 6',
-    }).addTo(routesLayer);
+  for (let i = 0; i < props.stations.length - 1; i++) {
+    const s1 = props.stations[i];
+    const s2 = props.stations[i + 1];
+    if (s1.lat == null || s1.lng == null || s2.lat == null || s2.lng == null) continue;
+
+    const leg = props.legs?.find(
+      (l) => l.position === i || (l.from_spot_id === s1.id && l.to_spot_id === s2.id)
+    );
+    const geometryCoords = parseRouteGeometry(leg?.route_geometry);
+
+    if (geometryCoords) {
+      L.polyline(geometryCoords, {
+        color: props.routeColor ?? getRouteColor(leg?.transport_type, leg?.routing_profile),
+        weight: 3,
+        opacity: 0.85,
+      }).addTo(routesLayer);
+    } else {
+      L.polyline(arcPoints([s1.lat, s1.lng], [s2.lat, s2.lng]), {
+        color: props.routeColor ?? getRouteColor(leg?.transport_type, leg?.routing_profile),
+        weight: 3,
+        opacity: 0.65,
+        dashArray: '6 6',
+      }).addTo(routesLayer);
+    }
   }
 
   if (coords.length > 1) {

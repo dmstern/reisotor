@@ -179,6 +179,23 @@ export interface ExcursionLeg {
   amount?: number | null;
   paid_by_user_id?: number | null;
   budget_expense_id?: number | null;
+  route_geometry?: string | null;
+  distance_meters?: number | null;
+  duration_seconds?: number | null;
+  routing_profile?: string | null;
+}
+
+export interface RouteResult {
+  coordinates: [number, number][];
+  distance_meters: number;
+  duration_seconds: number;
+  profile: string;
+}
+
+export interface DirectionsResponse {
+  supported: boolean;
+  reason?: string;
+  routes: RouteResult[];
 }
 
 export interface Excursion {
@@ -308,6 +325,7 @@ export interface TravelItem {
   role: IdeaRole | null;
   from_place_id: number | null;
   to_place_id: number | null;
+  legs?: ExcursionLeg[];
 }
 
 export interface Spot {

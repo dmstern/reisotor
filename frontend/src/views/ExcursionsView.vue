@@ -2153,7 +2153,12 @@ function getLegDuration(leg: ExcursionLeg): string | null {
 
 function getLegDurationParts(leg: ExcursionLeg): string[] | null {
   const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
-  return mins != null ? formatTravelDurationParts(mins) : null;
+  if (mins != null) return formatTravelDurationParts(mins);
+  if (leg.duration_seconds != null) {
+    const calcMins = Math.round(leg.duration_seconds / 60);
+    return formatTravelDurationParts(calcMins);
+  }
+  return null;
 }
 
 function getTourLayover(
