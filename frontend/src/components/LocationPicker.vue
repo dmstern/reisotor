@@ -722,6 +722,9 @@ defineExpose({
         <div class="status-details">
           <!-- 1. Titel-Zeile mit dezentem Bleistift-Icon -->
           <div v-if="props.title !== undefined" class="status-meta-row status-title-row">
+            <span class="status-row-icon" title="Titel" aria-hidden="true">
+              <AppIcon :icon="FORM_FIELD_ICONS.title" :size="14" group="formFields" />
+            </span>
             <div v-if="!isEditingTitle && props.title" class="status-meta-display">
               <span class="status-title" :title="props.title">
                 {{ props.title }}
@@ -768,6 +771,9 @@ defineExpose({
 
           <!-- 2. Adress-Zeile mit dezentem Bleistift-Icon -->
           <div class="status-meta-row status-address-row">
+            <span class="status-row-icon" title="Adresse" aria-hidden="true">
+              <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
+            </span>
             <div v-if="!isEditingAddress && props.address" class="status-meta-display">
               <span class="status-address" :title="props.address">
                 {{ props.address }}
@@ -785,8 +791,7 @@ defineExpose({
             </div>
             <div v-else-if="!isEditingAddress && !props.address" class="status-meta-display">
               <button type="button" class="add-address-btn" @click="startEditAddress">
-                <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
-                <span>Adresse hinzufügen</span>
+                <span>+ Adresse hinzufügen</span>
               </button>
             </div>
             <div v-else class="status-meta-edit">
@@ -814,6 +819,9 @@ defineExpose({
 
           <!-- 3. Kategorie-Zeile mit dezentem Bleistift-Icon -->
           <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
+            <span class="status-row-icon" title="Kategorie" aria-hidden="true">
+              <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
+            </span>
             <div v-if="!isEditingCategory && props.category" class="status-meta-display">
               <CategoryChip :category="props.category" type="spot" />
               <IconButton
@@ -833,8 +841,7 @@ defineExpose({
                 class="add-address-btn add-category-btn"
                 @click="startEditCategory"
               >
-                <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
-                <span>Kategorie wählen</span>
+                <span>+ Kategorie wählen</span>
               </button>
             </div>
             <div v-else class="status-meta-edit status-category-edit">
@@ -866,9 +873,14 @@ defineExpose({
 
           <!-- 4. Koordinaten-Zeile -->
           <div v-if="modelValue" class="status-meta-row status-coords-row">
-            <span class="status-coords">
-              {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+            <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
+              <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
             </span>
+            <div class="status-meta-display">
+              <span class="status-coords">
+                {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -1232,20 +1244,34 @@ defineExpose({
 .status-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
 }
 
 .status-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
   min-width: 0;
+}
+
+.status-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 .status-meta-display {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1, 4px);
+  justify-content: flex-start;
+  gap: var(--space-1-5, 6px);
   min-width: 0;
+  flex: 1;
 }
 
 .status-meta-edit {
@@ -1253,6 +1279,8 @@ defineExpose({
   align-items: center;
   gap: var(--space-1, 4px);
   width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .inline-edit-input {
@@ -1316,12 +1344,6 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.status-category-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .sub-category-wrap {

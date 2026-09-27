@@ -600,6 +600,30 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
+    it('renders matching icons and left-aligned rows for title, address, category, and coordinates', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 48.2082, lng: 16.3738 },
+        title: 'Café Central',
+        address: 'Herrengasse 14, 1010 Wien',
+        category: 'Restaurant',
+      });
+      await nextTick();
+
+      const titleIcon = container.querySelector('.status-title-row .status-row-icon');
+      expect(titleIcon).toBeTruthy();
+
+      const addressIcon = container.querySelector('.status-address-row .status-row-icon');
+      expect(addressIcon).toBeTruthy();
+
+      const categoryIcon = container.querySelector('.status-category-row .status-row-icon');
+      expect(categoryIcon).toBeTruthy();
+
+      const coordsIcon = container.querySelector('.status-coords-row .status-row-icon');
+      expect(coordsIcon).toBeTruthy();
+
+      cleanUp();
+    });
+
     it('clicking "Entfernen" button emits null to modelValue, empties address & link, and emits clear', async () => {
       const onUpdateModelValue = vi.fn();
       const onUpdateAddress = vi.fn();
