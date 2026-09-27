@@ -939,6 +939,7 @@ const spotPendingFixId = ref<number | null>(null);
 
 const editingSpot = ref<Spot | null>(null);
 const isSpotUploadingAttachments = ref(false);
+const isSpotUploadingCoverImage = ref(false);
 const editSpotForm = ref(emptySpotForm());
 
 const activeSpotForm = computed(() =>
@@ -1048,11 +1049,15 @@ const showSpotTitleError = computed(
 );
 
 const canSaveSpot = computed(
-  () => !!activeSpotForm.value.title.trim() && !isSpotUploadingAttachments.value
+  () =>
+    !!activeSpotForm.value.title.trim() &&
+    !isSpotUploadingAttachments.value &&
+    !isSpotUploadingCoverImage.value
 );
 
 const spotSaveTooltip = computed(() => {
   if (isSpotUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (isSpotUploadingCoverImage.value) return 'Spot-Bild wird noch hochgeladen…';
   if (!activeSpotForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Spot ein';
   return undefined;
 });
@@ -3471,6 +3476,7 @@ function closeSpotForm() {
   spotPendingFixId.value = null;
   showSpotLocationSection.value = false;
   showSpotScheduleSection.value = false;
+  isSpotUploadingCoverImage.value = false;
   newSpotDraft.clear();
 }
 
@@ -3522,6 +3528,7 @@ async function addSpot() {
     spotTitleTouched.value = true;
     return;
   }
+  if (isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value) return;
   const body = spotToBody(spotForm.value, spotManualPin.value);
   const result =
     spotPendingFixId.value != null
@@ -3659,7 +3666,8 @@ async function submitEditSpot() {
     spotTitleTouched.value = true;
     return;
   }
-  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
+  if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value)
+    return;
   const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
   const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
@@ -3678,6 +3686,7 @@ function closeEditSpotForm() {
   spotTitleTouched.value = false;
   spotManualPin.value = null;
   editSpotManualPin.value = null;
+  isSpotUploadingCoverImage.value = false;
   editSpotDraft.clear();
   editingSpot.value = null;
 }
@@ -3687,7 +3696,8 @@ watch(editSpotManualPin, (pin) => {
 });
 
 async function deleteEditingSpot() {
-  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
+  if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value)
+    return;
   const id = editingSpot.value.id;
   await spotsStore.remove(id);
   drawers.touchLocations();
@@ -4213,6 +4223,7 @@ async function deleteEditingSpot() {
             >
               <CoverImagePicker
                 v-model="activeSpotForm.image_url"
+                v-model:uploading="isSpotUploadingCoverImage"
                 :preview-image="editingSpot !== null ? editSpotPreviewImage : spotPreviewImage"
                 :placeholder-icon="groupIconDef(activeSpotForm.category)"
                 icon-group="categories"
@@ -4663,7 +4674,7 @@ async function deleteEditingSpot() {
                   variant="danger"
                   secondary
                   :icon="ACTION_ICONS.delete"
-                  :disabled="isSpotUploadingAttachments"
+                  :disabled="isSpotUploadingAttachments || isSpotUploadingCoverImage"
                   @click="deleteEditingSpot"
                 >
                   Löschen

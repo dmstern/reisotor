@@ -195,7 +195,10 @@ function onLocationReset() {
       : null;
 }
 
+const isUploadingCoverImage = ref(false);
+
 function onSubmit() {
+  if (isUploadingCoverImage.value) return;
   if (!form.value.name.trim()) {
     activeTab.value = 'general';
     return;
@@ -234,6 +237,7 @@ function onSubmit() {
     <div v-show="!showTabs || activeTab === 'general'" class="tab-content">
       <CoverImagePicker
         v-model="form.image_url"
+        v-model:uploading="isUploadingCoverImage"
         :placeholder-icon="ACTION_ICONS.vacation"
         modal-title="Dashboard-Banner bearbeiten"
         :modified="isImageModified"
@@ -352,12 +356,15 @@ function onSubmit() {
         variant="danger"
         secondary
         :icon="ACTION_ICONS.delete"
+        :disabled="isUploadingCoverImage"
         @click="emit('delete')"
       >
         Löschen
       </Button>
       <div class="spacer"></div>
-      <Button type="submit">{{ submitLabel ?? 'Speichern' }}</Button>
+      <Button type="submit" :disabled="isUploadingCoverImage">{{
+        submitLabel ?? 'Speichern'
+      }}</Button>
     </div>
   </form>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { IconDef } from '../utils/icon';
 import type { IconGroup } from '../stores/iconStyle';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -17,6 +17,7 @@ const props = withDefaults(
     iconGroup?: IconGroup;
     modalTitle?: string;
     modified?: boolean;
+    uploading?: boolean;
   }>(),
   {
     modelValue: '',
@@ -25,14 +26,22 @@ const props = withDefaults(
     iconGroup: 'actions',
     modalTitle: 'Bild bearbeiten',
     modified: false,
+    uploading: false,
   }
 );
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
+  (e: 'update:uploading', value: boolean): void;
 }>();
 
 const showModal = ref(false);
+const isUploading = ref(false);
+const imageUrlInputRef = ref<InstanceType<typeof ImageUrlInput> | null>(null);
+
+watch(isUploading, (v) => {
+  emit('update:uploading', v);
+});
 
 const effectivePreview = computed(() => {
   if (props.modelValue) return props.modelValue;
@@ -41,8 +50,18 @@ const effectivePreview = computed(() => {
 });
 
 function removeImage() {
+  if (isUploading.value) return;
   emit('update:modelValue', '');
   showModal.value = false;
+}
+
+function handleModalClose(visible: boolean) {
+  if (!visible) {
+    if (isUploading.value) {
+      imageUrlInputRef.value?.abortUpload();
+    }
+    showModal.value = false;
+  }
 }
 </script>
 
@@ -68,14 +87,12 @@ function removeImage() {
       </div>
     </div>
 
-    <Modal
-      :model-value="showModal"
-      :title="modalTitle"
-      @update:model-value="(v) => !v && (showModal = false)"
-    >
+    <Modal :model-value="showModal" :title="modalTitle" @update:model-value="handleModalClose">
       <div class="image-submodal">
         <ImageUrlInput
+          ref="imageUrlInputRef"
           :model-value="modelValue"
+          v-model:uploading="isUploading"
           @update:model-value="(val) => emit('update:modelValue', val)"
         />
         <ButtonGroup>
@@ -85,12 +102,13 @@ function removeImage() {
             variant="danger"
             secondary
             :icon="ACTION_ICONS.delete"
+            :disabled="isUploading"
             @click="removeImage"
           >
             Bild entfernen
           </Button>
           <div v-if="modelValue" class="spacer" />
-          <Button type="button" @click="showModal = false">Fertig</Button>
+          <Button type="button" :disabled="isUploading" @click="showModal = false">Fertig</Button>
         </ButtonGroup>
       </div>
     </Modal>
