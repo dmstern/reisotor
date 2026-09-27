@@ -64,7 +64,7 @@ const props = withDefaults(
     address: '',
     mapsLink: '',
     proximityBias: null,
-    placeholder: 'Adresse, Ort oder Maps-Link eingeben...',
+    placeholder: undefined,
     zoom: undefined,
     center: undefined,
     referencePoints: () => [],
@@ -88,14 +88,22 @@ const activeIndex = ref(-1);
 const selectedPlace = ref<PlaceSearchResult | null>(null);
 const shortlinkDetected = ref(false);
 
+const computedPlaceholder = computed(() => {
+  if (props.placeholder) return props.placeholder;
+  return props.modelValue
+    ? 'Anderen Ort oder Adresse suchen...'
+    : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
+});
+
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let activeAbortController: AbortController | null = null;
 
-// Initialisiere Textfeld mit übergebenem Link oder Adresse
+// Initialisiere Textfeld mit übergebenem Link oder Adresse nur, wenn noch kein Standort gesetzt ist
+// (wenn bereits Koordinaten vorliegen, zeigt die Status-Karte die Daten und das Suchfeld bleibt frei).
 watch(
   () => props.mapsLink,
   (link) => {
-    if (link && !inputText.value) {
+    if (link && !inputText.value && !props.modelValue) {
       inputText.value = link;
     }
   },
@@ -105,7 +113,7 @@ watch(
 watch(
   () => props.address,
   (addr) => {
-    if (addr && !inputText.value && !props.mapsLink) {
+    if (addr && !inputText.value && !props.modelValue && !props.mapsLink) {
       inputText.value = addr;
     }
   },
@@ -467,7 +475,7 @@ onUnmounted(() => {
         :model-value="inputText"
         class="location-picker-input"
         type="text"
-        :placeholder="placeholder"
+        :placeholder="computedPlaceholder"
         aria-label="Standort suchen oder Maps-Link einfügen"
         autocomplete="off"
         @update:model-value="handleInput"
@@ -480,11 +488,24 @@ onUnmounted(() => {
       <!-- Autocomplete Dropdown List -->
       <Transition name="dropdown-unfold">
         <ul
-          v-if="isOpen && results.length"
+          v-if="isOpen && (results.length > 0 || (!isSearching && inputText.trim().length >= 2))"
           class="location-dropdown options"
           role="listbox"
           aria-label="Suchergebnisse"
         >
+          <li
+            v-if="!isSearching && results.length === 0"
+            role="status"
+            class="location-result-empty"
+          >
+            <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" class="item-icon" />
+            <div class="location-empty-content">
+              <span class="empty-title">Kein passender Ort gefunden</span>
+              <span class="empty-desc">
+                Du kannst den Titel unten manuell eingeben oder direkt auf die Karte tippen.
+              </span>
+            </div>
+          </li>
           <li
             v-for="(place, index) in results"
             :key="place.id || `${place.lat}-${place.lng}-${index}`"
@@ -677,6 +698,33 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.location-result-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2, 8px);
+  padding: 10px 12px;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.location-empty-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.location-empty-content .empty-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.location-empty-content .empty-desc {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 /* Status Card */

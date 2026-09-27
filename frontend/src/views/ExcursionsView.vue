@@ -3228,9 +3228,8 @@ watch(spotManualPin, (pin) => {
 });
 
 function onSpotLocationSelect(place: PlaceSearchResult) {
-  if (!activeSpotForm.value.title.trim()) {
-    activeSpotForm.value.title = place.name;
-  }
+  activeSpotForm.value.title = place.name;
+  spotTitleTouched.value = false;
   activeSpotForm.value.address = place.formatted_address || place.name;
   const coords = { lat: place.lat, lng: place.lng };
   spotManualPin.value = coords;
@@ -3764,6 +3763,34 @@ async function deleteEditingSpot() {
                 icon-group="categories"
                 modal-title="Spot-Bild bearbeiten"
               />
+
+              <!-- 1. Ortssuche & Standort als primärer Einstieg -->
+              <div class="spot-location-section">
+                <LocationPicker
+                  v-model="spotManualPin"
+                  :address="activeSpotForm.address"
+                  :maps-link="activeSpotForm.maps_link"
+                  :proximity-bias="spotPickerCenter"
+                  :center="spotPickerCenter"
+                  :reference-points="
+                    editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
+                  "
+                  @update:address="activeSpotForm.address = $event"
+                  @update:maps-link="onSpotMapsLinkUpdate"
+                  @select="onSpotLocationSelect"
+                  @clear="onSpotLocationClear"
+                />
+                <p
+                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
+                  class="hint error"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                  konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
+                  manuell zu setzen.
+                </p>
+              </div>
+
+              <!-- 2. Kerndaten: Titel & Kategorie (Automatisch gefüllt bei Suche oder manuell bearbeitbar) -->
               <FormField
                 icon="title"
                 label="Titel"
@@ -3789,6 +3816,16 @@ async function deleteEditingSpot() {
                   :options="spotCategoryOptions"
                 />
               </FormField>
+              <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
+                <span class="spot-side-label">Bereich</span>
+                <SegmentedToggle
+                  id="spotFormSideToggle"
+                  :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
+                  :options="SPOT_SIDE_OPTIONS"
+                  @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
+                />
+                <p class="hint">z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen</p>
+              </div>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
@@ -3840,63 +3877,6 @@ async function deleteEditingSpot() {
                   </FormField>
                 </div>
               </template>
-              <CollapsibleFieldset
-                :model-value="
-                  editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
-                "
-                label="Standort"
-                :icon="FORM_FIELD_ICONS.location"
-                icon-group="formFields"
-                class="location-fieldset"
-                content-class="location-fieldset-content"
-                @update:model-value="
-                  (val) => {
-                    if (editingSpot !== null) {
-                      showEditSpotLocationSection = val;
-                    } else {
-                      showSpotLocationSection = val;
-                    }
-                  }
-                "
-              >
-                <p class="hint">
-                  Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
-                </p>
-                <p
-                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
-                  class="hint error"
-                >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                  konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
-                  manuell zu setzen.
-                </p>
-                <LocationPicker
-                  v-model="spotManualPin"
-                  :address="activeSpotForm.address"
-                  :maps-link="activeSpotForm.maps_link"
-                  :proximity-bias="spotPickerCenter"
-                  :center="spotPickerCenter"
-                  :reference-points="
-                    editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
-                  "
-                  @update:address="activeSpotForm.address = $event"
-                  @update:maps-link="onSpotMapsLinkUpdate"
-                  @select="onSpotLocationSelect"
-                  @clear="onSpotLocationClear"
-                />
-                <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
-                  <span class="spot-side-label">Bereich</span>
-                  <SegmentedToggle
-                    id="spotFormSideToggle"
-                    :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
-                    :options="SPOT_SIDE_OPTIONS"
-                    @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
-                  />
-                  <p class="hint">
-                    z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen
-                  </p>
-                </div>
-              </CollapsibleFieldset>
               <FormField icon="note" label="Notiz">
                 <RichTextEditor
                   v-model="activeSpotForm.note"
@@ -5674,6 +5654,12 @@ async function deleteEditingSpot() {
 
 .spacer {
   flex: 1;
+}
+
+.spot-location-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
 }
 
 .location-fieldset-content {
