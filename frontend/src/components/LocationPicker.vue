@@ -897,94 +897,44 @@ defineExpose({
       </div>
 
       <!-- 2. Polaroid-Card: schwebt links unterhalb des Suchfelds auf der Karte -->
-      <div
-        v-if="isDetailsVisible"
-        class="polaroid-card"
-        :class="{ 'is-modified': modified, 'has-location': hasLocation }"
-        data-testid="location-status"
-      >
-        <!-- Header Actions (oben rechts in der Card): Zurücksetzen -->
-        <div v-if="modified" class="polaroid-header-actions">
-          <IconButton
-            type="button"
-            size="sm"
-            shape="circle"
-            variant="secondary"
-            class="polaroid-action-btn polaroid-reset-btn"
-            :icon="ACTION_ICONS.restore"
-            title="Standort zurücksetzen"
-            aria-label="Standort zurücksetzen"
-            @click="onResetClick"
-          />
-        </div>
+      <Transition name="polaroid-slide">
+        <div
+          v-if="isDetailsVisible"
+          class="polaroid-card"
+          :class="{ 'is-modified': modified, 'has-location': hasLocation }"
+          data-testid="location-status"
+        >
+          <!-- Header Actions (oben rechts in der Card): Zurücksetzen -->
+          <div v-if="modified" class="polaroid-header-actions">
+            <IconButton
+              type="button"
+              size="sm"
+              shape="circle"
+              variant="secondary"
+              class="polaroid-action-btn polaroid-reset-btn"
+              :icon="ACTION_ICONS.restore"
+              title="Standort zurücksetzen"
+              aria-label="Standort zurücksetzen"
+              @click="onResetClick"
+            />
+          </div>
 
-        <!-- Polaroid-Foto / Medien-Slot (z. B. CoverImagePicker) -->
-        <div v-if="$slots.media" class="polaroid-media">
-          <slot name="media" />
-        </div>
+          <!-- Polaroid-Foto / Medien-Slot (z. B. CoverImagePicker) -->
+          <div v-if="$slots.media" class="polaroid-media">
+            <slot name="media" />
+          </div>
 
-        <!-- Polaroid-Body / Beschriftung & Detailzeilen -->
-        <div class="polaroid-body">
-          <div class="status-details">
-            <!-- 1. Titel-Zeile -->
-            <div v-if="props.title !== undefined" class="status-meta-row status-title-row">
-              <span class="status-row-icon" title="Titel" aria-hidden="true">
-                <AppIcon :icon="FORM_FIELD_ICONS.title" :size="14" group="formFields" />
-              </span>
-              <div v-if="!isEditingTitle && props.title" class="status-meta-display">
-                <span class="status-title" :title="props.title">
-                  {{ props.title }}
+          <!-- Polaroid-Body / Beschriftung & Detailzeilen -->
+          <div class="polaroid-body">
+            <div class="status-details">
+              <!-- 1. Titel-Zeile -->
+              <div v-if="props.title !== undefined" class="status-meta-row status-title-row">
+                <span class="status-row-icon" title="Titel" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.title" :size="14" group="formFields" />
                 </span>
-                <IconButton
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  class="inline-edit-btn"
-                  :icon="ACTION_ICONS.edit"
-                  title="Titel bearbeiten"
-                  aria-label="Titel bearbeiten"
-                  @click="startEditTitle"
-                />
-              </div>
-              <div v-else class="status-meta-edit status-title-edit">
-                <Input
-                  v-model="editTitleInput"
-                  size="sm"
-                  class="inline-edit-input"
-                  name="title"
-                  data-testid="spot-title-input"
-                  placeholder="Titel des Spots..."
-                  :required="titleRequired"
-                  :invalid="titleInvalid"
-                  @input="onTitleInput"
-                  @keydown.enter.prevent="saveTitle"
-                  @keydown.esc.prevent="cancelTitle"
-                  @blur="saveTitle"
-                />
-                <IconButton
-                  v-if="props.title"
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  class="inline-save-btn"
-                  :icon="ACTION_ICONS.done"
-                  title="Titel speichern"
-                  aria-label="Titel speichern"
-                  @click="saveTitle"
-                />
-              </div>
-            </div>
-
-            <!-- 2. Standort-Gruppe: Adresse & Koordinaten näher zusammengerückt -->
-            <div class="status-location-group">
-              <!-- Adress-Zeile -->
-              <div class="status-meta-row status-address-row">
-                <span class="status-row-icon" title="Adresse" aria-hidden="true">
-                  <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                </span>
-                <div v-if="!isEditingAddress && props.address" class="status-meta-display">
-                  <span class="status-address" :title="props.address">
-                    {{ props.address }}
+                <div v-if="!isEditingTitle && props.title" class="status-meta-display">
+                  <span class="status-title" :title="props.title">
+                    {{ props.title }}
                   </span>
                   <IconButton
                     type="button"
@@ -992,112 +942,164 @@ defineExpose({
                     variant="ghost"
                     class="inline-edit-btn"
                     :icon="ACTION_ICONS.edit"
-                    title="Adresse bearbeiten"
-                    aria-label="Adresse bearbeiten"
-                    @click="startEditAddress"
+                    title="Titel bearbeiten"
+                    aria-label="Titel bearbeiten"
+                    @click="startEditTitle"
                   />
                 </div>
-                <div v-else class="status-meta-edit status-address-edit">
+                <div v-else class="status-meta-edit status-title-edit">
                   <Input
-                    v-model="editAddressInput"
+                    v-model="editTitleInput"
                     size="sm"
                     class="inline-edit-input"
-                    name="spot-address"
-                    data-testid="spot-address-input"
-                    placeholder="Adresse eingeben..."
-                    autocomplete="off"
-                    data-protonpass-ignore="true"
-                    data-1p-ignore="true"
-                    @input="onAddressInput"
-                    @keydown.enter.prevent="saveAddress"
-                    @keydown.esc.prevent="cancelAddress"
-                    @blur="saveAddress"
+                    name="title"
+                    data-testid="spot-title-input"
+                    placeholder="Titel des Spots..."
+                    :required="titleRequired"
+                    :invalid="titleInvalid"
+                    @input="onTitleInput"
+                    @keydown.enter.prevent="saveTitle"
+                    @keydown.esc.prevent="cancelTitle"
+                    @blur="saveTitle"
                   />
                   <IconButton
-                    v-if="props.address"
+                    v-if="props.title"
                     type="button"
                     size="sm"
                     variant="ghost"
                     class="inline-save-btn"
                     :icon="ACTION_ICONS.done"
-                    title="Adresse speichern"
-                    aria-label="Adresse speichern"
-                    @click="saveAddress"
+                    title="Titel speichern"
+                    aria-label="Titel speichern"
+                    @click="saveTitle"
                   />
                 </div>
               </div>
 
-              <!-- Koordinaten-Zeile mit Standort-Entfernen-Button direkt neben den Koordinaten -->
-              <div v-if="modelValue" class="status-meta-row status-coords-row">
-                <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
-                  <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
-                </span>
-                <div class="status-meta-display">
-                  <span class="status-coords">
-                    {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+              <!-- 2. Standort-Gruppe: Adresse & Koordinaten näher zusammengerückt -->
+              <div class="status-location-group">
+                <!-- Adress-Zeile -->
+                <div class="status-meta-row status-address-row">
+                  <span class="status-row-icon" title="Adresse" aria-hidden="true">
+                    <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
                   </span>
+                  <div v-if="!isEditingAddress && props.address" class="status-meta-display">
+                    <span class="status-address" :title="props.address">
+                      {{ props.address }}
+                    </span>
+                    <IconButton
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      class="inline-edit-btn"
+                      :icon="ACTION_ICONS.edit"
+                      title="Adresse bearbeiten"
+                      aria-label="Adresse bearbeiten"
+                      @click="startEditAddress"
+                    />
+                  </div>
+                  <div v-else class="status-meta-edit status-address-edit">
+                    <Input
+                      v-model="editAddressInput"
+                      size="sm"
+                      class="inline-edit-input"
+                      name="spot-address"
+                      data-testid="spot-address-input"
+                      placeholder="Adresse eingeben..."
+                      autocomplete="off"
+                      data-protonpass-ignore="true"
+                      data-1p-ignore="true"
+                      @input="onAddressInput"
+                      @keydown.enter.prevent="saveAddress"
+                      @keydown.esc.prevent="cancelAddress"
+                      @blur="saveAddress"
+                    />
+                    <IconButton
+                      v-if="props.address"
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      class="inline-save-btn"
+                      :icon="ACTION_ICONS.done"
+                      title="Adresse speichern"
+                      aria-label="Adresse speichern"
+                      @click="saveAddress"
+                    />
+                  </div>
+                </div>
+
+                <!-- Koordinaten-Zeile mit Standort-Entfernen-Button direkt neben den Koordinaten -->
+                <div v-if="modelValue" class="status-meta-row status-coords-row">
+                  <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
+                    <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+                  </span>
+                  <div class="status-meta-display">
+                    <span class="status-coords">
+                      {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+                    </span>
+                    <IconButton
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      class="clear-btn coords-clear-btn"
+                      :icon="ACTION_ICONS.close"
+                      title="Standort-Koordinaten entfernen"
+                      aria-label="Standort-Koordinaten entfernen"
+                      @click="clearCoords"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Kategorie-Zeile -->
+              <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
+                <span class="status-row-icon" title="Kategorie" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
+                </span>
+                <div v-if="!isEditingCategory && props.category" class="status-meta-display">
+                  <CategoryChip :category="props.category" type="spot" />
                   <IconButton
                     type="button"
                     size="sm"
                     variant="ghost"
-                    class="clear-btn coords-clear-btn"
-                    :icon="ACTION_ICONS.close"
-                    title="Standort-Koordinaten entfernen"
-                    aria-label="Standort-Koordinaten entfernen"
-                    @click="clearCoords"
+                    class="inline-edit-btn"
+                    :icon="ACTION_ICONS.edit"
+                    title="Kategorie bearbeiten"
+                    aria-label="Kategorie bearbeiten"
+                    @click="startEditCategory"
                   />
                 </div>
-              </div>
-            </div>
-
-            <!-- 3. Kategorie-Zeile -->
-            <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
-              <span class="status-row-icon" title="Kategorie" aria-hidden="true">
-                <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
-              </span>
-              <div v-if="!isEditingCategory && props.category" class="status-meta-display">
-                <CategoryChip :category="props.category" type="spot" />
-                <IconButton
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  class="inline-edit-btn"
-                  :icon="ACTION_ICONS.edit"
-                  title="Kategorie bearbeiten"
-                  aria-label="Kategorie bearbeiten"
-                  @click="startEditCategory"
-                />
-              </div>
-              <div v-else class="status-meta-edit status-category-edit">
-                <div class="inline-category-combobox">
-                  <CategoryCombobox
-                    v-model="editCategoryInput"
-                    type="spot"
-                    :options="categoryOptions"
+                <div v-else class="status-meta-edit status-category-edit">
+                  <div class="inline-category-combobox">
+                    <CategoryCombobox
+                      v-model="editCategoryInput"
+                      type="spot"
+                      :options="categoryOptions"
+                      size="sm"
+                      placeholder="Kategorie wählen..."
+                      @select="saveCategory"
+                      @keydown.enter.prevent="saveCategory()"
+                      @keydown.esc.prevent="cancelCategory"
+                      @blur="handleCategoryBlur"
+                    />
+                  </div>
+                  <IconButton
+                    v-if="props.category"
+                    type="button"
                     size="sm"
-                    placeholder="Kategorie wählen..."
-                    @select="saveCategory"
-                    @keydown.enter.prevent="saveCategory()"
-                    @keydown.esc.prevent="cancelCategory"
-                    @blur="handleCategoryBlur"
+                    variant="ghost"
+                    class="inline-save-btn"
+                    :icon="ACTION_ICONS.done"
+                    title="Kategorie speichern"
+                    aria-label="Kategorie speichern"
+                    @click="saveCategory()"
                   />
                 </div>
-                <IconButton
-                  v-if="props.category"
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  class="inline-save-btn"
-                  :icon="ACTION_ICONS.done"
-                  title="Kategorie speichern"
-                  aria-label="Kategorie speichern"
-                  @click="saveCategory()"
-                />
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </Transition>
 
       <!-- Floating Map Hint when no location set -->
       <div v-if="!modelValue" class="map-tap-hint">
@@ -1363,8 +1365,39 @@ defineExpose({
   flex-direction: column;
   padding: 8px;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   z-index: var(--z-card-elevated, 5);
+}
+
+/* Polaroid Card Slide Transition (sanftes Hineingleiten von oben nach unten) */
+.polaroid-slide-enter-active {
+  transform-origin: top center;
+  transition:
+    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.polaroid-slide-leave-active {
+  transform-origin: top center;
+  transition:
+    opacity 0.18s ease-in,
+    transform 0.18s ease-in;
+}
+
+.polaroid-slide-enter-from,
+.polaroid-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-16px) scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polaroid-slide-enter-active,
+  .polaroid-slide-leave-active {
+    transition: opacity 0.1s ease !important;
+    transform: none !important;
+  }
 }
 
 .polaroid-card:focus-within,
@@ -1693,6 +1726,15 @@ defineExpose({
   corner-shape: squircle;
   overflow: hidden;
   border: 1px solid var(--color-border);
+  transition:
+    height 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    min-height 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .location-picker-map {
+    transition: none !important;
+  }
 }
 
 .has-polaroid .location-picker-map {
