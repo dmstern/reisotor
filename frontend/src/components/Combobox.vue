@@ -237,7 +237,7 @@ defineOptions({
 
 .combobox.open,
 .combobox:focus-within {
-  z-index: 20;
+  z-index: var(--z-popover, 1100);
 }
 
 .combobox :deep(.combobox-input),
@@ -315,7 +315,7 @@ defineOptions({
   top: calc(100% + 2px);
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: var(--z-popover, 1100);
   list-style: none;
   margin: 0;
   padding: 4px 0;

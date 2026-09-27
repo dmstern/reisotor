@@ -1155,10 +1155,15 @@ defineExpose({
   right: 12px;
   width: auto;
   box-sizing: border-box;
-  z-index: 600;
+  z-index: var(--z-dropdown, 500);
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.location-search-floating:focus-within,
+.location-search-floating:has(.location-dropdown) {
+  z-index: var(--z-popover, 1100);
 }
 
 .manual-details-bar {
@@ -1243,7 +1248,7 @@ defineExpose({
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  z-index: 1100;
+  z-index: var(--z-popover, 1100);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle, 8px);
@@ -1356,7 +1361,12 @@ defineExpose({
   padding: 8px;
   gap: 8px;
   transition: all 0.2s ease;
-  z-index: 500;
+  z-index: var(--z-card-elevated, 5);
+}
+
+.polaroid-card:focus-within,
+.polaroid-card:has(.open) {
+  z-index: var(--z-popover, 1100);
 }
 
 .polaroid-card.is-modified {
@@ -1617,8 +1627,9 @@ defineExpose({
   position: relative;
 }
 
-.inline-category-combobox:focus-within {
-  z-index: 25;
+.inline-category-combobox:focus-within,
+.inline-category-combobox:has(.open) {
+  z-index: var(--z-popover, 1100);
 }
 
 .inline-category-combobox :deep(.combobox) {
@@ -1629,9 +1640,13 @@ defineExpose({
 /* Map wrap & Mini map */
 .map-wrap {
   position: relative;
-  isolation: isolate;
-  z-index: 0;
   width: 100%;
+}
+
+.map-wrap:focus-within,
+.map-wrap:has(.open),
+.map-wrap:has(.location-dropdown) {
+  z-index: var(--z-popover, 1100);
 }
 
 @media (min-width: 581px) {
@@ -1664,6 +1679,9 @@ defineExpose({
 }
 
 .location-picker-map {
+  position: relative;
+  isolation: isolate;
+  z-index: var(--z-canvas, 0);
   height: 380px;
   border-radius: var(--radius-md-squircle, 12px);
   corner-shape: squircle;
@@ -1680,7 +1698,7 @@ defineExpose({
   position: absolute;
   bottom: 12px;
   left: 12px;
-  z-index: 400;
+  z-index: var(--z-card-elevated, 5);
   display: inline-flex;
   align-items: center;
   gap: var(--space-1, 4px);
@@ -1698,7 +1716,7 @@ defineExpose({
   position: absolute;
   bottom: 12px;
   right: 12px;
-  z-index: 500;
+  z-index: var(--z-fab, 120);
 }
 
 .locate-btn.locating {

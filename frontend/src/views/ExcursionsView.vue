@@ -6296,9 +6296,17 @@ async function deleteEditingSpot() {
 }
 
 .spot-location-section {
+  position: relative;
+  z-index: var(--z-card-elevated, 5);
   display: flex;
   flex-direction: column;
   gap: var(--space-2, 8px);
+}
+
+.spot-location-section:focus-within,
+.spot-location-section:has(.open),
+.spot-location-section:has(.location-dropdown) {
+  z-index: var(--z-popover, 1100);
 }
 
 .location-fieldset-content {
