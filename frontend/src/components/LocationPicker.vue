@@ -696,6 +696,13 @@ onUnmounted(() => {
         :class="{ 'is-loading': isSearching, loading: isSearching }"
         :aria-busy="isSearching"
       >
+        <AppIcon
+          :icon="ACTION_ICONS.search"
+          :size="16"
+          group="actions"
+          class="location-search-icon"
+          aria-hidden="true"
+        />
         <Input
           :model-value="inputText"
           class="location-picker-input"
@@ -894,10 +901,22 @@ onUnmounted(() => {
   width: 100%;
 }
 
+.location-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+  z-index: 2;
+}
+
 .location-picker-input,
-.location-search-wrap :deep(.input) {
+.location-search-wrap :deep(.location-picker-input) {
   width: 100%;
   box-sizing: border-box;
+  padding-left: 36px;
+  padding-right: 36px;
 }
 
 .input-spinner {
