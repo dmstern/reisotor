@@ -4256,20 +4256,6 @@ async function deleteEditingSpot() {
               class="edit-form"
               @submit.prevent="editingSpot !== null ? submitEditSpot() : addSpot()"
             >
-              <CoverImagePicker
-                v-model="activeSpotForm.image_url"
-                v-model:uploading="isSpotUploadingCoverImage"
-                :preview-image="editingSpot !== null ? editSpotPreviewImage : spotPreviewImage"
-                :placeholder-icon="groupIconDef(activeSpotForm.category)"
-                icon-group="categories"
-                modal-title="Spot-Bild bearbeiten"
-                :modified="isEditSpotImageModified"
-                :initial-value="editingSpot !== null ? (editingSpot.image_url ?? '') : ''"
-                :search-context="spotImageSearchContext"
-                :initial-suggestions="spotPreviewImages"
-                @reset="resetEditSpotImage"
-              />
-
               <!-- 1. Standort-Bereich (Suche, Titel, Karte & Bereich) -->
               <fieldset
                 class="spot-location-fieldset spot-location-section"
@@ -4348,7 +4334,26 @@ async function deleteEditingSpot() {
                     @clear="onSpotLocationClear"
                     @reset="resetEditSpotLocation"
                     @blur="spotTitleTouched = true"
-                  />
+                  >
+                    <template #media>
+                      <CoverImagePicker
+                        v-model="activeSpotForm.image_url"
+                        v-model:uploading="isSpotUploadingCoverImage"
+                        variant="polaroid"
+                        :preview-image="
+                          editingSpot !== null ? editSpotPreviewImage : spotPreviewImage
+                        "
+                        :placeholder-icon="groupIconDef(activeSpotForm.category)"
+                        icon-group="categories"
+                        modal-title="Spot-Bild bearbeiten"
+                        :modified="isEditSpotImageModified"
+                        :initial-value="editingSpot !== null ? (editingSpot.image_url ?? '') : ''"
+                        :search-context="spotImageSearchContext"
+                        :initial-suggestions="spotPreviewImages"
+                        @reset="resetEditSpotImage"
+                      />
+                    </template>
+                  </LocationPicker>
                   <p v-if="showSpotTitleError" class="hint error">
                     <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
                     Bitte gib einen Titel für den Spot ein.

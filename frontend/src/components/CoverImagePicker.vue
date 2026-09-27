@@ -27,6 +27,7 @@ const props = withDefaults(
     placeholderIcon?: IconDef;
     iconGroup?: IconGroup;
     modalTitle?: string;
+    variant?: 'banner' | 'polaroid';
     modified?: boolean;
     uploading?: boolean;
     initialValue?: string;
@@ -39,6 +40,7 @@ const props = withDefaults(
     placeholderIcon: () => ACTION_ICONS.vacation,
     iconGroup: 'actions',
     modalTitle: 'Bild bearbeiten',
+    variant: 'banner',
     modified: false,
     uploading: false,
     initialValue: undefined,
@@ -236,10 +238,10 @@ function handleModalClose(visible: boolean) {
 </script>
 
 <template>
-  <div class="cover-image-picker">
+  <div class="cover-image-picker" :class="`cover-image-picker--${variant}`">
     <div
       class="form-image-banner"
-      :class="{ 'is-modified': isModified }"
+      :class="[`form-image-banner--${variant}`, { 'is-modified': isModified }]"
       :style="effectivePreview ? { backgroundImage: `url(${effectivePreview})` } : {}"
     >
       <Badge v-if="isModified" variant="accent" size="sm" class="banner-badge-modified">
@@ -249,7 +251,7 @@ function handleModalClose(visible: boolean) {
       <AppIcon
         v-if="!effectivePreview"
         class="placeholder"
-        :size="35"
+        :size="variant === 'polaroid' ? 28 : 35"
         :icon="placeholderIcon"
         :group="iconGroup"
       />
@@ -263,11 +265,19 @@ function handleModalClose(visible: boolean) {
           @click.stop="resetImage"
         >
           <AppIcon :icon="ACTION_ICONS.restore" :size="13" group="actions" />
-          Zurücksetzen
+          {{ variant === 'polaroid' ? '' : 'Zurücksetzen' }}
         </Button>
         <Button type="button" variant="ghost" class="banner-edit-btn" @click="showModal = true">
           <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-          {{ modelValue ? 'Bild bearbeiten' : 'Bild hinzufügen' }}
+          {{
+            variant === 'polaroid'
+              ? modelValue
+                ? 'Ändern'
+                : 'Foto'
+              : modelValue
+                ? 'Bild bearbeiten'
+                : 'Bild hinzufügen'
+          }}
         </Button>
       </div>
     </div>
@@ -390,6 +400,31 @@ function handleModalClose(visible: boolean) {
 .form-image-banner.is-modified {
   border-color: var(--color-accent) !important;
   box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.form-image-banner--polaroid {
+  height: 140px;
+  width: 100%;
+  margin: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background-color: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  padding: var(--space-2);
+}
+
+.form-image-banner--polaroid .banner-actions {
+  right: var(--space-1-5, 6px);
+  bottom: var(--space-1-5, 6px);
+  gap: var(--space-1, 4px);
+}
+
+.form-image-banner--polaroid .banner-edit-btn,
+.form-image-banner--polaroid .banner-reset-btn {
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent) !important;
 }
 
 .banner-badge-modified {

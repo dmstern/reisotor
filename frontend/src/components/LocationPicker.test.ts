@@ -27,7 +27,10 @@ Object.defineProperty(window, 'matchMedia', {
 
 interface MockMap {
   setView: ReturnType<typeof vi.fn>;
-  attributionControl: { setPrefix: ReturnType<typeof vi.fn> };
+  attributionControl: {
+    setPrefix: ReturnType<typeof vi.fn>;
+    setPosition?: ReturnType<typeof vi.fn>;
+  };
   on: (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => void;
   remove: ReturnType<typeof vi.fn>;
   invalidateSize: ReturnType<typeof vi.fn>;
@@ -56,7 +59,7 @@ vi.mock('leaflet', () => {
       map: vi.fn((_el: HTMLElement, _opts: unknown) => {
         mockMapInstance = {
           setView: vi.fn().mockReturnThis(),
-          attributionControl: { setPrefix: vi.fn() },
+          attributionControl: { setPrefix: vi.fn(), setPosition: vi.fn() },
           on: vi.fn(
             (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => {
               if (event === 'click') mapClickHandlers.push(handler);
@@ -670,9 +673,8 @@ describe('LocationPicker', () => {
         modified: true,
       });
       await nextTick();
-
-      const controlBox = container.querySelector('.location-control-box');
-      expect(controlBox?.classList.contains('is-modified')).toBe(true);
+      const polaroidCard = container.querySelector('.polaroid-card');
+      expect(polaroidCard?.classList.contains('is-modified')).toBe(true);
 
       const checkCircle = container.querySelector('.status-check-circle');
       expect(checkCircle?.classList.contains('is-modified')).toBe(true);
@@ -901,6 +903,11 @@ describe('LocationPicker', () => {
         { modelValue: null, title: '' },
         { 'onUpdate:title': updateTitle }
       );
+      await nextTick();
+
+      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
+      expect(manualBtn).toBeTruthy();
+      manualBtn.click();
       await nextTick();
 
       const titleInput = container.querySelector(
@@ -1265,6 +1272,82 @@ describe('LocationPicker', () => {
 
       expect(updateCategory).toHaveBeenCalledWith('Café');
       cleanUp();
+    });
+  });
+
+  describe('Polaroid Layout & Visibility Toggle', () => {
+    it('initially hides location details when modelValue, title, and address are empty', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: '',
+        address: '',
+      });
+      await nextTick();
+
+      expect(container.querySelector('.polaroid-card')).toBeNull();
+      const manualBtn = container.querySelector('.manual-details-btn');
+      expect(manualBtn).toBeTruthy();
+      expect(manualBtn?.textContent).toContain('Details manuell ausfüllen');
+      cleanUp();
+    });
+
+    it('renders full-width search bar in .location-search-row', async () => {
+      const { container, cleanUp } = mountPicker();
+      await nextTick();
+
+      const searchRow = container.querySelector('.location-search-row');
+      expect(searchRow).toBeTruthy();
+      const searchInput = searchRow?.querySelector('[data-testid="location-search-input"]');
+      expect(searchInput).toBeTruthy();
+      cleanUp();
+    });
+
+    it('reveals polaroid card when clicking "Details manuell ausfüllen"', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: '',
+        address: '',
+      });
+      await nextTick();
+
+      expect(container.querySelector('.polaroid-card')).toBeNull();
+      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
+      manualBtn.click();
+      await nextTick();
+
+      const polaroidCard = container.querySelector('.polaroid-card');
+      expect(polaroidCard).toBeTruthy();
+      expect(container.querySelector('.map-wrap')?.classList.contains('has-polaroid')).toBe(true);
+      cleanUp();
+    });
+
+    it('renders media slot inside polaroid card when slot is passed', async () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(
+            LocationPicker as unknown as import('vue').Component,
+            {
+              modelValue: { lat: 48.2, lng: 16.3 },
+              title: 'Spot mit Bild',
+            },
+            {
+              media: () => h('div', { class: 'custom-media-slot' }, 'Test Cover'),
+            }
+          ),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      const mediaWrap = container.querySelector('.polaroid-media');
+      expect(mediaWrap).toBeTruthy();
+      expect(mediaWrap?.querySelector('.custom-media-slot')?.textContent).toBe('Test Cover');
+
+      app.unmount();
+      container.remove();
+      document.body.innerHTML = '';
     });
   });
 });
