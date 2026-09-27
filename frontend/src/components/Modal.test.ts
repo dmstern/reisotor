@@ -53,8 +53,8 @@ describe('Modal', () => {
     const titleEl = document.querySelector('h2');
     expect(titleEl?.textContent).toBe('Spot bearbeiten');
     expect(document.querySelector('.test-content')?.textContent).toBe('Formular-Inhalt');
-    expect(document.querySelector('.modal-scroll-shadow--top')).toBeTruthy();
-    expect(document.querySelector('.modal-scroll-shadow--bottom')).toBeTruthy();
+    expect(document.querySelector('.modal-scroll-fade--top')).toBeTruthy();
+    expect(document.querySelector('.modal-scroll-fade--bottom')).toBeTruthy();
 
     cleanUp();
   });
@@ -103,8 +103,8 @@ describe('Modal', () => {
     expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
 
-    const topShadow = document.querySelector('.modal-scroll-shadow--top') as HTMLElement;
-    expect(topShadow.classList.contains('is-visible')).toBe(false);
+    const topFade = document.querySelector('.modal-scroll-fade--top') as HTMLElement;
+    expect(topFade.classList.contains('is-visible')).toBe(false);
 
     // Scroll down to middle (scrollTop: 200)
     formEl.scrollTop = 200;
@@ -113,7 +113,7 @@ describe('Modal', () => {
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
-    expect(topShadow.classList.contains('is-visible')).toBe(true);
+    expect(topFade.classList.contains('is-visible')).toBe(true);
 
     // Scroll all the way to bottom (scrollTop: 700 -> 700 + 300 = 1000)
     formEl.scrollTop = 700;
@@ -126,7 +126,7 @@ describe('Modal', () => {
     cleanUp();
   });
 
-  it('keeps both shadows inactive when content fits without scrolling', async () => {
+  it('keeps both fades inactive when content fits without scrolling', async () => {
     const { cleanUp } = mountTestApp(
       Modal,
       { modelValue: true, title: 'Kurzer Dialog', fullHeight: true },
@@ -150,11 +150,67 @@ describe('Modal', () => {
     expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(false);
 
-    const topShadow = document.querySelector('.modal-scroll-shadow--top') as HTMLElement;
-    const bottomShadow = document.querySelector('.modal-scroll-shadow--bottom') as HTMLElement;
+    const topFade = document.querySelector('.modal-scroll-fade--top') as HTMLElement;
+    const bottomFade = document.querySelector('.modal-scroll-fade--bottom') as HTMLElement;
 
-    expect(topShadow.classList.contains('is-visible')).toBe(false);
-    expect(bottomShadow.classList.contains('is-visible')).toBe(false);
+    expect(topFade.classList.contains('is-visible')).toBe(false);
+    expect(bottomFade.classList.contains('is-visible')).toBe(false);
+
+    cleanUp();
+  });
+
+  it('shows fade-out indicators on standard (non-fullHeight) dialogs when content overflows', async () => {
+    const { cleanUp } = mountTestApp(
+      Modal,
+      { modelValue: true, title: 'Standard-Dialog ohne full-height' },
+      {
+        default: () => h('div', { class: 'dialog-content' }, 'Langer Dialoginhalt ohne Formular'),
+      }
+    );
+    await nextTick();
+
+    const modalEl = document.querySelector('.modal') as HTMLElement;
+    const bodyEl = document.querySelector('.modal-body') as HTMLElement;
+    expect(modalEl).toBeTruthy();
+    expect(bodyEl).toBeTruthy();
+    expect(modalEl.classList.contains('has-actions-row')).toBe(false);
+
+    // Mock scroll dimensions on bodyEl
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 250, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollHeight', { value: 800, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollTop', { value: 0, writable: true, configurable: true });
+
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
+
+    const topFade = document.querySelector('.modal-scroll-fade--top') as HTMLElement;
+    const bottomFade = document.querySelector('.modal-scroll-fade--bottom') as HTMLElement;
+
+    expect(topFade.classList.contains('is-visible')).toBe(false);
+    expect(bottomFade.classList.contains('is-visible')).toBe(true);
+
+    // Scroll to middle
+    bodyEl.scrollTop = 200;
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
+    expect(topFade.classList.contains('is-visible')).toBe(true);
+    expect(bottomFade.classList.contains('is-visible')).toBe(true);
+
+    // Scroll to bottom (550 + 250 = 800)
+    bodyEl.scrollTop = 550;
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(false);
+    expect(topFade.classList.contains('is-visible')).toBe(true);
+    expect(bottomFade.classList.contains('is-visible')).toBe(false);
 
     cleanUp();
   });
