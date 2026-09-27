@@ -1059,6 +1059,12 @@ defineExpose({
         </div>
       </div>
 
+      <!-- Floating Map Hint when no location set -->
+      <div v-if="!modelValue" class="map-tap-hint">
+        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="13" group="formFields" />
+        <span>Tippe auf die Karte, um den Standort zu setzen</span>
+      </div>
+
       <!-- Locate Button (bottom-right) -->
       <IconButton
         variant="floating"
@@ -1074,11 +1080,6 @@ defineExpose({
         @click="useOwnLocation"
       />
     </div>
-
-    <p v-if="!modelValue" class="hint">
-      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
-      Tippe auf die Karte, um den Standort zu setzen.
-    </p>
   </div>
 </template>
 
@@ -1495,20 +1496,21 @@ defineExpose({
   position: relative;
   isolation: isolate;
   z-index: 0;
-  transition: margin-top 0.25s ease;
+  width: 100%;
 }
 
 @media (min-width: 581px) {
   .map-wrap.has-polaroid {
-    margin-top: 52px;
+    margin-top: 0;
   }
 
   .polaroid-card {
     position: absolute;
-    top: -46px;
-    right: 14px;
+    top: 12px;
+    left: 12px;
+    right: auto;
     width: 260px;
-    max-width: calc(100% - 28px);
+    max-width: calc(100% - 24px);
   }
 }
 
@@ -1527,7 +1529,7 @@ defineExpose({
 }
 
 .location-picker-map {
-  height: 240px;
+  height: 300px;
   border-radius: var(--radius-sm-squircle, 8px);
   corner-shape: squircle;
   overflow: hidden;
@@ -1535,7 +1537,26 @@ defineExpose({
 }
 
 .has-polaroid .location-picker-map {
-  min-height: 260px;
+  height: 380px;
+  min-height: 380px;
+}
+
+.map-tap-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 400;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  padding: 4px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
 }
 
 .locate-btn {

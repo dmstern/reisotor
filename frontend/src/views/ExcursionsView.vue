@@ -110,6 +110,7 @@ import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Select from '../components/primitives/Select.vue';
 import TrackVisibilitySelect from '../components/TrackVisibilitySelect.vue';
+import InfoPopover from '../components/primitives/InfoPopover.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
@@ -1462,32 +1463,6 @@ function computeMenuStyle(
     left: `${Math.max(8, Math.min(rect.left, window.innerWidth - minWidth - 8))}px`,
   };
 }
-
-const descriptionOpen = ref(false);
-const descriptionBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
-const descriptionMenuStyle = ref({ top: '0px', left: '0px' });
-function toggleDescription(event?: MouseEvent) {
-  if (!descriptionOpen.value) {
-    descriptionMenuStyle.value = computeMenuStyle(descriptionBtnRef.value, event, 260);
-    descriptionOpen.value = true;
-  } else {
-    descriptionOpen.value = false;
-  }
-}
-
-function onEscape(e: KeyboardEvent) {
-  if (e.key === 'Escape' && descriptionOpen.value) {
-    descriptionOpen.value = false;
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', onEscape);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', onEscape);
-});
 
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
@@ -3820,72 +3795,56 @@ async function deleteEditingSpot() {
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
                eines neuen Tooltip-Mechanismus. -->
-              <span class="dropdown info-dropdown">
-                <button
-                  ref="descriptionBtnRef"
-                  type="button"
-                  class="info-btn"
-                  :title="
-                    groupMode === 'tours'
-                      ? 'Was sind Touren?'
-                      : groupMode === 'tracks'
-                        ? 'Was sind Tracks?'
-                        : 'Was sind Spots?'
-                  "
-                  :aria-label="
-                    groupMode === 'tours'
-                      ? 'Was sind Touren?'
-                      : groupMode === 'tracks'
-                        ? 'Was sind Tracks?'
-                        : 'Was sind Spots?'
-                  "
-                  @click="toggleDescription($event)"
-                >
-                  <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
-                </button>
-                <Teleport to="body">
-                  <template v-if="descriptionOpen">
-                    <PickerMenu
-                      class="description-popover"
-                      :style="descriptionMenuStyle"
-                      @close="descriptionOpen = false"
-                    >
-                      <template v-if="groupMode === 'tours'">
-                        <p>
-                          <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route
-                          oder einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder
-                          Abreise auf der Karte zu visualisieren.
-                        </p>
-                        <p class="popover-tip">
-                          💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und
-                          Wege auf der Karte anzuzeigen.
-                        </p>
-                      </template>
-                      <template v-else-if="groupMode === 'tracks'">
-                        <p>
-                          <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du
-                          kannst sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder
-                          Touren zuordnen.
-                        </p>
-                        <p class="popover-tip">
-                          💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf
-                          „Aufzeichnen“ oder direkt über den Button auf der Karte.
-                        </p>
-                      </template>
-                      <template v-else>
-                        <p>
-                          <strong>Spots</strong> sind einzelne Orte (Restaurants,
-                          Sehenswürdigkeiten, Strände, …) – als Ideensammlung oder zur Reiseplanung.
-                        </p>
-                        <p class="popover-tip">
-                          💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen
-                          Kalendertag oder eine Tour, um sie einzutakten.
-                        </p>
-                      </template>
-                    </PickerMenu>
-                  </template>
-                </Teleport>
-              </span>
+              <InfoPopover
+                :title="
+                  groupMode === 'tours'
+                    ? 'Was sind Touren?'
+                    : groupMode === 'tracks'
+                      ? 'Was sind Tracks?'
+                      : 'Was sind Spots?'
+                "
+                :aria-label="
+                  groupMode === 'tours'
+                    ? 'Was sind Touren?'
+                    : groupMode === 'tracks'
+                      ? 'Was sind Tracks?'
+                      : 'Was sind Spots?'
+                "
+                :menu-width="300"
+              >
+                <template v-if="groupMode === 'tours'">
+                  <p>
+                    <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route oder
+                    einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der
+                    Karte zu visualisieren.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und Wege
+                    auf der Karte anzuzeigen.
+                  </p>
+                </template>
+                <template v-else-if="groupMode === 'tracks'">
+                  <p>
+                    <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du
+                    kannst sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder Touren
+                    zuordnen.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf „Aufzeichnen“
+                    oder direkt über den Button auf der Karte.
+                  </p>
+                </template>
+                <template v-else>
+                  <p>
+                    <strong>Spots</strong> sind einzelne Orte (Restaurants, Sehenswürdigkeiten,
+                    Strände, …) – als Ideensammlung oder zur Reiseplanung.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen Kalendertag
+                    oder eine Tour, um sie einzutakten.
+                  </p>
+                </template>
+              </InfoPopover>
               <!-- #155: der Spots/Touren/Tracks-Umschalter sitzt direkt neben der
                Drawer-Überschrift als primäre Weiche dieser Ansicht. -->
               <SegmentedToggle
@@ -4362,39 +4321,50 @@ async function deleteEditingSpot() {
                     konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um
                     ihn manuell zu setzen.
                   </p>
-                  <div
-                    class="spot-side-field"
-                    :class="{ 'is-modified': isEditSpotSideModified }"
-                    role="group"
-                    aria-label="Bereich des Standorts"
-                  >
-                    <span class="spot-side-label">
-                      <span>Bereich</span>
-                      <span
-                        v-if="isEditSpotSideModified"
-                        class="modified-dot"
-                        title="Geändert"
-                        aria-label="Geändert"
-                      />
-                    </span>
-                    <SegmentedToggle
-                      id="spotFormSideToggle"
-                      class="spot-side-toggle"
-                      :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
-                      :options="SPOT_SIDE_OPTIONS"
-                      @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
-                    />
-                    <p v-if="activeSpotForm.is_home" class="hint">
-                      z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen. Wird für das
-                      Auswählen des passenden Kartenausschnitts verwendet.
-                    </p>
-                    <p v-else class="hint">
-                      z. B. Ausflugsziele, Restaurants oder Unterkünfte am Reiseziel. Wird für das
-                      Auswählen des passenden Kartenausschnitts verwendet.
-                    </p>
-                  </div>
                 </div>
               </fieldset>
+              <div
+                class="spot-side-field"
+                :class="{ 'is-modified': isEditSpotSideModified }"
+                role="group"
+                aria-label="Bereich des Standorts"
+              >
+                <div class="spot-side-header">
+                  <span class="spot-side-label">
+                    <span>Bereich</span>
+                    <span
+                      v-if="isEditSpotSideModified"
+                      class="modified-dot"
+                      title="Geändert"
+                      aria-label="Geändert"
+                    />
+                  </span>
+                  <InfoPopover
+                    title="Was bedeutet Bereich?"
+                    aria-label="Erklärung zum Standort-Bereich"
+                    :menu-width="280"
+                  >
+                    <p>
+                      <strong>Urlaubsort:</strong> z. B. Ausflugsziele, Restaurants oder Unterkünfte
+                      am Reiseziel.
+                    </p>
+                    <p>
+                      <strong>Heimat-Seite:</strong> z. B. der heimische Flughafen/Bahnhof/Zuhause
+                      für Reise-Etappen.
+                    </p>
+                    <p class="popover-tip">
+                      🗺️ Wird für das Auswählen des passenden Kartenausschnitts verwendet.
+                    </p>
+                  </InfoPopover>
+                </div>
+                <SegmentedToggle
+                  id="spotFormSideToggle"
+                  class="spot-side-toggle"
+                  :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
+                  :options="SPOT_SIDE_OPTIONS"
+                  @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
+                />
+              </div>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <div class="row">
                   <FormField
@@ -6459,6 +6429,12 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-1-5, 6px);
   margin-top: var(--space-2);
+}
+
+.spot-side-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5, 6px);
 }
 
 .spot-side-toggle {
