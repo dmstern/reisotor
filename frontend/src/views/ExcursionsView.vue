@@ -3764,17 +3764,19 @@ async function deleteEditingSpot() {
                 modal-title="Spot-Bild bearbeiten"
               />
 
-              <!-- 1. Standort-Bereich (Suche, Karte & Bereich) -->
+              <!-- 1. Standort-Bereich (Suche, Titel, Karte & Bereich) -->
               <fieldset class="spot-location-fieldset spot-location-section">
                 <legend class="spot-location-legend">
                   <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                  <span>Standort</span>
+                  <span>Standort &amp; Titel</span>
                 </legend>
                 <p class="hint spot-location-hint">
-                  Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
+                  Ort suchen oder Spot-Titel eingeben. Wird für Karte und ggf. Wetter vor Ort
+                  verwendet.
                 </p>
                 <LocationPicker
                   v-model="spotManualPin"
+                  v-model:title="activeSpotForm.title"
                   :address="activeSpotForm.address"
                   :maps-link="activeSpotForm.maps_link"
                   :proximity-bias="spotPickerCenter"
@@ -3782,11 +3784,18 @@ async function deleteEditingSpot() {
                   :reference-points="
                     editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
                   "
+                  :title-required="true"
+                  :title-invalid="showSpotTitleError"
                   @update:address="activeSpotForm.address = $event"
                   @update:maps-link="onSpotMapsLinkUpdate"
                   @select="onSpotLocationSelect"
                   @clear="onSpotLocationClear"
+                  @blur="spotTitleTouched = true"
                 />
+                <p v-if="showSpotTitleError" class="hint error">
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+                  Bitte gib einen Titel für den Spot ein.
+                </p>
                 <p
                   v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
                   class="hint error"
@@ -3809,25 +3818,7 @@ async function deleteEditingSpot() {
                 </div>
               </fieldset>
 
-              <!-- 2. Kerndaten: Titel & Kategorie (Automatisch gefüllt bei Suche oder manuell bearbeitbar) -->
-              <FormField
-                icon="title"
-                label="Titel"
-                required
-                :invalid="showSpotTitleError"
-                :error="showSpotTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
-                v-slot="{ id, invalid }"
-              >
-                <Input
-                  :id="id"
-                  v-model="activeSpotForm.title"
-                  type="text"
-                  placeholder="Titel"
-                  required
-                  :invalid="invalid"
-                  @blur="spotTitleTouched = true"
-                />
-              </FormField>
+              <!-- 2. Kerndaten: Kategorie -->
               <FormField icon="category" label="Kategorie">
                 <CategoryCombobox
                   v-model="activeSpotForm.category"

@@ -37,7 +37,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
 
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
-    await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
+    await modal.locator('input[placeholder*="Titel"], input[name="title"]').fill(spotTitle);
 
     await modal.locator('.collapsible-toggle', { hasText: 'Einplanen' }).click();
 

@@ -41,7 +41,7 @@ test('Spot-Formular: Bild lässt sich direkt hochladen statt nur per URL zu verl
 
   await expect(modal.locator('.form-image-banner')).toHaveCSS('background-image', /api\/uploads/);
 
-  await modal.locator('input[placeholder="Titel"]').fill(spotTitle);
+  await modal.locator('input[placeholder*="Titel"], input[name="title"]').fill(spotTitle);
   await modal.locator('form.edit-form button[type="submit"]').click();
   await expect(modal).toBeHidden();
 

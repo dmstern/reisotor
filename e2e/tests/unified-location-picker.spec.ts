@@ -684,7 +684,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         const { modal, picker } = await openNewSpotModal(page);
         await clickMiniMap(picker, 0.5, 0.5);
 
-        const titleInput = modal.locator('input[placeholder="Titel"]');
+        const titleInput = modal.locator('input[placeholder*="Titel"], input[name="title"]');
         await titleInput.fill(`Manual Pin Spot ${Date.now()}`);
 
         const status = getStatusBadge(picker);
@@ -1010,7 +1010,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       await getDropdownOptions(page).first().click();
 
       // Title can be auto-suggested or entered
-      const titleInput = modal.locator('input[placeholder="Titel"]');
+      const titleInput = modal.locator('input[placeholder*="Titel"], input[name="title"]');
       const currentTitle = await titleInput.inputValue();
       const uniqueTitle = currentTitle || `Café Central Visit ${Date.now()}`;
       if (!currentTitle) {
@@ -1042,7 +1042,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       const input = getLocationInput(picker);
       await input.fill('https://www.google.com/maps/@41.90750,12.49140,15z');
 
-      const titleInput = modal.locator('input[placeholder="Titel"]');
+      const titleInput = modal.locator('input[placeholder*="Titel"], input[name="title"]');
       const uniqueTitle = `Hotel Excelsior Booking ${Date.now()}`;
       await titleInput.fill(uniqueTitle);
 
@@ -1061,7 +1061,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       // Click map for scenic spot in nature
       await clickMiniMap(picker, 0.45, 0.55);
 
-      const titleInput = modal.locator('input[placeholder="Titel"]');
+      const titleInput = modal.locator('input[placeholder*="Titel"], input[name="title"]');
       const uniqueTitle = `Schöne Aussicht ${Date.now()}`;
       await titleInput.fill(uniqueTitle);
 

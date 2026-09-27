@@ -44,6 +44,8 @@ const props = withDefaults(
   defineProps<{
     /** Aktuell ausgewählte Koordinaten (v-model). */
     modelValue: { lat: number; lng: number } | null;
+    /** Spot-Titel (v-model:title) – falls angebunden, fungiert das Feld als Such- & Titelfeld. */
+    title?: string;
     /** Adresse oder Ortsbezeichnung (v-model:address). */
     address?: string;
     /** Maps-Link (v-model:mapsLink). */
@@ -52,6 +54,10 @@ const props = withDefaults(
     proximityBias?: { lat: number; lng: number } | null;
     /** Platzhaltertext für das kombinierte Suchfeld. */
     placeholder?: string;
+    /** Ob der Titel ein Pflichtfeld ist. */
+    titleRequired?: boolean;
+    /** Ob der Titel ungültig/leer ist (Fehlerhervorhebung). */
+    titleInvalid?: boolean;
     /** Rückwärtskompatibilität: Initiale Zentrierung der Mini-Karte falls modelValue noch null. */
     center?: { lat: number; lng: number };
     /** Zoom-Stufe. */
@@ -60,10 +66,13 @@ const props = withDefaults(
     referencePoints?: { lat: number; lng: number; icon?: IconDef }[];
   }>(),
   {
+    title: undefined,
     address: '',
     mapsLink: '',
     proximityBias: null,
     placeholder: undefined,
+    titleRequired: false,
+    titleInvalid: false,
     zoom: undefined,
     center: undefined,
     referencePoints: () => [],
@@ -72,10 +81,12 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: { lat: number; lng: number } | null): void;
+  (e: 'update:title', value: string): void;
   (e: 'update:address', value: string): void;
   (e: 'update:mapsLink', value: string): void;
   (e: 'select', place: PlaceSearchResult): void;
   (e: 'clear'): void;
+  (e: 'blur', event: FocusEvent): void;
 }>();
 
 // --- Input & Search Autocomplete State ---
@@ -87,9 +98,16 @@ const activeIndex = ref(-1);
 const selectedPlace = ref<PlaceSearchResult | null>(null);
 const shortlinkDetected = ref(false);
 
+const hasLocation = computed(() => Boolean(props.modelValue || props.address || props.mapsLink));
+
 const computedPlaceholder = computed(() => {
   if (props.placeholder) return props.placeholder;
-  return props.modelValue
+  if (props.title !== undefined) {
+    return hasLocation.value
+      ? 'Titel bearbeiten oder anderen Ort suchen...'
+      : 'Titel eingeben oder Ort suchen...';
+  }
+  return hasLocation.value
     ? 'Anderen Ort oder Adresse suchen...'
     : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
 });
@@ -97,12 +115,23 @@ const computedPlaceholder = computed(() => {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let activeAbortController: AbortController | null = null;
 
+// Synchronisiere Textfeld mit extern übergebenem Titel, wenn v-model:title genutzt wird
+watch(
+  () => props.title,
+  (t) => {
+    if (t !== undefined && t !== inputText.value) {
+      inputText.value = t;
+    }
+  },
+  { immediate: true }
+);
+
 // Initialisiere Textfeld mit übergebenem Link oder Adresse nur, wenn noch kein Standort gesetzt ist
 // (wenn bereits Koordinaten vorliegen, zeigt die Status-Karte die Daten und das Suchfeld bleibt frei).
 watch(
   () => props.mapsLink,
   (link) => {
-    if (link && !inputText.value && !props.modelValue) {
+    if (link && !inputText.value && !props.modelValue && props.title === undefined) {
       inputText.value = link;
     }
   },
@@ -112,7 +141,13 @@ watch(
 watch(
   () => props.address,
   (addr) => {
-    if (addr && !inputText.value && !props.modelValue && !props.mapsLink) {
+    if (
+      addr &&
+      !inputText.value &&
+      !props.modelValue &&
+      !props.mapsLink &&
+      props.title === undefined
+    ) {
       inputText.value = addr;
     }
   },
@@ -130,7 +165,61 @@ let geoWatchId: number | null = null;
 const locatingSelf = ref(false);
 const locateError = ref(false);
 
+// Inline-Edit State für die Status-Details (Titel & Adresse)
+const isEditingTitle = ref(false);
+const editTitleInput = ref('');
+const isEditingAddress = ref(false);
+const editAddressInput = ref('');
+
+function startEditTitle() {
+  editTitleInput.value = props.title || displayTitle.value || inputText.value;
+  isEditingTitle.value = true;
+  nextTick(() => {
+    const el = document.querySelector<HTMLInputElement>(
+      '.status-title-row .inline-edit-input input, .status-title-row input'
+    );
+    el?.focus();
+    el?.select();
+  });
+}
+
+function saveTitle() {
+  if (!isEditingTitle.value) return;
+  isEditingTitle.value = false;
+  const trimmed = editTitleInput.value.trim();
+  inputText.value = trimmed;
+  emit('update:title', trimmed);
+}
+
+function cancelTitle() {
+  isEditingTitle.value = false;
+}
+
+function startEditAddress() {
+  editAddressInput.value = props.address || '';
+  isEditingAddress.value = true;
+  nextTick(() => {
+    const el = document.querySelector<HTMLInputElement>(
+      '.status-address-row .inline-edit-input input, .search-sub-edit input, .status-address-row input'
+    );
+    el?.focus();
+    el?.select();
+  });
+}
+
+function saveAddress() {
+  if (!isEditingAddress.value) return;
+  isEditingAddress.value = false;
+  const trimmed = editAddressInput.value.trim();
+  emit('update:address', trimmed);
+}
+
+function cancelAddress() {
+  isEditingAddress.value = false;
+}
+
 const displayTitle = computed(() => {
+  if (props.title) return props.title;
   if (selectedPlace.value?.name) return selectedPlace.value.name;
   if (props.address) return props.address;
   return '';
@@ -219,6 +308,9 @@ function useOwnLocation() {
 // --- Autocomplete & Search Handling ---
 function handleInput(val: string) {
   inputText.value = val;
+  if (props.title !== undefined) {
+    emit('update:title', val);
+  }
   shortlinkDetected.value = false;
 
   if (debounceTimer) {
@@ -307,11 +399,16 @@ function selectPlace(place: PlaceSearchResult) {
   isOpen.value = false;
   results.value = [];
   activeIndex.value = -1;
+  isEditingTitle.value = false;
+  isEditingAddress.value = false;
 
   const coords = { lat: place.lat, lng: place.lng };
   placeMarker(coords.lat, coords.lng);
   map?.setView([coords.lat, coords.lng], 16);
 
+  if (props.title !== undefined) {
+    emit('update:title', place.name);
+  }
   emit('update:modelValue', coords);
   emit('update:address', place.formatted_address || place.address || place.name);
   emit('update:mapsLink', buildGoogleMapsLink(coords.lat, coords.lng));
@@ -319,12 +416,16 @@ function selectPlace(place: PlaceSearchResult) {
 }
 
 function clear() {
-  inputText.value = '';
+  if (props.title === undefined) {
+    inputText.value = '';
+  }
   selectedPlace.value = null;
   isOpen.value = false;
   results.value = [];
   activeIndex.value = -1;
   shortlinkDetected.value = false;
+  isEditingTitle.value = false;
+  isEditingAddress.value = false;
 
   if (debounceTimer) {
     clearTimeout(debounceTimer);
@@ -375,10 +476,11 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-function onBlur() {
+function onBlur(e: FocusEvent) {
   window.setTimeout(() => {
     isOpen.value = false;
   }, 200);
+  emit('blur', e);
 }
 
 function onFocus() {
@@ -465,9 +567,9 @@ onUnmounted(() => {
 <template>
   <div class="location-picker">
     <!-- 1. Kombinierte Steuerungsbox für Standort & Suche -->
-    <div class="location-control-box" :class="{ 'has-location': !!modelValue }">
+    <div class="location-control-box" :class="{ 'has-location': hasLocation }">
       <!-- Visuelle Status-Details ("Standort gesetzt") -->
-      <div v-if="modelValue" class="location-status hint success" data-testid="location-status">
+      <div v-if="hasLocation" class="location-status hint success" data-testid="location-status">
         <div class="status-header">
           <Badge variant="success" size="sm" class="status-badge">
             <AppIcon :icon="FORM_FIELD_ICONS.location" :size="12" group="formFields" />
@@ -478,10 +580,98 @@ onUnmounted(() => {
           </Button>
         </div>
         <div class="status-details">
-          <span v-if="displayTitle" class="status-title">{{ displayTitle }}</span>
-          <span class="status-coords">
-            {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
-          </span>
+          <!-- 1. Titel-Zeile mit dezentem Bleistift-Icon -->
+          <div v-if="displayTitle || props.title" class="status-meta-row status-title-row">
+            <div v-if="!isEditingTitle" class="status-meta-display">
+              <span class="status-title" :title="displayTitle || props.title">
+                {{ displayTitle || props.title }}
+              </span>
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-edit-btn"
+                :icon="ACTION_ICONS.edit"
+                title="Titel bearbeiten"
+                aria-label="Titel bearbeiten"
+                @click="startEditTitle"
+              />
+            </div>
+            <div v-else class="status-meta-edit">
+              <Input
+                v-model="editTitleInput"
+                size="sm"
+                class="inline-edit-input"
+                placeholder="Titel..."
+                @keydown.enter.prevent="saveTitle"
+                @keydown.esc.prevent="cancelTitle"
+                @blur="saveTitle"
+              />
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-save-btn"
+                :icon="ACTION_ICONS.done"
+                title="Titel speichern"
+                aria-label="Titel speichern"
+                @click="saveTitle"
+              />
+            </div>
+          </div>
+
+          <!-- 2. Adress-Zeile mit dezentem Bleistift-Icon -->
+          <div class="status-meta-row status-address-row">
+            <div v-if="!isEditingAddress && props.address" class="status-meta-display">
+              <span class="status-address" :title="props.address">
+                {{ props.address }}
+              </span>
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-edit-btn"
+                :icon="ACTION_ICONS.edit"
+                title="Adresse bearbeiten"
+                aria-label="Adresse bearbeiten"
+                @click="startEditAddress"
+              />
+            </div>
+            <div v-else-if="!isEditingAddress && !props.address" class="status-meta-display">
+              <button type="button" class="add-address-btn" @click="startEditAddress">
+                <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
+                <span>Adresse hinzufügen</span>
+              </button>
+            </div>
+            <div v-else class="status-meta-edit">
+              <Input
+                v-model="editAddressInput"
+                size="sm"
+                class="inline-edit-input"
+                placeholder="Adresse eingeben..."
+                @keydown.enter.prevent="saveAddress"
+                @keydown.esc.prevent="cancelAddress"
+                @blur="saveAddress"
+              />
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-save-btn"
+                :icon="ACTION_ICONS.done"
+                title="Adresse speichern"
+                aria-label="Adresse speichern"
+                @click="saveAddress"
+              />
+            </div>
+          </div>
+
+          <!-- 3. Koordinaten-Zeile -->
+          <div v-if="modelValue" class="status-meta-row status-coords-row">
+            <span class="status-coords">
+              {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -495,8 +685,12 @@ onUnmounted(() => {
           :model-value="inputText"
           class="location-picker-input"
           type="text"
+          name="title"
+          data-testid="spot-title-input"
           :placeholder="computedPlaceholder"
-          aria-label="Standort suchen oder Maps-Link einfügen"
+          :required="titleRequired"
+          :invalid="titleInvalid"
+          aria-label="Spot-Titel oder Ort suchen"
           autocomplete="off"
           @update:model-value="handleInput"
           @keydown="onKeydown"
@@ -504,6 +698,35 @@ onUnmounted(() => {
           @blur="onBlur"
         />
         <LoadingSpinner v-if="isSearching" size="sm" class="spinner input-spinner" />
+
+        <!-- Schnell-Aktion für manuelle Adresse, falls noch kein Standort gewählt wurde -->
+        <div v-if="!hasLocation && !isEditingAddress" class="search-sub-actions">
+          <button type="button" class="add-manual-address-link" @click="startEditAddress">
+            <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
+            <span>Adresse manuell eingeben</span>
+          </button>
+        </div>
+        <div v-else-if="!hasLocation && isEditingAddress" class="search-sub-edit status-meta-edit">
+          <Input
+            v-model="editAddressInput"
+            size="sm"
+            class="inline-edit-input"
+            placeholder="Adresse manuell eingeben..."
+            @keydown.enter.prevent="saveAddress"
+            @keydown.esc.prevent="cancelAddress"
+            @blur="saveAddress"
+          />
+          <IconButton
+            type="button"
+            size="sm"
+            variant="ghost"
+            class="inline-save-btn"
+            :icon="ACTION_ICONS.done"
+            title="Adresse speichern"
+            aria-label="Adresse speichern"
+            @click="saveAddress"
+          />
+        </div>
 
         <!-- Autocomplete Dropdown List -->
         <Transition name="dropdown-unfold">
@@ -801,8 +1024,64 @@ onUnmounted(() => {
 .status-details {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
+}
+
+.status-meta-row {
+  min-width: 0;
+}
+
+.status-meta-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1, 4px);
+  min-width: 0;
+}
+
+.status-meta-edit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  width: 100%;
+}
+
+.inline-edit-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.inline-edit-input :deep(input) {
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  height: 26px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
+}
+
+.inline-edit-btn {
+  opacity: 0.65;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.status-meta-row:hover .inline-edit-btn,
+.inline-edit-btn:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .inline-edit-btn {
+    opacity: 0.85;
+  }
+}
+
+.inline-save-btn {
+  padding: 2px 4px;
+  flex-shrink: 0;
+  color: var(--color-success, #2e7d32);
 }
 
 .status-title {
@@ -814,13 +1093,53 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+.status-address {
+  font-size: 0.82rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status-coords {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.add-address-btn,
+.add-manual-address-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  transition: color 0.15s ease;
+}
+
+.add-address-btn:hover,
+.add-manual-address-link:hover {
+  color: var(--color-primary-dark);
+  text-decoration-style: solid;
+}
+
+.search-sub-actions {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.search-sub-edit {
+  margin-top: 6px;
 }
 
 /* Map wrap & Mini map */

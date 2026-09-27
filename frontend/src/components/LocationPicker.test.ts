@@ -720,4 +720,231 @@ describe('LocationPicker', () => {
       cleanUp();
     });
   });
+
+  describe('Unified Title & Address Editing', () => {
+    it('emits update:title immediately when typing in the input field if title prop is bound', async () => {
+      const updateTitle = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null, title: 'Mein' },
+        { 'onUpdate:title': updateTitle }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      expect(input.value).toBe('Mein');
+
+      input.value = 'Mein Spot';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateTitle).toHaveBeenCalledWith('Mein Spot');
+      cleanUp();
+    });
+
+    it('emits update:title with place name when selecting a search result', async () => {
+      const updateTitle = vi.fn();
+      const updateAddress = vi.fn();
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null, title: '' },
+        {
+          'onUpdate:title': updateTitle,
+          'onUpdate:address': updateAddress,
+          'onUpdate:modelValue': updateModelValue,
+        }
+      );
+      await nextTick();
+
+      const dummyPlace: PlaceSearchResult = {
+        name: 'Café Central',
+        formatted_address: 'Herrengasse 14, 1010 Wien',
+        lat: 48.2104,
+        lng: 16.3653,
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [dummyPlace],
+      });
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Central';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const item = container.querySelector('.location-result-item') as HTMLElement;
+      expect(item).toBeTruthy();
+      item.click();
+      await nextTick();
+
+      expect(updateTitle).toHaveBeenCalledWith('Café Central');
+      expect(updateAddress).toHaveBeenCalledWith('Herrengasse 14, 1010 Wien');
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2104, lng: 16.3653 });
+      cleanUp();
+    });
+
+    it('clearing location resets coordinates and address but preserves title if title prop is bound', async () => {
+      const updateModelValue = vi.fn();
+      const updateAddress = vi.fn();
+      const onClear = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2104, lng: 16.3653 },
+          title: 'Mein Spot',
+          address: 'Herrengasse 14',
+        },
+        {
+          'onUpdate:modelValue': updateModelValue,
+          'onUpdate:address': updateAddress,
+          onClear: onClear,
+        }
+      );
+      await nextTick();
+
+      const clearBtn = container.querySelector('.clear-btn') as HTMLButtonElement;
+      expect(clearBtn).toBeTruthy();
+      clearBtn.click();
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith(null);
+      expect(updateAddress).toHaveBeenCalledWith('');
+      expect(onClear).toHaveBeenCalled();
+
+      // Input value should still be 'Mein Spot'
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      expect(input.value).toBe('Mein Spot');
+      cleanUp();
+    });
+
+    it('renders address and allows inline edit via pencil button', async () => {
+      const updateAddress = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2104, lng: 16.3653 },
+          title: 'Café Central',
+          address: 'Herrengasse 14',
+        },
+        {
+          'onUpdate:address': updateAddress,
+        }
+      );
+      await nextTick();
+
+      const addressSpan = container.querySelector('.status-address') as HTMLElement;
+      expect(addressSpan).toBeTruthy();
+      expect(addressSpan.textContent?.trim()).toBe('Herrengasse 14');
+
+      // Click edit pencil button in address row
+      const editAddressBtn = container.querySelector(
+        '.status-address-row .inline-edit-btn'
+      ) as HTMLButtonElement;
+      expect(editAddressBtn).toBeTruthy();
+      editAddressBtn.click();
+      await nextTick();
+
+      const editInput = container.querySelector(
+        '.status-address-row .inline-edit-input'
+      ) as HTMLInputElement;
+      expect(editInput).toBeTruthy();
+      expect(editInput.value).toBe('Herrengasse 14');
+
+      editInput.value = 'Herrengasse 14, Wien';
+      editInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      const saveBtn = container.querySelector(
+        '.status-address-row .inline-save-btn'
+      ) as HTMLButtonElement;
+      expect(saveBtn).toBeTruthy();
+      saveBtn.click();
+      await nextTick();
+
+      expect(updateAddress).toHaveBeenCalledWith('Herrengasse 14, Wien');
+      cleanUp();
+    });
+
+    it('allows inline editing of title via pencil button in status card', async () => {
+      const updateTitle = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2104, lng: 16.3653 },
+          title: 'Alter Titel',
+        },
+        {
+          'onUpdate:title': updateTitle,
+        }
+      );
+      await nextTick();
+
+      const editTitleBtn = container.querySelector(
+        '.status-title-row .inline-edit-btn'
+      ) as HTMLButtonElement;
+      expect(editTitleBtn).toBeTruthy();
+      editTitleBtn.click();
+      await nextTick();
+
+      const editInput = container.querySelector(
+        '.status-title-row .inline-edit-input'
+      ) as HTMLInputElement;
+      expect(editInput).toBeTruthy();
+      expect(editInput.value).toBe('Alter Titel');
+
+      editInput.value = 'Neuer Titel';
+      editInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      // Press Enter to save
+      editInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await nextTick();
+
+      expect(updateTitle).toHaveBeenCalledWith('Neuer Titel');
+      cleanUp();
+    });
+
+    it('allows entering manual address when no location is set via "+ Adresse manuell eingeben"', async () => {
+      const updateAddress = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: null,
+          title: 'Geheimer Spot',
+          address: '',
+        },
+        {
+          'onUpdate:address': updateAddress,
+        }
+      );
+      await nextTick();
+
+      const manualBtn = container.querySelector('.add-manual-address-link') as HTMLButtonElement;
+      expect(manualBtn).toBeTruthy();
+      expect(manualBtn.textContent).toContain('Adresse manuell eingeben');
+
+      manualBtn.click();
+      await nextTick();
+
+      const editInput = container.querySelector(
+        '.search-sub-edit .inline-edit-input'
+      ) as HTMLInputElement;
+      expect(editInput).toBeTruthy();
+
+      editInput.value = 'Musterstraße 1, 1010 Wien';
+      editInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      const saveBtn = container.querySelector(
+        '.search-sub-edit .inline-save-btn'
+      ) as HTMLButtonElement;
+      expect(saveBtn).toBeTruthy();
+      saveBtn.click();
+      await nextTick();
+
+      expect(updateAddress).toHaveBeenCalledWith('Musterstraße 1, 1010 Wien');
+      cleanUp();
+    });
+  });
 });
