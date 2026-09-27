@@ -188,6 +188,7 @@ function saveTitle() {
   isEditingTitle.value = false;
   const trimmed = editTitleInput.value.trim();
   inputText.value = trimmed;
+  selectedPlace.value = null;
   emit('update:title', trimmed);
 }
 
@@ -420,7 +421,9 @@ function selectPlace(place: PlaceSearchResult) {
 }
 
 function clear() {
-  inputText.value = '';
+  const hadSelectedPlace = selectedPlace.value !== null;
+  const wasMapsLink = classifyLocationInput(inputText.value).type === 'maps_link';
+
   selectedPlace.value = null;
   isOpen.value = false;
   results.value = [];
@@ -443,9 +446,13 @@ function clear() {
     marker = null;
   }
 
-  if (props.title !== undefined) {
-    emit('update:title', '');
+  if (hadSelectedPlace || wasMapsLink || props.title === undefined) {
+    inputText.value = '';
+    if (props.title !== undefined) {
+      emit('update:title', '');
+    }
   }
+
   emit('update:modelValue', null);
   emit('update:address', '');
   emit('update:mapsLink', '');

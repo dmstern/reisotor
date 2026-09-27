@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createApp, h, nextTick } from 'vue';
+import { createApp, h, nextTick, reactive } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 
 // Polyfills
@@ -787,7 +787,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('clearing location resets coordinates, address, and input/title', async () => {
+    it('clearing location resets coordinates and address but preserves custom spot title', async () => {
       const updateModelValue = vi.fn();
       const updateAddress = vi.fn();
       const updateTitle = vi.fn();
@@ -815,12 +815,88 @@ describe('LocationPicker', () => {
 
       expect(updateModelValue).toHaveBeenCalledWith(null);
       expect(updateAddress).toHaveBeenCalledWith('');
-      expect(updateTitle).toHaveBeenCalledWith('');
+      expect(updateTitle).not.toHaveBeenCalled();
       expect(onClear).toHaveBeenCalled();
 
       const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
-      expect(input.value).toBe('');
+      expect(input.value).toBe('Mein Spot');
       cleanUp();
+    });
+
+    it('clearing location after selecting search result resets coordinates, address, and title', async () => {
+      const state = reactive({
+        modelValue: null as { lat: number; lng: number } | null,
+        title: '',
+        address: '',
+      });
+      const onClear = vi.fn();
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(LocationPicker as unknown as import('vue').Component, {
+            modelValue: state.modelValue,
+            title: state.title,
+            address: state.address,
+            'onUpdate:modelValue': (val: { lat: number; lng: number } | null) => {
+              state.modelValue = val;
+            },
+            'onUpdate:title': (val: string) => {
+              state.title = val;
+            },
+            'onUpdate:address': (val: string) => {
+              state.address = val;
+            },
+            onClear,
+          }),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      const dummyPlace: PlaceSearchResult = {
+        name: 'Café Central',
+        formatted_address: 'Herrengasse 14, 1010 Wien',
+        lat: 48.2104,
+        lng: 16.3653,
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [dummyPlace],
+      });
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Central';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const item = container.querySelector('.location-result-item') as HTMLElement;
+      expect(item).toBeTruthy();
+      item.click();
+      await nextTick();
+
+      expect(state.title).toBe('Café Central');
+      expect(state.modelValue).toEqual({ lat: 48.2104, lng: 16.3653 });
+
+      const clearBtn = container.querySelector('.clear-btn') as HTMLButtonElement;
+      expect(clearBtn).toBeTruthy();
+      clearBtn.click();
+      await nextTick();
+
+      expect(state.modelValue).toBeNull();
+      expect(state.address).toBe('');
+      expect(state.title).toBe('');
+      expect(onClear).toHaveBeenCalled();
+      expect(input.value).toBe('');
+
+      app.unmount();
+      container.remove();
+      document.body.innerHTML = '';
     });
 
     it('renders address and allows inline edit via pencil button', async () => {
