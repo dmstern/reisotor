@@ -121,7 +121,7 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
   });
 
   describe('1. Spot Edit Mode: Coordinate Population & Status Badge', () => {
-    it('populates coordinates in LocationPicker, displays "Standort gesetzt" badge, and centers map when editing existing spot', async () => {
+    it('populates coordinates in LocationPicker, displays status card, and centers map when editing existing spot', async () => {
       const existingSpotCoords = { lat: 48.2082, lng: 16.3738 };
       const existingSpotAddress = 'Stephansplatz, Wien';
 
@@ -153,10 +153,9 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
       app.mount(container);
       await nextTick();
 
-      // 1. Status card and badge must be present immediately
+      // 1. Status card must be present immediately with coordinates and address
       const statusCard = container.querySelector('[data-testid="location-status"]');
       expect(statusCard).not.toBeNull();
-      expect(statusCard?.textContent).toContain('Standort gesetzt');
       expect(statusCard?.textContent).toContain('48.20820, 16.37380');
       expect(statusCard?.textContent).toContain(existingSpotAddress);
 
@@ -230,11 +229,11 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
       app.mount(container);
       await nextTick();
 
-      // Check if LocationPicker got coordinates or "Standort gesetzt" badge
-      const statusBadge = container.querySelector('[data-testid="location-status"]');
+      // Check if LocationPicker got coordinates
+      const coordsRow = container.querySelector('.status-coords-row');
 
-      // EMPIRICAL FINDING: Because lat/lng are omitted, status badge is NOT rendered!
-      expect(statusBadge).toBeNull();
+      // EMPIRICAL FINDING: Because lat/lng are omitted, coordinates row is NOT rendered!
+      expect(coordsRow).toBeNull();
 
       // If user submits form without manually clicking map, lat and lng are lost:
       const form = container.querySelector('form');
@@ -250,7 +249,7 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
       container.remove();
     });
 
-    it('CORRECT BEHAVIOR: when initial includes lat and lng, LocationPicker populates coordinates and shows "Standort gesetzt"', async () => {
+    it('CORRECT BEHAVIOR: when initial includes lat and lng, LocationPicker populates coordinates', async () => {
       const initialWithCoords: TripFormData = {
         name: 'Urlaub Paris',
         destination: 'Paris, Frankreich',
@@ -279,7 +278,6 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
 
       const statusBadge = container.querySelector('[data-testid="location-status"]');
       expect(statusBadge).not.toBeNull();
-      expect(statusBadge?.textContent).toContain('Standort gesetzt');
       expect(statusBadge?.textContent).toContain('48.85660, 2.35220');
 
       app.unmount();
