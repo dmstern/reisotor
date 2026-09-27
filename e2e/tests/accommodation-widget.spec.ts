@@ -25,9 +25,12 @@ test.describe('Unterkunft-Spot: Aktionen, die für eine Unterkunft keinen Sinn e
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
-    await modal.getByPlaceholder('Titel').fill(title);
-    await modal.getByRole('button', { name: 'Kategorie wählen' }).click();
-    const catInput = modal.getByPlaceholder('Kategorie wählen...');
+    const manualBtn = modal.locator('.manual-details-btn');
+    if (await manualBtn.isVisible()) {
+      await manualBtn.click();
+    }
+    await modal.locator('input[placeholder*="Titel"], input[name="title"]').fill(title);
+    const catInput = modal.locator('.inline-category-combobox input, [placeholder*="Kategorie"]');
     await catInput.fill('Unterkunft');
     await catInput.press('Enter');
     await modal.locator('button[type="submit"]', { hasText: 'Hinzufügen' }).click();
