@@ -135,6 +135,7 @@ describe('spots route coordinate preservation', () => {
       expect(data.name).toBe('Stephansdom');
       // Should find a photo or null, but never throw 500
       expect(data).toHaveProperty('imageUrl');
+      expect(Array.isArray(data.images)).toBe(true);
     });
 
     it('returns imageUrl null when place has no photo without throwing', async () => {
@@ -147,6 +148,8 @@ describe('spots route coordinate preservation', () => {
       const data = res.json();
       expect(data.name).toBe('UnbekannterOrtXYZ12345');
       expect(data.imageUrl).toBeNull();
+      expect(Array.isArray(data.images)).toBe(true);
+      expect(data.images).toEqual([]);
     });
   });
 });

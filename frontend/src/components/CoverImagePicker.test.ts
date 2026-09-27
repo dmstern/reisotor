@@ -3,6 +3,14 @@ import { describe, it, expect, vi } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia } from 'pinia';
 import CoverImagePicker from './CoverImagePicker.vue';
+import { api } from '../api/client';
+
+vi.mock('../api/client', () => ({
+  api: {
+    get: vi.fn(),
+    post: vi.fn(),
+  },
+}));
 
 function mountComponent(props: Record<string, unknown> = {}) {
   const pinia = createPinia();
@@ -113,6 +121,117 @@ describe('CoverImagePicker component', () => {
     ) as HTMLButtonElement[];
     const doneBtn = doneButtons.find((b) => b.textContent?.includes('Fertig'));
     expect(doneBtn?.disabled).toBe(true);
+
+    cleanUp();
+  });
+
+  it('browses through initialSuggestions with next and prev buttons', async () => {
+    const onUpdateModelValue = vi.fn();
+    const suggestions = [
+      'https://example.com/photo1.jpg',
+      'https://example.com/photo2.jpg',
+      'https://example.com/photo3.jpg',
+    ];
+    const { container, cleanUp } = mountComponent({
+      modelValue: suggestions[0],
+      initialSuggestions: suggestions,
+      'onUpdate:modelValue': onUpdateModelValue,
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const browseBar = document.querySelector('.suggestion-browse-bar');
+    expect(browseBar).not.toBeNull();
+    expect(document.querySelector('.browse-counter')?.textContent).toContain('Vorschlag 1 von 3');
+
+    // Prev button should be disabled at first item
+    const prevBtn = document.querySelector(
+      '.browse-buttons button[title*="vorherigen"]'
+    ) as HTMLButtonElement;
+    expect(prevBtn.disabled).toBe(true);
+
+    const nextBtn = document.querySelector(
+      '.browse-buttons button[title*="Nächstes Bild"]'
+    ) as HTMLButtonElement;
+    expect(nextBtn.disabled).toBe(false);
+
+    // Click next -> advances to suggestion 2
+    nextBtn.click();
+    await nextTick();
+    expect(onUpdateModelValue).toHaveBeenCalledWith(suggestions[1]);
+
+    cleanUp();
+  });
+
+  it('displays modified state and allows resetting image via reset button', async () => {
+    const onUpdateModelValue = vi.fn();
+    const { container, cleanUp } = mountComponent({
+      modelValue: 'https://example.com/new.jpg',
+      initialValue: 'https://example.com/original.jpg',
+      'onUpdate:modelValue': onUpdateModelValue,
+    });
+
+    // Banner should be marked modified
+    const banner = container.querySelector('.form-image-banner');
+    expect(banner?.classList.contains('is-modified')).toBe(true);
+    expect(banner?.querySelector('.banner-badge-modified')?.textContent).toContain('Bild geändert');
+
+    // Banner reset button
+    const bannerResetBtn = banner?.querySelector('.banner-reset-btn') as HTMLButtonElement;
+    expect(bannerResetBtn).not.toBeNull();
+    bannerResetBtn.click();
+    expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/original.jpg');
+
+    // Open modal
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    // Dialog should have preview badge and modal reset button
+    expect(document.querySelector('.dialog-preview-badge')?.textContent).toContain('Bild geändert');
+    const modalResetBtn = Array.from(document.querySelectorAll('.image-submodal button')).find(
+      (b) => b.textContent?.includes('Änderungen zurücksetzen')
+    ) as HTMLButtonElement;
+    expect(modalResetBtn).toBeDefined();
+
+    modalResetBtn.click();
+    expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/original.jpg');
+
+    cleanUp();
+  });
+
+  it('fetches suggestions from API when searchContext is provided', async () => {
+    const onUpdateModelValue = vi.fn();
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Eiffel Tower',
+      imageUrl: 'https://example.com/eiffel1.jpg',
+      images: ['https://example.com/eiffel1.jpg', 'https://example.com/eiffel2.jpg'],
+    });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      searchContext: { name: 'Eiffel Tower' },
+      'onUpdate:modelValue': onUpdateModelValue,
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const nextBtn = document.querySelector(
+      '.browse-buttons button[title*="Nächstes Bild"]'
+    ) as HTMLButtonElement;
+    expect(nextBtn).not.toBeNull();
+
+    await nextBtn.click();
+    await nextTick();
+
+    expect(api.get).toHaveBeenCalledWith(
+      expect.stringContaining('/spots/preview?name=Eiffel+Tower')
+    );
+    expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/eiffel1.jpg');
 
     cleanUp();
   });

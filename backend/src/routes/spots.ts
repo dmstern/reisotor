@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
-import { fetchPlacePhoto } from '../utils/placePhoto.js';
+import { fetchPlacePhotos } from '../utils/placePhoto.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
@@ -208,6 +208,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
     let previewName: string | null = name?.trim() || null;
     let previewImage: string | null = null;
+    const previewImages: string[] = [];
 
     if (maps_link) {
       const linkPreview = await fetchPlacePreview(maps_link);
@@ -216,24 +217,34 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       }
       if (linkPreview.imageUrl) {
         previewImage = linkPreview.imageUrl;
+        previewImages.push(linkPreview.imageUrl);
       }
     }
 
-    if (!previewImage && previewName) {
-      const photo = await fetchPlacePhoto({
-        name: previewName,
-        lat: Number.isFinite(parsedLat) ? parsedLat : undefined,
-        lng: Number.isFinite(parsedLng) ? parsedLng : undefined,
-        city: city?.trim() || undefined,
-      });
-      if (photo) {
-        previewImage = photo;
+    if (previewName) {
+      const photos = await fetchPlacePhotos(
+        {
+          name: previewName,
+          lat: Number.isFinite(parsedLat) ? parsedLat : undefined,
+          lng: Number.isFinite(parsedLng) ? parsedLng : undefined,
+          city: city?.trim() || undefined,
+        },
+        10
+      );
+      for (const p of photos) {
+        if (!previewImages.includes(p)) {
+          previewImages.push(p);
+        }
+      }
+      if (!previewImage && previewImages.length > 0) {
+        previewImage = previewImages[0];
       }
     }
 
     return {
       name: previewName,
       imageUrl: previewImage,
+      images: previewImages,
     };
   });
 

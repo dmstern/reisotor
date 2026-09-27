@@ -1134,6 +1134,25 @@ const editSpotPreviewImage = computed(() => {
   return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
 });
 
+const spotImageSearchContext = computed(() => {
+  const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
+  return {
+    name: activeSpotForm.value.title.trim() || undefined,
+    city: selectedSpotCity.value || undefined,
+    lat: pin?.lat,
+    lng: pin?.lng,
+    maps_link: activeSpotForm.value.maps_link || undefined,
+  };
+});
+
+function resetEditSpotImage() {
+  if (editingSpot.value) {
+    editSpotForm.value.image_url = editingSpot.value.image_url ?? '';
+  } else {
+    spotForm.value.image_url = '';
+  }
+}
+
 const spotCategoryOptions = computed(() => {
   const used = spotsStore.spots.map((s) => s.category).filter((c): c is string => !!c);
   return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
@@ -3371,6 +3390,8 @@ watch(
 );
 
 let lastPreviewFetchKey = '';
+const spotPreviewImages = ref<string[]>([]);
+const selectedSpotCity = ref<string | null>(null);
 
 // Live-Vorschau (Titel/Foto aus Wikipedia/Wikimedia oder Maps-Link, siehe backend/src/utils/placePhoto.ts
 // & mapsLink.ts) - Best-effort, überschreibt nie bereits eingetippte Werte (z. B. wenn der Titel oder ein
@@ -3393,9 +3414,16 @@ async function fetchSpotPreview(
     if (extra?.lng != null) params.set('lng', String(extra.lng));
     if (extra?.city) params.set('city', extra.city);
 
-    const preview = await api.get<{ name: string | null; imageUrl: string | null }>(
-      `/spots/preview?${params.toString()}`
-    );
+    const preview = await api.get<{
+      name: string | null;
+      imageUrl: string | null;
+      images?: string[];
+    }>(`/spots/preview?${params.toString()}`);
+    if (preview.images && preview.images.length > 0) {
+      spotPreviewImages.value = preview.images;
+    } else if (preview.imageUrl) {
+      spotPreviewImages.value = [preview.imageUrl];
+    }
     if (preview.name && !form.value.title.trim()) form.value.title = preview.name;
     if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
   } catch {
@@ -3477,6 +3505,8 @@ function closeSpotForm() {
   showSpotLocationSection.value = false;
   showSpotScheduleSection.value = false;
   isSpotUploadingCoverImage.value = false;
+  spotPreviewImages.value = [];
+  selectedSpotCity.value = null;
   newSpotDraft.clear();
 }
 
@@ -3570,6 +3600,7 @@ watch(spotManualPin, (pin) => {
 });
 
 function onSpotLocationSelect(place: PlaceSearchResult) {
+  selectedSpotCity.value = place.city || null;
   activeSpotForm.value.title = place.name;
   spotTitleTouched.value = false;
   activeSpotForm.value.address = place.formatted_address || place.name;
@@ -3636,6 +3667,8 @@ function resetEditSpotLocation() {
 function startEditSpot(spot: Spot) {
   spotTitleTouched.value = false;
   editingSpot.value = spot;
+  selectedSpotCity.value = null;
+  spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
   const isZuhause = spot.category?.trim().toLowerCase() === 'zuhause';
   editSpotForm.value = {
     title: spot.title,
@@ -3687,6 +3720,8 @@ function closeEditSpotForm() {
   spotManualPin.value = null;
   editSpotManualPin.value = null;
   isSpotUploadingCoverImage.value = false;
+  spotPreviewImages.value = [];
+  selectedSpotCity.value = null;
   editSpotDraft.clear();
   editingSpot.value = null;
 }
@@ -4229,6 +4264,10 @@ async function deleteEditingSpot() {
                 icon-group="categories"
                 modal-title="Spot-Bild bearbeiten"
                 :modified="isEditSpotImageModified"
+                :initial-value="editingSpot !== null ? (editingSpot.image_url ?? '') : ''"
+                :search-context="spotImageSearchContext"
+                :initial-suggestions="spotPreviewImages"
+                @reset="resetEditSpotImage"
               />
 
               <!-- 1. Standort-Bereich (Suche, Titel, Karte & Bereich) -->

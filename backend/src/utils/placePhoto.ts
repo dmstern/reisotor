@@ -9,7 +9,7 @@ export interface PlacePhotoOptions {
 
 interface CacheEntry {
   expiresAt: number;
-  url: string | null;
+  urls: string[];
 }
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 Stunden
@@ -250,12 +250,16 @@ async function extractPhotoFromPage(lang: string, page: WikiPage): Promise<strin
 }
 
 /**
- * Durchsucht den Web-Bilder-Index nach einem echten Foto für eine Location (z. B. Bar, Restaurant, Hotel, Attraktion).
+ * Durchsucht den Web-Bilder-Index nach echten Fotos für eine Location (z. B. Bar, Restaurant, Hotel, Attraktion).
  * Nutzt den Bing/Yahoo-Index (denselben Datenbestand wie DuckDuckGo), ist kostenfrei und stabil ohne API-Key abrufbar.
  */
-export async function searchWebPlacePhoto(name: string, city?: string): Promise<string | null> {
+export async function searchWebPlacePhotos(
+  name: string,
+  city?: string,
+  limit = 10
+): Promise<string[]> {
   const rawName = name?.trim();
-  if (!rawName) return null;
+  if (!rawName) return [];
 
   const queryParts = [rawName];
   if (city?.trim() && !rawName.toLowerCase().includes(city.trim().toLowerCase())) {
@@ -274,7 +278,7 @@ export async function searchWebPlacePhoto(name: string, city?: string): Promise<
       },
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok || typeof res.text !== 'function') return null;
+    if (!res.ok || typeof res.text !== 'function') return [];
     const html = await res.text();
 
     const itemPattern = /id="resitem-\d+"[\s\S]*?(?:<\/a>|<\/li>)/gi;
@@ -291,7 +295,11 @@ export async function searchWebPlacePhoto(name: string, city?: string): Promise<
           !['bar', 'cafe', 'café', 'restaurant', 'hotel', 'der', 'die', 'das'].includes(w)
       );
 
+    const photos: string[] = [];
+    const seen = new Set<string>();
+
     for (const item of items) {
+      if (photos.length >= limit) break;
       const block = item[0];
       const origMatch = block.match(/data-origurl=["'](https?:\/\/[^"'\s]+)["']/i);
       const thumbMatch = block.match(/<img[^>]+src=["'](https?:\/\/[^"'\s]+)["']/i);
@@ -314,41 +322,52 @@ export async function searchWebPlacePhoto(name: string, city?: string): Promise<
         continue;
       }
 
-      // 1. Bevorzuge hochauflösendes Originalfoto (TripAdvisor, Yelp, Foursquare, Blog etc.)
-      if (origUrl && isSafeUrl(origUrl) && isGoodPhoto(origUrl)) {
-        return origUrl;
-      }
-      // 2. Fallback auf schnelles Bing CDN Thumbnail
-      if (thumbUrl && isSafeUrl(thumbUrl) && isGoodPhoto(thumbUrl)) {
-        return thumbUrl;
+      // Bevorzuge hochauflösendes Originalfoto, ansonsten Thumbnail
+      const candidate =
+        origUrl && isSafeUrl(origUrl) && isGoodPhoto(origUrl)
+          ? origUrl
+          : thumbUrl && isSafeUrl(thumbUrl) && isGoodPhoto(thumbUrl)
+            ? thumbUrl
+            : null;
+
+      if (candidate && !seen.has(candidate)) {
+        seen.add(candidate);
+        photos.push(candidate);
       }
     }
 
     // Zusätzlicher Fallback: Falls Container-IDs abweichen, direkt data-origurl matchen
-    if (items.length === 0) {
+    if (photos.length === 0 && items.length === 0) {
       const origMatches = [...html.matchAll(/data-origurl=["'](https?:\/\/[^"'\s]+)["']/gi)];
       for (const m of origMatches) {
+        if (photos.length >= limit) break;
         const u = m[1].replace(/&amp;/g, '&');
-        if (isSafeUrl(u) && isGoodPhoto(u)) return u;
+        if (isSafeUrl(u) && isGoodPhoto(u) && !seen.has(u)) {
+          seen.add(u);
+          photos.push(u);
+        }
       }
     }
 
-    return null;
+    return photos;
   } catch {
-    return null;
+    return [];
   }
 }
 
+export async function searchWebPlacePhoto(name: string, city?: string): Promise<string | null> {
+  const photos = await searchWebPlacePhotos(name, city, 1);
+  return photos[0] ?? null;
+}
+
 /**
- * Sucht nach einem echten Foto für einen Ort oder eine Sehenswürdigkeit:
+ * Sucht nach mehreren passenden Fotos für einen Ort oder eine Sehenswürdigkeit:
  * 1. Primär: Echte Web-Bildersuche (authentische Fotos für Bars, Restaurants, Hotels & Sehenswürdigkeiten)
  * 2. Sekundär / Fallback: Wikipedia / Wikimedia (GeoSearch bei Koordinaten + Titelsuche)
- * Liefert null zurück, falls kein echtes Foto gefunden wurde (damit die App sauber
- * auf die Kartenvorschau zurückfällt, statt ein generisches Logo anzuzeigen).
  */
-export async function fetchPlacePhoto(options: PlacePhotoOptions): Promise<string | null> {
+export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): Promise<string[]> {
   const rawName = options.name?.trim();
-  if (!rawName) return null;
+  if (!rawName) return [];
 
   const lat = options.lat != null && Number.isFinite(options.lat) ? options.lat : undefined;
   const lng = options.lng != null && Number.isFinite(options.lng) ? options.lng : undefined;
@@ -356,20 +375,30 @@ export async function fetchPlacePhoto(options: PlacePhotoOptions): Promise<strin
 
   const cacheKey = buildPhotoCacheKey(rawName, lat, lng, city);
   const cached = photoCache.get(cacheKey);
-  if (cached && Date.now() < cached.expiresAt) {
-    return cached.url;
+  if (cached && Date.now() < cached.expiresAt && cached.urls.length >= limit) {
+    return cached.urls.slice(0, limit);
   }
 
-  // 1. Primär: Echte Web-Bildersuche
-  let photoUrl = await searchWebPlacePhoto(rawName, city);
+  const photos: string[] = [];
+  const seen = new Set<string>();
 
-  // 2. Sekundär: Wikipedia / Wikimedia Fallback
-  if (!photoUrl) {
+  // 1. Primär: Echte Web-Bildersuche
+  const webPhotos = await searchWebPlacePhotos(rawName, city, limit);
+  for (const p of webPhotos) {
+    if (!seen.has(p)) {
+      seen.add(p);
+      photos.push(p);
+    }
+  }
+
+  // 2. Sekundär: Wikipedia / Wikimedia Fallback wenn limit noch nicht erreicht
+  if (photos.length < limit) {
     const languages = ['de', 'en'];
 
     // 2a. Wenn Koordinaten vorhanden: GeoSearch um die Koordinate (Radius 300m)
     if (lat != null && lng != null) {
       for (const lang of languages) {
+        if (photos.length >= limit) break;
         const pages = await queryWiki(lang, {
           generator: 'geosearch',
           ggscoord: `${lat}|${lng}`,
@@ -380,40 +409,41 @@ export async function fetchPlacePhoto(options: PlacePhotoOptions): Promise<strin
         });
 
         for (const p of pages) {
+          if (photos.length >= limit) break;
           if (isTitleMatch(p.title, rawName, city)) {
             const found = await extractPhotoFromPage(lang, p);
-            if (found) {
-              photoUrl = found;
-              break;
+            if (found && !seen.has(found)) {
+              seen.add(found);
+              photos.push(found);
             }
           }
         }
-        if (photoUrl) break;
       }
     }
 
     // 2b. Textsuche nach Name (+ Stadt)
-    if (!photoUrl) {
+    if (photos.length < limit) {
       const searchQuery = [rawName, city].filter(Boolean).join(' ');
       for (const lang of languages) {
+        if (photos.length >= limit) break;
         const pages = await queryWiki(lang, {
           generator: 'search',
           gsrsearch: searchQuery,
-          gsrlimit: '3',
+          gsrlimit: '5',
           prop: 'pageimages|images',
           pithumbsize: '1000',
         });
 
         for (const p of pages) {
+          if (photos.length >= limit) break;
           if (isTitleMatch(p.title, rawName, city)) {
             const found = await extractPhotoFromPage(lang, p);
-            if (found) {
-              photoUrl = found;
-              break;
+            if (found && !seen.has(found)) {
+              seen.add(found);
+              photos.push(found);
             }
           }
         }
-        if (photoUrl) break;
       }
     }
   }
@@ -425,8 +455,16 @@ export async function fetchPlacePhoto(options: PlacePhotoOptions): Promise<strin
   }
   photoCache.set(cacheKey, {
     expiresAt: Date.now() + CACHE_TTL_MS,
-    url: photoUrl,
+    urls: photos,
   });
 
-  return photoUrl;
+  return photos.slice(0, limit);
+}
+
+/**
+ * Sucht nach einem echten Foto für einen Ort (Einzelfoto-Kompatibilität).
+ */
+export async function fetchPlacePhoto(options: PlacePhotoOptions): Promise<string | null> {
+  const photos = await fetchPlacePhotos(options, 1);
+  return photos[0] ?? null;
 }

@@ -241,6 +241,8 @@ function onSubmit() {
         :placeholder-icon="ACTION_ICONS.vacation"
         modal-title="Dashboard-Banner bearbeiten"
         :modified="isImageModified"
+        :initial-value="props.initial?.image_url ?? ''"
+        :search-context="{ name: form.destination || form.name }"
       />
 
       <label :for="nameId">
