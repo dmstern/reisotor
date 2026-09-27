@@ -12,7 +12,6 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
-import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import type { IconDef } from '../utils/icon';
@@ -465,109 +464,107 @@ onUnmounted(() => {
 
 <template>
   <div class="location-picker">
-    <!-- 1. Einheitliches Such- und Link-Eingabefeld -->
-    <div
-      class="location-search-wrap"
-      :class="{ 'is-loading': isSearching, loading: isSearching }"
-      :aria-busy="isSearching"
-    >
-      <Input
-        :model-value="inputText"
-        class="location-picker-input"
-        type="text"
-        :placeholder="computedPlaceholder"
-        aria-label="Standort suchen oder Maps-Link einfügen"
-        autocomplete="off"
-        @update:model-value="handleInput"
-        @keydown="onKeydown"
-        @focus="onFocus"
-        @blur="onBlur"
-      />
-      <LoadingSpinner v-if="isSearching" size="sm" class="spinner input-spinner" />
+    <!-- 1. Kombinierte Steuerungsbox für Standort & Suche -->
+    <div class="location-control-box" :class="{ 'has-location': !!modelValue }">
+      <!-- Visuelle Status-Details ("Standort gesetzt") -->
+      <div v-if="modelValue" class="location-status hint success" data-testid="location-status">
+        <div class="status-header">
+          <Badge variant="success" size="sm" class="status-badge">
+            <AppIcon :icon="FORM_FIELD_ICONS.location" :size="12" group="formFields" />
+            Standort gesetzt
+          </Badge>
+          <Button variant="secondary" size="sm" class="clear-btn" type="button" @click="clear">
+            Entfernen
+          </Button>
+        </div>
+        <div class="status-details">
+          <span v-if="displayTitle" class="status-title">{{ displayTitle }}</span>
+          <span class="status-coords">
+            {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+          </span>
+        </div>
+      </div>
 
-      <!-- Autocomplete Dropdown List -->
-      <Transition name="dropdown-unfold">
-        <ul
-          v-if="isOpen && (results.length > 0 || (!isSearching && inputText.trim().length >= 2))"
-          class="location-dropdown options"
-          role="listbox"
-          aria-label="Suchergebnisse"
-        >
-          <li
-            v-if="!isSearching && results.length === 0"
-            role="status"
-            class="location-result-empty"
+      <!-- Einheitliches Such- und Link-Eingabefeld -->
+      <div
+        class="location-search-wrap"
+        :class="{ 'is-loading': isSearching, loading: isSearching }"
+        :aria-busy="isSearching"
+      >
+        <Input
+          :model-value="inputText"
+          class="location-picker-input"
+          type="text"
+          :placeholder="computedPlaceholder"
+          aria-label="Standort suchen oder Maps-Link einfügen"
+          autocomplete="off"
+          @update:model-value="handleInput"
+          @keydown="onKeydown"
+          @focus="onFocus"
+          @blur="onBlur"
+        />
+        <LoadingSpinner v-if="isSearching" size="sm" class="spinner input-spinner" />
+
+        <!-- Autocomplete Dropdown List -->
+        <Transition name="dropdown-unfold">
+          <ul
+            v-if="isOpen && (results.length > 0 || (!isSearching && inputText.trim().length >= 2))"
+            class="location-dropdown options"
+            role="listbox"
+            aria-label="Suchergebnisse"
           >
-            <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" class="item-icon" />
-            <div class="location-empty-content">
-              <span class="empty-title">Kein passender Ort gefunden</span>
-              <span class="empty-desc">
-                Du kannst den Titel unten manuell eingeben oder direkt auf die Karte tippen.
-              </span>
-            </div>
-          </li>
-          <li
-            v-for="(place, index) in results"
-            :key="place.id || `${place.lat}-${place.lng}-${index}`"
-            role="option"
-            tabindex="-1"
-            class="location-result-item"
-            :class="{ 'is-active': index === activeIndex }"
-            :aria-selected="index === activeIndex"
-            @mousedown.prevent="selectPlace(place)"
-            @click="selectPlace(place)"
-            @keydown.enter.prevent="selectPlace(place)"
-          >
-            <AppIcon
-              :icon="FORM_FIELD_ICONS.location"
-              :size="16"
-              group="formFields"
-              class="item-icon"
-            />
-            <div class="location-item-content">
-              <div class="location-item-title-row">
-                <span class="location-item-name">{{ place.name }}</span>
-                <Badge
-                  v-if="place.category"
-                  variant="default"
-                  size="sm"
-                  class="location-category-badge"
-                >
-                  {{ place.category }}
-                </Badge>
+            <li
+              v-if="!isSearching && results.length === 0"
+              role="status"
+              class="location-result-empty"
+            >
+              <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" class="item-icon" />
+              <div class="location-empty-content">
+                <span class="empty-title">Kein passender Ort gefunden</span>
+                <span class="empty-desc">
+                  Du kannst den Titel unten manuell eingeben oder direkt auf die Karte tippen.
+                </span>
               </div>
-              <span class="location-item-address">{{
-                place.formatted_address || place.address
-              }}</span>
-            </div>
-          </li>
-        </ul>
-      </Transition>
+            </li>
+            <li
+              v-for="(place, index) in results"
+              :key="place.id || `${place.lat}-${place.lng}-${index}`"
+              role="option"
+              tabindex="-1"
+              class="location-result-item"
+              :class="{ 'is-active': index === activeIndex }"
+              :aria-selected="index === activeIndex"
+              @mousedown.prevent="selectPlace(place)"
+              @click="selectPlace(place)"
+              @keydown.enter.prevent="selectPlace(place)"
+            >
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.location"
+                :size="16"
+                group="formFields"
+                class="item-icon"
+              />
+              <div class="location-item-content">
+                <div class="location-item-title-row">
+                  <span class="location-item-name">{{ place.name }}</span>
+                  <Badge
+                    v-if="place.category"
+                    variant="default"
+                    size="sm"
+                    class="location-category-badge"
+                  >
+                    {{ place.category }}
+                  </Badge>
+                </div>
+                <span class="location-item-address">{{
+                  place.formatted_address || place.address
+                }}</span>
+              </div>
+            </li>
+          </ul>
+        </Transition>
+      </div>
     </div>
-
-    <!-- 2. Visuelle Status-Karte ("Standort gesetzt") -->
-    <Card
-      v-if="modelValue"
-      variant="muted"
-      class="location-status hint success"
-      data-testid="location-status"
-    >
-      <div class="status-header">
-        <Badge variant="success" size="sm" class="status-badge">
-          <AppIcon :icon="FORM_FIELD_ICONS.location" :size="12" group="formFields" />
-          Standort gesetzt
-        </Badge>
-        <Button variant="secondary" size="sm" class="clear-btn" type="button" @click="clear">
-          Entfernen
-        </Button>
-      </div>
-      <div class="status-details">
-        <span v-if="displayTitle" class="status-title">{{ displayTitle }}</span>
-        <span class="status-coords">
-          {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
-        </span>
-      </div>
-    </Card>
 
     <!-- Kurzlink-Hinweis -->
     <p v-if="shortlinkDetected" class="hint info">
@@ -614,9 +611,55 @@ onUnmounted(() => {
   position: relative;
 }
 
+.location-control-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  position: relative;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.location-control-box.has-location {
+  padding: var(--space-3, 12px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle, 8px);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+  gap: var(--space-2-5, 10px);
+}
+
+@media (min-width: 580px) {
+  .location-control-box.has-location {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 12px);
+  }
+
+  .location-control-box.has-location .location-status {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .location-control-box.has-location .location-search-wrap {
+    flex: 1.15;
+    min-width: 0;
+  }
+}
+
 .location-search-wrap {
   position: relative;
   width: 100%;
+}
+
+.location-picker-input,
+.location-search-wrap :deep(.input) {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .input-spinner {
@@ -727,12 +770,13 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-/* Status Card */
+/* Status Info inside Control Box */
 .location-status {
-  padding: 8px 12px !important;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
 }
 
 .status-header {
@@ -751,29 +795,39 @@ onUnmounted(() => {
 .clear-btn {
   padding: 2px 8px;
   font-size: 0.78rem;
+  line-height: 1.2;
 }
 
 .status-details {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .status-title {
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-coords {
   font-size: 0.8rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Map wrap & Mini map */
 .map-wrap {
   position: relative;
+  isolation: isolate;
+  z-index: 0;
 }
 
 .location-picker-map {

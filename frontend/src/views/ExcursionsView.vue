@@ -3764,8 +3764,15 @@ async function deleteEditingSpot() {
                 modal-title="Spot-Bild bearbeiten"
               />
 
-              <!-- 1. Ortssuche & Standort als primärer Einstieg -->
-              <div class="spot-location-section">
+              <!-- 1. Standort-Bereich (Suche, Karte & Bereich) -->
+              <fieldset class="spot-location-fieldset spot-location-section">
+                <legend class="spot-location-legend">
+                  <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
+                  <span>Standort</span>
+                </legend>
+                <p class="hint spot-location-hint">
+                  Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
+                </p>
                 <LocationPicker
                   v-model="spotManualPin"
                   :address="activeSpotForm.address"
@@ -3788,7 +3795,19 @@ async function deleteEditingSpot() {
                   konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
                   manuell zu setzen.
                 </p>
-              </div>
+                <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
+                  <span class="spot-side-label">Bereich</span>
+                  <SegmentedToggle
+                    id="spotFormSideToggle"
+                    :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
+                    :options="SPOT_SIDE_OPTIONS"
+                    @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
+                  />
+                  <p class="hint">
+                    z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen
+                  </p>
+                </div>
+              </fieldset>
 
               <!-- 2. Kerndaten: Titel & Kategorie (Automatisch gefüllt bei Suche oder manuell bearbeitbar) -->
               <FormField
@@ -3816,16 +3835,6 @@ async function deleteEditingSpot() {
                   :options="spotCategoryOptions"
                 />
               </FormField>
-              <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
-                <span class="spot-side-label">Bereich</span>
-                <SegmentedToggle
-                  id="spotFormSideToggle"
-                  :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
-                  :options="SPOT_SIDE_OPTIONS"
-                  @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
-                />
-                <p class="hint">z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen</p>
-              </div>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
@@ -5654,6 +5663,37 @@ async function deleteEditingSpot() {
 
 .spacer {
   flex: 1;
+}
+
+.spot-location-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  padding: var(--space-2-5, 10px) var(--space-3, 12px) var(--space-3, 12px);
+  margin: var(--space-1, 4px) 0 var(--space-2, 8px);
+  background: var(--color-bg);
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.spot-location-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5, 6px);
+  padding: 0 var(--space-1-5, 6px);
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.spot-location-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
 }
 
 .spot-location-section {
