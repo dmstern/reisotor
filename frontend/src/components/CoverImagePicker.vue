@@ -6,6 +6,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import ButtonGroup from './primitives/ButtonGroup.vue';
+import Badge from './primitives/Badge.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import ImageUrlInput from './ImageUrlInput.vue';
 import Modal from './Modal.vue';
@@ -241,10 +242,10 @@ function handleModalClose(visible: boolean) {
       :class="{ 'is-modified': isModified }"
       :style="effectivePreview ? { backgroundImage: `url(${effectivePreview})` } : {}"
     >
-      <span v-if="isModified" class="banner-badge-modified">
+      <Badge v-if="isModified" variant="accent" size="sm" class="banner-badge-modified">
         <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
         Bild geändert
-      </span>
+      </Badge>
       <AppIcon
         v-if="!effectivePreview"
         class="placeholder"
@@ -281,10 +282,10 @@ function handleModalClose(visible: boolean) {
             class="dialog-preview-img"
             referrerpolicy="no-referrer"
           />
-          <span v-if="isModified" class="dialog-preview-badge">
+          <Badge v-if="isModified" variant="accent" size="sm" class="dialog-preview-badge">
             <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
             Bild geändert
-          </span>
+          </Badge>
         </div>
 
         <!-- Bildvorschläge durchblättern -->
@@ -395,15 +396,6 @@ function handleModalClose(visible: boolean) {
   position: absolute;
   top: var(--space-2);
   left: var(--space-2);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--color-accent);
-  border-radius: var(--radius-full);
   box-shadow: var(--shadow-sm);
   z-index: 1;
 }
@@ -488,16 +480,8 @@ function handleModalClose(visible: boolean) {
   position: absolute;
   top: var(--space-2);
   left: var(--space-2);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--color-accent);
-  border-radius: var(--radius-full);
   box-shadow: var(--shadow-sm);
+  z-index: 1;
 }
 
 .suggestion-browse-bar {
