@@ -9,6 +9,7 @@ import ButtonGroup from './primitives/ButtonGroup.vue';
 import Badge from './primitives/Badge.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import ImageUrlInput from './ImageUrlInput.vue';
+import Input from './primitives/Input.vue';
 import Modal from './Modal.vue';
 import { api } from '../api/client';
 
@@ -61,8 +62,33 @@ const imageUrlInputRef = ref<InstanceType<typeof ImageUrlInput> | null>(null);
 
 const suggestions = ref<string[]>([]);
 const currentIndex = ref<number>(-1);
-const isSearchingNext = ref(false);
+const isSearchingAction = ref<'query' | 'next' | null>(null);
+const isSearching = computed(() => isSearchingAction.value !== null);
 const searchMessage = ref<string | null>(null);
+
+const searchQuery = ref(props.searchContext?.name ?? '');
+const lastSearchedQuery = ref(props.searchContext?.name ?? '');
+
+watch(
+  () => props.searchContext?.name,
+  (newName) => {
+    if (!showModal.value) {
+      searchQuery.value = newName ?? '';
+      lastSearchedQuery.value = newName ?? '';
+    }
+  }
+);
+
+watch(
+  () => showModal.value,
+  (isOpen) => {
+    if (isOpen) {
+      searchQuery.value = props.searchContext?.name ?? '';
+      lastSearchedQuery.value = props.searchContext?.name ?? '';
+      searchMessage.value = null;
+    }
+  }
+);
 
 watch(isUploading, (v) => {
   emit('update:uploading', v);
@@ -119,10 +145,7 @@ const effectivePreview = computed(() => {
 });
 
 const canBrowse = computed(() => {
-  return Boolean(
-    (props.searchContext && (props.searchContext.name || props.searchContext.maps_link)) ||
-    suggestions.value.length > 0
-  );
+  return Boolean(props.searchContext !== undefined || suggestions.value.length > 0);
 });
 
 const suggestionStatusText = computed(() => {
@@ -133,16 +156,90 @@ const suggestionStatusText = computed(() => {
   return `${suggestions.value.length} Vorschläge`;
 });
 
-async function fetchSuggestionsFromApi(): Promise<number> {
-  if (!props.searchContext || (!props.searchContext.name && !props.searchContext.maps_link)) {
+async function executeSearch(queryOverride?: string, action: 'query' | 'next' = 'query') {
+  if (isSearching.value || isUploading.value) return;
+  const term = (queryOverride !== undefined ? queryOverride : searchQuery.value).trim();
+  if (!term && !props.searchContext?.maps_link) {
+    searchMessage.value = 'Bitte gib einen Suchbegriff ein.';
+    return;
+  }
+
+  isSearchingAction.value = action;
+  searchMessage.value = null;
+
+  try {
+    const params = new URLSearchParams();
+    if (term) {
+      params.set('name', term);
+    }
+    if (props.searchContext?.city) {
+      params.set('city', props.searchContext.city);
+    }
+    if (props.searchContext?.lat != null) {
+      params.set('lat', String(props.searchContext.lat));
+    }
+    if (props.searchContext?.lng != null) {
+      params.set('lng', String(props.searchContext.lng));
+    }
+    if (!term || term === (props.searchContext?.name ?? '')) {
+      if (props.searchContext?.maps_link) {
+        params.set('maps_link', props.searchContext.maps_link);
+      }
+    }
+
+    const res = await api.get<{
+      name: string | null;
+      imageUrl: string | null;
+      images?: string[];
+    }>(`/spots/preview?${params.toString()}`);
+
+    const newImages = res.images || (res.imageUrl ? [res.imageUrl] : []);
+    const validImages = newImages.filter((img): img is string => Boolean(img));
+
+    lastSearchedQuery.value = term;
+
+    if (validImages.length === 0) {
+      searchMessage.value = term
+        ? `Keine Bilder für „${term}“ gefunden.`
+        : 'Keine Bilder gefunden.';
+      suggestions.value = [];
+      currentIndex.value = -1;
+      return;
+    }
+
+    suggestions.value = validImages;
+    currentIndex.value = 0;
+    emit('update:modelValue', validImages[0]);
+  } catch {
+    searchMessage.value = 'Bilder-Suche fehlgeschlagen.';
+  } finally {
+    isSearchingAction.value = null;
+  }
+}
+
+async function fetchSuggestionsFromApi(termOverride?: string): Promise<number> {
+  const term = (termOverride !== undefined ? termOverride : searchQuery.value).trim();
+  if (!term && (!props.searchContext || !props.searchContext.maps_link)) {
     return 0;
   }
   const params = new URLSearchParams();
-  if (props.searchContext.name) params.set('name', props.searchContext.name);
-  if (props.searchContext.city) params.set('city', props.searchContext.city);
-  if (props.searchContext.lat != null) params.set('lat', String(props.searchContext.lat));
-  if (props.searchContext.lng != null) params.set('lng', String(props.searchContext.lng));
-  if (props.searchContext.maps_link) params.set('maps_link', props.searchContext.maps_link);
+  if (term) {
+    params.set('name', term);
+  }
+  if (props.searchContext?.city) {
+    params.set('city', props.searchContext.city);
+  }
+  if (props.searchContext?.lat != null) {
+    params.set('lat', String(props.searchContext.lat));
+  }
+  if (props.searchContext?.lng != null) {
+    params.set('lng', String(props.searchContext.lng));
+  }
+  if (!term || term === (props.searchContext?.name ?? '')) {
+    if (props.searchContext?.maps_link) {
+      params.set('maps_link', props.searchContext.maps_link);
+    }
+  }
 
   const res = await api.get<{ name: string | null; imageUrl: string | null; images?: string[] }>(
     `/spots/preview?${params.toString()}`
@@ -159,13 +256,19 @@ async function fetchSuggestionsFromApi(): Promise<number> {
 }
 
 async function nextSuggestion() {
-  if (isSearchingNext.value || isUploading.value) return;
+  if (isSearching.value || isUploading.value) return;
   searchMessage.value = null;
 
+  const currentTerm = searchQuery.value.trim();
+  if (currentTerm !== lastSearchedQuery.value) {
+    await executeSearch(currentTerm, 'next');
+    return;
+  }
+
   if (suggestions.value.length === 0 || currentIndex.value >= suggestions.value.length - 1) {
-    isSearchingNext.value = true;
+    isSearchingAction.value = 'next';
     try {
-      const added = await fetchSuggestionsFromApi();
+      const added = await fetchSuggestionsFromApi(currentTerm);
       if (added > 0 && currentIndex.value < suggestions.value.length - 1) {
         currentIndex.value++;
         emit('update:modelValue', suggestions.value[currentIndex.value]);
@@ -175,11 +278,13 @@ async function nextSuggestion() {
       searchMessage.value = 'Bilder-Suche fehlgeschlagen.';
       return;
     } finally {
-      isSearchingNext.value = false;
+      isSearchingAction.value = null;
     }
 
     if (suggestions.value.length === 0) {
-      searchMessage.value = 'Keine Bilder gefunden.';
+      searchMessage.value = currentTerm
+        ? `Keine Bilder für „${currentTerm}“ gefunden.`
+        : 'Keine Bilder gefunden.';
       return;
     }
 
@@ -200,7 +305,7 @@ async function nextSuggestion() {
 }
 
 function prevSuggestion() {
-  if (isSearchingNext.value || isUploading.value) return;
+  if (isSearching.value || isUploading.value) return;
   searchMessage.value = null;
   if (currentIndex.value > 0) {
     currentIndex.value--;
@@ -221,8 +326,20 @@ function resetImage() {
   emit('update:modelValue', resetTo);
   emit('reset');
   searchMessage.value = null;
+  searchQuery.value = props.searchContext?.name ?? '';
+  lastSearchedQuery.value = props.searchContext?.name ?? '';
+  if (props.initialSuggestions && props.initialSuggestions.length > 0) {
+    suggestions.value = [...props.initialSuggestions];
+  }
   if (resetTo && suggestions.value.includes(resetTo)) {
     currentIndex.value = suggestions.value.indexOf(resetTo);
+  } else if (suggestions.value.length > 0 && resetTo) {
+    suggestions.value.unshift(resetTo);
+    currentIndex.value = 0;
+  } else if (suggestions.value.length > 0) {
+    currentIndex.value = 0;
+  } else {
+    currentIndex.value = -1;
   }
 }
 
@@ -306,13 +423,41 @@ function handleModalClose(visible: boolean) {
               {{ suggestionStatusText }}
             </span>
           </div>
+
+          <div class="browse-search-row">
+            <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
+            <Input
+              v-model="searchQuery"
+              size="sm"
+              type="search"
+              class="browse-search-input"
+              placeholder="Suchbegriff für Bildersuche…"
+              aria-label="Suchbegriff für Bildersuche"
+              :disabled="isSearching || isUploading"
+              @input="searchMessage = null"
+              @keydown.enter.prevent="executeSearch()"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              :icon="isSearchingAction === 'query' ? undefined : ACTION_ICONS.search"
+              :disabled="!searchQuery.trim() || isSearching || isUploading"
+              title="Nach Bildern für diesen Suchbegriff suchen"
+              @click="executeSearch()"
+            >
+              <LoadingSpinner v-if="isSearchingAction === 'query'" size="sm" />
+              <span>{{ isSearchingAction === 'query' ? 'Sucht…' : 'Suchen' }}</span>
+            </Button>
+          </div>
+
           <div class="browse-buttons">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               :icon="ACTION_ICONS.scrollLeft"
-              :disabled="currentIndex <= 0 || isSearchingNext || isUploading"
+              :disabled="currentIndex <= 0 || isSearching || isUploading"
               title="Zurück zum vorherigen Bild"
               @click="prevSuggestion"
             >
@@ -322,13 +467,17 @@ function handleModalClose(visible: boolean) {
               type="button"
               variant="secondary"
               size="sm"
-              :icon="isSearchingNext ? undefined : ACTION_ICONS.search"
-              :disabled="isSearchingNext || isUploading"
+              :icon="isSearchingAction === 'next' ? undefined : ACTION_ICONS.search"
+              :disabled="
+                isSearching ||
+                isUploading ||
+                (suggestions.length === 0 && !searchQuery.trim() && !props.searchContext?.maps_link)
+              "
               title="Nächstes Bild suchen"
               @click="nextSuggestion"
             >
-              <LoadingSpinner v-if="isSearchingNext" size="sm" />
-              <span>{{ isSearchingNext ? 'Sucht…' : 'Nächstes Bild suchen' }}</span>
+              <LoadingSpinner v-if="isSearchingAction === 'next'" size="sm" />
+              <span>{{ isSearchingAction === 'next' ? 'Sucht…' : 'Nächstes Bild suchen' }}</span>
             </Button>
           </div>
           <div v-if="searchMessage" class="browse-msg">
@@ -349,7 +498,7 @@ function handleModalClose(visible: boolean) {
             type="button"
             variant="secondary"
             :icon="ACTION_ICONS.restore"
-            :disabled="isUploading || isSearchingNext"
+            :disabled="isUploading || isSearching"
             @click="resetImage"
           >
             Änderungen zurücksetzen
@@ -360,7 +509,7 @@ function handleModalClose(visible: boolean) {
             variant="danger"
             secondary
             :icon="ACTION_ICONS.delete"
-            :disabled="isUploading || isSearchingNext"
+            :disabled="isUploading || isSearching"
             @click="removeImage"
           >
             Bild entfernen
@@ -545,6 +694,17 @@ function handleModalClose(visible: boolean) {
 .browse-counter {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.browse-search-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.browse-search-input {
+  flex: 1;
+  min-width: 0;
 }
 
 .browse-buttons {

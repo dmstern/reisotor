@@ -235,4 +235,120 @@ describe('CoverImagePicker component', () => {
 
     cleanUp();
   });
+
+  it('pre-fills search input with searchContext name and allows executing custom search', async () => {
+    const onUpdateModelValue = vi.fn();
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Louvre',
+      imageUrl: 'https://example.com/louvre1.jpg',
+      images: ['https://example.com/louvre1.jpg', 'https://example.com/louvre2.jpg'],
+    });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      searchContext: { name: 'Eiffel Tower', city: 'Paris' },
+      'onUpdate:modelValue': onUpdateModelValue,
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const searchInput = document.querySelector('.browse-search-input') as HTMLInputElement;
+    expect(searchInput).not.toBeNull();
+    expect(searchInput.value).toBe('Eiffel Tower');
+
+    searchInput.value = 'Louvre';
+    searchInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    const searchBtn = Array.from(document.querySelectorAll('.browse-search-row button')).find((b) =>
+      b.textContent?.includes('Suchen')
+    ) as HTMLButtonElement;
+    expect(searchBtn).toBeDefined();
+
+    searchBtn.click();
+    await nextTick();
+    await nextTick();
+
+    expect(api.get).toHaveBeenCalledWith(
+      expect.stringContaining('/spots/preview?name=Louvre&city=Paris')
+    );
+    expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/louvre1.jpg');
+    expect(document.querySelector('.browse-counter')?.textContent).toContain('Vorschlag 1 von 2');
+
+    cleanUp();
+  });
+
+  it('triggers custom search when search query changed and user clicks next suggestion', async () => {
+    const onUpdateModelValue = vi.fn();
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Arc de Triomphe',
+      imageUrl: 'https://example.com/arc1.jpg',
+      images: ['https://example.com/arc1.jpg'],
+    });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      searchContext: { name: 'Eiffel Tower' },
+      'onUpdate:modelValue': onUpdateModelValue,
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const searchInput = document.querySelector('.browse-search-input') as HTMLInputElement;
+    searchInput.value = 'Arc de Triomphe';
+    searchInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    const nextBtn = document.querySelector(
+      '.browse-buttons button[title*="Nächstes Bild"]'
+    ) as HTMLButtonElement;
+    await nextBtn.click();
+    await nextTick();
+    await nextTick();
+
+    expect(api.get).toHaveBeenCalledWith(
+      expect.stringContaining('/spots/preview?name=Arc+de+Triomphe')
+    );
+    expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/arc1.jpg');
+
+    cleanUp();
+  });
+
+  it('displays message when search finds no images', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'UnbekannterOrtXYZ',
+      imageUrl: null,
+      images: [],
+    });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: 'https://example.com/existing.jpg',
+      searchContext: { name: 'Eiffel' },
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const searchInput = document.querySelector('.browse-search-input') as HTMLInputElement;
+    searchInput.value = 'UnbekannterOrtXYZ';
+    searchInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    const searchBtn = Array.from(document.querySelectorAll('.browse-search-row button')).find((b) =>
+      b.textContent?.includes('Suchen')
+    ) as HTMLButtonElement;
+    await searchBtn.click();
+    await nextTick();
+    await nextTick();
+
+    const msg = document.querySelector('.browse-msg');
+    expect(msg?.textContent).toContain('Keine Bilder für „UnbekannterOrtXYZ“ gefunden.');
+
+    cleanUp();
+  });
 });
