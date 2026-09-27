@@ -6299,13 +6299,15 @@ async function deleteEditingSpot() {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1-5, 6px);
-  padding: 0 var(--space-2, 8px);
+  padding: 2px var(--space-2, 8px);
   margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
   background: var(--color-surface);
-  border-radius: var(--radius-xs, 4px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   position: relative;
   z-index: 1;
 }
