@@ -26,6 +26,8 @@ Object.defineProperty(window, 'matchMedia', {
 
 interface MockMap {
   setView: ReturnType<typeof vi.fn>;
+  project?: ReturnType<typeof vi.fn>;
+  unproject?: ReturnType<typeof vi.fn>;
   attributionControl: { setPrefix: ReturnType<typeof vi.fn> };
   on: (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => void;
   remove: ReturnType<typeof vi.fn>;
@@ -56,6 +58,24 @@ vi.mock('leaflet', () => {
       map: vi.fn((_el: HTMLElement, _opts: unknown) => {
         mockMapInstance = {
           setView: vi.fn().mockReturnThis(),
+          project: vi.fn(
+            (latlng: [number, number] | { lat: number; lng: number }, _zoom?: number) => {
+              const lat = Array.isArray(latlng) ? latlng[0] : latlng.lat;
+              const lng = Array.isArray(latlng) ? latlng[1] : latlng.lng;
+              return {
+                x: lng * 1000,
+                y: lat * 1000,
+                add: vi.fn((offset: [number, number] | { x: number; y: number }) => {
+                  const dx = Array.isArray(offset) ? offset[0] : offset.x;
+                  const dy = Array.isArray(offset) ? offset[1] : offset.y;
+                  return { x: lng * 1000 + dx, y: lat * 1000 + dy };
+                }),
+              };
+            }
+          ),
+          unproject: vi.fn((pt: { x: number; y: number }, _zoom?: number) => {
+            return { lat: pt.y / 1000, lng: pt.x / 1000 };
+          }),
           attributionControl: { setPrefix: vi.fn() },
           on: vi.fn(
             (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => {
@@ -69,6 +89,7 @@ vi.mock('leaflet', () => {
         };
         return mockMapInstance;
       }),
+      point: vi.fn((x: number, y: number) => ({ x, y })),
       tileLayer: vi.fn(() => ({
         addTo: vi.fn().mockReturnThis(),
       })),

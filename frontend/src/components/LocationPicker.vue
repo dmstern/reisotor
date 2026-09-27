@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, useSlots, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { IconCompass, IconCompassFilled } from '@tabler/icons-vue';
@@ -105,6 +105,8 @@ const emit = defineEmits<{
   (e: 'blur', event: FocusEvent): void;
 }>();
 
+const slots = useSlots();
+
 // --- Input & Search Autocomplete State ---
 const inputText = ref('');
 const isSearching = ref(false);
@@ -156,6 +158,7 @@ watch(
 
 // --- Map State ---
 const mapEl = ref<HTMLDivElement | null>(null);
+const polaroidCardEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let marker: L.Marker | null = null;
 let resizeObserver: ResizeObserver | null = null;
@@ -164,6 +167,7 @@ let ownLocationMarker: L.Marker | null = null;
 let geoWatchId: number | null = null;
 const locatingSelf = ref(false);
 const locateError = ref(false);
+let isInternalCoordChange = false;
 
 // Inline-Edit State für die Status-Details (Titel, Adresse & Kategorie)
 const isEditingTitle = ref(false);
@@ -189,6 +193,9 @@ function openManualDetails() {
   cardClosed.value = false;
   manualDetailsOpen.value = true;
   nextTick(() => {
+    if (props.modelValue) {
+      centerOnPoint([props.modelValue.lat, props.modelValue.lng]);
+    }
     const el = document.querySelector<HTMLInputElement>(
       '.status-title-row .inline-edit-input input, .status-title-row input, .status-address-row .inline-edit-input input, .status-address-row input'
     );
@@ -199,6 +206,11 @@ function openManualDetails() {
 function closeManualDetails() {
   cardClosed.value = true;
   manualDetailsOpen.value = false;
+  nextTick(() => {
+    if (props.modelValue) {
+      centerOnPoint([props.modelValue.lat, props.modelValue.lng]);
+    }
+  });
 }
 
 watch(
@@ -356,11 +368,68 @@ async function reverseGeocodeCoords(lat: number, lng: number) {
   }
 }
 
+function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
+  if (!isDetailsVisible.value) {
+    return { coveredTopPx: 0, coveredLeftPx: 0 };
+  }
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 580;
+  if (polaroidCardEl.value && mapEl.value) {
+    const cardRect = polaroidCardEl.value.getBoundingClientRect();
+    const mapRect = mapEl.value.getBoundingClientRect();
+
+    if (cardRect.height > 0 || cardRect.width > 0) {
+      if (isMobile) {
+        // Auf Mobile überdeckt die Card den oberen Bereich der Karte.
+        // Sichtbar ist der Bereich unterhalb der Card bis zum unteren Kartenrand.
+        const coveredTopPx = Math.max(0, cardRect.bottom - mapRect.top);
+        return { coveredTopPx, coveredLeftPx: 0 };
+      } else {
+        // Auf Desktop überdeckt die Card die linke Seite der Karte.
+        // Sichtbar ist der Bereich rechts von der Card.
+        const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
+        return { coveredTopPx: 0, coveredLeftPx };
+      }
+    }
+  }
+
+  // Fallbacks falls noch nicht gerendert oder in Testumgebungen ohne Layout-Geometrie:
+  if (isMobile) {
+    return { coveredTopPx: slots.media ? 440 : 240, coveredLeftPx: 0 };
+  }
+  return { coveredTopPx: 0, coveredLeftPx: 272 };
+}
+
+function centerOnPoint(latlng: L.LatLngExpression, zoom?: number) {
+  if (!map) return;
+  const targetZoom = zoom ?? (map.getZoom ? map.getZoom() : 15) ?? 15;
+  const { coveredTopPx, coveredLeftPx } = getCoveredOffsets();
+  if (
+    (!coveredTopPx && !coveredLeftPx) ||
+    typeof map.project !== 'function' ||
+    typeof map.unproject !== 'function'
+  ) {
+    map.setView(latlng, targetZoom, { animate: false });
+    return;
+  }
+  // Direkte Projektions-Rechnung analog zu TripMap.vue:
+  // Der Zielpunkt soll nicht im geometrischen Container-Zentrum liegen, sondern im Zentrum
+  // der tatsächlich sichtbaren Fläche:
+  // - Auf Mobile (oberer Bereich verdeckt): Versatz nach unten (-coveredTopPx / 2)
+  // - Auf Desktop (linker Bereich verdeckt): Versatz nach rechts (-coveredLeftPx / 2)
+  const targetPoint = map.project(latlng, targetZoom);
+  const shiftedCenter = map.unproject(
+    targetPoint.add([-coveredLeftPx / 2, -coveredTopPx / 2]),
+    targetZoom
+  );
+  map.setView(shiftedCenter, targetZoom, { animate: false });
+}
+
 function onManualCoordsSet(coords: { lat: number; lng: number }) {
   cardClosed.value = false;
   placeMarker(coords.lat, coords.lng);
   selectedPlace.value = null;
   manualDetailsOpen.value = true;
+  isInternalCoordChange = true;
   emit('update:modelValue', coords);
   emit('update:mapsLink', buildOsmLink(coords.lat, coords.lng));
   reverseGeocodeCoords(coords.lat, coords.lng);
@@ -428,8 +497,10 @@ function useOwnLocation() {
     (position) => {
       locatingSelf.value = false;
       const { latitude, longitude } = position.coords;
-      map?.setView([latitude, longitude], 16);
       onManualCoordsSet({ lat: latitude, lng: longitude });
+      nextTick(() => {
+        centerOnPoint([latitude, longitude], 16);
+      });
     },
     () => {
       locatingSelf.value = false;
@@ -474,9 +545,11 @@ function handleInput(val: string) {
     if (classification.coords) {
       const coords = classification.coords;
       placeMarker(coords.lat, coords.lng);
-      map?.setView([coords.lat, coords.lng], 16);
       manualDetailsOpen.value = true;
       emit('update:modelValue', coords);
+      nextTick(() => {
+        centerOnPoint([coords.lat, coords.lng], 16);
+      });
     } else if (classification.isShortlink) {
       shortlinkDetected.value = true;
     }
@@ -541,7 +614,9 @@ function selectPlace(place: PlaceSearchResult) {
 
   const coords = { lat: place.lat, lng: place.lng };
   placeMarker(coords.lat, coords.lng);
-  map?.setView([coords.lat, coords.lng], 16);
+  nextTick(() => {
+    centerOnPoint([coords.lat, coords.lng], 16);
+  });
 
   if (props.title !== undefined) {
     emit('update:title', place.name);
@@ -689,6 +764,9 @@ onMounted(async () => {
 
   if (props.modelValue) {
     placeMarker(props.modelValue.lat, props.modelValue.lng);
+    centerOnPoint([props.modelValue.lat, props.modelValue.lng], initialZoom);
+  } else if (isDetailsVisible.value && (props.proximityBias || props.center)) {
+    centerOnPoint([initial.lat, initial.lng], initialZoom);
   }
   renderReferencePoints();
   startOwnLocation();
@@ -697,7 +775,12 @@ onMounted(async () => {
     onManualCoordsSet({ lat: e.latlng.lat, lng: e.latlng.lng });
   });
 
-  resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+  resizeObserver = new ResizeObserver(() => {
+    map?.invalidateSize();
+    if (props.modelValue) {
+      centerOnPoint([props.modelValue.lat, props.modelValue.lng]);
+    }
+  });
   resizeObserver.observe(mapEl.value);
 });
 
@@ -707,13 +790,12 @@ watch(
     if (val) {
       cardClosed.value = false;
       placeMarker(val.lat, val.lng);
-      if (map) {
-        const curCenter = map.getCenter();
-        const dist = Math.hypot(curCenter.lat - val.lat, curCenter.lng - val.lng);
-        if (dist > 0.0001) {
-          map.setView([val.lat, val.lng], map.getZoom() || 15);
-        }
+      if (map && !isInternalCoordChange) {
+        nextTick(() => {
+          centerOnPoint([val.lat, val.lng], map?.getZoom() || 15);
+        });
       }
+      isInternalCoordChange = false;
     } else {
       if (marker) {
         marker.remove();
@@ -730,7 +812,7 @@ watch(
   () => props.proximityBias ?? props.center,
   (c) => {
     if (!map || props.modelValue || !c) return;
-    map.setView([c.lat, c.lng], props.zoom ?? FALLBACK_ZOOM);
+    centerOnPoint([c.lat, c.lng], props.zoom ?? FALLBACK_ZOOM);
   }
 );
 
@@ -752,13 +834,20 @@ defineExpose({
   openManualDetails,
   closeManualDetails,
   isDetailsVisible,
+  centerOnPoint,
 });
 </script>
 
 <template>
   <div class="location-picker">
     <!-- Mini-Karte mit schwebender Suche und Polaroid-Card-Overlay -->
-    <div class="map-wrap" :class="{ 'has-polaroid': isDetailsVisible }">
+    <div
+      class="map-wrap"
+      :class="{
+        'has-polaroid': isDetailsVisible,
+        'has-polaroid-media': isDetailsVisible && Boolean($slots.media),
+      }"
+    >
       <div ref="mapEl" class="location-picker-map"></div>
 
       <!-- 1. Schwebende Suchleiste direkt über der Karte -->
@@ -900,6 +989,7 @@ defineExpose({
       <Transition name="polaroid-slide">
         <div
           v-if="isDetailsVisible"
+          ref="polaroidCardEl"
           class="polaroid-card"
           :class="{ 'is-modified': modified, 'has-location': hasLocation }"
           data-testid="location-status"
@@ -1641,8 +1731,7 @@ defineExpose({
   align-self: center;
   margin-top: 0;
   margin-left: auto;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0.7;
   transition:
     opacity 0.15s ease,
     color 0.15s ease;
@@ -1651,19 +1740,11 @@ defineExpose({
 .status-coords-row:hover .coords-clear-btn,
 .coords-clear-btn:focus-visible {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .coords-clear-btn:hover {
   opacity: 1;
   color: var(--color-danger, #ef4444);
-}
-
-@media (hover: none) {
-  .coords-clear-btn {
-    opacity: 0.85;
-    pointer-events: auto;
-  }
 }
 
 .sub-category-wrap {
@@ -1714,24 +1795,6 @@ defineExpose({
   }
 }
 
-@media (max-width: 580px) {
-  .polaroid-card {
-    position: absolute;
-    top: 68px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-    max-width: none;
-    max-height: calc(100% - 80px);
-    overflow-y: auto;
-  }
-
-  .has-polaroid .location-picker-map {
-    height: 460px;
-    min-height: 460px;
-  }
-}
-
 .location-picker-map {
   position: relative;
   isolation: isolate;
@@ -1755,6 +1818,30 @@ defineExpose({
 .has-polaroid .location-picker-map {
   height: 440px;
   min-height: 440px;
+}
+
+@media (max-width: 580px) {
+  .polaroid-card {
+    position: absolute;
+    top: 68px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100% - 200px);
+    overflow-y: auto;
+  }
+
+  .has-polaroid .location-picker-map {
+    height: 560px;
+    min-height: 560px;
+  }
+
+  .has-polaroid.has-polaroid-media .location-picker-map,
+  .has-polaroid:has(.polaroid-media) .location-picker-map {
+    height: 680px;
+    min-height: 680px;
+  }
 }
 
 .map-tap-hint {

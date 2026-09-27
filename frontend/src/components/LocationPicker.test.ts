@@ -27,6 +27,8 @@ Object.defineProperty(window, 'matchMedia', {
 
 interface MockMap {
   setView: ReturnType<typeof vi.fn>;
+  project: ReturnType<typeof vi.fn>;
+  unproject: ReturnType<typeof vi.fn>;
   attributionControl: {
     setPrefix: ReturnType<typeof vi.fn>;
     setPosition?: ReturnType<typeof vi.fn>;
@@ -59,6 +61,24 @@ vi.mock('leaflet', () => {
       map: vi.fn((_el: HTMLElement, _opts: unknown) => {
         mockMapInstance = {
           setView: vi.fn().mockReturnThis(),
+          project: vi.fn(
+            (latlng: [number, number] | { lat: number; lng: number }, _zoom?: number) => {
+              const lat = Array.isArray(latlng) ? latlng[0] : latlng.lat;
+              const lng = Array.isArray(latlng) ? latlng[1] : latlng.lng;
+              return {
+                x: lng * 1000,
+                y: lat * 1000,
+                add: vi.fn((offset: [number, number] | { x: number; y: number }) => {
+                  const dx = Array.isArray(offset) ? offset[0] : offset.x;
+                  const dy = Array.isArray(offset) ? offset[1] : offset.y;
+                  return { x: lng * 1000 + dx, y: lat * 1000 + dy };
+                }),
+              };
+            }
+          ),
+          unproject: vi.fn((pt: { x: number; y: number }, _zoom?: number) => {
+            return { lat: pt.y / 1000, lng: pt.x / 1000 };
+          }),
           attributionControl: { setPrefix: vi.fn(), setPosition: vi.fn() },
           on: vi.fn(
             (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => {
@@ -72,6 +92,7 @@ vi.mock('leaflet', () => {
         };
         return mockMapInstance;
       }),
+      point: vi.fn((x: number, y: number) => ({ x, y })),
       tileLayer: vi.fn(() => ({
         addTo: vi.fn().mockReturnThis(),
       })),
@@ -1357,6 +1378,135 @@ describe('LocationPicker', () => {
       const infoBtn = searchRow?.querySelector('.search-info-popover .info-popover-btn');
       expect(infoBtn).toBeTruthy();
       expect(infoBtn?.getAttribute('aria-label')).toBe('Suchtipps und Maps-Links anzeigen');
+
+      cleanUp();
+    });
+  });
+
+  describe('Visible Centering Area & Mobile Layout', () => {
+    const originalInnerWidth = window.innerWidth;
+
+    afterEach(() => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    });
+
+    it('applies has-polaroid-media class to map-wrap when media slot is provided', async () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(
+            LocationPicker as unknown as import('vue').Component,
+            {
+              modelValue: { lat: 38.6849, lng: -9.2187 },
+              title: 'Spot mit Bild',
+            },
+            {
+              media: () => h('div', { class: 'test-media' }, 'Cover'),
+            }
+          ),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      const mapWrap = container.querySelector('.map-wrap');
+      expect(mapWrap?.classList.contains('has-polaroid')).toBe(true);
+      expect(mapWrap?.classList.contains('has-polaroid-media')).toBe(true);
+
+      app.unmount();
+      container.remove();
+    });
+
+    it('shifts map center to the right on desktop when details card is visible', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      const { cleanUp } = mountPicker({
+        modelValue: { lat: 38.68493, lng: -9.21877 },
+        title: 'Turm von Belém',
+      });
+      await nextTick();
+      await nextTick();
+
+      // Auf Desktop wird der Zielpunkt nach rechts verschoben (X-Wert der Mitte um coveredLeftPx / 2 reduziert)
+      expect(mockMapInstance?.project).toHaveBeenCalled();
+      expect(mockMapInstance?.unproject).toHaveBeenCalled();
+      const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
+      expect(lastSetViewCall).toBeTruthy();
+      const centeredLatLng = lastSetViewCall?.[0] as { lat: number; lng: number };
+      expect(centeredLatLng.lng).toBeLessThan(-9.21877); // Westlichere Mitte bewirkt Versatz nach rechts
+
+      cleanUp();
+    });
+
+    it('shifts map center downwards under the card on mobile when details card is visible', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const { cleanUp } = mountPicker({
+        modelValue: { lat: 38.68493, lng: -9.21877 },
+        title: 'Turm von Belém',
+      });
+      await nextTick();
+      await nextTick();
+
+      // Auf Mobile wird der Zielpunkt nach unten unter die Card verschoben (Y-Wert der Mitte um coveredTopPx / 2 reduziert)
+      expect(mockMapInstance?.project).toHaveBeenCalled();
+      expect(mockMapInstance?.unproject).toHaveBeenCalled();
+      const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
+      expect(lastSetViewCall).toBeTruthy();
+      const centeredLatLng = lastSetViewCall?.[0] as { lat: number; lng: number };
+      expect(centeredLatLng.lat).toBeLessThan(38.68493); // Südlichere Mitte bewirkt Versatz nach unten
+
+      cleanUp();
+    });
+
+    it('centers geolocation in visible area taking mobile card offset into account', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const getCurrentPositionMock = vi.fn().mockImplementation((success) => {
+        success({ coords: { latitude: 38.6849, longitude: -9.2187 } });
+      });
+      Object.defineProperty(globalThis.navigator, 'geolocation', {
+        writable: true,
+        configurable: true,
+        value: {
+          getCurrentPosition: getCurrentPositionMock,
+          watchPosition: vi.fn(),
+          clearWatch: vi.fn(),
+        },
+      });
+
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+      });
+      await nextTick();
+      await nextTick();
+
+      const locateBtn = container.querySelector('.locate-btn') as HTMLButtonElement;
+      locateBtn.click();
+      await nextTick();
+      await nextTick();
+
+      expect(getCurrentPositionMock).toHaveBeenCalled();
+      expect(mockMapInstance?.project).toHaveBeenCalled();
+      const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
+      expect(lastSetViewCall).toBeTruthy();
 
       cleanUp();
     });
