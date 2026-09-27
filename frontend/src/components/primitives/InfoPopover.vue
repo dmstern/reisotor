@@ -22,6 +22,10 @@ const props = withDefaults(
     placement?: 'bottom' | 'top' | 'auto';
     /** Horizontale Ausrichtung zum Trigger-Element ('left' | 'right') */
     align?: 'left' | 'right';
+    /** Z-Index für das Menü-Fenster (Standard: 1101, über Modals) */
+    zIndex?: number;
+    /** Z-Index für den Backdrop (Standard: 1100) */
+    backdropZIndex?: number;
   }>(),
   {
     title: 'Informationen anzeigen',
@@ -30,6 +34,8 @@ const props = withDefaults(
     menuWidth: 280,
     placement: 'auto',
     align: 'left',
+    zIndex: 1101,
+    backdropZIndex: 1100,
   }
 );
 
@@ -108,7 +114,13 @@ defineExpose({
 
     <Teleport to="body">
       <template v-if="open">
-        <PickerMenu class="info-popover-menu" :style="menuStyle" @close="close">
+        <PickerMenu
+          class="info-popover-menu"
+          :style="menuStyle"
+          :z-index="zIndex"
+          :backdrop-z-index="backdropZIndex"
+          @close="close"
+        >
           <div class="info-popover-content">
             <slot :close="close" />
           </div>

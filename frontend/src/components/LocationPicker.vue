@@ -13,6 +13,7 @@ import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
+import InfoPopover from './primitives/InfoPopover.vue';
 import CategoryChip from './CategoryChip.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 import type { IconDef } from '../utils/icon';
@@ -781,8 +782,31 @@ defineExpose({
             @focus="onFocus"
             @blur="onBlur"
           />
-          <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-            <LoadingSpinner size="sm" class="spinner input-spinner" />
+          <div class="search-right-actions">
+            <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
+              <LoadingSpinner size="sm" class="spinner input-spinner" />
+            </div>
+            <InfoPopover
+              title="Suchtipps & Maps-Links"
+              aria-label="Suchtipps und Maps-Links anzeigen"
+              align="right"
+              placement="bottom"
+              :menu-width="260"
+              class="search-info-popover"
+            >
+              <p>
+                <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
+                Orten weltweit suchen.
+              </p>
+              <p>
+                <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple
+                Maps oder OpenStreetMap (OSM) hier hinein.
+              </p>
+              <p class="popover-tip">
+                📍 Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
+                platzieren.
+              </p>
+            </InfoPopover>
           </div>
 
           <!-- Autocomplete Dropdown List -->
@@ -1165,21 +1189,38 @@ defineExpose({
   width: 100%;
   box-sizing: border-box;
   padding-left: 36px;
-  padding-right: 36px;
+  padding-right: 40px;
   background: var(--color-surface);
   box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
-.input-spinner-wrap {
+.location-search-wrap.is-loading :deep(.location-picker-input) {
+  padding-right: 68px;
+}
+
+.location-search-wrap :deep(.location-picker-input)::placeholder {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.search-right-actions {
   position: absolute;
-  right: 12px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
+  gap: var(--space-1-5, 6px);
+  z-index: 3;
+}
+
+.search-right-actions .input-spinner-wrap {
+  position: static;
+  transform: none;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  pointer-events: none;
-  z-index: 2;
   line-height: 1;
 }
 

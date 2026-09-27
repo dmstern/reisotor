@@ -1348,5 +1348,21 @@ describe('LocationPicker', () => {
       container.remove();
       document.body.innerHTML = '';
     });
+
+    it('renders search info popover button in search bar', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+      });
+      await nextTick();
+
+      const searchRow = container.querySelector('.location-search-row');
+      expect(searchRow).toBeTruthy();
+
+      const infoBtn = searchRow?.querySelector('.search-info-popover .info-popover-btn');
+      expect(infoBtn).toBeTruthy();
+      expect(infoBtn?.getAttribute('aria-label')).toBe('Suchtipps und Maps-Links anzeigen');
+
+      cleanUp();
+    });
   });
 });
