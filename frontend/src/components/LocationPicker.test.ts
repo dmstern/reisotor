@@ -366,6 +366,7 @@ describe('LocationPicker', () => {
       expect(option?.textContent).toContain('Café Central');
       expect(option?.textContent).toContain('Herrengasse 14');
       expect(option?.textContent).toContain('Café');
+      expect(option?.querySelector('.location-category-badge.category-chip')).toBeTruthy();
 
       cleanUp();
     });

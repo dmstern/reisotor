@@ -12,7 +12,6 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
-import Badge from './primitives/Badge.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import CategoryChip from './CategoryChip.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
@@ -959,14 +958,12 @@ defineExpose({
               <div class="location-item-content">
                 <div class="location-item-title-row">
                   <span class="location-item-name">{{ place.name }}</span>
-                  <Badge
+                  <CategoryChip
                     v-if="place.category"
-                    variant="default"
-                    size="sm"
+                    :category="place.category"
+                    type="spot"
                     class="location-category-badge"
-                  >
-                    {{ place.category }}
-                  </Badge>
+                  />
                 </div>
                 <span class="location-item-address">{{
                   place.formatted_address || place.address
