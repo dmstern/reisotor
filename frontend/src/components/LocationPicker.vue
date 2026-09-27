@@ -714,6 +714,7 @@ defineExpose({
             size="sm"
             class="clear-btn"
             type="button"
+            :icon="modified ? ACTION_ICONS.restore : ACTION_ICONS.close"
             @click="onClearOrResetClick"
           >
             {{ modified ? 'Zurücksetzen' : 'Entfernen' }}
@@ -1239,6 +1240,7 @@ defineExpose({
   padding: 2px 8px;
   font-size: 0.78rem;
   line-height: 1.2;
+  gap: var(--space-1, 4px);
 }
 
 .status-details {

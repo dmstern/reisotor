@@ -4259,6 +4259,7 @@ async function deleteEditingSpot() {
                       size="sm"
                       class="clear-btn spot-location-clear-btn"
                       type="button"
+                      :icon="isEditSpotLocationModified ? ACTION_ICONS.restore : ACTION_ICONS.close"
                       @click="
                         isEditSpotLocationModified
                           ? resetEditSpotLocation()
@@ -6354,6 +6355,7 @@ async function deleteEditingSpot() {
   height: 22px;
   min-height: 22px;
   line-height: 1;
+  gap: var(--space-1, 4px);
 }
 
 .spot-location-hint {

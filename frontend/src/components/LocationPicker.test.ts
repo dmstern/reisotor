@@ -584,6 +584,7 @@ describe('LocationPicker', () => {
       const clearBtn = container.querySelector('button.clear-btn');
       expect(clearBtn).toBeTruthy();
       expect(clearBtn?.textContent).toContain('Entfernen');
+      expect(clearBtn?.querySelector('.app-icon')).toBeTruthy();
 
       cleanUp();
     });
@@ -682,6 +683,7 @@ describe('LocationPicker', () => {
 
       const btn = container.querySelector('button.clear-btn') as HTMLButtonElement;
       expect(btn?.textContent).toContain('Zurücksetzen');
+      expect(btn?.querySelector('.app-icon')).toBeTruthy();
 
       cleanUp();
     });
