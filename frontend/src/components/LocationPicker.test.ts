@@ -787,9 +787,10 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('clearing location resets coordinates and address but preserves title if title prop is bound', async () => {
+    it('clearing location resets coordinates, address, and input/title', async () => {
       const updateModelValue = vi.fn();
       const updateAddress = vi.fn();
+      const updateTitle = vi.fn();
       const onClear = vi.fn();
 
       const { container, cleanUp } = mountPicker(
@@ -801,6 +802,7 @@ describe('LocationPicker', () => {
         {
           'onUpdate:modelValue': updateModelValue,
           'onUpdate:address': updateAddress,
+          'onUpdate:title': updateTitle,
           onClear: onClear,
         }
       );
@@ -813,11 +815,11 @@ describe('LocationPicker', () => {
 
       expect(updateModelValue).toHaveBeenCalledWith(null);
       expect(updateAddress).toHaveBeenCalledWith('');
+      expect(updateTitle).toHaveBeenCalledWith('');
       expect(onClear).toHaveBeenCalled();
 
-      // Input value should still be 'Mein Spot'
       const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
-      expect(input.value).toBe('Mein Spot');
+      expect(input.value).toBe('');
       cleanUp();
     });
 

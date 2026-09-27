@@ -308,9 +308,6 @@ function useOwnLocation() {
 // --- Autocomplete & Search Handling ---
 function handleInput(val: string) {
   inputText.value = val;
-  if (props.title !== undefined) {
-    emit('update:title', val);
-  }
   shortlinkDetected.value = false;
 
   if (debounceTimer) {
@@ -329,6 +326,9 @@ function handleInput(val: string) {
     isOpen.value = false;
     results.value = [];
     activeIndex.value = -1;
+    if (props.title !== undefined) {
+      emit('update:title', '');
+    }
     return;
   }
 
@@ -349,6 +349,10 @@ function handleInput(val: string) {
       shortlinkDetected.value = true;
     }
     return;
+  }
+
+  if (props.title !== undefined) {
+    emit('update:title', val);
   }
 
   // Free-text search query
@@ -416,9 +420,7 @@ function selectPlace(place: PlaceSearchResult) {
 }
 
 function clear() {
-  if (props.title === undefined) {
-    inputText.value = '';
-  }
+  inputText.value = '';
   selectedPlace.value = null;
   isOpen.value = false;
   results.value = [];
@@ -441,6 +443,9 @@ function clear() {
     marker = null;
   }
 
+  if (props.title !== undefined) {
+    emit('update:title', '');
+  }
   emit('update:modelValue', null);
   emit('update:address', '');
   emit('update:mapsLink', '');
