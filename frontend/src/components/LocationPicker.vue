@@ -114,11 +114,6 @@ const hasLocation = computed(() => Boolean(props.modelValue || props.address || 
 
 const computedPlaceholder = computed(() => {
   if (props.placeholder) return props.placeholder;
-  if (props.title !== undefined) {
-    return hasLocation.value
-      ? 'Titel bearbeiten oder anderen Ort suchen...'
-      : 'Titel eingeben oder Ort suchen...';
-  }
   return hasLocation.value
     ? 'Anderen Ort oder Adresse suchen...'
     : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
@@ -126,17 +121,6 @@ const computedPlaceholder = computed(() => {
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let activeAbortController: AbortController | null = null;
-
-// Synchronisiere Textfeld mit extern übergebenem Titel, wenn v-model:title genutzt wird
-watch(
-  () => props.title,
-  (t) => {
-    if (t !== undefined && t !== inputText.value) {
-      inputText.value = t;
-    }
-  },
-  { immediate: true }
-);
 
 // Initialisiere Textfeld mit übergebenem Link oder Adresse nur, wenn noch kein Standort gesetzt ist
 // (wenn bereits Koordinaten vorliegen, zeigt die Status-Karte die Daten und das Suchfeld bleibt frei).
@@ -177,14 +161,31 @@ let geoWatchId: number | null = null;
 const locatingSelf = ref(false);
 const locateError = ref(false);
 
-// Inline-Edit State für die Status-Details (Titel & Adresse)
+// Inline-Edit State für die Status-Details (Titel, Adresse & Kategorie)
 const isEditingTitle = ref(false);
 const editTitleInput = ref('');
 const isEditingAddress = ref(false);
 const editAddressInput = ref('');
+const isEditingCategory = ref(false);
+const editCategoryInput = ref('');
+
+const showDetailsBox = computed(() => hasLocation.value || props.title !== undefined);
+
+watch(
+  () => props.title,
+  (newTitle) => {
+    if (!isEditingTitle.value) {
+      editTitleInput.value = newTitle || '';
+      if (!newTitle) {
+        isEditingTitle.value = true;
+      }
+    }
+  },
+  { immediate: true }
+);
 
 function startEditTitle() {
-  editTitleInput.value = props.title || displayTitle.value || inputText.value;
+  editTitleInput.value = props.title || '';
   isEditingTitle.value = true;
   nextTick(() => {
     const el = document.querySelector<HTMLInputElement>(
@@ -195,17 +196,23 @@ function startEditTitle() {
   });
 }
 
+function onTitleInput() {
+  emit('update:title', editTitleInput.value);
+}
+
 function saveTitle() {
-  if (!isEditingTitle.value) return;
-  isEditingTitle.value = false;
   const trimmed = editTitleInput.value.trim();
-  inputText.value = trimmed;
-  selectedPlace.value = null;
   emit('update:title', trimmed);
+  if (trimmed) {
+    isEditingTitle.value = false;
+  }
 }
 
 function cancelTitle() {
-  isEditingTitle.value = false;
+  if (props.title) {
+    editTitleInput.value = props.title;
+    isEditingTitle.value = false;
+  }
 }
 
 function startEditAddress() {
@@ -213,7 +220,7 @@ function startEditAddress() {
   isEditingAddress.value = true;
   nextTick(() => {
     const el = document.querySelector<HTMLInputElement>(
-      '.status-address-row .inline-edit-input input, .search-sub-edit input, .status-address-row input'
+      '.status-address-row .inline-edit-input input, .status-address-row input'
     );
     el?.focus();
     el?.select();
@@ -231,15 +238,12 @@ function cancelAddress() {
   isEditingAddress.value = false;
 }
 
-const isEditingCategory = ref(false);
-const editCategoryInput = ref('');
-
 function startEditCategory() {
   editCategoryInput.value = props.category || '';
   isEditingCategory.value = true;
   nextTick(() => {
     const el = document.querySelector<HTMLInputElement>(
-      '.status-category-row .inline-category-combobox input, .sub-category-wrap .inline-category-combobox input'
+      '.status-category-row .inline-category-combobox input, .status-category-row input'
     );
     el?.focus();
     el?.select();
@@ -264,13 +268,6 @@ function handleCategoryBlur() {
     }
   }, 200);
 }
-
-const displayTitle = computed(() => {
-  if (props.title) return props.title;
-  if (selectedPlace.value?.name) return selectedPlace.value.name;
-  if (props.address) return props.address;
-  return '';
-});
 
 function placeMarker(lat: number, lng: number) {
   if (!map) return;
@@ -373,9 +370,6 @@ function handleInput(val: string) {
     isOpen.value = false;
     results.value = [];
     activeIndex.value = -1;
-    if (props.title !== undefined) {
-      emit('update:title', '');
-    }
     return;
   }
 
@@ -396,10 +390,6 @@ function handleInput(val: string) {
       shortlinkDetected.value = true;
     }
     return;
-  }
-
-  if (props.title !== undefined) {
-    emit('update:title', val);
   }
 
   // Free-text search query
@@ -446,13 +436,15 @@ function handleInput(val: string) {
 
 function selectPlace(place: PlaceSearchResult) {
   selectedPlace.value = place;
-  inputText.value = place.name;
+  inputText.value = '';
   isOpen.value = false;
   results.value = [];
   activeIndex.value = -1;
   isEditingTitle.value = false;
   isEditingAddress.value = false;
   isEditingCategory.value = false;
+  editTitleInput.value = place.name;
+  editAddressInput.value = place.formatted_address || place.address || place.name;
 
   const coords = { lat: place.lat, lng: place.lng };
   placeMarker(coords.lat, coords.lng);
@@ -471,15 +463,11 @@ function selectPlace(place: PlaceSearchResult) {
 }
 
 function clear() {
-  const hadSelectedPlace = selectedPlace.value !== null;
-  const wasMapsLink = classifyLocationInput(inputText.value).type === 'maps_link';
-
   selectedPlace.value = null;
   isOpen.value = false;
   results.value = [];
   activeIndex.value = -1;
   shortlinkDetected.value = false;
-  isEditingTitle.value = false;
   isEditingAddress.value = false;
   isEditingCategory.value = false;
 
@@ -497,12 +485,7 @@ function clear() {
     marker = null;
   }
 
-  if (hadSelectedPlace || wasMapsLink || props.title === undefined) {
-    inputText.value = '';
-    if (props.title !== undefined) {
-      emit('update:title', '');
-    }
-  }
+  inputText.value = '';
 
   emit('update:modelValue', null);
   emit('update:address', '');
@@ -638,10 +621,18 @@ defineExpose({
 <template>
   <div class="location-picker">
     <!-- 1. Kombinierte Steuerungsbox für Standort & Suche -->
-    <div class="location-control-box" :class="{ 'has-location': hasLocation }">
-      <!-- Visuelle Status-Details -->
-      <div v-if="hasLocation" class="location-status hint success" data-testid="location-status">
-        <div v-if="!hideStatusHeader" class="status-header">
+    <div
+      class="location-control-box"
+      :class="{ 'has-location': hasLocation, 'has-details': showDetailsBox }"
+    >
+      <!-- Visuelle Status-Details (immer angezeigt, wenn Titel vorhanden oder Standort gesetzt) -->
+      <div
+        v-if="showDetailsBox"
+        class="location-status"
+        :class="{ 'hint success': hasLocation }"
+        data-testid="location-status"
+      >
+        <div v-if="!hideStatusHeader && hasLocation" class="status-header">
           <span class="status-check-circle" title="Standort gesetzt" aria-label="Standort gesetzt">
             <AppIcon
               :icon="ACTION_ICONS.done"
@@ -656,10 +647,10 @@ defineExpose({
         </div>
         <div class="status-details">
           <!-- 1. Titel-Zeile mit dezentem Bleistift-Icon -->
-          <div v-if="displayTitle || props.title" class="status-meta-row status-title-row">
-            <div v-if="!isEditingTitle" class="status-meta-display">
-              <span class="status-title" :title="displayTitle || props.title">
-                {{ displayTitle || props.title }}
+          <div v-if="props.title !== undefined" class="status-meta-row status-title-row">
+            <div v-if="!isEditingTitle && props.title" class="status-meta-display">
+              <span class="status-title" :title="props.title">
+                {{ props.title }}
               </span>
               <IconButton
                 type="button"
@@ -672,17 +663,23 @@ defineExpose({
                 @click="startEditTitle"
               />
             </div>
-            <div v-else class="status-meta-edit">
+            <div v-else class="status-meta-edit status-title-edit">
               <Input
                 v-model="editTitleInput"
                 size="sm"
                 class="inline-edit-input"
-                placeholder="Titel..."
+                name="title"
+                data-testid="spot-title-input"
+                placeholder="Titel des Spots..."
+                :required="titleRequired"
+                :invalid="titleInvalid"
+                @input="onTitleInput"
                 @keydown.enter.prevent="saveTitle"
                 @keydown.esc.prevent="cancelTitle"
                 @blur="saveTitle"
               />
               <IconButton
+                v-if="props.title"
                 type="button"
                 size="sm"
                 variant="ghost"
@@ -819,12 +816,10 @@ defineExpose({
           :model-value="inputText"
           class="location-picker-input"
           type="text"
-          name="title"
-          data-testid="spot-title-input"
+          name="location-search"
+          data-testid="location-search-input"
           :placeholder="computedPlaceholder"
-          :required="titleRequired"
-          :invalid="titleInvalid"
-          aria-label="Spot-Titel oder Ort suchen"
+          aria-label="Ort suchen oder Maps-Link einfügen"
           autocomplete="off"
           @update:model-value="handleInput"
           @keydown="onKeydown"
@@ -832,85 +827,6 @@ defineExpose({
           @blur="onBlur"
         />
         <LoadingSpinner v-if="isSearching" size="sm" class="spinner input-spinner" />
-
-        <!-- Schnell-Aktion für manuelle Adresse & Kategorie, falls noch kein Standort gewählt wurde -->
-        <div v-if="!hasLocation && !isEditingAddress" class="search-sub-actions">
-          <div v-if="props.category !== undefined" class="sub-category-wrap">
-            <div v-if="!isEditingCategory && props.category" class="status-meta-display">
-              <CategoryChip :category="props.category" type="spot" />
-              <IconButton
-                type="button"
-                size="sm"
-                variant="ghost"
-                class="inline-edit-btn"
-                :icon="ACTION_ICONS.edit"
-                title="Kategorie bearbeiten"
-                aria-label="Kategorie bearbeiten"
-                @click="startEditCategory"
-              />
-            </div>
-            <div v-else-if="!isEditingCategory && !props.category" class="status-meta-display">
-              <button
-                type="button"
-                class="add-manual-address-link add-category-link"
-                @click="startEditCategory"
-              >
-                <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
-                <span>Kategorie wählen</span>
-              </button>
-            </div>
-            <div v-else class="status-meta-edit status-category-edit">
-              <div class="inline-category-combobox">
-                <CategoryCombobox
-                  v-model="editCategoryInput"
-                  type="spot"
-                  :options="categoryOptions"
-                  size="sm"
-                  placeholder="Kategorie wählen..."
-                  @select="saveCategory"
-                  @keydown.enter.prevent="saveCategory()"
-                  @keydown.esc.prevent="cancelCategory"
-                  @blur="handleCategoryBlur"
-                />
-              </div>
-              <IconButton
-                type="button"
-                size="sm"
-                variant="ghost"
-                class="inline-save-btn"
-                :icon="ACTION_ICONS.done"
-                title="Kategorie speichern"
-                aria-label="Kategorie speichern"
-                @click="saveCategory()"
-              />
-            </div>
-          </div>
-          <button type="button" class="add-manual-address-link" @click="startEditAddress">
-            <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
-            <span>Adresse manuell eingeben</span>
-          </button>
-        </div>
-        <div v-else-if="!hasLocation && isEditingAddress" class="search-sub-edit status-meta-edit">
-          <Input
-            v-model="editAddressInput"
-            size="sm"
-            class="inline-edit-input"
-            placeholder="Adresse manuell eingeben..."
-            @keydown.enter.prevent="saveAddress"
-            @keydown.esc.prevent="cancelAddress"
-            @blur="saveAddress"
-          />
-          <IconButton
-            type="button"
-            size="sm"
-            variant="ghost"
-            class="inline-save-btn"
-            :icon="ACTION_ICONS.done"
-            title="Adresse speichern"
-            aria-label="Adresse speichern"
-            @click="saveAddress"
-          />
-        </div>
 
         <!-- Autocomplete Dropdown List -->
         <Transition name="dropdown-unfold">
@@ -1029,6 +945,7 @@ defineExpose({
     border-color 0.15s ease;
 }
 
+.location-control-box.has-details,
 .location-control-box.has-location {
   padding: var(--space-3, 12px);
   background: var(--color-surface);
@@ -1040,18 +957,21 @@ defineExpose({
 }
 
 @media (min-width: 580px) {
+  .location-control-box.has-details,
   .location-control-box.has-location {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: var(--space-3, 12px);
   }
 
+  .location-control-box.has-details .location-status,
   .location-control-box.has-location .location-status {
     flex: 1;
     min-width: 0;
   }
 
+  .location-control-box.has-details .location-search-wrap,
   .location-control-box.has-location .location-search-wrap {
     flex: 1.15;
     min-width: 0;
@@ -1328,9 +1248,7 @@ defineExpose({
 }
 
 .add-address-btn,
-.add-manual-address-link,
-.add-category-btn,
-.add-category-link {
+.add-category-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1346,23 +1264,9 @@ defineExpose({
 }
 
 .add-address-btn:hover,
-.add-manual-address-link:hover,
-.add-category-btn:hover,
-.add-category-link:hover {
+.add-category-btn:hover {
   color: var(--color-primary-dark);
   text-decoration-style: solid;
-}
-
-.search-sub-actions {
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-  flex-wrap: wrap;
-}
-
-.search-sub-edit {
-  margin-top: 6px;
 }
 
 /* Map wrap & Mini map */

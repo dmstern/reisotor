@@ -447,7 +447,7 @@ describe('LocationPicker', () => {
       expect(onUpdateMapsLink).toHaveBeenCalledWith(
         expect.stringContaining('https://www.google.com/maps/search/?api=1&query=41.9075,12.4914')
       );
-      expect(input.value).toBe('Hotel Excelsior');
+      expect(input.value).toBe('');
 
       cleanUp();
     });
@@ -734,19 +734,40 @@ describe('LocationPicker', () => {
   });
 
   describe('Unified Title & Address Editing', () => {
-    it('emits update:title immediately when typing in the input field if title prop is bound', async () => {
+    it('does not mutate title when typing in the search input field', async () => {
       const updateTitle = vi.fn();
       const { container, cleanUp } = mountPicker(
-        { modelValue: null, title: 'Mein' },
+        { modelValue: null, title: 'Mein Spot' },
         { 'onUpdate:title': updateTitle }
       );
       await nextTick();
 
-      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
-      expect(input.value).toBe('Mein');
+      const searchInput = container.querySelector(
+        'input.location-picker-input'
+      ) as HTMLInputElement;
+      searchInput.value = 'Neuer Suchbegriff';
+      searchInput.dispatchEvent(new Event('input'));
+      await nextTick();
 
-      input.value = 'Mein Spot';
-      input.dispatchEvent(new Event('input'));
+      expect(updateTitle).not.toHaveBeenCalled();
+      cleanUp();
+    });
+
+    it('emits update:title when typing in the spot title input field', async () => {
+      const updateTitle = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null, title: '' },
+        { 'onUpdate:title': updateTitle }
+      );
+      await nextTick();
+
+      const titleInput = container.querySelector(
+        '.status-title-row [data-testid="spot-title-input"]'
+      ) as HTMLInputElement;
+      expect(titleInput).toBeTruthy();
+
+      titleInput.value = 'Mein Spot';
+      titleInput.dispatchEvent(new Event('input'));
       await nextTick();
 
       expect(updateTitle).toHaveBeenCalledWith('Mein Spot');
@@ -830,12 +851,12 @@ describe('LocationPicker', () => {
       expect(updateTitle).not.toHaveBeenCalled();
       expect(onClear).toHaveBeenCalled();
 
-      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
-      expect(input.value).toBe('Mein Spot');
+      const titleEl = container.querySelector('.status-title') as HTMLElement;
+      expect(titleEl?.textContent?.trim()).toBe('Mein Spot');
       cleanUp();
     });
 
-    it('clearing location after selecting search result resets coordinates, address, and title', async () => {
+    it('clearing location after selecting search result resets coordinates and address but preserves title', async () => {
       const state = reactive({
         modelValue: null as { lat: number; lng: number } | null,
         title: '',
@@ -902,7 +923,7 @@ describe('LocationPicker', () => {
 
       expect(state.modelValue).toBeNull();
       expect(state.address).toBe('');
-      expect(state.title).toBe('');
+      expect(state.title).toBe('Café Central');
       expect(onClear).toHaveBeenCalled();
       expect(input.value).toBe('');
 
@@ -996,7 +1017,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('allows entering manual address when no location is set via "+ Adresse manuell eingeben"', async () => {
+    it('allows entering manual address when no location is set via "+ Adresse hinzufügen"', async () => {
       const updateAddress = vi.fn();
       const { container, cleanUp } = mountPicker(
         {
@@ -1010,15 +1031,15 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const manualBtn = container.querySelector('.add-manual-address-link') as HTMLButtonElement;
+      const manualBtn = container.querySelector('.add-address-btn') as HTMLButtonElement;
       expect(manualBtn).toBeTruthy();
-      expect(manualBtn.textContent).toContain('Adresse manuell eingeben');
+      expect(manualBtn.textContent).toContain('Adresse hinzufügen');
 
       manualBtn.click();
       await nextTick();
 
       const editInput = container.querySelector(
-        '.search-sub-edit .inline-edit-input'
+        '.status-address-row .inline-edit-input'
       ) as HTMLInputElement;
       expect(editInput).toBeTruthy();
 
@@ -1027,7 +1048,7 @@ describe('LocationPicker', () => {
       await nextTick();
 
       const saveBtn = container.querySelector(
-        '.search-sub-edit .inline-save-btn'
+        '.status-address-row .inline-save-btn'
       ) as HTMLButtonElement;
       expect(saveBtn).toBeTruthy();
       saveBtn.click();
@@ -1097,7 +1118,7 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const addCategoryBtn = container.querySelector('.add-category-link') as HTMLButtonElement;
+      const addCategoryBtn = container.querySelector('.add-category-btn') as HTMLButtonElement;
       expect(addCategoryBtn).toBeTruthy();
       expect(addCategoryBtn.textContent).toContain('Kategorie wählen');
 
@@ -1105,7 +1126,7 @@ describe('LocationPicker', () => {
       await nextTick();
 
       const comboboxInput = container.querySelector(
-        '.sub-category-wrap .inline-category-combobox input'
+        '.status-category-row .inline-category-combobox input'
       ) as HTMLInputElement;
       expect(comboboxInput).toBeTruthy();
 
@@ -1114,7 +1135,7 @@ describe('LocationPicker', () => {
       await nextTick();
 
       const saveBtn = container.querySelector(
-        '.sub-category-wrap .inline-save-btn'
+        '.status-category-row .inline-save-btn'
       ) as HTMLButtonElement;
       expect(saveBtn).toBeTruthy();
       saveBtn.click();
