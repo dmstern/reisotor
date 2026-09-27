@@ -454,11 +454,7 @@ const cardRotation = computed(() => {
             <div class="card-title-block is-expanded">
               <h3 class="card-title" :title="spot.title">{{ spot.title }}</h3>
               <div
-                v-if="
-                  creatorLabel ||
-                  (isAccommodation && (spot.start_date || spot.end_date)) ||
-                  spot.address
-                "
+                v-if="creatorLabel || (isAccommodation && (spot.start_date || spot.end_date))"
                 class="card-title-meta"
               >
                 <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
@@ -468,9 +464,6 @@ const cardRotation = computed(() => {
                 >
                   {{ formatAccommodationDate(spot.start_date) || '?' }} –
                   {{ formatAccommodationDate(spot.end_date) || '?' }}
-                </span>
-                <span v-else-if="spot.address" class="overlay-submeta">
-                  {{ spot.address }}
                 </span>
               </div>
             </div>
