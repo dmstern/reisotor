@@ -976,7 +976,53 @@ defineExpose({
                 </div>
               </div>
 
-              <!-- 2. Standort-Gruppe: Adresse & Koordinaten näher zusammengerückt -->
+              <!-- 2. Kategorie-Zeile (direkt nach dem Titel analog SpotCard) -->
+              <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
+                <span class="status-row-icon" title="Kategorie" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
+                </span>
+                <div v-if="!isEditingCategory && props.category" class="status-meta-display">
+                  <CategoryChip :category="props.category" type="spot" />
+                  <IconButton
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    class="inline-edit-btn"
+                    :icon="ACTION_ICONS.edit"
+                    title="Kategorie bearbeiten"
+                    aria-label="Kategorie bearbeiten"
+                    @click="startEditCategory"
+                  />
+                </div>
+                <div v-else class="status-meta-edit status-category-edit">
+                  <div class="inline-category-combobox">
+                    <CategoryCombobox
+                      v-model="editCategoryInput"
+                      type="spot"
+                      :options="categoryOptions"
+                      size="sm"
+                      placeholder="Kategorie wählen..."
+                      @select="saveCategory"
+                      @keydown.enter.prevent="saveCategory()"
+                      @keydown.esc.prevent="cancelCategory"
+                      @blur="handleCategoryBlur"
+                    />
+                  </div>
+                  <IconButton
+                    v-if="props.category"
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    class="inline-save-btn"
+                    :icon="ACTION_ICONS.done"
+                    title="Kategorie speichern"
+                    aria-label="Kategorie speichern"
+                    @click="saveCategory()"
+                  />
+                </div>
+              </div>
+
+              <!-- 3. Standort-Gruppe: Adresse & Koordinaten näher zusammengerückt -->
               <div class="status-location-group">
                 <!-- Adress-Zeile -->
                 <div class="status-meta-row status-address-row">
@@ -1048,52 +1094,6 @@ defineExpose({
                       @click="clearCoords"
                     />
                   </div>
-                </div>
-              </div>
-
-              <!-- 3. Kategorie-Zeile -->
-              <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
-                <span class="status-row-icon" title="Kategorie" aria-hidden="true">
-                  <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
-                </span>
-                <div v-if="!isEditingCategory && props.category" class="status-meta-display">
-                  <CategoryChip :category="props.category" type="spot" />
-                  <IconButton
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    class="inline-edit-btn"
-                    :icon="ACTION_ICONS.edit"
-                    title="Kategorie bearbeiten"
-                    aria-label="Kategorie bearbeiten"
-                    @click="startEditCategory"
-                  />
-                </div>
-                <div v-else class="status-meta-edit status-category-edit">
-                  <div class="inline-category-combobox">
-                    <CategoryCombobox
-                      v-model="editCategoryInput"
-                      type="spot"
-                      :options="categoryOptions"
-                      size="sm"
-                      placeholder="Kategorie wählen..."
-                      @select="saveCategory"
-                      @keydown.enter.prevent="saveCategory()"
-                      @keydown.esc.prevent="cancelCategory"
-                      @blur="handleCategoryBlur"
-                    />
-                  </div>
-                  <IconButton
-                    v-if="props.category"
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    class="inline-save-btn"
-                    :icon="ACTION_ICONS.done"
-                    title="Kategorie speichern"
-                    aria-label="Kategorie speichern"
-                    @click="saveCategory()"
-                  />
                 </div>
               </div>
             </div>
@@ -1566,6 +1566,7 @@ defineExpose({
   flex-shrink: 0;
   align-self: center;
   margin-top: 0;
+  margin-left: auto;
   transition: opacity 0.15s ease;
 }
 
@@ -1585,6 +1586,8 @@ defineExpose({
 .inline-save-btn {
   padding: 2px 4px;
   flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
   color: var(--color-success, #2e7d32);
 }
 
@@ -1637,6 +1640,7 @@ defineExpose({
   flex-shrink: 0;
   align-self: center;
   margin-top: 0;
+  margin-left: auto;
   opacity: 0;
   pointer-events: none;
   transition:
