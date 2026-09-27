@@ -11,6 +11,7 @@ import {
 import { usePointerDrag } from '../composables/usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
+import { useTracksStore } from '../stores/tracks';
 import { useTripStore } from '../stores/trip';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import EditButton from './EditButton.vue';
@@ -189,6 +190,10 @@ const stationsSummaryText = computed(() => {
 // (data-date, siehe CalendarWeek.vue) und plant den Ausflug direkt über den Store ein.
 const excursionsStore = useExcursionsStore();
 const drawers = useDrawersStore();
+const tracksStore = useTracksStore();
+const linkedTracks = computed(() =>
+  tracksStore.tracks.filter((t) => t.excursion_id === props.excursion.id)
+);
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
     drawers.calendarOpen = true;
@@ -361,7 +366,11 @@ function onSpotDrop(event: DragEvent) {
               <div
                 v-if="
                   expanded &&
-                  (creatorLabel || routeLabel || resolvedStations.length || travelDuration)
+                  (creatorLabel ||
+                    routeLabel ||
+                    resolvedStations.length ||
+                    travelDuration ||
+                    linkedTracks.length)
                 "
                 class="card-title-meta"
               >
@@ -374,6 +383,14 @@ function onSpotDrop(event: DragEvent) {
                   {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
                 </span>
                 <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+                <span v-if="linkedTracks.length" class="overlay-submeta">
+                  <template
+                    v-if="creatorLabel || routeLabel || resolvedStations.length || travelDuration"
+                    >·
+                  </template>
+                  {{ linkedTracks.length }}
+                  {{ linkedTracks.length === 1 ? 'Aufzeichnung' : 'Aufzeichnungen' }}
+                </span>
               </div>
             </Transition>
           </div>
@@ -459,8 +476,9 @@ function onSpotDrop(event: DragEvent) {
           <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
         </div>
 
-        <div class="links" v-if="hasMappedStations && expanded">
+        <div class="links" v-if="expanded && (hasMappedStations || linkedTracks.length)">
           <Button
+            v-if="hasMappedStations"
             variant="card-action"
             class="show-on-map-btn"
             aria-label="Auf Karte anzeigen"
@@ -469,6 +487,17 @@ function onSpotDrop(event: DragEvent) {
           >
             <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
             <span class="btn-label">Auf Karte anzeigen</span>
+          </Button>
+          <Button
+            v-for="trk in linkedTracks"
+            :key="trk.id"
+            variant="card-action"
+            class="show-on-map-btn"
+            :title="'Aufzeichnung „' + (trk.title || 'Aufzeichnung') + '“ auf Karte abspielen'"
+            @click.stop="drawers.openMapForTrack(trk.id)"
+          >
+            <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" />
+            <span class="btn-label">{{ trk.title || 'Aufzeichnung' }}</span>
           </Button>
         </div>
         <div class="card-actions-wrapper">

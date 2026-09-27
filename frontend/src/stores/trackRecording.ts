@@ -11,6 +11,7 @@ interface BufferedPoint {
   lng: number;
   recorded_at: string;
   accuracy?: number;
+  altitude?: number | null;
 }
 
 const ACTIVE_KEY = 'reisotor-track-recording-active';
@@ -35,6 +36,19 @@ function writeBuffer(trackId: number, points: BufferedPoint[]) {
 
 function clearBuffer(trackId: number) {
   localStorage.removeItem(bufferKey(trackId));
+}
+
+/**
+ * Bereinigt Höhenwerte aus der Geolocation-API (coords.altitude in Metern über WGS84-Ellipsoid).
+ * Gibt `null` zurück bei `null`, `undefined`, NaN oder nicht-finiten Werten.
+ * Rundet valide Werte auf 1 Dezimalstelle (Dezimeter-Auflösung) und normalisiert `-0` auf `0`.
+ */
+export function parseAltitude(raw: number | null | undefined): number | null {
+  if (raw == null || typeof raw !== 'number' || !Number.isFinite(raw)) {
+    return null;
+  }
+  const rounded = Math.round(raw * 10) / 10;
+  return rounded === 0 ? 0 : rounded;
 }
 
 interface ActiveState {
@@ -166,6 +180,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
           lng: position.coords.longitude,
           recorded_at: new Date().toISOString(),
           accuracy: position.coords.accuracy ?? undefined,
+          altitude: parseAltitude(position.coords.altitude),
         });
         persistBuffer();
       },
@@ -179,6 +194,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
           lng: position.coords.longitude,
           recorded_at: new Date().toISOString(),
           accuracy: position.coords.accuracy ?? undefined,
+          altitude: parseAltitude(position.coords.altitude),
         });
         persistBuffer();
         if (pendingBuffer.length >= FLUSH_POINT_THRESHOLD) flushBuffer();
@@ -262,6 +278,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
               lng: position.coords.longitude,
               recorded_at: new Date().toISOString(),
               accuracy: position.coords.accuracy ?? undefined,
+              altitude: parseAltitude(position.coords.altitude),
             });
             persistBuffer();
             resolve();
@@ -276,6 +293,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
         lat: 48.2,
         lng: 16.37,
         recorded_at: new Date().toISOString(),
+        altitude: null,
       });
       persistBuffer();
     }
