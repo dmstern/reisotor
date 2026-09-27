@@ -4379,6 +4379,7 @@ async function deleteEditingSpot() {
                     </span>
                     <SegmentedToggle
                       id="spotFormSideToggle"
+                      class="spot-side-toggle"
                       :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
                       :options="SPOT_SIDE_OPTIONS"
                       @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
@@ -6458,6 +6459,19 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-1-5, 6px);
   margin-top: var(--space-2);
+}
+
+.spot-side-toggle {
+  width: 100%;
+}
+
+@media (min-width: 581px) {
+  .spot-side-toggle {
+    width: fit-content;
+    min-width: 280px;
+    max-width: 340px;
+    align-self: flex-start;
+  }
 }
 
 .spot-side-label {
