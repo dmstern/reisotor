@@ -913,7 +913,9 @@ defineExpose({
           @focus="onFocus"
           @blur="onBlur"
         />
-        <LoadingSpinner v-if="isSearching" size="sm" class="spinner input-spinner" />
+        <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
+          <LoadingSpinner size="sm" class="spinner input-spinner" />
+        </div>
 
         <!-- Autocomplete Dropdown List -->
         <Transition name="dropdown-unfold">
@@ -1093,11 +1095,20 @@ defineExpose({
   padding-right: 36px;
 }
 
-.input-spinner {
+.input-spinner-wrap {
   position: absolute;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+  line-height: 1;
+}
+
+.input-spinner {
   pointer-events: none;
 }
 
