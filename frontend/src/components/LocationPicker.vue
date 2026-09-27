@@ -1394,7 +1394,8 @@ defineExpose({
 }
 
 .inline-edit-btn {
-  opacity: 0.65;
+  opacity: 0;
+  pointer-events: none;
   padding: 2px 4px;
   flex-shrink: 0;
   align-self: flex-start;
@@ -1405,11 +1406,13 @@ defineExpose({
 .status-meta-row:hover .inline-edit-btn,
 .inline-edit-btn:focus-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 @media (hover: none) {
   .inline-edit-btn {
     opacity: 0.85;
+    pointer-events: auto;
   }
 }
 
