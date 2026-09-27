@@ -508,7 +508,10 @@ onMounted(async () => {
   const initial = props.modelValue ?? props.proximityBias ?? props.center ?? FALLBACK_CENTER;
   const initialZoom = props.modelValue ? 15 : (props.zoom ?? FALLBACK_ZOOM);
 
-  map = L.map(mapEl.value, {}).setView([initial.lat, initial.lng], initialZoom);
+  map = L.map(mapEl.value, {
+    zoomControl: false,
+    rotateControl: false,
+  }).setView([initial.lat, initial.lng], initialZoom);
   map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap-Mitwirkende',
