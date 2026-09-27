@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, useId } from 'vue';
 import type { TripFormData } from '../stores/trip';
-import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
-import LocationPicker from './LocationPicker.vue';
+import { buildGoogleMapsLink, buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
+import LocationPicker, { type PlaceSearchResult } from './LocationPicker.vue';
 import CoverImagePicker from './CoverImagePicker.vue';
 import TabBar, { type TabBarItem } from './TabBar.vue';
 import AppIcon from './AppIcon.vue';
@@ -62,16 +62,16 @@ function blankForm(): TripFormData {
 }
 
 const form = ref<TripFormData>(props.initial ? { ...props.initial } : blankForm());
-const mapsLinkResolved = ref<boolean | null>(null);
-const manualPin = ref<{ lat: number; lng: number } | null>(null);
-const pickerOpen = ref(false);
+const manualPin = ref<{ lat: number; lng: number } | null>(
+  props.initial?.lat != null && props.initial?.lng != null
+    ? { lat: props.initial.lat, lng: props.initial.lng }
+    : null
+);
 const showOptional = ref(false);
 
 const nameId = useId();
 const startDateId = useId();
 const endDateId = useId();
-const destinationId = useId();
-const mapsLinkId = useId();
 
 const dateError = computed(() => {
   if (form.value.start_date && form.value.end_date && form.value.start_date > form.value.end_date) {
@@ -84,9 +84,8 @@ watch(
   () => props.initial,
   (initial) => {
     form.value = initial ? { ...initial } : blankForm();
-    mapsLinkResolved.value = null;
-    manualPin.value = null;
-    pickerOpen.value = false;
+    manualPin.value =
+      initial?.lat != null && initial?.lng != null ? { lat: initial.lat, lng: initial.lng } : null;
     showOptional.value = false;
     activeTab.value = props.initialTab ?? 'general';
   }
@@ -99,7 +98,7 @@ watch(
   }
 );
 
-// Öffnet den Picker und die optionalen Felder automatisch, sobald der Aufrufer einen Fehlschlag meldet;
+// Öffnet die optionalen Felder automatisch, sobald der Aufrufer einen Fehlschlag meldet;
 // ein danach gesetzter Pin löst automatisch einen erneuten Speicherversuch aus.
 watch(
   () => props.locationError,
@@ -107,7 +106,6 @@ watch(
     if (err) {
       activeTab.value = 'general';
       showOptional.value = true;
-      pickerOpen.value = true;
     }
   }
 );
@@ -117,17 +115,23 @@ watch(
 // Wetterabfrage verwendet wird.
 watch(manualPin, (pin) => {
   if (!pin) return;
-  form.value.maps_link = buildOsmLink(pin.lat, pin.lng);
-  mapsLinkResolved.value = true;
+  if (!form.value.maps_link) {
+    form.value.maps_link = buildOsmLink(pin.lat, pin.lng);
+  }
   if (props.locationError) onSubmit();
 });
 
-function checkMapsLink() {
-  if (!form.value.maps_link) {
-    mapsLinkResolved.value = null;
-    return;
-  }
-  mapsLinkResolved.value = parseLatLngFromMapsLink(form.value.maps_link) != null;
+function onLocationSelect(place: PlaceSearchResult) {
+  form.value.destination = place.formatted_address || place.name;
+  const coords = { lat: place.lat, lng: place.lng };
+  manualPin.value = coords;
+  form.value.maps_link = buildGoogleMapsLink(place.lat, place.lng);
+}
+
+function onLocationClear() {
+  manualPin.value = null;
+  form.value.destination = '';
+  form.value.maps_link = '';
 }
 
 function onSubmit() {
@@ -202,43 +206,24 @@ function onSubmit() {
           {{ dateError }}
         </p>
 
-        <label :for="destinationId">
-          Ziel
-          <Input
-            :id="destinationId"
-            v-model="form.destination"
-            type="text"
-            placeholder="z. B. Toskana"
-          />
-        </label>
-
         <Card class="location-box">
-          <span class="field-label">Standort</span>
+          <span class="field-label">Ziel &amp; Standort</span>
           <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
-          <label :for="mapsLinkId">
-            Maps-Link (Google/Apple)
-            <Input :id="mapsLinkId" v-model="form.maps_link" type="url" @blur="checkMapsLink" />
-          </label>
-          <p v-if="mapsLinkResolved === true" class="hint success">
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
-            – erscheint auf der Karte
-          </p>
-          <p v-if="mapsLinkResolved === false" class="hint">
-            Standort konnte nicht automatisch erkannt werden.
-          </p>
           <p v-if="locationError" class="hint error">
             <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte
-            auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell
-            zu setzen.
+            auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn manuell zu
+            setzen.
           </p>
-          <CollapsibleFieldset
-            v-model="pickerOpen"
-            label="Standort manuell setzen"
-            :icon="ACTION_ICONS.myLocation"
-            icon-group="actions"
-          >
-            <LocationPicker v-model="manualPin" />
-          </CollapsibleFieldset>
+          <LocationPicker
+            v-model="manualPin"
+            :address="form.destination"
+            :maps-link="form.maps_link"
+            placeholder="Reiseziel, Stadt oder Maps-Link eingeben..."
+            @update:address="form.destination = $event"
+            @update:maps-link="form.maps_link = $event"
+            @select="onLocationSelect"
+            @clear="onLocationClear"
+          />
         </Card>
       </CollapsibleFieldset>
     </div>

@@ -83,7 +83,7 @@ import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
 import ResizeHandle from '../components/ResizeHandle.vue';
-import LocationPicker from '../components/LocationPicker.vue';
+import LocationPicker, { type PlaceSearchResult } from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
@@ -92,7 +92,7 @@ import LegTransportModal from '../components/LegTransportModal.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
-import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
+import { buildGoogleMapsLink, parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -699,9 +699,7 @@ const emptySpotForm = () => ({
   scheduledDate: '',
 });
 const spotForm = ref(emptySpotForm());
-const spotMapsLinkResolved = ref<boolean | null>(null);
 const spotManualPin = ref<{ lat: number; lng: number } | null>(null);
-const spotPickerOpen = ref(false);
 const spotLocationError = ref(false);
 // Bleibt gesetzt, solange nach dem Anlegen die Standort-Auflösung fehlschlägt – ein erneuter
 // Speicherversuch (manuell gesetzter Pin) muss dann den bereits angelegten Spot AKTUALISIEREN
@@ -727,9 +725,7 @@ const editSpotDraft = useDraftAutosave(
   editSpotForm,
   computed(() => editingSpot.value !== null)
 );
-const editSpotMapsLinkResolved = ref<boolean | null>(null);
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
-const editSpotPickerOpen = ref(false);
 const editSpotLocationError = ref(false);
 
 const spotTitleTouched = ref(false);
@@ -3072,19 +3068,11 @@ async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof em
   }
 }
 
-function checkSpotMapsLink() {
-  spotMapsLinkResolved.value = spotForm.value.maps_link
-    ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null
-    : null;
-  if (spotForm.value.maps_link) fetchSpotPreview(spotForm.value.maps_link, spotForm);
-}
-function checkEditSpotMapsLink() {
-  const parsed = editSpotForm.value.maps_link
-    ? parseLatLngFromMapsLink(editSpotForm.value.maps_link)
-    : null;
-  editSpotMapsLinkResolved.value = editSpotForm.value.maps_link ? parsed != null : null;
-  if (parsed) editSpotManualPin.value = parsed;
-  if (editSpotForm.value.maps_link) fetchSpotPreview(editSpotForm.value.maps_link, editSpotForm);
+function onSpotMapsLinkUpdate(val: string) {
+  activeSpotForm.value.maps_link = val;
+  if (val) {
+    fetchSpotPreview(val, editingSpot.value !== null ? editSpotForm : spotForm);
+  }
 }
 
 function spotToBody(
@@ -3142,9 +3130,8 @@ function closeSpotForm() {
   spotTitleTouched.value = false;
   showSpotForm.value = false;
   spotForm.value = emptySpotForm();
-  spotMapsLinkResolved.value = null;
   spotManualPin.value = null;
-  spotPickerOpen.value = false;
+  editSpotManualPin.value = null;
   spotLocationError.value = false;
   spotPendingFixId.value = null;
   showSpotLocationSection.value = false;
@@ -3212,7 +3199,7 @@ async function addSpot() {
   if (body.maps_link && result.lat == null && !spotManualPin.value) {
     spotPendingFixId.value = result.id;
     spotLocationError.value = true;
-    spotPickerOpen.value = true;
+    showSpotLocationSection.value = true;
     return;
   }
   await syncSpotTours(result.id, spotForm.value.tourTitles);
@@ -3228,8 +3215,38 @@ async function addSpot() {
 }
 
 watch(spotManualPin, (pin) => {
-  if (pin && spotLocationError.value) addSpot();
+  if (editingSpot.value !== null) {
+    editSpotManualPin.value = pin;
+  }
+  if (pin && (editingSpot.value !== null ? editSpotLocationError.value : spotLocationError.value)) {
+    if (editingSpot.value !== null) {
+      submitEditSpot();
+    } else {
+      addSpot();
+    }
+  }
 });
+
+function onSpotLocationSelect(place: PlaceSearchResult) {
+  if (!activeSpotForm.value.title.trim()) {
+    activeSpotForm.value.title = place.name;
+  }
+  activeSpotForm.value.address = place.formatted_address || place.name;
+  const coords = { lat: place.lat, lng: place.lng };
+  spotManualPin.value = coords;
+  editSpotManualPin.value = coords;
+  activeSpotForm.value.maps_link = buildGoogleMapsLink(place.lat, place.lng);
+  if (place.category) {
+    activeSpotForm.value.category = place.category;
+  }
+}
+
+function onSpotLocationClear() {
+  spotManualPin.value = null;
+  editSpotManualPin.value = null;
+  activeSpotForm.value.address = '';
+  activeSpotForm.value.maps_link = '';
+}
 
 function startEditSpot(spot: Spot) {
   spotTitleTouched.value = false;
@@ -3253,10 +3270,9 @@ function startEditSpot(spot: Spot) {
     tourTitles: tourTitlesFor(spot.id),
     scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
   };
-  editSpotMapsLinkResolved.value = null;
-  editSpotManualPin.value =
-    spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
-  editSpotPickerOpen.value = false;
+  const pin = spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
+  editSpotManualPin.value = pin;
+  spotManualPin.value = pin;
   editSpotLocationError.value = false;
 }
 
@@ -3271,7 +3287,7 @@ async function submitEditSpot() {
   drawers.touchLocations();
   if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {
     editSpotLocationError.value = true;
-    editSpotPickerOpen.value = true;
+    showEditSpotLocationSection.value = true;
     return;
   }
   await syncSpotTours(editingSpot.value.id, editSpotForm.value.tourTitles);
@@ -3282,6 +3298,8 @@ async function submitEditSpot() {
 
 function closeEditSpotForm() {
   spotTitleTouched.value = false;
+  spotManualPin.value = null;
+  editSpotManualPin.value = null;
   editSpotDraft.clear();
   editingSpot.value = null;
 }
@@ -3844,77 +3862,28 @@ async function deleteEditingSpot() {
                 <p class="hint">
                   Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
                 </p>
-                <FormField icon="location" label="Adresse">
-                  <Input
-                    v-model="activeSpotForm.address"
-                    type="text"
-                    placeholder="Adresse (Straße, Hausnummer, Ort)"
-                  />
-                </FormField>
-                <FormField icon="maps" label="Maps-Link (Google/Apple)">
-                  <Input
-                    v-model="activeSpotForm.maps_link"
-                    type="url"
-                    placeholder="Maps-Link (Google/Apple)"
-                    @blur="editingSpot !== null ? checkEditSpotMapsLink() : checkSpotMapsLink()"
-                  />
-                </FormField>
-                <p
-                  v-if="
-                    (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
-                    true
-                  "
-                  class="hint success"
-                >
-                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                  erkannt – erscheint auf der Karte
-                </p>
-                <p
-                  v-if="
-                    (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
-                    false
-                  "
-                  class="hint"
-                >
-                  Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks
-                  funktionieren).
-                </p>
                 <p
                   v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
                   class="hint error"
                 >
                   <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                  konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
-                  um ihn manuell zu setzen.
+                  konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
+                  manuell zu setzen.
                 </p>
-                <CollapsibleFieldset
-                  :model-value="editingSpot !== null ? editSpotPickerOpen : spotPickerOpen"
-                  label="Standort manuell setzen"
-                  :icon="ACTION_ICONS.myLocation"
-                  icon-group="actions"
-                  @update:model-value="
-                    (val) => {
-                      if (editingSpot !== null) {
-                        editSpotPickerOpen = val;
-                      } else {
-                        spotPickerOpen = val;
-                      }
-                    }
+                <LocationPicker
+                  v-model="spotManualPin"
+                  :address="activeSpotForm.address"
+                  :maps-link="activeSpotForm.maps_link"
+                  :proximity-bias="spotPickerCenter"
+                  :center="spotPickerCenter"
+                  :reference-points="
+                    editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
                   "
-                >
-                  <LocationPicker
-                    v-if="editingSpot !== null"
-                    v-model="editSpotManualPin"
-                    :center="spotPickerCenter"
-                    :reference-points="editSpotReferencePoints"
-                  />
-                  <LocationPicker
-                    v-else
-                    v-model="spotManualPin"
-                    :center="spotPickerCenter"
-                    :reference-points="spotReferencePoints"
-                  />
-                </CollapsibleFieldset>
+                  @update:address="activeSpotForm.address = $event"
+                  @update:maps-link="onSpotMapsLinkUpdate"
+                  @select="onSpotLocationSelect"
+                  @clear="onSpotLocationClear"
+                />
                 <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
                   <span class="spot-side-label">Bereich</span>
                   <SegmentedToggle

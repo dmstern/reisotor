@@ -1,0 +1,723 @@
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createApp, h, nextTick } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
+
+// Polyfills
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+interface MockMap {
+  setView: ReturnType<typeof vi.fn>;
+  attributionControl: { setPrefix: ReturnType<typeof vi.fn> };
+  on: (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => void;
+  remove: ReturnType<typeof vi.fn>;
+  invalidateSize: ReturnType<typeof vi.fn>;
+  getZoom: ReturnType<typeof vi.fn>;
+  getCenter: ReturnType<typeof vi.fn>;
+}
+
+interface MockMarker {
+  setLatLng: ReturnType<typeof vi.fn>;
+  addTo: ReturnType<typeof vi.fn>;
+  remove: ReturnType<typeof vi.fn>;
+  getLatLng: ReturnType<typeof vi.fn>;
+  on: (event: string, handler: () => void) => void;
+  dragging: { enable: ReturnType<typeof vi.fn> };
+}
+
+// Mock Leaflet
+let mockMapInstance: MockMap | null = null;
+let mockMarkerInstance: MockMarker | null = null;
+const mapClickHandlers: ((e: { latlng: { lat: number; lng: number } }) => void)[] = [];
+let markerDragEndHandler: (() => void) | null = null;
+
+vi.mock('leaflet', () => {
+  return {
+    default: {
+      map: vi.fn((_el: HTMLElement, _opts: unknown) => {
+        mockMapInstance = {
+          setView: vi.fn().mockReturnThis(),
+          attributionControl: { setPrefix: vi.fn() },
+          on: vi.fn(
+            (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => {
+              if (event === 'click') mapClickHandlers.push(handler);
+            }
+          ),
+          remove: vi.fn(),
+          invalidateSize: vi.fn(),
+          getZoom: vi.fn().mockReturnValue(15),
+          getCenter: vi.fn().mockReturnValue({ lat: 48.5, lng: 10 }),
+        };
+        return mockMapInstance;
+      }),
+      tileLayer: vi.fn(() => ({
+        addTo: vi.fn().mockReturnThis(),
+      })),
+      marker: vi.fn((coords: [number, number], _opts?: unknown) => {
+        mockMarkerInstance = {
+          setLatLng: vi.fn().mockReturnThis(),
+          addTo: vi.fn().mockReturnThis(),
+          remove: vi.fn(),
+          getLatLng: vi.fn().mockReturnValue({ lat: coords[0], lng: coords[1] }),
+          on: vi.fn((event: string, handler: () => void) => {
+            if (event === 'dragend') markerDragEndHandler = handler;
+          }),
+          dragging: { enable: vi.fn() },
+        };
+        return mockMarkerInstance;
+      }),
+      layerGroup: vi.fn(() => ({
+        addTo: vi.fn().mockReturnThis(),
+        clearLayers: vi.fn(),
+      })),
+      divIcon: vi.fn(() => ({})),
+    },
+  };
+});
+
+import LocationPicker, { type PlaceSearchResult } from './LocationPicker.vue';
+
+describe('LocationPicker', () => {
+  let pinia: ReturnType<typeof createPinia>;
+  let originalFetch: typeof globalThis.fetch;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    pinia = createPinia();
+    setActivePinia(pinia);
+    mapClickHandlers.length = 0;
+    markerDragEndHandler = null;
+    mockMapInstance = null;
+    mockMarkerInstance = null;
+    originalFetch = globalThis.fetch;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  function mountPicker(
+    props: Record<string, unknown> = {},
+    listeners: Record<string, unknown> = {}
+  ) {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () =>
+        h(LocationPicker as unknown as import('vue').Component, {
+          ...props,
+          ...listeners,
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+    return {
+      container,
+      cleanUp: () => {
+        app.unmount();
+        container.remove();
+        document.body.innerHTML = '';
+      },
+    };
+  }
+
+  describe('Input Classification & Maps Link Detection', () => {
+    it('detects standard Google Maps link and extracts coordinates without network query', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+
+      const updateModelValue = vi.fn();
+      const updateMapsLink = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue, 'onUpdate:mapsLink': updateMapsLink }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      expect(input).toBeTruthy();
+
+      input.value = 'https://www.google.com/maps/@48.20820,16.37380,15z';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      // Advancing timer should not trigger any fetch because it's recognized as maps_link
+      vi.advanceTimersByTime(500);
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+      expect(updateMapsLink).toHaveBeenCalledWith(
+        'https://www.google.com/maps/@48.20820,16.37380,15z'
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects Google Maps !3d/!4d exact pin link without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value =
+        'https://www.google.com/maps/place/Cafe+Central/@48.2000,16.3000,12z/data=!3m1!4b1!4m6!3m5!1s0x476d07987!8m2!3d48.21040!4d16.36530';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      vi.advanceTimersByTime(500);
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2104, lng: 16.3653 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects Apple Maps coordinate link without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'https://maps.apple.com/?coordinate=48.2082%2C16.3738';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects OpenStreetMap mlat/mlon link without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value =
+        'https://www.openstreetmap.org/?mlat=48.20820&mlon=16.37380#map=16/48.2082/16.3738';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects Android geo: URI without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'geo:48.21040,16.36530';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2104, lng: 16.3653 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('recognizes maps shortlink and shows notice without making geocoding request', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateMapsLink = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:mapsLink': updateMapsLink }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'https://maps.app.goo.gl/shortlink123';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      vi.advanceTimersByTime(500);
+
+      expect(updateMapsLink).toHaveBeenCalledWith('https://maps.app.goo.gl/shortlink123');
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      const notice = container.querySelector('.hint.info');
+      expect(notice).toBeTruthy();
+      expect(notice?.textContent).toContain('Kurzlink');
+
+      cleanUp();
+    });
+
+    it('does not trigger search for whitespace or single-character input', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+
+      input.value = ' ';
+      input.dispatchEvent(new Event('input'));
+      vi.advanceTimersByTime(500);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      input.value = 'C';
+      input.dispatchEvent(new Event('input'));
+      vi.advanceTimersByTime(500);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+  });
+
+  describe('Freitext Search & Autocomplete', () => {
+    it('debounces search by 300ms and calls /api/places/search', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Café Central',
+          formatted_address: 'Herrengasse 14, 1010 Wien, Österreich',
+          lat: 48.2104,
+          lng: 16.3653,
+          category: 'Café',
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Café Central';
+      input.dispatchEvent(new Event('input'));
+
+      // Before 300ms, fetch should not be called yet
+      vi.advanceTimersByTime(200);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // At 300ms, fetch is executed
+      vi.advanceTimersByTime(150);
+      await nextTick();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/places/search?q=Caf%C3%A9%20Central'),
+        expect.any(Object)
+      );
+
+      // Results rendered in dropdown
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const dropdown = container.querySelector('.location-dropdown');
+      expect(dropdown).toBeTruthy();
+      const option = container.querySelector('.location-result-item');
+      expect(option?.textContent).toContain('Café Central');
+      expect(option?.textContent).toContain('Herrengasse 14');
+      expect(option?.textContent).toContain('Café');
+
+      cleanUp();
+    });
+
+    it('forwards proximityBias coordinates as lat & lng query parameters', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      });
+      globalThis.fetch = fetchSpy;
+
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        proximityBias: { lat: 48.2082, lng: 16.3738 },
+      });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Stephansdom';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await nextTick();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('lat=48.2082&lng=16.3738'),
+        expect.any(Object)
+      );
+
+      cleanUp();
+    });
+
+    it('selecting a dropdown item updates coordinates, address, and emits select', async () => {
+      const mockPlace: PlaceSearchResult = {
+        name: 'Hotel Excelsior',
+        formatted_address: 'Via Vittorio Veneto 125, 00187 Rom, Italien',
+        lat: 41.9075,
+        lng: 12.4914,
+        category: 'Unterkunft',
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [mockPlace],
+      });
+
+      const onSelect = vi.fn();
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+      const onUpdateMapsLink = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        {
+          onSelect,
+          'onUpdate:modelValue': onUpdateModelValue,
+          'onUpdate:address': onUpdateAddress,
+          'onUpdate:mapsLink': onUpdateMapsLink,
+        }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Hotel Excelsior';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const option = container.querySelector('.location-result-item') as HTMLElement;
+      expect(option).toBeTruthy();
+
+      option.click();
+      await nextTick();
+
+      expect(onSelect).toHaveBeenCalledWith(mockPlace);
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 41.9075, lng: 12.4914 });
+      expect(onUpdateAddress).toHaveBeenCalledWith('Via Vittorio Veneto 125, 00187 Rom, Italien');
+      expect(onUpdateMapsLink).toHaveBeenCalledWith(
+        expect.stringContaining('https://www.google.com/maps/search/?api=1&query=41.9075,12.4914')
+      );
+      expect(input.value).toBe('Hotel Excelsior');
+
+      cleanUp();
+    });
+
+    it('handles keyboard navigation: ArrowDown, ArrowUp, Enter, and Escape', async () => {
+      const mockPlaces: PlaceSearchResult[] = [
+        {
+          name: 'First Place',
+          formatted_address: 'Address 1',
+          lat: 10,
+          lng: 20,
+        },
+        {
+          name: 'Second Place',
+          formatted_address: 'Address 2',
+          lat: 30,
+          lng: 40,
+        },
+      ];
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockPlaces,
+      });
+
+      const onSelect = vi.fn();
+      const onUpdateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { onSelect, 'onUpdate:modelValue': onUpdateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Place';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      // ArrowDown to first
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await nextTick();
+      let activeItem = container.querySelector('.location-result-item.is-active');
+      expect(activeItem?.textContent).toContain('First Place');
+
+      // ArrowDown to second
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await nextTick();
+      activeItem = container.querySelector('.location-result-item.is-active');
+      expect(activeItem?.textContent).toContain('Second Place');
+
+      // Enter selects second
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await nextTick();
+      expect(onSelect).toHaveBeenCalledWith(mockPlaces[1]);
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 30, lng: 40 });
+
+      cleanUp();
+    });
+
+    it('handles Escape to close dropdown without modifying state', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [{ name: 'Test', formatted_address: 'Addr', lat: 1, lng: 2 }],
+      });
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Test';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      expect(container.querySelector('.location-dropdown')).toBeTruthy();
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await nextTick();
+      vi.advanceTimersByTime(300);
+      await nextTick();
+
+      expect(container.querySelector('.location-dropdown')).toBeNull();
+
+      cleanUp();
+    });
+
+    it('handles upstream 500 error gracefully without unhandled exceptions', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'Internal Geocoding Error' }),
+      });
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Café Central';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      // UI remains intact, no unhandled exception
+      expect(container.querySelector('.location-picker')).toBeTruthy();
+
+      cleanUp();
+    });
+  });
+
+  describe('Status Card & Clear Action', () => {
+    it('renders status card with "Standort gesetzt" when modelValue is present', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 48.2082, lng: 16.3738 },
+        address: 'Stephansplatz 3, Wien',
+      });
+      await nextTick();
+
+      const statusCard = container.querySelector('[data-testid="location-status"]');
+      expect(statusCard).toBeTruthy();
+      expect(statusCard?.textContent).toContain('Standort gesetzt');
+      expect(statusCard?.textContent).toContain('48.2082');
+      expect(statusCard?.textContent).toContain('16.3738');
+      expect(statusCard?.textContent).toContain('Stephansplatz 3, Wien');
+
+      const clearBtn = container.querySelector('button.clear-btn');
+      expect(clearBtn).toBeTruthy();
+      expect(clearBtn?.textContent).toContain('Entfernen');
+
+      cleanUp();
+    });
+
+    it('clicking "Entfernen" button emits null to modelValue, empties address & link, and emits clear', async () => {
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+      const onUpdateMapsLink = vi.fn();
+      const onClear = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2082, lng: 16.3738 },
+          address: 'Wien',
+          mapsLink: 'https://maps.google.com',
+        },
+        {
+          'onUpdate:modelValue': onUpdateModelValue,
+          'onUpdate:address': onUpdateAddress,
+          'onUpdate:mapsLink': onUpdateMapsLink,
+          onClear,
+        }
+      );
+      await nextTick();
+
+      const clearBtn = container.querySelector('button.clear-btn') as HTMLButtonElement;
+      expect(clearBtn).toBeTruthy();
+
+      clearBtn.click();
+      await nextTick();
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith(null);
+      expect(onUpdateAddress).toHaveBeenCalledWith('');
+      expect(onUpdateMapsLink).toHaveBeenCalledWith('');
+      expect(onClear).toHaveBeenCalled();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      expect(input.value).toBe('');
+
+      cleanUp();
+    });
+  });
+
+  describe('Mini-Map Leaflet Sync & Map Interaction', () => {
+    it('initializes Leaflet map on mount', async () => {
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      expect(container.querySelector('.location-picker-map')).toBeTruthy();
+      expect(mockMapInstance).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('clicking on map moves pin and emits update:modelValue with new coordinates', async () => {
+      const onUpdateModelValue = vi.fn();
+      const onUpdateMapsLink = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': onUpdateModelValue, 'onUpdate:mapsLink': onUpdateMapsLink }
+      );
+      await nextTick();
+
+      expect(mapClickHandlers.length).toBeGreaterThan(0);
+      const clickHandler = mapClickHandlers[0];
+
+      // Simulate Leaflet map click
+      clickHandler({ latlng: { lat: 43.7696, lng: 11.2558 } });
+      await nextTick();
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 43.7696, lng: 11.2558 });
+      expect(onUpdateMapsLink).toHaveBeenCalledWith(expect.stringContaining('43.7696'));
+
+      cleanUp();
+    });
+
+    it('dragging marker updates coordinates and emits update:modelValue', async () => {
+      const onUpdateModelValue = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: { lat: 48.2082, lng: 16.3738 } },
+        { 'onUpdate:modelValue': onUpdateModelValue }
+      );
+      await nextTick();
+
+      expect(markerDragEndHandler).toBeTruthy();
+
+      // Mock new position on marker
+      mockMarkerInstance!.getLatLng = vi.fn().mockReturnValue({ lat: 48.21, lng: 16.38 });
+      markerDragEndHandler!();
+      await nextTick();
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 48.21, lng: 16.38 });
+
+      cleanUp();
+    });
+
+    it('clicking locate-btn invokes navigator.geolocation and updates location', async () => {
+      const getCurrentPositionMock = vi.fn().mockImplementation((success) => {
+        success({
+          coords: {
+            latitude: 48.2082,
+            longitude: 16.3738,
+          },
+        });
+      });
+
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: {
+          getCurrentPosition: getCurrentPositionMock,
+          watchPosition: vi.fn(),
+          clearWatch: vi.fn(),
+        },
+      });
+
+      const onUpdateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': onUpdateModelValue }
+      );
+      await nextTick();
+
+      const locateBtn = container.querySelector('.locate-btn') as HTMLButtonElement;
+      expect(locateBtn).toBeTruthy();
+
+      locateBtn.click();
+      await nextTick();
+
+      expect(getCurrentPositionMock).toHaveBeenCalled();
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+
+      cleanUp();
+    });
+  });
+});

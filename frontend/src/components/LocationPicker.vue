@@ -1,18 +1,36 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { IconCompass, IconCompassFilled } from '@tabler/icons-vue';
 import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../utils/mapRoute';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { buildGoogleMapsLink, buildOsmLink } from '../utils/googleMaps';
+import { classifyLocationInput } from '../utils/locationInputClassifier';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
+import Input from './primitives/Input.vue';
+import Card from './primitives/Card.vue';
+import Badge from './primitives/Badge.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import type { IconDef } from '../utils/icon';
 
-// Eigener Standort während des Antippens (startOwnLocation() unten) - eigenes IconDef statt
-// FORM_FIELD_ICONS.tour (dasselbe Tabler-Icon, aber ein anderes Konzept: dort "Tour zuordnen").
+export interface PlaceSearchResult {
+  id?: string;
+  name: string;
+  formatted_address: string;
+  address?: string;
+  lat: number;
+  lng: number;
+  category?: string;
+  city?: string;
+  country?: string;
+  countryCode?: string;
+  postcode?: string;
+}
+
 const OWN_LOCATION_ICON: IconDef = {
   id: 'compass',
   emoji: '🧭',
@@ -20,44 +38,96 @@ const OWN_LOCATION_ICON: IconDef = {
   filled: IconCompassFilled,
 };
 
-// Manueller Fallback, falls weder clientseitiges Parsen noch die serverseitige Kurzlink-Auflösung
-// (backend/src/utils/mapsLink.ts) Koordinaten liefern (z. B. wenn Google einen Maps-Kurzlink per
-// Bot-Erkennung mit 403 blockt – siehe TripForm.vue/ExcursionsView.vue/TravelSection.vue, die diese
-// Komponente einbinden). Struktur an ExcursionMiniMap.vue angelehnt
-// (eigenständige, lazy erzeugte Leaflet-Instanz, beim Unmount wieder abgebaut), aber MIT normaler
-// Zoom-Kontrolle statt zoomControl:false, da hier tatsächlich zum präzisen Antippen gezoomt wird.
-const props = defineProps<{
-  modelValue: { lat: number; lng: number } | null;
-  center?: { lat: number; lng: number };
-  zoom?: number;
-  // Andere bereits gespeicherte Orte (z. B. Spots des aktuellen Urlaubs) rein zur Orientierung beim
-  // Antippen der Karte – nicht interaktiv, kein Klick-Handler, nur eine reine Anzeige-Hilfe. Generisch
-  // benannt (nicht "spots"), da dieselbe Komponente auch von Unterkunft-/Reise-/Trip-Formularen
-  // eingebunden wird, die keine Spot-Objekte kennen.
-  referencePoints?: { lat: number; lng: number; icon?: IconDef }[];
-}>();
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: { lat: number; lng: number } | null): void;
-}>();
-
-// Pragmatischer Default (weite Europa-Ansicht), falls weder ein Pin noch ein center-Prop vorliegt –
-// relevant v. a. für TripForm.vue, das (anders als Spot/Unterkunft/Reise) keinen übergeordneten Ort
-// hat, an dem sich die Startansicht orientieren könnte.
 const FALLBACK_CENTER = { lat: 48.5, lng: 10 };
 const FALLBACK_ZOOM = 4;
 
+const props = withDefaults(
+  defineProps<{
+    /** Aktuell ausgewählte Koordinaten (v-model). */
+    modelValue: { lat: number; lng: number } | null;
+    /** Adresse oder Ortsbezeichnung (v-model:address). */
+    address?: string;
+    /** Maps-Link (v-model:mapsLink). */
+    mapsLink?: string;
+    /** Proximity-Bias-Koordinaten für die POI-/Adress-Suche (z. B. Urlaubsziel). */
+    proximityBias?: { lat: number; lng: number } | null;
+    /** Platzhaltertext für das kombinierte Suchfeld. */
+    placeholder?: string;
+    /** Rückwärtskompatibilität: Initiale Zentrierung der Mini-Karte falls modelValue noch null. */
+    center?: { lat: number; lng: number };
+    /** Zoom-Stufe. */
+    zoom?: number;
+    /** Zusätzliche Orientierungspunkte im Umkreis. */
+    referencePoints?: { lat: number; lng: number; icon?: IconDef }[];
+  }>(),
+  {
+    address: '',
+    mapsLink: '',
+    proximityBias: null,
+    placeholder: 'Adresse, Ort oder Maps-Link eingeben...',
+    zoom: undefined,
+    center: undefined,
+    referencePoints: () => [],
+  }
+);
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: { lat: number; lng: number } | null): void;
+  (e: 'update:address', value: string): void;
+  (e: 'update:mapsLink', value: string): void;
+  (e: 'select', place: PlaceSearchResult): void;
+  (e: 'clear'): void;
+}>();
+
+// --- Input & Search Autocomplete State ---
+const inputText = ref('');
+const isSearching = ref(false);
+const isOpen = ref(false);
+const results = ref<PlaceSearchResult[]>([]);
+const activeIndex = ref(-1);
+const selectedPlace = ref<PlaceSearchResult | null>(null);
+const shortlinkDetected = ref(false);
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+let activeAbortController: AbortController | null = null;
+
+// Initialisiere Textfeld mit übergebenem Link oder Adresse
+watch(
+  () => props.mapsLink,
+  (link) => {
+    if (link && !inputText.value) {
+      inputText.value = link;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.address,
+  (addr) => {
+    if (addr && !inputText.value && !props.mapsLink) {
+      inputText.value = addr;
+    }
+  },
+  { immediate: true }
+);
+
+// --- Map State ---
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let marker: L.Marker | null = null;
 let resizeObserver: ResizeObserver | null = null;
-// Eigene Layer für Referenzpunkte (props.referencePoints) und eigenen Standort statt Teil des
-// aktiv gesetzten Pins – beide sind rein zur Orientierung, nie interaktiv/klickbar, damit ein Tap
-// darauf weiterhin wie überall sonst auf der Karte den Standort dort setzt (kein toter Bereich).
 let referenceLayer: L.LayerGroup | null = null;
 let ownLocationMarker: L.Marker | null = null;
 let geoWatchId: number | null = null;
 const locatingSelf = ref(false);
 const locateError = ref(false);
+
+const displayTitle = computed(() => {
+  if (selectedPlace.value?.name) return selectedPlace.value.name;
+  if (props.address) return props.address;
+  return '';
+});
 
 function placeMarker(lat: number, lng: number) {
   if (!map) return;
@@ -66,12 +136,20 @@ function placeMarker(lat: number, lng: number) {
   } else {
     marker = L.marker([lat, lng], {
       icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#e08e45'),
+      draggable: true,
     }).addTo(map);
+
+    marker.on('dragend', () => {
+      if (!marker) return;
+      const latlng = marker.getLatLng();
+      const coords = { lat: latlng.lat, lng: latlng.lng };
+      selectedPlace.value = null;
+      emit('update:modelValue', coords);
+      emit('update:mapsLink', buildOsmLink(coords.lat, coords.lng));
+    });
   }
 }
 
-// Andere gespeicherte Orte (z. B. Spots des Urlaubs) gedimmt im Hintergrund – zur Orientierung,
-// welche Umgebung man gerade antippt, ohne mit dem eigentlich zu setzenden Pin zu konkurrieren.
 function renderReferencePoints() {
   if (!map) return;
   referenceLayer?.clearLayers();
@@ -86,11 +164,6 @@ function renderReferencePoints() {
   }
 }
 
-// Eigener Standort als zusätzliche Orientierungshilfe (z. B. "wie weit ist der Punkt von mir
-// entfernt") – watchPosition statt eines einmaligen getCurrentPosition, da der Picker während des
-// Antippens offen bleiben kann und sich der eigene Standort dabei mitbewegen können soll (analog zu
-// TripMap.vue's Live-Standort). Fehlt die Geolocation-API oder verweigert die Nutzerin den Zugriff,
-// bleibt der Picker unverändert nutzbar – nur ohne eigenen Standort-Marker.
 function startOwnLocation() {
   if (!navigator.geolocation) return;
   geoWatchId = navigator.geolocation.watchPosition(
@@ -107,72 +180,12 @@ function startOwnLocation() {
       }
     },
     () => {
-      // Zugriff verweigert/fehlgeschlagen - kein Fehlerzustand, der Picker bleibt normal nutzbar.
+      // Permission denied or unavailable - silently ignore
     },
     { enableHighAccuracy: true, maximumAge: 10_000 }
   );
 }
 
-onMounted(async () => {
-  await nextTick();
-  if (!mapEl.value) return;
-  const initial = props.modelValue ?? props.center ?? FALLBACK_CENTER;
-  const initialZoom = props.modelValue ? 15 : (props.zoom ?? FALLBACK_ZOOM);
-  // Leere Optionen zwingend nötig: leaflet-rotate (siehe TripMap.vue) patcht L.Map.initialize
-  // global und liest darin unbedingt `options.rotate` – ohne (auch leeres) Options-Objekt crasht
-  // das mit "Cannot read properties of undefined (reading 'rotate')", sobald TripMap.vue (und
-  // damit der 'leaflet-rotate'-Side-Effect-Import) schon im selben View gemountet ist, was die
-  // Karte hier komplett leer lässt.
-  map = L.map(mapEl.value, {}).setView([initial.lat, initial.lng], initialZoom);
-  map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap-Mitwirkende',
-    maxZoom: 19,
-  }).addTo(map);
-
-  if (props.modelValue) placeMarker(props.modelValue.lat, props.modelValue.lng);
-  renderReferencePoints();
-  startOwnLocation();
-
-  map.on('click', (e: L.LeafletMouseEvent) => {
-    placeMarker(e.latlng.lat, e.latlng.lng);
-    emit('update:modelValue', { lat: e.latlng.lat, lng: e.latlng.lng });
-  });
-
-  resizeObserver = new ResizeObserver(() => map?.invalidateSize());
-  resizeObserver.observe(mapEl.value);
-});
-
-watch(() => props.referencePoints, renderReferencePoints, { deep: true });
-
-onUnmounted(() => {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
-  map?.remove();
-  map = null;
-});
-
-// Zieht die Ansicht nicht weg, sobald bereits ein Pin gesetzt ist (z. B. wenn die Trip-Koordinaten,
-// aus denen sich center für Spot-/Unterkunft-/Reise-Formulare ableitet, erst nach dem Mount
-// asynchron nachladen) – nur relevant, solange der Nutzer noch keinen eigenen Punkt gewählt hat.
-watch(
-  () => props.center,
-  (c) => {
-    if (!map || props.modelValue || !c) return;
-    map.setView([c.lat, c.lng], props.zoom ?? FALLBACK_ZOOM);
-  }
-);
-
-function clear() {
-  marker?.remove();
-  marker = null;
-  emit('update:modelValue', null);
-}
-
-// Einmaliger getCurrentPosition-Aufruf statt des laufenden watchPosition oben (startOwnLocation) -
-// hier soll der aktuelle Standort explizit als Pin übernommen werden, nicht nur zur Orientierung
-// mitlaufen.
 function useOwnLocation() {
   if (!navigator.geolocation) return;
   locatingSelf.value = true;
@@ -181,9 +194,12 @@ function useOwnLocation() {
     (position) => {
       locatingSelf.value = false;
       const { latitude, longitude } = position.coords;
+      const coords = { lat: latitude, lng: longitude };
       placeMarker(latitude, longitude);
       map?.setView([latitude, longitude], 16);
-      emit('update:modelValue', { lat: latitude, lng: longitude });
+      selectedPlace.value = null;
+      emit('update:modelValue', coords);
+      emit('update:mapsLink', buildOsmLink(latitude, longitude));
     },
     () => {
       locatingSelf.value = false;
@@ -192,18 +208,359 @@ function useOwnLocation() {
     { enableHighAccuracy: true, maximumAge: 10_000 }
   );
 }
+
+// --- Autocomplete & Search Handling ---
+function handleInput(val: string) {
+  inputText.value = val;
+  shortlinkDetected.value = false;
+
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  if (activeAbortController) {
+    activeAbortController.abort();
+    activeAbortController = null;
+  }
+
+  const classification = classifyLocationInput(val);
+
+  if (classification.type === 'empty') {
+    isSearching.value = false;
+    isOpen.value = false;
+    results.value = [];
+    activeIndex.value = -1;
+    return;
+  }
+
+  if (classification.type === 'maps_link') {
+    isSearching.value = false;
+    isOpen.value = false;
+    results.value = [];
+    activeIndex.value = -1;
+
+    emit('update:mapsLink', classification.url);
+
+    if (classification.coords) {
+      const coords = classification.coords;
+      placeMarker(coords.lat, coords.lng);
+      map?.setView([coords.lat, coords.lng], 16);
+      emit('update:modelValue', coords);
+    } else if (classification.isShortlink) {
+      shortlinkDetected.value = true;
+    }
+    return;
+  }
+
+  // Free-text search query
+  const trimmed = classification.query.trim();
+  if (trimmed.length < 2) {
+    isSearching.value = false;
+    isOpen.value = false;
+    results.value = [];
+    activeIndex.value = -1;
+    return;
+  }
+
+  isSearching.value = true;
+  activeIndex.value = -1;
+
+  debounceTimer = setTimeout(async () => {
+    try {
+      activeAbortController = new AbortController();
+      const bias = props.proximityBias ?? props.center;
+      let url = `/api/places/search?q=${encodeURIComponent(trimmed)}`;
+      if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
+        url += `&lat=${bias.lat}&lng=${bias.lng}`;
+      }
+
+      const res = await fetch(url, { signal: activeAbortController.signal });
+      if (!res.ok) {
+        results.value = [];
+        isOpen.value = true;
+        return;
+      }
+      const data = (await res.json()) as PlaceSearchResult[];
+      results.value = Array.isArray(data) ? data : [];
+      isOpen.value = results.value.length > 0;
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return;
+      }
+      results.value = [];
+    } finally {
+      isSearching.value = false;
+    }
+  }, 300);
+}
+
+function selectPlace(place: PlaceSearchResult) {
+  selectedPlace.value = place;
+  inputText.value = place.name;
+  isOpen.value = false;
+  results.value = [];
+  activeIndex.value = -1;
+
+  const coords = { lat: place.lat, lng: place.lng };
+  placeMarker(coords.lat, coords.lng);
+  map?.setView([coords.lat, coords.lng], 16);
+
+  emit('update:modelValue', coords);
+  emit('update:address', place.formatted_address || place.address || place.name);
+  emit('update:mapsLink', buildGoogleMapsLink(coords.lat, coords.lng));
+  emit('select', place);
+}
+
+function clear() {
+  inputText.value = '';
+  selectedPlace.value = null;
+  isOpen.value = false;
+  results.value = [];
+  activeIndex.value = -1;
+  shortlinkDetected.value = false;
+
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  if (activeAbortController) {
+    activeAbortController.abort();
+    activeAbortController = null;
+  }
+
+  if (marker) {
+    marker.remove();
+    marker = null;
+  }
+
+  emit('update:modelValue', null);
+  emit('update:address', '');
+  emit('update:mapsLink', '');
+  emit('clear');
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'ArrowDown') {
+    if (!isOpen.value) {
+      if (results.value.length > 0) {
+        isOpen.value = true;
+        activeIndex.value = 0;
+      }
+    } else {
+      e.preventDefault();
+      activeIndex.value = (activeIndex.value + 1) % results.value.length;
+    }
+  } else if (e.key === 'ArrowUp') {
+    if (isOpen.value) {
+      e.preventDefault();
+      activeIndex.value = activeIndex.value <= 0 ? results.value.length - 1 : activeIndex.value - 1;
+    }
+  } else if (e.key === 'Enter') {
+    if (isOpen.value && activeIndex.value >= 0 && activeIndex.value < results.value.length) {
+      e.preventDefault();
+      selectPlace(results.value[activeIndex.value]);
+    }
+  } else if (e.key === 'Escape') {
+    if (isOpen.value) {
+      e.preventDefault();
+      isOpen.value = false;
+    }
+  }
+}
+
+function onBlur() {
+  window.setTimeout(() => {
+    isOpen.value = false;
+  }, 200);
+}
+
+function onFocus() {
+  if (results.value.length > 0 && inputText.value.trim().length >= 2) {
+    isOpen.value = true;
+  }
+}
+
+onMounted(async () => {
+  await nextTick();
+  if (!mapEl.value) return;
+
+  const initial = props.modelValue ?? props.proximityBias ?? props.center ?? FALLBACK_CENTER;
+  const initialZoom = props.modelValue ? 15 : (props.zoom ?? FALLBACK_ZOOM);
+
+  map = L.map(mapEl.value, {}).setView([initial.lat, initial.lng], initialZoom);
+  map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap-Mitwirkende',
+    maxZoom: 19,
+  }).addTo(map);
+
+  if (props.modelValue) {
+    placeMarker(props.modelValue.lat, props.modelValue.lng);
+  }
+  renderReferencePoints();
+  startOwnLocation();
+
+  map.on('click', (e: L.LeafletMouseEvent) => {
+    const coords = { lat: e.latlng.lat, lng: e.latlng.lng };
+    placeMarker(coords.lat, coords.lng);
+    selectedPlace.value = null;
+    emit('update:modelValue', coords);
+    emit('update:mapsLink', buildOsmLink(coords.lat, coords.lng));
+  });
+
+  resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+  resizeObserver.observe(mapEl.value);
+});
+
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val) {
+      placeMarker(val.lat, val.lng);
+      if (map) {
+        const curCenter = map.getCenter();
+        const dist = Math.hypot(curCenter.lat - val.lat, curCenter.lng - val.lng);
+        if (dist > 0.0001) {
+          map.setView([val.lat, val.lng], map.getZoom() || 15);
+        }
+      }
+    } else {
+      if (marker) {
+        marker.remove();
+        marker = null;
+      }
+    }
+  },
+  { deep: true }
+);
+
+watch(() => props.referencePoints, renderReferencePoints, { deep: true });
+
+watch(
+  () => props.proximityBias ?? props.center,
+  (c) => {
+    if (!map || props.modelValue || !c) return;
+    map.setView([c.lat, c.lng], props.zoom ?? FALLBACK_ZOOM);
+  }
+);
+
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  if (activeAbortController) activeAbortController.abort();
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
+  map?.remove();
+  map = null;
+});
 </script>
 
 <template>
   <div class="location-picker">
-    <p class="hint">
-      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> Tippe auf die Karte,
-      um den Standort zu setzen.
+    <!-- 1. Einheitliches Such- und Link-Eingabefeld -->
+    <div
+      class="location-search-wrap"
+      :class="{ 'is-loading': isSearching, loading: isSearching }"
+      :aria-busy="isSearching"
+    >
+      <Input
+        :model-value="inputText"
+        class="location-picker-input"
+        type="text"
+        :placeholder="placeholder"
+        aria-label="Standort suchen oder Maps-Link einfügen"
+        autocomplete="off"
+        @update:model-value="handleInput"
+        @keydown="onKeydown"
+        @focus="onFocus"
+        @blur="onBlur"
+      />
+      <LoadingSpinner v-if="isSearching" size="sm" class="spinner input-spinner" />
+
+      <!-- Autocomplete Dropdown List -->
+      <Transition name="dropdown-unfold">
+        <ul
+          v-if="isOpen && results.length"
+          class="location-dropdown options"
+          role="listbox"
+          aria-label="Suchergebnisse"
+        >
+          <li
+            v-for="(place, index) in results"
+            :key="place.id || `${place.lat}-${place.lng}-${index}`"
+            role="option"
+            tabindex="-1"
+            class="location-result-item"
+            :class="{ 'is-active': index === activeIndex }"
+            :aria-selected="index === activeIndex"
+            @mousedown.prevent="selectPlace(place)"
+            @click="selectPlace(place)"
+            @keydown.enter.prevent="selectPlace(place)"
+          >
+            <AppIcon
+              :icon="FORM_FIELD_ICONS.location"
+              :size="16"
+              group="formFields"
+              class="item-icon"
+            />
+            <div class="location-item-content">
+              <div class="location-item-title-row">
+                <span class="location-item-name">{{ place.name }}</span>
+                <Badge
+                  v-if="place.category"
+                  variant="default"
+                  size="sm"
+                  class="location-category-badge"
+                >
+                  {{ place.category }}
+                </Badge>
+              </div>
+              <span class="location-item-address">{{
+                place.formatted_address || place.address
+              }}</span>
+            </div>
+          </li>
+        </ul>
+      </Transition>
+    </div>
+
+    <!-- 2. Visuelle Status-Karte ("Standort gesetzt") -->
+    <Card
+      v-if="modelValue"
+      variant="muted"
+      class="location-status hint success"
+      data-testid="location-status"
+    >
+      <div class="status-header">
+        <Badge variant="success" size="sm" class="status-badge">
+          <AppIcon :icon="FORM_FIELD_ICONS.location" :size="12" group="formFields" />
+          Standort gesetzt
+        </Badge>
+        <Button variant="secondary" size="sm" class="clear-btn" type="button" @click="clear">
+          Entfernen
+        </Button>
+      </div>
+      <div class="status-details">
+        <span v-if="displayTitle" class="status-title">{{ displayTitle }}</span>
+        <span class="status-coords">
+          {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+        </span>
+      </div>
+    </Card>
+
+    <!-- Kurzlink-Hinweis -->
+    <p v-if="shortlinkDetected" class="hint info">
+      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+      Maps-Kurzlink erkannt. Die genauen Koordinaten werden serverseitig aufgelöst.
     </p>
+
+    <!-- Standort-Ermittlungsfehler -->
     <p v-if="locateError" class="hint error">
-      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Standort konnte nicht
-      ermittelt werden.
+      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+      Standort konnte nicht ermittelt werden.
     </p>
+
+    <!-- 3. Mini-Karte -->
     <div class="map-wrap">
       <div ref="mapEl" class="location-picker-map"></div>
       <IconButton
@@ -216,13 +573,14 @@ function useOwnLocation() {
         title="Meinen aktuellen Standort verwenden"
         aria-label="Meinen aktuellen Standort verwenden"
         :icon="OWN_LOCATION_ICON"
+        type="button"
         @click="useOwnLocation"
       />
     </div>
-    <p v-if="modelValue" class="hint success">
-      <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-      Standort gesetzt: {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
-      <Button variant="secondary" class="clear-btn" @click="clear">Entfernen</Button>
+
+    <p v-if="!modelValue" class="hint">
+      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+      Tippe auf die Karte, um den Standort zu setzen.
     </p>
   </div>
 </template>
@@ -231,27 +589,115 @@ function useOwnLocation() {
 .location-picker {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2, 8px);
+  position: relative;
 }
 
-.hint {
+.location-search-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.input-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.location-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle, 8px);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+  list-style: none;
+  padding: 4px 0;
+  margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.location-result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2, 8px);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.location-result-item:hover,
+.location-result-item.is-active,
+.location-result-item[aria-selected='true'] {
+  background: var(--color-hover);
+}
+
+.item-icon {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.location-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.location-item-title-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin: 0;
+  gap: var(--space-2, 8px);
+}
+
+.location-item-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-category-badge {
+  flex-shrink: 0;
+}
+
+.location-item-address {
   font-size: 0.8rem;
   color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.hint.success {
+/* Status Card */
+.location-status {
+  padding: 8px 12px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.status-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  color: var(--color-primary-dark);
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
 }
 
-.hint.error {
-  color: var(--color-danger);
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .clear-btn {
@@ -259,21 +705,37 @@ function useOwnLocation() {
   font-size: 0.78rem;
 }
 
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.status-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.status-coords {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Map wrap & Mini map */
 .map-wrap {
   position: relative;
 }
 
 .location-picker-map {
   height: 220px;
-  border-radius: var(--radius-sm-squircle);
+  border-radius: var(--radius-sm-squircle, 8px);
   corner-shape: squircle;
   overflow: hidden;
   border: 1px solid var(--color-border);
 }
 
-/* Floating Icon-Only-Button direkt auf der Karte statt eines vollbreiten Text-Buttons darüber -
-   gleiches Muster/gleiche Maße wie TripMap.vue's .fit-btn-Stack (dort mehrere gestapelte
-   Kartensteuerelemente), hier reicht ein einzelner Button. */
 .locate-btn {
   position: absolute;
   top: 10px;
@@ -281,8 +743,6 @@ function useOwnLocation() {
   z-index: 1000;
 }
 
-/* Dezenter Puls statt Text ("Standort wird ermittelt…") - der Button hat als Icon-Only-Button
-   keinen Platz mehr für eine Textänderung während des Ermittelns. */
 .locate-btn.locating {
   animation: locate-pulse 1s ease-in-out infinite;
 }
@@ -295,6 +755,23 @@ function useOwnLocation() {
   50% {
     opacity: 1;
   }
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.hint.info {
+  color: var(--color-primary-dark);
+}
+
+.hint.error {
+  color: var(--color-danger);
 }
 
 :root[data-theme='dark'] .location-picker-map :deep(.leaflet-tile-pane) {
