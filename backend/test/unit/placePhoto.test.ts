@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   fetchPlacePhoto,
+  searchWebPlacePhoto,
   clearPhotoCache,
   isGoodPhoto,
   isTitleMatch,
@@ -54,6 +55,11 @@ describe('placePhoto utility', () => {
       expect(isTitleMatch('Holocaustleugnung', 'Blumental')).toBe(false);
       expect(isTitleMatch('Alexanderplatz', 'Stephansdom')).toBe(false);
     });
+
+    it('rejects person names and unrelated words for place names', () => {
+      expect(isTitleMatch('Steve Franken', 'Franken Bar')).toBe(false);
+      expect(isTitleMatch('Steve Franken', 'Franken', 'Berlin')).toBe(false);
+    });
   });
 
   describe('buildPhotoCacheKey', () => {
@@ -61,6 +67,65 @@ describe('placePhoto utility', () => {
       const key1 = buildPhotoCacheKey('  Stephansdom  ', 48.2085, 16.3738, ' Wien ');
       const key2 = buildPhotoCacheKey('stephansdom', 48.2085, 16.3738, 'wien');
       expect(key1).toBe(key2);
+    });
+  });
+
+  describe('searchWebPlacePhoto', () => {
+    it('extracts original photo URL from web search HTML', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div id="resitem-0">
+                  <a data-origurl="https://media-cdn.tripadvisor.com/media/photo-s/frankenbar.jpg"
+                     data-referenceurl="https://www.tripadvisor.de/Attraction_Review-frankenbar.html">
+                    <img src="https://tse4.mm.bing.net/th/id/OIP.thumb.jpg" />
+                  </a>
+                </div>`
+              ),
+          })
+        )
+      );
+
+      const photo = await searchWebPlacePhoto('Franken Bar', 'Berlin');
+      expect(photo).toBe('https://media-cdn.tripadvisor.com/media/photo-s/frankenbar.jpg');
+    });
+
+    it('falls back to thumbnail URL if original URL is an SVG or logo', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div id="resitem-0">
+                  <a data-origurl="https://example.com/logo.svg"
+                     data-referenceurl="https://example.com/cafe">
+                    <img src="https://tse4.mm.bing.net/th/id/OIP.thumb.jpg" />
+                    <p class="tile-title">Café am Engelbecken</p>
+                  </a>
+                </div>`
+              ),
+          })
+        )
+      );
+
+      const photo = await searchWebPlacePhoto('Café', 'Berlin');
+      expect(photo).toBe('https://tse4.mm.bing.net/th/id/OIP.thumb.jpg');
+    });
+
+    it('returns null on network error or empty results', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error')))
+      );
+
+      const photo = await searchWebPlacePhoto('Unknown Bar');
+      expect(photo).toBeNull();
     });
   });
 
@@ -281,6 +346,31 @@ describe('placePhoto utility', () => {
       const photo2 = await fetchPlacePhoto({ name: 'Brandenburger Tor' });
       expect(photo2).toBe('https://thumb.wikimedia.org/wikipedia/commons/thumb/tor.jpg');
       expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('prefers web image search before falling back to Wikipedia', async () => {
+      const fetchMock = vi.fn((url: string) => {
+        if (url.includes('images.search.yahoo.com')) {
+          return Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div id="resitem-0">
+                  <a data-origurl="https://media-cdn.tripadvisor.com/media/photo-s/bar.jpg"
+                     data-referenceurl="https://www.tripadvisor.de/bar.html">
+                    <img src="https://tse4.mm.bing.net/th/id/thumb.jpg" />
+                    <p class="tile-title">Franken Bar (Berlin)</p>
+                  </a>
+                </div>`
+              ),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const photo = await fetchPlacePhoto({ name: 'Franken Bar', city: 'Berlin' });
+      expect(photo).toBe('https://media-cdn.tripadvisor.com/media/photo-s/bar.jpg');
     });
   });
 });

@@ -72,6 +72,56 @@ export function isGoodPhoto(filenameOrUrl: string): boolean {
   );
 }
 
+const PLACE_WORDS = new Set([
+  'schloss',
+  'burg',
+  'kirche',
+  'dom',
+  'kathedrale',
+  'museum',
+  'park',
+  'palais',
+  'turm',
+  'brücke',
+  'tor',
+  'platz',
+  'straße',
+  'strasse',
+  'gasse',
+  'allee',
+  'insel',
+  'see',
+  'berg',
+  'spitze',
+  'hotel',
+  'café',
+  'cafe',
+  'bar',
+  'restaurant',
+  'gasthaus',
+  'wirtshaus',
+  'brauerei',
+  'kloster',
+  'stift',
+  'station',
+  'bahnhof',
+  'airport',
+  'flughafen',
+  'castle',
+  'palace',
+  'church',
+  'cathedral',
+  'tower',
+  'bridge',
+  'gate',
+  'square',
+  'street',
+  'lake',
+  'mountain',
+  'resort',
+  'beach',
+]);
+
 export function isTitleMatch(
   articleTitle: string,
   placeName: string,
@@ -98,12 +148,26 @@ export function isTitleMatch(
   const bClean = b.replace(/\([^)]*\)/g, '').trim();
 
   if (aClean === bClean) return true;
-  if (aClean.includes(bClean) || bClean.includes(aClean)) return true;
 
-  // Wort-Overlap (z. B. "Schloss Neuschwanstein" vs "Neuschwanstein")
-  const aWords = aClean.split(/\s+/).filter((w) => w.length > 3);
-  const bWords = bClean.split(/\s+/).filter((w) => w.length > 3);
-  return aWords.some((w) => bWords.includes(w));
+  const aWords = aClean.split(/\s+/).filter(Boolean);
+  const bWords = bClean.split(/\s+/).filter(Boolean);
+  const cityWords = targetCity ? targetCity.toLowerCase().split(/\s+/).filter(Boolean) : [];
+
+  // Wenn aClean bClean enthält oder umgekehrt (z. B. "Schloss Neuschwanstein" vs "Neuschwanstein")
+  if (aClean.includes(bClean) || bClean.includes(aClean)) {
+    const longerWords = aWords.length >= bWords.length ? aWords : bWords;
+    const shorterWords = aWords.length >= bWords.length ? bWords : aWords;
+    const diffWords = longerWords.filter((w) => !shorterWords.includes(w));
+
+    // Alle abweichenden Wörter müssen Ortsdeskriptoren oder die Stadt sein
+    const isPlaceDiff = diffWords.every((w) => PLACE_WORDS.has(w) || cityWords.includes(w));
+    if (isPlaceDiff) return true;
+
+    // Wenn der kürzere Begriff mindestens 2 Wörter hat und komplett im längeren vorkommt
+    if (shorterWords.length >= 2) return true;
+  }
+
+  return false;
 }
 
 interface WikiPage {
@@ -186,8 +250,99 @@ async function extractPhotoFromPage(lang: string, page: WikiPage): Promise<strin
 }
 
 /**
- * Sucht über die freie Wikipedia / Wikimedia API nach einem echten Foto für einen Ort
- * oder eine Sehenswürdigkeit (GeoSearch bei Koordinaten + Titelsuche).
+ * Durchsucht den Web-Bilder-Index nach einem echten Foto für eine Location (z. B. Bar, Restaurant, Hotel, Attraktion).
+ * Nutzt den Bing/Yahoo-Index (denselben Datenbestand wie DuckDuckGo), ist kostenfrei und stabil ohne API-Key abrufbar.
+ */
+export async function searchWebPlacePhoto(name: string, city?: string): Promise<string | null> {
+  const rawName = name?.trim();
+  if (!rawName) return null;
+
+  const queryParts = [rawName];
+  if (city?.trim() && !rawName.toLowerCase().includes(city.trim().toLowerCase())) {
+    queryParts.push(city.trim());
+  }
+  const query = queryParts.join(' ');
+  const url = `https://images.search.yahoo.com/search/images?p=${encodeURIComponent(query)}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok || typeof res.text !== 'function') return null;
+    const html = await res.text();
+
+    const itemPattern = /id="resitem-\d+"[\s\S]*?(?:<\/a>|<\/li>)/gi;
+    const items = [...html.matchAll(itemPattern)];
+
+    // Signifikante Suchbegriffe aus dem Ortsnamen für Relevanz-Prüfung extrahieren
+    const nameWords = rawName
+      .toLowerCase()
+      .replace(/[^a-z0-9äöüß]/gi, ' ')
+      .split(/\s+/)
+      .filter(
+        (w) =>
+          w.length >= 3 &&
+          !['bar', 'cafe', 'café', 'restaurant', 'hotel', 'der', 'die', 'das'].includes(w)
+      );
+
+    for (const item of items) {
+      const block = item[0];
+      const origMatch = block.match(/data-origurl=["'](https?:\/\/[^"'\s]+)["']/i);
+      const thumbMatch = block.match(/<img[^>]+src=["'](https?:\/\/[^"'\s]+)["']/i);
+      const titleMatch = block.match(/class="[^"]*tile-title[^"]*"[^>]*>([^<]+)<\/p>/i);
+      const refMatch = block.match(/data-referenceurl=["'](https?:\/\/[^"'\s]+)["']/i);
+
+      const origUrl = origMatch ? origMatch[1].replace(/&amp;/g, '&') : null;
+      const thumbUrl = thumbMatch ? thumbMatch[1].replace(/&amp;/g, '&') : null;
+      const title = titleMatch ? titleMatch[1].toLowerCase() : '';
+      const refUrl = refMatch ? refMatch[1].toLowerCase() : '';
+
+      // Relevanz-Check: Mindestens ein signifikantes Wort des Ortsnamens muss im Titel, der Quell-URL oder Bild-URL vorkommen
+      const searchable = `${title} ${refUrl} ${(origUrl || '').toLowerCase()}`;
+      const isRelevant =
+        nameWords.length === 0
+          ? searchable.includes(rawName.toLowerCase().trim())
+          : nameWords.some((w) => searchable.includes(w));
+
+      if (!isRelevant) {
+        continue;
+      }
+
+      // 1. Bevorzuge hochauflösendes Originalfoto (TripAdvisor, Yelp, Foursquare, Blog etc.)
+      if (origUrl && isSafeUrl(origUrl) && isGoodPhoto(origUrl)) {
+        return origUrl;
+      }
+      // 2. Fallback auf schnelles Bing CDN Thumbnail
+      if (thumbUrl && isSafeUrl(thumbUrl) && isGoodPhoto(thumbUrl)) {
+        return thumbUrl;
+      }
+    }
+
+    // Zusätzlicher Fallback: Falls Container-IDs abweichen, direkt data-origurl matchen
+    if (items.length === 0) {
+      const origMatches = [...html.matchAll(/data-origurl=["'](https?:\/\/[^"'\s]+)["']/gi)];
+      for (const m of origMatches) {
+        const u = m[1].replace(/&amp;/g, '&');
+        if (isSafeUrl(u) && isGoodPhoto(u)) return u;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sucht nach einem echten Foto für einen Ort oder eine Sehenswürdigkeit:
+ * 1. Primär: Echte Web-Bildersuche (authentische Fotos für Bars, Restaurants, Hotels & Sehenswürdigkeiten)
+ * 2. Sekundär / Fallback: Wikipedia / Wikimedia (GeoSearch bei Koordinaten + Titelsuche)
  * Liefert null zurück, falls kein echtes Foto gefunden wurde (damit die App sauber
  * auf die Kartenvorschau zurückfällt, statt ein generisches Logo anzuzeigen).
  */
@@ -205,56 +360,61 @@ export async function fetchPlacePhoto(options: PlacePhotoOptions): Promise<strin
     return cached.url;
   }
 
-  let photoUrl: string | null = null;
-  const languages = ['de', 'en'];
+  // 1. Primär: Echte Web-Bildersuche
+  let photoUrl = await searchWebPlacePhoto(rawName, city);
 
-  // 1. Wenn Koordinaten vorhanden: GeoSearch um die Koordinate (Radius 300m)
-  if (lat != null && lng != null) {
-    for (const lang of languages) {
-      const pages = await queryWiki(lang, {
-        generator: 'geosearch',
-        ggscoord: `${lat}|${lng}`,
-        ggsradius: '300',
-        ggslimit: '5',
-        prop: 'pageimages|images',
-        pithumbsize: '1000',
-      });
-
-      for (const p of pages) {
-        if (isTitleMatch(p.title, rawName, city)) {
-          const found = await extractPhotoFromPage(lang, p);
-          if (found) {
-            photoUrl = found;
-            break;
-          }
-        }
-      }
-      if (photoUrl) break;
-    }
-  }
-
-  // 2. Textsuche nach Name (+ Stadt)
+  // 2. Sekundär: Wikipedia / Wikimedia Fallback
   if (!photoUrl) {
-    const searchQuery = [rawName, city].filter(Boolean).join(' ');
-    for (const lang of languages) {
-      const pages = await queryWiki(lang, {
-        generator: 'search',
-        gsrsearch: searchQuery,
-        gsrlimit: '3',
-        prop: 'pageimages|images',
-        pithumbsize: '1000',
-      });
+    const languages = ['de', 'en'];
 
-      for (const p of pages) {
-        if (isTitleMatch(p.title, rawName, city)) {
-          const found = await extractPhotoFromPage(lang, p);
-          if (found) {
-            photoUrl = found;
-            break;
+    // 2a. Wenn Koordinaten vorhanden: GeoSearch um die Koordinate (Radius 300m)
+    if (lat != null && lng != null) {
+      for (const lang of languages) {
+        const pages = await queryWiki(lang, {
+          generator: 'geosearch',
+          ggscoord: `${lat}|${lng}`,
+          ggsradius: '300',
+          ggslimit: '5',
+          prop: 'pageimages|images',
+          pithumbsize: '1000',
+        });
+
+        for (const p of pages) {
+          if (isTitleMatch(p.title, rawName, city)) {
+            const found = await extractPhotoFromPage(lang, p);
+            if (found) {
+              photoUrl = found;
+              break;
+            }
           }
         }
+        if (photoUrl) break;
       }
-      if (photoUrl) break;
+    }
+
+    // 2b. Textsuche nach Name (+ Stadt)
+    if (!photoUrl) {
+      const searchQuery = [rawName, city].filter(Boolean).join(' ');
+      for (const lang of languages) {
+        const pages = await queryWiki(lang, {
+          generator: 'search',
+          gsrsearch: searchQuery,
+          gsrlimit: '3',
+          prop: 'pageimages|images',
+          pithumbsize: '1000',
+        });
+
+        for (const p of pages) {
+          if (isTitleMatch(p.title, rawName, city)) {
+            const found = await extractPhotoFromPage(lang, p);
+            if (found) {
+              photoUrl = found;
+              break;
+            }
+          }
+        }
+        if (photoUrl) break;
+      }
     }
   }
 
