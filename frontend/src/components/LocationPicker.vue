@@ -14,6 +14,8 @@ import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
 import Badge from './primitives/Badge.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
+import CategoryChip from './CategoryChip.vue';
+import CategoryCombobox from './CategoryCombobox.vue';
 import type { IconDef } from '../utils/icon';
 
 export interface PlaceSearchResult {
@@ -64,11 +66,17 @@ const props = withDefaults(
     zoom?: number;
     /** Zusätzliche Orientierungspunkte im Umkreis. */
     referencePoints?: { lat: number; lng: number; icon?: IconDef }[];
+    /** Spot-Kategorie (v-model:category). */
+    category?: string;
+    /** Verfügbare Kategorie-Optionen für die Combobox. */
+    categoryOptions?: string[];
     /** Ob der Status-Header (Haken & Entfernen) ausgeblendet werden soll (z. B. wenn im Fieldset-Legend platziert). */
     hideStatusHeader?: boolean;
   }>(),
   {
     title: undefined,
+    category: undefined,
+    categoryOptions: undefined,
     address: '',
     mapsLink: '',
     proximityBias: null,
@@ -85,6 +93,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'update:modelValue', value: { lat: number; lng: number } | null): void;
   (e: 'update:title', value: string): void;
+  (e: 'update:category', value: string): void;
   (e: 'update:address', value: string): void;
   (e: 'update:mapsLink', value: string): void;
   (e: 'select', place: PlaceSearchResult): void;
@@ -220,6 +229,40 @@ function saveAddress() {
 
 function cancelAddress() {
   isEditingAddress.value = false;
+}
+
+const isEditingCategory = ref(false);
+const editCategoryInput = ref('');
+
+function startEditCategory() {
+  editCategoryInput.value = props.category || '';
+  isEditingCategory.value = true;
+  nextTick(() => {
+    const el = document.querySelector<HTMLInputElement>(
+      '.status-category-row .inline-category-combobox input, .sub-category-wrap .inline-category-combobox input'
+    );
+    el?.focus();
+    el?.select();
+  });
+}
+
+function saveCategory(val?: string) {
+  if (!isEditingCategory.value) return;
+  const newCat = (typeof val === 'string' ? val : editCategoryInput.value).trim();
+  isEditingCategory.value = false;
+  emit('update:category', newCat);
+}
+
+function cancelCategory() {
+  isEditingCategory.value = false;
+}
+
+function handleCategoryBlur() {
+  window.setTimeout(() => {
+    if (isEditingCategory.value) {
+      saveCategory();
+    }
+  }, 200);
 }
 
 const displayTitle = computed(() => {
@@ -409,6 +452,7 @@ function selectPlace(place: PlaceSearchResult) {
   activeIndex.value = -1;
   isEditingTitle.value = false;
   isEditingAddress.value = false;
+  isEditingCategory.value = false;
 
   const coords = { lat: place.lat, lng: place.lng };
   placeMarker(coords.lat, coords.lng);
@@ -416,6 +460,9 @@ function selectPlace(place: PlaceSearchResult) {
 
   if (props.title !== undefined) {
     emit('update:title', place.name);
+  }
+  if (place.category && props.category !== undefined) {
+    emit('update:category', place.category);
   }
   emit('update:modelValue', coords);
   emit('update:address', place.formatted_address || place.address || place.name);
@@ -434,6 +481,7 @@ function clear() {
   shortlinkDetected.value = false;
   isEditingTitle.value = false;
   isEditingAddress.value = false;
+  isEditingCategory.value = false;
 
   if (debounceTimer) {
     clearTimeout(debounceTimer);
@@ -693,7 +741,59 @@ defineExpose({
             </div>
           </div>
 
-          <!-- 3. Koordinaten-Zeile -->
+          <!-- 3. Kategorie-Zeile mit dezentem Bleistift-Icon -->
+          <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
+            <div v-if="!isEditingCategory && props.category" class="status-meta-display">
+              <CategoryChip :category="props.category" type="spot" />
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-edit-btn"
+                :icon="ACTION_ICONS.edit"
+                title="Kategorie bearbeiten"
+                aria-label="Kategorie bearbeiten"
+                @click="startEditCategory"
+              />
+            </div>
+            <div v-else-if="!isEditingCategory && !props.category" class="status-meta-display">
+              <button
+                type="button"
+                class="add-address-btn add-category-btn"
+                @click="startEditCategory"
+              >
+                <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
+                <span>Kategorie wählen</span>
+              </button>
+            </div>
+            <div v-else class="status-meta-edit status-category-edit">
+              <div class="inline-category-combobox">
+                <CategoryCombobox
+                  v-model="editCategoryInput"
+                  type="spot"
+                  :options="categoryOptions"
+                  size="sm"
+                  placeholder="Kategorie wählen..."
+                  @select="saveCategory"
+                  @keydown.enter.prevent="saveCategory()"
+                  @keydown.esc.prevent="cancelCategory"
+                  @blur="handleCategoryBlur"
+                />
+              </div>
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-save-btn"
+                :icon="ACTION_ICONS.done"
+                title="Kategorie speichern"
+                aria-label="Kategorie speichern"
+                @click="saveCategory()"
+              />
+            </div>
+          </div>
+
+          <!-- 4. Koordinaten-Zeile -->
           <div v-if="modelValue" class="status-meta-row status-coords-row">
             <span class="status-coords">
               {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
@@ -733,8 +833,58 @@ defineExpose({
         />
         <LoadingSpinner v-if="isSearching" size="sm" class="spinner input-spinner" />
 
-        <!-- Schnell-Aktion für manuelle Adresse, falls noch kein Standort gewählt wurde -->
+        <!-- Schnell-Aktion für manuelle Adresse & Kategorie, falls noch kein Standort gewählt wurde -->
         <div v-if="!hasLocation && !isEditingAddress" class="search-sub-actions">
+          <div v-if="props.category !== undefined" class="sub-category-wrap">
+            <div v-if="!isEditingCategory && props.category" class="status-meta-display">
+              <CategoryChip :category="props.category" type="spot" />
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-edit-btn"
+                :icon="ACTION_ICONS.edit"
+                title="Kategorie bearbeiten"
+                aria-label="Kategorie bearbeiten"
+                @click="startEditCategory"
+              />
+            </div>
+            <div v-else-if="!isEditingCategory && !props.category" class="status-meta-display">
+              <button
+                type="button"
+                class="add-manual-address-link add-category-link"
+                @click="startEditCategory"
+              >
+                <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
+                <span>Kategorie wählen</span>
+              </button>
+            </div>
+            <div v-else class="status-meta-edit status-category-edit">
+              <div class="inline-category-combobox">
+                <CategoryCombobox
+                  v-model="editCategoryInput"
+                  type="spot"
+                  :options="categoryOptions"
+                  size="sm"
+                  placeholder="Kategorie wählen..."
+                  @select="saveCategory"
+                  @keydown.enter.prevent="saveCategory()"
+                  @keydown.esc.prevent="cancelCategory"
+                  @blur="handleCategoryBlur"
+                />
+              </div>
+              <IconButton
+                type="button"
+                size="sm"
+                variant="ghost"
+                class="inline-save-btn"
+                :icon="ACTION_ICONS.done"
+                title="Kategorie speichern"
+                aria-label="Kategorie speichern"
+                @click="saveCategory()"
+              />
+            </div>
+          </div>
           <button type="button" class="add-manual-address-link" @click="startEditAddress">
             <AppIcon :icon="ACTION_ICONS.edit" :size="12" group="actions" />
             <span>Adresse manuell eingeben</span>
@@ -1159,8 +1309,28 @@ defineExpose({
   white-space: nowrap;
 }
 
+.status-category-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sub-category-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inline-category-combobox {
+  min-width: 140px;
+  max-width: 220px;
+  flex: 1;
+}
+
 .add-address-btn,
-.add-manual-address-link {
+.add-manual-address-link,
+.add-category-btn,
+.add-category-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1176,7 +1346,9 @@ defineExpose({
 }
 
 .add-address-btn:hover,
-.add-manual-address-link:hover {
+.add-manual-address-link:hover,
+.add-category-btn:hover,
+.add-category-link:hover {
   color: var(--color-primary-dark);
   text-decoration-style: solid;
 }
@@ -1185,6 +1357,8 @@ defineExpose({
   margin-top: 4px;
   display: flex;
   align-items: center;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
 }
 
 .search-sub-edit {

@@ -1036,5 +1036,92 @@ describe('LocationPicker', () => {
       expect(updateAddress).toHaveBeenCalledWith('Musterstraße 1, 1010 Wien');
       cleanUp();
     });
+
+    it('renders CategoryChip with edit button when location and category are present, and allows inline edit', async () => {
+      const updateCategory = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2082, lng: 16.3738 },
+          title: 'Stephansdom',
+          category: 'Sehenswürdigkeit',
+        },
+        {
+          'onUpdate:category': updateCategory,
+        }
+      );
+      await nextTick();
+
+      // Check CategoryChip is rendered in status-details
+      const chip = container.querySelector('.status-category-row .category-chip');
+      expect(chip).toBeTruthy();
+      expect(chip?.textContent).toContain('Sehenswürdigkeit');
+
+      // Click pencil icon to edit category
+      const editBtn = container.querySelector(
+        '.status-category-row .inline-edit-btn'
+      ) as HTMLButtonElement;
+      expect(editBtn).toBeTruthy();
+      editBtn.click();
+      await nextTick();
+
+      // Combobox should now be rendered
+      const comboboxInput = container.querySelector(
+        '.status-category-row .inline-category-combobox input'
+      ) as HTMLInputElement;
+      expect(comboboxInput).toBeTruthy();
+      expect(comboboxInput.value).toBe('Sehenswürdigkeit');
+
+      comboboxInput.value = 'Museum';
+      comboboxInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      // Save via Enter
+      comboboxInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await nextTick();
+
+      expect(updateCategory).toHaveBeenCalledWith('Museum');
+      cleanUp();
+    });
+
+    it('renders "+ Kategorie wählen" when category is empty and allows selecting category', async () => {
+      const updateCategory = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: null,
+          title: 'Mein Spot',
+          category: '',
+        },
+        {
+          'onUpdate:category': updateCategory,
+        }
+      );
+      await nextTick();
+
+      const addCategoryBtn = container.querySelector('.add-category-link') as HTMLButtonElement;
+      expect(addCategoryBtn).toBeTruthy();
+      expect(addCategoryBtn.textContent).toContain('Kategorie wählen');
+
+      addCategoryBtn.click();
+      await nextTick();
+
+      const comboboxInput = container.querySelector(
+        '.sub-category-wrap .inline-category-combobox input'
+      ) as HTMLInputElement;
+      expect(comboboxInput).toBeTruthy();
+
+      comboboxInput.value = 'Café';
+      comboboxInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      const saveBtn = container.querySelector(
+        '.sub-category-wrap .inline-save-btn'
+      ) as HTMLButtonElement;
+      expect(saveBtn).toBeTruthy();
+      saveBtn.click();
+      await nextTick();
+
+      expect(updateCategory).toHaveBeenCalledWith('Café');
+      cleanUp();
+    });
   });
 });

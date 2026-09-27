@@ -78,7 +78,6 @@ import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
-import CategoryCombobox from '../components/CategoryCombobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
@@ -3814,6 +3813,8 @@ async function deleteEditingSpot() {
                   ref="spotLocationPickerRef"
                   v-model="spotManualPin"
                   v-model:title="activeSpotForm.title"
+                  v-model:category="activeSpotForm.category"
+                  :category-options="spotCategoryOptions"
                   :hide-status-header="true"
                   :address="activeSpotForm.address"
                   :maps-link="activeSpotForm.maps_link"
@@ -3855,15 +3856,6 @@ async function deleteEditingSpot() {
                   </p>
                 </div>
               </fieldset>
-
-              <!-- 2. Kerndaten: Kategorie -->
-              <FormField icon="category" label="Kategorie">
-                <CategoryCombobox
-                  v-model="activeSpotForm.category"
-                  type="spot"
-                  :options="spotCategoryOptions"
-                />
-              </FormField>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <div class="row">
                   <FormField icon="date" label="Check-in-Datum">
