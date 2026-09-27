@@ -615,11 +615,17 @@ function onResetClick() {
   emit('reset');
 }
 
-function onClearOrCloseClick() {
-  cardClosed.value = true;
-  manualDetailsOpen.value = false;
-  selectedPlace.value = null;
-  clear();
+function clearCoords() {
+  inputText.value = '';
+  if (marker) {
+    marker.remove();
+    marker = null;
+  }
+  cardClosed.value = false;
+  manualDetailsOpen.value = true;
+  emit('update:modelValue', null);
+  emit('update:mapsLink', '');
+  emit('clear');
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -740,6 +746,7 @@ onUnmounted(() => {
 
 defineExpose({
   clear,
+  clearCoords,
   reset,
   hasLocation,
   openManualDetails,
@@ -896,10 +903,9 @@ defineExpose({
         :class="{ 'is-modified': modified, 'has-location': hasLocation }"
         data-testid="location-status"
       >
-        <!-- Header Actions (oben rechts in der Card): Zurücksetzen & Löschen/Schließen -->
-        <div class="polaroid-header-actions">
+        <!-- Header Actions (oben rechts in der Card): Zurücksetzen -->
+        <div v-if="modified" class="polaroid-header-actions">
           <IconButton
-            v-if="modified"
             type="button"
             size="sm"
             shape="circle"
@@ -909,17 +915,6 @@ defineExpose({
             title="Standort zurücksetzen"
             aria-label="Standort zurücksetzen"
             @click="onResetClick"
-          />
-          <IconButton
-            type="button"
-            size="sm"
-            shape="circle"
-            variant="secondary"
-            class="clear-btn polaroid-action-btn polaroid-clear-btn"
-            :icon="ACTION_ICONS.close"
-            :title="hasLocation ? 'Standort entfernen' : 'Details schließen'"
-            :aria-label="hasLocation ? 'Standort entfernen' : 'Details schließen'"
-            @click="onClearOrCloseClick"
           />
         </div>
 
@@ -980,50 +975,75 @@ defineExpose({
               </div>
             </div>
 
-            <!-- 2. Adress-Zeile -->
-            <div class="status-meta-row status-address-row">
-              <span class="status-row-icon" title="Adresse" aria-hidden="true">
-                <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-              </span>
-              <div v-if="!isEditingAddress && props.address" class="status-meta-display">
-                <span class="status-address" :title="props.address">
-                  {{ props.address }}
+            <!-- 2. Standort-Gruppe: Adresse & Koordinaten näher zusammengerückt -->
+            <div class="status-location-group">
+              <!-- Adress-Zeile -->
+              <div class="status-meta-row status-address-row">
+                <span class="status-row-icon" title="Adresse" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
                 </span>
-                <IconButton
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  class="inline-edit-btn"
-                  :icon="ACTION_ICONS.edit"
-                  title="Adresse bearbeiten"
-                  aria-label="Adresse bearbeiten"
-                  @click="startEditAddress"
-                />
+                <div v-if="!isEditingAddress && props.address" class="status-meta-display">
+                  <span class="status-address" :title="props.address">
+                    {{ props.address }}
+                  </span>
+                  <IconButton
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    class="inline-edit-btn"
+                    :icon="ACTION_ICONS.edit"
+                    title="Adresse bearbeiten"
+                    aria-label="Adresse bearbeiten"
+                    @click="startEditAddress"
+                  />
+                </div>
+                <div v-else class="status-meta-edit status-address-edit">
+                  <Input
+                    v-model="editAddressInput"
+                    size="sm"
+                    class="inline-edit-input"
+                    name="address"
+                    data-testid="spot-address-input"
+                    placeholder="Adresse eingeben..."
+                    @input="onAddressInput"
+                    @keydown.enter.prevent="saveAddress"
+                    @keydown.esc.prevent="cancelAddress"
+                    @blur="saveAddress"
+                  />
+                  <IconButton
+                    v-if="props.address"
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    class="inline-save-btn"
+                    :icon="ACTION_ICONS.done"
+                    title="Adresse speichern"
+                    aria-label="Adresse speichern"
+                    @click="saveAddress"
+                  />
+                </div>
               </div>
-              <div v-else class="status-meta-edit status-address-edit">
-                <Input
-                  v-model="editAddressInput"
-                  size="sm"
-                  class="inline-edit-input"
-                  name="address"
-                  data-testid="spot-address-input"
-                  placeholder="Adresse eingeben..."
-                  @input="onAddressInput"
-                  @keydown.enter.prevent="saveAddress"
-                  @keydown.esc.prevent="cancelAddress"
-                  @blur="saveAddress"
-                />
-                <IconButton
-                  v-if="props.address"
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  class="inline-save-btn"
-                  :icon="ACTION_ICONS.done"
-                  title="Adresse speichern"
-                  aria-label="Adresse speichern"
-                  @click="saveAddress"
-                />
+
+              <!-- Koordinaten-Zeile mit Standort-Entfernen-Button direkt neben den Koordinaten -->
+              <div v-if="modelValue" class="status-meta-row status-coords-row">
+                <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
+                  <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+                </span>
+                <div class="status-meta-display">
+                  <span class="status-coords">
+                    {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+                  </span>
+                  <IconButton
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    class="clear-btn coords-clear-btn"
+                    :icon="ACTION_ICONS.close"
+                    title="Standort-Koordinaten entfernen"
+                    aria-label="Standort-Koordinaten entfernen"
+                    @click="clearCoords"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1070,18 +1090,6 @@ defineExpose({
                   aria-label="Kategorie speichern"
                   @click="saveCategory()"
                 />
-              </div>
-            </div>
-
-            <!-- 4. Koordinaten-Zeile -->
-            <div v-if="modelValue" class="status-meta-row status-coords-row">
-              <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
-                <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
-              </span>
-              <div class="status-meta-display">
-                <span class="status-coords">
-                  {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
-                </span>
               </div>
             </div>
           </div>
@@ -1391,11 +1399,6 @@ defineExpose({
   color: var(--color-text);
 }
 
-.polaroid-clear-btn:hover {
-  color: var(--color-danger, #ef4444);
-  border-color: var(--color-danger, #ef4444);
-}
-
 .polaroid-reset-btn:hover {
   color: var(--color-accent, #e08e45);
   border-color: var(--color-accent, #e08e45);
@@ -1410,7 +1413,7 @@ defineExpose({
   flex-shrink: 0;
 }
 
-.polaroid-card:not(:has(.polaroid-media)) .status-title-row {
+.polaroid-card.is-modified:not(:has(.polaroid-media)) .status-title-row {
   padding-right: 32px;
 }
 
@@ -1436,6 +1439,14 @@ defineExpose({
   box-sizing: border-box;
 }
 
+.status-location-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+}
+
 .status-meta-row {
   display: flex;
   align-items: flex-start;
@@ -1443,6 +1454,14 @@ defineExpose({
   min-width: 0;
   max-width: 100%;
   width: 100%;
+}
+
+.status-coords-row {
+  align-items: center;
+}
+
+.status-coords-row .status-row-icon {
+  margin-top: 0;
 }
 
 .status-row-icon {
@@ -1561,6 +1580,26 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.coords-clear-btn {
+  color: var(--color-text-muted);
+  padding: 2px 4px;
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: 0;
+  opacity: 0.7;
+  transition: all 0.15s ease;
+}
+
+.status-coords-row:hover .coords-clear-btn,
+.coords-clear-btn:focus-visible {
+  opacity: 1;
+}
+
+.coords-clear-btn:hover {
+  opacity: 1;
+  color: var(--color-danger, #ef4444);
 }
 
 .sub-category-wrap {

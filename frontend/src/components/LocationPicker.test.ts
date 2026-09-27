@@ -584,9 +584,9 @@ describe('LocationPicker', () => {
       expect(statusCard?.textContent).toContain('16.3738');
       expect(statusCard?.textContent).toContain('Stephansplatz 3, Wien');
 
-      const clearBtn = container.querySelector('button.polaroid-clear-btn');
+      const clearBtn = container.querySelector('button.coords-clear-btn');
       expect(clearBtn).toBeTruthy();
-      expect(clearBtn?.getAttribute('title')).toBe('Standort entfernen');
+      expect(clearBtn?.getAttribute('title')).toBe('Standort-Koordinaten entfernen');
       expect(clearBtn?.querySelector('.app-icon')).toBeTruthy();
 
       cleanUp();
@@ -616,7 +616,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('clicking clear button closes polaroid card, emits null to modelValue, empties address & link, and emits clear', async () => {
+    it('clicking clear coords button removes coordinates pin, keeps polaroid card open, and preserves address', async () => {
       const onUpdateModelValue = vi.fn();
       const onUpdateAddress = vi.fn();
       const onUpdateMapsLink = vi.fn();
@@ -637,25 +637,26 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const clearBtn = container.querySelector('button.polaroid-clear-btn') as HTMLButtonElement;
+      const clearBtn = container.querySelector('button.coords-clear-btn') as HTMLButtonElement;
       expect(clearBtn).toBeTruthy();
 
       clearBtn.click();
       await nextTick();
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(null);
-      expect(onUpdateAddress).toHaveBeenCalledWith('');
+      expect(onUpdateAddress).not.toHaveBeenCalled();
       expect(onUpdateMapsLink).toHaveBeenCalledWith('');
       expect(onClear).toHaveBeenCalled();
 
+      // Card remains open, input is empty
       const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
       expect(input.value).toBe('');
-      expect(container.querySelector('.polaroid-card')).toBeNull();
+      expect(container.querySelector('.polaroid-card')).toBeTruthy();
 
       cleanUp();
     });
 
-    it('clicking close button closes card when opened manually without location', async () => {
+    it('opens polaroid card when manual details button is clicked', async () => {
       const { container, cleanUp } = mountPicker({
         modelValue: null,
       });
@@ -666,11 +667,6 @@ describe('LocationPicker', () => {
       await nextTick();
       expect(container.querySelector('.polaroid-card')).toBeTruthy();
 
-      const closeBtn = container.querySelector('.polaroid-clear-btn') as HTMLButtonElement;
-      closeBtn.click();
-      await nextTick();
-
-      expect(container.querySelector('.polaroid-card')).toBeNull();
       cleanUp();
     });
 
@@ -969,7 +965,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('clearing location resets coordinates and address but preserves custom spot title', async () => {
+    it('clearing location resets coordinates but preserves custom spot title and address', async () => {
       const updateModelValue = vi.fn();
       const updateAddress = vi.fn();
       const updateTitle = vi.fn();
@@ -990,21 +986,21 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const clearBtn = container.querySelector('.clear-btn') as HTMLButtonElement;
+      const clearBtn = container.querySelector('.coords-clear-btn') as HTMLButtonElement;
       expect(clearBtn).toBeTruthy();
       clearBtn.click();
       await nextTick();
 
       expect(updateModelValue).toHaveBeenCalledWith(null);
-      expect(updateAddress).toHaveBeenCalledWith('');
+      expect(updateAddress).not.toHaveBeenCalled();
       expect(updateTitle).not.toHaveBeenCalled();
       expect(onClear).toHaveBeenCalled();
 
-      expect(container.querySelector('.polaroid-card')).toBeNull();
+      expect(container.querySelector('.polaroid-card')).toBeTruthy();
       cleanUp();
     });
 
-    it('clearing location after selecting search result resets coordinates and address but preserves title', async () => {
+    it('clearing coordinates after selecting search result resets coordinates but preserves address and title', async () => {
       const state = reactive({
         modelValue: null as { lat: number; lng: number } | null,
         title: '',
@@ -1064,13 +1060,13 @@ describe('LocationPicker', () => {
       expect(state.title).toBe('Café Central');
       expect(state.modelValue).toEqual({ lat: 48.2104, lng: 16.3653 });
 
-      const clearBtn = container.querySelector('.clear-btn') as HTMLButtonElement;
+      const clearBtn = container.querySelector('.coords-clear-btn') as HTMLButtonElement;
       expect(clearBtn).toBeTruthy();
       clearBtn.click();
       await nextTick();
 
       expect(state.modelValue).toBeNull();
-      expect(state.address).toBe('');
+      expect(state.address).toBe('Herrengasse 14, 1010 Wien');
       expect(state.title).toBe('Café Central');
       expect(onClear).toHaveBeenCalled();
       expect(input.value).toBe('');

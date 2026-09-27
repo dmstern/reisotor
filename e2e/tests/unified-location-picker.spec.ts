@@ -153,6 +153,12 @@ async function openNewSpotModal(page: Page) {
   const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
   await expect(modal).toBeVisible();
 
+  // If a draft was restored, discard it to ensure pristine state
+  const discardBtn = modal.locator('.draft-discard-btn');
+  if (await discardBtn.isVisible()) {
+    await discardBtn.click();
+  }
+
   // If Standort section is collapsed, expand it
   const locationBtn = modal.getByRole('button', { name: 'Standort', exact: true });
   if (await locationBtn.isVisible()) {
@@ -645,7 +651,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
         const status = getStatusBadge(picker);
         await expect(status).toBeVisible();
-        await expect(picker.locator('.spot-location-check-icon, .status-check-icon')).toBeVisible();
+        await expect(status.locator('.status-coords')).toBeVisible();
       });
 
       test('T1.23: subsequent clicks on different points move marker and update coordinates', async ({
@@ -729,7 +735,9 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         await expect(marker).not.toBeVisible();
       });
 
-      test('T1.28: clicking clear button resets the status badge display', async ({ page }) => {
+      test('T1.28: clicking clear button resets coordinates while preserving card display', async ({
+        page,
+      }) => {
         setupPlacesMock(page);
         const { picker } = await openNewSpotModal(page);
         const input = getLocationInput(picker);
@@ -743,7 +751,8 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         const clearBtn = getClearButton(picker);
         await clearBtn.click();
 
-        await expect(status).not.toBeVisible();
+        await expect(status.locator('.status-coords')).not.toBeVisible();
+        await expect(status).toBeVisible();
       });
 
       test('T1.29: clicking clear button clears the text input and maps link in the form', async ({
@@ -773,7 +782,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         const clearBtn = getClearButton(picker);
         await clearBtn.click();
 
-        await expect(status).not.toBeVisible();
+        await expect(status.locator('.status-coords')).not.toBeVisible();
         await expect(getMapMarker(picker)).not.toBeVisible();
       });
     });
@@ -910,8 +919,8 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       await expect(status).toBeVisible();
       await expect(status).toContainText('48.2082');
 
-      // 2. Adjust pin by clicking elsewhere on the map
-      await clickMiniMap(picker, 0.2, 0.2);
+      // 2. Adjust pin by clicking elsewhere on the map (avoiding top-left polaroid overlay)
+      await clickMiniMap(picker, 0.8, 0.7);
 
       // Status coordinates must update to clicked position
       await expect(status).toBeVisible();
@@ -919,7 +928,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       expect(newText).not.toContain('48.20820, 16.37380');
     });
 
-    test('T3.2: searching POI then clearing resets all inputs, coordinates, and map pin', async ({
+    test('T3.2: searching POI then clearing resets coordinates and map pin while preserving card', async ({
       page,
     }) => {
       setupPlacesMock(page);
@@ -934,7 +943,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       await getClearButton(picker).click();
 
-      await expect(getStatusBadge(picker)).not.toBeVisible();
+      await expect(getStatusBadge(picker).locator('.status-coords')).not.toBeVisible();
       await expect(getMapMarker(picker)).not.toBeVisible();
       await expect(input).toHaveValue('');
     });
@@ -1010,10 +1019,19 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       await getDropdownOptions(page).first().click();
 
       // Title can be auto-suggested or entered
+      const titleDisplay = modal.locator('.status-title');
       const titleInput = modal.locator('input[placeholder*="Titel"], input[name="title"]');
-      const currentTitle = await titleInput.inputValue();
+      let currentTitle = '';
+      if (await titleDisplay.isVisible()) {
+        currentTitle = (await titleDisplay.textContent())?.trim() || '';
+      } else if (await titleInput.isVisible()) {
+        currentTitle = await titleInput.inputValue();
+      }
       const uniqueTitle = currentTitle || `Café Central Visit ${Date.now()}`;
       if (!currentTitle) {
+        if (await modal.locator('.manual-details-btn').isVisible()) {
+          await modal.locator('.manual-details-btn').click();
+        }
         await titleInput.fill(uniqueTitle);
       }
 

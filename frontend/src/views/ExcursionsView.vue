@@ -3645,7 +3645,6 @@ function triggerSpotLocationClear() {
 function onSpotLocationClear() {
   spotManualPin.value = null;
   editSpotManualPin.value = null;
-  activeSpotForm.value.address = '';
   activeSpotForm.value.maps_link = '';
 }
 
