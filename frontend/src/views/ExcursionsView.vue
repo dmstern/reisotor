@@ -4383,8 +4383,13 @@ async function deleteEditingSpot() {
                       :options="SPOT_SIDE_OPTIONS"
                       @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
                     />
-                    <p class="hint">
-                      z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen
+                    <p v-if="activeSpotForm.is_home" class="hint">
+                      z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen. Wird für das
+                      Auswählen des passenden Kartenausschnitts verwendet.
+                    </p>
+                    <p v-else class="hint">
+                      z. B. Ausflugsziele, Restaurants oder Unterkünfte am Reiseziel. Wird für das
+                      Auswählen des passenden Kartenausschnitts verwendet.
                     </p>
                   </div>
                 </div>
