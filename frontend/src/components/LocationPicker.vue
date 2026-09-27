@@ -101,6 +101,7 @@ const emit = defineEmits<{
   (e: 'update:mapsLink', value: string): void;
   (e: 'select', place: PlaceSearchResult): void;
   (e: 'clear'): void;
+  (e: 'reset'): void;
   (e: 'blur', event: FocusEvent): void;
 }>();
 
@@ -522,6 +523,37 @@ function clear() {
   emit('clear');
 }
 
+function reset() {
+  selectedPlace.value = null;
+  isOpen.value = false;
+  results.value = [];
+  activeIndex.value = -1;
+  shortlinkDetected.value = false;
+  isEditingAddress.value = false;
+  isEditingCategory.value = false;
+  isEditingTitle.value = false;
+
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  if (activeAbortController) {
+    activeAbortController.abort();
+    activeAbortController = null;
+  }
+
+  inputText.value = '';
+}
+
+function onClearOrResetClick() {
+  if (props.modified) {
+    reset();
+    emit('reset');
+  } else {
+    clear();
+  }
+}
+
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     if (!isOpen.value) {
@@ -639,6 +671,7 @@ onUnmounted(() => {
 
 defineExpose({
   clear,
+  reset,
   hasLocation,
 });
 </script>
@@ -676,8 +709,14 @@ defineExpose({
             />
           </span>
           <span v-if="modified" class="status-badge-modified">Standort geändert</span>
-          <Button variant="secondary" size="sm" class="clear-btn" type="button" @click="clear">
-            Entfernen
+          <Button
+            variant="secondary"
+            size="sm"
+            class="clear-btn"
+            type="button"
+            @click="onClearOrResetClick"
+          >
+            {{ modified ? 'Zurücksetzen' : 'Entfernen' }}
           </Button>
         </div>
         <div class="status-details">

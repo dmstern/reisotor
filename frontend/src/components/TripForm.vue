@@ -182,6 +182,19 @@ function onLocationClear() {
   form.value.maps_link = '';
 }
 
+function onLocationReset() {
+  if (!props.initial) {
+    onLocationClear();
+    return;
+  }
+  form.value.destination = props.initial.destination ?? '';
+  form.value.maps_link = props.initial.maps_link ?? '';
+  manualPin.value =
+    props.initial.lat != null && props.initial.lng != null
+      ? { lat: props.initial.lat, lng: props.initial.lng }
+      : null;
+}
+
 function onSubmit() {
   if (!form.value.name.trim()) {
     activeTab.value = 'general';
@@ -284,6 +297,7 @@ function onSubmit() {
             @update:maps-link="form.maps_link = $event"
             @select="onLocationSelect"
             @clear="onLocationClear"
+            @reset="onLocationReset"
           />
         </Card>
       </CollapsibleFieldset>

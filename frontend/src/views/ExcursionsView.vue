@@ -3608,6 +3608,24 @@ function onSpotLocationClear() {
   activeSpotForm.value.maps_link = '';
 }
 
+function resetEditSpotLocation() {
+  if (!editingSpot.value) {
+    triggerSpotLocationClear();
+    return;
+  }
+  const original = editingSpot.value;
+  const pin =
+    original.lat != null && original.lng != null ? { lat: original.lat, lng: original.lng } : null;
+  editSpotManualPin.value = pin;
+  spotManualPin.value = pin;
+  activeSpotForm.value.title = original.title;
+  activeSpotForm.value.address = original.address ?? '';
+  activeSpotForm.value.maps_link = original.maps_link ?? '';
+  activeSpotForm.value.category = original.category ?? '';
+  editSpotLocationError.value = false;
+  spotLocationPickerRef.value?.reset();
+}
+
 function startEditSpot(spot: Spot) {
   spotTitleTouched.value = false;
   editingSpot.value = spot;
@@ -4212,8 +4230,12 @@ async function deleteEditingSpot() {
                     <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
                     <span>Standort &amp; Titel</span>
                   </span>
-                  <span v-if="hasSpotLocation" class="spot-location-legend-status">
+                  <span
+                    v-if="hasSpotLocation || isEditSpotLocationModified"
+                    class="spot-location-legend-status"
+                  >
                     <span
+                      v-if="hasSpotLocation"
                       class="spot-location-check-circle"
                       :class="{ 'is-modified': isEditSpotLocationModified }"
                       :title="isEditSpotLocationModified ? 'Standort geändert' : 'Standort gesetzt'"
@@ -4237,75 +4259,82 @@ async function deleteEditingSpot() {
                       size="sm"
                       class="clear-btn spot-location-clear-btn"
                       type="button"
-                      @click="triggerSpotLocationClear"
+                      @click="
+                        isEditSpotLocationModified
+                          ? resetEditSpotLocation()
+                          : triggerSpotLocationClear()
+                      "
                     >
-                      Entfernen
+                      {{ isEditSpotLocationModified ? 'Zurücksetzen' : 'Entfernen' }}
                     </Button>
                   </span>
                 </legend>
-                <p class="hint spot-location-hint">
-                  Ort suchen oder Spot-Titel eingeben. Wird für Karte und ggf. Wetter vor Ort
-                  verwendet.
-                </p>
-                <LocationPicker
-                  ref="spotLocationPickerRef"
-                  v-model="spotManualPin"
-                  v-model:title="activeSpotForm.title"
-                  v-model:category="activeSpotForm.category"
-                  :category-options="spotCategoryOptions"
-                  :hide-status-header="true"
-                  :address="activeSpotForm.address"
-                  :maps-link="activeSpotForm.maps_link"
-                  :proximity-bias="spotPickerCenter"
-                  :center="spotPickerCenter"
-                  :reference-points="
-                    editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
-                  "
-                  :title-required="true"
-                  :title-invalid="showSpotTitleError"
-                  :modified="isEditSpotLocationModified"
-                  @update:address="activeSpotForm.address = $event"
-                  @update:maps-link="onSpotMapsLinkUpdate"
-                  @select="onSpotLocationSelect"
-                  @clear="onSpotLocationClear"
-                  @blur="spotTitleTouched = true"
-                />
-                <p v-if="showSpotTitleError" class="hint error">
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-                  Bitte gib einen Titel für den Spot ein.
-                </p>
-                <p
-                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
-                  class="hint error"
-                >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                  konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
-                  manuell zu setzen.
-                </p>
-                <div
-                  class="spot-side-field"
-                  :class="{ 'is-modified': isEditSpotSideModified }"
-                  role="group"
-                  aria-label="Bereich des Standorts"
-                >
-                  <span class="spot-side-label">
-                    <span>Bereich</span>
-                    <span
-                      v-if="isEditSpotSideModified"
-                      class="modified-dot"
-                      title="Geändert"
-                      aria-label="Geändert"
-                    />
-                  </span>
-                  <SegmentedToggle
-                    id="spotFormSideToggle"
-                    :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
-                    :options="SPOT_SIDE_OPTIONS"
-                    @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
-                  />
-                  <p class="hint">
-                    z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen
+                <div class="spot-location-body">
+                  <p class="hint spot-location-hint">
+                    Ort suchen oder Spot-Titel eingeben. Wird für Karte und ggf. Wetter vor Ort
+                    verwendet.
                   </p>
+                  <LocationPicker
+                    ref="spotLocationPickerRef"
+                    v-model="spotManualPin"
+                    v-model:title="activeSpotForm.title"
+                    v-model:category="activeSpotForm.category"
+                    :category-options="spotCategoryOptions"
+                    :hide-status-header="true"
+                    :address="activeSpotForm.address"
+                    :maps-link="activeSpotForm.maps_link"
+                    :proximity-bias="spotPickerCenter"
+                    :center="spotPickerCenter"
+                    :reference-points="
+                      editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
+                    "
+                    :title-required="true"
+                    :title-invalid="showSpotTitleError"
+                    :modified="isEditSpotLocationModified"
+                    @update:address="activeSpotForm.address = $event"
+                    @update:maps-link="onSpotMapsLinkUpdate"
+                    @select="onSpotLocationSelect"
+                    @clear="onSpotLocationClear"
+                    @reset="resetEditSpotLocation"
+                    @blur="spotTitleTouched = true"
+                  />
+                  <p v-if="showSpotTitleError" class="hint error">
+                    <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+                    Bitte gib einen Titel für den Spot ein.
+                  </p>
+                  <p
+                    v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
+                    class="hint error"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                    konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um
+                    ihn manuell zu setzen.
+                  </p>
+                  <div
+                    class="spot-side-field"
+                    :class="{ 'is-modified': isEditSpotSideModified }"
+                    role="group"
+                    aria-label="Bereich des Standorts"
+                  >
+                    <span class="spot-side-label">
+                      <span>Bereich</span>
+                      <span
+                        v-if="isEditSpotSideModified"
+                        class="modified-dot"
+                        title="Geändert"
+                        aria-label="Geändert"
+                      />
+                    </span>
+                    <SegmentedToggle
+                      id="spotFormSideToggle"
+                      :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
+                      :options="SPOT_SIDE_OPTIONS"
+                      @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
+                    />
+                    <p class="hint">
+                      z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen
+                    </p>
+                  </div>
                 </div>
               </fieldset>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
@@ -6255,20 +6284,29 @@ async function deleteEditingSpot() {
   margin: var(--space-1, 4px) 0 var(--space-2, 8px);
   background: var(--color-bg);
   min-inline-size: 0;
+}
+
+.spot-location-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-2, 8px);
+  min-inline-size: 0;
 }
 
 .spot-location-legend {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1-5, 6px);
-  padding: 0 var(--space-1-5, 6px);
+  padding: 0 var(--space-2, 8px);
   margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-radius: var(--radius-xs, 4px);
+  position: relative;
+  z-index: 1;
 }
 
 .spot-location-legend-title {
@@ -6288,11 +6326,6 @@ async function deleteEditingSpot() {
   color: var(--color-success, #22c55e);
   display: inline-flex;
   align-items: center;
-}
-
-.spot-location-fieldset.is-modified {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 .spot-location-fieldset.is-modified .spot-location-legend {

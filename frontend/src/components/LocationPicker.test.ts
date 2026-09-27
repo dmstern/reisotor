@@ -656,6 +656,41 @@ describe('LocationPicker', () => {
       expect(badge).toBeTruthy();
       expect(badge?.textContent).toBe('Standort geändert');
 
+      const btn = container.querySelector('button.clear-btn') as HTMLButtonElement;
+      expect(btn?.textContent).toContain('Zurücksetzen');
+
+      cleanUp();
+    });
+
+    it('clicking "Zurücksetzen" button when modified emits reset event without emitting clear or update:modelValue', async () => {
+      const onReset = vi.fn();
+      const onClear = vi.fn();
+      const onUpdateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2082, lng: 16.3738 },
+          address: 'Wien',
+          modified: true,
+        },
+        {
+          onReset,
+          onClear,
+          'onUpdate:modelValue': onUpdateModelValue,
+        }
+      );
+      await nextTick();
+
+      const btn = container.querySelector('button.clear-btn') as HTMLButtonElement;
+      expect(btn?.textContent).toContain('Zurücksetzen');
+
+      btn.click();
+      await nextTick();
+
+      expect(onReset).toHaveBeenCalled();
+      expect(onClear).not.toHaveBeenCalled();
+      expect(onUpdateModelValue).not.toHaveBeenCalled();
+
       cleanUp();
     });
   });
