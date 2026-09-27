@@ -1225,6 +1225,7 @@ defineExpose({
 .location-status {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
   min-width: 0;
   max-width: 100%;
@@ -1475,7 +1476,7 @@ defineExpose({
 
 .hint {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   margin: 0;
   font-size: 0.8rem;
