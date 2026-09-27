@@ -3634,11 +3634,6 @@ function onSpotLocationSelect(place: PlaceSearchResult) {
 
 const spotLocationPickerRef = ref<InstanceType<typeof LocationPicker> | null>(null);
 
-const hasSpotLocation = computed(() => {
-  const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
-  return Boolean(pin || activeSpotForm.value.address || activeSpotForm.value.maps_link);
-});
-
 function triggerSpotLocationClear() {
   if (spotLocationPickerRef.value) {
     spotLocationPickerRef.value.clear();
@@ -4261,114 +4256,63 @@ async function deleteEditingSpot() {
               class="edit-form"
               @submit.prevent="editingSpot !== null ? submitEditSpot() : addSpot()"
             >
-              <!-- 1. Standort-Bereich (Suche, Titel, Karte & Bereich) -->
-              <fieldset
-                class="spot-location-fieldset spot-location-section"
-                :class="{ 'is-modified': isEditSpotLocationModified }"
-              >
-                <legend class="spot-location-legend">
-                  <span class="spot-location-legend-title">
-                    <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                    <span>Standort &amp; Titel</span>
-                  </span>
-                  <span
-                    v-if="hasSpotLocation || isEditSpotLocationModified"
-                    class="spot-location-legend-status"
-                  >
-                    <span
-                      v-if="hasSpotLocation"
-                      class="spot-location-check-circle"
-                      :class="{ 'is-modified': isEditSpotLocationModified }"
-                      :title="isEditSpotLocationModified ? 'Standort geändert' : 'Standort gesetzt'"
-                      :aria-label="
-                        isEditSpotLocationModified ? 'Standort geändert' : 'Standort gesetzt'
+              <!-- 1. Standort-Bereich (Vollflächige Minikarte mit schwebender Suche & Polaroid-Card) -->
+              <div class="spot-location-section">
+                <LocationPicker
+                  ref="spotLocationPickerRef"
+                  v-model="spotManualPin"
+                  v-model:title="activeSpotForm.title"
+                  v-model:category="activeSpotForm.category"
+                  :category-options="spotCategoryOptions"
+                  :address="activeSpotForm.address"
+                  :maps-link="activeSpotForm.maps_link"
+                  :proximity-bias="spotPickerCenter"
+                  :center="spotPickerCenter"
+                  :reference-points="
+                    editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
+                  "
+                  :title-required="true"
+                  :title-invalid="showSpotTitleError"
+                  :modified="isEditSpotLocationModified"
+                  @update:address="activeSpotForm.address = $event"
+                  @update:maps-link="onSpotMapsLinkUpdate"
+                  @select="onSpotLocationSelect"
+                  @clear="onSpotLocationClear"
+                  @reset="resetEditSpotLocation"
+                  @blur="spotTitleTouched = true"
+                >
+                  <template #media>
+                    <CoverImagePicker
+                      v-model="activeSpotForm.image_url"
+                      v-model:uploading="isSpotUploadingCoverImage"
+                      variant="polaroid"
+                      :preview-image="
+                        editingSpot !== null ? editSpotPreviewImage : spotPreviewImage
                       "
-                    >
-                      <AppIcon
-                        :icon="ACTION_ICONS.done"
-                        :size="15"
-                        group="actions"
-                        class="spot-location-check-icon"
-                        :class="{ 'is-modified': isEditSpotLocationModified }"
-                      />
-                    </span>
-                    <span v-if="isEditSpotLocationModified" class="spot-location-badge-modified">
-                      Standort geändert
-                    </span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      class="clear-btn spot-location-clear-btn"
-                      type="button"
-                      :icon="isEditSpotLocationModified ? ACTION_ICONS.restore : ACTION_ICONS.close"
-                      @click="
-                        isEditSpotLocationModified
-                          ? resetEditSpotLocation()
-                          : triggerSpotLocationClear()
-                      "
-                    >
-                      {{ isEditSpotLocationModified ? 'Zurücksetzen' : 'Entfernen' }}
-                    </Button>
-                  </span>
-                </legend>
-                <div class="spot-location-body">
-                  <LocationPicker
-                    ref="spotLocationPickerRef"
-                    v-model="spotManualPin"
-                    v-model:title="activeSpotForm.title"
-                    v-model:category="activeSpotForm.category"
-                    :category-options="spotCategoryOptions"
-                    :hide-status-header="true"
-                    :address="activeSpotForm.address"
-                    :maps-link="activeSpotForm.maps_link"
-                    :proximity-bias="spotPickerCenter"
-                    :center="spotPickerCenter"
-                    :reference-points="
-                      editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
-                    "
-                    :title-required="true"
-                    :title-invalid="showSpotTitleError"
-                    :modified="isEditSpotLocationModified"
-                    @update:address="activeSpotForm.address = $event"
-                    @update:maps-link="onSpotMapsLinkUpdate"
-                    @select="onSpotLocationSelect"
-                    @clear="onSpotLocationClear"
-                    @reset="resetEditSpotLocation"
-                    @blur="spotTitleTouched = true"
-                  >
-                    <template #media>
-                      <CoverImagePicker
-                        v-model="activeSpotForm.image_url"
-                        v-model:uploading="isSpotUploadingCoverImage"
-                        variant="polaroid"
-                        :preview-image="
-                          editingSpot !== null ? editSpotPreviewImage : spotPreviewImage
-                        "
-                        :placeholder-icon="groupIconDef(activeSpotForm.category)"
-                        icon-group="categories"
-                        modal-title="Spot-Bild bearbeiten"
-                        :modified="isEditSpotImageModified"
-                        :initial-value="editingSpot !== null ? (editingSpot.image_url ?? '') : ''"
-                        :search-context="spotImageSearchContext"
-                        :initial-suggestions="spotPreviewImages"
-                        @reset="resetEditSpotImage"
-                      />
-                    </template>
-                  </LocationPicker>
-                  <p v-if="showSpotTitleError" class="hint error">
-                    <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-                    Bitte gib einen Titel für den Spot ein.
-                  </p>
-                  <p
-                    v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
-                    class="hint error"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                    konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um
-                    ihn manuell zu setzen.
-                  </p>
-                </div>
-              </fieldset>
+                      :placeholder-icon="groupIconDef(activeSpotForm.category)"
+                      icon-group="categories"
+                      modal-title="Spot-Bild bearbeiten"
+                      :modified="isEditSpotImageModified"
+                      :initial-value="editingSpot !== null ? (editingSpot.image_url ?? '') : ''"
+                      :search-context="spotImageSearchContext"
+                      :initial-suggestions="spotPreviewImages"
+                      @reset="resetEditSpotImage"
+                    />
+                  </template>
+                </LocationPicker>
+                <p v-if="showSpotTitleError" class="hint error">
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+                  Bitte gib einen Titel für den Spot ein.
+                </p>
+                <p
+                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
+                  class="hint error"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                  konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
+                  manuell zu setzen.
+                </p>
+              </div>
               <div
                 class="spot-side-field"
                 :class="{ 'is-modified': isEditSpotSideModified }"
@@ -6352,106 +6296,6 @@ async function deleteEditingSpot() {
   flex: 1;
 }
 
-.spot-location-fieldset {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  padding: var(--space-2-5, 10px) var(--space-3, 12px) var(--space-3, 12px);
-  margin: var(--space-1, 4px) 0 var(--space-2, 8px);
-  background: var(--color-bg);
-  min-inline-size: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-@media (max-width: 480px) {
-  .spot-location-fieldset {
-    padding: var(--space-2, 8px);
-  }
-}
-
-.spot-location-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2, 8px);
-  min-inline-size: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.spot-location-legend {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1-5, 6px);
-  padding: 2px var(--space-2, 8px);
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  position: relative;
-  z-index: 1;
-}
-
-.spot-location-legend-title {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5, 6px);
-}
-
-.spot-location-legend-status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5, 6px);
-  margin-left: var(--space-1, 4px);
-}
-
-.spot-location-check-icon {
-  color: var(--color-success, #22c55e);
-  display: inline-flex;
-  align-items: center;
-}
-
-.spot-location-fieldset.is-modified .spot-location-legend {
-  color: var(--color-accent-dark, var(--color-accent));
-}
-
-.spot-location-check-circle {
-  display: inline-flex;
-  align-items: center;
-}
-
-.spot-location-check-circle.is-modified .spot-location-check-icon,
-.spot-location-check-icon.is-modified {
-  color: var(--color-accent, #e08e45);
-}
-
-.spot-location-badge-modified {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--color-accent-dark, var(--color-accent));
-}
-
-.spot-location-clear-btn {
-  font-size: 0.75rem;
-  padding: 1px 7px;
-  height: 22px;
-  min-height: 22px;
-  line-height: 1;
-  gap: var(--space-1, 4px);
-}
-
-.spot-location-hint {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--color-text-muted);
-}
-
 .spot-location-section {
   display: flex;
   flex-direction: column;
@@ -6477,6 +6321,7 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-1-5, 6px);
   margin-top: var(--space-2);
+  margin-bottom: var(--space-4, 16px);
 }
 
 .spot-side-header {

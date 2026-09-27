@@ -173,17 +173,19 @@ const isEditingCategory = ref(false);
 const editCategoryInput = ref('');
 
 const manualDetailsOpen = ref(false);
+const cardClosed = ref(false);
 
 const isDetailsVisible = computed(() => {
+  if (cardClosed.value) return false;
   if (manualDetailsOpen.value) return true;
   if (selectedPlace.value !== null) return true;
   if (hasLocation.value) return true;
   if (props.title && props.title.trim().length > 0) return true;
-  if (props.address && props.address.trim().length > 0) return true;
   return false;
 });
 
 function openManualDetails() {
+  cardClosed.value = false;
   manualDetailsOpen.value = true;
   nextTick(() => {
     const el = document.querySelector<HTMLInputElement>(
@@ -194,6 +196,7 @@ function openManualDetails() {
 }
 
 function closeManualDetails() {
+  cardClosed.value = true;
   manualDetailsOpen.value = false;
 }
 
@@ -353,6 +356,7 @@ async function reverseGeocodeCoords(lat: number, lng: number) {
 }
 
 function onManualCoordsSet(coords: { lat: number; lng: number }) {
+  cardClosed.value = false;
   placeMarker(coords.lat, coords.lng);
   selectedPlace.value = null;
   manualDetailsOpen.value = true;
@@ -521,6 +525,7 @@ function handleInput(val: string) {
 }
 
 function selectPlace(place: PlaceSearchResult) {
+  cardClosed.value = false;
   selectedPlace.value = place;
   manualDetailsOpen.value = true;
   inputText.value = '';
@@ -582,6 +587,7 @@ function clear() {
 }
 
 function reset() {
+  cardClosed.value = false;
   selectedPlace.value = null;
   isOpen.value = false;
   results.value = [];
@@ -603,13 +609,16 @@ function reset() {
   inputText.value = '';
 }
 
-function onClearOrResetClick() {
-  if (props.modified) {
-    reset();
-    emit('reset');
-  } else {
-    clear();
-  }
+function onResetClick() {
+  reset();
+  emit('reset');
+}
+
+function onClearOrCloseClick() {
+  cardClosed.value = true;
+  manualDetailsOpen.value = false;
+  selectedPlace.value = null;
+  clear();
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -689,6 +698,7 @@ watch(
   () => props.modelValue,
   (val) => {
     if (val) {
+      cardClosed.value = false;
       placeMarker(val.lat, val.lng);
       if (map) {
         const curCenter = map.getCenter();
@@ -739,134 +749,156 @@ defineExpose({
 
 <template>
   <div class="location-picker">
-    <!-- 1. Vollbreite Suchleiste -->
-    <div class="location-search-row">
-      <div
-        class="location-search-wrap"
-        :class="{ 'is-loading': isSearching, loading: isSearching }"
-        :aria-busy="isSearching"
-      >
-        <AppIcon
-          :icon="ACTION_ICONS.search"
-          :size="16"
-          group="actions"
-          class="location-search-icon"
-          aria-hidden="true"
-        />
-        <Input
-          :model-value="inputText"
-          class="location-picker-input"
-          type="text"
-          name="location-search"
-          data-testid="location-search-input"
-          :placeholder="computedPlaceholder"
-          aria-label="Ort suchen oder Maps-Link einfügen"
-          autocomplete="off"
-          @update:model-value="handleInput"
-          @keydown="onKeydown"
-          @focus="onFocus"
-          @blur="onBlur"
-        />
-        <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-          <LoadingSpinner size="sm" class="spinner input-spinner" />
-        </div>
-
-        <!-- Autocomplete Dropdown List -->
-        <Transition name="dropdown-unfold">
-          <ul
-            v-if="isOpen && (results.length > 0 || (!isSearching && inputText.trim().length >= 2))"
-            class="location-dropdown options"
-            role="listbox"
-            aria-label="Suchergebnisse"
-          >
-            <li
-              v-if="!isSearching && results.length === 0"
-              role="status"
-              class="location-result-empty"
-            >
-              <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" class="item-icon" />
-              <div class="location-empty-content">
-                <span class="empty-title">Kein passender Ort gefunden</span>
-                <span class="empty-desc">
-                  Du kannst die Details manuell ausfüllen oder direkt auf die Karte tippen.
-                </span>
-              </div>
-            </li>
-            <li
-              v-for="(place, index) in results"
-              :key="place.id || `${place.lat}-${place.lng}-${index}`"
-              role="option"
-              tabindex="-1"
-              class="location-result-item"
-              :class="{ 'is-active': index === activeIndex }"
-              :aria-selected="index === activeIndex"
-              @mousedown.prevent="selectPlace(place)"
-              @click="selectPlace(place)"
-              @keydown.enter.prevent="selectPlace(place)"
-            >
-              <AppIcon
-                :icon="FORM_FIELD_ICONS.location"
-                :size="16"
-                group="formFields"
-                class="item-icon"
-              />
-              <div class="location-item-content">
-                <div class="location-item-title-row">
-                  <span class="location-item-name">{{ place.name }}</span>
-                  <CategoryChip
-                    v-if="place.category"
-                    :category="place.category"
-                    type="spot"
-                    class="location-category-badge"
-                  />
-                </div>
-                <span class="location-item-address">{{
-                  place.formatted_address || place.address
-                }}</span>
-              </div>
-            </li>
-          </ul>
-        </Transition>
-      </div>
-    </div>
-
-    <!-- 2. "Details manuell ausfüllen" Action Bar (wenn Details initial verborgen) -->
-    <div v-if="!isDetailsVisible" class="manual-details-bar">
-      <Button
-        variant="ghost"
-        size="sm"
-        type="button"
-        class="manual-details-btn"
-        :icon="ACTION_ICONS.edit"
-        @click="openManualDetails"
-      >
-        Details manuell ausfüllen
-      </Button>
-    </div>
-
-    <!-- Kurzlink-Hinweis -->
-    <p v-if="shortlinkDetected" class="hint info">
-      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
-      Maps-Kurzlink erkannt. Die genauen Koordinaten werden serverseitig aufgelöst.
-    </p>
-
-    <!-- Standort-Ermittlungsfehler -->
-    <p v-if="locateError" class="hint error">
-      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-      Standort konnte nicht ermittelt werden.
-    </p>
-
-    <!-- 3. Mini-Karte mit Polaroid-Card-Overlay -->
+    <!-- Mini-Karte mit schwebender Suche und Polaroid-Card-Overlay -->
     <div class="map-wrap" :class="{ 'has-polaroid': isDetailsVisible }">
       <div ref="mapEl" class="location-picker-map"></div>
 
-      <!-- Polaroid-Card: schwebt am rechten oberen Rand der Karte und ragt zu ca. 1/3 heraus -->
+      <!-- 1. Schwebende Suchleiste direkt über der Karte -->
+      <div class="location-search-row location-search-floating">
+        <div
+          class="location-search-wrap"
+          :class="{ 'is-loading': isSearching, loading: isSearching }"
+          :aria-busy="isSearching"
+        >
+          <AppIcon
+            :icon="ACTION_ICONS.search"
+            :size="16"
+            group="actions"
+            class="location-search-icon"
+            aria-hidden="true"
+          />
+          <Input
+            :model-value="inputText"
+            class="location-picker-input"
+            type="text"
+            name="location-search"
+            data-testid="location-search-input"
+            :placeholder="computedPlaceholder"
+            aria-label="Ort suchen oder Maps-Link einfügen"
+            autocomplete="off"
+            @update:model-value="handleInput"
+            @keydown="onKeydown"
+            @focus="onFocus"
+            @blur="onBlur"
+          />
+          <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
+            <LoadingSpinner size="sm" class="spinner input-spinner" />
+          </div>
+
+          <!-- Autocomplete Dropdown List -->
+          <Transition name="dropdown-unfold">
+            <ul
+              v-if="
+                isOpen && (results.length > 0 || (!isSearching && inputText.trim().length >= 2))
+              "
+              class="location-dropdown options"
+              role="listbox"
+              aria-label="Suchergebnisse"
+            >
+              <li
+                v-if="!isSearching && results.length === 0"
+                role="status"
+                class="location-result-empty"
+              >
+                <AppIcon
+                  :icon="ACTION_ICONS.warning"
+                  :size="16"
+                  group="actions"
+                  class="item-icon"
+                />
+                <div class="location-empty-content">
+                  <span class="empty-title">Kein passender Ort gefunden</span>
+                  <span class="empty-desc">
+                    Du kannst die Details manuell ausfüllen oder direkt auf die Karte tippen.
+                  </span>
+                </div>
+              </li>
+              <li
+                v-for="(place, index) in results"
+                :key="place.id || `${place.lat}-${place.lng}-${index}`"
+                role="option"
+                tabindex="-1"
+                class="location-result-item"
+                :class="{ 'is-active': index === activeIndex }"
+                :aria-selected="index === activeIndex"
+                @mousedown.prevent="selectPlace(place)"
+                @click="selectPlace(place)"
+                @keydown.enter.prevent="selectPlace(place)"
+              >
+                <AppIcon
+                  :icon="FORM_FIELD_ICONS.location"
+                  :size="16"
+                  group="formFields"
+                  class="item-icon"
+                />
+                <div class="location-item-content">
+                  <div class="location-item-title-row">
+                    <span class="location-item-name">{{ place.name }}</span>
+                    <CategoryChip
+                      v-if="place.category"
+                      :category="place.category"
+                      type="spot"
+                      class="location-category-badge"
+                    />
+                  </div>
+                  <span class="location-item-address">{{
+                    place.formatted_address || place.address
+                  }}</span>
+                </div>
+              </li>
+            </ul>
+          </Transition>
+        </div>
+
+        <!-- "Details manuell ausfüllen" Action Bar (wenn Details initial verborgen) -->
+        <div v-if="!isDetailsVisible" class="manual-details-bar">
+          <Button
+            variant="secondary"
+            size="sm"
+            type="button"
+            class="manual-details-btn"
+            :icon="ACTION_ICONS.edit"
+            @click="openManualDetails"
+          >
+            Details manuell ausfüllen
+          </Button>
+        </div>
+      </div>
+
+      <!-- 2. Polaroid-Card: schwebt links unterhalb des Suchfelds auf der Karte -->
       <div
         v-if="isDetailsVisible"
         class="polaroid-card"
         :class="{ 'is-modified': modified, 'has-location': hasLocation }"
         data-testid="location-status"
       >
+        <!-- Header Actions (oben rechts in der Card): Zurücksetzen & Löschen/Schließen -->
+        <div class="polaroid-header-actions">
+          <IconButton
+            v-if="modified"
+            type="button"
+            size="sm"
+            shape="circle"
+            variant="secondary"
+            class="polaroid-action-btn polaroid-reset-btn"
+            :icon="ACTION_ICONS.restore"
+            title="Standort zurücksetzen"
+            aria-label="Standort zurücksetzen"
+            @click="onResetClick"
+          />
+          <IconButton
+            type="button"
+            size="sm"
+            shape="circle"
+            variant="secondary"
+            class="clear-btn polaroid-action-btn polaroid-clear-btn"
+            :icon="ACTION_ICONS.close"
+            :title="hasLocation ? 'Standort entfernen' : 'Details schließen'"
+            :aria-label="hasLocation ? 'Standort entfernen' : 'Details schließen'"
+            @click="onClearOrCloseClick"
+          />
+        </div>
+
         <!-- Polaroid-Foto / Medien-Slot (z. B. CoverImagePicker) -->
         <div v-if="$slots.media" class="polaroid-media">
           <slot name="media" />
@@ -874,33 +906,6 @@ defineExpose({
 
         <!-- Polaroid-Body / Beschriftung & Detailzeilen -->
         <div class="polaroid-body">
-          <div v-if="!hideStatusHeader && hasLocation" class="status-header">
-            <span
-              class="status-check-circle"
-              :class="{ 'is-modified': modified }"
-              :title="modified ? 'Standort geändert' : 'Standort gesetzt'"
-              :aria-label="modified ? 'Standort geändert' : 'Standort gesetzt'"
-            >
-              <AppIcon
-                :icon="ACTION_ICONS.done"
-                :size="15"
-                group="actions"
-                class="status-check-icon"
-              />
-            </span>
-            <span v-if="modified" class="status-badge-modified">Standort geändert</span>
-            <Button
-              variant="secondary"
-              size="sm"
-              class="clear-btn"
-              type="button"
-              :icon="modified ? ACTION_ICONS.restore : ACTION_ICONS.close"
-              @click="onClearOrResetClick"
-            >
-              {{ modified ? 'Zurücksetzen' : 'Entfernen' }}
-            </Button>
-          </div>
-
           <div class="status-details">
             <!-- 1. Titel-Zeile -->
             <div v-if="props.title !== undefined" class="status-meta-row status-title-row">
@@ -1080,6 +1085,18 @@ defineExpose({
         @click="useOwnLocation"
       />
     </div>
+
+    <!-- Kurzlink-Hinweis -->
+    <p v-if="shortlinkDetected" class="hint info">
+      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
+      Maps-Kurzlink erkannt. Die genauen Koordinaten werden serverseitig aufgelöst.
+    </p>
+
+    <!-- Standort-Ermittlungsfehler -->
+    <p v-if="locateError" class="hint error">
+      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+      Standort konnte nicht ermittelt werden.
+    </p>
   </div>
 </template>
 
@@ -1099,18 +1116,33 @@ defineExpose({
   min-width: 0;
 }
 
+.location-search-floating {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .manual-details-bar {
   display: flex;
-  justify-content: flex-end;
-  margin-top: -2px;
-  margin-bottom: 2px;
+  justify-content: flex-start;
+  margin: 0;
 }
 
 .manual-details-btn {
-  font-size: 0.82rem;
-  color: var(--color-primary);
-  padding: 2px 8px;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm, 0 2px 6px rgba(0, 0, 0, 0.12));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
   height: 28px;
+  padding: 2px 10px;
+  cursor: pointer;
 }
 
 .location-search-wrap {
@@ -1134,6 +1166,8 @@ defineExpose({
   box-sizing: border-box;
   padding-left: 36px;
   padding-right: 36px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .input-spinner-wrap {
@@ -1255,12 +1289,17 @@ defineExpose({
 
 /* Polaroid Card */
 .polaroid-card {
+  position: absolute;
+  top: 58px;
+  left: 12px;
+  width: 260px;
+  max-width: calc(100% - 24px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle, 12px);
   corner-shape: squircle;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.14),
     0 1px 3px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
   display: flex;
@@ -1268,14 +1307,57 @@ defineExpose({
   padding: 8px;
   gap: 8px;
   transition: all 0.2s ease;
-  z-index: 450;
+  z-index: 500;
 }
 
 .polaroid-card.is-modified {
   border-color: var(--color-accent) !important;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.14),
     0 0 0 1px var(--color-accent);
+}
+
+.polaroid-header-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.polaroid-action-btn {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.polaroid-action-btn:hover {
+  background: var(--color-surface-hover, var(--color-hover));
+  color: var(--color-text);
+}
+
+.polaroid-clear-btn:hover {
+  color: var(--color-danger, #ef4444);
+  border-color: var(--color-danger, #ef4444);
+}
+
+.polaroid-reset-btn:hover {
+  color: var(--color-accent, #e08e45);
+  border-color: var(--color-accent, #e08e45);
 }
 
 .polaroid-media {
@@ -1287,6 +1369,10 @@ defineExpose({
   flex-shrink: 0;
 }
 
+.polaroid-card:not(:has(.polaroid-media)) .status-title-row {
+  padding-right: 32px;
+}
+
 .polaroid-body {
   display: flex;
   flex-direction: column;
@@ -1295,39 +1381,8 @@ defineExpose({
   padding: 2px 2px 4px 2px;
 }
 
-.status-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2, 8px);
-  min-width: 0;
-  max-width: 100%;
-}
-
-.status-check-circle {
-  display: inline-flex;
-  align-items: center;
-}
-
-.status-check-icon {
-  color: var(--color-success, #22c55e);
-}
-
-.status-check-circle.is-modified .status-check-icon {
-  color: var(--color-accent, #e08e45);
-}
-
-.status-badge-modified {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-accent-dark, var(--color-accent));
-}
-
 .clear-btn {
-  padding: 2px 8px;
-  font-size: 0.78rem;
-  line-height: 1.2;
-  gap: var(--space-1, 4px);
+  line-height: 1;
 }
 
 .status-details {
@@ -1500,13 +1555,9 @@ defineExpose({
 }
 
 @media (min-width: 581px) {
-  .map-wrap.has-polaroid {
-    margin-top: 0;
-  }
-
   .polaroid-card {
     position: absolute;
-    top: 12px;
+    top: 58px;
     left: 12px;
     right: auto;
     width: 260px;
@@ -1516,29 +1567,33 @@ defineExpose({
 
 @media (max-width: 580px) {
   .polaroid-card {
-    position: static;
-    width: 100%;
-    margin-bottom: 8px;
+    position: absolute;
+    top: 58px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100% - 70px);
+    overflow-y: auto;
   }
 
-  .map-wrap.has-polaroid {
-    display: flex;
-    flex-direction: column-reverse;
-    margin-top: 0;
+  .has-polaroid .location-picker-map {
+    height: 460px;
+    min-height: 460px;
   }
 }
 
 .location-picker-map {
-  height: 300px;
-  border-radius: var(--radius-sm-squircle, 8px);
+  height: 380px;
+  border-radius: var(--radius-md-squircle, 12px);
   corner-shape: squircle;
   overflow: hidden;
   border: 1px solid var(--color-border);
 }
 
 .has-polaroid .location-picker-map {
-  height: 380px;
-  min-height: 380px;
+  height: 440px;
+  min-height: 440px;
 }
 
 .map-tap-hint {

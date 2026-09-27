@@ -571,7 +571,7 @@ describe('LocationPicker', () => {
   });
 
   describe('Status Card & Clear Action', () => {
-    it('renders status card with check icon and details when modelValue is present', async () => {
+    it('renders polaroid card with coordinates, address, and clear button when modelValue is present', async () => {
       const { container, cleanUp } = mountPicker({
         modelValue: { lat: 48.2082, lng: 16.3738 },
         address: 'Stephansplatz 3, Wien',
@@ -580,28 +580,15 @@ describe('LocationPicker', () => {
 
       const statusCard = container.querySelector('[data-testid="location-status"]');
       expect(statusCard).toBeTruthy();
-      expect(statusCard?.querySelector('.status-check-icon')).toBeTruthy();
       expect(statusCard?.textContent).toContain('48.2082');
       expect(statusCard?.textContent).toContain('16.3738');
       expect(statusCard?.textContent).toContain('Stephansplatz 3, Wien');
 
-      const clearBtn = container.querySelector('button.clear-btn');
+      const clearBtn = container.querySelector('button.polaroid-clear-btn');
       expect(clearBtn).toBeTruthy();
-      expect(clearBtn?.textContent).toContain('Entfernen');
+      expect(clearBtn?.getAttribute('title')).toBe('Standort entfernen');
       expect(clearBtn?.querySelector('.app-icon')).toBeTruthy();
 
-      cleanUp();
-    });
-
-    it('hides status header when hideStatusHeader is true', async () => {
-      const { container, cleanUp } = mountPicker({
-        modelValue: { lat: 48.2082, lng: 16.3738 },
-        hideStatusHeader: true,
-      });
-      await nextTick();
-
-      const header = container.querySelector('.status-header');
-      expect(header).toBeNull();
       cleanUp();
     });
 
@@ -629,7 +616,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('clicking "Entfernen" button emits null to modelValue, empties address & link, and emits clear', async () => {
+    it('clicking clear button closes polaroid card, emits null to modelValue, empties address & link, and emits clear', async () => {
       const onUpdateModelValue = vi.fn();
       const onUpdateAddress = vi.fn();
       const onUpdateMapsLink = vi.fn();
@@ -650,7 +637,7 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const clearBtn = container.querySelector('button.clear-btn') as HTMLButtonElement;
+      const clearBtn = container.querySelector('button.polaroid-clear-btn') as HTMLButtonElement;
       expect(clearBtn).toBeTruthy();
 
       clearBtn.click();
@@ -663,11 +650,31 @@ describe('LocationPicker', () => {
 
       const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
       expect(input.value).toBe('');
+      expect(container.querySelector('.polaroid-card')).toBeNull();
 
       cleanUp();
     });
 
-    it('renders orange modified styling and "Standort geändert" badge when modified is true', async () => {
+    it('clicking close button closes card when opened manually without location', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+      });
+      await nextTick();
+
+      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
+      manualBtn.click();
+      await nextTick();
+      expect(container.querySelector('.polaroid-card')).toBeTruthy();
+
+      const closeBtn = container.querySelector('.polaroid-clear-btn') as HTMLButtonElement;
+      closeBtn.click();
+      await nextTick();
+
+      expect(container.querySelector('.polaroid-card')).toBeNull();
+      cleanUp();
+    });
+
+    it('renders orange modified styling on polaroid card and reset button when modified is true', async () => {
       const { container, cleanUp } = mountPicker({
         modelValue: { lat: 48.2082, lng: 16.3738 },
         modified: true,
@@ -676,22 +683,15 @@ describe('LocationPicker', () => {
       const polaroidCard = container.querySelector('.polaroid-card');
       expect(polaroidCard?.classList.contains('is-modified')).toBe(true);
 
-      const checkCircle = container.querySelector('.status-check-circle');
-      expect(checkCircle?.classList.contains('is-modified')).toBe(true);
-      expect(checkCircle?.getAttribute('title')).toBe('Standort geändert');
-
-      const badge = container.querySelector('.status-badge-modified');
-      expect(badge).toBeTruthy();
-      expect(badge?.textContent).toBe('Standort geändert');
-
-      const btn = container.querySelector('button.clear-btn') as HTMLButtonElement;
-      expect(btn?.textContent).toContain('Zurücksetzen');
-      expect(btn?.querySelector('.app-icon')).toBeTruthy();
+      const resetBtn = container.querySelector('.polaroid-reset-btn') as HTMLButtonElement;
+      expect(resetBtn).toBeTruthy();
+      expect(resetBtn.getAttribute('title')).toBe('Standort zurücksetzen');
+      expect(resetBtn.querySelector('.app-icon')).toBeTruthy();
 
       cleanUp();
     });
 
-    it('clicking "Zurücksetzen" button when modified emits reset event without emitting clear or update:modelValue', async () => {
+    it('clicking reset button when modified emits reset event without emitting clear or update:modelValue', async () => {
       const onReset = vi.fn();
       const onClear = vi.fn();
       const onUpdateModelValue = vi.fn();
@@ -710,8 +710,8 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const btn = container.querySelector('button.clear-btn') as HTMLButtonElement;
-      expect(btn?.textContent).toContain('Zurücksetzen');
+      const btn = container.querySelector('.polaroid-reset-btn') as HTMLButtonElement;
+      expect(btn).toBeTruthy();
 
       btn.click();
       await nextTick();
@@ -1000,8 +1000,7 @@ describe('LocationPicker', () => {
       expect(updateTitle).not.toHaveBeenCalled();
       expect(onClear).toHaveBeenCalled();
 
-      const titleEl = container.querySelector('.status-title') as HTMLElement;
-      expect(titleEl?.textContent?.trim()).toBe('Mein Spot');
+      expect(container.querySelector('.polaroid-card')).toBeNull();
       cleanUp();
     });
 
