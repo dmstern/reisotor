@@ -177,11 +177,31 @@ const showDetailsBox = computed(() => hasLocation.value || props.title !== undef
 watch(
   () => props.title,
   (newTitle) => {
-    if (!isEditingTitle.value) {
+    if (!isEditingTitle.value || !editTitleInput.value) {
       editTitleInput.value = newTitle || '';
-      if (!newTitle) {
-        isEditingTitle.value = true;
-      }
+      isEditingTitle.value = !newTitle;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.address,
+  (newAddress) => {
+    if (!isEditingAddress.value || !editAddressInput.value) {
+      editAddressInput.value = newAddress || '';
+      isEditingAddress.value = !newAddress;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.category,
+  (newCategory) => {
+    if (!isEditingCategory.value || !editCategoryInput.value) {
+      editCategoryInput.value = newCategory || '';
+      isEditingCategory.value = !newCategory;
     }
   },
   { immediate: true }
@@ -230,15 +250,23 @@ function startEditAddress() {
   });
 }
 
+function onAddressInput() {
+  emit('update:address', editAddressInput.value);
+}
+
 function saveAddress() {
-  if (!isEditingAddress.value) return;
-  isEditingAddress.value = false;
   const trimmed = editAddressInput.value.trim();
   emit('update:address', trimmed);
+  if (trimmed) {
+    isEditingAddress.value = false;
+  }
 }
 
 function cancelAddress() {
-  isEditingAddress.value = false;
+  if (props.address) {
+    editAddressInput.value = props.address;
+    isEditingAddress.value = false;
+  }
 }
 
 function startEditCategory() {
@@ -254,19 +282,23 @@ function startEditCategory() {
 }
 
 function saveCategory(val?: string) {
-  if (!isEditingCategory.value) return;
   const newCat = (typeof val === 'string' ? val : editCategoryInput.value).trim();
-  isEditingCategory.value = false;
   emit('update:category', newCat);
+  if (newCat) {
+    isEditingCategory.value = false;
+  }
 }
 
 function cancelCategory() {
-  isEditingCategory.value = false;
+  if (props.category) {
+    editCategoryInput.value = props.category;
+    isEditingCategory.value = false;
+  }
 }
 
 function handleCategoryBlur() {
   window.setTimeout(() => {
-    if (isEditingCategory.value) {
+    if (isEditingCategory.value && props.category) {
       saveCategory();
     }
   }, 200);
@@ -769,7 +801,7 @@ defineExpose({
             </div>
           </div>
 
-          <!-- 2. Adress-Zeile mit dezentem Bleistift-Icon -->
+          <!-- 2. Adress-Zeile -->
           <div class="status-meta-row status-address-row">
             <span class="status-row-icon" title="Adresse" aria-hidden="true">
               <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
@@ -789,22 +821,21 @@ defineExpose({
                 @click="startEditAddress"
               />
             </div>
-            <div v-else-if="!isEditingAddress && !props.address" class="status-meta-display">
-              <button type="button" class="add-address-btn" @click="startEditAddress">
-                <span>+ Adresse hinzufügen</span>
-              </button>
-            </div>
-            <div v-else class="status-meta-edit">
+            <div v-else class="status-meta-edit status-address-edit">
               <Input
                 v-model="editAddressInput"
                 size="sm"
                 class="inline-edit-input"
+                name="address"
+                data-testid="spot-address-input"
                 placeholder="Adresse eingeben..."
+                @input="onAddressInput"
                 @keydown.enter.prevent="saveAddress"
                 @keydown.esc.prevent="cancelAddress"
                 @blur="saveAddress"
               />
               <IconButton
+                v-if="props.address"
                 type="button"
                 size="sm"
                 variant="ghost"
@@ -817,7 +848,7 @@ defineExpose({
             </div>
           </div>
 
-          <!-- 3. Kategorie-Zeile mit dezentem Bleistift-Icon -->
+          <!-- 3. Kategorie-Zeile -->
           <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
             <span class="status-row-icon" title="Kategorie" aria-hidden="true">
               <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
@@ -835,15 +866,6 @@ defineExpose({
                 @click="startEditCategory"
               />
             </div>
-            <div v-else-if="!isEditingCategory && !props.category" class="status-meta-display">
-              <button
-                type="button"
-                class="add-address-btn add-category-btn"
-                @click="startEditCategory"
-              >
-                <span>+ Kategorie wählen</span>
-              </button>
-            </div>
             <div v-else class="status-meta-edit status-category-edit">
               <div class="inline-category-combobox">
                 <CategoryCombobox
@@ -859,6 +881,7 @@ defineExpose({
                 />
               </div>
               <IconButton
+                v-if="props.category"
                 type="button"
                 size="sm"
                 variant="ghost"
@@ -1413,26 +1436,14 @@ defineExpose({
   flex: 1;
 }
 
-.add-address-btn,
-.add-category-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
-  color: var(--color-primary);
-  background: none;
-  border: none;
-  padding: 2px 0;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  transition: color 0.15s ease;
-}
-
-.add-address-btn:hover,
-.add-category-btn:hover {
-  color: var(--color-primary-dark);
-  text-decoration-style: solid;
+.inline-category-combobox :deep(input) {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 0.8rem;
+  height: 26px;
+  min-height: 26px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
 }
 
 /* Map wrap & Mini map */

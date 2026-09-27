@@ -1159,7 +1159,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('allows entering manual address when no location is set via "+ Adresse hinzufügen"', async () => {
+    it('renders address input field directly when address is empty, and allows entering address inline', async () => {
       const updateAddress = vi.fn();
       const { container, cleanUp } = mountPicker(
         {
@@ -1173,27 +1173,17 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const manualBtn = container.querySelector('.add-address-btn') as HTMLButtonElement;
-      expect(manualBtn).toBeTruthy();
-      expect(manualBtn.textContent).toContain('Adresse hinzufügen');
-
-      manualBtn.click();
-      await nextTick();
-
       const editInput = container.querySelector(
-        '.status-address-row .inline-edit-input'
+        '.status-address-row .inline-edit-input input, .status-address-row input'
       ) as HTMLInputElement;
       expect(editInput).toBeTruthy();
+      expect(editInput.placeholder).toContain('Adresse');
 
       editInput.value = 'Musterstraße 1, 1010 Wien';
       editInput.dispatchEvent(new Event('input'));
       await nextTick();
 
-      const saveBtn = container.querySelector(
-        '.status-address-row .inline-save-btn'
-      ) as HTMLButtonElement;
-      expect(saveBtn).toBeTruthy();
-      saveBtn.click();
+      editInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       await nextTick();
 
       expect(updateAddress).toHaveBeenCalledWith('Musterstraße 1, 1010 Wien');
@@ -1246,7 +1236,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('renders "+ Kategorie wählen" when category is empty and allows selecting category', async () => {
+    it('renders category combobox input directly when category is empty and allows selecting category', async () => {
       const updateCategory = vi.fn();
       const { container, cleanUp } = mountPicker(
         {
@@ -1260,27 +1250,17 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const addCategoryBtn = container.querySelector('.add-category-btn') as HTMLButtonElement;
-      expect(addCategoryBtn).toBeTruthy();
-      expect(addCategoryBtn.textContent).toContain('Kategorie wählen');
-
-      addCategoryBtn.click();
-      await nextTick();
-
       const comboboxInput = container.querySelector(
         '.status-category-row .inline-category-combobox input'
       ) as HTMLInputElement;
       expect(comboboxInput).toBeTruthy();
+      expect(comboboxInput.placeholder).toContain('Kategorie');
 
       comboboxInput.value = 'Café';
       comboboxInput.dispatchEvent(new Event('input'));
       await nextTick();
 
-      const saveBtn = container.querySelector(
-        '.status-category-row .inline-save-btn'
-      ) as HTMLButtonElement;
-      expect(saveBtn).toBeTruthy();
-      saveBtn.click();
+      comboboxInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       await nextTick();
 
       expect(updateCategory).toHaveBeenCalledWith('Café');
