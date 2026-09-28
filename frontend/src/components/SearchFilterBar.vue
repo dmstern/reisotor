@@ -363,13 +363,23 @@ function clearFilters() {
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   color: var(--color-text);
   font-size: 0.9rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   box-sizing: border-box;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.search-input:focus {
+.search-input:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus,
+.search-input:active {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-tint);
+  box-shadow:
+    0 0 0 2px var(--color-primary-tint),
+    var(--shadow-sm);
   outline: none;
 }
 

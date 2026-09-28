@@ -125,7 +125,7 @@ function onInput(event: Event) {
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   min-width: 0;
   max-width: 100%;
   min-height: 44px;
@@ -136,15 +136,22 @@ function onInput(event: Event) {
     box-shadow 0.15s ease;
 }
 
-.input:focus {
+.input:hover:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
+
+.input:focus,
+.input:active:not(:disabled) {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
+  box-shadow: var(--shadow-sm);
 }
 
 .input:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background: var(--color-hover);
+  box-shadow: none;
 }
 
 .input--invalid {
@@ -160,8 +167,13 @@ function onInput(event: Event) {
   box-shadow: 0 0 0 1px var(--color-accent);
 }
 
-.input--modified:focus {
+.input--modified:hover:not(:disabled),
+.input--modified:focus,
+.input--modified:active:not(:disabled) {
   outline-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-sm);
 }
 
 .input--sm {

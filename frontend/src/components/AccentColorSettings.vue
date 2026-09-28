@@ -238,6 +238,13 @@ function resetColor() {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  box-shadow: none;
+  transition: box-shadow 0.15s ease;
+}
+
+.color-input:hover::-webkit-color-swatch,
+.color-input:active::-webkit-color-swatch,
+.color-input:focus::-webkit-color-swatch {
   box-shadow: var(--shadow-sm);
 }
 
@@ -245,6 +252,13 @@ function resetColor() {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  box-shadow: none;
+  transition: box-shadow 0.15s ease;
+}
+
+.color-input:hover::-moz-color-swatch,
+.color-input:active::-moz-color-swatch,
+.color-input:focus::-moz-color-swatch {
   box-shadow: var(--shadow-sm);
 }
 

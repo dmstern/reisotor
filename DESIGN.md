@@ -293,6 +293,8 @@ Desktop-Panel hatte `box-shadow: none` (Rest eines älteren Layouts) und wirkte 
 sichtbarem Öffnen/Schließen wie eine flache Nachbarspalte statt einer darüberliegenden Schublade.
 Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
 
+**Formularfelder & Dropdowns (Input, Select, Dropdown, Combobox, Textarea)**: Eingabefelder, Selects, Dropdowns und Comboboxen besitzen im Initialzustand **keinen** Schlagschatten (`box-shadow: none`). Erst bei Hover (`:hover`) und im Active-/Fokus-Zustand (`:focus`, `:active`, geöffnetes Dropdown-Menü) erhalten sie einen sanften Schlagschatten (`box-shadow: var(--shadow-sm)`). Der Schatten wird per Transition (`box-shadow 0.15s ease`) sowohl beim Hovern als auch beim Verlassen/Blur weich animiert.
+
 ## Animationen
 
 Kein zentrales `--transition-*`-Token bisher, aber ein klarer de-facto Standard über drei
@@ -660,14 +662,17 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
   `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges
-  Squircle-Styling, `min-height: 44px`, Focus-Ringe, Disabled-State, `size` (`sm`, `md`, `lg`),
-  `invalid`-Zustand (`aria-invalid`, rote Umrandung) und den Chromium-Höhenausgleich für
-  Datums-/Zeitauswahlen.
+  Squircle-Styling, initial schattenlos (`box-shadow: none`), `min-height: 44px`, Focus-Ringe,
+  Disabled-State, `size` (`sm`, `md`, `lg`), `invalid`-Zustand (`aria-invalid`, rote Umrandung),
+  Schlagschatten (`var(--shadow-sm)`) nur bei Hover/Active per sanfter Transition (auch bei Blur)
+  sowie den Chromium-Höhenausgleich für Datums-/Zeitauswahlen.
 - **`Select.vue`**: Dropdown-Auswahlfeld-Primitive. Kapselt Squircle-Styling, Höhenkonsistenz mit `Input.vue`
-  (`min-height: 44px`), benutzerdefiniertes Pfeil-Icon (automatisch hell/dunkel je nach Theme), Fokus-Ringe,
+  (`min-height: 44px`), initial schattenlos (`box-shadow: none`) mit sanft animiertem Schlagschatten
+  bei Hover/Active/Fokus, benutzerdefiniertes Pfeil-Icon (automatisch hell/dunkel je nach Theme), Fokus-Ringe,
   `size` (`sm`, `md`, `lg`) sowie `invalid`-Zustand.
 - **`Textarea.vue`**: Mehrzeiliges Texteingabefeld-Primitive für längere Texte (z. B. Feedback). Kapselt Squircle-Styling,
-  Fokus-Ringe, Resize-Verhalten (`vertical`) und Fehlerzustände.
+  initial schattenlos mit animiertem Schlagschatten bei Hover/Active/Fokus, Fokus-Ringe, Resize-Verhalten (`vertical`)
+  und Fehlerzustände.
 - **`Checkbox.vue`**: Checkbox-Primitive für alle Abhake- und Auswahl-Interaktionen der App (ToDo, Packliste,
   Einkauf, Einstellungen etc.). Kapselt die Reisotor-Custom-Häkchen-Optik (`appearance: none`, SVG-Häkchen,
   Squircle-Eckenrundung) und unterstützt sowohl Booleans als auch Array-Bindungen (`v-model`) sowie `checked`-Props.

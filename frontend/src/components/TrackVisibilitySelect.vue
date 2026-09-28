@@ -242,7 +242,7 @@ defineOptions({
   corner-shape: squircle;
   background-color: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 500;
@@ -267,19 +267,22 @@ defineOptions({
 .track-visibility-trigger:hover:not(:disabled) {
   background-color: var(--color-hover);
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
+.track-visibility-trigger:active:not(:disabled),
 .track-visibility-trigger:focus-visible,
 .track-visibility-trigger.is-open {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .track-visibility-trigger.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .track-visibility-content {

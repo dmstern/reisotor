@@ -240,6 +240,12 @@ defineOptions({
   z-index: var(--z-popover, 1100);
 }
 
+.combobox:hover :deep(.combobox-input:not(:disabled)),
+.combobox.open :deep(.combobox-input),
+.combobox:focus-within :deep(.combobox-input) {
+  box-shadow: var(--shadow-sm);
+}
+
 .combobox :deep(.combobox-input),
 .combobox :deep(input) {
   width: 100%;
