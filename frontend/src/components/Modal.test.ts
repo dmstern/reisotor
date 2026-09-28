@@ -86,18 +86,20 @@ describe('Modal', () => {
     await nextTick();
 
     const modalEl = document.querySelector('.modal') as HTMLElement;
+    const bodyEl = document.querySelector('.modal-body') as HTMLElement;
     const formEl = document.querySelector('form') as HTMLElement;
     expect(modalEl).toBeTruthy();
+    expect(bodyEl).toBeTruthy();
     expect(formEl).toBeTruthy();
     expect(modalEl.classList.contains('has-actions-row')).toBe(true);
 
-    // Mock scroll dimensions on formEl
-    Object.defineProperty(formEl, 'clientHeight', { value: 300, configurable: true });
-    Object.defineProperty(formEl, 'scrollHeight', { value: 1000, configurable: true });
-    Object.defineProperty(formEl, 'scrollTop', { value: 0, writable: true, configurable: true });
+    // Mock scroll dimensions on bodyEl (the scroll container with overflow-y: auto)
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 300, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollTop', { value: 0, writable: true, configurable: true });
 
     // Trigger scroll event at top (scrollTop: 0)
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
@@ -107,8 +109,8 @@ describe('Modal', () => {
     expect(topFade.classList.contains('is-visible')).toBe(false);
 
     // Scroll down to middle (scrollTop: 200)
-    formEl.scrollTop = 200;
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.scrollTop = 200;
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
@@ -116,12 +118,21 @@ describe('Modal', () => {
     expect(topFade.classList.contains('is-visible')).toBe(true);
 
     // Scroll all the way to bottom (scrollTop: 700 -> 700 + 300 = 1000)
-    formEl.scrollTop = 700;
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.scrollTop = 700;
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(false);
+
+    // Scroll back to top (scrollTop: 0)
+    bodyEl.scrollTop = 0;
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
+    expect(topFade.classList.contains('is-visible')).toBe(false);
 
     cleanUp();
   });
@@ -137,14 +148,14 @@ describe('Modal', () => {
     await nextTick();
 
     const modalEl = document.querySelector('.modal') as HTMLElement;
-    const formEl = document.querySelector('form') as HTMLElement;
+    const bodyEl = document.querySelector('.modal-body') as HTMLElement;
 
     // Dimensions fit completely
-    Object.defineProperty(formEl, 'clientHeight', { value: 400, configurable: true });
-    Object.defineProperty(formEl, 'scrollHeight', { value: 200, configurable: true });
-    Object.defineProperty(formEl, 'scrollTop', { value: 0, writable: true, configurable: true });
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollHeight', { value: 200, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollTop', { value: 0, writable: true, configurable: true });
 
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(false);

@@ -92,21 +92,7 @@ let mutationObserver: MutationObserver | null = null;
 
 function getScrollElement(): HTMLElement | null {
   if (!modalRef.value) return null;
-  const form = modalRef.value.querySelector<HTMLElement>('.modal-body > form');
-  if (form && form.scrollHeight > form.clientHeight) {
-    return form;
-  }
-  const slottedChild = modalRef.value.querySelector<HTMLElement>(
-    '.modal-body > *:not(.modal-scroll-fade)'
-  );
-  if (slottedChild && slottedChild.scrollHeight > slottedChild.clientHeight) {
-    return slottedChild;
-  }
-  const body = modalBodyRef.value || modalRef.value.querySelector<HTMLElement>('.modal-body');
-  if (body) {
-    return body;
-  }
-  return modalRef.value;
+  return modalBodyRef.value || modalRef.value.querySelector<HTMLElement>('.modal-body');
 }
 
 function updateScrollState() {
@@ -281,14 +267,14 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
             />
           </div>
           <div class="modal-body-wrap">
+            <div class="modal-body" ref="modalBodyRef">
+              <slot :close="close" />
+            </div>
             <div
               ref="topFadeRef"
               class="modal-scroll-fade modal-scroll-fade--top modal-scroll-shadow--top"
               aria-hidden="true"
             />
-            <div class="modal-body" ref="modalBodyRef">
-              <slot :close="close" />
-            </div>
             <div
               ref="bottomFadeRef"
               class="modal-scroll-fade modal-scroll-fade--bottom modal-scroll-shadow--bottom"
@@ -423,7 +409,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease;
-  z-index: 15;
+  z-index: 25;
 }
 
 .modal-scroll-fade--top,
