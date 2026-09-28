@@ -11,7 +11,8 @@ import AppIcon from './AppIcon.vue';
 import FileAttachments from './FileAttachments.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import LegMiniMap from './LegMiniMap.vue';
-import { IconRoute2, IconLineDashed } from '@tabler/icons-vue';
+import Alert, { type AlertVariant } from './primitives/Alert.vue';
+import { IconRoute2, IconLineDashed, IconLink, IconLinkOff } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import type { FormFieldIconKey } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -802,6 +803,49 @@ const timeDurationStatus = computed<TimeDurationStatus | null>(() => {
   return null;
 });
 
+const timeLinkedIconDef: IconDef = {
+  id: 'link',
+  emoji: '🔗',
+  outline: IconLink,
+};
+
+const timeUnlinkedIconDef: IconDef = {
+  id: 'link-off',
+  emoji: '🔓',
+  outline: IconLinkOff,
+};
+
+const alertVariantForStatus = computed<AlertVariant>(() => {
+  if (!timeDurationStatus.value) return 'neutral';
+  switch (timeDurationStatus.value.type) {
+    case 'mismatch':
+      return 'warning';
+    case 'suggest':
+      return 'info';
+    case 'matched':
+      return 'success';
+    case 'info':
+    default:
+      return 'neutral';
+  }
+});
+
+const alertIconForStatus = computed<IconDef | undefined>(() => {
+  if (!timeDurationStatus.value) return undefined;
+  switch (timeDurationStatus.value.type) {
+    case 'mismatch':
+      return ACTION_ICONS.warning;
+    case 'suggest':
+      return ACTION_ICONS.sparkles;
+    case 'matched':
+      return ACTION_ICONS.done;
+    case 'info':
+      return ACTION_ICONS.duration;
+    default:
+      return undefined;
+  }
+});
+
 function selectRoute(idx: number) {
   if (!calculatedRoutes.value[idx]) return;
   selectedRouteIndex.value = idx;
@@ -1494,52 +1538,46 @@ function onDelete() {
       </div>
 
       <!-- Zeiteffizienz- / Synchronisations-Leiste -->
-      <div
+      <Alert
         v-if="timeDurationStatus"
         class="time-sync-bar"
         :class="`time-sync-bar--${timeDurationStatus.type}`"
+        :variant="alertVariantForStatus"
+        :icon="alertIconForStatus"
+        size="sm"
         data-testid="time-sync-bar"
       >
-        <div class="time-sync-content">
-          <span class="time-sync-message">
-            <template v-if="timeDurationStatus.type === 'matched'">
-              <span class="time-sync-check">✓</span>
-              <span>
-                Dauer & Zeitspanne:
-                <strong>{{ formatDuration(activeDurationSeconds) }}</strong>
-              </span>
-            </template>
-            <template v-else-if="timeDurationStatus.type === 'mismatch'">
-              <span class="time-sync-warn">⚠️</span>
-              <span>
-                Zeitfenster:
-                <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
-                (Reisedauer: {{ formatDuration(activeDurationSeconds) }},
-                {{
-                  (timeDurationStatus.diffMinutes ?? 0) > 0
-                    ? `+${formatDuration((timeDurationStatus.diffMinutes ?? 0) * 60)}`
-                    : `-${formatDuration(Math.abs(timeDurationStatus.diffMinutes ?? 0) * 60)}`
-                }})
-              </span>
-            </template>
-            <template v-else-if="timeDurationStatus.type === 'suggest'">
-              <span class="time-sync-sparkle">✨</span>
-              <span>{{ timeDurationStatus.text }}</span>
-            </template>
-            <template v-else-if="timeDurationStatus.type === 'info'">
-              <span>⏱️</span>
-              <span>
-                Reisedauer:
-                <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
-              </span>
-            </template>
-          </span>
-        </div>
+        <span class="time-sync-message">
+          <template v-if="timeDurationStatus.type === 'matched'">
+            Dauer & Zeitspanne:
+            <strong>{{ formatDuration(activeDurationSeconds) }}</strong>
+          </template>
+          <template v-else-if="timeDurationStatus.type === 'mismatch'">
+            Zeitfenster:
+            <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
+            (Reisedauer: {{ formatDuration(activeDurationSeconds) }},
+            {{
+              (timeDurationStatus.diffMinutes ?? 0) > 0
+                ? `+${formatDuration((timeDurationStatus.diffMinutes ?? 0) * 60)}`
+                : `-${formatDuration(Math.abs(timeDurationStatus.diffMinutes ?? 0) * 60)}`
+            }})
+          </template>
+          <template v-else-if="timeDurationStatus.type === 'suggest'">
+            {{ timeDurationStatus.text }}
+          </template>
+          <template v-else-if="timeDurationStatus.type === 'info'">
+            Reisedauer:
+            <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
+          </template>
+        </span>
 
-        <div v-if="timeDurationStatus.canToggleLink" class="time-sync-actions">
-          <button
+        <template #actions>
+          <Button
+            v-if="timeDurationStatus.canToggleLink"
             type="button"
-            class="btn-time-link"
+            size="sm"
+            :variant="isTimeLinked ? 'card-action' : 'secondary'"
+            :icon="isTimeLinked ? timeLinkedIconDef : timeUnlinkedIconDef"
             :class="{ 'is-linked': isTimeLinked }"
             :title="
               isTimeLinked
@@ -1549,20 +1587,21 @@ function onDelete() {
             data-testid="time-link-toggle"
             @click="toggleTimeLink"
           >
-            {{ isTimeLinked ? '🔗 Gekoppelt' : '🔓 Entkoppelt' }}
-          </button>
-        </div>
-        <div v-else-if="timeDurationStatus.type === 'suggest'" class="time-sync-actions">
-          <button
+            {{ isTimeLinked ? 'Gekoppelt' : 'Entkoppelt' }}
+          </Button>
+          <Button
+            v-else-if="timeDurationStatus.type === 'suggest'"
             type="button"
-            class="btn-time-apply"
+            size="sm"
+            variant="primary"
+            :icon="ACTION_ICONS.sparkles"
             data-testid="time-apply-btn"
             @click="applySuggestedTime(timeDurationStatus.field!, timeDurationStatus.target)"
           >
-            ✨ Übernehmen
-          </button>
-        </div>
-      </div>
+            Übernehmen
+          </Button>
+        </template>
+      </Alert>
 
       <CollapsibleFieldset label="Erweiterte Angaben" :open-initial="hasExtendedData">
         <FormField :icon="extendedConfig.icons.checkin" :label="extendedConfig.labels.checkin">
@@ -2290,130 +2329,13 @@ function onDelete() {
 }
 
 .time-sync-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 6px 10px;
   margin-top: calc(-1 * var(--space-1));
-  font-size: 0.75rem;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  background: var(--color-surface-subtle, var(--color-hover));
-  border: 1px solid var(--color-border);
-  transition: all 0.2s ease;
-}
-
-.time-sync-bar--matched {
-  color: var(--color-text-muted);
-  border-color: var(--color-border);
-}
-
-.time-sync-bar--mismatch {
-  background: var(--color-warning-subtle, #fefce8);
-  border-color: var(--color-warning, #eab308);
-  color: var(--color-warning-dark, #854d0e);
-}
-
-:root[data-theme='dark'] .time-sync-bar--mismatch {
-  background: rgba(234, 179, 8, 0.12);
-  border-color: rgba(234, 179, 8, 0.35);
-  color: #fef08a;
-}
-
-.time-sync-bar--suggest {
-  background: var(--color-primary-tint, #eff6ff);
-  border-color: var(--color-primary-light, #93c5fd);
-  color: var(--color-primary, #2563eb);
-}
-
-:root[data-theme='dark'] .time-sync-bar--suggest {
-  background: rgba(37, 99, 235, 0.12);
-  border-color: rgba(37, 99, 235, 0.3);
-  color: #93c5fd;
-}
-
-.time-sync-bar--info {
-  color: var(--color-text-muted);
-}
-
-.time-sync-content {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
 }
 
 .time-sync-message {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.time-sync-check {
-  color: var(--color-success, #22c55e);
-  font-weight: 700;
-}
-
-.time-sync-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.btn-time-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-family: inherit;
-}
-
-.btn-time-link:hover {
-  background: var(--color-hover);
-  color: var(--color-text);
-  border-color: var(--color-border-strong);
-}
-
-.btn-time-link.is-linked {
-  background: var(--color-primary-tint, #eff6ff);
-  color: var(--color-primary);
-  border-color: var(--color-primary-light, #93c5fd);
-}
-
-:root[data-theme='dark'] .btn-time-link.is-linked {
-  background: rgba(37, 99, 235, 0.18);
-  border-color: rgba(37, 99, 235, 0.4);
-  color: #93c5fd;
-}
-
-.btn-time-apply {
-  padding: 2px 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  border: 1px solid var(--color-primary);
-  background: var(--color-primary);
-  color: #ffffff;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-  font-family: inherit;
-}
-
-.btn-time-apply:hover {
-  background: var(--color-primary-dark);
 }
 
 @media (prefers-reduced-motion: reduce) {
