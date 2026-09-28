@@ -119,5 +119,126 @@ describe('routingService unit tests', () => {
       expect(cachedRes.supported).toBe(true);
       expect(cachedRes.routes[0].distance_meters).toBe(1541);
     });
+
+    it('liefert bis zu 3 alternative Routen und unterstützt preference (shortest/fastest)', async () => {
+      const mockThreeRoutes = {
+        features: [
+          {
+            geometry: {
+              coordinates: [
+                [13.4, 52.52],
+                [13.41, 52.53],
+              ],
+            },
+            properties: { summary: { distance: 1500, duration: 180 } },
+          },
+          {
+            geometry: {
+              coordinates: [
+                [13.4, 52.52],
+                [13.408, 52.528],
+                [13.41, 52.53],
+              ],
+            },
+            properties: { summary: { distance: 1620, duration: 170 } },
+          },
+          {
+            geometry: {
+              coordinates: [
+                [13.4, 52.52],
+                [13.395, 52.525],
+                [13.41, 52.53],
+              ],
+            },
+            properties: { summary: { distance: 1750, duration: 195 } },
+          },
+          {
+            // 4. Route soll auf maximal 3 begrenzt werden
+            geometry: {
+              coordinates: [
+                [13.4, 52.52],
+                [13.41, 52.53],
+              ],
+            },
+            properties: { summary: { distance: 2000, duration: 300 } },
+          },
+        ],
+      };
+
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockThreeRoutes,
+      } as unknown as Response);
+
+      const res = await getDirections({
+        from: { lat: 52.52, lng: 13.4 },
+        to: { lat: 52.53, lng: 13.41 },
+        transportType: 'Auto',
+        preference: 'shortest',
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const requestCall = fetchSpy.mock.calls[0];
+      const sentBody = JSON.parse(requestCall[1]?.body as string);
+      expect(sentBody.preference).toBe('shortest');
+      expect(sentBody.alternative_routes).toEqual({
+        target_count: 3,
+        weight_factor: 1.6,
+        share_factor: 0.8,
+      });
+
+      expect(res.supported).toBe(true);
+      expect(res.routes).toHaveLength(3); // Auf 3 begrenzt!
+      expect(res.routes[0].distance_meters).toBe(1500);
+      expect(res.routes[1].distance_meters).toBe(1620);
+      expect(res.routes[2].distance_meters).toBe(1750);
+    });
+
+    it('führt Fallback-Retry ohne alternative_routes durch falls ORS Fehler meldet', async () => {
+      const mockSingleRoute = {
+        features: [
+          {
+            geometry: {
+              coordinates: [
+                [13.4, 52.52],
+                [13.41, 52.53],
+              ],
+            },
+            properties: { summary: { distance: 1500, duration: 180 } },
+          },
+        ],
+      };
+
+      // Erster Aufruf mit alternative_routes schlägt fehl (z.B. HTTP 400 Parameter-Limit)
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          text: async () => 'Parameter alternative_routes exceeds server limits',
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockSingleRoute,
+        } as unknown as Response);
+
+      const res = await getDirections({
+        from: { lat: 52.52, lng: 13.4 },
+        to: { lat: 52.53, lng: 13.41 },
+        transportType: 'Fahrrad',
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      // Erster Aufruf hatte alternative_routes
+      const firstBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+      expect(firstBody.alternative_routes).toBeDefined();
+
+      // Zweiter Aufruf hatte keine alternative_routes
+      const secondBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body as string);
+      expect(secondBody.alternative_routes).toBeUndefined();
+
+      expect(res.supported).toBe(true);
+      expect(res.routes).toHaveLength(1);
+    });
   });
 });

@@ -10,6 +10,7 @@ export interface DirectionsParams {
   to: RouteCoordinates;
   transportType?: string;
   profile?: string;
+  preference?: 'fastest' | 'shortest';
 }
 
 export interface RouteResult {
@@ -86,6 +87,24 @@ export function roundCoord(val: number): number {
 }
 
 /**
+ * Berechnet die ungefähre Luftlinien-Distanz zweier Punkte in Kilometern (Haversine-Formel).
+ * Wird verwendet, um ORS-Limits für alternative Routen (max. ca. 100 km) einzuhalten.
+ */
+export function haversineDistanceKm(from: RouteCoordinates, to: RouteCoordinates): number {
+  const R = 6371; // Erdradius in km
+  const dLat = ((to.lat - from.lat) * Math.PI) / 180;
+  const dLng = ((to.lng - from.lng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((from.lat * Math.PI) / 180) *
+      Math.cos((to.lat * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
  * Holt eine Route von OpenRouteService oder aus dem lokalen SQLite-Cache.
  */
 export async function getDirections(params: DirectionsParams): Promise<DirectionsResponse> {
@@ -103,9 +122,19 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
   const toLat = roundCoord(params.to.lat);
   const toLng = roundCoord(params.to.lng);
 
+  const normalizedPref = params.preference === 'shortest' ? 'shortest' : 'fastest';
+  const cacheProfile = `${profile}:${normalizedPref}`;
+
   // 1. Im SQLite-Cache prüfen
-  const cached = selectCacheStmt.get(profile, fromLat, fromLng, toLat, toLng) as
+  let cached = selectCacheStmt.get(cacheProfile, fromLat, fromLng, toLat, toLng) as
     { response_json: string } | undefined;
+
+  // Abwärtskompatibilität: Falls keine Präferenz oder standardmäßig 'fastest', frühere Cache-Einträge ohne Suffix prüfen
+  if (!cached && normalizedPref === 'fastest') {
+    cached = selectCacheStmt.get(profile, fromLat, fromLng, toLat, toLng) as
+      { response_json: string } | undefined;
+  }
+
   if (cached) {
     try {
       const parsed = JSON.parse(cached.response_json) as DirectionsResponse;
@@ -127,15 +156,27 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
 
   // 3. OpenRouteService anfragen
   const url = `https://api.openrouteservice.org/v2/directions/${profile}/geojson`;
-  const body = {
+  const distKm = haversineDistanceKm(params.from, params.to);
+  const canHaveAlternatives = distKm <= 95;
+
+  const body: Record<string, unknown> = {
     coordinates: [
       [fromLng, fromLat],
       [toLng, toLat],
     ],
+    preference: normalizedPref,
   };
 
+  if (canHaveAlternatives) {
+    body.alternative_routes = {
+      target_count: 3,
+      weight_factor: 1.6,
+      share_factor: 0.8,
+    };
+  }
+
   try {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: apiKey,
@@ -144,6 +185,21 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(10000),
     });
+
+    // Fallback: Falls alternative_routes vom ORS-Server abgelehnt wurden (z. B. Server-Limits oder unerwartete Restriktionen),
+    // versuchen wir es ohne Alternativen nochmals direkt.
+    if (!res.ok && body.alternative_routes) {
+      delete body.alternative_routes;
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(10000),
+      });
+    }
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
@@ -176,7 +232,8 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
       };
     }
 
-    const routes: RouteResult[] = data.features.map((f) => {
+    // Maximal 3 Routen übernehmen
+    const routes: RouteResult[] = data.features.slice(0, 3).map((f) => {
       const geoCoords = f.geometry?.coordinates ?? [];
       // Konvertiere GeoJSON [lng, lat] in Leaflet-kompatibles [lat, lng]
       const leafletCoords: [number, number][] = geoCoords.map(([lng, lat]) => [lat, lng]);
@@ -195,7 +252,7 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
 
     // Im Cache persistieren
     insertCacheStmt.run(
-      profile,
+      cacheProfile,
       fromLat,
       fromLng,
       toLat,

@@ -9,6 +9,7 @@ interface DirectionsBody {
   to_lng: number;
   transport_type?: string;
   profile?: string;
+  preference?: 'fastest' | 'shortest';
 }
 
 export const routingRoutes: FastifyPluginAsync = async (app) => {
@@ -22,7 +23,8 @@ export const routingRoutes: FastifyPluginAsync = async (app) => {
 
       if (!requireTripMember(reply, tripId, req.session.userId)) return;
 
-      const { from_lat, from_lng, to_lat, to_lng, transport_type, profile } = req.body ?? {};
+      const { from_lat, from_lng, to_lat, to_lng, transport_type, profile, preference } =
+        req.body ?? {};
 
       if (
         typeof from_lat !== 'number' ||
@@ -44,6 +46,7 @@ export const routingRoutes: FastifyPluginAsync = async (app) => {
         to: { lat: to_lat, lng: to_lng },
         transportType: transport_type,
         profile,
+        preference,
       });
 
       return reply.send(result);

@@ -122,4 +122,44 @@ describe('routing routes (POST /api/trips/:tripId/routes/directions)', () => {
       [38.8, -9.38],
     ]);
   });
+
+  it('übergibt preference korrekt an routingService', async () => {
+    const mockOrs = {
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [-9.14, 38.71],
+              [-9.38, 38.8],
+            ],
+          },
+          properties: { summary: { distance: 29000, duration: 2100 } },
+        },
+      ],
+    };
+
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockOrs,
+    } as unknown as Response);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/routes/directions`,
+      headers: { cookie },
+      payload: {
+        from_lat: 38.71,
+        from_lng: -9.14,
+        to_lat: 38.8,
+        to_lng: -9.38,
+        transport_type: 'Auto',
+        preference: 'shortest',
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(fetchSpy).toHaveBeenCalled();
+    const sentBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+    expect(sentBody.preference).toBe('shortest');
+  });
 });
