@@ -4055,7 +4055,7 @@ async function deleteEditingSpot() {
                 v-slot="{ modified }"
               >
                 <Select v-model="activeExcursionForm.role" :modified="modified">
-                  <option value="">🎒 – Normaler Ausflug –</option>
+                  <option value="">🎒 Ausflug</option>
                   <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
                     {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
                       TRAVEL_ROLE_META[r].hint

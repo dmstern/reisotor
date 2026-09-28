@@ -408,14 +408,14 @@ function onSpotDrop(event: DragEvent) {
               v-else
               variant="custom"
               class="tour-type-badge"
-              title="Tour / Ausflug"
+              title="Ausflug"
               style="
                 --badge-bg: var(--excursion-theme-tint);
                 --badge-color: var(--excursion-theme-color);
                 --badge-border: var(--excursion-theme-border);
               "
             >
-              <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Tour
+              <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Ausflug
             </Badge>
             <PendingSyncBadge v-if="excursion._pending" />
             <Transition name="fade">
