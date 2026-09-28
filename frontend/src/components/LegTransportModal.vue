@@ -9,22 +9,62 @@ import Input from './primitives/Input.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import AppIcon from './AppIcon.vue';
 import FileAttachments from './FileAttachments.vue';
+import SegmentedToggle from './SegmentedToggle.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { travelTypeIcon } from '../utils/travelTypeIcon';
+import { travelTypeIcon, travelTypeIconDef } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { api } from '../api/client';
 import type { DirectionsResponse } from '../api/types';
 
-const TRANSPORT_TYPE_OPTIONS = [
+const TRANSPORT_MODE_OPTIONS = [
+  {
+    value: 'zu Fuß',
+    label: 'Zu Fuß',
+    icon: travelTypeIconDef('zu Fuß'),
+  },
+  {
+    value: 'Auto',
+    label: 'Auto',
+    icon: travelTypeIconDef('Auto'),
+  },
+  {
+    value: 'Fahrrad',
+    label: 'Fahrrad',
+    icon: travelTypeIconDef('Fahrrad'),
+  },
+  {
+    value: 'ÖPNV',
+    label: 'ÖPNV',
+    icon: travelTypeIconDef('ÖPNV'),
+  },
+];
+
+const DEFAULT_TRANSIT_OPTIONS = [
   'Zug',
-  'Flug',
   'Bus',
-  'Auto',
+  'Straßenbahn',
+  'U-Bahn',
   'Fähre',
-  'Fahrrad',
-  'zu Fuß',
+  'Flug',
   'Sonstiges',
 ];
+
+type TransportCategory = 'zu Fuß' | 'Auto' | 'Fahrrad' | 'ÖPNV';
+
+function getCategoryFromType(type?: string | null): TransportCategory {
+  if (!type) return 'zu Fuß';
+  const lower = type.trim().toLowerCase();
+  if (lower === 'zu fuß' || lower === 'zu fuss' || lower === 'fuss' || lower === 'fuß') {
+    return 'zu Fuß';
+  }
+  if (lower === 'auto' || lower === 'car') {
+    return 'Auto';
+  }
+  if (lower === 'fahrrad' || lower === 'rad' || lower === 'bike') {
+    return 'Fahrrad';
+  }
+  return 'ÖPNV';
+}
 
 const props = defineProps<{
   modelValue: boolean;
@@ -67,8 +107,40 @@ function formatDuration(seconds?: number | null): string {
   return mins > 0 ? `${hours} Std. ${mins} Min.` : `${hours} Std.`;
 }
 
+const transportCategory = ref<TransportCategory>('zu Fuß');
+const selectedTransitType = ref('Zug');
+
+const transitOptions = computed(() => {
+  const current = form.value.transport_type;
+  if (
+    current &&
+    !['zu Fuß', 'Zu Fuß', 'Auto', 'Fahrrad'].includes(current) &&
+    !DEFAULT_TRANSIT_OPTIONS.includes(current)
+  ) {
+    return [...DEFAULT_TRANSIT_OPTIONS, current];
+  }
+  return DEFAULT_TRANSIT_OPTIONS;
+});
+
+function onCategorySelect(cat: string) {
+  transportCategory.value = cat as TransportCategory;
+  if (cat === 'ÖPNV') {
+    form.value.transport_type = selectedTransitType.value || 'Zug';
+  } else {
+    form.value.transport_type = cat;
+  }
+  routeCalculationError.value = null;
+}
+
+function onTransitSelect(val: string) {
+  selectedTransitType.value = val;
+  if (transportCategory.value === 'ÖPNV') {
+    form.value.transport_type = val;
+  }
+}
+
 const form = ref({
-  transport_type: 'Zug',
+  transport_type: 'zu Fuß',
   departure_time: '',
   arrival_time: '',
   checkin_info: '',
@@ -86,25 +158,35 @@ watch(
     if (!open) return;
     routeCalculationError.value = null;
     if (props.leg) {
-      form.value = {
-        transport_type: props.leg.transport_type || 'Zug',
-        departure_time: props.leg.departure_time || '',
-        arrival_time: props.leg.arrival_time || '',
-        checkin_info: props.leg.checkin_info || '',
-        seat: props.leg.seat || '',
-        luggage: props.leg.luggage || '',
-        ticket_link: props.leg.ticket_link || '',
-        note: props.leg.note || '',
-        amount: props.leg.amount != null ? String(props.leg.amount) : '',
-        paid_by_user_id: props.leg.paid_by_user_id != null ? String(props.leg.paid_by_user_id) : '',
-      };
+      const initialType = props.leg.transport_type || 'zu Fuß';
+      const cat = getCategoryFromType(initialType);
+      transportCategory.value = cat;
+      if (cat === 'ÖPNV') {
+        selectedTransitType.value = initialType === 'ÖPNV' ? 'Zug' : initialType;
+        form.value.transport_type = selectedTransitType.value;
+      } else {
+        selectedTransitType.value = 'Zug';
+        form.value.transport_type = cat;
+      }
+      form.value.departure_time = props.leg.departure_time || '';
+      form.value.arrival_time = props.leg.arrival_time || '';
+      form.value.checkin_info = props.leg.checkin_info || '';
+      form.value.seat = props.leg.seat || '';
+      form.value.luggage = props.leg.luggage || '';
+      form.value.ticket_link = props.leg.ticket_link || '';
+      form.value.note = props.leg.note || '';
+      form.value.amount = props.leg.amount != null ? String(props.leg.amount) : '';
+      form.value.paid_by_user_id =
+        props.leg.paid_by_user_id != null ? String(props.leg.paid_by_user_id) : '';
       calculatedDistanceMeters.value = props.leg.distance_meters ?? null;
       calculatedDurationSeconds.value = props.leg.duration_seconds ?? null;
       routeGeometry.value = props.leg.route_geometry ?? null;
       routingProfile.value = props.leg.routing_profile ?? null;
     } else {
+      transportCategory.value = 'zu Fuß';
+      selectedTransitType.value = 'Zug';
       form.value = {
-        transport_type: 'Zug',
+        transport_type: 'zu Fuß',
         departure_time: '',
         arrival_time: '',
         checkin_info: '',
@@ -140,7 +222,9 @@ const hasCoordinates = computed(() => {
 });
 
 const isRoutable = computed(() => {
-  return hasCoordinates.value && ['Auto', 'Fahrrad', 'zu Fuß'].includes(form.value.transport_type);
+  if (!hasCoordinates.value) return false;
+  const t = (form.value.transport_type || '').toLowerCase();
+  return t === 'auto' || t === 'fahrrad' || t === 'zu fuß' || t === 'zu fuss';
 });
 
 function updateArrivalTimeFromDuration() {
@@ -280,12 +364,34 @@ function onDelete() {
       </div>
 
       <FormField icon="category" label="Verkehrsmittel">
-        <Select v-model="form.transport_type">
-          <option v-for="t in TRANSPORT_TYPE_OPTIONS" :key="t" :value="t">
-            {{ travelTypeIcon(t) }} {{ t }}
-          </option>
-        </Select>
+        <SegmentedToggle
+          class="transport-toggle"
+          :model-value="transportCategory"
+          :options="TRANSPORT_MODE_OPTIONS"
+          @update:model-value="onCategorySelect"
+        />
       </FormField>
+
+      <!-- Öffi-Detail-Dropdown (nur wenn ÖPNV ausgewählt ist) -->
+      <div
+        class="transit-dropdown-wrapper"
+        :class="{ 'is-expanded': transportCategory === 'ÖPNV' }"
+        :inert="transportCategory !== 'ÖPNV' ? true : undefined"
+      >
+        <div class="transit-dropdown-inner">
+          <FormField icon="category" label="Öffi-Verkehrsmittel">
+            <Select
+              :model-value="selectedTransitType"
+              class="transit-select"
+              @update:model-value="onTransitSelect"
+            >
+              <option v-for="t in transitOptions" :key="t" :value="t">
+                {{ travelTypeIcon(t) }} {{ t }}
+              </option>
+            </Select>
+          </FormField>
+        </div>
+      </div>
 
       <!-- Exakte Routen-Berechnung (OpenRouteService) -->
       <div
@@ -510,6 +616,60 @@ function onDelete() {
   flex: 1;
 }
 
+.transport-toggle {
+  width: 100%;
+}
+
+.transport-toggle :deep(.segmented-option) {
+  padding: 6px 8px;
+}
+
+.transit-dropdown-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: calc(-1 * var(--space-3));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    margin-top 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.25s ease,
+    visibility 0s linear 0.35s;
+}
+
+.transit-dropdown-wrapper.is-expanded {
+  grid-template-rows: 1fr;
+  margin-top: 0;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    margin-top 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.28s ease,
+    visibility 0s linear 0s;
+}
+
+.transit-dropdown-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 4px;
+  margin: -4px;
+}
+
+.transit-dropdown-wrapper:not(.is-expanded) .transit-dropdown-inner {
+  transform: translateY(-6px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.transit-dropdown-wrapper.is-expanded .transit-dropdown-inner {
+  transform: translateY(0);
+  opacity: 1;
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .route-calc-wrapper {
   display: grid;
   grid-template-rows: 0fr;
@@ -659,6 +819,8 @@ function onDelete() {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .transit-dropdown-wrapper,
+  .transit-dropdown-inner,
   .route-calc-wrapper,
   .route-calc-section,
   .route-calc-stats,
@@ -679,6 +841,14 @@ function onDelete() {
   .route-calc-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .transport-toggle :deep(.segmented-option) {
+    padding: 6px 4px;
+    font-size: 0.8rem;
+    gap: 4px;
   }
 }
 </style>

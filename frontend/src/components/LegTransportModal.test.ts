@@ -267,4 +267,119 @@ describe('LegTransportModal', () => {
 
     cleanUp();
   });
+
+  it('rendert 4 Toggle-Buttons für Zu Fuß, Auto, Fahrrad und ÖPNV', async () => {
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: null,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const toggle = document.querySelector('.transport-toggle');
+    expect(toggle).not.toBeNull();
+
+    const options = Array.from(toggle?.querySelectorAll('.segmented-option') ?? []);
+    expect(options.length).toBe(4);
+    const labels = options.map((o) => o.textContent?.trim());
+    expect(labels).toEqual(['Zu Fuß', 'Auto', 'Fahrrad', 'ÖPNV']);
+
+    // Standardmäßig ist Zu Fuß aktiv
+    expect(options[0].classList.contains('active')).toBe(true);
+    expect(options[0].getAttribute('aria-pressed')).toBe('true');
+
+    cleanUp();
+  });
+
+  it('steuert Öffi-Dropdown über ÖPNV-Toggle und unterstützt Verkehrsmittel-Auswahl', async () => {
+    let savedLeg: ExcursionLeg | undefined;
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: { ...mockFromSpot, lat: 38.71, lng: -9.14 },
+      toSpot: { ...mockToSpot, lat: 38.8, lng: -9.38 },
+      leg: mockLeg, // Zug (ÖPNV)
+      users: mockUsers,
+      onSave: (leg: ExcursionLeg) => {
+        savedLeg = leg;
+      },
+    });
+    await nextTick();
+
+    const transitWrapper = document.querySelector('.transit-dropdown-wrapper');
+    expect(transitWrapper).not.toBeNull();
+    // Da mockLeg 'Zug' ist, soll ÖPNV aktiv sein und das Dropdown ausgeklappt
+    expect(transitWrapper?.classList.contains('is-expanded')).toBe(true);
+    expect(transitWrapper?.hasAttribute('inert')).toBe(false);
+
+    const toggleOptions = Array.from(
+      document.querySelectorAll('.transport-toggle .segmented-option')
+    );
+    const opnvBtn = toggleOptions.find((o) => o.textContent?.includes('ÖPNV')) as HTMLButtonElement;
+    const autoBtn = toggleOptions.find((o) => o.textContent?.includes('Auto')) as HTMLButtonElement;
+    const bikeBtn = toggleOptions.find((o) =>
+      o.textContent?.includes('Fahrrad')
+    ) as HTMLButtonElement;
+    const walkBtn = toggleOptions.find((o) =>
+      o.textContent?.includes('Zu Fuß')
+    ) as HTMLButtonElement;
+
+    expect(opnvBtn.classList.contains('active')).toBe(true);
+
+    // Klick auf Auto: Dropdown klappt ein, Route-Berechnung klappt aus
+    autoBtn.click();
+    await nextTick();
+
+    expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
+    expect(transitWrapper?.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
+      true
+    );
+
+    // Klick auf Fahrrad: Dropdown bleibt eingeklappt, Route-Berechnung bleibt aktiv
+    bikeBtn.click();
+    await nextTick();
+    expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
+    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
+      true
+    );
+
+    // Klick auf Zu Fuß: Dropdown bleibt eingeklappt, Route-Berechnung bleibt aktiv
+    walkBtn.click();
+    await nextTick();
+    expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
+    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
+      true
+    );
+
+    // Zurück zu ÖPNV: Dropdown klappt wieder aus, Route-Berechnung klappt ein
+    opnvBtn.click();
+    await nextTick();
+
+    expect(transitWrapper?.classList.contains('is-expanded')).toBe(true);
+    expect(transitWrapper?.hasAttribute('inert')).toBe(false);
+    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
+      false
+    );
+
+    // Öffi-Verkehrsmittel im Dropdown auf "Bus" umstellen
+    const select = document.querySelector('.transit-select') as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    select.value = 'Bus';
+    select.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    // Speichern und prüfen
+    const submitBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Übernehmen')
+    );
+    submitBtn?.click();
+    await nextTick();
+
+    expect(savedLeg).toBeDefined();
+    expect((savedLeg as ExcursionLeg).transport_type).toBe('Bus');
+
+    cleanUp();
+  });
 });
