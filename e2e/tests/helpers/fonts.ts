@@ -46,14 +46,12 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
     page.url().includes('/excursions') ||
     (await page
       .locator(
-        '.trip-map-container, .trip-map, .leaflet-container, .map-col, .location-picker-map, .mini-map, .excursion-mini-map, .map-wrap'
+        '.trip-map-container:visible, .trip-map:visible, .leaflet-container:visible, .map-col:visible, .location-picker-map:visible, .mini-map:visible, .excursion-mini-map:visible, .map-wrap:visible'
       )
       .count()) > 0;
 
   if (!isMapExpected) {
-    // Kurzer Check, ob sich im DOM bereits ein Leaflet-Container befindet (z. B. in einem dynamisch geöffneten Dialog)
-    const hasLeaflet = (await page.locator('.leaflet-container').count()) > 0;
-    if (!hasLeaflet) return;
+    return;
   }
 
   // 1. Warten, bis ein sichtbarer Leaflet-Kartencontainer mit Abmessungen > 0 im DOM gerendert ist
@@ -72,6 +70,7 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
           );
         });
       },
+      undefined,
       { timeout: 10_000 }
     )
     .catch(() => {});
@@ -111,6 +110,7 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
           img.complete && img.naturalWidth > 0 && img.classList.contains('leaflet-tile-loaded')
       );
     },
+    undefined,
     { timeout: timeoutMs }
   );
 
