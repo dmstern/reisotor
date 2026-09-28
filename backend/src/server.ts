@@ -1,3 +1,4 @@
+import './loadEnv.js';
 import { buildApp } from './app.js';
 import { startDepartureReminderScheduler } from './departureReminders.js';
 import { startWeatherSnapshotScheduler } from './weatherSnapshots.js';

@@ -1,3 +1,4 @@
+import '../loadEnv.js';
 import bcrypt from 'bcrypt';
 import { db, ensureDefaultSharedBudget } from './index.js';
 
