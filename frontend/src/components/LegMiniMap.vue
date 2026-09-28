@@ -75,7 +75,7 @@ function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
 
   // Fallback für Tests (jsdom liefert 0 für getBoundingClientRect) und initiales Rendern:
   if (isMobile) {
-    return { coveredTopPx: 160, coveredLeftPx: 0 };
+    return { coveredTopPx: 170, coveredLeftPx: 0 };
   }
   return { coveredTopPx: 0, coveredLeftPx: 272 };
 }

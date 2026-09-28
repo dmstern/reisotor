@@ -915,19 +915,26 @@ function onDelete() {
 }
 
 .route-calc-fieldset--has-route {
+  position: relative;
   padding: 0;
+  border-color: transparent;
+  background: transparent;
+  margin: 14px 0 var(--space-2) 0;
 }
 
-.route-calc-fieldset--has-route :deep(legend) {
-  margin-left: var(--space-2, 8px);
-  padding: 0 var(--space-1, 4px);
+.route-calc-fieldset--has-route:not(.is-closed) :deep(legend) {
+  position: absolute;
+  top: -14px;
+  left: 12px;
+  z-index: var(--z-dropdown, 500);
+  padding: 0;
+  margin: 0;
 }
 
 .route-calc-fieldset--has-route :deep(.collapsible-anim-inner) {
   padding: 0;
   margin: 0;
-  border-radius: 0 0 calc(var(--radius-md-squircle) - 1px) calc(var(--radius-md-squircle) - 1px);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .route-calc-fieldset--has-route :deep(.collapsible-content) {
@@ -939,9 +946,10 @@ function onDelete() {
 .route-calc-active.route-calc-map-wrap {
   position: relative;
   width: 100%;
-  border-radius: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle, 12px);
+  corner-shape: squircle;
   overflow: hidden;
-  border: none;
   isolation: isolate;
   display: block;
 }
@@ -980,7 +988,7 @@ function onDelete() {
 
 .route-floating-card {
   position: absolute;
-  top: 12px;
+  top: 22px;
   left: 12px;
   width: 260px;
   max-width: calc(100% - 24px);
@@ -1003,7 +1011,7 @@ function onDelete() {
 @media (min-width: 581px) {
   .route-floating-card {
     position: absolute;
-    top: 12px;
+    top: 22px;
     left: 12px;
     right: auto;
     width: 260px;
@@ -1014,7 +1022,7 @@ function onDelete() {
 @media (max-width: 580px) {
   .route-floating-card {
     position: absolute;
-    top: 12px;
+    top: 22px;
     left: 12px;
     right: 12px;
     width: auto;
