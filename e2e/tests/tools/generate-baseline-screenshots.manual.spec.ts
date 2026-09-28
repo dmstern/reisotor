@@ -521,16 +521,19 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-leg',
     path: '/excursions?group=tours#excursion-3',
     open: async (page) => {
-      const card = page.locator('.tour-group-card').first();
+      const card = page
+        .locator('.tour-group-card')
+        .filter({ hasText: 'Panoramatour Alfama & Belém' })
+        .first();
       await card.waitFor({ state: 'visible', timeout: 15000 });
-      await card.scrollIntoViewIfNeeded();
-      const legPill = page.locator('.tour-leg-pill').first();
+      const legPill = page.locator('.tour-leg-pill[aria-label*="Hotel Alfama"]').first();
       if (!(await legPill.isVisible().catch(() => false))) {
         await card.click();
       }
       await legPill.waitFor({ state: 'visible', timeout: 10000 });
-      await legPill.scrollIntoViewIfNeeded();
-      await legPill.click();
+      await legPill.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
+      await page.waitForTimeout(200);
+      await legPill.click({ force: true });
     },
     waitSelector: '.modal:has-text("Teilstrecke:"), .leg-form',
   },
