@@ -779,11 +779,11 @@ describe('LegTransportModal', () => {
     cleanUp();
   });
 
-  it('berechnet Abfahrtszeit rückwärts aus Wunschankunftszeit per Glitzer-Button', async () => {
+  it('berechnet Abfahrtszeit rückwärts aus Wunschankunftszeit bei Eingabe wenn gekoppelt', async () => {
     const legWithDuration: ExcursionLeg = {
       ...mockLeg,
       departure_time: null,
-      arrival_time: '15:30',
+      arrival_time: null,
       duration_seconds: 3600, // 60 Minuten
     };
 
@@ -796,24 +796,23 @@ describe('LegTransportModal', () => {
     });
     await nextTick();
 
-    const depSparkle = document.querySelector(
-      '[data-testid="departure-sparkle-btn"]'
-    ) as HTMLButtonElement;
-    expect(depSparkle).not.toBeNull();
+    const arrInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    const depInput = document.querySelector('.departure-time-wrapper input') as HTMLInputElement;
 
-    depSparkle.click();
+    // Wunschankunftszeit eintragen -> Abfahrt berechnet sich automatisch (15:30 - 60 Min = 14:30)
+    arrInput.value = '15:30';
+    arrInput.dispatchEvent(new Event('input'));
     await nextTick();
 
-    const depInput = document.querySelector('.departure-time-wrapper input') as HTMLInputElement;
     expect(depInput.value).toBe('14:30');
 
     cleanUp();
   });
 
-  it('berechnet Ankunftszeit vorwärts aus Abfahrtszeit per Glitzer-Button', async () => {
+  it('berechnet Ankunftszeit vorwärts aus Abfahrtszeit bei Eingabe wenn gekoppelt', async () => {
     const legWithDuration: ExcursionLeg = {
       ...mockLeg,
-      departure_time: '10:15',
+      departure_time: null,
       arrival_time: null,
       duration_seconds: 1800, // 30 Minuten
     };
@@ -827,15 +826,14 @@ describe('LegTransportModal', () => {
     });
     await nextTick();
 
-    const arrSparkle = document.querySelector(
-      '[data-testid="arrival-sparkle-btn"]'
-    ) as HTMLButtonElement;
-    expect(arrSparkle).not.toBeNull();
+    const depInput = document.querySelector('.departure-time-wrapper input') as HTMLInputElement;
+    const arrInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
 
-    arrSparkle.click();
+    // Abfahrtszeit eintragen -> Ankunft berechnet sich automatisch (10:15 + 30 Min = 10:45)
+    depInput.value = '10:15';
+    depInput.dispatchEvent(new Event('input'));
     await nextTick();
 
-    const arrInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
     expect(arrInput.value).toBe('10:45');
 
     cleanUp();
@@ -926,11 +924,10 @@ describe('LegTransportModal', () => {
     expect(syncBar?.classList.contains('time-sync-bar--mismatch')).toBe(true);
     expect(syncBar?.textContent).toContain('Zeitfenster');
 
-    // Glitzer-Button bei Abfahrt berechnet Abfahrt passend zur neuen Ankunft 10:00 (10:00 - 30 Min. = 09:30)
-    const depSparkle = document.querySelector(
-      '[data-testid="departure-sparkle-btn"]'
-    ) as HTMLButtonElement;
-    depSparkle.click();
+    // Button "Anpassen" im Statusbalken synchronisiert die Zeiten wieder (10:00 - 30 Min. = 09:30)
+    const adjustBtn = syncBar?.querySelector('button') as HTMLButtonElement;
+    expect(adjustBtn).not.toBeNull();
+    adjustBtn.click();
     await nextTick();
 
     expect(depInput.value).toBe('09:30');

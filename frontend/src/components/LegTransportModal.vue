@@ -155,20 +155,12 @@ const arrivalTimeRef = toRef(form.value, 'arrival_time');
 const {
   lastModifiedTimeField,
   isTimeLinked,
-  isCalculatingDepartureSparkle,
-  isCalculatingArrivalSparkle,
-  canCalcArrival,
-  canCalcDeparture,
-  arrivalSparkleTitle,
-  departureSparkleTitle,
   canToggleLink,
   timeLinkTitle,
   timeDurationStatus,
   syncTimesWithDuration,
   onDepartureInput,
   onArrivalInput,
-  calcArrivalFromDeparture,
-  calcDepartureFromArrival,
   toggleTimeLink,
   applySuggestedTime,
 } = useLegTimeSync({
@@ -610,29 +602,13 @@ function onDelete() {
       <div class="time-section">
         <div class="time-row">
           <FormField icon="time" :label="departureLabel" class="time-field time-field--departure">
-            <div
-              class="time-input-wrap departure-time-wrapper"
-              :class="{ 'has-sparkle': canCalcDeparture }"
-            >
+            <div class="time-input-wrap departure-time-wrapper">
               <Input
                 v-model="form.departure_time"
                 type="time"
                 @input="onDepartureInput"
                 @change="onDepartureInput"
               />
-              <button
-                v-if="canCalcDeparture"
-                type="button"
-                class="time-sparkle-btn departure-sparkle-btn"
-                :class="{ 'sparkle-spin': isCalculatingDepartureSparkle }"
-                :title="departureSparkleTitle"
-                :aria-label="departureSparkleTitle"
-                data-testid="departure-sparkle-btn"
-                @mousedown.prevent
-                @click="calcDepartureFromArrival"
-              >
-                <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
-              </button>
             </div>
           </FormField>
 
@@ -660,29 +636,13 @@ function onDelete() {
           </div>
 
           <FormField icon="time" label="Ankunft" class="time-field time-field--arrival">
-            <div
-              class="time-input-wrap arrival-time-wrapper"
-              :class="{ 'has-sparkle': canCalcArrival }"
-            >
+            <div class="time-input-wrap arrival-time-wrapper">
               <Input
                 v-model="form.arrival_time"
                 type="time"
                 @input="onArrivalInput"
                 @change="onArrivalInput"
               />
-              <button
-                v-if="canCalcArrival"
-                type="button"
-                class="time-sparkle-btn arrival-sparkle-btn"
-                :class="{ 'sparkle-spin': isCalculatingArrivalSparkle }"
-                :title="arrivalSparkleTitle"
-                :aria-label="arrivalSparkleTitle"
-                data-testid="arrival-sparkle-btn"
-                @mousedown.prevent
-                @click="calcArrivalFromDeparture"
-              >
-                <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
-              </button>
             </div>
           </FormField>
         </div>
@@ -1093,63 +1053,10 @@ function onDelete() {
   width: 100%;
 }
 
-.time-input-wrap.has-sparkle :deep(input) {
-  padding-right: 56px;
-}
-
-.time-sparkle-btn {
-  position: absolute;
-  right: 30px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-primary);
-  cursor: pointer;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  transition:
-    transform 0.15s ease,
-    color 0.15s ease,
-    background-color 0.15s ease;
-  z-index: 2;
-}
-
-.time-sparkle-btn:hover {
-  background-color: var(--color-surface-hover, var(--color-hover));
-  color: var(--color-primary-hover, var(--color-primary-dark));
-  transform: translateY(-50%) scale(1.15);
-}
-
-.time-sparkle-btn:active {
-  transform: translateY(-50%) scale(0.92);
-}
-
-.time-sparkle-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-
-@keyframes sparkleRotate {
-  0% {
-    transform: translateY(-50%) rotate(0deg) scale(0.9);
-  }
-  50% {
-    transform: translateY(-50%) rotate(180deg) scale(1.2);
-  }
-  100% {
-    transform: translateY(-50%) rotate(360deg) scale(1);
-  }
-}
-
-.sparkle-spin {
-  animation: sparkleRotate 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+.time-input-wrap :deep(.input) {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  padding: 9px 8px;
 }
 
 .time-section {
@@ -1305,7 +1212,6 @@ function onDelete() {
   .route-mode-pane-inner,
   .route-calc-hint,
   .route-calc-error,
-  .sparkle-spin,
   .time-link-btn,
   .time-link-connector::before,
   .time-link-connector::after,
@@ -1320,6 +1226,11 @@ function onDelete() {
 @media (max-width: 600px) {
   .row {
     grid-template-columns: 1fr;
+  }
+
+  .time-input-wrap :deep(.input) {
+    padding: 9px 6px;
+    font-size: 0.9375rem;
   }
 
   .route-calc-header {

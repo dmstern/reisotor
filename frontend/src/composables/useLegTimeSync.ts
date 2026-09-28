@@ -80,44 +80,6 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
 
   const lastModifiedTimeField = ref<'departure' | 'arrival'>('departure');
   const isTimeLinked = ref(true);
-  const isCalculatingDepartureSparkle = ref(false);
-  const isCalculatingArrivalSparkle = ref(false);
-
-  const canCalcArrival = computed(() => {
-    return (
-      activeDurationSeconds.value != null &&
-      !!departureTime.value &&
-      parseTimeToMinutes(departureTime.value) != null
-    );
-  });
-
-  const canCalcDeparture = computed(() => {
-    return (
-      activeDurationSeconds.value != null &&
-      !!arrivalTime.value &&
-      parseTimeToMinutes(arrivalTime.value) != null
-    );
-  });
-
-  const arrivalSparkleTitle = computed(() => {
-    if (!canCalcArrival.value || !activeDurationSeconds.value) return 'Ankunftszeit berechnen';
-    const durStr = formatDuration(activeDurationSeconds.value);
-    const target = calcArrivalTime(departureTime.value, activeDurationSeconds.value);
-    return target
-      ? `Ankunftszeit aus ${departureLabel.value} berechnen (${departureTime.value} + ${durStr} = ${target})`
-      : 'Ankunftszeit aus Reisedauer berechnen';
-  });
-
-  const departureSparkleTitle = computed(() => {
-    if (!canCalcDeparture.value || !activeDurationSeconds.value) {
-      return `${departureLabel.value} berechnen`;
-    }
-    const durStr = formatDuration(activeDurationSeconds.value);
-    const target = calcDepartureTime(arrivalTime.value, activeDurationSeconds.value);
-    return target
-      ? `${departureLabel.value} aus Wunschankunftszeit berechnen (${arrivalTime.value} − ${durStr} = ${target})`
-      : `${departureLabel.value} aus Reisedauer berechnen`;
-  });
 
   const lockedDurationMinutes = ref<number | null>(null);
 
@@ -203,36 +165,6 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
       if (target) {
         departureTime.value = target;
       }
-    }
-  }
-
-  function calcArrivalFromDeparture() {
-    const durSec = effectiveDurationSeconds.value;
-    if (!departureTime.value || !durSec) return;
-    const target = calcArrivalTime(departureTime.value, durSec);
-    if (target) {
-      arrivalTime.value = target;
-      lastModifiedTimeField.value = 'departure';
-      isTimeLinked.value = true;
-      isCalculatingArrivalSparkle.value = true;
-      setTimeout(() => {
-        isCalculatingArrivalSparkle.value = false;
-      }, 600);
-    }
-  }
-
-  function calcDepartureFromArrival() {
-    const durSec = effectiveDurationSeconds.value;
-    if (!arrivalTime.value || !durSec) return;
-    const target = calcDepartureTime(arrivalTime.value, durSec);
-    if (target) {
-      departureTime.value = target;
-      lastModifiedTimeField.value = 'arrival';
-      isTimeLinked.value = true;
-      isCalculatingDepartureSparkle.value = true;
-      setTimeout(() => {
-        isCalculatingDepartureSparkle.value = false;
-      }, 600);
     }
   }
 
@@ -363,12 +295,6 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   return {
     lastModifiedTimeField,
     isTimeLinked,
-    isCalculatingDepartureSparkle,
-    isCalculatingArrivalSparkle,
-    canCalcArrival,
-    canCalcDeparture,
-    arrivalSparkleTitle,
-    departureSparkleTitle,
     canToggleLink,
     timeLinkTitle,
     timeDurationStatus,
@@ -377,8 +303,6 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
     syncTimesWithDuration,
     onDepartureInput,
     onArrivalInput,
-    calcArrivalFromDeparture,
-    calcDepartureFromArrival,
     toggleTimeLink,
     applySuggestedTime,
   };
