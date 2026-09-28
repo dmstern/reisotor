@@ -882,4 +882,67 @@ describe('LegTransportModal', () => {
 
     cleanUp();
   });
+
+  it('passt das Abfahrts-Label dynamisch an das Verkehrsmittel an', async () => {
+    // 1. Initial mit 'zu Fuß' -> 'Losgehen'
+    const footLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'zu Fuß',
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: footLeg,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const getDepLabelText = () =>
+      document
+        .querySelector('.departure-time-wrapper')
+        ?.closest('.form-field')
+        ?.querySelector('.form-field-label')
+        ?.textContent?.trim();
+
+    expect(getDepLabelText()).toBe('Losgehen');
+
+    // Umschalten auf 'Auto' per Toggle-Button -> 'Abfahrt'
+    const toggleOptions = Array.from(
+      document.querySelectorAll('.transport-toggle .segmented-option')
+    ) as HTMLButtonElement[];
+    const carOption = toggleOptions.find((btn) => btn.textContent?.includes('Auto'));
+    expect(carOption).toBeDefined();
+
+    carOption?.click();
+    await nextTick();
+
+    expect(getDepLabelText()).toBe('Abfahrt');
+
+    // Umschalten auf 'ÖPNV' (Default: 'Zug') -> 'Abfahrt'
+    const transitOption = toggleOptions.find((btn) => btn.textContent?.includes('ÖPNV'));
+    transitOption?.click();
+    await nextTick();
+
+    expect(getDepLabelText()).toBe('Abfahrt');
+
+    // Im Dropdown auf 'Flug' wechseln -> 'Abflug'
+    const select = document.querySelector('.transit-dropdown-inner select') as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    select.value = 'Flug';
+    select.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    expect(getDepLabelText()).toBe('Abflug');
+
+    // Im Dropdown auf 'Fähre' wechseln -> 'Ablegen'
+    select.value = 'Fähre';
+    select.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    expect(getDepLabelText()).toBe('Ablegen');
+
+    cleanUp();
+  });
 });

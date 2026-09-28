@@ -69,6 +69,35 @@ function getCategoryFromType(type?: string | null): TransportCategory {
   return 'ÖPNV';
 }
 
+function getDepartureLabel(type?: string | null): string {
+  if (!type) return 'Abfahrt';
+  const lower = type.trim().toLowerCase();
+  if (
+    lower === 'zu fuß' ||
+    lower === 'zu fuss' ||
+    lower === 'fuss' ||
+    lower === 'fuß' ||
+    lower === 'wandern' ||
+    lower === 'walk'
+  ) {
+    return 'Losgehen';
+  }
+  if (lower === 'flug' || lower === 'flugzeug' || lower === 'flight' || lower === 'plane') {
+    return 'Abflug';
+  }
+  if (
+    lower === 'fähre' ||
+    lower === 'faehre' ||
+    lower === 'schiff' ||
+    lower === 'boot' ||
+    lower === 'ferry' ||
+    lower === 'boat'
+  ) {
+    return 'Ablegen';
+  }
+  return 'Abfahrt';
+}
+
 const props = defineProps<{
   modelValue: boolean;
   fromSpot?: Spot | null;
@@ -260,22 +289,26 @@ const canCalcDeparture = computed(() => {
   );
 });
 
+const departureLabel = computed(() => getDepartureLabel(form.value.transport_type));
+
 const arrivalSparkleTitle = computed(() => {
   if (!canCalcArrival.value || !activeDurationSeconds.value) return 'Ankunftszeit berechnen';
   const durStr = formatDuration(activeDurationSeconds.value);
   const target = calcArrivalTime(form.value.departure_time, activeDurationSeconds.value);
   return target
-    ? `Ankunftszeit aus Abfahrt berechnen (${form.value.departure_time} + ${durStr} = ${target})`
+    ? `Ankunftszeit aus ${departureLabel.value} berechnen (${form.value.departure_time} + ${durStr} = ${target})`
     : 'Ankunftszeit aus Reisedauer berechnen';
 });
 
 const departureSparkleTitle = computed(() => {
-  if (!canCalcDeparture.value || !activeDurationSeconds.value) return 'Abfahrtszeit berechnen';
+  if (!canCalcDeparture.value || !activeDurationSeconds.value) {
+    return `${departureLabel.value} berechnen`;
+  }
   const durStr = formatDuration(activeDurationSeconds.value);
   const target = calcDepartureTime(form.value.arrival_time, activeDurationSeconds.value);
   return target
-    ? `Abfahrtszeit aus Wunschankunftszeit berechnen (${form.value.arrival_time} − ${durStr} = ${target})`
-    : 'Abfahrtszeit aus Reisedauer berechnen';
+    ? `${departureLabel.value} aus Wunschankunftszeit berechnen (${form.value.arrival_time} − ${durStr} = ${target})`
+    : `${departureLabel.value} aus Reisedauer berechnen`;
 });
 
 function syncTimesWithDuration(durationSeconds?: number | null) {
@@ -438,7 +471,7 @@ const timeDurationStatus = computed<TimeDurationStatus | null>(() => {
       return {
         type: 'suggest',
         field: 'departure',
-        text: `Abfahrt für Ankunft um ${arr} (${formatDuration(durSec)}): ${target}`,
+        text: `${departureLabel.value} für Ankunft um ${arr} (${formatDuration(durSec)}): ${target}`,
         target,
         canToggleLink: false,
       };
@@ -1085,7 +1118,7 @@ function onDelete() {
       </div>
 
       <div class="row time-row">
-        <FormField icon="time" label="Abfahrt / Abflug">
+        <FormField icon="time" :label="departureLabel">
           <div
             class="time-input-wrap departure-time-wrapper"
             :class="{ 'has-sparkle': canCalcDeparture }"
