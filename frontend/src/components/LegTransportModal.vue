@@ -13,7 +13,7 @@ import LegMiniMap from './LegMiniMap.vue';
 import LegRouteAlternatives from './LegRouteAlternatives.vue';
 import LegExtendedDetails from './LegExtendedDetails.vue';
 import AppIcon from './AppIcon.vue';
-import { IconLink, IconLinkOff, IconRoute2 } from '@tabler/icons-vue';
+import { IconLink, IconLinkOff, IconMapRoute } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
@@ -170,9 +170,9 @@ const timeUnlinkedIconDef: IconDef = {
 };
 
 const routeHeadingIconDef: IconDef = {
-  id: 'route-2',
+  id: 'map-route',
   emoji: '🗺️',
-  outline: IconRoute2,
+  outline: IconMapRoute,
 };
 
 const transitOptions = computed(() => {
