@@ -1315,6 +1315,7 @@ describe('LocationPicker', () => {
       expect(searchRow).toBeTruthy();
       const searchInput = searchRow?.querySelector('[data-testid="location-search-input"]');
       expect(searchInput).toBeTruthy();
+      expect(searchInput?.classList.contains('location-picker-input')).toBe(true);
       cleanUp();
     });
 

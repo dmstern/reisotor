@@ -1286,7 +1286,7 @@ defineExpose({
 
 .location-search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-muted);
@@ -1298,14 +1298,16 @@ defineExpose({
 .location-search-wrap :deep(.location-picker-input) {
   width: 100%;
   box-sizing: border-box;
-  padding-left: 36px;
-  padding-right: 40px;
+  padding-left: 38px;
+  padding-right: 42px;
   background: var(--color-surface);
   box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+  border-radius: var(--radius-pill);
+  corner-shape: round;
 }
 
 .location-search-wrap.is-loading :deep(.location-picker-input) {
-  padding-right: 68px;
+  padding-right: 70px;
 }
 
 .location-search-wrap :deep(.location-picker-input)::placeholder {
@@ -1316,7 +1318,7 @@ defineExpose({
 
 .search-right-actions {
   position: absolute;
-  right: 8px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
