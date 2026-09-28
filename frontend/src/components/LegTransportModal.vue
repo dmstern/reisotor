@@ -489,6 +489,7 @@ function onDelete() {
         :disabled="isRoutingDisabled"
         :title="routingDisabledTitle"
         class="route-calc-fieldset"
+        :class="{ 'route-calc-fieldset--has-route': hasExactRoute }"
       >
         <template v-if="!isRoutingDisabled && isCalculatingRoute" #badge>
           <span class="route-calc-badge route-calc-badge--loading">
@@ -535,7 +536,7 @@ function onDelete() {
           </p>
         </div>
 
-        <!-- Zustand 2: Route liegt vor -> Vollflächige Mini-Map mit schwebenden Elementen -->
+        <!-- Zustand 2: Route liegt vor -> Vollflächige Mini-Map mit schwebender Mini-Card -->
         <div v-else class="route-calc-active route-calc-map-wrap">
           <!-- Mini-Map der Teilstrecke mit Start-, Ziel-Pins und gerouteten Alternativen -->
           <div class="route-mini-map-container">
@@ -551,8 +552,9 @@ function onDelete() {
             />
           </div>
 
-          <!-- Schwebend oben: Routen-Modus Umschalter (Exakte Route / Luftlinie) -->
-          <div class="route-floating-top">
+          <!-- Schwebende Mini-Card (analog Polaroid-Card in LocationPicker.vue) -->
+          <div class="route-floating-card">
+            <!-- 1. Routen-Modus Umschalter (Exakte Route / Luftlinie) -->
             <SegmentedToggle
               class="route-mode-toggle"
               :model-value="routeDisplayMode"
@@ -560,11 +562,9 @@ function onDelete() {
               aria-label="Routenführung auf der Karte"
               @update:model-value="onRouteModeChange"
             />
-          </div>
 
-          <!-- Schwebend unten: Routen-Alternativen / Luftlinie-Hinweis & Quellenangabe -->
-          <div class="route-floating-bottom">
-            <div class="route-calc-body">
+            <!-- 2. Routen-Suchergebnisse / Luftlinie-Hinweis -->
+            <div class="route-card-body">
               <!-- Exakte Route: Routenberechnung & Alternativen -->
               <div
                 class="route-mode-pane route-mode-pane--exact"
@@ -594,19 +594,32 @@ function onDelete() {
                 :inert="routeDisplayMode !== 'direct' ? true : undefined"
               >
                 <div class="route-mode-pane-inner">
-                  <div class="route-calc-detail">
+                  <div class="route-direct-detail">
                     <span class="route-calc-hint">
                       Gestrichelte Verbindung auf der Karte (ungefähre Luftlinie).
                     </span>
                   </div>
                 </div>
               </div>
+
+              <p v-if="routeCalculationError" class="route-calc-error">
+                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+                <span>{{ routeCalculationError }}</span>
+              </p>
             </div>
 
-            <p v-if="routeCalculationError" class="route-calc-error">
-              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-              <span>{{ routeCalculationError }}</span>
-            </p>
+            <!-- 3. Quellenangabe unten in der Card -->
+            <div class="route-source-footer">
+              <span class="route-source-label">Quelle:</span>
+              <a
+                href="https://openrouteservice.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="route-source-link"
+              >
+                OpenRouteService
+              </a>
+            </div>
           </div>
         </div>
       </CollapsibleFieldset>
@@ -914,13 +927,34 @@ function onDelete() {
   justify-content: center;
 }
 
+.route-calc-fieldset--has-route {
+  padding: 0;
+}
+
+.route-calc-fieldset--has-route :deep(legend) {
+  margin-left: var(--space-2, 8px);
+  padding: 0 var(--space-1, 4px);
+}
+
+.route-calc-fieldset--has-route :deep(.collapsible-anim-inner) {
+  padding: 0;
+  margin: 0;
+  border-radius: 0 0 calc(var(--radius-md-squircle) - 1px) calc(var(--radius-md-squircle) - 1px);
+  overflow: hidden;
+}
+
+.route-calc-fieldset--has-route :deep(.collapsible-content) {
+  margin-top: 0;
+  padding: 0;
+  gap: 0;
+}
+
 .route-calc-active.route-calc-map-wrap {
   position: relative;
   width: 100%;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: none;
   isolation: isolate;
   display: block;
 }
@@ -957,20 +991,54 @@ function onDelete() {
   }
 }
 
-.route-floating-top {
+.route-floating-card {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  z-index: var(--z-dropdown, 500);
+  top: 12px;
+  left: 12px;
+  width: 260px;
+  max-width: calc(100% - 24px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md-squircle, 12px);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 8px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  z-index: var(--z-card-elevated, 5);
+}
+
+@media (min-width: 581px) {
+  .route-floating-card {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: auto;
+    width: 260px;
+    max-width: calc(100% - 24px);
+  }
+}
+
+@media (max-width: 580px) {
+  .route-floating-card {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100% - 160px);
+    overflow-y: auto;
+  }
 }
 
 .route-mode-toggle {
   width: 100%;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .route-calc-init-controls {
@@ -988,42 +1056,46 @@ function onDelete() {
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.route-floating-bottom {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  right: 10px;
-  z-index: var(--z-dropdown, 500);
+.route-card-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: calc(100% - 70px);
-  pointer-events: none;
-}
-
-.route-floating-bottom > * {
-  pointer-events: auto;
-}
-
-.route-calc-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  gap: 4px;
   width: 100%;
 }
 
-.route-calc-detail {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: 8px 12px;
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+.route-direct-detail {
+  padding: 4px 6px;
 }
 
-.route-calc-detail .route-calc-hint {
+.route-direct-detail .route-calc-hint {
   color: var(--color-text);
   font-weight: 500;
+}
+
+.route-source-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1, 4px);
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border-subtle, var(--color-border));
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+.route-source-label {
+  color: var(--color-text-muted);
+}
+
+.route-source-link {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+
+.route-source-link:hover {
+  color: var(--color-primary);
 }
 
 .route-mode-pane {
@@ -1075,13 +1147,10 @@ function onDelete() {
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.route-floating-bottom .route-calc-error {
-  background: var(--color-surface);
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: 6px 10px;
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+.route-floating-card .route-calc-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-danger);
 }
 
 @keyframes route-content-in {

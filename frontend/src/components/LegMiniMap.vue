@@ -15,7 +15,7 @@ const props = withDefaults(
     transportType?: string;
     routeDisplayMode?: 'exact' | 'direct';
     coveredTopPx?: number;
-    coveredBottomPx?: number;
+    coveredLeftPx?: number;
   }>(),
   {
     fromSpot: null,
@@ -25,7 +25,7 @@ const props = withDefaults(
     transportType: 'Auto',
     routeDisplayMode: 'exact',
     coveredTopPx: 0,
-    coveredBottomPx: 0,
+    coveredLeftPx: 0,
   }
 );
 
@@ -39,48 +39,45 @@ let markersLayer: L.LayerGroup | null = null;
 let routesLayer: L.LayerGroup | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
-function getCoveredOffsets(): { coveredTopPx: number; coveredBottomPx: number } {
-  if (props.coveredTopPx || props.coveredBottomPx) {
+function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
+  if (props.coveredTopPx || props.coveredLeftPx) {
     return {
       coveredTopPx: props.coveredTopPx ?? 0,
-      coveredBottomPx: props.coveredBottomPx ?? 0,
+      coveredLeftPx: props.coveredLeftPx ?? 0,
     };
   }
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 580;
   if (mapEl.value) {
     const container = mapEl.value.closest('.route-calc-map-wrap') || mapEl.value.parentElement;
     if (container) {
-      const mapRect = mapEl.value.getBoundingClientRect();
-      const topEl = container.querySelector<HTMLElement>('.route-floating-top');
-      const bottomEl = container.querySelector<HTMLElement>('.route-floating-bottom');
+      const cardEl = container.querySelector<HTMLElement>('.route-floating-card');
+      if (cardEl) {
+        const cardRect = cardEl.getBoundingClientRect();
+        const mapRect = mapEl.value.getBoundingClientRect();
 
-      let coveredTopPx = 0;
-      let coveredBottomPx = 0;
-
-      if (topEl) {
-        const topRect = topEl.getBoundingClientRect();
-        if (topRect.height > 0) {
-          coveredTopPx = Math.max(0, topRect.bottom - mapRect.top);
+        if (cardRect.height > 0 || cardRect.width > 0) {
+          if (isMobile) {
+            // Auf Mobile überdeckt die Card den oberen Bereich der Karte.
+            // Sichtbar ist der Bereich unterhalb der Card bis zum unteren Kartenrand.
+            const coveredTopPx = Math.max(0, cardRect.bottom - mapRect.top);
+            return { coveredTopPx, coveredLeftPx: 0 };
+          } else {
+            // Auf Desktop überdeckt die Card die linke Seite der Karte.
+            // Sichtbar ist der Bereich rechts von der Card.
+            const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
+            return { coveredTopPx: 0, coveredLeftPx };
+          }
         }
-      }
-
-      if (bottomEl) {
-        const bottomRect = bottomEl.getBoundingClientRect();
-        if (bottomRect.height > 0) {
-          coveredBottomPx = Math.max(0, mapRect.bottom - bottomRect.top);
-        }
-      }
-
-      if (coveredTopPx > 0 || coveredBottomPx > 0) {
-        return { coveredTopPx, coveredBottomPx };
       }
     }
   }
 
   // Fallback für Tests (jsdom liefert 0 für getBoundingClientRect) und initiales Rendern:
-  // Top: SegmentedToggle (~38px) + Offset (10px) = ~48px
-  // Bottom: Single Route Card (~46px) + Offset (10px) = ~56px
-  return { coveredTopPx: 48, coveredBottomPx: 56 };
+  if (isMobile) {
+    return { coveredTopPx: 160, coveredLeftPx: 0 };
+  }
+  return { coveredTopPx: 0, coveredLeftPx: 272 };
 }
 
 async function render() {
@@ -184,7 +181,11 @@ async function render() {
     fullBounds = fullBounds ? fullBounds.extend(routeBounds) : routeBounds;
   }
 
-  const { coveredTopPx, coveredBottomPx } = getCoveredOffsets();
+  const { coveredTopPx, coveredLeftPx } = getCoveredOffsets();
+  let adjustedCoveredLeftPx = coveredLeftPx;
+  if (map?.getSize && map.getSize().x > 0) {
+    adjustedCoveredLeftPx = Math.min(adjustedCoveredLeftPx, Math.max(0, map.getSize().x - 80));
+  }
 
   // Kartenausschnitt anpassen auf den tatsächlich sichtbaren Bereich
   if (
@@ -194,8 +195,8 @@ async function render() {
   ) {
     try {
       map.fitBounds(fullBounds, {
-        paddingTopLeft: [20, 20 + coveredTopPx],
-        paddingBottomRight: [20, 20 + coveredBottomPx],
+        paddingTopLeft: [20 + adjustedCoveredLeftPx, 20 + coveredTopPx],
+        paddingBottomRight: [20, 20],
         maxZoom: 16,
         animate: false,
       });
@@ -204,7 +205,7 @@ async function render() {
     }
   } else if (boundsPoints.length === 1) {
     if (
-      (!coveredTopPx && !coveredBottomPx) ||
+      (!coveredTopPx && !adjustedCoveredLeftPx) ||
       typeof map.project !== 'function' ||
       typeof map.unproject !== 'function'
     ) {
@@ -212,7 +213,7 @@ async function render() {
     } else {
       const targetPoint = map.project(boundsPoints[0], 14);
       const shiftedCenter = map.unproject(
-        targetPoint.add([0, (coveredBottomPx - coveredTopPx) / 2]),
+        targetPoint.add([-adjustedCoveredLeftPx / 2, -coveredTopPx / 2]),
         14
       );
       map.setView(shiftedCenter, 14, { animate: false });
@@ -243,9 +244,9 @@ onMounted(async () => {
     resizeObserver.observe(mapEl.value);
 
     const container = mapEl.value.closest('.route-calc-map-wrap');
-    const bottomEl = container?.querySelector('.route-floating-bottom');
-    if (bottomEl) {
-      resizeObserver.observe(bottomEl);
+    const cardEl = container?.querySelector('.route-floating-card');
+    if (cardEl) {
+      resizeObserver.observe(cardEl);
     }
   }
 
@@ -271,7 +272,7 @@ watch(
     () => props.routeDisplayMode,
     () => props.transportType,
     () => props.coveredTopPx,
-    () => props.coveredBottomPx,
+    () => props.coveredLeftPx,
   ],
   render,
   { deep: true }
@@ -300,14 +301,14 @@ defineExpose({
 }
 
 .leg-mini-map {
-  height: 380px;
+  height: 420px;
   width: 100%;
   background: var(--color-surface-subtle, var(--color-hover));
 }
 
-@media (max-width: 480px) {
+@media (max-width: 580px) {
   .leg-mini-map {
-    height: 400px;
+    height: 500px;
   }
 }
 
