@@ -601,6 +601,25 @@ describe('LegTransportModal', () => {
     const arrivalInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
     expect(arrivalInput?.value).toBe('14:35');
 
+    // Fieldset soll sich bei Klick auf den Toggle sauber schließen lassen
+    const routeFieldset = document.querySelector('.route-calc-fieldset');
+    const toggleBtn = routeFieldset?.querySelector('.collapsible-toggle') as HTMLButtonElement;
+    expect(routeFieldset?.classList.contains('is-open')).toBe(true);
+
+    toggleBtn.click();
+    await nextTick();
+
+    expect(routeFieldset?.classList.contains('is-closed')).toBe(true);
+    expect(
+      routeFieldset?.querySelector('.collapsible-anim-wrapper')?.classList.contains('is-open')
+    ).toBe(false);
+
+    // Wieder aufklappen
+    toggleBtn.click();
+    await nextTick();
+
+    expect(routeFieldset?.classList.contains('is-open')).toBe(true);
+
     // Speichern
     const submitBtn = Array.from(document.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Übernehmen')

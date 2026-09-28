@@ -922,6 +922,10 @@ function onDelete() {
   margin: 14px 0 var(--space-2) 0;
 }
 
+.route-calc-fieldset--has-route.is-closed {
+  margin: var(--space-1) 0;
+}
+
 .route-calc-fieldset--has-route:not(.is-closed) :deep(legend) {
   position: absolute;
   top: -14px;
@@ -931,10 +935,21 @@ function onDelete() {
   margin: 0;
 }
 
+.route-calc-fieldset--has-route :deep(.collapsible-anim-wrapper) {
+  min-height: 0;
+}
+
+.route-calc-fieldset--has-route.is-closed :deep(.collapsible-anim-wrapper) {
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .route-calc-fieldset--has-route :deep(.collapsible-anim-inner) {
   padding: 0;
   margin: 0;
-  overflow: visible;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .route-calc-fieldset--has-route :deep(.collapsible-content) {
