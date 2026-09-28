@@ -641,7 +641,6 @@ function discardNewDraft() {
 function startEdit(entry: DiaryEntry) {
   editContentTouched.value = false;
   editDateTouched.value = false;
-  editingEntry.value = entry;
   editForm.value = {
     title: entry.title ?? '',
     content: entry.content,
@@ -652,6 +651,7 @@ function startEdit(entry: DiaryEntry) {
   };
   editShowExcursionPicker.value = editForm.value.excursion_ids.length > 0;
   editShowSpotPicker.value = editForm.value.spot_ids.length > 0;
+  editingEntry.value = entry;
 }
 
 // Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer einen veröffentlichten
@@ -712,9 +712,13 @@ async function closeEditForm() {
 
 function discardEditDraft() {
   if (!editingEntry.value) return;
+  const isDraft = editingEntry.value.is_draft;
   startEdit(editingEntry.value);
   editDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+  showToast({
+    message: isDraft ? 'Entwurf verworfen.' : 'Änderungen verworfen.',
+    type: 'info',
+  });
 }
 
 async function deleteEditingEntry() {
@@ -976,6 +980,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           :status="newDraft.status.value"
           :restored="newDraft.restored.value"
           :can-discard="true"
+          mode="create"
           @discard="discardNewDraft"
         />
         <div class="actions-row">
@@ -1132,8 +1137,12 @@ function showEntryDayOnMap(entry: DiaryEntry) {
 
     <Modal
       :model-value="editingEntry !== null"
-      title="Eintrag bearbeiten"
+      :title="editingEntry?.is_draft ? 'Eintrag anlegen' : 'Eintrag bearbeiten'"
       full-height
+      :confirm-close="!editingEntry?.is_draft && editDraft.isDirty.value"
+      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
+      confirm-close-message="Du hast ungespeicherte Änderungen an diesem Eintrag vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
+      confirm-close-confirm-label="Änderungen verwerfen"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">
@@ -1283,6 +1292,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
           :status="editDraft.status.value"
           :restored="editDraft.restored.value"
           :can-discard="true"
+          :mode="editingEntry?.is_draft ? 'create' : 'edit'"
           @discard="discardEditDraft"
         />
         <div class="actions-row">

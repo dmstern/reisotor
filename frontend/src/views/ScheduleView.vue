@@ -915,7 +915,6 @@ async function addItem() {
 
 function startEdit(item: ScheduleItem) {
   editTitleTouched.value = false;
-  editingItem.value = item;
   editForm.value = {
     time: item.time ?? '',
     endTime: item.end_time ?? '',
@@ -931,6 +930,7 @@ function startEdit(item: ScheduleItem) {
     editForm.value.location ||
     editForm.value.mapsLink
   );
+  editingItem.value = item;
 }
 
 async function submitEdit() {
@@ -978,7 +978,7 @@ function discardEditDraft() {
   if (!editingItem.value) return;
   startEdit(editingItem.value);
   editDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 function jumpToTrip() {
@@ -1515,6 +1515,10 @@ function formatDate(date: string) {
       :model-value="showAddForm"
       title="Termin anlegen"
       full-height
+      :confirm-close="newDraft.isDirty.value"
+      confirm-close-title="Entwurf verwerfen?"
+      confirm-close-message="Du hast bereits Eingaben für diesen Termin gemacht. Möchtest du den Entwurf verwerfen?"
+      confirm-close-confirm-label="Entwurf verwerfen"
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
@@ -1616,6 +1620,7 @@ function formatDate(date: string) {
           :status="newDraft.status.value"
           :restored="newDraft.restored.value"
           :can-discard="true"
+          mode="create"
           @discard="discardNewDraft"
         />
         <div class="actions-row">
@@ -1631,6 +1636,10 @@ function formatDate(date: string) {
       :model-value="editingItem !== null"
       title="Termin bearbeiten"
       full-height
+      :confirm-close="editDraft.isDirty.value"
+      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
+      confirm-close-message="Du hast ungespeicherte Änderungen an diesem Termin vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
+      confirm-close-confirm-label="Änderungen verwerfen"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -1734,6 +1743,7 @@ function formatDate(date: string) {
           :status="editDraft.status.value"
           :restored="editDraft.restored.value"
           :can-discard="true"
+          mode="edit"
           @discard="discardEditDraft"
         />
         <div class="actions-row">

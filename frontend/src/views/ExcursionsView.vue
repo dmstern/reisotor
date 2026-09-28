@@ -740,6 +740,12 @@ const isEditTourRoleModified = computed(() => {
   );
 });
 
+const isExcursionModalDirty = computed(() =>
+  editingExcursion.value !== null
+    ? editExcursionDraft.isDirty.value
+    : newExcursionDraft.isDirty.value
+);
+
 function openExcursionForm() {
   excursionTitleTouched.value = false;
   excursionForm.value = emptyExcursionForm();
@@ -800,7 +806,6 @@ async function addExcursion() {
 
 function startEditExcursion(excursion: Excursion) {
   excursionTitleTouched.value = false;
-  editingExcursion.value = excursion.id;
   showEditExcursionSpotsSection.value = false;
   showEditExcursionTracksSection.value = false;
   tracksToShareOnSave.value.clear();
@@ -815,6 +820,7 @@ function startEditExcursion(excursion: Excursion) {
     legs: excursion.legs ? excursion.legs.map((l) => ({ ...l })) : [],
     track_ids: tracksStore.tracks.filter((t) => t.excursion_id === excursion.id).map((t) => t.id),
   };
+  editingExcursion.value = excursion.id;
 }
 
 async function submitEditExcursion() {
@@ -864,7 +870,7 @@ function discardEditExcursionDraft() {
   if (!initialEditingExcursion.value) return;
   startEditExcursion(initialEditingExcursion.value);
   editExcursionDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 async function deleteEditingExcursion() {
@@ -1060,6 +1066,14 @@ const isEditSpotPaidByModified = computed(() => {
     editingSpot.value.paid_by_user_id != null ? String(editingSpot.value.paid_by_user_id) : '';
   return (editSpotForm.value.paid_by_user_id || '').trim() !== initialPaid.trim();
 });
+
+const isEditSpotDirty = computed(
+  () => editSpotDraft.isDirty.value || isEditSpotLocationModified.value
+);
+
+const isSpotModalDirty = computed(() =>
+  editingSpot.value !== null ? isEditSpotDirty.value : newSpotDraft.isDirty.value
+);
 
 const spotTitleTouched = ref(false);
 const showSpotTitleError = computed(
@@ -3668,7 +3682,6 @@ function resetEditSpotLocation() {
 
 function startEditSpot(spot: Spot) {
   spotTitleTouched.value = false;
-  editingSpot.value = spot;
   selectedSpotCity.value = null;
   spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
   const isZuhause = spot.category?.trim().toLowerCase() === 'zuhause';
@@ -3694,6 +3707,7 @@ function startEditSpot(spot: Spot) {
   editSpotManualPin.value = pin;
   spotManualPin.value = pin;
   editSpotLocationError.value = false;
+  editingSpot.value = spot;
 }
 
 async function submitEditSpot() {
@@ -3732,7 +3746,7 @@ function discardEditSpotDraft() {
   if (!editingSpot.value) return;
   startEditSpot(editingSpot.value);
   editSpotDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 watch(editSpotManualPin, (pin) => {
@@ -3973,6 +3987,20 @@ async function deleteEditingSpot() {
             :model-value="showExcursionForm || editingExcursion !== null"
             :title="editingExcursion !== null ? 'Tour bearbeiten' : 'Neue Tour'"
             full-height
+            :confirm-close="isExcursionModalDirty"
+            :confirm-close-title="
+              editingExcursion !== null
+                ? 'Ungespeicherte Änderungen verwerfen?'
+                : 'Entwurf verwerfen?'
+            "
+            :confirm-close-message="
+              editingExcursion !== null
+                ? 'Du hast ungespeicherte Änderungen an dieser Tour vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
+                : 'Du hast bereits Eingaben für diese Tour gemacht. Möchtest du den Entwurf verwerfen?'
+            "
+            :confirm-close-confirm-label="
+              editingExcursion !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
+            "
             @update:model-value="
               (v) =>
                 !v && (editingExcursion !== null ? closeEditExcursionForm() : closeExcursionForm())
@@ -4157,6 +4185,7 @@ async function deleteEditingSpot() {
                     ? editExcursionDraft.restored.value
                     : newExcursionDraft.restored.value
                 "
+                :mode="editingExcursion !== null ? 'edit' : 'create'"
                 :can-discard="true"
                 @discard="
                   editingExcursion !== null
@@ -4247,6 +4276,18 @@ async function deleteEditingSpot() {
             :model-value="showSpotForm || editingSpot !== null"
             :title="editingSpot !== null ? 'Spot bearbeiten' : 'Neuer Spot'"
             full-height
+            :confirm-close="isSpotModalDirty"
+            :confirm-close-title="
+              editingSpot !== null ? 'Ungespeicherte Änderungen verwerfen?' : 'Entwurf verwerfen?'
+            "
+            :confirm-close-message="
+              editingSpot !== null
+                ? 'Du hast ungespeicherte Änderungen an diesem Spot vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
+                : 'Du hast bereits Eingaben für diesen Spot gemacht. Möchtest du den Entwurf verwerfen?'
+            "
+            :confirm-close-confirm-label="
+              editingSpot !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
+            "
             @update:model-value="
               (v) => !v && (editingSpot !== null ? closeEditSpotForm() : closeSpotForm())
             "
@@ -4671,6 +4712,7 @@ async function deleteEditingSpot() {
                 :restored="
                   editingSpot !== null ? editSpotDraft.restored.value : newSpotDraft.restored.value
                 "
+                :mode="editingSpot !== null ? 'edit' : 'create'"
                 :can-discard="true"
                 @discard="editingSpot !== null ? discardEditSpotDraft() : discardNewSpotDraft()"
               />

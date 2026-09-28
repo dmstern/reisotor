@@ -10,6 +10,8 @@
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
 import { onUnmounted, watch, useId, ref, nextTick, computed } from 'vue';
 import IconButton from './primitives/IconButton.vue';
+import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useModalStore } from '../stores/modal';
 
@@ -21,25 +23,57 @@ const props = withDefaults(
     fullHeight?: boolean;
     ariaLabel?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl';
+    confirmClose?: boolean;
+    confirmCloseTitle?: string;
+    confirmCloseMessage?: string;
+    confirmCloseConfirmLabel?: string;
+    confirmCloseCancelLabel?: string;
   }>(),
-  { size: 'md' }
+  {
+    size: 'md',
+    confirmClose: false,
+    confirmCloseTitle: 'Ungespeicherte Änderungen verwerfen?',
+    confirmCloseMessage:
+      'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?',
+    confirmCloseConfirmLabel: 'Änderungen verwerfen',
+    confirmCloseCancelLabel: 'Weiter bearbeiten',
+  }
 );
-const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void;
+  (e: 'discard'): void;
+}>();
 
 const modalStore = useModalStore();
 const modalId = useId();
 const titleId = `${modalId}-title`;
 const modalRef = ref<HTMLDivElement | null>(null);
+const confirmModalRef = ref<HTMLDivElement | null>(null);
+const showConfirmClose = ref(false);
 
 function close() {
+  if (props.confirmClose) {
+    showConfirmClose.value = true;
+    return;
+  }
   emit('update:modelValue', false);
 }
 
-function getFocusableElements(): HTMLElement[] {
-  if (!modalRef.value) return [];
+function cancelConfirmClose() {
+  showConfirmClose.value = false;
+}
+
+function acceptConfirmClose() {
+  showConfirmClose.value = false;
+  emit('discard');
+  emit('update:modelValue', false);
+}
+
+function getFocusableElements(container: HTMLElement | null = modalRef.value): HTMLElement[] {
+  if (!container) return [];
   const selector =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  const elements = Array.from(modalRef.value.querySelectorAll<HTMLElement>(selector));
+  const elements = Array.from(container.querySelectorAll<HTMLElement>(selector));
   return elements.filter(
     (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
   );
@@ -49,6 +83,10 @@ function handleKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return;
 
   if (e.key === 'Escape') {
+    if (showConfirmClose.value) {
+      cancelConfirmClose();
+      return;
+    }
     if (modalStore.isTop(modalId)) {
       close();
     }
@@ -57,7 +95,8 @@ function handleKeydown(e: KeyboardEvent) {
 
   if (e.key === 'Tab') {
     if (!modalStore.isTop(modalId)) return;
-    const focusables = getFocusableElements();
+    const container = showConfirmClose.value ? confirmModalRef.value : modalRef.value;
+    const focusables = getFocusableElements(container);
     if (focusables.length === 0) {
       e.preventDefault();
       return;
@@ -206,6 +245,7 @@ watch(
         });
       }
     } else {
+      showConfirmClose.value = false;
       if (isRegistered) {
         isRegistered = false;
         window.removeEventListener('keydown', handleKeydown);
@@ -216,6 +256,24 @@ watch(
   },
   { immediate: true }
 );
+
+watch(showConfirmClose, (isOpen) => {
+  if (isOpen) {
+    nextTick(() => {
+      const focusables = getFocusableElements(confirmModalRef.value);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      }
+    });
+  } else if (props.modelValue) {
+    nextTick(() => {
+      const focusables = getFocusableElements(modalRef.value);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      }
+    });
+  }
+});
 
 watch(
   () => props.fullHeight,
@@ -280,6 +338,47 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
               class="modal-scroll-fade modal-scroll-fade--bottom modal-scroll-shadow--bottom"
               aria-hidden="true"
             />
+          </div>
+        </div>
+      </div>
+    </Transition>
+    <Transition name="modal-fade">
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+      <div
+        v-if="modelValue && showConfirmClose"
+        class="overlay confirm-close-overlay"
+        :style="{ zIndex: currentZIndex + 5 }"
+        @click.self="cancelConfirmClose"
+      >
+        <div
+          ref="confirmModalRef"
+          class="modal size-sm confirm-close-dialog"
+          role="alertdialog"
+          aria-modal="true"
+          :aria-labelledby="`${modalId}-confirm-title`"
+        >
+          <div class="modal-head">
+            <h2 :id="`${modalId}-confirm-title`">
+              {{ confirmCloseTitle || 'Ungespeicherte Änderungen verwerfen?' }}
+            </h2>
+          </div>
+          <div class="modal-body-wrap">
+            <div class="modal-body confirm-close-body">
+              <p class="confirm-close-message">
+                {{
+                  confirmCloseMessage ||
+                  'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
+                }}
+              </p>
+              <ButtonGroup class="confirm-close-actions">
+                <Button type="button" variant="secondary" @click="cancelConfirmClose">
+                  {{ confirmCloseCancelLabel || 'Weiter bearbeiten' }}
+                </Button>
+                <Button type="button" variant="danger" @click="acceptConfirmClose">
+                  {{ confirmCloseConfirmLabel || 'Änderungen verwerfen' }}
+                </Button>
+              </ButtonGroup>
+            </div>
           </div>
         </div>
       </div>
@@ -514,5 +613,25 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   width: 44px;
   height: 44px;
   transform: translate(-50%, -50%);
+}
+
+.confirm-close-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.confirm-close-message {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.confirm-close-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 </style>

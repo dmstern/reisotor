@@ -1,4 +1,4 @@
-import { ref, watch, toValue, type Ref, type MaybeRefOrGetter } from 'vue';
+import { ref, computed, watch, toValue, type Ref, type MaybeRefOrGetter } from 'vue';
 import { api } from '../api/client';
 import { useTripStore } from '../stores/trip';
 
@@ -185,5 +185,7 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
     { immediate: true }
   );
 
-  return { status, restored, clear };
+  const isDirty = computed(() => status.value !== 'idle');
+
+  return { status, restored, isDirty, clear };
 }

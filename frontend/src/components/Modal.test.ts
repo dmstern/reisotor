@@ -225,4 +225,109 @@ describe('Modal', () => {
 
     cleanUp();
   });
+
+  it('closes immediately on close button click when confirmClose is false', async () => {
+    let closed = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: false,
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    expect(closed).toBe(true);
+    expect(document.querySelector('.confirm-close-dialog')).toBeNull();
+    cleanUp();
+  });
+
+  it('shows confirmation dialog on close button click when confirmClose is true', async () => {
+    let closed = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      confirmCloseTitle: 'Ungespeicherte Änderungen verwerfen?',
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    expect(closed).toBe(false);
+    const confirmDialog = document.querySelector('.confirm-close-dialog');
+    expect(confirmDialog).not.toBeNull();
+    expect(confirmDialog?.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    cleanUp();
+  });
+
+  it('cancels close confirmation when clicking cancel button', async () => {
+    let closed = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    const cancelBtn = Array.from(document.querySelectorAll('.confirm-close-actions button')).find(
+      (b) => b.textContent?.includes('Weiter bearbeiten')
+    ) as HTMLButtonElement;
+    expect(cancelBtn).not.toBeNull();
+    cancelBtn.click();
+    await nextTick();
+
+    expect(closed).toBe(false);
+    expect(document.querySelector('.confirm-close-dialog')).toBeNull();
+    cleanUp();
+  });
+
+  it('confirms close when clicking discard button and emits discard event', async () => {
+    let closed = false;
+    let discarded = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+      onDiscard: () => {
+        discarded = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    const discardBtn = Array.from(document.querySelectorAll('.confirm-close-actions button')).find(
+      (b) => b.textContent?.includes('Änderungen verwerfen')
+    ) as HTMLButtonElement;
+    expect(discardBtn).not.toBeNull();
+    discardBtn.click();
+    await nextTick();
+
+    expect(discarded).toBe(true);
+    expect(closed).toBe(true);
+    cleanUp();
+  });
 });

@@ -78,4 +78,27 @@ describe('DraftStatusBar', () => {
     app.unmount();
     container.remove();
   });
+
+  it('renders edit mode with "Ungespeicherte Änderungen" when status is saved', async () => {
+    const html = await renderStatus({ status: 'saved', mode: 'edit' });
+    expect(html).toContain('Ungespeicherte Änderungen');
+    expect(html).not.toContain('Entwurf gesichert');
+  });
+
+  it('renders edit mode with "Ungespeicherte Änderungen…" when status is dirty', async () => {
+    const html = await renderStatus({ status: 'dirty', mode: 'edit' });
+    expect(html).toContain('Ungespeicherte Änderungen…');
+  });
+
+  it('renders edit mode restored message when restored is true', async () => {
+    const html = await renderStatus({ status: 'saved', restored: true, mode: 'edit' });
+    expect(html).toContain('Stand nach Unterbrechung wiederhergestellt');
+  });
+
+  it('renders discard button in edit mode with "Änderungen verwerfen"', async () => {
+    const html = await renderStatus({ status: 'saved', canDiscard: true, mode: 'edit' });
+    expect(html).toContain('draft-discard-btn');
+    expect(html).toContain('Änderungen verwerfen');
+    expect(html).not.toContain('Entwurf verwerfen');
+  });
 });
