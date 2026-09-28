@@ -159,9 +159,38 @@ describe('LegTransportModal', () => {
     });
     await nextTick();
 
+    const calcWrapper = document.querySelector('.route-calc-wrapper');
+    expect(calcWrapper).not.toBeNull();
+    expect(calcWrapper?.classList.contains('is-expanded')).toBe(true);
+
     const calcSection = document.querySelector('.route-calc-section');
     expect(calcSection).not.toBeNull();
     expect(calcSection?.textContent).toContain('Exakte Route (OpenRouteService)');
+
+    cleanUp();
+  });
+
+  it('klappt Routen-Berechnung ein wenn Verkehrsmittel nicht geroutet werden kann', async () => {
+    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
+    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
+    const trainLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'Zug',
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: spotWithCoordsA,
+      toSpot: spotWithCoordsB,
+      leg: trainLeg,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const calcWrapper = document.querySelector('.route-calc-wrapper');
+    expect(calcWrapper).not.toBeNull();
+    expect(calcWrapper?.classList.contains('is-expanded')).toBe(false);
+    expect(calcWrapper?.hasAttribute('inert')).toBe(true);
 
     cleanUp();
   });

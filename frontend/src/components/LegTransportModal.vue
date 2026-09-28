@@ -288,32 +288,45 @@ function onDelete() {
       </FormField>
 
       <!-- Exakte Routen-Berechnung (OpenRouteService) -->
-      <div v-if="isRoutable" class="route-calc-section">
-        <div class="route-calc-header">
-          <div class="route-calc-info">
-            <span class="route-calc-title">🗺️ Exakte Route (OpenRouteService)</span>
-            <span
-              v-if="calculatedDistanceMeters && calculatedDurationSeconds"
-              class="route-calc-stats"
-            >
-              {{ formatDistance(calculatedDistanceMeters) }} •
-              {{ formatDuration(calculatedDurationSeconds) }}
-            </span>
-            <span v-else class="route-calc-hint">
-              Echte Wegeroute, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
-            </span>
+      <div
+        class="route-calc-wrapper"
+        :class="{ 'is-expanded': isRoutable }"
+        :inert="!isRoutable ? true : undefined"
+      >
+        <div class="route-calc-inner">
+          <div class="route-calc-section">
+            <div class="route-calc-header">
+              <div class="route-calc-info">
+                <span class="route-calc-title">🗺️ Exakte Route (OpenRouteService)</span>
+                <div class="route-calc-detail">
+                  <span
+                    v-if="calculatedDistanceMeters && calculatedDurationSeconds"
+                    class="route-calc-stats"
+                  >
+                    {{ formatDistance(calculatedDistanceMeters) }} •
+                    {{ formatDuration(calculatedDurationSeconds) }}
+                  </span>
+                  <span v-else class="route-calc-hint">
+                    Echte Wegeroute, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
+                  </span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                class="btn-calc-route"
+                :loading="isCalculatingRoute"
+                @click="calculateRoute"
+              >
+                {{ calculatedDistanceMeters ? 'Neu berechnen' : 'Route berechnen' }}
+              </Button>
+            </div>
+            <p v-if="routeCalculationError" class="route-calc-error">
+              ⚠️ {{ routeCalculationError }}
+            </p>
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            :loading="isCalculatingRoute"
-            @click="calculateRoute"
-          >
-            {{ calculatedDistanceMeters ? 'Neu berechnen' : 'Route berechnen' }}
-          </Button>
         </div>
-        <p v-if="routeCalculationError" class="route-calc-error">⚠️ {{ routeCalculationError }}</p>
       </div>
 
       <div class="row">
@@ -497,6 +510,39 @@ function onDelete() {
   flex: 1;
 }
 
+.route-calc-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: calc(-1 * var(--space-3));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    margin-top 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.28s ease,
+    visibility 0s linear 0.38s;
+}
+
+.route-calc-wrapper.is-expanded {
+  grid-template-rows: 1fr;
+  margin-top: 0;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    margin-top 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.32s ease,
+    visibility 0s linear 0s;
+}
+
+.route-calc-inner {
+  min-height: 0;
+  overflow: hidden;
+  /* Reserviert Platz für Outline-Fokus (z. B. Button-Fokus-Ring) */
+  padding: 4px;
+  margin: -4px;
+}
+
 .route-calc-section {
   display: flex;
   flex-direction: column;
@@ -506,6 +552,20 @@ function onDelete() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  transition:
+    transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.route-calc-wrapper:not(.is-expanded) .route-calc-section {
+  transform: translateY(-8px) scale(0.99);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.route-calc-wrapper.is-expanded .route-calc-section {
+  transform: translateY(0) scale(1);
+  opacity: 1;
 }
 
 .route-calc-header {
@@ -519,6 +579,14 @@ function onDelete() {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 40px;
+  justify-content: center;
+}
+
+.route-calc-detail {
+  display: flex;
+  min-height: 1.25rem;
+  align-items: center;
 }
 
 .route-calc-title {
@@ -530,17 +598,37 @@ function onDelete() {
   font-weight: 700;
   color: var(--color-primary);
   font-size: 0.9375rem;
+  animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .route-calc-hint {
   font-size: 0.8125rem;
   color: var(--color-text-muted);
+  animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.btn-calc-route {
+  flex-shrink: 0;
+  min-width: 125px;
+  justify-content: center;
 }
 
 .route-calc-error {
   margin: 0;
   font-size: 0.8125rem;
   color: var(--color-danger, #ef4444);
+  animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes route-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .arrival-time-wrapper {
@@ -556,6 +644,31 @@ function onDelete() {
 .btn-calc-arrival {
   flex-shrink: 0;
   white-space: nowrap;
+  animation: btn-arrival-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes btn-arrival-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-calc-wrapper,
+  .route-calc-section,
+  .route-calc-stats,
+  .route-calc-hint,
+  .route-calc-error,
+  .btn-calc-arrival {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 @media (max-width: 600px) {
