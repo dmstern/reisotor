@@ -945,4 +945,112 @@ describe('LegTransportModal', () => {
 
     cleanUp();
   });
+
+  it('passt die Erweiterten Angaben dynamisch an das Verkehrsmittel an und blendet unpassende Felder aus', async () => {
+    // 1. Initial mit 'zu Fuß'
+    const footLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'zu Fuß',
+      seat: null,
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: footLeg,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const getFieldLabels = () =>
+      Array.from(document.querySelectorAll('.collapsible-content .form-field-label')).map((el) =>
+        el.textContent?.trim()
+      );
+
+    const getInputs = () =>
+      Array.from(document.querySelectorAll<HTMLInputElement>('.collapsible-content input')).map(
+        (i) => ({ placeholder: i.placeholder, value: i.value })
+      );
+
+    // Bei Zu Fuß: Sitzplatz-Feld ist ausgeblendet
+    let labels = getFieldLabels();
+    expect(labels).toContain('Treffpunkt / Startpunkt');
+    expect(labels).toContain('Ausrüstung & Rucksack');
+    expect(labels).toContain('Touren-Link / Wanderkarte');
+    expect(labels).toContain('Eintritt & Kosten (€)');
+    expect(labels).toContain('Notiz zur Strecke');
+    expect(labels.some((l) => l?.includes('Sitzplatz'))).toBe(false);
+
+    let inputs = getInputs();
+    expect(inputs.some((i) => i.placeholder.includes('Haupteingang'))).toBe(true);
+    expect(inputs.some((i) => i.placeholder.includes('Wanderschuhe'))).toBe(true);
+
+    // 2. Umschalten auf Auto
+    const toggleOptions = Array.from(
+      document.querySelectorAll('.transport-toggle .segmented-option')
+    ) as HTMLButtonElement[];
+    const carOption = toggleOptions.find((btn) => btn.textContent?.includes('Auto'));
+    carOption?.click();
+    await nextTick();
+
+    labels = getFieldLabels();
+    expect(labels).toContain('Treffpunkt / Abholort');
+    expect(labels).toContain('Fahrzeug / Fahrer:in');
+    expect(labels).toContain('Kofferraum & Gepäck');
+    expect(labels).toContain('Mietwagen-Link / Buchung');
+    expect(labels).toContain('Kosten (Maut, Sprit, Miete) (€)');
+    expect(labels).toContain('Notiz zur Fahrt');
+
+    inputs = getInputs();
+    expect(inputs.some((i) => i.placeholder.includes('Terminal 1'))).toBe(true);
+    expect(inputs.some((i) => i.placeholder.includes('VW Golf'))).toBe(true);
+    expect(inputs.some((i) => i.placeholder.includes('Kofferraum'))).toBe(true);
+
+    // 3. Umschalten auf ÖPNV -> Flug
+    const transitOption = toggleOptions.find((btn) => btn.textContent?.includes('ÖPNV'));
+    transitOption?.click();
+    await nextTick();
+
+    const select = document.querySelector('.transit-dropdown-inner select') as HTMLSelectElement;
+    select.value = 'Flug';
+    select.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    labels = getFieldLabels();
+    expect(labels).toContain('Terminal, Gate & Check-in');
+    expect(labels).toContain('Sitzplatz & Flugnummer');
+    expect(labels).toContain('Aufgabe- & Handgepäck');
+    expect(labels).toContain('Online-Check-in / Flug-Link');
+    expect(labels).toContain('Flugkosten (€)');
+    expect(labels).toContain('Notiz zum Flug');
+
+    cleanUp();
+  });
+
+  it('erhält bestehende Sitzplatz-Angaben auch wenn Zu Fuß gewählt ist', async () => {
+    const footLegWithSeat: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'zu Fuß',
+      seat: 'Bank #3',
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: footLegWithSeat,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const labels = Array.from(
+      document.querySelectorAll('.collapsible-content .form-field-label')
+    ).map((el) => el.textContent?.trim());
+
+    // Weil form.seat gefüllt ist, wird das Feld gerendert, damit keine Daten verloren gehen
+    expect(labels.some((l) => l?.includes('Sitzplatz'))).toBe(true);
+
+    cleanUp();
+  });
 });

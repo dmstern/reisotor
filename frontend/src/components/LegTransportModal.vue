@@ -13,6 +13,7 @@ import SegmentedToggle from './SegmentedToggle.vue';
 import LegMiniMap from './LegMiniMap.vue';
 import { IconRoute2, IconLineDashed } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
+import type { FormFieldIconKey } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIcon, travelTypeIconDef } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -96,6 +97,322 @@ function getDepartureLabel(type?: string | null): string {
     return 'Ablegen';
   }
   return 'Abfahrt';
+}
+
+interface ExtendedFieldsConfig {
+  showsSeat: boolean;
+  labels: {
+    checkin: string;
+    seat: string;
+    luggage: string;
+    ticketLink: string;
+    amount: string;
+    note: string;
+  };
+  placeholders: {
+    checkin: string;
+    seat: string;
+    luggage: string;
+    ticketLink: string;
+    amount: string;
+    note: string;
+  };
+  icons: {
+    checkin: FormFieldIconKey;
+    seat: FormFieldIconKey;
+    luggage: FormFieldIconKey;
+    ticketLink: FormFieldIconKey;
+    amount: FormFieldIconKey;
+    note: FormFieldIconKey;
+  };
+}
+
+function getExtendedFieldsConfig(transportType?: string | null): ExtendedFieldsConfig {
+  const type = (transportType || '').trim().toLowerCase();
+
+  // 1. Zu Fuß / Wandern
+  if (
+    type === 'zu fuß' ||
+    type === 'zu fuss' ||
+    type === 'fuss' ||
+    type === 'fuß' ||
+    type === 'wandern' ||
+    type === 'walk' ||
+    type === 'spaziergang'
+  ) {
+    return {
+      showsSeat: false,
+      labels: {
+        checkin: 'Treffpunkt / Startpunkt',
+        seat: 'Sitzplatz / Rastplatz',
+        luggage: 'Ausrüstung & Rucksack',
+        ticketLink: 'Touren-Link / Wanderkarte',
+        amount: 'Eintritt & Kosten (€)',
+        note: 'Notiz zur Strecke',
+      },
+      placeholders: {
+        checkin: 'z. B. Vor dem Haupteingang, Brunnen am Marktplatz',
+        seat: 'z. B. Bank am Aussichtspunkt',
+        luggage: 'z. B. Wanderschuhe, Regenjacke, 20L-Tagesrucksack',
+        ticketLink: 'z. B. Komoot-Tour, AllTrails, Park-Webseite',
+        amount: 'z. B. Nationalpark-Gebühr, Führung',
+        note: 'z. B. Schöne Fotospots, steiler Anstieg, Einkehrmöglichkeit',
+      },
+      icons: {
+        checkin: 'location',
+        seat: 'note',
+        luggage: 'note',
+        ticketLink: 'link',
+        amount: 'amount',
+        note: 'note',
+      },
+    };
+  }
+
+  // 2. Fahrrad
+  if (
+    type === 'fahrrad' ||
+    type === 'rad' ||
+    type === 'bike' ||
+    type === 'e-bike' ||
+    type === 'mountainbike'
+  ) {
+    return {
+      showsSeat: false,
+      labels: {
+        checkin: 'Treffpunkt / Fahrradverleih',
+        seat: 'Fahrrad / Rad-Nummer',
+        luggage: 'Fahrrad-Typ & Ausrüstung',
+        ticketLink: 'Routen-Link / Leihrad-App',
+        amount: 'Leihgebühr & Kosten (€)',
+        note: 'Notiz zur Radstrecke',
+      },
+      placeholders: {
+        checkin: 'z. B. Radstation Gleis 1, Nextbike-Station Hafen',
+        seat: 'z. B. Rad #42',
+        luggage: 'z. B. E-Bike mit Packtaschen, Helm, Schloss',
+        ticketLink: 'z. B. Komoot-Route, Nextbike-Buchung, Mietvertrag',
+        amount: 'z. B. 15.00 für Leihrad oder Akku-Aufladung',
+        note: 'z. B. Steile Steigung, Schotterweg, Schloss-Code',
+      },
+      icons: {
+        checkin: 'location',
+        seat: 'category',
+        luggage: 'note',
+        ticketLink: 'link',
+        amount: 'amount',
+        note: 'note',
+      },
+    };
+  }
+
+  // 3. Auto / Taxi / Mietwagen / Carsharing
+  if (
+    type === 'auto' ||
+    type === 'car' ||
+    type === 'taxi' ||
+    type === 'uber' ||
+    type === 'mietwagen' ||
+    type === 'carsharing'
+  ) {
+    return {
+      showsSeat: true,
+      labels: {
+        checkin: 'Treffpunkt / Abholort',
+        seat: 'Fahrzeug / Fahrer:in',
+        luggage: 'Kofferraum & Gepäck',
+        ticketLink: 'Mietwagen-Link / Buchung',
+        amount: 'Kosten (Maut, Sprit, Miete) (€)',
+        note: 'Notiz zur Fahrt',
+      },
+      placeholders: {
+        checkin: 'z. B. Mietwagen-Station Terminal 1, Hotelauffahrt',
+        seat: 'z. B. Sixt Buchung XYZ, VW Golf, Fahrer:in Alice',
+        luggage: 'z. B. 2 große Koffer im Kofferraum, Kindersitz',
+        ticketLink: 'z. B. Buchungsbestätigung Mietwagen, Uber-Link',
+        amount: 'z. B. 45.00 für Maut, Parkhaus oder Benzin',
+        note: 'z. B. Parkhaus P2 reserviert, Umweltplakette beachten',
+      },
+      icons: {
+        checkin: 'location',
+        seat: 'category',
+        luggage: 'note',
+        ticketLink: 'link',
+        amount: 'amount',
+        note: 'note',
+      },
+    };
+  }
+
+  // 4. Flug
+  if (type === 'flug' || type === 'flugzeug' || type === 'flight' || type === 'plane') {
+    return {
+      showsSeat: true,
+      labels: {
+        checkin: 'Terminal, Gate & Check-in',
+        seat: 'Sitzplatz & Flugnummer',
+        luggage: 'Aufgabe- & Handgepäck',
+        ticketLink: 'Online-Check-in / Flug-Link',
+        amount: 'Flugkosten (€)',
+        note: 'Notiz zum Flug',
+      },
+      placeholders: {
+        checkin: 'z. B. Terminal 2, Gate B14, 2 Std. vorher da sein',
+        seat: 'z. B. LH 1234, Sitz 14A (Fenster)',
+        luggage: 'z. B. 1x Koffer 23kg, Handgepäck-Trolley',
+        ticketLink: 'z. B. Airline-Buchung, Bordkarte, Flugverfolgung',
+        amount: 'z. B. 149.00',
+        note: 'z. B. Buchungscode (PNR): ABCD12, Reisepass mitnehmen',
+      },
+      icons: {
+        checkin: 'location',
+        seat: 'category',
+        luggage: 'note',
+        ticketLink: 'link',
+        amount: 'amount',
+        note: 'note',
+      },
+    };
+  }
+
+  // 5. Fähre / Schiff
+  if (
+    type === 'fähre' ||
+    type === 'faehre' ||
+    type === 'schiff' ||
+    type === 'boot' ||
+    type === 'ferry' ||
+    type === 'boat'
+  ) {
+    return {
+      showsSeat: true,
+      labels: {
+        checkin: 'Pier, Anleger & Boarding',
+        seat: 'Kabine / Deck / Sitzplatz',
+        luggage: 'Fahrzeugmitnahme & Gepäck',
+        ticketLink: 'Fähr-Ticket / Buchungslink',
+        amount: 'Fahrtkosten / Überfahrt (€)',
+        note: 'Notiz zur Überfahrt',
+      },
+      placeholders: {
+        checkin: 'z. B. Pier 3, Terminal Ost, 30 Min. vor Ablegen',
+        seat: 'z. B. Sonnendeck, Kabine 402, Pullmansitz 12',
+        luggage: 'z. B. Auto auf Autodeck, 2 Reisetaschen',
+        ticketLink: 'z. B. Buchungsbestätigung Fährlinie, E-Ticket',
+        amount: 'z. B. 45.00',
+        note: 'z. B. Buchungsnummer, Voucher am Schalter umtauschen',
+      },
+      icons: {
+        checkin: 'location',
+        seat: 'category',
+        luggage: 'note',
+        ticketLink: 'link',
+        amount: 'amount',
+        note: 'note',
+      },
+    };
+  }
+
+  // 6. Bus
+  if (type === 'bus' || type === 'fernbus' || type === 'reisebus') {
+    return {
+      showsSeat: true,
+      labels: {
+        checkin: 'Haltestelle & Bussteig',
+        seat: 'Sitzplatz',
+        luggage: 'Freigepäck & Handgepäck',
+        ticketLink: 'Bus-Ticket / Buchungslink',
+        amount: 'Ticketkosten (€)',
+        note: 'Notiz zur Busfahrt',
+      },
+      placeholders: {
+        checkin: 'z. B. ZOB Steig 4, 15 Min. vor Abfahrt',
+        seat: 'z. B. Reihe 5, Platz 18 (Fenster)',
+        luggage: 'z. B. 1x Koffer im Laderaum, Handgepäck',
+        ticketLink: 'z. B. FlixBus-Ticket, ÖPNV-Ticket',
+        amount: 'z. B. 19.99',
+        note: 'z. B. QR-Code in App bereithalten',
+      },
+      icons: {
+        checkin: 'location',
+        seat: 'category',
+        luggage: 'note',
+        ticketLink: 'link',
+        amount: 'amount',
+        note: 'note',
+      },
+    };
+  }
+
+  // 7. Zug / Bahn / Straßenbahn / U-Bahn / Standard-ÖPNV
+  if (
+    type === 'zug' ||
+    type === 'bahn' ||
+    type === 'straßenbahn' ||
+    type === 'strassenbahn' ||
+    type === 'tram' ||
+    type === 'u-bahn' ||
+    type === 'ubahn' ||
+    type === 'metro' ||
+    type === 'öpnv'
+  ) {
+    return {
+      showsSeat: true,
+      labels: {
+        checkin: 'Gleis & Einstieg',
+        seat: 'Wagen & Sitzplatz',
+        luggage: 'Gepäck & Fahrradmitnahme',
+        ticketLink: 'Ticket-Link / Online-Ticket',
+        amount: 'Ticketkosten (€)',
+        note: 'Notiz zur Teilstrecke',
+      },
+      placeholders: {
+        checkin: 'z. B. Gleis 7 A-C, 10 Min. vorher am Bahnsteig',
+        seat: 'z. B. Wagen 23, Platz 64 (Ruhebereich, Fenster)',
+        luggage: 'z. B. Koffer im Gepäckregal, Fahrradstellplatz #3',
+        ticketLink: 'z. B. Bahn.de-Buchung, ÖPNV-Ticket-App',
+        amount: 'z. B. 49.90',
+        note: 'z. B. Umstieg in Mannheim (nur 6 Min.!), Wagenreihung prüfen',
+      },
+      icons: {
+        checkin: 'location',
+        seat: 'category',
+        luggage: 'note',
+        ticketLink: 'link',
+        amount: 'amount',
+        note: 'note',
+      },
+    };
+  }
+
+  // Fallback (z. B. Sonstiges)
+  return {
+    showsSeat: true,
+    labels: {
+      checkin: 'Vorher da sein / Treffpunkt',
+      seat: 'Sitzplatz',
+      luggage: 'Gepäck',
+      ticketLink: 'Buchungslink / Ticket-URL',
+      amount: 'Ticketkosten (€)',
+      note: 'Notiz zur Teilstrecke',
+    },
+    placeholders: {
+      checkin: 'z. B. Treffpunkt oder Haltestelle',
+      seat: 'z. B. Platznummer oder Bereich',
+      luggage: 'z. B. Taschen, Koffer',
+      ticketLink: 'https://...',
+      amount: 'z. B. 25.00',
+      note: 'Wichtige Hinweise zur Teilstrecke',
+    },
+    icons: {
+      checkin: 'location',
+      seat: 'category',
+      luggage: 'note',
+      ticketLink: 'link',
+      amount: 'amount',
+      note: 'note',
+    },
+  };
 }
 
 const props = defineProps<{
@@ -290,6 +607,10 @@ const canCalcDeparture = computed(() => {
 });
 
 const departureLabel = computed(() => getDepartureLabel(form.value.transport_type));
+const extendedConfig = computed(() => getExtendedFieldsConfig(form.value.transport_type));
+const showsSeatField = computed(
+  () => extendedConfig.value.showsSeat || Boolean(form.value.seat?.trim())
+);
 
 const arrivalSparkleTitle = computed(() => {
   if (!canCalcArrival.value || !activeDurationSeconds.value) return 'Ankunftszeit berechnen';
@@ -1244,39 +1565,61 @@ function onDelete() {
       </div>
 
       <CollapsibleFieldset label="Erweiterte Angaben" :open-initial="hasExtendedData">
-        <FormField icon="note" label="Vorher da sein / Treffpunkt">
+        <FormField :icon="extendedConfig.icons.checkin" :label="extendedConfig.labels.checkin">
           <Input
             v-model="form.checkin_info"
             type="text"
-            placeholder="z. B. Gleis 4 / 2 Std. vorher am Flughafen"
+            :placeholder="extendedConfig.placeholders.checkin"
+          />
+        </FormField>
+
+        <div v-if="showsSeatField" class="row">
+          <FormField :icon="extendedConfig.icons.seat" :label="extendedConfig.labels.seat">
+            <Input
+              v-model="form.seat"
+              type="text"
+              :placeholder="extendedConfig.placeholders.seat"
+            />
+          </FormField>
+          <FormField :icon="extendedConfig.icons.luggage" :label="extendedConfig.labels.luggage">
+            <Input
+              v-model="form.luggage"
+              type="text"
+              :placeholder="extendedConfig.placeholders.luggage"
+            />
+          </FormField>
+        </div>
+        <FormField
+          v-else
+          :icon="extendedConfig.icons.luggage"
+          :label="extendedConfig.labels.luggage"
+        >
+          <Input
+            v-model="form.luggage"
+            type="text"
+            :placeholder="extendedConfig.placeholders.luggage"
+          />
+        </FormField>
+
+        <FormField
+          :icon="extendedConfig.icons.ticketLink"
+          :label="extendedConfig.labels.ticketLink"
+        >
+          <Input
+            v-model="form.ticket_link"
+            type="url"
+            :placeholder="extendedConfig.placeholders.ticketLink"
           />
         </FormField>
 
         <div class="row">
-          <FormField icon="note" label="Sitzplatz">
-            <Input v-model="form.seat" type="text" placeholder="z. B. Wagen 21, Platz 44" />
-          </FormField>
-          <FormField icon="note" label="Gepäck">
-            <Input
-              v-model="form.luggage"
-              type="text"
-              placeholder="z. B. 1x Koffer 23kg, Handgepäck"
-            />
-          </FormField>
-        </div>
-
-        <FormField icon="link" label="Buchungslink / Ticket-URL">
-          <Input v-model="form.ticket_link" type="url" placeholder="https://..." />
-        </FormField>
-
-        <div class="row">
-          <FormField icon="amount" label="Ticketkosten (€)">
+          <FormField :icon="extendedConfig.icons.amount" :label="extendedConfig.labels.amount">
             <Input
               v-model="form.amount"
               type="number"
               step="0.01"
               min="0"
-              placeholder="z. B. 49.90"
+              :placeholder="extendedConfig.placeholders.amount"
             />
           </FormField>
           <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
@@ -1292,12 +1635,8 @@ function onDelete() {
           Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
         </p>
 
-        <FormField icon="note" label="Notiz zur Teilstrecke">
-          <Input
-            v-model="form.note"
-            type="text"
-            placeholder="Tipps zum Umstieg, Buchungscode etc."
-          />
+        <FormField :icon="extendedConfig.icons.note" :label="extendedConfig.labels.note">
+          <Input v-model="form.note" type="text" :placeholder="extendedConfig.placeholders.note" />
         </FormField>
       </CollapsibleFieldset>
 
