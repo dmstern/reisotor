@@ -854,7 +854,7 @@ function onDelete() {
 .transit-hint {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-1-5);
+  gap: var(--space-1-5, 6px);
   margin: var(--space-2) 0 0;
   font-size: 0.8125rem;
   color: var(--color-text-muted);
@@ -947,7 +947,7 @@ function onDelete() {
 .route-calc-title {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1-5);
+  gap: var(--space-1-5, 6px);
   font-weight: 600;
   font-size: 0.875rem;
 }
@@ -1053,7 +1053,7 @@ function onDelete() {
 .route-calc-error {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-1-5);
+  gap: var(--space-1-5, 6px);
   margin: 0;
   font-size: 0.8125rem;
   color: var(--color-danger);
