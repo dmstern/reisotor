@@ -10,6 +10,8 @@ import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import AppIcon from './AppIcon.vue';
 import FileAttachments from './FileAttachments.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
+import { IconRoute2, IconLineDashed } from '@tabler/icons-vue';
+import type { IconDef } from '../utils/icon';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIcon, travelTypeIconDef } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -87,6 +89,59 @@ const calculatedDistanceMeters = ref<number | null>(null);
 const calculatedDurationSeconds = ref<number | null>(null);
 const routeGeometry = ref<string | null>(null);
 const routingProfile = ref<string | null>(null);
+
+const ROUTE_MODE_OPTIONS: {
+  value: 'exact' | 'direct';
+  label: string;
+  icon: IconDef;
+}[] = [
+  {
+    value: 'exact',
+    label: 'Exakte Route',
+    icon: { id: 'route-exact', emoji: '🗺️', outline: IconRoute2 },
+  },
+  {
+    value: 'direct',
+    label: 'Luftlinie',
+    icon: { id: 'route-direct', emoji: '〰️', outline: IconLineDashed },
+  },
+];
+
+const routeDisplayMode = ref<'exact' | 'direct'>('exact');
+const cachedExactRoute = ref<{
+  geometry: string | null;
+  distance: number | null;
+  duration: number | null;
+  profile: string | null;
+} | null>(null);
+
+const hasExactRoute = computed(() => {
+  return (
+    (routeGeometry.value != null || cachedExactRoute.value?.geometry != null) &&
+    (calculatedDistanceMeters.value != null || cachedExactRoute.value?.distance != null)
+  );
+});
+
+function onRouteModeChange(val: string) {
+  routeDisplayMode.value = val as 'exact' | 'direct';
+  routeCalculationError.value = null;
+  if (val === 'exact' && cachedExactRoute.value) {
+    routeGeometry.value = cachedExactRoute.value.geometry;
+    calculatedDistanceMeters.value = cachedExactRoute.value.distance;
+    calculatedDurationSeconds.value = cachedExactRoute.value.duration;
+    routingProfile.value = cachedExactRoute.value.profile;
+  }
+}
+
+function resetToDirectLine() {
+  routeGeometry.value = null;
+  calculatedDistanceMeters.value = null;
+  calculatedDurationSeconds.value = null;
+  routingProfile.value = null;
+  cachedExactRoute.value = null;
+  routeDisplayMode.value = 'exact';
+  routeCalculationError.value = null;
+}
 
 function formatDistance(meters?: number | null): string {
   if (meters == null) return '';
@@ -182,6 +237,18 @@ watch(
       calculatedDurationSeconds.value = props.leg.duration_seconds ?? null;
       routeGeometry.value = props.leg.route_geometry ?? null;
       routingProfile.value = props.leg.routing_profile ?? null;
+      if (props.leg.route_geometry) {
+        cachedExactRoute.value = {
+          geometry: props.leg.route_geometry,
+          distance: props.leg.distance_meters ?? null,
+          duration: props.leg.duration_seconds ?? null,
+          profile: props.leg.routing_profile ?? null,
+        };
+        routeDisplayMode.value = 'exact';
+      } else {
+        cachedExactRoute.value = null;
+        routeDisplayMode.value = 'exact';
+      }
     } else {
       transportCategory.value = 'zu Fuß';
       selectedTransitType.value = 'Zug';
@@ -201,6 +268,8 @@ watch(
       calculatedDurationSeconds.value = null;
       routeGeometry.value = null;
       routingProfile.value = null;
+      cachedExactRoute.value = null;
+      routeDisplayMode.value = 'exact';
     }
   },
   { immediate: true }
@@ -264,6 +333,13 @@ async function calculateRoute() {
     calculatedDurationSeconds.value = primary.duration_seconds;
     routeGeometry.value = JSON.stringify(primary.coordinates);
     routingProfile.value = primary.profile;
+    cachedExactRoute.value = {
+      geometry: JSON.stringify(primary.coordinates),
+      distance: primary.distance_meters,
+      duration: primary.duration_seconds,
+      profile: primary.profile,
+    };
+    routeDisplayMode.value = 'exact';
 
     if (form.value.departure_time && !form.value.arrival_time) {
       updateArrivalTimeFromDuration();
@@ -305,6 +381,7 @@ const canDelete = computed(() => {
 
 function onSave() {
   if (!props.fromSpot || !props.toSpot || isLegUploadingAttachments.value) return;
+  const isExact = isRoutable.value && routeDisplayMode.value === 'exact' && !!routeGeometry.value;
   const legData: ExcursionLeg = {
     id: props.leg?.id,
     position: props.leg?.position ?? 0,
@@ -322,10 +399,10 @@ function onSave() {
     paid_by_user_id:
       form.value.amount && form.value.paid_by_user_id ? Number(form.value.paid_by_user_id) : null,
     budget_expense_id: props.leg?.budget_expense_id,
-    route_geometry: routeGeometry.value,
-    distance_meters: calculatedDistanceMeters.value,
-    duration_seconds: calculatedDurationSeconds.value,
-    routing_profile: routingProfile.value,
+    route_geometry: isExact ? routeGeometry.value : null,
+    distance_meters: isExact ? calculatedDistanceMeters.value : null,
+    duration_seconds: isExact ? calculatedDurationSeconds.value : null,
+    routing_profile: isExact ? routingProfile.value : null,
   };
   emit('save', legData);
   emit('update:modelValue', false);
@@ -392,26 +469,20 @@ function onDelete() {
         </div>
       </div>
 
-      <!-- Exakte Routen-Berechnung (OpenRouteService) -->
+      <!-- Exakte Routen-Berechnung (OpenRouteService) & Luftlinie-Umschalter -->
       <div
         class="route-calc-wrapper"
         :class="{ 'is-expanded': isRoutable }"
         :inert="!isRoutable ? true : undefined"
       >
         <div class="route-calc-inner">
-          <div class="route-calc-section">
-            <div class="route-calc-header">
+          <div class="route-calc-section" :class="{ 'has-route': hasExactRoute }">
+            <!-- Zustand 1: Noch keine Route berechnet -> Aufforderung zur Berechnung -->
+            <div v-if="!hasExactRoute" class="route-calc-header">
               <div class="route-calc-info">
                 <span class="route-calc-title">🗺️ Exakte Route (OpenRouteService)</span>
                 <div class="route-calc-detail">
-                  <span
-                    v-if="calculatedDistanceMeters && calculatedDurationSeconds"
-                    class="route-calc-stats"
-                  >
-                    {{ formatDistance(calculatedDistanceMeters) }} •
-                    {{ formatDuration(calculatedDurationSeconds) }}
-                  </span>
-                  <span v-else class="route-calc-hint">
+                  <span class="route-calc-hint">
                     Echte Wegeroute, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
                   </span>
                 </div>
@@ -424,9 +495,81 @@ function onDelete() {
                 :loading="isCalculatingRoute"
                 @click="calculateRoute"
               >
-                {{ calculatedDistanceMeters ? 'Neu berechnen' : 'Route berechnen' }}
+                Route berechnen
               </Button>
             </div>
+
+            <!-- Zustand 2: Route liegt vor -> Umschalter zwischen Exakt & Luftlinie samt Rückgängig -->
+            <div v-else class="route-calc-active">
+              <div class="route-calc-header-mode">
+                <div class="route-calc-heading-row">
+                  <div class="route-calc-title-group">
+                    <span class="route-calc-title">🗺️ Routenführung</span>
+                    <span
+                      class="route-calc-badge"
+                      :class="{ 'route-calc-badge--dashed': routeDisplayMode === 'direct' }"
+                    >
+                      {{ routeDisplayMode === 'exact' ? 'Exakte Route aktiv' : 'Luftlinie aktiv' }}
+                    </span>
+                  </div>
+                </div>
+
+                <SegmentedToggle
+                  class="route-mode-toggle"
+                  :model-value="routeDisplayMode"
+                  :options="ROUTE_MODE_OPTIONS"
+                  aria-label="Routenführung auf der Karte"
+                  @update:model-value="onRouteModeChange"
+                />
+              </div>
+
+              <div class="route-calc-body">
+                <div class="route-calc-detail">
+                  <span v-if="routeDisplayMode === 'exact'" class="route-calc-stats">
+                    {{ formatDistance(calculatedDistanceMeters) }} •
+                    {{ formatDuration(calculatedDurationSeconds) }}
+                  </span>
+                  <span v-else class="route-calc-hint">
+                    Gestrichelte Verbindung auf der Karte (ungefähre Luftlinie).
+                  </span>
+                </div>
+
+                <div class="route-calc-actions">
+                  <Button
+                    v-if="routeDisplayMode === 'exact'"
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    class="btn-calc-route"
+                    :loading="isCalculatingRoute"
+                    @click="calculateRoute"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.refresh" :size="13" group="actions" />
+                    Neu berechnen
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="btn-reset-route"
+                    :title="
+                      routeDisplayMode === 'exact'
+                        ? 'Exakte Route verwerfen und auf Luftlinie zurücksetzen'
+                        : 'Route verwerfen'
+                    "
+                    @click="resetToDirectLine"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.restore" :size="13" group="actions" />
+                    {{
+                      routeDisplayMode === 'exact'
+                        ? 'Auf Luftlinie zurücksetzen'
+                        : 'Route verwerfen'
+                    }}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <p v-if="routeCalculationError" class="route-calc-error">
               ⚠️ {{ routeCalculationError }}
             </p>
@@ -442,7 +585,9 @@ function onDelete() {
           <div class="arrival-time-wrapper">
             <Input v-model="form.arrival_time" type="time" />
             <Button
-              v-if="form.departure_time && calculatedDurationSeconds"
+              v-if="
+                form.departure_time && calculatedDurationSeconds && routeDisplayMode === 'exact'
+              "
               type="button"
               variant="ghost"
               size="sm"
@@ -772,6 +917,80 @@ function onDelete() {
   justify-content: center;
 }
 
+.route-calc-active {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.route-calc-header-mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.route-calc-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.route-calc-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.route-calc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.route-calc-badge--dashed {
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+}
+
+.route-mode-toggle {
+  width: 100%;
+}
+
+.route-calc-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 36px;
+}
+
+.route-calc-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.btn-reset-route {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.btn-reset-route:hover {
+  color: var(--color-danger, #ef4444);
+}
+
 .route-calc-error {
   margin: 0;
   font-size: 0.8125rem;
@@ -841,10 +1060,23 @@ function onDelete() {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .route-calc-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .route-calc-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 480px) {
-  .transport-toggle :deep(.segmented-option) {
+  .transport-toggle :deep(.segmented-option),
+  .route-mode-toggle :deep(.segmented-option) {
     padding: 6px 4px;
     font-size: 0.8rem;
     gap: 4px;
