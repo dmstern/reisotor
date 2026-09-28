@@ -190,11 +190,22 @@ const isNarrowLayout = computed(() => props.sheetOverlayMode ?? !isDesktop.value
 // locate Teleport target"). Ein Tick Verzögerung reicht: dann ist das Geschwister-Element sicher
 // eingehängt.
 const teleportReady = ref(false);
+function updateTeleportReady() {
+  teleportReady.value =
+    typeof document !== 'undefined' && !!document.getElementById('map-focus-dock');
+}
 onMounted(() => {
-  nextTick(() => {
-    teleportReady.value = true;
-  });
+  updateTeleportReady();
+  if (!teleportReady.value) {
+    nextTick(updateTeleportReady);
+  }
 });
+watch(isNarrowLayout, () => {
+  if (isNarrowLayout.value && !teleportReady.value) {
+    updateTeleportReady();
+  }
+});
+const canTeleportToDock = computed(() => isNarrowLayout.value && teleportReady.value);
 const tripStore = useTripStore();
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
@@ -2489,16 +2500,12 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
          Kartenrand auf Mobil praktisch permanent von der (dort ebenfalls unten verankerten, meist
          mindestens "partial" hohen) Spots-Schublade verdeckt und damit faktisch unbedienbar war -
          genau dieselbe Falle wie bei der Stationen-Liste vorher, jetzt mit demselben Muster gelöst.
-         Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (Teleport disabled,
-         siehe @container-Regel für .focus-spot-list/.day-strip weiter unten - dieselbe 720px-
-         Schwelle wie isNarrowLayout). -->
-    <Teleport
-      v-if="teleportReady || !isNarrowLayout"
-      to="#map-focus-dock"
-      :disabled="!isNarrowLayout"
-    >
+         Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (ohne Teleport).
+         Wichtig: Kein dynamisches :disabled auf <Teleport> verwenden, da Vue 3 bei initial deaktiviertem
+         Teleport das Ziel nicht sauber auflöst und beim Umschalten auf Mobil mit "parent is null" abstürzt.
+         Stattdessen echtes v-if / v-else-if. -->
+    <Teleport v-if="canTeleportToDock && vacationDays.length && !focusedTrack" to="#map-focus-dock">
       <DayStrip
-        v-if="vacationDays.length && !focusedTrack"
         :days="vacationDays"
         :active-date="drawers.mapFocusDate"
         :has-content="dayHasContent"
@@ -2506,14 +2513,21 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         @select="toggleDayFocus"
       />
     </Teleport>
+    <DayStrip
+      v-else-if="vacationDays.length && !focusedTrack"
+      :days="vacationDays"
+      :active-date="drawers.mapFocusDate"
+      :has-content="dayHasContent"
+      :date-title="formatDate"
+      @select="toggleDayFocus"
+    />
 
     <!-- Playback-Steuerung für fokussierte Aufzeichnung:
          Mobil im Bottom-Sheet-Dock (#map-focus-dock in ExcursionsView.vue),
          auf Desktop schwebend über der Karte unten -->
     <Teleport
-      v-if="(teleportReady || !isNarrowLayout) && focusedTrack && focusedTrackPoints.length >= 2"
+      v-if="canTeleportToDock && focusedTrack && focusedTrackPoints.length >= 2"
       to="#map-focus-dock"
-      :disabled="!isNarrowLayout"
     >
       <div class="map-track-playback-container">
         <TrackPlayback
@@ -2525,6 +2539,18 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         />
       </div>
     </Teleport>
+    <div
+      v-else-if="focusedTrack && focusedTrackPoints.length >= 2"
+      class="map-track-playback-container"
+    >
+      <TrackPlayback
+        :track="focusedTrack"
+        :title="focusedTrack?.title"
+        :points="focusedTrackPoints"
+        v-model:progress="trackPlaybackProgress"
+        @close="clearTrackFocus"
+      />
+    </div>
 
     <TravelDetailDialog
       v-if="openTravel"
