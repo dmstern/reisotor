@@ -72,27 +72,6 @@ const singleRouteDistance = computed(() => {
           <span v-if="idx === props.selectedRouteIndex" class="route-alt-radio-dot"></span>
         </div>
         <div class="route-alt-content">
-          <div class="route-alt-title-row">
-            <span class="route-alt-name">Route {{ idx + 1 }}</span>
-            <div class="route-alt-badges">
-              <span
-                v-if="idx === props.fastestRouteIndex"
-                class="route-alt-badge badge-fastest"
-                title="Schnellste Reisedauer"
-              >
-                <AppIcon :icon="fastestRouteIconDef" :size="11" group="actions" />
-                Schnellste
-              </span>
-              <span
-                v-if="idx === props.shortestRouteIndex"
-                class="route-alt-badge badge-shortest"
-                title="Kürzeste Fahrtstrecke"
-              >
-                <AppIcon :icon="ACTION_ICONS.distance" :size="11" group="actions" />
-                Kürzeste
-              </span>
-            </div>
-          </div>
           <div class="route-alt-stats">
             <span class="route-alt-duration">{{ formatDuration(r.duration_seconds) }}</span>
             <span class="route-alt-sep">•</span>
@@ -113,6 +92,27 @@ const singleRouteDistance = computed(() => {
               }})
             </span>
           </div>
+          <div
+            v-if="idx === props.fastestRouteIndex || idx === props.shortestRouteIndex"
+            class="route-alt-badges"
+          >
+            <span
+              v-if="idx === props.fastestRouteIndex"
+              class="route-alt-badge badge-fastest"
+              title="Schnellste Reisedauer"
+            >
+              <AppIcon :icon="fastestRouteIconDef" :size="11" group="actions" />
+              Schnellste
+            </span>
+            <span
+              v-if="idx === props.shortestRouteIndex"
+              class="route-alt-badge badge-shortest"
+              title="Kürzeste Fahrtstrecke"
+            >
+              <AppIcon :icon="ACTION_ICONS.distance" :size="11" group="actions" />
+              Kürzeste
+            </span>
+          </div>
         </div>
       </button>
     </div>
@@ -120,9 +120,6 @@ const singleRouteDistance = computed(() => {
     <!-- Nur 1 Route vorhanden -> Kasten im gleichen Stil wie die Alternativen (ohne Radio-Button) -->
     <div v-else class="route-alt-card route-alt-card--single is-selected">
       <div class="route-alt-content">
-        <div class="route-alt-title-row">
-          <span class="route-alt-name">Route 1</span>
-        </div>
         <div class="route-alt-stats route-calc-stats">
           <span class="route-alt-duration">{{ formatDuration(singleRouteDuration) }}</span>
           <span
@@ -209,24 +206,12 @@ const singleRouteDistance = computed(() => {
 
 .route-alt-content {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.route-alt-title-row {
-  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
   flex-wrap: wrap;
-}
-
-.route-alt-name {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-text);
 }
 
 .route-alt-badges {
@@ -234,6 +219,7 @@ const singleRouteDistance = computed(() => {
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .route-alt-badge {
@@ -265,8 +251,9 @@ const singleRouteDistance = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
+  flex-wrap: wrap;
 }
 
 .route-alt-duration {
@@ -279,6 +266,7 @@ const singleRouteDistance = computed(() => {
 }
 
 .route-alt-diff {
+  font-size: 0.75rem;
   color: var(--color-text-muted);
   font-style: italic;
 }

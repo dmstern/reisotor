@@ -64,7 +64,7 @@ describe('LegRouteAlternatives', () => {
     // Einzelkarte vorhanden
     const singleCard = document.querySelector('.route-alt-card--single');
     expect(singleCard).not.toBeNull();
-    expect(singleCard?.textContent).toContain('Route 1');
+    expect(singleCard?.textContent).not.toContain('Route 1');
     expect(singleCard?.textContent).toContain('30 Min.');
     expect(singleCard?.textContent).toContain('30,0 km');
 
@@ -92,7 +92,11 @@ describe('LegRouteAlternatives', () => {
     const cards = document.querySelectorAll('.route-alt-card');
     expect(cards.length).toBe(2);
 
-    // Route 1 ist schnellste
+    // Keine redundanten technischen Nummern-Labels (Route 1, Route 2)
+    expect(cards[0].textContent).not.toContain('Route 1');
+    expect(cards[1].textContent).not.toContain('Route 2');
+
+    // Erste Alternative ist schnellste
     expect(cards[0].querySelector('.badge-fastest')?.textContent).toContain('Schnellste');
     expect(cards[0].querySelector('.badge-shortest')).toBeNull();
     // Kein redundanter Vorschlag-Badge

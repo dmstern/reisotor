@@ -264,8 +264,8 @@ describe('LegTransportModal', () => {
     await new Promise((r) => setTimeout(r, 10));
     await nextTick();
 
-    // Distanz und Dauer sollen nun im Single-Route-Card angezeigt werden:
-    expect(document.querySelector('.route-alt-card--single')?.textContent).toContain('Route 1');
+    // Distanz und Dauer sollen nun im Single-Route-Card angezeigt werden (ohne überflüssiges "Route 1"-Label):
+    expect(document.querySelector('.route-alt-card--single')?.textContent).not.toContain('Route 1');
     expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30,0 km');
     expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30 Min.');
 
