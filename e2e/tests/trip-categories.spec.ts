@@ -72,8 +72,9 @@ test.describe('Trip Categories Management', () => {
     // Verify dropdown suggestion includes updatedCategory
     await expect(expenseModal.getByRole('option', { name: updatedCategory })).toBeVisible();
 
-    // Close expense modal
+    // Close expense modal and confirm discarding draft
     await expenseModal.getByRole('button', { name: 'Schließen' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Entwurf verwerfen' }).click();
     await expect(expenseModal).not.toBeVisible();
 
     // 11. Go back to /trips and delete the custom category
