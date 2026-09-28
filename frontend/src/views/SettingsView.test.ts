@@ -133,4 +133,34 @@ describe('SettingsView loading state', () => {
 
     cleanUp();
   });
+
+  it('zeigt im Über-Tab Quellenangaben für OpenRouteService und OpenStreetMap', async () => {
+    await router.push('/settings?tab=about');
+    await router.isReady();
+
+    const { container, cleanUp } = mountComponent();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 20));
+    await nextTick();
+
+    expect(container.textContent).toContain('Geodaten & Quellen');
+    expect(container.textContent).toContain('Routen & Fahrzeiten');
+    expect(container.textContent).toContain('OpenRouteService');
+    expect(container.textContent).toContain('Kartendaten');
+    expect(container.textContent).toContain('OpenStreetMap');
+
+    const orsLink = container.querySelector(
+      'a[href="https://openrouteservice.org/"]'
+    ) as HTMLAnchorElement;
+    expect(orsLink).not.toBeNull();
+    expect(orsLink.target).toBe('_blank');
+
+    const osmLink = container.querySelector(
+      'a[href="https://www.openstreetmap.org/copyright"]'
+    ) as HTMLAnchorElement;
+    expect(osmLink).not.toBeNull();
+    expect(osmLink.target).toBe('_blank');
+
+    cleanUp();
+  });
 });

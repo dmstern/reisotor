@@ -178,12 +178,6 @@ describe('LegTransportModal', () => {
     expect(routeFieldset?.classList.contains('is-open')).toBe(true);
     expect(routeFieldset?.textContent).toContain('Routenführung');
     expect(routeFieldset?.textContent).toContain('Route berechnen');
-    expect(routeFieldset?.textContent).toContain('Quelle: OpenRouteService');
-
-    const sourceLink = routeFieldset?.querySelector('a.route-source-link') as HTMLAnchorElement;
-    expect(sourceLink).not.toBeNull();
-    expect(sourceLink?.href).toBe('https://openrouteservice.org/');
-    expect(sourceLink?.target).toBe('_blank');
 
     cleanUp();
   });
@@ -585,7 +579,6 @@ describe('LegTransportModal', () => {
     const floatingBottom = document.querySelector('.route-floating-bottom');
     expect(floatingBottom).not.toBeNull();
     expect(floatingBottom?.querySelector('.route-calc-body')).not.toBeNull();
-    expect(floatingBottom?.querySelector('.route-source-link')).not.toBeNull();
 
     const miniMap = document.querySelector('[data-testid="leg-mini-map"]');
     expect(miniMap).not.toBeNull();

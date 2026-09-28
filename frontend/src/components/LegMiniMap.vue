@@ -79,8 +79,8 @@ function getCoveredOffsets(): { coveredTopPx: number; coveredBottomPx: number } 
 
   // Fallback für Tests (jsdom liefert 0 für getBoundingClientRect) und initiales Rendern:
   // Top: SegmentedToggle (~38px) + Offset (10px) = ~48px
-  // Bottom: Single Route Card (~46px) + Footer (~20px) + Offset (10px) = ~76px
-  return { coveredTopPx: 48, coveredBottomPx: 76 };
+  // Bottom: Single Route Card (~46px) + Offset (10px) = ~56px
+  return { coveredTopPx: 48, coveredBottomPx: 56 };
 }
 
 async function render() {

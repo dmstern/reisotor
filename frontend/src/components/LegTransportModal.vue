@@ -533,17 +533,6 @@ function onDelete() {
             <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
             <span>{{ routeCalculationError }}</span>
           </p>
-
-          <div class="route-calc-footer">
-            <a
-              href="https://openrouteservice.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="route-source-link"
-            >
-              Quelle: OpenRouteService
-            </a>
-          </div>
         </div>
 
         <!-- Zustand 2: Route liegt vor -> Vollflächige Mini-Map mit schwebenden Elementen -->
@@ -618,17 +607,6 @@ function onDelete() {
               <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
               <span>{{ routeCalculationError }}</span>
             </p>
-
-            <div class="route-calc-footer">
-              <a
-                href="https://openrouteservice.org/"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="route-source-link"
-              >
-                Quelle: OpenRouteService
-              </a>
-            </div>
           </div>
         </div>
       </CollapsibleFieldset>
@@ -1103,49 +1081,6 @@ function onDelete() {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: 6px 10px;
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-}
-
-.route-calc-footer {
-  display: flex;
-  margin-top: 2px;
-}
-
-.route-floating-bottom .route-calc-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0;
-}
-
-.route-source-link {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  transition: color 0.15s ease;
-  font-family: inherit;
-}
-
-.route-source-link:hover {
-  color: var(--color-primary-dark);
-}
-
-.route-floating-bottom .route-source-link {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  text-decoration: none;
-  transition: all 0.15s ease;
-  backdrop-filter: blur(4px);
-}
-
-.route-floating-bottom .route-source-link:hover {
-  color: var(--color-text);
-  background: var(--color-hover);
   box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
