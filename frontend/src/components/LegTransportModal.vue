@@ -103,7 +103,6 @@ const {
   selectRoute,
   onPreferenceToggle,
   onRouteModeChange,
-  resetToDirectLine,
   setInitialRoute,
 } = useRouteCalculation({
   tripId,
@@ -523,28 +522,6 @@ function onDelete() {
                   <span class="route-calc-hint">
                     Gestrichelte Verbindung auf der Karte (ungefähre Luftlinie).
                   </span>
-                </div>
-
-                <div class="route-calc-actions">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    class="btn-reset-route"
-                    :title="
-                      routeDisplayMode === 'exact'
-                        ? 'Exakte Route verwerfen und auf Luftlinie zurücksetzen'
-                        : 'Route verwerfen'
-                    "
-                    @click="resetToDirectLine"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.restore" :size="13" group="actions" />
-                    {{
-                      routeDisplayMode === 'exact'
-                        ? 'Auf Luftlinie zurücksetzen'
-                        : 'Route verwerfen'
-                    }}
-                  </Button>
                 </div>
               </div>
             </div>
@@ -1051,25 +1028,6 @@ function onDelete() {
   gap: var(--space-2);
 }
 
-.route-calc-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: 4px;
-}
-
-.btn-reset-route {
-  color: var(--color-text-muted);
-  font-size: 0.8125rem;
-  padding: 4px 8px;
-  white-space: nowrap;
-}
-
-.btn-reset-route:hover {
-  color: var(--color-danger);
-}
-
 .route-calc-error {
   display: flex;
   align-items: flex-start;
@@ -1223,12 +1181,6 @@ function onDelete() {
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-2);
-  }
-
-  .route-calc-actions {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
   }
 }
 

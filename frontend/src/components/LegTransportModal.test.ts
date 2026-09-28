@@ -483,66 +483,6 @@ describe('LegTransportModal', () => {
     cleanUp();
   });
 
-  it('setzt Route komplett auf Luftlinie zurück per Klick auf Auf Luftlinie zurücksetzen', async () => {
-    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
-    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
-    const legWithRoute: ExcursionLeg = {
-      ...mockLeg,
-      transport_type: 'Auto',
-      route_geometry: '[[38.71,-9.14],[38.8,-9.38]]',
-      distance_meters: 1800,
-      duration_seconds: 1260,
-      routing_profile: 'driving-car',
-    };
-
-    let savedLeg: ExcursionLeg | undefined;
-    const { cleanUp } = mountTestApp(LegTransportModal, {
-      modelValue: true,
-      fromSpot: spotWithCoordsA,
-      toSpot: spotWithCoordsB,
-      leg: legWithRoute,
-      users: mockUsers,
-      onSave: (leg: ExcursionLeg) => {
-        savedLeg = leg;
-      },
-    });
-    await nextTick();
-
-    // Route liegt vor: Badge und Toggle sind sichtbar
-    expect(document.querySelector('.route-calc-active')).not.toBeNull();
-    expect(document.querySelector('.route-calc-badge')?.textContent).toContain(
-      'Exakte Route aktiv'
-    );
-
-    const resetBtn = Array.from(document.querySelectorAll('.btn-reset-route')).find((b) =>
-      b.textContent?.includes('Auf Luftlinie zurücksetzen')
-    ) as HTMLElement;
-    expect(resetBtn).toBeDefined();
-    resetBtn.click();
-    await nextTick();
-
-    // Box soll wieder im unberechneten Ausgangszustand mit "Route berechnen" sein
-    expect(document.querySelector('.route-calc-active')).toBeNull();
-    const calcBtn = Array.from(document.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Route berechnen')
-    );
-    expect(calcBtn).toBeDefined();
-
-    // Speichern
-    const submitBtn = Array.from(document.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('Übernehmen')
-    );
-    submitBtn?.click();
-    await nextTick();
-
-    expect(savedLeg).toBeDefined();
-    expect(savedLeg?.route_geometry).toBeNull();
-    expect(savedLeg?.distance_meters).toBeNull();
-    expect(savedLeg?.duration_seconds).toBeNull();
-
-    cleanUp();
-  });
-
   it('rendert Mini-Map und zeigt mehrere Routenalternativen zur Auswahl', async () => {
     const { api } = await import('../api/client');
     vi.mocked(api.post).mockResolvedValueOnce({
