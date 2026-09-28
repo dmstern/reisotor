@@ -468,6 +468,11 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
           amount: null,
           paid_by_user_id: null,
           budget_expense_id: null,
+          route_geometry:
+            '[[38.72,-9.12],[38.7192,-9.1215],[38.7185,-9.1232],[38.7171,-9.1248],[38.7155,-9.1259],[38.7142,-9.1265],[38.713,-9.127]]',
+          distance_meters: 1100,
+          duration_seconds: 900,
+          routing_profile: 'foot-walking',
         },
         {
           id: 2,

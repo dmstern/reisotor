@@ -611,9 +611,19 @@ db.prepare(
 const insertLeg = db.prepare(
   `INSERT INTO excursion_legs (
     idea_id, position, from_spot_id, to_spot_id, transport_type, departure_time, arrival_time,
-    seat, note, amount, paid_by_user_id
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    seat, note, amount, paid_by_user_id, route_geometry, distance_meters, duration_seconds, routing_profile
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
+
+const alfamaWalkingRoute = JSON.stringify([
+  [38.72, -9.12],
+  [38.7192, -9.1215],
+  [38.7185, -9.1232],
+  [38.7171, -9.1248],
+  [38.7155, -9.1259],
+  [38.7142, -9.1265],
+  [38.713, -9.127],
+]);
 
 // Leg 0: Hotel Alfama -> Miradouro de Santa Luzia
 insertLeg.run(
@@ -627,7 +637,42 @@ insertLeg.run(
   null,
   'Durch die kleinen Gassen bergauf',
   null,
-  null
+  null,
+  alfamaWalkingRoute,
+  1100,
+  900,
+  'foot-walking'
+);
+
+db.prepare(
+  `INSERT OR REPLACE INTO routing_cache (profile, from_lat, from_lng, to_lat, to_lng, response_json, created_at)
+   VALUES (?, ?, ?, ?, ?, ?, ?)`
+).run(
+  'foot-walking:fastest',
+  38.72,
+  -9.12,
+  santaLuziaLat,
+  santaLuziaLng,
+  JSON.stringify({
+    supported: true,
+    routes: [
+      {
+        coordinates: [
+          [38.72, -9.12],
+          [38.7192, -9.1215],
+          [38.7185, -9.1232],
+          [38.7171, -9.1248],
+          [38.7155, -9.1259],
+          [38.7142, -9.1265],
+          [38.713, -9.127],
+        ],
+        distance_meters: 1100,
+        duration_seconds: 900,
+        profile: 'foot-walking',
+      },
+    ],
+  }),
+  isScreenshotMode ? '2026-08-06T15:00:00.000Z' : new Date().toISOString()
 );
 
 // Leg 1: Miradouro de Santa Luzia -> Castelo de São Jorge
@@ -641,6 +686,10 @@ insertLeg.run(
   '10:45',
   null,
   'Weiter zur Festungsmauer',
+  null,
+  null,
+  null,
+  null,
   null,
   null
 );
@@ -657,7 +706,11 @@ insertLeg.run(
   'Tram 28',
   'Historische Tram bergab',
   3.1,
-  user1.id
+  user1.id,
+  null,
+  null,
+  null,
+  null
 );
 
 // Leg 3: Praça do Comércio -> Time Out Market
@@ -671,6 +724,10 @@ insertLeg.run(
   '13:45',
   null,
   'Flaniermeile am Flussufer',
+  null,
+  null,
+  null,
+  null,
   null,
   null
 );
@@ -687,7 +744,11 @@ insertLeg.run(
   'Linie 15E',
   'Mit der Tram direkt nach Belém',
   3.1,
-  user2.id
+  user2.id,
+  null,
+  null,
+  null,
+  null
 );
 
 // Bestehender Ausflug für Belém & Market (wird u. a. von E2E-Tests wie calendar.spec.ts & map-focus-covered-drawer.spec.ts gesucht)
