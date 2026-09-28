@@ -79,12 +79,29 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
     )
     .catch(() => {});
 
+  // 1b. In Screenshot-/Test-Umgebungen (insbes. bei eingefrorener Uhr per page.clock.setFixedTime)
+  // stellt dieser Style sicher, dass fertig geladene Leaflet-Kacheln nicht in Leaflets JS-Fade-Loop (opacity: 0)
+  // hängenbleiben, sondern sofort mit voller Deckkraft (opacity: 1) dargestellt werden.
+  await page
+    .addStyleTag({
+      content: `
+        .leaflet-tile.leaflet-tile-loaded {
+          opacity: 1 !important;
+          transition: none !important;
+        }
+      `,
+    })
+    .catch(() => {});
+
   // Bei Viewport- oder Schubladen-Änderungen sicherstellen, dass Leaflet die Kachelberechnung triggert
   await page.evaluate(() => {
     window.dispatchEvent(new Event('resize'));
+    document.querySelectorAll<HTMLElement>('.leaflet-tile.leaflet-tile-loaded').forEach((el) => {
+      el.style.opacity = '1';
+    });
   });
 
-  // 2. Warten, bis alle Kacheln vollständig heruntergeladen, dekodiert und gerendert wurden
+  // 2. Warten, bis alle Kacheln in JEDEM sichtbaren Kartencontainer vollständig heruntergeladen, dekodiert und gerendert wurden
   await page.waitForFunction(
     () => {
       const visibleContainers = Array.from(
@@ -101,23 +118,30 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
       });
       if (visibleContainers.length === 0) return true; // Keine sichtbare Karte vorhanden
 
-      const isAnyLoading = visibleContainers.some((el) => el.hasAttribute('data-tiles-loading'));
-      if (isAnyLoading) return false;
+      for (const container of visibleContainers) {
+        if (container.hasAttribute('data-tiles-loading')) return false;
 
-      const tiles = Array.from(
-        document.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
-      );
-      if (tiles.length === 0) return false;
+        const tiles = Array.from(
+          container.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
+        );
+        if (tiles.length === 0) return false;
 
-      return tiles.every(
-        (img) =>
-          img.complete && img.naturalWidth > 0 && img.classList.contains('leaflet-tile-loaded')
-      );
+        const allLoaded = tiles.every(
+          (img) =>
+            img.complete &&
+            img.naturalWidth > 0 &&
+            img.classList.contains('leaflet-tile-loaded') &&
+            parseFloat(window.getComputedStyle(img).opacity || '0') >= 0.9
+        );
+        if (!allLoaded) return false;
+      }
+
+      return true;
     },
     undefined,
     { timeout: timeoutMs }
   );
 
-  // 3. Settle-Puffer für Leaflets CSS-Opacity-Transition (0.3s ease-in-out) & Compositing
+  // 3. Settle-Puffer für Leaflets Layout-Updates & Compositing
   await page.waitForTimeout(500);
 }

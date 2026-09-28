@@ -105,41 +105,45 @@ async function saveScreenshotIfChanged(
     });
     if (visibleContainers.length === 0) return { hasMap: false };
 
-    const isAnyLoading = visibleContainers.some((el) => el.hasAttribute('data-tiles-loading'));
-    const tiles = Array.from(
-      document.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
-    );
-    const hasZeroTiles = tiles.length === 0;
-    const hasIncompleteTiles = tiles.some(
-      (img) =>
-        !img.complete || img.naturalWidth === 0 || !img.classList.contains('leaflet-tile-loaded')
-    );
+    for (const container of visibleContainers) {
+      if (container.hasAttribute('data-tiles-loading')) {
+        return {
+          hasMap: true,
+          error: 'Leaflet-Kartenkacheln laden noch (data-tiles-loading)!',
+        };
+      }
+      const tiles = Array.from(
+        container.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
+      );
+      if (tiles.length === 0) {
+        return {
+          hasMap: true,
+          error: 'Sichtbare Leaflet-Karte hat 0 Kacheln (Kartenmaterial nicht gerendert)!',
+        };
+      }
+      const hasIncomplete = tiles.some(
+        (img) =>
+          !img.complete ||
+          img.naturalWidth === 0 ||
+          !img.classList.contains('leaflet-tile-loaded') ||
+          parseFloat(window.getComputedStyle(img).opacity || '0') < 0.9
+      );
+      if (hasIncomplete) {
+        return {
+          hasMap: true,
+          error:
+            'Nicht alle Leaflet-Kartenkacheln wurden vollständig geladen/gerendert oder sind noch transparent!',
+        };
+      }
+    }
 
-    return {
-      hasMap: true,
-      isAnyLoading,
-      tilesCount: tiles.length,
-      hasZeroTiles,
-      hasIncompleteTiles,
-    };
+    return { hasMap: true };
   });
 
-  if (mapCheck.hasMap) {
-    if (mapCheck.isAnyLoading) {
-      throw new Error(
-        `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Leaflet-Kartenkacheln laden noch (data-tiles-loading)!`
-      );
-    }
-    if (mapCheck.hasZeroTiles) {
-      throw new Error(
-        `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Sichtbare Leaflet-Karte hat 0 Kacheln (Kartenmaterial nicht gerendert)!`
-      );
-    }
-    if (mapCheck.hasIncompleteTiles) {
-      throw new Error(
-        `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Nicht alle Leaflet-Kartenkacheln wurden vollständig geladen/gerendert!`
-      );
-    }
+  if (mapCheck.hasMap && mapCheck.error) {
+    throw new Error(
+      `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: ${mapCheck.error}`
+    );
   }
 
   // Erhöhte Toleranz (25.000 Pixel entspricht ca. 1.2% bei Full HD), da Anti-Aliasing
@@ -176,7 +180,7 @@ async function saveScreenshotIfChanged(
             ? Math.max(300, Math.round(img1.width * img1.height * 0.012))
             : Math.round(img1.width * img1.height * 0.012));
 
-        if (numDiffPixels > 0 && process.env.FORCE_SCREENSHOTS) {
+        if (numDiffPixels > 0 && (process.env.FORCE_SCREENSHOTS || process.env.SCREENSHOT_MODE)) {
           fs.writeFileSync(screenshotPath, newBuffer);
           console.log(
             `[Updated: ${numDiffPixels} px diff (forced)] ${path.basename(screenshotPath)}`
@@ -404,6 +408,10 @@ async function applyScreenshotStyles(page: Page) {
       .app-header.non-prod {
         border-bottom: none !important;
         box-shadow: none !important;
+      }
+      .leaflet-tile.leaflet-tile-loaded {
+        opacity: 1 !important;
+        transition: none !important;
       }
     `,
   });
