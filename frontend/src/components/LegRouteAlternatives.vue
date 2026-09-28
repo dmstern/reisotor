@@ -165,6 +165,7 @@ const singleRouteDistance = computed(() => {
   corner-shape: squircle;
   background: var(--color-surface);
   border: 1.5px solid var(--color-border);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
   text-align: left;
   cursor: pointer;
   font-family: inherit;
@@ -180,6 +181,7 @@ const singleRouteDistance = computed(() => {
 .route-alt-card:hover:not(.is-selected) {
   border-color: var(--color-primary-light, var(--color-primary));
   background: var(--color-hover);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .route-alt-card:active {
@@ -189,7 +191,9 @@ const singleRouteDistance = computed(() => {
 .route-alt-card.is-selected {
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow:
+    var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15)),
+    0 0 0 1px var(--color-primary);
 }
 
 .route-alt-content {

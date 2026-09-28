@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef, watch } from 'vue';
+import { computed, nextTick, ref, toRef, watch } from 'vue';
 import type { ExcursionLeg, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
@@ -119,6 +119,17 @@ const {
 });
 
 const isRoutingOpen = ref(true);
+const miniMapRef = ref<{ render?: () => void; invalidateSize?: () => void } | null>(null);
+
+watch(isRoutingOpen, async (open) => {
+  if (open) {
+    await nextTick();
+    setTimeout(() => {
+      miniMapRef.value?.invalidateSize?.();
+      miniMapRef.value?.render?.();
+    }, 150);
+  }
+});
 
 const isRoutingDisabled = computed(() => !isRoutable.value);
 
@@ -517,21 +528,30 @@ function onDelete() {
               Route berechnen
             </Button>
           </div>
+
+          <p v-if="routeCalculationError" class="route-calc-error">
+            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+            <span>{{ routeCalculationError }}</span>
+          </p>
+
+          <div class="route-calc-footer">
+            <a
+              href="https://openrouteservice.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="route-source-link"
+            >
+              Quelle: OpenRouteService
+            </a>
+          </div>
         </div>
 
-        <!-- Zustand 2: Route liegt vor -> Mini-Map, Alternativen & Umschalter -->
-        <div v-else class="route-calc-active">
-          <SegmentedToggle
-            class="route-mode-toggle"
-            :model-value="routeDisplayMode"
-            :options="ROUTE_MODE_OPTIONS"
-            aria-label="Routenführung auf der Karte"
-            @update:model-value="onRouteModeChange"
-          />
-
+        <!-- Zustand 2: Route liegt vor -> Vollflächige Mini-Map mit schwebenden Elementen -->
+        <div v-else class="route-calc-active route-calc-map-wrap">
           <!-- Mini-Map der Teilstrecke mit Start-, Ziel-Pins und gerouteten Alternativen -->
           <div class="route-mini-map-container">
             <LegMiniMap
+              ref="miniMapRef"
               :from-spot="fromSpot"
               :to-spot="toSpot"
               :routes="calculatedRoutes"
@@ -542,60 +562,74 @@ function onDelete() {
             />
           </div>
 
-          <div class="route-calc-body">
-            <!-- Exakte Route: Routenberechnung & Alternativen -->
-            <div
-              class="route-mode-pane route-mode-pane--exact"
-              :class="{ 'is-active': routeDisplayMode === 'exact' }"
-              :inert="routeDisplayMode !== 'exact' ? true : undefined"
-            >
-              <div class="route-mode-pane-inner">
-                <LegRouteAlternatives
-                  :routes="calculatedRoutes"
-                  :selected-route-index="selectedRouteIndex"
-                  :route-preference="routePreference"
-                  :fastest-route-index="fastestRouteIndex"
-                  :shortest-route-index="shortestRouteIndex"
-                  :suggested-route-index="suggestedRouteIndex"
-                  :calculated-distance-meters="calculatedDistanceMeters"
-                  :calculated-duration-seconds="calculatedDurationSeconds"
-                  @select-route="selectRoute"
-                  @update:route-preference="onPreferenceToggle"
-                />
-              </div>
-            </div>
+          <!-- Schwebend oben: Routen-Modus Umschalter (Exakte Route / Luftlinie) -->
+          <div class="route-floating-top">
+            <SegmentedToggle
+              class="route-mode-toggle"
+              :model-value="routeDisplayMode"
+              :options="ROUTE_MODE_OPTIONS"
+              aria-label="Routenführung auf der Karte"
+              @update:model-value="onRouteModeChange"
+            />
+          </div>
 
-            <!-- Luftlinie: Info-Hinweis -->
-            <div
-              class="route-mode-pane route-mode-pane--direct"
-              :class="{ 'is-active': routeDisplayMode === 'direct' }"
-              :inert="routeDisplayMode !== 'direct' ? true : undefined"
-            >
-              <div class="route-mode-pane-inner">
-                <div class="route-calc-detail">
-                  <span class="route-calc-hint">
-                    Gestrichelte Verbindung auf der Karte (ungefähre Luftlinie).
-                  </span>
+          <!-- Schwebend unten: Routen-Alternativen / Luftlinie-Hinweis & Quellenangabe -->
+          <div class="route-floating-bottom">
+            <div class="route-calc-body">
+              <!-- Exakte Route: Routenberechnung & Alternativen -->
+              <div
+                class="route-mode-pane route-mode-pane--exact"
+                :class="{ 'is-active': routeDisplayMode === 'exact' }"
+                :inert="routeDisplayMode !== 'exact' ? true : undefined"
+              >
+                <div class="route-mode-pane-inner">
+                  <LegRouteAlternatives
+                    :routes="calculatedRoutes"
+                    :selected-route-index="selectedRouteIndex"
+                    :route-preference="routePreference"
+                    :fastest-route-index="fastestRouteIndex"
+                    :shortest-route-index="shortestRouteIndex"
+                    :suggested-route-index="suggestedRouteIndex"
+                    :calculated-distance-meters="calculatedDistanceMeters"
+                    :calculated-duration-seconds="calculatedDurationSeconds"
+                    @select-route="selectRoute"
+                    @update:route-preference="onPreferenceToggle"
+                  />
+                </div>
+              </div>
+
+              <!-- Luftlinie: Info-Hinweis -->
+              <div
+                class="route-mode-pane route-mode-pane--direct"
+                :class="{ 'is-active': routeDisplayMode === 'direct' }"
+                :inert="routeDisplayMode !== 'direct' ? true : undefined"
+              >
+                <div class="route-mode-pane-inner">
+                  <div class="route-calc-detail">
+                    <span class="route-calc-hint">
+                      Gestrichelte Verbindung auf der Karte (ungefähre Luftlinie).
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <p v-if="routeCalculationError" class="route-calc-error">
+              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+              <span>{{ routeCalculationError }}</span>
+            </p>
+
+            <div class="route-calc-footer">
+              <a
+                href="https://openrouteservice.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="route-source-link"
+              >
+                Quelle: OpenRouteService
+              </a>
+            </div>
           </div>
-        </div>
-
-        <p v-if="routeCalculationError" class="route-calc-error">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-          <span>{{ routeCalculationError }}</span>
-        </p>
-
-        <div class="route-calc-footer">
-          <a
-            href="https://openrouteservice.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="route-source-link"
-          >
-            Quelle: OpenRouteService
-          </a>
         </div>
       </CollapsibleFieldset>
 
@@ -902,10 +936,15 @@ function onDelete() {
   justify-content: center;
 }
 
-.route-calc-active {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.route-calc-active.route-calc-map-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  isolation: isolate;
+  display: block;
 }
 
 .route-calc-badge {
@@ -940,8 +979,20 @@ function onDelete() {
   }
 }
 
+.route-floating-top {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: var(--z-dropdown, 500);
+}
+
 .route-mode-toggle {
   width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 .route-calc-init-controls {
@@ -954,7 +1005,26 @@ function onDelete() {
 
 .route-mini-map-container {
   width: 100%;
+  height: 100%;
+  position: relative;
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.route-floating-bottom {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: var(--z-dropdown, 500);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(100% - 70px);
+  pointer-events: none;
+}
+
+.route-floating-bottom > * {
+  pointer-events: auto;
 }
 
 .route-calc-body {
@@ -962,6 +1032,20 @@ function onDelete() {
   flex-direction: column;
   gap: 0;
   width: 100%;
+}
+
+.route-calc-detail {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 8px 12px;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+.route-calc-detail .route-calc-hint {
+  color: var(--color-text);
+  font-weight: 500;
 }
 
 .route-mode-pane {
@@ -1013,9 +1097,24 @@ function onDelete() {
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.route-floating-bottom .route-calc-error {
+  background: var(--color-surface);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  padding: 6px 10px;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
 .route-calc-footer {
   display: flex;
   margin-top: 2px;
+}
+
+.route-floating-bottom .route-calc-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0;
 }
 
 .route-source-link {
@@ -1029,6 +1128,25 @@ function onDelete() {
 
 .route-source-link:hover {
   color: var(--color-primary-dark);
+}
+
+.route-floating-bottom .route-source-link {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(4px);
+}
+
+.route-floating-bottom .route-source-link:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
 }
 
 @keyframes route-content-in {
