@@ -585,7 +585,7 @@ describe('LegTransportModal', () => {
     // Initial ist Route 1 vorausgewählt (schnellste / Standard-Präferenz)
     expect(altCards[0].classList.contains('is-selected')).toBe(true);
     expect(altCards[0].querySelector('.badge-fastest')?.textContent).toContain('Schnellste');
-    expect(altCards[0].querySelector('.badge-suggested')?.textContent).toContain('Vorschlag');
+    expect(altCards[0].querySelector('.badge-suggested')).toBeNull();
     expect(altCards[1].querySelector('.badge-shortest')?.textContent).toContain('Kürzeste');
 
     // Route 2 anklicken (kürzere Strecke, aber 35 Min.)
@@ -708,7 +708,7 @@ describe('LegTransportModal', () => {
     cleanUp();
   });
 
-  it('schaltet per Präferenz-Umschalter zwischen schnellster und kürzester Route um', async () => {
+  it('erlaubt Auswahl zwischen schnellster und kürzester Route in der Alternativen-Liste', async () => {
     const { api } = await import('../api/client');
     vi.mocked(api.post).mockResolvedValueOnce({
       supported: true,
@@ -761,24 +761,20 @@ describe('LegTransportModal', () => {
 
     const altCards = document.querySelectorAll('.route-alt-card');
     expect(altCards.length).toBe(2);
-    expect(document.querySelector('.route-preference-label')?.textContent).toBe('Bevorzugen:');
+    // Kein redundanter Präferenz-Toggle
+    expect(document.querySelector('.route-preference-toggle')).toBeNull();
     // Initial ist Route 1 (schnellste) ausgewählt
     expect(altCards[0].classList.contains('is-selected')).toBe(true);
+    expect(altCards[0].querySelector('.badge-fastest')?.textContent).toContain('Schnellste');
 
-    // Klick auf "Kürzeste Strecke" im Präferenz-Toggle
-    const prefButtons = Array.from(
-      document.querySelectorAll('.route-preference-row .segmented-option')
-    ) as HTMLButtonElement[];
-    const shortestBtn = prefButtons.find((b) => b.textContent?.includes('Kürzeste'));
-    expect(shortestBtn).toBeDefined();
-
-    shortestBtn?.click();
+    // Klick auf Route 2 (kürzeste Strecke) in der Alternativen-Liste
+    (altCards[1] as HTMLElement).click();
     await nextTick();
 
-    // Route 2 (kürzeste) soll nun automatisch ausgewählt sein
+    // Route 2 (kürzeste) soll nun ausgewählt sein
     expect(altCards[1].classList.contains('is-selected')).toBe(true);
     expect(altCards[0].classList.contains('is-selected')).toBe(false);
-    expect(altCards[1].querySelector('.badge-suggested')?.textContent).toContain('Vorschlag');
+    expect(altCards[1].querySelector('.badge-shortest')?.textContent).toContain('Kürzeste');
 
     cleanUp();
   });

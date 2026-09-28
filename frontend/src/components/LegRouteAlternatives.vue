@@ -4,21 +4,30 @@ import type { RouteResult } from '../api/types';
 import type { IconDef } from '../utils/icon';
 import { IconBolt } from '@tabler/icons-vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { ROUTE_PREFERENCE_OPTIONS } from '../utils/legTransportConfig';
 import { formatDistance, formatDuration, formatDiffDuration } from '../utils/formatRoute';
-import SegmentedToggle from './SegmentedToggle.vue';
 import AppIcon from './AppIcon.vue';
 
-const props = defineProps<{
-  routes: RouteResult[];
-  selectedRouteIndex: number;
-  routePreference: 'fastest' | 'shortest';
-  fastestRouteIndex: number;
-  shortestRouteIndex: number;
-  suggestedRouteIndex: number;
-  calculatedDistanceMeters?: number | null;
-  calculatedDurationSeconds?: number | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    routes: RouteResult[];
+    selectedRouteIndex?: number;
+    routePreference?: 'fastest' | 'shortest';
+    fastestRouteIndex?: number;
+    shortestRouteIndex?: number;
+    suggestedRouteIndex?: number;
+    calculatedDistanceMeters?: number | null;
+    calculatedDurationSeconds?: number | null;
+  }>(),
+  {
+    selectedRouteIndex: 0,
+    routePreference: 'fastest',
+    fastestRouteIndex: -1,
+    shortestRouteIndex: -1,
+    suggestedRouteIndex: -1,
+    calculatedDistanceMeters: null,
+    calculatedDurationSeconds: null,
+  }
+);
 
 const emit = defineEmits<{
   (e: 'select-route', index: number): void;
@@ -31,10 +40,6 @@ const fastestRouteIconDef: IconDef = {
   outline: IconBolt,
 };
 
-const preferenceLabel = computed(() => {
-  return props.routes.length > 1 ? 'Bevorzugen:' : 'Berechnete Route:';
-});
-
 const singleRouteDuration = computed(() => {
   return props.routes[0]?.duration_seconds ?? props.calculatedDurationSeconds ?? null;
 });
@@ -42,26 +47,10 @@ const singleRouteDuration = computed(() => {
 const singleRouteDistance = computed(() => {
   return props.routes[0]?.distance_meters ?? props.calculatedDistanceMeters ?? null;
 });
-
-function onPreferenceChange(val: string) {
-  emit('update:routePreference', val as 'fastest' | 'shortest');
-}
 </script>
 
 <template>
   <div class="leg-route-alternatives">
-    <!-- Präferenz-Umschalter (Schnellste vs Kürzeste) -->
-    <div class="route-preference-row">
-      <span class="route-preference-label">{{ preferenceLabel }}</span>
-      <SegmentedToggle
-        class="route-preference-toggle"
-        :model-value="props.routePreference"
-        :options="ROUTE_PREFERENCE_OPTIONS"
-        aria-label="Routenpräferenz"
-        @update:model-value="onPreferenceChange"
-      />
-    </div>
-
     <!-- Mehrere Routenalternativen (bis zu 3) als interaktive Liste -->
     <div
       v-if="props.routes.length > 1"
@@ -101,14 +90,6 @@ function onPreferenceChange(val: string) {
               >
                 <AppIcon :icon="ACTION_ICONS.distance" :size="11" group="actions" />
                 Kürzeste
-              </span>
-              <span
-                v-if="idx === props.suggestedRouteIndex"
-                class="route-alt-badge badge-suggested"
-                title="Empfehlung anhand gewählter Präferenz"
-              >
-                <AppIcon :icon="ACTION_ICONS.recommended" :size="11" group="actions" />
-                Vorschlag
               </span>
             </div>
           </div>
@@ -163,31 +144,6 @@ function onPreferenceChange(val: string) {
   flex-direction: column;
   gap: var(--space-2);
   width: 100%;
-}
-
-.route-preference-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-}
-
-.route-preference-label {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.route-preference-toggle {
-  flex: 1;
-  max-width: 320px;
-}
-
-.route-preference-toggle :deep(.segmented-option) {
-  padding: 4px 8px;
-  font-size: 0.75rem;
 }
 
 .route-alternatives-list {
@@ -301,11 +257,6 @@ function onPreferenceChange(val: string) {
   color: var(--color-success);
 }
 
-.badge-suggested {
-  background: var(--color-warning-tint);
-  color: var(--color-warning-dark);
-}
-
 :root[data-theme='dark'] .badge-fastest {
   color: var(--color-primary-light);
 }
@@ -359,18 +310,6 @@ function onPreferenceChange(val: string) {
     transition: none !important;
     animation: none !important;
     transform: none !important;
-  }
-}
-
-@media (max-width: 600px) {
-  .route-preference-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .route-preference-toggle {
-    max-width: 100%;
-    width: 100%;
   }
 }
 </style>
