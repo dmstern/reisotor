@@ -723,4 +723,163 @@ describe('LegTransportModal', () => {
 
     cleanUp();
   });
+
+  it('berechnet Abfahrtszeit rückwärts aus Wunschankunftszeit per Glitzer-Button', async () => {
+    const legWithDuration: ExcursionLeg = {
+      ...mockLeg,
+      departure_time: null,
+      arrival_time: '15:30',
+      duration_seconds: 3600, // 60 Minuten
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: legWithDuration,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const depSparkle = document.querySelector(
+      '[data-testid="departure-sparkle-btn"]'
+    ) as HTMLButtonElement;
+    expect(depSparkle).not.toBeNull();
+
+    depSparkle.click();
+    await nextTick();
+
+    const depInput = document.querySelector('.departure-time-wrapper input') as HTMLInputElement;
+    expect(depInput.value).toBe('14:30');
+
+    cleanUp();
+  });
+
+  it('berechnet Ankunftszeit vorwärts aus Abfahrtszeit per Glitzer-Button', async () => {
+    const legWithDuration: ExcursionLeg = {
+      ...mockLeg,
+      departure_time: '10:15',
+      arrival_time: null,
+      duration_seconds: 1800, // 30 Minuten
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: legWithDuration,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const arrSparkle = document.querySelector(
+      '[data-testid="arrival-sparkle-btn"]'
+    ) as HTMLButtonElement;
+    expect(arrSparkle).not.toBeNull();
+
+    arrSparkle.click();
+    await nextTick();
+
+    const arrInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    expect(arrInput.value).toBe('10:45');
+
+    cleanUp();
+  });
+
+  it('synchronisiert Abfahrts- und Ankunftszeit automatisch wenn gekoppelt', async () => {
+    const legWithDuration: ExcursionLeg = {
+      ...mockLeg,
+      departure_time: '09:00',
+      arrival_time: '09:45',
+      duration_seconds: 2700, // 45 Minuten
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: legWithDuration,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const depInput = document.querySelector('.departure-time-wrapper input') as HTMLInputElement;
+    const arrInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    const linkToggle = document.querySelector(
+      '[data-testid="time-link-toggle"]'
+    ) as HTMLButtonElement;
+
+    expect(linkToggle).not.toBeNull();
+    expect(linkToggle.classList.contains('is-linked')).toBe(true);
+
+    // Abfahrtszeit auf 11:00 ändern -> Ankunft passt sich automatisch an (11:45)
+    depInput.value = '11:00';
+    depInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    expect(arrInput.value).toBe('11:45');
+
+    // Ankunftszeit auf 13:15 ändern -> Abfahrt passt sich automatisch an (12:30)
+    arrInput.value = '13:15';
+    arrInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    expect(depInput.value).toBe('12:30');
+
+    cleanUp();
+  });
+
+  it('erlaubt Entkoppeln der Zeiten und zeigt Statusbalken bei Abweichung', async () => {
+    const legWithDuration: ExcursionLeg = {
+      ...mockLeg,
+      departure_time: '08:00',
+      arrival_time: '08:30',
+      duration_seconds: 1800, // 30 Minuten
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: legWithDuration,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const linkToggle = document.querySelector(
+      '[data-testid="time-link-toggle"]'
+    ) as HTMLButtonElement;
+    expect(linkToggle).not.toBeNull();
+
+    // Entkoppeln
+    linkToggle.click();
+    await nextTick();
+    expect(linkToggle.classList.contains('is-linked')).toBe(false);
+
+    // Jetzt Ankunft manuell auf 10:00 ändern (1,5 Std. Puffer)
+    const arrInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    const depInput = document.querySelector('.departure-time-wrapper input') as HTMLInputElement;
+    arrInput.value = '10:00';
+    arrInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    // Abfahrtszeit bleibt unverändert bei 08:00
+    expect(depInput.value).toBe('08:00');
+
+    // Statusbalken zeigt Mismatch an
+    const syncBar = document.querySelector('[data-testid="time-sync-bar"]');
+    expect(syncBar?.classList.contains('time-sync-bar--mismatch')).toBe(true);
+    expect(syncBar?.textContent).toContain('Zeitfenster');
+
+    // Glitzer-Button bei Abfahrt berechnet Abfahrt passend zur neuen Ankunft 10:00 (10:00 - 30 Min. = 09:30)
+    const depSparkle = document.querySelector(
+      '[data-testid="departure-sparkle-btn"]'
+    ) as HTMLButtonElement;
+    depSparkle.click();
+    await nextTick();
+
+    expect(depInput.value).toBe('09:30');
+
+    cleanUp();
+  });
 });

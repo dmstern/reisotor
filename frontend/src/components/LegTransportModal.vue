@@ -174,7 +174,279 @@ const hasExactRoute = computed(() => {
   );
 });
 
-const isArrivalAutoCalculated = ref(false);
+const lastModifiedTimeField = ref<'departure' | 'arrival'>('departure');
+const isTimeLinked = ref(true);
+const isCalculatingDepartureSparkle = ref(false);
+const isCalculatingArrivalSparkle = ref(false);
+
+/**
+ * Parst einen "HH:MM"-String in Minuten seit Mitternacht.
+ * Gibt null zurück, wenn der String ungültig oder unvollständig ist.
+ */
+function parseTimeToMinutes(timeStr?: string | null): number | null {
+  if (!timeStr) return null;
+  const parts = timeStr.trim().split(':');
+  if (parts.length !== 2) return null;
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+/**
+ * Formatiert Minuten seit Mitternacht in einen "HH:MM"-String.
+ */
+function formatMinutesToTime(totalMinutes: number): string {
+  const normalized = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  const h = Math.floor(normalized / 60);
+  const m = normalized % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Berechnet Ankunftszeit: Abfahrt + Dauer
+ */
+function calcArrivalTime(departureStr: string, durationSeconds: number): string | null {
+  const depMinutes = parseTimeToMinutes(departureStr);
+  if (depMinutes == null) return null;
+  const durMinutes = Math.round(durationSeconds / 60);
+  return formatMinutesToTime(depMinutes + durMinutes);
+}
+
+/**
+ * Berechnet Abfahrtszeit: Ankunft - Dauer
+ */
+function calcDepartureTime(arrivalStr: string, durationSeconds: number): string | null {
+  const arrMinutes = parseTimeToMinutes(arrivalStr);
+  if (arrMinutes == null) return null;
+  const durMinutes = Math.round(durationSeconds / 60);
+  return formatMinutesToTime(arrMinutes - durMinutes);
+}
+
+/**
+ * Berechnet die Zeitspanne (in Minuten) zwischen Abfahrt und Ankunft.
+ */
+function calcElapsedMinutes(departureStr: string, arrivalStr: string): number | null {
+  const dep = parseTimeToMinutes(departureStr);
+  const arr = parseTimeToMinutes(arrivalStr);
+  if (dep == null || arr == null) return null;
+  return (((arr - dep) % 1440) + 1440) % 1440;
+}
+
+const activeDurationSeconds = computed<number | null>(() => {
+  if (
+    routeDisplayMode.value === 'exact' &&
+    calculatedDurationSeconds.value != null &&
+    calculatedDurationSeconds.value > 0
+  ) {
+    return calculatedDurationSeconds.value;
+  }
+  return null;
+});
+
+const canCalcArrival = computed(() => {
+  return (
+    activeDurationSeconds.value != null &&
+    !!form.value.departure_time &&
+    parseTimeToMinutes(form.value.departure_time) != null
+  );
+});
+
+const canCalcDeparture = computed(() => {
+  return (
+    activeDurationSeconds.value != null &&
+    !!form.value.arrival_time &&
+    parseTimeToMinutes(form.value.arrival_time) != null
+  );
+});
+
+const arrivalSparkleTitle = computed(() => {
+  if (!canCalcArrival.value || !activeDurationSeconds.value) return 'Ankunftszeit berechnen';
+  const durStr = formatDuration(activeDurationSeconds.value);
+  const target = calcArrivalTime(form.value.departure_time, activeDurationSeconds.value);
+  return target
+    ? `Ankunftszeit aus Abfahrt berechnen (${form.value.departure_time} + ${durStr} = ${target})`
+    : 'Ankunftszeit aus Reisedauer berechnen';
+});
+
+const departureSparkleTitle = computed(() => {
+  if (!canCalcDeparture.value || !activeDurationSeconds.value) return 'Abfahrtszeit berechnen';
+  const durStr = formatDuration(activeDurationSeconds.value);
+  const target = calcDepartureTime(form.value.arrival_time, activeDurationSeconds.value);
+  return target
+    ? `Abfahrtszeit aus Wunschankunftszeit berechnen (${form.value.arrival_time} − ${durStr} = ${target})`
+    : 'Abfahrtszeit aus Reisedauer berechnen';
+});
+
+function syncTimesWithDuration(durationSeconds?: number | null) {
+  const dur = durationSeconds ?? activeDurationSeconds.value;
+  if (!dur || dur <= 0) return;
+
+  if (lastModifiedTimeField.value === 'arrival' && form.value.arrival_time) {
+    const target = calcDepartureTime(form.value.arrival_time, dur);
+    if (target) {
+      form.value.departure_time = target;
+    }
+  } else if (form.value.departure_time) {
+    const target = calcArrivalTime(form.value.departure_time, dur);
+    if (target) {
+      form.value.arrival_time = target;
+    }
+  } else if (form.value.arrival_time) {
+    const target = calcDepartureTime(form.value.arrival_time, dur);
+    if (target) {
+      form.value.departure_time = target;
+    }
+  }
+}
+
+function onDepartureInput() {
+  lastModifiedTimeField.value = 'departure';
+  if (isTimeLinked.value && activeDurationSeconds.value) {
+    const target = calcArrivalTime(form.value.departure_time, activeDurationSeconds.value);
+    if (target) {
+      form.value.arrival_time = target;
+    }
+  }
+}
+
+function onArrivalInput() {
+  lastModifiedTimeField.value = 'arrival';
+  if (isTimeLinked.value && activeDurationSeconds.value) {
+    const target = calcDepartureTime(form.value.arrival_time, activeDurationSeconds.value);
+    if (target) {
+      form.value.departure_time = target;
+    }
+  }
+}
+
+function calcArrivalFromDeparture() {
+  if (!form.value.departure_time || !activeDurationSeconds.value) return;
+  const target = calcArrivalTime(form.value.departure_time, activeDurationSeconds.value);
+  if (target) {
+    form.value.arrival_time = target;
+    lastModifiedTimeField.value = 'departure';
+    isTimeLinked.value = true;
+    isCalculatingArrivalSparkle.value = true;
+    setTimeout(() => {
+      isCalculatingArrivalSparkle.value = false;
+    }, 600);
+  }
+}
+
+function calcDepartureFromArrival() {
+  if (!form.value.arrival_time || !activeDurationSeconds.value) return;
+  const target = calcDepartureTime(form.value.arrival_time, activeDurationSeconds.value);
+  if (target) {
+    form.value.departure_time = target;
+    lastModifiedTimeField.value = 'arrival';
+    isTimeLinked.value = true;
+    isCalculatingDepartureSparkle.value = true;
+    setTimeout(() => {
+      isCalculatingDepartureSparkle.value = false;
+    }, 600);
+  }
+}
+
+function toggleTimeLink() {
+  if (!isTimeLinked.value) {
+    if (activeDurationSeconds.value) {
+      syncTimesWithDuration(activeDurationSeconds.value);
+    }
+    isTimeLinked.value = true;
+  } else {
+    isTimeLinked.value = false;
+  }
+}
+
+function applySuggestedTime(field: 'departure' | 'arrival', target?: string | null) {
+  if (!target) return;
+  if (field === 'departure') {
+    form.value.departure_time = target;
+    lastModifiedTimeField.value = 'arrival';
+  } else {
+    form.value.arrival_time = target;
+    lastModifiedTimeField.value = 'departure';
+  }
+  isTimeLinked.value = true;
+}
+
+interface TimeDurationStatus {
+  type: 'matched' | 'mismatch' | 'suggest' | 'info';
+  text: string;
+  field?: 'departure' | 'arrival';
+  target?: string | null;
+  elapsedMinutes?: number;
+  diffMinutes?: number;
+  canToggleLink: boolean;
+}
+
+const timeDurationStatus = computed<TimeDurationStatus | null>(() => {
+  const dep = form.value.departure_time;
+  const arr = form.value.arrival_time;
+  const durSec = activeDurationSeconds.value;
+
+  if (!dep && !arr) return null;
+
+  if (dep && arr) {
+    const elapsedMins = calcElapsedMinutes(dep, arr);
+    if (elapsedMins == null) return null;
+
+    if (durSec != null) {
+      const durMins = Math.round(durSec / 60);
+      const diffMins = elapsedMins - durMins;
+
+      if (Math.abs(diffMins) <= 1) {
+        return {
+          type: 'matched',
+          text: `Dauer & Zeitspanne: ${formatDuration(durSec)}`,
+          elapsedMinutes: elapsedMins,
+          canToggleLink: true,
+        };
+      } else {
+        return {
+          type: 'mismatch',
+          text: `Zeitfenster: ${formatDuration(elapsedMins * 60)} • Reisedauer: ${formatDuration(durSec)}`,
+          elapsedMinutes: elapsedMins,
+          diffMinutes: diffMins,
+          canToggleLink: true,
+        };
+      }
+    } else {
+      return {
+        type: 'info',
+        text: `Reisedauer: ${formatDuration(elapsedMins * 60)}`,
+        elapsedMinutes: elapsedMins,
+        canToggleLink: false,
+      };
+    }
+  }
+
+  if (durSec != null) {
+    if (dep && !arr) {
+      const target = calcArrivalTime(dep, durSec);
+      return {
+        type: 'suggest',
+        field: 'arrival',
+        text: `Ankunft bei ${formatDuration(durSec)} Reisedauer: ${target}`,
+        target,
+        canToggleLink: false,
+      };
+    }
+    if (arr && !dep) {
+      const target = calcDepartureTime(arr, durSec);
+      return {
+        type: 'suggest',
+        field: 'departure',
+        text: `Abfahrt für Ankunft um ${arr} (${formatDuration(durSec)}): ${target}`,
+        target,
+        canToggleLink: false,
+      };
+    }
+  }
+
+  return null;
+});
 
 function selectRoute(idx: number) {
   if (!calculatedRoutes.value[idx]) return;
@@ -191,8 +463,8 @@ function selectRoute(idx: number) {
     profile: selected.profile,
   };
   routeDisplayMode.value = 'exact';
-  if (form.value.departure_time && (!form.value.arrival_time || isArrivalAutoCalculated.value)) {
-    updateArrivalTimeFromDuration();
+  if (isTimeLinked.value || !form.value.arrival_time || !form.value.departure_time) {
+    syncTimesWithDuration(selected.duration_seconds);
   }
 }
 
@@ -304,7 +576,6 @@ watch(
   (open) => {
     if (!open) return;
     routeCalculationError.value = null;
-    isArrivalAutoCalculated.value = false;
     if (props.leg) {
       const initialType = props.leg.transport_type || 'zu Fuß';
       const cat = getCategoryFromType(initialType);
@@ -318,6 +589,18 @@ watch(
       }
       form.value.departure_time = props.leg.departure_time || '';
       form.value.arrival_time = props.leg.arrival_time || '';
+      if (form.value.arrival_time && !form.value.departure_time) {
+        lastModifiedTimeField.value = 'arrival';
+      } else {
+        lastModifiedTimeField.value = 'departure';
+      }
+      if (form.value.departure_time && form.value.arrival_time && props.leg.duration_seconds) {
+        const elapsed = calcElapsedMinutes(form.value.departure_time, form.value.arrival_time);
+        const durMins = Math.round(props.leg.duration_seconds / 60);
+        isTimeLinked.value = elapsed != null && Math.abs(elapsed - durMins) <= 1;
+      } else {
+        isTimeLinked.value = true;
+      }
       form.value.checkin_info = props.leg.checkin_info || '';
       form.value.seat = props.leg.seat || '';
       form.value.luggage = props.leg.luggage || '';
@@ -374,6 +657,8 @@ watch(
         amount: '',
         paid_by_user_id: '',
       };
+      lastModifiedTimeField.value = 'departure';
+      isTimeLinked.value = true;
       calculatedDistanceMeters.value = null;
       calculatedDurationSeconds.value = null;
       routeGeometry.value = null;
@@ -407,19 +692,6 @@ const isRoutable = computed(() => {
   const t = (form.value.transport_type || '').toLowerCase();
   return t === 'auto' || t === 'fahrrad' || t === 'zu fuß' || t === 'zu fuss';
 });
-
-function updateArrivalTimeFromDuration() {
-  if (!form.value.departure_time || !calculatedDurationSeconds.value) return;
-  const [hours, minutes] = form.value.departure_time.split(':').map(Number);
-  if (isNaN(hours) || isNaN(minutes)) return;
-  const departureTotalMinutes = hours * 60 + minutes;
-  const durationMinutes = Math.round(calculatedDurationSeconds.value / 60);
-  const arrivalTotalMinutes = (departureTotalMinutes + durationMinutes) % (24 * 60);
-  const arrHours = Math.floor(arrivalTotalMinutes / 60);
-  const arrMinutes = arrivalTotalMinutes % 60;
-  form.value.arrival_time = `${String(arrHours).padStart(2, '0')}:${String(arrMinutes).padStart(2, '0')}`;
-  isArrivalAutoCalculated.value = true;
-}
 
 async function calculateRoute() {
   if (!props.fromSpot || !props.toSpot || !hasCoordinates.value) return;
@@ -812,32 +1084,130 @@ function onDelete() {
         </div>
       </div>
 
-      <div class="row">
+      <div class="row time-row">
         <FormField icon="time" label="Abfahrt / Abflug">
-          <Input v-model="form.departure_time" type="time" />
+          <div
+            class="time-input-wrap departure-time-wrapper"
+            :class="{ 'has-sparkle': canCalcDeparture }"
+          >
+            <Input
+              v-model="form.departure_time"
+              type="time"
+              @input="onDepartureInput"
+              @change="onDepartureInput"
+            />
+            <button
+              v-if="canCalcDeparture"
+              type="button"
+              class="time-sparkle-btn departure-sparkle-btn"
+              :class="{ 'sparkle-spin': isCalculatingDepartureSparkle }"
+              :title="departureSparkleTitle"
+              :aria-label="departureSparkleTitle"
+              data-testid="departure-sparkle-btn"
+              @mousedown.prevent
+              @click="calcDepartureFromArrival"
+            >
+              <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
+            </button>
+          </div>
         </FormField>
         <FormField icon="time" label="Ankunft">
-          <div class="arrival-time-wrapper">
+          <div
+            class="time-input-wrap arrival-time-wrapper"
+            :class="{ 'has-sparkle': canCalcArrival }"
+          >
             <Input
               v-model="form.arrival_time"
               type="time"
-              @input="isArrivalAutoCalculated = false"
+              @input="onArrivalInput"
+              @change="onArrivalInput"
             />
-            <Button
-              v-if="
-                form.departure_time && calculatedDurationSeconds && routeDisplayMode === 'exact'
-              "
+            <button
+              v-if="canCalcArrival"
               type="button"
-              variant="ghost"
-              size="sm"
-              class="btn-calc-arrival"
-              title="Ankunftszeit aus Reisedauer berechnen"
-              @click="updateArrivalTimeFromDuration"
+              class="time-sparkle-btn arrival-sparkle-btn"
+              :class="{ 'sparkle-spin': isCalculatingArrivalSparkle }"
+              :title="arrivalSparkleTitle"
+              :aria-label="arrivalSparkleTitle"
+              data-testid="arrival-sparkle-btn"
+              @mousedown.prevent
+              @click="calcArrivalFromDeparture"
             >
-              ⏱️ Berechnen
-            </Button>
+              <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
+            </button>
           </div>
         </FormField>
+      </div>
+
+      <!-- Zeiteffizienz- / Synchronisations-Leiste -->
+      <div
+        v-if="timeDurationStatus"
+        class="time-sync-bar"
+        :class="`time-sync-bar--${timeDurationStatus.type}`"
+        data-testid="time-sync-bar"
+      >
+        <div class="time-sync-content">
+          <span class="time-sync-message">
+            <template v-if="timeDurationStatus.type === 'matched'">
+              <span class="time-sync-check">✓</span>
+              <span>
+                Dauer & Zeitspanne:
+                <strong>{{ formatDuration(activeDurationSeconds) }}</strong>
+              </span>
+            </template>
+            <template v-else-if="timeDurationStatus.type === 'mismatch'">
+              <span class="time-sync-warn">⚠️</span>
+              <span>
+                Zeitfenster:
+                <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
+                (Reisedauer: {{ formatDuration(activeDurationSeconds) }},
+                {{
+                  (timeDurationStatus.diffMinutes ?? 0) > 0
+                    ? `+${formatDuration((timeDurationStatus.diffMinutes ?? 0) * 60)}`
+                    : `-${formatDuration(Math.abs(timeDurationStatus.diffMinutes ?? 0) * 60)}`
+                }})
+              </span>
+            </template>
+            <template v-else-if="timeDurationStatus.type === 'suggest'">
+              <span class="time-sync-sparkle">✨</span>
+              <span>{{ timeDurationStatus.text }}</span>
+            </template>
+            <template v-else-if="timeDurationStatus.type === 'info'">
+              <span>⏱️</span>
+              <span>
+                Reisedauer:
+                <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
+              </span>
+            </template>
+          </span>
+        </div>
+
+        <div v-if="timeDurationStatus.canToggleLink" class="time-sync-actions">
+          <button
+            type="button"
+            class="btn-time-link"
+            :class="{ 'is-linked': isTimeLinked }"
+            :title="
+              isTimeLinked
+                ? 'Zeiten sind an Reisedauer gekoppelt (Klick zum Entkoppeln)'
+                : 'Zeiten an Reisedauer koppeln'
+            "
+            data-testid="time-link-toggle"
+            @click="toggleTimeLink"
+          >
+            {{ isTimeLinked ? '🔗 Gekoppelt' : '🔓 Entkoppelt' }}
+          </button>
+        </div>
+        <div v-else-if="timeDurationStatus.type === 'suggest'" class="time-sync-actions">
+          <button
+            type="button"
+            class="btn-time-apply"
+            data-testid="time-apply-btn"
+            @click="applySuggestedTime(timeDurationStatus.field!, timeDurationStatus.target)"
+          >
+            ✨ Übernehmen
+          </button>
+        </div>
       </div>
 
       <CollapsibleFieldset label="Erweiterte Angaben" :open-initial="hasExtendedData">
@@ -1477,31 +1847,201 @@ function onDelete() {
   }
 }
 
-.arrival-time-wrapper {
+.time-input-wrap {
+  position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+}
+
+.time-input-wrap :deep(.input) {
+  width: 100%;
+}
+
+.time-input-wrap.has-sparkle :deep(input) {
+  padding-right: 56px;
+}
+
+.time-sparkle-btn {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-primary, #6366f1);
+  cursor: pointer;
+  border-radius: var(--radius-sm-squircle, 6px);
+  corner-shape: squircle;
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+  z-index: 2;
+}
+
+.time-sparkle-btn:hover {
+  background-color: var(--color-surface-hover, rgba(0, 0, 0, 0.06));
+  color: var(--color-primary-hover, #4f46e5);
+  transform: translateY(-50%) scale(1.15);
+}
+
+.time-sparkle-btn:active {
+  transform: translateY(-50%) scale(0.92);
+}
+
+.time-sparkle-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@keyframes sparkleRotate {
+  0% {
+    transform: translateY(-50%) rotate(0deg) scale(0.9);
+  }
+  50% {
+    transform: translateY(-50%) rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: translateY(-50%) rotate(360deg) scale(1);
+  }
+}
+
+.sparkle-spin {
+  animation: sparkleRotate 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.time-sync-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
+  padding: 6px 10px;
+  margin-top: calc(-1 * var(--space-1));
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm-squircle, 6px);
+  corner-shape: squircle;
+  background: var(--color-surface-subtle, var(--color-hover));
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
 }
 
-.arrival-time-wrapper :deep(input) {
+.time-sync-bar--matched {
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.time-sync-bar--mismatch {
+  background: var(--color-warning-subtle, #fefce8);
+  border-color: var(--color-warning, #eab308);
+  color: var(--color-warning-dark, #854d0e);
+}
+
+:root[data-theme='dark'] .time-sync-bar--mismatch {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.35);
+  color: #fef08a;
+}
+
+.time-sync-bar--suggest {
+  background: var(--color-primary-tint, #eff6ff);
+  border-color: var(--color-primary-light, #93c5fd);
+  color: var(--color-primary, #2563eb);
+}
+
+:root[data-theme='dark'] .time-sync-bar--suggest {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: #93c5fd;
+}
+
+.time-sync-bar--info {
+  color: var(--color-text-muted);
+}
+
+.time-sync-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex: 1;
+  min-width: 0;
 }
 
-.btn-calc-arrival {
-  flex-shrink: 0;
+.time-sync-message {
   white-space: nowrap;
-  animation: btn-arrival-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@keyframes btn-arrival-in {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.time-sync-check {
+  color: var(--color-success, #22c55e);
+  font-weight: 700;
+}
+
+.time-sync-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-time-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm-squircle, 6px);
+  corner-shape: squircle;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-time-link:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.btn-time-link.is-linked {
+  background: var(--color-primary-tint, #eff6ff);
+  color: var(--color-primary);
+  border-color: var(--color-primary-light, #93c5fd);
+}
+
+:root[data-theme='dark'] .btn-time-link.is-linked {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: #93c5fd;
+}
+
+.btn-time-apply {
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm-squircle, 6px);
+  corner-shape: squircle;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-time-apply:hover {
+  background: var(--color-primary-dark);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1512,7 +2052,7 @@ function onDelete() {
   .route-calc-stats,
   .route-calc-hint,
   .route-calc-error,
-  .btn-calc-arrival {
+  .sparkle-spin {
     transition: none !important;
     animation: none !important;
     transform: none !important;
