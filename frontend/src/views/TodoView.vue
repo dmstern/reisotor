@@ -392,7 +392,6 @@ async function toggleDone(item: TodoItem) {
 function startEdit(item: TodoItem) {
   editTitleTouched.value = false;
   clearFocusedTodo();
-  editingItem.value = item;
   editForm.value = {
     title: item.title,
     assigned_to_user_id: item.assigned_to_user_id != null ? String(item.assigned_to_user_id) : '',
@@ -401,6 +400,7 @@ function startEdit(item: TodoItem) {
     priority: item.priority,
     note: item.note ?? '',
   };
+  editingItem.value = item;
 }
 
 async function submitEdit() {
@@ -429,7 +429,7 @@ function discardEditDraft() {
   if (!editingItem.value) return;
   startEdit(editingItem.value);
   editDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 async function deleteEditingItem() {
@@ -733,6 +733,10 @@ function hasTodoMeta(item: TodoItem): boolean {
       :model-value="editingItem !== null"
       title="Aufgabe bearbeiten"
       full-height
+      :confirm-close="editDraft.isDirty.value"
+      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
+      confirm-close-message="Du hast ungespeicherte Änderungen an dieser Aufgabe vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
+      confirm-close-confirm-label="Änderungen verwerfen"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -791,6 +795,7 @@ function hasTodoMeta(item: TodoItem): boolean {
           :status="editDraft.status.value"
           :restored="editDraft.restored.value"
           :can-discard="true"
+          mode="edit"
           @discard="discardEditDraft"
         />
         <div class="actions-row">

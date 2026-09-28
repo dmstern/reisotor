@@ -13,12 +13,14 @@ withDefaults(
     ariaLabel?: string;
     size?: 'sm' | 'md' | 'lg';
     invalid?: boolean;
+    modified?: boolean;
   }>(),
   {
     disabled: false,
     required: false,
     size: 'md',
     invalid: false,
+    modified: false,
   }
 );
 
@@ -49,6 +51,7 @@ function onChange(event: Event) {
     :class="[
       size !== 'md' ? `select--${size}` : undefined,
       invalid ? 'select--invalid' : undefined,
+      modified ? 'select--modified' : undefined,
     ]"
     @change="onChange"
     @blur="emit('blur', $event)"
@@ -70,7 +73,7 @@ function onChange(event: Event) {
   corner-shape: squircle;
   background-color: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 500;
@@ -102,6 +105,7 @@ function onChange(event: Event) {
 .select:hover:not(:disabled) {
   background-color: var(--color-hover);
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239141ac' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
@@ -114,6 +118,7 @@ function onChange(event: Event) {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239141ac' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
@@ -124,12 +129,14 @@ function onChange(event: Event) {
 
 .select:active:not(:disabled) {
   transform: scale(0.995);
+  box-shadow: var(--shadow-sm);
 }
 
 .select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background-color: var(--color-hover);
+  box-shadow: none;
 }
 
 .select--invalid {
@@ -138,6 +145,20 @@ function onChange(event: Event) {
 
 .select--invalid:focus {
   outline-color: var(--color-danger);
+}
+
+.select--modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.select--modified:hover:not(:disabled),
+.select--modified:focus,
+.select--modified:active:not(:disabled) {
+  outline-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-sm);
 }
 
 .select--sm {

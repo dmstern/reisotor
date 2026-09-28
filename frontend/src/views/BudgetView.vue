@@ -33,6 +33,7 @@ import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vu
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
+import { useToast } from '../composables/useToast';
 
 const tripStore = useTripStore();
 const auth = useAuthStore();
@@ -40,6 +41,7 @@ const spotsStore = useSpotsStore();
 const excursionsStore = useExcursionsStore();
 const budgetStore = useBudgetStore();
 const liveSync = useLiveSyncStore();
+const { showToast } = useToast();
 const tripId = tripStore.currentTripId as number;
 // Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
 // normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
@@ -242,8 +244,14 @@ function closeExpenseForm() {
   newExpenseDraft.clear();
 }
 
+function discardNewExpenseDraft() {
+  expenseForm.value = emptyExpenseForm();
+  showExpenseDetails.value = false;
+  newExpenseDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 function startEditExpense(expense: BudgetExpense) {
-  editingExpense.value = expense;
   editExpenseForm.value = {
     title: expense.title,
     category: expense.category ?? '',
@@ -254,6 +262,7 @@ function startEditExpense(expense: BudgetExpense) {
     budget_id: expense.budget_id != null ? String(expense.budget_id) : '',
   };
   showEditExpenseDetails.value = Boolean(expense.budget_id || expense.note);
+  editingExpense.value = expense;
 }
 
 async function submitEditExpense() {
@@ -274,6 +283,13 @@ function closeEditExpenseForm() {
   editExpenseDraft.clear();
   editingExpense.value = null;
   showEditExpenseDetails.value = false;
+}
+
+function discardEditExpenseDraft() {
+  if (!editingExpense.value) return;
+  startEditExpense(editingExpense.value);
+  editExpenseDraft.clear();
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 // --- Überweisungen ---
@@ -534,6 +550,10 @@ const categoryColors = computed(() => {
           <Modal
             :model-value="showExpenseForm"
             title="Ausgabe eintragen"
+            :confirm-close="newExpenseDraft.isDirty.value"
+            confirm-close-title="Entwurf verwerfen?"
+            confirm-close-message="Du hast bereits Eingaben für diese Ausgabe gemacht. Möchtest du den Entwurf verwerfen?"
+            confirm-close-confirm-label="Entwurf verwerfen"
             @update:model-value="(v) => !v && closeExpenseForm()"
           >
             <form class="edit-form add-form" @submit.prevent="submitExpense">
@@ -612,6 +632,9 @@ const categoryColors = computed(() => {
               <DraftStatusBar
                 :status="newExpenseDraft.status.value"
                 :restored="newExpenseDraft.restored.value"
+                :can-discard="true"
+                mode="create"
+                @discard="discardNewExpenseDraft"
               />
               <div class="actions-row">
                 <div class="spacer"></div>
@@ -706,6 +729,10 @@ const categoryColors = computed(() => {
     <Modal
       :model-value="editingExpense !== null"
       title="Ausgabe bearbeiten"
+      :confirm-close="editExpenseDraft.isDirty.value"
+      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
+      confirm-close-message="Du hast ungespeicherte Änderungen an dieser Ausgabe vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
+      confirm-close-confirm-label="Änderungen verwerfen"
       @update:model-value="(v) => !v && closeEditExpenseForm()"
     >
       <form class="edit-form add-form" @submit.prevent="submitEditExpense">
@@ -802,6 +829,9 @@ const categoryColors = computed(() => {
         <DraftStatusBar
           :status="editExpenseDraft.status.value"
           :restored="editExpenseDraft.restored.value"
+          :can-discard="true"
+          mode="edit"
+          @discard="discardEditExpenseDraft"
         />
         <div class="actions-row">
           <div class="spacer"></div>

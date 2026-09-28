@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt';
 import { db, ensureDefaultSharedBudget } from './index.js';
-import { tilePreviewUrl } from '../utils/mapsLink.js';
 
 // Demo-Seed für Sandbox-/Dev-Umgebungen: legt zusätzlich zu den 2 Standard-Nutzern (wie seed.ts)
 // einen kompletten Beispiel-Urlaub mit Daten in allen Bereichen an, damit eine frische Instanz
@@ -75,7 +74,7 @@ const tripResult = db
     null,
     LISBON.lat,
     LISBON.lng,
-    tilePreviewUrl(LISBON.lat, LISBON.lng)
+    '/demo/lissabon.jpg'
   );
 const tripId = tripResult.lastInsertRowid as number;
 
@@ -171,13 +170,14 @@ const accommodationExpenseId = insertExpense.run(
 const hotelAlfamaResult = db
   .prepare(
     `INSERT INTO spots
-    (trip_id, title, category, note, maps_link, lat, lng, address, start_date, end_date,
+    (trip_id, title, image_url, category, note, maps_link, lat, lng, address, start_date, end_date,
      checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id)
-   VALUES (?, ?, 'Unterkunft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+   VALUES (?, ?, ?, 'Unterkunft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
   .run(
     tripId,
     'Hotel Alfama',
+    '/demo/spot-hotel-alfama.jpg',
     'Zentrale Lage im Altstadtviertel Alfama, Klimaanlage vorhanden.',
     'https://maps.google.com/?q=Alfama+Lissabon',
     38.72,
@@ -372,7 +372,7 @@ const santaLuziaLng = -9.127;
 const santaLuziaSpotId = insertSpot.run(
   tripId,
   'Miradouro de Santa Luzia',
-  tilePreviewUrl(santaLuziaLat, santaLuziaLng),
+  '/demo/spot-santa-luzia.jpg',
   'Aussichtspunkt',
   'Wunderschöner Panoramablick über die roten Ziegeldächer der Alfama bis zum Tejo.',
   null,
@@ -387,7 +387,7 @@ const casteloLng = -9.138;
 const casteloSpotId = insertSpot.run(
   tripId,
   'Castelo de São Jorge',
-  tilePreviewUrl(casteloLat, casteloLng),
+  '/demo/spot-castelo-de-sao-jorge.jpg',
   'Sehenswürdigkeit',
   'Maurische Festung aus dem 11. Jahrhundert mit weitem Blick über ganz Lissabon.',
   null,
@@ -402,7 +402,7 @@ const comercioLng = -9.133;
 const comercioSpotId = insertSpot.run(
   tripId,
   'Praça do Comércio',
-  tilePreviewUrl(comercioLat, comercioLng),
+  '/demo/spot-praca-do-comercio.jpg',
   'Sehenswürdigkeit',
   'Historischer Hauptplatz direkt am Flussufer mit Triumphbogen.',
   null,
@@ -417,7 +417,7 @@ const marketLng = -9.1459;
 const marketSpotId = insertSpot.run(
   tripId,
   'Time Out Market',
-  tilePreviewUrl(marketLat, marketLng),
+  '/demo/spot-time-out-market.jpg',
   'Restaurant',
   'Große Markthalle mit vielen Ständen bekannter Lissabonner Restaurants.',
   null,
@@ -432,7 +432,7 @@ const belemLng = -9.2159;
 const belemSpotId = insertSpot.run(
   tripId,
   'Torre de Belém',
-  tilePreviewUrl(belemLat, belemLng),
+  '/demo/spot-torre-de-belem.jpg',
   'Sehenswürdigkeit',
   'Ikonischer Wehrturm direkt am Tejo.',
   null,

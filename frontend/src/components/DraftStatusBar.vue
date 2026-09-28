@@ -9,10 +9,12 @@ withDefaults(
     status: DraftStatus;
     restored?: boolean;
     canDiscard?: boolean;
+    mode?: 'create' | 'edit';
   }>(),
   {
     restored: false,
     canDiscard: false,
+    mode: 'create',
   }
 );
 
@@ -27,33 +29,53 @@ const emit = defineEmits<{
        ist gesichert, das eigentliche Speichern läuft weiterhin über den Submit-Button des Formulars. -->
   <div v-if="status !== 'idle'" class="draft-status" :class="status">
     <span class="draft-status-message">
-      <template v-if="restored && status === 'saved'">
-        <AppIcon :icon="FORM_FIELD_ICONS.note" :size="13" group="formFields" />
-        <span>Entwurf wiederhergestellt – noch nicht gespeichert</span>
+      <template v-if="mode === 'edit'">
+        <template v-if="restored && status === 'saved'">
+          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="13" group="formFields" />
+          <span>Stand nach Unterbrechung wiederhergestellt – noch nicht gespeichert</span>
+        </template>
+        <template v-else-if="status === 'dirty'">
+          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <span>Ungespeicherte Änderungen…</span>
+        </template>
+        <template v-else-if="status === 'saved'">
+          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <span>Ungespeicherte Änderungen</span>
+        </template>
+        <template v-else-if="status === 'offline'">
+          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <span>Ungespeicherte Änderungen (nur lokal gesichert)</span>
+        </template>
       </template>
-      <template v-else-if="status === 'dirty'">
-        <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-        <span>Noch nicht gespeichert – Entwurf wird gesichert…</span>
-      </template>
-      <template v-else-if="status === 'saved'">
-        <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-        <span>Noch nicht gespeichert – Entwurf gesichert</span>
-      </template>
-      <template v-else-if="status === 'offline'">
-        <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-        <span>Noch nicht gespeichert – Entwurf nur lokal gesichert (offline)</span>
+      <template v-else>
+        <template v-if="restored && status === 'saved'">
+          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="13" group="formFields" />
+          <span>Entwurf wiederhergestellt – noch nicht gespeichert</span>
+        </template>
+        <template v-else-if="status === 'dirty'">
+          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <span>Noch nicht gespeichert – Entwurf wird gesichert…</span>
+        </template>
+        <template v-else-if="status === 'saved'">
+          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <span>Noch nicht gespeichert – Entwurf gesichert</span>
+        </template>
+        <template v-else-if="status === 'offline'">
+          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <span>Noch nicht gespeichert – Entwurf nur lokal gesichert (offline)</span>
+        </template>
       </template>
     </span>
     <button
       v-if="canDiscard"
       type="button"
       class="draft-discard-btn"
-      title="Entwurf verwerfen"
-      aria-label="Entwurf verwerfen"
+      :title="mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen'"
+      :aria-label="mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen'"
       @click="emit('discard')"
     >
       <AppIcon :icon="ACTION_ICONS.delete" :size="12" group="actions" />
-      <span>Entwurf verwerfen</span>
+      <span>{{ mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen' }}</span>
     </button>
   </div>
 </template>

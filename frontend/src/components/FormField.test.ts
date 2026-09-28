@@ -64,4 +64,14 @@ describe('FormField component', () => {
     const html = await renderToString(app);
     expect(html).toContain('has-error');
   });
+
+  it('renders modified state with is-modified class and modified-dot indicator', async () => {
+    const app = createApp({
+      render: () => h(FormField, { label: 'Titel', modified: true }),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('is-modified');
+    expect(html).toContain('modified-dot');
+  });
 });

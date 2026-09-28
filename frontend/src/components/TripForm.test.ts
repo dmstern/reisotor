@@ -122,4 +122,115 @@ describe('TripForm', () => {
     expect(hasHomeIcon).toBe(false);
     cleanUp();
   });
+
+  it('renders the unified LocationPicker inside the location box', () => {
+    const { container, cleanUp } = mountForm();
+    const locationPicker = container.querySelector('.location-picker');
+    expect(locationPicker).not.toBeNull();
+    const input = locationPicker?.querySelector('input');
+    expect(input?.getAttribute('placeholder')).toContain('Reiseziel');
+    cleanUp();
+  });
+
+  it('initializes coordinates from initial prop and submits them', async () => {
+    let submittedData: TripFormData | null = null;
+    const initialWithCoords: TripFormData = {
+      ...sampleInitial,
+      lat: 43.7696,
+      lng: 11.2558,
+      destination: 'Florenz',
+      maps_link: 'https://maps.google.com/?q=43.7696,11.2558',
+    };
+
+    const { container, cleanUp } = mountForm(
+      { initial: initialWithCoords },
+      {
+        onSubmit: (data: TripFormData) => {
+          submittedData = data;
+        },
+      }
+    );
+
+    const formEl = container.querySelector('form');
+    formEl?.dispatchEvent(new Event('submit', { cancelable: true }));
+    await nextTick();
+
+    expect(submittedData).toBeDefined();
+    const data1 = submittedData as unknown as TripFormData;
+    expect(data1.destination).toBe('Florenz');
+    expect(data1.lat).toBe(43.7696);
+    expect(data1.lng).toBe(11.2558);
+    cleanUp();
+  });
+
+  it('clears coordinates, destination, and maps_link when clear button is clicked', async () => {
+    let submittedData: TripFormData | null = null;
+    const initialWithCoords: TripFormData = {
+      ...sampleInitial,
+      lat: 43.7696,
+      lng: 11.2558,
+      destination: 'Florenz',
+      maps_link: 'https://maps.google.com/?q=43.7696,11.2558',
+    };
+
+    const { container, cleanUp } = mountForm(
+      { initial: initialWithCoords },
+      {
+        onSubmit: (data: TripFormData) => {
+          submittedData = data;
+        },
+      }
+    );
+
+    await nextTick();
+
+    const clearBtn = container.querySelector(
+      '.location-picker .clear-btn'
+    ) as HTMLButtonElement | null;
+    expect(clearBtn).not.toBeNull();
+    clearBtn?.click();
+    await nextTick();
+
+    const formEl = container.querySelector('form');
+    formEl?.dispatchEvent(new Event('submit', { cancelable: true }));
+    await nextTick();
+
+    expect(submittedData).toBeDefined();
+    const data2 = submittedData as unknown as TripFormData;
+    expect(data2.destination).toBeUndefined();
+    expect(data2.maps_link).toBeUndefined();
+    expect(data2.lat).toBeUndefined();
+    expect(data2.lng).toBeUndefined();
+    cleanUp();
+  });
+
+  it('recognizes pasted Google Maps link in unified input and submits coordinates', async () => {
+    let submittedData: TripFormData | null = null;
+    const { container, cleanUp } = mountForm(
+      { initial: sampleInitial },
+      {
+        onSubmit: (data: TripFormData) => {
+          submittedData = data;
+        },
+      }
+    );
+
+    const input = container.querySelector('.location-picker input') as HTMLInputElement | null;
+    expect(input).not.toBeNull();
+    if (input) {
+      input.value = 'https://www.google.com/maps/place/48.2082,16.3738/@48.2082,16.3738,15z';
+      input.dispatchEvent(new Event('input'));
+    }
+    await nextTick();
+
+    const formEl = container.querySelector('form');
+    formEl?.dispatchEvent(new Event('submit', { cancelable: true }));
+    await nextTick();
+
+    expect(submittedData).toBeDefined();
+    const data3 = submittedData as unknown as TripFormData;
+    expect(data3.lat).toBeCloseTo(48.2082);
+    expect(data3.lng).toBeCloseTo(16.3738);
+    cleanUp();
+  });
 });

@@ -12,6 +12,7 @@ withDefaults(
     readonly?: boolean;
     maxlength?: number;
     invalid?: boolean;
+    modified?: boolean;
     name?: string;
     id?: string;
     ariaLabel?: string;
@@ -23,6 +24,7 @@ withDefaults(
     required: false,
     readonly: false,
     invalid: false,
+    modified: false,
   }
 );
 
@@ -55,7 +57,10 @@ function onInput(event: Event) {
     :aria-label="ariaLabel"
     :aria-invalid="invalid || undefined"
     class="textarea"
-    :class="[invalid ? 'textarea--invalid' : undefined]"
+    :class="[
+      invalid ? 'textarea--invalid' : undefined,
+      modified ? 'textarea--modified' : undefined,
+    ]"
     @input="onInput"
     @blur="emit('blur', $event)"
     @focus="emit('focus', $event)"
@@ -73,7 +78,7 @@ function onInput(event: Event) {
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   font-family: inherit;
   font-size: 1rem;
   line-height: 1.5;
@@ -86,15 +91,22 @@ function onInput(event: Event) {
     box-shadow 0.15s ease;
 }
 
-.textarea:focus {
+.textarea:hover:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
+
+.textarea:focus,
+.textarea:active:not(:disabled) {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
+  box-shadow: var(--shadow-sm);
 }
 
 .textarea:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   background: var(--color-hover);
+  box-shadow: none;
 }
 
 .textarea--invalid {
@@ -103,5 +115,19 @@ function onInput(event: Event) {
 
 .textarea--invalid:focus {
   outline-color: var(--color-danger);
+}
+
+.textarea--modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.textarea--modified:hover:not(:disabled),
+.textarea--modified:focus,
+.textarea--modified:active:not(:disabled) {
+  outline-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-sm);
 }
 </style>

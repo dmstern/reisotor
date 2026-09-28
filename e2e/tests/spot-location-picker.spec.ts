@@ -16,8 +16,6 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
-    await modal.getByRole('button', { name: 'Standort', exact: true }).click();
-    await modal.getByRole('button', { name: 'Standort manuell setzen' }).click();
 
     const mapDiv = modal.locator('.location-picker-map');
     await expect(mapDiv.locator('.leaflet-tile-pane')).toBeAttached();
@@ -35,10 +33,10 @@ test.describe('Standort manuell setzen (Spot-Formular)', () => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Neuer Spot' }).click();
     const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
-    await modal.getByRole('button', { name: 'Standort', exact: true }).click();
-    await modal.getByRole('button', { name: 'Standort manuell setzen' }).click();
 
     await modal.locator('.locate-btn').click();
-    await expect(modal.locator('.hint.success')).toContainText('48.20820, 16.37380');
+    await expect(modal.locator('[data-testid="location-status"]')).toContainText(
+      '48.20820, 16.37380'
+    );
   });
 });

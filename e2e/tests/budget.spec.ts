@@ -389,8 +389,9 @@ test('displays category icon in combobox input and dropdown options', async ({ p
   await expect(combobox).toHaveClass(/has-leading-icon/);
   await expect(combobox.locator('.combobox-leading-icon')).toBeVisible();
 
-  // Modal per Escape schließen
+  // Modal per Escape schließen und Entwurf verwerfen bestätigen
   await page.keyboard.press('Escape');
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Entwurf verwerfen' }).click();
   await expect(modal).not.toBeVisible();
 });
 

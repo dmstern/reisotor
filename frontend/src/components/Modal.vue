@@ -10,6 +10,8 @@
 // textarea, siehe unten) wächst mit, alle anderen Felder behalten ihre natürliche Höhe.
 import { onUnmounted, watch, useId, ref, nextTick, computed } from 'vue';
 import IconButton from './primitives/IconButton.vue';
+import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useModalStore } from '../stores/modal';
 
@@ -21,25 +23,57 @@ const props = withDefaults(
     fullHeight?: boolean;
     ariaLabel?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl';
+    confirmClose?: boolean;
+    confirmCloseTitle?: string;
+    confirmCloseMessage?: string;
+    confirmCloseConfirmLabel?: string;
+    confirmCloseCancelLabel?: string;
   }>(),
-  { size: 'md' }
+  {
+    size: 'md',
+    confirmClose: false,
+    confirmCloseTitle: 'Ungespeicherte Änderungen verwerfen?',
+    confirmCloseMessage:
+      'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?',
+    confirmCloseConfirmLabel: 'Änderungen verwerfen',
+    confirmCloseCancelLabel: 'Weiter bearbeiten',
+  }
 );
-const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void;
+  (e: 'discard'): void;
+}>();
 
 const modalStore = useModalStore();
 const modalId = useId();
 const titleId = `${modalId}-title`;
 const modalRef = ref<HTMLDivElement | null>(null);
+const confirmModalRef = ref<HTMLDivElement | null>(null);
+const showConfirmClose = ref(false);
 
 function close() {
+  if (props.confirmClose) {
+    showConfirmClose.value = true;
+    return;
+  }
   emit('update:modelValue', false);
 }
 
-function getFocusableElements(): HTMLElement[] {
-  if (!modalRef.value) return [];
+function cancelConfirmClose() {
+  showConfirmClose.value = false;
+}
+
+function acceptConfirmClose() {
+  showConfirmClose.value = false;
+  emit('discard');
+  emit('update:modelValue', false);
+}
+
+function getFocusableElements(container: HTMLElement | null = modalRef.value): HTMLElement[] {
+  if (!container) return [];
   const selector =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  const elements = Array.from(modalRef.value.querySelectorAll<HTMLElement>(selector));
+  const elements = Array.from(container.querySelectorAll<HTMLElement>(selector));
   return elements.filter(
     (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
   );
@@ -49,6 +83,10 @@ function handleKeydown(e: KeyboardEvent) {
   if (!props.modelValue) return;
 
   if (e.key === 'Escape') {
+    if (showConfirmClose.value) {
+      cancelConfirmClose();
+      return;
+    }
     if (modalStore.isTop(modalId)) {
       close();
     }
@@ -57,7 +95,8 @@ function handleKeydown(e: KeyboardEvent) {
 
   if (e.key === 'Tab') {
     if (!modalStore.isTop(modalId)) return;
-    const focusables = getFocusableElements();
+    const container = showConfirmClose.value ? confirmModalRef.value : modalRef.value;
+    const focusables = getFocusableElements(container);
     if (focusables.length === 0) {
       e.preventDefault();
       return;
@@ -83,23 +122,16 @@ function handleKeydown(e: KeyboardEvent) {
 
 let isRegistered = false;
 
-const topShadowRef = ref<HTMLDivElement | null>(null);
-const bottomShadowRef = ref<HTMLDivElement | null>(null);
+const modalBodyRef = ref<HTMLDivElement | null>(null);
+const topFadeRef = ref<HTMLDivElement | null>(null);
+const bottomFadeRef = ref<HTMLDivElement | null>(null);
 
 let resizeObserver: ResizeObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
 
 function getScrollElement(): HTMLElement | null {
   if (!modalRef.value) return null;
-  if (props.fullHeight) {
-    const form = modalRef.value.querySelector<HTMLElement>('.modal-body > form');
-    if (form) return form;
-    const slottedChild = modalRef.value.querySelector<HTMLElement>('.modal-body > *');
-    if (slottedChild && slottedChild.scrollHeight > slottedChild.clientHeight) {
-      return slottedChild;
-    }
-  }
-  return modalRef.value;
+  return modalBodyRef.value || modalRef.value.querySelector<HTMLElement>('.modal-body');
 }
 
 function updateScrollState() {
@@ -108,8 +140,8 @@ function updateScrollState() {
   const el = getScrollElement();
   if (!el) {
     modalEl.classList.remove('can-scroll-up', 'can-scroll-down', 'has-actions-row');
-    topShadowRef.value?.classList.remove('is-visible');
-    bottomShadowRef.value?.classList.remove('is-visible');
+    topFadeRef.value?.classList.remove('is-visible');
+    bottomFadeRef.value?.classList.remove('is-visible');
     return;
   }
   const canUp = el.scrollTop > 2;
@@ -120,14 +152,19 @@ function updateScrollState() {
   modalEl.classList.toggle('can-scroll-down', canDown);
   modalEl.classList.toggle('has-actions-row', hasActions);
 
-  topShadowRef.value?.classList.toggle('is-visible', canUp);
-  bottomShadowRef.value?.classList.toggle('is-visible', canDown && !hasActions);
+  topFadeRef.value?.classList.toggle('is-visible', canUp);
+  bottomFadeRef.value?.classList.toggle('is-visible', canDown && !hasActions);
 }
 
 function onScroll(e: Event) {
   const target = e.target as HTMLElement | null;
   const scrollEl = getScrollElement();
-  if (target === scrollEl || target === modalRef.value) {
+  if (
+    target === scrollEl ||
+    target === modalBodyRef.value ||
+    target === modalRef.value ||
+    modalRef.value?.contains(target as Node)
+  ) {
     updateScrollState();
   }
 }
@@ -150,21 +187,27 @@ function setupScrollObservers() {
         resizeObserver.observe(child);
       }
     }
+    if (modalBodyRef.value && modalBodyRef.value !== scrollEl) {
+      resizeObserver.observe(modalBodyRef.value);
+    }
     if (modalRef.value && modalRef.value !== scrollEl) {
       resizeObserver.observe(modalRef.value);
     }
   }
 
-  if (typeof MutationObserver !== 'undefined' && scrollEl) {
-    mutationObserver = new MutationObserver(() => {
-      updateScrollState();
-      if (resizeObserver && scrollEl) {
-        for (const child of scrollEl.children) {
-          resizeObserver.observe(child);
+  if (typeof MutationObserver !== 'undefined') {
+    const observeTarget = scrollEl || modalBodyRef.value || modalRef.value;
+    if (observeTarget) {
+      mutationObserver = new MutationObserver(() => {
+        updateScrollState();
+        if (resizeObserver && scrollEl) {
+          for (const child of scrollEl.children) {
+            resizeObserver.observe(child);
+          }
         }
-      }
-    });
-    mutationObserver.observe(scrollEl, { childList: true, subtree: true });
+      });
+      mutationObserver.observe(observeTarget, { childList: true, subtree: true });
+    }
   }
 
   updateScrollState();
@@ -180,8 +223,8 @@ function cleanupScrollObservers() {
   resizeObserver = null;
   mutationObserver?.disconnect();
   mutationObserver = null;
-  topShadowRef.value?.classList.remove('is-visible');
-  bottomShadowRef.value?.classList.remove('is-visible');
+  topFadeRef.value?.classList.remove('is-visible');
+  bottomFadeRef.value?.classList.remove('is-visible');
 }
 
 watch(
@@ -202,6 +245,7 @@ watch(
         });
       }
     } else {
+      showConfirmClose.value = false;
       if (isRegistered) {
         isRegistered = false;
         window.removeEventListener('keydown', handleKeydown);
@@ -212,6 +256,24 @@ watch(
   },
   { immediate: true }
 );
+
+watch(showConfirmClose, (isOpen) => {
+  if (isOpen) {
+    nextTick(() => {
+      const focusables = getFocusableElements(confirmModalRef.value);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      }
+    });
+  } else if (props.modelValue) {
+    nextTick(() => {
+      const focusables = getFocusableElements(modalRef.value);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      }
+    });
+  }
+});
 
 watch(
   () => props.fullHeight,
@@ -262,18 +324,61 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
               @click="close"
             />
           </div>
-          <div class="modal-body">
+          <div class="modal-body-wrap">
+            <div class="modal-body" ref="modalBodyRef">
+              <slot :close="close" />
+            </div>
             <div
-              ref="topShadowRef"
-              class="modal-scroll-shadow modal-scroll-shadow--top"
+              ref="topFadeRef"
+              class="modal-scroll-fade modal-scroll-fade--top modal-scroll-shadow--top"
               aria-hidden="true"
             />
-            <slot :close="close" />
             <div
-              ref="bottomShadowRef"
-              class="modal-scroll-shadow modal-scroll-shadow--bottom"
+              ref="bottomFadeRef"
+              class="modal-scroll-fade modal-scroll-fade--bottom modal-scroll-shadow--bottom"
               aria-hidden="true"
             />
+          </div>
+        </div>
+      </div>
+    </Transition>
+    <Transition name="modal-fade">
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+      <div
+        v-if="modelValue && showConfirmClose"
+        class="overlay confirm-close-overlay"
+        :style="{ zIndex: currentZIndex + 5 }"
+        @click.self="cancelConfirmClose"
+      >
+        <div
+          ref="confirmModalRef"
+          class="modal confirm-close-dialog"
+          role="alertdialog"
+          aria-modal="true"
+          :aria-labelledby="`${modalId}-confirm-title`"
+        >
+          <div class="modal-head">
+            <h2 :id="`${modalId}-confirm-title`">
+              {{ confirmCloseTitle || 'Ungespeicherte Änderungen verwerfen?' }}
+            </h2>
+          </div>
+          <div class="modal-body-wrap">
+            <div class="modal-body confirm-close-body">
+              <p class="confirm-close-message">
+                {{
+                  confirmCloseMessage ||
+                  'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
+                }}
+              </p>
+              <ButtonGroup class="confirm-close-actions">
+                <Button type="button" variant="secondary" @click="cancelConfirmClose">
+                  {{ confirmCloseCancelLabel || 'Weiter bearbeiten' }}
+                </Button>
+                <Button type="button" variant="danger" @click="acceptConfirmClose">
+                  {{ confirmCloseConfirmLabel || 'Änderungen verwerfen' }}
+                </Button>
+              </ButtonGroup>
+            </div>
           </div>
         </div>
       </div>
@@ -317,7 +422,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 }
 
 .modal {
-  --modal-scroll-shadow-color: rgba(43, 42, 40, 0.14);
+  position: relative;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-lg-squircle);
@@ -326,25 +431,13 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   max-width: 480px;
   width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: var(--shadow-md);
   transition:
     height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
     max-height 0.35s ease;
-}
-
-@media (prefers-color-scheme: dark) {
-  .modal {
-    --modal-scroll-shadow-color: rgba(0, 0, 0, 0.2);
-  }
-}
-
-:global([data-theme='dark']) .modal {
-  --modal-scroll-shadow-color: rgba(0, 0, 0, 0.2);
-}
-
-:global([data-theme='light']) .modal {
-  --modal-scroll-shadow-color: rgba(43, 42, 40, 0.14);
 }
 
 @media (max-width: 600px) {
@@ -373,93 +466,88 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   max-width: 900px;
 }
 
-/* fullHeight-Variante (siehe Prop oben): ursprünglich per align-self:stretch auf die volle
-   Viewport-Höhe gestreckt, damit ein enthaltenes <textarea> per :slotted() mitwachsen konnte. Seit
-   alle Anlegen-Formulare RichTextEditor.vue statt eines rohen <textarea> nutzen (das seine Höhe
-   bereits selbst deckelt, siehe dort), hätte der Zwangs-Stretch nur noch ungenutzten Leerraum unter
-   kurzen Formularen erzeugt (#88, konkret bei Notizen: Titel + Editor füllen die gestreckte Höhe
-   nicht annähernd aus) – Höhe wächst jetzt stattdessen wie beim Basis-.modal mit dem Inhalt
-   (max-height:90vh + overflow-y:auto), Desktop bekommt zusätzlich mehr Breite für die inhaltsreichen
-   Formulare, die diese Variante nutzen (Notizen/Tagebuch/Touren/Spots/Reise). */
-.modal.full-height {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
+/* Desktop-Breite für inhaltsreiche Formulare (Notizen/Tagebuch/Touren/Spots/Reise), die diese
+   Variante nutzen (#88). */
 @media (min-width: 800px) {
   .modal.full-height {
-    /* #88: 640px verschenkte auf Desktop-Bildschirmen (FullHD+) spürbar Platz links/rechts, gerade
-       für das große Freitextfeld (Tagebuch/Notizen) - deutlich breiter, aber immer noch mit Luft zum
-       Bildschirmrand auf kleineren Laptop-Displays. */
     max-width: 900px;
   }
 }
 
-.modal.full-height .modal-body {
+.modal-body-wrap {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
 }
 
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+  /* padding (NICHT nur padding-block) reserviert Platz für den Fokus-Rahmen (outline-offset 1px +
+     outline-Breite 2px, siehe input:focus in style.css) von Feldern ganz am Rand des Formulars -
+     sonst schneidet das eigene overflow-y:auto des Containers diesen Rahmen ab. */
+  padding: var(--space-1);
+}
+
+/* Sanfte Fade-Out-Verläufe in die Hintergrundfarbe (--color-surface) am oberen und unteren Rand,
+   wenn der Inhalt scrollbar ist. Angelehnt an DayStrip.vue und TabBar.vue. pointer-events: none
+   sichert uneingeschränkte Klickbarkeit dahinter liegender Felder. */
+.modal-scroll-fade,
 .modal-scroll-shadow {
   position: absolute;
   left: 0;
   right: 0;
-  height: 14px;
+  height: 28px;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease;
-  z-index: 15;
+  z-index: 25;
 }
 
+.modal-scroll-fade--top,
 .modal-scroll-shadow--top {
   top: 0;
-  background: linear-gradient(to bottom, var(--modal-scroll-shadow-color) 0%, transparent 100%);
+  background: linear-gradient(to bottom, var(--color-surface) 0%, transparent 100%);
 }
 
+.modal-scroll-fade--bottom,
 .modal-scroll-shadow--bottom {
   bottom: 0;
-  background: linear-gradient(to top, var(--modal-scroll-shadow-color) 0%, transparent 100%);
+  background: linear-gradient(to top, var(--color-surface) 0%, transparent 100%);
 }
 
+.modal-scroll-fade.is-visible,
 .modal-scroll-shadow.is-visible {
   opacity: 1;
 }
 
-/* Slot-Inhalt gehört der aufrufenden View (Notizen/Tagebuch/Spot-/Touren-/Unterkunft-/Reise-
-   Formulare), braucht daher :slotted() statt einer normalen scoped-Regel. Das Formular selbst füllt
-   den verfügbaren Platz, sein zentrales Notiz-/Inhalts-Textfeld (nicht die übrigen, kurzen Felder)
-   den Rest davon – jede dieser Views hat genau ein solches Feld pro Formular. */
-.modal.full-height .modal-body :slotted(form) {
+/* Slot-Inhalt gehört der aufrufenden View. Formulare füllen die verfügbare Höhe; zentrale
+   Notiz-/Inhalts-Textfelder (z. B. RichTextEditor / textarea) wachsen mit. */
+.modal-body :slotted(form) {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  /* padding (NICHT nur padding-block) reserviert Platz für den Fokus-Rahmen (outline-offset 1px +
-     outline-Breite 2px, siehe input:focus in style.css) von Feldern ganz am Rand des Formulars -
-     sonst schneidet das eigene overflow-y:auto des Formulars diesen Rahmen ab. Zwei Achsen statt nur
-     block: overflow-y:auto setzt laut CSS-Spec (Overflow Module Level 3) implizit auch overflow-x
-     auf auto, sobald eine Achse nicht "visible" ist - eine reine Block-Reservierung (frühere Fassung,
-     #86) deckte deshalb nur oben/unten ab, links/rechts blieb der Rahmen z. B. bei zweispaltigen
-     .row-Layouts (TravelSection.vue "Von"/"Nach") weiterhin abgeschnitten (#169). Gilt für jedes
-     full-height-Formular gemeinsam (Notizen/Tagebuch/Touren/Spots/Unterkunft/Reise/...), da alle
-     dieselbe :slotted(form)-Regel hier teilen - der Grund, warum dieser Fix zentral hier statt in
-     jeder einzelnen View ansetzt. */
-  padding: var(--space-1);
 }
 
-.modal.full-height .modal-body :slotted(textarea) {
+.modal-body :slotted(textarea) {
   flex: 1;
   min-height: 120px;
 }
 
 /* Fixierte Aktions-Leiste ("Speichern", "Löschen" etc.) am unteren Rand scrollbarer Dialog-Formulare:
-   Bleibt beim Scrollen am unteren Rand stehen, sodass Aktionen immer direkt erreichbar sind
-   (z. B. wenn nur der Titel oben geändert wird), während der Formularinhalt dahinter scrollt. */
-.modal.full-height .modal-body :slotted(form) .actions-row {
+   Bleibt beim Scrollen am unteren Rand stehen, während der Inhalt dahinter scrollt. Bei sichtbarem
+   Überlauf nach unten zeigt ein weiches Fade-Out (::before) oberhalb der Leiste an, dass darunter
+   weiterer Inhalt erreichbar ist. */
+.modal-body :slotted(form) .actions-row,
+.modal-body :slotted(.actions-row) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -474,31 +562,29 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
   z-index: 10;
-  transition: box-shadow 0.2s ease;
 }
 
-.modal.full-height .modal-body :slotted(form) .actions-row::before {
+.modal-body :slotted(form) .actions-row::before,
+.modal-body :slotted(.actions-row)::before {
   content: '';
   position: absolute;
   bottom: 100%;
   left: 0;
   right: 0;
-  height: 14px;
-  background: linear-gradient(to top, var(--modal-scroll-shadow-color) 0%, transparent 100%);
+  height: 28px;
+  background: linear-gradient(to top, var(--color-surface) 0%, transparent 100%);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
-.modal.full-height.can-scroll-down .modal-body :slotted(form) .actions-row {
-  box-shadow: 0 -4px 12px var(--modal-scroll-shadow-color);
-}
-
-.modal.full-height.can-scroll-down .modal-body :slotted(form) .actions-row::before {
+.modal.can-scroll-down .modal-body :slotted(form) .actions-row::before,
+.modal.can-scroll-down .modal-body :slotted(.actions-row)::before {
   opacity: 1;
 }
 
-.modal.full-height .modal-body :slotted(form) .actions-row .spacer {
+.modal-body :slotted(form) .actions-row .spacer,
+.modal-body :slotted(.actions-row) .spacer {
   flex: 1;
 }
 
@@ -527,5 +613,54 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   width: 44px;
   height: 44px;
   transform: translate(-50%, -50%);
+}
+
+.modal.confirm-close-dialog {
+  max-width: 480px;
+}
+
+.confirm-close-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.confirm-close-message {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.confirm-close-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.confirm-close-actions :deep(.btn),
+.confirm-close-actions :deep(button) {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .modal.confirm-close-dialog {
+    max-width: 100%;
+  }
+
+  .confirm-close-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .confirm-close-actions :deep(.btn),
+  .confirm-close-actions :deep(button) {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

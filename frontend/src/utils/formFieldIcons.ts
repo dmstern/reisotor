@@ -1,6 +1,5 @@
 import {
-  IconPencil,
-  IconPencilFilled,
+  IconSubtitlesEdit,
   IconNotes,
   IconClock,
   IconClockFilled,
@@ -65,7 +64,7 @@ export type FormFieldIconKey =
   | 'visibility';
 
 export const FORM_FIELD_ICONS: Record<FormFieldIconKey, IconDef> = {
-  title: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
+  title: { id: 'subtitles-edit', emoji: '✏️', outline: IconSubtitlesEdit },
   date: { id: 'calendar', emoji: '📅', outline: IconCalendar, filled: IconCalendarFilled },
   period: {
     id: 'calendar-week',

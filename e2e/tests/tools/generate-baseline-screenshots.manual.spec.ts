@@ -85,21 +85,64 @@ async function saveScreenshotIfChanged(
   screenshotPath: string,
   options: { fullPage?: boolean; maxDiffPixels?: number } = {}
 ): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
+  // Immer sicherstellen, dass auf Seiten oder Dialogen mit einer Karte alle Kartenkacheln vollständig geladen sind
+  await waitForMapTiles(page);
+
   // Sicherheitsnetz: Falls Leaflet-Karten auf der Seite gerendert werden, darf NIEMALS ein Screenshot
-  // mit unvollständigen oder noch ladenden Kacheln gespeichert werden.
-  const hasIncompleteTiles = await page.evaluate(() => {
-    const tiles = Array.from(
-      document.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
-    );
-    if (tiles.length === 0) return false;
-    return tiles.some(
-      (img) =>
-        !img.complete || img.naturalWidth === 0 || !img.classList.contains('leaflet-tile-loaded')
-    );
+  // mit unvollständigen, noch ladenden oder fehlenden Kacheln gespeichert werden.
+  const mapCheck = await page.evaluate(() => {
+    const visibleContainers = Array.from(
+      document.querySelectorAll<HTMLElement>('.leaflet-container')
+    ).filter((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        style.visibility !== 'hidden' &&
+        style.display !== 'none'
+      );
+    });
+    if (visibleContainers.length === 0) return { hasMap: false };
+
+    for (const container of visibleContainers) {
+      if (container.hasAttribute('data-tiles-loading')) {
+        return {
+          hasMap: true,
+          error: 'Leaflet-Kartenkacheln laden noch (data-tiles-loading)!',
+        };
+      }
+      const tiles = Array.from(
+        container.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
+      );
+      if (tiles.length === 0) {
+        return {
+          hasMap: true,
+          error: 'Sichtbare Leaflet-Karte hat 0 Kacheln (Kartenmaterial nicht gerendert)!',
+        };
+      }
+      const hasIncomplete = tiles.some(
+        (img) =>
+          !img.complete ||
+          img.naturalWidth === 0 ||
+          !img.classList.contains('leaflet-tile-loaded') ||
+          parseFloat(window.getComputedStyle(img).opacity || '0') < 0.9
+      );
+      if (hasIncomplete) {
+        return {
+          hasMap: true,
+          error:
+            'Nicht alle Leaflet-Kartenkacheln wurden vollständig geladen/gerendert oder sind noch transparent!',
+        };
+      }
+    }
+
+    return { hasMap: true };
   });
-  if (hasIncompleteTiles) {
+
+  if (mapCheck.hasMap && mapCheck.error) {
     throw new Error(
-      `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Nicht alle Leaflet-Kartenkacheln wurden vollständig geladen/gerendert!`
+      `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: ${mapCheck.error}`
     );
   }
 
@@ -137,7 +180,7 @@ async function saveScreenshotIfChanged(
             ? Math.max(300, Math.round(img1.width * img1.height * 0.012))
             : Math.round(img1.width * img1.height * 0.012));
 
-        if (numDiffPixels > 0 && process.env.FORCE_SCREENSHOTS) {
+        if (numDiffPixels > 0 && (process.env.FORCE_SCREENSHOTS || process.env.SCREENSHOT_MODE)) {
           fs.writeFileSync(screenshotPath, newBuffer);
           console.log(
             `[Updated: ${numDiffPixels} px diff (forced)] ${path.basename(screenshotPath)}`
@@ -366,6 +409,10 @@ async function applyScreenshotStyles(page: Page) {
         border-bottom: none !important;
         box-shadow: none !important;
       }
+      .leaflet-tile.leaflet-tile-loaded {
+        opacity: 1 !important;
+        transition: none !important;
+      }
     `,
   });
 }
@@ -485,6 +532,7 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-todo',
     path: '/listen?tab=todo',
     open: async (page) => {
+      await page.locator('.todo-page').waitFor({ state: 'visible', timeout: 15000 });
       const item = page.locator('.checkable-list-item').first();
       await item.waitFor({ state: 'visible', timeout: 15000 });
       const btn = item.locator('.edit-btn');
@@ -497,6 +545,7 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-packing',
     path: '/listen?tab=packing',
     open: async (page) => {
+      await page.locator('.packing-page').waitFor({ state: 'visible', timeout: 15000 });
       const item = page.locator('.checkable-list-item').first();
       await item.waitFor({ state: 'visible', timeout: 15000 });
       const btn = item.locator('.edit-btn');
@@ -509,6 +558,7 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-shopping',
     path: '/listen?tab=shopping',
     open: async (page) => {
+      await page.locator('.shopping-page').waitFor({ state: 'visible', timeout: 15000 });
       const item = page.locator('.checkable-list-item').first();
       await item.waitFor({ state: 'visible', timeout: 15000 });
       const btn = item.locator('.edit-btn');
@@ -843,6 +893,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         await dlg.open(page);
         await page.locator(dlg.waitSelector).first().waitFor({ state: 'visible', timeout: 15_000 });
         await page.waitForTimeout(400);
+        await waitForMapTiles(page);
 
         for (const theme of THEMES) {
           await page.emulateMedia({ colorScheme: theme });
@@ -851,6 +902,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             document.documentElement.setAttribute('data-theme', t);
           }, theme);
           await page.waitForTimeout(300);
+          await waitForMapTiles(page);
 
           const screenshotPath = path.join(
             process.cwd(),
