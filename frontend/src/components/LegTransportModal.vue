@@ -12,7 +12,14 @@ import FileAttachments from './FileAttachments.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import LegMiniMap from './LegMiniMap.vue';
 import Alert, { type AlertVariant } from './primitives/Alert.vue';
-import { IconRoute2, IconLineDashed, IconLink, IconLinkOff, IconBolt } from '@tabler/icons-vue';
+import {
+  IconMapRoute,
+  IconSTurnRight,
+  IconBrandCitymapper,
+  IconLink,
+  IconLinkOff,
+  IconBolt,
+} from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import type { FormFieldIconKey } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -446,12 +453,12 @@ const ROUTE_MODE_OPTIONS: {
   {
     value: 'exact',
     label: 'Exakte Route',
-    icon: { id: 'route-exact', emoji: '🗺️', outline: IconRoute2 },
+    icon: { id: 's-turn-right', emoji: '🗺️', outline: IconSTurnRight },
   },
   {
     value: 'direct',
     label: 'Luftlinie',
-    icon: { id: 'route-direct', emoji: '〰️', outline: IconLineDashed },
+    icon: { id: 'brand-citymapper', emoji: '〰️', outline: IconBrandCitymapper },
   },
 ];
 
@@ -816,9 +823,9 @@ const timeUnlinkedIconDef: IconDef = {
 };
 
 const routeHeadingIconDef: IconDef = {
-  id: 'route-2',
+  id: 'map-route',
   emoji: '🗺️',
-  outline: IconRoute2,
+  outline: IconMapRoute,
 };
 
 const fastestRouteIconDef: IconDef = {
