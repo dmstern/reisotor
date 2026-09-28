@@ -363,14 +363,13 @@ function onDelete() {
         </span>
       </div>
 
-      <FormField icon="category" label="Verkehrsmittel">
-        <SegmentedToggle
-          class="transport-toggle"
-          :model-value="transportCategory"
-          :options="TRANSPORT_MODE_OPTIONS"
-          @update:model-value="onCategorySelect"
-        />
-      </FormField>
+      <SegmentedToggle
+        class="transport-toggle"
+        :model-value="transportCategory"
+        :options="TRANSPORT_MODE_OPTIONS"
+        aria-label="Fortbewegungsart"
+        @update:model-value="onCategorySelect"
+      />
 
       <!-- Öffi-Detail-Dropdown (nur wenn ÖPNV ausgewählt ist) -->
       <div
