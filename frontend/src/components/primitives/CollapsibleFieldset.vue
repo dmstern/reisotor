@@ -151,7 +151,7 @@ function toggle() {
 .label-inner {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .picker-count {

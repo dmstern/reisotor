@@ -196,7 +196,7 @@ defineExpose({
   font-size: 0.82rem;
   color: var(--color-text);
   background: var(--color-hover);
-  padding: var(--space-1-5, 6px) var(--space-2, 8px);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }

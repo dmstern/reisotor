@@ -766,7 +766,7 @@ function onDelete() {
 .spot-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -854,7 +854,7 @@ function onDelete() {
 .transit-hint {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
   margin: var(--space-2) 0 0;
   font-size: 0.8125rem;
   color: var(--color-text-muted);
@@ -947,7 +947,7 @@ function onDelete() {
 .route-calc-title {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
   font-weight: 600;
   font-size: 0.875rem;
 }
@@ -1053,7 +1053,7 @@ function onDelete() {
 .route-calc-error {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
   margin: 0;
   font-size: 0.8125rem;
   color: var(--color-danger);
@@ -1217,7 +1217,7 @@ function onDelete() {
   .route-mode-toggle :deep(.segmented-option) {
     padding: 6px 4px;
     font-size: 0.8rem;
-    gap: 4px;
+    gap: var(--space-1);
   }
 }
 </style>

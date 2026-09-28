@@ -1544,7 +1544,7 @@ defineExpose({
   transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
   z-index: 3;
 }
 
@@ -1779,7 +1779,7 @@ defineExpose({
 .polaroid-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-2);
   min-width: 0;
   padding: 2px 2px 4px 2px;
 }
@@ -1791,7 +1791,7 @@ defineExpose({
 .status-details {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1);
   min-width: 0;
   max-width: 100%;
   width: 100%;
@@ -1840,7 +1840,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
   min-width: 0;
   max-width: 100%;
   flex: 1;

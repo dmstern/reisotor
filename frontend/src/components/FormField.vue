@@ -65,7 +65,7 @@ const id = useId();
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -77,7 +77,7 @@ const id = useId();
 .form-field-label {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -97,7 +97,7 @@ const id = useId();
 .field-error-hint {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   margin: 2px 0 0;
   font-size: 0.8rem;
   color: var(--color-danger, #ef4444);
@@ -114,7 +114,7 @@ const id = useId();
   height: 6px;
   border-radius: 50%;
   background-color: var(--color-accent);
-  margin-left: 4px;
+  margin-left: var(--space-1);
   flex-shrink: 0;
 }
 

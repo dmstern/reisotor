@@ -310,7 +310,7 @@ a.btn.is-loading {
 .btn--card-action {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 6px 12px;
   min-height: 32px;
   box-sizing: border-box;
