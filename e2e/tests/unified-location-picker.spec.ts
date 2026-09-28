@@ -1102,13 +1102,17 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       const input = getLocationInput(picker);
       await input.fill('Florenz');
-      await getDropdownOptions(page).first().click();
+      const firstOpt = getDropdownOptions(page).first();
+      await expect(firstOpt).toBeVisible();
+      await firstOpt.click();
+      await expect(getDropdown(page)).not.toBeVisible();
 
       const status = getStatusBadge(picker);
       await expect(status).toBeVisible();
       await expect(status).toContainText('43.7696');
 
       const saveBtn = modal.locator('button[type="submit"]');
+      await expect(saveBtn).toBeEnabled();
       await saveBtn.click();
 
       // Trip should be created
