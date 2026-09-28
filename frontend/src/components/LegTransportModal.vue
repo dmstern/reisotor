@@ -441,8 +441,8 @@ function onDelete() {
         :title="routingDisabledTitle"
         class="route-calc-fieldset"
       >
-        <template v-if="!isRoutingDisabled" #badge>
-          <span v-if="isCalculatingRoute" class="route-calc-badge route-calc-badge--loading">
+        <template v-if="!isRoutingDisabled && isCalculatingRoute" #badge>
+          <span class="route-calc-badge route-calc-badge--loading">
             <AppIcon
               :icon="ACTION_ICONS.refresh"
               :size="12"
@@ -450,13 +450,6 @@ function onDelete() {
               class="route-calc-spinner"
             />
             Route wird berechnet…
-          </span>
-          <span
-            v-else-if="hasExactRoute"
-            class="route-calc-badge"
-            :class="{ 'route-calc-badge--dashed': routeDisplayMode === 'direct' }"
-          >
-            {{ routeDisplayMode === 'exact' ? 'Exakte Route aktiv' : 'Luftlinie aktiv' }}
           </span>
         </template>
 
@@ -843,6 +836,8 @@ function onDelete() {
   transition:
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .route-calc-header {
   display: flex;
   align-items: center;
