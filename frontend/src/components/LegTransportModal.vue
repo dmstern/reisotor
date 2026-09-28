@@ -12,7 +12,7 @@ import FileAttachments from './FileAttachments.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import LegMiniMap from './LegMiniMap.vue';
 import Alert, { type AlertVariant } from './primitives/Alert.vue';
-import { IconRoute2, IconLineDashed, IconLink, IconLinkOff } from '@tabler/icons-vue';
+import { IconRoute2, IconLineDashed, IconLink, IconLinkOff, IconBolt } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import type { FormFieldIconKey } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -815,6 +815,18 @@ const timeUnlinkedIconDef: IconDef = {
   outline: IconLinkOff,
 };
 
+const routeHeadingIconDef: IconDef = {
+  id: 'route-2',
+  emoji: '🗺️',
+  outline: IconRoute2,
+};
+
+const fastestRouteIconDef: IconDef = {
+  id: 'bolt',
+  emoji: '⚡',
+  outline: IconBolt,
+};
+
 const alertVariantForStatus = computed<AlertVariant>(() => {
   if (!timeDurationStatus.value) return 'neutral';
   switch (timeDurationStatus.value.type) {
@@ -1238,8 +1250,16 @@ function onDelete() {
             </Select>
           </FormField>
           <p class="transit-hint">
-            ℹ️ Für ÖPNV ist aktuell noch keine exakte Routenberechnung möglich – bitte trage die
-            Routendetails daher selbst ein.
+            <AppIcon
+              :icon="ACTION_ICONS.info"
+              :size="14"
+              group="actions"
+              class="transit-hint-icon"
+            />
+            <span>
+              Für ÖPNV ist aktuell noch keine exakte Routenberechnung möglich – bitte trage die
+              Routendetails daher selbst ein.
+            </span>
           </p>
         </div>
       </div>
@@ -1255,7 +1275,9 @@ function onDelete() {
             <!-- Zustand 1: Noch keine Route berechnet -> Aufforderung zur Berechnung -->
             <div v-if="!hasExactRoute" class="route-calc-header">
               <div class="route-calc-info">
-                <span class="route-calc-title">🗺️ Exakte Route</span>
+                <span class="route-calc-title">
+                  <AppIcon :icon="routeHeadingIconDef" :size="16" group="actions" /> Exakte Route
+                </span>
                 <div class="route-calc-detail">
                   <span class="route-calc-hint">
                     Echte Wegeroute, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
@@ -1288,7 +1310,10 @@ function onDelete() {
               <div class="route-calc-header-mode">
                 <div class="route-calc-heading-row">
                   <div class="route-calc-title-group">
-                    <span class="route-calc-title">🗺️ Routenführung</span>
+                    <span class="route-calc-title">
+                      <AppIcon :icon="routeHeadingIconDef" :size="16" group="actions" />
+                      Routenführung
+                    </span>
                     <span
                       class="route-calc-badge"
                       :class="{ 'route-calc-badge--dashed': routeDisplayMode === 'direct' }"
@@ -1364,21 +1389,28 @@ function onDelete() {
                               class="route-alt-badge badge-fastest"
                               title="Schnellste Reisedauer"
                             >
-                              ⚡ Schnellste
+                              <AppIcon :icon="fastestRouteIconDef" :size="11" group="actions" />
+                              Schnellste
                             </span>
                             <span
                               v-if="idx === shortestRouteIndex"
                               class="route-alt-badge badge-shortest"
                               title="Kürzeste Fahrtstrecke"
                             >
-                              📏 Kürzeste
+                              <AppIcon :icon="ACTION_ICONS.distance" :size="11" group="actions" />
+                              Kürzeste
                             </span>
                             <span
                               v-if="idx === suggestedRouteIndex"
                               class="route-alt-badge badge-suggested"
                               title="Empfehlung anhand gewählter Präferenz"
                             >
-                              ⭐ Vorschlag
+                              <AppIcon
+                                :icon="ACTION_ICONS.recommended"
+                                :size="11"
+                                group="actions"
+                              />
+                              Vorschlag
                             </span>
                           </div>
                         </div>
@@ -1465,7 +1497,8 @@ function onDelete() {
             </div>
 
             <p v-if="routeCalculationError" class="route-calc-error">
-              ⚠️ {{ routeCalculationError }}
+              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+              <span>{{ routeCalculationError }}</span>
             </p>
 
             <div class="route-calc-footer">
@@ -1835,10 +1868,18 @@ function onDelete() {
 }
 
 .transit-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1-5);
   margin: var(--space-2) 0 0;
   font-size: 0.8125rem;
   color: var(--color-text-muted);
   line-height: 1.4;
+}
+
+.transit-hint-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .route-calc-wrapper {
@@ -1921,6 +1962,9 @@ function onDelete() {
 }
 
 .route-calc-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
   font-weight: 600;
   font-size: 0.875rem;
 }
@@ -2123,6 +2167,7 @@ function onDelete() {
 .route-alt-badge {
   display: inline-flex;
   align-items: center;
+  gap: 3px;
   padding: 1px 6px;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -2223,6 +2268,9 @@ function onDelete() {
 }
 
 .route-calc-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1-5);
   margin: 0;
   font-size: 0.8125rem;
   color: var(--color-danger, #ef4444);
