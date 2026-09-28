@@ -574,8 +574,8 @@ const cardRotation = computed(() => {
       </div>
 
       <div class="card-actions-wrapper" :class="{ 'is-expanded': expanded }">
-        <div class="mobile-only-accordion" :class="{ 'is-expanded': expanded }">
-          <div class="mobile-only-accordion-inner accordion-stagger">
+        <div class="actions-accordion" :class="{ 'is-expanded': expanded }">
+          <div class="actions-accordion-inner accordion-stagger">
             <div class="card-actions">
               <TourAssignDropdown
                 :tours="tourAssignments"
@@ -619,7 +619,7 @@ const cardRotation = computed(() => {
               >
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
               </button>
-              <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
+              <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – nur im aufgeklappten Zustand -->
               <DoneToggle
                 v-if="!isAccommodation"
                 key="btn-done"
@@ -1142,6 +1142,7 @@ const cardRotation = computed(() => {
   position: static;
   overflow: hidden;
   justify-content: flex-start;
+  min-height: 64px;
 }
 
 .spot-card.expanded .body {
@@ -1193,6 +1194,7 @@ const cardRotation = computed(() => {
   overflow: hidden;
   flex-shrink: 0;
   max-height: 1.5em;
+  padding-right: 48px;
 }
 
 .note {
@@ -1246,11 +1248,6 @@ const cardRotation = computed(() => {
   position: relative;
   z-index: 2;
   width: 100%;
-}
-
-.mobile-only-accordion,
-.mobile-only-accordion-inner {
-  display: contents; /* Auf Desktop komplett durchlässig */
 }
 
 .spot-card:not(.expanded) .card-actions-wrapper {
@@ -1675,54 +1672,6 @@ const cardRotation = computed(() => {
     -webkit-line-clamp: 1;
     line-clamp: 1;
   }
-
-  .mobile-only-accordion {
-    display: grid;
-    grid-template-rows: 0fr;
-    visibility: hidden;
-    /* Beim Zuklappen: faltet sich sofort zusammen (Stufe 1) */
-    transition:
-      grid-template-rows 0.22s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      visibility 0s linear 0.22s;
-  }
-
-  .mobile-only-accordion.is-expanded {
-    grid-template-rows: 1fr;
-    visibility: visible;
-    /* Beim Aufklappen: entfaltet sich nach Bild-Morph (Stufe 2) */
-    transition:
-      grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1) 0.14s,
-      visibility 0s linear 0.14s;
-  }
-
-  .mobile-only-accordion-inner {
-    display: block;
-    overflow: hidden;
-    /* Verhindert Abschneiden des Fokus-Rahmens */
-    padding: 3px;
-    margin: -3px;
-  }
-
-  .mobile-only-accordion.is-expanded .mobile-only-accordion-inner {
-    overflow: visible;
-  }
-
-  .mobile-only-accordion-inner > * {
-    transition:
-      opacity 0.2s ease 0s,
-      transform 0.2s ease 0s;
-    opacity: 0;
-    transform: translateY(-12px) scale(0.98);
-  }
-
-  .mobile-only-accordion.is-expanded .mobile-only-accordion-inner > * {
-    transition:
-      opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    transition-delay: calc(var(--stagger-idx, 0) * 35ms + 140ms);
-  }
 }
 
 /* Auf schmalen Karten (<= 340px, z. B. in Schlangenreihen oder engen Spalten):
@@ -1773,7 +1722,8 @@ const cardRotation = computed(() => {
   }
 }
 
-.spot-accordion {
+.spot-accordion,
+.actions-accordion {
   display: grid;
   grid-template-rows: 0fr;
   visibility: hidden;
@@ -1783,7 +1733,8 @@ const cardRotation = computed(() => {
     visibility 0s linear 0.22s;
 }
 
-.spot-accordion.is-expanded {
+.spot-accordion.is-expanded,
+.actions-accordion.is-expanded {
   grid-template-rows: 1fr;
   visibility: visible;
   /* Beim Aufklappen nach dem Bild-Morph entfalten (Stufe 2) */
@@ -1792,15 +1743,27 @@ const cardRotation = computed(() => {
     visibility 0s linear 0.14s;
 }
 
-.spot-accordion-inner {
+.actions-accordion {
+  width: 100%;
+}
+
+.spot-accordion-inner,
+.actions-accordion-inner {
+  display: block;
   overflow: hidden;
   /* Verhindert Abschneiden des Fokus-Rahmens */
   padding: 3px;
   margin: -3px;
 }
 
+.spot-accordion.is-expanded .spot-accordion-inner,
+.actions-accordion.is-expanded .actions-accordion-inner {
+  overflow: visible;
+}
+
 /* Einfaden und gestaffeltes Auffächern für die Inhalte */
 .spot-accordion-inner > *,
+.actions-accordion-inner > *,
 .excursion-accordion-inner > * {
   transition:
     opacity 0.2s ease 0s,
@@ -1810,6 +1773,7 @@ const cardRotation = computed(() => {
 }
 
 .spot-accordion.is-expanded .spot-accordion-inner > *,
+.actions-accordion.is-expanded .actions-accordion-inner > *,
 .excursion-accordion.is-expanded .excursion-accordion-inner > * {
   transition:
     opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
@@ -1824,11 +1788,11 @@ const cardRotation = computed(() => {
   .image,
   .body,
   .spot-accordion,
-  .mobile-only-accordion,
+  .actions-accordion,
   .show-on-map-btn,
   .show-on-map-btn .btn-label,
   .spot-accordion-inner > *,
-  .mobile-only-accordion-inner > *,
+  .actions-accordion-inner > *,
   .spot-note-container,
   .card-badge-group,
   .card-badge-group :deep(.category-chip) {
