@@ -42,22 +42,63 @@ export async function waitForAppReady(page: Page): Promise<void> {
 /** Stellt sicher, dass Leaflet-Kartenkacheln (OpenStreetMap) vollständig geladen und gerendert sind,
  *  bevor Screenshots aufgenommen werden. Verhindert weiße/unvollständige Kacheln im Screenshot. */
 export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<void> {
-  const hasMapContainer =
-    (await page.locator('.trip-map-container, .trip-map, .leaflet-container').count()) > 0;
-  if (!hasMapContainer) return;
+  const isMapExpected =
+    page.url().includes('/excursions') ||
+    (await page
+      .locator(
+        '.trip-map-container, .trip-map, .leaflet-container, .map-col, .location-picker-map, .mini-map, .excursion-mini-map, .map-wrap'
+      )
+      .count()) > 0;
 
-  // 1. Warten, bis der Leaflet-Kartencontainer gerendert und sichtbar ist
-  await page.locator('.leaflet-container').first().waitFor({ state: 'visible', timeout: 10_000 });
+  if (!isMapExpected) {
+    // Kurzer Check, ob sich im DOM bereits ein Leaflet-Container befindet (z. B. in einem dynamisch geöffneten Dialog)
+    const hasLeaflet = (await page.locator('.leaflet-container').count()) > 0;
+    if (!hasLeaflet) return;
+  }
+
+  // 1. Warten, bis ein sichtbarer Leaflet-Kartencontainer mit Abmessungen > 0 im DOM gerendert ist
+  await page
+    .waitForFunction(
+      () => {
+        const containers = Array.from(document.querySelectorAll<HTMLElement>('.leaflet-container'));
+        return containers.some((el) => {
+          const rect = el.getBoundingClientRect();
+          const style = window.getComputedStyle(el);
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            style.visibility !== 'hidden' &&
+            style.display !== 'none'
+          );
+        });
+      },
+      { timeout: 10_000 }
+    )
+    .catch(() => {});
+
+  // Bei Viewport- oder Schubladen-Änderungen sicherstellen, dass Leaflet die Kachelberechnung triggert
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('resize'));
+  });
 
   // 2. Warten, bis alle Kacheln vollständig heruntergeladen, dekodiert und gerendert wurden
   await page.waitForFunction(
     () => {
-      const mapContainers = Array.from(
+      const visibleContainers = Array.from(
         document.querySelectorAll<HTMLElement>('.leaflet-container')
-      );
-      if (mapContainers.length === 0) return false;
+      ).filter((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none'
+        );
+      });
+      if (visibleContainers.length === 0) return true; // Keine sichtbare Karte vorhanden
 
-      const isAnyLoading = mapContainers.some((el) => el.hasAttribute('data-tiles-loading'));
+      const isAnyLoading = visibleContainers.some((el) => el.hasAttribute('data-tiles-loading'));
       if (isAnyLoading) return false;
 
       const tiles = Array.from(
@@ -73,6 +114,6 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
     { timeout: timeoutMs }
   );
 
-  // 3. Settle-Puffer für Leaflets CSS-Opacity-Transition (0.2s linear) & Compositing
+  // 3. Settle-Puffer für Leaflets CSS-Opacity-Transition (0.3s ease-in-out) & Compositing
   await page.waitForTimeout(500);
 }

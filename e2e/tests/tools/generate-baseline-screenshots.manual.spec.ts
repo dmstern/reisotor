@@ -85,22 +85,61 @@ async function saveScreenshotIfChanged(
   screenshotPath: string,
   options: { fullPage?: boolean; maxDiffPixels?: number } = {}
 ): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
+  // Immer sicherstellen, dass auf Seiten oder Dialogen mit einer Karte alle Kartenkacheln vollständig geladen sind
+  await waitForMapTiles(page);
+
   // Sicherheitsnetz: Falls Leaflet-Karten auf der Seite gerendert werden, darf NIEMALS ein Screenshot
-  // mit unvollständigen oder noch ladenden Kacheln gespeichert werden.
-  const hasIncompleteTiles = await page.evaluate(() => {
+  // mit unvollständigen, noch ladenden oder fehlenden Kacheln gespeichert werden.
+  const mapCheck = await page.evaluate(() => {
+    const visibleContainers = Array.from(
+      document.querySelectorAll<HTMLElement>('.leaflet-container')
+    ).filter((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        style.visibility !== 'hidden' &&
+        style.display !== 'none'
+      );
+    });
+    if (visibleContainers.length === 0) return { hasMap: false };
+
+    const isAnyLoading = visibleContainers.some((el) => el.hasAttribute('data-tiles-loading'));
     const tiles = Array.from(
       document.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
     );
-    if (tiles.length === 0) return false;
-    return tiles.some(
+    const hasZeroTiles = tiles.length === 0;
+    const hasIncompleteTiles = tiles.some(
       (img) =>
         !img.complete || img.naturalWidth === 0 || !img.classList.contains('leaflet-tile-loaded')
     );
+
+    return {
+      hasMap: true,
+      isAnyLoading,
+      tilesCount: tiles.length,
+      hasZeroTiles,
+      hasIncompleteTiles,
+    };
   });
-  if (hasIncompleteTiles) {
-    throw new Error(
-      `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Nicht alle Leaflet-Kartenkacheln wurden vollständig geladen/gerendert!`
-    );
+
+  if (mapCheck.hasMap) {
+    if (mapCheck.isAnyLoading) {
+      throw new Error(
+        `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Leaflet-Kartenkacheln laden noch (data-tiles-loading)!`
+      );
+    }
+    if (mapCheck.hasZeroTiles) {
+      throw new Error(
+        `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Sichtbare Leaflet-Karte hat 0 Kacheln (Kartenmaterial nicht gerendert)!`
+      );
+    }
+    if (mapCheck.hasIncompleteTiles) {
+      throw new Error(
+        `[Sicherheitsabbruch] Screenshot '${path.basename(screenshotPath)}' kann nicht gespeichert werden: Nicht alle Leaflet-Kartenkacheln wurden vollständig geladen/gerendert!`
+      );
+    }
   }
 
   // Erhöhte Toleranz (25.000 Pixel entspricht ca. 1.2% bei Full HD), da Anti-Aliasing
@@ -843,6 +882,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         await dlg.open(page);
         await page.locator(dlg.waitSelector).first().waitFor({ state: 'visible', timeout: 15_000 });
         await page.waitForTimeout(400);
+        await waitForMapTiles(page);
 
         for (const theme of THEMES) {
           await page.emulateMedia({ colorScheme: theme });
@@ -851,6 +891,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             document.documentElement.setAttribute('data-theme', t);
           }, theme);
           await page.waitForTimeout(300);
+          await waitForMapTiles(page);
 
           const screenshotPath = path.join(
             process.cwd(),
