@@ -73,7 +73,7 @@ const mockLeg: ExcursionLeg = {
 };
 
 describe('LegTransportModal', () => {
-  it('renders route summary with fromSpot and toSpot names and spot pills', async () => {
+  it('renders modal title with category icons and spot names, without redundant summary box', async () => {
     const { cleanUp } = mountTestApp(LegTransportModal, {
       modelValue: true,
       fromSpot: mockFromSpot,
@@ -84,13 +84,17 @@ describe('LegTransportModal', () => {
     await nextTick();
 
     const summary = document.querySelector('.route-summary');
-    expect(summary).not.toBeNull();
-    expect(summary?.textContent).toContain('Frankfurt Hbf');
-    expect(summary?.textContent).toContain('Lisboa Oriente');
-    expect(summary?.textContent).toContain('→');
+    expect(summary).toBeNull();
 
-    const pills = document.querySelectorAll('.spot-pill');
-    expect(pills.length).toBe(2);
+    const titleEl = document.querySelector('h2, .modal-title, .title');
+    expect(titleEl).not.toBeNull();
+    expect(titleEl?.textContent).toContain('Teilstrecke:');
+    expect(titleEl?.textContent).toContain('Frankfurt Hbf');
+    expect(titleEl?.textContent).toContain('Lisboa Oriente');
+    expect(titleEl?.textContent).toContain('→');
+
+    const icons = titleEl?.querySelectorAll('.app-icon');
+    expect(icons?.length).toBe(2);
 
     cleanUp();
   });
@@ -106,7 +110,10 @@ describe('LegTransportModal', () => {
     await nextTick();
 
     const titleEl = document.querySelector('h2, .modal-title, .title');
-    expect(titleEl?.textContent).toContain('Teilstrecke: Frankfurt Hbf → Lisboa Oriente');
+    expect(titleEl?.textContent).toContain('Teilstrecke:');
+    expect(titleEl?.textContent).toContain('Frankfurt Hbf');
+    expect(titleEl?.textContent).toContain('Lisboa Oriente');
+    expect(titleEl?.textContent).toContain('→');
 
     cleanUp();
   });
@@ -140,8 +147,9 @@ describe('LegTransportModal', () => {
     });
     await nextTick();
 
-    const toggleBtn = document.querySelector('.collapsible-toggle');
-    expect(toggleBtn?.textContent).toContain('Erweiterte Angaben');
+    const toggleBtns = Array.from(document.querySelectorAll('.collapsible-toggle'));
+    const extendedBtn = toggleBtns.find((b) => b.textContent?.includes('Erweiterte Angaben'));
+    expect(extendedBtn).toBeDefined();
 
     cleanUp();
   });
@@ -165,16 +173,14 @@ describe('LegTransportModal', () => {
     });
     await nextTick();
 
-    const calcWrapper = document.querySelector('.route-calc-wrapper');
-    expect(calcWrapper).not.toBeNull();
-    expect(calcWrapper?.classList.contains('is-expanded')).toBe(true);
+    const routeFieldset = document.querySelector('.route-calc-fieldset');
+    expect(routeFieldset).not.toBeNull();
+    expect(routeFieldset?.classList.contains('is-open')).toBe(true);
+    expect(routeFieldset?.textContent).toContain('Routenführung');
+    expect(routeFieldset?.textContent).toContain('Route berechnen');
+    expect(routeFieldset?.textContent).toContain('Quelle: OpenRouteService');
 
-    const calcSection = document.querySelector('.route-calc-section');
-    expect(calcSection).not.toBeNull();
-    expect(calcSection?.textContent).toContain('Exakte Route');
-    expect(calcSection?.textContent).toContain('Quelle: OpenRouteService');
-
-    const sourceLink = calcSection?.querySelector('a.route-source-link') as HTMLAnchorElement;
+    const sourceLink = routeFieldset?.querySelector('a.route-source-link') as HTMLAnchorElement;
     expect(sourceLink).not.toBeNull();
     expect(sourceLink?.href).toBe('https://openrouteservice.org/');
     expect(sourceLink?.target).toBe('_blank');
@@ -199,10 +205,12 @@ describe('LegTransportModal', () => {
     });
     await nextTick();
 
-    const calcWrapper = document.querySelector('.route-calc-wrapper');
-    expect(calcWrapper).not.toBeNull();
-    expect(calcWrapper?.classList.contains('is-expanded')).toBe(false);
-    expect(calcWrapper?.hasAttribute('inert')).toBe(true);
+    const routeFieldset = document.querySelector('.route-calc-fieldset');
+    expect(routeFieldset).not.toBeNull();
+    expect(routeFieldset?.classList.contains('is-closed')).toBe(true);
+    const toggleBtn = routeFieldset?.querySelector('.collapsible-toggle');
+    expect(toggleBtn?.hasAttribute('disabled')).toBe(true);
+    expect(toggleBtn?.getAttribute('title')).toContain('Für ÖPNV');
 
     cleanUp();
   });
@@ -256,12 +264,10 @@ describe('LegTransportModal', () => {
     await new Promise((r) => setTimeout(r, 10));
     await nextTick();
 
-    // Distanz und Dauer sollen nun angezeigt werden:
+    // Distanz und Dauer sollen nun im Single-Route-Card angezeigt werden:
+    expect(document.querySelector('.route-alt-card--single')?.textContent).toContain('Route 1');
     expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30,0 km');
     expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30 Min.');
-    expect(document.querySelector('.route-preference-label')?.textContent).toBe(
-      'Berechnete Route:'
-    );
 
     // Ankunftszeit soll von 14:15 + 30m auf 14:45 gesetzt sein:
     const arrivalInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
@@ -328,11 +334,14 @@ describe('LegTransportModal', () => {
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(true);
     expect(transitWrapper?.hasAttribute('inert')).toBe(false);
 
-    // Hinweis zu nicht verfügbarer exakter Routenberechnung soll sichtbar sein
-    const hint = document.querySelector('.transit-hint');
-    expect(hint).not.toBeNull();
-    expect(hint?.textContent).toContain(
-      'Für ÖPNV ist aktuell noch keine exakte Routenberechnung möglich'
+    // Hinweis zu nicht verfügbarer exakter Routenberechnung soll als Tooltip am deaktivierten Routen-Toggle sichtbar sein
+    const routeFieldset = document.querySelector('.route-calc-fieldset');
+    expect(routeFieldset).not.toBeNull();
+    expect(routeFieldset?.classList.contains('is-closed')).toBe(true);
+    const routeToggle = routeFieldset?.querySelector('.collapsible-toggle');
+    expect(routeToggle?.hasAttribute('disabled')).toBe(true);
+    expect(routeToggle?.getAttribute('title')).toContain(
+      'Für ÖPNV ist aktuell noch keine Routenberechnung möglich'
     );
 
     const toggleOptions = Array.from(
@@ -355,7 +364,7 @@ describe('LegTransportModal', () => {
 
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
     expect(transitWrapper?.hasAttribute('inert')).toBe(true);
-    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
+    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-open')).toBe(
       true
     );
 
@@ -363,7 +372,7 @@ describe('LegTransportModal', () => {
     bikeBtn.click();
     await nextTick();
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
-    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
+    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-open')).toBe(
       true
     );
 
@@ -371,19 +380,22 @@ describe('LegTransportModal', () => {
     walkBtn.click();
     await nextTick();
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
-    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
+    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-open')).toBe(
       true
     );
 
-    // Zurück zu ÖPNV: Dropdown klappt wieder aus, Route-Berechnung klappt ein
+    // Zurück zu ÖPNV: Dropdown klappt wieder aus, Route-Berechnung klappt ein und ist deaktiviert
     opnvBtn.click();
     await nextTick();
 
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(true);
     expect(transitWrapper?.hasAttribute('inert')).toBe(false);
-    expect(document.querySelector('.route-calc-wrapper')?.classList.contains('is-expanded')).toBe(
-      false
+    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-closed')).toBe(
+      true
     );
+    expect(
+      document.querySelector('.route-calc-fieldset .collapsible-toggle')?.hasAttribute('disabled')
+    ).toBe(true);
 
     // Öffi-Verkehrsmittel im Dropdown auf "Bus" umstellen
     const select = document.querySelector('.transit-select') as HTMLSelectElement;
@@ -450,15 +462,20 @@ describe('LegTransportModal', () => {
     await new Promise((r) => setTimeout(r, 10));
     await nextTick();
 
-    // Nach Berechnung ist Exakte Route aktiv
-    expect(document.querySelector('.route-calc-badge')?.textContent).toContain(
-      'Exakte Route aktiv'
-    );
-    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('1,8 km');
-
-    // Umschalten auf Luftlinie über SegmentedToggle
+    // Nach Berechnung ist Exakte Route im Toggle aktiv und der Exakt-Pane sichtbar
     const routeModeToggle = document.querySelector('.route-mode-toggle');
     expect(routeModeToggle).not.toBeNull();
+    expect(routeModeToggle?.querySelector('.active')?.textContent).toContain('Exakte Route');
+    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('1,8 km');
+
+    const exactPane = document.querySelector('.route-mode-pane--exact');
+    const directPane = document.querySelector('.route-mode-pane--direct');
+    expect(exactPane?.classList.contains('is-active')).toBe(true);
+    expect(exactPane?.hasAttribute('inert')).toBe(false);
+    expect(directPane?.classList.contains('is-active')).toBe(false);
+    expect(directPane?.hasAttribute('inert')).toBe(true);
+
+    // Umschalten auf Luftlinie über SegmentedToggle: animierter Wechsel der Panes
     const luftlinieBtn = Array.from(routeModeToggle?.querySelectorAll('button') ?? []).find((b) =>
       b.textContent?.includes('Luftlinie')
     );
@@ -466,10 +483,14 @@ describe('LegTransportModal', () => {
     luftlinieBtn?.click();
     await nextTick();
 
-    expect(document.querySelector('.route-calc-badge')?.textContent).toContain('Luftlinie aktiv');
+    expect(routeModeToggle?.querySelector('.active')?.textContent).toContain('Luftlinie');
     expect(document.querySelector('.route-calc-hint')?.textContent).toContain(
       'ungefähre Luftlinie'
     );
+    expect(exactPane?.classList.contains('is-active')).toBe(false);
+    expect(exactPane?.hasAttribute('inert')).toBe(true);
+    expect(directPane?.classList.contains('is-active')).toBe(true);
+    expect(directPane?.hasAttribute('inert')).toBe(false);
 
     // Speichern und prüfen: route_geometry und Distanz sollen null sein
     const submitBtn = Array.from(document.querySelectorAll('button')).find((b) =>

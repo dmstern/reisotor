@@ -12,6 +12,7 @@ import FileAttachments from './FileAttachments.vue';
 import LegMiniMap from './LegMiniMap.vue';
 import LegRouteAlternatives from './LegRouteAlternatives.vue';
 import LegExtendedDetails from './LegExtendedDetails.vue';
+import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import AppIcon from './AppIcon.vue';
 import { IconLink, IconLinkOff, IconMapRoute } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
@@ -98,6 +99,7 @@ const {
   suggestedRouteIndex,
   routeDisplayMode,
   hasExactRoute,
+  hasCoordinates,
   isRoutable,
   calculateRoute,
   selectRoute,
@@ -114,6 +116,26 @@ const {
       syncTimesWithDuration(selected.duration_seconds);
     }
   },
+});
+
+const isRoutingOpen = ref(true);
+
+const isRoutingDisabled = computed(() => !isRoutable.value);
+
+const routingDisabledTitle = computed(() => {
+  if (transportCategory.value === 'ÖPNV') {
+    return 'Für ÖPNV ist aktuell noch keine Routenberechnung möglich – bitte trage die Routendetails daher selbst ein.';
+  }
+  if (!hasCoordinates.value) {
+    return 'Für diese Teilstrecke liegen keine Koordinaten für Start oder Ziel vor.';
+  }
+  return undefined;
+});
+
+watch(isRoutingDisabled, (disabled) => {
+  if (disabled) {
+    isRoutingOpen.value = false;
+  }
 });
 
 const activeDurationSeconds = computed<number | null>(() => {
@@ -190,8 +212,12 @@ function onCategorySelect(cat: string) {
   transportCategory.value = cat as TransportCategory;
   if (cat === 'ÖPNV') {
     form.value.transport_type = selectedTransitType.value || 'Zug';
+    isRoutingOpen.value = false;
   } else {
     form.value.transport_type = cat;
+    if (hasCoordinates.value) {
+      isRoutingOpen.value = true;
+    }
   }
   routeCalculationError.value = null;
 }
@@ -215,9 +241,11 @@ watch(
       if (cat === 'ÖPNV') {
         selectedTransitType.value = initialType === 'ÖPNV' ? 'Zug' : initialType;
         form.value.transport_type = selectedTransitType.value;
+        isRoutingOpen.value = false;
       } else {
         selectedTransitType.value = 'Zug';
         form.value.transport_type = cat;
+        isRoutingOpen.value = isRoutable.value;
       }
       form.value.departure_time = props.leg.departure_time || '';
       form.value.arrival_time = props.leg.arrival_time || '';
@@ -265,6 +293,7 @@ watch(
       };
       lastModifiedTimeField.value = 'departure';
       isTimeLinked.value = true;
+      isRoutingOpen.value = isRoutable.value;
       setInitialRoute(null, null, null, null);
     }
   },
@@ -348,23 +377,32 @@ function onDelete() {
     full-height
     @update:model-value="(val) => emit('update:modelValue', val)"
   >
-    <form class="leg-form" @submit.prevent="onSave">
-      <div class="route-summary" v-if="fromSpot && toSpot">
-        <span class="spot-pill">
+    <template #title>
+      <span class="leg-modal-title">
+        <span>Teilstrecke:</span>
+        <span class="leg-modal-spot">
           <AppIcon
+            v-if="fromSpot"
             :icon="spotCategoryMeta(fromSpot.category).tabler"
-            :size="14"
+            :size="18"
             group="categories"
           />
-          {{ fromSpot.title }}
+          <span class="leg-modal-spot-name">{{ fromSpot?.title || 'Start' }}</span>
         </span>
-        <span class="arrow">→</span>
-        <span class="spot-pill">
-          <AppIcon :icon="spotCategoryMeta(toSpot.category).tabler" :size="14" group="categories" />
-          {{ toSpot.title }}
+        <span class="leg-modal-arrow" aria-hidden="true">→</span>
+        <span class="leg-modal-spot">
+          <AppIcon
+            v-if="toSpot"
+            :icon="spotCategoryMeta(toSpot.category).tabler"
+            :size="18"
+            group="categories"
+          />
+          <span class="leg-modal-spot-name">{{ toSpot?.title || 'Ziel' }}</span>
         </span>
-      </div>
+      </span>
+    </template>
 
+    <form class="leg-form" @submit.prevent="onSave">
       <SegmentedToggle
         class="transport-toggle"
         :model-value="transportCategory"
@@ -391,159 +429,144 @@ function onDelete() {
               </option>
             </Select>
           </FormField>
-          <p class="transit-hint">
-            <AppIcon
-              :icon="ACTION_ICONS.info"
-              :size="14"
-              group="actions"
-              class="transit-hint-icon"
-            />
-            <span>
-              Für ÖPNV ist aktuell noch keine exakte Routenberechnung möglich – bitte trage die
-              Routendetails daher selbst ein.
-            </span>
-          </p>
         </div>
       </div>
 
       <!-- Exakte Routen-Berechnung & Luftlinie-Umschalter -->
-      <div
-        class="route-calc-wrapper"
-        :class="{ 'is-expanded': isRoutable }"
-        :inert="!isRoutable ? true : undefined"
+      <CollapsibleFieldset
+        v-model="isRoutingOpen"
+        label="Routenführung"
+        :icon="routeHeadingIconDef"
+        :disabled="isRoutingDisabled"
+        :title="routingDisabledTitle"
+        class="route-calc-fieldset"
       >
-        <div class="route-calc-inner">
-          <div class="route-calc-section" :class="{ 'has-route': hasExactRoute }">
-            <!-- Zustand 1: Noch keine Route berechnet -> Aufforderung zur Berechnung -->
-            <div v-if="!hasExactRoute" class="route-calc-header">
-              <div class="route-calc-info">
-                <span class="route-calc-title">
-                  <AppIcon :icon="routeHeadingIconDef" :size="16" group="actions" /> Exakte Route
-                </span>
-                <div class="route-calc-detail">
-                  <span class="route-calc-hint">
-                    Echte Wegeroute, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
-                  </span>
-                </div>
-              </div>
-              <div class="route-calc-init-controls">
-                <SegmentedToggle
-                  class="route-preference-toggle"
-                  :model-value="routePreference"
-                  :options="ROUTE_PREFERENCE_OPTIONS"
-                  aria-label="Routenpräferenz"
-                  @update:model-value="onPreferenceToggle"
+        <template v-if="!isRoutingDisabled" #badge>
+          <span v-if="isCalculatingRoute" class="route-calc-badge route-calc-badge--loading">
+            <AppIcon
+              :icon="ACTION_ICONS.refresh"
+              :size="12"
+              group="actions"
+              class="route-calc-spinner"
+            />
+            Route wird berechnet…
+          </span>
+          <span
+            v-else-if="hasExactRoute"
+            class="route-calc-badge"
+            :class="{ 'route-calc-badge--dashed': routeDisplayMode === 'direct' }"
+          >
+            {{ routeDisplayMode === 'exact' ? 'Exakte Route aktiv' : 'Luftlinie aktiv' }}
+          </span>
+        </template>
+
+        <!-- Zustand 1: Noch keine Route berechnet -> Aufforderung zur Berechnung -->
+        <div v-if="!hasExactRoute" class="route-calc-header">
+          <div class="route-calc-info">
+            <span class="route-calc-hint">
+              Exakte Route, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
+            </span>
+          </div>
+          <div class="route-calc-init-controls">
+            <SegmentedToggle
+              class="route-preference-toggle"
+              :model-value="routePreference"
+              :options="ROUTE_PREFERENCE_OPTIONS"
+              aria-label="Routenpräferenz"
+              @update:model-value="onPreferenceToggle"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              class="btn-calc-route"
+              :loading="isCalculatingRoute"
+              @click="calculateRoute"
+            >
+              Route berechnen
+            </Button>
+          </div>
+        </div>
+
+        <!-- Zustand 2: Route liegt vor -> Mini-Map, Alternativen & Umschalter -->
+        <div v-else class="route-calc-active">
+          <SegmentedToggle
+            class="route-mode-toggle"
+            :model-value="routeDisplayMode"
+            :options="ROUTE_MODE_OPTIONS"
+            aria-label="Routenführung auf der Karte"
+            @update:model-value="onRouteModeChange"
+          />
+
+          <!-- Mini-Map der Teilstrecke mit Start-, Ziel-Pins und gerouteten Alternativen -->
+          <div class="route-mini-map-container">
+            <LegMiniMap
+              :from-spot="fromSpot"
+              :to-spot="toSpot"
+              :routes="calculatedRoutes"
+              :selected-route-index="selectedRouteIndex"
+              :transport-type="form.transport_type"
+              :route-display-mode="routeDisplayMode"
+              @select-route="selectRoute"
+            />
+          </div>
+
+          <div class="route-calc-body">
+            <!-- Exakte Route: Routenberechnung & Alternativen -->
+            <div
+              class="route-mode-pane route-mode-pane--exact"
+              :class="{ 'is-active': routeDisplayMode === 'exact' }"
+              :inert="routeDisplayMode !== 'exact' ? true : undefined"
+            >
+              <div class="route-mode-pane-inner">
+                <LegRouteAlternatives
+                  :routes="calculatedRoutes"
+                  :selected-route-index="selectedRouteIndex"
+                  :route-preference="routePreference"
+                  :fastest-route-index="fastestRouteIndex"
+                  :shortest-route-index="shortestRouteIndex"
+                  :suggested-route-index="suggestedRouteIndex"
+                  :calculated-distance-meters="calculatedDistanceMeters"
+                  :calculated-duration-seconds="calculatedDurationSeconds"
+                  @select-route="selectRoute"
+                  @update:route-preference="onPreferenceToggle"
                 />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  class="btn-calc-route"
-                  :loading="isCalculatingRoute"
-                  @click="calculateRoute"
-                >
-                  Route berechnen
-                </Button>
               </div>
             </div>
 
-            <!-- Zustand 2: Route liegt vor -> Mini-Map, Alternativen & Umschalter -->
-            <div v-else class="route-calc-active">
-              <div class="route-calc-header-mode">
-                <div class="route-calc-heading-row">
-                  <div class="route-calc-title-group">
-                    <span class="route-calc-title">
-                      <AppIcon :icon="routeHeadingIconDef" :size="16" group="actions" />
-                      Routenführung
-                    </span>
-                    <span
-                      v-if="isCalculatingRoute"
-                      class="route-calc-badge route-calc-badge--loading"
-                    >
-                      <AppIcon
-                        :icon="ACTION_ICONS.refresh"
-                        :size="12"
-                        group="actions"
-                        class="route-calc-spinner"
-                      />
-                      Route wird berechnet…
-                    </span>
-                    <span
-                      v-else
-                      class="route-calc-badge"
-                      :class="{ 'route-calc-badge--dashed': routeDisplayMode === 'direct' }"
-                    >
-                      {{ routeDisplayMode === 'exact' ? 'Exakte Route aktiv' : 'Luftlinie aktiv' }}
-                    </span>
-                  </div>
-                </div>
-
-                <SegmentedToggle
-                  class="route-mode-toggle"
-                  :model-value="routeDisplayMode"
-                  :options="ROUTE_MODE_OPTIONS"
-                  aria-label="Routenführung auf der Karte"
-                  @update:model-value="onRouteModeChange"
-                />
-              </div>
-
-              <!-- Mini-Map der Teilstrecke mit Start-, Ziel-Pins und gerouteten Alternativen -->
-              <div class="route-mini-map-container">
-                <LegMiniMap
-                  :from-spot="fromSpot"
-                  :to-spot="toSpot"
-                  :routes="calculatedRoutes"
-                  :selected-route-index="selectedRouteIndex"
-                  :transport-type="form.transport_type"
-                  :route-display-mode="routeDisplayMode"
-                  @select-route="selectRoute"
-                />
-              </div>
-
-              <div class="route-calc-body">
-                <!-- Wenn Exakte Route aktiv ist -->
-                <template v-if="routeDisplayMode === 'exact'">
-                  <LegRouteAlternatives
-                    :routes="calculatedRoutes"
-                    :selected-route-index="selectedRouteIndex"
-                    :route-preference="routePreference"
-                    :fastest-route-index="fastestRouteIndex"
-                    :shortest-route-index="shortestRouteIndex"
-                    :suggested-route-index="suggestedRouteIndex"
-                    :calculated-distance-meters="calculatedDistanceMeters"
-                    :calculated-duration-seconds="calculatedDurationSeconds"
-                    @select-route="selectRoute"
-                    @update:route-preference="onPreferenceToggle"
-                  />
-                </template>
-
-                <!-- Wenn Luftlinie aktiv ist -->
-                <div v-else class="route-calc-detail">
+            <!-- Luftlinie: Info-Hinweis -->
+            <div
+              class="route-mode-pane route-mode-pane--direct"
+              :class="{ 'is-active': routeDisplayMode === 'direct' }"
+              :inert="routeDisplayMode !== 'direct' ? true : undefined"
+            >
+              <div class="route-mode-pane-inner">
+                <div class="route-calc-detail">
                   <span class="route-calc-hint">
                     Gestrichelte Verbindung auf der Karte (ungefähre Luftlinie).
                   </span>
                 </div>
               </div>
             </div>
-
-            <p v-if="routeCalculationError" class="route-calc-error">
-              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-              <span>{{ routeCalculationError }}</span>
-            </p>
-
-            <div class="route-calc-footer">
-              <a
-                href="https://openrouteservice.org/"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="route-source-link"
-              >
-                Quelle: OpenRouteService
-              </a>
-            </div>
           </div>
         </div>
-      </div>
+
+        <p v-if="routeCalculationError" class="route-calc-error">
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+          <span>{{ routeCalculationError }}</span>
+        </p>
+
+        <div class="route-calc-footer">
+          <a
+            href="https://openrouteservice.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="route-source-link"
+          >
+            Quelle: OpenRouteService
+          </a>
+        </div>
+      </CollapsibleFieldset>
 
       <div class="row time-row">
         <FormField icon="time" :label="departureLabel">
@@ -728,31 +751,24 @@ function onDelete() {
   gap: var(--space-3);
 }
 
-.route-summary {
-  display: flex;
+.leg-modal-title {
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-hover);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  font-size: 0.9rem;
-  font-weight: 500;
+  gap: var(--space-1) var(--space-2);
 }
 
-.spot-pill {
+.leg-modal-spot {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.arrow {
+.leg-modal-spot-name {
+  word-break: break-word;
+}
+
+.leg-modal-arrow {
   color: var(--color-text-muted);
   font-weight: 700;
   flex-shrink: 0;
@@ -827,80 +843,6 @@ function onDelete() {
   transition:
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.transit-hint {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-1);
-  margin: var(--space-2) 0 0;
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-  line-height: 1.4;
-}
-
-.transit-hint-icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.route-calc-wrapper {
-  display: grid;
-  grid-template-rows: 0fr;
-  margin-top: calc(-1 * var(--space-3));
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    grid-template-rows 0.38s cubic-bezier(0.32, 0.72, 0, 1),
-    margin-top 0.38s cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 0.28s ease,
-    visibility 0s linear 0.38s;
-}
-
-.route-calc-wrapper.is-expanded {
-  grid-template-rows: 1fr;
-  margin-top: 0;
-  opacity: 1;
-  visibility: visible;
-  transition:
-    grid-template-rows 0.38s cubic-bezier(0.32, 0.72, 0, 1),
-    margin-top 0.38s cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 0.32s ease,
-    visibility 0s linear 0s;
-}
-
-.route-calc-inner {
-  min-height: 0;
-  overflow: hidden;
-  padding: 4px;
-  margin: -4px;
-}
-
-.route-calc-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  background: var(--color-surface-subtle, var(--color-hover));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  transition:
-    transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.route-calc-wrapper:not(.is-expanded) .route-calc-section {
-  transform: translateY(-8px) scale(0.99);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.route-calc-wrapper.is-expanded .route-calc-section {
-  transform: translateY(0) scale(1);
-  opacity: 1;
-}
-
 .route-calc-header {
   display: flex;
   align-items: center;
@@ -922,14 +864,6 @@ function onDelete() {
   align-items: center;
 }
 
-.route-calc-title {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
 .route-calc-hint {
   font-size: 0.8125rem;
   color: var(--color-text-muted);
@@ -948,25 +882,6 @@ function onDelete() {
   gap: var(--space-2);
 }
 
-.route-calc-header-mode {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.route-calc-heading-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.route-calc-title-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .route-calc-badge {
   display: inline-flex;
   align-items: center;
@@ -978,12 +893,6 @@ function onDelete() {
   background: var(--color-primary-tint);
   color: var(--color-primary);
   line-height: 1.2;
-}
-
-.route-calc-badge--dashed {
-  background: var(--color-hover);
-  color: var(--color-text-muted);
-  border: 1px dashed var(--color-border);
 }
 
 .route-calc-badge--loading {
@@ -1025,7 +934,47 @@ function onDelete() {
 .route-calc-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 0;
+  width: 100%;
+}
+
+.route-mode-pane {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 0.35s;
+}
+
+.route-mode-pane.is-active {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.06s,
+    visibility 0s linear 0s;
+}
+
+.route-mode-pane-inner {
+  min-height: 0;
+  overflow: hidden;
+  transform: translateY(-4px);
+  opacity: 0;
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.route-mode-pane.is-active .route-mode-pane-inner {
+  transform: translateY(0);
+  opacity: 1;
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .route-calc-error {
@@ -1150,8 +1099,8 @@ function onDelete() {
 @media (prefers-reduced-motion: reduce) {
   .transit-dropdown-wrapper,
   .transit-dropdown-inner,
-  .route-calc-wrapper,
-  .route-calc-section,
+  .route-mode-pane,
+  .route-mode-pane-inner,
   .route-calc-hint,
   .route-calc-error,
   .sparkle-spin {
@@ -1180,7 +1129,7 @@ function onDelete() {
   .route-calc-body {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--space-2);
+    gap: 0;
   }
 }
 
