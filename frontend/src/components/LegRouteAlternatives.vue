@@ -35,6 +35,14 @@ const preferenceLabel = computed(() => {
   return props.routes.length > 1 ? 'Bevorzugen:' : 'Berechnete Route:';
 });
 
+const singleRouteDuration = computed(() => {
+  return props.routes[0]?.duration_seconds ?? props.calculatedDurationSeconds ?? null;
+});
+
+const singleRouteDistance = computed(() => {
+  return props.routes[0]?.distance_meters ?? props.calculatedDistanceMeters ?? null;
+});
+
 function onPreferenceChange(val: string) {
   emit('update:routePreference', val as 'fastest' | 'shortest');
 }
@@ -128,12 +136,23 @@ function onPreferenceChange(val: string) {
       </button>
     </div>
 
-    <!-- Nur 1 Route vorhanden -> Kompakte Anzeige -->
-    <div v-else class="route-calc-detail">
-      <span class="route-calc-stats">
-        {{ formatDistance(props.calculatedDistanceMeters) }} •
-        {{ formatDuration(props.calculatedDurationSeconds) }}
-      </span>
+    <!-- Nur 1 Route vorhanden -> Kasten im gleichen Stil wie die Alternativen (ohne Radio-Button) -->
+    <div v-else class="route-alt-card route-alt-card--single is-selected">
+      <div class="route-alt-content">
+        <div class="route-alt-title-row">
+          <span class="route-alt-name">Route 1</span>
+        </div>
+        <div class="route-alt-stats route-calc-stats">
+          <span class="route-alt-duration">{{ formatDuration(singleRouteDuration) }}</span>
+          <span
+            v-if="singleRouteDuration != null && singleRouteDistance != null"
+            class="route-alt-sep"
+          >
+            •
+          </span>
+          <span class="route-alt-distance">{{ formatDistance(singleRouteDistance) }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -313,17 +332,14 @@ function onPreferenceChange(val: string) {
   font-style: italic;
 }
 
-.route-calc-detail {
-  display: flex;
-  min-height: 1.25rem;
-  align-items: center;
+.route-alt-card--single {
+  cursor: default;
+  animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.route-calc-stats {
-  font-weight: 700;
-  color: var(--color-primary);
-  font-size: 0.9375rem;
-  animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+.route-alt-card--single:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
 }
 
 @keyframes route-content-in {
@@ -339,7 +355,7 @@ function onPreferenceChange(val: string) {
 
 @media (prefers-reduced-motion: reduce) {
   .route-alternatives-list,
-  .route-calc-stats {
+  .route-alt-card--single {
     transition: none !important;
     animation: none !important;
     transform: none !important;
