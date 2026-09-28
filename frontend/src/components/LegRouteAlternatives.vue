@@ -6,6 +6,7 @@ import { IconBolt } from '@tabler/icons-vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDistance, formatDuration, formatDiffDuration } from '../utils/formatRoute';
 import AppIcon from './AppIcon.vue';
+import Radio from './primitives/Radio.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -68,9 +69,12 @@ const singleRouteDistance = computed(() => {
         :aria-checked="idx === props.selectedRouteIndex"
         @click="emit('select-route', idx)"
       >
-        <div class="route-alt-radio" aria-hidden="true">
-          <span v-if="idx === props.selectedRouteIndex" class="route-alt-radio-dot"></span>
-        </div>
+        <Radio
+          :checked="idx === props.selectedRouteIndex"
+          visual-only
+          size="sm"
+          class="route-alt-radio"
+        />
         <div class="route-alt-content">
           <div class="route-alt-stats">
             <span class="route-alt-duration">{{ formatDuration(r.duration_seconds) }}</span>
@@ -148,6 +152,7 @@ const singleRouteDistance = computed(() => {
   flex-direction: column;
   gap: var(--space-1);
   width: 100%;
+  padding: 1px;
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -159,49 +164,32 @@ const singleRouteDistance = computed(() => {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   text-align: left;
   cursor: pointer;
   font-family: inherit;
+  box-sizing: border-box;
   transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
   width: 100%;
 }
 
-.route-alt-card:hover {
-  border-color: var(--color-primary-light);
+.route-alt-card:hover:not(.is-selected) {
+  border-color: var(--color-primary-light, var(--color-primary));
   background: var(--color-hover);
+}
+
+.route-alt-card:active {
+  transform: scale(0.995);
 }
 
 .route-alt-card.is-selected {
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
-  box-shadow: 0 0 0 1px var(--color-primary);
-}
-
-.route-alt-radio {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: border-color 0.15s ease;
-}
-
-.route-alt-card.is-selected .route-alt-radio {
-  border-color: var(--color-primary);
-}
-
-.route-alt-radio-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .route-alt-content {
@@ -259,6 +247,7 @@ const singleRouteDistance = computed(() => {
 .route-alt-duration {
   font-weight: 600;
   color: var(--color-text);
+  transition: color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .route-alt-card.is-selected .route-alt-duration {
@@ -273,12 +262,15 @@ const singleRouteDistance = computed(() => {
 
 .route-alt-card--single {
   cursor: default;
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-primary-tint);
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .route-alt-card--single:hover {
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
+  transform: none;
 }
 
 @keyframes route-content-in {
@@ -294,6 +286,8 @@ const singleRouteDistance = computed(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .route-alternatives-list,
+  .route-alt-card,
+  .route-alt-duration,
   .route-alt-card--single {
     transition: none !important;
     animation: none !important;

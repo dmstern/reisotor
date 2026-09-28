@@ -108,6 +108,12 @@ describe('LegRouteAlternatives', () => {
     expect(cards[1].querySelector('.badge-suggested')).toBeNull();
     expect(cards[1].querySelector('.route-alt-diff')?.textContent).toContain('+5 Min.');
 
+    // Erste Karte hat ausgewählten Radio-Button, zweite Karte nicht
+    expect(cards[0].querySelector('.route-alt-radio')?.classList.contains('is-checked')).toBe(true);
+    expect(cards[1].querySelector('.route-alt-radio')?.classList.contains('is-checked')).toBe(
+      false
+    );
+
     // Klick auf Route 2 emittiert select-route Event
     (cards[1] as HTMLElement).click();
     await nextTick();
