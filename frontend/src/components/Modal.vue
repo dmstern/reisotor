@@ -352,7 +352,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
       >
         <div
           ref="confirmModalRef"
-          class="modal size-sm confirm-close-dialog"
+          class="modal confirm-close-dialog"
           role="alertdialog"
           aria-modal="true"
           :aria-labelledby="`${modalId}-confirm-title`"
@@ -615,6 +615,10 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   transform: translate(-50%, -50%);
 }
 
+.modal.confirm-close-dialog {
+  max-width: 480px;
+}
+
 .confirm-close-body {
   display: flex;
   flex-direction: column;
@@ -630,8 +634,33 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 .confirm-close-actions {
   display: flex;
+  flex-direction: row;
   justify-content: flex-end;
+  flex-wrap: nowrap;
   gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.confirm-close-actions :deep(.btn),
+.confirm-close-actions :deep(button) {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .modal.confirm-close-dialog {
+    max-width: 100%;
+  }
+
+  .confirm-close-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .confirm-close-actions :deep(.btn),
+  .confirm-close-actions :deep(button) {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

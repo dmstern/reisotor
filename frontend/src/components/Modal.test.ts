@@ -268,6 +268,10 @@ describe('Modal', () => {
     const confirmDialog = document.querySelector('.confirm-close-dialog');
     expect(confirmDialog).not.toBeNull();
     expect(confirmDialog?.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    const actionBtns = confirmDialog?.querySelectorAll('.confirm-close-actions button');
+    expect(actionBtns?.length).toBe(2);
+    expect(actionBtns?.[0].textContent).toContain('Weiter bearbeiten');
+    expect(actionBtns?.[1].textContent).toContain('Änderungen verwerfen');
     cleanUp();
   });
 
