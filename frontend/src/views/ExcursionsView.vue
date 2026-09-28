@@ -78,12 +78,14 @@ import SearchFilterBar from '../components/SearchFilterBar.vue';
 import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
 import Modal from '../components/Modal.vue';
-import CategoryCombobox from '../components/CategoryCombobox.vue';
 import FormField from '../components/FormField.vue';
 import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
+import TrackShareWarningModal from '../components/TrackShareWarningModal.vue';
+import TourAssignDropdown, { type TourItem } from '../components/TourAssignDropdown.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
 import ResizeHandle from '../components/ResizeHandle.vue';
-import LocationPicker from '../components/LocationPicker.vue';
+import LocationPicker, { type PlaceSearchResult } from '../components/LocationPicker.vue';
 import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import FileAttachments from '../components/FileAttachments.vue';
@@ -92,7 +94,7 @@ import LegTransportModal from '../components/LegTransportModal.vue';
 import RichTextEditor from '../components/RichTextEditor.vue';
 import { isEmptyRichText } from '../utils/richText';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
-import { parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
+import { buildGoogleMapsLink, parseLatLngFromMapsLink, tilePreviewUrl } from '../utils/googleMaps';
 import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -108,6 +110,7 @@ import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Select from '../components/primitives/Select.vue';
 import TrackVisibilitySelect from '../components/TrackVisibilitySelect.vue';
+import InfoPopover from '../components/primitives/InfoPopover.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
@@ -160,16 +163,144 @@ const editingTrack = ref<LocationTrack | null>(null);
 const editTrackTitle = ref('');
 const editTrackStartedAt = ref('');
 const editTrackVisibility = ref<TrackVisibility>('private');
+const editTrackExcursionId = ref<number | null>(null);
+
+const showTrackShareWarningModal = ref(false);
+const shareWarningTrackTitle = ref('');
+const shareWarningTourTitle = ref('');
+const pendingShareTrack = ref<LocationTrack | null>(null);
+const pendingTrackTourId = ref<number | null>(null);
+const tracksToShareOnSave = ref(new Set<number>());
+
+const trackTourAssignments = computed<TourItem[]>(() => {
+  return excursionsStore.excursions.map((e) => ({
+    id: e.id,
+    title: e.title,
+    assigned: editTrackExcursionId.value === e.id,
+  }));
+});
+
+const editTrackExcursionTitle = computed(() => {
+  if (editTrackExcursionId.value == null) return null;
+  const exc = excursionsStore.excursions.find((e) => e.id === editTrackExcursionId.value);
+  return exc?.title ?? null;
+});
+
+function onToggleTrackTour(tourId: number) {
+  if (editTrackExcursionId.value === tourId) {
+    editTrackExcursionId.value = null;
+    return;
+  }
+  const tour = excursionsStore.excursions.find((e) => e.id === tourId);
+  const isPrivate =
+    editTrackVisibility.value === 'private' || editingTrack.value?.visibility === 'private';
+  if (isPrivate && users.value.length > 1) {
+    pendingTrackTourId.value = tourId;
+    shareWarningTrackTitle.value =
+      editTrackTitle.value.trim() ||
+      (editingTrack.value ? trackTitle(editingTrack.value) : 'Aufzeichnung');
+    shareWarningTourTitle.value = tour?.title || 'Tour';
+    showTrackShareWarningModal.value = true;
+  } else {
+    editTrackExcursionId.value = tourId;
+  }
+}
+
+async function onCreateTourFromTrack(title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  const newExcursion = await excursionsStore.create({
+    title: trimmed,
+  });
+  onToggleTrackTour(newExcursion.id);
+}
+
+const pendingRowTrackAssign = ref<{ track: LocationTrack; tourId: number } | null>(null);
+
+function trackTourAssignmentsFor(track: LocationTrack): TourItem[] {
+  return excursionsStore.excursions.map((e) => ({
+    id: e.id,
+    title: e.title,
+    assigned: track.excursion_id === e.id,
+  }));
+}
+
+async function onToggleRowTrackTour(track: LocationTrack, tourId: number) {
+  if (track.excursion_id === tourId) {
+    await tracksStore.update(track.id, { excursion_id: null });
+    return;
+  }
+  const tour = excursionsStore.excursions.find((e) => e.id === tourId);
+  if (track.visibility === 'private' && users.value.length > 1) {
+    pendingRowTrackAssign.value = { track, tourId };
+    shareWarningTrackTitle.value = trackTitle(track);
+    shareWarningTourTitle.value = tour?.title || 'Tour';
+    showTrackShareWarningModal.value = true;
+  } else {
+    await tracksStore.update(track.id, { excursion_id: tourId });
+  }
+}
+
+async function onCreateTourFromRowTrack(track: LocationTrack, title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  const newTour = await excursionsStore.create({ title: trimmed });
+  await onToggleRowTrackTour(track, newTour.id);
+}
+
+function onConfirmShareModal() {
+  if (pendingRowTrackAssign.value) {
+    const { track, tourId } = pendingRowTrackAssign.value;
+    tracksStore.update(track.id, { excursion_id: tourId, visibility: 'shared' });
+    pendingRowTrackAssign.value = null;
+  } else if (pendingTrackTourId.value != null) {
+    editTrackExcursionId.value = pendingTrackTourId.value;
+    editTrackVisibility.value = 'shared';
+    pendingTrackTourId.value = null;
+  } else if (pendingShareTrack.value != null) {
+    const trk = pendingShareTrack.value;
+    if (!activeExcursionForm.value.track_ids.includes(trk.id)) {
+      activeExcursionForm.value.track_ids.push(trk.id);
+      tracksToShareOnSave.value.add(trk.id);
+    }
+    pendingShareTrack.value = null;
+  }
+  showTrackShareWarningModal.value = false;
+}
+
+function getTourForTrack(track: LocationTrack): Excursion | undefined {
+  if (track.excursion_id == null) return undefined;
+  return excursionsStore.excursions.find((e) => e.id === track.excursion_id);
+}
+
+const isEditTrackTitleModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackTitle.value.trim() !== (editingTrack.value.title ?? '').trim();
+});
+const isEditTrackStartedAtModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackStartedAt.value !== toLocalDatetimeInputValue(editingTrack.value.started_at);
+});
+const isEditTrackVisibilityModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackVisibility.value !== editingTrack.value.visibility;
+});
+const isEditTrackTourModified = computed(() => {
+  if (!editingTrack.value) return false;
+  return editTrackExcursionId.value !== (editingTrack.value.excursion_id ?? null);
+});
 
 function startEditTrack(track: LocationTrack) {
   editingTrack.value = track;
   editTrackTitle.value = track.title ?? '';
   editTrackStartedAt.value = toLocalDatetimeInputValue(track.started_at);
   editTrackVisibility.value = track.visibility;
+  editTrackExcursionId.value = track.excursion_id ?? null;
 }
 
 function closeEditTrack() {
   editingTrack.value = null;
+  pendingTrackTourId.value = null;
 }
 
 async function submitEditTrack() {
@@ -182,6 +313,7 @@ async function submitEditTrack() {
     title,
     started_at: startedAt,
     visibility: editTrackVisibility.value,
+    excursion_id: editTrackExcursionId.value,
   });
   closeEditTrack();
 }
@@ -500,8 +632,38 @@ const emptyExcursionForm = () => ({
   role: '' as IdeaRole | '',
   destination_spot_id: null as number | null,
   legs: [] as ExcursionLeg[],
+  track_ids: [] as number[],
 });
 const excursionForm = ref(emptyExcursionForm());
+
+const showExcursionTracksSection = ref(false);
+const showEditExcursionTracksSection = ref(false);
+
+const selectableTracksForTour = computed(() => {
+  const currentExcursionId = editingExcursion.value;
+  return tracksStore.tracks.filter(
+    (t) => t.excursion_id == null || t.excursion_id === currentExcursionId
+  );
+});
+
+function onToggleTourTrack(trk: LocationTrack) {
+  const isAssigned = activeExcursionForm.value.track_ids.includes(trk.id);
+  if (isAssigned) {
+    activeExcursionForm.value.track_ids = activeExcursionForm.value.track_ids.filter(
+      (id) => id !== trk.id
+    );
+    tracksToShareOnSave.value.delete(trk.id);
+  } else {
+    if (trk.visibility === 'private' && users.value.length > 1) {
+      pendingShareTrack.value = trk;
+      shareWarningTrackTitle.value = trackTitle(trk);
+      shareWarningTourTitle.value = activeExcursionForm.value.title.trim() || 'Tour';
+      showTrackShareWarningModal.value = true;
+    } else {
+      activeExcursionForm.value.track_ids.push(trk.id);
+    }
+  }
+}
 
 const editingExcursion = ref<number | null>(null);
 const isExcursionUploadingAttachments = ref(false);
@@ -544,10 +706,52 @@ const editExcursionDraft = useDraftAutosave(
   computed(() => editingExcursion.value !== null)
 );
 
+const initialEditingExcursion = computed(() => {
+  if (editingExcursion.value == null) return null;
+  return excursionsStore.excursions.find((e) => e.id === editingExcursion.value) ?? null;
+});
+
+const isEditTourTitleModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (
+    (editExcursionForm.value.title || '').trim() !==
+    (initialEditingExcursion.value.title || '').trim()
+  );
+});
+
+const isEditTourDateModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (editExcursionForm.value.date || '') !== (initialEditingExcursion.value.date || '');
+});
+
+const isEditTourNoteModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (
+    (editExcursionForm.value.note || '').trim() !==
+    (initialEditingExcursion.value.note || '').trim()
+  );
+});
+
+const isEditTourRoleModified = computed(() => {
+  if (!initialEditingExcursion.value) return false;
+  return (
+    (editExcursionForm.value.role || '').trim() !==
+    (initialEditingExcursion.value.role || '').trim()
+  );
+});
+
+const isExcursionModalDirty = computed(() =>
+  editingExcursion.value !== null
+    ? editExcursionDraft.isDirty.value
+    : newExcursionDraft.isDirty.value
+);
+
 function openExcursionForm() {
   excursionTitleTouched.value = false;
   excursionForm.value = emptyExcursionForm();
   showExcursionSpotsSection.value = false;
+  showExcursionTracksSection.value = false;
+  tracksToShareOnSave.value.clear();
   showExcursionForm.value = true;
 }
 
@@ -555,7 +759,18 @@ function closeExcursionForm() {
   excursionTitleTouched.value = false;
   showExcursionForm.value = false;
   excursionForm.value = emptyExcursionForm();
+  tracksToShareOnSave.value.clear();
   newExcursionDraft.clear();
+}
+
+function discardNewExcursionDraft() {
+  excursionTitleTouched.value = false;
+  excursionForm.value = emptyExcursionForm();
+  showExcursionSpotsSection.value = false;
+  showExcursionTracksSection.value = false;
+  tracksToShareOnSave.value.clear();
+  newExcursionDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 function tourPayload(form: ReturnType<typeof emptyExcursionForm>) {
@@ -577,14 +792,23 @@ async function addExcursion() {
     if (!excursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
-  await excursionsStore.create(tourPayload(excursionForm.value));
+  const created = await excursionsStore.create(tourPayload(excursionForm.value));
+  for (const trackId of excursionForm.value.track_ids) {
+    const shouldShare = tracksToShareOnSave.value.has(trackId);
+    await tracksStore.update(trackId, {
+      excursion_id: created.id,
+      ...(shouldShare ? { visibility: 'shared' } : {}),
+    });
+  }
+  tracksToShareOnSave.value.clear();
   closeExcursionForm();
 }
 
 function startEditExcursion(excursion: Excursion) {
   excursionTitleTouched.value = false;
-  editingExcursion.value = excursion.id;
   showEditExcursionSpotsSection.value = false;
+  showEditExcursionTracksSection.value = false;
+  tracksToShareOnSave.value.clear();
   editExcursionForm.value = {
     title: excursion.title,
     image_url: excursion.image_url ?? '',
@@ -594,7 +818,9 @@ function startEditExcursion(excursion: Excursion) {
     role: excursion.role ?? '',
     destination_spot_id: excursion.destination_spot_id ?? null,
     legs: excursion.legs ? excursion.legs.map((l) => ({ ...l })) : [],
+    track_ids: tracksStore.tracks.filter((t) => t.excursion_id === excursion.id).map((t) => t.id),
   };
+  editingExcursion.value = excursion.id;
 }
 
 async function submitEditExcursion() {
@@ -607,15 +833,44 @@ async function submitEditExcursion() {
     if (!editExcursionForm.value.title.trim()) excursionTitleTouched.value = true;
     return;
   }
-  await excursionsStore.update(editingExcursion.value, tourPayload(editExcursionForm.value));
+  const excId = editingExcursion.value;
+  await excursionsStore.update(excId, tourPayload(editExcursionForm.value));
+  const currentAssigned = tracksStore.tracks
+    .filter((t) => t.excursion_id === excId)
+    .map((t) => t.id);
+  const nextAssigned = editExcursionForm.value.track_ids;
+
+  for (const oldId of currentAssigned) {
+    if (!nextAssigned.includes(oldId)) {
+      await tracksStore.update(oldId, { excursion_id: null });
+    }
+  }
+  for (const newId of nextAssigned) {
+    if (!currentAssigned.includes(newId)) {
+      const shouldShare = tracksToShareOnSave.value.has(newId);
+      await tracksStore.update(newId, {
+        excursion_id: excId,
+        ...(shouldShare ? { visibility: 'shared' } : {}),
+      });
+    }
+  }
+  tracksToShareOnSave.value.clear();
   editExcursionDraft.clear();
   editingExcursion.value = null;
 }
 
 function closeEditExcursionForm() {
   excursionTitleTouched.value = false;
+  tracksToShareOnSave.value.clear();
   editExcursionDraft.clear();
   editingExcursion.value = null;
+}
+
+function discardEditExcursionDraft() {
+  if (!initialEditingExcursion.value) return;
+  startEditExcursion(initialEditingExcursion.value);
+  editExcursionDraft.clear();
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 async function deleteEditingExcursion() {
@@ -699,9 +954,7 @@ const emptySpotForm = () => ({
   scheduledDate: '',
 });
 const spotForm = ref(emptySpotForm());
-const spotMapsLinkResolved = ref<boolean | null>(null);
 const spotManualPin = ref<{ lat: number; lng: number } | null>(null);
-const spotPickerOpen = ref(false);
 const spotLocationError = ref(false);
 // Bleibt gesetzt, solange nach dem Anlegen die Standort-Auflösung fehlschlägt – ein erneuter
 // Speicherversuch (manuell gesetzter Pin) muss dann den bereits angelegten Spot AKTUALISIEREN
@@ -710,6 +963,7 @@ const spotPendingFixId = ref<number | null>(null);
 
 const editingSpot = ref<Spot | null>(null);
 const isSpotUploadingAttachments = ref(false);
+const isSpotUploadingCoverImage = ref(false);
 const editSpotForm = ref(emptySpotForm());
 
 const activeSpotForm = computed(() =>
@@ -727,10 +981,99 @@ const editSpotDraft = useDraftAutosave(
   editSpotForm,
   computed(() => editingSpot.value !== null)
 );
-const editSpotMapsLinkResolved = ref<boolean | null>(null);
 const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
-const editSpotPickerOpen = ref(false);
 const editSpotLocationError = ref(false);
+
+function areCoordsEqual(
+  a: { lat: number; lng: number } | null | undefined,
+  b: { lat: number; lng: number } | null | undefined
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
+}
+
+const isEditSpotLocationModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const initialPin =
+    editingSpot.value.lat != null && editingSpot.value.lng != null
+      ? { lat: editingSpot.value.lat, lng: editingSpot.value.lng }
+      : null;
+  const currentPin = editSpotManualPin.value;
+  const pinChanged = !areCoordsEqual(currentPin, initialPin);
+  const addressChanged =
+    (editSpotForm.value.address || '').trim() !== (editingSpot.value.address || '').trim();
+  const titleChanged =
+    (editSpotForm.value.title || '').trim() !== (editingSpot.value.title || '').trim();
+  const mapsLinkChanged =
+    (editSpotForm.value.maps_link || '').trim() !== (editingSpot.value.maps_link || '').trim();
+  const categoryChanged =
+    (editSpotForm.value.category || '').trim() !== (editingSpot.value.category || '').trim();
+  return pinChanged || addressChanged || titleChanged || mapsLinkChanged || categoryChanged;
+});
+
+const isEditSpotSideModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const isZuhause = editingSpot.value.category?.trim().toLowerCase() === 'zuhause';
+  const initialSide = isZuhause ? true : !!editingSpot.value.is_home;
+  return Boolean(editSpotForm.value.is_home) !== initialSide;
+});
+
+const isEditSpotImageModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.image_url || '').trim() !== (editingSpot.value.image_url || '').trim();
+});
+
+const isEditSpotNoteModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.note || '').trim() !== (editingSpot.value.note || '').trim();
+});
+
+const isEditSpotStartDateModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.start_date || '') !== (editingSpot.value.start_date || '');
+});
+
+const isEditSpotEndDateModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.end_date || '') !== (editingSpot.value.end_date || '');
+});
+
+const isEditSpotCheckinModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.checkin || '').trim() !== (editingSpot.value.checkin || '').trim();
+});
+
+const isEditSpotCheckoutModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.checkout || '').trim() !== (editingSpot.value.checkout || '').trim();
+});
+
+const isEditSpotContactModified = computed(() => {
+  if (!editingSpot.value) return false;
+  return (editSpotForm.value.contact || '').trim() !== (editingSpot.value.contact || '').trim();
+});
+
+const isEditSpotAmountModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const initialAmount = editingSpot.value.amount != null ? String(editingSpot.value.amount) : '';
+  return (editSpotForm.value.amount || '').trim() !== initialAmount.trim();
+});
+
+const isEditSpotPaidByModified = computed(() => {
+  if (!editingSpot.value) return false;
+  const initialPaid =
+    editingSpot.value.paid_by_user_id != null ? String(editingSpot.value.paid_by_user_id) : '';
+  return (editSpotForm.value.paid_by_user_id || '').trim() !== initialPaid.trim();
+});
+
+const isEditSpotDirty = computed(
+  () => editSpotDraft.isDirty.value || isEditSpotLocationModified.value
+);
+
+const isSpotModalDirty = computed(() =>
+  editingSpot.value !== null ? isEditSpotDirty.value : newSpotDraft.isDirty.value
+);
 
 const spotTitleTouched = ref(false);
 const showSpotTitleError = computed(
@@ -738,11 +1081,15 @@ const showSpotTitleError = computed(
 );
 
 const canSaveSpot = computed(
-  () => !!activeSpotForm.value.title.trim() && !isSpotUploadingAttachments.value
+  () =>
+    !!activeSpotForm.value.title.trim() &&
+    !isSpotUploadingAttachments.value &&
+    !isSpotUploadingCoverImage.value
 );
 
 const spotSaveTooltip = computed(() => {
   if (isSpotUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
+  if (isSpotUploadingCoverImage.value) return 'Spot-Bild wird noch hochgeladen…';
   if (!activeSpotForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Spot ein';
   return undefined;
 });
@@ -818,6 +1165,25 @@ const editSpotPreviewImage = computed(() => {
   const coords = editSpotManualPin.value ?? parsed;
   return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
 });
+
+const spotImageSearchContext = computed(() => {
+  const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
+  return {
+    name: activeSpotForm.value.title.trim() || undefined,
+    city: selectedSpotCity.value || undefined,
+    lat: pin?.lat,
+    lng: pin?.lng,
+    maps_link: activeSpotForm.value.maps_link || undefined,
+  };
+});
+
+function resetEditSpotImage() {
+  if (editingSpot.value) {
+    editSpotForm.value.image_url = editingSpot.value.image_url ?? '';
+  } else {
+    spotForm.value.image_url = '';
+  }
+}
 
 const spotCategoryOptions = computed(() => {
   const used = spotsStore.spots.map((s) => s.category).filter((c): c is string => !!c);
@@ -1128,32 +1494,6 @@ function computeMenuStyle(
     left: `${Math.max(8, Math.min(rect.left, window.innerWidth - minWidth - 8))}px`,
   };
 }
-
-const descriptionOpen = ref(false);
-const descriptionBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
-const descriptionMenuStyle = ref({ top: '0px', left: '0px' });
-function toggleDescription(event?: MouseEvent) {
-  if (!descriptionOpen.value) {
-    descriptionMenuStyle.value = computeMenuStyle(descriptionBtnRef.value, event, 260);
-    descriptionOpen.value = true;
-  } else {
-    descriptionOpen.value = false;
-  }
-}
-
-function onEscape(e: KeyboardEvent) {
-  if (e.key === 'Escape' && descriptionOpen.value) {
-    descriptionOpen.value = false;
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', onEscape);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', onEscape);
-});
 
 const categoryFilter = usePersistedRef<string[]>('reisotor-excursions-category-filter', []);
 function removeCategoryFilter(cat: string) {
@@ -3060,16 +3400,41 @@ watch(
   }
 );
 
-// Live-Vorschau (Titel/echtes Foto statt nur des Kartenausschnitts, siehe backend/src/utils/
-// mapsLink.ts's fetchPlacePreview()) - Best-effort, überschreibt nie bereits eingetippte Werte
-// (z. B. wenn der Titel schon vor dem Maps-Link gesetzt wurde). Keine Kategorie-Erkennung: dafür
-// gibt es ohne kostenpflichtige Places-API kein verlässliches Signal.
-async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof emptySpotForm>>) {
-  if (!mapsLink) return;
+let lastPreviewFetchKey = '';
+const spotPreviewImages = ref<string[]>([]);
+const selectedSpotCity = ref<string | null>(null);
+
+// Live-Vorschau (Titel/Foto aus Wikipedia/Wikimedia oder Maps-Link, siehe backend/src/utils/placePhoto.ts
+// & mapsLink.ts) - Best-effort, überschreibt nie bereits eingetippte Werte (z. B. wenn der Titel oder ein
+// Bild schon manuell gesetzt wurde).
+async function fetchSpotPreview(
+  mapsLink: string,
+  form: Ref<ReturnType<typeof emptySpotForm>>,
+  extra?: { name?: string; lat?: number; lng?: number; city?: string }
+) {
+  if (!mapsLink && !extra?.name) return;
+  const key = `${mapsLink}|${extra?.name || ''}|${extra?.lat || ''}|${extra?.lng || ''}|${extra?.city || ''}`;
+  if (lastPreviewFetchKey === key) return;
+  lastPreviewFetchKey = key;
+
   try {
-    const preview = await api.get<{ name: string | null; imageUrl: string | null }>(
-      `/spots/preview?maps_link=${encodeURIComponent(mapsLink)}`
-    );
+    const params = new URLSearchParams();
+    if (mapsLink) params.set('maps_link', mapsLink);
+    if (extra?.name) params.set('name', extra.name);
+    if (extra?.lat != null) params.set('lat', String(extra.lat));
+    if (extra?.lng != null) params.set('lng', String(extra.lng));
+    if (extra?.city) params.set('city', extra.city);
+
+    const preview = await api.get<{
+      name: string | null;
+      imageUrl: string | null;
+      images?: string[];
+    }>(`/spots/preview?${params.toString()}`);
+    if (preview.images && preview.images.length > 0) {
+      spotPreviewImages.value = preview.images;
+    } else if (preview.imageUrl) {
+      spotPreviewImages.value = [preview.imageUrl];
+    }
     if (preview.name && !form.value.title.trim()) form.value.title = preview.name;
     if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
   } catch {
@@ -3077,19 +3442,16 @@ async function fetchSpotPreview(mapsLink: string, form: Ref<ReturnType<typeof em
   }
 }
 
-function checkSpotMapsLink() {
-  spotMapsLinkResolved.value = spotForm.value.maps_link
-    ? parseLatLngFromMapsLink(spotForm.value.maps_link) != null
-    : null;
-  if (spotForm.value.maps_link) fetchSpotPreview(spotForm.value.maps_link, spotForm);
-}
-function checkEditSpotMapsLink() {
-  const parsed = editSpotForm.value.maps_link
-    ? parseLatLngFromMapsLink(editSpotForm.value.maps_link)
-    : null;
-  editSpotMapsLinkResolved.value = editSpotForm.value.maps_link ? parsed != null : null;
-  if (parsed) editSpotManualPin.value = parsed;
-  if (editSpotForm.value.maps_link) fetchSpotPreview(editSpotForm.value.maps_link, editSpotForm);
+function onSpotMapsLinkUpdate(val: string) {
+  activeSpotForm.value.maps_link = val;
+  if (val) {
+    const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
+    fetchSpotPreview(val, editingSpot.value !== null ? editSpotForm : spotForm, {
+      name: activeSpotForm.value.title.trim() || undefined,
+      lat: pin?.lat,
+      lng: pin?.lng,
+    });
+  }
 }
 
 function spotToBody(
@@ -3147,14 +3509,32 @@ function closeSpotForm() {
   spotTitleTouched.value = false;
   showSpotForm.value = false;
   spotForm.value = emptySpotForm();
-  spotMapsLinkResolved.value = null;
   spotManualPin.value = null;
-  spotPickerOpen.value = false;
+  editSpotManualPin.value = null;
   spotLocationError.value = false;
   spotPendingFixId.value = null;
   showSpotLocationSection.value = false;
   showSpotScheduleSection.value = false;
+  isSpotUploadingCoverImage.value = false;
+  spotPreviewImages.value = [];
+  selectedSpotCity.value = null;
   newSpotDraft.clear();
+}
+
+function discardNewSpotDraft() {
+  spotTitleTouched.value = false;
+  spotForm.value = emptySpotForm();
+  spotManualPin.value = null;
+  editSpotManualPin.value = null;
+  spotLocationError.value = false;
+  spotPendingFixId.value = null;
+  showSpotLocationSection.value = false;
+  showSpotScheduleSection.value = false;
+  isSpotUploadingCoverImage.value = false;
+  spotPreviewImages.value = [];
+  selectedSpotCity.value = null;
+  newSpotDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
 // Alle Tour-Titel als Vorschläge für die "Tour zuordnen"-Combobox (TourAssignPicker.vue).
@@ -3205,6 +3585,7 @@ async function addSpot() {
     spotTitleTouched.value = true;
     return;
   }
+  if (isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value) return;
   const body = spotToBody(spotForm.value, spotManualPin.value);
   const result =
     spotPendingFixId.value != null
@@ -3217,7 +3598,7 @@ async function addSpot() {
   if (body.maps_link && result.lat == null && !spotManualPin.value) {
     spotPendingFixId.value = result.id;
     spotLocationError.value = true;
-    spotPickerOpen.value = true;
+    showSpotLocationSection.value = true;
     return;
   }
   await syncSpotTours(result.id, spotForm.value.tourTitles);
@@ -3233,12 +3614,81 @@ async function addSpot() {
 }
 
 watch(spotManualPin, (pin) => {
-  if (pin && spotLocationError.value) addSpot();
+  if (editingSpot.value !== null) {
+    editSpotManualPin.value = pin;
+  }
+  if (pin && (editingSpot.value !== null ? editSpotLocationError.value : spotLocationError.value)) {
+    if (editingSpot.value !== null) {
+      submitEditSpot();
+    } else {
+      addSpot();
+    }
+  }
 });
+
+function onSpotLocationSelect(place: PlaceSearchResult) {
+  selectedSpotCity.value = place.city || null;
+  activeSpotForm.value.title = place.name;
+  spotTitleTouched.value = false;
+  activeSpotForm.value.address = place.formatted_address || place.name;
+  const coords = { lat: place.lat, lng: place.lng };
+  spotManualPin.value = coords;
+  editSpotManualPin.value = coords;
+  activeSpotForm.value.maps_link = buildGoogleMapsLink(place.lat, place.lng);
+  if (place.category) {
+    activeSpotForm.value.category = place.category;
+  }
+  lastPreviewFetchKey = '';
+  fetchSpotPreview(
+    activeSpotForm.value.maps_link,
+    editingSpot.value !== null ? editSpotForm : spotForm,
+    {
+      name: place.name,
+      lat: place.lat,
+      lng: place.lng,
+      city: place.city,
+    }
+  );
+}
+
+const spotLocationPickerRef = ref<InstanceType<typeof LocationPicker> | null>(null);
+
+function triggerSpotLocationClear() {
+  if (spotLocationPickerRef.value) {
+    spotLocationPickerRef.value.clear();
+  } else {
+    onSpotLocationClear();
+  }
+}
+
+function onSpotLocationClear() {
+  spotManualPin.value = null;
+  editSpotManualPin.value = null;
+  activeSpotForm.value.maps_link = '';
+}
+
+function resetEditSpotLocation() {
+  if (!editingSpot.value) {
+    triggerSpotLocationClear();
+    return;
+  }
+  const original = editingSpot.value;
+  const pin =
+    original.lat != null && original.lng != null ? { lat: original.lat, lng: original.lng } : null;
+  editSpotManualPin.value = pin;
+  spotManualPin.value = pin;
+  activeSpotForm.value.title = original.title;
+  activeSpotForm.value.address = original.address ?? '';
+  activeSpotForm.value.maps_link = original.maps_link ?? '';
+  activeSpotForm.value.category = original.category ?? '';
+  editSpotLocationError.value = false;
+  spotLocationPickerRef.value?.reset();
+}
 
 function startEditSpot(spot: Spot) {
   spotTitleTouched.value = false;
-  editingSpot.value = spot;
+  selectedSpotCity.value = null;
+  spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
   const isZuhause = spot.category?.trim().toLowerCase() === 'zuhause';
   editSpotForm.value = {
     title: spot.title,
@@ -3258,11 +3708,11 @@ function startEditSpot(spot: Spot) {
     tourTitles: tourTitlesFor(spot.id),
     scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
   };
-  editSpotMapsLinkResolved.value = null;
-  editSpotManualPin.value =
-    spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
-  editSpotPickerOpen.value = false;
+  const pin = spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
+  editSpotManualPin.value = pin;
+  spotManualPin.value = pin;
   editSpotLocationError.value = false;
+  editingSpot.value = spot;
 }
 
 async function submitEditSpot() {
@@ -3270,13 +3720,14 @@ async function submitEditSpot() {
     spotTitleTouched.value = true;
     return;
   }
-  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
+  if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value)
+    return;
   const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
   const updated = await spotsStore.update(editingSpot.value.id, body);
   drawers.touchLocations();
   if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {
     editSpotLocationError.value = true;
-    editSpotPickerOpen.value = true;
+    showEditSpotLocationSection.value = true;
     return;
   }
   await syncSpotTours(editingSpot.value.id, editSpotForm.value.tourTitles);
@@ -3287,8 +3738,20 @@ async function submitEditSpot() {
 
 function closeEditSpotForm() {
   spotTitleTouched.value = false;
+  spotManualPin.value = null;
+  editSpotManualPin.value = null;
+  isSpotUploadingCoverImage.value = false;
+  spotPreviewImages.value = [];
+  selectedSpotCity.value = null;
   editSpotDraft.clear();
   editingSpot.value = null;
+}
+
+function discardEditSpotDraft() {
+  if (!editingSpot.value) return;
+  startEditSpot(editingSpot.value);
+  editSpotDraft.clear();
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 watch(editSpotManualPin, (pin) => {
@@ -3296,7 +3759,8 @@ watch(editSpotManualPin, (pin) => {
 });
 
 async function deleteEditingSpot() {
-  if (!editingSpot.value || isSpotUploadingAttachments.value) return;
+  if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value)
+    return;
   const id = editingSpot.value.id;
   await spotsStore.remove(id);
   drawers.touchLocations();
@@ -3384,72 +3848,56 @@ async function deleteEditingSpot() {
                (Nutzer-Feedback) - jetzt hinter einem Info-Button versteckt, gleiches
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
                eines neuen Tooltip-Mechanismus. -->
-              <span class="dropdown info-dropdown">
-                <button
-                  ref="descriptionBtnRef"
-                  type="button"
-                  class="info-btn"
-                  :title="
-                    groupMode === 'tours'
-                      ? 'Was sind Touren?'
-                      : groupMode === 'tracks'
-                        ? 'Was sind Tracks?'
-                        : 'Was sind Spots?'
-                  "
-                  :aria-label="
-                    groupMode === 'tours'
-                      ? 'Was sind Touren?'
-                      : groupMode === 'tracks'
-                        ? 'Was sind Tracks?'
-                        : 'Was sind Spots?'
-                  "
-                  @click="toggleDescription($event)"
-                >
-                  <AppIcon :icon="ACTION_ICONS.info" :size="16" group="actions" />
-                </button>
-                <Teleport to="body">
-                  <template v-if="descriptionOpen">
-                    <PickerMenu
-                      class="description-popover"
-                      :style="descriptionMenuStyle"
-                      @close="descriptionOpen = false"
-                    >
-                      <template v-if="groupMode === 'tours'">
-                        <p>
-                          <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route
-                          oder einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder
-                          Abreise auf der Karte zu visualisieren.
-                        </p>
-                        <p class="popover-tip">
-                          💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und
-                          Wege auf der Karte anzuzeigen.
-                        </p>
-                      </template>
-                      <template v-else-if="groupMode === 'tracks'">
-                        <p>
-                          <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du
-                          kannst sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder
-                          Touren zuordnen.
-                        </p>
-                        <p class="popover-tip">
-                          💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf
-                          „Aufzeichnen“ oder direkt über den Button auf der Karte.
-                        </p>
-                      </template>
-                      <template v-else>
-                        <p>
-                          <strong>Spots</strong> sind einzelne Orte (Restaurants,
-                          Sehenswürdigkeiten, Strände, …) – als Ideensammlung oder zur Reiseplanung.
-                        </p>
-                        <p class="popover-tip">
-                          💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen
-                          Kalendertag oder eine Tour, um sie einzutakten.
-                        </p>
-                      </template>
-                    </PickerMenu>
-                  </template>
-                </Teleport>
-              </span>
+              <InfoPopover
+                :title="
+                  groupMode === 'tours'
+                    ? 'Was sind Touren?'
+                    : groupMode === 'tracks'
+                      ? 'Was sind Tracks?'
+                      : 'Was sind Spots?'
+                "
+                :aria-label="
+                  groupMode === 'tours'
+                    ? 'Was sind Touren?'
+                    : groupMode === 'tracks'
+                      ? 'Was sind Tracks?'
+                      : 'Was sind Spots?'
+                "
+                :menu-width="300"
+              >
+                <template v-if="groupMode === 'tours'">
+                  <p>
+                    <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route oder
+                    einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der
+                    Karte zu visualisieren.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und Wege
+                    auf der Karte anzuzeigen.
+                  </p>
+                </template>
+                <template v-else-if="groupMode === 'tracks'">
+                  <p>
+                    <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du
+                    kannst sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder Touren
+                    zuordnen.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf „Aufzeichnen“
+                    oder direkt über den Button auf der Karte.
+                  </p>
+                </template>
+                <template v-else>
+                  <p>
+                    <strong>Spots</strong> sind einzelne Orte (Restaurants, Sehenswürdigkeiten,
+                    Strände, …) – als Ideensammlung oder zur Reiseplanung.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen Kalendertag
+                    oder eine Tour, um sie einzutakten.
+                  </p>
+                </template>
+              </InfoPopover>
               <!-- #155: der Spots/Touren/Tracks-Umschalter sitzt direkt neben der
                Drawer-Überschrift als primäre Weiche dieser Ansicht. -->
               <SegmentedToggle
@@ -3544,6 +3992,20 @@ async function deleteEditingSpot() {
             :model-value="showExcursionForm || editingExcursion !== null"
             :title="editingExcursion !== null ? 'Tour bearbeiten' : 'Neue Tour'"
             full-height
+            :confirm-close="isExcursionModalDirty"
+            :confirm-close-title="
+              editingExcursion !== null
+                ? 'Ungespeicherte Änderungen verwerfen?'
+                : 'Entwurf verwerfen?'
+            "
+            :confirm-close-message="
+              editingExcursion !== null
+                ? 'Du hast ungespeicherte Änderungen an dieser Tour vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
+                : 'Du hast bereits Eingaben für diese Tour gemacht. Möchtest du den Entwurf verwerfen?'
+            "
+            :confirm-close-confirm-label="
+              editingExcursion !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
+            "
             @update:model-value="
               (v) =>
                 !v && (editingExcursion !== null ? closeEditExcursionForm() : closeExcursionForm())
@@ -3558,10 +4020,11 @@ async function deleteEditingSpot() {
                 label="Titel"
                 required
                 :invalid="showExcursionTitleError"
+                :modified="isEditTourTitleModified"
                 :error="
                   showExcursionTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined
                 "
-                v-slot="{ id, invalid }"
+                v-slot="{ id, invalid, modified }"
               >
                 <Input
                   :id="id"
@@ -3570,10 +4033,11 @@ async function deleteEditingSpot() {
                   placeholder="Titel"
                   required
                   :invalid="invalid"
+                  :modified="modified"
                   @blur="excursionTitleTouched = true"
                 />
               </FormField>
-              <FormField icon="note" label="Notiz">
+              <FormField icon="note" label="Notiz" :modified="isEditTourNoteModified">
                 <RichTextEditor
                   v-model="activeExcursionForm.note"
                   placeholder="Notiz"
@@ -3581,11 +4045,21 @@ async function deleteEditingSpot() {
                   expandable
                 />
               </FormField>
-              <FormField icon="date" label="Datum (sonst „In Planung“)">
-                <Input v-model="activeExcursionForm.date" type="date" />
+              <FormField
+                icon="date"
+                label="Datum (sonst „In Planung“)"
+                :modified="isEditTourDateModified"
+                v-slot="{ modified }"
+              >
+                <Input v-model="activeExcursionForm.date" type="date" :modified="modified" />
               </FormField>
-              <FormField icon="tour" label="Rolle">
-                <Select v-model="activeExcursionForm.role">
+              <FormField
+                icon="tour"
+                label="Rolle"
+                :modified="isEditTourRoleModified"
+                v-slot="{ modified }"
+              >
+                <Select v-model="activeExcursionForm.role" :modified="modified">
                   <option value="">🎒 – Normaler Ausflug –</option>
                   <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
                     {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
@@ -3635,6 +4109,70 @@ async function deleteEditingSpot() {
                   :users="users"
                 />
               </CollapsibleFieldset>
+              <CollapsibleFieldset
+                v-if="tracksStore.tracks.length"
+                :model-value="
+                  editingExcursion !== null
+                    ? showEditExcursionTracksSection
+                    : showExcursionTracksSection
+                "
+                label="Aufzeichnungen"
+                :count="
+                  activeExcursionForm.track_ids.length
+                    ? `(${activeExcursionForm.track_ids.length} zugeordnet)`
+                    : undefined
+                "
+                :icon="ACTION_ICONS.recordStart"
+                icon-group="actions"
+                @update:model-value="
+                  (val) => {
+                    if (editingExcursion !== null) {
+                      showEditExcursionTracksSection = val;
+                    } else {
+                      showExcursionTracksSection = val;
+                    }
+                  }
+                "
+              >
+                <div class="excursion-tracks-picker">
+                  <p v-if="!selectableTracksForTour.length" class="empty-subtext">
+                    Keine verfügbaren Aufzeichnungen für diesen Urlaub vorhanden.
+                  </p>
+                  <ul v-else class="excursion-tracks-list">
+                    <li
+                      v-for="trk in selectableTracksForTour"
+                      :key="trk.id"
+                      class="excursion-track-item"
+                      :class="{ 'is-selected': activeExcursionForm.track_ids.includes(trk.id) }"
+                    >
+                      <label class="excursion-track-label" :for="`tour-track-${trk.id}`">
+                        <Checkbox
+                          :id="`tour-track-${trk.id}`"
+                          :checked="activeExcursionForm.track_ids.includes(trk.id)"
+                          @change="onToggleTourTrack(trk)"
+                        />
+                        <div class="excursion-track-info">
+                          <span class="excursion-track-name">{{ trackTitle(trk) }}</span>
+                          <span class="excursion-track-meta">
+                            <span>{{ formatDateTime(trk.started_at) }}</span>
+                            <template v-if="trackDurationLabel(trk)">
+                              · <span>{{ trackDurationLabel(trk) }}</span>
+                            </template>
+                            <span
+                              v-if="trk.visibility === 'private'"
+                              class="privacy-pill privacy-pill--private"
+                              title="Aktuell nur für dich sichtbar"
+                            >
+                              <AppIcon :icon="ACTION_ICONS.private" :size="11" group="actions" />
+                              Privat
+                            </span>
+                          </span>
+                        </div>
+                      </label>
+                    </li>
+                  </ul>
+                </div>
+              </CollapsibleFieldset>
               <FileAttachments
                 v-if="editingExcursion"
                 domain="ideas"
@@ -3651,6 +4189,13 @@ async function deleteEditingSpot() {
                   editingExcursion !== null
                     ? editExcursionDraft.restored.value
                     : newExcursionDraft.restored.value
+                "
+                :mode="editingExcursion !== null ? 'edit' : 'create'"
+                :can-discard="true"
+                @discard="
+                  editingExcursion !== null
+                    ? discardEditExcursionDraft()
+                    : discardNewExcursionDraft()
                 "
               />
               <div class="actions-row">
@@ -3736,6 +4281,18 @@ async function deleteEditingSpot() {
             :model-value="showSpotForm || editingSpot !== null"
             :title="editingSpot !== null ? 'Spot bearbeiten' : 'Neuer Spot'"
             full-height
+            :confirm-close="isSpotModalDirty"
+            :confirm-close-title="
+              editingSpot !== null ? 'Ungespeicherte Änderungen verwerfen?' : 'Entwurf verwerfen?'
+            "
+            :confirm-close-message="
+              editingSpot !== null
+                ? 'Du hast ungespeicherte Änderungen an diesem Spot vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
+                : 'Du hast bereits Eingaben für diesen Spot gemacht. Möchtest du den Entwurf verwerfen?'
+            "
+            :confirm-close-confirm-label="
+              editingSpot !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
+            "
             @update:model-value="
               (v) => !v && (editingSpot !== null ? closeEditSpotForm() : closeSpotForm())
             "
@@ -3744,81 +4301,188 @@ async function deleteEditingSpot() {
               class="edit-form"
               @submit.prevent="editingSpot !== null ? submitEditSpot() : addSpot()"
             >
-              <CoverImagePicker
-                v-model="activeSpotForm.image_url"
-                :preview-image="editingSpot !== null ? editSpotPreviewImage : spotPreviewImage"
-                :placeholder-icon="groupIconDef(activeSpotForm.category)"
-                icon-group="categories"
-                modal-title="Spot-Bild bearbeiten"
-              />
-              <FormField
-                icon="title"
-                label="Titel"
-                required
-                :invalid="showSpotTitleError"
-                :error="showSpotTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
-                v-slot="{ id, invalid }"
-              >
-                <Input
-                  :id="id"
-                  v-model="activeSpotForm.title"
-                  type="text"
-                  placeholder="Titel"
-                  required
-                  :invalid="invalid"
+              <!-- 1. Standort-Bereich (Vollflächige Minikarte mit schwebender Suche & Polaroid-Card) -->
+              <div class="spot-location-section">
+                <LocationPicker
+                  ref="spotLocationPickerRef"
+                  v-model="spotManualPin"
+                  v-model:title="activeSpotForm.title"
+                  v-model:category="activeSpotForm.category"
+                  :category-options="spotCategoryOptions"
+                  :address="activeSpotForm.address"
+                  :maps-link="activeSpotForm.maps_link"
+                  :proximity-bias="spotPickerCenter"
+                  :center="spotPickerCenter"
+                  :reference-points="
+                    editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
+                  "
+                  :title-required="true"
+                  :title-invalid="showSpotTitleError"
+                  :modified="isEditSpotLocationModified"
+                  @update:address="activeSpotForm.address = $event"
+                  @update:maps-link="onSpotMapsLinkUpdate"
+                  @select="onSpotLocationSelect"
+                  @clear="onSpotLocationClear"
+                  @reset="resetEditSpotLocation"
                   @blur="spotTitleTouched = true"
+                >
+                  <template #media>
+                    <CoverImagePicker
+                      v-model="activeSpotForm.image_url"
+                      v-model:uploading="isSpotUploadingCoverImage"
+                      variant="polaroid"
+                      :preview-image="
+                        editingSpot !== null ? editSpotPreviewImage : spotPreviewImage
+                      "
+                      :placeholder-icon="groupIconDef(activeSpotForm.category)"
+                      icon-group="categories"
+                      modal-title="Spot-Bild bearbeiten"
+                      :modified="isEditSpotImageModified"
+                      :initial-value="editingSpot !== null ? (editingSpot.image_url ?? '') : ''"
+                      :search-context="spotImageSearchContext"
+                      :initial-suggestions="spotPreviewImages"
+                      @reset="resetEditSpotImage"
+                    />
+                  </template>
+                </LocationPicker>
+                <p v-if="showSpotTitleError" class="hint error">
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+                  Bitte gib einen Titel für den Spot ein.
+                </p>
+                <p
+                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
+                  class="hint error"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
+                  konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
+                  manuell zu setzen.
+                </p>
+              </div>
+              <div
+                class="spot-side-field"
+                :class="{ 'is-modified': isEditSpotSideModified }"
+                role="group"
+                aria-label="Bereich des Standorts"
+              >
+                <div class="spot-side-header">
+                  <span class="spot-side-label">
+                    <span>Bereich</span>
+                    <span
+                      v-if="isEditSpotSideModified"
+                      class="modified-dot"
+                      title="Geändert"
+                      aria-label="Geändert"
+                    />
+                  </span>
+                  <InfoPopover
+                    title="Was bedeutet Bereich?"
+                    aria-label="Erklärung zum Standort-Bereich"
+                    :menu-width="280"
+                  >
+                    <p>
+                      <strong>Urlaubsort:</strong> z. B. Ausflugsziele, Restaurants oder Unterkünfte
+                      am Reiseziel.
+                    </p>
+                    <p>
+                      <strong>Heimat-Seite:</strong> z. B. der heimische Flughafen/Bahnhof/Zuhause
+                      für Reise-Etappen.
+                    </p>
+                    <p class="popover-tip">
+                      🗺️ Wird für das Auswählen des passenden Kartenausschnitts verwendet.
+                    </p>
+                  </InfoPopover>
+                </div>
+                <SegmentedToggle
+                  id="spotFormSideToggle"
+                  class="spot-side-toggle"
+                  :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
+                  :options="SPOT_SIDE_OPTIONS"
+                  @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
                 />
-              </FormField>
-              <FormField icon="category" label="Kategorie">
-                <CategoryCombobox
-                  v-model="activeSpotForm.category"
-                  type="spot"
-                  :options="spotCategoryOptions"
-                />
-              </FormField>
+              </div>
               <template v-if="activeSpotForm.category === 'Unterkunft'">
                 <div class="row">
-                  <FormField icon="date" label="Check-in-Datum">
-                    <Input v-model="activeSpotForm.start_date" type="date" />
+                  <FormField
+                    icon="date"
+                    label="Check-in-Datum"
+                    :modified="isEditSpotStartDateModified"
+                    v-slot="{ modified }"
+                  >
+                    <Input v-model="activeSpotForm.start_date" type="date" :modified="modified" />
                   </FormField>
-                  <FormField icon="date" label="Check-out-Datum">
-                    <Input v-model="activeSpotForm.end_date" type="date" />
+                  <FormField
+                    icon="date"
+                    label="Check-out-Datum"
+                    :modified="isEditSpotEndDateModified"
+                    v-slot="{ modified }"
+                  >
+                    <Input v-model="activeSpotForm.end_date" type="date" :modified="modified" />
                   </FormField>
                 </div>
                 <div class="row">
-                  <FormField icon="time" label="Check-in-Zeit">
+                  <FormField
+                    icon="time"
+                    label="Check-in-Zeit"
+                    :modified="isEditSpotCheckinModified"
+                    v-slot="{ modified }"
+                  >
                     <Input
                       v-model="activeSpotForm.checkin"
                       type="text"
                       placeholder="Check-in (z. B. 15:00)"
+                      :modified="modified"
                     />
                   </FormField>
-                  <FormField icon="time" label="Check-out-Zeit">
+                  <FormField
+                    icon="time"
+                    label="Check-out-Zeit"
+                    :modified="isEditSpotCheckoutModified"
+                    v-slot="{ modified }"
+                  >
                     <Input
                       v-model="activeSpotForm.checkout"
                       type="text"
                       placeholder="Check-out (z. B. 11:00)"
+                      :modified="modified"
                     />
                   </FormField>
                 </div>
-                <FormField icon="contact" label="Kontakt">
+                <FormField
+                  icon="contact"
+                  label="Kontakt"
+                  :modified="isEditSpotContactModified"
+                  v-slot="{ modified }"
+                >
                   <Input
                     v-model="activeSpotForm.contact"
                     type="text"
                     placeholder="Kontakt (Telefon/E-Mail/Text)"
+                    :modified="modified"
                   />
                 </FormField>
                 <div class="row">
-                  <FormField icon="amount" label="Kosten">
+                  <FormField
+                    icon="amount"
+                    label="Kosten"
+                    :modified="isEditSpotAmountModified"
+                    v-slot="{ modified }"
+                  >
                     <Input
                       v-model="activeSpotForm.amount"
                       type="number"
                       step="0.01"
                       placeholder="Kosten (€)"
+                      :modified="modified"
                     />
                   </FormField>
-                  <FormField v-if="users.length > 1" icon="shared" label="Bezahlt von">
-                    <Select v-model="activeSpotForm.paid_by_user_id">
+                  <FormField
+                    v-if="users.length > 1"
+                    icon="shared"
+                    label="Bezahlt von"
+                    :modified="isEditSpotPaidByModified"
+                    v-slot="{ modified }"
+                  >
+                    <Select v-model="activeSpotForm.paid_by_user_id" :modified="modified">
                       <option value="">Bezahlt von –</option>
                       <option v-for="u in users" :key="u.id" :value="String(u.id)">
                         {{ u.avatar }} {{ u.username }}
@@ -3827,113 +4491,7 @@ async function deleteEditingSpot() {
                   </FormField>
                 </div>
               </template>
-              <CollapsibleFieldset
-                :model-value="
-                  editingSpot !== null ? showEditSpotLocationSection : showSpotLocationSection
-                "
-                label="Standort"
-                :icon="FORM_FIELD_ICONS.location"
-                icon-group="formFields"
-                class="location-fieldset"
-                content-class="location-fieldset-content"
-                @update:model-value="
-                  (val) => {
-                    if (editingSpot !== null) {
-                      showEditSpotLocationSection = val;
-                    } else {
-                      showSpotLocationSection = val;
-                    }
-                  }
-                "
-              >
-                <p class="hint">
-                  Wird für die Position auf der Karte und ggf. das Wetter vor Ort verwendet.
-                </p>
-                <FormField icon="location" label="Adresse">
-                  <Input
-                    v-model="activeSpotForm.address"
-                    type="text"
-                    placeholder="Adresse (Straße, Hausnummer, Ort)"
-                  />
-                </FormField>
-                <FormField icon="maps" label="Maps-Link (Google/Apple)">
-                  <Input
-                    v-model="activeSpotForm.maps_link"
-                    type="url"
-                    placeholder="Maps-Link (Google/Apple)"
-                    @blur="editingSpot !== null ? checkEditSpotMapsLink() : checkSpotMapsLink()"
-                  />
-                </FormField>
-                <p
-                  v-if="
-                    (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
-                    true
-                  "
-                  class="hint success"
-                >
-                  <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort
-                  erkannt – erscheint auf der Karte
-                </p>
-                <p
-                  v-if="
-                    (editingSpot !== null ? editSpotMapsLinkResolved : spotMapsLinkResolved) ===
-                    false
-                  "
-                  class="hint"
-                >
-                  Standort wird beim Speichern serverseitig aufgelöst (auch Kurzlinks
-                  funktionieren).
-                </p>
-                <p
-                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
-                  class="hint error"
-                >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                  konnte auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte,
-                  um ihn manuell zu setzen.
-                </p>
-                <CollapsibleFieldset
-                  :model-value="editingSpot !== null ? editSpotPickerOpen : spotPickerOpen"
-                  label="Standort manuell setzen"
-                  :icon="ACTION_ICONS.myLocation"
-                  icon-group="actions"
-                  @update:model-value="
-                    (val) => {
-                      if (editingSpot !== null) {
-                        editSpotPickerOpen = val;
-                      } else {
-                        spotPickerOpen = val;
-                      }
-                    }
-                  "
-                >
-                  <LocationPicker
-                    v-if="editingSpot !== null"
-                    v-model="editSpotManualPin"
-                    :center="spotPickerCenter"
-                    :reference-points="editSpotReferencePoints"
-                  />
-                  <LocationPicker
-                    v-else
-                    v-model="spotManualPin"
-                    :center="spotPickerCenter"
-                    :reference-points="spotReferencePoints"
-                  />
-                </CollapsibleFieldset>
-                <div class="spot-side-field" role="group" aria-label="Bereich des Standorts">
-                  <span class="spot-side-label">Bereich</span>
-                  <SegmentedToggle
-                    id="spotFormSideToggle"
-                    :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
-                    :options="SPOT_SIDE_OPTIONS"
-                    @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
-                  />
-                  <p class="hint">
-                    z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen
-                  </p>
-                </div>
-              </CollapsibleFieldset>
-              <FormField icon="note" label="Notiz">
+              <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified">
                 <RichTextEditor
                   v-model="activeSpotForm.note"
                   placeholder="Notiz"
@@ -4159,6 +4717,9 @@ async function deleteEditingSpot() {
                 :restored="
                   editingSpot !== null ? editSpotDraft.restored.value : newSpotDraft.restored.value
                 "
+                :mode="editingSpot !== null ? 'edit' : 'create'"
+                :can-discard="true"
+                @discard="editingSpot !== null ? discardEditSpotDraft() : discardNewSpotDraft()"
               />
               <div class="actions-row">
                 <Button
@@ -4167,7 +4728,7 @@ async function deleteEditingSpot() {
                   variant="danger"
                   secondary
                   :icon="ACTION_ICONS.delete"
-                  :disabled="isSpotUploadingAttachments"
+                  :disabled="isSpotUploadingAttachments || isSpotUploadingCoverImage"
                   @click="deleteEditingSpot"
                 >
                   Löschen
@@ -4775,6 +5336,19 @@ async function deleteEditingSpot() {
                         <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
                         {{ trackDurationLabel(track) }}
                       </span>
+                      <span
+                        v-if="getTourForTrack(track)"
+                        class="track-meta-tour"
+                        :title="'Zugeordnete Tour: ' + getTourForTrack(track)?.title"
+                      >
+                        ·
+                        <AppIcon
+                          :icon="SECTION_ICON_DEFS.excursions"
+                          :size="12"
+                          group="navigation"
+                        />
+                        {{ getTourForTrack(track)?.title }}
+                      </span>
                     </span>
                   </button>
                   <template v-if="track.user_id === auth.user?.id">
@@ -4788,6 +5362,11 @@ async function deleteEditingSpot() {
                     >
                       <AppIcon :icon="ACTION_ICONS.recordStop" :size="15" group="actions" />
                     </button>
+                    <TourAssignDropdown
+                      :tours="trackTourAssignmentsFor(track)"
+                      @toggle-tour="(tourId) => onToggleRowTrackTour(track, tourId)"
+                      @create-tour="(title) => onCreateTourFromRowTrack(track, title)"
+                    />
                     <button
                       type="button"
                       class="track-icon-btn"
@@ -4839,6 +5418,14 @@ async function deleteEditingSpot() {
             @confirm="startRecordingConfirmed"
           />
 
+          <!-- Datenschutz-Hinweis bei Zuordnung einer privaten Aufzeichnung zu einer Tour -->
+          <TrackShareWarningModal
+            v-model="showTrackShareWarningModal"
+            :track-title="shareWarningTrackTitle"
+            :tour-title="shareWarningTourTitle"
+            @confirm="onConfirmShareModal"
+          />
+
           <!-- Aufzeichnung bearbeiten (Name, Sichtbarkeit) -->
           <Modal
             :model-value="editingTrack !== null"
@@ -4881,18 +5468,61 @@ async function deleteEditingSpot() {
                 </Button>
               </div>
 
-              <FormField icon="title" label="Name">
+              <FormField
+                icon="title"
+                label="Name"
+                :modified="isEditTrackTitleModified"
+                v-slot="{ modified }"
+              >
                 <Input
                   v-model="editTrackTitle"
                   type="text"
                   placeholder="z. B. Wanderung zur Berghütte"
                   :maxlength="100"
+                  :modified="modified"
                 />
               </FormField>
-              <FormField icon="date" label="Aufzeichnungszeitpunkt">
-                <Input v-model="editTrackStartedAt" type="datetime-local" required />
+              <FormField
+                icon="date"
+                label="Aufzeichnungszeitpunkt"
+                :modified="isEditTrackStartedAtModified"
+                v-slot="{ modified }"
+              >
+                <Input
+                  v-model="editTrackStartedAt"
+                  type="datetime-local"
+                  required
+                  :modified="modified"
+                />
               </FormField>
-              <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
+              <FormField icon="tour" label="Zugeordnete Tour" :modified="isEditTrackTourModified">
+                <div class="track-tour-assign-field">
+                  <TourAssignDropdown
+                    :tours="trackTourAssignments"
+                    @toggle-tour="onToggleTrackTour"
+                    @create-tour="onCreateTourFromTrack"
+                  />
+                  <span v-if="editTrackExcursionTitle" class="track-tour-selected-badge">
+                    <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
+                    {{ editTrackExcursionTitle }}
+                    <button
+                      type="button"
+                      class="remove-tour-btn"
+                      title="Zuordnung entfernen"
+                      aria-label="Zuordnung entfernen"
+                      @click="editTrackExcursionId = null"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
+                    </button>
+                  </span>
+                </div>
+              </FormField>
+              <FormField
+                icon="visibility"
+                label="Sichtbarkeit"
+                :modified="isEditTrackVisibilityModified"
+                v-slot="{ id }"
+              >
                 <TrackVisibilitySelect :id="id" v-model="editTrackVisibility" />
               </FormField>
               <div class="actions-row">
@@ -5712,6 +6342,20 @@ async function deleteEditingSpot() {
   flex: 1;
 }
 
+.spot-location-section {
+  position: relative;
+  z-index: var(--z-card-elevated, 5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.spot-location-section:focus-within,
+.spot-location-section:has(.open),
+.spot-location-section:has(.location-dropdown) {
+  z-index: var(--z-popover, 1100);
+}
+
 .location-fieldset-content {
   gap: var(--space-4, 16px);
 }
@@ -5731,6 +6375,26 @@ async function deleteEditingSpot() {
   flex-direction: column;
   gap: var(--space-1-5, 6px);
   margin-top: var(--space-2);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.spot-side-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5, 6px);
+}
+
+.spot-side-toggle {
+  width: 100%;
+}
+
+@media (min-width: 581px) {
+  .spot-side-toggle {
+    width: fit-content;
+    min-width: 280px;
+    max-width: 340px;
+    align-self: flex-start;
+  }
 }
 
 .spot-side-label {
@@ -5740,6 +6404,10 @@ async function deleteEditingSpot() {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
+}
+
+.spot-side-field.is-modified .spot-side-label {
+  color: var(--color-accent-dark, var(--color-accent));
 }
 
 .location-fieldset-content :deep(.form-field),
@@ -6935,6 +7603,132 @@ async function deleteEditingSpot() {
 
 .assign-chip-remove:hover {
   opacity: 1;
+}
+
+.track-tour-assign-field {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.track-tour-selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 10px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.remove-tour-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  margin-left: 2px;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.remove-tour-btn:hover {
+  opacity: 1;
+}
+
+.track-meta-tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.excursion-tracks-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.excursion-tracks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.excursion-track-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.excursion-track-item:hover {
+  background: var(--color-bg-hover, var(--color-bg-secondary));
+}
+
+.excursion-track-item.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.excursion-track-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  width: 100%;
+}
+
+.excursion-track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.excursion-track-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.excursion-track-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.privacy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.privacy-pill--private {
+  background: var(--color-warning-tint, rgba(234, 179, 8, 0.15));
+  color: var(--color-warning-dark, #a16207);
 }
 </style>
 

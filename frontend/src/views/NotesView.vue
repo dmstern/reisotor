@@ -245,8 +245,8 @@ async function openNew() {
 
 function startEdit(note: Note) {
   noteContentTouched.value = false;
-  editingNote.value = note;
   editForm.value = { title: note.title ?? '', content: note.content };
+  editingNote.value = note;
 }
 
 // Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer eine veröffentlichte Notiz
@@ -303,6 +303,17 @@ async function closeEditForm() {
   }
   editDraft.clear();
   editingNote.value = null;
+}
+
+function discardEditDraft() {
+  if (!editingNote.value) return;
+  const isDraft = editingNote.value.is_draft;
+  startEdit(editingNote.value);
+  editDraft.clear();
+  showToast({
+    message: isDraft ? 'Entwurf verworfen.' : 'Änderungen verworfen.',
+    type: 'info',
+  });
 }
 
 async function deleteEditingNote() {
@@ -383,8 +394,12 @@ async function remove(id: number) {
 
     <Modal
       :model-value="editingNote !== null"
-      title="Notiz bearbeiten"
+      :title="editingNote?.is_draft ? 'Notiz anlegen' : 'Notiz bearbeiten'"
       full-height
+      :confirm-close="!editingNote?.is_draft && editDraft.isDirty.value"
+      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
+      confirm-close-message="Du hast ungespeicherte Änderungen an dieser Notiz vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
+      confirm-close-confirm-label="Änderungen verwerfen"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEdit">
@@ -412,7 +427,13 @@ async function remove(id: number) {
           :entity-id="editingNote.id"
           v-model:uploading="isNoteUploadingAttachments"
         />
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          :mode="editingNote?.is_draft ? 'create' : 'edit'"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"

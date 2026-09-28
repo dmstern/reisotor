@@ -111,6 +111,8 @@ function openMembers(trip: Trip) {
                 start_date: editingTrip.start_date,
                 end_date: editingTrip.end_date,
                 maps_link: editingTrip.maps_link ?? '',
+                lat: editingTrip.lat ?? undefined,
+                lng: editingTrip.lng ?? undefined,
                 image_url: editingTrip.image_url ?? '',
                 packing_category_required: editingTrip.packing_category_required !== 0,
                 weather_model: editingTrip.weather_model ?? 'ecmwf_ifs025',

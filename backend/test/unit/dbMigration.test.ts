@@ -339,3 +339,117 @@ describe('location_tracks.end_reason Migration', () => {
     expect(cacheColumns.some((c) => c.name === 'response_json')).toBe(true);
   });
 });
+
+describe('location_track_points.altitude Migration', () => {
+  let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.DB_PATH;
+    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+  });
+
+  it('ergänzt die Spalte altitude in einer bestehenden location_track_points Tabelle, behält Altpunkte mit NULL und speichert neue Höhendaten', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-track-points-migration-test-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL, name TEXT NOT NULL, password TEXT NOT NULL);
+      CREATE TABLE location_tracks (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT,
+        visibility TEXT NOT NULL DEFAULT 'private',
+        started_at TEXT NOT NULL
+      );
+      CREATE TABLE location_track_points (
+        id INTEGER PRIMARY KEY,
+        track_id INTEGER NOT NULL REFERENCES location_tracks(id) ON DELETE CASCADE,
+        lat REAL NOT NULL,
+        lng REAL NOT NULL,
+        recorded_at TEXT NOT NULL,
+        accuracy REAL
+      );
+    `);
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Test-Trip', '2026-09-01', '2026-09-10')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO users (id, email, name, password) VALUES (1, 'test@example.com', 'Tester', 'secret')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO location_tracks (id, trip_id, user_id, started_at) VALUES (1, 1, 1, '2026-09-25T10:00:00Z')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO location_track_points (id, track_id, lat, lng, recorded_at, accuracy) VALUES (1, 1, 48.2082, 16.3738, '2026-09-25T10:00:00Z', 5.0)`
+      )
+      .run();
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(location_track_points)').all() as {
+      name: string;
+      type: string;
+    }[];
+    const altitudeCol = columns.find((c) => c.name === 'altitude');
+    expect(altitudeCol).toBeDefined();
+    expect(altitudeCol?.type.toUpperCase()).toBe('REAL');
+
+    // Bestehende Altpunkte haben altitude = null
+    const existingRow = db
+      .prepare('SELECT id, lat, lng, altitude FROM location_track_points WHERE id = 1')
+      .get() as {
+      id: number;
+      lat: number;
+      lng: number;
+      altitude: number | null;
+    };
+    expect(existingRow.altitude).toBeNull();
+
+    // Neue Punkte können Höhendaten speichern
+    db.prepare(
+      'INSERT INTO location_track_points (id, track_id, lat, lng, recorded_at, accuracy, altitude) VALUES (2, 1, 48.2090, 16.3750, ?, 4.5, ?)'
+    ).run('2026-09-25T10:00:10Z', 235.6);
+
+    const newRow = db
+      .prepare('SELECT id, lat, lng, altitude FROM location_track_points WHERE id = 2')
+      .get() as {
+      id: number;
+      lat: number;
+      lng: number;
+      altitude: number | null;
+    };
+    expect(newRow.altitude).toBe(235.6);
+  });
+
+  it('erstellt die Spalte altitude standardmäßig bei einer neuen Datenbank', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-track-points-fresh-test-'));
+    dbPath = path.join(dir, 'fresh.sqlite');
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(location_track_points)').all() as {
+      name: string;
+      type: string;
+    }[];
+    const altitudeCol = columns.find((c) => c.name === 'altitude');
+    expect(altitudeCol).toBeDefined();
+    expect(altitudeCol?.type.toUpperCase()).toBe('REAL');
+  });
+});

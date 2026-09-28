@@ -195,7 +195,7 @@ function selectMode(val: ThemeMode) {
   corner-shape: squircle;
   background-color: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 500;
@@ -212,7 +212,7 @@ function selectMode(val: ThemeMode) {
 .theme-dropdown-trigger:hover {
   background-color: var(--color-hover);
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-dropdown-trigger:focus-visible,
@@ -220,10 +220,12 @@ function selectMode(val: ThemeMode) {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-dropdown-trigger:active {
   transform: scale(0.99);
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-trigger-content {

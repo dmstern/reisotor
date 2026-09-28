@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { forceFontDisplayBlock, waitForAppReady } from '../helpers/fonts.js';
+import { forceFontDisplayBlock, waitForAppReady, waitForMapTiles } from '../helpers/fonts.js';
 import {
   expectNoHorizontalOverflow,
   setCalendarDrawerOpen,
@@ -42,6 +42,7 @@ test.describe(`Adversarial Layout Audit: ${targetRoute}`, () => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto(targetRoute);
       await waitForAppReady(page);
+      await waitForMapTiles(page);
 
       // 1. Mathematische Layout-Integrität: Kein Element darf seitlich ausbrechen
       await expectNoHorizontalOverflow(page);
@@ -70,11 +71,13 @@ test.describe(`Adversarial Layout Audit: ${targetRoute}`, () => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto(targetRoute);
       await waitForAppReady(page);
+      await waitForMapTiles(page);
 
       // Zustand 1: Schublade geöffnet (Default auf Desktop)
       await setCalendarDrawerOpen(page, true);
       await expectNoHorizontalOverflow(page);
       if (process.env.AUDIT_SCREENSHOTS) {
+        await waitForMapTiles(page);
         await page.screenshot({
           path: `tests/scratch/audit-${vp.name}-drawer-open.png`,
           fullPage: false,
@@ -87,6 +90,7 @@ test.describe(`Adversarial Layout Audit: ${targetRoute}`, () => {
         await setCalendarDrawerWidth(page, 500);
         await expectNoHorizontalOverflow(page);
         if (process.env.AUDIT_SCREENSHOTS) {
+          await waitForMapTiles(page);
           await page.screenshot({
             path: `tests/scratch/audit-${vp.name}-drawer-500px.png`,
             fullPage: false,
@@ -98,6 +102,7 @@ test.describe(`Adversarial Layout Audit: ${targetRoute}`, () => {
       await setCalendarDrawerOpen(page, false);
       await expectNoHorizontalOverflow(page);
       if (process.env.AUDIT_SCREENSHOTS) {
+        await waitForMapTiles(page);
         await page.screenshot({
           path: `tests/scratch/audit-${vp.name}-drawer-closed.png`,
           fullPage: false,

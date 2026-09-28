@@ -14,7 +14,7 @@ const PATTERNS: RegExp[] = [
   /@(-?\d+\.\d+),(-?\d+\.\d+)/, // Google: .../@48.2082,16.3738,15z
   /coordinate=(-?\d+\.\d+),\s*(-?\d+\.\d+)/, // Apple Maps: ?coordinate=48.2082,16.3738
   /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // Google/Apple Maps: ?ll=48.2082,16.3738
-  /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, // Google/Apple Maps: ?q=48.2082,16.3738
+  /[?&](?:q|query)=(-?\d+\.\d+),(-?\d+\.\d+)/, // Google/Apple Maps: ?q=48.2082,16.3738 or ?query=48.2082,16.3738
   /[?&]mlat=(-?\d+\.\d+)&mlon=(-?\d+\.\d+)/, // OpenStreetMap: ?mlat=48.2082&mlon=16.3738 (siehe buildOsmLink unten)
   /#map=\d+\/(-?\d+\.\d+)\/(-?\d+\.\d+)/, // OpenStreetMap Hash: #map=16/48.2082/16.3738
   /geo:(-?\d+\.\d+),(-?\d+\.\d+)/, // RFC 5870 / Android Geo-URI: geo:48.2082,16.3738

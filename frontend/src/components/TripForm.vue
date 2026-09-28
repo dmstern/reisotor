@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, useId } from 'vue';
 import type { TripFormData } from '../stores/trip';
-import { buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
-import LocationPicker from './LocationPicker.vue';
+import { buildGoogleMapsLink, buildOsmLink, parseLatLngFromMapsLink } from '../utils/googleMaps';
+import LocationPicker, { type PlaceSearchResult } from './LocationPicker.vue';
 import CoverImagePicker from './CoverImagePicker.vue';
 import TabBar, { type TabBarItem } from './TabBar.vue';
 import AppIcon from './AppIcon.vue';
@@ -62,16 +62,16 @@ function blankForm(): TripFormData {
 }
 
 const form = ref<TripFormData>(props.initial ? { ...props.initial } : blankForm());
-const mapsLinkResolved = ref<boolean | null>(null);
-const manualPin = ref<{ lat: number; lng: number } | null>(null);
-const pickerOpen = ref(false);
+const manualPin = ref<{ lat: number; lng: number } | null>(
+  props.initial?.lat != null && props.initial?.lng != null
+    ? { lat: props.initial.lat, lng: props.initial.lng }
+    : null
+);
 const showOptional = ref(false);
 
 const nameId = useId();
 const startDateId = useId();
 const endDateId = useId();
-const destinationId = useId();
-const mapsLinkId = useId();
 
 const dateError = computed(() => {
   if (form.value.start_date && form.value.end_date && form.value.start_date > form.value.end_date) {
@@ -80,13 +80,60 @@ const dateError = computed(() => {
   return '';
 });
 
+function areCoordsEqual(
+  a: { lat: number; lng: number } | null | undefined,
+  b: { lat: number; lng: number } | null | undefined
+): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
+}
+
+const isLocationModified = computed(() => {
+  if (!props.initial) return false;
+  const initialPin =
+    props.initial.lat != null && props.initial.lng != null
+      ? { lat: props.initial.lat, lng: props.initial.lng }
+      : null;
+  const pinChanged = !areCoordsEqual(manualPin.value, initialPin);
+  const destinationChanged =
+    (form.value.destination || '').trim() !== (props.initial.destination || '').trim();
+  const mapsLinkChanged =
+    (form.value.maps_link || '').trim() !== (props.initial.maps_link || '').trim();
+  return pinChanged || destinationChanged || mapsLinkChanged;
+});
+
+const isNameModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.name || '').trim() !== (props.initial.name || '').trim();
+});
+
+const isStartDateModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.start_date || '') !== (props.initial.start_date || '');
+});
+
+const isEndDateModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.end_date || '') !== (props.initial.end_date || '');
+});
+
+const isImageModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.image_url || '').trim() !== (props.initial.image_url || '').trim();
+});
+
+const isWeatherModelModified = computed(() => {
+  if (!props.initial) return false;
+  return (form.value.weather_model || '') !== (props.initial.weather_model || '');
+});
+
 watch(
   () => props.initial,
   (initial) => {
     form.value = initial ? { ...initial } : blankForm();
-    mapsLinkResolved.value = null;
-    manualPin.value = null;
-    pickerOpen.value = false;
+    manualPin.value =
+      initial?.lat != null && initial?.lng != null ? { lat: initial.lat, lng: initial.lng } : null;
     showOptional.value = false;
     activeTab.value = props.initialTab ?? 'general';
   }
@@ -99,7 +146,7 @@ watch(
   }
 );
 
-// Öffnet den Picker und die optionalen Felder automatisch, sobald der Aufrufer einen Fehlschlag meldet;
+// Öffnet die optionalen Felder automatisch, sobald der Aufrufer einen Fehlschlag meldet;
 // ein danach gesetzter Pin löst automatisch einen erneuten Speicherversuch aus.
 watch(
   () => props.locationError,
@@ -107,7 +154,6 @@ watch(
     if (err) {
       activeTab.value = 'general';
       showOptional.value = true;
-      pickerOpen.value = true;
     }
   }
 );
@@ -117,20 +163,42 @@ watch(
 // Wetterabfrage verwendet wird.
 watch(manualPin, (pin) => {
   if (!pin) return;
-  form.value.maps_link = buildOsmLink(pin.lat, pin.lng);
-  mapsLinkResolved.value = true;
+  if (!form.value.maps_link) {
+    form.value.maps_link = buildOsmLink(pin.lat, pin.lng);
+  }
   if (props.locationError) onSubmit();
 });
 
-function checkMapsLink() {
-  if (!form.value.maps_link) {
-    mapsLinkResolved.value = null;
-    return;
-  }
-  mapsLinkResolved.value = parseLatLngFromMapsLink(form.value.maps_link) != null;
+function onLocationSelect(place: PlaceSearchResult) {
+  form.value.destination = place.formatted_address || place.name;
+  const coords = { lat: place.lat, lng: place.lng };
+  manualPin.value = coords;
+  form.value.maps_link = buildGoogleMapsLink(place.lat, place.lng);
 }
 
+function onLocationClear() {
+  manualPin.value = null;
+  form.value.destination = '';
+  form.value.maps_link = '';
+}
+
+function onLocationReset() {
+  if (!props.initial) {
+    onLocationClear();
+    return;
+  }
+  form.value.destination = props.initial.destination ?? '';
+  form.value.maps_link = props.initial.maps_link ?? '';
+  manualPin.value =
+    props.initial.lat != null && props.initial.lng != null
+      ? { lat: props.initial.lat, lng: props.initial.lng }
+      : null;
+}
+
+const isUploadingCoverImage = ref(false);
+
 function onSubmit() {
+  if (isUploadingCoverImage.value) return;
   if (!form.value.name.trim()) {
     activeTab.value = 'general';
     return;
@@ -169,8 +237,12 @@ function onSubmit() {
     <div v-show="!showTabs || activeTab === 'general'" class="tab-content">
       <CoverImagePicker
         v-model="form.image_url"
+        v-model:uploading="isUploadingCoverImage"
         :placeholder-icon="ACTION_ICONS.vacation"
         modal-title="Dashboard-Banner bearbeiten"
+        :modified="isImageModified"
+        :initial-value="props.initial?.image_url ?? ''"
+        :search-context="{ name: form.destination || form.name }"
       />
 
       <label :for="nameId">
@@ -183,6 +255,7 @@ function onSubmit() {
           type="text"
           placeholder="z. B. Italien 2026"
           required
+          :modified="isNameModified"
         />
       </label>
 
@@ -190,11 +263,21 @@ function onSubmit() {
         <div class="dates-row">
           <label :for="startDateId">
             Start
-            <Input :id="startDateId" v-model="form.start_date" type="date" />
+            <Input
+              :id="startDateId"
+              v-model="form.start_date"
+              type="date"
+              :modified="isStartDateModified"
+            />
           </label>
           <label :for="endDateId">
             Ende
-            <Input :id="endDateId" v-model="form.end_date" type="date" />
+            <Input
+              :id="endDateId"
+              v-model="form.end_date"
+              type="date"
+              :modified="isEndDateModified"
+            />
           </label>
         </div>
         <p v-if="dateError" class="hint error">
@@ -202,43 +285,26 @@ function onSubmit() {
           {{ dateError }}
         </p>
 
-        <label :for="destinationId">
-          Ziel
-          <Input
-            :id="destinationId"
-            v-model="form.destination"
-            type="text"
-            placeholder="z. B. Toskana"
-          />
-        </label>
-
-        <Card class="location-box">
-          <span class="field-label">Standort</span>
+        <Card class="location-box" :class="{ 'is-modified': isLocationModified }">
+          <span class="field-label">Ziel &amp; Standort</span>
           <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
-          <label :for="mapsLinkId">
-            Maps-Link (Google/Apple)
-            <Input :id="mapsLinkId" v-model="form.maps_link" type="url" @blur="checkMapsLink" />
-          </label>
-          <p v-if="mapsLinkResolved === true" class="hint success">
-            <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" /> Standort erkannt
-            – erscheint auf der Karte
-          </p>
-          <p v-if="mapsLinkResolved === false" class="hint">
-            Standort konnte nicht automatisch erkannt werden.
-          </p>
           <p v-if="locationError" class="hint error">
             <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte
-            auch automatisch nicht ermittelt werden. Bitte tippe unten auf die Karte, um ihn manuell
-            zu setzen.
+            auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn manuell zu
+            setzen.
           </p>
-          <CollapsibleFieldset
-            v-model="pickerOpen"
-            label="Standort manuell setzen"
-            :icon="ACTION_ICONS.myLocation"
-            icon-group="actions"
-          >
-            <LocationPicker v-model="manualPin" />
-          </CollapsibleFieldset>
+          <LocationPicker
+            v-model="manualPin"
+            :address="form.destination"
+            :maps-link="form.maps_link"
+            placeholder="Reiseziel, Stadt oder Maps-Link eingeben..."
+            :modified="isLocationModified"
+            @update:address="form.destination = $event"
+            @update:maps-link="form.maps_link = $event"
+            @select="onLocationSelect"
+            @clear="onLocationClear"
+            @reset="onLocationReset"
+          />
         </Card>
       </CollapsibleFieldset>
     </div>
@@ -256,7 +322,11 @@ function onSubmit() {
         </p>
         <label for="trip-weather-model" class="field-group">
           Wettermodell
-          <Select id="trip-weather-model" v-model="form.weather_model">
+          <Select
+            id="trip-weather-model"
+            v-model="form.weather_model"
+            :modified="isWeatherModelModified"
+          >
             <option
               v-for="option in WEATHER_MODEL_OPTIONS"
               :key="option.value"
@@ -288,12 +358,15 @@ function onSubmit() {
         variant="danger"
         secondary
         :icon="ACTION_ICONS.delete"
+        :disabled="isUploadingCoverImage"
         @click="emit('delete')"
       >
         Löschen
       </Button>
       <div class="spacer"></div>
-      <Button type="submit">{{ submitLabel ?? 'Speichern' }}</Button>
+      <Button type="submit" :disabled="isUploadingCoverImage">{{
+        submitLabel ?? 'Speichern'
+      }}</Button>
     </div>
   </form>
 </template>
@@ -386,6 +459,14 @@ label,
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.location-box.is-modified {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 .location-box .field-label {

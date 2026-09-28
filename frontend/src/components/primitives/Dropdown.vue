@@ -71,7 +71,7 @@ const emit = defineEmits<{
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 500;
@@ -85,10 +85,23 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .dropdown__button.dropdown__field:hover:not(:disabled) {
   background: var(--color-hover);
+  box-shadow: var(--shadow-sm);
+}
+
+.dropdown__button.dropdown__field:active:not(:disabled),
+.dropdown__button.dropdown__field:focus,
+.dropdown__button.dropdown__field:focus-visible,
+.dropdown--open .dropdown__button.dropdown__field,
+.dropdown__button.dropdown__field[aria-expanded='true'] {
+  box-shadow: var(--shadow-sm);
 }
 
 .dropdown__button.dropdown__field:focus-visible {
@@ -99,6 +112,7 @@ const emit = defineEmits<{
 .dropdown__button.dropdown__field:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .dropdown__button.dropdown__field :deep(.app-icon) {

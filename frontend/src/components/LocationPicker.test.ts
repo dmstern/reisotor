@@ -1,0 +1,1764 @@
+// @vitest-environment jsdom
+/* eslint-disable vue/one-component-per-file */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createApp, h, nextTick, reactive } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
+
+// Polyfills
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+interface MockMap {
+  setView: ReturnType<typeof vi.fn>;
+  project: ReturnType<typeof vi.fn>;
+  unproject: ReturnType<typeof vi.fn>;
+  attributionControl: {
+    setPrefix: ReturnType<typeof vi.fn>;
+    setPosition?: ReturnType<typeof vi.fn>;
+  };
+  on: (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => void;
+  remove: ReturnType<typeof vi.fn>;
+  invalidateSize: ReturnType<typeof vi.fn>;
+  getZoom: ReturnType<typeof vi.fn>;
+  getCenter: ReturnType<typeof vi.fn>;
+}
+
+interface MockMarker {
+  setLatLng: ReturnType<typeof vi.fn>;
+  addTo: ReturnType<typeof vi.fn>;
+  remove: ReturnType<typeof vi.fn>;
+  getLatLng: ReturnType<typeof vi.fn>;
+  on: (event: string, handler: () => void) => void;
+  dragging: { enable: ReturnType<typeof vi.fn> };
+}
+
+// Mock Leaflet
+let mockMapInstance: MockMap | null = null;
+let mockMarkerInstance: MockMarker | null = null;
+const mapClickHandlers: ((e: { latlng: { lat: number; lng: number } }) => void)[] = [];
+let markerDragEndHandler: (() => void) | null = null;
+
+vi.mock('leaflet', () => {
+  return {
+    default: {
+      map: vi.fn((_el: HTMLElement, _opts: unknown) => {
+        mockMapInstance = {
+          setView: vi.fn().mockReturnThis(),
+          project: vi.fn(
+            (latlng: [number, number] | { lat: number; lng: number }, _zoom?: number) => {
+              const lat = Array.isArray(latlng) ? latlng[0] : latlng.lat;
+              const lng = Array.isArray(latlng) ? latlng[1] : latlng.lng;
+              return {
+                x: lng * 1000,
+                y: lat * 1000,
+                add: vi.fn((offset: [number, number] | { x: number; y: number }) => {
+                  const dx = Array.isArray(offset) ? offset[0] : offset.x;
+                  const dy = Array.isArray(offset) ? offset[1] : offset.y;
+                  return { x: lng * 1000 + dx, y: lat * 1000 + dy };
+                }),
+              };
+            }
+          ),
+          unproject: vi.fn((pt: { x: number; y: number }, _zoom?: number) => {
+            return { lat: pt.y / 1000, lng: pt.x / 1000 };
+          }),
+          attributionControl: { setPrefix: vi.fn(), setPosition: vi.fn() },
+          on: vi.fn(
+            (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => {
+              if (event === 'click') mapClickHandlers.push(handler);
+            }
+          ),
+          remove: vi.fn(),
+          invalidateSize: vi.fn(),
+          getZoom: vi.fn().mockReturnValue(15),
+          getCenter: vi.fn().mockReturnValue({ lat: 48.5, lng: 10 }),
+        };
+        return mockMapInstance;
+      }),
+      point: vi.fn((x: number, y: number) => ({ x, y })),
+      tileLayer: vi.fn(() => ({
+        addTo: vi.fn().mockReturnThis(),
+      })),
+      marker: vi.fn((coords: [number, number], _opts?: unknown) => {
+        mockMarkerInstance = {
+          setLatLng: vi.fn().mockReturnThis(),
+          addTo: vi.fn().mockReturnThis(),
+          remove: vi.fn(),
+          getLatLng: vi.fn().mockReturnValue({ lat: coords[0], lng: coords[1] }),
+          on: vi.fn((event: string, handler: () => void) => {
+            if (event === 'dragend') markerDragEndHandler = handler;
+          }),
+          dragging: { enable: vi.fn() },
+        };
+        return mockMarkerInstance;
+      }),
+      layerGroup: vi.fn(() => ({
+        addTo: vi.fn().mockReturnThis(),
+        clearLayers: vi.fn(),
+      })),
+      divIcon: vi.fn(() => ({})),
+    },
+  };
+});
+
+import LocationPicker, { type PlaceSearchResult } from './LocationPicker.vue';
+
+describe('LocationPicker', () => {
+  let pinia: ReturnType<typeof createPinia>;
+  let originalFetch: typeof globalThis.fetch;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    pinia = createPinia();
+    setActivePinia(pinia);
+    mapClickHandlers.length = 0;
+    markerDragEndHandler = null;
+    mockMapInstance = null;
+    mockMarkerInstance = null;
+    originalFetch = globalThis.fetch;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  function mountPicker(
+    props: Record<string, unknown> = {},
+    listeners: Record<string, unknown> = {}
+  ) {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () =>
+        h(LocationPicker as unknown as import('vue').Component, {
+          ...props,
+          ...listeners,
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+    return {
+      container,
+      cleanUp: () => {
+        app.unmount();
+        container.remove();
+        document.body.innerHTML = '';
+      },
+    };
+  }
+
+  describe('Input Classification & Maps Link Detection', () => {
+    it('detects standard Google Maps link and extracts coordinates without network query', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+
+      const updateModelValue = vi.fn();
+      const updateMapsLink = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue, 'onUpdate:mapsLink': updateMapsLink }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      expect(input).toBeTruthy();
+
+      input.value = 'https://www.google.com/maps/@48.20820,16.37380,15z';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      // Advancing timer should not trigger any fetch because it's recognized as maps_link
+      vi.advanceTimersByTime(500);
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+      expect(updateMapsLink).toHaveBeenCalledWith(
+        'https://www.google.com/maps/@48.20820,16.37380,15z'
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects Google Maps !3d/!4d exact pin link without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value =
+        'https://www.google.com/maps/place/Cafe+Central/@48.2000,16.3000,12z/data=!3m1!4b1!4m6!3m5!1s0x476d07987!8m2!3d48.21040!4d16.36530';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      vi.advanceTimersByTime(500);
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2104, lng: 16.3653 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects Apple Maps coordinate link without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'https://maps.apple.com/?coordinate=48.2082%2C16.3738';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects OpenStreetMap mlat/mlon link without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value =
+        'https://www.openstreetmap.org/?mlat=48.20820&mlon=16.37380#map=16/48.2082/16.3738';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('detects Android geo: URI without calling places API', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': updateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'geo:48.21040,16.36530';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2104, lng: 16.3653 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+
+    it('recognizes maps shortlink and shows notice without making geocoding request', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateMapsLink = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:mapsLink': updateMapsLink }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'https://maps.app.goo.gl/shortlink123';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      vi.advanceTimersByTime(500);
+
+      expect(updateMapsLink).toHaveBeenCalledWith('https://maps.app.goo.gl/shortlink123');
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      const notice = container.querySelector('.hint.info');
+      expect(notice).toBeTruthy();
+      expect(notice?.textContent).toContain('Kurzlink');
+
+      cleanUp();
+    });
+
+    it('does not trigger search for whitespace or single-character input', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+
+      input.value = ' ';
+      input.dispatchEvent(new Event('input'));
+      vi.advanceTimersByTime(500);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      input.value = 'C';
+      input.dispatchEvent(new Event('input'));
+      vi.advanceTimersByTime(500);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+  });
+
+  describe('Freitext Search & Autocomplete', () => {
+    it('debounces search by 300ms and calls /api/places/search', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Café Central',
+          formatted_address: 'Herrengasse 14, 1010 Wien, Österreich',
+          lat: 48.2104,
+          lng: 16.3653,
+          category: 'Café',
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Café Central';
+      input.dispatchEvent(new Event('input'));
+
+      // Before 300ms, fetch should not be called yet
+      vi.advanceTimersByTime(200);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // At 300ms, fetch is executed
+      vi.advanceTimersByTime(150);
+      await nextTick();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/places/search?q=Caf%C3%A9%20Central'),
+        expect.any(Object)
+      );
+
+      // Results rendered in dropdown
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const dropdown = container.querySelector('.location-dropdown');
+      expect(dropdown).toBeTruthy();
+      const option = container.querySelector('.location-result-item');
+      expect(option?.textContent).toContain('Café Central');
+      expect(option?.textContent).toContain('Herrengasse 14');
+      expect(option?.textContent).toContain('Café');
+      expect(option?.querySelector('.location-category-badge.category-chip')).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('forwards proximityBias coordinates as lat & lng query parameters', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      });
+      globalThis.fetch = fetchSpy;
+
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        proximityBias: { lat: 48.2082, lng: 16.3738 },
+      });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Stephansdom';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await nextTick();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('lat=48.2082&lng=16.3738'),
+        expect.any(Object)
+      );
+
+      cleanUp();
+    });
+
+    it('selecting a dropdown item updates coordinates, address, and emits select', async () => {
+      const mockPlace: PlaceSearchResult = {
+        name: 'Hotel Excelsior',
+        formatted_address: 'Via Vittorio Veneto 125, 00187 Rom, Italien',
+        lat: 41.9075,
+        lng: 12.4914,
+        category: 'Unterkunft',
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [mockPlace],
+      });
+
+      const onSelect = vi.fn();
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+      const onUpdateMapsLink = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        {
+          onSelect,
+          'onUpdate:modelValue': onUpdateModelValue,
+          'onUpdate:address': onUpdateAddress,
+          'onUpdate:mapsLink': onUpdateMapsLink,
+        }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Hotel Excelsior';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const option = container.querySelector('.location-result-item') as HTMLElement;
+      expect(option).toBeTruthy();
+
+      option.click();
+      await nextTick();
+
+      expect(onSelect).toHaveBeenCalledWith(mockPlace);
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 41.9075, lng: 12.4914 });
+      expect(onUpdateAddress).toHaveBeenCalledWith('Via Vittorio Veneto 125, 00187 Rom, Italien');
+      expect(onUpdateMapsLink).toHaveBeenCalledWith(
+        expect.stringContaining('https://www.google.com/maps/search/?api=1&query=41.9075,12.4914')
+      );
+      expect(input.value).toBe('');
+
+      cleanUp();
+    });
+
+    it('handles keyboard navigation: ArrowDown, ArrowUp, Enter, and Escape', async () => {
+      const mockPlaces: PlaceSearchResult[] = [
+        {
+          name: 'First Place',
+          formatted_address: 'Address 1',
+          lat: 10,
+          lng: 20,
+        },
+        {
+          name: 'Second Place',
+          formatted_address: 'Address 2',
+          lat: 30,
+          lng: 40,
+        },
+      ];
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockPlaces,
+      });
+
+      const onSelect = vi.fn();
+      const onUpdateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { onSelect, 'onUpdate:modelValue': onUpdateModelValue }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Place';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      // ArrowDown to first
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await nextTick();
+      let activeItem = container.querySelector('.location-result-item.is-active');
+      expect(activeItem?.textContent).toContain('First Place');
+
+      // ArrowDown to second
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await nextTick();
+      activeItem = container.querySelector('.location-result-item.is-active');
+      expect(activeItem?.textContent).toContain('Second Place');
+
+      // Enter selects second
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await nextTick();
+      expect(onSelect).toHaveBeenCalledWith(mockPlaces[1]);
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 30, lng: 40 });
+
+      cleanUp();
+    });
+
+    it('handles Escape to close dropdown without modifying state', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [{ name: 'Test', formatted_address: 'Addr', lat: 1, lng: 2 }],
+      });
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Test';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      expect(container.querySelector('.location-dropdown')).toBeTruthy();
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await nextTick();
+      vi.advanceTimersByTime(300);
+      await nextTick();
+
+      expect(container.querySelector('.location-dropdown')).toBeNull();
+
+      cleanUp();
+    });
+
+    it('handles upstream 500 error gracefully without unhandled exceptions', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'Internal Geocoding Error' }),
+      });
+
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Café Central';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      // UI remains intact, no unhandled exception
+      expect(container.querySelector('.location-picker')).toBeTruthy();
+
+      cleanUp();
+    });
+  });
+
+  describe('Status Card & Clear Action', () => {
+    it('renders polaroid card with coordinates, address, and clear button when modelValue is present', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 48.2082, lng: 16.3738 },
+        address: 'Stephansplatz 3, Wien',
+      });
+      await nextTick();
+
+      const statusCard = container.querySelector('[data-testid="location-status"]');
+      expect(statusCard).toBeTruthy();
+      expect(statusCard?.textContent).toContain('48.2082');
+      expect(statusCard?.textContent).toContain('16.3738');
+      expect(statusCard?.textContent).toContain('Stephansplatz 3, Wien');
+
+      const clearBtn = container.querySelector('button.coords-clear-btn');
+      expect(clearBtn).toBeTruthy();
+      expect(clearBtn?.getAttribute('title')).toBe('Standort-Koordinaten entfernen');
+      expect(clearBtn?.querySelector('.app-icon')).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('renders matching icons and left-aligned rows for title, address, category, and coordinates', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 48.2082, lng: 16.3738 },
+        title: 'Café Central',
+        address: 'Herrengasse 14, 1010 Wien',
+        category: 'Restaurant',
+      });
+      await nextTick();
+
+      const titleIcon = container.querySelector('.status-title-row .status-row-icon');
+      expect(titleIcon).toBeTruthy();
+
+      const addressIcon = container.querySelector('.status-address-row .status-row-icon');
+      expect(addressIcon).toBeTruthy();
+
+      const categoryIcon = container.querySelector('.status-category-row .status-row-icon');
+      expect(categoryIcon).toBeTruthy();
+
+      const coordsIcon = container.querySelector('.status-coords-row .status-row-icon');
+      expect(coordsIcon).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('clicking clear coords button removes coordinates pin, keeps polaroid card open, and preserves address', async () => {
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+      const onUpdateMapsLink = vi.fn();
+      const onClear = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2082, lng: 16.3738 },
+          address: 'Wien',
+          mapsLink: 'https://maps.google.com',
+        },
+        {
+          'onUpdate:modelValue': onUpdateModelValue,
+          'onUpdate:address': onUpdateAddress,
+          'onUpdate:mapsLink': onUpdateMapsLink,
+          onClear,
+        }
+      );
+      await nextTick();
+
+      const clearBtn = container.querySelector('button.coords-clear-btn') as HTMLButtonElement;
+      expect(clearBtn).toBeTruthy();
+
+      clearBtn.click();
+      await nextTick();
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith(null);
+      expect(onUpdateAddress).not.toHaveBeenCalled();
+      expect(onUpdateMapsLink).toHaveBeenCalledWith('');
+      expect(onClear).toHaveBeenCalled();
+
+      // Card remains open, input is empty
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      expect(input.value).toBe('');
+      expect(container.querySelector('.polaroid-card')).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('opens polaroid card when manual details button is clicked', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+      });
+      await nextTick();
+
+      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
+      manualBtn.click();
+      await nextTick();
+      expect(container.querySelector('.polaroid-card')).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('renders orange modified styling on polaroid card and reset button when modified is true', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 48.2082, lng: 16.3738 },
+        modified: true,
+      });
+      await nextTick();
+      const polaroidCard = container.querySelector('.polaroid-card');
+      expect(polaroidCard?.classList.contains('is-modified')).toBe(true);
+
+      const resetBtn = container.querySelector('.polaroid-reset-btn') as HTMLButtonElement;
+      expect(resetBtn).toBeTruthy();
+      expect(resetBtn.getAttribute('title')).toBe('Standort zurücksetzen');
+      expect(resetBtn.querySelector('.app-icon')).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('clicking reset button when modified emits reset event without emitting clear or update:modelValue', async () => {
+      const onReset = vi.fn();
+      const onClear = vi.fn();
+      const onUpdateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2082, lng: 16.3738 },
+          address: 'Wien',
+          modified: true,
+        },
+        {
+          onReset,
+          onClear,
+          'onUpdate:modelValue': onUpdateModelValue,
+        }
+      );
+      await nextTick();
+
+      const btn = container.querySelector('.polaroid-reset-btn') as HTMLButtonElement;
+      expect(btn).toBeTruthy();
+
+      btn.click();
+      await nextTick();
+
+      expect(onReset).toHaveBeenCalled();
+      expect(onClear).not.toHaveBeenCalled();
+      expect(onUpdateModelValue).not.toHaveBeenCalled();
+
+      cleanUp();
+    });
+  });
+
+  describe('Mini-Map Leaflet Sync & Map Interaction', () => {
+    it('initializes Leaflet map on mount', async () => {
+      const { container, cleanUp } = mountPicker({ modelValue: null });
+      await nextTick();
+
+      expect(container.querySelector('.location-picker-map')).toBeTruthy();
+      expect(mockMapInstance).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('clicking on map moves pin and emits update:modelValue with new coordinates', async () => {
+      const onUpdateModelValue = vi.fn();
+      const onUpdateMapsLink = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': onUpdateModelValue, 'onUpdate:mapsLink': onUpdateMapsLink }
+      );
+      await nextTick();
+
+      expect(mapClickHandlers.length).toBeGreaterThan(0);
+      const clickHandler = mapClickHandlers[0];
+
+      // Simulate Leaflet map click
+      clickHandler({ latlng: { lat: 43.7696, lng: 11.2558 } });
+      await nextTick();
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 43.7696, lng: 11.2558 });
+      expect(onUpdateMapsLink).toHaveBeenCalledWith(expect.stringContaining('43.7696'));
+
+      cleanUp();
+    });
+
+    it('clicking on map performs reverse geocoding and updates address when found', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          formatted_address: 'Stephansplatz 1, 1010 Wien',
+        }),
+      });
+      globalThis.fetch = fetchSpy;
+
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: null, address: 'Alte Adresse' },
+        { 'onUpdate:modelValue': onUpdateModelValue, 'onUpdate:address': onUpdateAddress }
+      );
+      await nextTick();
+
+      const clickHandler = mapClickHandlers[0];
+      clickHandler({ latlng: { lat: 48.2085, lng: 16.3731 } });
+      await nextTick();
+      await vi.runAllTimersAsync();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/places/reverse?lat=48.2085&lng=16.3731'),
+        expect.any(Object)
+      );
+      expect(onUpdateAddress).toHaveBeenCalledWith('Stephansplatz 1, 1010 Wien');
+
+      cleanUp();
+    });
+
+    it('clicking on map clears address when reverse geocode finds no address', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => null,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const onUpdateModelValue = vi.fn();
+      const onUpdateAddress = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: { lat: 48.2082, lng: 16.3738 }, address: 'Alte Adresse 123' },
+        { 'onUpdate:modelValue': onUpdateModelValue, 'onUpdate:address': onUpdateAddress }
+      );
+      await nextTick();
+
+      const clickHandler = mapClickHandlers[0];
+      clickHandler({ latlng: { lat: 0, lng: 0 } });
+      await nextTick();
+      await vi.runAllTimersAsync();
+
+      expect(onUpdateAddress).toHaveBeenCalledWith('');
+
+      cleanUp();
+    });
+
+    it('dragging marker updates coordinates and emits update:modelValue', async () => {
+      const onUpdateModelValue = vi.fn();
+
+      const { cleanUp } = mountPicker(
+        { modelValue: { lat: 48.2082, lng: 16.3738 } },
+        { 'onUpdate:modelValue': onUpdateModelValue }
+      );
+      await nextTick();
+
+      expect(markerDragEndHandler).toBeTruthy();
+
+      // Mock new position on marker
+      mockMarkerInstance!.getLatLng = vi.fn().mockReturnValue({ lat: 48.21, lng: 16.38 });
+      markerDragEndHandler!();
+      await nextTick();
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 48.21, lng: 16.38 });
+
+      cleanUp();
+    });
+
+    it('clicking locate-btn invokes navigator.geolocation and updates location', async () => {
+      const getCurrentPositionMock = vi.fn().mockImplementation((success) => {
+        success({
+          coords: {
+            latitude: 48.2082,
+            longitude: 16.3738,
+          },
+        });
+      });
+
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: {
+          getCurrentPosition: getCurrentPositionMock,
+          watchPosition: vi.fn(),
+          clearWatch: vi.fn(),
+        },
+      });
+
+      const onUpdateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:modelValue': onUpdateModelValue }
+      );
+      await nextTick();
+
+      const locateBtn = container.querySelector('.locate-btn') as HTMLButtonElement;
+      expect(locateBtn).toBeTruthy();
+
+      locateBtn.click();
+      await nextTick();
+
+      expect(getCurrentPositionMock).toHaveBeenCalled();
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 48.2082, lng: 16.3738 });
+
+      cleanUp();
+    });
+  });
+
+  describe('Unified Title & Address Editing', () => {
+    it('does not mutate title when typing in the search input field', async () => {
+      const updateTitle = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null, title: 'Mein Spot' },
+        { 'onUpdate:title': updateTitle }
+      );
+      await nextTick();
+
+      const searchInput = container.querySelector(
+        'input.location-picker-input'
+      ) as HTMLInputElement;
+      searchInput.value = 'Neuer Suchbegriff';
+      searchInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateTitle).not.toHaveBeenCalled();
+      cleanUp();
+    });
+
+    it('emits update:title when typing in the spot title input field', async () => {
+      const updateTitle = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null, title: '' },
+        { 'onUpdate:title': updateTitle }
+      );
+      await nextTick();
+
+      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
+      expect(manualBtn).toBeTruthy();
+      manualBtn.click();
+      await nextTick();
+
+      const titleInput = container.querySelector(
+        '.status-title-row [data-testid="spot-title-input"]'
+      ) as HTMLInputElement;
+      expect(titleInput).toBeTruthy();
+
+      titleInput.value = 'Mein Spot';
+      titleInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      expect(updateTitle).toHaveBeenCalledWith('Mein Spot');
+      cleanUp();
+    });
+
+    it('emits update:title with place name when selecting a search result', async () => {
+      const updateTitle = vi.fn();
+      const updateAddress = vi.fn();
+      const updateModelValue = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null, title: '' },
+        {
+          'onUpdate:title': updateTitle,
+          'onUpdate:address': updateAddress,
+          'onUpdate:modelValue': updateModelValue,
+        }
+      );
+      await nextTick();
+
+      const dummyPlace: PlaceSearchResult = {
+        name: 'Café Central',
+        formatted_address: 'Herrengasse 14, 1010 Wien',
+        lat: 48.2104,
+        lng: 16.3653,
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [dummyPlace],
+      });
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Central';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const item = container.querySelector('.location-result-item') as HTMLElement;
+      expect(item).toBeTruthy();
+      item.click();
+      await nextTick();
+
+      expect(updateTitle).toHaveBeenCalledWith('Café Central');
+      expect(updateAddress).toHaveBeenCalledWith('Herrengasse 14, 1010 Wien');
+      expect(updateModelValue).toHaveBeenCalledWith({ lat: 48.2104, lng: 16.3653 });
+      cleanUp();
+    });
+
+    it('clearing location resets coordinates but preserves custom spot title and address', async () => {
+      const updateModelValue = vi.fn();
+      const updateAddress = vi.fn();
+      const updateTitle = vi.fn();
+      const onClear = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2104, lng: 16.3653 },
+          title: 'Mein Spot',
+          address: 'Herrengasse 14',
+        },
+        {
+          'onUpdate:modelValue': updateModelValue,
+          'onUpdate:address': updateAddress,
+          'onUpdate:title': updateTitle,
+          onClear: onClear,
+        }
+      );
+      await nextTick();
+
+      const clearBtn = container.querySelector('.coords-clear-btn') as HTMLButtonElement;
+      expect(clearBtn).toBeTruthy();
+      clearBtn.click();
+      await nextTick();
+
+      expect(updateModelValue).toHaveBeenCalledWith(null);
+      expect(updateAddress).not.toHaveBeenCalled();
+      expect(updateTitle).not.toHaveBeenCalled();
+      expect(onClear).toHaveBeenCalled();
+
+      expect(container.querySelector('.polaroid-card')).toBeTruthy();
+      cleanUp();
+    });
+
+    it('clearing coordinates after selecting search result resets coordinates but preserves address and title', async () => {
+      const state = reactive({
+        modelValue: null as { lat: number; lng: number } | null,
+        title: '',
+        address: '',
+      });
+      const onClear = vi.fn();
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(LocationPicker as unknown as import('vue').Component, {
+            modelValue: state.modelValue,
+            title: state.title,
+            address: state.address,
+            'onUpdate:modelValue': (val: { lat: number; lng: number } | null) => {
+              state.modelValue = val;
+            },
+            'onUpdate:title': (val: string) => {
+              state.title = val;
+            },
+            'onUpdate:address': (val: string) => {
+              state.address = val;
+            },
+            onClear,
+          }),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      const dummyPlace: PlaceSearchResult = {
+        name: 'Café Central',
+        formatted_address: 'Herrengasse 14, 1010 Wien',
+        lat: 48.2104,
+        lng: 16.3653,
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [dummyPlace],
+      });
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'Central';
+      input.dispatchEvent(new Event('input'));
+
+      vi.advanceTimersByTime(350);
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const item = container.querySelector('.location-result-item') as HTMLElement;
+      expect(item).toBeTruthy();
+      item.click();
+      await nextTick();
+
+      expect(state.title).toBe('Café Central');
+      expect(state.modelValue).toEqual({ lat: 48.2104, lng: 16.3653 });
+
+      const clearBtn = container.querySelector('.coords-clear-btn') as HTMLButtonElement;
+      expect(clearBtn).toBeTruthy();
+      clearBtn.click();
+      await nextTick();
+
+      expect(state.modelValue).toBeNull();
+      expect(state.address).toBe('Herrengasse 14, 1010 Wien');
+      expect(state.title).toBe('Café Central');
+      expect(onClear).toHaveBeenCalled();
+      expect(input.value).toBe('');
+
+      app.unmount();
+      container.remove();
+      document.body.innerHTML = '';
+    });
+
+    it('renders address and allows inline edit via pencil button', async () => {
+      const updateAddress = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2104, lng: 16.3653 },
+          title: 'Café Central',
+          address: 'Herrengasse 14',
+        },
+        {
+          'onUpdate:address': updateAddress,
+        }
+      );
+      await nextTick();
+
+      const addressSpan = container.querySelector('.status-address') as HTMLElement;
+      expect(addressSpan).toBeTruthy();
+      expect(addressSpan.textContent?.trim()).toBe('Herrengasse 14');
+
+      // Click edit pencil button in address row
+      const editAddressBtn = container.querySelector(
+        '.status-address-row .inline-edit-btn'
+      ) as HTMLButtonElement;
+      expect(editAddressBtn).toBeTruthy();
+      editAddressBtn.click();
+      await nextTick();
+
+      const editInput = container.querySelector(
+        '.status-address-row .inline-edit-input'
+      ) as HTMLInputElement;
+      expect(editInput).toBeTruthy();
+      expect(editInput.value).toBe('Herrengasse 14');
+
+      editInput.value = 'Herrengasse 14, Wien';
+      editInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      const saveBtn = container.querySelector(
+        '.status-address-row .inline-save-btn'
+      ) as HTMLButtonElement;
+      expect(saveBtn).toBeTruthy();
+      saveBtn.click();
+      await nextTick();
+
+      expect(updateAddress).toHaveBeenCalledWith('Herrengasse 14, Wien');
+      cleanUp();
+    });
+
+    it('allows inline editing of title via pencil button in status card', async () => {
+      const updateTitle = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2104, lng: 16.3653 },
+          title: 'Alter Titel',
+        },
+        {
+          'onUpdate:title': updateTitle,
+        }
+      );
+      await nextTick();
+
+      const editTitleBtn = container.querySelector(
+        '.status-title-row .inline-edit-btn'
+      ) as HTMLButtonElement;
+      expect(editTitleBtn).toBeTruthy();
+      editTitleBtn.click();
+      await nextTick();
+
+      const editInput = container.querySelector(
+        '.status-title-row .inline-edit-input'
+      ) as HTMLInputElement;
+      expect(editInput).toBeTruthy();
+      expect(editInput.value).toBe('Alter Titel');
+
+      editInput.value = 'Neuer Titel';
+      editInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      // Press Enter to save
+      editInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await nextTick();
+
+      expect(updateTitle).toHaveBeenCalledWith('Neuer Titel');
+      cleanUp();
+    });
+
+    it('renders address input field directly when address is empty, and allows entering address inline', async () => {
+      const updateAddress = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: null,
+          title: 'Geheimer Spot',
+          address: '',
+        },
+        {
+          'onUpdate:address': updateAddress,
+        }
+      );
+      await nextTick();
+
+      const editInput = container.querySelector(
+        '.status-address-row .inline-edit-input input, .status-address-row input'
+      ) as HTMLInputElement;
+      expect(editInput).toBeTruthy();
+      expect(editInput.placeholder).toContain('Adresse');
+
+      editInput.value = 'Musterstraße 1, 1010 Wien';
+      editInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      editInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await nextTick();
+
+      expect(updateAddress).toHaveBeenCalledWith('Musterstraße 1, 1010 Wien');
+      cleanUp();
+    });
+
+    it('renders CategoryChip with edit button when location and category are present, and allows inline edit', async () => {
+      const updateCategory = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 48.2082, lng: 16.3738 },
+          title: 'Stephansdom',
+          category: 'Sehenswürdigkeit',
+        },
+        {
+          'onUpdate:category': updateCategory,
+        }
+      );
+      await nextTick();
+
+      // Check CategoryChip is rendered in status-details
+      const chip = container.querySelector('.status-category-row .category-chip');
+      expect(chip).toBeTruthy();
+      expect(chip?.textContent).toContain('Sehenswürdigkeit');
+
+      // Click pencil icon to edit category
+      const editBtn = container.querySelector(
+        '.status-category-row .inline-edit-btn'
+      ) as HTMLButtonElement;
+      expect(editBtn).toBeTruthy();
+      editBtn.click();
+      await nextTick();
+
+      // Combobox should now be rendered
+      const comboboxInput = container.querySelector(
+        '.status-category-row .inline-category-combobox input'
+      ) as HTMLInputElement;
+      expect(comboboxInput).toBeTruthy();
+      expect(comboboxInput.value).toBe('Sehenswürdigkeit');
+
+      comboboxInput.value = 'Museum';
+      comboboxInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      // Save via Enter
+      comboboxInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await nextTick();
+
+      expect(updateCategory).toHaveBeenCalledWith('Museum');
+      cleanUp();
+    });
+
+    it('renders category combobox input directly when category is empty and allows selecting category', async () => {
+      const updateCategory = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: null,
+          title: 'Mein Spot',
+          category: '',
+        },
+        {
+          'onUpdate:category': updateCategory,
+        }
+      );
+      await nextTick();
+
+      const comboboxInput = container.querySelector(
+        '.status-category-row .inline-category-combobox input'
+      ) as HTMLInputElement;
+      expect(comboboxInput).toBeTruthy();
+      expect(comboboxInput.placeholder).toContain('Kategorie');
+
+      comboboxInput.value = 'Café';
+      comboboxInput.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      comboboxInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await nextTick();
+
+      expect(updateCategory).toHaveBeenCalledWith('Café');
+      cleanUp();
+    });
+  });
+
+  describe('Polaroid Layout & Visibility Toggle', () => {
+    it('initially hides location details when modelValue, title, and address are empty', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: '',
+        address: '',
+      });
+      await nextTick();
+
+      expect(container.querySelector('.polaroid-card')).toBeNull();
+      const manualBtn = container.querySelector('.manual-details-btn');
+      expect(manualBtn).toBeTruthy();
+      expect(manualBtn?.textContent).toContain('Details manuell ausfüllen');
+      cleanUp();
+    });
+
+    it('renders full-width search bar in .location-search-row', async () => {
+      const { container, cleanUp } = mountPicker();
+      await nextTick();
+
+      const searchRow = container.querySelector('.location-search-row');
+      expect(searchRow).toBeTruthy();
+      const searchInput = searchRow?.querySelector('[data-testid="location-search-input"]');
+      expect(searchInput).toBeTruthy();
+      expect(searchInput?.classList.contains('location-picker-input')).toBe(true);
+      cleanUp();
+    });
+
+    it('reveals polaroid card when clicking "Details manuell ausfüllen"', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: '',
+        address: '',
+      });
+      await nextTick();
+
+      expect(container.querySelector('.polaroid-card')).toBeNull();
+      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
+      manualBtn.click();
+      await nextTick();
+
+      const polaroidCard = container.querySelector('.polaroid-card');
+      expect(polaroidCard).toBeTruthy();
+      expect(container.querySelector('.map-wrap')?.classList.contains('has-polaroid')).toBe(true);
+      cleanUp();
+    });
+
+    it('renders media slot inside polaroid card when slot is passed', async () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(
+            LocationPicker as unknown as import('vue').Component,
+            {
+              modelValue: { lat: 48.2, lng: 16.3 },
+              title: 'Spot mit Bild',
+            },
+            {
+              media: () => h('div', { class: 'custom-media-slot' }, 'Test Cover'),
+            }
+          ),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      const mediaWrap = container.querySelector('.polaroid-media');
+      expect(mediaWrap).toBeTruthy();
+      expect(mediaWrap?.querySelector('.custom-media-slot')?.textContent).toBe('Test Cover');
+
+      app.unmount();
+      container.remove();
+      document.body.innerHTML = '';
+    });
+
+    it('renders search info popover button in search bar', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+      });
+      await nextTick();
+
+      const searchRow = container.querySelector('.location-search-row');
+      expect(searchRow).toBeTruthy();
+
+      const infoBtn = searchRow?.querySelector('.search-info-popover .info-popover-btn');
+      expect(infoBtn).toBeTruthy();
+      expect(infoBtn?.getAttribute('aria-label')).toBe('Suchtipps und Maps-Links anzeigen');
+
+      cleanUp();
+    });
+  });
+
+  describe('Visible Centering Area & Mobile Layout', () => {
+    const originalInnerWidth = window.innerWidth;
+
+    afterEach(() => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    });
+
+    it('applies has-polaroid-media class to map-wrap when media slot is provided', async () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(
+            LocationPicker as unknown as import('vue').Component,
+            {
+              modelValue: { lat: 38.6849, lng: -9.2187 },
+              title: 'Spot mit Bild',
+            },
+            {
+              media: () => h('div', { class: 'test-media' }, 'Cover'),
+            }
+          ),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      const mapWrap = container.querySelector('.map-wrap');
+      expect(mapWrap?.classList.contains('has-polaroid')).toBe(true);
+      expect(mapWrap?.classList.contains('has-polaroid-media')).toBe(true);
+
+      app.unmount();
+      container.remove();
+    });
+
+    it('shifts map center to the right on desktop when details card is visible', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      const { cleanUp } = mountPicker({
+        modelValue: { lat: 38.68493, lng: -9.21877 },
+        title: 'Turm von Belém',
+      });
+      await nextTick();
+      await nextTick();
+
+      // Auf Desktop wird der Zielpunkt nach rechts verschoben (X-Wert der Mitte um coveredLeftPx / 2 reduziert)
+      expect(mockMapInstance?.project).toHaveBeenCalled();
+      expect(mockMapInstance?.unproject).toHaveBeenCalled();
+      const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
+      expect(lastSetViewCall).toBeTruthy();
+      const centeredLatLng = lastSetViewCall?.[0] as { lat: number; lng: number };
+      expect(centeredLatLng.lng).toBeLessThan(-9.21877); // Westlichere Mitte bewirkt Versatz nach rechts
+
+      cleanUp();
+    });
+
+    it('shifts map center downwards under the card on mobile when details card is visible', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const { cleanUp } = mountPicker({
+        modelValue: { lat: 38.68493, lng: -9.21877 },
+        title: 'Turm von Belém',
+      });
+      await nextTick();
+      await nextTick();
+
+      // Auf Mobile wird der Zielpunkt nach unten unter die Card verschoben (Y-Wert der Mitte um coveredTopPx / 2 reduziert)
+      expect(mockMapInstance?.project).toHaveBeenCalled();
+      expect(mockMapInstance?.unproject).toHaveBeenCalled();
+      const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
+      expect(lastSetViewCall).toBeTruthy();
+      const centeredLatLng = lastSetViewCall?.[0] as { lat: number; lng: number };
+      expect(centeredLatLng.lat).toBeLessThan(38.68493); // Südlichere Mitte bewirkt Versatz nach unten
+
+      cleanUp();
+    });
+
+    it('centers geolocation in visible area taking mobile card offset into account', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const getCurrentPositionMock = vi.fn().mockImplementation((success) => {
+        success({ coords: { latitude: 38.6849, longitude: -9.2187 } });
+      });
+      Object.defineProperty(globalThis.navigator, 'geolocation', {
+        writable: true,
+        configurable: true,
+        value: {
+          getCurrentPosition: getCurrentPositionMock,
+          watchPosition: vi.fn(),
+          clearWatch: vi.fn(),
+        },
+      });
+
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+      });
+      await nextTick();
+      await nextTick();
+
+      const locateBtn = container.querySelector('.locate-btn') as HTMLButtonElement;
+      locateBtn.click();
+      await nextTick();
+      await nextTick();
+
+      expect(getCurrentPositionMock).toHaveBeenCalled();
+      expect(mockMapInstance?.project).toHaveBeenCalled();
+      const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
+      expect(lastSetViewCall).toBeTruthy();
+
+      cleanUp();
+    });
+  });
+
+  describe('Smart Sparkle Suggestions from Spot Title', () => {
+    it('renders sparkle icon in address input field when title is present but address is empty', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: 'Praça do Comércio',
+        address: '',
+      });
+      await nextTick();
+
+      const sparkleBtn = container.querySelector('[data-testid="spot-address-sparkle-btn"]');
+      expect(sparkleBtn).toBeTruthy();
+      expect(sparkleBtn?.getAttribute('title')).toContain('Adresse anhand des Titels automatisch');
+
+      cleanUp();
+    });
+
+    it('does not render address sparkle icon when title is missing', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: '',
+        address: '',
+      });
+      await nextTick();
+
+      const sparkleBtn = container.querySelector('[data-testid="spot-address-sparkle-btn"]');
+      expect(sparkleBtn).toBeNull();
+
+      cleanUp();
+    });
+
+    it('renders category sparkle icon when title is present, category is empty and category prop is defined', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: 'Praça do Comércio',
+        category: '',
+        categoryOptions: ['Sehenswürdigkeit', 'Café', 'Restaurant'],
+      });
+      await nextTick();
+
+      const categorySparkleBtn = container.querySelector(
+        '[data-testid="spot-category-sparkle-btn"]'
+      );
+      expect(categorySparkleBtn).toBeTruthy();
+      expect(categorySparkleBtn?.getAttribute('title')).toContain(
+        'Kategorie anhand des Titels automatisch'
+      );
+
+      cleanUp();
+    });
+
+    it('does not render category sparkle icon when title is missing', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: '',
+        category: '',
+      });
+      await nextTick();
+
+      const categorySparkleBtn = container.querySelector(
+        '[data-testid="spot-category-sparkle-btn"]'
+      );
+      expect(categorySparkleBtn).toBeNull();
+
+      cleanUp();
+    });
+
+    it('clicking address sparkle icon fetches suggestions, fills first address into input and emits update:address', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Praça do Comércio',
+          formatted_address: 'Praça do Comércio, 1100-148 Lisboa, Portugal',
+          lat: 38.7075,
+          lng: -9.1364,
+          category: 'Sehenswürdigkeit',
+        },
+        {
+          name: 'Praça do Comércio',
+          formatted_address: 'Praça do Comércio, 3000-116 Coimbra, Portugal',
+          lat: 40.2098,
+          lng: -8.4297,
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const updateAddressSpy = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 38.7075, lng: -9.1364 },
+          title: 'Praça do Comércio',
+          address: '',
+        },
+        {
+          'onUpdate:address': updateAddressSpy,
+        }
+      );
+      await nextTick();
+
+      const sparkleBtn = container.querySelector(
+        '[data-testid="spot-address-sparkle-btn"]'
+      ) as HTMLButtonElement;
+      expect(sparkleBtn).toBeTruthy();
+
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/places/search?q=Pra%C3%A7a%20do%20Com%C3%A9rcio'),
+        expect.anything()
+      );
+      expect(updateAddressSpy).toHaveBeenCalledWith('Praça do Comércio, 1100-148 Lisboa, Portugal');
+
+      const addressInput = container.querySelector(
+        '[data-testid="spot-address-input"]'
+      ) as HTMLInputElement;
+      expect(addressInput.value).toBe('Praça do Comércio, 1100-148 Lisboa, Portugal');
+
+      cleanUp();
+    });
+
+    it('clicking address sparkle icon repeatedly cycles through suggestions round-robin', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Praça do Comércio Lisboa',
+          formatted_address: 'Praça do Comércio, Lisboa',
+          lat: 38.7075,
+          lng: -9.1364,
+        },
+        {
+          name: 'Praça do Comércio Coimbra',
+          formatted_address: 'Praça do Comércio, Coimbra',
+          lat: 40.2098,
+          lng: -8.4297,
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const updateAddressSpy = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 38.7075, lng: -9.1364 },
+          title: 'Praça do Comércio',
+          address: '',
+        },
+        {
+          'onUpdate:address': updateAddressSpy,
+        }
+      );
+      await nextTick();
+
+      const sparkleBtn = container.querySelector(
+        '[data-testid="spot-address-sparkle-btn"]'
+      ) as HTMLButtonElement;
+      const addressInput = container.querySelector(
+        '[data-testid="spot-address-input"]'
+      ) as HTMLInputElement;
+
+      // Click 1 -> 1. Vorschlag
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateAddressSpy).toHaveBeenLastCalledWith('Praça do Comércio, Lisboa');
+      expect(addressInput.value).toBe('Praça do Comércio, Lisboa');
+
+      // Click 2 -> 2. Vorschlag
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateAddressSpy).toHaveBeenLastCalledWith('Praça do Comércio, Coimbra');
+      expect(addressInput.value).toBe('Praça do Comércio, Coimbra');
+
+      // Click 3 -> Wrap around to 1. Vorschlag
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateAddressSpy).toHaveBeenLastCalledWith('Praça do Comércio, Lisboa');
+      expect(addressInput.value).toBe('Praça do Comércio, Lisboa');
+
+      cleanUp();
+    });
+
+    it('clicking category sparkle icon fills category and cycles on repeated clicks', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Belém Tower',
+          formatted_address: 'Av. Brasília, 1400-038 Lisboa',
+          lat: 38.6916,
+          lng: -9.216,
+          category: 'Sehenswürdigkeit',
+        },
+        {
+          name: 'Belém Café',
+          formatted_address: 'R. de Belém 84, 1300-085 Lisboa',
+          lat: 38.6975,
+          lng: -9.2032,
+          category: 'Café',
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const updateCategorySpy = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 38.6916, lng: -9.216 },
+          title: 'Torre de Belém',
+          category: '',
+        },
+        {
+          'onUpdate:category': updateCategorySpy,
+        }
+      );
+      await nextTick();
+
+      const categorySparkleBtn = container.querySelector(
+        '[data-testid="spot-category-sparkle-btn"]'
+      ) as HTMLButtonElement;
+      expect(categorySparkleBtn).toBeTruthy();
+
+      // Click 1 -> 'Sehenswürdigkeit'
+      categorySparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateCategorySpy).toHaveBeenLastCalledWith('Sehenswürdigkeit');
+
+      // Click 2 -> 'Café'
+      categorySparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateCategorySpy).toHaveBeenLastCalledWith('Café');
+
+      cleanUp();
+    });
+  });
+});

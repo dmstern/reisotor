@@ -857,6 +857,23 @@ function closeAddForm() {
   newDraft.clear();
 }
 
+function discardNewDraft() {
+  newTitleTouched.value = false;
+  newStartDateTouched.value = false;
+  showAddLocationSection.value = false;
+  newStartDate.value = '';
+  newTime.value = '';
+  newEndTime.value = '';
+  newTitle.value = '';
+  newNote.value = '';
+  newEndDate.value = '';
+  newLocation.value = '';
+  newMapsLink.value = '';
+  newLinkKey.value = '';
+  newDraft.clear();
+  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+}
+
 // Ein direkt über den Schedule-Store angelegter/geänderter/gelöschter, mit einer Tour verknüpfter
 // Termin verändert deren abgeleitetes Datum (schedule_items.idea_id, siehe routes/ideas.ts) –
 // excursionsStore hält davon aber eine eigene, unabhängig geladene Kopie (Excursion.date), die
@@ -898,7 +915,6 @@ async function addItem() {
 
 function startEdit(item: ScheduleItem) {
   editTitleTouched.value = false;
-  editingItem.value = item;
   editForm.value = {
     time: item.time ?? '',
     endTime: item.end_time ?? '',
@@ -914,6 +930,7 @@ function startEdit(item: ScheduleItem) {
     editForm.value.location ||
     editForm.value.mapsLink
   );
+  editingItem.value = item;
 }
 
 async function submitEdit() {
@@ -955,6 +972,13 @@ function closeEditForm() {
   editDraft.clear();
   editingItem.value = null;
   showEditLocationSection.value = false;
+}
+
+function discardEditDraft() {
+  if (!editingItem.value) return;
+  startEdit(editingItem.value);
+  editDraft.clear();
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 function jumpToTrip() {
@@ -1491,6 +1515,10 @@ function formatDate(date: string) {
       :model-value="showAddForm"
       title="Termin anlegen"
       full-height
+      :confirm-close="newDraft.isDirty.value"
+      confirm-close-title="Entwurf verwerfen?"
+      confirm-close-message="Du hast bereits Eingaben für diesen Termin gemacht. Möchtest du den Entwurf verwerfen?"
+      confirm-close-confirm-label="Entwurf verwerfen"
       @update:model-value="(v) => !v && closeAddForm()"
     >
       <form class="edit-form" @submit.prevent="addItem">
@@ -1588,7 +1616,13 @@ function formatDate(date: string) {
         <FormField icon="note" label="Notiz">
           <RichTextEditor v-model="newNote" placeholder="Notiz" compact expandable />
         </FormField>
-        <DraftStatusBar :status="newDraft.status.value" :restored="newDraft.restored.value" />
+        <DraftStatusBar
+          :status="newDraft.status.value"
+          :restored="newDraft.restored.value"
+          :can-discard="true"
+          mode="create"
+          @discard="discardNewDraft"
+        />
         <div class="actions-row">
           <div class="spacer"></div>
           <Button type="submit" :disabled="!canAddScheduleItem" :title="addScheduleItemTooltip"
@@ -1602,6 +1636,10 @@ function formatDate(date: string) {
       :model-value="editingItem !== null"
       title="Termin bearbeiten"
       full-height
+      :confirm-close="editDraft.isDirty.value"
+      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
+      confirm-close-message="Du hast ungespeicherte Änderungen an diesem Termin vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
+      confirm-close-confirm-label="Änderungen verwerfen"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -1701,7 +1739,13 @@ function formatDate(date: string) {
           :entity-id="editingItem.id"
           v-model:uploading="isItemUploadingAttachments"
         />
-        <DraftStatusBar :status="editDraft.status.value" :restored="editDraft.restored.value" />
+        <DraftStatusBar
+          :status="editDraft.status.value"
+          :restored="editDraft.restored.value"
+          :can-discard="true"
+          mode="edit"
+          @discard="discardEditDraft"
+        />
         <div class="actions-row">
           <Button
             type="button"

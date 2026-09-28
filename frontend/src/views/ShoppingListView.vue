@@ -295,7 +295,6 @@ async function reassign(item: ShoppingItem, event: Event) {
 
 function startEdit(item: ShoppingItem) {
   editLabelTouched.value = false;
-  editingItem.value = item;
   editForm.value = {
     label: item.label,
     link: item.link ?? '',
@@ -303,6 +302,7 @@ function startEdit(item: ShoppingItem) {
     shop: item.shop ?? '',
     period: item.period ?? '',
   };
+  editingItem.value = item;
 }
 
 async function submitEdit() {
@@ -336,7 +336,7 @@ function discardEditDraft() {
   if (!editingItem.value) return;
   startEdit(editingItem.value);
   editDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 async function deleteEditingItem() {
@@ -691,6 +691,10 @@ function hasItemMeta(item: ShoppingItem): boolean {
       :model-value="editingItem !== null"
       title="Artikel bearbeiten"
       full-height
+      :confirm-close="editDraft.isDirty.value"
+      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
+      confirm-close-message="Du hast ungespeicherte Änderungen an diesem Eintrag vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
+      confirm-close-confirm-label="Änderungen verwerfen"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">
@@ -741,6 +745,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
           :status="editDraft.status.value"
           :restored="editDraft.restored.value"
           :can-discard="true"
+          mode="edit"
           @discard="discardEditDraft"
         />
         <div class="actions-row">

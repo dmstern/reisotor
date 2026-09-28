@@ -1524,7 +1524,8 @@ db.exec(`
     lat REAL NOT NULL,
     lng REAL NOT NULL,
     recorded_at TEXT NOT NULL,
-    accuracy REAL
+    accuracy REAL,
+    altitude REAL
   );
 `);
 db.exec(
@@ -1857,6 +1858,8 @@ ensureColumn('note_comments', 'updated_at', 'TEXT');
 ensureColumn('diary_comments', 'updated_at', 'TEXT');
 // Grund für das Beenden einer Aufzeichnung ('completed' = regulär beendet, 'aborted' = vom System abgebrochen):
 ensureColumn('location_tracks', 'end_reason', 'TEXT');
+// Höhendaten in Metern über dem Meeresspiegel (sofern vom GPS/Browser bereitgestellt):
+ensureColumn('location_track_points', 'altitude', 'REAL');
 
 // OpenRouteService Routing: Exakte Routengeometrien & Reisedauer für Teilstrecken (#361)
 ensureColumn('excursion_legs', 'route_geometry', 'TEXT');

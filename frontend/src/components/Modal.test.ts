@@ -53,8 +53,8 @@ describe('Modal', () => {
     const titleEl = document.querySelector('h2');
     expect(titleEl?.textContent).toBe('Spot bearbeiten');
     expect(document.querySelector('.test-content')?.textContent).toBe('Formular-Inhalt');
-    expect(document.querySelector('.modal-scroll-shadow--top')).toBeTruthy();
-    expect(document.querySelector('.modal-scroll-shadow--bottom')).toBeTruthy();
+    expect(document.querySelector('.modal-scroll-fade--top')).toBeTruthy();
+    expect(document.querySelector('.modal-scroll-fade--bottom')).toBeTruthy();
 
     cleanUp();
   });
@@ -86,47 +86,58 @@ describe('Modal', () => {
     await nextTick();
 
     const modalEl = document.querySelector('.modal') as HTMLElement;
+    const bodyEl = document.querySelector('.modal-body') as HTMLElement;
     const formEl = document.querySelector('form') as HTMLElement;
     expect(modalEl).toBeTruthy();
+    expect(bodyEl).toBeTruthy();
     expect(formEl).toBeTruthy();
     expect(modalEl.classList.contains('has-actions-row')).toBe(true);
 
-    // Mock scroll dimensions on formEl
-    Object.defineProperty(formEl, 'clientHeight', { value: 300, configurable: true });
-    Object.defineProperty(formEl, 'scrollHeight', { value: 1000, configurable: true });
-    Object.defineProperty(formEl, 'scrollTop', { value: 0, writable: true, configurable: true });
+    // Mock scroll dimensions on bodyEl (the scroll container with overflow-y: auto)
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 300, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollTop', { value: 0, writable: true, configurable: true });
 
     // Trigger scroll event at top (scrollTop: 0)
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
 
-    const topShadow = document.querySelector('.modal-scroll-shadow--top') as HTMLElement;
-    expect(topShadow.classList.contains('is-visible')).toBe(false);
+    const topFade = document.querySelector('.modal-scroll-fade--top') as HTMLElement;
+    expect(topFade.classList.contains('is-visible')).toBe(false);
 
     // Scroll down to middle (scrollTop: 200)
-    formEl.scrollTop = 200;
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.scrollTop = 200;
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
-    expect(topShadow.classList.contains('is-visible')).toBe(true);
+    expect(topFade.classList.contains('is-visible')).toBe(true);
 
     // Scroll all the way to bottom (scrollTop: 700 -> 700 + 300 = 1000)
-    formEl.scrollTop = 700;
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.scrollTop = 700;
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(false);
 
+    // Scroll back to top (scrollTop: 0)
+    bodyEl.scrollTop = 0;
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
+    expect(topFade.classList.contains('is-visible')).toBe(false);
+
     cleanUp();
   });
 
-  it('keeps both shadows inactive when content fits without scrolling', async () => {
+  it('keeps both fades inactive when content fits without scrolling', async () => {
     const { cleanUp } = mountTestApp(
       Modal,
       { modelValue: true, title: 'Kurzer Dialog', fullHeight: true },
@@ -137,25 +148,190 @@ describe('Modal', () => {
     await nextTick();
 
     const modalEl = document.querySelector('.modal') as HTMLElement;
-    const formEl = document.querySelector('form') as HTMLElement;
+    const bodyEl = document.querySelector('.modal-body') as HTMLElement;
 
     // Dimensions fit completely
-    Object.defineProperty(formEl, 'clientHeight', { value: 400, configurable: true });
-    Object.defineProperty(formEl, 'scrollHeight', { value: 200, configurable: true });
-    Object.defineProperty(formEl, 'scrollTop', { value: 0, writable: true, configurable: true });
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 400, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollHeight', { value: 200, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollTop', { value: 0, writable: true, configurable: true });
 
-    formEl.dispatchEvent(new Event('scroll'));
+    bodyEl.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
     expect(modalEl.classList.contains('can-scroll-down')).toBe(false);
 
-    const topShadow = document.querySelector('.modal-scroll-shadow--top') as HTMLElement;
-    const bottomShadow = document.querySelector('.modal-scroll-shadow--bottom') as HTMLElement;
+    const topFade = document.querySelector('.modal-scroll-fade--top') as HTMLElement;
+    const bottomFade = document.querySelector('.modal-scroll-fade--bottom') as HTMLElement;
 
-    expect(topShadow.classList.contains('is-visible')).toBe(false);
-    expect(bottomShadow.classList.contains('is-visible')).toBe(false);
+    expect(topFade.classList.contains('is-visible')).toBe(false);
+    expect(bottomFade.classList.contains('is-visible')).toBe(false);
 
+    cleanUp();
+  });
+
+  it('shows fade-out indicators on standard (non-fullHeight) dialogs when content overflows', async () => {
+    const { cleanUp } = mountTestApp(
+      Modal,
+      { modelValue: true, title: 'Standard-Dialog ohne full-height' },
+      {
+        default: () => h('div', { class: 'dialog-content' }, 'Langer Dialoginhalt ohne Formular'),
+      }
+    );
+    await nextTick();
+
+    const modalEl = document.querySelector('.modal') as HTMLElement;
+    const bodyEl = document.querySelector('.modal-body') as HTMLElement;
+    expect(modalEl).toBeTruthy();
+    expect(bodyEl).toBeTruthy();
+    expect(modalEl.classList.contains('has-actions-row')).toBe(false);
+
+    // Mock scroll dimensions on bodyEl
+    Object.defineProperty(bodyEl, 'clientHeight', { value: 250, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollHeight', { value: 800, configurable: true });
+    Object.defineProperty(bodyEl, 'scrollTop', { value: 0, writable: true, configurable: true });
+
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(false);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
+
+    const topFade = document.querySelector('.modal-scroll-fade--top') as HTMLElement;
+    const bottomFade = document.querySelector('.modal-scroll-fade--bottom') as HTMLElement;
+
+    expect(topFade.classList.contains('is-visible')).toBe(false);
+    expect(bottomFade.classList.contains('is-visible')).toBe(true);
+
+    // Scroll to middle
+    bodyEl.scrollTop = 200;
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(true);
+    expect(topFade.classList.contains('is-visible')).toBe(true);
+    expect(bottomFade.classList.contains('is-visible')).toBe(true);
+
+    // Scroll to bottom (550 + 250 = 800)
+    bodyEl.scrollTop = 550;
+    bodyEl.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(modalEl.classList.contains('can-scroll-up')).toBe(true);
+    expect(modalEl.classList.contains('can-scroll-down')).toBe(false);
+    expect(topFade.classList.contains('is-visible')).toBe(true);
+    expect(bottomFade.classList.contains('is-visible')).toBe(false);
+
+    cleanUp();
+  });
+
+  it('closes immediately on close button click when confirmClose is false', async () => {
+    let closed = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: false,
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    expect(closed).toBe(true);
+    expect(document.querySelector('.confirm-close-dialog')).toBeNull();
+    cleanUp();
+  });
+
+  it('shows confirmation dialog on close button click when confirmClose is true', async () => {
+    let closed = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      confirmCloseTitle: 'Ungespeicherte Änderungen verwerfen?',
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    expect(closed).toBe(false);
+    const confirmDialog = document.querySelector('.confirm-close-dialog');
+    expect(confirmDialog).not.toBeNull();
+    expect(confirmDialog?.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    const actionBtns = confirmDialog?.querySelectorAll('.confirm-close-actions button');
+    expect(actionBtns?.length).toBe(2);
+    expect(actionBtns?.[0].textContent).toContain('Weiter bearbeiten');
+    expect(actionBtns?.[1].textContent).toContain('Änderungen verwerfen');
+    cleanUp();
+  });
+
+  it('cancels close confirmation when clicking cancel button', async () => {
+    let closed = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    const cancelBtn = Array.from(document.querySelectorAll('.confirm-close-actions button')).find(
+      (b) => b.textContent?.includes('Weiter bearbeiten')
+    ) as HTMLButtonElement;
+    expect(cancelBtn).not.toBeNull();
+    cancelBtn.click();
+    await nextTick();
+
+    expect(closed).toBe(false);
+    expect(document.querySelector('.confirm-close-dialog')).toBeNull();
+    cleanUp();
+  });
+
+  it('confirms close when clicking discard button and emits discard event', async () => {
+    let closed = false;
+    let discarded = false;
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      'onUpdate:modelValue': (v: boolean) => {
+        if (!v) closed = true;
+      },
+      onDiscard: () => {
+        discarded = true;
+      },
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    const discardBtn = Array.from(document.querySelectorAll('.confirm-close-actions button')).find(
+      (b) => b.textContent?.includes('Änderungen verwerfen')
+    ) as HTMLButtonElement;
+    expect(discardBtn).not.toBeNull();
+    discardBtn.click();
+    await nextTick();
+
+    expect(discarded).toBe(true);
+    expect(closed).toBe(true);
     cleanUp();
   });
 });

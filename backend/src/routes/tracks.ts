@@ -35,6 +35,7 @@ interface TrackPointInput {
   lng: number;
   recorded_at: string;
   accuracy?: number;
+  altitude?: number | null;
 }
 
 interface AppendPointsBody {
@@ -107,10 +108,18 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
       const points = req.body.points ?? [];
       if (!points.length) return reply.code(204).send();
       const insert = db.prepare(
-        'INSERT INTO location_track_points (track_id, lat, lng, recorded_at, accuracy) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO location_track_points (track_id, lat, lng, recorded_at, accuracy, altitude) VALUES (?, ?, ?, ?, ?, ?)'
       );
       const insertAll = db.transaction((rows: TrackPointInput[]) => {
-        for (const p of rows) insert.run(track.id, p.lat, p.lng, p.recorded_at, p.accuracy ?? null);
+        for (const p of rows)
+          insert.run(
+            track.id,
+            p.lat,
+            p.lng,
+            p.recorded_at,
+            p.accuracy ?? null,
+            p.altitude !== undefined ? p.altitude : null
+          );
       });
       insertAll(points);
       return reply.code(204).send();

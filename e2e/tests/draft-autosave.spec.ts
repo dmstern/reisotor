@@ -79,9 +79,10 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await editEditor.click();
     await editEditor.press('End');
     await editEditor.pressSequentially(' - gerade am Ändern');
-    await expect(modal.locator('.draft-status')).toContainText('Entwurf gesichert', {
+    await expect(modal.locator('.draft-status')).toHaveClass(/saved/, {
       timeout: 3_000,
     });
+    await expect(modal.locator('.draft-status')).toContainText('Ungespeicherte Änderungen');
 
     await page.reload();
     await card
@@ -91,7 +92,9 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await expect(modal.locator('.richtext-content[contenteditable="true"]')).toHaveText(
       'Ursprungstext der Notiz - gerade am Ändern'
     );
-    await expect(modal.locator('.draft-status')).toContainText('Entwurf wiederhergestellt');
+    await expect(modal.locator('.draft-status')).toContainText(
+      'Stand nach Unterbrechung wiederhergestellt'
+    );
   });
 
   test('ein ungespeicherter Entwurf in der ToDo- und Einkaufsliste kann verworfen werden', async ({

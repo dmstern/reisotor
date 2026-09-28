@@ -21,6 +21,12 @@ import type {
 const baseUrl =
   typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL ? import.meta.env.BASE_URL : '/';
 const demoTripBanner = `${baseUrl}demo/lissabon.jpg`;
+const demoHotelAlfamaImage = `${baseUrl}demo/spot-hotel-alfama.jpg`;
+const demoSantaLuziaImage = `${baseUrl}demo/spot-santa-luzia.jpg`;
+const demoCasteloImage = `${baseUrl}demo/spot-castelo-de-sao-jorge.jpg`;
+const demoComercioImage = `${baseUrl}demo/spot-praca-do-comercio.jpg`;
+const demoMarketImage = `${baseUrl}demo/spot-time-out-market.jpg`;
+const demoBelemImage = `${baseUrl}demo/spot-torre-de-belem.jpg`;
 
 export interface DemoTrip {
   id: number;
@@ -142,7 +148,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       id: 1,
       trip_id: 1,
       title: 'Hotel Alfama',
-      image_url: null,
+      image_url: demoHotelAlfamaImage,
       category: 'Unterkunft',
       note: 'Zentrale Lage im Altstadtviertel Alfama, Klimaanlage vorhanden.',
       note_format: 'plain',
@@ -166,7 +172,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       id: 2,
       trip_id: 1,
       title: 'Torre de Belém',
-      image_url: null,
+      image_url: demoBelemImage,
       category: 'Sehenswürdigkeit',
       note: 'Unbedingt früh morgens, wird schnell voll.',
       note_format: 'plain',
@@ -190,7 +196,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       id: 3,
       trip_id: 1,
       title: 'Time Out Market',
-      image_url: null,
+      image_url: demoMarketImage,
       category: 'Restaurant',
       note: 'Gute Auswahl für beide.',
       note_format: 'plain',
@@ -262,7 +268,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       id: 6,
       trip_id: 1,
       title: 'Praça do Comércio',
-      image_url: null,
+      image_url: demoComercioImage,
       category: 'Sehenswürdigkeit',
       note: null,
       note_format: 'plain',
@@ -286,7 +292,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       id: 7,
       trip_id: 1,
       title: 'Castelo de São Jorge',
-      image_url: null,
+      image_url: demoCasteloImage,
       category: 'Sehenswürdigkeit',
       note: 'Tolle Aussicht.',
       note_format: 'plain',
@@ -310,7 +316,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       id: 8,
       trip_id: 1,
       title: 'Miradouro de Santa Luzia',
-      image_url: null,
+      image_url: demoSantaLuziaImage,
       category: 'Aussichtspunkt',
       note: 'Wunderschöner Panoramablick über die roten Ziegeldächer der Alfama bis zum Tejo.',
       note_format: 'plain',

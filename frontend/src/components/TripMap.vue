@@ -78,8 +78,10 @@ import DropdownItem from './primitives/DropdownItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import DayStrip from './DayStrip.vue';
+import TrackPlayback from './TrackPlayback.vue';
 import AppIcon from './AppIcon.vue';
 import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
+import { IconFlag, IconFlagFilled, IconTarget } from '@tabler/icons-vue';
 
 // Die Karte ist ein generischer, reiner Pin-Layer (kein Anlegen/Bearbeiten hier): sie zeigt
 // automatisch jedes Objekt des aktuellen Urlaubs mit hinterlegtem Standort – Unterkunft, Reise
@@ -191,11 +193,22 @@ const isNarrowLayout = computed(() => props.sheetOverlayMode ?? !isDesktop.value
 // locate Teleport target"). Ein Tick Verzögerung reicht: dann ist das Geschwister-Element sicher
 // eingehängt.
 const teleportReady = ref(false);
+function updateTeleportReady() {
+  teleportReady.value =
+    typeof document !== 'undefined' && !!document.getElementById('map-focus-dock');
+}
 onMounted(() => {
-  nextTick(() => {
-    teleportReady.value = true;
-  });
+  updateTeleportReady();
+  if (!teleportReady.value) {
+    nextTick(updateTeleportReady);
+  }
 });
+watch(isNarrowLayout, () => {
+  if (isNarrowLayout.value && !teleportReady.value) {
+    updateTeleportReady();
+  }
+});
+const canTeleportToDock = computed(() => isNarrowLayout.value && teleportReady.value);
 const tripStore = useTripStore();
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
@@ -233,6 +246,20 @@ let positionsLayer: L.LayerGroup | null = null;
 // zeichnen (gleicher Grund wie bei positionsLayer/markersLayer oben).
 let tracksLayer: L.LayerGroup | null = null;
 let trackPlaybackLayer: L.LayerGroup | null = null;
+let playbackMarker: L.Marker | null = null;
+
+const TRACK_START_ICON: IconDef = {
+  id: 'flag',
+  emoji: '🚩',
+  outline: IconFlag,
+  filled: IconFlagFilled,
+};
+
+const TRACK_GOAL_ICON: IconDef = {
+  id: 'target',
+  emoji: '🏁',
+  outline: IconTarget,
+};
 // Eigener Standort kommt direkt aus dem lokalen navigator.geolocation-Callback (aktuellster Stand,
 // keine Netzwerk-Latenz) statt aus liveSync.memberPositions – die Store-Seite filtert den eigenen
 // Nutzer dort bewusst heraus (gleiches Muster wie bei onlineUserIds/Präsenz).
@@ -301,7 +328,9 @@ const focusMenuOpen = ref(false);
 const isFocusBannerExpanded = ref(false);
 
 function clearFocus() {
-  if (focusedExcursion.value) {
+  if (focusedTrack.value) {
+    drawers.mapFocusTrackId = null;
+  } else if (focusedExcursion.value) {
     drawers.mapFocusExcursionId = null;
   } else if (drawers.mapFocusDate) {
     drawers.mapFocusDate = null;
@@ -315,6 +344,16 @@ function clearFocus() {
     drawers.mapFocusAllPhotos = false;
   }
   isFocusBannerExpanded.value = false;
+}
+
+function clearTrackFocus() {
+  drawers.mapFocusTrackId = null;
+  trackPlaybackProgress.value = 0;
+  if (tracksLayer) tracksLayer.clearLayers();
+  if (trackPlaybackLayer) {
+    trackPlaybackLayer.clearLayers();
+    playbackMarker = null;
+  }
 }
 const focusButtonRef = ref<HTMLButtonElement | null>(null);
 const focusMenuStyle = ref({ top: '0px', left: '0px' });
@@ -1588,6 +1627,28 @@ function renderRoutes() {
   }
 }
 
+function trackPlaybackIcon(): L.DivIcon {
+  const size = 32;
+  const dotSize = 24;
+  const half = size / 2;
+  const color = '#9141ac';
+  return L.divIcon({
+    html: `<div class="track-playback-marker" style="position:relative;width:${size}px;height:${size}px;">
+      <div class="map-pulse-ring" style="position:absolute;left:50%;top:50%;width:${dotSize + 12}px;height:${dotSize + 12}px;
+        margin:${-(dotSize + 12) / 2}px 0 0 ${-(dotSize + 12) / 2}px;border-radius:50%;background:${color};"></div>
+      <div style="position:absolute;left:50%;top:50%;width:${dotSize}px;height:${dotSize}px;
+        margin:${-dotSize / 2}px 0 0 ${-dotSize / 2}px;border-radius:50%;background:${color};
+        border:3px solid #ffffff;box-shadow:0 2px 8px rgba(0,0,0,0.45);
+        display:flex;align-items:center;justify-content:center;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#ffffff;"></div>
+      </div>
+    </div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [half, half],
+  });
+}
+
 // Zeichnet die aktuell fokussierte Standort-Aufzeichnung als durchgezogene Linie (echte GPS-Punkte,
 // kein arcRoute()-Bogen wie bei den schematischen Touren-Routen in renderRoutes()) – wird nur bei
 // einem Track-Wechsel/frisch geladenen Punkten neu aufgerufen, nicht bei jedem Zeit-Slider-Tick
@@ -1596,9 +1657,52 @@ function renderTracks() {
   if (!map || !tracksLayer) return;
   tracksLayer.clearLayers();
   const trackPts = focusedTrackPoints.value;
-  if (trackPts.length < 2) return;
+  if (trackPts.length < 2) {
+    if (trackPlaybackLayer) {
+      trackPlaybackLayer.clearLayers();
+      playbackMarker = null;
+    }
+    return;
+  }
   const coords: L.LatLngExpression[] = trackPts.map((p) => [p.lat, p.lng]);
   L.polyline(coords, { color: '#2f6fed', weight: 4, opacity: 0.85 }).addTo(tracksLayer);
+
+  // Start-Pin (Grün, 🚩) auf tracksLayer
+  const startPt = trackPts[0];
+  L.marker([startPt.lat, startPt.lng], {
+    icon: cachedEmojiPin(TRACK_START_ICON, '#3f8f5c'),
+    zIndexOffset: 800,
+    title: 'Start',
+  })
+    .bindTooltip('Start', {
+      direction: 'top',
+      offset: [0, -28],
+      opacity: 0.95,
+      className: 'map-marker-tooltip',
+    })
+    .on('click', () => {
+      trackPlaybackProgress.value = 0;
+    })
+    .addTo(tracksLayer);
+
+  // Ziel-Pin (Rot, 🏁/🎯) auf tracksLayer
+  const goalPt = trackPts[trackPts.length - 1];
+  L.marker([goalPt.lat, goalPt.lng], {
+    icon: cachedEmojiPin(TRACK_GOAL_ICON, '#c1503f'),
+    zIndexOffset: 800,
+    title: 'Ziel',
+  })
+    .bindTooltip('Ziel', {
+      direction: 'top',
+      offset: [0, -28],
+      opacity: 0.95,
+      className: 'map-marker-tooltip',
+    })
+    .on('click', () => {
+      trackPlaybackProgress.value = 1;
+    })
+    .addTo(tracksLayer);
+
   fitBoundsWithCoveredBottom(L.latLngBounds(coords));
   updateTrackPlaybackMarker();
 }
@@ -1609,13 +1713,28 @@ function renderTracks() {
 // gezeichnet werden soll (gleicher Grund wie bei positionsLayer/markersLayer oben).
 function updateTrackPlaybackMarker() {
   if (!map || !trackPlaybackLayer) return;
-  trackPlaybackLayer.clearLayers();
-  const pos = interpolateTrackPosition(focusedTrackPoints.value, trackPlaybackProgress.value);
-  if (!pos) return;
-  L.marker([pos.lat, pos.lng], {
-    icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#2f6fed'),
-    zIndexOffset: 900,
-  }).addTo(trackPlaybackLayer);
+  const trackPts = focusedTrackPoints.value;
+  if (trackPts.length < 2) {
+    trackPlaybackLayer.clearLayers();
+    playbackMarker = null;
+    return;
+  }
+  const pos = interpolateTrackPosition(trackPts, trackPlaybackProgress.value);
+  if (!pos) {
+    trackPlaybackLayer.clearLayers();
+    playbackMarker = null;
+    return;
+  }
+  if (!playbackMarker) {
+    trackPlaybackLayer.clearLayers();
+    playbackMarker = L.marker([pos.lat, pos.lng], {
+      icon: trackPlaybackIcon(),
+      zIndexOffset: 1200,
+      title: 'Aktuelle Position',
+    }).addTo(trackPlaybackLayer);
+  } else {
+    playbackMarker.setLatLng([pos.lat, pos.lng]);
+  }
 }
 
 // Zeichnet den eigenen (pulsierenden) und die Standort-Marker der anderen gerade auf der Karte
@@ -2022,6 +2141,10 @@ watch(
   focusedTrack,
   async (track) => {
     trackPlaybackProgress.value = 0;
+    if (trackPlaybackLayer) {
+      trackPlaybackLayer.clearLayers();
+      playbackMarker = null;
+    }
     renderTracks();
     if (track && !tracksStore.getPointsForTrack(track.id).length) {
       try {
@@ -2404,16 +2527,12 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
          Kartenrand auf Mobil praktisch permanent von der (dort ebenfalls unten verankerten, meist
          mindestens "partial" hohen) Spots-Schublade verdeckt und damit faktisch unbedienbar war -
          genau dieselbe Falle wie bei der Stationen-Liste vorher, jetzt mit demselben Muster gelöst.
-         Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (Teleport disabled,
-         siehe @container-Regel für .focus-spot-list/.day-strip weiter unten - dieselbe 720px-
-         Schwelle wie isNarrowLayout). -->
-    <Teleport
-      v-if="teleportReady || !isNarrowLayout"
-      to="#map-focus-dock"
-      :disabled="!isNarrowLayout"
-    >
+         Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (ohne Teleport).
+         Wichtig: Kein dynamisches :disabled auf <Teleport> verwenden, da Vue 3 bei initial deaktiviertem
+         Teleport das Ziel nicht sauber auflöst und beim Umschalten auf Mobil mit "parent is null" abstürzt.
+         Stattdessen echtes v-if / v-else-if. -->
+    <Teleport v-if="canTeleportToDock && vacationDays.length && !focusedTrack" to="#map-focus-dock">
       <DayStrip
-        v-if="vacationDays.length"
         :days="vacationDays"
         :active-date="drawers.mapFocusDate"
         :has-content="dayHasContent"
@@ -2421,6 +2540,44 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         @select="toggleDayFocus"
       />
     </Teleport>
+    <DayStrip
+      v-else-if="vacationDays.length && !focusedTrack"
+      :days="vacationDays"
+      :active-date="drawers.mapFocusDate"
+      :has-content="dayHasContent"
+      :date-title="formatDate"
+      @select="toggleDayFocus"
+    />
+
+    <!-- Playback-Steuerung für fokussierte Aufzeichnung:
+         Mobil im Bottom-Sheet-Dock (#map-focus-dock in ExcursionsView.vue),
+         auf Desktop schwebend über der Karte unten -->
+    <Teleport
+      v-if="canTeleportToDock && focusedTrack && focusedTrackPoints.length >= 2"
+      to="#map-focus-dock"
+    >
+      <div class="map-track-playback-container">
+        <TrackPlayback
+          :track="focusedTrack"
+          :title="focusedTrack?.title"
+          :points="focusedTrackPoints"
+          v-model:progress="trackPlaybackProgress"
+          @close="clearTrackFocus"
+        />
+      </div>
+    </Teleport>
+    <div
+      v-else-if="focusedTrack && focusedTrackPoints.length >= 2"
+      class="map-track-playback-container"
+    >
+      <TrackPlayback
+        :track="focusedTrack"
+        :title="focusedTrack?.title"
+        :points="focusedTrackPoints"
+        v-model:progress="trackPlaybackProgress"
+        @close="clearTrackFocus"
+      />
+    </div>
 
     <TravelDetailDialog
       v-if="openTravel"
@@ -2790,6 +2947,23 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
   margin-bottom: var(--space-2);
 }
 
+.map-track-playback-container {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1000;
+}
+
+#map-focus-dock .map-track-playback-container {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
+  margin-bottom: var(--space-3);
+}
+
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
    Kachel-Ebene (nicht auf Markern/Popups) sorgt für eine abgedunkelte Karte statt eines
    grellen weißen Rechtecks im ansonsten dunklen UI. */
@@ -2898,6 +3072,14 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
     max-width: min(400px, calc(100% - 140px));
     border-radius: 999px;
     corner-shape: round;
+    bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
+  }
+
+  .map-track-playback-container {
+    left: var(--spots-col-right-px, 400px);
+    right: 0;
+    margin: 0 auto;
+    width: min(520px, calc(100% - var(--spots-col-right-px, 400px) - 48px));
     bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
   }
 }

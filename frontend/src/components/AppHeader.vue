@@ -236,7 +236,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
-  padding: 3px 14px 3px 3px;
+  padding: 4px 14px 3px 3px;
   height: 44px;
   box-sizing: border-box;
   position: relative;
@@ -282,7 +282,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
-  padding: var(--space-1);
+  padding: 5px var(--space-1) var(--space-1);
   pointer-events: auto;
   max-width: 100%;
   min-width: 0;
@@ -368,13 +368,20 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
-  padding: 3px 3px 3px 8px;
+  padding: 4px 3px 3px 6px;
   height: 44px;
   box-sizing: border-box;
 }
 
+/* Wenn die Aufnahme-Pill links in der Pill sitzt (kein Kalender-Button davor),
+   schmiegt sie sich mit 6px Abstand nach links, oben und unten exakt gleich weit
+   vom Pill-Rand konzentrisch in die Rundung der 44px-Pill ein. */
+.header-actions:has(.recording-pill) {
+  padding-left: 6px;
+}
+
 /* Wenn der Kalender-Button auf Mobilgeräten (<1024px) links in der Pill sitzt,
-   wird das linke Padding von 8px auf 3px reduziert. Dadurch ist der 36px-Kreis-Button
+   wird das linke Padding auf 3px reduziert. Dadurch ist der 36px-Kreis-Button
    zu allen Seiten (oben 3px, unten 3px, links 3px) exakt gleich weit vom Pill-Rand entfernt
    und schmiegt sich perfekt konzentrisch in die Rundung der 44px-Pill ein. */
 .header-actions:has(.header-calendar-btn) {
@@ -475,7 +482,7 @@ const profileTitle = computed(() => {
     display: none;
   }
   .brand {
-    padding: 3px;
+    padding: 4px 3px 3px 3px;
     width: 44px;
   }
 }
@@ -504,7 +511,7 @@ const profileTitle = computed(() => {
     backdrop-filter: var(--backdrop-blur-md);
     border: 1px solid var(--color-surface-glass-border);
     box-shadow: var(--shadow-floating-island);
-    padding: 3px;
+    padding: 4px 3px 3px 3px;
     height: 44px;
     box-sizing: border-box;
     pointer-events: auto;
@@ -524,6 +531,7 @@ const profileTitle = computed(() => {
   }
 
   .header-actions,
+  .header-actions:has(.recording-pill),
   .header-actions:has(.header-calendar-btn) {
     background: transparent;
     border: none;
