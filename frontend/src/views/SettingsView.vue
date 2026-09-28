@@ -1609,14 +1609,8 @@ async function exportBackup() {
           </dd>
           <dd v-else>Lädt…</dd>
         </dl>
-        <h3>Geodaten &amp; Quellen</h3>
+        <h3>Dienste &amp; Open Source</h3>
         <dl class="build-info-list">
-          <dt>Routen &amp; Fahrzeiten</dt>
-          <dd>
-            <a href="https://openrouteservice.org/" target="_blank" rel="noopener noreferrer"
-              >OpenRouteService</a
-            >
-          </dd>
           <dt>Kartendaten</dt>
           <dd>
             <a
@@ -1624,6 +1618,28 @@ async function exportBackup() {
               target="_blank"
               rel="noopener noreferrer"
               >© OpenStreetMap-Mitwirkende</a
+            >
+          </dd>
+          <dt>Kartenanzeige</dt>
+          <dd>
+            <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>
+          </dd>
+          <dt>Routen &amp; Fahrzeiten</dt>
+          <dd>
+            <a href="https://openrouteservice.org/" target="_blank" rel="noopener noreferrer"
+              >OpenRouteService</a
+            >
+          </dd>
+          <dt>Wettervorhersage</dt>
+          <dd>
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer"
+              >Open-Meteo</a
+            >
+          </dd>
+          <dt>Icons</dt>
+          <dd>
+            <a href="https://tabler.io/icons" target="_blank" rel="noopener noreferrer"
+              >Tabler Icons</a
             >
           </dd>
         </dl>

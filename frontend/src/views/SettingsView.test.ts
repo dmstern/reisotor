@@ -134,7 +134,7 @@ describe('SettingsView loading state', () => {
     cleanUp();
   });
 
-  it('zeigt im Über-Tab Quellenangaben für OpenRouteService und OpenStreetMap', async () => {
+  it('zeigt im Über-Tab Quellenangaben und Open-Source-Komponenten', async () => {
     await router.push('/settings?tab=about');
     await router.isReady();
 
@@ -143,11 +143,17 @@ describe('SettingsView loading state', () => {
     await new Promise((r) => setTimeout(r, 20));
     await nextTick();
 
-    expect(container.textContent).toContain('Geodaten & Quellen');
-    expect(container.textContent).toContain('Routen & Fahrzeiten');
-    expect(container.textContent).toContain('OpenRouteService');
+    expect(container.textContent).toContain('Dienste & Open Source');
     expect(container.textContent).toContain('Kartendaten');
     expect(container.textContent).toContain('OpenStreetMap');
+    expect(container.textContent).toContain('Kartenanzeige');
+    expect(container.textContent).toContain('Leaflet');
+    expect(container.textContent).toContain('Routen & Fahrzeiten');
+    expect(container.textContent).toContain('OpenRouteService');
+    expect(container.textContent).toContain('Wettervorhersage');
+    expect(container.textContent).toContain('Open-Meteo');
+    expect(container.textContent).toContain('Icons');
+    expect(container.textContent).toContain('Tabler Icons');
 
     const orsLink = container.querySelector(
       'a[href="https://openrouteservice.org/"]'
@@ -160,6 +166,24 @@ describe('SettingsView loading state', () => {
     ) as HTMLAnchorElement;
     expect(osmLink).not.toBeNull();
     expect(osmLink.target).toBe('_blank');
+
+    const leafletLink = container.querySelector(
+      'a[href="https://leafletjs.com/"]'
+    ) as HTMLAnchorElement;
+    expect(leafletLink).not.toBeNull();
+    expect(leafletLink.target).toBe('_blank');
+
+    const weatherLink = container.querySelector(
+      'a[href="https://open-meteo.com/"]'
+    ) as HTMLAnchorElement;
+    expect(weatherLink).not.toBeNull();
+    expect(weatherLink.target).toBe('_blank');
+
+    const tablerLink = container.querySelector(
+      'a[href="https://tabler.io/icons"]'
+    ) as HTMLAnchorElement;
+    expect(tablerLink).not.toBeNull();
+    expect(tablerLink.target).toBe('_blank');
 
     cleanUp();
   });
