@@ -466,6 +466,10 @@ function onDelete() {
               </option>
             </Select>
           </FormField>
+          <p class="transit-hint">
+            ℹ️ Für ÖPNV ist aktuell noch keine exakte Routenberechnung möglich – bitte trage die
+            Routendetails daher selbst ein.
+          </p>
         </div>
       </div>
 
@@ -812,6 +816,13 @@ function onDelete() {
   transition:
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.transit-hint {
+  margin: var(--space-2) 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 .route-calc-wrapper {

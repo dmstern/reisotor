@@ -313,6 +313,13 @@ describe('LegTransportModal', () => {
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(true);
     expect(transitWrapper?.hasAttribute('inert')).toBe(false);
 
+    // Hinweis zu nicht verfügbarer exakter Routenberechnung soll sichtbar sein
+    const hint = document.querySelector('.transit-hint');
+    expect(hint).not.toBeNull();
+    expect(hint?.textContent).toContain(
+      'Für ÖPNV ist aktuell noch keine exakte Routenberechnung möglich'
+    );
+
     const toggleOptions = Array.from(
       document.querySelectorAll('.transport-toggle .segmented-option')
     );
