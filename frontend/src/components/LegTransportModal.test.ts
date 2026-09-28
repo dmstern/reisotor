@@ -259,6 +259,9 @@ describe('LegTransportModal', () => {
     // Distanz und Dauer sollen nun angezeigt werden:
     expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30,0 km');
     expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30 Min.');
+    expect(document.querySelector('.route-preference-label')?.textContent).toBe(
+      'Berechnete Route:'
+    );
 
     // Ankunftszeit soll von 14:15 + 30m auf 14:45 gesetzt sein:
     const arrivalInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
@@ -737,6 +740,7 @@ describe('LegTransportModal', () => {
 
     const altCards = document.querySelectorAll('.route-alt-card');
     expect(altCards.length).toBe(2);
+    expect(document.querySelector('.route-preference-label')?.textContent).toBe('Bevorzugen:');
     // Initial ist Route 1 (schnellste) ausgewählt
     expect(altCards[0].classList.contains('is-selected')).toBe(true);
 

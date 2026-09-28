@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { RouteResult } from '../api/types';
 import type { IconDef } from '../utils/icon';
 import { IconBolt } from '@tabler/icons-vue';
@@ -30,6 +31,10 @@ const fastestRouteIconDef: IconDef = {
   outline: IconBolt,
 };
 
+const preferenceLabel = computed(() => {
+  return props.routes.length > 1 ? 'Bevorzugen:' : 'Berechnete Route:';
+});
+
 function onPreferenceChange(val: string) {
   emit('update:routePreference', val as 'fastest' | 'shortest');
 }
@@ -39,7 +44,7 @@ function onPreferenceChange(val: string) {
   <div class="leg-route-alternatives">
     <!-- Präferenz-Umschalter (Schnellste vs Kürzeste) -->
     <div class="route-preference-row">
-      <span class="route-preference-label">Bevorzugen:</span>
+      <span class="route-preference-label">{{ preferenceLabel }}</span>
       <SegmentedToggle
         class="route-preference-toggle"
         :model-value="props.routePreference"
