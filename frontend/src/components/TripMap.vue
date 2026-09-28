@@ -17,6 +17,11 @@ import 'leaflet/dist/leaflet.css';
 // leaflet-rotate.d.ts für die zugehörige Typ-Ergänzung. Muss vor der ersten L.map()-Instanziierung
 // geladen sein.
 import 'leaflet-rotate';
+
+// leaflet-rotate aktiviert standardmäßig rotateControl: true auf L.Map. Da Reisotor überall
+// eigene Steuerelemente nutzt (und auf Mini-Karten keine Rotation wünscht), deaktivieren wir
+// dieses mitgelieferte Default-Control global für alle Karteninstanzen.
+L.Map.mergeOptions({ rotateControl: false });
 import { api } from '../api/client';
 import type {
   Attachment,

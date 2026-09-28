@@ -145,7 +145,11 @@ onMounted(async () => {
   await nextTick();
   if (!mapEl.value) return;
 
-  map = L.map(mapEl.value, { zoomControl: false, attributionControl: false });
+  map = L.map(mapEl.value, {
+    zoomControl: false,
+    attributionControl: false,
+    rotateControl: false,
+  });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
   routesLayer = L.layerGroup().addTo(map);
   markersLayer = L.layerGroup().addTo(map);
