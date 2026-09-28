@@ -461,23 +461,28 @@ function handleModalClose(visible: boolean) {
               title="Zurück zum vorherigen Bild"
               @click="prevSuggestion"
             >
-              Zurück zum letzten Bild
+              Vorheriges Bild
             </Button>
             <Button
               type="button"
               variant="secondary"
               size="sm"
-              :icon="isSearchingAction === 'next' ? undefined : ACTION_ICONS.search"
               :disabled="
                 isSearching ||
                 isUploading ||
                 (suggestions.length === 0 && !searchQuery.trim() && !props.searchContext?.maps_link)
               "
-              title="Nächstes Bild suchen"
+              title="Nächstes Bild"
               @click="nextSuggestion"
             >
               <LoadingSpinner v-if="isSearchingAction === 'next'" size="sm" />
-              <span>{{ isSearchingAction === 'next' ? 'Sucht…' : 'Nächstes Bild suchen' }}</span>
+              <span>{{ isSearchingAction === 'next' ? 'Sucht…' : 'Nächstes Bild' }}</span>
+              <AppIcon
+                v-if="isSearchingAction !== 'next'"
+                :icon="ACTION_ICONS.scrollRight"
+                :size="16"
+                group="actions"
+              />
             </Button>
           </div>
           <div v-if="searchMessage" class="browse-msg">

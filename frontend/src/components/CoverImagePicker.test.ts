@@ -151,11 +151,13 @@ describe('CoverImagePicker component', () => {
       '.browse-buttons button[title*="vorherigen"]'
     ) as HTMLButtonElement;
     expect(prevBtn.disabled).toBe(true);
+    expect(prevBtn.textContent).toContain('Vorheriges Bild');
 
     const nextBtn = document.querySelector(
       '.browse-buttons button[title*="Nächstes Bild"]'
     ) as HTMLButtonElement;
     expect(nextBtn.disabled).toBe(false);
+    expect(nextBtn.textContent).toContain('Nächstes Bild');
 
     // Click next -> advances to suggestion 2
     nextBtn.click();
