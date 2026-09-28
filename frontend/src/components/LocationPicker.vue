@@ -343,6 +343,178 @@ function handleCategoryBlur() {
   }, 200);
 }
 
+// --- Smart Suggestions from Title (Sparkle Feature) ---
+interface SuggestionCache {
+  title: string;
+  biasKey: string;
+  places: PlaceSearchResult[];
+  addresses: string[];
+  categories: string[];
+}
+
+const currentTitle = computed(() => (props.title?.trim() || editTitleInput.value?.trim()) ?? '');
+
+const suggestionCache = ref<SuggestionCache | null>(null);
+const isFetchingAddressSuggestion = ref(false);
+const isFetchingCategorySuggestion = ref(false);
+const addressSuggestionIndex = ref(-1);
+const categorySuggestionIndex = ref(-1);
+
+watch(currentTitle, (newTitle, oldTitle) => {
+  if (newTitle !== oldTitle) {
+    suggestionCache.value = null;
+    addressSuggestionIndex.value = -1;
+    categorySuggestionIndex.value = -1;
+  }
+});
+
+async function fetchSuggestionsForTitle(title: string): Promise<SuggestionCache> {
+  const bias = props.modelValue ?? props.proximityBias ?? props.center;
+  const biasKey =
+    bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)
+      ? `${bias.lat.toFixed(4)},${bias.lng.toFixed(4)}`
+      : '';
+
+  if (
+    suggestionCache.value &&
+    suggestionCache.value.title === title &&
+    suggestionCache.value.biasKey === biasKey
+  ) {
+    return suggestionCache.value;
+  }
+
+  let places: PlaceSearchResult[] = [];
+  try {
+    let url = `/api/places/search?q=${encodeURIComponent(title)}&limit=10`;
+    if (biasKey && bias) {
+      url += `&lat=${bias.lat}&lng=${bias.lng}`;
+    }
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (res.ok) {
+      const data = (await res.json()) as PlaceSearchResult[];
+      if (Array.isArray(data)) {
+        places = data;
+      }
+    }
+    // Fallback: Wenn Suche mit Proximity-Bias 0 Treffer liefert, nochmals ohne Bias suchen
+    if (places.length === 0 && biasKey) {
+      const fbRes = await fetch(`/api/places/search?q=${encodeURIComponent(title)}&limit=10`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (fbRes.ok) {
+        const fbData = (await fbRes.json()) as PlaceSearchResult[];
+        if (Array.isArray(fbData)) {
+          places = fbData;
+        }
+      }
+    }
+  } catch {
+    places = [];
+  }
+
+  const addresses: string[] = [];
+  for (const p of places) {
+    const addr = (p.formatted_address || p.address || '').trim();
+    if (addr && !addresses.includes(addr)) {
+      addresses.push(addr);
+    }
+  }
+
+  const categories: string[] = [];
+  for (const p of places) {
+    const cat = (p.category || '').trim();
+    if (cat && !categories.includes(cat)) {
+      categories.push(cat);
+    }
+  }
+
+  const cache: SuggestionCache = {
+    title,
+    biasKey,
+    places,
+    addresses,
+    categories,
+  };
+  suggestionCache.value = cache;
+  return cache;
+}
+
+const showAddressSparkle = computed(() => {
+  if (!currentTitle.value) return false;
+  if (!isEditingAddress.value && props.address) return false;
+  return (
+    !props.address ||
+    !editAddressInput.value.trim() ||
+    (suggestionCache.value?.addresses.length ?? 0) > 0
+  );
+});
+
+const addressSparkleTitle = computed(() => {
+  if (isFetchingAddressSuggestion.value) return 'Suche Adress-Vorschläge...';
+  const addresses = suggestionCache.value?.addresses ?? [];
+  if (addresses.length > 0 && addressSuggestionIndex.value >= 0) {
+    return `Vorschlag ${addressSuggestionIndex.value + 1} von ${addresses.length}: "${addresses[addressSuggestionIndex.value]}" (Klicken für nächsten Vorschlag)`;
+  }
+  return 'Adresse anhand des Titels automatisch vorschlagen';
+});
+
+async function cycleAddressSuggestion() {
+  const title = currentTitle.value;
+  if (!title || isFetchingAddressSuggestion.value) return;
+
+  isFetchingAddressSuggestion.value = true;
+  try {
+    const cache = await fetchSuggestionsForTitle(title);
+    if (cache.addresses.length > 0) {
+      addressSuggestionIndex.value = (addressSuggestionIndex.value + 1) % cache.addresses.length;
+      const nextAddr = cache.addresses[addressSuggestionIndex.value];
+      editAddressInput.value = nextAddr;
+      isEditingAddress.value = true;
+      emit('update:address', nextAddr);
+    }
+  } finally {
+    isFetchingAddressSuggestion.value = false;
+  }
+}
+
+const showCategorySparkle = computed(() => {
+  if (!currentTitle.value || props.category === undefined) return false;
+  if (!isEditingCategory.value && props.category) return false;
+  return (
+    !props.category ||
+    !editCategoryInput.value.trim() ||
+    (suggestionCache.value?.categories.length ?? 0) > 0
+  );
+});
+
+const categorySparkleTitle = computed(() => {
+  if (isFetchingCategorySuggestion.value) return 'Suche Kategorie-Vorschläge...';
+  const categories = suggestionCache.value?.categories ?? [];
+  if (categories.length > 0 && categorySuggestionIndex.value >= 0) {
+    return `Vorschlag ${categorySuggestionIndex.value + 1} von ${categories.length}: "${categories[categorySuggestionIndex.value]}" (Klicken für nächsten Vorschlag)`;
+  }
+  return 'Kategorie anhand des Titels automatisch vorschlagen';
+});
+
+async function cycleCategorySuggestion() {
+  const title = currentTitle.value;
+  if (!title || isFetchingCategorySuggestion.value) return;
+
+  isFetchingCategorySuggestion.value = true;
+  try {
+    const cache = await fetchSuggestionsForTitle(title);
+    if (cache.categories.length > 0) {
+      categorySuggestionIndex.value = (categorySuggestionIndex.value + 1) % cache.categories.length;
+      const nextCat = cache.categories[categorySuggestionIndex.value];
+      editCategoryInput.value = nextCat;
+      isEditingCategory.value = true;
+      emit('update:category', nextCat);
+    }
+  } finally {
+    isFetchingCategorySuggestion.value = false;
+  }
+}
+
 async function reverseGeocodeCoords(lat: number, lng: number) {
   try {
     const res = await fetch(`/api/places/reverse?lat=${lat}&lng=${lng}`, {
@@ -639,6 +811,9 @@ function clear() {
   shortlinkDetected.value = false;
   isEditingAddress.value = false;
   isEditingCategory.value = false;
+  suggestionCache.value = null;
+  addressSuggestionIndex.value = -1;
+  categorySuggestionIndex.value = -1;
 
   if (debounceTimer) {
     clearTimeout(debounceTimer);
@@ -1085,7 +1260,10 @@ defineExpose({
                   />
                 </div>
                 <div v-else class="status-meta-edit status-category-edit">
-                  <div class="inline-category-combobox">
+                  <div
+                    class="inline-category-combobox"
+                    :class="{ 'has-sparkle': showCategorySparkle }"
+                  >
                     <CategoryCombobox
                       v-model="editCategoryInput"
                       type="spot"
@@ -1097,6 +1275,25 @@ defineExpose({
                       @keydown.esc.prevent="cancelCategory"
                       @blur="handleCategoryBlur"
                     />
+                    <button
+                      v-if="showCategorySparkle"
+                      type="button"
+                      class="sparkle-suggest-btn category-sparkle-btn"
+                      :class="{ 'is-loading': isFetchingCategorySuggestion }"
+                      :title="categorySparkleTitle"
+                      :aria-label="categorySparkleTitle"
+                      data-testid="spot-category-sparkle-btn"
+                      :disabled="isFetchingCategorySuggestion"
+                      @mousedown.prevent
+                      @click="cycleCategorySuggestion"
+                    >
+                      <AppIcon
+                        :icon="ACTION_ICONS.sparkles"
+                        :size="13"
+                        group="actions"
+                        :class="{ 'sparkle-spin': isFetchingCategorySuggestion }"
+                      />
+                    </button>
                   </div>
                   <IconButton
                     v-if="props.category"
@@ -1135,21 +1332,45 @@ defineExpose({
                     />
                   </div>
                   <div v-else class="status-meta-edit status-address-edit">
-                    <Input
-                      v-model="editAddressInput"
-                      size="sm"
-                      class="inline-edit-input"
-                      name="spot-address"
-                      data-testid="spot-address-input"
-                      placeholder="Adresse eingeben..."
-                      autocomplete="off"
-                      data-protonpass-ignore="true"
-                      data-1p-ignore="true"
-                      @input="onAddressInput"
-                      @keydown.enter.prevent="saveAddress"
-                      @keydown.esc.prevent="cancelAddress"
-                      @blur="saveAddress"
-                    />
+                    <div
+                      class="inline-address-input-wrap"
+                      :class="{ 'has-sparkle': showAddressSparkle }"
+                    >
+                      <Input
+                        v-model="editAddressInput"
+                        size="sm"
+                        class="inline-edit-input"
+                        name="spot-address"
+                        data-testid="spot-address-input"
+                        placeholder="Adresse eingeben..."
+                        autocomplete="off"
+                        data-protonpass-ignore="true"
+                        data-1p-ignore="true"
+                        @input="onAddressInput"
+                        @keydown.enter.prevent="saveAddress"
+                        @keydown.esc.prevent="cancelAddress"
+                        @blur="saveAddress"
+                      />
+                      <button
+                        v-if="showAddressSparkle"
+                        type="button"
+                        class="sparkle-suggest-btn address-sparkle-btn"
+                        :class="{ 'is-loading': isFetchingAddressSuggestion }"
+                        :title="addressSparkleTitle"
+                        :aria-label="addressSparkleTitle"
+                        data-testid="spot-address-sparkle-btn"
+                        :disabled="isFetchingAddressSuggestion"
+                        @mousedown.prevent
+                        @click="cycleAddressSuggestion"
+                      >
+                        <AppIcon
+                          :icon="ACTION_ICONS.sparkles"
+                          :size="13"
+                          group="actions"
+                          :class="{ 'sparkle-spin': isFetchingAddressSuggestion }"
+                        />
+                      </button>
+                    </div>
                     <IconButton
                       v-if="props.address"
                       type="button"
@@ -1649,6 +1870,90 @@ defineExpose({
   flex: 1;
   min-width: 0;
   width: 100%;
+}
+
+.inline-address-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.inline-address-input-wrap.has-sparkle :deep(input) {
+  padding-right: 28px;
+}
+
+.inline-category-combobox.has-sparkle :deep(input) {
+  padding-right: 46px;
+}
+
+.sparkle-suggest-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-primary, #6366f1);
+  cursor: pointer;
+  border-radius: var(--radius-sm-squircle, 6px);
+  corner-shape: squircle;
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+  z-index: 2;
+}
+
+.address-sparkle-btn {
+  right: 6px;
+}
+
+.category-sparkle-btn {
+  right: 24px;
+}
+
+.sparkle-suggest-btn:hover:not(:disabled) {
+  background-color: var(--color-surface-hover, rgba(0, 0, 0, 0.06));
+  color: var(--color-primary-hover, #4f46e5);
+  transform: translateY(-50%) scale(1.12);
+}
+
+.sparkle-suggest-btn:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.sparkle-suggest-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.sparkle-suggest-btn:disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+
+@keyframes sparkleRotate {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(360deg) scale(0.9);
+  }
+}
+
+.sparkle-spin {
+  animation: sparkleRotate 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .inline-edit-btn {

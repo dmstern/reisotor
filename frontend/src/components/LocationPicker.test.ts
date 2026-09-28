@@ -1512,4 +1512,253 @@ describe('LocationPicker', () => {
       cleanUp();
     });
   });
+
+  describe('Smart Sparkle Suggestions from Spot Title', () => {
+    it('renders sparkle icon in address input field when title is present but address is empty', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: 'Praça do Comércio',
+        address: '',
+      });
+      await nextTick();
+
+      const sparkleBtn = container.querySelector('[data-testid="spot-address-sparkle-btn"]');
+      expect(sparkleBtn).toBeTruthy();
+      expect(sparkleBtn?.getAttribute('title')).toContain('Adresse anhand des Titels automatisch');
+
+      cleanUp();
+    });
+
+    it('does not render address sparkle icon when title is missing', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: '',
+        address: '',
+      });
+      await nextTick();
+
+      const sparkleBtn = container.querySelector('[data-testid="spot-address-sparkle-btn"]');
+      expect(sparkleBtn).toBeNull();
+
+      cleanUp();
+    });
+
+    it('renders category sparkle icon when title is present, category is empty and category prop is defined', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: 'Praça do Comércio',
+        category: '',
+        categoryOptions: ['Sehenswürdigkeit', 'Café', 'Restaurant'],
+      });
+      await nextTick();
+
+      const categorySparkleBtn = container.querySelector(
+        '[data-testid="spot-category-sparkle-btn"]'
+      );
+      expect(categorySparkleBtn).toBeTruthy();
+      expect(categorySparkleBtn?.getAttribute('title')).toContain(
+        'Kategorie anhand des Titels automatisch'
+      );
+
+      cleanUp();
+    });
+
+    it('does not render category sparkle icon when title is missing', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.7075, lng: -9.1364 },
+        title: '',
+        category: '',
+      });
+      await nextTick();
+
+      const categorySparkleBtn = container.querySelector(
+        '[data-testid="spot-category-sparkle-btn"]'
+      );
+      expect(categorySparkleBtn).toBeNull();
+
+      cleanUp();
+    });
+
+    it('clicking address sparkle icon fetches suggestions, fills first address into input and emits update:address', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Praça do Comércio',
+          formatted_address: 'Praça do Comércio, 1100-148 Lisboa, Portugal',
+          lat: 38.7075,
+          lng: -9.1364,
+          category: 'Sehenswürdigkeit',
+        },
+        {
+          name: 'Praça do Comércio',
+          formatted_address: 'Praça do Comércio, 3000-116 Coimbra, Portugal',
+          lat: 40.2098,
+          lng: -8.4297,
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const updateAddressSpy = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 38.7075, lng: -9.1364 },
+          title: 'Praça do Comércio',
+          address: '',
+        },
+        {
+          'onUpdate:address': updateAddressSpy,
+        }
+      );
+      await nextTick();
+
+      const sparkleBtn = container.querySelector(
+        '[data-testid="spot-address-sparkle-btn"]'
+      ) as HTMLButtonElement;
+      expect(sparkleBtn).toBeTruthy();
+
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/places/search?q=Pra%C3%A7a%20do%20Com%C3%A9rcio'),
+        expect.anything()
+      );
+      expect(updateAddressSpy).toHaveBeenCalledWith('Praça do Comércio, 1100-148 Lisboa, Portugal');
+
+      const addressInput = container.querySelector(
+        '[data-testid="spot-address-input"]'
+      ) as HTMLInputElement;
+      expect(addressInput.value).toBe('Praça do Comércio, 1100-148 Lisboa, Portugal');
+
+      cleanUp();
+    });
+
+    it('clicking address sparkle icon repeatedly cycles through suggestions round-robin', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Praça do Comércio Lisboa',
+          formatted_address: 'Praça do Comércio, Lisboa',
+          lat: 38.7075,
+          lng: -9.1364,
+        },
+        {
+          name: 'Praça do Comércio Coimbra',
+          formatted_address: 'Praça do Comércio, Coimbra',
+          lat: 40.2098,
+          lng: -8.4297,
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const updateAddressSpy = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 38.7075, lng: -9.1364 },
+          title: 'Praça do Comércio',
+          address: '',
+        },
+        {
+          'onUpdate:address': updateAddressSpy,
+        }
+      );
+      await nextTick();
+
+      const sparkleBtn = container.querySelector(
+        '[data-testid="spot-address-sparkle-btn"]'
+      ) as HTMLButtonElement;
+      const addressInput = container.querySelector(
+        '[data-testid="spot-address-input"]'
+      ) as HTMLInputElement;
+
+      // Click 1 -> 1. Vorschlag
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateAddressSpy).toHaveBeenLastCalledWith('Praça do Comércio, Lisboa');
+      expect(addressInput.value).toBe('Praça do Comércio, Lisboa');
+
+      // Click 2 -> 2. Vorschlag
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateAddressSpy).toHaveBeenLastCalledWith('Praça do Comércio, Coimbra');
+      expect(addressInput.value).toBe('Praça do Comércio, Coimbra');
+
+      // Click 3 -> Wrap around to 1. Vorschlag
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateAddressSpy).toHaveBeenLastCalledWith('Praça do Comércio, Lisboa');
+      expect(addressInput.value).toBe('Praça do Comércio, Lisboa');
+
+      cleanUp();
+    });
+
+    it('clicking category sparkle icon fills category and cycles on repeated clicks', async () => {
+      const mockResults: PlaceSearchResult[] = [
+        {
+          name: 'Belém Tower',
+          formatted_address: 'Av. Brasília, 1400-038 Lisboa',
+          lat: 38.6916,
+          lng: -9.216,
+          category: 'Sehenswürdigkeit',
+        },
+        {
+          name: 'Belém Café',
+          formatted_address: 'R. de Belém 84, 1300-085 Lisboa',
+          lat: 38.6975,
+          lng: -9.2032,
+          category: 'Café',
+        },
+      ];
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockResults,
+      });
+      globalThis.fetch = fetchSpy;
+
+      const updateCategorySpy = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 38.6916, lng: -9.216 },
+          title: 'Torre de Belém',
+          category: '',
+        },
+        {
+          'onUpdate:category': updateCategorySpy,
+        }
+      );
+      await nextTick();
+
+      const categorySparkleBtn = container.querySelector(
+        '[data-testid="spot-category-sparkle-btn"]'
+      ) as HTMLButtonElement;
+      expect(categorySparkleBtn).toBeTruthy();
+
+      // Click 1 -> 'Sehenswürdigkeit'
+      categorySparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateCategorySpy).toHaveBeenLastCalledWith('Sehenswürdigkeit');
+
+      // Click 2 -> 'Café'
+      categorySparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(updateCategorySpy).toHaveBeenLastCalledWith('Café');
+
+      cleanUp();
+    });
+  });
 });
