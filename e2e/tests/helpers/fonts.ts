@@ -29,14 +29,18 @@ export async function forceFontDisplayBlock(page: Page): Promise<void> {
  *  bevor Screenshots aufgenommen werden. */
 export async function waitForAppReady(page: Page): Promise<void> {
   await page
-    .locator('#splash, .splash, .loading-state, .view-loading')
-    .waitFor({ state: 'detached', timeout: 10_000 })
+    .locator('#splash, .splash')
+    .waitFor({ state: 'detached', timeout: 15_000 })
     .catch(() => {});
   await page
-    .locator('.app-main, .budget-page, .dashboard, .page')
+    .locator('.page, .listen-view, .login-page, .landing, .calendar-drawer-content')
     .first()
-    .waitFor({ state: 'attached', timeout: 10_000 });
-  await page.waitForTimeout(500);
+    .waitFor({ state: 'attached', timeout: 15_000 });
+  await page
+    .locator('.loading-state, .view-loading')
+    .waitFor({ state: 'detached', timeout: 15_000 })
+    .catch(() => {});
+  await page.waitForTimeout(300);
 }
 
 /** Stellt sicher, dass Leaflet-Kartenkacheln (OpenStreetMap) vollständig geladen und gerendert sind,

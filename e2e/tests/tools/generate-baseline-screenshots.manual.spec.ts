@@ -524,6 +524,7 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-todo',
     path: '/listen?tab=todo',
     open: async (page) => {
+      await page.locator('.todo-page').waitFor({ state: 'visible', timeout: 15000 });
       const item = page.locator('.checkable-list-item').first();
       await item.waitFor({ state: 'visible', timeout: 15000 });
       const btn = item.locator('.edit-btn');
@@ -536,6 +537,7 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-packing',
     path: '/listen?tab=packing',
     open: async (page) => {
+      await page.locator('.packing-page').waitFor({ state: 'visible', timeout: 15000 });
       const item = page.locator('.checkable-list-item').first();
       await item.waitFor({ state: 'visible', timeout: 15000 });
       const btn = item.locator('.edit-btn');
@@ -548,6 +550,7 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-shopping',
     path: '/listen?tab=shopping',
     open: async (page) => {
+      await page.locator('.shopping-page').waitFor({ state: 'visible', timeout: 15000 });
       const item = page.locator('.checkable-list-item').first();
       await item.waitFor({ state: 'visible', timeout: 15000 });
       const btn = item.locator('.edit-btn');
