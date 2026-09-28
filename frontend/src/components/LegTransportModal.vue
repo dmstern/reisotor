@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { ExcursionLeg, Spot, User } from '../api/types';
+import type { DirectionsResponse, ExcursionLeg, RouteResult, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Button from './primitives/Button.vue';
@@ -10,13 +10,14 @@ import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import AppIcon from './AppIcon.vue';
 import FileAttachments from './FileAttachments.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
+import LegMiniMap from './LegMiniMap.vue';
 import { IconRoute2, IconLineDashed } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIcon, travelTypeIconDef } from '../utils/travelTypeIcon';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { parseRouteGeometry } from '../utils/mapRoute';
 import { api } from '../api/client';
-import type { DirectionsResponse } from '../api/types';
 
 const TRANSPORT_MODE_OPTIONS = [
   {
@@ -107,6 +108,57 @@ const ROUTE_MODE_OPTIONS: {
   },
 ];
 
+const ROUTE_PREFERENCE_OPTIONS: {
+  value: 'fastest' | 'shortest';
+  label: string;
+  icon: IconDef;
+}[] = [
+  {
+    value: 'fastest',
+    label: 'Schnellste Route',
+    icon: ACTION_ICONS.duration,
+  },
+  {
+    value: 'shortest',
+    label: 'Kürzeste Strecke',
+    icon: ACTION_ICONS.distance,
+  },
+];
+
+const routePreference = ref<'fastest' | 'shortest'>('fastest');
+const calculatedRoutes = ref<RouteResult[]>([]);
+const selectedRouteIndex = ref<number>(0);
+
+const fastestRouteIndex = computed(() => {
+  if (!calculatedRoutes.value.length) return -1;
+  let minDur = Infinity;
+  let idx = 0;
+  calculatedRoutes.value.forEach((r, i) => {
+    if (r.duration_seconds < minDur) {
+      minDur = r.duration_seconds;
+      idx = i;
+    }
+  });
+  return idx;
+});
+
+const shortestRouteIndex = computed(() => {
+  if (!calculatedRoutes.value.length) return -1;
+  let minDist = Infinity;
+  let idx = 0;
+  calculatedRoutes.value.forEach((r, i) => {
+    if (r.distance_meters < minDist) {
+      minDist = r.distance_meters;
+      idx = i;
+    }
+  });
+  return idx;
+});
+
+const suggestedRouteIndex = computed(() => {
+  return routePreference.value === 'shortest' ? shortestRouteIndex.value : fastestRouteIndex.value;
+});
+
 const routeDisplayMode = ref<'exact' | 'direct'>('exact');
 const cachedExactRoute = ref<{
   geometry: string | null;
@@ -121,6 +173,39 @@ const hasExactRoute = computed(() => {
     (calculatedDistanceMeters.value != null || cachedExactRoute.value?.distance != null)
   );
 });
+
+const isArrivalAutoCalculated = ref(false);
+
+function selectRoute(idx: number) {
+  if (!calculatedRoutes.value[idx]) return;
+  selectedRouteIndex.value = idx;
+  const selected = calculatedRoutes.value[idx];
+  calculatedDistanceMeters.value = selected.distance_meters;
+  calculatedDurationSeconds.value = selected.duration_seconds;
+  routeGeometry.value = JSON.stringify(selected.coordinates);
+  routingProfile.value = selected.profile;
+  cachedExactRoute.value = {
+    geometry: JSON.stringify(selected.coordinates),
+    distance: selected.distance_meters,
+    duration: selected.duration_seconds,
+    profile: selected.profile,
+  };
+  routeDisplayMode.value = 'exact';
+  if (form.value.departure_time && (!form.value.arrival_time || isArrivalAutoCalculated.value)) {
+    updateArrivalTimeFromDuration();
+  }
+}
+
+function onPreferenceToggle(val: string) {
+  const pref = val as 'fastest' | 'shortest';
+  routePreference.value = pref;
+  if (calculatedRoutes.value.length > 1) {
+    const targetIdx = pref === 'shortest' ? shortestRouteIndex.value : fastestRouteIndex.value;
+    if (targetIdx >= 0) {
+      selectRoute(targetIdx);
+    }
+  }
+}
 
 function onRouteModeChange(val: string) {
   routeDisplayMode.value = val as 'exact' | 'direct';
@@ -139,6 +224,8 @@ function resetToDirectLine() {
   calculatedDurationSeconds.value = null;
   routingProfile.value = null;
   cachedExactRoute.value = null;
+  calculatedRoutes.value = [];
+  selectedRouteIndex.value = 0;
   routeDisplayMode.value = 'exact';
   routeCalculationError.value = null;
 }
@@ -160,6 +247,11 @@ function formatDuration(seconds?: number | null): string {
   const hours = Math.floor(totalMin / 60);
   const mins = totalMin % 60;
   return mins > 0 ? `${hours} Std. ${mins} Min.` : `${hours} Std.`;
+}
+
+function formatDiffDuration(diffSeconds: number): string {
+  if (diffSeconds < 60) return '< 1 Min.';
+  return formatDuration(diffSeconds);
 }
 
 const transportCategory = ref<TransportCategory>('zu Fuß');
@@ -212,6 +304,7 @@ watch(
   (open) => {
     if (!open) return;
     routeCalculationError.value = null;
+    isArrivalAutoCalculated.value = false;
     if (props.leg) {
       const initialType = props.leg.transport_type || 'zu Fuß';
       const cat = getCategoryFromType(initialType);
@@ -244,9 +337,26 @@ watch(
           duration: props.leg.duration_seconds ?? null,
           profile: props.leg.routing_profile ?? null,
         };
+        const parsedCoords = parseRouteGeometry(props.leg.route_geometry);
+        if (parsedCoords) {
+          calculatedRoutes.value = [
+            {
+              coordinates: parsedCoords,
+              distance_meters: props.leg.distance_meters ?? 0,
+              duration_seconds: props.leg.duration_seconds ?? 0,
+              profile: props.leg.routing_profile ?? '',
+            },
+          ];
+          selectedRouteIndex.value = 0;
+        } else {
+          calculatedRoutes.value = [];
+          selectedRouteIndex.value = 0;
+        }
         routeDisplayMode.value = 'exact';
       } else {
         cachedExactRoute.value = null;
+        calculatedRoutes.value = [];
+        selectedRouteIndex.value = 0;
         routeDisplayMode.value = 'exact';
       }
     } else {
@@ -269,6 +379,8 @@ watch(
       routeGeometry.value = null;
       routingProfile.value = null;
       cachedExactRoute.value = null;
+      calculatedRoutes.value = [];
+      selectedRouteIndex.value = 0;
       routeDisplayMode.value = 'exact';
     }
   },
@@ -306,6 +418,7 @@ function updateArrivalTimeFromDuration() {
   const arrHours = Math.floor(arrivalTotalMinutes / 60);
   const arrMinutes = arrivalTotalMinutes % 60;
   form.value.arrival_time = `${String(arrHours).padStart(2, '0')}:${String(arrMinutes).padStart(2, '0')}`;
+  isArrivalAutoCalculated.value = true;
 }
 
 async function calculateRoute() {
@@ -321,6 +434,7 @@ async function calculateRoute() {
       to_lat: props.toSpot.lat,
       to_lng: props.toSpot.lng,
       transport_type: form.value.transport_type,
+      preference: routePreference.value,
     });
 
     if (!res.supported || !res.routes?.length) {
@@ -328,22 +442,9 @@ async function calculateRoute() {
       return;
     }
 
-    const primary = res.routes[0];
-    calculatedDistanceMeters.value = primary.distance_meters;
-    calculatedDurationSeconds.value = primary.duration_seconds;
-    routeGeometry.value = JSON.stringify(primary.coordinates);
-    routingProfile.value = primary.profile;
-    cachedExactRoute.value = {
-      geometry: JSON.stringify(primary.coordinates),
-      distance: primary.distance_meters,
-      duration: primary.duration_seconds,
-      profile: primary.profile,
-    };
-    routeDisplayMode.value = 'exact';
-
-    if (form.value.departure_time && !form.value.arrival_time) {
-      updateArrivalTimeFromDuration();
-    }
+    calculatedRoutes.value = res.routes.slice(0, 3);
+    const suggestedIdx = suggestedRouteIndex.value >= 0 ? suggestedRouteIndex.value : 0;
+    selectRoute(suggestedIdx);
   } catch (err: unknown) {
     routeCalculationError.value =
       err instanceof Error ? err.message : 'Fehler beim Abrufen der Route';
@@ -491,19 +592,28 @@ function onDelete() {
                   </span>
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                class="btn-calc-route"
-                :loading="isCalculatingRoute"
-                @click="calculateRoute"
-              >
-                Route berechnen
-              </Button>
+              <div class="route-calc-init-controls">
+                <SegmentedToggle
+                  class="route-preference-toggle"
+                  :model-value="routePreference"
+                  :options="ROUTE_PREFERENCE_OPTIONS"
+                  aria-label="Routenpräferenz"
+                  @update:model-value="onPreferenceToggle"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  class="btn-calc-route"
+                  :loading="isCalculatingRoute"
+                  @click="calculateRoute"
+                >
+                  Route berechnen
+                </Button>
+              </div>
             </div>
 
-            <!-- Zustand 2: Route liegt vor -> Umschalter zwischen Exakt & Luftlinie samt Rückgängig -->
+            <!-- Zustand 2: Route liegt vor -> Mini-Map, Alternativen & Umschalter -->
             <div v-else class="route-calc-active">
               <div class="route-calc-header-mode">
                 <div class="route-calc-heading-row">
@@ -527,13 +637,123 @@ function onDelete() {
                 />
               </div>
 
+              <!-- Mini-Map der Teilstrecke mit Start-, Ziel-Pins und gerouteten Alternativen -->
+              <div class="route-mini-map-container">
+                <LegMiniMap
+                  :from-spot="fromSpot"
+                  :to-spot="toSpot"
+                  :routes="calculatedRoutes"
+                  :selected-route-index="selectedRouteIndex"
+                  :transport-type="form.transport_type"
+                  :route-display-mode="routeDisplayMode"
+                  @select-route="selectRoute"
+                />
+              </div>
+
               <div class="route-calc-body">
-                <div class="route-calc-detail">
-                  <span v-if="routeDisplayMode === 'exact'" class="route-calc-stats">
-                    {{ formatDistance(calculatedDistanceMeters) }} •
-                    {{ formatDuration(calculatedDurationSeconds) }}
-                  </span>
-                  <span v-else class="route-calc-hint">
+                <!-- Wenn Exakte Route aktiv ist -->
+                <template v-if="routeDisplayMode === 'exact'">
+                  <!-- Präferenz-Umschalter (Schnellste vs Kürzeste) -->
+                  <div class="route-preference-row">
+                    <span class="route-preference-label">Bevorzugen:</span>
+                    <SegmentedToggle
+                      class="route-preference-toggle"
+                      :model-value="routePreference"
+                      :options="ROUTE_PREFERENCE_OPTIONS"
+                      aria-label="Routenpräferenz"
+                      @update:model-value="onPreferenceToggle"
+                    />
+                  </div>
+
+                  <!-- Mehrere Routenalternativen (bis zu 3) als interaktive Liste -->
+                  <div
+                    v-if="calculatedRoutes.length > 1"
+                    class="route-alternatives-list"
+                    role="radiogroup"
+                    aria-label="Verfügbare Routenalternativen"
+                  >
+                    <button
+                      v-for="(r, idx) in calculatedRoutes"
+                      :key="idx"
+                      type="button"
+                      class="route-alt-card"
+                      :class="{ 'is-selected': idx === selectedRouteIndex }"
+                      role="radio"
+                      :aria-checked="idx === selectedRouteIndex"
+                      @click="selectRoute(idx)"
+                    >
+                      <div class="route-alt-radio" aria-hidden="true">
+                        <span v-if="idx === selectedRouteIndex" class="route-alt-radio-dot"></span>
+                      </div>
+                      <div class="route-alt-content">
+                        <div class="route-alt-title-row">
+                          <span class="route-alt-name">Route {{ idx + 1 }}</span>
+                          <div class="route-alt-badges">
+                            <span
+                              v-if="idx === fastestRouteIndex"
+                              class="route-alt-badge badge-fastest"
+                              title="Schnellste Reisedauer"
+                            >
+                              ⚡ Schnellste
+                            </span>
+                            <span
+                              v-if="idx === shortestRouteIndex"
+                              class="route-alt-badge badge-shortest"
+                              title="Kürzeste Fahrtstrecke"
+                            >
+                              📏 Kürzeste
+                            </span>
+                            <span
+                              v-if="idx === suggestedRouteIndex"
+                              class="route-alt-badge badge-suggested"
+                              title="Empfehlung anhand gewählter Präferenz"
+                            >
+                              ⭐ Vorschlag
+                            </span>
+                          </div>
+                        </div>
+                        <div class="route-alt-stats">
+                          <span class="route-alt-duration">{{
+                            formatDuration(r.duration_seconds)
+                          }}</span>
+                          <span class="route-alt-sep">•</span>
+                          <span class="route-alt-distance">{{
+                            formatDistance(r.distance_meters)
+                          }}</span>
+                          <span
+                            v-if="
+                              idx !== fastestRouteIndex &&
+                              fastestRouteIndex >= 0 &&
+                              calculatedRoutes[fastestRouteIndex] &&
+                              r.duration_seconds >
+                                calculatedRoutes[fastestRouteIndex].duration_seconds
+                            "
+                            class="route-alt-diff"
+                          >
+                            (+{{
+                              formatDiffDuration(
+                                r.duration_seconds -
+                                  calculatedRoutes[fastestRouteIndex].duration_seconds
+                              )
+                            }})
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  <!-- Nur 1 Route vorhanden -> Kompakte Anzeige -->
+                  <div v-else class="route-calc-detail">
+                    <span class="route-calc-stats">
+                      {{ formatDistance(calculatedDistanceMeters) }} •
+                      {{ formatDuration(calculatedDurationSeconds) }}
+                    </span>
+                  </div>
+                </template>
+
+                <!-- Wenn Luftlinie aktiv ist -->
+                <div v-else class="route-calc-detail">
+                  <span class="route-calc-hint">
                     Gestrichelte Verbindung auf der Karte (ungefähre Luftlinie).
                   </span>
                 </div>
@@ -587,7 +807,11 @@ function onDelete() {
         </FormField>
         <FormField icon="time" label="Ankunft">
           <div class="arrival-time-wrapper">
-            <Input v-model="form.arrival_time" type="time" />
+            <Input
+              v-model="form.arrival_time"
+              type="time"
+              @input="isArrivalAutoCalculated = false"
+            />
             <Button
               v-if="
                 form.departure_time && calculatedDurationSeconds && routeDisplayMode === 'exact'
@@ -976,19 +1200,223 @@ function onDelete() {
   width: 100%;
 }
 
-.route-calc-body {
+.route-calc-init-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.route-mini-map-container {
+  width: 100%;
+  animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.route-preference-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  min-height: 36px;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.route-preference-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.route-preference-toggle {
+  flex: 1;
+  max-width: 320px;
+}
+
+.route-preference-toggle :deep(.segmented-option) {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+.route-alternatives-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.route-alt-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.route-alt-card:hover {
+  border-color: var(--color-primary-light, #93c5fd);
+  background: var(--color-hover);
+}
+
+.route-alt-card.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint, #eff6ff);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.route-alt-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.route-alt-card.is-selected .route-alt-radio {
+  border-color: var(--color-primary);
+}
+
+.route-alt-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.route-alt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.route-alt-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.route-alt-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.route-alt-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.route-alt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 999px;
+  line-height: 1.3;
+}
+
+.badge-fastest {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.badge-shortest {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.badge-suggested {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+:root[data-theme='dark'] .badge-fastest {
+  background: rgba(3, 105, 161, 0.25);
+  color: #7dd3fc;
+}
+
+:root[data-theme='dark'] .badge-shortest {
+  background: rgba(21, 128, 61, 0.25);
+  color: #86efac;
+}
+
+:root[data-theme='dark'] .badge-suggested {
+  background: rgba(180, 83, 9, 0.25);
+  color: #fde68a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .badge-fastest {
+    background: rgba(3, 105, 161, 0.25);
+    color: #7dd3fc;
+  }
+  :root:not([data-theme='light']) .badge-shortest {
+    background: rgba(21, 128, 61, 0.25);
+    color: #86efac;
+  }
+  :root:not([data-theme='light']) .badge-suggested {
+    background: rgba(180, 83, 9, 0.25);
+    color: #fde68a;
+  }
+}
+
+.route-alt-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.route-alt-duration {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.route-alt-card.is-selected .route-alt-duration {
+  color: var(--color-primary);
+}
+
+.route-alt-diff {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.route-calc-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .route-calc-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
-  flex-shrink: 0;
+  margin-top: 4px;
 }
 
 .btn-reset-route {
@@ -1072,9 +1500,25 @@ function onDelete() {
     align-items: flex-start;
   }
 
-  .route-calc-body {
+  .route-calc-init-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .route-preference-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .route-preference-toggle {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .route-calc-body {
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--space-2);
   }
 

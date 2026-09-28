@@ -5,6 +5,12 @@ import { createPinia } from 'pinia';
 import LegTransportModal from './LegTransportModal.vue';
 import type { Spot, User, ExcursionLeg } from '../api/types';
 
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 vi.mock('../api/client', () => ({
   api: {
     get: vi.fn().mockResolvedValue([]),
@@ -527,6 +533,187 @@ describe('LegTransportModal', () => {
     expect(savedLeg?.route_geometry).toBeNull();
     expect(savedLeg?.distance_meters).toBeNull();
     expect(savedLeg?.duration_seconds).toBeNull();
+
+    cleanUp();
+  });
+
+  it('rendert Mini-Map und zeigt mehrere Routenalternativen zur Auswahl', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.post).mockResolvedValueOnce({
+      supported: true,
+      routes: [
+        {
+          coordinates: [
+            [38.71, -9.14],
+            [38.8, -9.38],
+          ],
+          distance_meters: 30000,
+          duration_seconds: 1800, // 30 Min. - schnellste
+          profile: 'driving-car',
+        },
+        {
+          coordinates: [
+            [38.71, -9.14],
+            [38.75, -9.2],
+            [38.8, -9.38],
+          ],
+          distance_meters: 25000, // 25 km - kürzeste
+          duration_seconds: 2100, // 35 Min.
+          profile: 'driving-car',
+        },
+        {
+          coordinates: [
+            [38.71, -9.14],
+            [38.82, -9.3],
+            [38.8, -9.38],
+          ],
+          distance_meters: 32000,
+          duration_seconds: 2400, // 40 Min.
+          profile: 'driving-car',
+        },
+      ],
+    });
+
+    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
+    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
+    const carLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'Auto',
+      departure_time: '14:00',
+      arrival_time: '',
+    };
+
+    let savedLeg: ExcursionLeg | undefined;
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: spotWithCoordsA,
+      toSpot: spotWithCoordsB,
+      leg: carLeg,
+      users: mockUsers,
+      onSave: (leg: ExcursionLeg) => {
+        savedLeg = leg;
+      },
+    });
+    await nextTick();
+
+    const calcBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Route berechnen')
+    );
+    calcBtn?.click();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 150));
+    await nextTick();
+
+    // Mini-Map soll gerendert sein
+    const miniMap = document.querySelector('[data-testid="leg-mini-map"]');
+    expect(miniMap).not.toBeNull();
+
+    // 3 Alternativen-Karten sollen gerendert sein
+    const altCards = document.querySelectorAll('.route-alt-card');
+    expect(altCards.length).toBe(3);
+
+    // Initial ist Route 1 vorausgewählt (schnellste / Standard-Präferenz)
+    expect(altCards[0].classList.contains('is-selected')).toBe(true);
+    expect(altCards[0].querySelector('.badge-fastest')?.textContent).toContain('Schnellste');
+    expect(altCards[0].querySelector('.badge-suggested')?.textContent).toContain('Vorschlag');
+    expect(altCards[1].querySelector('.badge-shortest')?.textContent).toContain('Kürzeste');
+
+    // Route 2 anklicken (kürzere Strecke, aber 35 Min.)
+    (altCards[1] as HTMLElement).click();
+    await nextTick();
+
+    expect(altCards[1].classList.contains('is-selected')).toBe(true);
+    expect(altCards[0].classList.contains('is-selected')).toBe(false);
+
+    // Ankunftszeit soll aus Route 2 (14:00 + 35m = 14:35) aktualisiert worden sein
+    const arrivalInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    expect(arrivalInput?.value).toBe('14:35');
+
+    // Speichern
+    const submitBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Übernehmen')
+    );
+    submitBtn?.click();
+    await nextTick();
+
+    expect(savedLeg).toBeDefined();
+    expect(savedLeg?.distance_meters).toBe(25000);
+    expect(savedLeg?.duration_seconds).toBe(2100);
+    expect(savedLeg?.arrival_time).toBe('14:35');
+
+    cleanUp();
+  });
+
+  it('schaltet per Präferenz-Umschalter zwischen schnellster und kürzester Route um', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.post).mockResolvedValueOnce({
+      supported: true,
+      routes: [
+        {
+          coordinates: [
+            [38.71, -9.14],
+            [38.8, -9.38],
+          ],
+          distance_meters: 30000,
+          duration_seconds: 1800, // Schnellste
+          profile: 'driving-car',
+        },
+        {
+          coordinates: [
+            [38.71, -9.14],
+            [38.75, -9.2],
+            [38.8, -9.38],
+          ],
+          distance_meters: 22000, // Kürzeste
+          duration_seconds: 2200,
+          profile: 'driving-car',
+        },
+      ],
+    });
+
+    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
+    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
+    const carLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'Auto',
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: spotWithCoordsA,
+      toSpot: spotWithCoordsB,
+      leg: carLeg,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const calcBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Route berechnen')
+    );
+    calcBtn?.click();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 150));
+    await nextTick();
+
+    const altCards = document.querySelectorAll('.route-alt-card');
+    expect(altCards.length).toBe(2);
+    // Initial ist Route 1 (schnellste) ausgewählt
+    expect(altCards[0].classList.contains('is-selected')).toBe(true);
+
+    // Klick auf "Kürzeste Strecke" im Präferenz-Toggle
+    const prefButtons = Array.from(
+      document.querySelectorAll('.route-preference-row .segmented-option')
+    ) as HTMLButtonElement[];
+    const shortestBtn = prefButtons.find((b) => b.textContent?.includes('Kürzeste'));
+    expect(shortestBtn).toBeDefined();
+
+    shortestBtn?.click();
+    await nextTick();
+
+    // Route 2 (kürzeste) soll nun automatisch ausgewählt sein
+    expect(altCards[1].classList.contains('is-selected')).toBe(true);
+    expect(altCards[0].classList.contains('is-selected')).toBe(false);
+    expect(altCards[1].querySelector('.badge-suggested')?.textContent).toContain('Vorschlag');
 
     cleanUp();
   });
