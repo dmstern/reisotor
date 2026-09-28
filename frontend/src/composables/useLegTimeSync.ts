@@ -119,6 +119,49 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
       : `${departureLabel.value} aus Reisedauer berechnen`;
   });
 
+  const lockedDurationMinutes = ref<number | null>(null);
+
+  const effectiveDurationSeconds = computed<number | null>(() => {
+    if (activeDurationSeconds.value && activeDurationSeconds.value > 0) {
+      return activeDurationSeconds.value;
+    }
+    if (lockedDurationMinutes.value != null && lockedDurationMinutes.value > 0) {
+      return lockedDurationMinutes.value * 60;
+    }
+    return null;
+  });
+
+  const canToggleLink = computed(() => {
+    return (
+      (activeDurationSeconds.value != null && activeDurationSeconds.value > 0) ||
+      (Boolean(departureTime.value) && Boolean(arrivalTime.value))
+    );
+  });
+
+  const timeLinkTitle = computed(() => {
+    let durStr: string | null = null;
+    if (activeDurationSeconds.value && activeDurationSeconds.value > 0) {
+      durStr = formatDuration(activeDurationSeconds.value);
+    } else if (departureTime.value && arrivalTime.value) {
+      const elapsed = calcElapsedMinutes(departureTime.value, arrivalTime.value);
+      if (elapsed != null && elapsed > 0) {
+        durStr = formatDuration(elapsed * 60);
+      }
+    }
+
+    if (!canToggleLink.value) {
+      return 'Zeiten koppeln (verfügbar sobald eine Reisedauer berechnet oder beide Zeiten eingetragen sind)';
+    }
+
+    if (isTimeLinked.value) {
+      return durStr
+        ? `Zeiten sind an Reisedauer gekoppelt (${durStr}) – Klick zum Entkoppeln`
+        : 'Zeiten sind gekoppelt – Klick zum Entkoppeln';
+    }
+
+    return durStr ? `Zeiten an Reisedauer koppeln (${durStr})` : 'Zeiten an Reisedauer koppeln';
+  });
+
   function syncTimesWithDuration(durationSeconds?: number | null) {
     const dur = durationSeconds ?? activeDurationSeconds.value;
     if (!dur || dur <= 0) return;
@@ -143,8 +186,9 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
 
   function onDepartureInput() {
     lastModifiedTimeField.value = 'departure';
-    if (isTimeLinked.value && activeDurationSeconds.value) {
-      const target = calcArrivalTime(departureTime.value, activeDurationSeconds.value);
+    const durSec = effectiveDurationSeconds.value;
+    if (isTimeLinked.value && durSec && durSec > 0) {
+      const target = calcArrivalTime(departureTime.value, durSec);
       if (target) {
         arrivalTime.value = target;
       }
@@ -153,8 +197,9 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
 
   function onArrivalInput() {
     lastModifiedTimeField.value = 'arrival';
-    if (isTimeLinked.value && activeDurationSeconds.value) {
-      const target = calcDepartureTime(arrivalTime.value, activeDurationSeconds.value);
+    const durSec = effectiveDurationSeconds.value;
+    if (isTimeLinked.value && durSec && durSec > 0) {
+      const target = calcDepartureTime(arrivalTime.value, durSec);
       if (target) {
         departureTime.value = target;
       }
@@ -162,8 +207,9 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   }
 
   function calcArrivalFromDeparture() {
-    if (!departureTime.value || !activeDurationSeconds.value) return;
-    const target = calcArrivalTime(departureTime.value, activeDurationSeconds.value);
+    const durSec = effectiveDurationSeconds.value;
+    if (!departureTime.value || !durSec) return;
+    const target = calcArrivalTime(departureTime.value, durSec);
     if (target) {
       arrivalTime.value = target;
       lastModifiedTimeField.value = 'departure';
@@ -176,8 +222,9 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   }
 
   function calcDepartureFromArrival() {
-    if (!arrivalTime.value || !activeDurationSeconds.value) return;
-    const target = calcDepartureTime(arrivalTime.value, activeDurationSeconds.value);
+    const durSec = effectiveDurationSeconds.value;
+    if (!arrivalTime.value || !durSec) return;
+    const target = calcDepartureTime(arrivalTime.value, durSec);
     if (target) {
       departureTime.value = target;
       lastModifiedTimeField.value = 'arrival';
@@ -191,8 +238,11 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
 
   function toggleTimeLink() {
     if (!isTimeLinked.value) {
-      if (activeDurationSeconds.value) {
+      if (activeDurationSeconds.value && activeDurationSeconds.value > 0) {
         syncTimesWithDuration(activeDurationSeconds.value);
+        lockedDurationMinutes.value = Math.round(activeDurationSeconds.value / 60);
+      } else if (departureTime.value && arrivalTime.value) {
+        lockedDurationMinutes.value = calcElapsedMinutes(departureTime.value, arrivalTime.value);
       }
       isTimeLinked.value = true;
     } else {
@@ -319,6 +369,8 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
     canCalcDeparture,
     arrivalSparkleTitle,
     departureSparkleTitle,
+    canToggleLink,
+    timeLinkTitle,
     timeDurationStatus,
     alertVariantForStatus,
     alertIconForStatus,

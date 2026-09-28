@@ -1108,4 +1108,116 @@ describe('LegTransportModal', () => {
 
     cleanUp();
   });
+
+  it('rendert Kettensegment-Koppel-Button zwischen Abfahrt und Ankunft ohne sichtbares Text-Label mit Tooltip', async () => {
+    const legWithDuration: ExcursionLeg = {
+      ...mockLeg,
+      departure_time: '08:00',
+      arrival_time: '08:45',
+      duration_seconds: 2700, // 45 Min.
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: mockFromSpot,
+      toSpot: mockToSpot,
+      leg: legWithDuration,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    const linkConnector = document.querySelector('.time-link-connector');
+    expect(linkConnector).not.toBeNull();
+
+    const linkBtn = linkConnector?.querySelector(
+      '[data-testid="time-link-toggle"]'
+    ) as HTMLButtonElement;
+    expect(linkBtn).not.toBeNull();
+    expect(linkBtn.classList.contains('is-linked')).toBe(true);
+
+    // Kein Text-Label im Button (Photoshop/Gimp-Icon-Stil)
+    expect(linkBtn.textContent?.trim()).toBe('');
+    // Erklärung liegt im Tooltip / aria-label
+    expect(linkBtn.getAttribute('title')).toContain('Zeiten sind an Reisedauer gekoppelt');
+    expect(linkBtn.getAttribute('aria-label')).toContain('Zeiten sind an Reisedauer gekoppelt');
+
+    // Diskreter Dauer-Chip unter den Zeiten
+    const durationChip = document.querySelector('[data-testid="time-duration-chip"]');
+    expect(durationChip).not.toBeNull();
+    expect(durationChip?.textContent).toContain('45 Min.');
+
+    cleanUp();
+  });
+
+  it('löscht bei Wechsel auf ÖPNV die alte Auto-Dauer und blendet Dauer-Alert-Kasten aus', async () => {
+    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
+    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
+    const carLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'Auto',
+      route_geometry: '[[38.71,-9.14],[38.8,-9.38]]',
+      distance_meters: 10000,
+      duration_seconds: 720, // 12 Min.
+      routing_profile: 'driving-car',
+      departure_time: '10:00',
+      arrival_time: '10:12',
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: spotWithCoordsA,
+      toSpot: spotWithCoordsB,
+      leg: carLeg,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    // Initial Auto: 12 Min. Fahrzeit
+    const chip = document.querySelector('[data-testid="time-duration-chip"]');
+    expect(chip?.textContent).toContain('12 Min.');
+    expect(document.querySelector('[data-testid="time-sync-bar"]')).toBeNull();
+
+    // Wechsel auf ÖPNV
+    const transitBtn = Array.from(document.querySelectorAll('.transport-toggle button')).find((b) =>
+      b.textContent?.includes('ÖPNV')
+    ) as HTMLElement | undefined;
+    expect(transitBtn).toBeDefined();
+    transitBtn?.click();
+    await nextTick();
+
+    // Im ÖPNV soll die alte Auto-Dauer (12 Min.) nicht mehr als aktive Reisedauer gelten
+    // Die aus der Auto-Route abgeleitete Ankunftszeit wurde geleert, um Verwirrung zu vermeiden
+    const arrInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    expect(arrInput.value).toBe('');
+    // Und es gibt keinen störenden Dauer-Alert-Kasten
+    expect(document.querySelector('[data-testid="time-sync-bar"]')).toBeNull();
+    expect(document.querySelector('[data-testid="time-duration-chip"]')).toBeNull();
+
+    // Nun trägt Nutzer Zug-Ankunftszeit ein (10:45)
+    arrInput.value = '10:45';
+    arrInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    // Dauer-Chip zeigt reale ÖPNV-Reisedauer (45 Min.) ohne Mismatch-Alert!
+    const newChip = document.querySelector('[data-testid="time-duration-chip"]');
+    expect(newChip?.textContent).toContain('45 Min.');
+    expect(document.querySelector('[data-testid="time-sync-bar"]')).toBeNull();
+
+    // Zurückwechseln auf Auto
+    const autoBtn = Array.from(document.querySelectorAll('.transport-toggle button')).find((b) =>
+      b.textContent?.includes('Auto')
+    ) as HTMLElement | undefined;
+    autoBtn?.click();
+    await nextTick();
+
+    // Auto-Route wird aus dem Cache wiederhergestellt (12 Min.)
+    // Da Ankunft zuletzt auf 10:45 gesetzt wurde, passt sich Abfahrt auf 10:33 an
+    const restoredChip = document.querySelector('[data-testid="time-duration-chip"]');
+    expect(restoredChip?.textContent).toContain('12 Min.');
+    const depInput = document.querySelector('.departure-time-wrapper input') as HTMLInputElement;
+    expect(depInput.value).toBe('10:33');
+    expect(arrInput.value).toBe('10:45');
+
+    cleanUp();
+  });
 });

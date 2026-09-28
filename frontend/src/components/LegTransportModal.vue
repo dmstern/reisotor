@@ -161,9 +161,9 @@ const {
   canCalcDeparture,
   arrivalSparkleTitle,
   departureSparkleTitle,
+  canToggleLink,
+  timeLinkTitle,
   timeDurationStatus,
-  alertVariantForStatus,
-  alertIconForStatus,
   syncTimesWithDuration,
   onDepartureInput,
   onArrivalInput,
@@ -176,6 +176,39 @@ const {
   arrivalTime: arrivalTimeRef,
   activeDurationSeconds,
   departureLabel,
+});
+
+const timeDurationInfo = computed<{ label: string; duration: string } | null>(() => {
+  if (
+    timeDurationStatus.value?.type === 'mismatch' ||
+    timeDurationStatus.value?.type === 'suggest'
+  ) {
+    return null;
+  }
+
+  if (activeDurationSeconds.value && activeDurationSeconds.value > 0) {
+    const durStr = formatDuration(activeDurationSeconds.value);
+    let label = 'Reisedauer';
+    const cat = transportCategory.value;
+    if (cat === 'zu Fuß') label = 'Gehzeit';
+    else if (cat === 'Auto' || cat === 'Fahrrad') label = 'Fahrzeit';
+    else if (form.value.transport_type === 'Flugzeug') label = 'Flugdauer';
+    return { label, duration: durStr };
+  }
+
+  if (form.value.departure_time && form.value.arrival_time) {
+    const elapsed = calcElapsedMinutes(form.value.departure_time, form.value.arrival_time);
+    if (elapsed != null && elapsed > 0) {
+      let label = 'Reisedauer';
+      const cat = transportCategory.value;
+      if (cat === 'zu Fuß') label = 'Gehzeit';
+      else if (cat === 'Auto' || cat === 'Fahrrad' || cat === 'ÖPNV') label = 'Fahrzeit';
+      else if (form.value.transport_type === 'Flugzeug') label = 'Flugdauer';
+      return { label, duration: formatDuration(elapsed * 60) };
+    }
+  }
+
+  return null;
 });
 
 const timeLinkedIconDef: IconDef = {
@@ -213,6 +246,19 @@ function onCategorySelect(cat: string) {
   if (cat === 'ÖPNV') {
     form.value.transport_type = selectedTransitType.value || 'Zug';
     isRoutingOpen.value = false;
+    // Wenn von Auto/Fahrrad/zu Fuß auf ÖPNV gewechselt wird:
+    // Aktive Routenberechnung leeren, damit die alte Auto-/Gehzeit nicht im ÖPNV verbleibt
+    calculatedDurationSeconds.value = null;
+    calculatedDistanceMeters.value = null;
+    routeGeometry.value = null;
+    calculatedRoutes.value = [];
+    if (isTimeLinked.value) {
+      if (lastModifiedTimeField.value === 'departure' && form.value.arrival_time) {
+        form.value.arrival_time = '';
+      } else if (lastModifiedTimeField.value === 'arrival' && form.value.departure_time) {
+        form.value.departure_time = '';
+      }
+    }
   } else {
     form.value.transport_type = cat;
     if (hasCoordinates.value) {
@@ -561,126 +607,151 @@ function onDelete() {
         </div>
       </CollapsibleFieldset>
 
-      <div class="row time-row">
-        <FormField icon="time" :label="departureLabel">
-          <div
-            class="time-input-wrap departure-time-wrapper"
-            :class="{ 'has-sparkle': canCalcDeparture }"
-          >
-            <Input
-              v-model="form.departure_time"
-              type="time"
-              @input="onDepartureInput"
-              @change="onDepartureInput"
-            />
-            <button
-              v-if="canCalcDeparture"
-              type="button"
-              class="time-sparkle-btn departure-sparkle-btn"
-              :class="{ 'sparkle-spin': isCalculatingDepartureSparkle }"
-              :title="departureSparkleTitle"
-              :aria-label="departureSparkleTitle"
-              data-testid="departure-sparkle-btn"
-              @mousedown.prevent
-              @click="calcDepartureFromArrival"
+      <div class="time-section">
+        <div class="time-row">
+          <FormField icon="time" :label="departureLabel" class="time-field time-field--departure">
+            <div
+              class="time-input-wrap departure-time-wrapper"
+              :class="{ 'has-sparkle': canCalcDeparture }"
             >
-              <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
-            </button>
-          </div>
-        </FormField>
-        <FormField icon="time" label="Ankunft">
-          <div
-            class="time-input-wrap arrival-time-wrapper"
-            :class="{ 'has-sparkle': canCalcArrival }"
-          >
-            <Input
-              v-model="form.arrival_time"
-              type="time"
-              @input="onArrivalInput"
-              @change="onArrivalInput"
-            />
-            <button
-              v-if="canCalcArrival"
-              type="button"
-              class="time-sparkle-btn arrival-sparkle-btn"
-              :class="{ 'sparkle-spin': isCalculatingArrivalSparkle }"
-              :title="arrivalSparkleTitle"
-              :aria-label="arrivalSparkleTitle"
-              data-testid="arrival-sparkle-btn"
-              @mousedown.prevent
-              @click="calcArrivalFromDeparture"
-            >
-              <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
-            </button>
-          </div>
-        </FormField>
-      </div>
+              <Input
+                v-model="form.departure_time"
+                type="time"
+                @input="onDepartureInput"
+                @change="onDepartureInput"
+              />
+              <button
+                v-if="canCalcDeparture"
+                type="button"
+                class="time-sparkle-btn departure-sparkle-btn"
+                :class="{ 'sparkle-spin': isCalculatingDepartureSparkle }"
+                :title="departureSparkleTitle"
+                :aria-label="departureSparkleTitle"
+                data-testid="departure-sparkle-btn"
+                @mousedown.prevent
+                @click="calcDepartureFromArrival"
+              >
+                <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
+              </button>
+            </div>
+          </FormField>
 
-      <!-- Zeiteffizienz- / Synchronisations-Leiste -->
-      <Alert
-        v-if="timeDurationStatus"
-        class="time-sync-bar"
-        :class="`time-sync-bar--${timeDurationStatus.type}`"
-        :variant="alertVariantForStatus"
-        :icon="alertIconForStatus"
-        size="sm"
-        data-testid="time-sync-bar"
-      >
-        <span class="time-sync-message">
-          <template v-if="timeDurationStatus.type === 'matched'">
-            Dauer & Zeitspanne:
-            <strong>{{ formatDuration(activeDurationSeconds) }}</strong>
-          </template>
-          <template v-else-if="timeDurationStatus.type === 'mismatch'">
+          <!-- Kettensegment-Koppel-Button zwischen Abfahrt und Ankunft (Photoshop/Gimp-Stil) -->
+          <div
+            class="time-link-connector"
+            :class="{ 'is-linked': isTimeLinked, 'is-disabled': !canToggleLink }"
+          >
+            <button
+              type="button"
+              class="time-link-btn"
+              :class="{ 'is-linked': isTimeLinked }"
+              :disabled="!canToggleLink"
+              :title="timeLinkTitle"
+              :aria-label="timeLinkTitle"
+              data-testid="time-link-toggle"
+              @click="toggleTimeLink"
+            >
+              <AppIcon
+                :icon="isTimeLinked ? timeLinkedIconDef : timeUnlinkedIconDef"
+                :size="15"
+                group="actions"
+              />
+            </button>
+          </div>
+
+          <FormField icon="time" label="Ankunft" class="time-field time-field--arrival">
+            <div
+              class="time-input-wrap arrival-time-wrapper"
+              :class="{ 'has-sparkle': canCalcArrival }"
+            >
+              <Input
+                v-model="form.arrival_time"
+                type="time"
+                @input="onArrivalInput"
+                @change="onArrivalInput"
+              />
+              <button
+                v-if="canCalcArrival"
+                type="button"
+                class="time-sparkle-btn arrival-sparkle-btn"
+                :class="{ 'sparkle-spin': isCalculatingArrivalSparkle }"
+                :title="arrivalSparkleTitle"
+                :aria-label="arrivalSparkleTitle"
+                data-testid="arrival-sparkle-btn"
+                @mousedown.prevent
+                @click="calcArrivalFromDeparture"
+              >
+                <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
+              </button>
+            </div>
+          </FormField>
+        </div>
+
+        <!-- Diskreter Dauer-Chip (wenn Zeiten synchron oder bekannt) -->
+        <div v-if="timeDurationInfo" class="time-meta-row" data-testid="time-duration-chip">
+          <span class="time-duration-chip" :class="{ 'is-linked': isTimeLinked }">
+            <AppIcon :icon="ACTION_ICONS.duration" :size="13" group="actions" />
+            <span>
+              {{ timeDurationInfo.label }}:
+              <strong>{{ timeDurationInfo.duration }}</strong>
+            </span>
+          </span>
+        </div>
+
+        <!-- Warnhinweis nur bei Mismatch (Zeiten weichen von Reisedauer ab) -->
+        <Alert
+          v-if="timeDurationStatus?.type === 'mismatch'"
+          class="time-sync-bar time-sync-bar--mismatch"
+          variant="warning"
+          :icon="ACTION_ICONS.warning"
+          size="sm"
+          data-testid="time-sync-bar"
+        >
+          <span class="time-sync-message">
             Zeitfenster:
             <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
             (Reisedauer: {{ formatDuration(activeDurationSeconds) }},
             {{
               (timeDurationStatus.diffMinutes ?? 0) > 0
-                ? `+${formatDuration((timeDurationStatus.diffMinutes ?? 0) * 60)}`
+                ? `+${formatDuration((timeDurationStatus.diffMinutes ?? 0) * 60)} Puffer`
                 : `-${formatDuration(Math.abs(timeDurationStatus.diffMinutes ?? 0) * 60)}`
             }})
-          </template>
-          <template v-else-if="timeDurationStatus.type === 'suggest'">
-            {{ timeDurationStatus.text }}
-          </template>
-          <template v-else-if="timeDurationStatus.type === 'info'">
-            Reisedauer:
-            <strong>{{ formatDuration((timeDurationStatus.elapsedMinutes ?? 0) * 60) }}</strong>
-          </template>
-        </span>
+          </span>
 
-        <template #actions>
-          <Button
-            v-if="timeDurationStatus.canToggleLink"
-            type="button"
-            size="sm"
-            :variant="isTimeLinked ? 'card-action' : 'secondary'"
-            :icon="isTimeLinked ? timeLinkedIconDef : timeUnlinkedIconDef"
-            :class="{ 'is-linked': isTimeLinked }"
-            :title="
-              isTimeLinked
-                ? 'Zeiten sind an Reisedauer gekoppelt (Klick zum Entkoppeln)'
-                : 'Zeiten an Reisedauer koppeln'
-            "
-            data-testid="time-link-toggle"
-            @click="toggleTimeLink"
-          >
-            {{ isTimeLinked ? 'Gekoppelt' : 'Entkoppelt' }}
-          </Button>
-          <Button
-            v-else-if="timeDurationStatus.type === 'suggest'"
-            type="button"
-            size="sm"
-            variant="primary"
-            :icon="ACTION_ICONS.sparkles"
-            data-testid="time-apply-btn"
-            @click="applySuggestedTime(timeDurationStatus.field!, timeDurationStatus.target)"
-          >
-            Übernehmen
-          </Button>
-        </template>
-      </Alert>
+          <template #actions>
+            <Button type="button" size="sm" variant="secondary" @click="syncTimesWithDuration()">
+              Anpassen
+            </Button>
+          </template>
+        </Alert>
+
+        <!-- Übernahme-Vorschlag wenn nur ein Zeitfeld befüllt und Zeiten entkoppelt -->
+        <Alert
+          v-else-if="timeDurationStatus?.type === 'suggest'"
+          class="time-sync-bar time-sync-bar--suggest"
+          variant="info"
+          :icon="ACTION_ICONS.sparkles"
+          size="sm"
+          data-testid="time-sync-bar"
+        >
+          <span class="time-sync-message">
+            {{ timeDurationStatus.text }}
+          </span>
+
+          <template #actions>
+            <Button
+              type="button"
+              size="sm"
+              variant="primary"
+              :icon="ACTION_ICONS.sparkles"
+              data-testid="time-apply-btn"
+              @click="applySuggestedTime(timeDurationStatus.field!, timeDurationStatus.target)"
+            >
+              Übernehmen
+            </Button>
+          </template>
+        </Alert>
+      </div>
 
       <LegExtendedDetails
         v-model:checkin-info="form.checkin_info"
@@ -1081,6 +1152,142 @@ function onDelete() {
   animation: sparkleRotate 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.time-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.time-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: flex-end;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.time-field {
+  min-width: 0;
+}
+
+.time-link-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  position: relative;
+  padding: 0 4px;
+}
+
+.time-link-connector::before,
+.time-link-connector::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 1.5px;
+  background: var(--color-border-strong);
+  transition: background-color 0.18s ease;
+  pointer-events: none;
+}
+
+.time-link-connector::before {
+  right: 100%;
+}
+
+.time-link-connector::after {
+  left: 100%;
+}
+
+.time-link-connector.is-linked::before,
+.time-link-connector.is-linked::after {
+  background: var(--color-primary);
+}
+
+.time-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm-squircle, 8px);
+  corner-shape: squircle;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+  padding: 0;
+  z-index: 2;
+}
+
+.time-link-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-surface-hover, var(--color-hover));
+  transform: scale(1.1);
+  box-shadow: var(--shadow-sm);
+}
+
+.time-link-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.time-link-btn.is-linked {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.time-link-btn.is-linked:hover:not(:disabled) {
+  background: var(--color-primary-tint);
+  border-color: var(--color-primary-hover, var(--color-primary-dark));
+  color: var(--color-primary-hover, var(--color-primary-dark));
+}
+
+.time-link-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.time-link-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.time-meta-row {
+  display: flex;
+  justify-content: center;
+  animation: route-content-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.time-duration-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.time-duration-chip.is-linked {
+  color: var(--color-primary-dark, var(--color-primary));
+  background: var(--color-primary-tint);
+  border-color: transparent;
+}
+
 .time-sync-bar {
   margin-top: calc(-1 * var(--space-1));
 }
@@ -1098,7 +1305,12 @@ function onDelete() {
   .route-mode-pane-inner,
   .route-calc-hint,
   .route-calc-error,
-  .sparkle-spin {
+  .sparkle-spin,
+  .time-link-btn,
+  .time-link-connector::before,
+  .time-link-connector::after,
+  .time-duration-chip,
+  .time-meta-row {
     transition: none !important;
     animation: none !important;
     transform: none !important;
