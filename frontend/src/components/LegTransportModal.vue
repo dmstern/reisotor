@@ -607,19 +607,6 @@ function onDelete() {
                 <span>{{ routeCalculationError }}</span>
               </p>
             </div>
-
-            <!-- 3. Quellenangabe unten in der Card -->
-            <div class="route-source-footer">
-              <span class="route-source-label">Quelle:</span>
-              <a
-                href="https://openrouteservice.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="route-source-link"
-              >
-                OpenRouteService
-              </a>
-            </div>
           </div>
         </div>
       </CollapsibleFieldset>
@@ -1070,32 +1057,6 @@ function onDelete() {
 .route-direct-detail .route-calc-hint {
   color: var(--color-text);
   font-weight: 500;
-}
-
-.route-source-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-1, 4px);
-  padding-top: 4px;
-  border-top: 1px solid var(--color-border-subtle, var(--color-border));
-  font-size: 0.6875rem;
-  color: var(--color-text-muted);
-}
-
-.route-source-label {
-  color: var(--color-text-muted);
-}
-
-.route-source-link {
-  color: var(--color-text-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.15s ease;
-}
-
-.route-source-link:hover {
-  color: var(--color-primary);
 }
 
 .route-mode-pane {
