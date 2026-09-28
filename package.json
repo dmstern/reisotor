@@ -34,6 +34,8 @@
     "test:all": "npm --prefix backend test && npm --prefix frontend test && npm --prefix e2e test",
     "seed": "npm --prefix backend run seed",
     "seed:demo": "npm --prefix backend run seed:demo",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install && npm --prefix e2e install",
+    "install:all:ci": "npm ci && npm --prefix backend ci && npm --prefix frontend ci && npm --prefix e2e ci",
     "e2e:install": "npm --prefix e2e run install-browsers",
     "e2e:report": "npm --prefix e2e run report"
   },

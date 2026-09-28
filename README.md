@@ -102,10 +102,8 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 Voraussetzung: Node.js 20+, sowie `make`/`gcc`/`python3` (für die nativen Module `better-sqlite3` und `bcrypt`).
 
 ```bash
-# Einmalige Installation aller Abhängigkeiten
-npm install
-cd backend  && npm install
-cd frontend && npm install
+# Einmalige Installation aller Abhängigkeiten (Root, Backend, Frontend, E2E)
+npm run install:all
 
 # Startet Backend & Frontend parallel (inkl. automatischem DB-Seed)
 npm run dev
