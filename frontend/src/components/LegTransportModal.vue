@@ -574,7 +574,7 @@ function onDelete() {
         </div>
       </div>
 
-      <!-- Exakte Routen-Berechnung (OpenRouteService) & Luftlinie-Umschalter -->
+      <!-- Exakte Routen-Berechnung & Luftlinie-Umschalter -->
       <div
         class="route-calc-wrapper"
         :class="{ 'is-expanded': isRoutable }"
@@ -585,7 +585,7 @@ function onDelete() {
             <!-- Zustand 1: Noch keine Route berechnet -> Aufforderung zur Berechnung -->
             <div v-if="!hasExactRoute" class="route-calc-header">
               <div class="route-calc-info">
-                <span class="route-calc-title">🗺️ Exakte Route (OpenRouteService)</span>
+                <span class="route-calc-title">🗺️ Exakte Route</span>
                 <div class="route-calc-detail">
                   <span class="route-calc-hint">
                     Echte Wegeroute, Distanz und Fahrzeit für {{ form.transport_type }} berechnen.
@@ -797,6 +797,17 @@ function onDelete() {
             <p v-if="routeCalculationError" class="route-calc-error">
               ⚠️ {{ routeCalculationError }}
             </p>
+
+            <div class="route-calc-footer">
+              <a
+                href="https://openrouteservice.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="route-source-link"
+              >
+                Quelle: OpenRouteService
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -1435,6 +1446,24 @@ function onDelete() {
   font-size: 0.8125rem;
   color: var(--color-danger, #ef4444);
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.route-calc-footer {
+  display: flex;
+  margin-top: 2px;
+}
+
+.route-source-link {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+
+.route-source-link:hover {
+  color: var(--color-primary-dark);
 }
 
 @keyframes route-content-in {

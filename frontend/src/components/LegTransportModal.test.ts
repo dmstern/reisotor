@@ -171,7 +171,13 @@ describe('LegTransportModal', () => {
 
     const calcSection = document.querySelector('.route-calc-section');
     expect(calcSection).not.toBeNull();
-    expect(calcSection?.textContent).toContain('Exakte Route (OpenRouteService)');
+    expect(calcSection?.textContent).toContain('Exakte Route');
+    expect(calcSection?.textContent).toContain('Quelle: OpenRouteService');
+
+    const sourceLink = calcSection?.querySelector('a.route-source-link') as HTMLAnchorElement;
+    expect(sourceLink).not.toBeNull();
+    expect(sourceLink?.href).toBe('https://openrouteservice.org/');
+    expect(sourceLink?.target).toBe('_blank');
 
     cleanUp();
   });
