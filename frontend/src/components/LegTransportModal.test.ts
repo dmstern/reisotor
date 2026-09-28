@@ -650,6 +650,100 @@ describe('LegTransportModal', () => {
     cleanUp();
   });
 
+  it('schaltet bei aktivem Routing automatisch auf neues Verkehrsmittel um und nutzt Cache beim Zurückwechseln', async () => {
+    const { api } = await import('../api/client');
+    const postSpy = vi.mocked(api.post);
+    postSpy.mockClear();
+
+    // Mock für Fahrrad
+    postSpy.mockResolvedValueOnce({
+      supported: true,
+      routes: [
+        {
+          coordinates: [
+            [38.71, -9.14],
+            [38.8, -9.38],
+          ],
+          distance_meters: 22000,
+          duration_seconds: 4800, // 1 Std. 20 Min.
+          profile: 'cycling-regular',
+        },
+      ],
+    });
+
+    const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
+    const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
+    const carLeg: ExcursionLeg = {
+      ...mockLeg,
+      transport_type: 'Auto',
+      route_geometry: '[[38.71,-9.14],[38.8,-9.38]]',
+      distance_meters: 30000,
+      duration_seconds: 1800, // 30 Min.
+      routing_profile: 'driving-car',
+      departure_time: '10:00',
+      arrival_time: '10:30',
+    };
+
+    const { cleanUp } = mountTestApp(LegTransportModal, {
+      modelValue: true,
+      fromSpot: spotWithCoordsA,
+      toSpot: spotWithCoordsB,
+      leg: carLeg,
+      users: mockUsers,
+    });
+    await nextTick();
+
+    // Initial: Auto aktiv, 30,0 km • 30 Min.
+    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30,0 km');
+    expect(postSpy).not.toHaveBeenCalled();
+
+    // Umschalten auf "Fahrrad":
+    const bikeBtn = Array.from(document.querySelectorAll('.transport-toggle button')).find((b) =>
+      b.textContent?.includes('Fahrrad')
+    ) as HTMLElement | undefined;
+    expect(bikeBtn).toBeDefined();
+    bikeBtn?.click();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 20));
+    await nextTick();
+
+    // Sollte api.post für Fahrrad aufgerufen haben
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(postSpy.mock.calls[0][1]).toMatchObject({
+      transport_type: 'Fahrrad',
+    });
+
+    // Stats und Ankunftszeit aktualisiert für Fahrrad (22,0 km, 1 Std. 20 Min., Ankunft 11:20):
+    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('22,0 km');
+    const arrivalInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
+    expect(arrivalInput?.value).toBe('11:20');
+
+    // Zurückwechseln auf "Auto":
+    const autoBtn = Array.from(document.querySelectorAll('.transport-toggle button')).find((b) =>
+      b.textContent?.includes('Auto')
+    ) as HTMLElement | undefined;
+    autoBtn?.click();
+    await nextTick();
+
+    // Darf KEINEN weiteren API-Aufruf ausgelöst haben, da Auto im Frontend-Cache lag!
+    expect(postSpy).toHaveBeenCalledTimes(1);
+
+    // Wiederhergestellte Werte für Auto:
+    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('30,0 km');
+    expect(arrivalInput?.value).toBe('10:30');
+
+    // Erneut auf "Fahrrad" klicken:
+    bikeBtn?.click();
+    await nextTick();
+
+    // Weiterhin kein zusätzlicher API-Aufruf!
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('.route-calc-stats')?.textContent).toContain('22,0 km');
+    expect(arrivalInput?.value).toBe('11:20');
+
+    cleanUp();
+  });
+
   it('schaltet per Präferenz-Umschalter zwischen schnellster und kürzester Route um', async () => {
     const { api } = await import('../api/client');
     vi.mocked(api.post).mockResolvedValueOnce({

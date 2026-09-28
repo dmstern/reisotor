@@ -81,7 +81,7 @@ const toCoords = computed(() => ({
 
 const tripId = computed(() => props.fromSpot?.trip_id || props.toSpot?.trip_id);
 
-const transportTypeRef = toRef(form.value, 'transport_type');
+const transportTypeRef = computed(() => form.value.transport_type);
 
 const {
   isCalculatingRoute,
@@ -458,6 +458,19 @@ function onDelete() {
                       Routenführung
                     </span>
                     <span
+                      v-if="isCalculatingRoute"
+                      class="route-calc-badge route-calc-badge--loading"
+                    >
+                      <AppIcon
+                        :icon="ACTION_ICONS.refresh"
+                        :size="12"
+                        group="actions"
+                        class="route-calc-spinner"
+                      />
+                      Route wird berechnet…
+                    </span>
+                    <span
+                      v-else
                       class="route-calc-badge"
                       :class="{ 'route-calc-badge--dashed': routeDisplayMode === 'direct' }"
                     >
@@ -513,18 +526,6 @@ function onDelete() {
                 </div>
 
                 <div class="route-calc-actions">
-                  <Button
-                    v-if="routeDisplayMode === 'exact'"
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    class="btn-calc-route"
-                    :loading="isCalculatingRoute"
-                    @click="calculateRoute"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.refresh" :size="13" group="actions" />
-                    Neu berechnen
-                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1008,6 +1009,25 @@ function onDelete() {
   border: 1px dashed var(--color-border);
 }
 
+.route-calc-badge--loading {
+  gap: var(--space-1);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.route-calc-spinner {
+  animation: route-spin 1s linear infinite;
+}
+
+@keyframes route-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .route-mode-toggle {
   width: 100%;
 }
@@ -1034,7 +1054,7 @@ function onDelete() {
 .route-calc-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--space-2);
   margin-top: 4px;
 }
