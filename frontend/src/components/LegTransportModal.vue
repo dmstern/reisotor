@@ -455,7 +455,7 @@ function onDelete() {
         :inert="transportCategory !== 'ÖPNV' ? true : undefined"
       >
         <div class="transit-dropdown-inner">
-          <FormField icon="category" label="Öffi-Verkehrsmittel">
+          <FormField icon="category" label="Verkehrsmittel">
             <Select
               :model-value="selectedTransitType"
               class="transit-select"
