@@ -92,6 +92,8 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     const track = create.json();
     expect(track.visibility).toBe('private');
     expect(track.user_id).toBeDefined();
+    expect(track.author_username).toBe('track-owner');
+    expect(track.author_avatar).toBe('🧭');
 
     const ownerList = await app.inject({
       method: 'GET',
@@ -99,6 +101,9 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
       headers: { cookie: ownerCookie },
     });
     expect(ownerList.json().map((t: { id: number }) => t.id)).toContain(track.id);
+    const ownerTrack = ownerList.json().find((t: { id: number }) => t.id === track.id);
+    expect(ownerTrack.author_username).toBe('track-owner');
+    expect(ownerTrack.author_avatar).toBe('🧭');
 
     const memberList = await app.inject({
       method: 'GET',

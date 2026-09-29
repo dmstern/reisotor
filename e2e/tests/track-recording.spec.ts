@@ -84,25 +84,30 @@ test.describe('Standort-Aufzeichnung', () => {
 
     await trackRow.locator('.track-row-main').click();
 
-    // Sichtbarkeits-Umschalter: von privat (Standard) auf geteilt. aria-label statt Emoji-Text
-    // (group="actions" rendert seit #168 immer SVG, siehe ExcursionsView.vue).
-    const visibilityBtn = trackRow.locator('[aria-label="Mit allen teilen"]');
-    await expect(visibilityBtn).toBeVisible();
-    await visibilityBtn.click();
-    await expect(trackRow.locator('[aria-label="Teilen zurücknehmen"]')).toBeVisible();
-
-    // Track bearbeiten: Name vergeben
+    // Track bearbeiten: Name vergeben und Sichtbarkeit im neuen Berechtigungen-Tab auf geteilt stellen
     const editBtn = trackRow.locator('[aria-label="Aufzeichnung bearbeiten"]');
     await expect(editBtn).toBeVisible();
     await editBtn.click();
 
     const trackModal = page.locator('.modal', { hasText: 'Aufzeichnung bearbeiten' });
     await expect(trackModal).toBeVisible();
+
+    // Berechtigungen-Tab öffnen und auf geteilt ("Für alle Mitreisenden sichtbar") umstellen
+    await trackModal.locator('.tab', { hasText: 'Berechtigungen' }).click();
+    const sharedCard = trackModal.locator('.visibility-card', {
+      hasText: 'Für alle Mitreisenden sichtbar',
+    });
+    await expect(sharedCard).toBeVisible();
+    await sharedCard.click();
+    await expect(sharedCard).toHaveClass(/is-active/);
+
+    // Zurück zu Allgemein und Name vergeben
+    await trackModal.locator('.tab', { hasText: 'Allgemein' }).click();
     await trackModal.getByPlaceholder('z. B. Wanderung zur Berghütte').fill('Morgenrunde');
     await trackModal.getByRole('button', { name: 'Speichern' }).click();
     await expect(trackModal).not.toBeVisible();
 
-    await expect(trackRow.locator('.track-row-title')).toHaveText('Morgenrunde');
+    await expect(trackRow.locator('.track-row-title')).toContainText('Morgenrunde');
   });
 
   // Pausieren (z. B. Stromsparen bei längerem Aufenthalt an einem Ort, Nutzer-Anforderung) hängt

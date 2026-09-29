@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createApp, h, nextTick, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import TrackPlayback from './TrackPlayback.vue';
-import type { TrackPoint } from '../api/types';
+import type { LocationTrack, TrackPoint } from '../api/types';
 
 describe('TrackPlayback', () => {
   beforeEach(() => {
@@ -64,7 +64,10 @@ describe('TrackPlayback', () => {
   ];
 
   interface MountOptions {
+    track?: LocationTrack | null;
     title?: string | null;
+    authorAvatar?: string | null;
+    authorName?: string | null;
     points?: TrackPoint[];
     progress?: number;
     onUpdateProgress?: (val: number) => void;
@@ -85,7 +88,10 @@ describe('TrackPlayback', () => {
     const app = createApp({
       render: () =>
         h(TrackPlayback, {
+          track: options.track,
           title: options.title,
+          authorAvatar: options.authorAvatar,
+          authorName: options.authorName,
           points: options.points ?? samplePoints,
           progress: progressRef.value,
           'onUpdate:progress': onUpdate,
@@ -241,6 +247,43 @@ describe('TrackPlayback', () => {
     cleanUp();
   });
 
+  it('opens and closes speed popover and updates trigger label', async () => {
+    const { container, cleanUp } = mountPlayback();
+
+    const trigger = container.querySelector<HTMLButtonElement>('.speed-trigger-btn');
+    expect(trigger).toBeTruthy();
+    expect(trigger?.textContent?.trim()).toBe('1x');
+
+    const popover = container.querySelector<HTMLElement>('.speed-popover');
+    expect(popover).toBeTruthy();
+    expect(popover?.style.display).toBe('none');
+
+    // Click trigger to open
+    trigger?.click();
+    await nextTick();
+    expect(popover?.style.display).not.toBe('none');
+    expect(trigger?.getAttribute('aria-expanded')).toBe('true');
+
+    // Select 5x
+    const speedButtons = container.querySelectorAll<HTMLButtonElement>('.speed-btn');
+    speedButtons[2].click();
+    await nextTick();
+
+    expect(trigger?.textContent?.trim()).toBe('5x');
+    expect(popover?.style.display).toBe('none');
+
+    // Reopen and close via Escape
+    trigger?.click();
+    await nextTick();
+    expect(popover?.style.display).not.toBe('none');
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await nextTick();
+    expect(popover?.style.display).toBe('none');
+
+    cleanUp();
+  });
+
   it('gracefully handles tracks with empty points or missing altitude', async () => {
     // 1. Empty points
     const { container: emptyContainer, cleanUp: cleanUpEmpty } = mountPlayback({
@@ -307,6 +350,33 @@ describe('TrackPlayback', () => {
 
     closeBtn?.click();
     expect(onClose).toHaveBeenCalledTimes(1);
+
+    cleanUp();
+  });
+
+  it('renders author avatar and username when provided on track or props', async () => {
+    const { container, cleanUp } = mountPlayback({
+      points: samplePoints,
+      track: {
+        id: 10,
+        trip_id: 1,
+        user_id: 2,
+        author_username: 'Anna',
+        author_avatar: '🦊',
+        excursion_id: null,
+        title: 'Schöne Wanderung',
+        visibility: 'shared',
+        started_at: '2026-09-26T10:00:00.000Z',
+        ended_at: '2026-09-26T10:30:00.000Z',
+      },
+    });
+    await nextTick();
+
+    const authorEl = container.querySelector('.track-playback-author');
+    expect(authorEl).toBeTruthy();
+    expect(authorEl?.querySelector('.track-playback-author-avatar')?.textContent).toBe('🦊');
+    expect(authorEl?.querySelector('.track-playback-author-name')?.textContent).toBe('Anna');
+    expect(authorEl?.getAttribute('title')).toBe('Aufgezeichnet von Anna');
 
     cleanUp();
   });

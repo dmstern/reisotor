@@ -7,6 +7,8 @@ export type PlaybackSpeed = (typeof SPEEDS)[number];
 export interface TrackPlaybackProps {
   track?: LocationTrack | null;
   title?: string | null;
+  authorAvatar?: string | null;
+  authorName?: string | null;
   points: TrackPoint[];
   progress?: number;
   active?: boolean;
@@ -14,7 +16,7 @@ export interface TrackPlaybackProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import {
   formatDistanceShort,
   formatDurationShort,
@@ -48,6 +50,8 @@ const ELEVATION_ICON: IconDef = {
 const props = withDefaults(defineProps<TrackPlaybackProps>(), {
   track: null,
   title: undefined,
+  authorAvatar: undefined,
+  authorName: undefined,
   progress: 0,
   active: true,
 });
@@ -131,6 +135,38 @@ function setSpeed(s: PlaybackSpeed) {
   }
 }
 
+const showSpeedPopover = ref(false);
+const speedWrapperRef = ref<HTMLElement | null>(null);
+
+function toggleSpeedPopover() {
+  showSpeedPopover.value = !showSpeedPopover.value;
+}
+
+function selectSpeed(s: PlaybackSpeed) {
+  setSpeed(s);
+  showSpeedPopover.value = false;
+}
+
+function onWindowClick(event: MouseEvent) {
+  if (!showSpeedPopover.value) return;
+  const target = event.target as Node | null;
+  if (!target) return;
+  if (speedWrapperRef.value && !speedWrapperRef.value.contains(target)) {
+    showSpeedPopover.value = false;
+  }
+}
+
+function onWindowKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && showSpeedPopover.value) {
+    showSpeedPopover.value = false;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', onWindowClick, true);
+  window.addEventListener('keydown', onWindowKeydown);
+});
+
 function cycleSpeed() {
   const currentIndex = SPEEDS.indexOf(speed.value);
   const nextIndex = (currentIndex + 1) % SPEEDS.length;
@@ -153,14 +189,28 @@ watch(
     if (!isActive) stopAnimation();
   }
 );
-onUnmounted(stopAnimation);
+onUnmounted(() => {
+  stopAnimation();
+  window.removeEventListener('click', onWindowClick, true);
+  window.removeEventListener('keydown', onWindowKeydown);
+});
 
 // --- Metriken ---
 const distance = computed(() => trackDistanceMeters(props.points));
-const duration = computed(() => trackDurationMs(props.points));
+const duration = computed(() => {
+  const pointsDuration = trackDurationMs(props.points);
+  if (pointsDuration > 0) return pointsDuration;
+  if (props.track?.started_at && props.track?.ended_at) {
+    const trackMs =
+      new Date(props.track.ended_at).getTime() - new Date(props.track.started_at).getTime();
+    if (trackMs > 0) return trackMs;
+  }
+  return 0;
+});
 const avgSpeed = computed(() => trackAverageSpeedKmh(distance.value, duration.value));
 const avgSpeedLabel = computed(() => {
   if (avgSpeed.value == null || avgSpeed.value <= 0) return '';
+  if (avgSpeed.value > 300) return '';
   return formatSpeedShort(avgSpeed.value);
 });
 const elevation = computed(() => trackElevation(props.points));
@@ -217,7 +267,17 @@ const currentTimeOfDay = computed(() => {
   if (props.points.length < 2) return '';
   const startMs = new Date(props.points[0].recorded_at).getTime();
   const endMs = new Date(props.points[props.points.length - 1].recorded_at).getTime();
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return '';
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+    if (props.track?.started_at && props.track?.ended_at) {
+      const tStart = new Date(props.track.started_at).getTime();
+      const tEnd = new Date(props.track.ended_at).getTime();
+      if (Number.isFinite(tStart) && Number.isFinite(tEnd) && tEnd > tStart) {
+        const cur = tStart + (props.progress ?? 0) * (tEnd - tStart);
+        return timeOfDayFormatter.format(new Date(cur));
+      }
+    }
+    return '';
+  }
   const currentMs = startMs + (props.progress ?? 0) * (endMs - startMs);
   return timeOfDayFormatter.format(new Date(currentMs));
 });
@@ -236,6 +296,12 @@ const trackDateLabel = computed(() => {
 
 const displayTitle = computed(() => props.title || props.track?.title || 'Aufzeichnung');
 
+const trackAuthorAvatar = computed(() => props.authorAvatar ?? props.track?.author_avatar ?? null);
+const trackAuthorName = computed(() => props.authorName ?? props.track?.author_username ?? '');
+const trackAuthorTitle = computed(() =>
+  trackAuthorName.value ? `Aufgezeichnet von ${trackAuthorName.value}` : 'Aufzeichnung'
+);
+
 defineExpose({
   playing,
   speed,
@@ -243,6 +309,7 @@ defineExpose({
   cycleSpeed,
   togglePlay,
   stopAnimation,
+  showSpeedPopover,
 });
 </script>
 
@@ -258,6 +325,10 @@ defineExpose({
           class="track-playback-icon"
         />
         <span class="track-playback-title">{{ displayTitle }}</span>
+        <span v-if="trackAuthorAvatar" class="track-playback-author" :title="trackAuthorTitle">
+          <span class="track-playback-author-avatar">{{ trackAuthorAvatar }}</span>
+          <span class="track-playback-author-name">{{ trackAuthorName }}</span>
+        </span>
         <span v-if="trackDateLabel" class="track-playback-date">{{ trackDateLabel }}</span>
       </div>
       <IconButton
@@ -331,19 +402,41 @@ defineExpose({
         :aria-valuetext="`${currentElapsedLabel} von ${totalDurationLabel}`"
       />
 
-      <div class="playback-speed-group" role="group" aria-label="Wiedergabegeschwindigkeit">
+      <div ref="speedWrapperRef" class="speed-picker-wrapper">
         <button
-          v-for="s in SPEEDS"
-          :key="s"
           type="button"
-          class="speed-btn"
-          :class="{ active: speed === s }"
-          :aria-pressed="speed === s"
-          :title="`Geschwindigkeit ${s}x`"
-          @click="setSpeed(s)"
+          class="speed-trigger-btn"
+          :class="{ 'is-open': showSpeedPopover }"
+          aria-label="Wiedergabegeschwindigkeit ändern"
+          :title="`Geschwindigkeit: ${speed}x (tippen zum Ändern)`"
+          :aria-expanded="showSpeedPopover"
+          aria-haspopup="dialog"
+          @click.stop="toggleSpeedPopover"
         >
-          {{ s }}x
+          <span class="speed-trigger-label">{{ speed }}x</span>
         </button>
+
+        <div
+          v-show="showSpeedPopover"
+          class="speed-popover"
+          role="dialog"
+          aria-label="Wiedergabegeschwindigkeit wählen"
+        >
+          <div class="playback-speed-group" role="group" aria-label="Wiedergabegeschwindigkeit">
+            <button
+              v-for="s in SPEEDS"
+              :key="s"
+              type="button"
+              class="speed-btn"
+              :class="{ active: speed === s }"
+              :aria-pressed="speed === s"
+              :title="`Geschwindigkeit ${s}x`"
+              @click="selectSpeed(s)"
+            >
+              {{ s }}x
+            </button>
+          </div>
+        </div>
       </div>
 
       <span class="playback-time" aria-live="off">
@@ -368,12 +461,13 @@ defineExpose({
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
+  container-type: inline-size;
   background: var(--color-surface-glass, rgba(255, 255, 255, 0.92));
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border, var(--color-border));
   border-radius: var(--radius-md-squircle, 12px);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.12));
+  box-shadow: var(--shadow-md);
 }
 
 .track-playback-header {
@@ -413,6 +507,35 @@ defineExpose({
   flex-shrink: 0;
 }
 
+.track-playback-author {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.track-playback-author-avatar {
+  line-height: 1;
+}
+
+.track-playback-author-name {
+  white-space: nowrap;
+}
+
+@container (max-width: 500px) {
+  .track-playback-author-name {
+    display: none;
+  }
+}
+
+@media (max-width: 500px) {
+  .track-playback-author-name {
+    display: none;
+  }
+}
+
 .track-playback-stats {
   display: flex;
   flex-wrap: wrap;
@@ -423,7 +546,7 @@ defineExpose({
 .metric-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 2px 7px;
   border-radius: var(--radius-pill);
   background: var(--color-hover);
@@ -442,8 +565,8 @@ defineExpose({
 }
 
 .playback-slider {
-  flex: 1;
-  min-width: 60px;
+  flex: 1 1 0;
+  min-width: 40px;
   height: 6px;
   accent-color: var(--color-primary);
   border-radius: var(--radius-pill);
@@ -460,6 +583,62 @@ defineExpose({
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   border-radius: var(--radius-pill);
+}
+
+.speed-picker-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.speed-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  line-height: 1.2;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.speed-trigger-btn:hover,
+.speed-trigger-btn.is-open {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.speed-trigger-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.speed-popover {
+  position: absolute;
+  bottom: calc(100% + var(--space-1) + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-md);
+  padding: var(--space-1);
+  white-space: nowrap;
 }
 
 .playback-speed-group {
@@ -497,16 +676,56 @@ defineExpose({
 .speed-btn.active {
   background: var(--color-surface);
   color: var(--color-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .playback-time {
-  flex: none;
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+@container (max-width: 380px) {
+  .track-playback {
+    padding: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .track-playback-controls {
+    gap: var(--space-1);
+  }
+
+  .playback-time {
+    font-size: 0.72rem;
+  }
+
+  .metric-chip {
+    padding: 1px 5px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .track-playback {
+    padding: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .track-playback-controls {
+    gap: var(--space-1);
+  }
+
+  .playback-time {
+    font-size: 0.72rem;
+  }
+
+  .metric-chip {
+    padding: 1px 5px;
+    font-size: 0.7rem;
+  }
 }
 
 .track-playback-range {

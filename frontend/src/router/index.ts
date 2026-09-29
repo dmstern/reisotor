@@ -111,7 +111,7 @@ const router = createRouter({
       path: '/trip/:tripId/spots',
       redirect: (to) => ({
         path: `/trip/${to.params.tripId}/excursions`,
-        query: { ...to.query, group: 'spots' },
+        query: { group: 'spots', ...to.query },
       }),
     },
     {
