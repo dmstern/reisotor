@@ -241,6 +241,43 @@ describe('TrackPlayback', () => {
     cleanUp();
   });
 
+  it('opens and closes speed popover and updates trigger label', async () => {
+    const { container, cleanUp } = mountPlayback();
+
+    const trigger = container.querySelector<HTMLButtonElement>('.speed-trigger-btn');
+    expect(trigger).toBeTruthy();
+    expect(trigger?.textContent?.trim()).toBe('1x');
+
+    const popover = container.querySelector<HTMLElement>('.speed-popover');
+    expect(popover).toBeTruthy();
+    expect(popover?.style.display).toBe('none');
+
+    // Click trigger to open
+    trigger?.click();
+    await nextTick();
+    expect(popover?.style.display).not.toBe('none');
+    expect(trigger?.getAttribute('aria-expanded')).toBe('true');
+
+    // Select 5x
+    const speedButtons = container.querySelectorAll<HTMLButtonElement>('.speed-btn');
+    speedButtons[2].click();
+    await nextTick();
+
+    expect(trigger?.textContent?.trim()).toBe('5x');
+    expect(popover?.style.display).toBe('none');
+
+    // Reopen and close via Escape
+    trigger?.click();
+    await nextTick();
+    expect(popover?.style.display).not.toBe('none');
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await nextTick();
+    expect(popover?.style.display).toBe('none');
+
+    cleanUp();
+  });
+
   it('gracefully handles tracks with empty points or missing altitude', async () => {
     // 1. Empty points
     const { container: emptyContainer, cleanUp: cleanUpEmpty } = mountPlayback({

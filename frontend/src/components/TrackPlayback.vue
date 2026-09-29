@@ -14,7 +14,7 @@ export interface TrackPlaybackProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import {
   formatDistanceShort,
   formatDurationShort,
@@ -131,6 +131,38 @@ function setSpeed(s: PlaybackSpeed) {
   }
 }
 
+const showSpeedPopover = ref(false);
+const speedWrapperRef = ref<HTMLElement | null>(null);
+
+function toggleSpeedPopover() {
+  showSpeedPopover.value = !showSpeedPopover.value;
+}
+
+function selectSpeed(s: PlaybackSpeed) {
+  setSpeed(s);
+  showSpeedPopover.value = false;
+}
+
+function onWindowClick(event: MouseEvent) {
+  if (!showSpeedPopover.value) return;
+  const target = event.target as Node | null;
+  if (!target) return;
+  if (speedWrapperRef.value && !speedWrapperRef.value.contains(target)) {
+    showSpeedPopover.value = false;
+  }
+}
+
+function onWindowKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && showSpeedPopover.value) {
+    showSpeedPopover.value = false;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', onWindowClick, true);
+  window.addEventListener('keydown', onWindowKeydown);
+});
+
 function cycleSpeed() {
   const currentIndex = SPEEDS.indexOf(speed.value);
   const nextIndex = (currentIndex + 1) % SPEEDS.length;
@@ -153,7 +185,11 @@ watch(
     if (!isActive) stopAnimation();
   }
 );
-onUnmounted(stopAnimation);
+onUnmounted(() => {
+  stopAnimation();
+  window.removeEventListener('click', onWindowClick, true);
+  window.removeEventListener('keydown', onWindowKeydown);
+});
 
 // --- Metriken ---
 const distance = computed(() => trackDistanceMeters(props.points));
@@ -161,6 +197,7 @@ const duration = computed(() => trackDurationMs(props.points));
 const avgSpeed = computed(() => trackAverageSpeedKmh(distance.value, duration.value));
 const avgSpeedLabel = computed(() => {
   if (avgSpeed.value == null || avgSpeed.value <= 0) return '';
+  if (avgSpeed.value > 300) return '';
   return formatSpeedShort(avgSpeed.value);
 });
 const elevation = computed(() => trackElevation(props.points));
@@ -243,6 +280,7 @@ defineExpose({
   cycleSpeed,
   togglePlay,
   stopAnimation,
+  showSpeedPopover,
 });
 </script>
 
@@ -331,19 +369,41 @@ defineExpose({
         :aria-valuetext="`${currentElapsedLabel} von ${totalDurationLabel}`"
       />
 
-      <div class="playback-speed-group" role="group" aria-label="Wiedergabegeschwindigkeit">
+      <div ref="speedWrapperRef" class="speed-picker-wrapper">
         <button
-          v-for="s in SPEEDS"
-          :key="s"
           type="button"
-          class="speed-btn"
-          :class="{ active: speed === s }"
-          :aria-pressed="speed === s"
-          :title="`Geschwindigkeit ${s}x`"
-          @click="setSpeed(s)"
+          class="speed-trigger-btn"
+          :class="{ 'is-open': showSpeedPopover }"
+          aria-label="Wiedergabegeschwindigkeit ändern"
+          :title="`Geschwindigkeit: ${speed}x (tippen zum Ändern)`"
+          :aria-expanded="showSpeedPopover"
+          aria-haspopup="dialog"
+          @click.stop="toggleSpeedPopover"
         >
-          {{ s }}x
+          <span class="speed-trigger-label">{{ speed }}x</span>
         </button>
+
+        <div
+          v-show="showSpeedPopover"
+          class="speed-popover"
+          role="dialog"
+          aria-label="Wiedergabegeschwindigkeit wählen"
+        >
+          <div class="playback-speed-group" role="group" aria-label="Wiedergabegeschwindigkeit">
+            <button
+              v-for="s in SPEEDS"
+              :key="s"
+              type="button"
+              class="speed-btn"
+              :class="{ active: speed === s }"
+              :aria-pressed="speed === s"
+              :title="`Geschwindigkeit ${s}x`"
+              @click="selectSpeed(s)"
+            >
+              {{ s }}x
+            </button>
+          </div>
+        </div>
       </div>
 
       <span class="playback-time" aria-live="off">
@@ -442,8 +502,8 @@ defineExpose({
 }
 
 .playback-slider {
-  flex: 1;
-  min-width: 60px;
+  flex: 1 1 0;
+  min-width: 40px;
   height: 6px;
   accent-color: var(--color-primary);
   border-radius: var(--radius-pill);
@@ -460,6 +520,62 @@ defineExpose({
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   border-radius: var(--radius-pill);
+}
+
+.speed-picker-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.speed-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  line-height: 1.2;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.speed-trigger-btn:hover,
+.speed-trigger-btn.is-open {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.speed-trigger-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.speed-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-md, 0 4px 14px rgba(0, 0, 0, 0.15));
+  padding: 4px;
+  white-space: nowrap;
 }
 
 .playback-speed-group {
@@ -501,12 +617,32 @@ defineExpose({
 }
 
 .playback-time {
-  flex: none;
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .track-playback {
+    padding: var(--space-2);
+    gap: 6px;
+  }
+
+  .track-playback-controls {
+    gap: 6px;
+  }
+
+  .playback-time {
+    font-size: 0.72rem;
+  }
+
+  .metric-chip {
+    padding: 1px 5px;
+    font-size: 0.7rem;
+  }
 }
 
 .track-playback-range {
