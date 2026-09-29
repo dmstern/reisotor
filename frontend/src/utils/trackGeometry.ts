@@ -46,7 +46,18 @@ export function interpolateTrackPosition(
   }
   const startMs = new Date(points[0].recorded_at).getTime();
   const endMs = new Date(points[points.length - 1].recorded_at).getTime();
-  const targetMs = startMs + progress * (endMs - startMs);
+  const spanTotal = endMs - startMs;
+  if (!Number.isFinite(spanTotal) || spanTotal <= 0) {
+    const fractionalIndex = progress * (points.length - 1);
+    const lowIndex = Math.floor(fractionalIndex);
+    const highIndex = Math.min(points.length - 1, lowIndex + 1);
+    const t = fractionalIndex - lowIndex;
+    return {
+      lat: points[lowIndex].lat + (points[highIndex].lat - points[lowIndex].lat) * t,
+      lng: points[lowIndex].lng + (points[highIndex].lng - points[lowIndex].lng) * t,
+    };
+  }
+  const targetMs = startMs + progress * spanTotal;
   for (let i = 1; i < points.length; i++) {
     const prevMs = new Date(points[i - 1].recorded_at).getTime();
     const curMs = new Date(points[i].recorded_at).getTime();

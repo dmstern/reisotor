@@ -885,6 +885,29 @@ db.prepare(
 );
 
 // --- Tracks (Aufzeichnungen) ---
+// Realistische Demodaten für einen 2,0 km Abendspaziergang am Tejo (Lissabon):
+// Dauer: 35 Minuten (18:30 bis 19:05) -> ca. 3,4 km/h gemütliches Schlendern mit Fotostopps
+const trackBaseDate = isScreenshotMode
+  ? new Date('2026-08-15T18:30:00.000Z')
+  : (() => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 1);
+      d.setHours(18, 30, 0, 0);
+      return d;
+    })();
+
+const sampleTrackPoints = [
+  { lat: 38.7061, lng: -9.145, offsetMin: 0, alt: 12.0 },
+  { lat: 38.7058, lng: -9.1415, offsetMin: 7, alt: 11.5 },
+  { lat: 38.7071, lng: -9.1365, offsetMin: 15, alt: 13.0 },
+  { lat: 38.7085, lng: -9.1325, offsetMin: 22, alt: 16.5 },
+  { lat: 38.711, lng: -9.128, offsetMin: 29, alt: 14.0 },
+  { lat: 38.7125, lng: -9.124, offsetMin: 35, alt: 12.0 },
+];
+
+const trackStartMs = trackBaseDate.getTime();
+const trackEndMs = trackStartMs + 35 * 60 * 1000;
+
 const trackResult = db
   .prepare(
     `INSERT INTO location_tracks (trip_id, user_id, title, visibility, started_at, ended_at)
@@ -894,30 +917,18 @@ const trackResult = db
     tripId,
     user1.id,
     'Abendspaziergang am Tejo',
-    isScreenshotMode
-      ? '2026-08-15T18:30:00.000Z'
-      : new Date(today.getTime() - 86400000).toISOString(),
-    isScreenshotMode
-      ? '2026-08-15T19:45:00.000Z'
-      : new Date(today.getTime() - 82000000).toISOString()
+    new Date(trackStartMs).toISOString(),
+    new Date(trackEndMs).toISOString()
   );
 const trackId = trackResult.lastInsertRowid as number;
 
 const insertPoint = db.prepare(
-  'INSERT INTO location_track_points (track_id, lat, lng, recorded_at, accuracy) VALUES (?, ?, ?, ?, ?)'
+  'INSERT INTO location_track_points (track_id, lat, lng, recorded_at, accuracy, altitude) VALUES (?, ?, ?, ?, ?, ?)'
 );
 
-const sampleTrackPoints = [
-  { lat: 38.7061, lng: -9.145, t: '2026-08-15T18:30:00.000Z' },
-  { lat: 38.7058, lng: -9.1415, t: '2026-08-15T18:40:00.000Z' },
-  { lat: 38.7071, lng: -9.1365, t: '2026-08-15T18:55:00.000Z' },
-  { lat: 38.7085, lng: -9.1325, t: '2026-08-15T19:15:00.000Z' },
-  { lat: 38.711, lng: -9.128, t: '2026-08-15T19:35:00.000Z' },
-  { lat: 38.7125, lng: -9.124, t: '2026-08-15T19:45:00.000Z' },
-];
-
 for (const p of sampleTrackPoints) {
-  insertPoint.run(trackId, p.lat, p.lng, isScreenshotMode ? p.t : new Date().toISOString(), 5.0);
+  const pointTime = new Date(trackStartMs + p.offsetMin * 60 * 1000).toISOString();
+  insertPoint.run(trackId, p.lat, p.lng, pointTime, 5.0, p.alt);
 }
 
 console.log(

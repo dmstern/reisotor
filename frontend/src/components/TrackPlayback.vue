@@ -193,7 +193,16 @@ onUnmounted(() => {
 
 // --- Metriken ---
 const distance = computed(() => trackDistanceMeters(props.points));
-const duration = computed(() => trackDurationMs(props.points));
+const duration = computed(() => {
+  const pointsDuration = trackDurationMs(props.points);
+  if (pointsDuration > 0) return pointsDuration;
+  if (props.track?.started_at && props.track?.ended_at) {
+    const trackMs =
+      new Date(props.track.ended_at).getTime() - new Date(props.track.started_at).getTime();
+    if (trackMs > 0) return trackMs;
+  }
+  return 0;
+});
 const avgSpeed = computed(() => trackAverageSpeedKmh(distance.value, duration.value));
 const avgSpeedLabel = computed(() => {
   if (avgSpeed.value == null || avgSpeed.value <= 0) return '';
@@ -254,7 +263,17 @@ const currentTimeOfDay = computed(() => {
   if (props.points.length < 2) return '';
   const startMs = new Date(props.points[0].recorded_at).getTime();
   const endMs = new Date(props.points[props.points.length - 1].recorded_at).getTime();
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return '';
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+    if (props.track?.started_at && props.track?.ended_at) {
+      const tStart = new Date(props.track.started_at).getTime();
+      const tEnd = new Date(props.track.ended_at).getTime();
+      if (Number.isFinite(tStart) && Number.isFinite(tEnd) && tEnd > tStart) {
+        const cur = tStart + (props.progress ?? 0) * (tEnd - tStart);
+        return timeOfDayFormatter.format(new Date(cur));
+      }
+    }
+    return '';
+  }
   const currentMs = startMs + (props.progress ?? 0) * (endMs - startMs);
   return timeOfDayFormatter.format(new Date(currentMs));
 });
