@@ -221,45 +221,8 @@ async function onCreateTourFromTrack(title: string) {
   onToggleTrackTour(newExcursion.id);
 }
 
-const pendingRowTrackAssign = ref<{ track: LocationTrack; tourId: number } | null>(null);
-
-function trackTourAssignmentsFor(track: LocationTrack): TourItem[] {
-  return excursionsStore.excursions.map((e) => ({
-    id: e.id,
-    title: e.title,
-    assigned: track.excursion_id === e.id,
-  }));
-}
-
-async function onToggleRowTrackTour(track: LocationTrack, tourId: number) {
-  if (track.excursion_id === tourId) {
-    await tracksStore.update(track.id, { excursion_id: null });
-    return;
-  }
-  const tour = excursionsStore.excursions.find((e) => e.id === tourId);
-  if (track.visibility === 'private' && users.value.length > 1) {
-    pendingRowTrackAssign.value = { track, tourId };
-    shareWarningTrackTitle.value = trackTitle(track);
-    shareWarningTourTitle.value = tour?.title || 'Tour';
-    showTrackShareWarningModal.value = true;
-  } else {
-    await tracksStore.update(track.id, { excursion_id: tourId });
-  }
-}
-
-async function onCreateTourFromRowTrack(track: LocationTrack, title: string) {
-  const trimmed = title.trim();
-  if (!trimmed) return;
-  const newTour = await excursionsStore.create({ title: trimmed });
-  await onToggleRowTrackTour(track, newTour.id);
-}
-
 function onConfirmShareModal() {
-  if (pendingRowTrackAssign.value) {
-    const { track, tourId } = pendingRowTrackAssign.value;
-    tracksStore.update(track.id, { excursion_id: tourId, visibility: 'shared' });
-    pendingRowTrackAssign.value = null;
-  } else if (pendingTrackTourId.value != null) {
+  if (pendingTrackTourId.value != null) {
     editTrackExcursionId.value = pendingTrackTourId.value;
     editTrackVisibility.value = 'shared';
     pendingTrackTourId.value = null;
@@ -5380,12 +5343,6 @@ async function deleteEditingSpot() {
                     >
                       <AppIcon :icon="ACTION_ICONS.recordStop" :size="15" group="actions" />
                     </button>
-                    <TourAssignDropdown
-                      class="track-tour-dropdown"
-                      :tours="trackTourAssignmentsFor(track)"
-                      @toggle-tour="(tourId) => onToggleRowTrackTour(track, tourId)"
-                      @create-tour="(title) => onCreateTourFromRowTrack(track, title)"
-                    />
                     <button
                       type="button"
                       class="track-icon-btn"
@@ -7085,30 +7042,12 @@ async function deleteEditingSpot() {
     padding: var(--space-2);
     gap: var(--space-1);
   }
-
-  .track-row .tour-assign-label {
-    display: none;
-  }
-
-  .track-row .tour-assign-btn {
-    padding: 6px;
-    border-radius: var(--radius-sm-squircle);
-  }
 }
 
 @media (max-width: 480px) {
   .track-row {
     padding: var(--space-2);
     gap: var(--space-1);
-  }
-
-  .track-row .tour-assign-label {
-    display: none;
-  }
-
-  .track-row .tour-assign-btn {
-    padding: 6px;
-    border-radius: var(--radius-sm-squircle);
   }
 }
 
