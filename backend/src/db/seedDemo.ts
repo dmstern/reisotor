@@ -1,16 +1,30 @@
 import '../loadEnv.js';
 import bcrypt from 'bcrypt';
-import { db, ensureDefaultSharedBudget } from './index.js';
+import { clearDatabase, db, ensureDefaultSharedBudget } from './index.js';
 
 // Demo-Seed für Sandbox-/Dev-Umgebungen: legt zusätzlich zu den 2 Standard-Nutzern (wie seed.ts)
 // einen kompletten Beispiel-Urlaub mit Daten in allen Bereichen an, damit eine frische Instanz
 // sofort "voll" aussieht und sich Änderungen ohne manuelles Anlegen von Trip/Unterkunft/Budget
 // etc. testen lassen. Läuft NIE auf dem Produktions-Pi (siehe deploy.sh/README) – nur lokal/in
-// Sandboxes. Bricht ab, statt Duplikate anzulegen, falls schon ein Urlaub existiert.
+// Sandboxes. Bricht ab, statt Duplikate anzulegen, falls schon ein Urlaub existiert (es sei denn,
+// --force wird übergeben, wodurch die bestehende Datenbank vorab bereinigt wird).
+const isForced = process.argv.includes('--force') || process.env.FORCE === '1';
 const existingTrip = db.prepare('SELECT id FROM trips LIMIT 1').get();
-if (existingTrip) {
-  console.log('Demo-Seed übersprungen: es existiert bereits mindestens ein Urlaub.');
+
+if (existingTrip && !isForced) {
+  console.log(
+    'Demo-Seed übersprungen: es existiert bereits mindestens ein Urlaub. (Nutze --force zum Überschreiben)'
+  );
   process.exit(0);
+}
+
+if (isForced) {
+  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_PROD_DB_CLEAR) {
+    console.error('Fehler: Datenbank leeren ist in der Produktionsumgebung gesperrt.');
+    process.exit(1);
+  }
+  console.log('Force-Flag erkannt: Bereinige bestehende Datenbank vor dem Demo-Seed...');
+  clearDatabase(db, { clearUploads: true });
 }
 
 function addDays(date: Date, days: number): Date {

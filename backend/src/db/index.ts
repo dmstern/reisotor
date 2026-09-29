@@ -1897,3 +1897,43 @@ if (
   `
   ).run();
 }
+
+/**
+ * Leert alle Anwendungs-Tabellen in der Datenbank und setzt Auto-Inkrement-Sequenzen zurück.
+ * Optional werden auch hochgeladene Dateien bereinigt.
+ */
+export function clearDatabase(
+  database: Database.Database = db,
+  options: { clearUploads?: boolean } = {}
+): void {
+  database.pragma('foreign_keys = OFF');
+  const tables = database
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+    .all() as { name: string }[];
+
+  const clearAll = database.transaction(() => {
+    for (const { name } of tables) {
+      database.prepare(`DELETE FROM "${name}"`).run();
+    }
+    const hasSeq = database
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence'")
+      .get();
+    if (hasSeq) {
+      database.prepare('DELETE FROM sqlite_sequence').run();
+    }
+  });
+  clearAll();
+  database.pragma('foreign_keys = ON');
+
+  if (options.clearUploads && fs.existsSync(uploadsDir)) {
+    for (const file of fs.readdirSync(uploadsDir)) {
+      if (file !== '.gitkeep') {
+        try {
+          fs.unlinkSync(path.join(uploadsDir, file));
+        } catch {
+          // Datei bereits gelöscht oder nicht beschreibbar – kein Fehlerfall.
+        }
+      }
+    }
+  }
+}

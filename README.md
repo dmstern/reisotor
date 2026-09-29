@@ -129,6 +129,20 @@ Für einen kompletten Beispiel-Urlaub mit Testdaten in allen Bereichen (Kalender
 npm run seed:demo
 ```
 
+Soll eine bereits vorhandene lokale Dev-Datenbank geleert und frisch mit den Demo-Daten überschrieben werden:
+
+```bash
+npm run seed:demo:force
+# Alternativ:
+npm run seed:demo -- --force
+```
+
+Um die lokale Datenbank und Uploads ohne erneutes Seeden komplett zu leeren:
+
+```bash
+npm run db:clear
+```
+
 ### Backend-loser Demo-Modus (Frontend only)
 
 Reisotor bietet auch einen vollständig backend-losen Demo-Modus, der alle API-Aufrufe mit Beispieldaten im Arbeitsspeicher simuliert (entspricht der [GitHub-Pages-Live-Demo](https://dmstern.github.io/reisotor/)):
