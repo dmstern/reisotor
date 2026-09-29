@@ -46,6 +46,15 @@ export const SCREENSHOT_PARTNER: User = {
   must_change_password: false,
 };
 
+export const SCREENSHOT_USER_3: User = {
+  id: 3,
+  username: 'Alex',
+  avatar: '🐱',
+  email: 'alex@example.com',
+  is_admin: false,
+  must_change_password: false,
+};
+
 export const SCREENSHOT_TRIP: DemoTrip = {
   id: 1,
   name: 'Sommerurlaub Lissabon',

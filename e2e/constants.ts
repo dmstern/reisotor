@@ -7,6 +7,8 @@ export const E2E_USERNAME = 'Mia';
 export const E2E_PASSWORD = 'e2e-changeme-1';
 export const E2E_USERNAME_2 = 'Amari';
 export const E2E_PASSWORD_2 = 'e2e-changeme-2';
+export const E2E_USERNAME_3 = 'Alex';
+export const E2E_PASSWORD_3 = 'e2e-changeme-3';
 export const E2E_SESSION_SECRET = 'e2e-fixed-secret-not-for-prod-32chars';
 
 // Bewusst NICHT 3000/5173 (die Ports des normalen lokalen Dev-Servers, siehe .vscode/tasks.json) —

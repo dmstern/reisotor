@@ -2,9 +2,9 @@ import '../loadEnv.js';
 import bcrypt from 'bcrypt';
 import { db, ensureDefaultSharedBudget } from './index.js';
 
-// Demo-Seed für Sandbox-/Dev-Umgebungen: legt zusätzlich zu den 2 Standard-Nutzern (wie seed.ts)
-// einen kompletten Beispiel-Urlaub mit Daten in allen Bereichen an, damit eine frische Instanz
-// sofort "voll" aussieht und sich Änderungen ohne manuelles Anlegen von Trip/Unterkunft/Budget
+// Demo-Seed für Sandbox-/Dev-Umgebungen: legt 3 Nutzer:innen an (eine Hauptperson + zwei
+// Mitreisende) sowie einen kompletten Beispiel-Urlaub mit Daten in allen Bereichen, damit eine frische
+// Instanz sofort "voll" aussieht und sich Änderungen ohne manuelles Anlegen von Trip/Unterkunft/Budget
 // etc. testen lassen. Läuft NIE auf dem Produktions-Pi (siehe deploy.sh/README) – nur lokal/in
 // Sandboxes. Bricht ab, statt Duplikate anzulegen, falls schon ein Urlaub existiert.
 const existingTrip = db.prepare('SELECT id FROM trips LIMIT 1').get();
@@ -34,6 +34,11 @@ const users = [
     password: process.env.SEED_PASS2 ?? 'changeme2',
     avatar: process.env.SEED_AVATAR2 ?? '🐼',
   },
+  {
+    username: process.env.SEED_USER3 ?? 'Alex',
+    password: process.env.SEED_PASS3 ?? 'changeme3',
+    avatar: process.env.SEED_AVATAR3 ?? '🐱',
+  },
 ];
 
 const insertUser = db.prepare(
@@ -50,7 +55,7 @@ for (let i = 0; i < users.length; i++) {
     u.username
   );
 }
-const [user1, user2] = users.map(
+const [user1, user2, user3] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number }
 );
 
@@ -226,11 +231,24 @@ insertExpense.run(
   null,
   sharedBudgetId
 );
+insertExpense.run(
+  tripId,
+  'Kaffee & Pastéis de Nata',
+  'Essen & Trinken',
+  16.5,
+  user3.id,
+  fmt(addDays(startDate, 2)),
+  null,
+  sharedBudgetId
+);
 
 // --- Überweisung (Schulden begleichen) ---
 db.prepare(
   'INSERT INTO budget_transfers (trip_id, from_user_id, to_user_id, amount, date, note) VALUES (?, ?, ?, ?, ?, ?)'
 ).run(tripId, user2.id, user1.id, 120, fmt(addDays(startDate, 4)), 'Teilausgleich für Hotel');
+db.prepare(
+  'INSERT INTO budget_transfers (trip_id, from_user_id, to_user_id, amount, date, note) VALUES (?, ?, ?, ?, ?, ?)'
+).run(tripId, user3.id, user1.id, 80, fmt(addDays(startDate, 4)), 'Anzahlung für Unterkunft');
 
 // --- Ablauf/Kalender ---
 const insertSchedule = db.prepare(
@@ -273,10 +291,12 @@ const insertPacking = db.prepare(
 );
 insertPacking.run(tripId, 'Kleidung', 'Badehose', user1.id, 0, 0);
 insertPacking.run(tripId, 'Kleidung', 'Sommerkleid', user2.id, 0, 0);
+insertPacking.run(tripId, 'Kleidung', 'Sonnenhut', user3.id, 0, 0);
 insertPacking.run(tripId, 'Elektronik', 'Reiseadapter', null, 1, 1);
 insertPacking.run(tripId, 'Elektronik', 'Powerbank', null, 0, 0);
 insertPacking.run(tripId, 'Dokumente', 'Reisepass', user1.id, 0, 0);
 insertPacking.run(tripId, 'Dokumente', 'Reisepass', user2.id, 0, 0);
+insertPacking.run(tripId, 'Dokumente', 'Reisepass', user3.id, 0, 0);
 
 // --- Einkaufsliste ---
 const insertShopping = db.prepare(
@@ -284,6 +304,7 @@ const insertShopping = db.prepare(
 );
 insertShopping.run(tripId, 'Sonnencreme', user2.id, 0, null, null, 'dm', 'before');
 insertShopping.run(tripId, 'Reiseführer Lissabon', user1.id, 1, null, null, null, 'before');
+insertShopping.run(tripId, 'Snacks für die Reise', user3.id, 0, null, null, null, 'before');
 insertShopping.run(tripId, 'Postkarten', null, 0, null, null, null, 'during');
 
 // --- ToDo-Liste ---
@@ -334,7 +355,7 @@ insertTodo.run(
 insertTodo.run(
   tripId,
   'Viva-Viagem-Karten an Metrostation aufladen',
-  null,
+  user3.id,
   fmt(addDays(startDate, 1)),
   'during',
   'medium',
@@ -453,6 +474,11 @@ db.prepare('INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, 
   user2.id,
   isScreenshotMode ? '2026-08-06T12:30:00.000Z' : new Date().toISOString()
 );
+db.prepare('INSERT INTO spot_likes (spot_id, user_id, created_at) VALUES (?, ?, ?)').run(
+  casteloSpotId,
+  user3.id,
+  isScreenshotMode ? '2026-08-06T13:00:00.000Z' : new Date().toISOString()
+);
 db.prepare(
   'INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
 ).run(
@@ -460,6 +486,14 @@ db.prepare(
   user2.id,
   'Unbedingt früh morgens hin, bevor die Reisebusse kommen!',
   isScreenshotMode ? '2026-08-06T14:15:00.000Z' : new Date().toISOString()
+);
+db.prepare(
+  'INSERT INTO spot_comments (spot_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
+).run(
+  casteloSpotId,
+  user3.id,
+  'Der Ausblick über die Stadt soll bei Sonnenuntergang fantastisch sein!',
+  isScreenshotMode ? '2026-08-06T14:45:00.000Z' : new Date().toISOString()
 );
 
 // --- Reise/Transport: Hin- und Rückflug (#176: Touren mit gesetzter role statt einer eigenen
@@ -597,6 +631,11 @@ db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, 
   panoramaTourId,
   user2.id,
   isScreenshotMode ? '2026-08-06T15:00:00.000Z' : new Date().toISOString()
+);
+db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
+  panoramaTourId,
+  user3.id,
+  isScreenshotMode ? '2026-08-06T15:15:00.000Z' : new Date().toISOString()
 );
 db.prepare(
   'INSERT INTO idea_comments (idea_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
@@ -798,6 +837,11 @@ db.prepare('INSERT INTO diary_likes (entry_id, user_id, created_at) VALUES (?, ?
   user2.id,
   isScreenshotMode ? '2026-08-14T21:00:00.000Z' : new Date().toISOString()
 );
+db.prepare('INSERT INTO diary_likes (entry_id, user_id, created_at) VALUES (?, ?, ?)').run(
+  diaryEntryId,
+  user3.id,
+  isScreenshotMode ? '2026-08-14T21:05:00.000Z' : new Date().toISOString()
+);
 db.prepare(
   'INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
 ).run(
@@ -805,6 +849,14 @@ db.prepare(
   user2.id,
   'Sieht traumhaft aus, ich freu mich schon!',
   isScreenshotMode ? '2026-08-14T21:15:00.000Z' : new Date().toISOString()
+);
+db.prepare(
+  'INSERT INTO diary_comments (entry_id, author_id, content, created_at) VALUES (?, ?, ?, ?)'
+).run(
+  diaryEntryId,
+  user3.id,
+  'Toller Start, freue mich schon auf morgen!',
+  isScreenshotMode ? '2026-08-14T21:20:00.000Z' : new Date().toISOString()
 );
 
 // --- Notizen ---

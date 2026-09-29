@@ -6,9 +6,11 @@ import {
   E2E_FRONTEND_PORT,
   E2E_PASSWORD,
   E2E_PASSWORD_2,
+  E2E_PASSWORD_3,
   E2E_SESSION_SECRET,
   E2E_USERNAME,
   E2E_USERNAME_2,
+  E2E_USERNAME_3,
 } from './constants.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -108,6 +110,8 @@ export default defineConfig({
         SEED_PASS1: E2E_PASSWORD,
         SEED_USER2: E2E_USERNAME_2,
         SEED_PASS2: E2E_PASSWORD_2,
+        SEED_USER3: E2E_USERNAME_3,
+        SEED_PASS3: E2E_PASSWORD_3,
         SCREENSHOT_MODE: process.env.SCREENSHOT_MODE ?? '',
       },
     },
