@@ -885,50 +885,114 @@ db.prepare(
 );
 
 // --- Tracks (Aufzeichnungen) ---
-// Realistische Demodaten für einen 2,0 km Abendspaziergang am Tejo (Lissabon):
-// Dauer: 35 Minuten (18:30 bis 19:05) -> ca. 3,4 km/h gemütliches Schlendern mit Fotostopps
-const trackBaseDate = isScreenshotMode
-  ? new Date('2026-08-15T18:30:00.000Z')
-  : (() => {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 1);
-      d.setHours(18, 30, 0, 0);
-      return d;
-    })();
-
-const sampleTrackPoints = [
-  { lat: 38.7061, lng: -9.145, offsetMin: 0, alt: 12.0 },
-  { lat: 38.7058, lng: -9.1415, offsetMin: 7, alt: 11.5 },
-  { lat: 38.7071, lng: -9.1365, offsetMin: 15, alt: 13.0 },
-  { lat: 38.7085, lng: -9.1325, offsetMin: 22, alt: 16.5 },
-  { lat: 38.711, lng: -9.128, offsetMin: 29, alt: 14.0 },
-  { lat: 38.7125, lng: -9.124, offsetMin: 35, alt: 12.0 },
-];
-
-const trackStartMs = trackBaseDate.getTime();
-const trackEndMs = trackStartMs + 35 * 60 * 1000;
-
-const trackResult = db
-  .prepare(
-    `INSERT INTO location_tracks (trip_id, user_id, title, visibility, started_at, ended_at)
-     VALUES (?, ?, ?, 'shared', ?, ?)`
-  )
-  .run(
-    tripId,
-    user1.id,
-    'Abendspaziergang am Tejo',
-    new Date(trackStartMs).toISOString(),
-    new Date(trackEndMs).toISOString()
-  );
-const trackId = trackResult.lastInsertRowid as number;
+const insertTrack = db.prepare(
+  `INSERT INTO location_tracks (trip_id, user_id, title, visibility, started_at, ended_at)
+   VALUES (?, ?, ?, 'shared', ?, ?)`
+);
 
 const insertPoint = db.prepare(
   'INSERT INTO location_track_points (track_id, lat, lng, recorded_at, accuracy, altitude) VALUES (?, ?, ?, ?, ?, ?)'
 );
 
-for (const p of sampleTrackPoints) {
-  const pointTime = new Date(trackStartMs + p.offsetMin * 60 * 1000).toISOString();
-  insertPoint.run(trackId, p.lat, p.lng, pointTime, 5.0, p.alt);
+interface SeedTrackPoint {
+  lat: number;
+  lng: number;
+  offsetMin: number;
+  alt: number;
+}
+
+interface SeedTrack {
+  userId: number;
+  title: string;
+  durationMin: number;
+  baseDate: Date;
+  points: SeedTrackPoint[];
+}
+
+const seedTracks: SeedTrack[] = [
+  {
+    userId: user1.id,
+    title: 'Abendspaziergang am Tejo',
+    durationMin: 35,
+    baseDate: isScreenshotMode
+      ? new Date('2026-08-15T18:30:00.000Z')
+      : (() => {
+          const d = new Date(today);
+          d.setDate(d.getDate() - 3);
+          d.setHours(18, 30, 0, 0);
+          return d;
+        })(),
+    points: [
+      { lat: 38.7061, lng: -9.145, offsetMin: 0, alt: 12.0 },
+      { lat: 38.7058, lng: -9.1415, offsetMin: 7, alt: 11.5 },
+      { lat: 38.7071, lng: -9.1365, offsetMin: 15, alt: 13.0 },
+      { lat: 38.7085, lng: -9.1325, offsetMin: 22, alt: 16.5 },
+      { lat: 38.711, lng: -9.128, offsetMin: 29, alt: 14.0 },
+      { lat: 38.7125, lng: -9.124, offsetMin: 35, alt: 12.0 },
+    ],
+  },
+  {
+    userId: user2.id,
+    title: 'Alfama & Miradouro-Runde',
+    durationMin: 45,
+    baseDate: isScreenshotMode
+      ? new Date('2026-08-16T10:00:00.000Z')
+      : (() => {
+          const d = new Date(today);
+          d.setDate(d.getDate() - 2);
+          d.setHours(10, 0, 0, 0);
+          return d;
+        })(),
+    points: [
+      { lat: 38.7099, lng: -9.133, offsetMin: 0, alt: 18.0 },
+      { lat: 38.7112, lng: -9.1305, offsetMin: 8, alt: 32.0 },
+      { lat: 38.7125, lng: -9.1285, offsetMin: 16, alt: 48.0 },
+      { lat: 38.713, lng: -9.1272, offsetMin: 24, alt: 58.0 },
+      { lat: 38.7138, lng: -9.1298, offsetMin: 31, alt: 65.0 },
+      { lat: 38.7155, lng: -9.1325, offsetMin: 38, alt: 82.0 },
+      { lat: 38.7175, lng: -9.1365, offsetMin: 45, alt: 105.0 },
+    ],
+  },
+  {
+    userId: user3.id,
+    title: 'Uferpromenade Belém',
+    durationMin: 38,
+    baseDate: isScreenshotMode
+      ? new Date('2026-08-17T09:30:00.000Z')
+      : (() => {
+          const d = new Date(today);
+          d.setDate(d.getDate() - 1);
+          d.setHours(15, 30, 0, 0);
+          return d;
+        })(),
+    points: [
+      { lat: 38.696, lng: -9.1935, offsetMin: 0, alt: 4.0 },
+      { lat: 38.6948, lng: -9.2005, offsetMin: 8, alt: 3.5 },
+      { lat: 38.6936, lng: -9.2057, offsetMin: 17, alt: 3.0 },
+      { lat: 38.6925, lng: -9.211, offsetMin: 25, alt: 3.0 },
+      { lat: 38.6919, lng: -9.2145, offsetMin: 32, alt: 2.5 },
+      { lat: 38.6916, lng: -9.216, offsetMin: 38, alt: 2.0 },
+    ],
+  },
+];
+
+for (const track of seedTracks) {
+  const startMs = track.baseDate.getTime();
+  const endMs = startMs + track.durationMin * 60 * 1000;
+
+  const trackResult = insertTrack.run(
+    tripId,
+    track.userId,
+    track.title,
+    new Date(startMs).toISOString(),
+    new Date(endMs).toISOString()
+  );
+  const trackId = trackResult.lastInsertRowid as number;
+
+  for (const p of track.points) {
+    const pointTime = new Date(startMs + p.offsetMin * 60 * 1000).toISOString();
+    insertPoint.run(trackId, p.lat, p.lng, pointTime, 5.0, p.alt);
+  }
 }
 
 console.log(
