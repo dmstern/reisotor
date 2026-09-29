@@ -7034,7 +7034,7 @@ async function deleteEditingSpot() {
 .track-meta-author {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   flex-shrink: 0;
 }
 
@@ -7051,8 +7051,15 @@ async function deleteEditingSpot() {
   color: var(--color-text-muted);
 }
 
-.track-meta-time,
+.track-meta-time {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .track-meta-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -7060,7 +7067,7 @@ async function deleteEditingSpot() {
 .track-meta-tour {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -7133,7 +7140,7 @@ async function deleteEditingSpot() {
 .track-meta-aborted {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   color: var(--color-warning-dark);
   font-weight: 500;
   flex-shrink: 0;

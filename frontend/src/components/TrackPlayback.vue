@@ -461,12 +461,13 @@ defineExpose({
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
+  container-type: inline-size;
   background: var(--color-surface-glass, rgba(255, 255, 255, 0.92));
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border, var(--color-border));
   border-radius: var(--radius-md-squircle, 12px);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.12));
+  box-shadow: var(--shadow-md);
 }
 
 .track-playback-header {
@@ -509,7 +510,7 @@ defineExpose({
 .track-playback-author {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--space-1);
   font-size: 0.78rem;
   color: var(--color-text-muted);
   flex-shrink: 0;
@@ -521,6 +522,12 @@ defineExpose({
 
 .track-playback-author-name {
   white-space: nowrap;
+}
+
+@container (max-width: 500px) {
+  .track-playback-author-name {
+    display: none;
+  }
 }
 
 @media (max-width: 500px) {
@@ -539,7 +546,7 @@ defineExpose({
 .metric-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 2px 7px;
   border-radius: var(--radius-pill);
   background: var(--color-hover);
@@ -611,7 +618,7 @@ defineExpose({
   background: var(--color-surface);
   border-color: var(--color-primary);
   color: var(--color-primary);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .speed-trigger-btn:focus-visible {
@@ -621,7 +628,7 @@ defineExpose({
 
 .speed-popover {
   position: absolute;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + var(--space-1) + 2px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -629,8 +636,8 @@ defineExpose({
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md, 0 4px 14px rgba(0, 0, 0, 0.15));
-  padding: 4px;
+  box-shadow: var(--shadow-md);
+  padding: var(--space-1);
   white-space: nowrap;
 }
 
@@ -669,7 +676,7 @@ defineExpose({
 .speed-btn.active {
   background: var(--color-surface);
   color: var(--color-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .playback-time {
@@ -681,14 +688,34 @@ defineExpose({
   white-space: nowrap;
 }
 
-@media (max-width: 380px) {
+@container (max-width: 380px) {
   .track-playback {
     padding: var(--space-2);
-    gap: 6px;
+    gap: var(--space-1);
   }
 
   .track-playback-controls {
-    gap: 6px;
+    gap: var(--space-1);
+  }
+
+  .playback-time {
+    font-size: 0.72rem;
+  }
+
+  .metric-chip {
+    padding: 1px 5px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .track-playback {
+    padding: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .track-playback-controls {
+    gap: var(--space-1);
   }
 
   .playback-time {
