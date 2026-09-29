@@ -493,11 +493,25 @@ function onSpotDrop(event: DragEvent) {
             :key="trk.id"
             variant="card-action"
             class="show-on-map-btn"
-            :title="'Aufzeichnung „' + (trk.title || 'Aufzeichnung') + '“ auf Karte abspielen'"
+            :title="
+              'Aufzeichnung „' +
+              (trk.title || 'Aufzeichnung') +
+              '“' +
+              (trk.author_username ? ' von ' + trk.author_username : '') +
+              ' auf Karte abspielen'
+            "
             @click.stop="drawers.openMapForTrack(trk.id)"
           >
             <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" />
-            <span class="btn-label">{{ trk.title || 'Aufzeichnung' }}</span>
+            <span class="btn-label">
+              <span
+                v-if="trk.author_avatar"
+                class="track-btn-avatar"
+                :title="trk.author_username"
+                >{{ trk.author_avatar }}</span
+              >
+              {{ trk.title || 'Aufzeichnung' }}
+            </span>
           </Button>
         </div>
         <div class="card-actions-wrapper">
@@ -901,6 +915,11 @@ function onSpotDrop(event: DragEvent) {
     max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
     opacity 0.2s ease,
     margin 0.28s ease;
+}
+
+.track-btn-avatar {
+  margin-right: 3px;
+  line-height: 1;
 }
 
 .card-actions {

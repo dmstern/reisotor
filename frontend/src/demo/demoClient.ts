@@ -415,6 +415,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       id: nextId++,
       trip_id: Number(body?.trip_id ?? 1),
       user_id: currentDemoUser.id,
+      author_username: currentDemoUser.username,
+      author_avatar: currentDemoUser.avatar,
       excursion_id: (body?.excursion_id as number | null) ?? null,
       title: null,
       visibility: (body?.visibility as string) ?? 'private',

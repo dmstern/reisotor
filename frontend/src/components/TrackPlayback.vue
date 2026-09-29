@@ -7,6 +7,8 @@ export type PlaybackSpeed = (typeof SPEEDS)[number];
 export interface TrackPlaybackProps {
   track?: LocationTrack | null;
   title?: string | null;
+  authorAvatar?: string | null;
+  authorName?: string | null;
   points: TrackPoint[];
   progress?: number;
   active?: boolean;
@@ -48,6 +50,8 @@ const ELEVATION_ICON: IconDef = {
 const props = withDefaults(defineProps<TrackPlaybackProps>(), {
   track: null,
   title: undefined,
+  authorAvatar: undefined,
+  authorName: undefined,
   progress: 0,
   active: true,
 });
@@ -292,6 +296,12 @@ const trackDateLabel = computed(() => {
 
 const displayTitle = computed(() => props.title || props.track?.title || 'Aufzeichnung');
 
+const trackAuthorAvatar = computed(() => props.authorAvatar ?? props.track?.author_avatar ?? null);
+const trackAuthorName = computed(() => props.authorName ?? props.track?.author_username ?? '');
+const trackAuthorTitle = computed(() =>
+  trackAuthorName.value ? `Aufgezeichnet von ${trackAuthorName.value}` : 'Aufzeichnung'
+);
+
 defineExpose({
   playing,
   speed,
@@ -315,6 +325,10 @@ defineExpose({
           class="track-playback-icon"
         />
         <span class="track-playback-title">{{ displayTitle }}</span>
+        <span v-if="trackAuthorAvatar" class="track-playback-author" :title="trackAuthorTitle">
+          <span class="track-playback-author-avatar">{{ trackAuthorAvatar }}</span>
+          <span class="track-playback-author-name">{{ trackAuthorName }}</span>
+        </span>
         <span v-if="trackDateLabel" class="track-playback-date">{{ trackDateLabel }}</span>
       </div>
       <IconButton
@@ -490,6 +504,29 @@ defineExpose({
   color: var(--color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.track-playback-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.track-playback-author-avatar {
+  line-height: 1;
+}
+
+.track-playback-author-name {
+  white-space: nowrap;
+}
+
+@media (max-width: 500px) {
+  .track-playback-author-name {
+    display: none;
+  }
 }
 
 .track-playback-stats {

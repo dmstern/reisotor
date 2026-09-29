@@ -147,6 +147,32 @@ function trackDurationLabel(track: LocationTrack): string {
   return formatDurationShort(ms);
 }
 
+function trackAuthorUser(track: LocationTrack): User | undefined {
+  if (track.user_id) {
+    const u = users.value.find((u) => u.id === track.user_id);
+    if (u) return u;
+  }
+  if (auth.user && auth.user.id === track.user_id) {
+    return auth.user;
+  }
+  return undefined;
+}
+
+function trackAuthorAvatar(track: LocationTrack): string {
+  const u = trackAuthorUser(track);
+  return u?.avatar || track.author_avatar || '👤';
+}
+
+function trackAuthorName(track: LocationTrack): string {
+  const u = trackAuthorUser(track);
+  return u?.username || track.author_username || '';
+}
+
+function trackAuthorTitle(track: LocationTrack): string {
+  const name = trackAuthorName(track);
+  return name ? `Aufgezeichnet von ${name}` : 'Aufzeichnung';
+}
+
 function onTrackShowOnMap(trackId: number) {
   if (isSheetOverlayMode.value && sheetState.value === 'full') {
     sheetState.value = 'partial';
@@ -5283,6 +5309,11 @@ async function deleteEditingSpot() {
                       <span>{{ trackTitle(track) }}</span>
                     </span>
                     <span class="track-row-meta">
+                      <span class="track-meta-author" :title="trackAuthorTitle(track)">
+                        <span class="track-meta-avatar">{{ trackAuthorAvatar(track) }}</span>
+                        <span class="track-meta-name">{{ trackAuthorName(track) }}</span>
+                        <span class="track-meta-sep" aria-hidden="true">·</span>
+                      </span>
                       <span
                         v-if="!trackTitle(track).includes(formatDateTime(track.started_at))"
                         class="track-meta-time"
@@ -7000,6 +7031,26 @@ async function deleteEditingSpot() {
   text-overflow: ellipsis;
 }
 
+.track-meta-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.track-meta-avatar {
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.track-meta-name {
+  white-space: nowrap;
+}
+
+.track-meta-sep {
+  color: var(--color-text-muted);
+}
+
 .track-meta-time,
 .track-meta-duration {
   flex-shrink: 0;
@@ -7041,6 +7092,24 @@ async function deleteEditingSpot() {
   .track-row {
     padding: var(--space-2);
     gap: var(--space-1);
+  }
+}
+
+@container spots-col (max-width: 320px) {
+  .track-meta-name {
+    display: none;
+  }
+}
+
+@container app-main (max-width: 719px) {
+  .track-meta-name {
+    display: none;
+  }
+}
+
+@media (max-width: 719px) {
+  .track-meta-name {
+    display: none;
   }
 }
 

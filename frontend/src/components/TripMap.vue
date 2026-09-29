@@ -1176,6 +1176,10 @@ function payerLabelFor(userId: number | null) {
   const u = users.value.find((u) => u.id === userId);
   return u ? `${u.avatar} ${u.username}` : null;
 }
+function trackAuthorUser(userId: number | undefined) {
+  if (userId == null) return null;
+  return users.value.find((u) => u.id === userId) ?? (auth.user?.id === userId ? auth.user : null);
+}
 
 // Fokussiert alle Punkte einer Kategorie (Aufruf von ExcursionsView.vue's Kategorie-Navigation, per
 // Template-Ref/defineExpose statt eines weiteren drawers-Felds, da rein kamera-bewegend und ohne
@@ -2565,6 +2569,12 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
         <TrackPlayback
           :track="focusedTrack"
           :title="focusedTrack?.title"
+          :author-avatar="
+            focusedTrack?.author_avatar || trackAuthorUser(focusedTrack?.user_id)?.avatar
+          "
+          :author-name="
+            focusedTrack?.author_username || trackAuthorUser(focusedTrack?.user_id)?.username
+          "
           :points="focusedTrackPoints"
           v-model:progress="trackPlaybackProgress"
           @close="clearTrackFocus"
@@ -2578,6 +2588,12 @@ watch(trackPlaybackProgress, () => updateTrackPlaybackMarker());
       <TrackPlayback
         :track="focusedTrack"
         :title="focusedTrack?.title"
+        :author-avatar="
+          focusedTrack?.author_avatar || trackAuthorUser(focusedTrack?.user_id)?.avatar
+        "
+        :author-name="
+          focusedTrack?.author_username || trackAuthorUser(focusedTrack?.user_id)?.username
+        "
         :points="focusedTrackPoints"
         v-model:progress="trackPlaybackProgress"
         @close="clearTrackFocus"

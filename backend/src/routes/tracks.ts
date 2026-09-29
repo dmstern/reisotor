@@ -7,6 +7,8 @@ interface TrackRow {
   id: number;
   trip_id: number;
   user_id: number;
+  author_username?: string | null;
+  author_avatar?: string | null;
   excursion_id: number | null;
   title: string | null;
   visibility: 'private' | 'shared';
@@ -53,14 +55,23 @@ function isTrackVisible(
 }
 
 export const tracksRoutes: FastifyPluginAsync = async (app) => {
+  const selectTrackByIdStmt = db.prepare(
+    `SELECT location_tracks.*, users.username as author_username, users.avatar as author_avatar
+     FROM location_tracks
+     LEFT JOIN users ON location_tracks.user_id = users.id
+     WHERE location_tracks.id = ?`
+  );
+
   app.get<{ Querystring: { trip_id?: string } }>('/tracks', async (req, reply) => {
     if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
     if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
     const rows = db
       .prepare(
-        `SELECT * FROM location_tracks
-         WHERE trip_id = ? AND deleted_at IS NULL AND (user_id = ? OR visibility = 'shared')
-         ORDER BY started_at DESC`
+        `SELECT location_tracks.*, users.username as author_username, users.avatar as author_avatar
+         FROM location_tracks
+         LEFT JOIN users ON location_tracks.user_id = users.id
+         WHERE location_tracks.trip_id = ? AND location_tracks.deleted_at IS NULL AND (location_tracks.user_id = ? OR location_tracks.visibility = 'shared')
+         ORDER BY location_tracks.started_at DESC`
       )
       .all(req.query.trip_id, req.session.userId) as TrackRow[];
     return rows;
@@ -84,9 +95,7 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
         startedAt
       );
     reply.code(201);
-    return db
-      .prepare('SELECT * FROM location_tracks WHERE id = ?')
-      .get(result.lastInsertRowid) as TrackRow;
+    return selectTrackByIdStmt.get(result.lastInsertRowid) as TrackRow;
   });
 
   // Batched Anhängen von GPS-Punkten (stores/trackRecording.ts flusht periodisch statt jeden
@@ -161,7 +170,7 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
         endReason,
         track.id
       );
-      return db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(track.id) as TrackRow;
+      return selectTrackByIdStmt.get(track.id) as TrackRow;
     }
   );
 
@@ -236,7 +245,7 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
         req.session.userId!
       );
     }
-    return db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(track.id) as TrackRow;
+    return selectTrackByIdStmt.get(track.id) as TrackRow;
   });
 
   app.delete<{ Params: { id: string } }>('/tracks/:id', async (req, reply) => {

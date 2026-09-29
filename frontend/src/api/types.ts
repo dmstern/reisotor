@@ -269,6 +269,8 @@ export interface LocationTrack {
   id: number;
   trip_id: number;
   user_id: number;
+  author_username?: string;
+  author_avatar?: string;
   excursion_id: number | null;
   title: string | null;
   visibility: TrackVisibility;
