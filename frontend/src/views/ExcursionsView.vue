@@ -109,7 +109,8 @@ import IconButton from '../components/primitives/IconButton.vue';
 import _DropdownItem from '../components/primitives/DropdownItem.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Select from '../components/primitives/Select.vue';
-import TrackVisibilitySelect from '../components/TrackVisibilitySelect.vue';
+import TabBar, { type TabBarItem } from '../components/TabBar.vue';
+import ItemVisibilitySettings from '../components/ItemVisibilitySettings.vue';
 import InfoPopover from '../components/primitives/InfoPopover.vue';
 import Input from '../components/primitives/Input.vue';
 import { useToast } from '../composables/useToast';
@@ -153,11 +154,16 @@ function onTrackShowOnMap(trackId: number) {
   drawers.openMapForTrack(trackId);
 }
 
-async function toggleTrackVisibility(track: LocationTrack) {
-  await tracksStore.update(track.id, {
-    visibility: track.visibility === 'shared' ? 'private' : 'shared',
-  });
-}
+const trackEditTabs = computed<TabBarItem[]>(() => [
+  { key: 'general', label: 'Allgemein', icon: ACTION_ICONS.edit },
+  {
+    key: 'permissions',
+    label: 'Berechtigungen',
+    icon: ACTION_ICONS.shared,
+    unseen: isEditTrackVisibilityModified.value,
+  },
+]);
+const activeTrackEditTab = ref<'general' | 'permissions'>('general');
 
 const editingTrack = ref<LocationTrack | null>(null);
 const editTrackTitle = ref('');
@@ -296,11 +302,13 @@ function startEditTrack(track: LocationTrack) {
   editTrackStartedAt.value = toLocalDatetimeInputValue(track.started_at);
   editTrackVisibility.value = track.visibility;
   editTrackExcursionId.value = track.excursion_id ?? null;
+  activeTrackEditTab.value = 'general';
 }
 
 function closeEditTrack() {
   editingTrack.value = null;
   pendingTrackTourId.value = null;
+  activeTrackEditTab.value = 'general';
 }
 
 async function submitEditTrack() {
@@ -5300,7 +5308,17 @@ async function deleteEditingSpot() {
                   :class="{ active: Number(drawers.mapFocusTrackId) === Number(track.id) }"
                 >
                   <button type="button" class="track-row-main" @click="onTrackShowOnMap(track.id)">
-                    <span class="track-row-title">{{ trackTitle(track) }}</span>
+                    <span class="track-row-title">
+                      <AppIcon
+                        v-if="track.visibility === 'private'"
+                        :icon="ACTION_ICONS.private"
+                        :size="13"
+                        group="actions"
+                        class="track-visibility-lock"
+                        title="Nur für dich sichtbar (privat)"
+                      />
+                      <span>{{ trackTitle(track) }}</span>
+                    </span>
                     <span class="track-row-meta">
                       <span
                         v-if="!trackTitle(track).includes(formatDateTime(track.started_at))"
@@ -5332,7 +5350,7 @@ async function deleteEditingSpot() {
                           · {{ trackDurationLabel(track) }}
                         </template>
                       </span>
-                      <span v-else-if="trackDurationLabel(track)">
+                      <span v-else-if="trackDurationLabel(track)" class="track-meta-duration">
                         <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
                         {{ trackDurationLabel(track) }}
                       </span>
@@ -5351,7 +5369,7 @@ async function deleteEditingSpot() {
                       </span>
                     </span>
                   </button>
-                  <template v-if="track.user_id === auth.user?.id">
+                  <div v-if="track.user_id === auth.user?.id" class="track-row-actions">
                     <button
                       v-if="!track.ended_at"
                       type="button"
@@ -5363,6 +5381,7 @@ async function deleteEditingSpot() {
                       <AppIcon :icon="ACTION_ICONS.recordStop" :size="15" group="actions" />
                     </button>
                     <TourAssignDropdown
+                      class="track-tour-dropdown"
                       :tours="trackTourAssignmentsFor(track)"
                       @toggle-tour="(tourId) => onToggleRowTrackTour(track, tourId)"
                       @create-tour="(title) => onCreateTourFromRowTrack(track, title)"
@@ -5376,37 +5395,7 @@ async function deleteEditingSpot() {
                     >
                       <AppIcon :icon="ACTION_ICONS.edit" :size="15" group="actions" />
                     </button>
-                    <button
-                      type="button"
-                      class="track-icon-btn"
-                      :title="
-                        track.visibility === 'shared'
-                          ? 'Für alle Mitreisenden sichtbar – antippen, um wieder privat zu machen'
-                          : 'Nur für dich sichtbar – antippen, um mit allen zu teilen'
-                      "
-                      :aria-label="
-                        track.visibility === 'shared' ? 'Teilen zurücknehmen' : 'Mit allen teilen'
-                      "
-                      @click="toggleTrackVisibility(track)"
-                    >
-                      <AppIcon
-                        :icon="
-                          track.visibility === 'shared' ? ACTION_ICONS.shared : ACTION_ICONS.private
-                        "
-                        :size="15"
-                        group="actions"
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      class="track-icon-btn track-icon-btn--delete"
-                      title="Aufzeichnung löschen"
-                      aria-label="Aufzeichnung löschen"
-                      @click="removeTrack(track.id)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.delete" :size="15" group="actions" />
-                    </button>
-                  </template>
+                  </div>
                 </li>
               </ul>
             </div>
@@ -5432,99 +5421,113 @@ async function deleteEditingSpot() {
             title="Aufzeichnung bearbeiten"
             @update:model-value="(v) => !v && closeEditTrack()"
           >
-            <form class="edit-form" @submit.prevent="submitEditTrack">
-              <div
-                v-if="editingTrack?.end_reason === 'aborted'"
-                class="track-status-alert track-status-alert--aborted"
-                role="status"
-              >
-                <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
-                <div class="track-status-alert__content">
-                  <span class="track-status-alert__title">Automatisch abgebrochen</span>
-                  <p class="track-status-alert__desc">
-                    Die Aufzeichnung wurde vom System beendet (z. B. durch Bildschirmsperre oder
-                    GPS-Abbruch).
-                  </p>
-                </div>
-              </div>
-              <div
-                v-else-if="editingTrack && !editingTrack.ended_at"
-                class="track-status-alert track-status-alert--running"
-                role="status"
-              >
-                <span class="recording-pulse-dot" aria-hidden="true"></span>
-                <div class="track-status-alert__content">
-                  <span class="track-status-alert__title">Aufzeichnung läuft</span>
-                  <p class="track-status-alert__desc">Diese Aufzeichnung ist aktuell noch aktiv.</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
-                  :icon="ACTION_ICONS.recordStop"
-                  @click="stopEditingTrack"
+            <form class="edit-form track-edit-form" @submit.prevent="submitEditTrack">
+              <TabBar
+                :tabs="trackEditTabs"
+                :active-key="activeTrackEditTab"
+                class="track-tab-bar"
+                @select="(key) => (activeTrackEditTab = key as 'general' | 'permissions')"
+              />
+
+              <div v-show="activeTrackEditTab === 'general'" class="tab-content">
+                <div
+                  v-if="editingTrack?.end_reason === 'aborted'"
+                  class="track-status-alert track-status-alert--aborted"
+                  role="status"
                 >
-                  Aufzeichnung beenden
-                </Button>
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
+                  <div class="track-status-alert__content">
+                    <span class="track-status-alert__title">Automatisch abgebrochen</span>
+                    <p class="track-status-alert__desc">
+                      Die Aufzeichnung wurde vom System beendet (z. B. durch Bildschirmsperre oder
+                      GPS-Abbruch).
+                    </p>
+                  </div>
+                </div>
+                <div
+                  v-else-if="editingTrack && !editingTrack.ended_at"
+                  class="track-status-alert track-status-alert--running"
+                  role="status"
+                >
+                  <span class="recording-pulse-dot" aria-hidden="true"></span>
+                  <div class="track-status-alert__content">
+                    <span class="track-status-alert__title">Aufzeichnung läuft</span>
+                    <p class="track-status-alert__desc">
+                      Diese Aufzeichnung ist aktuell noch aktiv.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    :icon="ACTION_ICONS.recordStop"
+                    @click="stopEditingTrack"
+                  >
+                    Aufzeichnung beenden
+                  </Button>
+                </div>
+
+                <FormField
+                  icon="title"
+                  label="Name"
+                  :modified="isEditTrackTitleModified"
+                  v-slot="{ modified }"
+                >
+                  <Input
+                    v-model="editTrackTitle"
+                    type="text"
+                    placeholder="z. B. Wanderung zur Berghütte"
+                    :maxlength="100"
+                    :modified="modified"
+                  />
+                </FormField>
+                <FormField
+                  icon="date"
+                  label="Aufzeichnungszeitpunkt"
+                  :modified="isEditTrackStartedAtModified"
+                  v-slot="{ modified }"
+                >
+                  <Input
+                    v-model="editTrackStartedAt"
+                    type="datetime-local"
+                    required
+                    :modified="modified"
+                  />
+                </FormField>
+                <FormField icon="tour" label="Zugeordnete Tour" :modified="isEditTrackTourModified">
+                  <div class="track-tour-assign-field">
+                    <TourAssignDropdown
+                      :tours="trackTourAssignments"
+                      @toggle-tour="onToggleTrackTour"
+                      @create-tour="onCreateTourFromTrack"
+                    />
+                    <span v-if="editTrackExcursionTitle" class="track-tour-selected-badge">
+                      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
+                      {{ editTrackExcursionTitle }}
+                      <button
+                        type="button"
+                        class="remove-tour-btn"
+                        title="Zuordnung entfernen"
+                        aria-label="Zuordnung entfernen"
+                        @click="editTrackExcursionId = null"
+                      >
+                        <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
+                      </button>
+                    </span>
+                  </div>
+                </FormField>
               </div>
 
-              <FormField
-                icon="title"
-                label="Name"
-                :modified="isEditTrackTitleModified"
-                v-slot="{ modified }"
+              <div
+                v-show="activeTrackEditTab === 'permissions'"
+                class="tab-content permissions-tab"
               >
-                <Input
-                  v-model="editTrackTitle"
-                  type="text"
-                  placeholder="z. B. Wanderung zur Berghütte"
-                  :maxlength="100"
-                  :modified="modified"
+                <ItemVisibilitySettings
+                  v-model="editTrackVisibility"
+                  item-label="Aufzeichnung"
+                  :modified="isEditTrackVisibilityModified"
                 />
-              </FormField>
-              <FormField
-                icon="date"
-                label="Aufzeichnungszeitpunkt"
-                :modified="isEditTrackStartedAtModified"
-                v-slot="{ modified }"
-              >
-                <Input
-                  v-model="editTrackStartedAt"
-                  type="datetime-local"
-                  required
-                  :modified="modified"
-                />
-              </FormField>
-              <FormField icon="tour" label="Zugeordnete Tour" :modified="isEditTrackTourModified">
-                <div class="track-tour-assign-field">
-                  <TourAssignDropdown
-                    :tours="trackTourAssignments"
-                    @toggle-tour="onToggleTrackTour"
-                    @create-tour="onCreateTourFromTrack"
-                  />
-                  <span v-if="editTrackExcursionTitle" class="track-tour-selected-badge">
-                    <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
-                    {{ editTrackExcursionTitle }}
-                    <button
-                      type="button"
-                      class="remove-tour-btn"
-                      title="Zuordnung entfernen"
-                      aria-label="Zuordnung entfernen"
-                      @click="editTrackExcursionId = null"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-                    </button>
-                  </span>
-                </div>
-              </FormField>
-              <FormField
-                icon="visibility"
-                label="Sichtbarkeit"
-                :modified="isEditTrackVisibilityModified"
-                v-slot="{ id }"
-              >
-                <TrackVisibilitySelect :id="id" v-model="editTrackVisibility" />
-              </FormField>
+              </div>
               <div class="actions-row">
                 <Button
                   type="button"
@@ -7012,6 +7015,9 @@ async function deleteEditingSpot() {
 }
 
 .track-row-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-text);
@@ -7020,12 +7026,90 @@ async function deleteEditingSpot() {
   white-space: nowrap;
 }
 
+.track-visibility-lock {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
 .track-row-meta {
   font-size: 0.8rem;
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-meta-time,
+.track-meta-duration {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.track-meta-tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.track-tab-bar {
+  margin-bottom: var(--space-2);
+}
+
+.track-edit-form .tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.track-edit-form .permissions-tab {
+  padding-top: var(--space-1);
+}
+
+@container spots-col (max-width: 480px) {
+  .track-row {
+    padding: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .track-row .tour-assign-label {
+    display: none;
+  }
+
+  .track-row .tour-assign-btn {
+    padding: 6px;
+    border-radius: var(--radius-sm-squircle);
+  }
+}
+
+@media (max-width: 480px) {
+  .track-row {
+    padding: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .track-row .tour-assign-label {
+    display: none;
+  }
+
+  .track-row .tour-assign-btn {
+    padding: 6px;
+    border-radius: var(--radius-sm-squircle);
+  }
 }
 
 .track-meta-live {
@@ -7034,6 +7118,8 @@ async function deleteEditingSpot() {
   gap: 6px;
   color: var(--color-danger);
   font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .track-meta-aborted {
@@ -7042,6 +7128,8 @@ async function deleteEditingSpot() {
   gap: 4px;
   color: var(--color-warning-dark);
   font-weight: 500;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .track-icon-btn {
@@ -7074,11 +7162,6 @@ async function deleteEditingSpot() {
 }
 
 .track-icon-btn--stop:hover {
-  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
-  color: var(--color-danger);
-}
-
-.track-icon-btn--delete:hover {
   background: color-mix(in srgb, var(--color-danger) 15%, transparent);
   color: var(--color-danger);
 }

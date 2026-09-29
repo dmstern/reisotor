@@ -20,9 +20,11 @@ const props = withDefaults(
   defineProps<{
     tours: TourItem[];
     canDrag?: boolean;
+    compact?: boolean;
   }>(),
   {
     canDrag: false,
+    compact: false,
   }
 );
 
@@ -122,7 +124,7 @@ onUnmounted(() => {
       ref="buttonRef"
       type="button"
       class="tour-assign-btn"
-      :class="{ 'is-open': open, 'is-draggable': canDrag }"
+      :class="{ 'is-open': open, 'is-draggable': canDrag, 'is-compact': compact }"
       :draggable="canDrag ? 'true' : 'false'"
       :aria-expanded="open"
       :title="canDrag ? 'Klicken zum Zuordnen / Auf Tour ziehen' : 'Tour zuordnen'"
@@ -131,7 +133,8 @@ onUnmounted(() => {
       @dragstart="canDrag ? onDragStart($event) : undefined"
       @dragend="canDrag ? onDragEnd($event) : undefined"
     >
-      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" /> Tour zuordnen
+      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
+      <span class="tour-assign-label">Tour zuordnen</span>
     </button>
     <Teleport to="body">
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
@@ -232,6 +235,20 @@ onUnmounted(() => {
   padding: 3px 10px 3px 8px;
   cursor: grab;
   touch-action: none;
+}
+
+.tour-assign-btn.is-compact {
+  padding: 6px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
+.tour-assign-btn.is-compact .tour-assign-label {
+  display: none;
+}
+
+.tour-assign-label {
+  display: inline;
 }
 
 .tour-assign-btn:active {
