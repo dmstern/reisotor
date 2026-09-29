@@ -28,7 +28,7 @@ Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.j
 - `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
 - Bei gezielten UI-Audits: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen. **Nicht** bei normalen Bugfixes oder kleineren UI-Änderungen im Chat ausführen (erzeugt massive Test-Logs; für Standard-Änderungen reichen fokussierte Unit-Tests).
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
-- **Prompt-Vorlagen:** `docs/AUDIT_PROMPTS.md` (Gezielter View-Audit, Pre-Release-Audit via Subagents, Design-System- & Clean-Code-Audit)
+- **Prompt-Vorlagen:** `docs/AUDIT_PROMPTS.md` (Design-System- & Clean-Code-Audit, Gezielter Layout-Audit, Pre-Release-Audit via Subagents)
 
 ## Typecheck, Linting & Formatting
 
