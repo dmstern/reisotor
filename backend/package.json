@@ -12,6 +12,8 @@
     "start": "node dist/server.js",
     "seed": "tsx src/db/seed.ts",
     "seed:demo": "tsx src/db/seedDemo.ts",
+    "seed:demo:force": "tsx src/db/seedDemo.ts --force",
+    "db:clear": "tsx src/db/clear.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
