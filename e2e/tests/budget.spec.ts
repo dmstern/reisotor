@@ -158,27 +158,27 @@ test('a private budget pot stays invisible to another member, but shared expense
   // Eigene Sicht zeigt weiterhin alles.
   await expect(pageA.locator('.pot-card', { hasText: privatePotName })).toBeVisible();
 
-  // --- Geteilte Ausgabe: user1 zahlt 10 €, ohne Budget-Zuordnung (zählt als geteilt/legacy). ---
+  // --- Geteilte Ausgabe: user1 zahlt 15 €, ohne Budget-Zuordnung (zählt als geteilt/legacy). ---
   const netABefore = await netFor(pageA, E2E_USERNAME);
   const netBBefore = await netFor(pageB, E2E_USERNAME_2);
 
   const sharedExpenseTitle = `E2E Geteilte Ausgabe ${Date.now()}`;
   await pageA.getByRole('button', { name: 'Ausgabe eintragen' }).click();
   await pageA.getByPlaceholder('Titel').fill(sharedExpenseTitle);
-  await pageA.locator('.add-form').getByPlaceholder('Betrag').fill('10');
+  await pageA.locator('.add-form').getByPlaceholder('Betrag').fill('15');
   await selectOptionByText(pageA.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
   await pageA.locator('.modal:visible').getByRole('button', { name: 'Eintragen' }).click();
   await expect(pageA.locator('.row', { hasText: sharedExpenseTitle })).toBeVisible();
 
   await pageB.reload();
-  // Bei 2 Mitgliedern verschiebt eine allein von user1 bezahlte 10€-Ausgabe beide Netto-Salden um
-  // genau 5€ in entgegengesetzte Richtung (fairShare = 10/2).
+  // Bei 3 Mitgliedern verschiebt eine allein von user1 bezahlte 15€-Ausgabe den Saldo von user2 um
+  // genau -5€ (fairShare = 15/3 = 5€) und von user1 um +10€ (15 - 5).
   await expect(async () => {
-    expect(await netFor(pageA, E2E_USERNAME)).toBeCloseTo(netABefore + 5, 1);
+    expect(await netFor(pageA, E2E_USERNAME)).toBeCloseTo(netABefore + 10, 1);
     expect(await netFor(pageB, E2E_USERNAME_2)).toBeCloseTo(netBBefore - 5, 1);
   }).toPass();
 
-  // --- Ausgleich per Überweisung: user2 (Schuldner) zahlt user1 (Gläubiger) genau die Differenz. ---
+  // --- Ausgleich per Überweisung: user2 (Schuldner) zahlt user1 (Gläubiger) genau die 5€ Differenz. ---
   await pageB.getByRole('button', { name: 'Überweisung eintragen', exact: true }).click();
   await selectOptionByText(pageB.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME_2);
   await selectOptionByText(pageB.locator('.modal:visible .add-form select').nth(1), E2E_USERNAME);
@@ -187,7 +187,7 @@ test('a private budget pot stays invisible to another member, but shared expense
 
   await pageA.reload();
   await expect(async () => {
-    expect(await netFor(pageA, E2E_USERNAME)).toBeCloseTo(netABefore, 1);
+    expect(await netFor(pageA, E2E_USERNAME)).toBeCloseTo(netABefore + 5, 1);
     expect(await netFor(pageB, E2E_USERNAME_2)).toBeCloseTo(netBBefore, 1);
   }).toPass();
 

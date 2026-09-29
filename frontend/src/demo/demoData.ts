@@ -46,7 +46,6 @@ export interface DemoDataSet {
   user: User;
   partner: User;
   user3: User;
-  user4: User;
   users: User[];
   trip: DemoTrip;
   spots: Spot[];
@@ -119,15 +118,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
     is_admin: false,
     must_change_password: false,
   };
-  const DEMO_USER_4: User = {
-    id: 4,
-    username: 'Sam',
-    avatar: '🐶',
-    email: 'sam@example.com',
-    is_admin: false,
-    must_change_password: false,
-  };
-  const DEMO_USERS: User[] = [DEMO_USER, DEMO_PARTNER, DEMO_USER_3, DEMO_USER_4];
+  const DEMO_USERS: User[] = [DEMO_USER, DEMO_PARTNER, DEMO_USER_3];
 
   const DEMO_TRIP = {
     id: 1,
@@ -299,7 +290,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       maps_link: null,
       lat: 38.718,
       lng: -9.138,
-      created_by: 4,
+      created_by: 3,
       is_home: 0,
       address: null,
       start_date: null,
@@ -589,7 +580,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       note: 'Praça do Comércio und Umgebung',
       note_format: 'plain',
       date: addDays(5),
-      created_by: 4,
+      created_by: 3,
       spot_ids: [6, 3],
       done: 0,
       role: null,
@@ -662,6 +653,17 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       note: null,
       budget_id: 1,
     },
+    {
+      id: 3,
+      trip_id: 1,
+      title: 'Kaffee & Pastéis de Nata',
+      category: 'Essen & Trinken',
+      amount: 15,
+      paid_by_user_id: 3,
+      date: addDays(1),
+      note: null,
+      budget_id: 1,
+    },
   ];
   const DEMO_BUDGET_TRANSFERS: BudgetTransfer[] = [];
 
@@ -699,6 +701,17 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       packed_count: 0,
       owner_id: 1,
     },
+    {
+      id: 4,
+      trip_id: 1,
+      category: 'Kleidung',
+      subcategory: null,
+      label: 'Sonnenhut',
+      quantity: 1,
+      laid_out_count: 0,
+      packed_count: 0,
+      owner_id: 3,
+    },
   ];
 
   const DEMO_SHOPPING: ShoppingItem[] = [
@@ -719,6 +732,17 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       label: 'Reiseadapter',
       assigned_to_user_id: 1,
       checked: 1,
+      link: null,
+      note: null,
+      shop: null,
+      period: 'before',
+    },
+    {
+      id: 3,
+      trip_id: 1,
+      label: 'Snacks für die Reise',
+      assigned_to_user_id: 3,
+      checked: 0,
       link: null,
       note: null,
       shop: null,
@@ -775,7 +799,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       id: 5,
       trip_id: 1,
       title: 'Viva-Viagem-Karten an Metrostation aufladen',
-      assigned_to_user_id: null,
+      assigned_to_user_id: 3,
       due_date: addDays(1),
       period: 'during',
       priority: 'medium',
@@ -841,7 +865,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
 
   const DEMO_SPOT_LIKES = [
     { id: 1, spot_id: 2, user_id: 3 },
-    { id: 2, spot_id: 2, user_id: 4 },
+    { id: 2, spot_id: 2, user_id: 2 },
   ];
   const DEMO_SPOT_COMMENTS = [
     {
@@ -855,7 +879,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
 
   const DEMO_EXCURSION_LIKES = [
     { id: 1, idea_id: 1, user_id: 2 },
-    { id: 2, idea_id: 3, user_id: 2 },
+    { id: 2, idea_id: 3, user_id: 3 },
   ];
   const DEMO_EXCURSION_COMMENTS = [
     {
@@ -874,12 +898,12 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
     },
   ];
 
-  const DEMO_DIARY_LIKES = [{ id: 1, entry_id: 1, user_id: 4 }];
+  const DEMO_DIARY_LIKES = [{ id: 1, entry_id: 1, user_id: 3 }];
   const DEMO_DIARY_COMMENTS = [
     {
       id: 1,
       entry_id: 1,
-      author_id: 4,
+      author_id: 3,
       content: 'Toller Start!',
       created_at: nowIso,
     },
@@ -889,7 +913,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
     user: DEMO_USER,
     partner: DEMO_PARTNER,
     user3: DEMO_USER_3,
-    user4: DEMO_USER_4,
     users: DEMO_USERS,
     trip: DEMO_TRIP,
     spots: DEMO_SPOTS,
@@ -917,7 +940,6 @@ const defaultData = createDemoData();
 export const DEMO_USER = defaultData.user;
 export const DEMO_PARTNER = defaultData.partner;
 export const DEMO_USER_3 = defaultData.user3;
-export const DEMO_USER_4 = defaultData.user4;
 export const DEMO_USERS = defaultData.users;
 export const DEMO_TRIP = defaultData.trip;
 export const DEMO_SPOTS = defaultData.spots;
