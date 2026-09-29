@@ -11,13 +11,19 @@ describe('travelTypeIcon', () => {
     expect(travelTypeIcon('Fähre')).toBe('⛴️');
     expect(travelTypeIcon('Fahrrad')).toBe('🚲');
     expect(travelTypeIcon('zu Fuß')).toBe('🚶');
+    expect(travelTypeIcon('Straßenbahn')).toBe('🚋');
+    expect(travelTypeIcon('U-Bahn')).toBe('🚇');
+    expect(travelTypeIcon('ÖPNV')).toBe('🚆');
   });
 
-  it('handles case-insensitivity for bicycle and walking types', () => {
+  it('handles case-insensitivity for bicycle, walking, and transit types', () => {
     expect(travelTypeIcon('fahrrad')).toBe('🚲');
     expect(travelTypeIcon('Zu Fuß')).toBe('🚶');
     expect(travelTypeIcon('zu fuß')).toBe('🚶');
     expect(travelTypeIcon('zu fuss')).toBe('🚶');
+    expect(travelTypeIcon('tram')).toBe('🚋');
+    expect(travelTypeIcon('metro')).toBe('🚇');
+    expect(travelTypeIcon('öpnv')).toBe('🚆');
   });
 
   it('falls back to ticket emoji or custom fallback for unknown or null types', () => {

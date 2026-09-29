@@ -136,7 +136,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: var(--space-1);
   padding: 5px 10px;
   border: none;
   /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab

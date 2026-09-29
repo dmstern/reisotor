@@ -17,6 +17,11 @@ import 'leaflet/dist/leaflet.css';
 // leaflet-rotate.d.ts für die zugehörige Typ-Ergänzung. Muss vor der ersten L.map()-Instanziierung
 // geladen sein.
 import 'leaflet-rotate';
+
+// leaflet-rotate aktiviert standardmäßig rotateControl: true auf L.Map. Da Reisotor überall
+// eigene Steuerelemente nutzt (und auf Mini-Karten keine Rotation wünscht), deaktivieren wir
+// dieses mitgelieferte Default-Control global für alle Karteninstanzen.
+L.Map.mergeOptions({ rotateControl: false });
 import { api } from '../api/client';
 import type {
   Attachment,
@@ -48,11 +53,14 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { buildTravelDerivedLocations } from '../utils/travelDerivedLocations';
 import {
+  arcPoints,
   arcRoute,
   cachedEmojiPin,
   cachedImagePin,
   compassPin,
+  getRouteColor,
   LEAFLET_ATTRIBUTION_PREFIX,
+  parseRouteGeometry,
 } from '../utils/mapRoute';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -1537,18 +1545,28 @@ function renderRoutes() {
       if (!props.tourRoleFilter!.includes(tRole)) continue;
     }
     if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
-      L.polyline(
-        arcRoute([
-          [t.from_lat, t.from_lng],
-          [t.to_lat, t.to_lng],
-        ]),
-        {
-          color: TRAVEL_COLOR,
-          weight: 3,
-          opacity: 0.65,
-          dashArray: '6 6',
-        }
-      ).addTo(routesLayer);
+      const leg = t.legs?.[0];
+      const geometryCoords = parseRouteGeometry(leg?.route_geometry);
+      if (geometryCoords) {
+        L.polyline(geometryCoords, {
+          color: getRouteColor(t.type, leg?.routing_profile),
+          weight: 4,
+          opacity: 0.85,
+        }).addTo(routesLayer);
+      } else {
+        L.polyline(
+          arcRoute([
+            [t.from_lat, t.from_lng],
+            [t.to_lat, t.to_lng],
+          ]),
+          {
+            color: TRAVEL_COLOR,
+            weight: 3,
+            opacity: 0.65,
+            dashArray: '6 6',
+          }
+        ).addTo(routesLayer);
+      }
     }
   }
 
@@ -1586,16 +1604,30 @@ function renderRoutes() {
       spotsStore.spots,
       travelItems.value
     );
-    const coords: L.LatLngExpression[] = stations
-      .filter((s) => s.lat != null && s.lng != null)
-      .map((s) => [s.lat as number, s.lng as number]);
-    if (coords.length >= 2) {
-      L.polyline(arcRoute(coords), {
-        color: '#e08e45',
-        weight: 3,
-        opacity: 0.65,
-        dashArray: '6 6',
-      }).addTo(routesLayer);
+    for (let i = 0; i < stations.length - 1; i++) {
+      const s1 = stations[i];
+      const s2 = stations[i + 1];
+      if (s1.lat == null || s1.lng == null || s2.lat == null || s2.lng == null) continue;
+
+      const leg = excursion.legs?.find(
+        (l) => l.position === i || (l.from_spot_id === s1.id && l.to_spot_id === s2.id)
+      );
+      const geometryCoords = parseRouteGeometry(leg?.route_geometry);
+
+      if (geometryCoords) {
+        L.polyline(geometryCoords, {
+          color: getRouteColor(leg?.transport_type, leg?.routing_profile),
+          weight: 4,
+          opacity: 0.85,
+        }).addTo(routesLayer);
+      } else {
+        L.polyline(arcPoints([s1.lat, s1.lng], [s2.lat, s2.lng]), {
+          color: getRouteColor(leg?.transport_type, leg?.routing_profile),
+          weight: 3,
+          opacity: 0.65,
+          dashArray: '6 6',
+        }).addTo(routesLayer);
+      }
     }
   }
 }

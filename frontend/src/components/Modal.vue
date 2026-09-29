@@ -309,11 +309,15 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
           :class="[{ 'full-height': fullHeight }, `size-${size}`]"
           role="dialog"
           aria-modal="true"
-          :aria-labelledby="title && !hideHeader ? titleId : undefined"
-          :aria-label="!title || hideHeader ? ariaLabel || title || 'Dialog' : undefined"
+          :aria-labelledby="(title || $slots.title) && !hideHeader ? titleId : undefined"
+          :aria-label="
+            (!title && !$slots.title) || hideHeader ? ariaLabel || title || 'Dialog' : undefined
+          "
         >
           <div class="modal-head" v-if="!hideHeader">
-            <h2 v-if="title" :id="titleId">{{ title }}</h2>
+            <h2 v-if="title || $slots.title" :id="titleId">
+              <slot name="title">{{ title }}</slot>
+            </h2>
             <IconButton
               variant="ghost"
               class="close-btn"
@@ -592,6 +596,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
 
@@ -599,6 +604,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   margin: 0;
   font-size: 1.1rem;
   color: var(--color-primary-dark);
+  min-width: 0;
 }
 
 .close-btn {

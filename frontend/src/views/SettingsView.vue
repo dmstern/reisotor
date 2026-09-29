@@ -1609,6 +1609,40 @@ async function exportBackup() {
           </dd>
           <dd v-else>Lädt…</dd>
         </dl>
+        <h3>Dienste &amp; Open Source</h3>
+        <dl class="build-info-list">
+          <dt>Kartendaten</dt>
+          <dd>
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+              >© OpenStreetMap-Mitwirkende</a
+            >
+          </dd>
+          <dt>Kartenanzeige</dt>
+          <dd>
+            <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>
+          </dd>
+          <dt>Routen &amp; Fahrzeiten</dt>
+          <dd>
+            <a href="https://openrouteservice.org/" target="_blank" rel="noopener noreferrer"
+              >OpenRouteService</a
+            >
+          </dd>
+          <dt>Wettervorhersage</dt>
+          <dd>
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer"
+              >Open-Meteo</a
+            >
+          </dd>
+          <dt>Icons</dt>
+          <dd>
+            <a href="https://tabler.io/icons" target="_blank" rel="noopener noreferrer"
+              >Tabler Icons</a
+            >
+          </dd>
+        </dl>
         <AppFooterLinks
           v-if="backendBuildInfo"
           :repo-url="backendBuildInfo.repoUrl"
@@ -2168,8 +2202,7 @@ label:not(.checkbox-card):not(.checkbox-option):not(.nav-config-visible):not(
   gap: var(--space-1);
 }
 
-.about-repo-link,
-.about-copyright {
-  margin: var(--space-2) 0 0;
+.build-info-card :deep(.app-footer-repo-link) {
+  margin-top: var(--space-4);
 }
 </style>

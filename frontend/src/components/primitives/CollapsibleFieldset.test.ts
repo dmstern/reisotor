@@ -93,4 +93,36 @@ describe('CollapsibleFieldset primitive', () => {
     expect(html).toContain('99 Items');
     expect(html).toContain('Slot content');
   });
+
+  it('renders disabled toggle with title tooltip and is-disabled class', async () => {
+    const app = createTestApp(
+      CollapsibleFieldset,
+      {
+        label: 'Routenführung',
+        disabled: true,
+        title: 'Für ÖPNV ist keine Routenberechnung möglich',
+      },
+      {
+        default: () => h('div', 'Hidden route details'),
+      }
+    );
+    const html = await renderToString(app);
+    expect(html).toContain('is-disabled');
+    expect(html).toContain('disabled');
+    expect(html).toContain('title="Für ÖPNV ist keine Routenberechnung möglich"');
+  });
+
+  it('renders badge slot inside legend button', async () => {
+    const app = createTestApp(
+      CollapsibleFieldset,
+      { label: 'Routenführung' },
+      {
+        badge: () => h('span', { class: 'route-calc-badge' }, 'Exakte Route aktiv'),
+        default: () => h('div', 'Content'),
+      }
+    );
+    const html = await renderToString(app);
+    expect(html).toContain('route-calc-badge');
+    expect(html).toContain('Exakte Route aktiv');
+  });
 });

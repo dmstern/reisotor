@@ -45,6 +45,7 @@ export function deriveTravelItems(excursions: Excursion[], spots: Spot[]): Trave
         role: e.role,
         from_place_id: fromId,
         to_place_id: toId,
+        legs: e.legs,
       };
     });
 }

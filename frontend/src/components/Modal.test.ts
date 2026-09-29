@@ -59,6 +59,23 @@ describe('Modal', () => {
     cleanUp();
   });
 
+  it('renders custom title via slot when provided', async () => {
+    const { cleanUp } = mountTestApp(
+      Modal,
+      { modelValue: true },
+      {
+        title: () => h('span', { class: 'custom-title' }, 'Eigener Titel mit Icon'),
+        default: () => h('div', 'Formular-Inhalt'),
+      }
+    );
+    await nextTick();
+
+    const titleEl = document.querySelector('h2');
+    expect(titleEl?.querySelector('.custom-title')?.textContent).toBe('Eigener Titel mit Icon');
+
+    cleanUp();
+  });
+
   it('does not render content when modelValue is false', async () => {
     const { cleanUp } = mountTestApp(
       Modal,

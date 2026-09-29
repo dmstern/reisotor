@@ -568,9 +568,9 @@ function handleModalClose(visible: boolean) {
 }
 
 .form-image-banner--polaroid .banner-actions {
-  right: var(--space-1-5, 6px);
-  bottom: var(--space-1-5, 6px);
-  gap: var(--space-1, 4px);
+  right: var(--space-1);
+  bottom: var(--space-1);
+  gap: var(--space-1);
 }
 
 .form-image-banner--polaroid .banner-edit-btn,

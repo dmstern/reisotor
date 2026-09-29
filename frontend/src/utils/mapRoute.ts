@@ -234,3 +234,32 @@ export function arcRoute(coords: L.LatLngExpression[], segments = 32): L.LatLngE
   }
   return arced;
 }
+
+/**
+ * Ermittelt die Linienfarbe für ein Verkehrsmittel oder Routing-Profil.
+ */
+export function getRouteColor(
+  transportType?: string | null,
+  routingProfile?: string | null
+): string {
+  if (routingProfile === 'cycling-regular' || transportType === 'Fahrrad') return '#059669';
+  if (routingProfile === 'foot-walking' || transportType === 'zu Fuß') return '#d97706';
+  if (routingProfile === 'driving-car' || transportType === 'Auto') return '#2563eb';
+  return '#e08e45';
+}
+
+/**
+ * Parst die gespeicherte Route-Geometrie (JSON-Array aus [lat, lng]) sicher.
+ */
+export function parseRouteGeometry(geometryStr?: string | null): [number, number][] | null {
+  if (!geometryStr) return null;
+  try {
+    const parsed = JSON.parse(geometryStr);
+    if (Array.isArray(parsed) && parsed.length >= 2 && Array.isArray(parsed[0])) {
+      return parsed as [number, number][];
+    }
+  } catch {
+    // Ignoriere Parsing-Fehler
+  }
+  return null;
+}

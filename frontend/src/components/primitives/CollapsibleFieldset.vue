@@ -16,6 +16,8 @@ const props = withDefaults(
     icon?: IconDef;
     iconGroup?: IconGroup;
     contentClass?: string;
+    disabled?: boolean;
+    title?: string;
   }>(),
   {
     modelValue: undefined,
@@ -26,6 +28,8 @@ const props = withDefaults(
     icon: undefined,
     iconGroup: 'actions',
     contentClass: undefined,
+    disabled: false,
+    title: undefined,
   }
 );
 
@@ -52,18 +56,24 @@ const isOpen = computed({
 });
 
 function toggle() {
+  if (props.disabled) return;
   isOpen.value = !isOpen.value;
 }
 </script>
 
 <template>
-  <fieldset class="collapsible-fieldset" :class="{ 'is-open': isOpen, 'is-closed': !isOpen }">
-    <legend>
+  <fieldset
+    class="collapsible-fieldset"
+    :class="{ 'is-open': isOpen, 'is-closed': !isOpen, 'is-disabled': disabled }"
+  >
+    <legend :title="title">
       <Button
         type="button"
         variant="ghost"
         class="collapsible-toggle"
         :aria-expanded="isOpen"
+        :disabled="disabled"
+        :title="title"
         @click="toggle"
       >
         <span class="label-inner">
@@ -71,6 +81,7 @@ function toggle() {
           <slot name="label">
             <span>{{ label }}</span>
           </slot>
+          <slot name="badge" />
           <slot name="count">
             <span v-if="count !== undefined && count !== ''" class="picker-count">{{ count }}</span>
           </slot>
@@ -144,14 +155,23 @@ function toggle() {
     color 0.15s ease;
 }
 
-.collapsible-toggle:hover {
+.collapsible-toggle:hover:not(:disabled) {
   background: var(--color-hover) !important;
+}
+
+.collapsible-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+}
+
+.collapsible-fieldset.is-disabled legend {
+  cursor: not-allowed;
 }
 
 .label-inner {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .picker-count {

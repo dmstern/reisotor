@@ -30,6 +30,11 @@ const TYPE_ICONS: Record<string, string> = {
   Fähre: '⛴️',
   Fahrrad: '🚲',
   'zu Fuß': '🚶',
+  Straßenbahn: '🚋',
+  Tram: '🚋',
+  'U-Bahn': '🚇',
+  Metro: '🚇',
+  ÖPNV: '🚆',
 };
 
 export function travelTypeIcon(type: string | null, fallback = '🎫'): string {
@@ -38,6 +43,10 @@ export function travelTypeIcon(type: string | null, fallback = '🎫'): string {
   const lower = type.toLowerCase();
   if (lower === 'zu fuß' || lower === 'zu fuss') return TYPE_ICONS['zu Fuß'];
   if (lower === 'fahrrad') return TYPE_ICONS.Fahrrad;
+  if (lower === 'straßenbahn' || lower === 'strassenbahn' || lower === 'tram')
+    return TYPE_ICONS.Straßenbahn;
+  if (lower === 'u-bahn' || lower === 'ubahn' || lower === 'metro') return TYPE_ICONS['U-Bahn'];
+  if (lower === 'öpnv') return TYPE_ICONS.ÖPNV;
   return fallback;
 }
 
@@ -55,6 +64,11 @@ const TYPE_ICON_DEFS: Record<string, IconDef> = {
   Fähre: { id: 'ship', emoji: TYPE_ICONS.Fähre, outline: IconShip },
   Fahrrad: { id: 'bike', emoji: TYPE_ICONS.Fahrrad, outline: IconBike, filled: IconBikeFilled },
   'zu Fuß': { id: 'walk', emoji: TYPE_ICONS['zu Fuß'], outline: IconWalk },
+  Straßenbahn: { id: 'tram', emoji: '🚋', outline: IconTrain, filled: IconTrainFilled },
+  Tram: { id: 'tram', emoji: '🚋', outline: IconTrain, filled: IconTrainFilled },
+  'U-Bahn': { id: 'subway', emoji: '🚇', outline: IconTrain, filled: IconTrainFilled },
+  Metro: { id: 'subway', emoji: '🚇', outline: IconTrain, filled: IconTrainFilled },
+  ÖPNV: { id: 'transit', emoji: '🚆', outline: IconTrain, filled: IconTrainFilled },
 };
 
 const FALLBACK_ICON_DEF: IconDef = {
@@ -73,5 +87,9 @@ export function travelTypeIconDef(
   const lower = type.toLowerCase();
   if (lower === 'zu fuß' || lower === 'zu fuss') return TYPE_ICON_DEFS['zu Fuß'];
   if (lower === 'fahrrad') return TYPE_ICON_DEFS.Fahrrad;
+  if (lower === 'straßenbahn' || lower === 'strassenbahn' || lower === 'tram')
+    return TYPE_ICON_DEFS.Straßenbahn;
+  if (lower === 'u-bahn' || lower === 'ubahn' || lower === 'metro') return TYPE_ICON_DEFS['U-Bahn'];
+  if (lower === 'öpnv') return TYPE_ICON_DEFS.ÖPNV;
   return fallback;
 }

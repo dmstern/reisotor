@@ -2493,7 +2493,12 @@ function getLegDuration(leg: ExcursionLeg): string | null {
 
 function getLegDurationParts(leg: ExcursionLeg): string[] | null {
   const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
-  return mins != null ? formatTravelDurationParts(mins) : null;
+  if (mins != null) return formatTravelDurationParts(mins);
+  if (leg.duration_seconds != null) {
+    const calcMins = Math.round(leg.duration_seconds / 60);
+    return formatTravelDurationParts(calcMins);
+  }
+  return null;
 }
 
 function getTourLayover(
@@ -6361,14 +6366,14 @@ async function deleteEditingSpot() {
 }
 
 .location-fieldset-content .checkbox-option {
-  padding: var(--space-1-5, 6px) 0;
+  padding: var(--space-1) 0;
   line-height: 1.45;
 }
 
 .spot-side-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
   margin-top: var(--space-2);
   margin-bottom: var(--space-4, 16px);
 }
@@ -6376,7 +6381,7 @@ async function deleteEditingSpot() {
 .spot-side-header {
   display: flex;
   align-items: center;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
 }
 
 .spot-side-toggle {
