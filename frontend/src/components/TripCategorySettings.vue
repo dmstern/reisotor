@@ -18,6 +18,7 @@ import Badge from './primitives/Badge.vue';
 import IconButton from './primitives/IconButton.vue';
 import Modal from './Modal.vue';
 import CategoryChip from './CategoryChip.vue';
+import SegmentedToggle from './SegmentedToggle.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -28,6 +29,20 @@ const props = defineProps<{
 const tripCategoriesStore = useTripCategoriesStore();
 
 const activeType = ref<'expense' | 'spot'>('expense');
+const SCOPE_OPTIONS = [
+  {
+    value: 'expense',
+    label: 'Ausgaben',
+    icon: FORM_FIELD_ICONS.amount,
+    iconGroup: 'formFields' as const,
+  },
+  {
+    value: 'spot',
+    label: 'Spots',
+    icon: FORM_FIELD_ICONS.location,
+    iconGroup: 'formFields' as const,
+  },
+];
 const searchQuery = ref('');
 const showCreateForm = ref(false);
 const editingCategoryId = ref<number | null>(null);
@@ -245,30 +260,11 @@ async function toggleHideStandard(cat: DisplayCategory) {
   <div class="trip-category-settings">
     <!-- 1. Bereichs-Umschalter: Ausgaben vs. Spots -->
     <div class="scope-nav">
-      <div class="pill-group" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          class="pill-btn"
-          :class="{ active: activeType === 'expense' }"
-          :aria-selected="activeType === 'expense'"
-          @click="activeType = 'expense'"
-        >
-          <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="16" group="formFields" />
-          Ausgaben
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="pill-btn"
-          :class="{ active: activeType === 'spot' }"
-          :aria-selected="activeType === 'spot'"
-          @click="activeType = 'spot'"
-        >
-          <AppIcon :icon="FORM_FIELD_ICONS.location" :size="16" group="formFields" />
-          Spots
-        </button>
-      </div>
+      <SegmentedToggle
+        :model-value="activeType"
+        :options="SCOPE_OPTIONS"
+        @update:model-value="(val) => (activeType = val as 'expense' | 'spot')"
+      />
 
       <Button
         v-if="!showCreateForm"
@@ -642,35 +638,6 @@ async function toggleHideStandard(cat: DisplayCategory) {
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-}
-
-.pill-group {
-  display: inline-flex;
-  background: var(--color-surface-subtle, rgba(0, 0, 0, 0.05));
-  border-radius: var(--radius-full, 9999px);
-  padding: 3px;
-  gap: 2px;
-}
-
-.pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 6px 14px;
-  border-radius: var(--radius-full, 9999px);
-  font-size: 0.85rem;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.pill-btn.active {
-  background: var(--color-surface, #ffffff);
-  color: var(--color-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .create-card {
