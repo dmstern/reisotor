@@ -4,16 +4,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useTripEditor } from '../composables/useTripEditor';
-import type { Trip } from '../api/types';
 import Modal from './Modal.vue';
 import TripForm from './TripForm.vue';
 import EditButton from './EditButton.vue';
-import TripMembersDialog from './TripMembersDialog.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
-import IconButton from './primitives/IconButton.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = withDefaults(
@@ -28,8 +24,6 @@ const props = withDefaults(
 const tripStore = useTripStore();
 const auth = useAuthStore();
 const open = ref(false);
-const showMembers = ref(false);
-const membersTrip = ref<Trip | null>(null);
 const switcherBtnRef = ref<HTMLButtonElement | null>(null);
 const dropdownRef = ref<HTMLElement | null>(null);
 const dropdownStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
@@ -131,12 +125,6 @@ function selectAndClose(id: number) {
     router.push(`/trip/${id}`);
   }
 }
-
-function openMembers(trip: Trip) {
-  membersTrip.value = trip;
-  showMembers.value = true;
-  close();
-}
 </script>
 
 <template>
@@ -191,14 +179,6 @@ function openMembers(trip: Trip) {
               @click="selectAndClose(trip.id)"
             />
             <div class="row-actions">
-              <IconButton
-                variant="ghost"
-                size="sm"
-                :icon="FORM_FIELD_ICONS.visibility"
-                title="Mitglieder verwalten"
-                aria-label="Mitglieder verwalten"
-                @click="openMembers(trip)"
-              />
               <EditButton
                 small
                 @click="
@@ -263,8 +243,6 @@ function openMembers(trip: Trip) {
         @delete="onDelete"
       />
     </Modal>
-
-    <TripMembersDialog v-model="showMembers" :trip="membersTrip" />
   </div>
 </template>
 

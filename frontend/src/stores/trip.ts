@@ -32,7 +32,7 @@ export const useTripStore = defineStore('trip', () => {
   // gesprungen werden soll. TripSwitcher beobachtet das und öffnet dafür sein Edit-Modal
   // (Architekturregel Batch 3: Fremdobjekte springen zur Ursprungssicht statt inline editierbar zu sein).
   const editTripRequestId = ref(0);
-  const editTripInitialTab = ref<'general' | 'settings'>('general');
+  const editTripInitialTab = ref<'general' | 'settings' | 'categories' | 'permissions'>('general');
 
   const currentTrip = computed(() => trips.value.find((t) => t.id === currentTripId.value) ?? null);
 
@@ -115,7 +115,7 @@ export const useTripStore = defineStore('trip', () => {
     editTripRequestId.value = 0;
   }
 
-  function requestEditTrip(tab: 'general' | 'settings' = 'general') {
+  function requestEditTrip(tab: 'general' | 'settings' | 'categories' | 'permissions' = 'general') {
     editTripInitialTab.value = tab;
     editTripRequestId.value++;
   }

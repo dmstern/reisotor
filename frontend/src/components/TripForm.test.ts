@@ -233,4 +233,27 @@ describe('TripForm', () => {
     expect(data3.lng).toBeCloseTo(16.3738);
     cleanUp();
   });
+
+  it('renders all four tabs (including Zugriffsberechtigungen) when editing an existing trip', () => {
+    const { container, cleanUp } = mountForm({ initial: sampleInitial, tripId: 1 });
+    const tabTexts = Array.from(container.querySelectorAll('.trip-tab-bar .tab')).map((el) =>
+      el.textContent?.trim()
+    );
+    expect(tabTexts).toContain('Allgemein');
+    expect(tabTexts).toContain('Einstellungen');
+    expect(tabTexts).toContain('Kategorien');
+    expect(tabTexts).toContain('Zugriffsberechtigungen');
+    cleanUp();
+  });
+
+  it('hides the actions row (save and delete buttons) when initialTab is permissions', () => {
+    const { container, cleanUp } = mountForm({
+      initial: sampleInitial,
+      initialTab: 'permissions',
+      tripId: 1,
+    });
+    const actionsRow = container.querySelector('.actions-row');
+    expect(actionsRow).toBeNull();
+    cleanUp();
+  });
 });
