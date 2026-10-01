@@ -45,5 +45,9 @@ describe('TripCategorySettings', () => {
     expect(html).toContain('Tauchkurs');
     expect(html).toContain('3 Ausgaben');
     expect(html).toContain('Urlaub');
+
+    // Keine veralteten separaten Emoji-Eingabefelder vorhanden
+    expect(html).not.toContain('emoji-input');
+    expect(html).not.toContain('emoji-field');
   });
 });

@@ -2,7 +2,6 @@
 import { ref, computed, watch, useId } from 'vue';
 import { useTripCategoriesStore, type TripCategory } from '../stores/tripCategories';
 import {
-  CATEGORY_ICON_PALETTE,
   CATEGORY_COLOR_PALETTE,
   findCategoryIcon,
   getCategoryIconDef,
@@ -19,6 +18,7 @@ import IconButton from './primitives/IconButton.vue';
 import Modal from './Modal.vue';
 import CategoryChip from './CategoryChip.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
+import CategoryIconPickerModal from './CategoryIconPickerModal.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -69,9 +69,11 @@ const editForm = ref({
 });
 
 const createNameId = useId();
-const createEmojiId = useId();
 const editNameId = useId();
-const editEmojiId = useId();
+
+const currentPickerIconId = computed(() =>
+  iconPickerTarget.value === 'create' ? createForm.value.icon : editForm.value.icon
+);
 
 // Bei Wechsel von tripId oder activeType Store synchronisieren
 watch(
@@ -178,11 +180,12 @@ const filteredCategories = computed(() => {
 });
 
 function startEdit(cat: DisplayCategory) {
+  const matchingOpt = findCategoryIcon(cat.icon, cat.emoji);
   editForm.value = {
     id: cat.id ?? 0,
     name: cat.name,
-    icon: cat.icon ?? 'category',
-    emoji: cat.emoji ?? '🏷️',
+    icon: matchingOpt?.id ?? cat.icon ?? 'category',
+    emoji: matchingOpt?.defaultEmoji ?? cat.emoji ?? '🏷️',
     color: cat.color ?? CATEGORY_COLOR_PALETTE[0],
     usage_count: cat.usageCount,
   };
@@ -322,36 +325,23 @@ async function toggleHideStandard(cat: DisplayCategory) {
           />
         </label>
 
-        <div class="picker-row">
-          <div class="icon-picker-field">
-            <span class="field-label">Icon</span>
-            <button
-              type="button"
-              class="icon-selector-btn"
-              title="Icon auswählen"
-              @click="openIconPicker('create')"
-            >
-              <AppIcon
-                :icon="getCategoryIconDef(createForm.icon, createForm.emoji)"
-                group="categories"
-                :size="18"
-              />
-              <span class="icon-name">{{
-                findCategoryIcon(createForm.icon)?.label ?? 'Icon'
-              }}</span>
-            </button>
-          </div>
-
-          <label :for="createEmojiId" class="emoji-field">
-            <span class="field-label">Emoji</span>
-            <Input
-              :id="createEmojiId"
-              v-model="createForm.emoji"
-              type="text"
-              class="emoji-input"
-              :maxlength="4"
+        <div class="icon-picker-field">
+          <span class="field-label">Icon</span>
+          <button
+            type="button"
+            class="icon-selector-btn"
+            title="Icon auswählen"
+            @click="openIconPicker('create')"
+          >
+            <AppIcon
+              :icon="getCategoryIconDef(createForm.icon, createForm.emoji)"
+              group="categories"
+              :size="18"
             />
-          </label>
+            <span class="icon-name">{{
+              findCategoryIcon(createForm.icon, createForm.emoji)?.label ?? 'Icon auswählen'
+            }}</span>
+          </button>
         </div>
 
         <div class="color-palette-field">
@@ -495,36 +485,23 @@ async function toggleHideStandard(cat: DisplayCategory) {
                 />
               </label>
 
-              <div class="picker-row">
-                <div class="icon-picker-field">
-                  <span class="field-label">Icon</span>
-                  <button
-                    type="button"
-                    class="icon-selector-btn"
-                    title="Icon auswählen"
-                    @click="openIconPicker('edit')"
-                  >
-                    <AppIcon
-                      :icon="getCategoryIconDef(editForm.icon, editForm.emoji)"
-                      group="categories"
-                      :size="18"
-                    />
-                    <span class="icon-name">{{
-                      findCategoryIcon(editForm.icon)?.label ?? 'Icon'
-                    }}</span>
-                  </button>
-                </div>
-
-                <label :for="editEmojiId" class="emoji-field">
-                  <span class="field-label">Emoji</span>
-                  <Input
-                    :id="editEmojiId"
-                    v-model="editForm.emoji"
-                    type="text"
-                    class="emoji-input"
-                    :maxlength="4"
+              <div class="icon-picker-field">
+                <span class="field-label">Icon</span>
+                <button
+                  type="button"
+                  class="icon-selector-btn"
+                  title="Icon auswählen"
+                  @click="openIconPicker('edit')"
+                >
+                  <AppIcon
+                    :icon="getCategoryIconDef(editForm.icon, editForm.emoji)"
+                    group="categories"
+                    :size="18"
                   />
-                </label>
+                  <span class="icon-name">{{
+                    findCategoryIcon(editForm.icon, editForm.emoji)?.label ?? 'Icon auswählen'
+                  }}</span>
+                </button>
               </div>
 
               <div class="color-palette-field">
@@ -572,25 +549,11 @@ async function toggleHideStandard(cat: DisplayCategory) {
     </div>
 
     <!-- 5. Icon-Auswahl-Modal -->
-    <Modal
-      :model-value="showIconPicker"
-      title="Kategorie-Icon wählen"
-      @update:model-value="(v) => !v && (showIconPicker = false)"
-    >
-      <div class="icon-grid">
-        <button
-          v-for="opt in CATEGORY_ICON_PALETTE"
-          :key="opt.id"
-          type="button"
-          class="icon-grid-item"
-          :title="opt.label"
-          @click="selectIcon(iconPickerTarget, opt)"
-        >
-          <AppIcon :icon="opt.tabler" group="categories" :size="24" />
-          <span class="grid-icon-label">{{ opt.label }}</span>
-        </button>
-      </div>
-    </Modal>
+    <CategoryIconPickerModal
+      v-model="showIconPicker"
+      :selected-icon-id="currentPickerIconId"
+      @select="(opt) => selectIcon(iconPickerTarget, opt)"
+    />
 
     <!-- 6. Lösch-Bestätigung -->
     <Modal
@@ -688,14 +651,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
   gap: var(--space-1);
 }
 
-.picker-row {
-  display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
-}
-
 .icon-picker-field {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -713,19 +669,15 @@ async function toggleHideStandard(cat: DisplayCategory) {
   font-size: 0.85rem;
   color: var(--color-text);
   text-align: left;
+  width: 100%;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
 .icon-selector-btn:hover {
   border-color: var(--color-primary);
-}
-
-.emoji-field {
-  width: 70px;
-}
-
-.emoji-input {
-  text-align: center;
-  font-size: 1.1rem;
+  background: var(--color-hover);
 }
 
 .color-palette-field {
@@ -846,41 +798,6 @@ async function toggleHideStandard(cat: DisplayCategory) {
   color: var(--color-text-muted);
   text-align: center;
   padding: var(--space-4);
-}
-
-.icon-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: var(--space-2);
-  max-height: 380px;
-  overflow-y: auto;
-  padding: var(--space-2);
-}
-
-.icon-grid-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.icon-grid-item:hover {
-  border-color: var(--color-primary);
-  background: var(--color-surface-hover, rgba(0, 0, 0, 0.03));
-}
-
-.grid-icon-label {
-  font-size: 0.72rem;
-  text-align: center;
-  color: var(--color-text);
-  line-height: 1.2;
 }
 
 .delete-dialog-content {

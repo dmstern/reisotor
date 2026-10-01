@@ -3,14 +3,24 @@ import {
   CATEGORY_COLOR_PALETTE,
   CATEGORY_ICON_PALETTE,
   findCategoryIcon,
+  findCategoryIconByEmoji,
   getCategoryIconDef,
   resolveCategoryMeta,
 } from './categoryIcons';
 
 describe('categoryIcons', () => {
-  it('enthält eine Palette mit Icons und Farben', () => {
-    expect(CATEGORY_ICON_PALETTE.length).toBeGreaterThanOrEqual(30);
+  it('enthält eine Palette mit mindestens 100 Icons und reichhaltigen Farben', () => {
+    expect(CATEGORY_ICON_PALETTE.length).toBeGreaterThanOrEqual(100);
     expect(CATEGORY_COLOR_PALETTE.length).toBeGreaterThanOrEqual(10);
+
+    // Alle Icons müssen vollständige Metadaten besitzen
+    for (const opt of CATEGORY_ICON_PALETTE) {
+      expect(opt.id).toBeTruthy();
+      expect(opt.label).toBeTruthy();
+      expect(opt.defaultEmoji).toBeTruthy();
+      expect(opt.tabler).toBeDefined();
+      expect(opt.tabler.outline).toBeDefined();
+    }
   });
 
   it('findet Icons anhand der ID und liefert Tabler-IconDef', () => {
@@ -22,6 +32,16 @@ describe('categoryIcons', () => {
     const def = getCategoryIconDef('bed', '🏨');
     expect(def.id).toBe('bed');
     expect(def.emoji).toBe('🏨');
+  });
+
+  it('findet Icons per Fallback-Emoji wenn Icon-ID fehlt', () => {
+    const byEmoji = findCategoryIconByEmoji('🍕');
+    expect(byEmoji).toBeDefined();
+    expect(byEmoji?.id).toBe('pizza');
+
+    const fallback = findCategoryIcon(undefined, '🍕');
+    expect(fallback).toBeDefined();
+    expect(fallback?.id).toBe('pizza');
   });
 
   it('löst benutzerdefinierte Kategorie-Metadaten vorrangig auf', () => {
