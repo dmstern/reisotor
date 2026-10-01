@@ -41,14 +41,18 @@ export function ensureTripCategory(
   if (!trimmed) return;
 
   const existing = db
-    .prepare('SELECT id FROM trip_categories WHERE trip_id = ? AND type = ? AND name = ?')
-    .get(tripId, type, trimmed);
+    .prepare(
+      'SELECT id, deleted_at FROM trip_categories WHERE trip_id = ? AND type = ? AND name = ?'
+    )
+    .get(tripId, type, trimmed) as { id: number; deleted_at: string | null } | undefined;
 
   if (!existing) {
     db.prepare(
       `INSERT OR IGNORE INTO trip_categories (trip_id, type, name, icon, emoji, color, is_hidden)
        VALUES (?, ?, ?, ?, ?, ?, 0)`
     ).run(tripId, type, trimmed, icon ?? null, emoji ?? null, color ?? null);
+  } else if (existing.deleted_at) {
+    db.prepare('UPDATE trip_categories SET deleted_at = NULL WHERE id = ?').run(existing.id);
   }
 }
 
@@ -64,7 +68,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     const filterType = req.query.type;
 
     // 1. Gespeicherte trip_categories abrufen
-    let query = 'SELECT * FROM trip_categories WHERE trip_id = ?';
+    let query = 'SELECT * FROM trip_categories WHERE trip_id = ? AND deleted_at IS NULL';
     const params: unknown[] = [tripId];
     if (filterType) {
       query += ' AND type = ?';
@@ -264,13 +268,16 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
          icon = excluded.icon,
          emoji = excluded.emoji,
          color = excluded.color,
-         is_hidden = 0`
+         is_hidden = 0,
+         deleted_at = NULL`
     );
 
     stmt.run(tripId, type, trimmed, icon ?? null, emoji ?? null, color ?? null);
 
     const category = db
-      .prepare('SELECT * FROM trip_categories WHERE trip_id = ? AND type = ? AND name = ?')
+      .prepare(
+        'SELECT * FROM trip_categories WHERE trip_id = ? AND type = ? AND name = ? AND deleted_at IS NULL'
+      )
       .get(tripId, type, trimmed) as TripCategoryRow;
 
     category.usage_count = 0;
@@ -289,7 +296,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, tripId, req.session.userId)) return;
 
     const existing = db
-      .prepare('SELECT * FROM trip_categories WHERE id = ? AND trip_id = ?')
+      .prepare('SELECT * FROM trip_categories WHERE id = ? AND trip_id = ? AND deleted_at IS NULL')
       .get(categoryId, tripId) as TripCategoryRow | undefined;
 
     if (!existing) {
@@ -385,7 +392,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, tripId, req.session.userId)) return;
 
     const existing = db
-      .prepare('SELECT * FROM trip_categories WHERE id = ? AND trip_id = ?')
+      .prepare('SELECT * FROM trip_categories WHERE id = ? AND trip_id = ? AND deleted_at IS NULL')
       .get(categoryId, tripId) as TripCategoryRow | undefined;
 
     if (!existing) {
@@ -414,8 +421,10 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
         ).run(tripId, existing.name);
       }
 
-      // 2. Aus trip_categories entfernen
-      db.prepare('DELETE FROM trip_categories WHERE id = ?').run(categoryId);
+      // 2. Weich in den Papierkorb verschieben
+      db.prepare("UPDATE trip_categories SET deleted_at = datetime('now') WHERE id = ?").run(
+        categoryId
+      );
     });
 
     deleteTransaction();
@@ -442,7 +451,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     db.prepare(
       `INSERT INTO trip_categories (trip_id, type, name, is_hidden)
        VALUES (?, ?, ?, ?)
-       ON CONFLICT(trip_id, type, name) DO UPDATE SET is_hidden = excluded.is_hidden`
+       ON CONFLICT(trip_id, type, name) DO UPDATE SET is_hidden = excluded.is_hidden, deleted_at = NULL`
     ).run(tripId, type, trimmed, hiddenVal);
 
     recordActivity(tripId, 'trip', null, 'hide_category', req.session.userId!);

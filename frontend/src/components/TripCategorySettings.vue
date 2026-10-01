@@ -45,7 +45,7 @@ const SCOPE_OPTIONS = [
 ];
 const searchQuery = ref('');
 const showCreateForm = ref(false);
-const editingCategoryId = ref<number | null>(null);
+const editingCategory = ref<DisplayCategory | null>(null);
 const categoryToDelete = ref<{ id: number; name: string; count: number } | null>(null);
 const showIconPicker = ref(false);
 const iconPickerTarget = ref<'create' | 'edit'>('create');
@@ -189,11 +189,11 @@ function startEdit(cat: DisplayCategory) {
     color: cat.color ?? CATEGORY_COLOR_PALETTE[0],
     usage_count: cat.usageCount,
   };
-  editingCategoryId.value = cat.id ?? -1;
+  editingCategory.value = cat;
 }
 
 function cancelEdit() {
-  editingCategoryId.value = null;
+  editingCategory.value = null;
 }
 
 async function saveEdit() {
@@ -216,7 +216,7 @@ async function saveEdit() {
       color: editForm.value.color,
     });
   }
-  editingCategoryId.value = null;
+  editingCategory.value = null;
 }
 
 async function handleCreate() {
@@ -239,13 +239,14 @@ async function handleCreate() {
   showCreateForm.value = false;
 }
 
-function confirmDelete(cat: DisplayCategory) {
-  if (!cat.id) return;
+function confirmDeleteFromEdit() {
+  if (!editingCategory.value || !editingCategory.value.id) return;
   categoryToDelete.value = {
-    id: cat.id,
-    name: cat.name,
-    count: cat.usageCount,
+    id: editingCategory.value.id,
+    name: editForm.value.name,
+    count: editForm.value.usage_count,
   };
+  editingCategory.value = null;
 }
 
 async function executeDelete() {
@@ -396,151 +397,51 @@ async function toggleHideStandard(cat: DisplayCategory) {
         class="category-row"
         :class="{
           'is-hidden': cat.isHidden,
-          'is-editing': editingCategoryId === (cat.id ?? -1),
         }"
       >
-        <!-- A. Normale Zeilenansicht -->
-        <template v-if="editingCategoryId !== (cat.id ?? -1)">
-          <div class="category-main">
-            <CategoryChip
-              :category="cat.name"
-              :type="activeType"
-              :custom-meta="{
-                label: cat.name,
-                icon: cat.emoji ?? '',
-                color: cat.color ?? '#3b82f6',
-                tabler: getCategoryIconDef(cat.icon, cat.emoji),
-              }"
-            />
+        <div class="category-main">
+          <CategoryChip
+            :category="cat.name"
+            :type="activeType"
+            :custom-meta="{
+              label: cat.name,
+              icon: cat.emoji ?? '',
+              color: cat.color ?? '#3b82f6',
+              tabler: getCategoryIconDef(cat.icon, cat.emoji),
+            }"
+          />
 
-            <Badge v-if="cat.isCustom" variant="primary" class="kind-badge">Urlaub</Badge>
-            <Badge v-else variant="default" class="kind-badge">Standard</Badge>
+          <Badge v-if="cat.isCustom" variant="primary" class="kind-badge">Urlaub</Badge>
+          <Badge v-else variant="default" class="kind-badge">Standard</Badge>
 
-            <span class="usage-count" :class="{ 'has-usage': cat.usageCount > 0 }">
-              {{ cat.usageCount }} {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }}
-            </span>
-          </div>
+          <span class="usage-count" :class="{ 'has-usage': cat.usageCount > 0 }">
+            {{ cat.usageCount }} {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }}
+          </span>
+        </div>
 
-          <div class="row-actions">
-            <!-- Bearbeiten -->
-            <IconButton
-              size="sm"
-              :icon="FORM_FIELD_ICONS.note"
-              title="Kategorie bearbeiten"
-              aria-label="Kategorie bearbeiten"
-              @click="startEdit(cat)"
-            />
+        <div class="row-actions">
+          <!-- Bearbeiten (Pencil) -->
+          <IconButton
+            size="sm"
+            :icon="ACTION_ICONS.edit"
+            title="Kategorie bearbeiten"
+            aria-label="Kategorie bearbeiten"
+            @click="startEdit(cat)"
+          />
 
-            <!-- Custom Kategorie löschen -->
-            <IconButton
-              v-if="cat.isCustom && cat.id"
-              size="sm"
-              variant="danger"
-              :icon="ACTION_ICONS.delete"
-              title="Kategorie löschen"
-              aria-label="Kategorie löschen"
-              @click="confirmDelete(cat)"
-            />
-
-            <!-- Standardkategorie ausblenden / einblenden -->
-            <Button
-              v-else-if="!cat.isCustom"
-              type="button"
-              variant="ghost"
-              size="sm"
-              class="hide-btn"
-              @click="toggleHideStandard(cat)"
-            >
-              {{ cat.isHidden ? 'Einblenden' : 'Ausblenden' }}
-            </Button>
-          </div>
-        </template>
-
-        <!-- B. Inline-Bearbeitung (wie GitHub Labels) -->
-        <template v-else>
-          <div class="inline-edit-form">
-            <div class="preview-row">
-              <span class="preview-label">Vorschau:</span>
-              <CategoryChip
-                :category="editForm.name || 'Kategorie-Name'"
-                :type="activeType"
-                :custom-meta="{
-                  label: editForm.name || 'Kategorie-Name',
-                  icon: editForm.emoji,
-                  color: editForm.color,
-                  tabler: getCategoryIconDef(editForm.icon, editForm.emoji),
-                }"
-              />
-            </div>
-
-            <div class="form-grid">
-              <label :for="editNameId" class="field-label">
-                Name
-                <Input
-                  :id="editNameId"
-                  v-model="editForm.name"
-                  type="text"
-                  required
-                  @keydown.enter.prevent="saveEdit"
-                />
-              </label>
-
-              <div class="icon-picker-field">
-                <span class="field-label">Icon</span>
-                <button
-                  type="button"
-                  class="icon-selector-btn"
-                  title="Icon auswählen"
-                  @click="openIconPicker('edit')"
-                >
-                  <AppIcon
-                    :icon="getCategoryIconDef(editForm.icon, editForm.emoji)"
-                    group="categories"
-                    :size="18"
-                  />
-                  <span class="icon-name">{{
-                    findCategoryIcon(editForm.icon, editForm.emoji)?.label ?? 'Icon auswählen'
-                  }}</span>
-                </button>
-              </div>
-
-              <div class="color-palette-field">
-                <span class="field-label">Farbe</span>
-                <div class="color-swatches">
-                  <button
-                    v-for="color in CATEGORY_COLOR_PALETTE"
-                    :key="color"
-                    type="button"
-                    class="swatch-btn"
-                    :class="{ selected: editForm.color === color }"
-                    :style="{ backgroundColor: color }"
-                    :title="color"
-                    @click="editForm.color = color"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <p v-if="editForm.usage_count > 0" class="rename-hint">
-              <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-              Wird bei {{ editForm.usage_count }} bestehenden
-              {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} automatisch mit umbenannt.
-            </p>
-
-            <div class="form-actions">
-              <Button type="button" variant="ghost" size="sm" @click="cancelEdit">Abbrechen</Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                :disabled="!editForm.name.trim()"
-                @click="saveEdit"
-              >
-                Änderungen speichern
-              </Button>
-            </div>
-          </div>
-        </template>
+          <!-- Standardkategorie ausblenden / einblenden -->
+          <Button
+            v-if="!cat.isCustom"
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="hide-btn"
+            :icon="cat.isHidden ? ACTION_ICONS.show : ACTION_ICONS.hide"
+            @click="toggleHideStandard(cat)"
+          >
+            {{ cat.isHidden ? 'Einblenden' : 'Ausblenden' }}
+          </Button>
+        </div>
       </Card>
 
       <p v-if="filteredCategories.length === 0" class="empty-hint">
@@ -548,14 +449,114 @@ async function toggleHideStandard(cat: DisplayCategory) {
       </p>
     </div>
 
-    <!-- 5. Icon-Auswahl-Modal -->
+    <!-- 5. Kategorie bearbeiten (Dialog) -->
+    <Modal
+      :model-value="editingCategory !== null"
+      title="Kategorie bearbeiten"
+      @update:model-value="(v) => !v && cancelEdit()"
+    >
+      <div class="edit-dialog-content">
+        <div class="preview-row">
+          <span class="preview-label">Vorschau:</span>
+          <CategoryChip
+            :category="editForm.name || 'Kategorie-Name'"
+            :type="activeType"
+            :custom-meta="{
+              label: editForm.name || 'Kategorie-Name',
+              icon: editForm.emoji,
+              color: editForm.color,
+              tabler: getCategoryIconDef(editForm.icon, editForm.emoji),
+            }"
+          />
+        </div>
+
+        <div class="form-grid">
+          <label :for="editNameId" class="field-label">
+            Name
+            <Input
+              :id="editNameId"
+              v-model="editForm.name"
+              type="text"
+              required
+              @keydown.enter.prevent="saveEdit"
+            />
+          </label>
+
+          <div class="icon-picker-field">
+            <span class="field-label">Icon</span>
+            <button
+              type="button"
+              class="icon-selector-btn"
+              title="Icon auswählen"
+              @click="openIconPicker('edit')"
+            >
+              <AppIcon
+                :icon="getCategoryIconDef(editForm.icon, editForm.emoji)"
+                group="categories"
+                :size="18"
+              />
+              <span class="icon-name">{{
+                findCategoryIcon(editForm.icon, editForm.emoji)?.label ?? 'Icon auswählen'
+              }}</span>
+            </button>
+          </div>
+
+          <div class="color-palette-field">
+            <span class="field-label">Farbe</span>
+            <div class="color-swatches">
+              <button
+                v-for="color in CATEGORY_COLOR_PALETTE"
+                :key="color"
+                type="button"
+                class="swatch-btn"
+                :class="{ selected: editForm.color === color }"
+                :style="{ backgroundColor: color }"
+                :title="color"
+                @click="editForm.color = color"
+              />
+            </div>
+          </div>
+        </div>
+
+        <p v-if="editForm.usage_count > 0" class="rename-hint">
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+          Wird bei {{ editForm.usage_count }} bestehenden
+          {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} automatisch mit umbenannt.
+        </p>
+
+        <div class="actions-row">
+          <Button
+            v-if="editingCategory?.isCustom && editingCategory?.id"
+            type="button"
+            variant="danger"
+            secondary
+            :icon="ACTION_ICONS.delete"
+            @click="confirmDeleteFromEdit"
+          >
+            Löschen
+          </Button>
+          <div class="spacer"></div>
+          <Button type="button" variant="ghost" @click="cancelEdit">Abbrechen</Button>
+          <Button
+            type="button"
+            variant="primary"
+            :disabled="!editForm.name.trim()"
+            @click="saveEdit"
+          >
+            Änderungen speichern
+          </Button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- 6. Icon-Auswahl-Modal -->
     <CategoryIconPickerModal
       v-model="showIconPicker"
       :selected-icon-id="currentPickerIconId"
       @select="(opt) => selectIcon(iconPickerTarget, opt)"
     />
 
-    <!-- 6. Lösch-Bestätigung -->
+    <!-- 7. Lösch-Bestätigung -->
     <Modal
       :model-value="categoryToDelete !== null"
       title="Kategorie löschen"
@@ -579,9 +580,9 @@ async function toggleHideStandard(cat: DisplayCategory) {
         <div class="actions-row">
           <Button type="button" variant="ghost" @click="categoryToDelete = null">Abbrechen</Button>
           <div class="spacer"></div>
-          <Button type="button" variant="danger" @click="executeDelete"
-            >Kategorie endgültig löschen</Button
-          >
+          <Button type="button" variant="danger" :icon="ACTION_ICONS.delete" @click="executeDelete">
+            Kategorie löschen
+          </Button>
         </div>
       </div>
     </Modal>
@@ -777,11 +778,10 @@ async function toggleHideStandard(cat: DisplayCategory) {
   padding: 4px 8px;
 }
 
-.inline-edit-form {
+.edit-dialog-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
+  gap: var(--space-3);
 }
 
 .rename-hint {

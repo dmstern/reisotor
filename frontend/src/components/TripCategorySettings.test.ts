@@ -49,5 +49,41 @@ describe('TripCategorySettings', () => {
     // Keine veralteten separaten Emoji-Eingabefelder vorhanden
     expect(html).not.toContain('emoji-input');
     expect(html).not.toContain('emoji-field');
+
+    // Kein Inline-Edit-Formular in der Liste vorhanden
+    expect(html).not.toContain('inline-edit-form');
+
+    // Bearbeiten-Button ist vorhanden mit Titel "Kategorie bearbeiten"
+    expect(html).toContain('title="Kategorie bearbeiten"');
+
+    // Standardkategorie-Aktion "Ausblenden" ist vorhanden und hat das hide-Icon (eye-off)
+    expect(html).toContain('Ausblenden');
+    expect(html).toContain('eye-off');
+  });
+
+  it('zeigt in der Zeile kein inline-Löschen-Icon mehr, sondern verlegt Löschen in den Dialog', async () => {
+    const store = useTripCategoriesStore();
+    store.categories = [
+      {
+        id: 1,
+        trip_id: 10,
+        type: 'expense',
+        name: 'Tauchkurs',
+        icon: 'swimming',
+        emoji: '🤿',
+        color: '#0ea5e9',
+        is_hidden: 0,
+        created_at: '',
+        usage_count: 0,
+      },
+    ];
+
+    const html = await render({ tripId: 10 });
+    // In der Zeilenansicht darf es keinen direkten "Kategorie löschen"-Button mehr geben
+    // (Löschen ist nun im Bearbeiten-Dialog verortet)
+    const rowActionsMatches = html.match(/<div class="row-actions">([\s\S]*?)<\/div>/g) || [];
+    for (const rowActions of rowActionsMatches) {
+      expect(rowActions).not.toContain('title="Kategorie löschen"');
+    }
   });
 });

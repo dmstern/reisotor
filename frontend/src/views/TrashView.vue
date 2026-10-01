@@ -11,6 +11,7 @@ import Card from '../components/primitives/Card.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
 import { stripHtml } from '../utils/richText';
 
@@ -54,6 +55,7 @@ const TYPE_ICON: Record<string, IconDef> = {
   note: SECTION_ICON_DEFS.notes,
   diary_entry: SECTION_ICON_DEFS.diary,
   location_track: SECTION_ICON_DEFS.map,
+  trip_category: FORM_FIELD_ICONS.category,
 };
 
 function userLabel(id: unknown) {
@@ -81,6 +83,8 @@ function titleFor(entry: TrashEntry): string {
     case 'packing_item':
     case 'shopping_item':
       return (d.label as string) || '(ohne Titel)';
+    case 'trip_category':
+      return (d.name as string) || '(ohne Name)';
     case 'budget_transfer':
       return `${(d.amount as number).toFixed(2)}\u00A0€ · ${userLabel(d.from_user_id)} → ${userLabel(d.to_user_id)}`;
     case 'note':

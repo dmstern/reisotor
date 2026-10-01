@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import { api } from '../api/client';
 import { useTripStore } from './trip';
+import { useToast } from '../composables/useToast';
 import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
 import { SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import { resolveCategoryMeta, type ResolvedCategoryMeta } from '../utils/categoryIcons';
@@ -165,8 +166,13 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
   }
 
   async function deleteCategory(tripId: number, id: number): Promise<void> {
+    const { showToast } = useToast();
     await api.delete(`/trips/${tripId}/categories/${id}`);
     categories.value = categories.value.filter((c) => c.id !== id);
+    showToast({
+      message: 'Kategorie gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+    });
   }
 
   async function setHidden(

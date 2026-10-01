@@ -449,6 +449,7 @@ db.exec(`
     color TEXT,
     is_hidden INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT,
     UNIQUE(trip_id, type, name)
   );
   CREATE INDEX IF NOT EXISTS idx_trip_categories_trip ON trip_categories (trip_id, type);
@@ -845,6 +846,7 @@ export const TRASH_TABLES = [
   'shopping_items',
   'notes',
   'diary_entries',
+  'trip_categories',
 ] as const;
 
 for (const table of TRASH_TABLES) {
@@ -856,6 +858,9 @@ for (const table of TRASH_TABLES) {
 // 1. spots (trip_id, deleted_at): queried heavily by spots/map routes and schedule dropdowns.
 // 2. trip_members (user_id, trip_id): queried whenever fetching user trips or checking membership.
 db.exec('CREATE INDEX IF NOT EXISTS idx_spots_trip_deleted ON spots (trip_id, deleted_at)');
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_trip_categories_deleted ON trip_categories (trip_id, deleted_at)'
+);
 db.exec('CREATE INDEX IF NOT EXISTS idx_trip_members_user_trip ON trip_members (user_id, trip_id)');
 
 // Reise-Orte (travel_places) verschmelzen mit Spots: statt einer eigenen, parallelen Orte-Liste nur

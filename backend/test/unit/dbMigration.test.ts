@@ -452,4 +452,33 @@ describe('location_track_points.altitude Migration', () => {
     expect(altitudeCol).toBeDefined();
     expect(altitudeCol?.type.toUpperCase()).toBe('REAL');
   });
+
+  it('ergänzt die Spalte deleted_at in trip_categories bei einer bestehenden Datenbank', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-trip-cat-migration-test-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE trip_categories (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        is_hidden INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(trip_categories)').all() as {
+      name: string;
+      type: string;
+    }[];
+    const deletedAtCol = columns.find((c) => c.name === 'deleted_at');
+    expect(deletedAtCol).toBeDefined();
+  });
 });
