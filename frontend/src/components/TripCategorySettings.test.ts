@@ -53,8 +53,10 @@ describe('TripCategorySettings', () => {
     // Kein Inline-Edit-Formular in der Liste vorhanden
     expect(html).not.toContain('inline-edit-form');
 
-    // Bearbeiten-Button ist vorhanden mit Titel "Kategorie bearbeiten"
+    // Bearbeiten-Button ist vorhanden mit Titel "Kategorie bearbeiten" und Standard-Styling (btn--ghost, edit-btn small)
     expect(html).toContain('title="Kategorie bearbeiten"');
+    expect(html).toContain('btn--ghost');
+    expect(html).toContain('edit-btn small');
 
     // Standardkategorie-Aktion "Ausblenden" ist vorhanden und hat das hide-Icon (eye-off)
     expect(html).toContain('Ausblenden');

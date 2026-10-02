@@ -15,6 +15,7 @@ import Input from './primitives/Input.vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import IconButton from './primitives/IconButton.vue';
+import EditButton from './EditButton.vue';
 import Modal from './Modal.vue';
 import CategoryChip from './CategoryChip.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
@@ -421,9 +422,8 @@ async function toggleHideStandard(cat: DisplayCategory) {
 
         <div class="row-actions">
           <!-- Bearbeiten (Pencil) -->
-          <IconButton
-            size="sm"
-            :icon="ACTION_ICONS.edit"
+          <EditButton
+            small
             title="Kategorie bearbeiten"
             aria-label="Kategorie bearbeiten"
             @click="startEdit(cat)"
