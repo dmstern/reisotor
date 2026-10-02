@@ -181,13 +181,14 @@ const filteredCategories = computed(() => {
 });
 
 function startEdit(cat: DisplayCategory) {
-  const matchingOpt = findCategoryIcon(cat.icon, cat.emoji);
+  const meta = tripCategoriesStore.categoryMeta(cat.name, activeType.value);
+  const matchingOpt = findCategoryIcon(cat.icon || meta.tabler.id, cat.emoji || meta.icon);
   editForm.value = {
     id: cat.id ?? 0,
     name: cat.name,
-    icon: matchingOpt?.id ?? cat.icon ?? 'category',
-    emoji: matchingOpt?.defaultEmoji ?? cat.emoji ?? '🏷️',
-    color: cat.color ?? CATEGORY_COLOR_PALETTE[0],
+    icon: matchingOpt?.id ?? cat.icon ?? meta.tabler.id ?? 'category',
+    emoji: cat.emoji ?? meta.icon ?? matchingOpt?.defaultEmoji ?? '🏷️',
+    color: cat.color ?? meta.color ?? CATEGORY_COLOR_PALETTE[0],
     usage_count: cat.usageCount,
   };
   editingCategory.value = cat;
@@ -401,16 +402,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
         }"
       >
         <div class="category-main">
-          <CategoryChip
-            :category="cat.name"
-            :type="activeType"
-            :custom-meta="{
-              label: cat.name,
-              icon: cat.emoji ?? '',
-              color: cat.color ?? '#3b82f6',
-              tabler: getCategoryIconDef(cat.icon, cat.emoji),
-            }"
-          />
+          <CategoryChip :category="cat.name" :type="activeType" />
 
           <Badge v-if="cat.isCustom" variant="primary" class="kind-badge">Urlaub</Badge>
           <Badge v-else variant="default" class="kind-badge">Standard</Badge>

@@ -88,4 +88,15 @@ describe('TripCategorySettings', () => {
       expect(rowActions).not.toContain('title="Kategorie löschen"');
     }
   });
+
+  it('rendert Standardkategorien mit ihren spezifischen Farben und Icons statt generischem Fallback', async () => {
+    const html = await render({ tripId: 10 });
+
+    // Ausgaben-Standardkategorien sind initial sichtbar
+    expect(html).toContain('Essen &amp; Trinken');
+    expect(html).toContain('--category-color:#e34948');
+
+    expect(html).toContain('Unterkunft');
+    expect(html).toContain('--category-color:#1baf7a');
+  });
 });

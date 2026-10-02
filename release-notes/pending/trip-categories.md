@@ -5,3 +5,4 @@
 - ✏️ **Bearbeiten-Dialog im App-Standard**: Kategorien werden jetzt über einen aufgeräumten Dialog mit Bleistift-Icon bearbeitet, in dem sich Name, Icon und Farbe bequem anpassen lassen.
 - 🗑️ **Papierkorb für gelöschte Kategorien**: Eigene Kategorien können direkt im Bearbeiten-Dialog gelöscht werden und landen sicher im Papierkorb, wo sie sich bei Bedarf jederzeit wiederherstellen lassen.
 - 👁️ **Standardkategorien anpassen**: Vordefinierte Kategorien der App, die du für deinen konkreten Urlaub nicht benötigst, können mit aussagekräftigen Symbolen nach Belieben ein- oder ausgeblendet werden.
+- 🎯 **Konsistente Kategorie-Icons**: Alle Standard-Kategorien für Ausgaben und Spots (wie Wellness & Therme, Spielplatz, Ausflugsziel, Aussichtspunkt oder Geldautomat) erscheinen nun im Urlaub-Dialog, in Dropdowns und auf Karten überall mit ihren passenden Symbolen und Farben.

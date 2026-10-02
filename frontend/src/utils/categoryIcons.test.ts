@@ -61,4 +61,53 @@ describe('categoryIcons', () => {
     expect(meta.color).toBe('#1baf7a');
     expect(meta.tabler.id).toBe('bed');
   });
+
+  it('löst alle Standard-Icons aus spotCategory und expenseCategory korrekt auf und verhindert generische Fallbacks', () => {
+    // Wellness & Therme muss das Massage-Icon haben, nicht das generische Category-Icon
+    const wellnessMeta = resolveCategoryMeta('Wellness & Therme', 'spot');
+    expect(wellnessMeta.tabler.id).toBe('massage');
+    expect(wellnessMeta.icon).toBe('💆');
+    expect(wellnessMeta.color).toBe('#14b8a6');
+
+    // Ausflugsziel muss target haben
+    const targetMeta = resolveCategoryMeta('Ausflugsziel', 'spot');
+    expect(targetMeta.tabler.id).toBe('target');
+    expect(targetMeta.icon).toBe('🎯');
+
+    // Spielplatz muss mood-kid haben
+    const spielplatzMeta = resolveCategoryMeta('Spielplatz', 'spot');
+    expect(spielplatzMeta.tabler.id).toBe('mood-kid');
+    expect(spielplatzMeta.icon).toBe('🛝');
+
+    // Geldautomat & Bank muss cash haben
+    const atmMeta = resolveCategoryMeta('Geldautomat & Bank', 'spot');
+    expect(atmMeta.tabler.id).toBe('cash');
+    expect(atmMeta.icon).toBe('🏧');
+
+    // Zoo & Tierpark muss paw haben
+    const zooMeta = resolveCategoryMeta('Zoo & Tierpark', 'spot');
+    expect(zooMeta.tabler.id).toBe('paw');
+    expect(zooMeta.icon).toBe('🦁');
+  });
+
+  it('behält das Standard-Icon bei, wenn nur eine benutzerdefinierte Farbe angegeben wird', () => {
+    const customizedColorOnly = resolveCategoryMeta('Wellness & Therme', 'spot', {
+      color: '#8b5cf6',
+      icon: null,
+      emoji: null,
+    });
+    expect(customizedColorOnly.color).toBe('#8b5cf6');
+    expect(customizedColorOnly.tabler.id).toBe('massage');
+    expect(customizedColorOnly.icon).toBe('💆');
+  });
+
+  it('findet Icons anhand alternativer Emojis aus Keywords (z. B. 🥾 für Wandern, 🌄 für Aussichtspunkt)', () => {
+    const walkOpt = findCategoryIcon(undefined, '🥾');
+    expect(walkOpt).toBeDefined();
+    expect(walkOpt?.id).toBe('walk');
+
+    const mountainOpt = findCategoryIcon(undefined, '🌄');
+    expect(mountainOpt).toBeDefined();
+    expect(mountainOpt?.id).toBe('mountain');
+  });
 });

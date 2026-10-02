@@ -155,6 +155,18 @@ import {
   IconStarFilled,
   IconCategory,
   IconCategoryFilled,
+  IconTarget,
+  IconRoad,
+  IconHome,
+  IconHomeFilled,
+  IconPaw,
+  IconPawFilled,
+  IconMoodKid,
+  IconCash,
+  IconReceiptTax,
+  IconShieldCheck,
+  IconShieldCheckFilled,
+  IconWashMachine,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 import { expenseCategoryMeta } from './expenseCategory';
@@ -237,6 +249,13 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
     defaultEmoji: '🔑',
     tabler: { id: 'key', emoji: '🔑', outline: IconKey },
     keywords: ['schlüssel', 'key', 'checkin', 'rezeption', 'zugang', 'checkout'],
+  },
+  {
+    id: 'home',
+    label: 'Zuhause & Wohnung',
+    defaultEmoji: '🏠',
+    tabler: { id: 'home', emoji: '🏠', outline: IconHome, filled: IconHomeFilled },
+    keywords: ['zuhause', 'wohnung', 'heimat', 'home', 'haus', '🏠'],
   },
 
   // 2. Essen & Trinken
@@ -435,7 +454,7 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
     label: 'Zu Fuß & Wandern',
     defaultEmoji: '🚶',
     tabler: { id: 'walk', emoji: '🚶', outline: IconWalk },
-    keywords: ['wandern', 'hike', 'fuß', 'walking', 'spaziergang', 'trekking'],
+    keywords: ['wandern', 'wanderweg', 'hike', 'fuß', 'walking', 'spaziergang', 'trekking', '🥾'],
   },
   {
     id: 'ferry',
@@ -508,6 +527,13 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
     tabler: { id: 'anchor', emoji: '⚓', outline: IconAnchor },
     keywords: ['hafen', 'marina', 'pier', 'kai', 'anker', 'dock'],
   },
+  {
+    id: 'road',
+    label: 'Maut & Autobahn',
+    defaultEmoji: '🛣️',
+    tabler: { id: 'road', emoji: '🛣️', outline: IconRoad },
+    keywords: ['maut', 'autobahn', 'straße', 'vignette', 'toll', 'raststätte', 'road', '🛣️'],
+  },
 
   // 4. Sehenswürdigkeiten & Kultur
   {
@@ -530,6 +556,31 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
     defaultEmoji: '🧭',
     tabler: { id: 'compass', emoji: '🧭', outline: IconCompass },
     keywords: ['ausflug', 'führung', 'tour', 'rundgang', 'kompass', 'guide', 'aktivität'],
+  },
+  {
+    id: 'target',
+    label: 'Ausflugsziel & Attraktion',
+    defaultEmoji: '🎯',
+    tabler: { id: 'target', emoji: '🎯', outline: IconTarget },
+    keywords: ['ausflug', 'ausflugsziel', 'attraktion', 'ziel', 'target', '🎯'],
+  },
+  {
+    id: 'paw',
+    label: 'Zoo & Tierpark',
+    defaultEmoji: '🦁',
+    tabler: { id: 'paw', emoji: '🦁', outline: IconPaw, filled: IconPawFilled },
+    keywords: [
+      'zoo',
+      'tierpark',
+      'tiere',
+      'löwe',
+      'safari',
+      'wildpark',
+      'aquarium',
+      'paw',
+      '🦁',
+      '🐾',
+    ],
   },
   {
     id: 'monument',
@@ -622,7 +673,18 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
     label: 'Berge & Natur',
     defaultEmoji: '⛰️',
     tabler: { id: 'mountain', emoji: '⛰️', outline: IconMountain, filled: IconMountainFilled },
-    keywords: ['berge', 'berg', 'gipfel', 'alpen', 'wandern', 'natur', 'panorama'],
+    keywords: [
+      'berge',
+      'berg',
+      'gipfel',
+      'alpen',
+      'wandern',
+      'natur',
+      'panorama',
+      'aussichtspunkt',
+      'aussicht',
+      '🌄',
+    ],
   },
   {
     id: 'beach',
@@ -636,14 +698,14 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
     label: 'Park & Wald',
     defaultEmoji: '🌲',
     tabler: { id: 'trees', emoji: '🌲', outline: IconTrees },
-    keywords: ['wald', 'bäume', 'nationalpark', 'park', 'forst', 'natur', 'trees'],
+    keywords: ['wald', 'bäume', 'nationalpark', 'park', 'forst', 'natur', 'trees', '🌳'],
   },
   {
     id: 'flower',
     label: 'Garten & Blumen',
     defaultEmoji: '🌸',
     tabler: { id: 'flower', emoji: '🌸', outline: IconFlower, filled: IconFlowerFilled },
-    keywords: ['blumen', 'garten', 'botanik', 'blüten', 'park', 'frühling', 'botanischer'],
+    keywords: ['blumen', 'garten', 'botanik', 'blüten', 'park', 'frühling', 'botanischer', '🌷'],
   },
   {
     id: 'sunset',
@@ -817,10 +879,37 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
   // 7. Wellness & Gesundheit
   {
     id: 'massage',
-    label: 'Wellness & Spa',
-    defaultEmoji: '🧖',
-    tabler: { id: 'massage', emoji: '🧖', outline: IconMassage },
-    keywords: ['massage', 'wellness', 'spa', 'sauna', 'therme', 'erholung', 'entspannung'],
+    label: 'Wellness & Spa / Therme',
+    defaultEmoji: '💆',
+    tabler: { id: 'massage', emoji: '💆', outline: IconMassage },
+    keywords: [
+      'massage',
+      'wellness',
+      'spa',
+      'sauna',
+      'therme',
+      'erholung',
+      'entspannung',
+      'bad',
+      '💆',
+      '🧖',
+    ],
+  },
+  {
+    id: 'mood-kid',
+    label: 'Spielplatz & Kinder',
+    defaultEmoji: '🛝',
+    tabler: { id: 'mood-kid', emoji: '🛝', outline: IconMoodKid },
+    keywords: [
+      'spielplatz',
+      'rutsche',
+      'kinder',
+      'kids',
+      'playground',
+      'schaukel',
+      'familie',
+      '🛝',
+    ],
   },
   {
     id: 'pill',
@@ -913,10 +1002,34 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
   },
   {
     id: 'bank',
-    label: 'Bank & Geldautomat',
+    label: 'Bank & Filiale',
     defaultEmoji: '🏦',
     tabler: { id: 'building-bank', emoji: '🏦', outline: IconBuildingBank },
-    keywords: ['bank', 'geldautomat', 'atm', 'überweisung', 'wechselstube', 'währung'],
+    keywords: ['bank', 'überweisung', 'wechselstube', 'währung'],
+  },
+  {
+    id: 'cash',
+    label: 'Geldautomat & ATM',
+    defaultEmoji: '🏧',
+    tabler: { id: 'cash', emoji: '🏧', outline: IconCash },
+    keywords: ['geldautomat', 'atm', 'bargeld', 'bank', 'cash', 'wechselstube', 'automat', '🏧'],
+  },
+  {
+    id: 'receipt-tax',
+    label: 'Kurtaxe & Gebühren',
+    defaultEmoji: '🏷️',
+    tabler: { id: 'receipt-tax', emoji: '🏷️', outline: IconReceiptTax },
+    keywords: [
+      'kurtaxe',
+      'ortstaxe',
+      'gebühr',
+      'steuer',
+      'tax',
+      'abgabe',
+      'visum',
+      'receipt',
+      '🏷️',
+    ],
   },
   {
     id: 'discount',
@@ -1038,11 +1151,47 @@ export const CATEGORY_ICON_PALETTE: CategoryIconOption[] = [
     keywords: ['star', 'stern', 'mustsee', 'top', 'bewertung', 'highlight', 'favorit'],
   },
   {
+    id: 'shield-check',
+    label: 'Versicherung & Reiseschutz',
+    defaultEmoji: '🛡️',
+    tabler: {
+      id: 'shield-check',
+      emoji: '🛡️',
+      outline: IconShieldCheck,
+      filled: IconShieldCheckFilled,
+    },
+    keywords: [
+      'versicherung',
+      'schutz',
+      'reiseschutz',
+      'reiserücktritt',
+      'krankenversicherung',
+      'shield',
+      '🛡️',
+    ],
+  },
+  {
+    id: 'wash-machine',
+    label: 'Wäsche & Waschsalon',
+    defaultEmoji: '🧺',
+    tabler: { id: 'wash-machine', emoji: '🧺', outline: IconWashMachine },
+    keywords: ['wäsche', 'waschsalon', 'waschmaschine', 'reinigung', 'laundry', 'waschen', '🧺'],
+  },
+  {
     id: 'category',
     label: 'Sonstiges / Allgemein',
     defaultEmoji: '🏷️',
     tabler: { id: 'category', emoji: '🏷️', outline: IconCategory, filled: IconCategoryFilled },
-    keywords: ['sonstiges', 'allgemein', 'verschiedenes', 'kategorie', 'diverses', 'tag'],
+    keywords: [
+      'sonstiges',
+      'allgemein',
+      'verschiedenes',
+      'kategorie',
+      'diverses',
+      'tag',
+      '📦',
+      '🏷️',
+    ],
   },
 ];
 
@@ -1059,11 +1208,15 @@ export function findCategoryIcon(
   fallbackEmoji?: string | null
 ): CategoryIconOption | undefined {
   if (iconId) {
-    const byId = CATEGORY_ICON_PALETTE.find((opt) => opt.id === iconId);
+    const byId = CATEGORY_ICON_PALETTE.find((opt) => opt.id === iconId || opt.tabler.id === iconId);
     if (byId) return byId;
   }
   if (fallbackEmoji) {
-    return CATEGORY_ICON_PALETTE.find((opt) => opt.defaultEmoji === fallbackEmoji);
+    const byEmoji = CATEGORY_ICON_PALETTE.find(
+      (opt) =>
+        opt.defaultEmoji === fallbackEmoji || (opt.keywords && opt.keywords.includes(fallbackEmoji))
+    );
+    if (byEmoji) return byEmoji;
   }
   return undefined;
 }
@@ -1071,7 +1224,9 @@ export function findCategoryIcon(
 /** Findet eine IconOption anhand ihres Emojis */
 export function findCategoryIconByEmoji(emoji?: string | null): CategoryIconOption | undefined {
   if (!emoji) return undefined;
-  return CATEGORY_ICON_PALETTE.find((opt) => opt.defaultEmoji === emoji);
+  return CATEGORY_ICON_PALETTE.find(
+    (opt) => opt.defaultEmoji === emoji || (opt.keywords && opt.keywords.includes(emoji))
+  );
 }
 
 /** Löst ein IconDef anhand einer Icon-ID auf */
@@ -1083,6 +1238,19 @@ export function getCategoryIconDef(iconId?: string | null, customEmoji?: string 
     }
     return opt.tabler;
   }
+
+  // Fallback: Suche in Standard-Kategorien (falls z. B. Tabler-ID oder Kategoriename übergeben wurde)
+  if (iconId) {
+    const spotCat = spotCategoryMeta(iconId);
+    if (spotCat.tabler.id !== 'map-pin') {
+      return customEmoji ? { ...spotCat.tabler, emoji: customEmoji } : spotCat.tabler;
+    }
+    const expCat = expenseCategoryMeta(iconId);
+    if (expCat.tabler.id !== 'category') {
+      return customEmoji ? { ...expCat.tabler, emoji: customEmoji } : expCat.tabler;
+    }
+  }
+
   return customEmoji ? { ...DEFAULT_CATEGORY_ICON, emoji: customEmoji } : DEFAULT_CATEGORY_ICON;
 }
 
@@ -1102,19 +1270,23 @@ export function resolveCategoryMeta(
   type: 'expense' | 'spot',
   customDef?: { icon?: string | null; emoji?: string | null; color?: string | null }
 ): ResolvedCategoryMeta {
+  const fallback = type === 'expense' ? expenseCategoryMeta(name) : spotCategoryMeta(name);
+
   // 1. Wenn customDef mit Icon/Emoji/Farbe angegeben ist
   if (customDef && (customDef.icon || customDef.emoji || customDef.color)) {
-    const tabler = getCategoryIconDef(customDef.icon, customDef.emoji);
+    const tabler =
+      customDef.icon || customDef.emoji
+        ? getCategoryIconDef(customDef.icon, customDef.emoji)
+        : fallback.tabler;
     return {
       label: name,
-      icon: customDef.emoji || tabler.emoji,
-      color: customDef.color || '#3b82f6',
+      icon: customDef.emoji || tabler.emoji || fallback.icon,
+      color: customDef.color || fallback.color,
       tabler,
     };
   }
 
   // 2. Standard-Kategorie-Metadaten
-  const fallback = type === 'expense' ? expenseCategoryMeta(name) : spotCategoryMeta(name);
   return {
     label: fallback.label || name,
     icon: fallback.icon,
