@@ -44,21 +44,29 @@ defineEmits<{
 }
 
 .swatch-btn {
-  width: 24px;
-  height: 24px;
+  position: relative;
+  width: 20px;
+  height: 20px;
   border-radius: var(--radius-full);
   corner-shape: round;
   border: 2px solid transparent;
   cursor: pointer;
   box-shadow: none;
+  flex-shrink: 0;
   transition:
     transform var(--transition-fast),
     border-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
+.swatch-btn::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
 .swatch-btn:hover {
-  transform: scale(1.15);
+  transform: scale(1.2);
   box-shadow: var(--shadow-sm);
 }
 
@@ -70,6 +78,6 @@ defineEmits<{
 .swatch-btn.selected {
   border-color: var(--color-text);
   box-shadow: 0 0 0 2px var(--color-surface);
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 </style>

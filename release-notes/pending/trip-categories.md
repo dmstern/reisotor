@@ -9,3 +9,4 @@
 - 🧭 **Spots an erster Stelle**: Im Kategorien-Reiter des Urlaub-Dialogs stehen Spots nun an erster Stelle vor den Ausgaben.
 - 🔍 **Vorher-Nachher-Vorschau beim Bearbeiten**: Beim Anpassen einer Kategorie siehst du am unteren Ende des Dialogs eine direkte Vorher-Nachher-Vorschau und eine Auflistung aller bestehenden Ausgaben oder Spots, bei denen Name und Symbol automatisch mit angepasst werden.
 - 📝 **Grammatisch korrekte Zähler**: In der Kategorien-Liste wird bei genau einem Eintrag nun sauber die Einzahl angezeigt (z. B. „1 Spot“ bzw. „1 Ausgabe“ statt „1 Spots“).
+- 🎨 **Harmonische Farbauswahl**: Die Farbbubbles für Kategorien wurden kompakt dimensioniert, sodass alle 14 Farben auf Desktop-Breiten sauber und bündig in einer einzelnen Reihe ohne störenden Zeilenumbruch dargestellt werden.

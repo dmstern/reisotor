@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/* eslint-disable vue/one-component-per-file */
 import { describe, it, expect } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import ColorSwatchPicker from './ColorSwatchPicker.vue';
@@ -35,6 +36,27 @@ describe('ColorSwatchPicker', () => {
 
     buttons[2].click();
     expect(selectedColor).toBe('#0ea5e9');
+
+    app.unmount();
+    container.remove();
+  });
+
+  it('rendert standardmäßig alle 14 Farben aus der CATEGORY_COLOR_PALETTE', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(ColorSwatchPicker, {
+          modelValue: '#1baf7a',
+        }),
+    });
+    app.mount(container);
+
+    await nextTick();
+
+    const buttons = container.querySelectorAll<HTMLButtonElement>('button.swatch-btn');
+    expect(buttons.length).toBe(14);
 
     app.unmount();
     container.remove();
