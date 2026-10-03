@@ -1761,4 +1761,173 @@ describe('LocationPicker', () => {
       cleanUp();
     });
   });
+
+  describe('Missing Location Row & Search Sparkle Button', () => {
+    it('renders "Standort fehlt" with warning icon and InfoPopover when modelValue is null', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: 'Berlin (BER)',
+        category: 'Flughafen',
+        address: 'Willy-Brandt-Platz 5, 12529 Schönefeld',
+      });
+      await nextTick();
+
+      const coordsRow = container.querySelector('.status-coords-row.is-missing');
+      expect(coordsRow).toBeTruthy();
+
+      const warningIcon = coordsRow?.querySelector('.status-warning-icon');
+      expect(warningIcon).toBeTruthy();
+
+      const missingText = coordsRow?.querySelector('[data-testid="spot-coords-missing"]');
+      expect(missingText?.textContent?.trim()).toBe('Standort fehlt');
+
+      const infoPopover = coordsRow?.querySelector('.coords-info-popover');
+      expect(infoPopover).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('renders location sparkle button when details exist and modelValue is null', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: 'Berlin (BER)',
+        category: 'Flughafen',
+        address: 'Willy-Brandt-Platz 5',
+      });
+      await nextTick();
+
+      const sparkleBtn = container.querySelector('[data-testid="spot-location-sparkle-btn"]');
+      expect(sparkleBtn).toBeTruthy();
+
+      cleanUp();
+    });
+
+    it('does not render location sparkle button when title, category, and address are empty', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: '',
+        category: '',
+        address: '',
+      });
+      await nextTick();
+
+      // Open manual details so card is visible
+      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
+      if (manualBtn) manualBtn.click();
+      await nextTick();
+
+      const sparkleBtn = container.querySelector('[data-testid="spot-location-sparkle-btn"]');
+      expect(sparkleBtn).toBeNull();
+
+      cleanUp();
+    });
+
+    it('clicking location sparkle button fills search input, triggers immediate search, and cycles through candidates', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          {
+            name: 'Flughafen Berlin Brandenburg',
+            formatted_address: 'Willy-Brandt-Platz 1, 12529 Schönefeld',
+            lat: 52.3667,
+            lng: 13.5033,
+            category: 'Flughafen',
+          },
+        ],
+      });
+      globalThis.fetch = fetchSpy;
+
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: 'Berlin (BER)',
+        category: 'Flughafen',
+        address: 'Willy-Brandt-Platz 5',
+      });
+      await nextTick();
+
+      const sparkleBtn = container.querySelector(
+        '[data-testid="spot-location-sparkle-btn"]'
+      ) as HTMLButtonElement;
+      expect(sparkleBtn).toBeTruthy();
+
+      const searchInput = container.querySelector(
+        '[data-testid="location-search-input"]'
+      ) as HTMLInputElement;
+      expect(searchInput).toBeTruthy();
+
+      // Click 1 -> Title + Category ('Berlin (BER) Flughafen')
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(searchInput.value).toBe('Berlin (BER) Flughafen');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining(encodeURIComponent('Berlin (BER) Flughafen')),
+        expect.anything()
+      );
+
+      // Click 2 -> Title alone ('Berlin (BER)')
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(searchInput.value).toBe('Berlin (BER)');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining(encodeURIComponent('Berlin (BER)')),
+        expect.anything()
+      );
+
+      // Click 3 -> Address alone ('Willy-Brandt-Platz 5')
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(searchInput.value).toBe('Willy-Brandt-Platz 5');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining(encodeURIComponent('Willy-Brandt-Platz 5')),
+        expect.anything()
+      );
+
+      // Click 4 -> Title + Address ('Berlin (BER), Willy-Brandt-Platz 5')
+      sparkleBtn.click();
+      await vi.runAllTimersAsync();
+      await nextTick();
+      expect(searchInput.value).toBe('Berlin (BER), Willy-Brandt-Platz 5');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining(encodeURIComponent('Berlin (BER), Willy-Brandt-Platz 5')),
+        expect.anything()
+      );
+
+      cleanUp();
+    });
+
+    it('transitions from coordinates set to "Standort fehlt" state when clearing coordinates', async () => {
+      const onUpdateModelValue = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 52.3667, lng: 13.5033 },
+          title: 'Flughafen BER',
+          address: 'Willy-Brandt-Platz',
+        },
+        {
+          'onUpdate:modelValue': onUpdateModelValue,
+        }
+      );
+      await nextTick();
+
+      // Initially has coordinates
+      const coordsRow = container.querySelector('.status-coords-row');
+      expect(coordsRow).toBeTruthy();
+      expect(coordsRow?.classList.contains('is-missing')).toBe(false);
+      expect(coordsRow?.textContent).toContain('52.36670');
+      expect(coordsRow?.querySelector('.status-warning-icon')).toBeNull();
+
+      // Click clear coords button
+      const clearBtn = container.querySelector('button.coords-clear-btn') as HTMLButtonElement;
+      expect(clearBtn).toBeTruthy();
+      clearBtn.click();
+      await nextTick();
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith(null);
+
+      cleanUp();
+    });
+  });
 });
