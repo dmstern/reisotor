@@ -17,11 +17,17 @@ export interface CategoryFormData {
   color: string;
 }
 
-const props = defineProps<{
-  modelValue: CategoryFormData;
-  activeType: 'expense' | 'spot';
-  inputNameId?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: CategoryFormData;
+    activeType: 'expense' | 'spot';
+    inputNameId?: string;
+    showPreview?: boolean;
+  }>(),
+  {
+    showPreview: true,
+  }
+);
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: CategoryFormData): void;
@@ -40,7 +46,7 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
 <template>
   <div class="trip-category-form-fields">
     <!-- Vorschau-Zeile -->
-    <div class="preview-row">
+    <div v-if="showPreview" class="preview-row">
       <span class="preview-label">Vorschau:</span>
       <CategoryChip
         :category="modelValue.name || 'Kategorie-Name'"

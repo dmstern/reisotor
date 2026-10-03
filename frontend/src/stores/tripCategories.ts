@@ -28,6 +28,14 @@ export interface CategoryInput {
   color?: string | null;
 }
 
+export interface CategoryUsageItem {
+  id: string;
+  title: string;
+  amount?: number;
+  date?: string | null;
+  subtitle?: string;
+}
+
 export const useTripCategoriesStore = defineStore('tripCategories', () => {
   const tripStore = useTripStore();
   const categories = ref<TripCategory[]>([]);
@@ -186,6 +194,26 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     await load(tripId, true);
   }
 
+  async function getCategoryUsageItems(
+    tripId: number,
+    type: 'expense' | 'spot' | 'packing',
+    name: string
+  ): Promise<CategoryUsageItem[]> {
+    try {
+      const res = await api.get<{
+        items: CategoryUsageItem[];
+        allocations?: CategoryUsageItem[];
+      }>(`/trips/${tripId}/categories/usage-items?type=${type}&name=${encodeURIComponent(name)}`);
+      const list = [...(res.items || [])];
+      if (res.allocations?.length) {
+        list.push(...res.allocations);
+      }
+      return list;
+    } catch {
+      return [];
+    }
+  }
+
   return {
     categories,
     loading,
@@ -199,5 +227,6 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     updateCategory,
     deleteCategory,
     setHidden,
+    getCategoryUsageItems,
   };
 });

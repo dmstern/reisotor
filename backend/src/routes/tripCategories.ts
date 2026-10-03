@@ -244,6 +244,101 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     return { categories: allCategories };
   });
 
+  // Details der betroffenen Einträge für eine Kategorie abrufen
+  app.get<{
+    Params: { tripId: string };
+    Querystring: { type?: string; name?: string };
+  }>('/trips/:tripId/categories/usage-items', async (req, reply) => {
+    const tripId = Number(req.params.tripId);
+    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    const { type, name } = req.query;
+    if (!type || !name) {
+      return reply.code(400).send({ error: 'type und name sind erforderlich' });
+    }
+
+    const trimmedName = name.trim();
+
+    if (type === 'expense') {
+      const items = db
+        .prepare(
+          `SELECT id, title, amount, date
+           FROM budget_items
+           WHERE trip_id = ? AND category = ? COLLATE NOCASE
+           ORDER BY date DESC, id DESC
+           LIMIT 50`
+        )
+        .all(tripId, trimmedName) as {
+        id: number;
+        title: string;
+        amount: number;
+        date: string | null;
+      }[];
+
+      const allocations = db
+        .prepare(
+          `SELECT a.id, b.name as title, a.amount
+           FROM budget_allocations a
+           JOIN budgets b ON b.id = a.budget_id
+           WHERE b.trip_id = ? AND a.category = ? COLLATE NOCASE
+           ORDER BY a.id ASC
+           LIMIT 50`
+        )
+        .all(tripId, trimmedName) as { id: number; title: string; amount: number }[];
+
+      return {
+        items: items.map((i) => ({
+          id: `expense-${i.id}`,
+          title: i.title,
+          amount: i.amount,
+          date: i.date,
+        })),
+        allocations: allocations.map((a) => ({
+          id: `alloc-${a.id}`,
+          title: a.title,
+          amount: a.amount,
+          subtitle: 'Budget-Planung',
+        })),
+      };
+    } else if (type === 'spot') {
+      const items = db
+        .prepare(
+          `SELECT id, title
+           FROM spots
+           WHERE trip_id = ? AND category = ? COLLATE NOCASE
+           ORDER BY title COLLATE NOCASE ASC, id ASC
+           LIMIT 50`
+        )
+        .all(tripId, trimmedName) as { id: number; title: string }[];
+
+      return {
+        items: items.map((i) => ({
+          id: `spot-${i.id}`,
+          title: i.title,
+        })),
+      };
+    } else if (type === 'packing') {
+      const items = db
+        .prepare(
+          `SELECT id, label as title
+           FROM packing_items
+           WHERE trip_id = ? AND category = ? COLLATE NOCASE
+           ORDER BY label COLLATE NOCASE ASC, id ASC
+           LIMIT 50`
+        )
+        .all(tripId, trimmedName) as { id: number; title: string }[];
+
+      return {
+        items: items.map((i) => ({
+          id: `packing-${i.id}`,
+          title: i.title,
+        })),
+      };
+    }
+
+    return { items: [] };
+  });
+
   // Neue Kategorie anlegen
   app.post<{
     Params: { tripId: string };
@@ -319,11 +414,9 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     const updateTransaction = db.transaction(() => {
       if (newName !== existing.name) {
         if (existing.type === 'expense') {
-          db.prepare('UPDATE budget_items SET category = ? WHERE trip_id = ? AND category = ?').run(
-            newName,
-            tripId,
-            existing.name
-          );
+          db.prepare(
+            'UPDATE budget_items SET category = ? WHERE trip_id = ? AND category = ? COLLATE NOCASE'
+          ).run(newName, tripId, existing.name);
 
           // Allokationen in Budgets dieses Urlaubs aktualisieren
           const budgets = db.prepare('SELECT id FROM budgets WHERE trip_id = ?').all(tripId) as {
@@ -331,10 +424,14 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           }[];
           for (const b of budgets) {
             const targetAlloc = db
-              .prepare('SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ?')
+              .prepare(
+                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
+              )
               .get(b.id, newName) as { id: number; amount: number } | undefined;
             const currentAlloc = db
-              .prepare('SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ?')
+              .prepare(
+                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
+              )
               .get(b.id, existing.name) as { id: number; amount: number } | undefined;
 
             if (currentAlloc) {
@@ -354,14 +451,12 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
             }
           }
         } else if (existing.type === 'spot') {
-          db.prepare('UPDATE spots SET category = ? WHERE trip_id = ? AND category = ?').run(
-            newName,
-            tripId,
-            existing.name
-          );
+          db.prepare(
+            'UPDATE spots SET category = ? WHERE trip_id = ? AND category = ? COLLATE NOCASE'
+          ).run(newName, tripId, existing.name);
         } else if (existing.type === 'packing') {
           db.prepare(
-            'UPDATE packing_items SET category = ? WHERE trip_id = ? AND category = ?'
+            'UPDATE packing_items SET category = ? WHERE trip_id = ? AND category = ? COLLATE NOCASE'
           ).run(newName, tripId, existing.name);
         }
       }

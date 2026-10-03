@@ -1,5 +1,9 @@
 import { ref, computed, watch, type MaybeRefOrGetter, toValue } from 'vue';
-import { useTripCategoriesStore, type TripCategory } from '../stores/tripCategories';
+import {
+  useTripCategoriesStore,
+  type TripCategory,
+  type CategoryUsageItem,
+} from '../stores/tripCategories';
 import {
   CATEGORY_COLOR_PALETTE,
   findCategoryIcon,
@@ -53,6 +57,9 @@ export function useTripCategorySettings(tripIdGetter: MaybeRefOrGetter<number>) 
     color: CATEGORY_COLOR_PALETTE[0],
     usage_count: 0,
   });
+
+  const usageItems = ref<CategoryUsageItem[]>([]);
+  const isLoadingUsageItems = ref(false);
 
   const currentPickerIconId = computed(() =>
     iconPickerTarget.value === 'create' ? createForm.value.icon : editForm.value.icon
@@ -162,10 +169,28 @@ export function useTripCategorySettings(tripIdGetter: MaybeRefOrGetter<number>) 
       usage_count: cat.usageCount,
     };
     editingCategory.value = cat;
+
+    usageItems.value = [];
+    if (cat.usageCount > 0) {
+      isLoadingUsageItems.value = true;
+      const tripId = toValue(tripIdGetter);
+      tripCategoriesStore
+        .getCategoryUsageItems(tripId, activeType.value, cat.name)
+        .then((items) => {
+          if (editingCategory.value?.name === cat.name) {
+            usageItems.value = items;
+          }
+        })
+        .finally(() => {
+          isLoadingUsageItems.value = false;
+        });
+    }
   }
 
   function cancelEdit() {
     editingCategory.value = null;
+    usageItems.value = [];
+    isLoadingUsageItems.value = false;
   }
 
   async function saveEdit() {
@@ -190,6 +215,8 @@ export function useTripCategorySettings(tripIdGetter: MaybeRefOrGetter<number>) 
       });
     }
     editingCategory.value = null;
+    usageItems.value = [];
+    isLoadingUsageItems.value = false;
   }
 
   async function handleCreate() {
@@ -221,6 +248,8 @@ export function useTripCategorySettings(tripIdGetter: MaybeRefOrGetter<number>) 
       count: editForm.value.usage_count,
     };
     editingCategory.value = null;
+    usageItems.value = [];
+    isLoadingUsageItems.value = false;
   }
 
   async function executeDelete() {
@@ -246,6 +275,8 @@ export function useTripCategorySettings(tripIdGetter: MaybeRefOrGetter<number>) 
     iconPickerTarget,
     createForm,
     editForm,
+    usageItems,
+    isLoadingUsageItems,
     currentPickerIconId,
     filteredCategories,
     selectIcon,

@@ -81,6 +81,18 @@ describe('trip categories routes', () => {
     expect(tauchCat).toBeDefined();
     expect(tauchCat.usage_count).toBe(1);
 
+    // 3b. GET /usage-items liefert die betroffenen Ausgaben für die Vorschau
+    const usageItemsRes = await app.inject({
+      method: 'GET',
+      url: `/api/trips/${tripId}/categories/usage-items?type=expense&name=Tauchkurzz`,
+      headers: { cookie: user.cookie },
+    });
+    expect(usageItemsRes.statusCode).toBe(200);
+    const usageData = usageItemsRes.json();
+    expect(usageData.items).toHaveLength(1);
+    expect(usageData.items[0].title).toBe('Open Water Kurs');
+    expect(usageData.items[0].amount).toBe(250);
+
     // 4. PUT benennt Kategorie um ("Tauchkurzz" -> "Tauchkurs")
     const updateRes = await app.inject({
       method: 'PUT',
