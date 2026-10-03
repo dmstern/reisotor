@@ -20,6 +20,9 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import TripCategorySettings from './TripCategorySettings.vue';
+import TripPermissionsSettings from './TripPermissionsSettings.vue';
+
+export type TripFormTab = 'general' | 'settings' | 'categories' | 'permissions';
 
 const WEATHER_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
 
@@ -30,21 +33,24 @@ const props = defineProps<{
   initial?: TripFormData;
   submitLabel?: string;
   locationError?: boolean;
-  initialTab?: 'general' | 'settings' | 'categories';
+  initialTab?: TripFormTab;
+  initialCategoryType?: 'expense' | 'spot';
   tripId?: number;
 }>();
 const emit = defineEmits<{
   (e: 'submit', data: TripFormData): void;
   (e: 'delete'): void;
+  (e: 'navigate'): void;
 }>();
 
 const TABS: TabBarItem[] = [
   { key: 'general', label: 'Allgemein', icon: ACTION_ICONS.edit },
   { key: 'settings', label: 'Einstellungen', icon: ACTION_ICONS.filterSettings },
   { key: 'categories', label: 'Kategorien', icon: FORM_FIELD_ICONS.category },
+  { key: 'permissions', label: 'Zugriffsberechtigungen', icon: FORM_FIELD_ICONS.visibility },
 ];
 
-const activeTab = ref<'general' | 'settings' | 'categories'>(props.initialTab ?? 'general');
+const activeTab = ref<TripFormTab>(props.initialTab ?? 'general');
 const showTabs = computed(() => Boolean(props.initial));
 const canDelete = computed(() => Boolean(props.initial));
 
@@ -231,7 +237,7 @@ function onSubmit() {
       :tabs="TABS"
       :active-key="activeTab"
       class="trip-tab-bar"
-      @select="activeTab = $event as 'general' | 'settings' | 'categories'"
+      @select="activeTab = $event as TripFormTab"
     />
 
     <div v-show="!showTabs || activeTab === 'general'" class="tab-content">
@@ -348,10 +354,19 @@ function onSubmit() {
     </div>
 
     <div v-if="showTabs && activeTab === 'categories'" class="tab-content categories-tab">
-      <TripCategorySettings v-if="props.tripId" :trip-id="props.tripId" />
+      <TripCategorySettings
+        v-if="props.tripId"
+        :trip-id="props.tripId"
+        :initial-type="props.initialCategoryType"
+        @navigate="emit('navigate')"
+      />
     </div>
 
-    <div v-if="activeTab !== 'categories'" class="actions-row">
+    <div v-if="showTabs && activeTab === 'permissions'" class="tab-content permissions-tab">
+      <TripPermissionsSettings v-if="props.tripId" :trip-id="props.tripId" />
+    </div>
+
+    <div v-if="activeTab !== 'categories' && activeTab !== 'permissions'" class="actions-row">
       <Button
         v-if="canDelete"
         type="button"
@@ -388,7 +403,8 @@ function onSubmit() {
   gap: var(--space-2);
 }
 
-.settings-tab {
+.settings-tab,
+.permissions-tab {
   gap: var(--space-3);
 }
 

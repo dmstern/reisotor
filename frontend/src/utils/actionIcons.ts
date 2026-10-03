@@ -166,6 +166,8 @@ export type ActionIconKey =
   | 'notDone'
   | 'luggage'
   | 'seat'
+  | 'show'
+  | 'hide'
   | 'showPassword'
   | 'hidePassword'
   | 'order'
@@ -300,6 +302,8 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   notDone: { id: 'square', emoji: '⬜️', outline: IconSquare },
   luggage: { id: 'luggage', emoji: '🧳', outline: IconLuggage },
   seat: { id: 'armchair', emoji: '💺', outline: IconArmchair },
+  show: { id: 'eye', emoji: '👁️', outline: IconEye, filled: IconEyeFilled },
+  hide: { id: 'eye-off', emoji: '🙈', outline: IconEyeOff },
   showPassword: { id: 'eye', emoji: '👁️', outline: IconEye, filled: IconEyeFilled },
   hidePassword: { id: 'eye-off', emoji: '🙈', outline: IconEyeOff },
   order: { id: 'list-numbers', emoji: '📋', outline: IconListNumbers },

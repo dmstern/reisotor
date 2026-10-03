@@ -177,4 +177,67 @@ describe('trash (soft delete + restore)', () => {
     });
     expect(res.statusCode).toBe(404);
   });
+
+  it('deleting a trip_category lands in trash and can be restored', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/categories`,
+      headers: { cookie },
+      payload: {
+        type: 'expense',
+        name: 'Segeln',
+        icon: 'sailboat',
+        emoji: '⛵',
+        color: '#0ea5e9',
+      },
+    });
+    expect(created.statusCode).toBe(200);
+    const catId = created.json().id;
+
+    // Weich löschen
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/api/trips/${tripId}/categories/${catId}`,
+      headers: { cookie },
+    });
+    expect(del.statusCode).toBe(200);
+
+    // Nicht mehr in aktiver Kategorien-Liste
+    const list = await app.inject({
+      method: 'GET',
+      url: `/api/trips/${tripId}/categories?type=expense`,
+      headers: { cookie },
+    });
+    expect(list.json().categories.find((c: { id: number }) => c.id === catId)).toBeUndefined();
+
+    // Im Papierkorb auffindbar
+    const trash = await app.inject({
+      method: 'GET',
+      url: `/api/trash?trip_id=${tripId}`,
+      headers: { cookie },
+    });
+    const entry = trash
+      .json()
+      .find((e: { type: string; id: number }) => e.type === 'trip_category' && e.id === catId);
+    expect(entry).toBeDefined();
+    expect(entry.data.name).toBe('Segeln');
+
+    // Wiederherstellen
+    const restore = await app.inject({
+      method: 'POST',
+      url: `/api/trash/trip_category/${catId}/restore`,
+      headers: { cookie },
+    });
+    expect(restore.statusCode).toBe(200);
+
+    // Wieder in aktiver Liste
+    const listAfterRestore = await app.inject({
+      method: 'GET',
+      url: `/api/trips/${tripId}/categories?type=expense`,
+      headers: { cookie },
+    });
+    expect(
+      listAfterRestore.json().categories.find((c: { id: number }) => c.id === catId)
+    ).toBeDefined();
+  });
 });

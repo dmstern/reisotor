@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 import { uploadsDir } from '../uploads.js';
+import { STANDARD_CATEGORIES_BY_TYPE } from '../utils/standardCategories.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = process.env.DB_PATH ?? path.join(__dirname, '..', '..', 'data.sqlite');
@@ -444,15 +445,47 @@ db.exec(`
     trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
     type TEXT NOT NULL,
     name TEXT NOT NULL,
+    default_name TEXT,
     icon TEXT,
     emoji TEXT,
     color TEXT,
     is_hidden INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT,
     UNIQUE(trip_id, type, name)
   );
   CREATE INDEX IF NOT EXISTS idx_trip_categories_trip ON trip_categories (trip_id, type);
 `);
+
+ensureColumn('trip_categories', 'default_name', 'TEXT');
+
+// Backfill für bestehende trip_categories: default_name für Standard-Kategorien initialisieren
+(() => {
+  const pendingRows = db
+    .prepare('SELECT id, type, name FROM trip_categories WHERE default_name IS NULL')
+    .all() as { id: number; type: string; name: string }[];
+  if (pendingRows.length === 0) return;
+
+  const updateStmt = db.prepare('UPDATE trip_categories SET default_name = ? WHERE id = ?');
+  const tx = db.transaction(() => {
+    for (const row of pendingRows) {
+      const standards = STANDARD_CATEGORIES_BY_TYPE[row.type] || [];
+      const trimmedLower = row.name.trim().toLowerCase();
+      // 1. Exakter Match
+      const exactMatch = standards.find((s) => s.toLowerCase() === trimmedLower);
+      if (exactMatch) {
+        updateStmt.run(exactMatch, row.id);
+        continue;
+      }
+      // 2. Präfix-Match (z. B. "Flughafennnnn" beginnt mit "Flughafen", "Aktivitätsbk" beginnt mit "Aktivität")
+      const prefixMatch = standards.find((s) => trimmedLower.startsWith(s.toLowerCase()));
+      if (prefixMatch) {
+        updateStmt.run(prefixMatch, row.id);
+      }
+    }
+  });
+  tx();
+})();
 
 // Standort-Freigabe pro Mitgliedschaft: wählbare Dauer ("dauerhaft"/"1 Woche"/"1 Tag"), siehe
 // routes/realtime.ts's location-share-Endpunkte. NULL = keine Freigabe (Default, entspricht dem
@@ -845,6 +878,7 @@ export const TRASH_TABLES = [
   'shopping_items',
   'notes',
   'diary_entries',
+  'trip_categories',
 ] as const;
 
 for (const table of TRASH_TABLES) {
@@ -856,6 +890,9 @@ for (const table of TRASH_TABLES) {
 // 1. spots (trip_id, deleted_at): queried heavily by spots/map routes and schedule dropdowns.
 // 2. trip_members (user_id, trip_id): queried whenever fetching user trips or checking membership.
 db.exec('CREATE INDEX IF NOT EXISTS idx_spots_trip_deleted ON spots (trip_id, deleted_at)');
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_trip_categories_deleted ON trip_categories (trip_id, deleted_at)'
+);
 db.exec('CREATE INDEX IF NOT EXISTS idx_trip_members_user_trip ON trip_members (user_id, trip_id)');
 
 // Reise-Orte (travel_places) verschmelzen mit Spots: statt einer eigenen, parallelen Orte-Liste nur

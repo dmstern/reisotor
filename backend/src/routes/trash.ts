@@ -18,6 +18,7 @@ const DOMAIN_BY_TYPE: Record<string, string> = {
   note: 'notes',
   diary_entry: 'diary',
   location_track: 'ideas',
+  trip_category: 'trip',
 };
 
 // Konfiguration für den Papierkorb (weicher Löschvorgang, siehe db/index.ts's TRASH_TABLES):
@@ -134,6 +135,11 @@ const TRASH_CONFIG: TrashConfig[] = [
         .all(tripId, userId ?? null) as Record<string, unknown>[],
     checkVisible: isTrackVisible,
   },
+  {
+    type: 'trip_category',
+    table: 'trip_categories',
+    label: 'Kategorie',
+  },
 ];
 
 function restoreLinkedBudgetExpense(table: string, id: string) {
@@ -186,6 +192,17 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
       if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
       if (config.checkVisible && !config.checkVisible(req.params.id, req.session.userId)) {
         return reply.code(403).send({ error: 'Kein Zugriff auf dieses Objekt' });
+      }
+
+      if (config.type === 'trip_category') {
+        const cat = db
+          .prepare('SELECT trip_id, type, name FROM trip_categories WHERE id = ?')
+          .get(req.params.id) as { trip_id: number; type: string; name: string } | undefined;
+        if (cat) {
+          db.prepare(
+            'DELETE FROM trip_categories WHERE trip_id = ? AND type = ? AND name = ? AND id != ? AND deleted_at IS NULL'
+          ).run(cat.trip_id, cat.type, cat.name, req.params.id);
+        }
       }
 
       const result = db

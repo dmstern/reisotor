@@ -1,7 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import CategoryChip from './CategoryChip.vue';
 import { SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
+import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
 import { STRESS_STRINGS, STRESS_CONTAINERS } from '../stories/stressFixtures';
+
+const ALL_CATEGORY_OPTIONS = [
+  ...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...EXPENSE_CATEGORY_SUGGESTIONS]),
+].sort((a, b) => a.localeCompare(b, 'de'));
 
 const meta: Meta<typeof CategoryChip> = {
   title: 'Components/Feedback & Badges/CategoryChip',
@@ -10,7 +15,11 @@ const meta: Meta<typeof CategoryChip> = {
   argTypes: {
     category: {
       control: { type: 'select' },
-      options: SPOT_CATEGORY_SUGGESTIONS,
+      options: ALL_CATEGORY_OPTIONS,
+    },
+    type: {
+      control: { type: 'radio' },
+      options: ['spot', 'expense'],
     },
   },
 };
@@ -20,7 +29,15 @@ type Story = StoryObj<typeof CategoryChip>;
 
 export const Default: Story = {
   args: {
+    category: 'Restaurant',
+    type: 'spot',
+  },
+};
+
+export const ExpenseCategory: Story = {
+  args: {
     category: 'Essen & Trinken',
+    type: 'expense',
   },
 };
 
@@ -31,7 +48,7 @@ export const IconOnly: Story = {
   },
 };
 
-export const AllCategoriesShowcase: Story = {
+export const AllSpotCategoriesShowcase: Story = {
   render: () => ({
     components: { CategoryChip },
     setup() {
@@ -39,8 +56,29 @@ export const AllCategoriesShowcase: Story = {
       return { categories };
     },
     template: `
-      <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px;">
-        <CategoryChip v-for="cat in categories" :key="cat" :category="cat" />
+      <div>
+        <h4 style="margin: 0 0 12px; font-size: 0.95rem;">Spot-Kategorien ({{ categories.length }})</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 4px;">
+          <CategoryChip v-for="cat in categories" :key="cat" :category="cat" type="spot" />
+        </div>
+      </div>
+    `,
+  }),
+};
+
+export const AllExpenseCategoriesShowcase: Story = {
+  render: () => ({
+    components: { CategoryChip },
+    setup() {
+      const categories = EXPENSE_CATEGORY_SUGGESTIONS;
+      return { categories };
+    },
+    template: `
+      <div>
+        <h4 style="margin: 0 0 12px; font-size: 0.95rem;">Ausgaben-Kategorien ({{ categories.length }})</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 4px;">
+          <CategoryChip v-for="cat in categories" :key="cat" :category="cat" type="expense" />
+        </div>
       </div>
     `,
   }),

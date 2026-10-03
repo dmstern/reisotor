@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -21,8 +21,19 @@ export interface TabBarItem {
   unseen?: boolean;
 }
 
-const props = defineProps<{ tabs: TabBarItem[]; activeKey: string }>();
+const props = defineProps<{
+  tabs: TabBarItem[];
+  activeKey: string;
+  fadeBg?: 'bg' | 'surface' | (string & {});
+}>();
 const emit = defineEmits<{ select: [key: string] }>();
+
+const effectiveFadeBg = computed(() => {
+  if (props.fadeBg === 'surface') return 'var(--color-surface)';
+  if (props.fadeBg === 'bg') return 'var(--color-bg)';
+  if (props.fadeBg) return props.fadeBg;
+  return undefined;
+});
 
 const tabBarEl = ref<HTMLElement | null>(null);
 const underlineLeft = ref(0);
@@ -106,7 +117,10 @@ function onTabClick(key: string, event: MouseEvent) {
 </script>
 
 <template>
-  <div class="tab-bar-scroller">
+  <div
+    class="tab-bar-scroller"
+    :style="effectiveFadeBg ? { '--tab-bar-fade-bg': effectiveFadeBg } : undefined"
+  >
     <div class="tab-bar" role="tablist" ref="tabBarEl" @scroll="updateScrollArrows">
       <div class="tab-bar-track">
         <button
@@ -164,6 +178,29 @@ function onTabClick(key: string, event: MouseEvent) {
 <style scoped>
 .tab-bar-scroller {
   position: relative;
+  --tab-bar-effective-fade-bg: var(--tab-bar-fade-bg, var(--scroll-fade-bg, var(--color-bg)));
+}
+
+/* Passt den Verlaufshintergrund dynamisch an, wenn TabBar innerhalb eines Modals, Dialogs,
+   Drawers oder einer Card mit Oberflächen-Hintergrund (--color-surface) eingebettet ist. */
+:where(
+    .modal,
+    dialog,
+    [role='dialog'],
+    .drawer,
+    .drawer-panel,
+    .sheet,
+    .bottom-sheet,
+    .card,
+    [data-surface]
+  )
+  .tab-bar-scroller,
+.tab-bar-scroller:where(.on-surface, [data-surface]) {
+  --tab-bar-effective-fade-bg: var(--tab-bar-fade-bg, var(--scroll-fade-bg, var(--color-surface)));
+}
+
+.tab-bar-scroller:where(.on-bg) {
+  --tab-bar-effective-fade-bg: var(--tab-bar-fade-bg, var(--scroll-fade-bg, var(--color-bg)));
 }
 
 .tab-bar {
@@ -197,9 +234,11 @@ function onTabClick(key: string, event: MouseEvent) {
 /* Dezente Klick-Fläche mit Verlauf statt eines vollflächigen, hart abgesetzten Buttons (#144) - der
    Farbverlauf zum jeweiligen Rand hin lässt das letzte teils sichtbare Tab-Label unter dem Pfeil
    sanft ausblenden statt hart abzuschneiden. Volle Höhe des Scrollers (top/bottom:0) statt nur
-   Icon-Größe, damit die Klickfläche nicht winzig ausfällt. Feste --color-bg (statt einer am
-   Stuck-Zustand hängenden Variable wie ExcursionsView.vue's --category-nav-bg) reicht hier, da
-   TabBar.vue anders als die dortige Kategorie-Nav nirgends sticky eingesetzt wird. */
+   Icon-Größe, damit die Klickfläche nicht winzig ausfällt.
+   Dynamischer Verlaufshintergrund (--tab-bar-effective-fade-bg): passt sich nahtlos an,
+   je nachdem ob TabBar auf einer normalen View (--color-bg) oder auf einer erhabenen Fläche wie
+   in einem Modal/Dialog/Drawer (--color-surface) verwendet wird. Kann per CSS-Variable
+   (--tab-bar-fade-bg bzw. --scroll-fade-bg) oder prop fade-bg explizit überschrieben werden. */
 .tab-bar-arrow {
   position: absolute;
   top: 0;
@@ -224,14 +263,14 @@ function onTabClick(key: string, event: MouseEvent) {
   left: 0;
   justify-content: flex-start;
   padding-left: 4px;
-  background: linear-gradient(to right, var(--color-bg) 45%, transparent);
+  background: linear-gradient(to right, var(--tab-bar-effective-fade-bg) 45%, transparent);
 }
 
 .tab-bar-arrow.right {
   right: 0;
   justify-content: flex-end;
   padding-right: 4px;
-  background: linear-gradient(to left, var(--color-bg) 45%, transparent);
+  background: linear-gradient(to left, var(--tab-bar-effective-fade-bg) 45%, transparent);
 }
 
 .tab {

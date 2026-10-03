@@ -1182,11 +1182,6 @@ function resetEditSpotImage() {
   }
 }
 
-const spotCategoryOptions = computed(() => {
-  const used = spotsStore.spots.map((s) => s.category).filter((c): c is string => !!c);
-  return [...new Set([...SPOT_CATEGORY_SUGGESTIONS, ...used])];
-});
-
 const SPOT_SIDE_OPTIONS = [
   {
     value: 'vacation',
@@ -4305,7 +4300,6 @@ async function deleteEditingSpot() {
                   v-model="spotManualPin"
                   v-model:title="activeSpotForm.title"
                   v-model:category="activeSpotForm.category"
-                  :category-options="spotCategoryOptions"
                   :address="activeSpotForm.address"
                   :maps-link="activeSpotForm.maps_link"
                   :proximity-bias="spotPickerCenter"

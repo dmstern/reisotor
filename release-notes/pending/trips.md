@@ -5,3 +5,4 @@
 - 📑 **Einfacheres Anlegen & Einstellungen-Tabs**: Das Formular zum Bearbeiten von Reisen ist jetzt in übersichtliche Reiter aufgeteilt; Zusatzfelder lassen sich bequem ein- und ausklappen. Die Aktionsleiste bleibt beim Scrollen fixiert am unteren Dialogrand.
 - 🃏 **Taktile Reisekarten**: Reisen in der Übersicht besitzen haptische Hover- und Klick-Feedbacks für eine flüssige Bedienung.
 - 🗑️ **Papierkorb pro Reise**: Gelöschte Elemente werden nun direkt über das Reise-Dashboard verwaltet, sodass alle Reiseteilnehmer gelöschte Einträge einsehen und wiederherstellen können.
+- 👥 **Zugriffsberechtigungen im Bearbeiten-Dialog**: Die Verwaltung von Mitreisenden und Zugriffsberechtigungen befindet sich nun übersichtlich als eigener Tab im Bearbeiten-Dialog jedes Urlaubs statt als separates Icon im Urlaub-Wechsler.

@@ -4,7 +4,12 @@ import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
-defineProps<{ small?: boolean; floating?: boolean }>();
+defineProps<{
+  small?: boolean;
+  floating?: boolean;
+  title?: string;
+  ariaLabel?: string;
+}>();
 defineEmits<{ (e: 'click'): void }>();
 </script>
 
@@ -19,8 +24,8 @@ defineEmits<{ (e: 'click'): void }>();
     class="edit-btn floating"
     :icon="ACTION_ICONS.edit"
     size="sm"
-    title="Bearbeiten"
-    aria-label="Bearbeiten"
+    :title="title ?? 'Bearbeiten'"
+    :aria-label="ariaLabel ?? title ?? 'Bearbeiten'"
     @click.stop="$emit('click')"
   />
   <IconButton
@@ -29,16 +34,16 @@ defineEmits<{ (e: 'click'): void }>();
     class="edit-btn small"
     :icon="ACTION_ICONS.edit"
     size="sm"
-    title="Bearbeiten"
-    aria-label="Bearbeiten"
+    :title="title ?? 'Bearbeiten'"
+    :aria-label="ariaLabel ?? title ?? 'Bearbeiten'"
     @click.stop="$emit('click')"
   />
   <Button
     v-else
     variant="secondary"
     class="edit-btn"
-    title="Bearbeiten"
-    aria-label="Bearbeiten"
+    :title="title ?? 'Bearbeiten'"
+    :aria-label="ariaLabel ?? title ?? 'Bearbeiten'"
     @click.stop="$emit('click')"
   >
     <AppIcon :icon="ACTION_ICONS.edit" :size="15" group="actions" />

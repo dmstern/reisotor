@@ -25,11 +25,12 @@ test.describe('Trip Categories Management', () => {
     await expect(modal).toBeVisible();
     await modal.getByRole('tab', { name: 'Kategorien' }).click();
 
-    // 4. Verify scope nav (Ausgaben & Spots)
-    await expect(modal.getByRole('tab', { name: 'Ausgaben' })).toBeVisible();
-    await expect(modal.getByRole('tab', { name: 'Spots' })).toBeVisible();
+    // 4. Verify scope nav (Spots & Ausgaben)
+    await expect(modal.getByRole('button', { name: 'Spots' })).toBeVisible();
+    await expect(modal.getByRole('button', { name: 'Ausgaben' })).toBeVisible();
 
-    // 5. Create a new custom expense category
+    // 5. Switch to Ausgaben and create a new custom expense category
+    await modal.getByRole('button', { name: 'Ausgaben' }).click();
     await modal.getByRole('button', { name: 'Neue Kategorie' }).click();
     const uniqueCategory = `Tauchen ${Date.now()}`;
     await modal.getByPlaceholder('z. B. Souvenirs oder Bootsverleih').fill(uniqueCategory);
@@ -38,14 +39,16 @@ test.describe('Trip Categories Management', () => {
     // 6. Verify newly created category is in the list with "Urlaub" badge
     const createdRow = modal.locator('.category-row', { hasText: uniqueCategory });
     await expect(createdRow).toBeVisible();
-    await expect(createdRow.locator('.kind-badge')).toHaveText('Urlaub');
+    await expect(createdRow.getByText('Urlaub', { exact: true })).toBeVisible();
 
-    // 7. Edit the category name inline
+    // 7. Edit the category name in the edit dialog
     await createdRow.getByRole('button', { name: 'Kategorie bearbeiten' }).click();
+    const editCatModal = page.locator('.modal', { hasText: 'Kategorie bearbeiten' });
+    await expect(editCatModal).toBeVisible();
     const updatedCategory = `${uniqueCategory} & Schnorcheln`;
-    const editInput = modal.locator('.inline-edit-form input').first();
-    await editInput.fill(updatedCategory);
-    await modal.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await editCatModal.getByLabel('Name').fill(updatedCategory);
+    await editCatModal.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await expect(editCatModal).not.toBeVisible();
 
     // 8. Verify the updated name appears
     const updatedRow = modal.locator('.category-row', { hasText: updatedCategory });
@@ -87,15 +90,21 @@ test.describe('Trip Categories Management', () => {
     const editModal = page.locator('.modal', { hasText: 'Urlaub bearbeiten' });
     await expect(editModal).toBeVisible();
     await editModal.getByRole('tab', { name: 'Kategorien' }).click();
+    await editModal.getByRole('button', { name: 'Ausgaben' }).click();
 
     const rowToDelete = editModal.locator('.category-row', { hasText: updatedCategory });
     await expect(rowToDelete).toBeVisible();
-    await rowToDelete.getByRole('button', { name: 'Kategorie löschen' }).click();
+    await rowToDelete.getByRole('button', { name: 'Kategorie bearbeiten' }).click();
+
+    const deleteEditModal = page.locator('.modal', { hasText: 'Kategorie bearbeiten' });
+    await expect(deleteEditModal).toBeVisible();
+    await deleteEditModal.getByRole('button', { name: 'Löschen' }).click();
 
     // Confirm deletion
     const deleteConfirmModal = page.locator('.modal', { hasText: 'Kategorie löschen' });
     await expect(deleteConfirmModal).toBeVisible();
-    await deleteConfirmModal.getByRole('button', { name: 'Kategorie endgültig löschen' }).click();
+    await deleteConfirmModal.getByRole('button', { name: 'Kategorie löschen' }).click();
+    await expect(deleteConfirmModal).not.toBeVisible();
 
     // Verify row is deleted
     await expect(editModal.locator('.category-row', { hasText: updatedCategory })).toHaveCount(0);

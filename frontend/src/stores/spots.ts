@@ -45,8 +45,16 @@ export const useSpotsStore = defineStore('spots', () => {
   const loaded = ref(false);
 
   const spotCategories = computed(() => {
+    const hidden = tripCategoriesStore.hiddenNamesByType.get('spot') ?? new Set();
+    const replaced = tripCategoriesStore.replacedDefaultNamesByType.get('spot') ?? new Set();
     const set = new Set<string>(tripCategoriesStore.activeSpotCategories);
-    spots.value.forEach((s) => s.category && set.add(s.category));
+    spots.value.forEach((s) => {
+      if (!s.category) return;
+      const lower = s.category.trim().toLowerCase();
+      if (!hidden.has(lower) && !replaced.has(lower)) {
+        set.add(s.category.trim());
+      }
+    });
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
   });
 

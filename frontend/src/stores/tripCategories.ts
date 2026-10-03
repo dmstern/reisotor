@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import { api } from '../api/client';
 import { useTripStore } from './trip';
+import { useToast } from '../composables/useToast';
 import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
 import { SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import { resolveCategoryMeta, type ResolvedCategoryMeta } from '../utils/categoryIcons';
@@ -11,6 +12,7 @@ export interface TripCategory {
   trip_id: number;
   type: 'expense' | 'spot' | 'packing';
   name: string;
+  default_name?: string | null;
   icon: string | null;
   emoji: string | null;
   color: string | null;
@@ -22,9 +24,19 @@ export interface TripCategory {
 export interface CategoryInput {
   type: 'expense' | 'spot' | 'packing';
   name: string;
+  default_name?: string | null;
+  previous_name?: string | null;
   icon?: string | null;
   emoji?: string | null;
   color?: string | null;
+}
+
+export interface CategoryUsageItem {
+  id: string;
+  title: string;
+  amount?: number;
+  date?: string | null;
+  subtitle?: string;
 }
 
 export const useTripCategoriesStore = defineStore('tripCategories', () => {
@@ -81,6 +93,24 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     for (const c of categories.value) {
       if (c.is_hidden) {
         map.get(c.type)?.add(c.name.trim().toLowerCase());
+        if (c.default_name) {
+          map.get(c.type)?.add(c.default_name.trim().toLowerCase());
+        }
+      }
+    }
+    return map;
+  });
+
+  /** Set der ursprünglichen Standard-Kategorienamen (lowercase), die durch eine Umbenennung ersetzt wurden */
+  const replacedDefaultNamesByType = computed(() => {
+    const map = new Map<'expense' | 'spot' | 'packing', Set<string>>();
+    map.set('expense', new Set());
+    map.set('spot', new Set());
+    map.set('packing', new Set());
+
+    for (const c of categories.value) {
+      if (c.default_name && c.default_name.trim().toLowerCase() !== c.name.trim().toLowerCase()) {
+        map.get(c.type)?.add(c.default_name.trim().toLowerCase());
       }
     }
     return map;
@@ -89,16 +119,18 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
   /** Aktive (nicht ausgeblendete) Ausgabekategorien für Dropdowns & Autocomplete */
   const activeExpenseCategories = computed(() => {
     const hidden = hiddenNamesByType.value.get('expense') ?? new Set();
+    const replaced = replacedDefaultNamesByType.value.get('expense') ?? new Set();
     const set = new Set<string>();
 
-    // 1. Standard-Vorschläge (außer ausgeblendete)
+    // 1. Standard-Vorschläge (außer ausgeblendete und durch Umbenennung ersetzte)
     for (const def of EXPENSE_CATEGORY_SUGGESTIONS) {
-      if (!hidden.has(def.trim().toLowerCase())) {
+      const lower = def.trim().toLowerCase();
+      if (!hidden.has(lower) && !replaced.has(lower)) {
         set.add(def);
       }
     }
 
-    // 2. Custom Kategorien dieses Urlaubs
+    // 2. Custom & angepasste Kategorien dieses Urlaubs
     for (const c of categories.value) {
       if (c.type === 'expense' && !c.is_hidden && c.name.trim()) {
         set.add(c.name.trim());
@@ -111,10 +143,12 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
   /** Aktive (nicht ausgeblendete) Spot-Kategorien für Dropdowns & Autocomplete */
   const activeSpotCategories = computed(() => {
     const hidden = hiddenNamesByType.value.get('spot') ?? new Set();
+    const replaced = replacedDefaultNamesByType.value.get('spot') ?? new Set();
     const set = new Set<string>();
 
     for (const def of SPOT_CATEGORY_SUGGESTIONS) {
-      if (!hidden.has(def.trim().toLowerCase())) {
+      const lower = def.trim().toLowerCase();
+      if (!hidden.has(lower) && !replaced.has(lower)) {
         set.add(def);
       }
     }
@@ -132,7 +166,10 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
   function categoryMeta(name: string, type: 'expense' | 'spot'): ResolvedCategoryMeta {
     const trimmedLower = (name ?? '').trim().toLowerCase();
     const custom = categories.value.find(
-      (c) => c.type === type && c.name.trim().toLowerCase() === trimmedLower
+      (c) =>
+        c.type === type &&
+        (c.name.trim().toLowerCase() === trimmedLower ||
+          (c.default_name && c.default_name.trim().toLowerCase() === trimmedLower))
     );
     return resolveCategoryMeta(name, type, custom);
   }
@@ -148,6 +185,7 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     } else {
       categories.value.push(created);
     }
+    await load(tripId, true);
     return created;
   }
 
@@ -161,12 +199,28 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     if (idx >= 0) {
       categories.value[idx] = updated;
     }
+    await load(tripId, true);
     return updated;
   }
 
+  async function resetCategory(tripId: number, id: number): Promise<void> {
+    const { showToast } = useToast();
+    await api.post(`/trips/${tripId}/categories/${id}/reset`);
+    await load(tripId, true);
+    showToast({
+      message: 'Kategorie auf Standard zurückgesetzt.',
+      type: 'info',
+    });
+  }
+
   async function deleteCategory(tripId: number, id: number): Promise<void> {
+    const { showToast } = useToast();
     await api.delete(`/trips/${tripId}/categories/${id}`);
     categories.value = categories.value.filter((c) => c.id !== id);
+    showToast({
+      message: 'Kategorie gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+    });
   }
 
   async function setHidden(
@@ -180,18 +234,42 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     await load(tripId, true);
   }
 
+  async function getCategoryUsageItems(
+    tripId: number,
+    type: 'expense' | 'spot' | 'packing',
+    name: string
+  ): Promise<CategoryUsageItem[]> {
+    try {
+      const res = await api.get<{
+        items: CategoryUsageItem[];
+        allocations?: CategoryUsageItem[];
+      }>(`/trips/${tripId}/categories/usage-items?type=${type}&name=${encodeURIComponent(name)}`);
+      const list = [...(res.items || [])];
+      if (res.allocations?.length) {
+        list.push(...res.allocations);
+      }
+      return list;
+    } catch {
+      return [];
+    }
+  }
+
   return {
     categories,
     loading,
     loadedTripId,
     load,
     categoriesByType,
+    hiddenNamesByType,
+    replacedDefaultNamesByType,
     activeExpenseCategories,
     activeSpotCategories,
     categoryMeta,
     createCategory,
     updateCategory,
+    resetCategory,
     deleteCategory,
     setHidden,
+    getCategoryUsageItems,
   };
 });

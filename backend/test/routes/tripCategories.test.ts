@@ -81,6 +81,18 @@ describe('trip categories routes', () => {
     expect(tauchCat).toBeDefined();
     expect(tauchCat.usage_count).toBe(1);
 
+    // 3b. GET /usage-items liefert die betroffenen Ausgaben für die Vorschau
+    const usageItemsRes = await app.inject({
+      method: 'GET',
+      url: `/api/trips/${tripId}/categories/usage-items?type=expense&name=Tauchkurzz`,
+      headers: { cookie: user.cookie },
+    });
+    expect(usageItemsRes.statusCode).toBe(200);
+    const usageData = usageItemsRes.json();
+    expect(usageData.items).toHaveLength(1);
+    expect(usageData.items[0].title).toBe('Open Water Kurs');
+    expect(usageData.items[0].amount).toBe(250);
+
     // 4. PUT benennt Kategorie um ("Tauchkurzz" -> "Tauchkurs")
     const updateRes = await app.inject({
       method: 'PUT',
@@ -186,5 +198,88 @@ describe('trip categories routes', () => {
       headers: { cookie: stranger.cookie },
     });
     expect(res.statusCode).toBe(403);
+  });
+
+  it('passt eine Standardkategorie an, kaskadiert Spots und setzt sie auf Standard zurück', async () => {
+    const user = await register('catuser3', 'catuser3@example.com');
+    const tripId = await createTrip(user.cookie, 'Spot Kategorien Trip');
+
+    // 1. Zwei Spots mit Standardkategorie "Flughafen" anlegen
+    const spot1 = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie: user.cookie },
+      payload: { trip_id: tripId, title: 'Berlin BER', category: 'Flughafen' },
+    });
+    expect(spot1.statusCode).toBe(201);
+
+    const spot2 = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie: user.cookie },
+      payload: { trip_id: tripId, title: 'Lissabon LIS', category: 'Flughafen' },
+    });
+    expect(spot2.statusCode).toBe(201);
+
+    // 2. Standardkategorie "Flughafen" anpassen -> Name "Flughafennnnn", default_name "Flughafen"
+    const adaptRes = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/categories`,
+      headers: { cookie: user.cookie },
+      payload: {
+        type: 'spot',
+        name: 'Flughafennnnn',
+        default_name: 'Flughafen',
+        previous_name: 'Flughafen',
+        icon: 'plane',
+        color: '#4a3aa7',
+      },
+    });
+    expect(adaptRes.statusCode).toBe(200);
+    const adapted = adaptRes.json();
+    expect(adapted.name).toBe('Flughafennnnn');
+    expect(adapted.default_name).toBe('Flughafen');
+    expect(adapted.usage_count).toBe(2);
+
+    // Prüfen, ob Spots kaskadierend umbenannt wurden
+    const spotsRes = await app.inject({
+      method: 'GET',
+      url: `/api/spots?trip_id=${tripId}`,
+      headers: { cookie: user.cookie },
+    });
+    const spots = spotsRes.json();
+    expect(spots.filter((s: { category: string }) => s.category === 'Flughafennnnn')).toHaveLength(
+      2
+    );
+
+    // 3. Kategorie auf Standard zurücksetzen
+    const resetRes = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/categories/${adapted.id}/reset`,
+      headers: { cookie: user.cookie },
+    });
+    expect(resetRes.statusCode).toBe(200);
+    expect(resetRes.json().name).toBe('Flughafen');
+
+    // Prüfen, ob Spots wieder "Flughafen" haben
+    const spotsResAfter = await app.inject({
+      method: 'GET',
+      url: `/api/spots?trip_id=${tripId}`,
+      headers: { cookie: user.cookie },
+    });
+    const spotsAfter = spotsResAfter.json();
+    expect(spotsAfter.filter((s: { category: string }) => s.category === 'Flughafen')).toHaveLength(
+      2
+    );
+
+    // Prüfen, ob der Override in trip_categories gelöscht wurde
+    const getCatsRes = await app.inject({
+      method: 'GET',
+      url: `/api/trips/${tripId}/categories?type=spot`,
+      headers: { cookie: user.cookie },
+    });
+    const cats = getCatsRes.json().categories;
+    const flughafenCat = cats.find((c: { name: string }) => c.name === 'Flughafennnnn');
+    expect(flughafenCat).toBeUndefined();
   });
 });

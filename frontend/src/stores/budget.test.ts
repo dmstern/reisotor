@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useBudgetStore } from './budget';
+import { useTripCategoriesStore } from './tripCategories';
 import type { Budget, BudgetAllocation, BudgetExpense } from '../api/types';
 
 // Regressionsnetz für die im Store zentralisierten Computeds (reines Wiring, die eigentliche
@@ -148,5 +149,31 @@ describe('useBudgetStore computeds', () => {
 
     expect(store.spentFor(shared, 'Souvenirs')).toBe(25);
     expect(store.spentFor(personal, 'Souvenirs')).toBe(15);
+  });
+
+  it('schließt ausgeblendete Kategorien aus expenseCategories aus, selbst wenn sie in Ausgaben vorkommen', () => {
+    const budgetStore = useBudgetStore();
+    const categoriesStore = useTripCategoriesStore();
+
+    categoriesStore.categories = [
+      {
+        id: 1,
+        trip_id: 1,
+        type: 'expense',
+        name: 'Flug',
+        default_name: 'Flug',
+        icon: null,
+        emoji: null,
+        color: null,
+        is_hidden: 1,
+        created_at: '',
+      },
+    ];
+
+    budgetStore.expenses = [expense(50, 1, 'Flug'), expense(20, 1, 'Kaffee')];
+    budgetStore.allocations = [allocation(1, 'Flug', 100)];
+
+    expect(budgetStore.expenseCategories).not.toContain('Flug');
+    expect(budgetStore.expenseCategories).toContain('Kaffee');
   });
 });

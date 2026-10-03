@@ -38,7 +38,7 @@ describe('TabBar', () => {
   }
 
   function mountTabBar(
-    props: { tabs: TabBarItem[]; activeKey: string },
+    props: { tabs: TabBarItem[]; activeKey: string; fadeBg?: 'bg' | 'surface' | string },
     onSelect?: (key: string) => void
   ) {
     const container = document.createElement('div');
@@ -49,6 +49,7 @@ describe('TabBar', () => {
         h(TabBar, {
           tabs: props.tabs,
           activeKey: props.activeKey,
+          fadeBg: props.fadeBg,
           onSelect,
         }),
     });
@@ -133,5 +134,57 @@ describe('TabBar', () => {
     expect(underline).not.toBeNull();
 
     cleanUp();
+  });
+
+  it('rendert Scroll-Pfeile mit Verlauf, wenn die Tab-Leiste horizontal scrollbar ist', async () => {
+    const { container, cleanUp } = mountTabBar({ tabs: sampleTabs, activeKey: 'spots' });
+    await nextTick();
+
+    const tabBar = container.querySelector<HTMLElement>('.tab-bar');
+    expect(tabBar).not.toBeNull();
+
+    // Simuliere Scroll-Zustand mittig: Links und rechts überhängender Inhalt
+    Object.defineProperty(tabBar, 'scrollLeft', { configurable: true, value: 50 });
+    Object.defineProperty(tabBar, 'clientWidth', { configurable: true, value: 100 });
+    Object.defineProperty(tabBar, 'scrollWidth', { configurable: true, value: 300 });
+
+    tabBar?.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    const arrowLeft = container.querySelector<HTMLButtonElement>('.tab-bar-arrow.left');
+    const arrowRight = container.querySelector<HTMLButtonElement>('.tab-bar-arrow.right');
+
+    expect(arrowLeft).not.toBeNull();
+    expect(arrowRight).not.toBeNull();
+    expect(arrowLeft?.getAttribute('aria-label')).toBe('Tabs nach links scrollen');
+    expect(arrowRight?.getAttribute('aria-label')).toBe('Tabs nach rechts scrollen');
+
+    cleanUp();
+  });
+
+  it('setzt dynamische CSS-Variable fuer den Fade-Hintergrund bei fadeBg-Prop', async () => {
+    const { container: containerSurface, cleanUp: cleanUpSurface } = mountTabBar({
+      tabs: sampleTabs,
+      activeKey: 'spots',
+      fadeBg: 'surface',
+    });
+    await nextTick();
+
+    const scrollerSurface = containerSurface.querySelector<HTMLElement>('.tab-bar-scroller');
+    expect(scrollerSurface?.style.getPropertyValue('--tab-bar-fade-bg')).toBe(
+      'var(--color-surface)'
+    );
+    cleanUpSurface();
+
+    const { container: containerBg, cleanUp: cleanUpBg } = mountTabBar({
+      tabs: sampleTabs,
+      activeKey: 'spots',
+      fadeBg: 'bg',
+    });
+    await nextTick();
+
+    const scrollerBg = containerBg.querySelector<HTMLElement>('.tab-bar-scroller');
+    expect(scrollerBg?.style.getPropertyValue('--tab-bar-fade-bg')).toBe('var(--color-bg)');
+    cleanUpBg();
   });
 });

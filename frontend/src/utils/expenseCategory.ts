@@ -117,6 +117,7 @@ export const KNOWN_EXPENSE_CATEGORIES: KnownExpenseCategoryDef[] = [
     aliases: [
       'zug',
       'bahn',
+      'bahnhof',
       'bus',
       'nahverkehr',
       'öffis',
@@ -179,7 +180,17 @@ export const KNOWN_EXPENSE_CATEGORIES: KnownExpenseCategoryDef[] = [
       outline: IconGasStation,
       filled: IconGasStationFilled,
     },
-    aliases: ['tanken', 'benzin', 'diesel', 'sprit', 'kraftstoff', 'ladesäule', 'e-auto', 'strom'],
+    aliases: [
+      'tanken',
+      'tankstelle',
+      'benzin',
+      'diesel',
+      'sprit',
+      'kraftstoff',
+      'ladesäule',
+      'e-auto',
+      'strom',
+    ],
   },
   {
     label: 'Maut & Vignetten',
@@ -211,6 +222,7 @@ export const KNOWN_EXPENSE_CATEGORIES: KnownExpenseCategoryDef[] = [
     aliases: [
       'aktivität',
       'aktivitäten',
+      'ausflugsziel',
       'spaß',
       'ausflug',
       'ausflüge',
@@ -307,7 +319,16 @@ export const KNOWN_EXPENSE_CATEGORIES: KnownExpenseCategoryDef[] = [
     icon: '💆',
     color: '#14b8a6',
     tabler: { id: 'massage', emoji: '💆', outline: IconMassage },
-    aliases: ['wellness', 'spa', 'massage', 'sauna', 'therme', 'entspannung', 'hamam'],
+    aliases: [
+      'wellness',
+      'wellness & therme',
+      'spa',
+      'massage',
+      'sauna',
+      'therme',
+      'entspannung',
+      'hamam',
+    ],
   },
   {
     label: 'Gesundheit & Apotheke',
