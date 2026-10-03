@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
@@ -17,7 +18,7 @@ export interface DisplayCategory {
   usageCount: number;
 }
 
-defineProps<{
+const props = defineProps<{
   category: DisplayCategory;
   activeType: 'expense' | 'spot';
 }>();
@@ -26,6 +27,13 @@ defineEmits<{
   (e: 'edit', category: DisplayCategory): void;
   (e: 'toggle-hide', category: DisplayCategory): void;
 }>();
+
+const usageLabel = computed(() => {
+  if (props.activeType === 'expense') {
+    return props.category.usageCount === 1 ? 'Ausgabe' : 'Ausgaben';
+  }
+  return props.category.usageCount === 1 ? 'Spot' : 'Spots';
+});
 </script>
 
 <template>
@@ -42,7 +50,7 @@ defineEmits<{
       <Badge v-else variant="default">Standard</Badge>
 
       <span class="usage-count" :class="{ 'has-usage': category.usageCount > 0 }">
-        {{ category.usageCount }} {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }}
+        {{ category.usageCount }} {{ usageLabel }}
       </span>
     </div>
 

@@ -67,4 +67,46 @@ describe('TripCategoryRow', () => {
     expect(html).toContain('is-hidden');
     expect(html).toContain('Einblenden');
   });
+
+  it('formatiert Zähler bei n=1 im Singular ("1 Spot" bzw. "1 Ausgabe")', async () => {
+    const spotCat: DisplayCategory = {
+      name: 'Restaurant',
+      isCustom: false,
+      isHidden: false,
+      usageCount: 1,
+    };
+    const spotHtml = await render(spotCat, 'spot');
+    expect(spotHtml).toContain('1 Spot');
+    expect(spotHtml).not.toContain('1 Spots');
+
+    const expenseCat: DisplayCategory = {
+      name: 'Restaurant',
+      isCustom: false,
+      isHidden: false,
+      usageCount: 1,
+    };
+    const expenseHtml = await render(expenseCat, 'expense');
+    expect(expenseHtml).toContain('1 Ausgabe');
+    expect(expenseHtml).not.toContain('1 Ausgaben');
+  });
+
+  it('formatiert Zähler bei n!=1 im Plural ("2 Spots" bzw. "2 Ausgaben")', async () => {
+    const spotCat: DisplayCategory = {
+      name: 'Sehenswürdigkeit',
+      isCustom: false,
+      isHidden: false,
+      usageCount: 2,
+    };
+    const spotHtml = await render(spotCat, 'spot');
+    expect(spotHtml).toContain('2 Spots');
+
+    const expenseCat: DisplayCategory = {
+      name: 'Transport',
+      isCustom: false,
+      isHidden: false,
+      usageCount: 2,
+    };
+    const expenseHtml = await render(expenseCat, 'expense');
+    expect(expenseHtml).toContain('2 Ausgaben');
+  });
 });

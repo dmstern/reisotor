@@ -8,3 +8,4 @@
 - 🎯 **Konsistente Kategorie-Icons**: Alle Standard-Kategorien für Ausgaben und Spots (wie Wellness & Therme, Spielplatz, Ausflugsziel, Aussichtspunkt oder Geldautomat) erscheinen nun im Urlaub-Dialog, in Dropdowns und auf Karten überall mit ihren passenden Symbolen und Farben.
 - 🧭 **Spots an erster Stelle**: Im Kategorien-Reiter des Urlaub-Dialogs stehen Spots nun an erster Stelle vor den Ausgaben.
 - 🔍 **Vorher-Nachher-Vorschau beim Bearbeiten**: Beim Anpassen einer Kategorie siehst du am unteren Ende des Dialogs eine direkte Vorher-Nachher-Vorschau und eine Auflistung aller bestehenden Ausgaben oder Spots, bei denen Name und Symbol automatisch mit angepasst werden.
+- 📝 **Grammatisch korrekte Zähler**: In der Kategorien-Liste wird bei genau einem Eintrag nun sauber die Einzahl angezeigt (z. B. „1 Spot“ bzw. „1 Ausgabe“ statt „1 Spots“).
