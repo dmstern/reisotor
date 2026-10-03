@@ -14,18 +14,18 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 export function useTripCategorySettings(tripIdGetter: MaybeRefOrGetter<number>) {
   const tripCategoriesStore = useTripCategoriesStore();
 
-  const activeType = ref<'expense' | 'spot'>('expense');
+  const activeType = ref<'expense' | 'spot'>('spot');
   const SCOPE_OPTIONS = [
-    {
-      value: 'expense',
-      label: 'Ausgaben',
-      icon: FORM_FIELD_ICONS.amount,
-      iconGroup: 'formFields' as const,
-    },
     {
       value: 'spot',
       label: 'Spots',
       icon: FORM_FIELD_ICONS.location,
+      iconGroup: 'formFields' as const,
+    },
+    {
+      value: 'expense',
+      label: 'Ausgaben',
+      icon: FORM_FIELD_ICONS.amount,
       iconGroup: 'formFields' as const,
     },
   ];

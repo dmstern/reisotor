@@ -8,12 +8,12 @@ describe('useTripCategorySettings', () => {
     setActivePinia(createPinia());
   });
 
-  it('initialisiert Ausgaben als Standard-Typ und bietet Scope-Optionen', () => {
+  it('initialisiert Spots als Standard-Typ und bietet Scope-Optionen', () => {
     const { activeType, SCOPE_OPTIONS } = useTripCategorySettings(1);
-    expect(activeType.value).toBe('expense');
+    expect(activeType.value).toBe('spot');
     expect(SCOPE_OPTIONS.length).toBe(2);
-    expect(SCOPE_OPTIONS[0].value).toBe('expense');
-    expect(SCOPE_OPTIONS[1].value).toBe('spot');
+    expect(SCOPE_OPTIONS[0].value).toBe('spot');
+    expect(SCOPE_OPTIONS[1].value).toBe('expense');
   });
 
   it('lädt und filtert Kategorien basierend auf Suche', () => {
@@ -22,10 +22,10 @@ describe('useTripCategorySettings', () => {
       {
         id: 1,
         trip_id: 1,
-        type: 'expense',
-        name: 'Bootsausflug',
-        icon: 'speedboat',
-        emoji: '🚤',
+        type: 'spot',
+        name: 'Aussichtspunkt',
+        icon: 'mountain',
+        emoji: '⛰️',
         color: '#0ea5e9',
         is_hidden: 0,
         created_at: '',
@@ -34,11 +34,11 @@ describe('useTripCategorySettings', () => {
     ];
 
     const { filteredCategories, searchQuery } = useTripCategorySettings(1);
-    expect(filteredCategories.value.some((c) => c.name === 'Bootsausflug')).toBe(true);
+    expect(filteredCategories.value.some((c) => c.name === 'Aussichtspunkt')).toBe(true);
 
-    searchQuery.value = 'Essen';
-    expect(filteredCategories.value.some((c) => c.name === 'Bootsausflug')).toBe(false);
-    expect(filteredCategories.value.some((c) => c.name.includes('Essen'))).toBe(true);
+    searchQuery.value = 'Café';
+    expect(filteredCategories.value.some((c) => c.name === 'Aussichtspunkt')).toBe(false);
+    expect(filteredCategories.value.some((c) => c.name.includes('Café'))).toBe(true);
   });
 
   it('steuert Neuanlage und Edit-State sauber', () => {

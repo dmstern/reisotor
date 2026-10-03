@@ -21,13 +21,13 @@ describe('TripCategorySettings', () => {
     return renderToString(app);
   }
 
-  it('rendert den Bereichs-Umschalter für Ausgaben und Spots und den Button für neue Kategorien', async () => {
+  it('rendert den Bereichs-Umschalter für Spots und Ausgaben und den Button für neue Kategorien', async () => {
     const store = useTripCategoriesStore();
     store.categories = [
       {
         id: 1,
         trip_id: 10,
-        type: 'expense',
+        type: 'spot',
         name: 'Tauchkurs',
         icon: 'swimming',
         emoji: '🤿',
@@ -39,11 +39,11 @@ describe('TripCategorySettings', () => {
     ];
 
     const html = await render({ tripId: 10 });
-    expect(html).toContain('Ausgaben');
     expect(html).toContain('Spots');
+    expect(html).toContain('Ausgaben');
     expect(html).toContain('Neue Kategorie');
     expect(html).toContain('Tauchkurs');
-    expect(html).toContain('3 Ausgaben');
+    expect(html).toContain('3 Spots');
     expect(html).toContain('Urlaub');
 
     // Keine veralteten separaten Emoji-Eingabefelder vorhanden
@@ -69,7 +69,7 @@ describe('TripCategorySettings', () => {
       {
         id: 1,
         trip_id: 10,
-        type: 'expense',
+        type: 'spot',
         name: 'Tauchkurs',
         icon: 'swimming',
         emoji: '🤿',
@@ -92,12 +92,12 @@ describe('TripCategorySettings', () => {
   it('rendert Standardkategorien mit ihren spezifischen Farben und Icons statt generischem Fallback', async () => {
     const html = await render({ tripId: 10 });
 
-    // Ausgaben-Standardkategorien sind initial sichtbar
-    expect(html).toContain('Essen &amp; Trinken');
+    // Spot-Standardkategorien sind initial sichtbar
+    expect(html).toContain('Restaurant');
     expect(html).toContain('--category-color:#e34948');
 
-    expect(html).toContain('Unterkunft');
-    expect(html).toContain('--category-color:#1baf7a');
+    expect(html).toContain('Café');
+    expect(html).toContain('--category-color:#c9891f');
   });
 
   it('bettet die Kategorienliste in einen Scroll-Fade-Wrapper mit oberen und unteren Verläufen ein', async () => {

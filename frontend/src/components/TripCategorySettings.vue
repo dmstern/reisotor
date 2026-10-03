@@ -56,7 +56,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
 
 <template>
   <div class="trip-category-settings">
-    <!-- 1. Bereichs-Umschalter: Ausgaben vs. Spots -->
+    <!-- 1. Bereichs-Umschalter: Spots vs. Ausgaben -->
     <div class="scope-nav">
       <SegmentedToggle
         :model-value="activeType"
