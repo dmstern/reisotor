@@ -62,9 +62,9 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
 
     <!-- Formular-Felder -->
     <div class="form-grid">
-      <FormField v-slot="{ id: fieldId }" icon="title" label="Name" required>
+      <FormField :id="inputNameId" v-slot="{ id: fieldId }" icon="title" label="Name" required>
         <Input
-          :id="inputNameId || fieldId"
+          :id="fieldId"
           :model-value="modelValue.name"
           type="text"
           placeholder="z. B. Souvenirs oder Bootsverleih"

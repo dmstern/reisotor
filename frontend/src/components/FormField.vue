@@ -13,6 +13,7 @@ import AppIcon from './AppIcon.vue';
 // Einzelfälle ohne geteiltes Konzept - bewusst kein roher Emoji-String mehr (siehe DESIGN.md
 // "Formularfelder"), damit jede Aufrufstelle zwischen Emoji/Tabler-Icons umschaltbar bleibt.
 const props = defineProps<{
+  id?: string;
   icon?: FormFieldIconKey | IconDef;
   label: string;
   required?: boolean;
@@ -32,7 +33,8 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
   return typeof props.icon === 'string' ? FORM_FIELD_ICONS[props.icon] : props.icon;
 });
 
-const id = useId();
+const autoId = useId();
+const id = computed(() => props.id || autoId);
 </script>
 
 <template>
