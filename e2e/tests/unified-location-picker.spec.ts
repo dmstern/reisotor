@@ -751,7 +751,10 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         const clearBtn = getClearButton(picker);
         await clearBtn.click();
 
-        await expect(status.locator('.status-coords')).not.toBeVisible();
+        await expect(
+          status.locator('.status-coords:not(.status-coords-missing)')
+        ).not.toBeVisible();
+        await expect(status.locator('[data-testid="spot-coords-missing"]')).toBeVisible();
         await expect(status).toBeVisible();
       });
 
@@ -782,7 +785,10 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         const clearBtn = getClearButton(picker);
         await clearBtn.click();
 
-        await expect(status.locator('.status-coords')).not.toBeVisible();
+        await expect(
+          status.locator('.status-coords:not(.status-coords-missing)')
+        ).not.toBeVisible();
+        await expect(status.locator('[data-testid="spot-coords-missing"]')).toBeVisible();
         await expect(getMapMarker(picker)).not.toBeVisible();
       });
     });
@@ -943,7 +949,12 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       await getClearButton(picker).click();
 
-      await expect(getStatusBadge(picker).locator('.status-coords')).not.toBeVisible();
+      await expect(
+        getStatusBadge(picker).locator('.status-coords:not(.status-coords-missing)')
+      ).not.toBeVisible();
+      await expect(
+        getStatusBadge(picker).locator('[data-testid="spot-coords-missing"]')
+      ).toBeVisible();
       await expect(getMapMarker(picker)).not.toBeVisible();
       await expect(input).toHaveValue('');
     });
