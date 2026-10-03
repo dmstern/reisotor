@@ -1,265 +1,48 @@
 <script setup lang="ts">
-import { ref, computed, watch, useId } from 'vue';
-import { useTripCategoriesStore, type TripCategory } from '../stores/tripCategories';
-import {
-  CATEGORY_COLOR_PALETTE,
-  findCategoryIcon,
-  getCategoryIconDef,
-  type CategoryIconOption,
-} from '../utils/categoryIcons';
-import { KNOWN_EXPENSE_CATEGORIES } from '../utils/expenseCategory';
-import { KNOWN_CATEGORIES as KNOWN_SPOT_CATEGORIES } from '../utils/spotCategory';
-import AppIcon from './AppIcon.vue';
+import { useId } from 'vue';
+import { useTripCategorySettings } from '../composables/useTripCategorySettings';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import Card from './primitives/Card.vue';
-import Badge from './primitives/Badge.vue';
+import Alert from './primitives/Alert.vue';
+import EmptyState from './primitives/EmptyState.vue';
 import IconButton from './primitives/IconButton.vue';
-import EditButton from './EditButton.vue';
 import Modal from './Modal.vue';
-import CategoryChip from './CategoryChip.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import CategoryIconPickerModal from './CategoryIconPickerModal.vue';
+import TripCategoryRow from './TripCategoryRow.vue';
+import TripCategoryFormFields from './TripCategoryFormFields.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const props = defineProps<{
   tripId: number;
 }>();
 
-const tripCategoriesStore = useTripCategoriesStore();
-
-const activeType = ref<'expense' | 'spot'>('expense');
-const SCOPE_OPTIONS = [
-  {
-    value: 'expense',
-    label: 'Ausgaben',
-    icon: FORM_FIELD_ICONS.amount,
-    iconGroup: 'formFields' as const,
-  },
-  {
-    value: 'spot',
-    label: 'Spots',
-    icon: FORM_FIELD_ICONS.location,
-    iconGroup: 'formFields' as const,
-  },
-];
-const searchQuery = ref('');
-const showCreateForm = ref(false);
-const editingCategory = ref<DisplayCategory | null>(null);
-const categoryToDelete = ref<{ id: number; name: string; count: number } | null>(null);
-const showIconPicker = ref(false);
-const iconPickerTarget = ref<'create' | 'edit'>('create');
-
-// Form-State für Neuanlage
-const createForm = ref({
-  name: '',
-  icon: 'category',
-  emoji: '🏷️',
-  color: CATEGORY_COLOR_PALETTE[0],
-});
-
-// Form-State für Inline-Bearbeitung
-const editForm = ref({
-  id: 0,
-  name: '',
-  icon: 'category',
-  emoji: '🏷️',
-  color: CATEGORY_COLOR_PALETTE[0],
-  usage_count: 0,
-});
-
 const createNameId = useId();
 const editNameId = useId();
 
-const currentPickerIconId = computed(() =>
-  iconPickerTarget.value === 'create' ? createForm.value.icon : editForm.value.icon
-);
-
-// Bei Wechsel von tripId oder activeType Store synchronisieren
-watch(
-  () => props.tripId,
-  (id) => {
-    if (id && typeof window !== 'undefined') tripCategoriesStore.load(id, true);
-  },
-  { immediate: true }
-);
-
-function selectIcon(target: 'create' | 'edit', option: CategoryIconOption) {
-  if (target === 'create') {
-    createForm.value.icon = option.id;
-    createForm.value.emoji = option.defaultEmoji;
-  } else {
-    editForm.value.icon = option.id;
-    editForm.value.emoji = option.defaultEmoji;
-  }
-  showIconPicker.value = false;
-}
-
-function openIconPicker(target: 'create' | 'edit') {
-  iconPickerTarget.value = target;
-  showIconPicker.value = true;
-}
-
-// Liste der Standardkategorien des aktiven Typs
-const defaultSuggestions = computed<{ label: string; icon?: string; color?: string }[]>(() => {
-  return activeType.value === 'expense'
-    ? KNOWN_EXPENSE_CATEGORIES
-    : KNOWN_SPOT_CATEGORIES.map((s) => ({ label: s.label || '', icon: s.icon, color: s.color }));
-});
-
-// Kategorien aus dem Store für den aktuellen Typ
-const storedCategories = computed(() => {
-  return tripCategoriesStore.categories.filter((c) => c.type === activeType.value);
-});
-
-// Kombinierte Liste aller Kategorien (Custom + Standard)
-interface DisplayCategory {
-  id?: number;
-  name: string;
-  isCustom: boolean;
-  isHidden: boolean;
-  icon?: string | null;
-  emoji?: string | null;
-  color?: string | null;
-  usageCount: number;
-}
-
-const allDisplayCategories = computed<DisplayCategory[]>(() => {
-  const list: DisplayCategory[] = [];
-  const storedByName = new Map<string, TripCategory>();
-
-  for (const c of storedCategories.value) {
-    storedByName.set(c.name.trim().toLowerCase(), c);
-  }
-
-  // 1. Gespeicherte Custom Categories
-  for (const c of storedCategories.value) {
-    const isStandard = defaultSuggestions.value.some(
-      (s) => s.label.trim().toLowerCase() === c.name.trim().toLowerCase()
-    );
-    if (!isStandard) {
-      list.push({
-        id: c.id,
-        name: c.name,
-        isCustom: true,
-        isHidden: Boolean(c.is_hidden),
-        icon: c.icon,
-        emoji: c.emoji,
-        color: c.color,
-        usageCount: c.usage_count ?? 0,
-      });
-    }
-  }
-
-  // 2. Standard-Kategorien
-  for (const s of defaultSuggestions.value) {
-    const stored = storedByName.get(s.label.trim().toLowerCase());
-    list.push({
-      id: stored?.id,
-      name: s.label,
-      isCustom: false,
-      isHidden: Boolean(stored?.is_hidden),
-      icon: stored?.icon ?? null,
-      emoji: stored?.emoji ?? s.icon,
-      color: stored?.color ?? s.color,
-      usageCount: stored?.usage_count ?? 0,
-    });
-  }
-
-  // Sortierung: Aktive Kategorien zuerst (alphabetisch), ausgeblendete ans Ende
-  return list.sort((a, b) => {
-    if (a.isHidden !== b.isHidden) return a.isHidden ? 1 : -1;
-    return a.name.localeCompare(b.name, 'de');
-  });
-});
-
-const filteredCategories = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return allDisplayCategories.value;
-  return allDisplayCategories.value.filter((c) => c.name.toLowerCase().includes(q));
-});
-
-function startEdit(cat: DisplayCategory) {
-  const meta = tripCategoriesStore.categoryMeta(cat.name, activeType.value);
-  const matchingOpt = findCategoryIcon(cat.icon || meta.tabler.id, cat.emoji || meta.icon);
-  editForm.value = {
-    id: cat.id ?? 0,
-    name: cat.name,
-    icon: matchingOpt?.id ?? cat.icon ?? meta.tabler.id ?? 'category',
-    emoji: cat.emoji ?? meta.icon ?? matchingOpt?.defaultEmoji ?? '🏷️',
-    color: cat.color ?? meta.color ?? CATEGORY_COLOR_PALETTE[0],
-    usage_count: cat.usageCount,
-  };
-  editingCategory.value = cat;
-}
-
-function cancelEdit() {
-  editingCategory.value = null;
-}
-
-async function saveEdit() {
-  if (!editForm.value.name.trim()) return;
-
-  if (editForm.value.id > 0) {
-    await tripCategoriesStore.updateCategory(props.tripId, editForm.value.id, {
-      name: editForm.value.name.trim(),
-      icon: editForm.value.icon,
-      emoji: editForm.value.emoji,
-      color: editForm.value.color,
-    });
-  } else {
-    // Falls Standard-Kategorie erstmalig angepasst wird: als Eintrag anlegen
-    await tripCategoriesStore.createCategory(props.tripId, {
-      type: activeType.value,
-      name: editForm.value.name.trim(),
-      icon: editForm.value.icon,
-      emoji: editForm.value.emoji,
-      color: editForm.value.color,
-    });
-  }
-  editingCategory.value = null;
-}
-
-async function handleCreate() {
-  if (!createForm.value.name.trim()) return;
-
-  await tripCategoriesStore.createCategory(props.tripId, {
-    type: activeType.value,
-    name: createForm.value.name.trim(),
-    icon: createForm.value.icon,
-    emoji: createForm.value.emoji,
-    color: createForm.value.color,
-  });
-
-  createForm.value = {
-    name: '',
-    icon: 'category',
-    emoji: '🏷️',
-    color: CATEGORY_COLOR_PALETTE[0],
-  };
-  showCreateForm.value = false;
-}
-
-function confirmDeleteFromEdit() {
-  if (!editingCategory.value || !editingCategory.value.id) return;
-  categoryToDelete.value = {
-    id: editingCategory.value.id,
-    name: editForm.value.name,
-    count: editForm.value.usage_count,
-  };
-  editingCategory.value = null;
-}
-
-async function executeDelete() {
-  if (!categoryToDelete.value) return;
-  await tripCategoriesStore.deleteCategory(props.tripId, categoryToDelete.value.id);
-  categoryToDelete.value = null;
-}
-
-async function toggleHideStandard(cat: DisplayCategory) {
-  await tripCategoriesStore.setHidden(props.tripId, activeType.value, cat.name, !cat.isHidden);
-}
+const {
+  activeType,
+  SCOPE_OPTIONS,
+  searchQuery,
+  showCreateForm,
+  editingCategory,
+  categoryToDelete,
+  showIconPicker,
+  createForm,
+  editForm,
+  currentPickerIconId,
+  filteredCategories,
+  selectIcon,
+  openIconPicker,
+  startEdit,
+  cancelEdit,
+  saveEdit,
+  handleCreate,
+  confirmDeleteFromEdit,
+  executeDelete,
+  toggleHideStandard,
+} = useTripCategorySettings(() => props.tripId);
 </script>
 
 <template>
@@ -284,13 +67,13 @@ async function toggleHideStandard(cat: DisplayCategory) {
       </Button>
     </div>
 
-    <!-- 2. Formular: Neue Kategorie erstellen (aufklappbar wie bei GitHub) -->
+    <!-- 2. Formular: Neue Kategorie erstellen (aufklappbare Karte) -->
     <Card v-if="showCreateForm" class="create-card animate-cascade">
       <div class="card-header">
-        <span class="card-title"
-          >Neue {{ activeType === 'expense' ? 'Ausgabenkategorie' : 'Spot-Kategorie' }}</span
-        >
-        <div class="spacer"></div>
+        <span class="card-title">
+          Neue {{ activeType === 'expense' ? 'Ausgabenkategorie' : 'Spot-Kategorie' }}
+        </span>
+        <div class="spacer" />
         <IconButton
           variant="ghost"
           size="sm"
@@ -301,73 +84,18 @@ async function toggleHideStandard(cat: DisplayCategory) {
         />
       </div>
 
-      <div class="preview-row">
-        <span class="preview-label">Vorschau:</span>
-        <CategoryChip
-          :category="createForm.name || 'Kategorie-Name'"
-          :type="activeType"
-          :custom-meta="{
-            label: createForm.name || 'Kategorie-Name',
-            icon: createForm.emoji,
-            color: createForm.color,
-            tabler: getCategoryIconDef(createForm.icon, createForm.emoji),
-          }"
-        />
-      </div>
-
-      <div class="form-grid">
-        <label :for="createNameId" class="field-label">
-          Name
-          <Input
-            :id="createNameId"
-            v-model="createForm.name"
-            type="text"
-            placeholder="z. B. Souvenirs oder Bootsverleih"
-            required
-            @keydown.enter.prevent="handleCreate"
-          />
-        </label>
-
-        <div class="icon-picker-field">
-          <span class="field-label">Icon</span>
-          <button
-            type="button"
-            class="icon-selector-btn"
-            title="Icon auswählen"
-            @click="openIconPicker('create')"
-          >
-            <AppIcon
-              :icon="getCategoryIconDef(createForm.icon, createForm.emoji)"
-              group="categories"
-              :size="18"
-            />
-            <span class="icon-name">{{
-              findCategoryIcon(createForm.icon, createForm.emoji)?.label ?? 'Icon auswählen'
-            }}</span>
-          </button>
-        </div>
-
-        <div class="color-palette-field">
-          <span class="field-label">Farbe</span>
-          <div class="color-swatches">
-            <button
-              v-for="color in CATEGORY_COLOR_PALETTE"
-              :key="color"
-              type="button"
-              class="swatch-btn"
-              :class="{ selected: createForm.color === color }"
-              :style="{ backgroundColor: color }"
-              :title="color"
-              @click="createForm.color = color"
-            />
-          </div>
-        </div>
-      </div>
+      <TripCategoryFormFields
+        v-model="createForm"
+        :active-type="activeType"
+        :input-name-id="createNameId"
+        @open-icon-picker="openIconPicker('create')"
+        @submit="handleCreate"
+      />
 
       <div class="form-actions">
-        <Button type="button" variant="ghost" size="sm" @click="showCreateForm = false"
-          >Abbrechen</Button
-        >
+        <Button type="button" variant="ghost" size="sm" @click="showCreateForm = false">
+          Abbrechen
+        </Button>
         <Button
           type="button"
           variant="primary"
@@ -393,52 +121,18 @@ async function toggleHideStandard(cat: DisplayCategory) {
 
     <!-- 4. Kategorien-Liste -->
     <div class="category-list">
-      <Card
+      <TripCategoryRow
         v-for="cat in filteredCategories"
         :key="cat.name"
-        class="category-row"
-        :class="{
-          'is-hidden': cat.isHidden,
-        }"
-      >
-        <div class="category-main">
-          <CategoryChip :category="cat.name" :type="activeType" />
+        :category="cat"
+        :active-type="activeType"
+        @edit="startEdit"
+        @toggle-hide="toggleHideStandard"
+      />
 
-          <Badge v-if="cat.isCustom" variant="primary" class="kind-badge">Urlaub</Badge>
-          <Badge v-else variant="default" class="kind-badge">Standard</Badge>
-
-          <span class="usage-count" :class="{ 'has-usage': cat.usageCount > 0 }">
-            {{ cat.usageCount }} {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }}
-          </span>
-        </div>
-
-        <div class="row-actions">
-          <!-- Bearbeiten (Pencil) -->
-          <EditButton
-            small
-            title="Kategorie bearbeiten"
-            aria-label="Kategorie bearbeiten"
-            @click="startEdit(cat)"
-          />
-
-          <!-- Standardkategorie ausblenden / einblenden -->
-          <Button
-            v-if="!cat.isCustom"
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="hide-btn"
-            :icon="cat.isHidden ? ACTION_ICONS.show : ACTION_ICONS.hide"
-            @click="toggleHideStandard(cat)"
-          >
-            {{ cat.isHidden ? 'Einblenden' : 'Ausblenden' }}
-          </Button>
-        </div>
-      </Card>
-
-      <p v-if="filteredCategories.length === 0" class="empty-hint">
+      <EmptyState v-if="filteredCategories.length === 0" class="empty-hint">
         Keine Kategorien für „{{ searchQuery }}“ gefunden.
-      </p>
+      </EmptyState>
     </div>
 
     <!-- 5. Kategorie bearbeiten (Dialog) -->
@@ -448,73 +142,18 @@ async function toggleHideStandard(cat: DisplayCategory) {
       @update:model-value="(v) => !v && cancelEdit()"
     >
       <div class="edit-dialog-content">
-        <div class="preview-row">
-          <span class="preview-label">Vorschau:</span>
-          <CategoryChip
-            :category="editForm.name || 'Kategorie-Name'"
-            :type="activeType"
-            :custom-meta="{
-              label: editForm.name || 'Kategorie-Name',
-              icon: editForm.emoji,
-              color: editForm.color,
-              tabler: getCategoryIconDef(editForm.icon, editForm.emoji),
-            }"
-          />
-        </div>
+        <TripCategoryFormFields
+          v-model="editForm"
+          :active-type="activeType"
+          :input-name-id="editNameId"
+          @open-icon-picker="openIconPicker('edit')"
+          @submit="saveEdit"
+        />
 
-        <div class="form-grid">
-          <label :for="editNameId" class="field-label">
-            Name
-            <Input
-              :id="editNameId"
-              v-model="editForm.name"
-              type="text"
-              required
-              @keydown.enter.prevent="saveEdit"
-            />
-          </label>
-
-          <div class="icon-picker-field">
-            <span class="field-label">Icon</span>
-            <button
-              type="button"
-              class="icon-selector-btn"
-              title="Icon auswählen"
-              @click="openIconPicker('edit')"
-            >
-              <AppIcon
-                :icon="getCategoryIconDef(editForm.icon, editForm.emoji)"
-                group="categories"
-                :size="18"
-              />
-              <span class="icon-name">{{
-                findCategoryIcon(editForm.icon, editForm.emoji)?.label ?? 'Icon auswählen'
-              }}</span>
-            </button>
-          </div>
-
-          <div class="color-palette-field">
-            <span class="field-label">Farbe</span>
-            <div class="color-swatches">
-              <button
-                v-for="color in CATEGORY_COLOR_PALETTE"
-                :key="color"
-                type="button"
-                class="swatch-btn"
-                :class="{ selected: editForm.color === color }"
-                :style="{ backgroundColor: color }"
-                :title="color"
-                @click="editForm.color = color"
-              />
-            </div>
-          </div>
-        </div>
-
-        <p v-if="editForm.usage_count > 0" class="rename-hint">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+        <Alert v-if="editForm.usage_count > 0" variant="warning" size="sm">
           Wird bei {{ editForm.usage_count }} bestehenden
           {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} automatisch mit umbenannt.
-        </p>
+        </Alert>
 
         <div class="actions-row">
           <Button
@@ -527,7 +166,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
           >
             Löschen
           </Button>
-          <div class="spacer"></div>
+          <div class="spacer" />
           <Button type="button" variant="ghost" @click="cancelEdit">Abbrechen</Button>
           <Button
             type="button"
@@ -545,7 +184,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
     <CategoryIconPickerModal
       v-model="showIconPicker"
       :selected-icon-id="currentPickerIconId"
-      @select="(opt) => selectIcon(iconPickerTarget, opt)"
+      @select="selectIcon"
     />
 
     <!-- 7. Lösch-Bestätigung -->
@@ -560,18 +199,15 @@ async function toggleHideStandard(cat: DisplayCategory) {
           löschen?
         </p>
 
-        <p v-if="categoryToDelete && categoryToDelete.count > 0" class="warning-box">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="18" group="actions" />
-          <span>
-            Diese Kategorie wird aktuell von <strong>{{ categoryToDelete.count }}</strong>
-            {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} verwendet. Beim Löschen wird die
-            Kategorie bei diesen Einträgen entfernt (auf „Keine Kategorie“ gesetzt).
-          </span>
-        </p>
+        <Alert v-if="categoryToDelete && categoryToDelete.count > 0" variant="danger" size="md">
+          Diese Kategorie wird aktuell von <strong>{{ categoryToDelete.count }}</strong>
+          {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} verwendet. Beim Löschen wird die
+          Kategorie bei diesen Einträgen entfernt (auf „Keine Kategorie“ gesetzt).
+        </Alert>
 
         <div class="actions-row">
           <Button type="button" variant="ghost" @click="categoryToDelete = null">Abbrechen</Button>
-          <div class="spacer"></div>
+          <div class="spacer" />
           <Button type="button" variant="danger" :icon="ACTION_ICONS.delete" @click="executeDelete">
             Kategorie löschen
           </Button>
@@ -601,7 +237,6 @@ async function toggleHideStandard(cat: DisplayCategory) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  border: 1px solid var(--color-border);
 }
 
 .card-header {
@@ -612,96 +247,7 @@ async function toggleHideStandard(cat: DisplayCategory) {
 
 .card-title {
   font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.preview-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  background: var(--color-surface-subtle, rgba(0, 0, 0, 0.02));
-  border-radius: var(--radius-md);
-}
-
-.preview-label {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-.form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.field-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.icon-picker-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.icon-selector-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px 12px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: var(--color-text);
-  text-align: left;
-  width: 100%;
-  transition:
-    border-color var(--transition-fast),
-    background-color var(--transition-fast);
-}
-
-.icon-selector-btn:hover {
-  border-color: var(--color-primary);
-  background: var(--color-hover);
-}
-
-.color-palette-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.color-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.swatch-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: transform var(--transition-fast);
-}
-
-.swatch-btn:hover {
-  transform: scale(1.15);
-}
-
-.swatch-btn.selected {
-  border-color: var(--color-text);
-  box-shadow: 0 0 0 2px var(--color-surface);
-  transform: scale(1.1);
+  font-size: var(--font-size-md);
 }
 
 .form-actions {
@@ -715,6 +261,10 @@ async function toggleHideStandard(cat: DisplayCategory) {
   margin: var(--space-1) 0;
 }
 
+.search-input {
+  width: 100%;
+}
+
 .category-list {
   display: flex;
   flex-direction: column;
@@ -723,70 +273,14 @@ async function toggleHideStandard(cat: DisplayCategory) {
   overflow-y: auto;
 }
 
-.category-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
-  gap: var(--space-2);
-}
-
-.category-row.is-hidden {
-  opacity: 0.55;
-  filter: grayscale(0.4);
-}
-
-.category-main {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  flex: 1;
-}
-
-.kind-badge {
-  font-size: 0.68rem;
-  padding: 2px 6px;
-}
-
-.usage-count {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.usage-count.has-usage {
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-.row-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.hide-btn {
-  font-size: 0.75rem;
-  padding: 4px 8px;
-}
-
 .edit-dialog-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
-.rename-hint {
-  font-size: 0.78rem;
-  color: var(--color-warning-text, #d97706);
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin: 0;
-}
-
 .empty-hint {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-align: center;
   padding: var(--space-4);
@@ -796,18 +290,6 @@ async function toggleHideStandard(cat: DisplayCategory) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-.warning-box {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-radius: var(--radius-md);
-  font-size: 0.85rem;
-  margin: 0;
 }
 
 .actions-row {

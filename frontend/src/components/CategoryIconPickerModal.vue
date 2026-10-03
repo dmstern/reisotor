@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import Modal from './Modal.vue';
 import Input from './primitives/Input.vue';
 import Button from './primitives/Button.vue';
+import EmptyState from './primitives/EmptyState.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import AppIcon from './AppIcon.vue';
 import { CATEGORY_ICON_PALETTE, type CategoryIconOption } from '../utils/categoryIcons';
@@ -115,11 +116,11 @@ function handleSelect(opt: CategoryIconOption) {
         </button>
       </div>
 
-      <!-- Leer-Zustand -->
-      <div v-else class="empty-state">
+      <!-- Leer-Zustand mit EmptyState Primitive -->
+      <EmptyState v-else class="empty-state">
         <p class="empty-text">Keine Icons für „{{ searchQuery }}“ gefunden.</p>
         <Button variant="ghost" size="sm" @click="searchQuery = ''"> Filter zurücksetzen </Button>
-      </div>
+      </EmptyState>
 
       <!-- Footer mit Zähler und Schließen -->
       <div class="picker-footer">
@@ -167,8 +168,9 @@ function handleSelect(opt: CategoryIconOption) {
   gap: var(--space-2);
   max-height: min(52vh, 420px);
   overflow-y: auto;
-  padding: 4px;
-  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
 .icon-grid-item {
@@ -180,9 +182,11 @@ function handleSelect(opt: CategoryIconOption) {
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   cursor: pointer;
   min-height: 74px;
+  box-shadow: none;
   transition:
     border-color var(--transition-fast),
     background-color var(--transition-fast),
@@ -194,6 +198,7 @@ function handleSelect(opt: CategoryIconOption) {
   border-color: var(--color-primary);
   background: var(--color-hover);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .icon-grid-item:focus-visible {
@@ -203,7 +208,7 @@ function handleSelect(opt: CategoryIconOption) {
 
 .icon-grid-item.is-selected {
   border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface, #ffffff));
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 
@@ -215,7 +220,7 @@ function handleSelect(opt: CategoryIconOption) {
 }
 
 .grid-icon-label {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   text-align: center;
   color: var(--color-text);
   line-height: 1.2;
@@ -237,7 +242,7 @@ function handleSelect(opt: CategoryIconOption) {
 }
 
 .empty-text {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -246,13 +251,13 @@ function handleSelect(opt: CategoryIconOption) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid var(--color-border);
   padding-top: var(--space-2);
   margin-top: var(--space-1);
 }
 
 .count-hint {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 </style>
