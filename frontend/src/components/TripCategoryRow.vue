@@ -10,7 +10,9 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 export interface DisplayCategory {
   id?: number;
   name: string;
+  defaultName?: string | null;
   isCustom: boolean;
+  isAdapted?: boolean;
   isHidden: boolean;
   icon?: string | null;
   emoji?: string | null;
@@ -25,6 +27,7 @@ const props = defineProps<{
 
 defineEmits<{
   (e: 'edit', category: DisplayCategory): void;
+  (e: 'reset', category: DisplayCategory): void;
   (e: 'toggle-hide', category: DisplayCategory): void;
 }>();
 
@@ -47,6 +50,7 @@ const usageLabel = computed(() => {
       <CategoryChip :category="category.name" :type="activeType" />
 
       <Badge v-if="category.isCustom" variant="primary">Urlaub</Badge>
+      <Badge v-else-if="category.isAdapted" variant="accent">Standard (angepasst)</Badge>
       <Badge v-else variant="default">Standard</Badge>
 
       <span class="usage-count" :class="{ 'has-usage': category.usageCount > 0 }">
@@ -55,6 +59,21 @@ const usageLabel = computed(() => {
     </div>
 
     <div class="row-actions">
+      <!-- Standardkategorie auf Standard zurücksetzen -->
+      <Button
+        v-if="category.isAdapted"
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="reset-btn"
+        :icon="ACTION_ICONS.restore"
+        title="Auf Standard zurücksetzen"
+        aria-label="Auf Standard zurücksetzen"
+        @click="$emit('reset', category)"
+      >
+        Zurücksetzen
+      </Button>
+
       <!-- Bearbeiten (Pencil) -->
       <EditButton
         small
@@ -119,6 +138,7 @@ const usageLabel = computed(() => {
   flex-shrink: 0;
 }
 
+.reset-btn,
 .hide-btn {
   font-size: var(--font-size-xs);
   padding: var(--space-1) var(--space-2);

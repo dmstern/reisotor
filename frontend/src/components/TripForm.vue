@@ -39,6 +39,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'submit', data: TripFormData): void;
   (e: 'delete'): void;
+  (e: 'navigate'): void;
 }>();
 
 const TABS: TabBarItem[] = [
@@ -352,7 +353,11 @@ function onSubmit() {
     </div>
 
     <div v-if="showTabs && activeTab === 'categories'" class="tab-content categories-tab">
-      <TripCategorySettings v-if="props.tripId" :trip-id="props.tripId" />
+      <TripCategorySettings
+        v-if="props.tripId"
+        :trip-id="props.tripId"
+        @navigate="emit('navigate')"
+      />
     </div>
 
     <div v-if="showTabs && activeTab === 'permissions'" class="tab-content permissions-tab">

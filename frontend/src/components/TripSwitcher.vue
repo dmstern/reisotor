@@ -106,6 +106,14 @@ watch(open, (isOpen) => {
   }
 });
 
+watch(
+  () => route.fullPath,
+  () => {
+    close();
+    closeForm();
+  }
+);
+
 onUnmounted(() => {
   window.removeEventListener('resize', close);
   window.removeEventListener('keydown', onWindowKeydown);
@@ -241,6 +249,7 @@ function selectAndClose(id: number) {
         "
         @submit="onSubmit"
         @delete="onDelete"
+        @navigate="closeForm()"
       />
     </Modal>
   </div>

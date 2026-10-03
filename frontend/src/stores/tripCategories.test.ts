@@ -3,6 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTripCategoriesStore, type TripCategory } from './tripCategories';
 import { api } from '../api/client';
 
+vi.mock('../composables/useToast', () => ({
+  useToast: () => ({
+    showToast: vi.fn(),
+  }),
+}));
+
 describe('useTripCategoriesStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -95,5 +101,37 @@ describe('useTripCategoriesStore', () => {
     expect(store.categories.length).toBe(1);
     expect(store.categories[0].name).toBe('Aussichtsturm');
     expect(store.activeSpotCategories).toContain('Aussichtsturm');
+  });
+
+  it('schließt ersetzte Standardkategorien aus activeSpotCategories aus und bindet den angepassten Namen ein', () => {
+    const store = useTripCategoriesStore();
+
+    store.categories = [
+      {
+        id: 8,
+        trip_id: 10,
+        type: 'spot',
+        name: 'Flughafennnnn',
+        default_name: 'Flughafen',
+        icon: 'plane',
+        emoji: '✈️',
+        color: '#4a3aa7',
+        is_hidden: 0,
+        created_at: '',
+      },
+    ];
+
+    expect(store.activeSpotCategories).toContain('Flughafennnnn');
+    expect(store.activeSpotCategories).not.toContain('Flughafen');
+  });
+
+  it('führt resetCategory aus und lädt Kategorien neu', async () => {
+    const store = useTripCategoriesStore();
+    const postSpy = vi.spyOn(api, 'post').mockResolvedValueOnce({ success: true });
+    vi.spyOn(api, 'get').mockResolvedValueOnce({ categories: [] });
+
+    await store.resetCategory(5, 8);
+
+    expect(postSpy).toHaveBeenCalledWith('/trips/5/categories/8/reset');
   });
 });

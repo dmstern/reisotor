@@ -107,4 +107,34 @@ describe('TripCategorySettings', () => {
     expect(html).toContain('scroll-fade--top');
     expect(html).toContain('scroll-fade--bottom');
   });
+
+  it('rendert eine angepasste Standardkategorie ohne Duplikat und mit "Standard (angepasst)"-Badge', async () => {
+    const store = useTripCategoriesStore();
+    store.categories = [
+      {
+        id: 8,
+        trip_id: 10,
+        type: 'spot',
+        name: 'Flughafennnnn',
+        default_name: 'Flughafen',
+        icon: 'plane',
+        emoji: '✈️',
+        color: '#4a3aa7',
+        is_hidden: 0,
+        created_at: '',
+        usage_count: 2,
+      },
+    ];
+
+    const html = await render({ tripId: 10 });
+    // Angepasster Name ist vorhanden
+    expect(html).toContain('Flughafennnnn');
+    expect(html).toContain('Standard (angepasst)');
+    expect(html).toContain('Zurücksetzen');
+    expect(html).toContain('2 Spots');
+
+    // Der alte Standardname "Flughafen" darf NICHT als eigenes separates Chip/Row existieren
+    const flughafenMatches = html.match(/>Flughafen</g) || [];
+    expect(flughafenMatches).toHaveLength(0);
+  });
 });

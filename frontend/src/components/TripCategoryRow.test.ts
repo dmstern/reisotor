@@ -109,4 +109,21 @@ describe('TripCategoryRow', () => {
     const expenseHtml = await render(expenseCat, 'expense');
     expect(expenseHtml).toContain('2 Ausgaben');
   });
+
+  it('rendert eine angepasste Standardkategorie mit "Standard (angepasst)"-Badge und Zurücksetzen-Button', async () => {
+    const adaptedCat: DisplayCategory = {
+      id: 8,
+      name: 'Flughafennnnn',
+      defaultName: 'Flughafen',
+      isCustom: false,
+      isAdapted: true,
+      isHidden: false,
+      usageCount: 2,
+    };
+    const html = await render(adaptedCat, 'spot');
+    expect(html).toContain('Flughafennnnn');
+    expect(html).toContain('Standard (angepasst)');
+    expect(html).toContain('Zurücksetzen');
+    expect(html).toContain('2 Spots');
+  });
 });

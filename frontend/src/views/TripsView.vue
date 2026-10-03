@@ -121,6 +121,7 @@ function openMembers(trip: Trip) {
         "
         @submit="onSubmit"
         @delete="onDelete"
+        @navigate="closeForm()"
       />
     </Modal>
 

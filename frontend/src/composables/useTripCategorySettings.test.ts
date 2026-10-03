@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useTripCategorySettings } from './useTripCategorySettings';
 import { useTripCategoriesStore } from '../stores/tripCategories';
@@ -120,5 +120,126 @@ describe('useTripCategorySettings', () => {
     cancelEdit();
     expect(editingCategory.value).toBeNull();
     expect(usageItems.value).toEqual([]);
+  });
+
+  it('dupliziert eine angepasste Standardkategorie nicht und markiert sie als isAdapted', () => {
+    const store = useTripCategoriesStore();
+    store.categories = [
+      {
+        id: 8,
+        trip_id: 1,
+        type: 'spot',
+        name: 'Flughafennnnn',
+        default_name: 'Flughafen',
+        icon: 'plane',
+        emoji: '✈️',
+        color: '#4a3aa7',
+        is_hidden: 0,
+        created_at: '',
+        usage_count: 2,
+      },
+    ];
+
+    const { filteredCategories } = useTripCategorySettings(1);
+
+    // Es darf nur genau EIN Eintrag für Flughafen existieren (nämlich der angepasste)
+    const flughafenEntries = filteredCategories.value.filter(
+      (c) => c.name === 'Flughafen' || c.defaultName === 'Flughafen'
+    );
+    expect(flughafenEntries).toHaveLength(1);
+
+    const entry = flughafenEntries[0];
+    expect(entry.name).toBe('Flughafennnnn');
+    expect(entry.defaultName).toBe('Flughafen');
+    expect(entry.isCustom).toBe(false);
+    expect(entry.isAdapted).toBe(true);
+    expect(entry.usageCount).toBe(2);
+  });
+
+  it('steuert den Reset-Dialog und führt executeReset aus', async () => {
+    const store = useTripCategoriesStore();
+    let resetCalledWith: { tripId: number; id: number } | null = null;
+    store.resetCategory = async (tripId: number, id: number) => {
+      resetCalledWith = { tripId, id };
+    };
+
+    const { categoryToReset, promptReset, executeReset } = useTripCategorySettings(1);
+
+    expect(categoryToReset.value).toBeNull();
+
+    promptReset({
+      id: 8,
+      name: 'Flughafennnnn',
+      defaultName: 'Flughafen',
+      isCustom: false,
+      isAdapted: true,
+      isHidden: false,
+      usageCount: 2,
+    });
+
+    expect(categoryToReset.value?.name).toBe('Flughafennnnn');
+
+    await executeReset();
+    expect(resetCalledWith).toEqual({ tripId: 1, id: 8 });
+    expect(categoryToReset.value).toBeNull();
+  });
+
+  it('lädt betroffene Einträge bei promptReset und leert sie bei cancelReset', async () => {
+    const store = useTripCategoriesStore();
+    store.getCategoryUsageItems = vi
+      .fn()
+      .mockResolvedValue([{ id: 101, title: 'Spot am Flughafen' }]);
+
+    const { categoryToReset, usageItems, promptReset, cancelReset } = useTripCategorySettings(1);
+
+    promptReset({
+      id: 5,
+      name: 'Flughafen',
+      isCustom: false,
+      isAdapted: true,
+      isHidden: false,
+      usageCount: 1,
+    });
+
+    expect(categoryToReset.value?.name).toBe('Flughafen');
+    await Promise.resolve();
+    expect(usageItems.value).toHaveLength(1);
+    expect(usageItems.value[0].title).toBe('Spot am Flughafen');
+
+    cancelReset();
+    expect(categoryToReset.value).toBeNull();
+    expect(usageItems.value).toHaveLength(0);
+  });
+
+  it('überträgt betroffene Einträge von edit zu delete und leert sie bei cancelDelete', async () => {
+    const store = useTripCategoriesStore();
+    store.getCategoryUsageItems = vi.fn().mockResolvedValue([{ id: 201, title: 'Eigener Spot' }]);
+
+    const { startEdit, confirmDeleteFromEdit, cancelDelete, categoryToDelete, usageItems } =
+      useTripCategorySettings(1);
+
+    startEdit({
+      id: 99,
+      name: 'Eigene Kategorie',
+      isCustom: true,
+      isAdapted: false,
+      isHidden: false,
+      usageCount: 1,
+    });
+
+    await Promise.resolve();
+    expect(usageItems.value).toHaveLength(1);
+
+    confirmDeleteFromEdit();
+    expect(categoryToDelete.value).toEqual({
+      id: 99,
+      name: 'Eigene Kategorie',
+      count: 1,
+    });
+    expect(usageItems.value).toHaveLength(1);
+
+    cancelDelete();
+    expect(categoryToDelete.value).toBeNull();
+    expect(usageItems.value).toHaveLength(0);
   });
 });

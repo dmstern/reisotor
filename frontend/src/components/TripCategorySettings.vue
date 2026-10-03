@@ -18,10 +18,15 @@ import CategoryIconPickerModal from './CategoryIconPickerModal.vue';
 import TripCategoryRow from './TripCategoryRow.vue';
 import TripCategoryFormFields from './TripCategoryFormFields.vue';
 import CategoryChip from './CategoryChip.vue';
+import TripCategoryAffectedItems from './TripCategoryAffectedItems.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
   tripId: number;
+}>();
+
+const emit = defineEmits<{
+  (e: 'navigate'): void;
 }>();
 
 const createNameId = useId();
@@ -36,6 +41,7 @@ const {
   showCreateForm,
   editingCategory,
   categoryToDelete,
+  categoryToReset,
   showIconPicker,
   createForm,
   editForm,
@@ -50,9 +56,21 @@ const {
   saveEdit,
   handleCreate,
   confirmDeleteFromEdit,
+  cancelDelete,
   executeDelete,
+  promptReset,
+  confirmResetFromEdit,
+  cancelReset,
+  executeReset,
   toggleHideStandard,
 } = useTripCategorySettings(() => props.tripId);
+
+function onNavigate() {
+  cancelEdit();
+  cancelDelete();
+  cancelReset();
+  emit('navigate');
+}
 
 const beforeCategoryMeta = computed(() => {
   if (!editingCategory.value) return undefined;
@@ -78,15 +96,6 @@ const afterCategoryMeta = computed(() => {
     tabler: getCategoryIconDef(iconId, emojiVal),
   };
 });
-
-function formatAmount(amount: number): string {
-  return (
-    amount.toLocaleString('de-DE', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) + ' €'
-  );
-}
 
 const categoryListRef = ref<HTMLElement | null>(null);
 const { canScrollUp, canScrollDown, updateScrollFade } = useScrollFade(categoryListRef);
@@ -179,6 +188,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
           :category="cat"
           :active-type="activeType"
           @edit="startEdit"
+          @reset="promptReset"
           @toggle-hide="toggleHideStandard"
         />
 
@@ -232,47 +242,27 @@ watch([() => filteredCategories.value.length, activeType], () => {
           </div>
 
           <Alert v-if="editForm.usage_count > 0" variant="warning" size="sm">
-            Wird bei {{ editForm.usage_count }} bestehenden
-            {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} automatisch mit angepasst.
+            <template v-if="editForm.usage_count === 1">
+              Wird bei 1 bestehenden
+              {{ activeType === 'expense' ? 'Ausgabe' : 'Spot' }} automatisch mit angepasst.
+            </template>
+            <template v-else>
+              Wird bei {{ editForm.usage_count }} bestehenden
+              {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} automatisch mit angepasst.
+            </template>
           </Alert>
 
           <!-- Liste der betroffenen Einträge -->
-          <div v-if="editForm.usage_count > 0" class="affected-items-block">
-            <div class="affected-items-header">
-              <span class="affected-items-label">
-                Betroffene {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} ({{
-                  editForm.usage_count
-                }}):
-              </span>
-              <span v-if="isLoadingUsageItems" class="affected-items-loading">Wird geladen...</span>
-            </div>
-
-            <div v-if="usageItems.length > 0" class="affected-items-list" role="list">
-              <div
-                v-for="item in usageItems"
-                :key="item.id"
-                class="affected-item-row"
-                role="listitem"
-              >
-                <span class="affected-item-title">{{ item.title }}</span>
-                <span v-if="item.subtitle" class="affected-item-meta">{{ item.subtitle }}</span>
-                <span v-else-if="item.amount != null" class="affected-item-meta">
-                  {{ formatAmount(item.amount) }}
-                </span>
-              </div>
-            </div>
-
-            <div
-              v-if="
-                editForm.usage_count > usageItems.length &&
-                !isLoadingUsageItems &&
-                usageItems.length > 0
-              "
-              class="affected-items-more"
-            >
-              + {{ editForm.usage_count - usageItems.length }} weitere
-            </div>
-          </div>
+          <TripCategoryAffectedItems
+            v-if="editForm.usage_count > 0 && editingCategory"
+            :items="usageItems"
+            :total-count="editForm.usage_count"
+            :active-type="activeType"
+            :is-loading="isLoadingUsageItems"
+            :category-name="editingCategory.name"
+            :trip-id="props.tripId"
+            @navigate="onNavigate"
+          />
         </div>
 
         <div class="actions-row">
@@ -285,6 +275,15 @@ watch([() => filteredCategories.value.length, activeType], () => {
             @click="confirmDeleteFromEdit"
           >
             Löschen
+          </Button>
+          <Button
+            v-else-if="editingCategory?.isAdapted && editingCategory?.id"
+            type="button"
+            variant="ghost"
+            :icon="ACTION_ICONS.restore"
+            @click="confirmResetFromEdit"
+          >
+            Auf Standard zurücksetzen
           </Button>
           <div class="spacer" />
           <Button type="button" variant="ghost" @click="cancelEdit">Abbrechen</Button>
@@ -311,7 +310,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
     <Modal
       :model-value="categoryToDelete !== null"
       title="Kategorie löschen"
-      @update:model-value="(v) => !v && (categoryToDelete = null)"
+      @update:model-value="(v) => !v && cancelDelete()"
     >
       <div class="delete-dialog-content">
         <p>
@@ -320,16 +319,91 @@ watch([() => filteredCategories.value.length, activeType], () => {
         </p>
 
         <Alert v-if="categoryToDelete && categoryToDelete.count > 0" variant="danger" size="md">
-          Diese Kategorie wird aktuell von <strong>{{ categoryToDelete.count }}</strong>
-          {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} verwendet. Beim Löschen wird die
-          Kategorie bei diesen Einträgen entfernt (auf „Keine Kategorie“ gesetzt).
+          <template v-if="categoryToDelete.count === 1">
+            Diese Kategorie wird aktuell von <strong>1</strong>
+            {{ activeType === 'expense' ? 'Ausgabe' : 'Spot' }} verwendet. Beim Löschen wird die
+            Kategorie bei diesem Eintrag entfernt (auf „Keine Kategorie“ gesetzt).
+          </template>
+          <template v-else>
+            Diese Kategorie wird aktuell von <strong>{{ categoryToDelete.count }}</strong>
+            {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} verwendet. Beim Löschen wird die
+            Kategorie bei diesen Einträgen entfernt (auf „Keine Kategorie“ gesetzt).
+          </template>
         </Alert>
 
+        <TripCategoryAffectedItems
+          v-if="categoryToDelete && categoryToDelete.count > 0"
+          :items="usageItems"
+          :total-count="categoryToDelete.count"
+          :active-type="activeType"
+          :is-loading="isLoadingUsageItems"
+          :category-name="categoryToDelete.name"
+          :trip-id="props.tripId"
+          @navigate="onNavigate"
+        />
+
         <div class="actions-row">
-          <Button type="button" variant="ghost" @click="categoryToDelete = null">Abbrechen</Button>
+          <Button type="button" variant="ghost" @click="cancelDelete">Abbrechen</Button>
           <div class="spacer" />
           <Button type="button" variant="danger" :icon="ACTION_ICONS.delete" @click="executeDelete">
             Kategorie löschen
+          </Button>
+        </div>
+      </div>
+    </Modal>
+
+    <!-- 8. Reset-Bestätigung -->
+    <Modal
+      :model-value="categoryToReset !== null"
+      title="Kategorie auf Standard zurücksetzen"
+      @update:model-value="(v) => !v && cancelReset()"
+    >
+      <div class="delete-dialog-content">
+        <p>
+          Möchtest du die Kategorie <strong>„{{ categoryToReset?.name }}“</strong> wirklich auf den
+          Standard <strong>„{{ categoryToReset?.defaultName }}“</strong> zurücksetzen?
+        </p>
+
+        <Alert v-if="categoryToReset && categoryToReset.usageCount > 0" variant="warning" size="md">
+          <template v-if="categoryToReset.usageCount === 1">
+            Name, Icon und Farbe werden auf die Standardwerte zurückgesetzt.
+            {{
+              activeType === 'expense'
+                ? 'Die 1 zugeordnete Ausgabe wird'
+                : 'Der 1 zugeordnete Spot wird'
+            }}
+            automatisch wieder der Standard-Kategorie
+            <strong>„{{ categoryToReset.defaultName }}“</strong> zugeordnet.
+          </template>
+          <template v-else>
+            Name, Icon und Farbe werden auf die Standardwerte zurückgesetzt. Die
+            <strong>{{ categoryToReset.usageCount }}</strong> zugeordneten
+            {{ activeType === 'expense' ? 'Ausgaben' : 'Spots' }} werden automatisch wieder der
+            Standard-Kategorie <strong>„{{ categoryToReset.defaultName }}“</strong> zugeordnet.
+          </template>
+        </Alert>
+
+        <TripCategoryAffectedItems
+          v-if="categoryToReset && categoryToReset.usageCount > 0"
+          :items="usageItems"
+          :total-count="categoryToReset.usageCount"
+          :active-type="activeType"
+          :is-loading="isLoadingUsageItems"
+          :category-name="categoryToReset.name"
+          :trip-id="props.tripId"
+          @navigate="onNavigate"
+        />
+
+        <div class="actions-row">
+          <Button type="button" variant="ghost" @click="cancelReset">Abbrechen</Button>
+          <div class="spacer" />
+          <Button
+            type="button"
+            variant="primary"
+            :icon="ACTION_ICONS.restore"
+            @click="executeReset"
+          >
+            Auf Standard zurücksetzen
           </Button>
         </div>
       </div>
@@ -479,77 +553,5 @@ watch([() => filteredCategories.value.length, activeType], () => {
 .diff-arrow {
   color: var(--color-text-muted);
   flex-shrink: 0;
-}
-
-.affected-items-block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
-}
-
-.affected-items-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.affected-items-loading {
-  font-style: italic;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.affected-items-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  max-height: 180px;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.affected-item-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  font-size: var(--font-size-sm);
-}
-
-.affected-item-title {
-  font-weight: 500;
-  color: var(--color-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.affected-item-meta {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.affected-items-more {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  text-align: center;
-  padding-top: var(--space-1);
-}
-
-@media (max-width: 480px) {
-  .affected-item-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
 }
 </style>

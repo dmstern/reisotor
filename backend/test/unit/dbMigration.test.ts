@@ -480,5 +480,61 @@ describe('location_track_points.altitude Migration', () => {
     }[];
     const deletedAtCol = columns.find((c) => c.name === 'deleted_at');
     expect(deletedAtCol).toBeDefined();
+    const defaultNameCol = columns.find((c) => c.name === 'default_name');
+    expect(defaultNameCol).toBeDefined();
+  });
+
+  it('ergänzt default_name und führt Backfill für bestehende Standardkategorien durch', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-trip-cat-default-name-test-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE trip_categories (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        is_hidden INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Test', '2026-06-01', '2026-06-15')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO trip_categories (id, trip_id, type, name) VALUES (1, 1, 'spot', 'Flughafennnnn')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO trip_categories (id, trip_id, type, name) VALUES (2, 1, 'spot', 'Restaurant')`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO trip_categories (id, trip_id, type, name) VALUES (3, 1, 'spot', 'MeinGeheimerSpot')`
+      )
+      .run();
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const rows = db
+      .prepare('SELECT id, name, default_name FROM trip_categories ORDER BY id ASC')
+      .all() as {
+      id: number;
+      name: string;
+      default_name: string | null;
+    }[];
+
+    expect(rows[0].default_name).toBe('Flughafen'); // Präfix-Match
+    expect(rows[1].default_name).toBe('Restaurant'); // Exakter Match
+    expect(rows[2].default_name).toBeNull(); // Custom, kein Match
   });
 });

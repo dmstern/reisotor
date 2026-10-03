@@ -54,9 +54,9 @@ const resolvedIcon = computed<IconDef | null>(() => {
         <slot name="title">
           <strong v-if="title" class="alert__title">{{ title }}</strong>
         </slot>
-        <slot>
-          <span v-if="description" class="alert__desc">{{ description }}</span>
-        </slot>
+        <div v-if="$slots.default || description" class="alert__desc">
+          <slot>{{ description }}</slot>
+        </div>
       </div>
     </div>
     <div v-if="$slots.actions" class="alert__actions">
@@ -93,8 +93,8 @@ const resolvedIcon = computed<IconDef | null>(() => {
 
 .alert__main {
   display: flex;
-  align-items: center;
-  gap: var(--space-1);
+  align-items: flex-start;
+  gap: var(--space-2);
   flex: 1;
   min-width: 0;
 }
@@ -104,6 +104,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .alert__content {
@@ -122,6 +123,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
 
 .alert__desc {
   color: inherit;
+  line-height: 1.45;
 }
 
 .alert__actions {
