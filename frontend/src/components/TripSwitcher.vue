@@ -231,6 +231,7 @@ function selectAndClose(id: number) {
         :trip-id="editingTrip?.id"
         :location-error="tripFormLocationError"
         :initial-tab="tripStore.editTripInitialTab"
+        :initial-category-type="tripStore.editTripInitialCategoryType"
         :initial="
           editingTrip
             ? {

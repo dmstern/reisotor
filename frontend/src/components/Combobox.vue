@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
 import Input from './primitives/Input.vue';
@@ -38,6 +38,13 @@ const flipUp = ref(false);
 const maxMenuHeight = ref<number | undefined>(undefined);
 const comboboxRef = ref<HTMLElement | null>(null);
 const inputRef = ref<InstanceType<typeof Input> | null>(null);
+const listboxRef = ref<HTMLElement | null>(null);
+const highlightedIndex = ref(-1);
+
+const generatedId = useId();
+const listboxId = computed(() =>
+  props.id ? `${props.id}-listbox` : `combobox-listbox-${generatedId}`
+);
 
 function updatePlacement() {
   if (!comboboxRef.value) return;
@@ -52,10 +59,10 @@ function updatePlacement() {
   // Wenn unten weniger als 200px Platz ist und oben mehr Raum als unten frei ist: nach oben flippen
   if (spaceBelow < 200 && spaceAbove > spaceBelow) {
     flipUp.value = true;
-    maxMenuHeight.value = Math.min(200, Math.max(80, Math.floor(spaceAbove)));
+    maxMenuHeight.value = Math.min(240, Math.max(80, Math.floor(spaceAbove)));
   } else {
     flipUp.value = false;
-    maxMenuHeight.value = Math.min(200, Math.max(80, Math.floor(spaceBelow)));
+    maxMenuHeight.value = Math.min(240, Math.max(80, Math.floor(spaceBelow)));
   }
 }
 
@@ -66,6 +73,7 @@ watch(open, (isOpen) => {
     window.addEventListener('resize', updatePlacement, { passive: true });
     window.addEventListener('scroll', updatePlacement, { passive: true, capture: true });
   } else {
+    highlightedIndex.value = -1;
     window.removeEventListener('resize', updatePlacement);
     window.removeEventListener('scroll', updatePlacement, { capture: true });
   }
@@ -77,7 +85,32 @@ const filteredOptions = computed(() => {
   return props.options.filter((o) => o.toLowerCase().includes(q));
 });
 
-watch(filteredOptions, () => {
+function scrollHighlightedIntoView() {
+  nextTick(() => {
+    if (!listboxRef.value || highlightedIndex.value < 0) return;
+    const items = listboxRef.value.querySelectorAll('li');
+    const target = items[highlightedIndex.value];
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ block: 'nearest' });
+    }
+  });
+}
+
+function initHighlightedIndex() {
+  if (filteredOptions.value.length === 1) {
+    highlightedIndex.value = 0;
+  } else {
+    const idx = filteredOptions.value.indexOf(props.modelValue ?? '');
+    highlightedIndex.value = idx >= 0 ? idx : -1;
+  }
+}
+
+watch(filteredOptions, (newOpts) => {
+  if (newOpts.length === 1) {
+    highlightedIndex.value = 0;
+  } else {
+    highlightedIndex.value = -1;
+  }
   if (open.value) {
     nextTick(() => updatePlacement());
   }
@@ -94,11 +127,106 @@ function selectOption(option: string) {
   emit('update:modelValue', option);
   emit('select', option);
   open.value = false;
+  highlightedIndex.value = -1;
+}
+
+function onModelValueInput(val: string) {
+  emit('update:modelValue', val);
+  if (!open.value) {
+    open.value = true;
+    updatePlacement();
+  }
+}
+
+function onKeydown(event: KeyboardEvent) {
+  if (props.disabled) return;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    if (!open.value) {
+      open.value = true;
+      updatePlacement();
+      highlightedIndex.value = filteredOptions.value.length > 0 ? 0 : -1;
+    } else if (filteredOptions.value.length > 0) {
+      if (highlightedIndex.value < 0) {
+        highlightedIndex.value = 0;
+      } else {
+        highlightedIndex.value = (highlightedIndex.value + 1) % filteredOptions.value.length;
+      }
+      scrollHighlightedIntoView();
+    }
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    if (!open.value) {
+      open.value = true;
+      updatePlacement();
+      highlightedIndex.value =
+        filteredOptions.value.length > 0 ? filteredOptions.value.length - 1 : -1;
+    } else if (filteredOptions.value.length > 0) {
+      if (highlightedIndex.value <= 0) {
+        highlightedIndex.value = filteredOptions.value.length - 1;
+      } else {
+        highlightedIndex.value = highlightedIndex.value - 1;
+      }
+      scrollHighlightedIntoView();
+    }
+  } else if (event.key === 'Enter') {
+    if (open.value) {
+      const q = (props.modelValue ?? '').trim().toLowerCase();
+
+      // 1. Per Pfeiltaste navigierte/hervorgehobene Option
+      if (highlightedIndex.value >= 0 && highlightedIndex.value < filteredOptions.value.length) {
+        event.preventDefault();
+        event.stopPropagation();
+        selectOption(filteredOptions.value[highlightedIndex.value]);
+        return;
+      }
+
+      // 2. Einziger Treffer bei Teilstring-Eingabe (z. B. "FLUG" -> "Flughafen")
+      if (filteredOptions.value.length === 1) {
+        event.preventDefault();
+        event.stopPropagation();
+        selectOption(filteredOptions.value[0]);
+        return;
+      }
+
+      // 3. Exakter Treffer (case-insensitive) unter den Optionen
+      const exactMatch = filteredOptions.value.find((o) => o.toLowerCase() === q);
+      if (exactMatch) {
+        event.preventDefault();
+        event.stopPropagation();
+        selectOption(exactMatch);
+        return;
+      }
+
+      // 4. Keine eindeutige Auswahl: Dropdown schließen
+      open.value = false;
+      highlightedIndex.value = -1;
+    }
+  } else if (event.key === 'Escape') {
+    if (open.value) {
+      event.preventDefault();
+      event.stopPropagation();
+      open.value = false;
+      highlightedIndex.value = -1;
+    }
+  } else if (event.key === 'Tab') {
+    open.value = false;
+    highlightedIndex.value = -1;
+  }
 }
 
 function onBlur(event: FocusEvent) {
   window.setTimeout(() => {
+    if (
+      typeof document !== 'undefined' &&
+      comboboxRef.value &&
+      comboboxRef.value.contains(document.activeElement)
+    ) {
+      return;
+    }
     open.value = false;
+    highlightedIndex.value = -1;
   }, 150);
   emit('blur', event);
 }
@@ -106,6 +234,7 @@ function onBlur(event: FocusEvent) {
 function onFocus(event: FocusEvent) {
   updatePlacement();
   open.value = true;
+  initHighlightedIndex();
   emit('focus', event);
 }
 
@@ -179,8 +308,17 @@ defineOptions({
       :disabled="disabled"
       :required="required"
       :invalid="invalid"
+      role="combobox"
+      :aria-expanded="open"
+      aria-autocomplete="list"
+      aria-haspopup="listbox"
+      :aria-controls="open ? listboxId : undefined"
+      :aria-activedescendant="
+        open && highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined
+      "
       class="combobox-input"
-      @update:model-value="emit('update:modelValue', $event)"
+      @update:model-value="onModelValueInput"
+      @keydown="onKeydown"
       @focus="onFocus"
       @blur="onBlur"
     />
@@ -192,36 +330,54 @@ defineOptions({
       :class="{ open }"
     />
     <Transition name="dropdown-unfold">
-      <ul
-        v-if="open && filteredOptions.length"
-        class="options"
-        role="listbox"
+      <div
+        v-if="open && (filteredOptions.length || $slots.footer)"
+        class="combobox-menu"
         :style="maxMenuHeight ? { maxHeight: `${maxMenuHeight}px` } : undefined"
       >
-        <li
-          v-for="option in filteredOptions"
-          :key="option"
-          role="option"
-          :aria-selected="option === modelValue"
-          tabindex="-1"
-          @mousedown.prevent="selectOption(option)"
+        <ul
+          v-if="filteredOptions.length"
+          :id="listboxId"
+          ref="listboxRef"
+          class="options"
+          role="listbox"
         >
-          <span
-            v-if="iconDefFor?.(option) || iconFor?.(option) || colorFor?.(option)"
-            class="option-icon"
-            :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
+          <li
+            v-for="(option, idx) in filteredOptions"
+            :id="`${listboxId}-option-${idx}`"
+            :key="option"
+            role="option"
+            :aria-selected="option === modelValue"
+            :class="{
+              'is-highlighted': highlightedIndex === idx,
+              'is-selected': option === modelValue,
+            }"
+            tabindex="-1"
+            @mouseenter="highlightedIndex = idx"
+            @focus="highlightedIndex = idx"
+            @mousedown.prevent="selectOption(option)"
           >
-            <AppIcon
-              v-if="iconDefFor?.(option)"
-              :icon="iconDefFor(option)!"
-              :size="16"
-              group="categories"
-            />
-            <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
-          </span>
-          <span class="option-label">{{ option }}</span>
-        </li>
-      </ul>
+            <span
+              v-if="iconDefFor?.(option) || iconFor?.(option) || colorFor?.(option)"
+              class="option-icon"
+              :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
+            >
+              <AppIcon
+                v-if="iconDefFor?.(option)"
+                :icon="iconDefFor(option)!"
+                :size="16"
+                group="categories"
+              />
+              <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
+            </span>
+            <span class="option-label">{{ option }}</span>
+          </li>
+        </ul>
+        <div v-else-if="$slots.footer" class="combobox-empty">Keine Vorschläge</div>
+        <div v-if="$slots.footer" class="combobox-footer">
+          <slot name="footer" />
+        </div>
+      </div>
     </Transition>
   </div>
 </template>
@@ -316,26 +472,25 @@ defineOptions({
   right: 8px;
 }
 
-.options {
+.combobox-menu {
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
   right: 0;
   z-index: var(--z-popover, 1100);
-  list-style: none;
-  margin: 0;
-  padding: 4px 0;
-  max-height: 200px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
   transform-origin: top center;
+  max-height: 240px;
+  overflow: hidden;
 }
 
-.combobox.flip-up .options {
+.combobox.flip-up .combobox-menu {
   top: auto;
   bottom: calc(100% + 2px);
   transform-origin: bottom center;
@@ -356,6 +511,19 @@ defineOptions({
   animation-name: dropdown-unfold-up;
 }
 
+.combobox.flip-up .dropdown-unfold-leave-active {
+  animation-name: dropdown-unfold-up;
+  animation-direction: reverse;
+}
+
+.options {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
 .options li {
   display: flex;
   align-items: center;
@@ -363,7 +531,9 @@ defineOptions({
   padding: 6px 10px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .option-icon {
@@ -378,7 +548,31 @@ defineOptions({
   flex: 1;
 }
 
-.options li:hover {
+.options li:hover,
+.options li.is-highlighted {
   background: var(--color-hover);
+}
+
+.options li.is-selected {
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.options li.is-highlighted.is-selected {
+  background: var(--color-primary-tint);
+}
+
+.combobox-empty {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.combobox-footer {
+  border-top: 1px solid var(--color-border);
+  padding: 4px;
+  background: var(--color-surface);
+  flex-shrink: 0;
 }
 </style>

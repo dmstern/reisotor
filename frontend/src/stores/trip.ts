@@ -33,6 +33,7 @@ export const useTripStore = defineStore('trip', () => {
   // (Architekturregel Batch 3: Fremdobjekte springen zur Ursprungssicht statt inline editierbar zu sein).
   const editTripRequestId = ref(0);
   const editTripInitialTab = ref<'general' | 'settings' | 'categories' | 'permissions'>('general');
+  const editTripInitialCategoryType = ref<'expense' | 'spot'>('spot');
 
   const currentTrip = computed(() => trips.value.find((t) => t.id === currentTripId.value) ?? null);
 
@@ -115,8 +116,14 @@ export const useTripStore = defineStore('trip', () => {
     editTripRequestId.value = 0;
   }
 
-  function requestEditTrip(tab: 'general' | 'settings' | 'categories' | 'permissions' = 'general') {
+  function requestEditTrip(
+    tab: 'general' | 'settings' | 'categories' | 'permissions' = 'general',
+    categoryType?: 'expense' | 'spot'
+  ) {
     editTripInitialTab.value = tab;
+    if (categoryType) {
+      editTripInitialCategoryType.value = categoryType;
+    }
     editTripRequestId.value++;
   }
 
@@ -154,6 +161,7 @@ export const useTripStore = defineStore('trip', () => {
     loaded,
     editTripRequestId,
     editTripInitialTab,
+    editTripInitialCategoryType,
     loadTrips,
     ensureLoaded,
     hasTrip,

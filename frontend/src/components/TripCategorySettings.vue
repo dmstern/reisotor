@@ -21,9 +21,15 @@ import CategoryChip from './CategoryChip.vue';
 import TripCategoryAffectedItems from './TripCategoryAffectedItems.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
-const props = defineProps<{
-  tripId: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    tripId: number;
+    initialType?: 'expense' | 'spot';
+  }>(),
+  {
+    initialType: 'spot',
+  }
+);
 
 const emit = defineEmits<{
   (e: 'navigate'): void;
@@ -63,7 +69,10 @@ const {
   cancelReset,
   executeReset,
   toggleHideStandard,
-} = useTripCategorySettings(() => props.tripId);
+} = useTripCategorySettings(
+  () => props.tripId,
+  () => props.initialType
+);
 
 function onNavigate() {
   cancelEdit();

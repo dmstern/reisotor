@@ -15,10 +15,20 @@ import type { DisplayCategory } from '../components/TripCategoryRow.vue';
 import type { CategoryFormData } from '../components/TripCategoryFormFields.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
-export function useTripCategorySettings(tripIdGetter: MaybeRefOrGetter<number>) {
+export function useTripCategorySettings(
+  tripIdGetter: MaybeRefOrGetter<number>,
+  initialTypeGetter?: MaybeRefOrGetter<'expense' | 'spot' | undefined>
+) {
   const tripCategoriesStore = useTripCategoriesStore();
 
-  const activeType = ref<'expense' | 'spot'>('spot');
+  const activeType = ref<'expense' | 'spot'>(toValue(initialTypeGetter) ?? 'spot');
+
+  watch(
+    () => toValue(initialTypeGetter),
+    (val) => {
+      if (val) activeType.value = val;
+    }
+  );
   const SCOPE_OPTIONS = [
     {
       value: 'spot',

@@ -34,6 +34,7 @@ const props = defineProps<{
   submitLabel?: string;
   locationError?: boolean;
   initialTab?: TripFormTab;
+  initialCategoryType?: 'expense' | 'spot';
   tripId?: number;
 }>();
 const emit = defineEmits<{
@@ -356,6 +357,7 @@ function onSubmit() {
       <TripCategorySettings
         v-if="props.tripId"
         :trip-id="props.tripId"
+        :initial-type="props.initialCategoryType"
         @navigate="emit('navigate')"
       />
     </div>
