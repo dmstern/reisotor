@@ -243,8 +243,12 @@ watch([() => filteredCategories.value.length, activeType], () => {
 
           <Alert v-if="editForm.usage_count > 0" variant="warning" size="sm">
             <template v-if="editForm.usage_count === 1">
-              Wird bei 1 bestehenden
-              {{ activeType === 'expense' ? 'Ausgabe' : 'Spot' }} automatisch mit angepasst.
+              {{
+                activeType === 'expense'
+                  ? 'Wird bei 1 bestehenden Ausgabe'
+                  : 'Wird bei 1 bestehendem Spot'
+              }}
+              automatisch mit angepasst.
             </template>
             <template v-else>
               Wird bei {{ editForm.usage_count }} bestehenden

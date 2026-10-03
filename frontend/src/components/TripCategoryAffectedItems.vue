@@ -167,25 +167,38 @@ function formatAmount(amount: number): string {
 .affected-items-link {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-primary);
   text-decoration: none;
   cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-tint);
   transition:
-    color 0.15s ease,
-    opacity 0.15s ease;
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .affected-items-link:hover,
 .affected-items-link:focus-visible {
-  color: var(--color-primary-hover, var(--color-primary));
-  text-decoration: underline;
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  color: var(--color-primary);
+  text-decoration: none;
 }
 
 .affected-items-link.inline-link {
   display: inline;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.affected-items-link.inline-link:hover,
+.affected-items-link.inline-link:focus-visible {
+  background: transparent;
+  text-decoration: underline;
 }
 
 .link-icon {
