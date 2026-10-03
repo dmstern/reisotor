@@ -93,6 +93,9 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     for (const c of categories.value) {
       if (c.is_hidden) {
         map.get(c.type)?.add(c.name.trim().toLowerCase());
+        if (c.default_name) {
+          map.get(c.type)?.add(c.default_name.trim().toLowerCase());
+        }
       }
     }
     return map;
@@ -257,6 +260,8 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     loadedTripId,
     load,
     categoriesByType,
+    hiddenNamesByType,
+    replacedDefaultNamesByType,
     activeExpenseCategories,
     activeSpotCategories,
     categoryMeta,

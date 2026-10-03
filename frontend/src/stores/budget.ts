@@ -165,9 +165,18 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   const expenseCategories = computed(() => {
+    const hidden = tripCategoriesStore.hiddenNamesByType.get('expense') ?? new Set();
+    const replaced = tripCategoriesStore.replacedDefaultNamesByType.get('expense') ?? new Set();
     const set = new Set<string>(tripCategoriesStore.activeExpenseCategories);
-    allocations.value.forEach((a) => a.category && set.add(a.category));
-    expenses.value.forEach((e) => e.category && set.add(e.category));
+    const addIfActive = (cat?: string | null) => {
+      if (!cat) return;
+      const lower = cat.trim().toLowerCase();
+      if (!hidden.has(lower) && !replaced.has(lower)) {
+        set.add(cat.trim());
+      }
+    };
+    allocations.value.forEach((a) => addIfActive(a.category));
+    expenses.value.forEach((e) => addIfActive(e.category));
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
   });
 

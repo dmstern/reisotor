@@ -125,6 +125,30 @@ describe('useTripCategoriesStore', () => {
     expect(store.activeSpotCategories).not.toContain('Flughafen');
   });
 
+  it('schließt ausgeblendete angepasste Standardkategorien vollständig aus activeSpotCategories aus und erfasst beide Namen in hiddenNamesByType', () => {
+    const store = useTripCategoriesStore();
+
+    store.categories = [
+      {
+        id: 8,
+        trip_id: 10,
+        type: 'spot',
+        name: 'Flughafennn',
+        default_name: 'Flughafen',
+        icon: 'plane',
+        emoji: '✈️',
+        color: '#4a3aa7',
+        is_hidden: 1,
+        created_at: '',
+      },
+    ];
+
+    expect(store.activeSpotCategories).not.toContain('Flughafennn');
+    expect(store.activeSpotCategories).not.toContain('Flughafen');
+    expect(store.hiddenNamesByType.get('spot')?.has('flughafennn')).toBe(true);
+    expect(store.hiddenNamesByType.get('spot')?.has('flughafen')).toBe(true);
+  });
+
   it('führt resetCategory aus und lädt Kategorien neu', async () => {
     const store = useTripCategoriesStore();
     const postSpy = vi.spyOn(api, 'post').mockResolvedValueOnce({ success: true });
