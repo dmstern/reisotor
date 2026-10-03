@@ -230,10 +230,11 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
       await nextTick();
 
       // Check if LocationPicker got coordinates
-      const coordsRow = container.querySelector('.status-coords-row');
+      const coordsRow = container.querySelector('.status-coords-row:not(.is-missing)');
 
-      // EMPIRICAL FINDING: Because lat/lng are omitted, coordinates row is NOT rendered!
+      // EMPIRICAL FINDING: Because lat/lng are omitted, active coordinates row is NOT rendered (shows 'is-missing')!
       expect(coordsRow).toBeNull();
+      expect(container.querySelector('.status-coords-row.is-missing')).not.toBeNull();
 
       // If user submits form without manually clicking map, lat and lng are lost:
       const form = container.querySelector('form');
