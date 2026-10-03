@@ -515,6 +515,71 @@ async function cycleCategorySuggestion() {
   }
 }
 
+// --- Location Search Sparkle Feature (Issue: Missing Spot Location) ---
+const locationSearchCandidateIndex = ref(-1);
+
+const locationSearchCandidates = computed(() => {
+  const t = (props.title?.trim() || editTitleInput.value?.trim()) ?? '';
+  const c = (props.category?.trim() || editCategoryInput.value?.trim()) ?? '';
+  const a = (props.address?.trim() || editAddressInput.value?.trim()) ?? '';
+
+  const candidates: string[] = [];
+
+  // 1. Titel + Kategorie (falls vorhanden und noch nicht im Titel enthalten) bzw. reiner Titel
+  if (t) {
+    if (c && !t.toLowerCase().includes(c.toLowerCase())) {
+      candidates.push(`${t} ${c}`);
+    }
+    candidates.push(t);
+  }
+
+  // 2. Adresse (falls vorhanden)
+  if (a) {
+    candidates.push(a);
+    if (t) {
+      candidates.push(`${t}, ${a}`);
+    }
+  }
+
+  return Array.from(new Set(candidates));
+});
+
+const showLocationSparkle = computed(() => {
+  return !props.modelValue && locationSearchCandidates.value.length > 0;
+});
+
+const locationSparkleTitle = computed(() => {
+  const candidates = locationSearchCandidates.value;
+  if (candidates.length === 0) {
+    return 'Standort anhand von Titel oder Adresse suchen';
+  }
+  if (locationSearchCandidateIndex.value >= 0) {
+    const current = candidates[locationSearchCandidateIndex.value];
+    return `Suche nach "${current}" (${locationSearchCandidateIndex.value + 1}/${candidates.length}, Klicken für nächsten Suchbegriff)`;
+  }
+  return 'Standort anhand von Titel oder Adresse in die Suche übernehmen';
+});
+
+watch([currentTitle, () => props.address, () => props.category], () => {
+  locationSearchCandidateIndex.value = -1;
+});
+
+function cycleLocationSearch() {
+  const candidates = locationSearchCandidates.value;
+  if (candidates.length === 0) return;
+
+  locationSearchCandidateIndex.value = (locationSearchCandidateIndex.value + 1) % candidates.length;
+  const query = candidates[locationSearchCandidateIndex.value];
+
+  handleInput(query, true);
+  nextTick(() => {
+    const el = document.querySelector<HTMLInputElement>(
+      '.location-picker-input input, input.location-picker-input'
+    );
+    el?.focus();
+  });
+}
+
 async function reverseGeocodeCoords(lat: number, lng: number) {
   try {
     const res = await fetch(`/api/places/reverse?lat=${lat}&lng=${lng}`, {
@@ -683,7 +748,7 @@ function useOwnLocation() {
 }
 
 // --- Autocomplete & Search Handling ---
-function handleInput(val: string) {
+function handleInput(val: string, immediate = false) {
   inputText.value = val;
   shortlinkDetected.value = false;
 
@@ -741,7 +806,7 @@ function handleInput(val: string) {
   isSearching.value = true;
   activeIndex.value = -1;
 
-  debounceTimer = setTimeout(async () => {
+  const runSearch = async () => {
     try {
       activeAbortController = new AbortController();
       const bias = props.proximityBias ?? props.center;
@@ -758,7 +823,7 @@ function handleInput(val: string) {
       }
       const data = (await res.json()) as PlaceSearchResult[];
       results.value = Array.isArray(data) ? data : [];
-      isOpen.value = results.value.length > 0;
+      isOpen.value = true;
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         return;
@@ -767,7 +832,13 @@ function handleInput(val: string) {
     } finally {
       isSearching.value = false;
     }
-  }, 300);
+  };
+
+  if (immediate) {
+    void runSearch();
+  } else {
+    debounceTimer = setTimeout(runSearch, 300);
+  }
 }
 
 function selectPlace(place: PlaceSearchResult) {
@@ -1385,26 +1456,92 @@ defineExpose({
                   </div>
                 </div>
 
-                <!-- Koordinaten-Zeile mit Standort-Entfernen-Button direkt neben den Koordinaten -->
-                <div v-if="modelValue" class="status-meta-row status-coords-row">
-                  <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
-                    <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
-                  </span>
-                  <div class="status-meta-display">
-                    <span class="status-coords">
-                      {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+                <!-- Standort / Koordinaten-Zeile: Immer sichtbar (Issue #SpotLocationMissing) -->
+                <div
+                  class="status-meta-row status-coords-row"
+                  :class="{ 'is-missing': !modelValue }"
+                >
+                  <template v-if="modelValue">
+                    <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
+                      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
                     </span>
-                    <IconButton
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      class="clear-btn coords-clear-btn"
-                      :icon="ACTION_ICONS.close"
-                      title="Standort-Koordinaten entfernen"
-                      aria-label="Standort-Koordinaten entfernen"
-                      @click="clearCoords"
-                    />
-                  </div>
+                    <div class="status-meta-display">
+                      <span class="status-coords">
+                        {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+                      </span>
+                      <IconButton
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        class="clear-btn coords-clear-btn"
+                        :icon="ACTION_ICONS.close"
+                        title="Standort-Koordinaten entfernen"
+                        aria-label="Standort-Koordinaten entfernen"
+                        @click="clearCoords"
+                      />
+                    </div>
+                  </template>
+                  <template v-else>
+                    <span
+                      class="status-row-icon status-warning-icon"
+                      title="Standort fehlt"
+                      aria-hidden="true"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+                    </span>
+                    <div class="status-meta-display">
+                      <span
+                        class="status-coords status-coords-missing"
+                        data-testid="spot-coords-missing"
+                      >
+                        Standort fehlt
+                      </span>
+                      <InfoPopover
+                        title="Standort festlegen"
+                        aria-label="Hinweise zum Festlegen des Standorts anzeigen"
+                        placement="bottom"
+                        align="left"
+                        :icon-size="14"
+                        :menu-width="260"
+                        class="coords-info-popover"
+                      >
+                        <p>
+                          <strong>Standort festlegen:</strong>
+                        </p>
+                        <p>
+                          • <strong>Ortssuche:</strong> Nutze die Suchleiste oben für Adressen oder
+                          Sehenswürdigkeiten.
+                        </p>
+                        <p>
+                          • <strong>Karten-Link:</strong> Kopiere einen Google Maps-, Apple Maps-
+                          oder OSM-Link in das Suchfeld.
+                        </p>
+                        <p class="popover-tip">
+                          📍 Tippe alternativ direkt auf die Karte, um die Stecknadel manuell zu
+                          platzieren.
+                        </p>
+                      </InfoPopover>
+                      <button
+                        v-if="showLocationSparkle"
+                        type="button"
+                        class="sparkle-suggest-btn coords-sparkle-btn"
+                        :class="{ 'is-loading': isSearching }"
+                        :title="locationSparkleTitle"
+                        :aria-label="locationSparkleTitle"
+                        data-testid="spot-location-sparkle-btn"
+                        :disabled="isSearching"
+                        @mousedown.prevent
+                        @click="cycleLocationSearch"
+                      >
+                        <AppIcon
+                          :icon="ACTION_ICONS.sparkles"
+                          :size="13"
+                          group="actions"
+                          :class="{ 'sparkle-spin': isSearching }"
+                        />
+                      </button>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
@@ -2052,6 +2189,39 @@ defineExpose({
 .coords-clear-btn:hover {
   opacity: 1;
   color: var(--color-danger, #ef4444);
+}
+
+.status-warning-icon {
+  color: var(--color-warning, #f59e0b);
+}
+
+.status-coords.status-coords-missing {
+  color: var(--color-warning, #d97706);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 0.8rem;
+  font-variant-numeric: normal;
+}
+
+.coords-info-popover {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.coords-sparkle-btn {
+  position: static;
+  transform: none;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.coords-sparkle-btn:hover:not(:disabled) {
+  transform: scale(1.15);
+}
+
+.coords-sparkle-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .sub-category-wrap {
