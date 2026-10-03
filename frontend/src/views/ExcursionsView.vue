@@ -1844,6 +1844,60 @@ function excursionForGroupTitle(title: string): Excursion | null {
   return excursionsStore.excursions.find((e) => e.title === title) ?? null;
 }
 
+/**
+ * Ermittelt die Gesamtzahl der gültigen, im Store vorhandenen Spots, die dieser Tour zugeordnet sind.
+ * Bei Mehrfachbesuchen wird jeder Spot nur einmal gezählt, da auch spotGroups die Kacheln dedupliziert.
+ */
+function getTourTotalSpotsCount(excursion: Excursion): number {
+  if (!excursion.spot_ids.length) return 0;
+  const count = spotsStore.spots.filter((s) => excursion.spot_ids.includes(s.id)).length;
+  return count > 0 ? count : excursion.spot_ids.length;
+}
+
+/**
+ * Gibt an, ob ALLE zugeordneten Spots einer Tour durch aktive Filter (Kategorie, Status, Suche) ausgeblendet sind.
+ */
+function isTourAllSpotsFiltered(excursion: Excursion, itemsCount: number): boolean {
+  return itemsCount === 0 && getTourTotalSpotsCount(excursion) > 0 && hasActiveFilters.value;
+}
+
+/**
+ * Gibt an, ob EINIGE (aber nicht alle) zugeordneten Spots einer Tour durch aktive Filter ausgeblendet sind.
+ */
+function isTourPartiallyFiltered(excursion: Excursion, itemsCount: number): boolean {
+  const total = getTourTotalSpotsCount(excursion);
+  return itemsCount > 0 && itemsCount < total && hasActiveFilters.value;
+}
+
+/**
+ * Formuliert die grammatikalisch passende Bezeichnung der aktiven Filterquelle (z. B. "den Suchfilter",
+ * "den Kategorie-/Status-Filter" oder "aktive Filter").
+ */
+function tourFilterReason(): string {
+  const hasSearch = searchQuery.value.trim().length > 0;
+  const hasCategoryOrStatus = categoryFilter.value.length > 0 || statusFilter.value.length > 0;
+
+  if (hasCategoryOrStatus && !hasSearch) {
+    return 'den Kategorie-/Status-Filter';
+  }
+  if (hasSearch && !hasCategoryOrStatus) {
+    return 'den Suchfilter';
+  }
+  return 'aktive Filter';
+}
+
+/**
+ * Baut den Textanfang für eine teilweise gefilterte Tour ("Ein Spot dieser Tour ist..." bzw.
+ * "Einige Spots dieser Tour sind gerade durch... ausgeblendet – ").
+ */
+function tourPartialFilteredPrefix(excursion: Excursion, itemsCount: number): string {
+  const total = getTourTotalSpotsCount(excursion);
+  const hiddenCount = total - itemsCount;
+  const countText =
+    hiddenCount === 1 ? 'Ein Spot dieser Tour ist' : 'Einige Spots dieser Tour sind';
+  return `${countText} gerade durch ${tourFilterReason()} ausgeblendet – `;
+}
+
 // Horizontale Kategorie-Navigation (Wolt-Stil): Map statt DOM-`id`, damit Leerzeichen/Umlaute in
 // Kategorienamen ("Aussichtspunkt", "Unterkunft") kein Escaping-Problem sind. scrollToElementInBody()
 // scrollt die Zielüberschrift bzw. ExcursionCard unter exakter Berücksichtigung der sticky Nav-Leiste
@@ -5226,25 +5280,33 @@ async function deleteEditingSpot() {
                       </template>
                     </TransitionGroup>
                   </div>
+
+                  <!-- Hinweis, wenn einige Spots der Tour gerade durch Filter ausgeblendet sind (#partially-filtered) -->
+                  <p
+                    v-if="grp.excursion && isTourPartiallyFiltered(grp.excursion, grp.items.length)"
+                    class="empty tour-partial-filter-hint"
+                  >
+                    {{ tourPartialFilteredPrefix(grp.excursion, grp.items.length) }}
+                    <button type="button" class="filter-reset-link" @click="clearAllFilters">
+                      Filter zurücksetzen
+                    </button>
+                    <span>, um alle Stationen zu sehen.</span>
+                  </p>
                 </div>
               </div>
               <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
-             kein Spot zugeordnet (grp.excursion.spot_ids selbst leer, unabhängig von Kategorie-/
-             Status-Filter), oder es sind welche zugeordnet, aber der aktive Filter blendet sie
-             gerade alle aus (grp.items kommt aus filteredSpotItems, spot_ids aus der Excursion
-             selbst bleibt dabei unangetastet) - ohne diese Unterscheidung wirkte eine reine
-             Filter-Situation fälschlich wie eine leere Tour. -->
+             kein Spot zugeordnet (getTourTotalSpotsCount(grp.excursion) === 0), oder es sind welche zugeordnet,
+             aber der aktive Filter (Kategorie, Status oder Suchbegriff) blendet sie gerade alle aus – ohne diese
+             Unterscheidung wirkte eine reine Filter-Situation fälschlich wie eine leere Tour. -->
               <p
-                v-if="
-                  grp.excursion &&
-                  !grp.items.length &&
-                  grp.excursion.spot_ids.length &&
-                  (categoryFilter.length || statusFilter.length)
-                "
+                v-if="grp.excursion && isTourAllSpotsFiltered(grp.excursion, grp.items.length)"
                 class="empty"
               >
-                Die zugeordneten Spots sind gerade durch den Kategorie-/Status-Filter ausgeblendet –
-                Filter zurücksetzen, um sie wieder zu sehen.
+                Die zugeordneten Spots sind gerade durch {{ tourFilterReason() }} ausgeblendet –
+                <button type="button" class="filter-reset-link" @click="clearAllFilters">
+                  Filter zurücksetzen
+                </button>
+                <span>, um sie wieder zu sehen.</span>
               </p>
               <p v-else-if="grp.excursion && !grp.items.length" class="empty">
                 Noch keine Spots zugeordnet – ziehe eine Spot-Karte hierher oder wähle diese Tour
@@ -7821,6 +7883,27 @@ async function deleteEditingSpot() {
 .privacy-pill--private {
   background: var(--color-warning-tint, rgba(234, 179, 8, 0.15));
   color: var(--color-warning-dark, #a16207);
+}
+
+.tour-partial-filter-hint {
+  margin: var(--space-3) auto var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  max-width: 540px;
+}
+
+.filter-reset-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  display: inline;
+}
+
+.filter-reset-link:hover {
+  color: var(--color-primary-dark);
 }
 </style>
 
