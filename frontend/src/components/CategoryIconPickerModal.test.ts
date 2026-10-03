@@ -147,4 +147,20 @@ describe('CategoryIconPickerModal', () => {
 
     cleanUp();
   });
+
+  it('bettet das Icon-Grid in einen Wrapper mit Scroll-Fade-Overlays ein', async () => {
+    const { cleanUp } = mountComponent(CategoryIconPickerModal, {
+      modelValue: true,
+    });
+
+    await nextTick();
+
+    const wrapper = document.querySelector('.icon-grid-wrapper');
+    expect(wrapper).toBeTruthy();
+    expect(document.querySelector('.icon-grid')).toBeTruthy();
+    expect(document.querySelector('.scroll-fade--top')).toBeTruthy();
+    expect(document.querySelector('.scroll-fade--bottom')).toBeTruthy();
+
+    cleanUp();
+  });
 });

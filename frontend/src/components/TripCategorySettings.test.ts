@@ -99,4 +99,12 @@ describe('TripCategorySettings', () => {
     expect(html).toContain('Unterkunft');
     expect(html).toContain('--category-color:#1baf7a');
   });
+
+  it('bettet die Kategorienliste in einen Scroll-Fade-Wrapper mit oberen und unteren Verläufen ein', async () => {
+    const html = await render({ tripId: 10 });
+    expect(html).toContain('category-list-wrapper');
+    expect(html).toContain('category-list');
+    expect(html).toContain('scroll-fade--top');
+    expect(html).toContain('scroll-fade--bottom');
+  });
 });

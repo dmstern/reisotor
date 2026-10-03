@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { useId } from 'vue';
+import { useId, ref, watch, nextTick } from 'vue';
 import { useTripCategorySettings } from '../composables/useTripCategorySettings';
+import { useScrollFade } from '../composables/useScrollFade';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import Card from './primitives/Card.vue';
 import Alert from './primitives/Alert.vue';
 import EmptyState from './primitives/EmptyState.vue';
 import IconButton from './primitives/IconButton.vue';
+import ScrollFadeOverlay from './primitives/ScrollFadeOverlay.vue';
 import Modal from './Modal.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import CategoryIconPickerModal from './CategoryIconPickerModal.vue';
@@ -43,6 +45,13 @@ const {
   executeDelete,
   toggleHideStandard,
 } = useTripCategorySettings(() => props.tripId);
+
+const categoryListRef = ref<HTMLElement | null>(null);
+const { canScrollUp, canScrollDown, updateScrollFade } = useScrollFade(categoryListRef);
+
+watch([() => filteredCategories.value.length, activeType], () => {
+  nextTick(updateScrollFade);
+});
 </script>
 
 <template>
@@ -120,19 +129,23 @@ const {
     </div>
 
     <!-- 4. Kategorien-Liste -->
-    <div class="category-list">
-      <TripCategoryRow
-        v-for="cat in filteredCategories"
-        :key="cat.name"
-        :category="cat"
-        :active-type="activeType"
-        @edit="startEdit"
-        @toggle-hide="toggleHideStandard"
-      />
+    <div class="category-list-wrapper">
+      <div ref="categoryListRef" class="category-list" @scroll="updateScrollFade">
+        <TripCategoryRow
+          v-for="cat in filteredCategories"
+          :key="cat.name"
+          :category="cat"
+          :active-type="activeType"
+          @edit="startEdit"
+          @toggle-hide="toggleHideStandard"
+        />
 
-      <EmptyState v-if="filteredCategories.length === 0" class="empty-hint">
-        Keine Kategorien für „{{ searchQuery }}“ gefunden.
-      </EmptyState>
+        <EmptyState v-if="filteredCategories.length === 0" class="empty-hint">
+          Keine Kategorien für „{{ searchQuery }}“ gefunden.
+        </EmptyState>
+      </div>
+
+      <ScrollFadeOverlay :can-scroll-up="canScrollUp" :can-scroll-down="canScrollDown" />
     </div>
 
     <!-- 5. Kategorie bearbeiten (Dialog) -->
@@ -265,11 +278,17 @@ const {
   width: 100%;
 }
 
+.category-list-wrapper {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .category-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-height: 460px;
+  max-height: min(52vh, 460px);
   overflow-y: auto;
 }
 

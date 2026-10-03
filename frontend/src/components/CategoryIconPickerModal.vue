@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import Modal from './Modal.vue';
 import Input from './primitives/Input.vue';
 import Button from './primitives/Button.vue';
 import EmptyState from './primitives/EmptyState.vue';
+import ScrollFadeOverlay from './primitives/ScrollFadeOverlay.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import AppIcon from './AppIcon.vue';
 import { CATEGORY_ICON_PALETTE, type CategoryIconOption } from '../utils/categoryIcons';
 import { useIconStyleStore, type IconStyle } from '../stores/iconStyle';
+import { useScrollFade } from '../composables/useScrollFade';
 
 const props = withDefaults(
   defineProps<{
@@ -31,6 +33,9 @@ const iconStyleStore = useIconStyleStore();
 // Toggle-Modus: Initialisiert mit der aktuellen Benutzer-Präferenz für Kategorien
 const displayMode = ref<IconStyle>(iconStyleStore.styleForGroup('categories'));
 
+const iconGridRef = ref<HTMLElement | null>(null);
+const { canScrollUp, canScrollDown, updateScrollFade } = useScrollFade(iconGridRef);
+
 // Wenn der Dialog geöffnet wird, Suchfeld leeren und Stil ggf. auffrischen
 const searchQuery = ref('');
 watch(
@@ -39,6 +44,7 @@ watch(
     if (isOpen) {
       searchQuery.value = '';
       displayMode.value = iconStyleStore.styleForGroup('categories');
+      nextTick(updateScrollFade);
     }
   }
 );
@@ -59,6 +65,10 @@ const filteredIcons = computed(() => {
     if (opt.keywords && opt.keywords.some((k) => k.toLowerCase().includes(q))) return true;
     return false;
   });
+});
+
+watch([() => filteredIcons.value.length, displayMode], () => {
+  nextTick(updateScrollFade);
 });
 
 function handleSelect(opt: CategoryIconOption) {
@@ -92,35 +102,50 @@ function handleSelect(opt: CategoryIconOption) {
       </div>
 
       <!-- Icon-Grid -->
-      <div
-        v-if="filteredIcons.length > 0"
-        class="icon-grid"
-        role="listbox"
-        aria-label="Icon-Auswahl"
-      >
-        <button
-          v-for="opt in filteredIcons"
-          :key="opt.id"
-          type="button"
-          class="icon-grid-item"
-          :class="{ 'is-selected': selectedIconId === opt.id }"
-          :title="opt.label"
-          :aria-label="opt.label"
-          :aria-selected="selectedIconId === opt.id"
-          @click="handleSelect(opt)"
+      <div class="icon-grid-wrapper">
+        <div
+          v-if="filteredIcons.length > 0"
+          ref="iconGridRef"
+          class="icon-grid"
+          role="listbox"
+          aria-label="Icon-Auswahl"
+          @scroll="updateScrollFade"
         >
-          <span class="icon-visual-wrapper">
-            <AppIcon :icon="opt.tabler" group="categories" :force-style="displayMode" :size="26" />
-          </span>
-          <span class="grid-icon-label">{{ opt.label }}</span>
-        </button>
-      </div>
+          <button
+            v-for="opt in filteredIcons"
+            :key="opt.id"
+            type="button"
+            class="icon-grid-item"
+            :class="{ 'is-selected': selectedIconId === opt.id }"
+            :title="opt.label"
+            :aria-label="opt.label"
+            :aria-selected="selectedIconId === opt.id"
+            @click="handleSelect(opt)"
+          >
+            <span class="icon-visual-wrapper">
+              <AppIcon
+                :icon="opt.tabler"
+                group="categories"
+                :force-style="displayMode"
+                :size="26"
+              />
+            </span>
+            <span class="grid-icon-label">{{ opt.label }}</span>
+          </button>
+        </div>
 
-      <!-- Leer-Zustand mit EmptyState Primitive -->
-      <EmptyState v-else class="empty-state">
-        <p class="empty-text">Keine Icons für „{{ searchQuery }}“ gefunden.</p>
-        <Button variant="ghost" size="sm" @click="searchQuery = ''"> Filter zurücksetzen </Button>
-      </EmptyState>
+        <ScrollFadeOverlay
+          v-if="filteredIcons.length > 0"
+          :can-scroll-up="canScrollUp"
+          :can-scroll-down="canScrollDown"
+        />
+
+        <!-- Leer-Zustand mit EmptyState Primitive -->
+        <EmptyState v-else class="empty-state">
+          <p class="empty-text">Keine Icons für „{{ searchQuery }}“ gefunden.</p>
+          <Button variant="ghost" size="sm" @click="searchQuery = ''"> Filter zurücksetzen </Button>
+        </EmptyState>
+      </div>
 
       <!-- Footer mit Zähler und Schließen -->
       <div class="picker-footer">
@@ -160,6 +185,14 @@ function handleSelect(opt: CategoryIconOption) {
 
 .toggle-wrapper {
   flex-shrink: 0;
+}
+
+.icon-grid-wrapper {
+  position: relative;
+  min-height: 0;
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  overflow: hidden;
 }
 
 .icon-grid {
