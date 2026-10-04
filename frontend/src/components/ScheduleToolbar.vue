@@ -50,7 +50,9 @@ defineEmits<{
         <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Tippe einen Tag an,
         um „{{ pendingScheduleLabel }}“ einzuplanen
       </span>
-      <Button variant="secondary" @click="$emit('cancelPendingSchedule')">Abbrechen</Button>
+      <Button variant="secondary" size="sm" @click="$emit('cancelPendingSchedule')">
+        Abbrechen
+      </Button>
     </div>
 
     <div class="calendar-toolbar">
@@ -148,15 +150,13 @@ defineEmits<{
   corner-shape: squircle;
   background: var(--color-highlight);
   border: 1px solid var(--color-highlight-border);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-primary-dark);
 }
 
-.pending-schedule-banner button {
+.pending-schedule-banner .btn {
   flex-shrink: 0;
-  padding: 4px 10px;
-  font-size: 0.82rem;
 }
 
 .calendar-toolbar {
@@ -185,10 +185,10 @@ defineEmits<{
 }
 
 .range-label {
-  font-size: 0.92rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
-  min-width: 105px;
+  min-width: 11ch;
   text-align: center;
 }
 
@@ -205,5 +205,20 @@ defineEmits<{
   align-items: center;
   gap: var(--space-1);
   flex-wrap: wrap;
+}
+
+@container schedule-view (max-width: 330px) {
+  .toolbar-nav-row {
+    justify-content: center;
+  }
+
+  .granularity-wrap {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .toolbar-actions-row {
+    justify-content: center;
+  }
 }
 </style>

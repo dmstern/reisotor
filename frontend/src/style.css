@@ -267,6 +267,7 @@
   /* Etwas großzügiger als vorher (8/14/22) – Basiswerte, gelten unverändert für alles, was normal
      rund bleibt (Pillen, echte Kreise wie EditButton/DeleteButton mit border-radius:50%, kleine
      Chips/Badges, …). */
+  --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 26px;
@@ -282,10 +283,14 @@
      ihren border-radius an diese -squircle-Variablen statt der Basiswerte – Elemente, die bewusst
      komplett rund bleiben sollen (Kreis-Buttons, Pillen), verwenden weiterhin die Basiswerte direkt
      und bleiben dadurch unangetastet. */
+  --radius-xs-squircle: var(--radius-xs);
   --radius-sm-squircle: var(--radius-sm);
   --radius-md-squircle: var(--radius-md);
   --radius-lg-squircle: var(--radius-lg);
   --radius-xl-squircle: var(--radius-xl);
+
+  /* Standard-Transition für Mikro-Interaktionen (0.15s ease, siehe DESIGN.md) */
+  --transition-fast: 0.15s ease;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -367,6 +372,7 @@
    Basiswerte (normaler Kreisbogen) bekommen statt einer zu starken Rundung ohne squircle-Effekt. */
 @supports (corner-shape: squircle) {
   :root {
+    --radius-xs-squircle: calc(var(--radius-xs) * 1.75);
     --radius-sm-squircle: calc(var(--radius-sm) * 1.75);
     --radius-md-squircle: calc(var(--radius-md) * 1.75);
     --radius-lg-squircle: calc(var(--radius-lg) * 1.75);

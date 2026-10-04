@@ -391,7 +391,7 @@ function onDrop(event: DragEvent, date: string) {
   height: 20px;
   padding: 0 3px;
   border-radius: var(--radius-pill);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
   line-height: 1;
@@ -401,7 +401,7 @@ function onDrop(event: DragEvent, date: string) {
   background: var(--color-primary);
   color: var(--color-primary-contrast, #ffffff);
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .day-weather-row {
@@ -429,8 +429,9 @@ function onDrop(event: DragEvent, date: string) {
   color: var(--color-accent-secondary);
   font-size: 0.58rem;
   font-weight: 600;
-  border-radius: 4px;
-  padding: 1px 4px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
+  padding: 1px var(--space-1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -455,7 +456,8 @@ function onDrop(event: DragEvent, date: string) {
   gap: 2px;
   font-size: 0.62rem;
   background: var(--color-hover);
-  border-radius: 3px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
   border-left: 2.5px solid var(--item-cat-color, var(--color-primary));
   padding: 1px 3px;
   overflow: hidden;

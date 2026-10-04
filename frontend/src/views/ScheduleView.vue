@@ -211,6 +211,7 @@ onMounted(async () => {
 
 <style scoped>
 .calendar-drawer-content {
+  container: schedule-view / inline-size;
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
@@ -231,7 +232,7 @@ onMounted(async () => {
 
 .calendar-drawer-content h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
   color: var(--color-primary-dark);
 }
 
@@ -254,18 +255,18 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--space-1);
-  margin-bottom: 2px;
+  margin-bottom: calc(var(--space-1) / 2);
   padding: 0 var(--space-1);
   text-align: center;
 }
 
 .weekday-col-header {
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
-  padding: 2px 0;
+  padding: calc(var(--space-1) / 2) 0;
   line-height: 1.2;
 }
 

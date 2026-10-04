@@ -154,15 +154,22 @@ const {
   min-width: 140px;
 }
 
-.edit-form button[type='submit'] {
-  flex: 1 1 100%;
-}
-
 .actions-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.actions-row button[type='submit'] {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 480px) {
+  .actions-row button[type='submit'] {
+    flex: 1 1 100%;
+  }
 }
 
 .spacer {

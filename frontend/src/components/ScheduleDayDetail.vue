@@ -123,7 +123,7 @@ defineEmits<{
 .day-detail-title-group h3 {
   color: var(--color-primary-dark);
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
 }
 
 .day-detail-actions {
@@ -143,10 +143,10 @@ defineEmits<{
 .day-meta-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   border: 1px solid var(--color-border);
   background: var(--color-hover);
   color: var(--color-text);
@@ -165,9 +165,12 @@ defineEmits<{
 
 .day-meta-pill.acc-pill.is-clickable {
   cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .day-meta-pill.acc-pill.is-clickable:hover {
@@ -188,7 +191,7 @@ defineEmits<{
 .temp-range {
   display: inline-flex;
   align-items: center;
-  gap: 1px;
+  gap: 2px;
 }
 
 .temp-min {
@@ -199,9 +202,9 @@ defineEmits<{
 .rain-prob {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: calc(var(--space-1) / 2);
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
 }
 
 .items {

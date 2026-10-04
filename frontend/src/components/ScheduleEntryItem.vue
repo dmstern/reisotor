@@ -131,7 +131,7 @@ const categoryMeta = computed(
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: var(--radius-xs-squircle, 6px);
+  border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   background: color-mix(in srgb, var(--entry-cat-color) 12%, var(--color-surface));
   color: var(--entry-cat-color);
@@ -160,18 +160,19 @@ const categoryMeta = computed(
 .item-time-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.74rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   font-weight: 700;
   color: var(--color-primary-dark);
   background: var(--color-primary-tint);
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
   line-height: 1.25;
 }
 
 .item-category-pill {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   line-height: 1.25;
@@ -179,7 +180,7 @@ const categoryMeta = computed(
 
 .item .title {
   font-weight: 600;
-  font-size: 0.94rem;
+  font-size: var(--font-size-md);
   color: var(--color-text);
   line-height: 1.3;
 }
@@ -190,24 +191,24 @@ const categoryMeta = computed(
 }
 
 .item .location {
-  margin: 3px 0 0;
-  font-size: 0.82rem;
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--space-1);
 }
 
 .item .note {
-  margin: 4px 0 0;
-  font-size: 0.86rem;
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
 }
 
 .item-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   flex-shrink: 0;
   align-items: center;
-  padding-top: 1px;
+  padding-top: calc(var(--space-1) / 2);
 }
 </style>

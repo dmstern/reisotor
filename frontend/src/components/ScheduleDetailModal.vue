@@ -186,7 +186,8 @@ const emit = defineEmits<{
 }
 
 .linked-entity-title {
-  max-width: 240px;
+  min-width: 0;
+  max-width: 32ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

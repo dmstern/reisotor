@@ -111,11 +111,11 @@ function downloadIcs() {
 }
 
 .calendar-btn {
-  padding: 4px 8px;
-  font-size: 0.82rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   line-height: 1.2;
-  gap: 6px;
+  gap: var(--space-1);
   white-space: nowrap;
 }
 
@@ -129,7 +129,7 @@ function downloadIcs() {
 
 @container day-detail (min-width: 440px) {
   .calendar-btn {
-    padding: 4px 10px;
+    padding: var(--space-1) var(--space-2);
   }
 
   .calendar-btn-label {
