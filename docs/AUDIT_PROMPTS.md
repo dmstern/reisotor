@@ -23,8 +23,8 @@ Um in Agent-Sessions (Antigravity / Claude Code) für Refactoring-Tickets wie [#
 | Phase       | Kurz-Trigger                | Fokus & Umfang                                                                                                 |
 | :---------- | :-------------------------- | :------------------------------------------------------------------------------------------------------------- |
 | **Phase 1** | `Refactor Phase 1: <datei>` | `<script setup>` entflechten, Dead Code tilgen, Composables erstellen. Template & Styles bleiben unangetastet. |
-| **Phase 2** | `Refactor Phase 2: <datei>` | `<template>` dekomponieren, Subkomponenten & Primitives nutzen.                                                |
-| **Phase 3** | `Refactor Phase 3: <datei>` | `<style>` mit Design-Tokens säubern & Layout-Audit (`AUDIT_ROUTE=<route> npm run test:audit`).                 |
+| **Phase 2** | `Refactor Phase 2: <datei>` | `<template>` dekomponieren, Subkomponenten & Primitives nutzen, State & Assets lokalisieren.                   |
+| **Phase 3** | `Refactor Phase 3: <datei>` | `<style>` mit Design-Tokens säubern, `@media` restlos durch `@container` ersetzen & Layout-Audit.              |
 
 _Beispiel-Eingabe im Chat:_
 
@@ -51,6 +51,7 @@ Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altla
 
 2. State & Fachlogik in Composables extrahieren:
    - Lagere zusammenhängende Geschäfts-, Berechnungs-, Filter- oder Sortierlogik in neue, fokussierte Composables unter frontend/src/composables/ (z. B. useSettingsForm.ts, useTripPermissions.ts) oder Pinia-Stores aus.
+   - Vermeide riesige "Sammelbecken"-Composables: Schneide Logik gezielt nach fachlichen Domänen (z. B. useUserManagement.ts, usePushSettings.ts).
    - Definiere klare TypeScript-Interfaces für Optionen und Rückgabewerte.
    - Halte das <script setup> der Hauptkomponente schlank: Es dient nur noch der Orchestrierung und Bereitstellung der Daten.
 
@@ -89,7 +90,11 @@ Der Script-State ist bereits sauber entflochten. Nun wird das <template> modular
    - Kapsele große Modals, Drawers oder eigenständige Abschnitte in neue Kindkomponenten unter frontend/src/components/...
    - Nutze saubere TypeScript defineProps<{...}>() und defineEmits<{...}>(). Da der State in Phase 1 modularisiert wurde, binde Subkomponenten entweder direkt an das passende Composable an oder übergebe minimale, fokussierte Props.
 
-4. Verifikation & Qualitätssicherung:
+4. Lokalisierung & Refinement von State und Assets:
+   - Sobald Subkomponenten stehen: Prüfe, ob in Phase 1 erstellte Composables, Helper oder Icon-Definitionen, die ausschließlich in einer einzigen Subkomponente benötigt werden, direkt dorthin umgezogen oder feiner aufgeteilt werden können (z. B. tab-spezifische Reset-Logik direkt im Tab halten; Sektions-Icons direkt in der Subkomponente instanziieren statt im globalen Tab-Composable).
+   - Bereinige historische CSS-Klassennamen aus Copy-Paste-Ursprüngen, damit sie zum neuen Kontext passen.
+
+5. Verifikation & Qualitätssicherung:
    - Führe npm run typecheck und betroffene Tests aus.
    - Formatiere alle geänderten Dateien (npx -y prettier --write <datei>).
    - Fasse transparent zusammen: Welche Subkomponenten wurden extrahiert, welche Primitives wurden wiederverwendet und welche Redundanzen wurden eliminiert?
@@ -112,9 +117,10 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
    - Eckenrundungen (Squircle vs. Kreisbogen), Typografie und Schatten (--shadow-sm/--shadow-md) strikt gemäß DESIGN.md vereinheitlichen.
    - Beseitige CSS-Hacks früherer Agenten (!important, negative Margins, willkürliche Z-Indizes) durch sauberes Flexbox/Grid.
 
-2. Container-Queries & Enge-Resilienz:
+2. Container-Queries & Enge-Resilienz (Ersetzen statt Duplizieren):
    - Keine starren Pixelbreiten in Subkomponenten.
-   - Nutze @container app-main (min-width: ...) oder flexibles Flexbox-Wrapping (flex-wrap: wrap) statt starrer Pixel-Breakpoints oder @media.
+   - Ersetze bestehende @media-Breakpoints innerhalb von .app-main restlos durch @container app-main (max-width/min-width: ...) oder flexibles Flexbox-Wrapping (flex-wrap: wrap).
+   - Keine redundanten @media-Blöcke parallel stehen lassen: Alte @media-Regeln müssen gelöscht werden, um CSS-Duplikate und unerwünschte Drawer-Effekte zu vermeiden.
 
 3. Adversarial Browser-Stresstest (Playwright):
    - Nutze die Vorlage unter e2e/tests/scratch/audit-template.spec.ts für die Route [z. B. /settings bzw. /trip/1/excursions].
@@ -122,6 +128,7 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
    - Enge-Matrix: Desktop mit maximal breit gezogener Schublade (setCalendarDrawerWidth(page, 500)) bzw. Spots-Spalte (setSpotsColumnWidth).
    - Checks: expectNoHorizontalOverflow(page), Touch-Targets auf Mobile (expectMinTouchTarget), lange Strings und expectNotCoveredBy().
    - Behebe gefundene Layout-Kollisionen direkt defensiv mit Tokens.
+   - Scope-Disziplin: Härte primär die dekomponierten Subkomponenten und die View selbst. Externe, bereits eigenständige Komponenten nur anpassen, wenn der Stresstest auf der Route dort konkrete Kollisionen meldet.
 
 4. Verifikation & Qualitätssicherung:
    - Führe npm run typecheck und AUDIT_ROUTE=<route> npm run test:audit aus.
