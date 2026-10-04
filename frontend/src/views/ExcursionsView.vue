@@ -12,8 +12,6 @@ import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
 import { useTracksStore } from '../stores/tracks';
-import { useTrackRecordingStore } from '../stores/trackRecording';
-import { useIconStyleStore } from '../stores/iconStyle';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
@@ -66,8 +64,6 @@ const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
 const excursionsStore = useExcursionsStore();
 const tracksStore = useTracksStore();
-const _trackRecording = useTrackRecordingStore();
-const _iconStyle = useIconStyleStore();
 const isDesktop = useIsDesktop();
 
 const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
@@ -761,6 +757,7 @@ onUnmounted(() => {
                Popover-Muster (Backdrop + .picker-menu) wie die Kategorie-/Status-Filter unten statt
                eines neuen Tooltip-Mechanismus. -->
               <InfoPopover
+                class="header-info-popover"
                 :title="
                   groupMode === 'tours'
                     ? 'Was sind Touren?'
@@ -1819,7 +1816,7 @@ onUnmounted(() => {
     margin-left: 0;
   }
 
-  .header h2 .info-dropdown {
+  .header h2 .header-info-popover {
     order: 2;
     flex-shrink: 0;
   }
