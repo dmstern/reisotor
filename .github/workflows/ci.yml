@@ -1,6 +1,8 @@
 name: CI
 
 # PRs und Pushes: Unit-Tests, Build-Artefakte für E2E, sharded Playwright-Suite.
+# Reine Doku-/Screenshot-PRs (z. B. *.md, docs/**, release-notes/**) überspringen die schweren
+# Build- und Test-Jobs im PR automatisch (spart 20 E2E-Runner und Wartezeit).
 # Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish Release Asset" — packt
 # Frontend + Backend als reisotor-staging.tar.gz (main) bzw. reisotor-release.tar.gz (Release-Tag).
 # Der Rollout auf den Raspberry Pi passiert per Cronjob auf dem Server (README.md).
@@ -15,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -24,6 +27,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for code changes
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "Not a pull request. Running full suite."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch origin "${{ github.base_ref }}" --depth=1 || true
+
+          NON_DOC_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -v -E '(\.md$|^docs/|^release-notes/|^\.gitignore$|^\.prettierignore$|^LICENSE$|^\.claude/|^\.agents/|^\.jules/|^\.cursorrules$|^\.claudeignore$)' | grep -v '^$' || true)
+
+          if [ -n "$NON_DOC_FILES" ]; then
+            echo "Code or workflow changes detected:"
+            echo "$NON_DOC_FILES"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only documentation/screenshot files changed."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint-and-format:
     name: Lint & Format Check
     runs-on: ubuntu-latest
@@ -48,6 +84,8 @@ jobs:
 
   backend-unit-and-build:
     name: Backend (Unit Tests & Build)
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -76,6 +114,8 @@ jobs:
 
   frontend-unit-and-build:
     name: Frontend (Unit Tests & Build)
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -104,7 +144,8 @@ jobs:
 
   e2e-tests:
     name: E2E Tests (Shard ${{ matrix.shard }}/20)
-    needs: [lint-and-format, backend-unit-and-build, frontend-unit-and-build]
+    needs: [changes, lint-and-format, backend-unit-and-build, frontend-unit-and-build]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     # Playwrights offizielles Image bringt Chromium UND sämtliche System-Bibliotheken dafür schon
     # fertig mit - erspart bei jedem Lauf das (undgecachte, weil auf einer frischen Runner-VM
@@ -191,11 +232,15 @@ jobs:
   e2e-required:
     name: E2E Required
     if: always()
-    needs: [e2e-tests]
+    needs: [changes, e2e-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all E2E shards passed
         run: |
+          if [ "${{ needs.changes.result }}" = "success" ] && [ "${{ github.event_name == 'pull_request' && needs.changes.outputs.code != 'true' }}" = "true" ]; then
+            echo "Nur Dokumentation/Screenshots geändert – E2E-Tests übersprungen."
+            exit 0
+          fi
           if [ "${{ needs.e2e-tests.result }}" != "success" ]; then
             echo "One or more E2E shards did not pass."
             exit 1
