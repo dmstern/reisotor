@@ -307,6 +307,7 @@
   /* Dynamische UI-Größen für positionsabhängige Berechnungen (z.B. in TripMap.vue) */
   --drawer-tab-width: 32px;
 
+  --shadow-xs: 0 1px 3px rgba(43, 42, 40, 0.08);
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
   --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);
@@ -448,6 +449,7 @@
     --color-border-strong: #4a453c;
     --color-button-edge: rgba(0, 0, 0, 0.35);
 
+    --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
@@ -510,6 +512,7 @@
   --color-border-strong: #4a453c;
   --color-button-edge: rgba(0, 0, 0, 0.35);
 
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
@@ -566,6 +569,7 @@
   --color-calendar-appointment: #8a8a86;
   --color-calendar-appointment-tint: rgba(138, 138, 134, 0.1);
   --color-calendar-appointment-border: rgba(138, 138, 134, 0.35);
+  --shadow-xs: 0 1px 3px rgba(43, 42, 40, 0.08);
   --shadow-sm: 0 2px 6px rgba(43, 42, 40, 0.12);
   --shadow-md: 0 8px 24px rgba(43, 42, 40, 0.16);
   --shadow-lg: 0 16px 48px rgba(43, 42, 40, 0.22);

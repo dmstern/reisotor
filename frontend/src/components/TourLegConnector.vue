@@ -198,13 +198,13 @@ const emit = defineEmits<{
 .tour-leg-pill:focus-visible {
   transform: translateY(-2px);
   border-color: var(--tour-theme-color, var(--color-primary));
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .tour-leg-pill.is-horizontal-leg {
   flex-direction: column;
   gap: 2px;
-  padding: 8px 6px;
+  padding: var(--space-2) var(--space-1);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   width: 100%;
@@ -216,8 +216,8 @@ const emit = defineEmits<{
   flex-direction: row;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: 6px 14px;
-  border-radius: var(--radius-pill, 9999px);
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-pill);
   max-width: 90%;
   text-align: center;
 }
@@ -253,7 +253,7 @@ const emit = defineEmits<{
 .tour-leg-add-btn.is-horizontal-leg {
   flex-direction: column;
   gap: 3px;
-  padding: 8px 3px;
+  padding: var(--space-2) 3px;
   width: 100%;
   max-width: 68px;
   border-radius: var(--radius-md-squircle);
@@ -264,8 +264,8 @@ const emit = defineEmits<{
 .tour-leg-add-btn.is-row-break {
   flex-direction: row;
   gap: 6px;
-  padding: 5px 14px;
-  border-radius: var(--radius-pill, 9999px);
+  padding: 5px var(--space-3);
+  border-radius: var(--radius-pill);
 }
 
 .tour-leg-add-wrap {
@@ -279,13 +279,13 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
   line-height: 1;
   color: var(--tour-theme-color, var(--color-primary));
 }
 
 .leg-pill-type {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.15;
@@ -297,9 +297,9 @@ const emit = defineEmits<{
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  column-gap: 4px;
+  column-gap: var(--space-1);
   row-gap: 1px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   line-height: 1.15;
@@ -311,9 +311,17 @@ const emit = defineEmits<{
 }
 
 .leg-pill-cost {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   color: var(--tour-theme-color, var(--color-primary));
   line-height: 1.1;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-leg-pill,
+  .tour-leg-add-btn {
+    transition: none;
+  }
 }
 </style>

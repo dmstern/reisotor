@@ -185,7 +185,7 @@ const emit = defineEmits<{
   border-radius: 0;
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   flex-shrink: 0;
   white-space: nowrap;
@@ -206,7 +206,7 @@ const emit = defineEmits<{
 }
 
 .category-nav-label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .category-nav-underline {
@@ -221,5 +221,12 @@ const emit = defineEmits<{
     transform 0.2s ease,
     width 0.2s ease;
   pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-nav-wrap,
+  .category-nav-underline {
+    transition: none;
+  }
 }
 </style>

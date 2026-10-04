@@ -341,4 +341,11 @@ function creatorLabel(userId: number | null | undefined): string | null {
   width: 100%;
   max-width: 100%;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-station-line path,
+  .tour-station-line circle {
+    transition: none;
+  }
+}
 </style>

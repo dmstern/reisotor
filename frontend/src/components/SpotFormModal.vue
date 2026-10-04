@@ -657,7 +657,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   flex-direction: column;
   gap: var(--space-1);
   margin-top: var(--space-2);
-  margin-bottom: var(--space-4, 16px);
+  margin-bottom: var(--space-4);
 }
 
 .spot-side-header {
@@ -667,23 +667,17 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 }
 
 .spot-side-toggle {
-  width: 100%;
-}
-
-@media (min-width: 581px) {
-  .spot-side-toggle {
-    width: fit-content;
-    min-width: 280px;
-    max-width: 340px;
-    align-self: flex-start;
-  }
+  width: fit-content;
+  min-width: min(280px, 100%);
+  max-width: 340px;
+  align-self: flex-start;
 }
 
 .spot-side-label {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -750,9 +744,9 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 3px 6px 3px 10px;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   border: 1px solid;
   line-height: 1.2;
@@ -791,7 +785,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   line-height: 1;
   opacity: 0.85;
   transition:
@@ -836,7 +830,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   line-height: 1;
   opacity: 0.7;
   transition: opacity 0.15s ease;
@@ -855,7 +849,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 
 .hint.error {
   color: var(--color-danger);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -866,7 +860,14 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-accent-dark, var(--color-accent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assign-chip-done-toggle,
+  .assign-chip-remove {
+    transition: none;
+  }
 }
 </style>

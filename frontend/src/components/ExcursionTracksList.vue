@@ -194,7 +194,7 @@ function getTourForTrack(track: LocationTrack): Excursion | undefined {
 }
 
 .track-row:hover {
-  border-color: var(--color-primary-light, var(--color-border));
+  border-color: var(--color-border-strong);
 }
 
 .track-row.active {
@@ -339,9 +339,37 @@ function getTourForTrack(track: LocationTrack): Excursion | undefined {
 }
 
 .empty-subtext {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: block;
   margin-top: var(--space-1);
+}
+
+@container spots-col (max-width: 480px) {
+  .track-row {
+    padding: var(--space-2);
+    gap: var(--space-1);
+  }
+}
+
+@container spots-col (max-width: 320px) {
+  .track-meta-name {
+    display: none;
+  }
+}
+
+@container app-main (max-width: 719px) {
+  .track-meta-name {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording-pulse-dot {
+    animation: none;
+  }
+  .track-row {
+    transition: none;
+  }
 }
 </style>

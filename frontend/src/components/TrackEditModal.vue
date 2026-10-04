@@ -404,11 +404,11 @@ async function deleteEditingTrack() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 4px 10px;
+  padding: 4px var(--space-2);
   background: var(--color-primary-tint);
   color: var(--color-primary);
   border-radius: var(--radius-pill);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }
 
@@ -436,5 +436,11 @@ async function deleteEditingTrack() {
 
 .spacer {
   flex: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording-pulse-dot {
+    animation: none;
+  }
 }
 </style>

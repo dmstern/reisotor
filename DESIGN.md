@@ -269,8 +269,8 @@ Rundung wirkt inkonsistent zu den übrigen Elementen. Bei einer PR-Selbstprüfun
 
 ## Schatten
 
-`--shadow-sm`/`--shadow-md`, ebenfalls mit eigenen (dunkleren, undurchsichtigeren) Werten im Dark
-Mode. Für neue schwebende Elemente (Dropdowns, Tooltips, Cards mit Hebung) eine der beiden Stufen
+`--shadow-xs` (subtile Abhebung für kleine Pillen/Chips/Badges), `--shadow-sm`/`--shadow-md`, ebenfalls mit eigenen (dunkleren, undurchsichtigeren) Werten im Dark
+Mode. Für neue schwebende Elemente (Dropdowns, Tooltips, Cards mit Hebung) eine dieser Stufen
 verwenden statt eines eigenen `box-shadow`-Werts.
 
 Für frei schwebende Glas-Inseln und Navigationsleisten (`AppHeader.vue`s `.brand`, `.floating-island`,

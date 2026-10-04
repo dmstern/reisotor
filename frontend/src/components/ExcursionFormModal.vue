@@ -433,15 +433,16 @@ function trackDurationLabel(track: LocationTrack): string | null {
 
 .excursion-track-item {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  background: var(--color-surface);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
 
 .excursion-track-item:hover {
-  background: var(--color-bg-hover, var(--color-bg-secondary));
+  background: var(--color-hover);
 }
 
 .excursion-track-item.is-selected {
@@ -467,13 +468,13 @@ function trackDurationLabel(track: LocationTrack): string | null {
 }
 
 .excursion-track-name {
-  font-size: 0.9rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .excursion-track-meta {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
@@ -487,7 +488,7 @@ function trackDurationLabel(track: LocationTrack): string | null {
   gap: 3px;
   padding: 1px 6px;
   border-radius: var(--radius-pill);
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
 }
 
@@ -497,8 +498,14 @@ function trackDurationLabel(track: LocationTrack): string | null {
 }
 
 .empty-subtext {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .excursion-track-item {
+    transition: none;
+  }
 }
 </style>
