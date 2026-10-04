@@ -155,33 +155,36 @@ watch(
   background: var(--color-surface);
   border: 2px solid var(--color-primary);
   color: var(--color-primary-dark);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   overflow: hidden;
 
   /* Initial-Zustand Mobil: Runder Icon-Button */
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 2px;
   width: auto;
   max-width: 44px;
   height: 44px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
 
-  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition:
+    max-width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .focus-banner.is-expanded {
   max-width: calc(100% - 60px);
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 2px 14px 2px 2px;
+  padding: 2px var(--space-3) 2px 2px;
 }
 
 .focus-banner-toggle-btn {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: none;
   background: transparent;
   display: flex;
@@ -192,7 +195,7 @@ watch(
   color: var(--color-primary-dark);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
 }
 
 .focus-banner-toggle-btn:active {
@@ -202,10 +205,10 @@ watch(
 .focus-banner-thumb {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   object-fit: cover;
   display: block;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .focus-banner-content {
@@ -215,8 +218,8 @@ watch(
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 0.2s,
-    visibility 0.2s;
+    opacity var(--transition-fast),
+    visibility var(--transition-fast);
   white-space: nowrap;
 }
 
@@ -226,14 +229,14 @@ watch(
   transition-delay: 0.1s;
 }
 
-@media screen and (min-width: 1024px) {
+@container trip-map (min-width: 720px) {
   .focus-banner {
     top: calc(var(--app-header-height, 56px) + var(--space-4));
     left: calc(
       var(
           --spots-col-right-px,
           calc(
-            var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
+            var(--calendar-margin, var(--drawer-tab-width, 32px)) + var(--calendar-offset, 0px) +
               var(--spots-col-width, 400px) + var(--space-4)
           )
         ) +
@@ -243,16 +246,17 @@ watch(
     right: unset;
     width: auto;
     max-width: calc(100% - 60px);
-    border-radius: var(--radius-pill, 999px);
+    border-radius: var(--radius-pill);
     corner-shape: round;
-    padding: 2px 14px 2px 2px;
+    padding: 2px var(--space-3) 2px 2px;
     height: 44px;
   }
 
   :global(.karte.sheet-overlay-mode) .focus-banner,
   :global(.sheet-overlay-mode) .focus-banner {
     left: calc(
-      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) + var(--space-4)
+      var(--calendar-margin, var(--drawer-tab-width, 32px)) + var(--calendar-offset, 0px) +
+        var(--space-4)
     );
   }
 

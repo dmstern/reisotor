@@ -90,16 +90,17 @@ function dismissTrackError() {
   border: 2px solid var(--color-primary);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 6px 10px;
-  font-size: 0.85rem;
+  padding: 6px var(--space-2);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
   max-width: calc(100% - 60px);
 }
 
-@media screen and (min-width: 1024px) {
+@container trip-map (min-width: 720px) {
   .tile-download-pill {
-    bottom: var(--space-4);
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
     right: var(--space-4);
     top: unset;
     left: unset;

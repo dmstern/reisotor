@@ -577,12 +577,13 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
 <style scoped>
 /* Mobil (Default): die Karte füllt ihren Container (.map-col in ExcursionsView.vue, dort auf Mobil
-   position:fixed über den ganzen Bildschirm) randlos vollflächig aus, ähnlich Google Maps –
-   .karte selbst erzeugt dafür keine eigene Box mehr (display:contents), .map-wrap/.map übernehmen
-   direkt die volle Fläche ihres jetzt fixed-positionierten Großelternteils. Auf Desktop
-   (@container weiter unten) wird das komplett auf den bisherigen Stand zurückgesetzt. */
+   position:absolute über den ganzen Bildschirm) randlos vollflächig aus, ähnlich Google Maps –
+   .karte spannt als absoluter Container den trip-map Query-Container auf, damit alle untergeordneten
+   Karten-Tools, Badges und Controls stufenlos und unabhängig vom Viewport responsiv reagieren. */
 .karte {
-  display: contents;
+  position: absolute;
+  inset: 0;
+  container: trip-map / inline-size;
 }
 
 .map-wrap {
@@ -594,6 +595,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   --fit-btn-inset: var(--space-3);
   /* Berücksichtigt den schwebenden AppHeader auf Mobil (Karte ragt jetzt darunter) */
   --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-3));
+  --fit-btn-right-inset: var(--space-3);
   --fit-btn-step: calc(var(--fit-btn-size) + var(--fit-btn-gap));
   position: absolute;
   inset: 0;
@@ -604,14 +606,16 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   border-radius: 0;
   overflow: hidden;
   border: none;
+}
+
 /* Mobil (Default): schwebt als horizontal scrollbare Leiste über dem unteren Kartenrand (analog zu
-   .focus-spot-list oben, nur unten statt oben verankert). Auf Desktop (@media weiter unten)
+   .focus-spot-list oben, nur unten statt oben verankert). Auf Desktop (@container weiter unten)
    wieder normales Flow-Element unterhalb der Karte. */
 .day-strip {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
+  left: var(--space-2);
+  right: var(--space-2);
+  bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-2));
   z-index: 1000;
 }
 
@@ -630,9 +634,9 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
 .map-track-playback-container {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
+  left: var(--space-2);
+  right: var(--space-2);
+  bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-2));
   z-index: 1000;
 }
 
@@ -643,6 +647,28 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   bottom: auto;
   z-index: auto;
   margin-bottom: var(--space-3);
+}
+
+/* Im Sheet-Overlay-Modus (z. B. auf Mobil oder bei schmalem .app-main Container)
+   schwebt der Day-Strip bzw. Track-Playback oberhalb des Sheets mit sauberem Abstand */
+.karte.sheet-overlay-mode .day-strip {
+  left: calc(
+    var(--calendar-margin, var(--drawer-tab-width, 32px)) + var(--calendar-offset, 0px) +
+      var(--space-4)
+  );
+  right: var(--space-4);
+  margin: 0 auto;
+  max-width: min(400px, calc(100% - 140px));
+}
+
+.karte.sheet-overlay-mode .map-track-playback-container {
+  left: calc(
+    var(--calendar-margin, var(--drawer-tab-width, 32px)) + var(--calendar-offset, 0px) +
+      var(--space-4)
+  );
+  right: var(--space-4);
+  margin: 0 auto;
+  width: min(520px, calc(100% - var(--space-6)));
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
@@ -677,14 +703,13 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   border: 1px solid var(--color-border) !important;
   box-shadow: var(--shadow-sm) !important;
   border-radius: var(--radius-md-squircle) !important;
+  corner-shape: squircle;
   overflow: hidden;
   background-color: var(--color-surface) !important;
 }
 
-@media screen and (max-width: 1023px) {
-  :deep(.leaflet-control-zoom) {
-    display: none !important;
-  }
+:deep(.leaflet-control-zoom) {
+  display: none !important;
 }
 
 :deep(.leaflet-bar a) {
@@ -715,13 +740,16 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   top: calc(var(--app-header-height, 56px) + var(--space-3)) !important;
 }
 
-/* Desktop: Die Karte ist auf Desktop stets vollflächig über die gesamte Bildschirmbreite.
-   Die Kartenwerkzeuge (.fit-btn) und Zoom-Buttons nutzen auf Desktop größere Insets,
-   um unter dem schwebenden Header zu liegen.
+/* Desktop & breite Container: Die Kartenwerkzeuge (.fit-btn) und Zoom-Buttons nutzen auf breiten
+   Containern größere Insets, um unter dem schwebenden Header zu liegen.
    Die Zoom-Buttons sitzen rechts neben den Drawers: im Side-by-Side-Modus rechts neben beiden Drawers,
    im Sheet-Overlay-Modus (wenn z. B. der Kalender auf Zwischengrößen ausgeklappt ist) direkt rechts
    neben der Kalender-Schublade. */
-@media (min-width: 1024px) {
+@container trip-map (min-width: 720px) {
+  :deep(.leaflet-control-zoom) {
+    display: block !important;
+  }
+
   .map-wrap {
     --fit-btn-size: 44px;
     --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
@@ -747,17 +775,17 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
     margin: 0 auto;
     width: fit-content;
     max-width: min(400px, calc(100% - 140px));
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     corner-shape: round;
-    bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
   }
 
   .map-track-playback-container {
     left: var(--spots-col-right-px, 400px);
     right: 0;
     margin: 0 auto;
-    width: min(520px, calc(100% - var(--spots-col-right-px, 400px) - 48px));
-    bottom: calc(var(--navbar-bottom-offset, 0px) + 24px);
+    width: min(520px, calc(100% - var(--spots-col-right-px, 400px) - var(--space-6)));
+    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
   }
 }
 </style>
@@ -784,7 +812,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
 .leaflet-tooltip.map-marker-tooltip {
   font-family: var(--font-sans);
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text);
   background: var(--color-surface);
@@ -792,7 +820,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   pointer-events: none;
   white-space: nowrap;
 }
@@ -829,17 +857,17 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-top: 3px;
+  margin-top: var(--space-1);
   white-space: nowrap;
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   line-height: 1.3;
-  padding: 1px 5px;
-  border-radius: 999px;
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-pill);
   background: rgba(20, 20, 25, 0.88);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-sm);
   backdrop-filter: blur(4px);
   pointer-events: none;
   z-index: 10;

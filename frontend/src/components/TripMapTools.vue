@@ -292,19 +292,33 @@ const {
   top: var(--fit-btn-top-inset, var(--fit-btn-inset));
   right: var(--fit-btn-right-inset, var(--fit-btn-inset));
   z-index: 1000;
-  width: var(--fit-btn-size) !important;
-  height: var(--fit-btn-size) !important;
-  min-width: var(--fit-btn-size) !important;
-  min-height: var(--fit-btn-size) !important;
+  width: var(--fit-btn-size);
+  height: var(--fit-btn-size);
+  min-width: var(--fit-btn-size);
+  min-height: var(--fit-btn-size);
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   corner-shape: round;
   background: var(--color-surface);
-  border: 2px solid rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
   color: var(--color-text);
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   line-height: 1;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.fit-btn:hover:not(:disabled) {
+  background: var(--color-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .fit-btn:disabled {
@@ -331,7 +345,13 @@ const {
 .share-location-btn.active,
 .record-btn.active {
   background: var(--color-primary);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-contrast, #ffffff);
+}
+
+.share-location-btn.active:hover:not(:disabled),
+.record-btn.active:hover:not(:disabled) {
+  background: var(--color-primary-dark);
 }
 
 .picker-item-emoji {
@@ -354,16 +374,16 @@ const {
   position: absolute;
   bottom: -2px;
   right: -2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
   background: var(--color-success);
   border: 2px solid var(--color-surface);
 }
 
-@media (min-width: 1024px) {
+@container trip-map (min-width: 720px) {
   .fit-btn {
-    font-size: 1.2rem;
+    font-size: var(--font-size-lg);
   }
 }
 </style>
