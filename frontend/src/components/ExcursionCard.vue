@@ -35,7 +35,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { computePopoverPosition } from '../utils/popoverPosition';
-import { TRAVEL_ROLE_META } from '../utils/travelRole';
+import { TOUR_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, tourTotalDurationMinutes } from '../utils/travelDuration';
 
@@ -138,6 +138,11 @@ watch(
 const statusDateLabel = computed(() =>
   props.excursion.date ? formatDate(props.excursion.date) : ''
 );
+
+// Einheitliche Metadaten für das Tour-Badge (Ausflug vs. Anreise/Abreise/Weiterreise)
+const tourRoleMeta = computed(() => {
+  return (props.excursion.role && TOUR_ROLE_META[props.excursion.role]) || TOUR_ROLE_META.excursion;
+});
 
 // #176: Anreise/Abreise/Weiterreise (ehemalige Reise-Etappe) - dieselbe Card wie eine normale Tour,
 // mit zusätzlicher Rollen-/Route-/Dauer-Anzeige (übernommen aus der früheren TravelView.vue).
@@ -407,26 +412,9 @@ function onSpotDrop(event: DragEvent) {
           </div>
 
           <div class="card-badge-group">
-            <Badge v-if="excursion.role" variant="primary" class="role-badge">
-              <AppIcon
-                :icon="TRAVEL_ROLE_META[excursion.role].tabler"
-                :size="14"
-                group="categories"
-              />
-              {{ TRAVEL_ROLE_META[excursion.role].label }}
-            </Badge>
-            <Badge
-              v-else
-              variant="custom"
-              class="tour-type-badge"
-              title="Ausflug"
-              style="
-                --badge-bg: var(--excursion-theme-tint);
-                --badge-color: var(--excursion-theme-color);
-                --badge-border: var(--excursion-theme-border);
-              "
-            >
-              <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="12" group="categories" /> Ausflug
+            <Badge variant="custom" class="tour-type-badge" :title="tourRoleMeta.label">
+              <AppIcon :icon="tourRoleMeta.tabler" :size="14" group="categories" />
+              {{ tourRoleMeta.label }}
             </Badge>
             <PendingSyncBadge v-if="excursion._pending" />
             <Transition name="fade">
@@ -800,8 +788,9 @@ function onSpotDrop(event: DragEvent) {
 
 .tour-type-badge {
   flex-shrink: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  --badge-bg: var(--excursion-theme-tint);
+  --badge-color: var(--excursion-theme-color);
+  --badge-border: var(--excursion-theme-border);
 }
 
 .tour-placeholder {
@@ -1160,11 +1149,6 @@ function onSpotDrop(event: DragEvent) {
 .note.is-clamped :deep(p + p::before),
 .note.is-clamped :deep(div + div::before) {
   content: ' ';
-}
-
-.role-badge {
-  flex-shrink: 0;
-  margin-left: auto;
 }
 
 .route {
