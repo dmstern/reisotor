@@ -275,7 +275,7 @@ function resetColor() {
   margin: 0;
 }
 
-@media (max-width: 420px) {
+@container app-main (max-width: 420px) {
   .card-reset-btn-label {
     display: none;
   }

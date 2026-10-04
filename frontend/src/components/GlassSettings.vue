@@ -365,7 +365,7 @@ const previewStyle = computed(() => {
 .preview-pill-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -388,7 +388,7 @@ const previewStyle = computed(() => {
   margin: 0;
 }
 
-@media (max-width: 420px) {
+@container app-main (max-width: 420px) {
   .card-reset-btn-label {
     display: none;
   }
