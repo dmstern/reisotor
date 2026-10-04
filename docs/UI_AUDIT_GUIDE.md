@@ -4,19 +4,23 @@ Dieses Dokument beschreibt das Vorgehen für UI-, Layout- und Container-Query-Au
 
 ---
 
-## Der 2-Stufen-Workflow für View-Audits
+## Der 3-Phasen-Workflow für View- & Komponenten-Audits
 
-Bei der Überarbeitung oder Überprüfung einer View gilt das Prinzip: **Erst Code & Architektur, dann Layout & Browser-Stresstest.**
+Bei der Überarbeitung oder Überprüfung einer View bzw. Komponente gilt das Prinzip: **Erst Architektur & Struktur (Zero Visual Change), dann Design-System & Tokens, dann Layout & Browser-Stresstest.** Konkrete Prompt-Vorlagen für einzelne Views finden sich in [`docs/AUDIT_PROMPTS.md`](AUDIT_PROMPTS.md).
 
-1. **Stufe 1: Design-System & Clean Code (`Prompt 1` in `AUDIT_PROMPTS.md`)**
-   - Monolithische Views (> 300–400 Zeilen) nach Single Responsibility (SRP) in fokussierte Unterkomponenten zerschneiden.
+1. **Phase 1: Architektur- & SRP-Refactoring (`Phase 1` in `AUDIT_PROMPTS.md`)**
+   - Monolithische Komponenten (> 300–400 Zeilen) nach Single Responsibility (SRP) in fokussierte Unterkomponenten zerschneiden.
+   - Geschäfts- und Filterlogik aus `<script setup>` in Composables extrahieren.
+   - _Zero Visual Change:_ Keine Styles, Farben oder Abstände anfassen. DOM bleibt visuell 1:1 identisch.
+2. **Phase 2: Design-System & Tokens (`Phase 2` in `AUDIT_PROMPTS.md`)**
    - Harte Pixelwerte durch Design-Tokens (`--space-*`, `--color-*`) aus `style.css` ersetzen.
    - UI-Primitives (`Button`, `Card`, `Badge` etc.) wiederverwenden bzw. extrahieren.
-2. **Stufe 2: Layout- & Adversarial-Audit (`Prompt 2` in `AUDIT_PROMPTS.md`)**
+   - Redundante CSS-Kopien zwischen Kindkomponenten eliminieren.
+3. **Phase 3: Gezielter Layout- & Adversarial-Audit (`Phase 3` in `AUDIT_PROMPTS.md`)**
    - Die bereinigte View mit `e2e/tests/scratch/audit-template.spec.ts` im Browser stress-testen.
    - 3-Viewport-Matrix, Drawer-Engezustände und Overflows defensiv absichern.
 
-Vor Releases oder Meilensteinen erfolgt die ganzheitliche Prüfung aller Bereiche via Subagents (**Stufe 3: Pre-Release-Audit**, `Prompt 3` in `AUDIT_PROMPTS.md`).
+Vor Releases oder Meilensteinen erfolgt die ganzheitliche Prüfung aller Bereiche via Subagents (**Pre-Release-Gesamt-Audit**, siehe unten).
 
 ---
 
@@ -34,7 +38,7 @@ Reisotor besitzt ein spezialisiertes E2E-Layout-Audit-System (`e2e/tests/scratch
      - **Team 2 (Spots & Touren):** `/trip/1/spots`, `/trip/1/excursions`
      - **Team 3 (Listen & Content):** `/trip/1/packing`, `/trip/1/todo`, `/trip/1/diary`
      - **Team 4 (Finanzen & Auth/Settings):** `/trip/1/budget`, `/settings`, `/profile`, `/login`
-   - Jedes Team führt `AUDIT_ROUTE=<route> npm run test:audit` aus. Erstelle einen konsolidierten Audit-Report (Details siehe `docs/AUDIT_PROMPTS.md`).
+   - Jedes Team führt `AUDIT_ROUTE=<route> npm run test:audit` aus. Erstelle einen konsolidierten Audit-Report (Details und Prompt-Vorlage siehe unten).
 
 ---
 
@@ -87,3 +91,26 @@ Klassische funktionale E2E- und Unit-Tests sind visuell blind: `expect(btn).toBe
 3. **Mikro-Ebene: Storybook Stress-Fixtures**:
    - `frontend/src/stories/stressFixtures.ts`: Standardisierte Stresstests (extrem langes deutsches Kompositum `STRESS_STRINGS.longWord`, Fließtext, Sonderzeichen und rote gestrichelte Begrenzungsrahmen `STRESS_CONTAINERS.narrow` / `ultraNarrow`).
    - Ermöglicht das visuelle Testen einzelner Komponenten im isolierten Zustand (`npm --prefix frontend run storybook`).
+
+---
+
+## Pre-Release-Gesamt-Audit (Orchestrierung & Team-Prompt)
+
+Vor großen Releases oder Meilensteinen (z. B. Reisotor 2.0) erfolgt die ganzheitliche Prüfung aller Bereiche der App via paralleler Subagent-Teams (Divide & Conquer). Kopiere diesen Prompt bei Bedarf:
+
+```text
+/teamwork-preview Wir bereiten das Release vor. Führe ein vollständiges, strukturiertes UI- und Layout-Audit durch.
+
+Vorgehensweise:
+1. Teile die Anwendung in 4 parallele Subagents auf:
+   - Team 1: Dashboard, Header, Navbar & Trip-Verwaltung (/trip/1, /trips)
+   - Team 2: Spots, Touren & Kartenansichten (/trip/1/spots, /trip/1/excursions)
+   - Team 3: Listen, Packliste, ToDo, Einkauf & Tagebuch (/trip/1/packing, /trip/1/todo, /trip/1/diary)
+   - Team 4: Budget, Einstellungen, Profil & Auth (/trip/1/budget, /settings, /login)
+2. Jeder Subagent nutzt e2e/tests/scratch/audit-template.spec.ts für seine Routen:
+   - 320x568 (narrowMobile), 390x844 (mobile), 1080x900 (narrowDesktop) und 1280x800 (desktop)
+   - Schubladen-Matrix (Desktop mit offener und geschlossener Schublade)
+   - expectNoHorizontalOverflow(page)
+   - Touch-Targets und Stacking Contexts
+3. Führe die Ergebnisse in einem gemeinsamen Audit-Report zusammen und behebe gefundene Layout-Fehler.
+```
