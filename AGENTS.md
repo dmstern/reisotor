@@ -18,7 +18,7 @@ Arbeits-/Workflow-Konventionen.
 
 Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.json`](package.json) (`npm run dev`, `test`, `build`, `typecheck`, `lint`, `format`, `seed` etc.). Bei Bedarf direkt in `package.json` nachschlagen.
 
-- **Einzelne Tests ausführen (strikte Pflicht für Agenten):** `npx -y vitest run <pfad-zur-datei> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1` (Backend/Frontend) oder `npx -y playwright test <pfad-zur-spec>` (E2E). Niemals gesamte Test-Suiten im Chat ausführen.
+- **Einzelne Tests ausführen (strikte Pflicht für Agenten):** Backend: `npx -y vitest run backend/test/<pfad> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1`; Frontend: `npm --prefix frontend test -- <pfad> --bail 1`; E2E: `npx -y playwright test <pfad-zur-spec>`. Niemals gesamte Test-Suiten im Chat ausführen.
 - **Voraussetzungen:** Node.js 20+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md`.
 
 ## Parallele Sessions & Worktree-Disziplin (Konfliktvermeidung & Clean Exit)
@@ -118,7 +118,7 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
      > 💡 **Tipp zur Token-Ersparnis:** Diese Aufgabe ist abgeschlossen. Bitte starte für das nächste Thema einen neuen Chat, um unnötigen Kontext-Ballast und Token-Kosten zu vermeiden.
 2. **Keine unfiltrierten Voll-Testsuiten im Chat:**
    - **NIEMALS** im Agenten-Chat `npm test`, `npm run test:all`, `npm run test:frontend` oder `npm run test:backend` ausführen, wenn nur einzelne Dateien oder Komponenten geändert wurden. Das flutet den Gesprächsverlauf mit hunderten Zeilen unnötigem Reporter-Output.
-   - **Immer gezielt testen:** Ausschließlich die betroffene Datei mit `--bail 1` aufrufen: `npx -y vitest run <pfad-zur-datei> --bail 1`.
+   - **Immer gezielt testen:** Ausschließlich die betroffene Datei mit `--bail 1` aufrufen: Backend: `npx -y vitest run <backend-pfad> --bail 1`, Frontend: `npm --prefix frontend test -- <frontend-pfad> --bail 1`.
    - Bei E2E: Ausschließlich die konkrete Spec ansteuern: `npx -y playwright test <spec>`.
 3. **Kompakte Terminal-Outputs & Paging-Vermeidung:**
    - Diffs immer zuerst mit `git diff --stat` prüfen statt riesige Diffs in voller Länge in den Chat zu kippen.

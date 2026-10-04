@@ -52,6 +52,7 @@ Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altla
 2. State & Fachlogik in Composables extrahieren:
    - Lagere zusammenhängende Geschäfts-, Berechnungs-, Filter- oder Sortierlogik in neue, fokussierte Composables unter frontend/src/composables/ (z. B. useSettingsForm.ts, useTripPermissions.ts) oder Pinia-Stores aus.
    - Vermeide riesige "Sammelbecken"-Composables: Schneide Logik gezielt nach fachlichen Domänen (z. B. useUserManagement.ts, usePushSettings.ts).
+   - Formular- & Modal-State entkoppeln: Vermeide übergroße "Super-Form"-Composables, die Add- UND Edit-Logik samt Drafts in ein einziges 300+-Zeilen-Objekt stopfen. Trenne Formulare nach Verwendungszweck (z. B. useAddExpenseForm vs. useEditExpenseForm) oder bereite den State so vor, dass Modals ihren lokalen Form-Lifecycle in Phase 2 selbst instanziieren können, anstatt monströse State-Objekte durch die Haupt-View zu schleusen.
    - Definiere klare TypeScript-Interfaces für Optionen und Rückgabewerte.
    - Halte das <script setup> der Hauptkomponente schlank: Es dient nur noch der Orchestrierung und Bereitstellung der Daten.
 
@@ -60,7 +61,7 @@ Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altla
    - Ändere keine CSS-Klassen oder Styles.
 
 4. Verifikation & Qualitätssicherung:
-   - Führe npm run typecheck und betroffene Unit-Tests aus (npx -y vitest run <testdatei> --bail 1).
+   - Führe npm run typecheck und betroffene Unit-Tests aus (Backend: npx -y vitest run <testdatei> --bail 1, Frontend: npm --prefix frontend test -- <testdatei> --bail 1).
    - Formatiere alle geänderten und neu erstellten Dateien (npx -y prettier --write <datei>).
    - Fasse transparent zusammen: Welche Composables wurden erstellt, wie viel Dead Code wurde gelöscht und um wie viele Zeilen ist das <script setup> geschrumpft?
    - Hinweis: Nach erfolgreichem Review folgt Phase 2 (UI-Dekomposition & Deduplizierung).
@@ -89,6 +90,7 @@ Der Script-State ist bereits sauber entflochten. Nun wird das <template> modular
 3. Subkomponenten & Dialoge schnüren:
    - Kapsele große Modals, Drawers oder eigenständige Abschnitte in neue Kindkomponenten unter frontend/src/components/...
    - Nutze saubere TypeScript defineProps<{...}>() und defineEmits<{...}>(). Da der State in Phase 1 modularisiert wurde, binde Subkomponenten entweder direkt an das passende Composable an oder übergebe minimale, fokussierte Props.
+   - Vermeide monolithisches Prop-Drilling ganzer Composable-Return-Typen (z. B. props.form: ReturnType<typeof useForm>) und Destrukturierungen in <script setup>, die Reaktivität gefährden. Modals/Drawers mit isoliertem Formular-Lifecycle sollten ihr Composable bevorzugt direkt selbst instanziieren.
 
 4. Lokalisierung & Refinement von State und Assets:
    - Sobald Subkomponenten stehen: Prüfe, ob in Phase 1 erstellte Composables, Helper oder Icon-Definitionen, die ausschließlich in einer einzigen Subkomponente benötigt werden, direkt dorthin umgezogen oder feiner aufgeteilt werden können (z. B. tab-spezifische Reset-Logik direkt im Tab halten; Sektions-Icons direkt in der Subkomponente instanziieren statt im globalen Tab-Composable).
@@ -96,6 +98,7 @@ Der Script-State ist bereits sauber entflochten. Nun wird das <template> modular
 
 5. Verifikation & Qualitätssicherung:
    - Führe npm run typecheck und betroffene Tests aus.
+   - Schreibe gezielte Unit-Tests (frontend/src/components/<Name>.test.ts) für neue, deduplizierte Kernkomponenten (insbesondere Toolbars, Formularfeld-Gruppen oder Dropdowns) und führe sie isoliert aus (npm --prefix frontend test -- <testdatei>).
    - Formatiere alle geänderten Dateien (npx -y prettier --write <datei>).
    - Fasse transparent zusammen: Welche Subkomponenten wurden extrahiert, welche Primitives wurden wiederverwendet und welche Redundanzen wurden eliminiert?
    - Hinweis: Nach erfolgreichem Review folgt Phase 3 (Design-Tokens & Layout-Härtung).
@@ -113,8 +116,9 @@ Führe Phase 3 (Design-Tokens & Layout-Härtung) für [KOMPONENTE / VIEW, z. B. 
 Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Stresstest durch:
 
 1. Design-Tokens & CSS-Bereinigung:
-   - Keine freien Pixelwerte oder Ad-hoc-Farben: Ersetze lokale Werte konsequent durch --space-*, --text-*, --radius-* und --color-*-Tokens aus style.css.
+   - Keine freien Pixelwerte oder Ad-hoc-Farben: Ersetze lokale Werte konsequent durch --space-*, --font-size-*, --radius-* und --color-*-Tokens aus style.css.
    - Eckenrundungen (Squircle vs. Kreisbogen), Typografie und Schatten (--shadow-sm/--shadow-md) strikt gemäß DESIGN.md vereinheitlichen.
+   - Additive Token-Ergänzungen in style.css: Fehlt für kleine UI-Elemente (z. B. Sub-Badges, Kalender-Pillen, Metatags) ein kleinerer Radius- oder Abstandswert im Design-System, darf dieser additiv in style.css ergänzt werden (z. B. --radius-xs: 6px; und --radius-xs-squircle inklusive Squircle-Feature-Query), anstatt unsaubere Ad-hoc-Pixelwerte im Komponenten-Style zu belassen.
    - Beseitige CSS-Hacks früherer Agenten (!important, negative Margins, willkürliche Z-Indizes) durch sauberes Flexbox/Grid.
 
 2. Container-Queries & Enge-Resilienz (Ersetzen statt Duplizieren):
