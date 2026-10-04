@@ -76,7 +76,7 @@ li {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 0;
+  padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -85,11 +85,14 @@ li:last-child {
 }
 
 .nav-config-icon {
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
 }
 
 .nav-config-label {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .nav-config-label.hidden {
@@ -100,12 +103,14 @@ li:last-child {
 .nav-config-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .nav-config-visible {
   display: flex;
   align-items: center;
   margin-left: var(--space-2);
+  flex-shrink: 0;
 }
 </style>

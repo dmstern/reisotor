@@ -128,17 +128,19 @@ const showPwaInstallDialog = ref(false);
 h2:has(.app-icon) {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
+  min-width: 0;
+  word-break: break-word;
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   margin: var(--space-4) 0 var(--space-3) 0;
 }
 
 .hint {
   margin: 0 0 var(--space-3);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.intro-hint {
@@ -148,9 +150,9 @@ h3 {
 .build-info-list {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 4px var(--space-3);
+  gap: var(--space-1) var(--space-3);
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .build-info-list dt {
@@ -159,16 +161,18 @@ h3 {
 
 .build-info-list dd {
   margin: 0;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .changelog-notes :deep(h4) {
   margin-top: var(--space-3);
   margin-bottom: var(--space-1);
   color: var(--color-primary);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   border-bottom: 1px solid var(--color-border);
-  padding-bottom: 2px;
+  padding-bottom: var(--space-1);
 }
 
 .changelog-notes :deep(h4:first-child) {

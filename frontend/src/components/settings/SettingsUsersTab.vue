@@ -121,7 +121,7 @@ onMounted(() => {
 
 .hint {
   margin: 0 0 var(--space-3);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.error {
@@ -135,7 +135,7 @@ onMounted(() => {
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .users-table th {
@@ -144,7 +144,7 @@ onMounted(() => {
   border-bottom: 2px solid var(--color-border);
   color: var(--color-text-muted);
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -163,7 +163,8 @@ onMounted(() => {
 }
 
 .user-avatar {
-  font-size: 1.2rem;
+  font-size: var(--font-size-xl);
+  flex-shrink: 0;
 }
 
 .email-cell {
@@ -177,6 +178,8 @@ onMounted(() => {
 .user-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 </style>

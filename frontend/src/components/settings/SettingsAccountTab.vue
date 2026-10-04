@@ -236,6 +236,16 @@ onMounted(() => {
   margin-bottom: var(--space-4);
 }
 
+@container app-main (max-width: 600px) {
+  .account-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .logout-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
 @media (max-width: 600px) {
   .account-header {
     flex-direction: column;
@@ -251,6 +261,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .name-and-status {
@@ -258,19 +269,22 @@ onMounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .name-and-status h2 {
   margin: 0;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.8rem;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -278,9 +292,9 @@ onMounted(() => {
 
 .status-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
 }
 
 .status-badge.online .status-dot {
@@ -298,12 +312,13 @@ onMounted(() => {
     transparent 180deg
   );
   animation: spin 1s linear infinite;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
 }
 
 .offline-description,
 .pending-description {
   margin: 0;
+  width: 100%;
   max-width: 350px;
   line-height: 1.4;
 }
@@ -329,6 +344,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  width: 100%;
   max-width: 360px;
 }
 
@@ -343,14 +359,14 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .field label {
   display: inline-flex;
   align-items: center;
   flex-direction: row;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .required-indicator {
@@ -359,13 +375,13 @@ onMounted(() => {
 
 .hint {
   margin: 0 0 var(--space-3);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.success {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   color: var(--color-success);
 }
 
@@ -374,7 +390,7 @@ onMounted(() => {
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   margin: var(--space-4) 0 var(--space-3) 0;
 }
 
@@ -382,7 +398,7 @@ h3 {
   max-height: 220px;
   overflow-y: auto;
   margin-top: var(--space-2);
-  padding-right: 4px;
+  padding-right: var(--space-1);
 }
 
 .emoji-category + .emoji-category {
@@ -391,7 +407,7 @@ h3 {
 
 .emoji-category-label {
   margin: var(--space-3) 0 var(--space-2);
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;

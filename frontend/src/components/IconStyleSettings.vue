@@ -303,6 +303,11 @@ const isDefault = computed(() => {
   margin: 0;
 }
 
+@container app-main (max-width: 420px) {
+  .card-reset-btn-label {
+    display: none;
+  }
+}
 @media (max-width: 420px) {
   .card-reset-btn-label {
     display: none;

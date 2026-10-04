@@ -65,24 +65,20 @@ onMounted(() => {
         ausschalten - der dauerhafte Offline-/Update-Hinweis oben im Header bleibt davon unberührt.
       </p>
       <CheckboxCard
-        id="auto-id-1788301175449-31"
+        id="settings-activity-toasts-toggle"
         v-model="uiSettings.showActivityToasts"
         label="Detaillierte Lade-/Speicher-Meldungen anzeigen"
         description="Schaltet die kurzen Toast-Meldungen am Bildschirmrand bei Lade- und Speichervorgängen ein oder aus."
       />
-      <label
-        for="auto-id-1788301175449-32"
-        class="weather-provider-label"
-        style="margin-top: var(--space-4)"
-      >
+      <label for="settings-toast-timeout-select" class="toast-timeout-label">
         Anzeigedauer von Toast-Benachrichtigungen
-        <Select id="auto-id-1788301175449-32" v-model.number="uiSettings.toastTimeout">
+        <Select id="settings-toast-timeout-select" v-model.number="uiSettings.toastTimeout">
           <option v-for="option in TOAST_TIMEOUT_OPTIONS" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
         </Select>
       </label>
-      <div style="margin-top: var(--space-4)">
+      <div class="update-dialogs-wrap">
         <CheckboxCard
           id="show-update-dialogs"
           v-model="uiSettings.showUpdateDialogs"
@@ -171,18 +167,24 @@ onMounted(() => {
   margin-bottom: var(--space-4);
 }
 
-.weather-provider-label {
+.toast-timeout-label {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  width: 100%;
   max-width: 320px;
+  margin-top: var(--space-4);
+}
+
+.update-dialogs-wrap {
+  margin-top: var(--space-4);
 }
 
 .hint {
   margin: 0 0 var(--space-3);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.intro-hint {
@@ -198,7 +200,7 @@ onMounted(() => {
 }
 
 .push-details-caret {
-  margin-left: 4px;
+  margin-left: var(--space-1);
   opacity: 0.6;
   transition: transform 0.15s ease;
 }
@@ -213,14 +215,14 @@ onMounted(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .push-domain-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 0;
+  padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -229,16 +231,20 @@ onMounted(() => {
 }
 
 .nav-config-icon {
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
 }
 
 .nav-config-label {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .nav-config-visible {
   display: flex;
   align-items: center;
   margin-left: var(--space-2);
+  flex-shrink: 0;
 }
 </style>

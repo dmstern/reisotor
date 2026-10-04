@@ -48,17 +48,17 @@ const {
         Wochenanfang und Zahlenformat für Datumsanzeigen in der ganzen App.
       </p>
       <div class="nav-position-row">
-        <label for="auto-id-1788301151989-34">
+        <label for="calendar-week-start-select">
           Wochenanfang
-          <Select id="auto-id-1788301151989-34" v-model="calendarSettings.weekStart">
+          <Select id="calendar-week-start-select" v-model="calendarSettings.weekStart">
             <option v-for="option in WEEK_START_OPTIONS" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </Select>
         </label>
-        <label for="auto-id-1788301151989-35">
+        <label for="calendar-date-format-select">
           Datumsformat
-          <Select id="auto-id-1788301151989-35" v-model="calendarSettings.dateFormat">
+          <Select id="calendar-date-format-select" v-model="calendarSettings.dateFormat">
             <option v-for="option in DATE_FORMAT_OPTIONS" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
@@ -87,7 +87,7 @@ const {
         Einstellungen des jeweiligen Urlaubs festgelegt.
       </p>
       <CheckboxCard
-        id="auto-id-1788301175449-30"
+        id="settings-home-weather-full-trip-toggle"
         v-model="uiSettings.showHomeWeatherFullTrip"
         label="Wetter zuhause für den ganzen Urlaub zeigen"
         description="Blendet die Heimtwetter-Kachel permanent während des gesamten Urlaubs ein (statt erst gegen Ende der Reise)."
@@ -110,9 +110,9 @@ const {
         Wird im Dashboard genutzt, um bei Urlauben mit abweichender Landeswährung den aktuellen
         Wechselkurs anzuzeigen.
       </p>
-      <label for="auto-id-1788301151989-38" class="weather-provider-label">
+      <label for="settings-home-currency-select" class="weather-provider-label">
         Heimatwährung
-        <Select id="auto-id-1788301151989-38" v-model="homeCurrency.currency">
+        <Select id="settings-home-currency-select" v-model="homeCurrency.currency">
           <option v-for="option in HOME_CURRENCY_OPTIONS" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
@@ -143,9 +143,11 @@ const {
 .nav-position-row label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
 .weather-provider-label {
@@ -153,13 +155,14 @@ const {
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  width: 100%;
   max-width: 320px;
 }
 
 .hint {
   margin: 0 0 var(--space-3);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.intro-hint {

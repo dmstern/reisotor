@@ -194,7 +194,7 @@ const {
         Passe das Verhalten des Hinweises im Dashboard-Header während eines laufenden Urlaubs an.
       </p>
       <CheckboxCard
-        id="auto-id-1788301175449-29"
+        id="settings-vacation-countdown-toggle"
         v-model="uiSettings.showVacationCountdown"
         label="Verbleibende Urlaubstage anzeigen statt festem Hinweis"
         description="Zählt die verbleibenden Tage im Dashboard-Header herunter (z. B. 'Noch 3 Tage Urlaub!'), anstatt eines statischen Grußtextes."
@@ -243,7 +243,7 @@ const {
 
 .hint {
   margin: 0 0 var(--space-3);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.nav-config-hint {
@@ -263,7 +263,7 @@ const {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .mobile-nav-toggle-wrapper {
@@ -304,6 +304,8 @@ const {
 
 .factory-reset-title-row h2 {
   margin: 0;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .factory-reset-hint {
@@ -315,6 +317,23 @@ const {
   flex-shrink: 0;
 }
 
+@container app-main (max-width: 640px) {
+  .factory-reset-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .factory-reset-action {
+    width: 100%;
+  }
+
+  .factory-reset-action :deep(.btn),
+  .factory-reset-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
 @media (max-width: 640px) {
   .factory-reset-inner {
     flex-direction: column;

@@ -53,7 +53,7 @@ const { exporting, exportError, exportBackup } = useBackupExport();
 
 .hint {
   margin: 0 0 var(--space-3);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.error {
