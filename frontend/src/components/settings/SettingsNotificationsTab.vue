@@ -141,9 +141,9 @@ onMounted(() => {
           </Button>
           <ul v-if="showPushDetails" class="push-domain-list">
             <li v-for="domain in NOTIFICATION_DOMAINS" :key="domain" class="push-domain-row">
-              <span class="nav-config-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
-              <span class="nav-config-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
-              <label :for="'push-domain-' + domain" class="nav-config-visible">
+              <span class="push-domain-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
+              <span class="push-domain-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
+              <label :for="'push-domain-' + domain" class="push-domain-visible">
                 <Checkbox
                   :id="'push-domain-' + domain"
                   :checked="notificationPrefs.preferences?.[domain] ?? true"
@@ -230,18 +230,18 @@ onMounted(() => {
   border-bottom: none;
 }
 
-.nav-config-icon {
+.push-domain-icon {
   font-size: var(--font-size-lg);
   flex-shrink: 0;
 }
 
-.nav-config-label {
+.push-domain-label {
   flex: 1;
   min-width: 0;
   overflow-wrap: break-word;
 }
 
-.nav-config-visible {
+.push-domain-visible {
   display: flex;
   align-items: center;
   margin-left: var(--space-2);

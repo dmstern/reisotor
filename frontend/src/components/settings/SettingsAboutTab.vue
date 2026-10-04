@@ -9,8 +9,12 @@ import FeedbackDialog from '../FeedbackDialog.vue';
 import PwaInstallDialog from '../PwaInstallDialog.vue';
 import { useAboutInfo } from '../../composables/useAboutInfo';
 import { usePwaInstallStore } from '../../stores/pwaInstall';
+import { IconBug, IconInfoSquareRounded } from '@tabler/icons-vue';
+import type { IconDef } from '../../utils/icon';
 import { ACTION_ICONS } from '../../utils/actionIcons';
-import { FEEDBACK_ICON, INFO_ICON } from '../../composables/useSettingsTabs';
+
+const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
+const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
 
 const pwaInstall = usePwaInstallStore();
 const {

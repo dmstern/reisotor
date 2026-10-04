@@ -12,12 +12,15 @@ import DiaryFontSettings from '../DiaryFontSettings.vue';
 import AppIcon from '../AppIcon.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import ReorderableConfigItem from './ReorderableConfigItem.vue';
+import { IconPuzzle } from '@tabler/icons-vue';
+import type { IconDef } from '../../utils/icon';
 import { useNavConfigStore } from '../../stores/navConfig';
 import { useDashboardConfigStore } from '../../stores/dashboardConfig';
 import { useUiSettingsStore } from '../../stores/uiSettings';
 import { useAppSettingsReset } from '../../composables/useAppSettingsReset';
-import { DASHBOARD_TILES_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
+
+const DASHBOARD_TILES_ICON: IconDef = { id: 'puzzle', emoji: '🧩', outline: IconPuzzle };
 
 const navConfig = useNavConfigStore();
 const dashboardConfig = useDashboardConfigStore();
@@ -318,23 +321,6 @@ const {
 }
 
 @container app-main (max-width: 640px) {
-  .factory-reset-inner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-3);
-  }
-
-  .factory-reset-action {
-    width: 100%;
-  }
-
-  .factory-reset-action :deep(.btn),
-  .factory-reset-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-@media (max-width: 640px) {
   .factory-reset-inner {
     flex-direction: column;
     align-items: stretch;

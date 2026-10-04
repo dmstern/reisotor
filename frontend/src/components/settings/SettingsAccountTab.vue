@@ -246,16 +246,6 @@ onMounted(() => {
     justify-content: center;
   }
 }
-@media (max-width: 600px) {
-  .account-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .logout-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
 
 .user-info {
   display: flex;

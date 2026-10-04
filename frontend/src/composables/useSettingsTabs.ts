@@ -12,10 +12,6 @@ import {
   IconDatabaseFilled,
   IconInfoCircle,
   IconInfoCircleFilled,
-  IconPuzzle,
-  IconCloud,
-  IconBug,
-  IconInfoSquareRounded,
 } from '@tabler/icons-vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
@@ -26,10 +22,6 @@ export const BELL_ICON: IconDef = {
   outline: IconBell,
   filled: IconBellFilled,
 };
-export const DASHBOARD_TILES_ICON: IconDef = { id: 'puzzle', emoji: '🧩', outline: IconPuzzle };
-export const WEATHER_SECTION_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
-export const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
-export const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
 export const USERS_ICON: IconDef = { id: 'users', emoji: '👥', outline: IconUsers };
 
 export type SettingsTab = 'account' | 'users' | 'app' | 'trip' | 'notifications' | 'data' | 'about';

@@ -280,9 +280,4 @@ function resetColor() {
     display: none;
   }
 }
-@media (max-width: 420px) {
-  .card-reset-btn-label {
-    display: none;
-  }
-}
 </style>

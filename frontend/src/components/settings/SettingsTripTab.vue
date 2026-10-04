@@ -11,9 +11,12 @@ import {
 import { useUiSettingsStore } from '../../stores/uiSettings';
 import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../../stores/homeCurrency';
 import { useAppSettingsReset } from '../../composables/useAppSettingsReset';
+import { IconCloud } from '@tabler/icons-vue';
+import type { IconDef } from '../../utils/icon';
 import { SECTION_ICON_DEFS } from '../../utils/sectionIcons';
-import { WEATHER_SECTION_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
+
+const WEATHER_SECTION_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
 
 const calendarSettings = useCalendarSettingsStore();
 const uiSettings = useUiSettingsStore();
