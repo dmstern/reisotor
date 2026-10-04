@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import DoneToggle from './DoneToggle.vue';
 import WeatherIcon from '../WeatherIcon.vue';
+import AppIcon from '../AppIcon.vue';
+import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
 
 const meta: Meta<typeof DoneToggle> = {
   title: 'Primitives/DoneToggle',
@@ -39,11 +41,19 @@ export const PlannedWithDate: Story = {
     planned: true,
   },
   render: (args) => ({
-    components: { DoneToggle },
+    components: { DoneToggle, AppIcon },
     setup() {
-      return { args };
+      return { args, FORM_FIELD_ICONS };
     },
-    template: `<DoneToggle v-bind="args">Geplant für 03.10.</DoneToggle>`,
+    template: `
+      <DoneToggle v-bind="args">
+        <span class="done-toggle-prefix">Geplant für </span>
+        <span class="done-toggle-date">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" class="done-toggle-calendar-icon" />
+          03.10.
+        </span>
+      </DoneToggle>
+    `,
   }),
 };
 
@@ -52,13 +62,20 @@ export const PlannedWithWeather: Story = {
     planned: true,
   },
   render: (args) => ({
-    components: { DoneToggle, WeatherIcon },
+    components: { DoneToggle, WeatherIcon, AppIcon },
     setup() {
-      return { args };
+      return { args, FORM_FIELD_ICONS };
     },
     template: `
       <DoneToggle v-bind="args">
-        Geplant für 03.10. · <WeatherIcon :code="3" :size="14" /> 25°
+        <span class="done-toggle-prefix">Geplant für </span>
+        <span class="done-toggle-date">
+          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" class="done-toggle-calendar-icon" />
+          03.10.
+        </span>
+        <span class="done-toggle-weather">
+          · <WeatherIcon :code="3" :size="14" /> 25°
+        </span>
       </DoneToggle>
     `,
   }),

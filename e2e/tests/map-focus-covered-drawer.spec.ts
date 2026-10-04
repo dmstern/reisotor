@@ -55,7 +55,7 @@ for (const [viewportName, viewport] of Object.entries({
       // Titel statt der ganzen Karte anklicken - ein Klick auf die Karten-Mitte kann auf einem der
       // @click.stop-Anfasser (Einplanen/Auf Tour ziehen) weiter unten landen, ohne den Fokus/die
       // Zentrierung überhaupt auszulösen.
-      await page.locator('.spot-card').first().locator('h3').click();
+      await page.locator('.spot-card').first().locator('.card-title').click();
       await page.waitForTimeout(400);
 
       const marker = page.locator('.leaflet-marker-icon').first();
@@ -96,7 +96,7 @@ for (const [viewportName, viewport] of Object.entries({
       await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
       const card = page.locator('.excursion-card', { hasText: excursion.title });
       await expect(card).toBeVisible();
-      await card.locator('h3').click();
+      await card.locator('.card-title').click();
       await expect(card).toHaveClass(/expanded/);
       await card.getByRole('button', { name: 'Auf Karte anzeigen' }).click();
       await page.waitForTimeout(400);
@@ -179,7 +179,7 @@ for (const [viewportName, viewport] of Object.entries({
       // Eine spätere Tour auswählen (nicht die allererste)
       const targetCard = cards.nth(Math.min(2, count - 1));
       await targetCard.scrollIntoViewIfNeeded();
-      await targetCard.locator('h3').click();
+      await targetCard.locator('.card-title').click();
       await expect(targetCard).toHaveClass(/expanded/);
 
       const showBtn = targetCard.getByRole('button', { name: 'Auf Karte anzeigen' });
@@ -219,7 +219,7 @@ for (const [viewportName, viewport] of Object.entries({
       // Einen späteren Spot auswählen
       const targetCard = cards.nth(Math.min(3, count - 1));
       await targetCard.scrollIntoViewIfNeeded();
-      await targetCard.locator('h3').click();
+      await targetCard.locator('.card-title').click();
       await expect(targetCard).toHaveClass(/expanded/);
 
       const showBtn = targetCard.getByRole('button', { name: 'Auf Karte anzeigen' });
@@ -255,7 +255,7 @@ for (const [viewportName, viewport] of Object.entries({
       // Erste Tour fokussieren
       const tour1 = page.locator('.excursion-card', { hasText: 'Sightseeing-Tag Belém' });
       await expect(tour1).toBeVisible();
-      await tour1.locator('h3').click();
+      await tour1.locator('.card-title').click();
       await expect(tour1).toHaveClass(/expanded/);
 
       const showBtn1 = tour1.getByRole('button', { name: 'Auf Karte anzeigen' });
@@ -301,7 +301,7 @@ for (const [viewportName, viewport] of Object.entries({
 
       const tour2 = page.locator('.excursion-card', { hasText: 'Panoramatour Alfama & Belém' });
       await expect(tour2).toBeVisible();
-      await tour2.locator('h3').click();
+      await tour2.locator('.card-title').click();
       await expect(tour2).toHaveClass(/expanded/);
 
       const showBtn2 = tour2.getByRole('button', { name: 'Auf Karte anzeigen' });

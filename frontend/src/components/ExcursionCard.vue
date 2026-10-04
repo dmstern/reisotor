@@ -39,17 +39,24 @@ import { TRAVEL_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, tourTotalDurationMinutes } from '../utils/travelDuration';
 
-const props = defineProps<{
-  excursion: Excursion;
-  creatorLabel: string | null;
-  likeCount: number;
-  liked: boolean;
-  comments: CommentItem[];
-  stations: Spot[];
-  travelItems: TravelItem[];
-  highlighted?: boolean;
-  expanded: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    excursion: Excursion;
+    creatorLabel: string | null;
+    likeCount: number;
+    liked: boolean;
+    comments: CommentItem[];
+    stations: Spot[];
+    travelItems: TravelItem[];
+    highlighted?: boolean;
+    expanded: boolean;
+    /** Semantisches HTML-Überschriften-Tag für den Card-Titel (Standard: 'h3') */
+    headingTag?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  }>(),
+  {
+    headingTag: 'h3',
+  }
+);
 const emit = defineEmits<{
   (e: 'edit', excursion: Excursion): void;
   (e: 'toggle-like'): void;
@@ -196,7 +203,9 @@ const linkedTracks = computed(() =>
 );
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
-    drawers.calendarOpen = true;
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+      drawers.calendarOpen = true;
+    }
   },
   onDrop: (targetEl) => {
     const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
@@ -361,7 +370,9 @@ function onSpotDrop(event: DragEvent) {
       <div class="body">
         <div class="card-header-row">
           <div class="card-title-block">
-            <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
+            <component :is="headingTag" class="card-title" :title="excursion.title">
+              {{ excursion.title }}
+            </component>
             <Transition name="fade">
               <div
                 v-if="
@@ -539,19 +550,39 @@ function onSpotDrop(event: DragEvent) {
               @click="onToggleDone"
             >
               <template v-if="excursion.done">
-                <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
+                <template v-if="excursion.date">
+                  <span class="done-toggle-prefix">Gemacht am </span>
+                  <span class="done-toggle-date">
+                    <AppIcon
+                      :icon="FORM_FIELD_ICONS.date"
+                      :size="12"
+                      group="formFields"
+                      class="done-toggle-calendar-icon"
+                    />
+                    {{ statusDateLabel }}
+                  </span>
+                </template>
                 <template v-else>Gemacht</template>
-                <template v-if="weatherSummary">
+                <span v-if="weatherSummary" class="done-toggle-weather">
                   · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
                   {{ weatherSummary.tempLabel }}
-                </template>
+                </span>
               </template>
               <template v-else-if="excursion.date">
-                Geplant für {{ statusDateLabel }}
-                <template v-if="weatherSummary">
+                <span class="done-toggle-prefix">Geplant für </span>
+                <span class="done-toggle-date">
+                  <AppIcon
+                    :icon="FORM_FIELD_ICONS.date"
+                    :size="12"
+                    group="formFields"
+                    class="done-toggle-calendar-icon"
+                  />
+                  {{ statusDateLabel }}
+                </span>
+                <span v-if="weatherSummary" class="done-toggle-weather">
                   · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
                   {{ weatherSummary.tempLabel }}
-                </template>
+                </span>
               </template>
               <template v-else>
                 <template v-if="expanded">Als gemacht markieren</template>
@@ -637,14 +668,16 @@ function onSpotDrop(event: DragEvent) {
 </template>
 
 <style scoped>
-/* Volle Breite statt kleiner Grid-Card (wie Tagebucheinträge) – macht Ausflüge auf einen Blick von
-   den (weiterhin als Grid angezeigten) Spots unterscheidbar. Bild als schmale, feste Miniatur
-   links statt großem Banner oben, damit es bei voller Breite nicht unnötig gestreckt wirkt. */
+/* Vollflächiger Listeneintrag statt schwebender Karte: fügt sich nahtlos in die Drawer-Breite ein,
+   getrennt durch horizontale Trennlinien am umgebenden .category-group. */
+.card.excursion-card,
 .excursion-card {
   --excursion-theme-color: var(--color-tour);
   --excursion-theme-dark: var(--color-tour-dark);
   --excursion-theme-tint: var(--color-tour-tint);
   --excursion-theme-border: var(--color-tour-border);
+
+  container: excursion-card / inline-size;
 
   position: relative;
   z-index: 1;
@@ -654,29 +687,26 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 80px;
-  border-width: var(--ui-border-width, 1px);
-  border-style: solid;
-  border-color: var(--excursion-theme-border);
-  background: var(--color-surface);
+  border: none !important;
+  border-radius: 0 !important;
+  corner-shape: auto !important;
+  box-shadow: none !important;
+  background: transparent !important;
   cursor: pointer;
   overflow: visible;
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
   transition:
-    border-color 0.2s ease,
     background 0.2s ease,
-    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.2s ease;
 }
 
 /* Leucht-Effekt, wenn der "Tour zuordnen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
 :global(body.is-dragging-tour .excursion-card:not(.drop-disabled)),
 .excursion-card.drop-candidate {
-  border-color: var(--color-tour) !important;
   background: color-mix(in srgb, var(--color-tour) 12%, var(--color-surface)) !important;
   box-shadow:
-    0 0 0 2px var(--color-tour),
-    0 8px 24px -4px color-mix(in srgb, var(--color-tour) 45%, transparent),
-    0 2px 6px rgba(0, 0, 0, 0.06);
+    inset 0 0 0 2px var(--color-tour),
+    0 8px 24px -4px color-mix(in srgb, var(--color-tour) 45%, transparent) !important;
   animation: tour-glow-pulse 2.2s ease-in-out infinite alternate;
   position: relative;
   z-index: 4;
@@ -685,17 +715,13 @@ function onSpotDrop(event: DragEvent) {
 @keyframes tour-glow-pulse {
   0% {
     box-shadow:
-      0 0 0 2px var(--color-tour),
-      0 6px 18px -4px color-mix(in srgb, var(--color-tour) 35%, transparent),
-      0 2px 6px rgba(0, 0, 0, 0.06);
-    border-color: var(--color-tour);
+      inset 0 0 0 2px var(--color-tour),
+      0 6px 18px -4px color-mix(in srgb, var(--color-tour) 35%, transparent);
   }
   100% {
     box-shadow:
-      0 0 0 3px var(--color-tour),
-      0 10px 28px -2px color-mix(in srgb, var(--color-tour) 60%, transparent),
-      0 4px 10px rgba(0, 0, 0, 0.1);
-    border-color: var(--color-tour-dark, var(--color-tour));
+      inset 0 0 0 3px var(--color-tour),
+      0 10px 28px -2px color-mix(in srgb, var(--color-tour) 60%, transparent);
   }
 }
 
@@ -703,13 +729,11 @@ function onSpotDrop(event: DragEvent) {
 :global(body.is-dragging-tour .excursion-card.drop-target),
 .excursion-card.drop-candidate:hover,
 .excursion-card.drop-target {
-  border-color: var(--color-tour) !important;
   background: color-mix(in srgb, var(--color-tour) 20%, var(--color-surface)) !important;
-  transform: translateY(-2px) scale(1.01);
+  transform: none;
   box-shadow:
-    0 0 0 3px var(--color-tour),
-    0 12px 32px -2px color-mix(in srgb, var(--color-tour) 65%, transparent),
-    0 4px 12px rgba(0, 0, 0, 0.12);
+    inset 0 0 0 3px var(--color-tour),
+    0 12px 32px -2px color-mix(in srgb, var(--color-tour) 65%, transparent) !important;
   z-index: 6;
 }
 
@@ -727,18 +751,23 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .excursion-card:not(.expanded):hover {
-  transform: translateY(-4px) scale(1.015);
-  border-color: var(--excursion-theme-color);
-  box-shadow: var(--shadow-md);
-  z-index: 5;
+  transform: none;
+  background: var(--color-hover) !important;
+  box-shadow: none !important;
 }
 
 .excursion-card:not(.expanded):active {
-  transform: translateY(0) scale(0.99);
+  transform: none;
+  background: color-mix(in srgb, var(--color-hover) 80%, var(--color-border)) !important;
 }
 
 .excursion-card.expanded {
-  transform: translateY(0) scale(1);
+  transform: none;
+  border: none !important;
+  border-radius: 0 !important;
+  corner-shape: auto !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .tour-card-main {
@@ -748,19 +777,12 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: row;
   align-items: stretch;
   position: relative;
-  padding: 10px 14px 10px 10px;
+  padding: 12px var(--space-3);
   gap: 12px;
 }
 
-/* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
-   Stelle leicht (zusätzliche Zeilen für Ersteller:in/Notiz, siehe Template), statt einen Dialog
-   über die Karte zu legen - exakt dasselbe Prinzip wie SpotCard.vue's .spot-card.expanded. Fester
-   statt gestrichelter Rahmen (anders als .drop-target oben), damit die beiden Zustände optisch
-   unterscheidbar bleiben. */
-.excursion-card.expanded {
-  border-style: solid;
-  border-color: var(--excursion-theme-color);
-  background: var(--excursion-theme-tint);
+.excursion-card.expanded .tour-card-main {
+  padding: 14px var(--space-3) 10px var(--space-3);
 }
 
 .tour-visual-col {
@@ -928,7 +950,7 @@ function onSpotDrop(event: DragEvent) {
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
 }
 
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
@@ -1055,6 +1077,10 @@ function onSpotDrop(event: DragEvent) {
   margin-top: auto;
   position: relative;
   z-index: 2;
+}
+
+.card-actions-wrapper > :deep(.social-row) {
+  margin-left: auto;
 }
 
 .links {
@@ -1260,7 +1286,7 @@ function onSpotDrop(event: DragEvent) {
 
 @container spots-col (max-width: 360px) {
   .tour-card-main {
-    padding: 8px 10px 8px 8px;
+    padding: 8px var(--space-3) 8px var(--space-3);
     gap: 8px;
   }
 

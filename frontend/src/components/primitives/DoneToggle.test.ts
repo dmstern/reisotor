@@ -28,12 +28,13 @@ describe('DoneToggle primitive', () => {
     expect(html).toContain('status-text');
   });
 
-  it('renders planned state with .planned class when planned=true and not done', async () => {
+  it('renders planned state with .planned class and checkbox icon when planned=true and not done', async () => {
     const html = await mountComponent({ planned: true }, 'Geplant für Fr., 12. Mai');
     expect(html).toContain('done-toggle');
     expect(html).toContain('planned');
     expect(html).not.toContain('status-done');
     expect(html).toContain('Geplant für Fr., 12. Mai');
+    expect(html).toContain('app-icon');
   });
 
   it('renders done state with .status-done, .active and aria-pressed="true"', async () => {

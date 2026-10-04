@@ -11,6 +11,7 @@ import { useUiSettingsStore } from '../stores/uiSettings';
 // hier würde sie nur unnötig erneut anfordern (Vite kann sie ohnehin nicht in einen separaten Chunk
 // auslagern, da sie schon Teil des Hauptbundles ist).
 import { useTripStore } from '../stores/trip';
+import { useModalStore } from '../stores/modal';
 import { useToast } from '../composables/useToast';
 import ScheduleView from '../views/ScheduleView.vue';
 
@@ -275,6 +276,12 @@ router.beforeEach(async (to) => {
 router.afterEach(() => {
   isNavigating.value = false;
   navigatingTo.value = null;
+  if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
+    const modalStore = useModalStore();
+    if (modalStore.activeStack.length === 0) {
+      document.body.style.overflow = '';
+    }
+  }
 });
 
 router.onError(() => {

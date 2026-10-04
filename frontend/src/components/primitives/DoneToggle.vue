@@ -68,6 +68,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   cursor: pointer;
   min-width: 0;
   max-width: 100%;
+  flex-shrink: 0;
   box-sizing: border-box;
   transition:
     background-color 0.15s ease,
@@ -114,6 +115,112 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+:deep(.done-toggle-date) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+:deep(.done-toggle-calendar-icon) {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+:deep(.done-toggle-prefix) {
+  display: inline;
+}
+
+:deep(.done-toggle-weather) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Auf schmalen Breiten (z. B. wenn der Spots-Drawer schmal gezogen wird <= 380px):
+   Wort "Geplant für"/"Gemacht am"/"Besucht am" per Visually-Hidden ausblenden.
+   Checkbox, Kalender-Icon, Datum und Wetter bleiben stets komplett sichtbar. */
+@container spots-col (max-width: 380px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+@container spot-card (max-width: 360px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+@container excursion-card (max-width: 360px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+@container (max-width: 360px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 }
 
 /* Virtuelles Touch-Target (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */

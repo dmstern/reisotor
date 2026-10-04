@@ -38,39 +38,46 @@ import { formatDate as formatDateShared, toLocalDateString } from '../utils/date
 import { formatTravelDuration } from '../utils/travelDuration';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
-const props = defineProps<{
-  spot: Spot;
-  creatorLabel: string | null;
-  likeCount: number;
-  liked: boolean;
-  comments: CommentItem[];
-  // Liegt beim Elternteil (ExcursionsView.vue), nicht lokal hier: dieselbe Information steuert dort
-  // gleichzeitig, welcher Pin auf der direkt danebenliegenden Karte vergrößert wird (siehe
-  // onCardClick unten) – ein Pin-Klick auf der Karte muss diese Karte hier aufklappen können, ohne
-  // dass TripMap.vue direkten Zugriff auf SpotCard-Instanzen bräuchte.
-  expanded: boolean;
-  // Frühestes Datum, an dem dieser Spot über einen Kalender-Termin (schedule_items.spot_id)
-  // eingeplant ist, oder null falls (noch) nicht geplant – vom Elternteil aus dem scheduleStore
-  // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
-  scheduledDate: string | null;
-  highlighted?: boolean;
-  excursionContext?: { id: number; isDestination: boolean; hasDestination: boolean };
-  /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
-   *  Migrationskommentar in db/index.ts). */
-  payerLabel?: string | null;
-  // Ob die Spots-Liste gerade nach Kategorie oder nach Touren gruppiert ist (ExcursionsView.vue) -
-  // steuert (#106), ob zusätzlich zum "Tour zuordnen"-Dropdown auch der native Drag-Anfasser
-  // gezeigt wird: der ergibt nur in der Touren-Gruppierung Sinn, wo echte Tour-Karten als
-  // Ablageziele sichtbar sind (siehe onDragStart unten).
-  groupMode: 'category' | 'tours';
-  // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
-  tourOptions: string[];
-  hasMultipleMembers?: boolean;
-  /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
-  layoverMinutes?: number | null;
-  /** Reduziert das Kategorie-Badge optional explizit auf sein Icon */
-  iconOnlyCategory?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    spot: Spot;
+    creatorLabel: string | null;
+    likeCount: number;
+    liked: boolean;
+    comments: CommentItem[];
+    // Liegt beim Elternteil (ExcursionsView.vue), nicht lokal hier: dieselbe Information steuert dort
+    // gleichzeitig, welcher Pin auf der direkt danebenliegenden Karte vergrößert wird (siehe
+    // onCardClick unten) – ein Pin-Klick auf der Karte muss diese Karte hier aufklappen können, ohne
+    // dass TripMap.vue direkten Zugriff auf SpotCard-Instanzen bräuchte.
+    expanded: boolean;
+    // Frühestes Datum, an dem dieser Spot über einen Kalender-Termin (schedule_items.spot_id)
+    // eingeplant ist, oder null falls (noch) nicht geplant – vom Elternteil aus dem scheduleStore
+    // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
+    scheduledDate: string | null;
+    highlighted?: boolean;
+    excursionContext?: { id: number; isDestination: boolean; hasDestination: boolean };
+    /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
+     *  Migrationskommentar in db/index.ts). */
+    payerLabel?: string | null;
+    // Ob die Spots-Liste gerade nach Kategorie oder nach Touren gruppiert ist (ExcursionsView.vue) -
+    // steuert (#106), ob zusätzlich zum "Tour zuordnen"-Dropdown auch der native Drag-Anfasser
+    // gezeigt wird: der ergibt nur in der Touren-Gruppierung Sinn, wo echte Tour-Karten als
+    // Ablageziele sichtbar sind (siehe onDragStart unten).
+    groupMode: 'category' | 'tours';
+    // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
+    tourOptions: string[];
+    hasMultipleMembers?: boolean;
+    /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
+    layoverMinutes?: number | null;
+    /** Reduziert das Kategorie-Badge optional explizit auf sein Icon */
+    iconOnlyCategory?: boolean;
+    /** Semantisches HTML-Überschriften-Tag für den Card-Titel (Standard: 'h4') */
+    headingTag?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  }>(),
+  {
+    headingTag: 'h4',
+  }
+);
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
 
@@ -257,7 +264,9 @@ onBeforeUnmount(() => {
 // Touch-Geräten unzuverlässig ist). Eigenständig neben dem bestehenden nativen
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
-    drawers.calendarOpen = true;
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+      drawers.calendarOpen = true;
+    }
     document.body.classList.add('is-dragging-calendar');
   },
   onEnd: () => {
@@ -452,7 +461,9 @@ const cardRotation = computed(() => {
           </div>
           <div class="overlay-bottom-content">
             <div class="card-title-block is-expanded">
-              <h3 class="card-title" :title="spot.title">{{ spot.title }}</h3>
+              <component :is="headingTag" class="card-title" :title="spot.title">
+                {{ spot.title }}
+              </component>
               <div
                 v-if="creatorLabel || (isAccommodation && (spot.start_date || spot.end_date))"
                 class="card-title-meta"
@@ -490,7 +501,9 @@ const cardRotation = computed(() => {
       <!-- Einheitlicher Card-Titel und Notiz im Body (nur im eingeklappten Zustand) -->
       <template v-if="!expanded">
         <div class="card-title-block">
-          <h3 class="card-title" :title="spot.title">{{ spot.title }}</h3>
+          <component :is="headingTag" class="card-title" :title="spot.title">
+            {{ spot.title }}
+          </component>
         </div>
         <!-- Spot-Notiz: Trunkiert mit Ellipsis im collapsed Zustand (#235) -->
         <div v-if="spot.note" class="spot-note-container">
@@ -651,19 +664,39 @@ const cardRotation = computed(() => {
                   </template>
                 </template>
                 <template v-else-if="isSpotDone">
-                  <template v-if="scheduledDate">Besucht am {{ plannedDateLabel }}</template>
+                  <template v-if="scheduledDate">
+                    <span class="done-toggle-prefix">Besucht am </span>
+                    <span class="done-toggle-date">
+                      <AppIcon
+                        :icon="FORM_FIELD_ICONS.date"
+                        :size="12"
+                        group="formFields"
+                        class="done-toggle-calendar-icon"
+                      />
+                      {{ plannedDateLabel }}
+                    </span>
+                  </template>
                   <template v-else>Besucht</template>
-                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                  <span v-if="dayWeather && scheduledDaysCount <= 1" class="done-toggle-weather">
                     · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
                     {{ Math.round(dayWeather.tempMax) }}°
-                  </template>
+                  </span>
                 </template>
                 <template v-else-if="scheduledDate || totalItemsCount === 1">
-                  Geplant für {{ plannedDateLabel }}
-                  <template v-if="dayWeather && scheduledDaysCount <= 1">
+                  <span class="done-toggle-prefix">Geplant für </span>
+                  <span class="done-toggle-date">
+                    <AppIcon
+                      :icon="FORM_FIELD_ICONS.date"
+                      :size="12"
+                      group="formFields"
+                      class="done-toggle-calendar-icon"
+                    />
+                    {{ plannedDateLabel }}
+                  </span>
+                  <span v-if="dayWeather && scheduledDaysCount <= 1" class="done-toggle-weather">
                     · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
                     {{ Math.round(dayWeather.tempMax) }}°
-                  </template>
+                  </span>
                 </template>
                 <template v-else> Besucht </template>
               </DoneToggle>
