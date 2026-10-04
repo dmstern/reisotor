@@ -13,6 +13,7 @@ import {
   outlookCalendarHref,
   triggerIcsDownload,
 } from '../utils/calendarExport';
+import { computePopoverPosition } from '../utils/popoverPosition';
 
 const props = withDefaults(
   defineProps<{
@@ -43,19 +44,21 @@ async function togglePicker(event: MouseEvent) {
     isOpen.value = false;
     return;
   }
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const target = event.currentTarget as HTMLElement;
   isOpen.value = true;
-  pickerStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.right - 188, window.innerWidth - 196))}px`,
-  };
+  pickerStyle.value = computePopoverPosition(target, {
+    menuWidth: 188,
+    menuHeight: 120,
+    align: 'right',
+  });
   await nextTick();
-  const menuRect = document.querySelector('.picker-menu')?.getBoundingClientRect();
-  if (menuRect && menuRect.bottom > window.innerHeight - 8) {
-    pickerStyle.value = {
-      ...pickerStyle.value,
-      top: `${Math.max(8, window.innerHeight - menuRect.height - 8)}px`,
-    };
+  const menuEl = document.querySelector('.picker-menu') as HTMLElement | null;
+  if (menuEl) {
+    pickerStyle.value = computePopoverPosition(target, {
+      menuWidth: 188,
+      menuHeight: menuEl.getBoundingClientRect().height,
+      align: 'right',
+    });
   }
 }
 

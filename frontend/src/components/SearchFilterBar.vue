@@ -9,6 +9,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { TOUR_ROLE_META, TOUR_ROLE_OPTIONS, type TourRoleFilterOption } from '../utils/travelRole';
+import { computePopoverPosition } from '../utils/popoverPosition';
 
 export interface SortOption {
   value: 'alpha' | 'likes' | 'date';
@@ -22,7 +23,7 @@ const props = withDefaults(
     sortMode?: 'alpha' | 'likes' | 'date';
     categoryFilter?: string[];
     categoryOptions?: string[];
-    statusFilter?: ('planned' | 'unplanned' | 'done')[];
+    statusFilter?: ('planned' | 'unplanned' | 'done')[] | undefined;
     tourRoleFilter?: TourRoleFilterOption[];
   }>(),
   {
@@ -53,21 +54,6 @@ const sortMenuOpen = ref(false);
 const sortBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
 const sortMenuStyle = ref({ top: '0px', left: '0px' });
 
-function computeMenuStyle(
-  targetEl: HTMLElement | null,
-  minWidth = 220
-): { top: string; left: string } {
-  if (!targetEl || typeof targetEl.getBoundingClientRect !== 'function') {
-    return { top: '0px', left: '0px' };
-  }
-  const rect = targetEl.getBoundingClientRect();
-  const leftPos = Math.max(8, Math.min(rect.right - minWidth, window.innerWidth - minWidth - 8));
-  return {
-    top: `${rect.bottom + 6}px`,
-    left: `${leftPos}px`,
-  };
-}
-
 function toggleFilterMenu(event?: MouseEvent) {
   if (!filterMenuOpen.value) {
     sortMenuOpen.value = false;
@@ -75,7 +61,9 @@ function toggleFilterMenu(event?: MouseEvent) {
       (event?.currentTarget as HTMLElement) ||
       (filterBtnRef.value as ComponentPublicInstance)?.$el ||
       (filterBtnRef.value as HTMLElement);
-    filterMenuStyle.value = computeMenuStyle(target, 230);
+    if (target) {
+      filterMenuStyle.value = computePopoverPosition(target, { menuWidth: 230, align: 'right' });
+    }
     filterMenuOpen.value = true;
   } else {
     filterMenuOpen.value = false;
@@ -89,7 +77,9 @@ function toggleSortMenu(event?: MouseEvent) {
       (event?.currentTarget as HTMLElement) ||
       (sortBtnRef.value as ComponentPublicInstance)?.$el ||
       (sortBtnRef.value as HTMLElement);
-    sortMenuStyle.value = computeMenuStyle(target, 180);
+    if (target) {
+      sortMenuStyle.value = computePopoverPosition(target, { menuWidth: 180, align: 'right' });
+    }
     sortMenuOpen.value = true;
   } else {
     sortMenuOpen.value = false;
