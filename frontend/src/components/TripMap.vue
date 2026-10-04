@@ -12,7 +12,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useTracksStore } from '../stores/tracks';
 import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate } from '../utils/dateFormat';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { useMapOfflineDownload } from '../composables/useMapOfflineDownload';
 import { useMapPhotos } from '../composables/useMapPhotos';
@@ -52,8 +52,6 @@ const spotsStore = useSpotsStore();
 const tracksStore = useTracksStore();
 const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
-
-const formatDate = formatDateShared;
 
 const calendarOffset = computed(() => {
   return isDesktop.value && drawers.calendarOpen ? drawers.calendarWidth : 0;
