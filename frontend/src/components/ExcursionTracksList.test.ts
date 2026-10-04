@@ -42,7 +42,7 @@ describe('ExcursionTracksList', () => {
     },
   ];
 
-  function render(props: any) {
+  function render(props: Record<string, unknown>) {
     const app = createApp({
       render: () => h(ExcursionTracksList, props),
     });
@@ -65,6 +65,7 @@ describe('ExcursionTracksList', () => {
     expect(html).toContain('Max');
     expect(html).toContain('Geheime Route');
     expect(html).toContain('Aufzeichnung läuft');
+    expect(html).toContain('1\u00A0Std. 30\u00A0Min.');
     expect(html).toContain('Nur für dich sichtbar (privat)');
   });
 

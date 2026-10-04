@@ -6,6 +6,7 @@ import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDateTime } from '../utils/dateFormat';
+import { formatDurationShort } from '../utils/trackGeometry';
 import { useExcursionsStore } from '../stores/excursions';
 
 const props = defineProps<{
@@ -44,15 +45,8 @@ function trackAuthorTitle(track: LocationTrack): string {
 
 function trackDurationLabel(track: LocationTrack): string | null {
   if (!track.started_at || !track.ended_at) return null;
-  const startMs = new Date(track.started_at).getTime();
-  const endMs = new Date(track.ended_at).getTime();
-  const diffSec = Math.max(0, Math.round((endMs - startMs) / 1000));
-  if (diffSec < 60) return `${diffSec}\u00A0s`;
-  const mins = Math.floor(diffSec / 60);
-  const hours = Math.floor(mins / 60);
-  const remMins = mins % 60;
-  if (hours > 0) return `${hours}\u00A0h ${remMins}\u00A0min`;
-  return `${mins}\u00A0min`;
+  const ms = Math.max(0, new Date(track.ended_at).getTime() - new Date(track.started_at).getTime());
+  return formatDurationShort(ms);
 }
 
 function getTourForTrack(track: LocationTrack): Excursion | undefined {
