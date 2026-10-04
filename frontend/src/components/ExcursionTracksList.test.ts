@@ -42,7 +42,7 @@ describe('ExcursionTracksList', () => {
     },
   ];
 
-  function render(props: Record<string, unknown>) {
+  function render(props: InstanceType<typeof ExcursionTracksList>['$props']) {
     const app = createApp({
       render: () => h(ExcursionTracksList, props),
     });
