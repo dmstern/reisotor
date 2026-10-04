@@ -64,35 +64,6 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     return excursion.legs?.find((l) => l.from_spot_id === fromSpotId && l.to_spot_id === toSpotId);
   }
 
-  function getLegDuration(leg: ExcursionLeg): string | null {
-    const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
-    return mins != null ? formatTravelDuration(mins) : null;
-  }
-
-  function getLegDurationParts(leg: ExcursionLeg): string[] | null {
-    const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
-    if (mins != null) return formatTravelDurationParts(mins);
-    if (leg.duration_seconds != null) {
-      const calcMins = Math.round(leg.duration_seconds / 60);
-      return formatTravelDurationParts(calcMins);
-    }
-    return null;
-  }
-
-  function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string {
-    const parts: string[] = [];
-    if (leg.transport_type) parts.push(leg.transport_type);
-    if (leg.departure_time || leg.arrival_time) {
-      parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'}\u00A0Uhr`);
-    }
-    const dur = getLegDuration(leg);
-    if (dur) parts.push(`(${dur})`);
-    if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')}\u00A0€`);
-    parts.push(`• Von: ${fromSpot.title} → Nach: ${toSpot.title}`);
-    parts.push('• Klicken zum Bearbeiten');
-    return parts.join(' ');
-  }
-
   function getTourLayover(
     excursion: Excursion,
     items: Array<{ spot: Spot }>,
@@ -398,4 +369,33 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     onSaveCardLeg,
     onDeleteCardLeg,
   };
+}
+
+export function getLegDuration(leg: ExcursionLeg): string | null {
+  const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
+  return mins != null ? formatTravelDuration(mins) : null;
+}
+
+export function getLegDurationParts(leg: ExcursionLeg): string[] | null {
+  const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
+  if (mins != null) return formatTravelDurationParts(mins);
+  if (leg.duration_seconds != null) {
+    const calcMins = Math.round(leg.duration_seconds / 60);
+    return formatTravelDurationParts(calcMins);
+  }
+  return null;
+}
+
+export function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string {
+  const parts: string[] = [];
+  if (leg.transport_type) parts.push(leg.transport_type);
+  if (leg.departure_time || leg.arrival_time) {
+    parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'}\u00A0Uhr`);
+  }
+  const dur = getLegDuration(leg);
+  if (dur) parts.push(`(${dur})`);
+  if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')}\u00A0€`);
+  parts.push(`• Von: ${fromSpot.title} → Nach: ${toSpot.title}`);
+  parts.push('• Klicken zum Bearbeiten');
+  return parts.join(' ');
 }

@@ -4,8 +4,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { Excursion, ExcursionComment, ExcursionLike, Spot, User } from '../api/types';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
-import { TRAVEL_ROLE_OPTIONS, TRAVEL_ROLE_META } from '../utils/travelRole';
-import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
@@ -16,45 +14,34 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useTracksStore } from '../stores/tracks';
 import { useTrackRecordingStore } from '../stores/trackRecording';
 import { useIconStyleStore } from '../stores/iconStyle';
-import { formatDate, formatDateTime } from '../utils/dateFormat';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import SearchFilterBar from '../components/SearchFilterBar.vue';
-import SpotOrderPicker from '../components/SpotOrderPicker.vue';
 import TripMap from '../components/TripMap.vue';
-import Modal from '../components/Modal.vue';
-import FormField from '../components/FormField.vue';
-import TourAssignPicker from '../components/TourAssignPicker.vue';
 import TrackRecordingWarningModal from '../components/TrackRecordingWarningModal.vue';
-import TrackShareWarningModal from '../components/TrackShareWarningModal.vue';
-import TourAssignDropdown from '../components/TourAssignDropdown.vue';
-import Checkbox from '../components/primitives/Checkbox.vue';
 import ResizeHandle from '../components/ResizeHandle.vue';
-import LocationPicker from '../components/LocationPicker.vue';
-import CoverImagePicker from '../components/CoverImagePicker.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
-import FileAttachments from '../components/FileAttachments.vue';
-import DraftStatusBar from '../components/DraftStatusBar.vue';
 import LegTransportModal from '../components/LegTransportModal.vue';
-import RichTextEditor from '../components/RichTextEditor.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from '../components/AppIcon.vue';
 import AnimatedText from '../components/AnimatedText.vue';
 import Button from '../components/primitives/Button.vue';
-import ButtonGroup from '../components/primitives/ButtonGroup.vue';
-import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import IconButton from '../components/primitives/IconButton.vue';
-import PickerMenu from '../components/primitives/PickerMenu.vue';
-import Select from '../components/primitives/Select.vue';
-import TabBar from '../components/TabBar.vue';
-import ItemVisibilitySettings from '../components/ItemVisibilitySettings.vue';
 import InfoPopover from '../components/primitives/InfoPopover.vue';
-import Input from '../components/primitives/Input.vue';
+import EmptyState from '../components/primitives/EmptyState.vue';
+
+// Subkomponenten (Phase 2: UI-Dekomposition & Deduplizierung, #446)
+import ExcursionCategoryNav from '../components/ExcursionCategoryNav.vue';
+import ExcursionTracksList from '../components/ExcursionTracksList.vue';
+import TourSerpentineWrap from '../components/TourSerpentineWrap.vue';
+import SpotFormModal from '../components/SpotFormModal.vue';
+import ExcursionFormModal from '../components/ExcursionFormModal.vue';
+import TrackEditModal from '../components/TrackEditModal.vue';
 
 // Composables extrahiert im Rahmen von Phase 1 (Logik- & State-Entflechtung, #446)
 import { useExcursionsLayout } from '../composables/useExcursionsLayout';
@@ -67,8 +54,6 @@ import {
 import { useTourSerpentine } from '../composables/useTourSerpentine';
 import { useExcursionTracks } from '../composables/useExcursionTracks';
 import { useExcursionSocial } from '../composables/useExcursionSocial';
-import { useTourForm } from '../composables/useTourForm';
-import { useSpotForm, SPOT_SIDE_OPTIONS } from '../composables/useSpotForm';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -193,8 +178,6 @@ const {
   tourLines,
   getTourCols,
   getTourRows,
-  getLegDurationParts,
-  getLegTooltip,
   getTourLayover,
   recomputeTourLine,
   setTourWrapRef,
@@ -210,45 +193,11 @@ const tracks = useExcursionTracks({
   users,
   isSheetOverlayMode,
   sheetState,
-  onShareTrackToTour: (track) => {
-    if (!tourForm.activeExcursionForm.value.track_ids.includes(track.id)) {
-      tourForm.activeExcursionForm.value.track_ids.push(track.id);
-      tracks.tracksToShareOnSave.value.add(track.id);
-    }
-  },
 });
 const {
-  trackTitle,
-  trackDurationLabel,
-  trackAuthorAvatar,
-  trackAuthorName,
-  trackAuthorTitle,
   onTrackShowOnMap,
-  trackEditTabs,
-  activeTrackEditTab,
   editingTrack,
-  editTrackTitle,
-  editTrackStartedAt,
-  editTrackVisibility,
-  editTrackExcursionId,
-  showTrackShareWarningModal,
-  shareWarningTrackTitle,
-  shareWarningTourTitle,
-  trackTourAssignments,
-  editTrackExcursionTitle,
-  onToggleTrackTour,
-  onCreateTourFromTrack,
-  getTourForTrack,
-  isEditTrackTitleModified,
-  isEditTrackStartedAtModified,
-  isEditTrackVisibilityModified,
-  isEditTrackTourModified,
   startEditTrack,
-  closeEditTrack,
-  submitEditTrack,
-  stopEditingTrack,
-  deleteEditingTrack,
-  onConfirmShareModal,
   showTrackRecordingWarningModal,
   hasActiveRecording,
   onRecordButtonClick,
@@ -278,126 +227,83 @@ const {
   updateExcursionComment,
 } = social;
 
-// 7. Tour Form (Add / Edit)
-const tourForm = useTourForm({
-  users,
-  tracksToShareOnSave: tracks.tracksToShareOnSave,
-  onTrackPrivateWarning: (trk, title) => {
-    tracks.pendingShareTrack.value = trk;
-    tracks.shareWarningTrackTitle.value = tracks.trackTitle(trk);
-    tracks.shareWarningTourTitle.value = title;
-    tracks.showTrackShareWarningModal.value = true;
-  },
-  excursionForGroupTitle,
-});
-const {
-  showExcursionForm,
-  showExcursionTracksSection,
-  showEditExcursionTracksSection,
-  showExcursionSpotsSection,
-  showEditExcursionSpotsSection,
-  editingExcursion,
-  isExcursionUploadingAttachments,
-  activeExcursionForm,
-  excursionTitleTouched,
-  showExcursionTitleError,
-  canSaveExcursion,
-  excursionSaveTooltip,
-  newExcursionDraft,
-  editExcursionDraft,
-  isEditTourTitleModified,
-  isEditTourDateModified,
-  isEditTourNoteModified,
-  isEditTourRoleModified,
-  isExcursionModalDirty,
-  selectableTracksForTour,
-  onToggleTourTrack,
-  openExcursionForm,
-  closeExcursionForm,
-  discardNewExcursionDraft,
-  addExcursion,
-  startEditExcursion,
-  submitEditExcursion,
-  closeEditExcursionForm,
-  discardEditExcursionDraft,
-  deleteEditingExcursion,
-  toggleExcursionDestination,
-  addSpotToExcursion,
-  assignSpotToTourTitle,
-} = tourForm;
+// 7. Tour Form Modal State & Helpers
+const showExcursionModal = ref(false);
+const editingExcursion = ref<Excursion | null>(null);
 
-// 8. Spot Form (Add / Edit)
-const spotFormComposable = useSpotForm({
-  tripId,
-  users,
-  spotScheduledDates,
-});
-const {
-  showSpotForm,
-  spotForm,
-  newSpotDraft,
-  openSpotForm,
-  closeSpotForm,
-  discardNewSpotDraft,
-  addSpot,
-  editingSpot,
-  editSpotDraft,
-  startEditSpot,
-  closeEditSpotForm,
-  discardEditSpotDraft,
-  submitEditSpot,
-  deleteEditingSpot,
-  activeSpotForm,
-  spotTitleTouched,
-  showSpotTitleError,
-  canSaveSpot,
-  spotSaveTooltip,
-  isSpotModalDirty,
-  spotManualPin,
-  spotLocationError,
-  editSpotLocationError,
-  isSpotUploadingAttachments,
-  isSpotUploadingCoverImage,
-  spotPreviewImages,
-  spotPreviewImage,
-  editSpotPreviewImage,
-  spotImageSearchContext,
-  resetEditSpotImage,
-  spotReferencePoints,
-  editSpotReferencePoints,
-  spotPickerCenter,
-  showSpotScheduleSection,
-  editSpotScheduledItems,
-  toggleScheduledItemDone,
-  removeScheduledItemFromSpot,
-  openScheduledItemDetail,
-  addSchedulePopoverOpen,
-  addScheduleDateVal,
-  addScheduleBtnRef,
-  addScheduleMenuStyle,
-  toggleAddSchedulePopover,
-  submitAddSpotToDate,
-  allTourTitles,
-  removeTourTitle,
-  getTourDate,
-  isTourTravel,
-  onSpotMapsLinkUpdate,
-  onSpotLocationSelect,
-  spotLocationPickerRef,
-  onSpotLocationClear,
-  resetEditSpotLocation,
-  isEditSpotLocationModified,
-  isEditSpotSideModified,
-  isEditSpotImageModified,
-  isEditSpotNoteModified,
-  isEditSpotStartDateModified,
-  isEditSpotEndDateModified,
-  isEditSpotCheckinModified,
-  isEditSpotCheckoutModified,
-  isEditSpotContactModified,
-  isEditSpotAmountModified,
-  isEditSpotPaidByModified,
-} = spotFormComposable;
+function openExcursionForm() {
+  editingExcursion.value = null;
+  showExcursionModal.value = true;
+}
+
+function startEditExcursion(excursion: Excursion | number) {
+  if (typeof excursion === 'number') {
+    const found = excursionsStore.excursions.find((e) => e.id === excursion);
+    editingExcursion.value = found ?? null;
+  } else {
+    editingExcursion.value = excursion;
+  }
+  showExcursionModal.value = true;
+}
+
+const allTourTitles = computed(() => excursionsStore.excursions.map((e) => e.title));
+
+async function toggleExcursionDestination(excursion: Excursion, spotId: number) {
+  const newDest = excursion.destination_spot_id === spotId ? null : spotId;
+  const payload = {
+    trip_id: excursion.trip_id,
+    title: excursion.title,
+    image_url: excursion.image_url ?? undefined,
+    note: excursion.note ?? undefined,
+    note_format: 'html' as const,
+    date: excursion.date ?? undefined,
+    spot_ids: excursion.spot_ids,
+    role: excursion.role ?? null,
+    destination_spot_id: newDest,
+    legs: excursion.legs,
+  };
+  await excursionsStore.update(excursion.id, payload);
+}
+
+async function addSpotToExcursion(excursionId: number, spotId: number) {
+  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
+  if (!excursion || excursion.spot_ids.includes(spotId)) return;
+  await excursionsStore.update(excursionId, {
+    title: excursion.title,
+    image_url: excursion.image_url ?? undefined,
+    note: excursion.note ?? undefined,
+    date: excursion.date ?? undefined,
+    spot_ids: [...excursion.spot_ids, spotId],
+  });
+}
+
+async function assignSpotToTourTitle(spotId: number, title: string) {
+  const excursion = excursionForGroupTitle(title);
+  if (excursion) {
+    if (!excursion.spot_ids.includes(spotId)) await addSpotToExcursion(excursion.id, spotId);
+  } else {
+    await excursionsStore.create({ title, spot_ids: [spotId] });
+  }
+}
+
+// 8. Spot Form Modal State
+const showSpotModal = ref(false);
+const editingSpot = ref<Spot | null>(null);
+
+function openSpotForm() {
+  editingSpot.value = null;
+  showSpotModal.value = true;
+}
+
+function startEditSpot(spot: Spot | number) {
+  if (typeof spot === 'number') {
+    const found = spotsStore.spots.find((s) => s.id === spot);
+    editingSpot.value = found ?? null;
+  } else {
+    editingSpot.value = spot;
+  }
+  showSpotModal.value = true;
+}
 
 // Card Expansion & Map Cross-Focus Orchestration
 const expandedSpotId = ref<number | null>(null);
@@ -991,248 +897,13 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Touren-Formular: für BEIDE Gruppierungen ("Touren" und "Reise") dasselbe Modal/Modell -
-           der aufklappbare Transportmittel-Abschnitt (#176) macht aus einer normalen Tour bei
-           Bedarf eine ehemalige Reise-Etappe, siehe Konzept-Entscheidung in Issue #68/#176. -->
-          <Modal
-            :model-value="showExcursionForm || editingExcursion !== null"
-            :title="editingExcursion !== null ? 'Tour bearbeiten' : 'Neue Tour'"
-            full-height
-            :confirm-close="isExcursionModalDirty"
-            :confirm-close-title="
-              editingExcursion !== null
-                ? 'Ungespeicherte Änderungen verwerfen?'
-                : 'Entwurf verwerfen?'
-            "
-            :confirm-close-message="
-              editingExcursion !== null
-                ? 'Du hast ungespeicherte Änderungen an dieser Tour vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
-                : 'Du hast bereits Eingaben für diese Tour gemacht. Möchtest du den Entwurf verwerfen?'
-            "
-            :confirm-close-confirm-label="
-              editingExcursion !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
-            "
-            @update:model-value="
-              (v) =>
-                !v && (editingExcursion !== null ? closeEditExcursionForm() : closeExcursionForm())
-            "
-          >
-            <form
-              class="edit-form"
-              @submit.prevent="editingExcursion !== null ? submitEditExcursion() : addExcursion()"
-            >
-              <FormField
-                icon="title"
-                label="Titel"
-                required
-                :invalid="showExcursionTitleError"
-                :modified="isEditTourTitleModified"
-                :error="
-                  showExcursionTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined
-                "
-                v-slot="{ id, invalid, modified }"
-              >
-                <Input
-                  :id="id"
-                  v-model="activeExcursionForm.title"
-                  type="text"
-                  placeholder="Titel"
-                  required
-                  :invalid="invalid"
-                  :modified="modified"
-                  @blur="excursionTitleTouched = true"
-                />
-              </FormField>
-              <FormField icon="note" label="Notiz" :modified="isEditTourNoteModified">
-                <RichTextEditor
-                  v-model="activeExcursionForm.note"
-                  placeholder="Notiz"
-                  compact
-                  expandable
-                />
-              </FormField>
-              <FormField
-                icon="date"
-                label="Datum (sonst „In Planung“)"
-                :modified="isEditTourDateModified"
-                v-slot="{ modified }"
-              >
-                <Input v-model="activeExcursionForm.date" type="date" :modified="modified" />
-              </FormField>
-              <FormField
-                icon="tour"
-                label="Rolle"
-                :modified="isEditTourRoleModified"
-                v-slot="{ modified }"
-              >
-                <Select v-model="activeExcursionForm.role" :modified="modified">
-                  <option value="">🎒 Ausflug</option>
-                  <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
-                    {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
-                      TRAVEL_ROLE_META[r].hint
-                    }})
-                  </option>
-                </Select>
-              </FormField>
-              <p
-                v-if="activeExcursionForm.role && activeExcursionForm.spot_ids.length < 2"
-                class="hint error"
-              >
-                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
-                Anreise/Abreise/Weiterreise werden mindestens Start- und Zielstation benötigt.
-              </p>
-              <CollapsibleFieldset
-                v-if="spotsStore.spots.length"
-                :model-value="
-                  editingExcursion !== null
-                    ? showEditExcursionSpotsSection
-                    : showExcursionSpotsSection
-                "
-                label="Stationen & Route"
-                :count="
-                  activeExcursionForm.spot_ids.length
-                    ? `(${activeExcursionForm.spot_ids.length} zugeordnet)`
-                    : undefined
-                "
-                :icon="FORM_FIELD_ICONS.location"
-                icon-group="formFields"
-                @update:model-value="
-                  (val) => {
-                    if (editingExcursion !== null) {
-                      showEditExcursionSpotsSection = val;
-                    } else {
-                      showExcursionSpotsSection = val;
-                    }
-                  }
-                "
-              >
-                <SpotOrderPicker
-                  v-model="activeExcursionForm.spot_ids"
-                  v-model:legs="activeExcursionForm.legs"
-                  v-model:destination="activeExcursionForm.destination_spot_id"
-                  :spots="spotsStore.spots"
-                  :like-count="spotsStore.likeCountFor"
-                  :users="users"
-                />
-              </CollapsibleFieldset>
-              <CollapsibleFieldset
-                v-if="tracksStore.tracks.length"
-                :model-value="
-                  editingExcursion !== null
-                    ? showEditExcursionTracksSection
-                    : showExcursionTracksSection
-                "
-                label="Aufzeichnungen"
-                :count="
-                  activeExcursionForm.track_ids.length
-                    ? `(${activeExcursionForm.track_ids.length} zugeordnet)`
-                    : undefined
-                "
-                :icon="ACTION_ICONS.recordStart"
-                icon-group="actions"
-                @update:model-value="
-                  (val) => {
-                    if (editingExcursion !== null) {
-                      showEditExcursionTracksSection = val;
-                    } else {
-                      showExcursionTracksSection = val;
-                    }
-                  }
-                "
-              >
-                <div class="excursion-tracks-picker">
-                  <p v-if="!selectableTracksForTour.length" class="empty-subtext">
-                    Keine verfügbaren Aufzeichnungen für diesen Urlaub vorhanden.
-                  </p>
-                  <ul v-else class="excursion-tracks-list">
-                    <li
-                      v-for="trk in selectableTracksForTour"
-                      :key="trk.id"
-                      class="excursion-track-item"
-                      :class="{ 'is-selected': activeExcursionForm.track_ids.includes(trk.id) }"
-                    >
-                      <label class="excursion-track-label" :for="`tour-track-${trk.id}`">
-                        <Checkbox
-                          :id="`tour-track-${trk.id}`"
-                          :checked="activeExcursionForm.track_ids.includes(trk.id)"
-                          @change="onToggleTourTrack(trk)"
-                        />
-                        <div class="excursion-track-info">
-                          <span class="excursion-track-name">{{ trackTitle(trk) }}</span>
-                          <span class="excursion-track-meta">
-                            <span>{{ formatDateTime(trk.started_at) }}</span>
-                            <template v-if="trackDurationLabel(trk)">
-                              · <span>{{ trackDurationLabel(trk) }}</span>
-                            </template>
-                            <span
-                              v-if="trk.visibility === 'private'"
-                              class="privacy-pill privacy-pill--private"
-                              title="Aktuell nur für dich sichtbar"
-                            >
-                              <AppIcon :icon="ACTION_ICONS.private" :size="11" group="actions" />
-                              Privat
-                            </span>
-                          </span>
-                        </div>
-                      </label>
-                    </li>
-                  </ul>
-                </div>
-              </CollapsibleFieldset>
-              <FileAttachments
-                v-if="editingExcursion"
-                domain="ideas"
-                :entity-id="editingExcursion"
-                v-model:uploading="isExcursionUploadingAttachments"
-              />
-              <DraftStatusBar
-                :status="
-                  editingExcursion !== null
-                    ? editExcursionDraft.status.value
-                    : newExcursionDraft.status.value
-                "
-                :restored="
-                  editingExcursion !== null
-                    ? editExcursionDraft.restored.value
-                    : newExcursionDraft.restored.value
-                "
-                :mode="editingExcursion !== null ? 'edit' : 'create'"
-                :can-discard="true"
-                @discard="
-                  editingExcursion !== null
-                    ? discardEditExcursionDraft()
-                    : discardNewExcursionDraft()
-                "
-              />
-              <div class="actions-row">
-                <Button
-                  v-if="editingExcursion !== null"
-                  type="button"
-                  variant="danger"
-                  secondary
-                  :icon="ACTION_ICONS.delete"
-                  :disabled="isExcursionUploadingAttachments"
-                  @click="deleteEditingExcursion"
-                >
-                  Löschen
-                </Button>
-                <div class="spacer"></div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  class="btn-cancel"
-                  @click="
-                    editingExcursion !== null ? closeEditExcursionForm() : closeExcursionForm()
-                  "
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit" :disabled="!canSaveExcursion" :title="excursionSaveTooltip">{{
-                  editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
-                }}</Button>
-              </div>
-            </form>
-          </Modal>
+          <!-- Touren-Formular: Modale Komponente mit useTourForm (#446) -->
+          <ExcursionFormModal
+            v-model:show="showExcursionModal"
+            v-model:excursion="editingExcursion"
+            :users="users"
+            :excursion-for-group-title="excursionForGroupTitle"
+          />
 
           <div
             class="filter-bar"
@@ -1293,546 +964,32 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <Modal
-            :model-value="showSpotForm || editingSpot !== null"
-            :title="editingSpot !== null ? 'Spot bearbeiten' : 'Neuer Spot'"
-            full-height
-            :confirm-close="isSpotModalDirty"
-            :confirm-close-title="
-              editingSpot !== null ? 'Ungespeicherte Änderungen verwerfen?' : 'Entwurf verwerfen?'
-            "
-            :confirm-close-message="
-              editingSpot !== null
-                ? 'Du hast ungespeicherte Änderungen an diesem Spot vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
-                : 'Du hast bereits Eingaben für diesen Spot gemacht. Möchtest du den Entwurf verwerfen?'
-            "
-            :confirm-close-confirm-label="
-              editingSpot !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
-            "
-            @update:model-value="
-              (v) => !v && (editingSpot !== null ? closeEditSpotForm() : closeSpotForm())
-            "
-          >
-            <form
-              class="edit-form"
-              @submit.prevent="editingSpot !== null ? submitEditSpot() : addSpot()"
-            >
-              <!-- 1. Standort-Bereich (Vollflächige Minikarte mit schwebender Suche & Polaroid-Card) -->
-              <div class="spot-location-section">
-                <LocationPicker
-                  ref="spotLocationPickerRef"
-                  v-model="spotManualPin"
-                  v-model:title="activeSpotForm.title"
-                  v-model:category="activeSpotForm.category"
-                  :address="activeSpotForm.address"
-                  :maps-link="activeSpotForm.maps_link"
-                  :proximity-bias="spotPickerCenter"
-                  :center="spotPickerCenter"
-                  :reference-points="
-                    editingSpot !== null ? editSpotReferencePoints : spotReferencePoints
-                  "
-                  :title-required="true"
-                  :title-invalid="showSpotTitleError"
-                  :modified="isEditSpotLocationModified"
-                  @update:address="activeSpotForm.address = $event"
-                  @update:maps-link="onSpotMapsLinkUpdate"
-                  @select="onSpotLocationSelect"
-                  @clear="onSpotLocationClear"
-                  @reset="resetEditSpotLocation"
-                  @blur="spotTitleTouched = true"
-                >
-                  <template #media>
-                    <CoverImagePicker
-                      v-model="activeSpotForm.image_url"
-                      v-model:uploading="isSpotUploadingCoverImage"
-                      variant="polaroid"
-                      :preview-image="
-                        editingSpot !== null ? editSpotPreviewImage : spotPreviewImage
-                      "
-                      :placeholder-icon="groupIconDef(activeSpotForm.category)"
-                      icon-group="categories"
-                      modal-title="Spot-Bild bearbeiten"
-                      :modified="isEditSpotImageModified"
-                      :initial-value="editingSpot !== null ? (editingSpot.image_url ?? '') : ''"
-                      :search-context="spotImageSearchContext"
-                      :initial-suggestions="spotPreviewImages"
-                      @reset="resetEditSpotImage"
-                    />
-                  </template>
-                </LocationPicker>
-                <p v-if="showSpotTitleError" class="hint error">
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-                  Bitte gib einen Titel für den Spot ein.
-                </p>
-                <p
-                  v-if="editingSpot !== null ? editSpotLocationError : spotLocationError"
-                  class="hint error"
-                >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort
-                  konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn
-                  manuell zu setzen.
-                </p>
-              </div>
-              <div
-                class="spot-side-field"
-                :class="{ 'is-modified': isEditSpotSideModified }"
-                role="group"
-                aria-label="Bereich des Standorts"
-              >
-                <div class="spot-side-header">
-                  <span class="spot-side-label">
-                    <span>Bereich</span>
-                    <span
-                      v-if="isEditSpotSideModified"
-                      class="modified-dot"
-                      title="Geändert"
-                      aria-label="Geändert"
-                    />
-                  </span>
-                  <InfoPopover
-                    title="Was bedeutet Bereich?"
-                    aria-label="Erklärung zum Standort-Bereich"
-                    :menu-width="280"
-                  >
-                    <p>
-                      <strong>Urlaubsort:</strong> z. B. Ausflugsziele, Restaurants oder Unterkünfte
-                      am Reiseziel.
-                    </p>
-                    <p>
-                      <strong>Heimat-Seite:</strong> z. B. der heimische Flughafen/Bahnhof/Zuhause
-                      für Reise-Etappen.
-                    </p>
-                    <p class="popover-tip">
-                      🗺️ Wird für das Auswählen des passenden Kartenausschnitts verwendet.
-                    </p>
-                  </InfoPopover>
-                </div>
-                <SegmentedToggle
-                  id="spotFormSideToggle"
-                  class="spot-side-toggle"
-                  :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
-                  :options="SPOT_SIDE_OPTIONS"
-                  @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
-                />
-              </div>
-              <template v-if="activeSpotForm.category === 'Unterkunft'">
-                <div class="row">
-                  <FormField
-                    icon="date"
-                    label="Check-in-Datum"
-                    :modified="isEditSpotStartDateModified"
-                    v-slot="{ modified }"
-                  >
-                    <Input v-model="activeSpotForm.start_date" type="date" :modified="modified" />
-                  </FormField>
-                  <FormField
-                    icon="date"
-                    label="Check-out-Datum"
-                    :modified="isEditSpotEndDateModified"
-                    v-slot="{ modified }"
-                  >
-                    <Input v-model="activeSpotForm.end_date" type="date" :modified="modified" />
-                  </FormField>
-                </div>
-                <div class="row">
-                  <FormField
-                    icon="time"
-                    label="Check-in-Zeit"
-                    :modified="isEditSpotCheckinModified"
-                    v-slot="{ modified }"
-                  >
-                    <Input
-                      v-model="activeSpotForm.checkin"
-                      type="text"
-                      placeholder="Check-in (z. B. 15:00)"
-                      :modified="modified"
-                    />
-                  </FormField>
-                  <FormField
-                    icon="time"
-                    label="Check-out-Zeit"
-                    :modified="isEditSpotCheckoutModified"
-                    v-slot="{ modified }"
-                  >
-                    <Input
-                      v-model="activeSpotForm.checkout"
-                      type="text"
-                      placeholder="Check-out (z. B. 11:00)"
-                      :modified="modified"
-                    />
-                  </FormField>
-                </div>
-                <FormField
-                  icon="contact"
-                  label="Kontakt"
-                  :modified="isEditSpotContactModified"
-                  v-slot="{ modified }"
-                >
-                  <Input
-                    v-model="activeSpotForm.contact"
-                    type="text"
-                    placeholder="Kontakt (Telefon/E-Mail/Text)"
-                    :modified="modified"
-                  />
-                </FormField>
-                <div class="row">
-                  <FormField
-                    icon="amount"
-                    label="Kosten"
-                    :modified="isEditSpotAmountModified"
-                    v-slot="{ modified }"
-                  >
-                    <Input
-                      v-model="activeSpotForm.amount"
-                      type="number"
-                      step="0.01"
-                      placeholder="Kosten (€)"
-                      :modified="modified"
-                    />
-                  </FormField>
-                  <FormField
-                    v-if="users.length > 1"
-                    icon="shared"
-                    label="Bezahlt von"
-                    :modified="isEditSpotPaidByModified"
-                    v-slot="{ modified }"
-                  >
-                    <Select v-model="activeSpotForm.paid_by_user_id" :modified="modified">
-                      <option value="">Bezahlt von –</option>
-                      <option v-for="u in users" :key="u.id" :value="String(u.id)">
-                        {{ u.avatar }} {{ u.username }}
-                      </option>
-                    </Select>
-                  </FormField>
-                </div>
-              </template>
-              <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified">
-                <RichTextEditor
-                  v-model="activeSpotForm.note"
-                  placeholder="Notiz"
-                  compact
-                  expandable
-                />
-              </FormField>
-              <!-- Kombiniertes "Einplanen"-Fieldset: Touren zuordnen + Datum einplanen in einem
-                   Bereich, damit klar wird, dass beide Konzepte Alternativen zum selben Zweck sind. -->
-              <CollapsibleFieldset
-                v-model="showSpotScheduleSection"
-                label="Einplanen"
-                :icon="FORM_FIELD_ICONS.date"
-                icon-group="formFields"
-              >
-                <template #count>
-                  <span
-                    v-if="activeSpotForm.tourTitles.length || editSpotScheduledItems.length"
-                    class="picker-count"
-                  >
-                    ({{
-                      [
-                        activeSpotForm.tourTitles.length
-                          ? `${activeSpotForm.tourTitles.length} ${activeSpotForm.tourTitles.length === 1 ? 'Tour' : 'Touren'}`
-                          : '',
-                        editSpotScheduledItems.length && editingSpot !== null
-                          ? `${editSpotScheduledItems.length} ${editSpotScheduledItems.length === 1 ? 'Termin' : 'Termine'}`
-                          : '',
-                      ]
-                        .filter(Boolean)
-                        .join(', ')
-                    }})
-                  </span>
-                </template>
-                <p class="schedule-hint">
-                  <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
-                  Ordne den Spot einer Tour zu oder plane ihn direkt für ein Datum ein (ohne Tour).
-                </p>
+          <!-- Spot-Formular: Modale Komponente mit useSpotForm (#446) -->
+          <SpotFormModal
+            v-model:show="showSpotModal"
+            v-model:spot="editingSpot"
+            :trip-id="tripId"
+            :users="users"
+            :spot-scheduled-dates="spotScheduledDates"
+          />
 
-                <!-- Oben: Datum-Hinzufügen-Button (nur im Edit-Modus) & Tour-zuordnen-Combobox -->
-                <div class="schedule-controls">
-                  <div v-if="editingSpot !== null" class="schedule-actions-row">
-                    <button
-                      ref="addScheduleBtnRef"
-                      type="button"
-                      class="add-schedule-btn"
-                      title="Zu einem Datum einplanen"
-                      @click="toggleAddSchedulePopover($event)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
-                      <span>Datum hinzufügen</span>
-                    </button>
-                    <Teleport to="body">
-                      <template v-if="addSchedulePopoverOpen">
-                        <PickerMenu
-                          class="add-schedule-popover"
-                          :style="addScheduleMenuStyle"
-                          @close="addSchedulePopoverOpen = false"
-                        >
-                          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-                          <label
-                            style="
-                              display: block;
-                              font-size: 0.85rem;
-                              font-weight: 500;
-                              margin-bottom: var(--space-2);
-                            "
-                          >
-                            <span>Datum auswählen:</span>
-                            <Input
-                              type="date"
-                              v-model="addScheduleDateVal"
-                              class="field-input"
-                              style="
-                                width: 100%;
-                                margin-top: var(--space-2);
-                                margin-bottom: var(--space-3);
-                              "
-                              @keyup.enter="submitAddSpotToDate"
-                            />
-                          </label>
-                          <ButtonGroup align="end" no-margin>
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              small
-                              @click="addSchedulePopoverOpen = false"
-                            >
-                              Abbrechen
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="primary"
-                              small
-                              :disabled="!addScheduleDateVal"
-                              @click="submitAddSpotToDate"
-                            >
-                              Hinzufügen
-                            </Button>
-                          </ButtonGroup>
-                        </PickerMenu>
-                      </template>
-                    </Teleport>
-                  </div>
-                  <div v-else class="new-spot-schedule-row">
-                    <FormField icon="date" label="Direkt für Datum einplanen">
-                      <Input
-                        type="date"
-                        v-model="spotForm.scheduledDate"
-                        placeholder="Datum auswählen"
-                      />
-                    </FormField>
-                  </div>
-
-                  <!-- Tour zuordnen (Combobox, in beiden Modi: Neu + Edit) -->
-                  <TourAssignPicker
-                    v-model="activeSpotForm.tourTitles"
-                    :tour-options="allTourTitles"
-                    :category="activeSpotForm.category"
-                    :is-home="activeSpotForm.is_home"
-                    :hide-chips="true"
-                    :hide-hint="true"
-                  />
-                </div>
-
-                <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
-                <div
-                  v-if="
-                    activeSpotForm.tourTitles.length ||
-                    (editingSpot !== null && editSpotScheduledItems.length)
-                  "
-                  class="assign-chips"
-                >
-                  <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
-                  <span
-                    v-for="title in activeSpotForm.tourTitles"
-                    :key="'tour-' + title"
-                    class="assign-chip tour-chip"
-                    :class="isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour'"
-                  >
-                    <span class="assign-chip-action">
-                      <AppIcon
-                        :icon="
-                          isTourTravel(title)
-                            ? SECTION_ICON_DEFS.travel
-                            : SECTION_ICON_DEFS.excursions
-                        "
-                        :size="12"
-                        group="navigation"
-                      />
-                      <span class="assign-chip-label">
-                        {{ title
-                        }}<template v-if="getTourDate(title)">
-                          &nbsp;·&nbsp;{{ formatDate(getTourDate(title)!) }}</template
-                        >
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      class="assign-chip-remove"
-                      :aria-label="`Von '${title}' entfernen`"
-                      title="Entfernen"
-                      @click="removeTourTitle(title)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
-                    </button>
-                  </span>
-
-                  <!-- Termin-Chips: grau (--color-calendar-appointment), nur im Edit-Modus -->
-                  <template v-if="editingSpot !== null">
-                    <span
-                      v-for="item in editSpotScheduledItems"
-                      :key="'sched-' + item.id"
-                      class="assign-chip assign-chip--schedule"
-                      :class="{ 'is-done': !!item.done }"
-                    >
-                      <button
-                        type="button"
-                        class="assign-chip-done-toggle"
-                        :title="item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'"
-                        :aria-label="
-                          item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'
-                        "
-                        @click.stop="toggleScheduledItemDone(item)"
-                      >
-                        <AppIcon
-                          :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
-                          :size="13"
-                          group="actions"
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        class="assign-chip-action"
-                        title="Termin im Kalender öffnen"
-                        @click="openScheduledItemDetail(item)"
-                      >
-                        <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="assign-chip-remove"
-                        :aria-label="`Termin am ${formatDate(item.date)} entfernen`"
-                        title="Termin entfernen"
-                        @click="removeScheduledItemFromSpot(item)"
-                      >
-                        <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
-                      </button>
-                    </span>
-                  </template>
-                </div>
-              </CollapsibleFieldset>
-              <FileAttachments
-                v-if="editingSpot"
-                domain="spots"
-                :entity-id="editingSpot.id"
-                v-model:uploading="isSpotUploadingAttachments"
-              />
-              <DraftStatusBar
-                :status="
-                  editingSpot !== null ? editSpotDraft.status.value : newSpotDraft.status.value
-                "
-                :restored="
-                  editingSpot !== null ? editSpotDraft.restored.value : newSpotDraft.restored.value
-                "
-                :mode="editingSpot !== null ? 'edit' : 'create'"
-                :can-discard="true"
-                @discard="editingSpot !== null ? discardEditSpotDraft() : discardNewSpotDraft()"
-              />
-              <div class="actions-row">
-                <Button
-                  v-if="editingSpot !== null"
-                  type="button"
-                  variant="danger"
-                  secondary
-                  :icon="ACTION_ICONS.delete"
-                  :disabled="isSpotUploadingAttachments || isSpotUploadingCoverImage"
-                  @click="deleteEditingSpot"
-                >
-                  Löschen
-                </Button>
-                <div class="spacer"></div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  class="btn-cancel"
-                  @click="editingSpot !== null ? closeEditSpotForm() : closeSpotForm()"
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit" :disabled="!canSaveSpot" :title="spotSaveTooltip">{{
-                  editingSpot !== null ? 'Speichern' : 'Hinzufügen'
-                }}</Button>
-              </div>
-            </form>
-          </Modal>
-
-          <div
-            v-if="spotGroups.length > 1"
-            class="category-nav-sentinel"
-            :ref="setCategoryNavSentinelRef"
-          ></div>
-          <div
-            class="category-nav-wrap"
-            v-if="spotGroups.length > 1"
-            :class="{ 'is-stuck': isCategoryNavStuck }"
-          >
-            <nav
-              class="category-nav"
-              aria-label="Zu Kategorie springen"
-              :ref="setCategoryNavRef"
-              @scroll="updateNavArrows"
-            >
-              <div class="category-nav-track">
-                <button
-                  v-for="grp in spotGroups"
-                  :key="grp.category"
-                  type="button"
-                  class="category-nav-item"
-                  :class="{ active: activeCategory === grp.category }"
-                  :aria-current="activeCategory === grp.category ? 'true' : undefined"
-                  :ref="(el) => setNavItemRef(grp.category, el)"
-                  @click="scrollToCategory(grp.category)"
-                >
-                  <AppIcon
-                    class="category-nav-icon"
-                    :icon="grp.iconDef"
-                    group="categories"
-                    :active="activeCategory === grp.category"
-                    :color="groupIconColor(grp)"
-                  />
-                  <span class="category-nav-label">{{ grp.category }}</span>
-                </button>
-                <span
-                  class="category-nav-underline"
-                  :style="{
-                    transform: `translateX(${underlineLeft}px)`,
-                    width: `${underlineWidth}px`,
-                  }"
-                  aria-hidden="true"
-                ></span>
-              </div>
-            </nav>
-            <!-- Dezente Klick-Flächen statt eines sichtbaren nativen Scrollbalkens (#144, siehe
-             .category-nav's scrollbar-width/::-webkit-scrollbar-Reset im CSS) - nur sichtbar, wenn in
-             die jeweilige Richtung tatsächlich noch etwas zu scrollen ist (canScrollNavLeft/Right,
-             live nachgeführt per @scroll/ResizeObserver/spotGroups-Watcher im Script). -->
-            <button
-              v-if="canScrollNavLeft"
-              type="button"
-              class="category-nav-arrow left"
-              aria-label="Kategorien nach links scrollen"
-              @click="scrollNavBy(-1)"
-            >
-              <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
-            </button>
-            <button
-              v-if="canScrollNavRight"
-              type="button"
-              class="category-nav-arrow right"
-              aria-label="Kategorien nach rechts scrollen"
-              @click="scrollNavBy(1)"
-            >
-              <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
-            </button>
-          </div>
+          <!-- Sticky Category Nav Bar (#144, #446) -->
+          <ExcursionCategoryNav
+            :spot-groups="spotGroups"
+            :active-category="activeCategory"
+            :is-stuck="isCategoryNavStuck"
+            :underline-left="underlineLeft"
+            :underline-width="underlineWidth"
+            :can-scroll-left="canScrollNavLeft"
+            :can-scroll-right="canScrollNavRight"
+            :group-icon-color="groupIconColor"
+            :set-sentinel-ref="setCategoryNavSentinelRef"
+            :set-nav-ref="setCategoryNavRef"
+            :set-nav-item-ref="setNavItemRef"
+            @select-category="scrollToCategory"
+            @scroll-nav="scrollNavBy"
+            @update-nav-arrows="updateNavArrows"
+          />
 
           <template v-if="groupMode !== 'tracks'">
             <section
@@ -1906,381 +1063,81 @@ onUnmounted(() => {
                 :inert="!!(grp.excursion && expandedExcursionId !== grp.excursion.id)"
               >
                 <div class="tour-station-accordion-inner">
-                  <div
-                    class="tour-station-wrap"
-                    :class="{
-                      'is-tour': grp.excursion,
-                      'single-col': grp.excursion && getTourCols(grp.excursion.id) === 1,
-                    }"
-                    :style="{
-                      '--tour-theme-color': grp.excursion?.role
-                        ? 'var(--color-travel)'
-                        : 'var(--color-tour)',
-                      '--tour-theme-tint': grp.excursion?.role
-                        ? 'var(--color-travel-tint)'
-                        : 'var(--color-tour-tint)',
-                    }"
-                    :ref="(el) => grp.excursion && setTourWrapRef(grp.excursion.id, el)"
-                  >
-                    <svg
-                      v-if="grp.excursion && tourLines.get(grp.excursion.id)"
-                      class="tour-station-line"
-                      :width="tourLines.get(grp.excursion.id)!.width"
-                      :height="tourLines.get(grp.excursion.id)!.height"
-                      aria-hidden="true"
-                    >
-                      <defs>
-                        <linearGradient
-                          v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
-                          :id="`tour-gradient-hin-${grp.excursion.id}`"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="0%"
-                            stop-color="var(--tour-theme-color, var(--color-primary))"
-                          />
-                          <stop offset="100%" stop-color="var(--color-primary)" />
-                        </linearGradient>
-                        <linearGradient
-                          v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
-                          :id="`tour-gradient-rueck-${grp.excursion.id}`"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="0%"
-                            stop-color="var(--tour-theme-color, var(--color-primary))"
-                          />
-                          <stop offset="100%" stop-color="var(--color-primary)" />
-                        </linearGradient>
-                      </defs>
+                  <!-- Touren: Schlangen-Layout (Serpentine) via TourSerpentineWrap (#446) -->
+                  <TourSerpentineWrap
+                    v-if="grp.excursion"
+                    :excursion="grp.excursion"
+                    :items="grp.items"
+                    :tour-line="tourLines.get(grp.excursion.id)"
+                    :cols="getTourCols(grp.excursion.id)"
+                    :rows="getTourRows(grp.excursion, grp.items)"
+                    :expanded-spot-id="expandedSpotId"
+                    :highlighted-ids="highlightedIds"
+                    :day-focus-highlighted-ids="dayFocusHighlightedIds"
+                    :spot-scheduled-dates="spotScheduledDates"
+                    :users="users"
+                    :all-tour-titles="allTourTitles"
+                    :spot-comment-items-for="spotCommentItemsFor"
+                    :get-tour-layover="getTourLayover"
+                    :set-spot-ref="setSpotRef"
+                    :set-tour-wrap-ref="(el) => setTourWrapRef(grp.excursion!.id, el)"
+                    @open-leg-modal="
+                      (fromSpot, toSpot) => openCardLegModal(grp.excursion!, fromSpot, toSpot)
+                    "
+                    @toggle-destination="
+                      (spotId) => toggleExcursionDestination(grp.excursion!, spotId)
+                    "
+                    @edit-spot="(spot) => startEditSpot(spot.id)"
+                    @toggle-spot-like="toggleSpotLike"
+                    @submit-spot-comment="
+                      ({ spotId, content }) => submitSpotComment(spotId, content)
+                    "
+                    @remove-spot-comment="removeSpotComment"
+                    @update-spot-comment="
+                      ({ commentId, content }) => updateSpotComment(commentId, content)
+                    "
+                    @toggle-spot-comment-like="toggleSpotCommentLike"
+                    @open-spot="onSpotCardOpen"
+                    @close-spot="onSpotCardClose"
+                    @show-spot-on-map="onSpotShowOnMap"
+                    @assign-tour="({ spotId, title }) => assignSpotToTourTitle(spotId, title)"
+                  />
 
-                      <path
-                        v-if="tourLines.get(grp.excursion.id)!.hinwegPath"
-                        :d="tourLines.get(grp.excursion.id)!.hinwegPath!.d"
-                        fill="none"
-                        :style="{ stroke: `url(#tour-gradient-hin-${grp.excursion.id})` }"
-                        stroke-width="3"
-                        stroke-dasharray="6,6"
-                        stroke-linecap="round"
+                  <!-- Nicht-Touren (z. B. "Ohne Tour"): Standard-Grid -->
+                  <TransitionGroup v-else tag="div" name="list" class="grid cards">
+                    <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
+                      <SpotCard
+                        :ref="(el) => setSpotRef(item.spot.id, el)"
+                        class="staggered-spot"
+                        :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
+                        :spot="item.spot"
+                        :highlighted="
+                          highlightedIds.has(item.spot.id) ||
+                          dayFocusHighlightedIds.has(item.spot.id)
+                        "
+                        :expanded="expandedSpotId === item.spot.id"
+                        :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
+                        :creator-label="creatorLabel(item.spot.created_by)"
+                        :payer-label="creatorLabel(item.spot.paid_by_user_id)"
+                        :like-count="spotsStore.likeCountFor(item.spot.id)"
+                        :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
+                        :comments="spotCommentItemsFor(item.spot.id)"
+                        :group-mode="groupMode === 'tours' ? 'tours' : 'category'"
+                        :tour-options="allTourTitles"
+                        :has-multiple-members="users.length > 1"
+                        @edit="startEditSpot"
+                        @toggle-like="toggleSpotLike(item.spot.id)"
+                        @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+                        @remove-comment="removeSpotComment"
+                        @update-comment="updateSpotComment"
+                        @toggle-comment-like="toggleSpotCommentLike"
+                        @open="onSpotCardOpen(item.spot)"
+                        @close="onSpotCardClose"
+                        @show-on-map="onSpotShowOnMap(item.spot)"
+                        @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
                       />
-                      <path
-                        v-if="tourLines.get(grp.excursion.id)!.rueckwegPath"
-                        :d="tourLines.get(grp.excursion.id)!.rueckwegPath!.d"
-                        fill="none"
-                        :style="{ stroke: `url(#tour-gradient-rueck-${grp.excursion.id})` }"
-                        stroke-width="3"
-                        stroke-dasharray="6,6"
-                        stroke-linecap="round"
-                      />
-
-                      <circle
-                        v-for="(dot, i) in tourLines.get(grp.excursion.id)!.dots"
-                        :key="'dot-' + i"
-                        :cx="dot.x"
-                        :cy="dot.y"
-                        r="4.5"
-                        :style="{
-                          fill: dot.isEnd
-                            ? 'var(--color-primary)'
-                            : 'var(--tour-theme-color, var(--color-primary))',
-                          stroke: 'var(--color-surface)',
-                          strokeWidth: '2px',
-                        }"
-                      />
-                    </svg>
-
-                    <!-- Touren: Schlangen-Layout (Serpentine / S-Kurve) mit adaptiver Spaltenanzahl -->
-                    <div
-                      v-if="grp.excursion"
-                      class="tour-serpentine-wrap"
-                      :style="{
-                        '--tour-cols': getTourCols(grp.excursion.id),
-                        '--tour-conn-width': '76px',
-                      }"
-                    >
-                      <div
-                        v-for="row in getTourRows(grp.excursion, grp.items)"
-                        :key="`row-${grp.excursion.id}-${row.rowIndex}`"
-                        class="tour-serpentine-row-wrap"
-                      >
-                        <div
-                          class="tour-serpentine-row"
-                          :class="{
-                            'is-rtl': row.isRtl,
-                            'is-ltr': !row.isRtl,
-                            'single-col': getTourCols(grp.excursion.id) === 1,
-                          }"
-                        >
-                          <template v-for="cell in row.cells" :key="cell.key">
-                            <!-- Spot-Kachel -->
-                            <div v-if="cell.type === 'spot'" class="tour-spot-cell">
-                              <SpotCard
-                                :ref="(el) => setSpotRef(cell.spot.id, el)"
-                                class="staggered-spot"
-                                :data-spot-id="cell.spot.id"
-                                :style="[
-                                  {
-                                    '--stagger-idx': cell.globalIndex,
-                                    '--stagger-total': grp.items.length,
-                                  },
-                                ]"
-                                :spot="cell.spot"
-                                :excursion-context="{
-                                  id: grp.excursion.id,
-                                  isDestination: grp.excursion.destination_spot_id === cell.spot.id,
-                                  hasDestination: grp.excursion.destination_spot_id != null,
-                                }"
-                                @toggle-destination="
-                                  toggleExcursionDestination(grp.excursion, cell.spot.id)
-                                "
-                                :highlighted="
-                                  highlightedIds.has(cell.spot.id) ||
-                                  dayFocusHighlightedIds.has(cell.spot.id)
-                                "
-                                :expanded="expandedSpotId === cell.spot.id"
-                                :scheduled-date="spotScheduledDates.get(cell.spot.id) ?? null"
-                                :creator-label="creatorLabel(cell.spot.created_by)"
-                                :payer-label="creatorLabel(cell.spot.paid_by_user_id)"
-                                :like-count="spotsStore.likeCountFor(cell.spot.id)"
-                                :liked="spotsStore.likedByMe(cell.spot.id, auth.user?.id)"
-                                :comments="spotCommentItemsFor(cell.spot.id)"
-                                :group-mode="groupMode === 'tours' ? 'tours' : 'category'"
-                                :tour-options="allTourTitles"
-                                :has-multiple-members="users.length > 1"
-                                :layover-minutes="
-                                  cell.globalIndex > 0 && cell.globalIndex < grp.items.length - 1
-                                    ? getTourLayover(grp.excursion, grp.items, cell.globalIndex)
-                                    : null
-                                "
-                                @edit="startEditSpot"
-                                @toggle-like="toggleSpotLike(cell.spot.id)"
-                                @submit-comment="
-                                  (content) => submitSpotComment(cell.spot.id, content)
-                                "
-                                @remove-comment="removeSpotComment"
-                                @update-comment="updateSpotComment"
-                                @toggle-comment-like="toggleSpotCommentLike"
-                                @open="onSpotCardOpen(cell.spot)"
-                                @close="onSpotCardClose"
-                                @show-on-map="onSpotShowOnMap(cell.spot)"
-                                @assign-tour="(title) => assignSpotToTourTitle(cell.spot.id, title)"
-                              />
-                            </div>
-
-                            <!-- Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) -->
-                            <div
-                              v-else-if="cell.type === 'leg-horizontal'"
-                              class="tour-leg-connector is-horizontal"
-                              :class="{ 'is-rtl': cell.isRtl }"
-                            >
-                              <!-- Teilstrecke existiert -->
-                              <div
-                                v-if="cell.leg"
-                                class="tour-leg-pill is-horizontal-leg"
-                                tabindex="0"
-                                role="button"
-                                :title="getLegTooltip(cell.leg, cell.fromSpot, cell.toSpot)"
-                                :aria-label="`Teilstrecke von ${cell.fromSpot.title} nach ${cell.toSpot.title} bearbeiten`"
-                                @click.stop="
-                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                                "
-                                @keydown.enter.self="
-                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                                "
-                                @keydown.space.self.prevent="
-                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                                "
-                              >
-                                <span class="leg-pill-icon">
-                                  {{ travelTypeIcon(cell.leg.transport_type ?? null) }}
-                                </span>
-                                <span
-                                  v-if="getLegDurationParts(cell.leg)"
-                                  class="leg-pill-duration"
-                                >
-                                  <span
-                                    v-for="(part, pIdx) in getLegDurationParts(cell.leg)"
-                                    :key="pIdx"
-                                    class="leg-duration-part"
-                                  >
-                                    {{ part }}
-                                  </span>
-                                </span>
-                                <span v-else-if="cell.leg.departure_time" class="leg-pill-duration">
-                                  <span class="leg-duration-part">{{
-                                    cell.leg.departure_time
-                                  }}</span>
-                                </span>
-                                <span v-if="cell.leg.amount != null" class="leg-pill-cost nobr">
-                                  {{ cell.leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
-                                </span>
-                              </div>
-
-                              <!-- Keine Teilstrecke erfasst -> kleiner Add-Button -->
-                              <button
-                                v-else
-                                type="button"
-                                class="tour-leg-add-btn is-horizontal-leg"
-                                title="Teilstrecke erfassen"
-                                :aria-label="`Teilstrecke zwischen ${cell.fromSpot.title} und ${cell.toSpot.title} erfassen`"
-                                @click.stop="
-                                  openCardLegModal(grp.excursion, cell.fromSpot, cell.toSpot)
-                                "
-                              >
-                                <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
-                                <span class="leg-add-text">Teilstrecke</span>
-                              </button>
-                            </div>
-                          </template>
-                        </div>
-
-                        <!-- Zeilenumbruch-Verbinder (Zentriert zwischen den Kacheln auf der gestrichelten Linie) -->
-                        <div
-                          v-if="row.rowBreak"
-                          class="tour-row-break"
-                          :class="[
-                            'align-' + row.rowBreak.alignSide,
-                            { 'single-col': getTourCols(grp.excursion.id) === 1 },
-                          ]"
-                        >
-                          <div class="tour-row-break-inner">
-                            <!-- Teilstrecke existiert -->
-                            <div
-                              v-if="row.rowBreak.leg"
-                              :key="`leg-${row.rowBreak.fromSpot.id}-${row.rowBreak.toSpot.id}`"
-                              class="tour-leg-pill is-row-break"
-                              tabindex="0"
-                              role="button"
-                              :title="
-                                getLegTooltip(
-                                  row.rowBreak.leg,
-                                  row.rowBreak.fromSpot,
-                                  row.rowBreak.toSpot
-                                )
-                              "
-                              :aria-label="`Teilstrecke von ${row.rowBreak.fromSpot.title} nach ${row.rowBreak.toSpot.title} bearbeiten`"
-                              @click.stop="
-                                openCardLegModal(
-                                  grp.excursion,
-                                  row.rowBreak.fromSpot,
-                                  row.rowBreak.toSpot
-                                )
-                              "
-                              @keydown.enter.self="
-                                openCardLegModal(
-                                  grp.excursion,
-                                  row.rowBreak.fromSpot,
-                                  row.rowBreak.toSpot
-                                )
-                              "
-                              @keydown.space.self.prevent="
-                                openCardLegModal(
-                                  grp.excursion,
-                                  row.rowBreak.fromSpot,
-                                  row.rowBreak.toSpot
-                                )
-                              "
-                            >
-                              <span class="leg-pill-icon">
-                                {{ travelTypeIcon(row.rowBreak.leg.transport_type ?? null) }}
-                              </span>
-                              <span v-if="row.rowBreak.leg.transport_type" class="leg-pill-type">
-                                {{ row.rowBreak.leg.transport_type }}
-                              </span>
-                              <span
-                                v-if="getLegDurationParts(row.rowBreak.leg)"
-                                class="leg-pill-duration"
-                              >
-                                <span
-                                  v-for="(part, pIdx) in getLegDurationParts(row.rowBreak.leg)"
-                                  :key="pIdx"
-                                  class="leg-duration-part"
-                                >
-                                  {{ part }}
-                                </span>
-                              </span>
-                              <span
-                                v-else-if="row.rowBreak.leg.departure_time"
-                                class="leg-pill-duration"
-                              >
-                                <span class="leg-duration-part">{{
-                                  row.rowBreak.leg.departure_time
-                                }}</span>
-                              </span>
-                              <span
-                                v-if="row.rowBreak.leg.amount != null"
-                                class="leg-pill-cost nobr"
-                              >
-                                {{ row.rowBreak.leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
-                              </span>
-                            </div>
-
-                            <!-- Keine Teilstrecke am Umbruch erfasst -->
-                            <div v-else class="tour-leg-add-wrap">
-                              <button
-                                type="button"
-                                class="tour-leg-add-btn is-row-break"
-                                title="Teilstrecke erfassen"
-                                :aria-label="`Teilstrecke zwischen ${row.rowBreak.fromSpot.title} und ${row.rowBreak.toSpot.title} erfassen`"
-                                @click.stop="
-                                  openCardLegModal(
-                                    grp.excursion,
-                                    row.rowBreak.fromSpot,
-                                    row.rowBreak.toSpot
-                                  )
-                                "
-                              >
-                                <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
-                                <span class="leg-add-text">Teilstrecke erfassen</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Nicht-Touren (z. B. "Ohne Tour"): Standard-Grid -->
-                    <TransitionGroup v-else tag="div" name="list" class="grid cards">
-                      <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
-                        <SpotCard
-                          :ref="(el) => setSpotRef(item.spot.id, el)"
-                          class="staggered-spot"
-                          :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
-                          :spot="item.spot"
-                          :highlighted="
-                            highlightedIds.has(item.spot.id) ||
-                            dayFocusHighlightedIds.has(item.spot.id)
-                          "
-                          :expanded="expandedSpotId === item.spot.id"
-                          :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
-                          :creator-label="creatorLabel(item.spot.created_by)"
-                          :payer-label="creatorLabel(item.spot.paid_by_user_id)"
-                          :like-count="spotsStore.likeCountFor(item.spot.id)"
-                          :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-                          :comments="spotCommentItemsFor(item.spot.id)"
-                          :group-mode="groupMode === 'tours' ? 'tours' : 'category'"
-                          :tour-options="allTourTitles"
-                          :has-multiple-members="users.length > 1"
-                          @edit="startEditSpot"
-                          @toggle-like="toggleSpotLike(item.spot.id)"
-                          @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-                          @remove-comment="removeSpotComment"
-                          @update-comment="updateSpotComment"
-                          @toggle-comment-like="toggleSpotCommentLike"
-                          @open="onSpotCardOpen(item.spot)"
-                          @close="onSpotCardClose"
-                          @show-on-map="onSpotShowOnMap(item.spot)"
-                          @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
-                        />
-                      </template>
-                    </TransitionGroup>
-                  </div>
+                    </template>
+                  </TransitionGroup>
 
                   <!-- Hinweis, wenn einige Spots der Tour gerade durch Filter ausgeblendet sind (#partially-filtered) -->
                   <p
@@ -2296,9 +1153,9 @@ onUnmounted(() => {
                 </div>
               </div>
               <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
-             kein Spot zugeordnet (getTourTotalSpotsCount(grp.excursion) === 0), oder es sind welche zugeordnet,
-             aber der aktive Filter (Kategorie, Status oder Suchbegriff) blendet sie gerade alle aus – ohne diese
-             Unterscheidung wirkte eine reine Filter-Situation fälschlich wie eine leere Tour. -->
+              kein Spot zugeordnet (getTourTotalSpotsCount(grp.excursion) === 0), oder es sind welche zugeordnet,
+              aber der aktive Filter (Kategorie, Status oder Suchbegriff) blendet sie gerade alle aus – ohne diese
+              Unterscheidung wirkte eine reine Filter-Situation fälschlich wie eine leere Tour. -->
               <p
                 v-if="grp.excursion && isTourAllSpotsFiltered(grp.excursion, grp.items.length)"
                 class="empty"
@@ -2315,14 +1172,14 @@ onUnmounted(() => {
               </p>
             </section>
             <div v-if="!spotGroups.length" class="empty-state-wrap">
-              <p class="empty">
+              <EmptyState>
                 <template v-if="hasActiveFilters">
                   Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen Filter
                   oder Suchbegriffe gefunden.
                 </template>
                 <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
                 <template v-else> Noch keine Spots angelegt. </template>
-              </p>
+              </EmptyState>
               <Button
                 v-if="hasActiveFilters"
                 variant="secondary"
@@ -2336,115 +1193,16 @@ onUnmounted(() => {
             </div>
           </template>
 
-          <div v-else class="tracks-tab-content">
-            <div v-if="!tracksStore.tracks.length" class="empty-state-wrap tracks-empty-state">
-              <p class="empty">
-                Noch keine Tracks aufgezeichnet.<br />
-                <span class="empty-subtext">
-                  Starte eine Aufzeichnung über den Button oben oder direkt auf der Karte.
-                </span>
-              </p>
-            </div>
-            <div v-else class="tracks-view">
-              <ul class="tracks-list">
-                <li
-                  v-for="track in tracksStore.tracks"
-                  :key="track.id"
-                  class="track-row"
-                  :class="{ active: Number(drawers.mapFocusTrackId) === Number(track.id) }"
-                >
-                  <button type="button" class="track-row-main" @click="onTrackShowOnMap(track.id)">
-                    <span class="track-row-title">
-                      <AppIcon
-                        v-if="track.visibility === 'private'"
-                        :icon="ACTION_ICONS.private"
-                        :size="13"
-                        group="actions"
-                        class="track-visibility-lock"
-                        title="Nur für dich sichtbar (privat)"
-                      />
-                      <span>{{ trackTitle(track) }}</span>
-                    </span>
-                    <span class="track-row-meta">
-                      <span class="track-meta-author" :title="trackAuthorTitle(track)">
-                        <span class="track-meta-avatar">{{ trackAuthorAvatar(track) }}</span>
-                        <span class="track-meta-name">{{ trackAuthorName(track) }}</span>
-                        <span class="track-meta-sep" aria-hidden="true">·</span>
-                      </span>
-                      <span
-                        v-if="!trackTitle(track).includes(formatDateTime(track.started_at))"
-                        class="track-meta-time"
-                      >
-                        {{ formatDateTime(track.started_at) }}
-                        <template
-                          v-if="
-                            !track.ended_at ||
-                            track.end_reason === 'aborted' ||
-                            trackDurationLabel(track)
-                          "
-                        >
-                          ·
-                        </template>
-                      </span>
-                      <span v-if="!track.ended_at" class="track-meta-live">
-                        <span class="recording-pulse-dot" aria-hidden="true"></span>
-                        Aufzeichnung läuft
-                      </span>
-                      <span
-                        v-else-if="track.end_reason === 'aborted'"
-                        class="track-meta-aborted"
-                        title="Aufzeichnung wurde automatisch abgebrochen"
-                      >
-                        <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
-                        Abgebrochen
-                        <template v-if="trackDurationLabel(track)">
-                          · {{ trackDurationLabel(track) }}
-                        </template>
-                      </span>
-                      <span v-else-if="trackDurationLabel(track)" class="track-meta-duration">
-                        <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
-                        {{ trackDurationLabel(track) }}
-                      </span>
-                      <span
-                        v-if="getTourForTrack(track)"
-                        class="track-meta-tour"
-                        :title="'Zugeordnete Tour: ' + getTourForTrack(track)?.title"
-                      >
-                        ·
-                        <AppIcon
-                          :icon="SECTION_ICON_DEFS.excursions"
-                          :size="12"
-                          group="navigation"
-                        />
-                        {{ getTourForTrack(track)?.title }}
-                      </span>
-                    </span>
-                  </button>
-                  <div v-if="track.user_id === auth.user?.id" class="track-row-actions">
-                    <button
-                      v-if="!track.ended_at"
-                      type="button"
-                      class="track-icon-btn track-icon-btn--stop"
-                      title="Aufzeichnung beenden"
-                      aria-label="Aufzeichnung beenden"
-                      @click.stop="stopTrackDirect(track)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.recordStop" :size="15" group="actions" />
-                    </button>
-                    <button
-                      type="button"
-                      class="track-icon-btn"
-                      title="Aufzeichnung bearbeiten"
-                      aria-label="Aufzeichnung bearbeiten"
-                      @click="startEditTrack(track)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.edit" :size="15" group="actions" />
-                    </button>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
+          <ExcursionTracksList
+            v-else
+            :tracks="tracksStore.tracks"
+            :users="users"
+            :active-track-id="drawers.mapFocusTrackId"
+            :current-user-id="auth.user?.id"
+            @show-on-map="onTrackShowOnMap"
+            @stop-track="stopTrackDirect"
+            @edit-track="startEditTrack"
+          />
 
           <!-- Hinweis-Modal für Standort-Aufzeichnung (#230) -->
           <TrackRecordingWarningModal
@@ -2452,150 +1210,8 @@ onUnmounted(() => {
             @confirm="startRecordingConfirmed"
           />
 
-          <!-- Datenschutz-Hinweis bei Zuordnung einer privaten Aufzeichnung zu einer Tour -->
-          <TrackShareWarningModal
-            v-model="showTrackShareWarningModal"
-            :track-title="shareWarningTrackTitle"
-            :tour-title="shareWarningTourTitle"
-            @confirm="onConfirmShareModal"
-          />
-
-          <!-- Aufzeichnung bearbeiten (Name, Sichtbarkeit) -->
-          <Modal
-            :model-value="editingTrack !== null"
-            title="Aufzeichnung bearbeiten"
-            @update:model-value="(v) => !v && closeEditTrack()"
-          >
-            <form class="edit-form track-edit-form" @submit.prevent="submitEditTrack">
-              <TabBar
-                :tabs="trackEditTabs"
-                :active-key="activeTrackEditTab"
-                class="track-tab-bar"
-                @select="(key) => (activeTrackEditTab = key as 'general' | 'permissions')"
-              />
-
-              <div v-show="activeTrackEditTab === 'general'" class="tab-content">
-                <div
-                  v-if="editingTrack?.end_reason === 'aborted'"
-                  class="track-status-alert track-status-alert--aborted"
-                  role="status"
-                >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="16" group="actions" />
-                  <div class="track-status-alert__content">
-                    <span class="track-status-alert__title">Automatisch abgebrochen</span>
-                    <p class="track-status-alert__desc">
-                      Die Aufzeichnung wurde vom System beendet (z. B. durch Bildschirmsperre oder
-                      GPS-Abbruch).
-                    </p>
-                  </div>
-                </div>
-                <div
-                  v-else-if="editingTrack && !editingTrack.ended_at"
-                  class="track-status-alert track-status-alert--running"
-                  role="status"
-                >
-                  <span class="recording-pulse-dot" aria-hidden="true"></span>
-                  <div class="track-status-alert__content">
-                    <span class="track-status-alert__title">Aufzeichnung läuft</span>
-                    <p class="track-status-alert__desc">
-                      Diese Aufzeichnung ist aktuell noch aktiv.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    :icon="ACTION_ICONS.recordStop"
-                    @click="stopEditingTrack"
-                  >
-                    Aufzeichnung beenden
-                  </Button>
-                </div>
-
-                <FormField
-                  icon="title"
-                  label="Name"
-                  :modified="isEditTrackTitleModified"
-                  v-slot="{ modified }"
-                >
-                  <Input
-                    v-model="editTrackTitle"
-                    type="text"
-                    placeholder="z. B. Wanderung zur Berghütte"
-                    :maxlength="100"
-                    :modified="modified"
-                  />
-                </FormField>
-                <FormField
-                  icon="date"
-                  label="Aufzeichnungszeitpunkt"
-                  :modified="isEditTrackStartedAtModified"
-                  v-slot="{ modified }"
-                >
-                  <Input
-                    v-model="editTrackStartedAt"
-                    type="datetime-local"
-                    required
-                    :modified="modified"
-                  />
-                </FormField>
-                <FormField icon="tour" label="Zugeordnete Tour" :modified="isEditTrackTourModified">
-                  <div class="track-tour-assign-field">
-                    <TourAssignDropdown
-                      :tours="trackTourAssignments"
-                      @toggle-tour="onToggleTrackTour"
-                      @create-tour="onCreateTourFromTrack"
-                    />
-                    <span v-if="editTrackExcursionTitle" class="track-tour-selected-badge">
-                      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
-                      {{ editTrackExcursionTitle }}
-                      <button
-                        type="button"
-                        class="remove-tour-btn"
-                        title="Zuordnung entfernen"
-                        aria-label="Zuordnung entfernen"
-                        @click="editTrackExcursionId = null"
-                      >
-                        <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-                      </button>
-                    </span>
-                  </div>
-                </FormField>
-              </div>
-
-              <div
-                v-show="activeTrackEditTab === 'permissions'"
-                class="tab-content permissions-tab"
-              >
-                <ItemVisibilitySettings
-                  v-model="editTrackVisibility"
-                  item-label="Aufzeichnung"
-                  :modified="isEditTrackVisibilityModified"
-                />
-              </div>
-              <div class="actions-row">
-                <Button
-                  type="button"
-                  variant="danger"
-                  secondary
-                  :icon="ACTION_ICONS.delete"
-                  @click="deleteEditingTrack"
-                >
-                  Löschen
-                </Button>
-                <div class="spacer"></div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  class="btn-cancel"
-                  @click="closeEditTrack"
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit">Speichern</Button>
-              </div>
-            </form>
-          </Modal>
+          <!-- Aufzeichnung bearbeiten (Name, Sichtbarkeit) via TrackEditModal (#446) -->
+          <TrackEditModal v-model:track="editingTrack" :users="users" />
 
           <!-- Schnelles Bearbeiten einer Teilstrecke direkt aus der Leg-Card (#361) -->
           <LegTransportModal
