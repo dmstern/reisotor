@@ -89,10 +89,59 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   }
 
   const spotRefs = new Map<number, HTMLElement>();
-  function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
+  const spotInstances = new Map<number, Map<number | null, HTMLElement>>();
+
+  function setSpotRef(
+    id: number,
+    el: Element | ComponentPublicInstance | null,
+    excursionId: number | null = null
+  ) {
     const domEl = resolveDomElement(el);
-    if (domEl) spotRefs.set(id, domEl);
-    else spotRefs.delete(id);
+    let tourMap = spotInstances.get(id);
+    if (!tourMap) {
+      tourMap = new Map();
+      spotInstances.set(id, tourMap);
+    }
+    if (domEl) {
+      tourMap.set(excursionId, domEl);
+      if (!spotRefs.has(id) || !spotRefs.get(id)?.isConnected) {
+        spotRefs.set(id, domEl);
+      }
+    } else {
+      tourMap.delete(excursionId);
+      if (tourMap.size === 0) {
+        spotInstances.delete(id);
+        spotRefs.delete(id);
+      } else {
+        const remaining = Array.from(tourMap.values()).find((e) => e.isConnected);
+        if (remaining) spotRefs.set(id, remaining);
+        else spotRefs.delete(id);
+      }
+    }
+  }
+
+  function getSpotElement(id: number, preferredExcursionId?: number | null): HTMLElement | null {
+    const tourMap = spotInstances.get(id);
+    if (tourMap && tourMap.size > 0) {
+      if (preferredExcursionId !== undefined && preferredExcursionId !== null) {
+        const preferred = tourMap.get(preferredExcursionId);
+        if (preferred && preferred.isConnected) return preferred;
+      }
+      const connectedElements = Array.from(tourMap.values()).filter((e) => e.isConnected);
+      const visible = connectedElements.find(
+        (e) => !e.closest('[inert]') && e.offsetParent !== null
+      );
+      if (visible) return visible;
+
+      if (connectedElements.length > 0) {
+        connectedElements.sort((a, b) =>
+          a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+        );
+        return connectedElements[0];
+      }
+    }
+    const legacy = spotRefs.get(id);
+    return legacy && legacy.isConnected ? legacy : null;
   }
 
   const spotsColBodyEl = ref<HTMLElement | null>(null);
@@ -118,6 +167,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     const token = ++activeScrollToken;
     const prefersReduced =
       typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (isSheetOverlayMode.value) {
@@ -220,11 +270,20 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   }
 
   function scrollToSpot(
-    id: number,
+    target: number | HTMLElement,
     offsetAdjustment = 0,
     overrideBehavior?: ScrollBehavior
   ): Promise<void> {
-    return scrollToElementInBody(() => spotRefs.get(id), offsetAdjustment, overrideBehavior);
+    return scrollToElementInBody(
+      () =>
+        target instanceof HTMLElement
+          ? target.isConnected
+            ? target
+            : null
+          : getSpotElement(target),
+      offsetAdjustment,
+      overrideBehavior
+    );
   }
 
   const activeCategory = ref<string | null>(null);
@@ -410,6 +469,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     scrollToCategory,
     scrollToExcursion,
     scrollToSpot,
+    getSpotElement,
     cancelProgrammaticScroll,
   };
 }

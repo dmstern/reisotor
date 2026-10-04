@@ -145,7 +145,6 @@ const {
   isCategoryNavStuck,
   setCategoryNavSentinelRef,
   excursionRefs,
-  spotRefs,
   spotsColBodyEl,
   setCategoryRef,
   setTourCardRef,
@@ -163,6 +162,7 @@ const {
   scrollToCategory,
   scrollToExcursion,
   scrollToSpot,
+  getSpotElement,
   cancelProgrammaticScroll,
 } = navSpy;
 
@@ -379,7 +379,9 @@ async function openExcursionWithScroll(excursionId: number) {
   }
 }
 
-async function openSpotWithScroll(spotId: number) {
+let lastActiveSpotEl: HTMLElement | null = null;
+
+async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null) {
   const token = ++spotOpenSequenceToken;
 
   if (drawers.mapFocusKey && drawers.mapFocusKey !== `spot-${spotId}`) {
@@ -390,8 +392,11 @@ async function openSpotWithScroll(spotId: number) {
   }
 
   const previousSpotId = expandedSpotId.value;
+  const resolvedTarget =
+    targetEl && targetEl.isConnected ? targetEl : getSpotElement(spotId, expandedExcursionId.value);
+
   if (previousSpotId === spotId) {
-    await scrollToSpot(spotId);
+    await scrollToSpot(resolvedTarget ?? spotId);
     return;
   }
 
@@ -400,15 +405,18 @@ async function openSpotWithScroll(spotId: number) {
 
   let offsetAdjustment = 0;
   if (previousSpotId != null) {
-    const prevEl = spotRefs.get(previousSpotId);
-    const targetEl = spotRefs.get(spotId);
-    if (prevEl && targetEl) {
+    const prevEl =
+      lastActiveSpotEl && lastActiveSpotEl.isConnected
+        ? lastActiveSpotEl
+        : getSpotElement(previousSpotId, expandedExcursionId.value);
+    const target = resolvedTarget;
+    if (prevEl && target) {
       const isPrevAbove = Boolean(
-        prevEl.compareDocumentPosition(targetEl) & Node.DOCUMENT_POSITION_FOLLOWING
+        prevEl.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING
       );
       if (
         isPrevAbove &&
-        targetEl.getBoundingClientRect().top > prevEl.getBoundingClientRect().top + 10
+        target.getBoundingClientRect().top > prevEl.getBoundingClientRect().top + 10
       ) {
         const accordions = prevEl.querySelectorAll<HTMLElement>(
           '.spot-accordion.is-expanded, .actions-accordion.is-expanded'
@@ -427,29 +435,40 @@ async function openSpotWithScroll(spotId: number) {
     }
   }
 
+  lastActiveSpotEl = resolvedTarget;
   expandedSpotId.value = spotId;
 
   await nextTick();
   if (token !== spotOpenSequenceToken) return;
 
-  await scrollToSpot(spotId, offsetAdjustment);
+  const currentTarget =
+    resolvedTarget && resolvedTarget.isConnected
+      ? resolvedTarget
+      : getSpotElement(spotId, expandedExcursionId.value);
+
+  await scrollToSpot(currentTarget ?? spotId, offsetAdjustment);
   if (token !== spotOpenSequenceToken) return;
 
   if (!prefersReduced) {
     await new Promise<void>((resolve) => setTimeout(resolve, 260));
     if (token !== spotOpenSequenceToken) return;
-    await scrollToSpot(spotId, 0, 'auto');
+    const finalTarget =
+      resolvedTarget && resolvedTarget.isConnected
+        ? resolvedTarget
+        : getSpotElement(spotId, expandedExcursionId.value);
+    await scrollToSpot(finalTarget ?? spotId, 0, 'auto');
   }
 }
 
-function onSpotCardOpen(spot: Spot) {
-  openSpotWithScroll(spot.id);
+function onSpotCardOpen(spot: Spot, targetEl?: HTMLElement | null) {
+  openSpotWithScroll(spot.id, targetEl);
 }
 
 function onSpotCardClose() {
   spotOpenSequenceToken++;
   expandedSpotId.value = null;
   drawers.mapFocusKey = null;
+  lastActiveSpotEl = null;
 }
 
 function onExcursionCardOpen(excursion: Excursion) {
@@ -467,7 +486,11 @@ function onSpotShowOnMap(spot: Spot) {
   drawers.openMapAt(`spot-${spot.id}`);
   if (isSheetOverlayMode.value) {
     nextTick(() => {
-      scrollToSpot(spot.id);
+      const el =
+        lastActiveSpotEl && lastActiveSpotEl.isConnected
+          ? lastActiveSpotEl
+          : getSpotElement(spot.id, expandedExcursionId.value);
+      scrollToSpot(el ?? spot.id);
     });
   }
 }
@@ -549,7 +572,8 @@ watch(
       const spotId = Number(key.replace('spot-', ''));
       if (!Number.isNaN(spotId)) {
         nextTick(() => {
-          scrollToSpot(spotId);
+          const el = getSpotElement(spotId, expandedExcursionId.value);
+          scrollToSpot(el ?? spotId);
         });
       }
     }
@@ -583,7 +607,9 @@ watch(
           return;
         }
         if (matchingSpotIds.length > 0) {
-          scrollToSpot(matchingSpotIds[0]);
+          const sid = matchingSpotIds[0];
+          const el = getSpotElement(sid, expandedExcursionId.value);
+          scrollToSpot(el ?? sid);
         }
       });
     }
@@ -1104,7 +1130,7 @@ onUnmounted(() => {
                   <TransitionGroup v-else tag="div" name="list" class="grid cards">
                     <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
                       <SpotCard
-                        :ref="(el) => setSpotRef(item.spot.id, el)"
+                        :ref="(el) => setSpotRef(item.spot.id, el, null)"
                         class="staggered-spot"
                         :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
                         :spot="item.spot"
@@ -1128,7 +1154,7 @@ onUnmounted(() => {
                         @remove-comment="removeSpotComment"
                         @update-comment="updateSpotComment"
                         @toggle-comment-like="toggleSpotCommentLike"
-                        @open="onSpotCardOpen(item.spot)"
+                        @open="(spot, el) => onSpotCardOpen(spot, el)"
                         @close="onSpotCardClose"
                         @show-on-map="onSpotShowOnMap(item.spot)"
                         @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"

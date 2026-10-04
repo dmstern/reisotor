@@ -27,7 +27,11 @@ const props = defineProps<{
     items: Array<{ spot: Spot }>,
     index: number
   ) => number | null;
-  setSpotRef?: (spotId: number, el: Element | ComponentPublicInstance | null) => void;
+  setSpotRef?: (
+    spotId: number,
+    el: Element | ComponentPublicInstance | null,
+    excursionId?: number | null
+  ) => void;
   setTourWrapRef?: (el: Element | ComponentPublicInstance | null) => void;
 }>();
 
@@ -40,7 +44,7 @@ const emit = defineEmits<{
   (e: 'removeSpotComment', commentId: number): void;
   (e: 'updateSpotComment', payload: { commentId: number; content: string }): void;
   (e: 'toggleSpotCommentLike', commentId: number): void;
-  (e: 'openSpot', spot: Spot): void;
+  (e: 'openSpot', spot: Spot, el?: HTMLElement | null): void;
   (e: 'closeSpot'): void;
   (e: 'showSpotOnMap', spot: Spot): void;
   (e: 'assignTour', payload: { spotId: number; title: string }): void;
@@ -158,7 +162,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
             <!-- Spot-Kachel -->
             <div v-if="cell.type === 'spot'" class="tour-spot-cell">
               <SpotCard
-                :ref="(el) => setSpotRef?.(cell.spot.id, el)"
+                :ref="(el) => setSpotRef?.(cell.spot.id, el, excursion.id)"
                 class="staggered-spot"
                 :data-spot-id="cell.spot.id"
                 :style="[
@@ -202,7 +206,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
                   (commentId, content) => emit('updateSpotComment', { commentId, content })
                 "
                 @toggle-comment-like="(commentId) => emit('toggleSpotCommentLike', commentId)"
-                @open="emit('openSpot', cell.spot)"
+                @open="(spot, el) => emit('openSpot', spot, el)"
                 @close="emit('closeSpot')"
                 @show-on-map="emit('showSpotOnMap', cell.spot)"
                 @assign-tour="(title) => emit('assignTour', { spotId: cell.spot.id, title })"

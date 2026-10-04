@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+} from 'vue';
 import type { ScheduleItem, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
@@ -98,7 +106,7 @@ const emit = defineEmits<{
   (e: 'remove-comment', id: number): void;
   (e: 'update-comment', id: number, content: string): void;
   (e: 'toggle-comment-like', id: number): void;
-  (e: 'open', spot: Spot): void;
+  (e: 'open', spot: Spot, el?: HTMLElement | null): void;
   (e: 'close'): void;
   (e: 'toggle-destination'): void;
   // Sofort-Zuordnung über TourAssignDropdown.vue (#106, siehe Template) – ersetzt den früheren
@@ -298,12 +306,25 @@ const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
 // vermischte zwei unabhängige Absichten: "Detail ansehen" vs. "auf der Karte zeigen", Letzteres
 // schrumpfte dabei ungewollt ein bereits voll ausgefahrenes Sheet). Zuklappen hebt eine per
 // "Auf Karte anzeigen" gesetzte Hervorhebung auf diesen Spot trotzdem mit auf.
-function onCardClick() {
+const cardRoot = ref<ComponentPublicInstance | HTMLElement | null>(null);
+
+function getCardDomElement(event?: MouseEvent): HTMLElement | null {
+  if (event?.currentTarget instanceof HTMLElement) {
+    return event.currentTarget;
+  }
+  const root = cardRoot.value;
+  if (!root) return null;
+  if (root instanceof HTMLElement) return root;
+  if ('$el' in root && root.$el instanceof HTMLElement) return root.$el;
+  return null;
+}
+
+function onCardClick(event?: MouseEvent) {
   if (props.expanded) {
     emit('close');
     if (drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
   } else {
-    emit('open', props.spot);
+    emit('open', props.spot, getCardDomElement(event));
   }
 }
 
@@ -436,6 +457,7 @@ const cardRotation = computed(() => {
 
 <template>
   <Card
+    ref="cardRoot"
     variant="polaroid"
     class="spot-card"
     :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
@@ -643,7 +665,7 @@ const cardRotation = computed(() => {
                   isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
                 "
                 :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-                @click="expanded ? onToggleDone($event) : onCardClick()"
+                @click="expanded ? onToggleDone($event) : onCardClick($event)"
               >
                 <template v-if="totalItemsCount > 1">
                   <template v-if="allItemsDone">
