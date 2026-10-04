@@ -9,6 +9,7 @@ flowchart LR
     P1["Phase 1: Logik & State<br/><b>&lt;script setup&gt;</b><br/><i>Composables, Dead Code & State-Entflechtung</i>"]
     --> P2["Phase 2: UI & Deduplizierung<br/><b>&lt;template&gt;</b><br/><i>Subkomponenten, Primitives & Konsolidierung</i>"]
     --> P3["Phase 3: Tokens & Stresstest<br/><b>&lt;style&gt; & Browser</b><br/><i>Design-Tokens, Container Queries & Layout-Audit</i>"]
+    --> P4["Phase 4: Review & Meta<br/><b>Branch & Meta-Lerneffekt</b><br/><i>Konsolidierung, PR-Bilanz & Prompt-Refinement</i>"]
 ```
 
 > [!NOTE]
@@ -20,11 +21,15 @@ flowchart LR
 
 Um in Agent-Sessions (Antigravity / Claude Code) für Refactoring-Tickets wie [#446](https://github.com/dmstern/reisotor/issues/446) nicht jedes Mal die langen Prompt-Blöcke kopieren zu müssen, reagieren Agenten auf folgende standardisierte Kurz-Trigger:
 
-| Phase       | Kurz-Trigger                | Fokus & Umfang                                                                                                 |
-| :---------- | :-------------------------- | :------------------------------------------------------------------------------------------------------------- |
-| **Phase 1** | `Refactor Phase 1: <datei>` | `<script setup>` entflechten, Dead Code tilgen, Composables erstellen. Template & Styles bleiben unangetastet. |
-| **Phase 2** | `Refactor Phase 2: <datei>` | `<template>` dekomponieren, Subkomponenten & Primitives nutzen, State & Assets lokalisieren.                   |
-| **Phase 3** | `Refactor Phase 3: <datei>` | `<style>` mit Design-Tokens säubern, `@media` restlos durch `@container` ersetzen & Layout-Audit.              |
+| Phase       | Kurz-Trigger                                                   | Fokus & Umfang                                                                                                 |
+| :---------- | :------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** | `Refactor Phase 1: <datei>`                                    | `<script setup>` entflechten, Dead Code tilgen, Composables erstellen. Template & Styles bleiben unangetastet. |
+| **Phase 2** | `Refactor Phase 2: <datei>`                                    | `<template>` dekomponieren, Subkomponenten & Primitives nutzen, State & Assets lokalisieren.                   |
+| **Phase 3** | `Refactor Phase 3: <datei>`                                    | `<style>` mit Design-Tokens säubern, `@media` restlos durch `@container` ersetzen & Layout-Audit.              |
+| **Phase 4** | `Refactor Phase 4: <datei>`<br/>_(`Refactor Review: <datei>`)_ | Ganzheitlicher Branch-Check (`git diff main`), Rest-Altlasten tilgen, PR-Bilanz & Meta-Refinement der Prompts. |
+
+> [!TIP]
+> **Kontext-Disziplin & Session-Trennung:** Jede Phase baut auf dem sauberen Git-Stand der Vorphase auf und wird bevorzugt in einer **frischen Agent-Session / einem separaten Chat auf demselben Branch** ausgeführt (mit jeweils vorangehendem semantischem Commit). Dies verhindert Kontext-Drift, Token-Explosion und Error-Compounding, die bei unbeaufsichtigten Multi-Agent-Kaskaden auftreten würden.
 
 _Beispiel-Eingabe im Chat:_
 
@@ -139,4 +144,38 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
    - Formatiere alle geänderten Dateien (npx -y prettier --write <datei>).
    - Binde Screenshots nur auf explizite Aufforderung in den Walkthrough ein.
    - Fasse transparent zusammen: Welche Tokens wurden vereinheitlicht und welche Layout-Kollisionen wurden behoben?
+   - Hinweis: Nach erfolgreichem Abschluss folgt Phase 4 (Konsolidierung, Review & Meta-Refinement).
+```
+
+---
+
+## Phase 4: Konsolidierung, Review & Meta-Refinement (Branch-Review & Prompt-Lerneffekte)
+
+Kopiere diesen Prompt für den abschließenden Schritt nach Durchlauf der Phasen 1 bis 3 (oder nutze `Refactor Phase 4: <datei>` bzw. `Refactor Review: <datei>`).
+**Ziel:** Ganzheitliche Konsolidierung aller Änderungen im Branch, Aufspüren von übrig gebliebenen Altlasten oder Redundanzen über alle Schichten hinweg, Vorbereitung der finalen PR-Bilanz und die iterative Schärfung des Refactoring-Prozesses auf Meta-Ebene.
+
+```text
+Führe Phase 4 (Konsolidierung, Review & Meta-Refinement) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
+Alle drei Schichten (<script>, <template>, <style>) wurden in den Vorphasen überarbeitet. Nun erfolgt die ganzheitliche Konsolidierung und der Meta-Review.
+
+1. Branch-weites Diff- & Konsolidierungs-Review:
+   - Analysiere das gesamte Diff des aktuellen Branches gegen main (git diff main...HEAD --stat).
+   - Prüfe auf Rest-Altlasten über alle Phasen hinweg: Gibt es verwaiste Imports, ungenutzte Types/Interfaces, tote CSS-Klassen oder versehentlich stehen gelassene Debug-Logs/Kommentare?
+   - Konsistenz-Check: Wurden Composables und Subkomponenten einheitlich benannt und modular in den vorgesehenen Verzeichnissen (frontend/src/composables/, frontend/src/components/...) abgelegt?
+
+2. Finale Verifikation & CI-Readiness:
+   - Führe npm run typecheck und die fokussierten Unit-Tests der neuen Subkomponenten/Composables aus (Backend: npx -y vitest run <testdatei> --bail 1, Frontend: npm --prefix frontend test -- <testdatei> --bail 1).
+   - Stelle sicher, dass alle geänderten Dateien mit Prettier formatiert sind (npx -y prettier --write <dateien>).
+   - Prüfe git status auf absolute Sauberkeit (keine ungetrackten Testdateien, Scratch-Specs oder temporäre Artefakte).
+
+3. PR-Walkthrough & quantitative Bilanz:
+   - Erstelle eine strukturierte Zusammenfassung für den PR:
+     - Vorher/Nachher-Zeilenbilanz der Haupt-View / Komponente.
+     - Liste neu entstandener Composables (inkl. fachlicher Domäne).
+     - Liste neu entstandener Subkomponenten & genutzter Primitives.
+     - Vereinheitlichte Design-Tokens und behobene Enge-/Layout-Probleme.
+
+4. Meta-Evaluation des Refactoring-Workflows:
+   - Reflektiere den Durchlauf: Gab es spezifische Hürden oder wiederkehrende Fallstricke (z. B. Reaktivitätsverlust beim Prop-Passing, Container-Query-Sonderfälle, unvollständige Mockups in Tests)?
+   - Schärfe bei Bedarf direkt die Prompts in docs/AUDIT_PROMPTS.md oder die Design-Vorgaben in DESIGN.md additiv mit den neu gewonnenen Erkenntnissen nach, damit nachfolgende Refactorings automatisch davon profitieren.
 ```

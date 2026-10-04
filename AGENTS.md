@@ -44,8 +44,8 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
 - `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
 - Bei gezielten UI-Audits: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen. **Nicht** bei normalen Bugfixes oder kleineren UI-Änderungen im Chat ausführen (erzeugt massive Test-Logs; für Standard-Änderungen reichen fokussierte Unit-Tests).
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
-- **Prompt-Vorlagen & 3-Phasen-Refactoring:** `docs/AUDIT_PROMPTS.md` (SFC-Schichten-Refactoring für Views/Komponenten: Script/State, Template/Primitives, Style/Layout-Audit) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Audit via Subagents).
-  - **Kurz-Trigger für Refactoring-Sessions (#446):** Eingaben wie `Refactor Phase 1: <datei>`, `Refactor Phase 2: <datei>` oder `Refactor Phase 3: <datei>` weisen den Agenten an, automatisch die genauen Schritte und Leitplanken der jeweiligen Phase aus `docs/AUDIT_PROMPTS.md` zu befolgen.
+- **Prompt-Vorlagen & 4-Phasen-Refactoring:** `docs/AUDIT_PROMPTS.md` (SFC-Schichten-Refactoring für Views/Komponenten: Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Audit via Subagents).
+  - **Kurz-Trigger für Refactoring-Sessions (#446):** Eingaben wie `Refactor Phase 1: <datei>`, `Refactor Phase 2: <datei>`, `Refactor Phase 3: <datei>` oder `Refactor Phase 4: <datei>` (bzw. `Refactor Review: <datei>`) weisen den Agenten an, automatisch die genauen Schritte und Leitplanken der jeweiligen Phase aus `docs/AUDIT_PROMPTS.md` zu befolgen.
 
 ## Typecheck, Linting & Formatting
 
