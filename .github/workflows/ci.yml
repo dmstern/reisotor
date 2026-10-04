@@ -41,6 +41,7 @@ jobs:
         id: filter
         with:
           token: ${{ github.token }}
+          predicate-quantifier: 'some-with-excludes'
           filters: |
             code:
               - '**'
