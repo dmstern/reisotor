@@ -275,6 +275,17 @@ const emit = defineEmits<{
   position: relative;
 }
 
+.leg-add-text {
+  font-size: 0.65rem;
+  font-weight: 500;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.tour-leg-add-btn.is-row-break .leg-add-text {
+  font-size: var(--font-size-xs);
+}
+
 .leg-pill-icon {
   display: inline-flex;
   align-items: center;
