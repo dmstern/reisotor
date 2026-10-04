@@ -21,6 +21,22 @@ Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.j
 - **Einzelne Tests ausführen (strikte Pflicht für Agenten):** `npx -y vitest run <pfad-zur-datei> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1` (Backend/Frontend) oder `npx -y playwright test <pfad-zur-spec>` (E2E). Niemals gesamte Test-Suiten im Chat ausführen.
 - **Voraussetzungen:** Node.js 20+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md`.
 
+## Parallele Sessions & Worktree-Disziplin (Konfliktvermeidung & Clean Exit)
+
+Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbeiten, gelten strikte Regeln zur Vermeidung von Konflikten, Race Conditions und unnötigem Token-Verbrauch:
+
+- **Pre-Flight-Check vor Code-Änderungen (Pflicht):**
+  - Vor dem Anlegen oder Editieren von Dateien MUSS der Agent zuerst prüfen, ob der Worktree sauber ist: `git status --porcelain`.
+  - **Wenn uncommittete Änderungen oder fremde Dateien vorhanden sind:**
+    - **Niemals blind überschreiben:** Fremde oder unfertige Arbeitsstände (aus anderen parallelen Sessions oder von der Nutzerin / dem Nutzer) dürfen unter keinen Umständen überschrieben, zurückgesetzt (`git restore` / `git checkout`) oder ungefragt mit in den eigenen Commit gemischt werden.
+    - **Kein teures LLM-Polling:** Der Agent darf **nicht** in einer Schleife (z. B. wiederholtes Aufwachen per Timer oder Bash-Sleeps) im Chat auf das Fertigwerden einer anderen Session warten (massiver Token-Verbrauch).
+    - **Transparenter Stopp:** Bei uncommitteten Fremdänderungen sofort stoppen und den Nutzer kurz und sachlich informieren (z. B. welche Dateien modifiziert sind) und fragen, ob gewartet, gestasht oder in einem separaten Worktree gearbeitet werden soll.
+- **Empfehlung für echte Parallelität (Git Worktrees):**
+  - Sollen mehrere Aufgaben gleichzeitig bearbeitet werden, ist die Nutzung separater Git Worktrees (`git worktree add ../reisotor-<task> -b <task-branch>`) der verbindliche Best-Practice-Weg. Dies verhindert Lock-Konflikte (`.git/index.lock`), Dateikollisionen und Wartezeiten vollständig.
+- **Clean Exit & Commit-Pflicht:**
+  - Jede Session MUSS nach erfolgreicher Arbeit, Formatierung (`npx -y prettier --write <dateien>`), Typecheck und fokussierten Tests die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
+  - Der Worktree darf am Ende einer Session NIEMALS mit uncommitteten Änderungen, ungetrackten Testdateien oder unformatiertem Code hinterlassen werden, damit nachfolgende Sessions sofort eine saubere Ausgangsbasis vorfinden.
+
 ## UI-Audits & Layout-Testing
 
 **Befehle für UI-Audits (Nur bei dedizierten Audits oder expliziter Aufforderung):**
