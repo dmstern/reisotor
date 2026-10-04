@@ -1,79 +1,46 @@
 # UI-Audit-Guide
 
-Dieses Dokument beschreibt das Vorgehen für UI-, Layout- und Container-Query-Audits in Reisotor sowie Richtlinien für AI-Coding-Agenten (Antigravity / Claude Code) und Entwickler:innen. Konkrete Prompt-Vorlagen für Agenten finden sich in [`docs/AUDIT_PROMPTS.md`](AUDIT_PROMPTS.md).
+Dieses Dokument beschreibt das Vorgehen für UI-, Layout- und Container-Query-Audits in Reisotor sowie verbindliche Richtlinien für AI-Coding-Agenten (Antigravity / Claude Code) und Entwickler:innen.
+
+> [!NOTE]
+> **Vorgelagerte Code-Refactorings:** Für die strukturelle Überarbeitung überlanger oder historisch gewachsener Komponenten vor einem Layout-Audit siehe [`docs/AUDIT_PROMPTS.md`](AUDIT_PROMPTS.md) (SFC-Schichten-Modell: `<script>` → `<template>` → `<style>`). Dieser Leitfaden konzentriert sich auf die **visuelle Härtung, Enge-Resilienz und das automatisierte Layout-Testing**.
 
 ---
 
-## Der 3-Phasen-Workflow für View- & Komponenten-Refactorings
+## 1. Die 3 goldenen Architektur-Regeln für Layouts in Reisotor
 
-Bei der Überarbeitung oder Überprüfung überlanger oder historisch gewachsener Views bzw. Komponenten folgt das Vorgehen dem **SFC-Schichten-Modell (von innen nach außen: `<script>` → `<template>` → `<style>`)**:
+### Regel 1: Der Drawer-Effekt & Container-Queries (`@container app-main`)
 
-1. **Phase 1: Logik & State entflechten (`<script setup>` & Composables, `Phase 1` in `AUDIT_PROMPTS.md`)**
-   - Tote Variablen, unbenutzte Imports und alte Agenten-Workarounds radikal löschen.
-   - Geschäfts-, Berechnungs- und Filterlogik in fokussierte Composables (`useXxx.ts`) oder Pinia-Stores auslagern.
-   - _Wichtig:_ Template und Styles bleiben in dieser Phase intakt – erst muss der State aufgeräumt sein, um Prop-Drilling-Spaghetti zu vermeiden!
-2. **Phase 2: UI-Dekomposition & Deduplizierung (`<template>` & Primitives, `Phase 2` in `AUDIT_PROMPTS.md`)**
-   - Ähnliche DOM-Strukturen (Cards, Listen) zu _einer_ wiederverwendbaren Komponente zusammenführen statt blind zu klonen.
-   - Lokale Ad-hoc-HTML-Elemente (`<button>`, `<span class="badge">`) direkt durch Primitives (`Card`, `Button`, `Badge` etc.) ersetzen.
-   - Große Dialoge/Modals als Kindkomponenten mit minimalen Props auslagern.
-3. **Phase 3: Design-Tokens, Container-Queries & Layout-Härtung (`<style>` & Browser-Test, `Phase 3` in `AUDIT_PROMPTS.md`)**
-   - Harte Pixelwerte durch Design-Tokens (`--space-*`, `--color-*`) ersetzen; CSS-Hacks entfernen.
-   - Auf `@container app-main` und stufenlose Breiten absichern.
-   - Die bereinigte View mit `e2e/tests/scratch/audit-template.spec.ts` im Browser stress-testen (3-Viewport-Matrix & 500px Schubladen-Enge).
+In Reisotor existieren auf Desktop (≥ 1024px) stufenlos in der Breite verstellbare Seitenelemente:
 
-Vor Releases oder Meilensteinen erfolgt die ganzheitliche Prüfung aller Bereiche via Subagents (**Pre-Release-Gesamt-Audit**, siehe unten).
+- **Kalenderschublade (`Drawer.vue`):** stufenlos von **280px bis 860px** verstellbar (Standard: 360px).
+- **Spots-Spalte (`.spots-col` in `ExcursionsView.vue`):** stufenlos von **280px bis 75cqw** verstellbar (Standard: 380px).
 
----
+Wenn diese Elemente geöffnet und breit gezogen werden, schrumpft die Inhaltsbreite von `.app-main` bzw. der Kartenansicht selbst auf großen Monitoren drastisch (von 1280px auf bis zu 340px!).
 
-## Autonome UI-Audit-Kurzbefehle & Trigger-Phrasen
+- **Verbot von `@media` für Inhalts-Komponenten:** Komponenten innerhalb von `.app-main` dürfen Breiten-Entscheidungen nicht über `@media (min-width: ...)` treffen (da `window.innerWidth` unverändert groß bleibt), sondern müssen `@container app-main (min-width: ...)` oder flexibles Flexbox-Wrapping (`flex-wrap: wrap`) nutzen.
+- **Stufenlos-Matrix:** Jede Ansicht muss Desktop-Engezustände bei maximal geöffneten Seitenelementen stabil aushalten.
 
-Reisotor besitzt ein spezialisiertes E2E-Layout-Audit-System (`e2e/tests/scratch/audit-template.spec.ts`), um visuelle Regressionen, Z-Index-Kollisionen und Container-Query-Probleme bei stufenlos verstellbaren Seitenelementen abzufangen. Wenn der Nutzer nach einem UI-, Layout- oder App-Audit fragt, MUSS der Agent folgendes Protokoll autonom ausführen:
+### Regel 2: Die 3-Viewport-Matrix (`helpers/layout.ts`)
 
-1. **Trigger: „Mach ein UI-Audit zu dem Change von eben“** (oder _„UI-Audit machen“_, _„Layout-Audit für die Änderungen“_):
-   - **Route ermitteln:** Prüfe `git status` / `git diff`, ermittle die modifizierte Frontend-Komponente und die Test-Route (`SpotsView.vue` -> `/trip/1/spots`, `ExcursionsView.vue` -> `/trip/1/excursions`, `PackingListView.vue` -> `/trip/1/packing`, `BudgetView.vue` -> `/trip/1/budget`, `DashboardView.vue` -> `/trip/1`, `SettingsView.vue` -> `/settings`, `LoginView.vue` -> `/login`).
-   - **Audit ausführen:** Führe `AUDIT_ROUTE=<route> AUDIT_SCREENSHOTS=true npm run test:audit` aus.
-   - **Prüfung:** Prüfe die 3 Viewports (320px `narrowMobile`, 390px `mobile`, 1280px `desktop` inkl. Drawer-Matrix & 500px Enge-Stresstest). Binde Screenshots (nur falls vom Nutzer gewünscht) in den Walkthrough ein und behebe gefundene Layout-Kollisionen direkt defensiv.
-2. **Trigger: „Mach ein komplettes App-Audit“** (oder _„Full App Audit“_, _„Prerelease App Audit“_, _„Vollständiges UI-Audit“_):
-   - **Niemals monolithisch im selben Kontext!** Teile die App sofort in 4 Domänen auf (Divide & Conquer via Subagents oder geordnet sequentiell):
-     - **Team 1 (Dashboard & Trips):** `/trip/1`, `/trips`
-     - **Team 2 (Spots & Touren):** `/trip/1/spots`, `/trip/1/excursions`
-     - **Team 3 (Listen & Content):** `/trip/1/packing`, `/trip/1/todo`, `/trip/1/diary`
-     - **Team 4 (Finanzen & Auth/Settings):** `/trip/1/budget`, `/settings`, `/profile`, `/login`
-   - Jedes Team führt `AUDIT_ROUTE=<route> npm run test:audit` aus. Erstelle einen konsolidierten Audit-Report (Details und Prompt-Vorlage siehe unten).
+Layouts und interaktive Elemente müssen auf mindestens 3 repräsentativen Bildschirmgrößen verifiziert werden:
+
+1. `narrowMobile`: **320x568px** (iPhone SE / kleine Androids – hier entstehen 80% aller Text-/Icon-Clashes und horizontalen Scrollbalken).
+2. `mobile`: **390x844px** (Standard-Smartphone).
+3. `desktop`: **1280x800px** (Standard-Desktop/Laptop) – immer mit geschlossener, normal geöffneter UND maximal breit gezogener Schublade (`setCalendarDrawerWidth(page, 500)`).
+   _(Optional für Zwischentests: `narrowDesktop` mit 1080x900px an der Desktop-Schwelle)._
+
+### Regel 3: Mathematische Layout-Defensiv-Checks statt visueller Blindheit
+
+Klassische funktionale E2E-Tests (`expect(btn).toBeVisible()`) sind visuell blind: Ein Button gilt als sichtbar, selbst wenn er von einem Sticky Header verdeckt wird oder Text seitlich aus dem Bildschirm ausbricht.
+
+- **Kein horizontaler Overflow:** In E2E-Tests immer `await expectNoHorizontalOverflow(page)` aus `helpers/layout.ts` aufrufen (`document.documentElement.scrollWidth <= window.innerWidth`). Kein Screen darf auf Mobile seitlich wackeln.
+- **Touch-Targets einhalten:** Interaktive Elemente auf Mobile mit `expectMinTouchTarget(locator, 44)` auf mindestens 44x44px absichern.
+- **Keine Element-Verdeckung:** Schwebende Menüs, Modals oder Aktions-Buttons auf Kollision mit Backdrops oder Headern mittels `expectNotCoveredBy(page, target, blocker)` prüfen.
 
 ---
 
-## UI-Qualitätssicherung, Visual Verification & Adversarial Testing
-
-Klassische funktionale E2E- und Unit-Tests sind visuell blind: `expect(btn).toBeVisible()` ist erfüllt, selbst wenn ein Button von einem Sticky Header verdeckt wird, Text auf 320px unglücklich umbricht oder ein Dropdown durch `overflow: hidden` abgeschnitten ist. Um Layout-Regressionen systematisch zu verhindern, gilt für KI-Agenten und Entwickler:
-
-1. **Keine diffusen monolithischen Mega-Prompts („Geh durch die ganze App und klick alles an“):**
-   Ein vollständiger UI-Check vor großen Meilensteinen oder Releases ist ausdrücklich gewollt und wertvoll, darf aber NIE als ein einziger, unstrukturierter Durchlauf in einem einzigen Kontextfenster beauftragt werden. Solche Aufträge führen bei LLMs zu kombinatorischer Überlastung und blinden Falsch-Positiven („Alles geprüft, sieht gut aus“). Stattdessen MUSS eine systematische Aufteilung erfolgen (Divide & Conquer – z. B. per Subagent-Team mit `/teamwork-preview` oder `/goal`, aufgeteilt nach Fachdomänen wie Dashboard/Trips, Spots/Touren, Listen/Packen, Budget/Settings, die jeweils isoliert die 3 Viewports auditieren).
-2. **Die 3-Viewport-Regel (`VIEWPORTS` in `e2e/tests/helpers/layout.ts`):**
-   Layouts und interaktive Elemente müssen auf mindestens 3 repräsentativen Bildschirmgrößen verifiziert werden:
-   - `narrowMobile`: **320x568px** (iPhone SE klein / Androids – hier entstehen 80% aller Text-/Icon-Clashes und horizontalen Scrollbalken).
-   - `mobile`: **390x844px** (Standard-Smartphone).
-   - `desktop`: **1280x800px** (Standard-Desktop/Laptop).
-     _(Optional für Zwischentests: `narrowDesktop` mit 1080x900px an der Desktop-Schwelle)._
-3. **Mathematische Layout-Defensiv-Checks statt visueller Blindheit:**
-   - **Kein horizontaler Overflow:** In Scratch-Specs immer `await expectNoHorizontalOverflow(page)` aus `helpers/layout.ts` aufrufen (`document.documentElement.scrollWidth <= window.innerWidth`). Kein Screen darf auf Mobile seitlich wackeln oder ausbrechen.
-   - **Keine Element-Verdeckung:** Schwebende Menüs, Modals oder wichtige Buttons auf Kollision mit Backdrops oder Headern mittels `expectNotCoveredBy(page, target, blocker)` prüfen.
-   - **Touch-Targets einhalten:** Interaktive Elemente auf Mobile mit `expectMinTouchTarget(locator)` auf mindestens 44x44px absichern.
-4. **Adversarial Scratch-Spec Workflow (`audit-template.spec.ts`):**
-   Für tiefes Testen nach Refactorings die Vorlage `e2e/tests/scratch/audit-template.spec.ts` heranziehen (oder anpassen) und gezielt Stress erzeugen (lange Strings ohne Leerzeichen, leere Listen, geöffnete Menüs).
-5. **Visuelle Screenshots nur On-Demand (Token-Schutz gemäß AGENTS.md):**
-   Screenshots werden von KI-Agenten **ausschließlich auf explizite Aufforderung** erstellt (z. B. für Vorher-/Nachher-Vergleiche im PR). Agenten dürfen Bilddateien niemals mit `view_file` öffnen, sondern binden sie per Markdown zur Prüfung durch den Menschen ein.
-6. **Der Drawer-Sonderfall & Container-Queries (`@container app-main`):**
-   Auf Desktop (≥ 1024px) existieren stufenlos in der Breite verstellbare Seitenelemente:
-   - Die globale Kalenderschublade (`Drawer.vue`): stufenlos von **280px bis 860px** verstellbar (Standard: 360px).
-   - Die Spots-Spalte (`.spots-col` in `ExcursionsView.vue`): stufenlos von **280px bis 75cqw** verstellbar (Standard: 380px).
-     Wenn diese Elemente geöffnet und breit gezogen werden, schrumpft die Inhaltsbreite von `.app-main` bzw. der Karte drastisch (von 1280px auf bis zu 340px!).
-   - **Verbot von `@media` für Inhalts-Komponenten:** Komponenten innerhalb von `.app-main` dürfen Breiten-Entscheidungen nicht über `@media (min-width: ...)` treffen (da `window.innerWidth` unverändert groß bleibt), sondern müssen `@container app-main (min-width: ...)` oder flexibles Flexbox-Wrapping (`flex-wrap: wrap`) nutzen.
-   - **Desktop-Audit mit Stufenlos-Matrix:** Bei Desktop-Audits muss das Layout immer sowohl mit **geschlossener**, **normal geöffneter** (`setCalendarDrawerOpen`) als auch **stufenlos breit gezogener** Schublade (`setCalendarDrawerWidth(page, 500)`, `setSpotsColumnWidth`) verifiziert werden, um Enge-Stresszustände abzufangen.
-
----
-
-## Tooling & Infrastruktur im Repo
+## 2. Tooling & Infrastruktur im Repo
 
 1. **`e2e/tests/helpers/layout.ts` (E2E-Helper)**:
    - `VIEWPORTS.narrowMobile` (320x568px), `mobile` (390x844px), `narrowDesktop` (1080x900px), `desktop` (1280x800px).
@@ -84,20 +51,70 @@ Klassische funktionale E2E- und Unit-Tests sind visuell blind: `expect(btn).toBe
    - `setSpotsColumnWidth(page, width)`: Verstellt die Spots-Spalte stufenlos.
    - `getAppMainContentWidth(page)`: Misst die tatsächliche gerenderte Breite von `.app-main`.
 
-2. **Wiederverwendbare Test-Vorlage**:
-   - `e2e/tests/scratch/audit-template.spec.ts`
-   - Befehl: `AUDIT_ROUTE=<route> npm run test:audit`
-   - Mit Screenshots: `AUDIT_ROUTE=<route> AUDIT_SCREENSHOTS=true npm run test:audit`
+2. **Wiederverwendbare Playwright-Vorlage**:
+   - Vorlage: `e2e/tests/scratch/audit-template.spec.ts`
+   - **Standard-Befehl (Token-schonend ohne Screenshots):**
+     ```bash
+     AUDIT_ROUTE=<route> npm run test:audit
+     ```
+   - **Befehl mit Screenshots (nur auf explizite Nutzer-Aufforderung):**
+     ```bash
+     AUDIT_ROUTE=<route> AUDIT_SCREENSHOTS=true npm run test:audit
+     ```
 
 3. **Mikro-Ebene: Storybook Stress-Fixtures**:
-   - `frontend/src/stories/stressFixtures.ts`: Standardisierte Stresstests (extrem langes deutsches Kompositum `STRESS_STRINGS.longWord`, Fließtext, Sonderzeichen und rote gestrichelte Begrenzungsrahmen `STRESS_CONTAINERS.narrow` / `ultraNarrow`).
+   - `frontend/src/stories/stressFixtures.ts`: Standardisierte Stresstests (extrem langes deutsches Kompositum `STRESS_STRINGS.longWord`, Fließtext, Sonderzeichen und Begrenzungsrahmen `STRESS_CONTAINERS.narrow` / `ultraNarrow`).
    - Ermöglicht das visuelle Testen einzelner Komponenten im isolierten Zustand (`npm --prefix frontend run storybook`).
 
 ---
 
-## Pre-Release-Gesamt-Audit (Orchestrierung & Team-Prompt)
+## 3. Lokaler Audit-Workflow (Einzelne View / Nach Refactoring)
 
-Vor großen Releases oder Meilensteinen (z. B. Reisotor 2.0) erfolgt die ganzheitliche Prüfung aller Bereiche der App via paralleler Subagent-Teams (Divide & Conquer). Kopiere diesen Prompt bei Bedarf:
+Wird ausgeführt nach Änderungen an einer View, im Rahmen von Phase 3 eines Refactorings oder bei der Bearbeitung von UI-Layout-Bugs.
+
+### Trigger-Phrasen für Agenten
+
+- _„Mach ein UI-Audit zu dem Change von eben“_
+- _„UI-Audit machen“_
+- _„Layout-Audit für die Änderungen“_
+
+### Autonomes Protokoll für den Agenten
+
+1. **Route ermitteln:** Prüfe `git status` / `git diff` und ermittle die modifizierte Frontend-Komponente und die passende Route:
+   - `SpotsView.vue` → `/trip/1/spots`
+   - `ExcursionsView.vue` → `/trip/1/excursions`
+   - `PackingListView.vue` → `/trip/1/packing`
+   - `TodoView.vue` → `/trip/1/todo`
+   - `DiaryView.vue` → `/trip/1/diary`
+   - `BudgetView.vue` → `/trip/1/budget`
+   - `DashboardView.vue` → `/trip/1`
+   - `SettingsView.vue` → `/settings`
+   - `LoginView.vue` → `/login`
+2. **Audit ausführen:** Führe `AUDIT_ROUTE=<route> npm run test:audit` aus (standardmäßig **ohne** `AUDIT_SCREENSHOTS=true`).
+3. **Ergebnis bewerten:**
+   - Wurden horizontale Overflows oder Berührungsziel-Verletzungen gefunden?
+   - Treten Kollisionen bei stufenlos geöffneter Schublade auf Desktop auf?
+4. **Defensiv beheben:** Behebe Layout-Kollisionen ausschließlich unter strikter Einhaltung von [`DESIGN.md`](../DESIGN.md) (Design-Tokens `--space-*`, `--color-*`, Container-Queries `@container app-main`, Flexbox-Wrapping). Keine ad-hoc Inline-Styles oder magische Pixelabstände!
+5. **Screenshots nur auf Abruf:** Screenshots werden **niemals unaufgefordert** erstellt. Nur wenn die Nutzerin / der Nutzer explizit Screenshots verlangt, führe den Befehl mit `AUDIT_SCREENSHOTS=true` aus und verlinke die Bilder per Markdown im Walkthrough (niemals per `view_file` selbst öffnen).
+
+---
+
+## 4. Projektweiter Pre-Release-Gesamt-Audit (Meilenstein-Gate)
+
+Vor großen Releases (z. B. Reisotor 2.0) oder Meilensteinen erfolgt die ganzheitliche Prüfung aller Bereiche der App.
+
+### Grundregel: Keine diffusen monolithischen Mega-Prompts
+
+Ein vollständiger UI-Check darf **niemals als ein einziger, unstrukturierter Durchlauf in einem einzigen Kontextfenster** beauftragt werden. Solche Aufträge führen bei LLMs zu kombinatorischer Überlastung und blinden Falsch-Positiven („Alles geprüft, sieht gut aus“).
+
+Stattdessen **muss** eine systematische Aufteilung in 4 Fachdomänen (Divide & Conquer via Subagents) erfolgen:
+
+- **Team 1 (Dashboard & Trips):** `/trip/1`, `/trips`
+- **Team 2 (Spots & Touren):** `/trip/1/spots`, `/trip/1/excursions`
+- **Team 3 (Listen & Content):** `/trip/1/packing`, `/trip/1/todo`, `/trip/1/diary`
+- **Team 4 (Finanzen & Auth/Settings):** `/trip/1/budget`, `/settings`, `/profile`, `/login`
+
+### Orchestrierungs-Prompt (Kopieren bei Release-Vorbereitung)
 
 ```text
 /teamwork-preview Wir bereiten das Release vor. Führe ein vollständiges, strukturiertes UI- und Layout-Audit durch.
@@ -113,5 +130,5 @@ Vorgehensweise:
    - Schubladen-Matrix (Desktop mit offener und geschlossener Schublade)
    - expectNoHorizontalOverflow(page)
    - Touch-Targets und Stacking Contexts
-3. Führe die Ergebnisse in einem gemeinsamen Audit-Report zusammen und behebe gefundene Layout-Fehler.
+3. Führe die Ergebnisse in einem gemeinsamen Audit-Report zusammen und behebe gefundene Layout-Fehler defensiv mit Tokens.
 ```
