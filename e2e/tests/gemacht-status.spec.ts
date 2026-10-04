@@ -40,7 +40,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // geometrischen Mittelpunkt der Karte - der kann in der kompakten Zeilen-Ansicht (schmale
     // .spots-col, z. B. bei geöffneter Kalender-Schublade auf Desktop) zufällig genau auf einem der
     // SocialRow-Buttons (🤍/💬) liegen, die selbst @click.stop setzen und das Aufklappen verhindern.
-    await spotCard.locator('h3').click();
+    await spotCard.locator('.card-title').click();
 
     // aria-label statt sichtbarem Text: der Toggle (group="actions") zeigt seit #168 immer ein
     // SVG-Icon statt eines Emoji-Zeichens (siehe stores/iconStyle.ts), aria-label/title bleiben die
@@ -70,7 +70,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     await page.reload();
     const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCardAfterReload.locator('h3').click();
+    await spotCardAfterReload.locator('.card-title').click();
     await expect(spotCardAfterReload.locator('.done-toggle')).toHaveAttribute(
       'aria-label',
       'Nicht mehr als gemacht markiert'
@@ -96,7 +96,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     await page.goto('/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCard.locator('h3').click();
+    await spotCard.locator('.card-title').click();
     await expect(spotCard.locator('.status.planned')).toContainText('Geplant für');
 
     await spotCard.locator('.done-toggle').click();
@@ -122,7 +122,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     await page.goto('/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCard.locator('h3').click();
+    await spotCard.locator('.card-title').click();
     await spotCard.locator('.done-toggle').click();
     await page.locator('.spot-unplanned-popover .calendar-alt-link').click();
 
@@ -152,7 +152,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     await page.goto('/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCard.locator('h3').click();
+    await spotCard.locator('.card-title').click();
 
     const toggle = spotCard.locator('.done-toggle');
     await expect(toggle).toHaveAttribute('aria-label', 'Als gemacht markieren');
@@ -171,7 +171,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     await page.reload();
     const spotCardAfterReload = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCardAfterReload.locator('h3').click();
+    await spotCardAfterReload.locator('.card-title').click();
     await expect(spotCardAfterReload.locator('.done-toggle')).toHaveAttribute(
       'aria-label',
       'Nicht mehr als gemacht markiert'
@@ -203,7 +203,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
 
     await page.goto('/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCard.locator('h3').click();
+    await spotCard.locator('.card-title').click();
 
     // Toggle-Button zeigt initial "Geplant an 2 Tagen"
     const toggle = spotCard.locator('.done-toggle');
@@ -242,7 +242,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // Nach Reload verifizieren
     await page.reload();
     const spotCardReloaded = page.locator('.spot-card', { hasText: spotTitle });
-    await spotCardReloaded.locator('h3').click();
+    await spotCardReloaded.locator('.card-title').click();
     await expect(spotCardReloaded.locator('.done-toggle')).toContainText('Besucht an 2 Tagen');
   });
 
@@ -329,13 +329,13 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await page.getByRole('button', { name: 'Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     // Titel anklicken zum Aufklappen (analog zu spotCard unten), da Aktionen in der kompakten Zeilen-Ansicht erst nach dem Aufklappen sichtbar sind
-    await tourCard.locator('h3').click();
+    await tourCard.locator('.card-title').click();
     await expect(tourCard.locator('.status.status-done')).toBeVisible();
 
     await page.goto('/excursions');
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     // Titel statt ganzer Karte anklicken - siehe Kommentar im ersten Test dieser Datei.
-    await spotCard.locator('h3').click();
+    await spotCard.locator('.card-title').click();
     await expect(spotCard.locator('.done-toggle')).toHaveAttribute(
       'aria-label',
       'Nicht mehr als gemacht markiert'
@@ -382,7 +382,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       const image = spotCard.locator('.image');
       await expect(image.locator('.status')).toHaveCount(0);
       // Aufklappen: Aktionen wie der Status-Button sind erst nach dem Aufklappen der Karte sichtbar
-      await spotCard.locator('h3').click();
+      await spotCard.locator('.card-title').click();
       await expect(spotCard).toHaveClass(/expanded/);
       const statusBtn = spotCard.locator('.done-toggle.status-done');
       await expect(statusBtn).toBeVisible();

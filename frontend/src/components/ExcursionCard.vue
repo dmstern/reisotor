@@ -39,17 +39,24 @@ import { TRAVEL_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, tourTotalDurationMinutes } from '../utils/travelDuration';
 
-const props = defineProps<{
-  excursion: Excursion;
-  creatorLabel: string | null;
-  likeCount: number;
-  liked: boolean;
-  comments: CommentItem[];
-  stations: Spot[];
-  travelItems: TravelItem[];
-  highlighted?: boolean;
-  expanded: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    excursion: Excursion;
+    creatorLabel: string | null;
+    likeCount: number;
+    liked: boolean;
+    comments: CommentItem[];
+    stations: Spot[];
+    travelItems: TravelItem[];
+    highlighted?: boolean;
+    expanded: boolean;
+    /** Semantisches HTML-Überschriften-Tag für den Card-Titel (Standard: 'h3') */
+    headingTag?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  }>(),
+  {
+    headingTag: 'h3',
+  }
+);
 const emit = defineEmits<{
   (e: 'edit', excursion: Excursion): void;
   (e: 'toggle-like'): void;
@@ -363,7 +370,9 @@ function onSpotDrop(event: DragEvent) {
       <div class="body">
         <div class="card-header-row">
           <div class="card-title-block">
-            <h3 class="card-title" :title="excursion.title">{{ excursion.title }}</h3>
+            <component :is="headingTag" class="card-title" :title="excursion.title">
+              {{ excursion.title }}
+            </component>
             <Transition name="fade">
               <div
                 v-if="

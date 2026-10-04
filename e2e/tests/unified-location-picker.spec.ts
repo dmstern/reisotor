@@ -612,7 +612,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         await page.goto('/excursions?group=spots');
         const spotCard = page.locator('.spot-card', { hasText: spotTitle });
         await expect(spotCard).toBeVisible();
-        await spotCard.locator('h3').click();
+        await spotCard.locator('.card-title').click();
         await spotCard.locator('.edit-btn, button[aria-label*="bearbeiten"]').click();
 
         const editModal = page.locator('.modal');
@@ -1156,7 +1156,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       await page.goto('/excursions?group=spots');
       const spotCard = page.locator('.spot-card', { hasText: spotTitle });
       await expect(spotCard).toBeVisible();
-      await spotCard.locator('h3').click();
+      await spotCard.locator('.card-title').click();
       await spotCard.locator('.edit-btn, button[aria-label*="bearbeiten"]').click();
 
       const editModal = page.locator('.modal');
