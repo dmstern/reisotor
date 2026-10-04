@@ -34,6 +34,9 @@ describe('DoneToggle primitive', () => {
     expect(html).toContain('planned');
     expect(html).not.toContain('status-done');
     expect(html).toContain('Geplant für Fr., 12. Mai');
+    expect(html).toContain('done-toggle-icon');
+    expect(html).toContain('is-planned-icon');
+    expect(html).toContain('done-toggle-calendar-icon');
   });
 
   it('renders done state with .status-done, .active and aria-pressed="true"', async () => {

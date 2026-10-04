@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import AppIcon from '../AppIcon.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
 
 // Einheitliche, wiederverwendbare Status-Pill / Checkbox-Toggle (DRY gemäß AGENTS.md):
 // Kombiniert Geplant-Status und Gemacht-Checkbox für Spots und Touren/Ausflüge mit
@@ -44,7 +45,22 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     :title="title"
     @click.stop="$emit('click', $event)"
   >
-    <AppIcon v-if="showIcon" :icon="icon" :size="14" group="actions" :active="done" />
+    <AppIcon
+      v-if="showIcon"
+      :icon="icon"
+      :size="14"
+      group="actions"
+      :active="done"
+      class="done-toggle-icon"
+      :class="{ 'is-planned-icon': planned && !isDoneOrPartial }"
+    />
+    <AppIcon
+      v-if="showIcon && planned && !isDoneOrPartial"
+      :icon="FORM_FIELD_ICONS.date"
+      :size="14"
+      group="formFields"
+      class="done-toggle-calendar-icon"
+    />
     <span class="status-text">
       <slot />
     </span>
@@ -68,6 +84,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   cursor: pointer;
   min-width: 0;
   max-width: 100%;
+  flex-shrink: 0;
   box-sizing: border-box;
   transition:
     background-color 0.15s ease,
@@ -114,6 +131,138 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.done-toggle-calendar-icon {
+  display: none;
+  flex-shrink: 0;
+}
+
+.done-toggle-icon {
+  flex-shrink: 0;
+}
+
+:deep(.done-toggle-prefix) {
+  display: inline;
+}
+
+:deep(.done-toggle-weather) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Auf schmalen Breiten (z. B. wenn der Spots-Drawer schmal gezogen wird <= 380px):
+   Wort "Geplant für"/"Gemacht am"/"Besucht am" per Visually-Hidden ausblenden und stattdessen
+   das Kalender-Icon anzeigen, damit Datum und Wetter stets komplett sichtbar bleiben. */
+@container spots-col (max-width: 380px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  .done-toggle-icon.is-planned-icon {
+    display: none;
+  }
+
+  .done-toggle-calendar-icon {
+    display: inline-flex;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+@container spot-card (max-width: 360px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  .done-toggle-icon.is-planned-icon {
+    display: none;
+  }
+
+  .done-toggle-calendar-icon {
+    display: inline-flex;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+@container excursion-card (max-width: 360px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  .done-toggle-icon.is-planned-icon {
+    display: none;
+  }
+
+  .done-toggle-calendar-icon {
+    display: inline-flex;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+@container (max-width: 360px) {
+  .done-toggle {
+    padding: 3px 8px;
+    gap: 4px;
+  }
+
+  .done-toggle-icon.is-planned-icon {
+    display: none;
+  }
+
+  .done-toggle-calendar-icon {
+    display: inline-flex;
+  }
+
+  :deep(.done-toggle-prefix) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 }
 
 /* Virtuelles Touch-Target (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */

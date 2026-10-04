@@ -541,19 +541,21 @@ function onSpotDrop(event: DragEvent) {
               @click="onToggleDone"
             >
               <template v-if="excursion.done">
-                <template v-if="excursion.date">Gemacht am {{ statusDateLabel }}</template>
+                <template v-if="excursion.date">
+                  <span class="done-toggle-prefix">Gemacht am </span>{{ statusDateLabel }}
+                </template>
                 <template v-else>Gemacht</template>
-                <template v-if="weatherSummary">
+                <span v-if="weatherSummary" class="done-toggle-weather">
                   · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
                   {{ weatherSummary.tempLabel }}
-                </template>
+                </span>
               </template>
               <template v-else-if="excursion.date">
-                Geplant für {{ statusDateLabel }}
-                <template v-if="weatherSummary">
+                <span class="done-toggle-prefix">Geplant für </span>{{ statusDateLabel }}
+                <span v-if="weatherSummary" class="done-toggle-weather">
                   · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
                   {{ weatherSummary.tempLabel }}
-                </template>
+                </span>
               </template>
               <template v-else>
                 <template v-if="expanded">Als gemacht markieren</template>
@@ -647,6 +649,8 @@ function onSpotDrop(event: DragEvent) {
   --excursion-theme-dark: var(--color-tour-dark);
   --excursion-theme-tint: var(--color-tour-tint);
   --excursion-theme-border: var(--color-tour-border);
+
+  container: excursion-card / inline-size;
 
   position: relative;
   z-index: 1;
@@ -930,7 +934,7 @@ function onSpotDrop(event: DragEvent) {
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
 }
 
 /* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
@@ -1057,6 +1061,10 @@ function onSpotDrop(event: DragEvent) {
   margin-top: auto;
   position: relative;
   z-index: 2;
+}
+
+.card-actions-wrapper > :deep(.social-row) {
+  margin-left: auto;
 }
 
 .links {
