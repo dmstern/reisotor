@@ -4,13 +4,9 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { buildGoogleMapsLink, buildOsmLink } from '../utils/googleMaps';
 import AppIcon from './AppIcon.vue';
-import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
-import Input from './primitives/Input.vue';
-import LoadingSpinner from './primitives/LoadingSpinner.vue';
-import InfoPopover from './primitives/InfoPopover.vue';
-import CategoryChip from './CategoryChip.vue';
-import CategoryCombobox from './CategoryCombobox.vue';
+import LocationSearchBar from './LocationSearchBar.vue';
+import LocationPolaroidCard from './LocationPolaroidCard.vue';
 import type { IconDef } from '../utils/icon';
 import { usePlaceSearch, type PlaceSearchResult } from '../composables/usePlaceSearch';
 import { useLocationDetails } from '../composables/useLocationDetails';
@@ -86,6 +82,11 @@ const slots = useSlots();
 
 const mapEl = ref<HTMLDivElement | null>(null);
 const polaroidCardEl = ref<HTMLDivElement | null>(null);
+
+function setPolaroidCardRef(inst: unknown) {
+  const component = inst as { cardEl?: HTMLDivElement | null; $el?: HTMLDivElement | null } | null;
+  polaroidCardEl.value = component?.cardEl ?? component?.$el ?? null;
+}
 
 const modelValueRef = toRef(props, 'modelValue');
 const titleRef = toRef(props, 'title');
@@ -338,456 +339,73 @@ defineExpose({
       <div ref="mapEl" class="location-picker-map"></div>
 
       <!-- 1. Schwebende Suchleiste direkt über der Karte -->
-      <div class="location-search-row location-search-floating">
-        <div
-          class="location-search-wrap"
-          :class="{ 'is-loading': isSearching, loading: isSearching }"
-          :aria-busy="isSearching"
-        >
-          <AppIcon
-            :icon="ACTION_ICONS.search"
-            :size="16"
-            group="actions"
-            class="location-search-icon"
-            aria-hidden="true"
-          />
-          <Input
-            :model-value="inputText"
-            class="location-picker-input"
-            type="text"
-            name="location-search"
-            data-testid="location-search-input"
-            :placeholder="computedPlaceholder"
-            aria-label="Ort suchen oder Maps-Link einfügen"
-            autocomplete="off"
-            @update:model-value="handleInput"
-            @keydown="onKeydown"
-            @focus="onFocus"
-            @blur="onBlur"
-          />
-          <div class="search-right-actions">
-            <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-              <LoadingSpinner size="sm" class="spinner input-spinner" />
-            </div>
-            <InfoPopover
-              title="Suchtipps & Maps-Links"
-              aria-label="Suchtipps und Maps-Links anzeigen"
-              align="right"
-              placement="bottom"
-              :menu-width="260"
-              class="search-info-popover"
-            >
-              <p>
-                <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
-                Orten weltweit suchen.
-              </p>
-              <p>
-                <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple
-                Maps oder OpenStreetMap (OSM) hier hinein.
-              </p>
-              <p class="popover-tip">
-                📍 Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
-                platzieren.
-              </p>
-            </InfoPopover>
-          </div>
-
-          <!-- Autocomplete Dropdown List -->
-          <Transition name="dropdown-unfold">
-            <ul
-              v-if="
-                isOpen && (results.length > 0 || (!isSearching && inputText.trim().length >= 2))
-              "
-              class="location-dropdown options"
-              role="listbox"
-              aria-label="Suchergebnisse"
-            >
-              <li
-                v-if="!isSearching && results.length === 0"
-                role="status"
-                class="location-result-empty"
-              >
-                <AppIcon
-                  :icon="ACTION_ICONS.warning"
-                  :size="16"
-                  group="actions"
-                  class="item-icon"
-                />
-                <div class="location-empty-content">
-                  <span class="empty-title">Kein passender Ort gefunden</span>
-                  <span class="empty-desc">
-                    Du kannst die Details manuell ausfüllen oder direkt auf die Karte tippen.
-                  </span>
-                </div>
-              </li>
-              <li
-                v-for="(place, index) in results"
-                :key="place.id || `${place.lat}-${place.lng}-${index}`"
-                role="option"
-                tabindex="-1"
-                class="location-result-item"
-                :class="{ 'is-active': index === activeIndex }"
-                :aria-selected="index === activeIndex"
-                @mousedown.prevent="selectPlace(place)"
-                @click="selectPlace(place)"
-                @keydown.enter.prevent="selectPlace(place)"
-              >
-                <AppIcon
-                  :icon="FORM_FIELD_ICONS.location"
-                  :size="16"
-                  group="formFields"
-                  class="item-icon"
-                />
-                <div class="location-item-content">
-                  <div class="location-item-title-row">
-                    <span class="location-item-name">{{ place.name }}</span>
-                    <CategoryChip
-                      v-if="place.category"
-                      :category="place.category"
-                      type="spot"
-                      class="location-category-badge"
-                    />
-                  </div>
-                  <span class="location-item-address">{{
-                    place.formatted_address || place.address
-                  }}</span>
-                </div>
-              </li>
-            </ul>
-          </Transition>
-        </div>
-
-        <!-- "Details manuell ausfüllen" Action Bar (wenn Details initial verborgen) -->
-        <div v-if="!isDetailsVisible" class="manual-details-bar">
-          <Button
-            variant="secondary"
-            size="sm"
-            type="button"
-            class="manual-details-btn"
-            :icon="ACTION_ICONS.edit"
-            @click="openManualDetails"
-          >
-            Details manuell ausfüllen
-          </Button>
-        </div>
-      </div>
+      <LocationSearchBar
+        :model-value="inputText"
+        :is-searching="isSearching"
+        :is-open="isOpen"
+        :results="results"
+        :active-index="activeIndex"
+        :placeholder="computedPlaceholder"
+        :is-details-visible="isDetailsVisible"
+        @update:model-value="handleInput"
+        @select="selectPlace"
+        @keydown="onKeydown"
+        @focus="onFocus"
+        @blur="onBlur"
+        @open-manual-details="openManualDetails"
+      />
 
       <!-- 2. Polaroid-Card: schwebt links unterhalb des Suchfelds auf der Karte -->
       <Transition name="polaroid-slide">
-        <div
+        <LocationPolaroidCard
           v-if="isDetailsVisible"
-          ref="polaroidCardEl"
-          class="polaroid-card"
-          :class="{ 'is-modified': modified, 'has-location': hasLocation }"
-          data-testid="location-status"
+          :ref="setPolaroidCardRef"
+          :model-value="modelValue"
+          :modified="modified"
+          :has-location="hasLocation"
+          :title="title"
+          :title-required="titleRequired"
+          :title-invalid="titleInvalid"
+          :category="category"
+          :category-options="categoryOptions"
+          :address="address"
+          :is-editing-title="isEditingTitle"
+          v-model:edit-title-input="editTitleInput"
+          :is-editing-category="isEditingCategory"
+          v-model:edit-category-input="editCategoryInput"
+          :is-editing-address="isEditingAddress"
+          v-model:edit-address-input="editAddressInput"
+          :show-category-sparkle="showCategorySparkle"
+          :category-sparkle-title="categorySparkleTitle"
+          :is-fetching-category-suggestion="isFetchingCategorySuggestion"
+          :show-address-sparkle="showAddressSparkle"
+          :address-sparkle-title="addressSparkleTitle"
+          :is-fetching-address-suggestion="isFetchingAddressSuggestion"
+          :show-location-sparkle="showLocationSparkle"
+          :location-sparkle-title="locationSparkleTitle"
+          :is-searching="isSearching"
+          @reset="onResetClick"
+          @clear-coords="clearCoords"
+          @start-edit-title="startEditTitle"
+          @title-input="onTitleInput"
+          @save-title="saveTitle"
+          @cancel-title="cancelTitle"
+          @start-edit-category="startEditCategory"
+          @save-category="saveCategory"
+          @cancel-category="cancelCategory"
+          @category-blur="handleCategoryBlur"
+          @cycle-category-suggestion="cycleCategorySuggestion"
+          @start-edit-address="startEditAddress"
+          @address-input="onAddressInput"
+          @save-address="saveAddress"
+          @cancel-address="cancelAddress"
+          @cycle-address-suggestion="cycleAddressSuggestion"
+          @cycle-location-search="cycleLocationSearch"
         >
-          <!-- Header Actions (oben rechts in der Card): Zurücksetzen -->
-          <div v-if="modified" class="polaroid-header-actions">
-            <IconButton
-              type="button"
-              size="sm"
-              shape="circle"
-              variant="secondary"
-              class="polaroid-action-btn polaroid-reset-btn"
-              :icon="ACTION_ICONS.restore"
-              title="Standort zurücksetzen"
-              aria-label="Standort zurücksetzen"
-              @click="onResetClick"
-            />
-          </div>
-
-          <!-- Polaroid-Foto / Medien-Slot (z. B. CoverImagePicker) -->
-          <div v-if="$slots.media" class="polaroid-media">
+          <template #media v-if="$slots.media">
             <slot name="media" />
-          </div>
-
-          <!-- Polaroid-Body / Beschriftung & Detailzeilen -->
-          <div class="polaroid-body">
-            <div class="status-details">
-              <!-- 1. Titel-Zeile -->
-              <div v-if="props.title !== undefined" class="status-meta-row status-title-row">
-                <span class="status-row-icon" title="Titel" aria-hidden="true">
-                  <AppIcon :icon="FORM_FIELD_ICONS.title" :size="14" group="formFields" />
-                </span>
-                <div v-if="!isEditingTitle && props.title" class="status-meta-display">
-                  <span class="status-title" :title="props.title">
-                    {{ props.title }}
-                  </span>
-                  <IconButton
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    class="inline-edit-btn"
-                    :icon="ACTION_ICONS.edit"
-                    title="Titel bearbeiten"
-                    aria-label="Titel bearbeiten"
-                    @click="startEditTitle"
-                  />
-                </div>
-                <div v-else class="status-meta-edit status-title-edit">
-                  <Input
-                    v-model="editTitleInput"
-                    size="sm"
-                    class="inline-edit-input"
-                    name="title"
-                    data-testid="spot-title-input"
-                    placeholder="Titel des Spots..."
-                    :required="titleRequired"
-                    :invalid="titleInvalid"
-                    @input="onTitleInput"
-                    @keydown.enter.prevent="saveTitle"
-                    @keydown.esc.prevent="cancelTitle"
-                    @blur="saveTitle"
-                  />
-                  <IconButton
-                    v-if="props.title"
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    class="inline-save-btn"
-                    :icon="ACTION_ICONS.done"
-                    title="Titel speichern"
-                    aria-label="Titel speichern"
-                    @click="saveTitle"
-                  />
-                </div>
-              </div>
-
-              <!-- 2. Kategorie-Zeile (direkt nach dem Titel analog SpotCard) -->
-              <div v-if="props.category !== undefined" class="status-meta-row status-category-row">
-                <span class="status-row-icon" title="Kategorie" aria-hidden="true">
-                  <AppIcon :icon="FORM_FIELD_ICONS.category" :size="14" group="formFields" />
-                </span>
-                <div v-if="!isEditingCategory && props.category" class="status-meta-display">
-                  <CategoryChip :category="props.category" type="spot" />
-                  <IconButton
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    class="inline-edit-btn"
-                    :icon="ACTION_ICONS.edit"
-                    title="Kategorie bearbeiten"
-                    aria-label="Kategorie bearbeiten"
-                    @click="startEditCategory"
-                  />
-                </div>
-                <div v-else class="status-meta-edit status-category-edit">
-                  <div
-                    class="inline-category-combobox"
-                    :class="{ 'has-sparkle': showCategorySparkle }"
-                  >
-                    <CategoryCombobox
-                      v-model="editCategoryInput"
-                      type="spot"
-                      :options="categoryOptions"
-                      size="sm"
-                      placeholder="Kategorie wählen..."
-                      @select="saveCategory"
-                      @keydown.enter.prevent="saveCategory()"
-                      @keydown.esc.prevent="cancelCategory"
-                      @blur="handleCategoryBlur"
-                    />
-                    <button
-                      v-if="showCategorySparkle"
-                      type="button"
-                      class="sparkle-suggest-btn category-sparkle-btn"
-                      :class="{ 'is-loading': isFetchingCategorySuggestion }"
-                      :title="categorySparkleTitle"
-                      :aria-label="categorySparkleTitle"
-                      data-testid="spot-category-sparkle-btn"
-                      :disabled="isFetchingCategorySuggestion"
-                      @mousedown.prevent
-                      @click="cycleCategorySuggestion"
-                    >
-                      <AppIcon
-                        :icon="ACTION_ICONS.sparkles"
-                        :size="13"
-                        group="actions"
-                        :class="{ 'sparkle-spin': isFetchingCategorySuggestion }"
-                      />
-                    </button>
-                  </div>
-                  <IconButton
-                    v-if="props.category"
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    class="inline-save-btn"
-                    :icon="ACTION_ICONS.done"
-                    title="Kategorie speichern"
-                    aria-label="Kategorie speichern"
-                    @click="saveCategory()"
-                  />
-                </div>
-              </div>
-
-              <!-- 3. Standort-Gruppe: Adresse & Koordinaten näher zusammengerückt -->
-              <div class="status-location-group">
-                <!-- Adress-Zeile -->
-                <div class="status-meta-row status-address-row">
-                  <span class="status-row-icon" title="Adresse" aria-hidden="true">
-                    <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-                  </span>
-                  <div v-if="!isEditingAddress && props.address" class="status-meta-display">
-                    <span class="status-address" :title="props.address">
-                      {{ props.address }}
-                    </span>
-                    <IconButton
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      class="inline-edit-btn"
-                      :icon="ACTION_ICONS.edit"
-                      title="Adresse bearbeiten"
-                      aria-label="Adresse bearbeiten"
-                      @click="startEditAddress"
-                    />
-                  </div>
-                  <div v-else class="status-meta-edit status-address-edit">
-                    <div
-                      class="inline-address-input-wrap"
-                      :class="{ 'has-sparkle': showAddressSparkle }"
-                    >
-                      <Input
-                        v-model="editAddressInput"
-                        size="sm"
-                        class="inline-edit-input"
-                        name="spot-address"
-                        data-testid="spot-address-input"
-                        placeholder="Adresse eingeben..."
-                        autocomplete="off"
-                        data-protonpass-ignore="true"
-                        data-1p-ignore="true"
-                        @input="onAddressInput"
-                        @keydown.enter.prevent="saveAddress"
-                        @keydown.esc.prevent="cancelAddress"
-                        @blur="saveAddress"
-                      />
-                      <button
-                        v-if="showAddressSparkle"
-                        type="button"
-                        class="sparkle-suggest-btn address-sparkle-btn"
-                        :class="{ 'is-loading': isFetchingAddressSuggestion }"
-                        :title="addressSparkleTitle"
-                        :aria-label="addressSparkleTitle"
-                        data-testid="spot-address-sparkle-btn"
-                        :disabled="isFetchingAddressSuggestion"
-                        @mousedown.prevent
-                        @click="cycleAddressSuggestion"
-                      >
-                        <AppIcon
-                          :icon="ACTION_ICONS.sparkles"
-                          :size="13"
-                          group="actions"
-                          :class="{ 'sparkle-spin': isFetchingAddressSuggestion }"
-                        />
-                      </button>
-                    </div>
-                    <IconButton
-                      v-if="props.address"
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      class="inline-save-btn"
-                      :icon="ACTION_ICONS.done"
-                      title="Adresse speichern"
-                      aria-label="Adresse speichern"
-                      @click="saveAddress"
-                    />
-                  </div>
-                </div>
-
-                <!-- Standort / Koordinaten-Zeile: Immer sichtbar (Issue #SpotLocationMissing) -->
-                <div
-                  class="status-meta-row status-coords-row"
-                  :class="{ 'is-missing': !modelValue }"
-                >
-                  <template v-if="modelValue">
-                    <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
-                      <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
-                    </span>
-                    <div class="status-meta-display">
-                      <span class="status-coords">
-                        {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
-                      </span>
-                      <IconButton
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        class="clear-btn coords-clear-btn"
-                        :icon="ACTION_ICONS.close"
-                        title="Standort-Koordinaten entfernen"
-                        aria-label="Standort-Koordinaten entfernen"
-                        @click="clearCoords"
-                      />
-                    </div>
-                  </template>
-                  <template v-else>
-                    <span
-                      class="status-row-icon status-warning-icon"
-                      title="Standort fehlt"
-                      aria-hidden="true"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-                    </span>
-                    <div class="status-meta-display">
-                      <span
-                        class="status-coords status-coords-missing"
-                        data-testid="spot-coords-missing"
-                      >
-                        Standort fehlt
-                      </span>
-                      <InfoPopover
-                        title="Standort festlegen"
-                        aria-label="Hinweise zum Festlegen des Standorts anzeigen"
-                        placement="bottom"
-                        align="left"
-                        :icon-size="14"
-                        :menu-width="260"
-                        class="coords-info-popover"
-                      >
-                        <p>
-                          <strong>Standort festlegen:</strong>
-                        </p>
-                        <p>
-                          • <strong>Ortssuche:</strong> Nutze die Suchleiste oben für Adressen oder
-                          Sehenswürdigkeiten.
-                        </p>
-                        <p>
-                          • <strong>Karten-Link:</strong> Kopiere einen Google Maps-, Apple Maps-
-                          oder OSM-Link in das Suchfeld.
-                        </p>
-                        <p class="popover-tip">
-                          📍 Tippe alternativ direkt auf die Karte, um die Stecknadel manuell zu
-                          platzieren.
-                        </p>
-                      </InfoPopover>
-                      <button
-                        v-if="showLocationSparkle"
-                        type="button"
-                        class="sparkle-suggest-btn coords-sparkle-btn"
-                        :class="{ 'is-loading': isSearching }"
-                        :title="locationSparkleTitle"
-                        :aria-label="locationSparkleTitle"
-                        data-testid="spot-location-sparkle-btn"
-                        :disabled="isSearching"
-                        @mousedown.prevent
-                        @click="cycleLocationSearch"
-                      >
-                        <AppIcon
-                          :icon="ACTION_ICONS.sparkles"
-                          :size="13"
-                          group="actions"
-                          :class="{ 'sparkle-spin': isSearching }"
-                        />
-                      </button>
-                    </div>
-                  </template>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          </template>
+        </LocationPolaroidCard>
       </Transition>
 
       <!-- Floating Map Hint when no location set -->
@@ -837,229 +455,16 @@ defineExpose({
   box-sizing: border-box;
 }
 
-.location-search-row {
-  width: 100%;
-  min-width: 0;
-}
-
-.location-search-floating {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  width: auto;
-  box-sizing: border-box;
-  z-index: var(--z-dropdown, 500);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.location-search-floating:focus-within,
-.location-search-floating:has(.location-dropdown) {
-  z-index: var(--z-popover, 1100);
-}
-
-.manual-details-bar {
-  display: flex;
-  justify-content: flex-start;
-  margin: 0;
-}
-
-.manual-details-btn {
-  font-size: 0.8rem;
-  color: var(--color-text);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm, 0 2px 6px rgba(0, 0, 0, 0.12));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  height: 28px;
-  padding: 2px 10px;
-  cursor: pointer;
-}
-
-.location-search-wrap {
+/* Map wrap & Mini map */
+.map-wrap {
   position: relative;
   width: 100%;
 }
 
-.location-search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-muted);
-  pointer-events: none;
-  z-index: 2;
-}
-
-.location-picker-input,
-.location-search-wrap :deep(.location-picker-input) {
-  width: 100%;
-  box-sizing: border-box;
-  padding-left: 38px;
-  padding-right: 42px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-}
-
-.location-search-wrap.is-loading :deep(.location-picker-input) {
-  padding-right: 70px;
-}
-
-.location-search-wrap :deep(.location-picker-input)::placeholder {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.search-right-actions {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  z-index: 3;
-}
-
-.search-right-actions .input-spinner-wrap {
-  position: static;
-  transform: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.input-spinner {
-  pointer-events: none;
-}
-
-.location-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+.map-wrap:focus-within,
+.map-wrap:has(:deep(.open)),
+.map-wrap:has(:deep(.location-dropdown)) {
   z-index: var(--z-popover, 1100);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle, 8px);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-  list-style: none;
-  padding: 4px 0;
-  margin: 0;
-  max-height: 240px;
-  overflow-y: auto;
-}
-
-.location-result-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2, 8px);
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background 0.1s ease;
-}
-
-.location-result-item:hover,
-.location-result-item.is-active,
-.location-result-item[aria-selected='true'] {
-  background: var(--color-hover);
-}
-
-.item-icon {
-  margin-top: 2px;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.location-item-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.location-item-title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-}
-
-.location-item-name {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.location-category-badge {
-  flex-shrink: 0;
-}
-
-.location-item-address {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.location-result-empty {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2, 8px);
-  padding: 10px 12px;
-  color: var(--color-text-muted);
-  user-select: none;
-}
-
-.location-empty-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.location-empty-content .empty-title {
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--color-text);
-}
-
-.location-empty-content .empty-desc {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  line-height: 1.4;
-}
-
-/* Polaroid Card */
-.polaroid-card {
-  position: absolute;
-  top: 68px;
-  left: 12px;
-  width: 260px;
-  max-width: calc(100% - 24px);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle, 12px);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  gap: 8px;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-  z-index: var(--z-card-elevated, 5);
 }
 
 /* Polaroid Card Slide Transition (sanftes Hineingleiten von oben nach unten) */
@@ -1091,428 +496,6 @@ defineExpose({
   }
 }
 
-.polaroid-card:focus-within,
-.polaroid-card:has(.open) {
-  z-index: var(--z-popover, 1100);
-}
-
-.polaroid-card.is-modified {
-  border-color: var(--color-accent) !important;
-  box-shadow:
-    var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15)),
-    0 0 0 1px var(--color-accent);
-}
-
-.polaroid-header-actions {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.polaroid-action-btn {
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  min-height: 26px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.polaroid-action-btn:hover {
-  background: var(--color-surface-hover, var(--color-hover));
-  color: var(--color-text);
-}
-
-.polaroid-reset-btn:hover {
-  color: var(--color-accent, #e08e45);
-  border-color: var(--color-accent, #e08e45);
-}
-
-.polaroid-media {
-  width: 100%;
-  border-radius: var(--radius-sm-squircle, 8px);
-  corner-shape: squircle;
-  overflow: hidden;
-  background: var(--color-surface-hover, rgba(0, 0, 0, 0.04));
-  flex-shrink: 0;
-}
-
-.polaroid-card.is-modified:not(:has(.polaroid-media)) .status-title-row {
-  padding-right: 32px;
-}
-
-.polaroid-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-  padding: 2px 2px 4px 2px;
-}
-
-.clear-btn {
-  line-height: 1;
-}
-
-.status-details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.status-location-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  min-width: 0;
-}
-
-.status-meta-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-  min-height: 36px;
-}
-
-.status-coords-row {
-  align-items: center;
-}
-
-.status-coords-row .status-row-icon {
-  margin-top: 0;
-}
-
-.status-row-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  min-width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  margin-top: 0;
-}
-
-.status-meta-display {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-1);
-  min-width: 0;
-  max-width: 100%;
-  flex: 1;
-  min-height: 36px;
-}
-
-.status-meta-edit {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1, 4px);
-  width: 100%;
-  flex: 1;
-  min-width: 0;
-  max-width: 100%;
-  min-height: 36px;
-}
-
-.status-meta-row:has(.status-meta-edit) {
-  align-items: center;
-}
-
-.status-meta-row:has(.status-meta-edit) .status-row-icon {
-  margin-top: 0;
-}
-
-.inline-edit-input {
-  flex: 1;
-  min-width: 0;
-  width: 100%;
-}
-
-.inline-address-input-wrap {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
-
-.inline-address-input-wrap.has-sparkle :deep(input) {
-  padding-right: 28px;
-}
-
-.inline-category-combobox.has-sparkle :deep(input) {
-  padding-right: 46px;
-}
-
-.sparkle-suggest-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-primary, #6366f1);
-  cursor: pointer;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
-  transition:
-    transform 0.15s ease,
-    color 0.15s ease,
-    background-color 0.15s ease;
-  z-index: 2;
-}
-
-.address-sparkle-btn {
-  right: 6px;
-}
-
-.category-sparkle-btn {
-  right: 24px;
-}
-
-.sparkle-suggest-btn:hover:not(:disabled) {
-  background-color: var(--color-surface-hover, rgba(0, 0, 0, 0.06));
-  color: var(--color-primary-hover, #4f46e5);
-  transform: translateY(-50%) scale(1.12);
-}
-
-.sparkle-suggest-btn:active:not(:disabled) {
-  transform: translateY(-50%) scale(0.95);
-}
-
-.sparkle-suggest-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-
-.sparkle-suggest-btn:disabled {
-  cursor: default;
-  opacity: 0.8;
-}
-
-@keyframes sparkleRotate {
-  0% {
-    transform: rotate(0deg) scale(0.9);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.15);
-  }
-  100% {
-    transform: rotate(360deg) scale(0.9);
-  }
-}
-
-.sparkle-spin {
-  animation: sparkleRotate 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-.inline-edit-btn {
-  opacity: 0;
-  pointer-events: none;
-  padding: 2px 4px;
-  flex-shrink: 0;
-  align-self: center;
-  margin-top: 0;
-  margin-left: auto;
-  transition: opacity 0.15s ease;
-}
-
-.status-meta-row:hover .inline-edit-btn,
-.inline-edit-btn:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-@media (hover: none) {
-  .inline-edit-btn {
-    opacity: 0.85;
-    pointer-events: auto;
-  }
-}
-
-.inline-save-btn {
-  padding: 2px 4px;
-  flex-shrink: 0;
-  align-self: center;
-  margin-left: auto;
-  color: var(--color-success, #2e7d32);
-}
-
-.status-title {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-text);
-  min-width: 0;
-  flex: 1;
-  line-height: 1.35;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.status-address {
-  font-size: 0.82rem;
-  color: var(--color-text);
-  min-width: 0;
-  flex: 1;
-  line-height: 1.35;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.status-coords {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-  min-width: 0;
-  flex: 1;
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.coords-clear-btn {
-  color: var(--color-text-muted);
-  padding: 2px 4px;
-  flex-shrink: 0;
-  align-self: center;
-  margin-top: 0;
-  margin-left: auto;
-  opacity: 0.7;
-  transition:
-    opacity 0.15s ease,
-    color 0.15s ease;
-}
-
-.status-coords-row:hover .coords-clear-btn,
-.coords-clear-btn:focus-visible {
-  opacity: 1;
-}
-
-.coords-clear-btn:hover {
-  opacity: 1;
-  color: var(--color-danger, #ef4444);
-}
-
-.status-warning-icon {
-  color: var(--color-warning, #f59e0b);
-}
-
-.status-coords.status-coords-missing {
-  color: var(--color-warning, #d97706);
-  font-weight: 500;
-  font-style: italic;
-  font-size: 0.8rem;
-  font-variant-numeric: normal;
-}
-
-.coords-info-popover {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-}
-
-.coords-sparkle-btn {
-  position: static;
-  transform: none;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.coords-sparkle-btn:hover:not(:disabled) {
-  transform: scale(1.15);
-}
-
-.coords-sparkle-btn:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.sub-category-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.inline-category-combobox {
-  min-width: 0;
-  flex: 1;
-  width: 100%;
-  position: relative;
-}
-
-.inline-category-combobox:focus-within,
-.inline-category-combobox:has(.open) {
-  z-index: var(--z-popover, 1100);
-}
-
-.inline-category-combobox :deep(.combobox) {
-  min-width: 0;
-  width: 100%;
-}
-
-/* Map wrap & Mini map */
-.map-wrap {
-  position: relative;
-  width: 100%;
-}
-
-.map-wrap:focus-within,
-.map-wrap:has(.open),
-.map-wrap:has(.location-dropdown) {
-  z-index: var(--z-popover, 1100);
-}
-
-@media (min-width: 581px) {
-  .polaroid-card {
-    position: absolute;
-    top: 68px;
-    left: 12px;
-    right: auto;
-    width: 260px;
-    max-width: calc(100% - 24px);
-  }
-}
-
 .location-picker-map {
   position: relative;
   isolation: isolate;
@@ -1539,24 +522,13 @@ defineExpose({
 }
 
 @media (max-width: 580px) {
-  .polaroid-card {
-    position: absolute;
-    top: 68px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-    max-width: none;
-    max-height: calc(100% - 200px);
-    overflow-y: auto;
-  }
-
   .has-polaroid .location-picker-map {
     height: 560px;
     min-height: 560px;
   }
 
   .has-polaroid.has-polaroid-media .location-picker-map,
-  .has-polaroid:has(.polaroid-media) .location-picker-map {
+  .has-polaroid:has(:deep(.polaroid-media)) .location-picker-map {
     height: 680px;
     min-height: 680px;
   }
