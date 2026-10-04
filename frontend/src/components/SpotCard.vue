@@ -654,7 +654,16 @@ const cardRotation = computed(() => {
                 </template>
                 <template v-else-if="isSpotDone">
                   <template v-if="scheduledDate">
-                    <span class="done-toggle-prefix">Besucht am </span>{{ plannedDateLabel }}
+                    <span class="done-toggle-prefix">Besucht am </span>
+                    <span class="done-toggle-date">
+                      <AppIcon
+                        :icon="FORM_FIELD_ICONS.date"
+                        :size="12"
+                        group="formFields"
+                        class="done-toggle-calendar-icon"
+                      />
+                      {{ plannedDateLabel }}
+                    </span>
                   </template>
                   <template v-else>Besucht</template>
                   <span v-if="dayWeather && scheduledDaysCount <= 1" class="done-toggle-weather">
@@ -663,7 +672,16 @@ const cardRotation = computed(() => {
                   </span>
                 </template>
                 <template v-else-if="scheduledDate || totalItemsCount === 1">
-                  <span class="done-toggle-prefix">Geplant für </span>{{ plannedDateLabel }}
+                  <span class="done-toggle-prefix">Geplant für </span>
+                  <span class="done-toggle-date">
+                    <AppIcon
+                      :icon="FORM_FIELD_ICONS.date"
+                      :size="12"
+                      group="formFields"
+                      class="done-toggle-calendar-icon"
+                    />
+                    {{ plannedDateLabel }}
+                  </span>
                   <span v-if="dayWeather && scheduledDaysCount <= 1" class="done-toggle-weather">
                     · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
                     {{ Math.round(dayWeather.tempMax) }}°

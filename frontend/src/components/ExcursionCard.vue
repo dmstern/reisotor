@@ -542,7 +542,16 @@ function onSpotDrop(event: DragEvent) {
             >
               <template v-if="excursion.done">
                 <template v-if="excursion.date">
-                  <span class="done-toggle-prefix">Gemacht am </span>{{ statusDateLabel }}
+                  <span class="done-toggle-prefix">Gemacht am </span>
+                  <span class="done-toggle-date">
+                    <AppIcon
+                      :icon="FORM_FIELD_ICONS.date"
+                      :size="12"
+                      group="formFields"
+                      class="done-toggle-calendar-icon"
+                    />
+                    {{ statusDateLabel }}
+                  </span>
                 </template>
                 <template v-else>Gemacht</template>
                 <span v-if="weatherSummary" class="done-toggle-weather">
@@ -551,7 +560,16 @@ function onSpotDrop(event: DragEvent) {
                 </span>
               </template>
               <template v-else-if="excursion.date">
-                <span class="done-toggle-prefix">Geplant für </span>{{ statusDateLabel }}
+                <span class="done-toggle-prefix">Geplant für </span>
+                <span class="done-toggle-date">
+                  <AppIcon
+                    :icon="FORM_FIELD_ICONS.date"
+                    :size="12"
+                    group="formFields"
+                    class="done-toggle-calendar-icon"
+                  />
+                  {{ statusDateLabel }}
+                </span>
                 <span v-if="weatherSummary" class="done-toggle-weather">
                   · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
                   {{ weatherSummary.tempLabel }}

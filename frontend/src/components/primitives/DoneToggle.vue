@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import AppIcon from '../AppIcon.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
-import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
 
 // Einheitliche, wiederverwendbare Status-Pill / Checkbox-Toggle (DRY gemäß AGENTS.md):
 // Kombiniert Geplant-Status und Gemacht-Checkbox für Spots und Touren/Ausflüge mit
@@ -45,22 +44,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     :title="title"
     @click.stop="$emit('click', $event)"
   >
-    <AppIcon
-      v-if="showIcon"
-      :icon="icon"
-      :size="14"
-      group="actions"
-      :active="done"
-      class="done-toggle-icon"
-      :class="{ 'is-planned-icon': planned && !isDoneOrPartial }"
-    />
-    <AppIcon
-      v-if="showIcon && planned && !isDoneOrPartial"
-      :icon="FORM_FIELD_ICONS.date"
-      :size="14"
-      group="formFields"
-      class="done-toggle-calendar-icon"
-    />
+    <AppIcon v-if="showIcon" :icon="icon" :size="14" group="actions" :active="done" />
     <span class="status-text">
       <slot />
     </span>
@@ -133,13 +117,19 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   text-overflow: ellipsis;
 }
 
-.done-toggle-calendar-icon {
-  display: none;
+:deep(.done-toggle-date) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.done-toggle-icon {
+:deep(.done-toggle-calendar-icon) {
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
+  opacity: 0.85;
 }
 
 :deep(.done-toggle-prefix) {
@@ -155,20 +145,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 /* Auf schmalen Breiten (z. B. wenn der Spots-Drawer schmal gezogen wird <= 380px):
-   Wort "Geplant für"/"Gemacht am"/"Besucht am" per Visually-Hidden ausblenden und stattdessen
-   das Kalender-Icon anzeigen, damit Datum und Wetter stets komplett sichtbar bleiben. */
+   Wort "Geplant für"/"Gemacht am"/"Besucht am" per Visually-Hidden ausblenden.
+   Checkbox, Kalender-Icon, Datum und Wetter bleiben stets komplett sichtbar. */
 @container spots-col (max-width: 380px) {
   .done-toggle {
     padding: 3px 8px;
     gap: 4px;
-  }
-
-  .done-toggle-icon.is-planned-icon {
-    display: none;
-  }
-
-  .done-toggle-calendar-icon {
-    display: inline-flex;
   }
 
   :deep(.done-toggle-prefix) {
@@ -190,14 +172,6 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     gap: 4px;
   }
 
-  .done-toggle-icon.is-planned-icon {
-    display: none;
-  }
-
-  .done-toggle-calendar-icon {
-    display: inline-flex;
-  }
-
   :deep(.done-toggle-prefix) {
     position: absolute;
     width: 1px;
@@ -217,14 +191,6 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     gap: 4px;
   }
 
-  .done-toggle-icon.is-planned-icon {
-    display: none;
-  }
-
-  .done-toggle-calendar-icon {
-    display: inline-flex;
-  }
-
   :deep(.done-toggle-prefix) {
     position: absolute;
     width: 1px;
@@ -242,14 +208,6 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   .done-toggle {
     padding: 3px 8px;
     gap: 4px;
-  }
-
-  .done-toggle-icon.is-planned-icon {
-    display: none;
-  }
-
-  .done-toggle-calendar-icon {
-    display: inline-flex;
   }
 
   :deep(.done-toggle-prefix) {
