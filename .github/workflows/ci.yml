@@ -35,27 +35,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check for code changes
-        uses: dorny/paths-filter@v3
         id: filter
-        with:
-          token: ${{ github.token }}
-          predicate-quantifier: 'some-with-excludes'
-          filters: |
-            code:
-              - '**'
-              - '!**/*.md'
-              - '!docs/**'
-              - '!release-notes/**'
-              - '!.gitignore'
-              - '!.prettierignore'
-              - '!LICENSE'
-              - '!.claude/**'
-              - '!.agents/**'
-              - '!.jules/**'
-              - '!.cursorrules'
-              - '!.claudeignore'
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "Not a pull request. Running full suite."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch origin "${{ github.base_ref }}" --depth=1 || true
+
+          NON_DOC_FILES=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -v -E '(\.md$|^docs/|^release-notes/|^\.gitignore$|^\.prettierignore$|^LICENSE$|^\.claude/|^\.agents/|^\.jules/|^\.cursorrules$|^\.claudeignore$)' | grep -v '^$' || true)
+
+          if [ -n "$NON_DOC_FILES" ]; then
+            echo "Code or workflow changes detected:"
+            echo "$NON_DOC_FILES"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only documentation/screenshot files changed."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
 
   lint-and-format:
     name: Lint & Format Check
