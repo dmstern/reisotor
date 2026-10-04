@@ -765,7 +765,7 @@ function onDelete() {
         <div class="spacer"></div>
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           class="btn-cancel"
           :disabled="isLegUploadingAttachments"
           @click="emit('update:modelValue', false)"

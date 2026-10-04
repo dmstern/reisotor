@@ -460,6 +460,14 @@ const categoryColors = computed(() => {
               </FormField>
               <div class="actions-row">
                 <div class="spacer"></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="btn-cancel"
+                  @click="closeNewBudgetForm"
+                >
+                  Abbrechen
+                </Button>
                 <Button type="submit">Anlegen</Button>
               </div>
             </form>
@@ -509,6 +517,14 @@ const categoryColors = computed(() => {
                   Löschen
                 </Button>
                 <div class="spacer"></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="btn-cancel"
+                  @click="closeEditBudgetForm"
+                >
+                  Abbrechen
+                </Button>
                 <Button type="submit">Speichern</Button>
               </div>
             </form>
@@ -638,6 +654,14 @@ const categoryColors = computed(() => {
               />
               <div class="actions-row">
                 <div class="spacer"></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="btn-cancel"
+                  @click="closeExpenseForm"
+                >
+                  Abbrechen
+                </Button>
                 <Button type="submit">Eintragen</Button>
               </div>
             </form>
@@ -716,6 +740,14 @@ const categoryColors = computed(() => {
 
               <div class="actions-row">
                 <div class="spacer"></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="btn-cancel"
+                  @click="closeTransferForm"
+                >
+                  Abbrechen
+                </Button>
                 <Button type="submit">Eintragen</Button>
               </div>
             </form>
@@ -835,6 +867,14 @@ const categoryColors = computed(() => {
         />
         <div class="actions-row">
           <div class="spacer"></div>
+          <Button
+            type="button"
+            variant="secondary"
+            class="btn-cancel"
+            @click="closeEditExpenseForm"
+          >
+            Abbrechen
+          </Button>
           <Button type="submit" :disabled="isExpenseUploadingAttachments">Speichern</Button>
         </div>
       </form>

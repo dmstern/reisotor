@@ -995,11 +995,44 @@ p + .btn {
 }
 
 @media (max-width: 600px) {
-  /* Blendet Abbrechen-Buttons auf Mobile aus, um Platz für Speichern/Löschen zu schaffen.
-     Das Modal lässt sich weiterhin über das Schließen-X rechts oben beenden. */
-  .actions-row .btn-cancel,
-  .button-group .btn-cancel {
+  .actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* Der Spacer erzwingt bei vorhandenen linken Aktionen (z. B. Löschen, Zurücksetzen)
+     einen Zeilenumbruch, sodass destruktive Aktionen in einer eigenen oberen Zeile stehen. */
+  .actions-row .spacer,
+  .actions-row > .spacer {
+    flex: 0 0 100% !important;
+    height: 0;
+    margin: 0;
+  }
+
+  /* Wenn keine linke Aktion vorliegt (Spacer ist erstes Kind), keinen leeren Umbruch erzeugen */
+  .actions-row > .spacer:first-child {
     display: none !important;
+  }
+
+  /* Linke Aktionen (z. B. Löschen, Reset) vor dem Spacer bleiben linksbündig */
+  .actions-row > :not(.spacer) {
+    flex: 0 0 auto;
+  }
+
+  /* Das Aktionspaar nach dem Spacer (Abbrechen & Speichern/Eintragen) teilt sich 50/50 die untere Zeile */
+  .actions-row > .spacer ~ :not(.spacer),
+  .actions-row > .btn-cancel,
+  .actions-row > .btn-cancel ~ :not(.spacer) {
+    flex: 1 1 0 !important;
+    min-width: 0;
+  }
+
+  /* Auch in ButtonGroups (z. B. Bestätigungsdialoge) teilen sich Buttons die Zeile symmetrisch */
+  .button-group:not(.button-group--no-stretch) > :not(.spacer) {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 

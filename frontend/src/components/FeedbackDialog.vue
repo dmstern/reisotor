@@ -158,10 +158,16 @@ function close() {
 
         <p v-if="error" class="hint error">{{ error }}</p>
 
-        <Button type="submit" :disabled="submitting">
-          <AppIcon :icon="ACTION_ICONS.send" :size="15" group="actions" />
-          {{ submitting ? 'Wird gesendet…' : 'Absenden' }}
-        </Button>
+        <div class="actions-row">
+          <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="close">
+            Abbrechen
+          </Button>
+          <Button type="submit" :disabled="submitting">
+            <AppIcon :icon="ACTION_ICONS.send" :size="15" group="actions" />
+            {{ submitting ? 'Wird gesendet…' : 'Absenden' }}
+          </Button>
+        </div>
       </form>
     </div>
   </Modal>

@@ -467,6 +467,9 @@ async function quickAdd(list: ListGroup, label: string) {
             Löschen
           </Button>
           <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="editingItem = null">
+            Abbrechen
+          </Button>
           <Button type="submit">Speichern</Button>
         </div>
       </form>
