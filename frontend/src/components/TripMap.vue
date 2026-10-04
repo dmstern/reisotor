@@ -12,29 +12,21 @@ import { useSpotsStore } from '../stores/spots';
 import { useTracksStore } from '../stores/tracks';
 import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
-import { spotCategoryMeta } from '../utils/spotCategory';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { ACTION_ICONS } from '../utils/actionIcons';
-import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { useMapOfflineDownload } from '../composables/useMapOfflineDownload';
-import { useMapTrackRecording } from '../composables/useMapTrackRecording';
-import { useMapToolMenus } from '../composables/useMapToolMenus';
 import { useMapPhotos } from '../composables/useMapPhotos';
 import { useMapPoints, type MapPoint } from '../composables/useMapPoints';
 import { useMapLiveLocation } from '../composables/useMapLiveLocation';
 import { useLeafletTripMap } from '../composables/useLeafletTripMap';
-import Button from './primitives/Button.vue';
-import IconButton from './primitives/IconButton.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
-import PickerMenu from './primitives/PickerMenu.vue';
+import EmptyState from './primitives/EmptyState.vue';
+import TripMapTools from './TripMapTools.vue';
+import TripMapFocusBanner from './TripMapFocusBanner.vue';
+import TripMapStatusPills from './TripMapStatusPills.vue';
+import TripMapDockTeleport from './TripMapDockTeleport.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
 import DayStrip from './DayStrip.vue';
 import TrackPlayback from './TrackPlayback.vue';
-import AppIcon from './AppIcon.vue';
-import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
 
 const props = defineProps<{
   categoryFilter?: string[];
@@ -88,7 +80,6 @@ const scheduleItems = ref<ScheduleItem[]>([]);
 const users = ref<User[]>([]);
 
 const mapEl = ref<HTMLDivElement | null>(null);
-const isFocusBannerExpanded = ref(false);
 const trackPlaybackProgress = ref(0);
 
 // Travel dialog state
@@ -173,41 +164,7 @@ function downloadOfflineMap() {
   offlineDownload.downloadOfflineMap(() => leafletTripMap.getBounds());
 }
 
-// 4. Track Recording composable
-const mapTrackRecording = useMapTrackRecording();
-const {
-  trackRecording,
-  showTrackRecordingWarningModal,
-  isMapRecordingActive,
-  toggleRecord,
-  startRecordingConfirmed,
-} = mapTrackRecording;
-
-// 5. Tool Menus composable
-const toolMenus = useMapToolMenus({
-  onFocusMenuOpen: () => loadAllTripPhotos(),
-});
-const {
-  focusMenuOpen,
-  focusButtonRef,
-  focusMenuStyle,
-  toggleFocusMenu,
-  selectFocus,
-  locationMenuOpen,
-  locationButtonRef,
-  locationMenuStyle,
-  toggleLocationMenu,
-  selectLocation,
-  shareMenuOpen,
-  shareButtonRef,
-  shareMenuStyle,
-  shareDurationLabel,
-  toggleShareMenu,
-  chooseShareDuration,
-  locationSharing,
-} = toolMenus;
-
-// 6. Live Location composable
+// 4. Live Location composable
 const liveLocation = useMapLiveLocation({
   users,
   onPositionUpdate: () => leafletTripMap.renderPositions(),
@@ -306,7 +263,6 @@ function clearFocus() {
   if (drawers.mapFocusAllPhotos) {
     drawers.mapFocusAllPhotos = false;
   }
-  isFocusBannerExpanded.value = false;
 }
 
 function clearTrackFocus() {
@@ -516,376 +472,67 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   >
     <div class="map-wrap">
       <div ref="mapEl" class="map"></div>
-      <!-- Fasst "Alle anzeigen"/"Nur Urlaubsort"/"Nur Unterkünfte"/"Nur Tourziele" hinter einem
-           Popover zusammen statt vier eigenen Buttons (Nutzer-Feedback: die Button-Spalte war zu
-           lang/unübersichtlich geworden, einzelne Buttons rutschten hinter das Bottom-Sheet). -->
-      <IconButton
-        ref="focusButtonRef"
-        variant="floating"
-        shape="circle"
-        class="fit-btn focus-btn"
-        title="Kartenausschnitt fokussieren"
-        aria-label="Kartenausschnitt fokussieren"
-        :disabled="!filteredPoints.length"
-        :icon="MAP_TOOL_ICONS.focusGroup"
-        @click="toggleFocusMenu($event)"
+      <TripMapTools
+        :filtered-points-count="filteredPoints.length"
+        :vacation-points-count="vacationPoints.length"
+        :accommodation-points-count="accommodationPoints.length"
+        :total-accommodations-count="totalAccommodationsCount"
+        :has-excursions="excursionsStore.excursions.length > 0"
+        :excursion-points-count="excursionPoints.length"
+        :all-trip-photos-loaded="allTripPhotosLoaded"
+        :all-trip-photo-points-count="allTripPhotoPoints.length"
+        :has-own-position="!!ownPosition"
+        :user-avatar="auth.user?.avatar"
+        :other-members="otherMembers"
+        :is-member-online="isMemberOnline"
+        :has-member-position="hasMemberPosition"
+        :map-orientation-mode="mapOrientation.mode"
+        :tile-download-state="tileDownloadState"
+        @fit-all="fitAll"
+        @fit-vacation="fitVacation"
+        @fit-accommodations="fitAccommodations"
+        @fit-excursions="fitExcursions"
+        @focus-all-photos="focusAllPhotos"
+        @open-focus-menu="loadAllTripPhotos"
+        @jump-my-location="jumpToMyLocation"
+        @jump-member-location="jumpToMemberLocation"
+        @set-orientation-mode="setMapOrientationMode"
+        @download-offline-map="downloadOfflineMap"
       />
-      <!-- Fasst "Zu meinem Standort springen" und den Ausrichtungs-Umschalter (Norden/Fahrtrichtung
-           oben) hinter einem zweiten Popover zusammen - beide drehen sich um "wo bin ich/wohin
-           schaue ich", anders als die reine Datenfokus-Gruppe oben. -->
-      <IconButton
-        ref="locationButtonRef"
-        variant="floating"
-        shape="circle"
-        class="fit-btn location-btn"
-        title="Standort & Ausrichtung"
-        aria-label="Standort & Ausrichtung"
-        :icon="MAP_TOOL_ICONS.locationGroup"
-        @click="toggleLocationMenu($event)"
+      <TripMapStatusPills
+        :tile-download-state="tileDownloadState"
+        :tile-download-progress="tileDownloadProgress"
+        :tile-download-result="tileDownloadResult"
+        @dismiss-download-result="dismissTileDownloadResult"
       />
-      <IconButton
-        variant="floating"
-        shape="circle"
-        class="fit-btn offline-download-btn"
-        title="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
-        aria-label="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
-        :disabled="tileDownloadState === 'downloading'"
-        :icon="ACTION_ICONS.download"
-        @click="downloadOfflineMap"
+      <TripMapFocusBanner
+        :focused-excursion="focusedExcursion"
+        :focused-date="drawers.mapFocusDate"
+        :focused-spot="focusedSpot"
+        :focused-location="drawers.mapFocusLocation"
+        :focused-all-photos="drawers.mapFocusAllPhotos"
+        :all-trip-photo-points-count="allTripPhotoPoints.length"
+        :format-date="formatDate"
+        @clear="clearFocus"
+        @open-photo-preview="openPhotoPreview"
       />
-      <!-- Standort-Freigabe (stores/locationSharing.ts): läuft unabhängig davon, ob diese
-           Kartenansicht offen ist - Klick öffnet nur die Dauer-Auswahl. -->
-      <IconButton
-        ref="shareButtonRef"
-        variant="floating"
-        shape="circle"
-        class="fit-btn share-location-btn"
-        :active="locationSharing.activeDuration !== 'off'"
-        :title="shareDurationLabel"
-        :aria-label="shareDurationLabel"
-        :icon="ACTION_ICONS.shareLocation"
-        @click="toggleShareMenu($event)"
-      />
-      <!-- Standort-Aufzeichnung (stores/trackRecording.ts): läuft ebenfalls unabhängig von dieser
-           Kartenansicht weiter - Klick öffnet bei Nicht-Aufzeichnung nur die Start-Auswahl, beendet
-           bei laufender Aufzeichnung direkt (kein Menü nötig). -->
-      <IconButton
-        variant="floating"
-        shape="circle"
-        class="fit-btn record-btn"
-        :active="isMapRecordingActive"
-        :title="isMapRecordingActive ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
-        :aria-label="isMapRecordingActive ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
-        :icon="isMapRecordingActive ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
-        @click="toggleRecord"
-      />
-      <Teleport to="body">
-        <template v-if="focusMenuOpen">
-          <PickerMenu wide :style="focusMenuStyle" @close="focusMenuOpen = false">
-            <DropdownItem
-              :disabled="!filteredPoints.length"
-              :title="
-                !filteredPoints.length
-                  ? 'Keine eingetragenen Orte vorhanden'
-                  : 'Alle eingetragenen Orte auf der Karte anzeigen'
-              "
-              :icon="MAP_TOOL_ICONS.fitAll"
-              label="Alle eingetragenen Orte anzeigen"
-              @click="selectFocus(fitAll)"
-            />
-            <DropdownItem
-              :disabled="!vacationPoints.length"
-              :title="
-                !vacationPoints.length
-                  ? 'Kein Urlaubsort eingetragen'
-                  : 'Auf den Urlaubsort fokussieren'
-              "
-              :icon="MAP_TOOL_ICONS.vacation"
-              label="Nur Urlaubsort"
-              @click="selectFocus(fitVacation)"
-            />
-            <DropdownItem
-              :disabled="!accommodationPoints.length"
-              :title="
-                !accommodationPoints.length
-                  ? totalAccommodationsCount > 0
-                    ? 'Unterkünfte haben keinen Standort auf der Karte (Standort im Spot per Maps-Link oder Pin festlegen)'
-                    : 'Keine Unterkünfte für diesen Urlaub eingetragen'
-                  : accommodationPoints.length === 1
-                    ? 'Auf die Unterkunft fokussieren'
-                    : 'Auf die Unterkünfte fokussieren'
-              "
-              :icon="MAP_TOOL_ICONS.accommodation"
-              label="Nur Unterkünfte"
-              @click="selectFocus(fitAccommodations)"
-            />
-            <DropdownItem
-              v-if="excursionsStore.excursions.length"
-              :disabled="!excursionPoints.length"
-              :title="
-                !excursionPoints.length
-                  ? 'Keine Tourziele mit Koordinaten vorhanden'
-                  : 'Auf Tourziele fokussieren'
-              "
-              :icon="MAP_TOOL_ICONS.excursions"
-              label="Nur Tourziele"
-              @click="selectFocus(fitExcursions)"
-            />
-            <DropdownItem
-              :disabled="allTripPhotosLoaded && !allTripPhotoPoints.length"
-              :title="
-                !allTripPhotosLoaded
-                  ? 'Fotos werden geladen...'
-                  : !allTripPhotoPoints.length
-                    ? 'Keine Fotos mit Standortinformationen im Urlaub hinterlegt'
-                    : allTripPhotoPoints.length === 1
-                      ? '1 Foto mit Standort auf der Karte anzeigen'
-                      : `${allTripPhotoPoints.length} Fotos mit Standort auf der Karte anzeigen`
-              "
-              :icon="MAP_TOOL_ICONS.photos"
-              label="Alle Fotos mit Standort"
-              @click="selectFocus(focusAllPhotos)"
-            />
-          </PickerMenu>
-        </template>
-        <template v-if="locationMenuOpen">
-          <PickerMenu wide :style="locationMenuStyle" @close="locationMenuOpen = false">
-            <DropdownItem :disabled="!ownPosition" @click="selectLocation(jumpToMyLocation)">
-              <span class="picker-item-emoji" aria-hidden="true">{{
-                auth.user?.avatar || '📍'
-              }}</span>
-              Zu meinem Standort springen
-            </DropdownItem>
-            <DropdownItem
-              v-for="member in otherMembers"
-              :key="member.id"
-              :disabled="!hasMemberPosition(member.id)"
-              :title="`${member.username} teilt gerade ${hasMemberPosition(member.id) ? '' : 'keinen '}Standort`"
-              @click="selectLocation(() => jumpToMemberLocation(member.id))"
-            >
-              <span
-                class="picker-item-emoji"
-                :class="{ offline: !isMemberOnline(member.id) }"
-                aria-hidden="true"
-              >
-                {{ member.avatar }}
-                <span v-if="isMemberOnline(member.id)" class="online-dot" aria-hidden="true" />
-              </span>
-              Zu Standort von {{ member.username }} springen
-            </DropdownItem>
-            <DropdownItem
-              :active="mapOrientation.mode === 'north'"
-              :icon="MAP_TOOL_ICONS.orientationNorth"
-              label="Norden oben"
-              @click="selectLocation(() => setMapOrientationMode('north'))"
-            />
-            <DropdownItem
-              :active="mapOrientation.mode === 'heading'"
-              :icon="MAP_TOOL_ICONS.orientationHeading"
-              label="Fahrtrichtung oben"
-              @click="selectLocation(() => setMapOrientationMode('heading'))"
-            />
-          </PickerMenu>
-        </template>
-        <template v-if="shareMenuOpen">
-          <PickerMenu :style="shareMenuStyle" @close="shareMenuOpen = false">
-            <DropdownItem
-              :active="locationSharing.activeDuration === 'off'"
-              :icon="ACTION_ICONS.off"
-              label="Nicht teilen"
-              @click="chooseShareDuration('off')"
-            />
-            <DropdownItem
-              :active="locationSharing.activeDuration === 'day'"
-              :icon="FORM_FIELD_ICONS.date"
-              icon-group="formFields"
-              label="Für einen Tag"
-              @click="chooseShareDuration('day')"
-            />
-            <DropdownItem
-              :active="locationSharing.activeDuration === 'week'"
-              :icon="FORM_FIELD_ICONS.period"
-              icon-group="formFields"
-              label="Für eine Woche"
-              @click="chooseShareDuration('week')"
-            />
-            <DropdownItem
-              :active="locationSharing.activeDuration === 'forever'"
-              :icon="ACTION_ICONS.forever"
-              label="Dauerhaft"
-              @click="chooseShareDuration('forever')"
-            />
-          </PickerMenu>
-        </template>
-      </Teleport>
-      <TrackRecordingWarningModal
-        v-model="showTrackRecordingWarningModal"
-        @confirm="startRecordingConfirmed"
-      />
-      <div class="tile-download-pill" v-if="trackRecording.startError">
-        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-        {{ trackRecording.startError }}
-        <IconButton
-          variant="ghost"
-          size="sm"
-          :icon="ACTION_ICONS.close"
-          aria-label="Meldung schließen"
-          title="Schließen"
-          @click="trackRecording.startError = null"
-        />
-      </div>
-      <div class="tile-download-pill" v-if="tileDownloadState === 'downloading'">
-        <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Lädt Kartenkacheln…
-        {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
-      </div>
-      <div
-        class="tile-download-pill"
-        v-else-if="tileDownloadState === 'done' && tileDownloadResult"
-      >
-        <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-        {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
-          tileDownloadResult.failed ? `, ${tileDownloadResult.failed} fehlgeschlagen` : ''
-        }}
-        <IconButton
-          variant="ghost"
-          size="sm"
-          :icon="ACTION_ICONS.close"
-          aria-label="Meldung schließen"
-          title="Schließen"
-          @click="dismissTileDownloadResult"
-        />
-      </div>
-      <div
-        class="focus-banner"
-        :class="{ 'is-expanded': isFocusBannerExpanded }"
-        v-if="
-          focusedExcursion ||
-          drawers.mapFocusDate ||
-          focusedSpot ||
-          drawers.mapFocusLocation ||
-          drawers.mapFocusAllPhotos
-        "
-      >
-        <button
-          class="focus-banner-toggle-btn"
-          :class="{ 'is-clickable': !!drawers.mapFocusLocation || drawers.mapFocusAllPhotos }"
-          :aria-expanded="isFocusBannerExpanded"
-          :aria-label="
-            drawers.mapFocusLocation || drawers.mapFocusAllPhotos
-              ? 'Foto in Galerie öffnen'
-              : isFocusBannerExpanded
-                ? 'Fokus-Banner einklappen'
-                : 'Fokus-Banner ausklappen'
-          "
-          @click="
-            drawers.mapFocusLocation || drawers.mapFocusAllPhotos
-              ? openPhotoPreview()
-              : (isFocusBannerExpanded = !isFocusBannerExpanded)
-          "
-        >
-          <img
-            v-if="
-              !focusedExcursion &&
-              !focusedSpot &&
-              !drawers.mapFocusAllPhotos &&
-              drawers.mapFocusLocation?.imageUrl
-            "
-            :src="drawers.mapFocusLocation.imageUrl"
-            alt=""
-            class="focus-banner-thumb"
-          />
-          <AppIcon
-            v-else
-            :icon="
-              focusedExcursion
-                ? SECTION_ICON_DEFS.excursions
-                : focusedSpot
-                  ? spotCategoryMeta(focusedSpot.category).tabler
-                  : drawers.mapFocusAllPhotos
-                    ? MAP_TOOL_ICONS.photos
-                    : drawers.mapFocusLocation
-                      ? FORM_FIELD_ICONS.image
-                      : FORM_FIELD_ICONS.period
-            "
-            :size="18"
-            :group="focusedExcursion ? 'navigation' : focusedSpot ? 'categories' : 'formFields'"
-          />
-        </button>
-        <div class="focus-banner-content">
-          <button
-            v-if="drawers.mapFocusLocation"
-            type="button"
-            class="focus-title-btn"
-            title="Foto in Galerie öffnen"
-            @click="openPhotoPreview()"
-          >
-            {{ drawers.mapFocusLocation.title || 'Foto-Standort' }}
-          </button>
-          <button
-            v-else-if="drawers.mapFocusAllPhotos"
-            type="button"
-            class="focus-title-btn"
-            title="Fotos in Galerie öffnen"
-            @click="openPhotoPreview()"
-          >
-            {{
-              allTripPhotoPoints.length === 1
-                ? '1 Foto mit Standort'
-                : `Alle Fotos mit Standort (${allTripPhotoPoints.length})`
-            }}
-          </button>
-          <span v-else>{{
-            focusedExcursion
-              ? focusedExcursion.title
-              : focusedSpot
-                ? focusedSpot.title
-                : formatDate(drawers.mapFocusDate!)
-          }}</span>
-          <Button variant="card-action" @click="clearFocus">
-            <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
-          </Button>
-        </div>
-      </div>
     </div>
 
-    <!-- Mobil/schmales Layout (Teleport aktiv, siehe isNarrowLayout) landet diese Stationen-Liste UND
-         (weiter unten) den Tage-Streifen in der Spots-Schublade (ExcursionsView.vue's
-         #map-focus-dock) statt als Overlay über der Karte zu schweben. Für die Stationen-Liste war
-         das schon immer so (deckte sonst einen Teil des Kartenausschnitts/der Zoom-Steuerung ab); der
-         Tage-Streifen kam erst nachträglich dazu, nachdem er als schwebendes Overlay am unteren
-         Kartenrand auf Mobil praktisch permanent von der (dort ebenfalls unten verankerten, meist
-         mindestens "partial" hohen) Spots-Schublade verdeckt und damit faktisch unbedienbar war -
-         genau dieselbe Falle wie bei der Stationen-Liste vorher, jetzt mit demselben Muster gelöst.
-         Auf echtem Desktop bleibt beides unverändert Teil dieser Karten-Spalte (ohne Teleport).
-         Wichtig: Kein dynamisches :disabled auf <Teleport> verwenden, da Vue 3 bei initial deaktiviertem
-         Teleport das Ziel nicht sauber auflöst und beim Umschalten auf Mobil mit "parent is null" abstürzt.
-         Stattdessen echtes v-if / v-else-if. -->
-    <Teleport v-if="canTeleportToDock && vacationDays.length && !focusedTrack" to="#map-focus-dock">
+    <!-- Mobil/schmales Layout landet diese Stationen-Liste UND den Tage-Streifen in der Spots-Schublade
+         (#map-focus-dock) statt als Overlay über der Karte zu schweben. Auf Desktop schwebend über der Karte. -->
+    <TripMapDockTeleport :active="canTeleportToDock">
       <DayStrip
+        v-if="vacationDays.length && !focusedTrack"
         :days="vacationDays"
         :active-date="drawers.mapFocusDate"
         :has-content="dayHasContent"
         :date-title="formatDate"
         @select="toggleDayFocus"
       />
-    </Teleport>
-    <DayStrip
-      v-else-if="vacationDays.length && !focusedTrack"
-      :days="vacationDays"
-      :active-date="drawers.mapFocusDate"
-      :has-content="dayHasContent"
-      :date-title="formatDate"
-      @select="toggleDayFocus"
-    />
-
-    <!-- Playback-Steuerung für fokussierte Aufzeichnung:
-         Mobil im Bottom-Sheet-Dock (#map-focus-dock in ExcursionsView.vue),
-         auf Desktop schwebend über der Karte unten -->
-    <Teleport
-      v-if="canTeleportToDock && focusedTrack && focusedTrackPoints.length >= 2"
-      to="#map-focus-dock"
-    >
-      <div class="map-track-playback-container">
+      <div
+        v-else-if="focusedTrack && focusedTrackPoints.length >= 2"
+        class="map-track-playback-container"
+      >
         <TrackPlayback
           :track="focusedTrack"
           :title="focusedTrack?.title"
@@ -900,25 +547,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
           @close="clearTrackFocus"
         />
       </div>
-    </Teleport>
-    <div
-      v-else-if="focusedTrack && focusedTrackPoints.length >= 2"
-      class="map-track-playback-container"
-    >
-      <TrackPlayback
-        :track="focusedTrack"
-        :title="focusedTrack?.title"
-        :author-avatar="
-          focusedTrack?.author_avatar || trackAuthorUser(focusedTrack?.user_id)?.avatar
-        "
-        :author-name="
-          focusedTrack?.author_username || trackAuthorUser(focusedTrack?.user_id)?.username
-        "
-        :points="focusedTrackPoints"
-        v-model:progress="trackPlaybackProgress"
-        @close="clearTrackFocus"
-      />
-    </div>
+    </TripMapDockTeleport>
 
     <TravelDetailDialog
       v-if="openTravel"
@@ -939,10 +568,10 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
       :editable="false"
     />
 
-    <p v-if="!points.length" class="empty">
+    <EmptyState v-if="!points.length">
       Noch keine Orte mit Koordinaten hinterlegt. Füge bei Unterkunft, Reise-Einträgen oder Spots
       einen Maps-Link (Google/Apple) hinzu, damit sie hier erscheinen.
-    </p>
+    </EmptyState>
   </div>
 </template>
 
@@ -975,295 +604,6 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   border-radius: 0;
   overflow: hidden;
   border: none;
-}
-
-/* Echter Kreisbogen (50% + corner-shape:round) statt der Squircle-Variable, die hier vorher ohne
-   passendes corner-shape blieb - siehe DESIGN.md, Abschnitt "Eckenrundung", runde Icon-Buttons
-   bekommen Kreisbogen, keinen Squircle. Größe/Abstand kommen aus den --fit-btn-*-Variablen
-   (.map-wrap oben) statt fester px-Werte direkt hier, damit Mobil/Desktop (@container weiter
-   unten) nur noch die Variablen überschreiben müssen statt jede top-Regel einzeln. */
-.fit-btn {
-  position: absolute;
-  top: var(--fit-btn-top-inset, var(--fit-btn-inset));
-  right: var(--fit-btn-right-inset, var(--fit-btn-inset));
-  z-index: 1000;
-  width: var(--fit-btn-size) !important;
-  height: var(--fit-btn-size) !important;
-  min-width: var(--fit-btn-size) !important;
-  min-height: var(--fit-btn-size) !important;
-  padding: 0;
-  border-radius: 50%;
-  corner-shape: round;
-  background: var(--color-surface);
-  border: 2px solid rgba(0, 0, 0, 0.25);
-  color: var(--color-text);
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.fit-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.location-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + var(--fit-btn-step));
-}
-
-.offline-download-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 2 * var(--fit-btn-step));
-}
-
-.share-location-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 3 * var(--fit-btn-step));
-}
-
-.record-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 4 * var(--fit-btn-step));
-}
-
-/* Gleiche Akzentfarbe, solange die jeweilige Funktion aktiv ist/läuft - dieselbe wie z. B.
-   TripSwitcher.vue's aktiver Zustand, statt einer neuen Farbsprache. */
-.share-location-btn.active,
-.record-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-/* Größe an AppIcon.vue's Default (20px) angeglichen, damit das Avatar-Emoji im Standort-Menü
-   (bewusst kein AppIcon, siehe dortiger Template-Kommentar) genauso mit dem Folgetext fluchtet wie
-   die AppIcon-Icons in den übrigen Menüpunkten. */
-.picker-item-emoji {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  font-size: 1.1rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-/* Mitreisende ohne Online-Präsenz (#182): ausgegraut, analog zu PresenceAvatars.vue's
-   .presence-avatar.offline im Header - Klickbarkeit selbst hängt aber an hasMemberPosition()
-   (:disabled), nicht am Online-Status allein (Standort-Freigabe ist ein eigener Opt-in). */
-.picker-item-emoji.offline {
-  filter: grayscale(1);
-  opacity: 0.6;
-}
-
-.picker-item-emoji .online-dot {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-success);
-  border: 2px solid var(--color-surface);
-}
-
-.picker-menu-hint {
-  margin: 0 0 2px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  white-space: normal;
-}
-
-/* Eigene Zeile unterhalb der Fokus-Banner-Position (links, wie .focus-banner) statt direkt neben
-   dem auslösenden Button rechts - eine mehrzeilige Fortschritts-/Ergebnismeldung neben einer engen
-   Button-Spalte hätte dort keinen Platz. */
-.tile-download-pill {
-  position: absolute;
-  /* Unterhalb des Focus-Banners platziert (welcher jetzt dynamisch unter dem Header sitzt) */
-  top: calc(var(--fit-btn-top-inset, var(--space-3)) + 52px);
-  left: var(--space-3);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-surface);
-  border: 2px solid var(--color-primary);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: 6px 10px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-  max-width: calc(100% - 60px);
-}
-
-.focus-banner {
-  position: absolute;
-  /* Berücksichtigt den schwebenden AppHeader auf Mobil (Karte ragt darunter) */
-  top: var(--fit-btn-top-inset, var(--space-3));
-  left: var(--space-3);
-  bottom: unset;
-  right: unset;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  background: var(--color-surface);
-  border: 2px solid var(--color-primary);
-  color: var(--color-primary-dark);
-  font-size: 0.85rem;
-  font-weight: 600;
-  overflow: hidden;
-
-  /* Initial-Zustand Mobil: Runder Icon-Button */
-  border-radius: var(--radius-pill, 999px);
-  corner-shape: round;
-  padding: 2px; /* Gleichmäßiges Padding für den Kreis */
-  width: auto;
-  max-width: 44px; /* Limitiert die Breite auf den Button */
-  height: 44px;
-  /* Schatten wie bei Floating Buttons (.btn--floating) */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
-  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.focus-banner.is-expanded {
-  max-width: calc(100% - 60px);
-  /* Behalte die runde Pillenform bei, damit der linke Button perfekt reinpasst */
-  border-radius: var(--radius-pill, 999px);
-  corner-shape: round;
-  padding: 2px 14px 2px 2px;
-}
-
-.focus-banner-toggle-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin: 0;
-  color: var(--color-primary-dark);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background-color 0.2s;
-}
-
-.focus-banner-toggle-btn:active {
-  background: var(--color-hover);
-}
-
-.focus-banner-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.focus-banner-content {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  /* Erst sichtbar, wenn expanded (oder Desktop) */
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.2s,
-    visibility 0.2s;
-  /* Staucht sich nicht zusammen, während Breite animiert */
-  white-space: nowrap;
-}
-
-.focus-banner.is-expanded .focus-banner-content {
-  opacity: 1;
-  visibility: visible;
-  transition-delay: 0.1s; /* Wartet kurz auf die Breiten-Animation */
-}
-
-@media screen and (min-width: 1024px) {
-  .focus-banner {
-    /* Wie auf Mobil oben positionieren, unterhalb des Headers */
-    top: calc(var(--app-header-height, 56px) + var(--space-4));
-
-    /* Dynamisch rechts neben den Drawer setzen, analog zum früheren leaflet-left */
-    left: calc(
-      var(
-          --spots-col-right-px,
-          calc(
-            var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) +
-              var(--spots-col-width, 400px) + var(--space-4)
-          )
-        ) +
-        var(--space-3)
-    );
-
-    bottom: unset;
-    right: unset;
-    /* Auf Desktop immer ausgeklappt */
-    width: auto;
-    max-width: calc(100% - 60px);
-    border-radius: var(--radius-pill, 999px);
-    corner-shape: round;
-    padding: 2px 14px 2px 2px;
-    height: 44px;
-  }
-
-  /* Sheet-Overlay Fallback auf Desktop (wenn Spots-Drawer ein Bottom-Sheet ist) */
-  .karte.sheet-overlay-mode .focus-banner {
-    left: calc(
-      var(--calendar-margin, var(--drawer-tab-width)) + var(--calendar-offset, 0px) + var(--space-4)
-    );
-  }
-
-  .focus-banner-content {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .focus-banner-toggle-btn {
-    pointer-events: none; /* Kein Klick auf Desktop */
-  }
-
-  .focus-banner-toggle-btn.is-clickable {
-    pointer-events: auto;
-    cursor: pointer;
-  }
-
-  .tile-download-pill {
-    bottom: var(--space-4);
-    right: var(--space-4);
-    top: unset;
-    left: unset;
-  }
-}
-
-.focus-banner span,
-.focus-banner .focus-title-btn {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.focus-banner .focus-title-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  font-weight: 500;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.focus-banner .focus-title-btn:hover {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 /* Mobil (Default): schwebt als horizontal scrollbare Leiste über dem unteren Kartenrand (analog zu
    .focus-spot-list oben, nur unten statt oben verankert). Auf Desktop (@media weiter unten)
    wieder normales Flow-Element unterhalb der Karte. */
@@ -1386,10 +726,6 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
     --fit-btn-size: 44px;
     --fit-btn-top-inset: calc(var(--app-header-height, 56px) + var(--space-4));
     --fit-btn-right-inset: var(--space-4);
-  }
-
-  .fit-btn {
-    font-size: 1.2rem;
   }
 
   :deep(.leaflet-top) {
