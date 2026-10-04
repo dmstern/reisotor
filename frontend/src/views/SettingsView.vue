@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted, ref, watch } from 'vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
 import IconButton from '../components/primitives/IconButton.vue';
@@ -8,50 +9,6 @@ import Checkbox from '../components/primitives/Checkbox.vue';
 import CheckboxCard from '../components/primitives/CheckboxCard.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Input from '../components/primitives/Input.vue';
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { api, ApiError } from '../api/client';
-import type { User } from '../api/types';
-import { useAuthStore } from '../stores/auth';
-import { useConnectivityStore } from '../stores/connectivity';
-import { useBuildInfoStore } from '../stores/buildInfo';
-import { useThemeStore } from '../stores/theme';
-import { useNavConfigStore } from '../stores/navConfig';
-import { NAV_LINKS } from '../utils/navLinks';
-import { useDashboardConfigStore } from '../stores/dashboardConfig';
-import { DASHBOARD_TILES } from '../utils/dashboardTiles';
-import { useIsDesktop } from '../composables/useIsDesktop';
-import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
-import {
-  useCalendarSettingsStore,
-  WEEK_START_OPTIONS,
-  DATE_FORMAT_OPTIONS,
-} from '../stores/calendarSettings';
-import {
-  useUiSettingsStore,
-  TOAST_TIMEOUT_OPTIONS,
-  DEFAULT_PRIMARY_COLOR,
-  DEFAULT_BORDER_WIDTH,
-  DEFAULT_DIARY_FONT,
-  getPresetGlassValues,
-} from '../stores/uiSettings';
-import { useIconStyleStore } from '../stores/iconStyle';
-import { useToast } from '../composables/useToast';
-
-import {
-  getExistingSubscription,
-  isPushSupported,
-  subscribeToPush,
-  unsubscribeFromPush,
-} from '../utils/push';
-import { useNotificationPreferencesStore } from '../stores/notificationPreferences';
-import {
-  NOTIFICATION_DOMAIN_META,
-  NOTIFICATION_DOMAINS,
-  NOTIFICATION_LEVEL_OPTIONS,
-  type NotificationLevel,
-} from '../utils/notificationPreferences';
-import { toLocalDateString } from '../utils/dateFormat';
 import PasswordInput from '../components/PasswordInput.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
@@ -63,504 +20,156 @@ import GlassSettings from '../components/GlassSettings.vue';
 import AccentColorSettings from '../components/AccentColorSettings.vue';
 import BorderWidthSettings from '../components/BorderWidthSettings.vue';
 import DiaryFontSettings from '../components/DiaryFontSettings.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import FeedbackDialog from '../components/FeedbackDialog.vue';
 import PwaInstallDialog from '../components/PwaInstallDialog.vue';
 import AppFooterLinks from '../components/AppFooterLinks.vue';
-import { usePwaInstallStore } from '../stores/pwaInstall';
 import TabBar from '../components/TabBar.vue';
 import CreateUserDialog from '../components/CreateUserDialog.vue';
+import { useAuthStore } from '../stores/auth';
+import { useConnectivityStore } from '../stores/connectivity';
+import { useNavConfigStore } from '../stores/navConfig';
+import { useDashboardConfigStore } from '../stores/dashboardConfig';
 import {
-  IconUser,
-  IconUserFilled,
-  IconUsers,
-  IconDeviceDesktop,
-  IconDeviceDesktopFilled,
-  IconBell,
-  IconBellFilled,
-  IconDatabase,
-  IconDatabaseFilled,
-  IconInfoCircle,
-  IconInfoCircleFilled,
-  IconPuzzle,
-  IconCloud,
-  IconBug,
-  IconInfoSquareRounded,
-} from '@tabler/icons-vue';
+  useCalendarSettingsStore,
+  WEEK_START_OPTIONS,
+  DATE_FORMAT_OPTIONS,
+} from '../stores/calendarSettings';
+import { useUiSettingsStore, TOAST_TIMEOUT_OPTIONS } from '../stores/uiSettings';
+import { useHomeCurrencyStore, HOME_CURRENCY_OPTIONS } from '../stores/homeCurrency';
+import { usePwaInstallStore } from '../stores/pwaInstall';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
-import type { IconDef } from '../utils/icon';
+import { NOTIFICATION_DOMAIN_META, NOTIFICATION_DOMAINS } from '../utils/notificationPreferences';
+import {
+  useSettingsTabs,
+  BELL_ICON,
+  DASHBOARD_TILES_ICON,
+  WEATHER_SECTION_ICON,
+  FEEDBACK_ICON,
+  INFO_ICON,
+  USERS_ICON,
+} from '../composables/useSettingsTabs';
+import { useAccountSettings } from '../composables/useAccountSettings';
+import { useUserManagement } from '../composables/useUserManagement';
+import { usePushSettings } from '../composables/usePushSettings';
+import { useAppSettingsReset } from '../composables/useAppSettingsReset';
+import { useBackupExport } from '../composables/useBackupExport';
+import { useAboutInfo } from '../composables/useAboutInfo';
 
 const auth = useAuthStore();
 const connectivity = useConnectivityStore();
-const router = useRouter();
-const route = useRoute();
 const navConfig = useNavConfigStore();
-const _isDesktop = useIsDesktop();
 const dashboardConfig = useDashboardConfigStore();
-const theme = useThemeStore();
-
-// Themengruppen statt einer langen, gleichrangigen Karten-Liste (Nutzer-Feedback) - gleiches Muster
-// wie ListenView.vue (Packliste/Einkauf/ToDo): aktiver Tab steckt im Query-Param, nicht im Pfad
-// (router.replace statt push, damit Tab-Klicks nicht einzeln in die Browser-History wandern).
-// Anders als bei ListenView.vue sind die Tab-Inhalte hier reine Template-Blöcke derselben
-// Komponente statt eigener Kind-Komponenten - das bestehende einzelne onMounted() unten lädt
-// weiterhin alles unabhängig vom aktiven Tab, die v-ifs zeigen nur, was davon gerade sichtbar ist.
-// Bell-/Puzzle-/Wetter-/Käfer-Icon werden mehrfach gebraucht (Tab-Leiste UND einzelne
-// Karten-Überschriften weiter unten, siehe #94) - einmal hier definiert statt an jeder Stelle neu.
-const BELL_ICON: IconDef = { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled };
-const DASHBOARD_TILES_ICON: IconDef = { id: 'puzzle', emoji: '🧩', outline: IconPuzzle };
-const WEATHER_SECTION_ICON: IconDef = { id: 'cloud', emoji: '🌤️', outline: IconCloud };
-const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
-const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
-const USERS_ICON: IconDef = { id: 'users', emoji: '👥', outline: IconUsers };
-
-type Tab = 'account' | 'users' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
-const ALL_TABS: { key: Tab; label: string; icon: IconDef; adminOnly?: boolean }[] = [
-  {
-    key: 'account',
-    label: 'Account',
-    icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled },
-  },
-  { key: 'users', label: 'Nutzerverwaltung', icon: USERS_ICON, adminOnly: true },
-  {
-    key: 'app',
-    label: 'App-Einstellungen',
-    icon: {
-      id: 'device-desktop',
-      emoji: '🖥️',
-      outline: IconDeviceDesktop,
-      filled: IconDeviceDesktopFilled,
-    },
-  },
-  { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
-  { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
-  {
-    key: 'data',
-    label: 'Daten',
-    icon: { id: 'database', emoji: '🗄️', outline: IconDatabase, filled: IconDatabaseFilled },
-    adminOnly: true,
-  },
-  {
-    key: 'about',
-    label: 'Über',
-    icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
-  },
-];
-
-const TABS = computed(() => ALL_TABS.filter((t) => !t.adminOnly || auth.user?.is_admin));
-const TAB_KEYS = computed(() => TABS.value.map((t) => t.key));
-
-const activeTab = computed<Tab>(() => {
-  const tab = route.query.tab;
-  return (TAB_KEYS.value as string[]).includes(tab as string) ? (tab as Tab) : 'account';
-});
-
-function selectTab(tab: string) {
-  router.replace({ query: { ...route.query, tab: tab as Tab } });
-}
-
-function navLinkLabel(key: string) {
-  return NAV_LINKS.find((l) => l.key === key)?.label ?? key;
-}
-function navLinkIcon(key: string) {
-  return NAV_LINKS.find((l) => l.key === key)?.icon ?? null;
-}
-function dashboardTileLabel(key: string) {
-  return DASHBOARD_TILES.find((t) => t.key === key)?.label ?? key;
-}
-function dashboardTileIcon(key: string) {
-  return DASHBOARD_TILES.find((t) => t.key === key)?.icon ?? null;
-}
-const homeCurrency = useHomeCurrencyStore();
 const calendarSettings = useCalendarSettingsStore();
 const uiSettings = useUiSettingsStore();
-const iconStyle = useIconStyleStore();
-const { showToast } = useToast();
+const homeCurrency = useHomeCurrencyStore();
+const pwaInstall = usePwaInstallStore();
+
+// Tab-Navigation
+const { tabs: TABS, activeTab, selectTab } = useSettingsTabs(() => auth.user?.is_admin);
+
+// Account & Profile
+const {
+  avatarSaving,
+  avatarSaved,
+  usernameForm,
+  usernameError,
+  usernameSaved,
+  usernameSaving,
+  passwordForm,
+  passwordError,
+  passwordSaved,
+  passwordSaving,
+  EMOJI_CATEGORIES,
+  initUsername,
+  changeUsername,
+  selectAvatar,
+  changePassword,
+  logout,
+} = useAccountSettings();
+
+// Admin User Management
+const {
+  userList,
+  loadingUsers,
+  userListError,
+  showCreateUserDialog,
+  loadUserList,
+  toggleAdminRole,
+  deleteUserAccount,
+  onUserCreated,
+} = useUserManagement();
+
+// Push Notifications
+const {
+  pushSupported,
+  pushEnabled,
+  pushLoading,
+  pushError,
+  showPushDetails,
+  notificationPrefs,
+  pushLevelValue,
+  pushLevelOptions: PUSH_LEVEL_TOGGLE_OPTIONS,
+  isPushDefault,
+  selectPushLevel,
+  setDomainPreference,
+  resetPush,
+  initPushSubscription,
+} = usePushSettings();
+
+// App Settings Reset-to-Default
+const {
+  navLinkLabel,
+  navLinkIcon,
+  dashboardTileLabel,
+  dashboardTileIcon,
+  isThemeDefault,
+  resetTheme,
+  isNavDefault,
+  resetNav,
+  isDashboardDefault,
+  resetDashboard,
+  isVacationCountdownDefault,
+  resetVacationCountdown,
+  isAllAppDefault,
+  resetAllAppSettings,
+  isCalendarDefault,
+  resetCalendar,
+  isWeatherDefault,
+  resetWeather,
+  isHomeCurrencyDefault,
+  resetHomeCurrency,
+  isToastsDefault,
+  resetToasts,
+} = useAppSettingsReset();
+
+// Backup Export
+const { exporting, exportError, exportBackup } = useBackupExport();
+
+// About / Versions-Info
+const {
+  buildInfoStore,
+  backendBuildInfo,
+  formatBuildTime,
+  changelogContent,
+  frontendVersion,
+  frontendCommit,
+  frontendBuiltAt,
+} = useAboutInfo();
+
 const loading = ref(true);
 const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
-const pwaInstall = usePwaInstallStore();
-
-const buildInfoStore = useBuildInfoStore();
-const backendBuildInfo = computed(() => buildInfoStore.buildInfo);
-const buildTimeFormatter = new Intl.DateTimeFormat('de-DE', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
-function formatBuildTime(iso: string | null) {
-  return iso ? buildTimeFormatter.format(new Date(iso)) : 'unbekannt';
-}
-
-const changelogContent = computed(() => {
-  const cl = backendBuildInfo.value?.changelog;
-  if (!cl) return '';
-  if (cl.groups && cl.groups.length > 0) {
-    return cl.groups
-      .map(
-        (g) =>
-          `#### ${g.title}\n\n` +
-          g.notes.map((note) => (note.startsWith('- ') ? note : `- ${note}`)).join('\n')
-      )
-      .join('\n\n');
-  }
-  return cl.notes.map((note) => (note.startsWith('- ') ? note : `- ${note}`)).join('\n');
-});
-// Lokale Bindings statt der globalen __APP_*__-Konstanten direkt im Template: vue-tsc's
-// Template-Typprüfung löst per `define` gebackene Ambient-Globals dort nicht auf (versucht sie
-// stattdessen als Property der Komponenteninstanz zu finden).
-const frontendVersion = __APP_VERSION__;
-const frontendCommit = __APP_COMMIT__;
-const frontendBuiltAt = __APP_BUILT_AT__;
-
-const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
-  {
-    label: 'Menschen',
-    emojis: [
-      '🙂',
-      '😎',
-      '🥳',
-      '😄',
-      '🤓',
-      '🥸',
-      '🧑',
-      '👩',
-      '👨',
-      '🧑‍🦱',
-      '👩‍🦰',
-      '🧑‍🦳',
-      '🧔',
-      '👵',
-      '👴',
-      '🧑‍🚀',
-      '🧑‍🎤',
-      '🧑‍🍳',
-      '🥷',
-      '🧙',
-    ],
-  },
-  {
-    label: 'Tiere',
-    emojis: [
-      '🐨',
-      '🦊',
-      '🐢',
-      '🦁',
-      '🐸',
-      '🐧',
-      '🐶',
-      '🐱',
-      '🐼',
-      '🐰',
-      '🦄',
-      '🐙',
-      '🦉',
-      '🐝',
-      '🦋',
-      '🐳',
-      '🐬',
-      '🦖',
-      '🐺',
-      '🦔',
-      '🐷',
-      '🐮',
-      '🐵',
-      '🦒',
-      '🐘',
-      '🦓',
-      '🦩',
-      '🐌',
-      '🐊',
-      '🦈',
-      '🦥',
-      '🦦',
-      '🦡',
-      '🐿️',
-      '🦫',
-      '🦭',
-      '🐡',
-      '🦑',
-      '🦜',
-      '🦚',
-      '🐴',
-      '🦌',
-      '🐯',
-      '🦍',
-      '🐔',
-    ],
-  },
-  {
-    label: 'Fabelwesen & Berufe',
-    emojis: [
-      '🧙‍♀️',
-      '🧙‍♂️',
-      '🧚',
-      '🧝',
-      '🧞',
-      '🧜',
-      '🧛',
-      '🧟',
-      '🦸',
-      '🦹',
-      '🐉',
-      '🧑‍⚕️',
-      '🧑‍🚒',
-      '👮',
-      '🧑‍🌾',
-      '🧑‍🏫',
-      '🧑‍💻',
-      '🧑‍🎨',
-      '🧑‍✈️',
-      '🧑‍🔧',
-      '🧑‍⚖️',
-    ],
-  },
-];
-
-const avatarSaving = ref(false);
-const avatarSaved = ref(false);
-
-const usernameForm = ref({ username: '' });
-const usernameError = ref('');
-const usernameSaved = ref(false);
-const usernameSaving = ref(false);
-
-const passwordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' });
-const passwordError = ref('');
-const passwordSaved = ref(false);
-const passwordSaving = ref(false);
-
-const pushSupported = isPushSupported();
-// null = wird noch geprüft, sonst tatsächlicher Abo-Status beim Browser (nicht nur ein lokaler
-// Toggle-Zustand, da das Abo z. B. auch über die Browser-Einstellungen widerrufen worden sein kann).
-const pushEnabled = ref<boolean | null>(null);
-const pushLoading = ref(false);
-const pushError = ref('');
-const showPushDetails = ref(false);
-const notificationPrefs = useNotificationPreferencesStore();
-
-// Segmented-Control-Wert: 'off' bei fehlendem Abo, sonst die Stufe, die exakt zu den aktuellen
-// Einzel-Präferenzen passt - passt keine der drei Presets (individuell angepasst), matched nichts
-// in PUSH_LEVEL_TOGGLE_OPTIONS und die Toggle zeigt bewusst keinen aktiven Zustand.
-const pushLevelValue = computed(() =>
-  pushEnabled.value ? (notificationPrefs.currentLevel ?? 'custom') : 'off'
-);
-const PUSH_LEVEL_TOGGLE_OPTIONS = [{ value: 'off', label: 'Aus' }, ...NOTIFICATION_LEVEL_OPTIONS];
-
-/** Bei "Aus" wird komplett abbestellt; bei jeder anderen Stufe wird (falls noch nicht geschehen)
- *  zuerst abonniert und danach die zugehörige Preset-Kombination aus Einzel-Präferenzen gesetzt -
- *  ein frisches Abo landet so direkt bei "Ausgewogen" statt ungefiltert bei "Alles". */
-async function selectPushLevel(level: string) {
-  pushError.value = '';
-  pushLoading.value = true;
-  try {
-    if (level === 'off') {
-      await unsubscribeFromPush();
-      pushEnabled.value = false;
-    } else {
-      if (!pushEnabled.value) {
-        await subscribeToPush();
-        pushEnabled.value = true;
-      }
-      await notificationPrefs.applyLevel(level as NotificationLevel);
-    }
-  } catch (err) {
-    pushError.value =
-      err instanceof Error ? err.message : 'Push-Benachrichtigungen konnten nicht geändert werden';
-  } finally {
-    pushLoading.value = false;
-  }
-}
-
-async function setDomainPreference(
-  domain: (typeof NOTIFICATION_DOMAINS)[number],
-  enabled: boolean
-) {
-  await notificationPrefs.update({ [domain]: enabled });
-}
-
-// Reset-to-default Hilfslogik für Einstellungs-Kacheln
-const isThemeDefault = computed(() => theme.mode === 'system');
-function resetTheme() {
-  theme.reset();
-}
-
-const isNavDefault = computed(() => {
-  if (navConfig.customMobile) return false;
-  const defaults = NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
-  if (navConfig.entries.length !== defaults.length) return false;
-  return navConfig.entries.every(
-    (e, i) => e.key === defaults[i].key && e.visible === defaults[i].visible
-  );
-});
-function resetNav() {
-  navConfig.reset();
-}
-
-const isDashboardDefault = computed(() => {
-  const defaults = DASHBOARD_TILES.map((t) => ({ key: t.key, visible: true }));
-  if (dashboardConfig.entries.length !== defaults.length) return false;
-  return dashboardConfig.entries.every(
-    (e, i) => e.key === defaults[i].key && e.visible === defaults[i].visible
-  );
-});
-function resetDashboard() {
-  dashboardConfig.reset();
-}
-
-const isVacationCountdownDefault = computed(() => !uiSettings.showVacationCountdown);
-function resetVacationCountdown() {
-  uiSettings.showVacationCountdown = false;
-}
-
-const isAllAppDefault = computed(() => {
-  const g = iconStyle.groups;
-  const isIconDefault =
-    g.navigation === 'icons' &&
-    g.categories === 'emoji' &&
-    g.weather === 'icons' &&
-    iconStyle.navColored &&
-    iconStyle.colorizeWeather &&
-    iconStyle.colorizeCategories;
-
-  return (
-    isThemeDefault.value &&
-    uiSettings.primaryColor.toLowerCase() === DEFAULT_PRIMARY_COLOR.toLowerCase() &&
-    uiSettings.borderWidth === DEFAULT_BORDER_WIDTH &&
-    uiSettings.glassStyle === 'glass' &&
-    uiSettings.glassOpacity === 42 &&
-    uiSettings.glassBlur === 6 &&
-    isIconDefault &&
-    uiSettings.diaryFont === DEFAULT_DIARY_FONT &&
-    isNavDefault.value &&
-    isDashboardDefault.value &&
-    isVacationCountdownDefault.value
-  );
-});
-
-async function resetAllAppSettings() {
-  if (
-    !window.confirm(
-      'Möchtest du wirklich alle App-Einstellungen auf die Werkseinstellungen zurücksetzen?'
-    )
-  ) {
-    return;
-  }
-
-  theme.reset();
-  uiSettings.primaryColor = DEFAULT_PRIMARY_COLOR;
-  uiSettings.borderWidth = DEFAULT_BORDER_WIDTH;
-  const glassPreset = getPresetGlassValues('glass');
-  if (glassPreset) {
-    uiSettings.glassOpacity = glassPreset.opacity;
-    uiSettings.glassBlur = glassPreset.blur;
-    uiSettings.glassStyle = 'glass';
-  }
-  iconStyle.resetToDefaults();
-  uiSettings.diaryFont = DEFAULT_DIARY_FONT;
-  resetNav();
-  resetDashboard();
-  resetVacationCountdown();
-
-  showToast({
-    message: 'Alle App-Einstellungen wurden auf Werkseinstellungen zurückgesetzt.',
-    type: 'info',
-  });
-}
-
-const isCalendarDefault = computed(
-  () => calendarSettings.weekStart === 'monday' && calendarSettings.dateFormat === 'de'
-);
-function resetCalendar() {
-  calendarSettings.reset();
-}
-
-const isWeatherDefault = computed(() => !uiSettings.showHomeWeatherFullTrip);
-function resetWeather() {
-  uiSettings.showHomeWeatherFullTrip = false;
-}
-
-const isHomeCurrencyDefault = computed(() => homeCurrency.currency === 'EUR');
-function resetHomeCurrency() {
-  homeCurrency.reset();
-}
-
-const isToastsDefault = computed(
-  () =>
-    uiSettings.showActivityToasts === true &&
-    uiSettings.toastTimeout === 5 &&
-    uiSettings.showUpdateDialogs === true
-);
-function resetToasts() {
-  uiSettings.showActivityToasts = true;
-  uiSettings.toastTimeout = 5;
-  uiSettings.showUpdateDialogs = true;
-}
-
-const isPushDefault = computed(() => {
-  if (!pushEnabled.value) return true;
-  return pushLevelValue.value === 'balanced';
-});
-async function resetPush() {
-  if (pushEnabled.value) {
-    await selectPushLevel('balanced');
-  }
-}
-
-const exporting = ref(false);
-const exportError = ref('');
-
-const userList = ref<User[]>([]);
-const loadingUsers = ref(false);
-const userListError = ref('');
-const showCreateUserDialog = ref(false);
-
-async function loadUserList() {
-  if (!auth.user?.is_admin) return;
-  loadingUsers.value = true;
-  userListError.value = '';
-  try {
-    userList.value = await api.get<User[]>('/users');
-  } catch (err) {
-    if (err instanceof ApiError) userListError.value = err.message;
-    else userListError.value = 'Fehler beim Laden der Nutzerliste.';
-  } finally {
-    loadingUsers.value = false;
-  }
-}
-
-async function toggleAdminRole(u: User) {
-  const nextIsAdmin = !u.is_admin;
-  try {
-    const updated = await api.put<User>(`/users/${u.id}/admin`, { is_admin: nextIsAdmin });
-    const idx = userList.value.findIndex((item) => item.id === u.id);
-    if (idx !== -1) userList.value[idx] = updated;
-  } catch (err) {
-    alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern der Admin-Rechte');
-  }
-}
-
-async function deleteUserAccount(u: User) {
-  if (u.id === auth.user?.id) return;
-  if (!confirm(`Möchtest du den Nutzer "${u.username}" wirklich löschen?`)) return;
-  try {
-    await api.delete(`/users/${u.id}`);
-    userList.value = userList.value.filter((item) => item.id !== u.id);
-  } catch (err) {
-    alert(err instanceof ApiError ? err.message : 'Fehler beim Löschen des Nutzers');
-  }
-}
-
-function onUserCreated(newUser: User) {
-  userList.value.push(newUser);
-}
 
 watch(activeTab, (tab) => {
-  if (tab === 'users' && auth.user?.is_admin) loadUserList();
+  if (tab === 'users' && auth.user?.is_admin) {
+    loadUserList();
+  }
 });
 
 onMounted(async () => {
-  usernameForm.value.username = auth.user?.username ?? '';
+  initUsername();
   try {
     await Promise.all([uiSettings.load(true), buildInfoStore.load()]);
   } finally {
@@ -571,95 +180,9 @@ onMounted(async () => {
     loadUserList();
   }
   if (pushSupported) {
-    getExistingSubscription()
-      .then(async (sub) => {
-        pushEnabled.value = !!sub;
-        if (pushEnabled.value) await notificationPrefs.load();
-      })
-      .catch(() => {});
+    initPushSubscription();
   }
 });
-
-async function changeUsername() {
-  usernameError.value = '';
-  usernameSaved.value = false;
-  if (!usernameForm.value.username.trim()) return;
-  usernameSaving.value = true;
-  try {
-    const updated = await api.put<User>('/users/me/username', {
-      username: usernameForm.value.username.trim(),
-    });
-    if (auth.user) auth.user.username = updated.username;
-    usernameSaved.value = true;
-  } catch (err) {
-    usernameError.value =
-      err instanceof ApiError ? err.message : 'Benutzername konnte nicht geändert werden';
-  } finally {
-    usernameSaving.value = false;
-  }
-}
-
-async function logout() {
-  await auth.logout();
-  router.push('/login');
-}
-
-async function selectAvatar(avatar: string) {
-  avatarSaving.value = true;
-  avatarSaved.value = false;
-  try {
-    const updated = await api.put<User>('/users/me/avatar', { avatar });
-    if (auth.user) auth.user.avatar = updated.avatar;
-    avatarSaved.value = true;
-  } finally {
-    avatarSaving.value = false;
-  }
-}
-
-async function changePassword() {
-  passwordError.value = '';
-  passwordSaved.value = false;
-  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    passwordError.value = 'Neue Passwörter stimmen nicht überein';
-    return;
-  }
-  passwordSaving.value = true;
-  try {
-    await api.put('/users/me/password', {
-      currentPassword: passwordForm.value.currentPassword,
-      newPassword: passwordForm.value.newPassword,
-    });
-    passwordSaved.value = true;
-    passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
-  } catch (err) {
-    passwordError.value =
-      err instanceof ApiError ? err.message : 'Passwort konnte nicht geändert werden';
-  } finally {
-    passwordSaving.value = false;
-  }
-}
-
-async function exportBackup() {
-  exportError.value = '';
-  exporting.value = true;
-  try {
-    const res = await fetch('/api/backup/export', { credentials: 'include' });
-    if (!res.ok) throw new Error('Export fehlgeschlagen');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reisotor-backup-${toLocalDateString(new Date())}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch {
-    exportError.value = 'Export fehlgeschlagen. Bitte erneut versuchen.';
-  } finally {
-    exporting.value = false;
-  }
-}
 </script>
 
 <template>
