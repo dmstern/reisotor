@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
 import { useTripStore } from './stores/trip';
 import { useBudgetStore } from './stores/budget';
+import { useModalStore } from './stores/modal';
 import { useDrawersStore } from './stores/drawers';
 import { useLiveSyncStore } from './stores/liveSync';
 import { useLocationSharingStore } from './stores/locationSharing';
@@ -124,7 +125,15 @@ function onSessionExpired() {
   auth.user = null;
   router.push('/login');
 }
-onMounted(() => window.addEventListener('reisotor:session-expired', onSessionExpired));
+onMounted(() => {
+  window.addEventListener('reisotor:session-expired', onSessionExpired);
+  if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
+    const modalStore = useModalStore();
+    if (modalStore.activeStack.length === 0) {
+      document.body.style.overflow = '';
+    }
+  }
+});
 onUnmounted(() => window.removeEventListener('reisotor:session-expired', onSessionExpired));
 
 // Wärmt den Offline-Daten-Cache (api/offline.ts) für den aktuellen Urlaub im Hintergrund vor -

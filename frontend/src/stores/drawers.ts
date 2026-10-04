@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import router from '../router';
 
 const CALENDAR_OPEN_KEY = 'reisotor-drawer-calendar-open';
@@ -25,6 +25,8 @@ function isDesktop() {
 
 function loadOpen(key: string): boolean {
   if (typeof localStorage === 'undefined') return false;
+  // Mobil gibt es keine Kalender-Schublade (Kalender ist eine eigenständige Seite unter /calendar)
+  if (!isDesktop()) return false;
   const stored = localStorage.getItem(key);
   if (stored !== null) return stored === 'true';
   // Noch keine explizite Präferenz gespeichert: auf Desktop standardmäßig ausgeklappt (genug
@@ -147,25 +149,14 @@ export const useDrawersStore = defineStore('drawers', () => {
   }
 
   watch(calendarOpen, (v) => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(CALENDAR_OPEN_KEY, String(v));
+    // Nur auf Desktop persistieren, da mobil keine Schublade existiert
+    if (typeof localStorage !== 'undefined' && isDesktop()) {
+      localStorage.setItem(CALENDAR_OPEN_KEY, String(v));
+    }
   });
   watch(calendarWidth, (v) => {
     if (typeof localStorage !== 'undefined') localStorage.setItem(CALENDAR_WIDTH_KEY, String(v));
   });
-
-  // Mobil ist eine offene Schublade vollflächig und scrollt selbst (siehe Drawer.vue) – ohne diese
-  // Sperre könnte die dahinterliegende Seite gleichzeitig mitscrollen (zwei übereinanderliegende
-  // Scroll-Bereiche, verwirrend/ruckelig). Auf Desktop ist eine Schublade nur ein schmales
-  // Seitenpanel neben dem weiterhin normal nutzbaren Hauptinhalt, daher dort keine Sperre.
-  const anyOpen = computed(() => calendarOpen.value);
-  watch(
-    anyOpen,
-    (open) => {
-      if (typeof document !== 'undefined' && !isDesktop())
-        document.body.style.overflow = open ? 'hidden' : '';
-    },
-    { immediate: true }
-  );
 
   // Springt zur Karte-Hauptsicht, falls man gerade woanders ist (z. B. "Auf Karte anzeigen" aus
   // TravelSection.vue/ExcursionsView.vue) – ein Push auf die bereits aktive Route würde

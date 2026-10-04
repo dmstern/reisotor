@@ -257,7 +257,9 @@ onBeforeUnmount(() => {
 // Touch-Geräten unzuverlässig ist). Eigenständig neben dem bestehenden nativen
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
-    drawers.calendarOpen = true;
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+      drawers.calendarOpen = true;
+    }
     document.body.classList.add('is-dragging-calendar');
   },
   onEnd: () => {

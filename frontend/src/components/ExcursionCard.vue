@@ -196,7 +196,9 @@ const linkedTracks = computed(() =>
 );
 const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
   onStart: () => {
-    drawers.calendarOpen = true;
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+      drawers.calendarOpen = true;
+    }
   },
   onDrop: (targetEl) => {
     const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
