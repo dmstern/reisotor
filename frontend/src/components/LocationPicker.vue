@@ -537,19 +537,6 @@ defineExpose({
   }
 }
 
-@media (max-width: 580px) {
-  .has-polaroid .location-picker-map {
-    height: 560px;
-    min-height: 560px;
-  }
-
-  .has-polaroid.has-polaroid-media .location-picker-map,
-  .has-polaroid:has(:deep(.polaroid-media)) .location-picker-map {
-    height: 680px;
-    min-height: 680px;
-  }
-}
-
 .map-tap-hint {
   position: absolute;
   bottom: 12px;

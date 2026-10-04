@@ -727,28 +727,4 @@ defineExpose({
     overflow-y: auto;
   }
 }
-
-@media (min-width: 581px) {
-  .polaroid-card {
-    position: absolute;
-    top: 68px;
-    left: 12px;
-    right: auto;
-    width: 260px;
-    max-width: calc(100% - 24px);
-  }
-}
-
-@media (max-width: 580px) {
-  .polaroid-card {
-    position: absolute;
-    top: 68px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-    max-width: none;
-    max-height: calc(100% - 200px);
-    overflow-y: auto;
-  }
-}
 </style>
