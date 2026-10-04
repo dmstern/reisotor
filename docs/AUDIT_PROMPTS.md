@@ -16,6 +16,26 @@ flowchart LR
 
 ---
 
+## Kurz-Trigger für Sessions (Schnellstart)
+
+Um in Agent-Sessions (Antigravity / Claude Code) für Refactoring-Tickets wie [#446](https://github.com/dmstern/reisotor/issues/446) nicht jedes Mal die langen Prompt-Blöcke kopieren zu müssen, reagieren Agenten auf folgende standardisierte Kurz-Trigger:
+
+| Phase       | Kurz-Trigger                | Fokus & Umfang                                                                                                 |
+| :---------- | :-------------------------- | :------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** | `Refactor Phase 1: <datei>` | `<script setup>` entflechten, Dead Code tilgen, Composables erstellen. Template & Styles bleiben unangetastet. |
+| **Phase 2** | `Refactor Phase 2: <datei>` | `<template>` dekomponieren, Subkomponenten & Primitives nutzen.                                                |
+| **Phase 3** | `Refactor Phase 3: <datei>` | `<style>` mit Design-Tokens säubern & Layout-Audit (`AUDIT_ROUTE=<route> npm run test:audit`).                 |
+
+_Beispiel-Eingabe im Chat:_
+
+```text
+Refactor Phase 1: frontend/src/views/ExcursionsView.vue
+```
+
+Sobald dieser Trigger fällt, zieht der Agent eigenständig die detaillierten Regeln und Prüfschritte der jeweiligen Phase heran.
+
+---
+
 ## Phase 1: Logik- & State-Entflechtung (`<script setup>` & Composables)
 
 Kopiere diesen Prompt für den ersten Schritt bei großen, historisch gewachsenen Komponenten.
