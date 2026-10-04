@@ -1937,14 +1937,22 @@ function setTourCardRef(
   setCategoryRef(category, el);
   setExcursionRef(excursionId, el);
 }
-function scrollToExcursion(id: number): Promise<void> {
-  return scrollToElementInBody(() => {
-    const el = excursionRefs.get(id);
-    if (el) return el;
-    const grp = spotGroups.value.find((g) => g.excursion?.id === id);
-    if (grp) return categoryRefs.get(grp.category) ?? null;
-    return null;
-  });
+function scrollToExcursion(
+  id: number,
+  offsetAdjustment = 0,
+  overrideBehavior?: ScrollBehavior
+): Promise<void> {
+  return scrollToElementInBody(
+    () => {
+      const el = excursionRefs.get(id);
+      if (el) return el;
+      const grp = spotGroups.value.find((g) => g.excursion?.id === id);
+      if (grp) return categoryRefs.get(grp.category) ?? null;
+      return null;
+    },
+    offsetAdjustment,
+    overrideBehavior
+  );
 }
 // Ref auf die eingebettete Karte (TripMap.vue): scrollToCategory() lässt bei Klick auf eine
 // Kategorie-Nav-Pille zusätzlich die Karte auf alle Punkte dieser Kategorie zoomen (siehe
@@ -1953,9 +1961,11 @@ const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
 let programmaticScrollTarget: string | null = null;
 let programmaticScrollTimeout: ReturnType<typeof setTimeout> | null = null;
 let excursionOpenSequenceToken = 0;
+let spotOpenSequenceToken = 0;
 
 function cancelProgrammaticScroll() {
   excursionOpenSequenceToken++;
+  spotOpenSequenceToken++;
   activeScrollToken++;
   programmaticScrollTarget = null;
   if (programmaticScrollTimeout) {
@@ -2214,8 +2224,12 @@ function setSpotRef(id: number, el: Element | ComponentPublicInstance | null) {
   if (domEl) spotRefs.set(id, domEl);
   else spotRefs.delete(id);
 }
-function scrollToSpot(id: number): Promise<void> {
-  return scrollToElementInBody(() => spotRefs.get(id));
+function scrollToSpot(
+  id: number,
+  offsetAdjustment = 0,
+  overrideBehavior?: ScrollBehavior
+): Promise<void> {
+  return scrollToElementInBody(() => spotRefs.get(id), offsetAdjustment, overrideBehavior);
 }
 // Klick auf einen Spot-Pin auf der Karte (TripMap.vue) klappt die passende Karte hier auf und
 // scrollt sie in den Blick – die Pin-Vergrößerung selbst setzt TripMap.vue bereits eigenständig
@@ -2227,7 +2241,6 @@ function onFocusSpotFromMap(spotId: number) {
   if (groupMode.value === 'tracks') {
     groupMode.value = 'category';
   }
-  expandedSpotId.value = spotId;
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
   if (groupMode.value === 'tours') {
     const parentExcursion = excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
@@ -2235,9 +2248,7 @@ function onFocusSpotFromMap(spotId: number) {
       expandedExcursionId.value = parentExcursion.id;
     }
   }
-  nextTick(() => {
-    scrollToSpot(spotId);
-  });
+  openSpotWithScroll(spotId);
 }
 
 // Touren-Stationsliste (siehe .tour-station-wrap/.tour-station-line im Template/CSS unten, #100):
@@ -2677,13 +2688,10 @@ watch(expandedExcursionId, (newId, oldId) => {
 });
 
 /**
- * Öffnet eine Tour sequentiell:
- * 1. Falls zuvor eine andere Tour geöffnet war, wird diese zuerst zugeklappt
- *    und gewartet, bis die Zuklapp-Transition beendet ist (400ms).
- * 2. Danach wird die Ziel-Tour aufgeklappt.
- * 3. Der Spot-Drawer scrollt die neu aufgeklappte Tour an den oberen Rand.
- * 4. Nach Abschluss der Aufklapp-Transition (400ms) wird die Scrollposition erneut
- *    berechnet und feinjustiert, sodass die Tour absolut bündig am oberen Ende sitzt.
+ * Öffnet eine Tour:
+ * Zuklappen der bisher geöffneten Tour und Aufklappen der neuen Tour erfolgen gleichzeitig.
+ * Die Verschiebung durch das parallel schrumpfende Accordion wird vorab eingerechnet,
+ * sodass direkt flüssig an die finale Position gescrollt wird, ohne dass die UI hin- und herzappelt.
  */
 async function openExcursionWithScroll(excursionId: number) {
   const token = ++excursionOpenSequenceToken;
@@ -2704,39 +2712,49 @@ async function openExcursionWithScroll(excursionId: number) {
   const prefersReduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // 1. Vorherige Tour zuerst einklappen und auf Ende der Collapse-Transition warten
+  // Vorab ermitteln, ob eine zuvor geöffnete Tour ÜBER der Ziel-Tour liegt:
+  // Deren Accordion schrumpft beim gleichzeitigen Zuklappen von seiner aktuellen Höhe auf 0px,
+  // wodurch die Ziel-Tour um genau diese Höhe nach oben wandert.
+  let offsetAdjustment = 0;
   if (previousExcursionId != null) {
-    expandedExcursionId.value = null;
-    expandedSpotId.value = null;
-
-    if (!prefersReduced) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 400));
-    } else {
-      await nextTick();
+    const prevEl = excursionRefs.get(previousExcursionId);
+    const targetEl = excursionRefs.get(excursionId);
+    if (prevEl && targetEl) {
+      const isPrevAbove = Boolean(
+        prevEl.compareDocumentPosition(targetEl) & Node.DOCUMENT_POSITION_FOLLOWING
+      );
+      if (
+        isPrevAbove &&
+        targetEl.getBoundingClientRect().top > prevEl.getBoundingClientRect().top + 10
+      ) {
+        const prevGroup = prevEl.closest('.category-group');
+        const prevAccordion = prevGroup?.querySelector(
+          '.tour-station-accordion'
+        ) as HTMLElement | null;
+        if (prevAccordion) {
+          offsetAdjustment = -prevAccordion.getBoundingClientRect().height;
+        }
+      }
     }
-
-    if (token !== excursionOpenSequenceToken) return;
   }
 
-  // 2. Ziel-Tour aufklappen
+  // Zuklappen der bisherigen Tour und Aufklappen der neuen Tour GLEICHZEITIG
   expandedExcursionId.value = excursionId;
+  expandedSpotId.value = null;
+
   await nextTick();
   if (token !== excursionOpenSequenceToken) return;
 
-  // 3. Scrollposition berechnen und Drawer an die Tour scrollen
-  await scrollToExcursion(excursionId);
+  // Direkt an die berechnete finale Position scrollen
+  await scrollToExcursion(excursionId, offsetAdjustment);
   if (token !== excursionOpenSequenceToken) return;
 
-  // 4. Warten, bis die Aufklapp-Transition der neuen Tour durch ist
+  // Nach Abschluss der Transition (400ms) bei Bedarf geräuschlos subpixel-feinjustieren
   if (!prefersReduced) {
     await new Promise<void>((resolve) => setTimeout(resolve, 420));
-  } else {
-    await nextTick();
+    if (token !== excursionOpenSequenceToken) return;
+    await scrollToExcursion(excursionId, 0, 'auto');
   }
-  if (token !== excursionOpenSequenceToken) return;
-
-  // 5. Scrollposition nochmal neu berechnen und feinjustieren
-  await scrollToExcursion(excursionId);
 }
 
 // Klick auf den Ausflug-Titel im Karten-Fokus-Panel (TripMap.vue's @focus-excursion) klappt die
@@ -2874,7 +2892,11 @@ let activeScrollToken = 0;
  * Erst NACH Abschluss der Höhen-Transition (und Einpendeln der Card-Expansion via rAF)
  * wird die exakte Ziel-Scrollposition berechnet und sauber gescrollt.
  */
-async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefined) {
+async function scrollToElementInBody(
+  elGetter: () => HTMLElement | null | undefined,
+  offsetAdjustment = 0,
+  overrideBehavior?: ScrollBehavior
+) {
   const token = ++activeScrollToken;
   const prefersReduced =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2932,7 +2954,7 @@ async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefi
   const bodyRect = body.getBoundingClientRect();
   const elRect = el.getBoundingClientRect();
   const currentScrollTop = body.scrollTop;
-  const elTopInBody = currentScrollTop + (elRect.top - bodyRect.top);
+  const elTopInBody = currentScrollTop + (elRect.top - bodyRect.top) + offsetAdjustment;
 
   let navClearance = 0;
   const navWrap = categoryNavEl.value?.closest('.category-nav-wrap') as HTMLElement | null;
@@ -2956,7 +2978,13 @@ async function scrollToElementInBody(elGetter: () => HTMLElement | null | undefi
   // damit der obere Schatten und Fokus-Rand der Spot-Card vollständig sichtbar bleiben (#audit)
   const spacing = 16;
   const targetScrollTop = Math.max(0, elTopInBody - navClearance - spacing);
-  body.scrollTo({ top: targetScrollTop, behavior: prefersReduced ? 'auto' : 'smooth' });
+  const behavior = overrideBehavior ?? (prefersReduced ? 'auto' : 'smooth');
+
+  if (behavior === 'auto' && Math.abs(body.scrollTop - targetScrollTop) <= 2) {
+    return;
+  }
+
+  body.scrollTo({ top: targetScrollTop, behavior });
 }
 
 // Schreibt die Sheet-Höhe während des Ziehens direkt aufs Element (statt über eine reaktive
@@ -3299,21 +3327,81 @@ watch(
   { immediate: true }
 );
 
-// Ein Klick auf eine Spot-Karte klappt sie nur auf, ohne das Sheet anzurühren oder die Karte zu
-// fokussieren (#109) – beides sind eigenständige Aktionen über den separaten "Auf Karte
-// anzeigen"-Button (siehe onSpotShowOnMap unten), sonst konfligieren "Detail ansehen" und "auf der
-// Karte zeigen" miteinander (ein voll ausgefahrenes Sheet schrumpfte zuvor bei jedem Karten-Klick
-// ungewollt wieder auf "angeschnitten").
-function onSpotCardOpen(spot: Spot) {
-  expandedSpotId.value = spot.id;
-  if (drawers.mapFocusKey && drawers.mapFocusKey !== `spot-${spot.id}`) {
+/**
+ * Öffnet eine Spot-Karte und scrollt sie an das obere Ende der Scroll-View.
+ * Falls zuvor eine andere Spot-Karte geöffnet war und diese oberhalb liegt,
+ * wird deren Höhenverlust beim gleichzeitigen Zuklappen vorab eingerechnet,
+ * damit die Ziel-Karte flüssig und ohne Jitter an die richtige Endposition scrollt.
+ */
+async function openSpotWithScroll(spotId: number) {
+  const token = ++spotOpenSequenceToken;
+
+  if (drawers.mapFocusKey && drawers.mapFocusKey !== `spot-${spotId}`) {
     drawers.mapFocusKey = null;
   }
   if (drawers.mapFocusExcursionId != null) {
     drawers.mapFocusExcursionId = null;
   }
+
+  const previousSpotId = expandedSpotId.value;
+  if (previousSpotId === spotId) {
+    await scrollToSpot(spotId);
+    return;
+  }
+
+  const prefersReduced =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let offsetAdjustment = 0;
+  if (previousSpotId != null) {
+    const prevEl = spotRefs.get(previousSpotId);
+    const targetEl = spotRefs.get(spotId);
+    if (prevEl && targetEl) {
+      const isPrevAbove = Boolean(
+        prevEl.compareDocumentPosition(targetEl) & Node.DOCUMENT_POSITION_FOLLOWING
+      );
+      if (
+        isPrevAbove &&
+        targetEl.getBoundingClientRect().top > prevEl.getBoundingClientRect().top + 10
+      ) {
+        // Differenz ermitteln, die prevEl beim Zuklappen verliert:
+        const accordions = prevEl.querySelectorAll<HTMLElement>(
+          '.spot-accordion.is-expanded, .actions-accordion.is-expanded'
+        );
+        let accHeight = 0;
+        accordions.forEach((a) => {
+          accHeight += a.getBoundingClientRect().height;
+        });
+        const mapActions = prevEl.querySelector<HTMLElement>('.map-actions');
+        const mapActionsHeight = mapActions ? mapActions.getBoundingClientRect().height : 0;
+        const img = prevEl.querySelector<HTMLElement>('.image');
+        const imgDiff = img ? Math.max(0, img.getBoundingClientRect().height - 100) : 0;
+
+        offsetAdjustment = -(accHeight + mapActionsHeight + imgDiff);
+      }
+    }
+  }
+
+  expandedSpotId.value = spotId;
+
+  await nextTick();
+  if (token !== spotOpenSequenceToken) return;
+
+  await scrollToSpot(spotId, offsetAdjustment);
+  if (token !== spotOpenSequenceToken) return;
+
+  if (!prefersReduced) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 260));
+    if (token !== spotOpenSequenceToken) return;
+    await scrollToSpot(spotId, 0, 'auto');
+  }
+}
+
+function onSpotCardOpen(spot: Spot) {
+  openSpotWithScroll(spot.id);
 }
 function onSpotCardClose() {
+  spotOpenSequenceToken++;
   expandedSpotId.value = null;
   drawers.mapFocusKey = null;
 }
