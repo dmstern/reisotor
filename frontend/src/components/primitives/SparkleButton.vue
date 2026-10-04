@@ -62,15 +62,25 @@ const emit = defineEmits<{
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--color-primary, #6366f1);
+  color: var(--color-primary);
   cursor: pointer;
-  border-radius: var(--radius-sm-squircle, 6px);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition:
     transform 0.15s ease,
     color 0.15s ease,
     background-color 0.15s ease;
   z-index: 2;
+}
+
+/* Unsichtbare Berührungsflächenerweiterung für Touchscreens */
+.sparkle-suggest-btn::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: -8px;
+  right: -8px;
 }
 
 .address-sparkle-btn,
@@ -92,8 +102,8 @@ const emit = defineEmits<{
 }
 
 .sparkle-suggest-btn:hover:not(:disabled) {
-  background-color: var(--color-surface-hover, rgba(0, 0, 0, 0.06));
-  color: var(--color-primary-hover, #4f46e5);
+  background-color: var(--color-hover);
+  color: var(--color-primary-dark);
   transform: translateY(-50%) scale(1.12);
 }
 

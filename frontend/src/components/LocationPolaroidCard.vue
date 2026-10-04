@@ -381,14 +381,14 @@ defineExpose({
   max-width: calc(100% - 24px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle, 12px);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+  box-shadow: var(--shadow-md);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 8px;
-  gap: 8px;
+  padding: var(--space-2);
+  gap: var(--space-2);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -401,9 +401,9 @@ defineExpose({
 }
 
 .polaroid-card.is-modified {
-  border-color: var(--color-accent) !important;
+  border-color: var(--color-accent);
   box-shadow:
-    var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15)),
+    var(--shadow-md),
     0 0 0 1px var(--color-accent);
 }
 
@@ -411,17 +411,17 @@ defineExpose({
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 20;
+  z-index: var(--z-sticky, 10);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .polaroid-action-btn {
   background: var(--color-surface);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-sm);
   width: 26px;
   height: 26px;
   min-width: 26px;
@@ -436,26 +436,26 @@ defineExpose({
 }
 
 .polaroid-action-btn:hover {
-  background: var(--color-surface-hover, var(--color-hover));
+  background: var(--color-hover);
   color: var(--color-text);
 }
 
 .polaroid-reset-btn:hover {
-  color: var(--color-accent, #e08e45);
-  border-color: var(--color-accent, #e08e45);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .polaroid-media {
   width: 100%;
-  border-radius: var(--radius-sm-squircle, 8px);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   overflow: hidden;
-  background: var(--color-surface-hover, rgba(0, 0, 0, 0.04));
+  background: var(--color-hover);
   flex-shrink: 0;
 }
 
 .polaroid-card.is-modified:not(:has(.polaroid-media)) .status-title-row {
-  padding-right: 32px;
+  padding-right: var(--space-5);
 }
 
 .polaroid-body {
@@ -463,7 +463,7 @@ defineExpose({
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
-  padding: 2px 2px 4px 2px;
+  padding: 2px 2px var(--space-1) 2px;
 }
 
 .clear-btn {
@@ -491,7 +491,7 @@ defineExpose({
 .status-meta-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   min-width: 0;
   max-width: 100%;
   width: 100%;
@@ -532,7 +532,7 @@ defineExpose({
 .status-meta-edit {
   display: flex;
   align-items: center;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   width: 100%;
   flex: 1;
   min-width: 0;
@@ -600,11 +600,11 @@ defineExpose({
   flex-shrink: 0;
   align-self: center;
   margin-left: auto;
-  color: var(--color-success, #2e7d32);
+  color: var(--color-success);
 }
 
 .status-title {
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
   min-width: 0;
@@ -620,7 +620,7 @@ defineExpose({
 }
 
 .status-address {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text);
   min-width: 0;
   flex: 1;
@@ -635,7 +635,7 @@ defineExpose({
 }
 
 .status-coords {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   min-width: 0;
@@ -666,18 +666,18 @@ defineExpose({
 
 .coords-clear-btn:hover {
   opacity: 1;
-  color: var(--color-danger, #ef4444);
+  color: var(--color-danger);
 }
 
 .status-warning-icon {
-  color: var(--color-warning, #f59e0b);
+  color: var(--color-warning);
 }
 
 .status-coords.status-coords-missing {
-  color: var(--color-warning, #d97706);
+  color: var(--color-warning-dark);
   font-weight: 500;
   font-style: italic;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-variant-numeric: normal;
 }
 
@@ -702,6 +702,30 @@ defineExpose({
 .inline-category-combobox :deep(.combobox) {
   min-width: 0;
   width: 100%;
+}
+
+@container (min-width: 581px) {
+  .polaroid-card {
+    position: absolute;
+    top: 68px;
+    left: 12px;
+    right: auto;
+    width: 260px;
+    max-width: calc(100% - 24px);
+  }
+}
+
+@container (max-width: 580px) {
+  .polaroid-card {
+    position: absolute;
+    top: 68px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100% - 200px);
+    overflow-y: auto;
+  }
 }
 
 @media (min-width: 581px) {

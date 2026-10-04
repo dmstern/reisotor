@@ -173,7 +173,7 @@ const emit = defineEmits<{
   z-index: var(--z-dropdown, 500);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .location-search-floating:focus-within,
@@ -188,14 +188,14 @@ const emit = defineEmits<{
 }
 
 .manual-details-btn {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text);
   background: var(--color-surface);
-  box-shadow: var(--shadow-sm, 0 2px 6px rgba(0, 0, 0, 0.12));
+  box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   height: 28px;
-  padding: 2px 10px;
+  padding: 2px var(--space-2);
   cursor: pointer;
 }
 
@@ -221,7 +221,7 @@ const emit = defineEmits<{
   padding-left: 38px;
   padding-right: 42px;
   background: var(--color-surface);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+  box-shadow: var(--shadow-md);
   border-radius: var(--radius-pill);
   corner-shape: round;
 }
@@ -262,16 +262,17 @@ const emit = defineEmits<{
 
 .location-dropdown {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + var(--space-1));
   left: 0;
   right: 0;
   z-index: var(--z-popover, 1100);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle, 8px);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  box-shadow: var(--shadow-md);
   list-style: none;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
   margin: 0;
   max-height: 240px;
   overflow-y: auto;
@@ -280,10 +281,10 @@ const emit = defineEmits<{
 .location-result-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2, 8px);
-  padding: 8px 12px;
+  gap: var(--space-2);
+  padding: var(--space-2) 12px;
   cursor: pointer;
-  transition: background 0.1s ease;
+  transition: background 0.15s ease;
 }
 
 .location-result-item:hover,
@@ -309,12 +310,12 @@ const emit = defineEmits<{
 .location-item-title-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
 }
 
 .location-item-name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -326,7 +327,7 @@ const emit = defineEmits<{
 }
 
 .location-item-address {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -336,7 +337,7 @@ const emit = defineEmits<{
 .location-result-empty {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   padding: 10px 12px;
   color: var(--color-text-muted);
   user-select: none;
@@ -350,12 +351,12 @@ const emit = defineEmits<{
 
 .location-empty-content .empty-title {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
 }
 
 .location-empty-content .empty-desc {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.4;
 }

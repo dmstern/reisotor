@@ -448,17 +448,20 @@ defineExpose({
 .location-picker {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   position: relative;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  container-name: location-picker;
+  container-type: inline-size;
 }
 
 /* Map wrap & Mini map */
 .map-wrap {
   position: relative;
   width: 100%;
+  container-type: inline-size;
 }
 
 .map-wrap:focus-within,
@@ -491,8 +494,8 @@ defineExpose({
 @media (prefers-reduced-motion: reduce) {
   .polaroid-slide-enter-active,
   .polaroid-slide-leave-active {
-    transition: opacity 0.1s ease !important;
-    transform: none !important;
+    transition: opacity 0.1s ease;
+    transform: none;
   }
 }
 
@@ -501,7 +504,7 @@ defineExpose({
   isolation: isolate;
   z-index: var(--z-canvas, 0);
   height: 380px;
-  border-radius: var(--radius-md-squircle, 12px);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -512,13 +515,26 @@ defineExpose({
 
 @media (prefers-reduced-motion: reduce) {
   .location-picker-map {
-    transition: none !important;
+    transition: none;
   }
 }
 
 .has-polaroid .location-picker-map {
   height: 440px;
   min-height: 440px;
+}
+
+@container (max-width: 580px) {
+  .has-polaroid .location-picker-map {
+    height: 560px;
+    min-height: 560px;
+  }
+
+  .has-polaroid.has-polaroid-media .location-picker-map,
+  .has-polaroid:has(:deep(.polaroid-media)) .location-picker-map {
+    height: 680px;
+    min-height: 680px;
+  }
 }
 
 @media (max-width: 580px) {
@@ -541,15 +557,22 @@ defineExpose({
   z-index: var(--z-card-elevated, 5);
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1, 4px);
-  padding: 4px 10px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   box-shadow: var(--shadow-sm);
   pointer-events: none;
+  max-width: calc(100% - 68px);
+}
+
+.map-tap-hint span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .locate-btn {
@@ -576,9 +599,9 @@ defineExpose({
 .hint {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: var(--space-1);
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
