@@ -44,7 +44,7 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
 - `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
 - Bei gezielten UI-Audits: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen. **Nicht** bei normalen Bugfixes oder kleineren UI-Änderungen im Chat ausführen (erzeugt massive Test-Logs; für Standard-Änderungen reichen fokussierte Unit-Tests).
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
-- **Prompt-Vorlagen:** `docs/AUDIT_PROMPTS.md` (3-Phasen-Refactoring für Views: Architektur/SRP, Design-System/Tokens, Layout-Audit) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Audit via Subagents)
+- **Prompt-Vorlagen:** `docs/AUDIT_PROMPTS.md` (SFC-Schichten-Refactoring für Views: Script/State, Template/Primitives, Style/Layout-Audit) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Audit via Subagents)
 
 ## Typecheck, Linting & Formatting
 

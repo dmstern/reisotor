@@ -1,11 +1,14 @@
 # View- & Komponenten-Refactoring Prompts
 
-Diese Prompts dienen der systematischen Qualitätsprüfung und Überarbeitung einzelner Views oder großer Komponenten in Reisotor (z. B. im Rahmen von Refactoring-Tickets wie #446).
-Der empfohlene Ablauf pro View folgt dem Prinzip: **Erst Architektur & Struktur refactorn (Zero Visual Change), dann Design-System & Tokens vereinheitlichen, dann das Layout im Browser stress-testen.**
+Diese Prompts dienen der systematischen Qualitätsprüfung und Überarbeitung überlanger oder historisch gewachsener Views und Komponenten in Reisotor (z. B. im Rahmen von Refactoring-Tickets wie #446).
+
+Statt einer oberflächlichen Code-Verschiebung folgt die Überarbeitung dem **SFC-Schichten-Modell (von innen nach außen entlang der Vue-Natur: `<script>` → `<template>` → `<style>`)**:
 
 ```mermaid
 flowchart LR
-    P1["Phase 1: Architektur & SRP<br/>(Dekomposition & Composables)<br/><i>Zero Visual Change</i>"] --> P2["Phase 2: Design-System & Tokens<br/>(Primitives, CSS & DRY)<br/><i>Design-Konsistenz</i>"] --> P3["Phase 3: Adversarial Layout-Audit<br/>(3 Viewports, Enge-Matrix, Overflows)<br/><i>Visuelle Browser-Härtung</i>"]
+    P1["Phase 1: Logik & State<br/><b>&lt;script setup&gt;</b><br/><i>Composables, Dead Code & State-Entflechtung</i>"]
+    --> P2["Phase 2: UI & Deduplizierung<br/><b>&lt;template&gt;</b><br/><i>Subkomponenten, Primitives & Konsolidierung</i>"]
+    --> P3["Phase 3: Tokens & Stresstest<br/><b>&lt;style&gt; & Browser</b><br/><i>Design-Tokens, Container Queries & Layout-Audit</i>"]
 ```
 
 > [!NOTE]
@@ -13,84 +16,96 @@ flowchart LR
 
 ---
 
-## Phase 1: Architektur- & SRP-Refactoring (Dekomposition & Composables)
+## Phase 1: Logik- & State-Entflechtung (`<script setup>` & Composables)
 
-Kopiere diesen Prompt für den ersten Schritt bei großen oder monolithischen Komponenten (> 300–400 Zeilen).
-**Wichtig:** Dieser Schritt ist **strikt verhaltens- und stylingneutral** (_Zero Visual Change_). Keine CSS-Klassen, Abstände oder Layout-Tokens anfassen!
+Kopiere diesen Prompt für den ersten Schritt bei großen, historisch gewachsenen Komponenten.
+**Ziel:** Den Script-Bereich massiv verschlanken, tote Altlasten eliminieren und saubere State-Schnittstellen schaffen. Das Template und die Styles bleiben in diesem Schritt im Wesentlichen unangetastet.
 
 ```text
-Führe ein reines Architektur- und Struktur-Refactoring für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
-Ziel ist maximale Wartbarkeit und Modularisierung nach Single Responsibility Principle (SRP) und Separation of Concerns (SoC) – STRENG UNTER DEM PRINZIP: ZERO VISUAL CHANGE.
+Führe Phase 1 (Logik- & State-Entflechtung) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
+Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altlasten und das Auslagern von Logik in fokussierte Composables.
 
-1. Dekomposition (SRP):
-   - Prüfe die Dateigröße. Zerschneide monolithische Abschnitte (> 300–400 Zeilen) in fokussierte, dedizierte Unterkomponenten (z. B. Modals, Drawers, Filterleisten, Card-Items).
-   - Kapsele zusammengehörige Template-Abschnitte und deren lokales Styling in neue Kindkomponenten unter frontend/src/components/...
-   - Typisiere Props und Emits sauber (defineProps<{...}>(), defineEmits<{...}>()).
+1. Entrümpelung & Dead-Code-Beseitigung:
+   - Identifiziere und lösche unbenutzte Imports, verwaiste ref()s/computed()s, tote Hilfsfunktionen und auskommentierten Code.
+   - Beseitige frühere Agenten-Workarounds, redundante Berechnungen oder doppelte State-Haltungen.
 
-2. Separation of Concerns (SoC & Composables):
-   - Extrahiere reine Geschäfts-, Berechnungs-, Filter- oder Sortierlogik aus dem <script setup> in fokussierte Composables (unter frontend/src/composables/useXxx.ts) oder Pinia-Stores.
-   - Halte den Script-Teil der View schlank (nur Orchestrierung, State-Verdrahtung und Template-Anbindung).
+2. State & Fachlogik in Composables extrahieren:
+   - Lagere zusammenhängende Geschäfts-, Berechnungs-, Filter- oder Sortierlogik in neue, fokussierte Composables unter frontend/src/composables/ (z. B. useSettingsForm.ts, useTripPermissions.ts) oder Pinia-Stores aus.
+   - Definiere klare TypeScript-Interfaces für Optionen und Rückgabewerte.
+   - Halte das <script setup> der Hauptkomponente schlank: Es dient nur noch der Orchestrierung und Bereitstellung der Daten.
 
-3. Striktes Refactoring-Prinzip (Keine optischen Änderungen):
-   - Ändere KEINE Styles, CSS-Klassen, Abstände, Farben oder Tokens.
-   - Ersetze KEINE UI-Elemente durch Primitives (dies erfolgt separat in Phase 2).
-   - Das gerenderte DOM und das optische Verhalten im Browser müssen 1:1 identisch bleiben.
+3. Template & Styles intakt lassen (Verhinderung von Prop-Drilling-Spaghetti):
+   - Zerlege in diesem Schritt noch KEIN Template in Kindkomponenten! Zuerst muss der State sauber sein, damit wir in Phase 2 wissen, welche Subkomponente welche Schnittstelle benötigt.
+   - Ändere keine CSS-Klassen oder Styles.
 
 4. Verifikation & Qualitätssicherung:
    - Führe npm run typecheck und betroffene Unit-Tests aus (npx -y vitest run <testdatei> --bail 1).
    - Formatiere alle geänderten und neu erstellten Dateien (npx -y prettier --write <datei>).
-   - Fasse transparent zusammen: Welche Unterkomponenten und Composables wurden extrahiert und um wie viele Zeilen wurde die Originaldatei reduziert?
-   - Hinweis: Nach erfolgreichem Review/Merge folgt Phase 2 (Design-System & Tokens).
+   - Fasse transparent zusammen: Welche Composables wurden erstellt, wie viel Dead Code wurde gelöscht und um wie viele Zeilen ist das <script setup> geschrumpft?
+   - Hinweis: Nach erfolgreichem Review folgt Phase 2 (UI-Dekomposition & Deduplizierung).
 ```
 
 ---
 
-## Phase 2: Design-System- & Token-Refactoring (Primitives & Styling)
+## Phase 2: UI-Dekomposition & Deduplizierung (`<template>`, Subkomponenten & Primitives)
 
-Kopiere diesen Prompt für den zweiten Schritt, nachdem die Komponente strukturell in handhabbare Teilkomponenten zerlegt ist. Hier werden CSS-Redundanzen beseitigt und das Design-System vereinheitlicht:
+Kopiere diesen Prompt für den zweiten Schritt, nachdem der State sauber in Composables entflochten ist.
+**Ziel:** Das Template modularisieren, redundante UI-Muster zusammenführen und bestehende Design-System-Primitives einbinden.
 
 ```text
-Führe ein Design-System- und UI-Konsistenz-Refactoring für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] (inkl. aller zugehörigen Teilkomponenten) durch.
-Prüfe gnadenlos auf Einhaltung der Richtlinien aus DESIGN.md und AGENTS.md:
+Führe Phase 2 (UI-Dekomposition & Deduplizierung) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
+Der Script-State ist bereits sauber entflochten. Nun wird das <template> modularisiert und auf Wiederverwendbarkeit getrimmt.
+
+1. Deduplizierung & Konsolidierung (Gemeinsamkeiten vereinen statt klonen):
+   - Analysiere wiederkehrende DOM-Muster im Template (z. B. ähnliche Cards, Listeneinträge, Filterleisten).
+   - Führe ähnliche Abschnitte zu EINER flexiblen, wiederverwendbaren Subkomponente zusammen, statt blind 3 leicht unterschiedliche Varianten zu kopieren.
+
+2. UI-Primitives sofort nutzen (components/primitives/):
+   - Ersetze lokale HTML-Ad-hoc-Elemente (z. B. eigene <button class="btn...">, Badge-Pills oder Card-Container) direkt durch bestehende Primitives:
+     Button, IconButton, Card, Badge, Input, DetailRow, EmptyState.
+   - Falls ein neues UI-Element mehrfach nützlich ist: Als neues Primitiv unter frontend/src/components/primitives/ anlegen.
+
+3. Subkomponenten & Dialoge schnüren:
+   - Kapsele große Modals, Drawers oder eigenständige Abschnitte in neue Kindkomponenten unter frontend/src/components/...
+   - Nutze saubere TypeScript defineProps<{...}>() und defineEmits<{...}>(). Da der State in Phase 1 modularisiert wurde, binde Subkomponenten entweder direkt an das passende Composable an oder übergebe minimale, fokussierte Props.
+
+4. Verifikation & Qualitätssicherung:
+   - Führe npm run typecheck und betroffene Tests aus.
+   - Formatiere alle geänderten Dateien (npx -y prettier --write <datei>).
+   - Fasse transparent zusammen: Welche Subkomponenten wurden extrahiert, welche Primitives wurden wiederverwendet und welche Redundanzen wurden eliminiert?
+   - Hinweis: Nach erfolgreichem Review folgt Phase 3 (Design-Tokens & Layout-Härtung).
+```
+
+---
+
+## Phase 3: Design-Tokens, Container-Queries & Layout-Härtung (`<style>` & Browser-Stresstest)
+
+Kopiere diesen Prompt für den dritten Schritt, wenn Struktur und Komponenten stehen.
+**Ziel:** CSS-Bereinigung mit Design-Tokens und visueller Härtung gegen Viewports und stufenlose Engezustände im echten Browser.
+
+```text
+Führe Phase 3 (Design-Tokens & Layout-Härtung) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
+Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Stresstest durch:
 
 1. Design-Tokens & CSS-Bereinigung:
    - Keine freien Pixelwerte oder Ad-hoc-Farben: Ersetze lokale Werte konsequent durch --space-*, --text-*, --radius-* und --color-*-Tokens aus style.css.
    - Eckenrundungen (Squircle vs. Kreisbogen), Typografie und Schatten (--shadow-sm/--shadow-md) strikt gemäß DESIGN.md vereinheitlichen.
-   - Redundante CSS-Kopien zwischen Kindkomponenten eliminieren.
+   - Beseitige CSS-Hacks früherer Agenten (!important, negative Margins, willkürliche Z-Indizes) durch sauberes Flexbox/Grid.
 
-2. UI-Primitives wiederverwenden:
-   - Prüfe, wo bestehende Primitives (Button, IconButton, Card, Input, Badge, DetailRow, EmptyState unter frontend/src/components/primitives/) wiederverwendet werden müssen, statt lokale Buttons/Karten im Template nachzubauen.
-   - Falls ein neues UI-Element sinnvoll und mehrfach nützlich ist: Als neues Primitiv unter frontend/src/components/primitives/ kapseln.
-
-3. Enge-Resilienz & Container-Queries:
-   - Verwende keine starren Pixelbreiten in Subkomponenten.
+2. Container-Queries & Enge-Resilienz:
+   - Keine starren Pixelbreiten in Subkomponenten.
    - Nutze @container app-main (min-width: ...) oder flexibles Flexbox-Wrapping (flex-wrap: wrap) statt starrer Pixel-Breakpoints oder @media.
 
+3. Adversarial Browser-Stresstest (Playwright):
+   - Nutze die Vorlage unter e2e/tests/scratch/audit-template.spec.ts für die Route [z. B. /settings bzw. /trip/1/excursions].
+   - 3-Viewport-Matrix: narrowMobile (320x568px), mobile (390x844px), desktop (1280x800px).
+   - Enge-Matrix: Desktop mit maximal breit gezogener Schublade (setCalendarDrawerWidth(page, 500)) bzw. Spots-Spalte (setSpotsColumnWidth).
+   - Checks: expectNoHorizontalOverflow(page), Touch-Targets auf Mobile (expectMinTouchTarget), lange Strings und expectNotCoveredBy().
+   - Behebe gefundene Layout-Kollisionen direkt defensiv mit Tokens.
+
 4. Verifikation & Qualitätssicherung:
-   - Führe npm run typecheck und betroffene Unit-Tests aus (npx -y vitest run <testdatei> --bail 1).
+   - Führe npm run typecheck und AUDIT_ROUTE=<route> npm run test:audit aus.
    - Formatiere alle geänderten Dateien (npx -y prettier --write <datei>).
-   - Fasse transparent zusammen: Welche Tokens wurden vereinheitlicht, welche Primitives eingebaut und welches CSS eliminiert?
-   - Hinweis: Nach erfolgreichem Review/Merge folgt Phase 3 (Gezielter Layout- & Adversarial-Audit).
-```
-
----
-
-## Phase 3: Gezielter Layout- & Adversarial-Audit (Browser-Stresstest)
-
-Kopiere diesen Prompt, wenn die Code-Basis und das Styling einer View stehen und du das visuelle Layout im Browser stress-testen willst:
-
-```text
-Führe einen gezielten Adversarial-UI-Audit für [VIEWNAME, z. B. SettingsView / ExcursionsView] durch:
-1. Nutze die Vorlage unter e2e/tests/scratch/audit-template.spec.ts für die Route [z. B. /settings bzw. /trip/1/excursions].
-2. Teste die Viewport- & Drawer-Matrix:
-   - narrowMobile (320x568px, iPhone SE) & mobile (390x844px) auf expectNoHorizontalOverflow(page)
-   - narrowDesktop (1080x900px) & desktop (1280x800px) jeweils mit geschlossener, normal geöffneter UND maximal breit gezogener Schublade (setCalendarDrawerWidth(page, 500))
-   - Bei Excursions/Spots: Prüfe zusätzlich stufenlose Verstellung der Spots-Spalte (setSpotsColumnWidth)
-3. Stresse die UI gezielt:
-   - Öffne Modals / Dropdowns und prüfe expectNotCoveredBy() bzw. ob Menüs abgeschnitten werden.
-   - Teste mit langen Strings (Zeilenumbrüche / Text-Overflow) und leeren Zuständen (Empty States).
-   - Prüfe Touch-Targets auf Mobile mit expectMinTouchTarget().
-4. Binde Screenshots der repräsentativen Zustände (Mobile + Desktop, hell/dunkel) in den Walkthrough ein (nur auf explizite Nutzer-Aufforderung) und berichte gefundene Layout-Kollisionen.
-   - Falls du gefundene Layout-Kollisionen direkt behebst: Halte dich strikt an DESIGN.md (ausschließlich --space-* und --color-*-Tokens, keine Ad-hoc-Pixelwerte oder improvisierte Inline-Styles).
-   - WICHTIG: Führe im Rahmen dieses Layout-Audits KEIN eigenmächtiges Groß-Refactoring an der Komponentenstruktur durch – führe für architektonisches Aufräumen stattdessen vorab Phase 1 und Phase 2 durch.
+   - Binde Screenshots nur auf explizite Aufforderung in den Walkthrough ein.
+   - Fasse transparent zusammen: Welche Tokens wurden vereinheitlicht und welche Layout-Kollisionen wurden behoben?
 ```

@@ -4,21 +4,22 @@ Dieses Dokument beschreibt das Vorgehen für UI-, Layout- und Container-Query-Au
 
 ---
 
-## Der 3-Phasen-Workflow für View- & Komponenten-Audits
+## Der 3-Phasen-Workflow für View- & Komponenten-Refactorings
 
-Bei der Überarbeitung oder Überprüfung einer View bzw. Komponente gilt das Prinzip: **Erst Architektur & Struktur (Zero Visual Change), dann Design-System & Tokens, dann Layout & Browser-Stresstest.** Konkrete Prompt-Vorlagen für einzelne Views finden sich in [`docs/AUDIT_PROMPTS.md`](AUDIT_PROMPTS.md).
+Bei der Überarbeitung oder Überprüfung überlanger oder historisch gewachsener Views bzw. Komponenten folgt das Vorgehen dem **SFC-Schichten-Modell (von innen nach außen: `<script>` → `<template>` → `<style>`)**:
 
-1. **Phase 1: Architektur- & SRP-Refactoring (`Phase 1` in `AUDIT_PROMPTS.md`)**
-   - Monolithische Komponenten (> 300–400 Zeilen) nach Single Responsibility (SRP) in fokussierte Unterkomponenten zerschneiden.
-   - Geschäfts- und Filterlogik aus `<script setup>` in Composables extrahieren.
-   - _Zero Visual Change:_ Keine Styles, Farben oder Abstände anfassen. DOM bleibt visuell 1:1 identisch.
-2. **Phase 2: Design-System & Tokens (`Phase 2` in `AUDIT_PROMPTS.md`)**
-   - Harte Pixelwerte durch Design-Tokens (`--space-*`, `--color-*`) aus `style.css` ersetzen.
-   - UI-Primitives (`Button`, `Card`, `Badge` etc.) wiederverwenden bzw. extrahieren.
-   - Redundante CSS-Kopien zwischen Kindkomponenten eliminieren.
-3. **Phase 3: Gezielter Layout- & Adversarial-Audit (`Phase 3` in `AUDIT_PROMPTS.md`)**
-   - Die bereinigte View mit `e2e/tests/scratch/audit-template.spec.ts` im Browser stress-testen.
-   - 3-Viewport-Matrix, Drawer-Engezustände und Overflows defensiv absichern.
+1. **Phase 1: Logik & State entflechten (`<script setup>` & Composables, `Phase 1` in `AUDIT_PROMPTS.md`)**
+   - Tote Variablen, unbenutzte Imports und alte Agenten-Workarounds radikal löschen.
+   - Geschäfts-, Berechnungs- und Filterlogik in fokussierte Composables (`useXxx.ts`) oder Pinia-Stores auslagern.
+   - _Wichtig:_ Template und Styles bleiben in dieser Phase intakt – erst muss der State aufgeräumt sein, um Prop-Drilling-Spaghetti zu vermeiden!
+2. **Phase 2: UI-Dekomposition & Deduplizierung (`<template>` & Primitives, `Phase 2` in `AUDIT_PROMPTS.md`)**
+   - Ähnliche DOM-Strukturen (Cards, Listen) zu _einer_ wiederverwendbaren Komponente zusammenführen statt blind zu klonen.
+   - Lokale Ad-hoc-HTML-Elemente (`<button>`, `<span class="badge">`) direkt durch Primitives (`Card`, `Button`, `Badge` etc.) ersetzen.
+   - Große Dialoge/Modals als Kindkomponenten mit minimalen Props auslagern.
+3. **Phase 3: Design-Tokens, Container-Queries & Layout-Härtung (`<style>` & Browser-Test, `Phase 3` in `AUDIT_PROMPTS.md`)**
+   - Harte Pixelwerte durch Design-Tokens (`--space-*`, `--color-*`) ersetzen; CSS-Hacks entfernen.
+   - Auf `@container app-main` und stufenlose Breiten absichern.
+   - Die bereinigte View mit `e2e/tests/scratch/audit-template.spec.ts` im Browser stress-testen (3-Viewport-Matrix & 500px Schubladen-Enge).
 
 Vor Releases oder Meilensteinen erfolgt die ganzheitliche Prüfung aller Bereiche via Subagents (**Pre-Release-Gesamt-Audit**, siehe unten).
 
