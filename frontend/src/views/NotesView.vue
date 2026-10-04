@@ -397,9 +397,7 @@ async function remove(id: number) {
       :title="editingNote?.is_draft ? 'Notiz anlegen' : 'Notiz bearbeiten'"
       full-height
       :confirm-close="!editingNote?.is_draft && editDraft.isDirty.value"
-      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
-      confirm-close-message="Du hast ungespeicherte Änderungen an dieser Notiz vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
-      confirm-close-confirm-label="Änderungen verwerfen"
+      confirm-close-entity="Notiz"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEdit">

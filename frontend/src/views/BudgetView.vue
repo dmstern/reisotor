@@ -567,9 +567,8 @@ const categoryColors = computed(() => {
             :model-value="showExpenseForm"
             title="Ausgabe eintragen"
             :confirm-close="newExpenseDraft.isDirty.value"
-            confirm-close-title="Entwurf verwerfen?"
-            confirm-close-message="Du hast bereits Eingaben für diese Ausgabe gemacht. Möchtest du den Entwurf verwerfen?"
-            confirm-close-confirm-label="Entwurf verwerfen"
+            confirm-close-mode="draft"
+            confirm-close-entity="Ausgabe"
             @update:model-value="(v) => !v && closeExpenseForm()"
           >
             <form class="edit-form add-form" @submit.prevent="submitExpense">
@@ -762,9 +761,7 @@ const categoryColors = computed(() => {
       :model-value="editingExpense !== null"
       title="Ausgabe bearbeiten"
       :confirm-close="editExpenseDraft.isDirty.value"
-      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
-      confirm-close-message="Du hast ungespeicherte Änderungen an dieser Ausgabe vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
-      confirm-close-confirm-label="Änderungen verwerfen"
+      confirm-close-entity="Ausgabe"
       @update:model-value="(v) => !v && closeEditExpenseForm()"
     >
       <form class="edit-form add-form" @submit.prevent="submitEditExpense">

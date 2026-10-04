@@ -42,9 +42,7 @@ const {
     title="Termin bearbeiten"
     full-height
     :confirm-close="editDraft.isDirty.value"
-    confirm-close-title="Ungespeicherte Änderungen verwerfen?"
-    confirm-close-message="Du hast ungespeicherte Änderungen an diesem Termin vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
-    confirm-close-confirm-label="Änderungen verwerfen"
+    confirm-close-entity="Termin"
     @update:model-value="(v) => !v && emit('close')"
   >
     <form class="edit-form" @submit.prevent="submitEdit">

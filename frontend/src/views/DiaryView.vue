@@ -1143,9 +1143,7 @@ function showEntryDayOnMap(entry: DiaryEntry) {
       :title="editingEntry?.is_draft ? 'Eintrag anlegen' : 'Eintrag bearbeiten'"
       full-height
       :confirm-close="!editingEntry?.is_draft && editDraft.isDirty.value"
-      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
-      confirm-close-message="Du hast ungespeicherte Änderungen an diesem Eintrag vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
-      confirm-close-confirm-label="Änderungen verwerfen"
+      confirm-close-entity="Eintrag"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEditEntry">

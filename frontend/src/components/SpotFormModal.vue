@@ -175,17 +175,8 @@ function handleOpenScheduledItem(item: ScheduleItem) {
     :title="editingSpot !== null ? 'Spot bearbeiten' : 'Neuer Spot'"
     full-height
     :confirm-close="isSpotModalDirty"
-    :confirm-close-title="
-      editingSpot !== null ? 'Ungespeicherte Änderungen verwerfen?' : 'Entwurf verwerfen?'
-    "
-    :confirm-close-message="
-      editingSpot !== null
-        ? 'Du hast ungespeicherte Änderungen an diesem Spot vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
-        : 'Du hast bereits Eingaben für diesen Spot gemacht. Möchtest du den Entwurf verwerfen?'
-    "
-    :confirm-close-confirm-label="
-      editingSpot !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
-    "
+    :confirm-close-mode="editingSpot !== null ? 'unsaved' : 'draft'"
+    confirm-close-entity="Spot"
     @update:model-value="(v) => !v && handleClose()"
   >
     <form
