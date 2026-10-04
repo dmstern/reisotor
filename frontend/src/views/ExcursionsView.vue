@@ -2343,36 +2343,6 @@ function recomputeTourLine(excursionId: number) {
     destinationIndex = domSpotIds.indexOf(excursion.destination_spot_id);
   }
 
-  // Gestrichelte Verbindungslinie von der Tour-Card zur ersten Spot-Card
-  const groupEl = wrapEl.closest('.category-group');
-  const tourCardEl = groupEl?.querySelector<HTMLElement>('.tour-group-card');
-  if (tourCardEl && spotBoxes.length > 0) {
-    const cardRect = tourCardEl.getBoundingClientRect();
-    const cardBottom = cardRect.bottom - wrapRect.top;
-    const firstSpot = spotBoxes[0];
-    const hOffset = 32;
-    const startX = firstSpot.cx - hOffset;
-    const startY = cardBottom;
-    const endX = firstSpot.cx + hOffset;
-    const endY = firstSpot.top;
-
-    if (endY > startY) {
-      dots.push({ x: startX, y: startY, isEnd: false });
-      dots.push({ x: endX, y: endY, isEnd: true });
-
-      const dy = endY - startY;
-      const cp1X = startX;
-      const cp1Y = startY + dy * 0.45;
-      const cp2X = endX;
-      const cp2Y = endY - dy * 0.45;
-      hinwegSegments.push({
-        d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
-        y1: startY,
-        y2: endY,
-      });
-    }
-  }
-
   for (let i = 0; i < spotBoxes.length - 1; i++) {
     const a = spotBoxes[i];
     const b = spotBoxes[i + 1];
@@ -2476,20 +2446,10 @@ function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstan
   if (domEl === previous) return;
   if (previous) {
     tourLineResizeObserver?.unobserve(previous);
-    const prevCard = previous
-      .closest('.category-group')
-      ?.querySelector<HTMLElement>('.tour-group-card');
-    if (prevCard) tourLineResizeObserver?.unobserve(prevCard);
   }
   if (domEl instanceof HTMLElement) {
     tourWrapRefs.set(excursionId, domEl);
     tourLineResizeObserver?.observe(domEl);
-    const tourCardEl = domEl
-      .closest('.category-group')
-      ?.querySelector<HTMLElement>('.tour-group-card');
-    if (tourCardEl) {
-      tourLineResizeObserver?.observe(tourCardEl);
-    }
     const initialWidth = Math.round(domEl.clientWidth);
     if (tourWrapWidths.get(excursionId) !== initialWidth) {
       tourWrapWidths.set(excursionId, initialWidth);
@@ -2505,13 +2465,7 @@ function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstan
 onMounted(() => {
   tourLineResizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
-      const id = [...tourWrapRefs.entries()].find(([, el]) => {
-        if (el === entry.target) return true;
-        const tourCardEl = el
-          .closest('.category-group')
-          ?.querySelector<HTMLElement>('.tour-group-card');
-        return tourCardEl === entry.target;
-      })?.[0];
+      const id = [...tourWrapRefs.entries()].find(([, el]) => el === entry.target)?.[0];
       if (id != null) {
         const wrapEl = tourWrapRefs.get(id);
         if (wrapEl) {
@@ -2527,10 +2481,6 @@ onMounted(() => {
   });
   for (const [_id, el] of tourWrapRefs) {
     tourLineResizeObserver.observe(el);
-    const tourCardEl = el
-      .closest('.category-group')
-      ?.querySelector<HTMLElement>('.tour-group-card');
-    if (tourCardEl) tourLineResizeObserver.observe(tourCardEl);
   }
 });
 onUnmounted(() => tourLineResizeObserver?.disconnect());
@@ -3958,6 +3908,7 @@ async function deleteEditingSpot() {
         </div>
         <div
           class="spots-col-body"
+          :class="{ 'has-tour-groups': groupMode === 'tours' }"
           ref="spotsColBodyEl"
           :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
           @pointerdown="onSheetBodyPointerDown"
@@ -4945,7 +4896,30 @@ async function deleteEditingSpot() {
           </div>
 
           <template v-if="groupMode !== 'tracks'">
-            <section class="group category-group" v-for="grp in spotGroups" :key="grp.category">
+            <section
+              class="group category-group"
+              :class="{
+                'is-tour-group': !!grp.excursion,
+                'is-expanded': !!(grp.excursion && expandedExcursionId === grp.excursion.id),
+              }"
+              :style="
+                grp.excursion
+                  ? {
+                      '--tour-theme-color': grp.excursion.role
+                        ? 'var(--color-travel)'
+                        : 'var(--color-tour)',
+                      '--tour-theme-tint': grp.excursion.role
+                        ? 'var(--color-travel-tint)'
+                        : 'var(--color-tour-tint)',
+                      '--tour-theme-border': grp.excursion.role
+                        ? 'var(--color-travel-border)'
+                        : 'var(--color-tour-border)',
+                    }
+                  : undefined
+              "
+              v-for="grp in spotGroups"
+              :key="grp.category"
+            >
               <ExcursionCard
                 v-if="grp.excursion"
                 :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
@@ -6607,6 +6581,39 @@ async function deleteEditingSpot() {
   min-width: 0;
 }
 
+.category-group.is-tour-group {
+  margin-left: calc(var(--space-3) * -1);
+  margin-right: calc(var(--space-3) * -1);
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.25s ease;
+}
+
+.category-group.is-tour-group:first-of-type {
+  border-top: 1px solid var(--color-border);
+}
+
+.category-nav-wrap ~ .category-group.is-tour-group:first-of-type {
+  border-top: none;
+}
+
+.category-group.is-tour-group.is-expanded {
+  background: var(--tour-theme-tint);
+}
+
+.category-group.is-tour-group .empty {
+  padding: var(--space-2) var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.category-group.is-tour-group + .category-group:not(.is-tour-group) {
+  margin-top: var(--space-4);
+}
+
+.spots-col-body.has-tour-groups .category-nav-wrap {
+  margin-bottom: 0;
+}
+
 .group h3 {
   font-size: 1rem;
   color: var(--color-primary-dark);
@@ -6645,14 +6652,14 @@ async function deleteEditingSpot() {
 .tour-station-wrap.is-tour {
   display: block;
   position: relative;
-  margin-left: 8px;
-  margin-right: 8px;
+  margin-left: 0;
+  margin-right: 0;
   min-width: 0;
   max-width: 100%;
 }
 
 .tour-station-wrap.is-tour.single-col {
-  margin-left: 18px;
+  margin-left: 0;
   margin-right: 0;
 }
 
@@ -6719,7 +6726,7 @@ async function deleteEditingSpot() {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-2) 12px 24px 12px;
+  padding: var(--space-2) var(--space-3) var(--space-4) var(--space-3);
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;
@@ -7488,7 +7495,7 @@ async function deleteEditingSpot() {
    eigenen margin-bottom bekommt (h3-Element-Default reicht bei einer Card nicht). */
 .tour-group-card {
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
-  margin-bottom: var(--space-3);
+  margin-bottom: 0;
 }
 
 /* Zero-height Sentinel direkt vor .category-nav, per IntersectionObserver beobachtet (siehe

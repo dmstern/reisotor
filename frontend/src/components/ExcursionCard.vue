@@ -659,9 +659,9 @@ function onSpotDrop(event: DragEvent) {
 </template>
 
 <style scoped>
-/* Volle Breite statt kleiner Grid-Card (wie Tagebucheinträge) – macht Ausflüge auf einen Blick von
-   den (weiterhin als Grid angezeigten) Spots unterscheidbar. Bild als schmale, feste Miniatur
-   links statt großem Banner oben, damit es bei voller Breite nicht unnötig gestreckt wirkt. */
+/* Vollflächiger Listeneintrag statt schwebender Karte: fügt sich nahtlos in die Drawer-Breite ein,
+   getrennt durch horizontale Trennlinien am umgebenden .category-group. */
+.card.excursion-card,
 .excursion-card {
   --excursion-theme-color: var(--color-tour);
   --excursion-theme-dark: var(--color-tour-dark);
@@ -678,29 +678,26 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 80px;
-  border-width: var(--ui-border-width, 1px);
-  border-style: solid;
-  border-color: var(--excursion-theme-border);
-  background: var(--color-surface);
+  border: none !important;
+  border-radius: 0 !important;
+  corner-shape: auto !important;
+  box-shadow: none !important;
+  background: transparent !important;
   cursor: pointer;
   overflow: visible;
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
   transition:
-    border-color 0.2s ease,
     background 0.2s ease,
-    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.2s ease;
 }
 
 /* Leucht-Effekt, wenn der "Tour zuordnen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
 :global(body.is-dragging-tour .excursion-card:not(.drop-disabled)),
 .excursion-card.drop-candidate {
-  border-color: var(--color-tour) !important;
   background: color-mix(in srgb, var(--color-tour) 12%, var(--color-surface)) !important;
   box-shadow:
-    0 0 0 2px var(--color-tour),
-    0 8px 24px -4px color-mix(in srgb, var(--color-tour) 45%, transparent),
-    0 2px 6px rgba(0, 0, 0, 0.06);
+    inset 0 0 0 2px var(--color-tour),
+    0 8px 24px -4px color-mix(in srgb, var(--color-tour) 45%, transparent) !important;
   animation: tour-glow-pulse 2.2s ease-in-out infinite alternate;
   position: relative;
   z-index: 4;
@@ -709,17 +706,13 @@ function onSpotDrop(event: DragEvent) {
 @keyframes tour-glow-pulse {
   0% {
     box-shadow:
-      0 0 0 2px var(--color-tour),
-      0 6px 18px -4px color-mix(in srgb, var(--color-tour) 35%, transparent),
-      0 2px 6px rgba(0, 0, 0, 0.06);
-    border-color: var(--color-tour);
+      inset 0 0 0 2px var(--color-tour),
+      0 6px 18px -4px color-mix(in srgb, var(--color-tour) 35%, transparent);
   }
   100% {
     box-shadow:
-      0 0 0 3px var(--color-tour),
-      0 10px 28px -2px color-mix(in srgb, var(--color-tour) 60%, transparent),
-      0 4px 10px rgba(0, 0, 0, 0.1);
-    border-color: var(--color-tour-dark, var(--color-tour));
+      inset 0 0 0 3px var(--color-tour),
+      0 10px 28px -2px color-mix(in srgb, var(--color-tour) 60%, transparent);
   }
 }
 
@@ -727,13 +720,11 @@ function onSpotDrop(event: DragEvent) {
 :global(body.is-dragging-tour .excursion-card.drop-target),
 .excursion-card.drop-candidate:hover,
 .excursion-card.drop-target {
-  border-color: var(--color-tour) !important;
   background: color-mix(in srgb, var(--color-tour) 20%, var(--color-surface)) !important;
-  transform: translateY(-2px) scale(1.01);
+  transform: none;
   box-shadow:
-    0 0 0 3px var(--color-tour),
-    0 12px 32px -2px color-mix(in srgb, var(--color-tour) 65%, transparent),
-    0 4px 12px rgba(0, 0, 0, 0.12);
+    inset 0 0 0 3px var(--color-tour),
+    0 12px 32px -2px color-mix(in srgb, var(--color-tour) 65%, transparent) !important;
   z-index: 6;
 }
 
@@ -751,18 +742,23 @@ function onSpotDrop(event: DragEvent) {
 }
 
 .excursion-card:not(.expanded):hover {
-  transform: translateY(-4px) scale(1.015);
-  border-color: var(--excursion-theme-color);
-  box-shadow: var(--shadow-md);
-  z-index: 5;
+  transform: none;
+  background: var(--color-hover) !important;
+  box-shadow: none !important;
 }
 
 .excursion-card:not(.expanded):active {
-  transform: translateY(0) scale(0.99);
+  transform: none;
+  background: color-mix(in srgb, var(--color-hover) 80%, var(--color-border)) !important;
 }
 
 .excursion-card.expanded {
-  transform: translateY(0) scale(1);
+  transform: none;
+  border: none !important;
+  border-radius: 0 !important;
+  corner-shape: auto !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .tour-card-main {
@@ -772,19 +768,12 @@ function onSpotDrop(event: DragEvent) {
   flex-direction: row;
   align-items: stretch;
   position: relative;
-  padding: 10px 14px 10px 10px;
+  padding: 12px var(--space-3);
   gap: 12px;
 }
 
-/* Ersetzt den früheren ExcursionDetailDialog.vue-Modal-Dialog (#92): die Karte wächst an Ort und
-   Stelle leicht (zusätzliche Zeilen für Ersteller:in/Notiz, siehe Template), statt einen Dialog
-   über die Karte zu legen - exakt dasselbe Prinzip wie SpotCard.vue's .spot-card.expanded. Fester
-   statt gestrichelter Rahmen (anders als .drop-target oben), damit die beiden Zustände optisch
-   unterscheidbar bleiben. */
-.excursion-card.expanded {
-  border-style: solid;
-  border-color: var(--excursion-theme-color);
-  background: var(--excursion-theme-tint);
+.excursion-card.expanded .tour-card-main {
+  padding: 14px var(--space-3) 10px var(--space-3);
 }
 
 .tour-visual-col {
@@ -1288,7 +1277,7 @@ function onSpotDrop(event: DragEvent) {
 
 @container spots-col (max-width: 360px) {
   .tour-card-main {
-    padding: 8px 10px 8px 8px;
+    padding: 8px var(--space-3) 8px var(--space-3);
     gap: 8px;
   }
 
