@@ -250,6 +250,7 @@ function selectAndClose(id: number) {
         "
         @submit="onSubmit"
         @delete="onDelete"
+        @cancel="closeForm()"
         @navigate="closeForm()"
       />
     </Modal>

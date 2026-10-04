@@ -985,6 +985,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
         />
         <div class="actions-row">
           <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="closeForm">
+            Abbrechen
+          </Button>
           <Button type="submit" :disabled="!canSubmitNewEntry" :title="newEntrySaveTooltip">
             Eintragen
           </Button>
@@ -1309,6 +1312,9 @@ function showEntryDayOnMap(entry: DiaryEntry) {
             Löschen
           </Button>
           <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="closeEditForm">
+            Abbrechen
+          </Button>
           <Button type="submit" :disabled="!canSaveEditEntry" :title="editEntrySaveTooltip">{{
             editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern'
           }}</Button>

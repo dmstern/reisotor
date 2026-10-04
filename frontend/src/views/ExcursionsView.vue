@@ -4296,6 +4296,16 @@ async function deleteEditingSpot() {
                   Löschen
                 </Button>
                 <div class="spacer"></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="btn-cancel"
+                  @click="
+                    editingExcursion !== null ? closeEditExcursionForm() : closeExcursionForm()
+                  "
+                >
+                  Abbrechen
+                </Button>
                 <Button type="submit" :disabled="!canSaveExcursion" :title="excursionSaveTooltip">{{
                   editingExcursion !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>
@@ -4818,6 +4828,14 @@ async function deleteEditingSpot() {
                   Löschen
                 </Button>
                 <div class="spacer"></div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  class="btn-cancel"
+                  @click="editingSpot !== null ? closeEditSpotForm() : closeSpotForm()"
+                >
+                  Abbrechen
+                </Button>
                 <Button type="submit" :disabled="!canSaveSpot" :title="spotSaveTooltip">{{
                   editingSpot !== null ? 'Speichern' : 'Hinzufügen'
                 }}</Button>

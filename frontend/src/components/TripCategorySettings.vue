@@ -292,14 +292,16 @@ watch([() => filteredCategories.value.length, activeType], () => {
           <Button
             v-else-if="editingCategory?.isAdapted && editingCategory?.id"
             type="button"
-            variant="ghost"
+            variant="secondary"
             :icon="ACTION_ICONS.restore"
             @click="confirmResetFromEdit"
           >
             Auf Standard zurücksetzen
           </Button>
           <div class="spacer" />
-          <Button type="button" variant="ghost" @click="cancelEdit">Abbrechen</Button>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="cancelEdit">
+            Abbrechen
+          </Button>
           <Button
             type="button"
             variant="primary"
@@ -356,8 +358,10 @@ watch([() => filteredCategories.value.length, activeType], () => {
         />
 
         <div class="actions-row">
-          <Button type="button" variant="ghost" @click="cancelDelete">Abbrechen</Button>
           <div class="spacer" />
+          <Button type="button" variant="secondary" class="btn-cancel" @click="cancelDelete">
+            Abbrechen
+          </Button>
           <Button type="button" variant="danger" :icon="ACTION_ICONS.delete" @click="executeDelete">
             Kategorie löschen
           </Button>
@@ -408,8 +412,10 @@ watch([() => filteredCategories.value.length, activeType], () => {
         />
 
         <div class="actions-row">
-          <Button type="button" variant="ghost" @click="cancelReset">Abbrechen</Button>
           <div class="spacer" />
+          <Button type="button" variant="secondary" class="btn-cancel" @click="cancelReset">
+            Abbrechen
+          </Button>
           <Button
             type="button"
             variant="primary"
@@ -503,16 +509,6 @@ watch([() => filteredCategories.value.length, activeType], () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.spacer {
-  flex: 1;
 }
 
 .edit-preview-section {

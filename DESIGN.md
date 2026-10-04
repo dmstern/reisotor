@@ -660,6 +660,12 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
 - **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl,
   Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
   Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
+- **`ButtonGroup.vue` & Dialog-Footer (`.actions-row`)**: Standardisierte Aktionsleiste für Modals und
+  Dialog-Formulare. Desktop: links destruktive/sekundäre Aktionen (`variant="danger" secondary` für Löschen),
+  gefolgt von `.spacer`, und rechts das konsistente Aktionspaar `[Abbrechen]` (`variant="secondary" class="btn-cancel"`)
+  und `[Speichern]` / `[Hinzufügen]` (`variant="primary"`). Mobile (`< 600px`): `[Abbrechen]` und `[Speichern]` teilen
+  sich daumenfreundlich 50/50 die untere Zeile, während destruktive Aktionen (`[Löschen]`) als Sicherheitsabstand
+  in einer eigenen oberen Halbzeile linksbündig platziert werden.
 - **`Input.vue`**: Wiederverwendbares Primitive für einzeilige Eingabefelder (`text`, `number`,
   `date`, `time`, `datetime-local`, `email`, `url`, `search`, etc.). Behandelt standardmäßiges
   Squircle-Styling, initial schattenlos (`box-shadow: none`), `min-height: 44px`, Focus-Ringe,

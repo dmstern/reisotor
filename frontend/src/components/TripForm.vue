@@ -40,6 +40,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'submit', data: TripFormData): void;
   (e: 'delete'): void;
+  (e: 'cancel'): void;
   (e: 'navigate'): void;
 }>();
 
@@ -379,6 +380,15 @@ function onSubmit() {
         Löschen
       </Button>
       <div class="spacer"></div>
+      <Button
+        type="button"
+        variant="secondary"
+        class="btn-cancel"
+        :disabled="isUploadingCoverImage"
+        @click="emit('cancel')"
+      >
+        Abbrechen
+      </Button>
       <Button type="submit" :disabled="isUploadingCoverImage">{{
         submitLabel ?? 'Speichern'
       }}</Button>

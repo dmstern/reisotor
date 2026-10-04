@@ -809,6 +809,9 @@ function hasTodoMeta(item: TodoItem): boolean {
             Löschen
           </Button>
           <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="closeEditForm">
+            Abbrechen
+          </Button>
           <Button
             type="submit"
             :disabled="!editForm.title.trim()"
@@ -817,8 +820,9 @@ function hasTodoMeta(item: TodoItem): boolean {
                 ? 'Bitte gib zuerst einen Titel für die Aufgabe ein'
                 : undefined
             "
-            >Speichern</Button
           >
+            Speichern
+          </Button>
         </div>
       </form>
     </Modal>

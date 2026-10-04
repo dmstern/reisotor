@@ -759,6 +759,9 @@ function hasItemMeta(item: ShoppingItem): boolean {
             Löschen
           </Button>
           <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="closeEditForm">
+            Abbrechen
+          </Button>
           <Button
             type="submit"
             :disabled="!editForm.label.trim()"
@@ -767,8 +770,9 @@ function hasItemMeta(item: ShoppingItem): boolean {
                 ? 'Bitte gib zuerst einen Namen für den Artikel ein'
                 : undefined
             "
-            >Speichern</Button
           >
+            Speichern
+          </Button>
         </div>
       </form>
     </Modal>

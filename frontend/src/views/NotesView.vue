@@ -447,6 +447,9 @@ async function remove(id: number) {
             Löschen
           </Button>
           <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="closeEditForm">
+            Abbrechen
+          </Button>
           <Button type="submit" :disabled="!canSaveNote" :title="noteSaveTooltip">{{
             editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern'
           }}</Button>

@@ -1625,9 +1625,12 @@ function formatDate(date: string) {
         />
         <div class="actions-row">
           <div class="spacer"></div>
-          <Button type="submit" :disabled="!canAddScheduleItem" :title="addScheduleItemTooltip"
-            >Hinzufügen</Button
-          >
+          <Button type="button" variant="secondary" class="btn-cancel" @click="closeAddForm">
+            Abbrechen
+          </Button>
+          <Button type="submit" :disabled="!canAddScheduleItem" :title="addScheduleItemTooltip">
+            Hinzufügen
+          </Button>
         </div>
       </form>
     </Modal>
@@ -1758,12 +1761,16 @@ function formatDate(date: string) {
             Löschen
           </Button>
           <div class="spacer"></div>
+          <Button type="button" variant="secondary" class="btn-cancel" @click="closeEditForm">
+            Abbrechen
+          </Button>
           <Button
             type="submit"
             :disabled="!canSaveEditScheduleItem"
             :title="editScheduleItemTooltip"
-            >Speichern</Button
           >
+            Speichern
+          </Button>
         </div>
       </form>
     </Modal>
