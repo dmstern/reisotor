@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import DockTeleport from './primitives/DockTeleport.vue';
+
 withDefaults(
   defineProps<{
     active: boolean;
@@ -11,8 +13,7 @@ withDefaults(
 </script>
 
 <template>
-  <Teleport v-if="active" :to="to">
+  <DockTeleport :active="active" :to="to">
     <slot />
-  </Teleport>
-  <slot v-else />
+  </DockTeleport>
 </template>
