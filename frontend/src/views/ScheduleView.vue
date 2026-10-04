@@ -1,17 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { api } from '../api/client';
-import type { CalendarEntry, ScheduleItem, Spot, TodoItem } from '../api/types';
-import { deriveTravelItems } from '../utils/deriveTravelItems';
+import type { CalendarEntry } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
-import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
-import { useLiveSyncStore } from '../stores/liveSync';
-import { useWeatherProviderStore } from '../stores/weatherProvider';
-import { useCalendarSettingsStore } from '../stores/calendarSettings';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import Modal from '../components/Modal.vue';
@@ -37,35 +31,25 @@ import EmptyState from '../components/primitives/EmptyState.vue';
 import PickerMenu from '../components/primitives/PickerMenu.vue';
 import Badge from '../components/primitives/Badge.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
-import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { travelTypeIconDef } from '../utils/travelTypeIcon';
-import { parseLatLngFromMapsLink } from '../utils/googleMaps';
-import { buildAllEntries } from '../utils/calendarEntries';
 import {
   calendarEventFromEntry,
   googleCalendarHref,
   outlookCalendarHref,
-  triggerIcsDownload,
 } from '../utils/calendarExport';
-import { useToast } from '../composables/useToast';
-import { fetchWeatherForecast, weatherCodeMeta, type DailyWeather } from '../utils/weather';
-import {
-  collectWeatherLocations,
-  dayWeatherEntries,
-  type DayWeatherEntry,
-} from '../utils/dayWeather';
-import {
-  endOfWeek,
-  startOfWeek,
-  toLocalDateString,
-  formatDate as formatDateShared,
-} from '../utils/dateFormat';
+import { weatherCodeMeta } from '../utils/weather';
+import { formatDate } from '../utils/dateFormat';
 import { isEmptyRichText } from '../utils/richText';
+import { useCalendarData } from '../composables/useCalendarData';
+import { usePendingSchedule } from '../composables/usePendingSchedule';
+import { useCalendarNavigation } from '../composables/useCalendarNavigation';
+import { useScheduleItemForm } from '../composables/useScheduleItemForm';
+import { useScheduleItemDetail } from '../composables/useScheduleItemDetail';
+import { useCalendarExportPicker } from '../composables/useCalendarExportPicker';
 
 // Auf Desktop weiterhin eigenständig gemountete Schublade (App.vue, linker Platz). Auf Mobil
 // dagegen dieselbe Komponente als eigenständige Seite (Route /calendar, siehe router/index.ts)
@@ -75,910 +59,141 @@ import { isEmptyRichText } from '../utils/richText';
 const props = defineProps<{ standalone?: boolean }>();
 const router = useRouter();
 const tripStore = useTripStore();
-const trip = computed(() => tripStore.currentTrip);
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
-const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
-const liveSync = useLiveSyncStore();
-const { showToast } = useToast();
-const weatherProvider = useWeatherProviderStore();
-// Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
-// normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig, spotsStore.load()
-// bringt sie bereits mit.
-const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
-const todos = ref<TodoItem[]>([]);
-// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
-// utils/deriveTravelItems.ts) - excursionsStore lädt automatisch bei erster Verwendung.
-const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
-const selectedDate = ref<string | null>(null);
-const loading = ref(true);
 
-// Reise-Orte (Flughafen/Bahnhof/Zuhause/…) sind seit der Verschmelzung in Spots (siehe
-// Migrationskommentar in db/index.ts) ganz normale Spots - der Standort-Vorschlag hier nutzt daher
-// den geteilten spotsStore statt eines eigenen /travel/places-Fetches.
-const placeNames = computed(() => spotsStore.spots.map((s) => s.title));
+// 1. Kalender-Daten & Synchronisation
+const {
+  trip,
+  loading,
+  allEntries,
+  accommodationsForDate,
+  weatherEntriesFor,
+  entriesForDate,
+  entryDone,
+  toggleTodoDone,
+  initCalendarData,
+} = useCalendarData();
 
-const newStartDate = ref('');
-const newTime = ref('');
-const newEndTime = ref('');
-const newTitle = ref('');
-const newNote = ref('');
-const newEndDate = ref('');
-const newLocation = ref('');
-const newMapsLink = ref('');
-// Verknüpfung mit einem Spot ('spot:<id>') oder einer Tour ('idea:<id>') statt Freitext-Standort –
-// leer = kein verknüpftes Objekt. Ein String-Key (statt zweier separater IDs) macht die Auswahl im
-// <select> unten trivial (ein einzelner v-model-Wert statt zweier sich gegenseitig ausschließender
-// Felder), siehe parseLinkKey/linkKeyFor.
-const newLinkKey = ref('');
-const showAddForm = ref(false);
-const showAddLocationSection = ref(false);
-const showEditLocationSection = ref(false);
+// 2. Einplanen-Workflow & Drag-and-Drop
+const { pendingScheduleLabel, finishPendingSchedule, cancelPendingSchedule, onDropExcursion } =
+  usePendingSchedule({ standalone: props.standalone });
 
-const newTitleTouched = ref(false);
-const newStartDateTouched = ref(false);
-const showNewTitleError = computed(() => newTitleTouched.value && !newTitle.value.trim());
-const showNewStartDateError = computed(() => newStartDateTouched.value && !newStartDate.value);
-
-const canAddScheduleItem = computed(() => !!newTitle.value.trim() && !!newStartDate.value);
-const addScheduleItemTooltip = computed(() => {
-  if (!newTitle.value.trim()) return 'Bitte gib zuerst einen Titel für den Termin ein';
-  if (!newStartDate.value) return 'Bitte wähle ein Startdatum aus';
-  return undefined;
-});
-
-const editTitleTouched = ref(false);
-const showEditTitleError = computed(() => editTitleTouched.value && !editForm.value.title.trim());
-
-const canSaveEditScheduleItem = computed(
-  () => !!editForm.value.title.trim() && !isItemUploadingAttachments.value
-);
-const editScheduleItemTooltip = computed(() => {
-  if (isItemUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
-  if (!editForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Termin ein';
-  return undefined;
-});
-
-// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): das Create-Formular besteht
-// (anders als in den meisten anderen Domänen) aus lauter einzelnen Refs statt eines Objekt-Refs -
-// ein schreibbarer computed() bündelt sie zu einem einzigen Ref-kompatiblen Objekt, das die
-// composable direkt lesen/überschreiben kann.
-const newFormBundle = computed<Record<string, unknown>>({
-  get: () => ({
-    newStartDate: newStartDate.value,
-    newTime: newTime.value,
-    newEndTime: newEndTime.value,
-    newTitle: newTitle.value,
-    newNote: newNote.value,
-    newEndDate: newEndDate.value,
-    newLocation: newLocation.value,
-    newMapsLink: newMapsLink.value,
-    newLinkKey: newLinkKey.value,
-  }),
-  set: (v) => {
-    newStartDate.value = (v.newStartDate as string) ?? '';
-    newTime.value = (v.newTime as string) ?? '';
-    newEndTime.value = (v.newEndTime as string) ?? '';
-    newTitle.value = (v.newTitle as string) ?? '';
-    newNote.value = (v.newNote as string) ?? '';
-    newEndDate.value = (v.newEndDate as string) ?? '';
-    newLocation.value = (v.newLocation as string) ?? '';
-    newMapsLink.value = (v.newMapsLink as string) ?? '';
-    newLinkKey.value = (v.newLinkKey as string) ?? '';
+// 3. Kalenderraster-Navigation & Datumsauswahl
+const {
+  granularity,
+  selectedDate,
+  canGoPrev,
+  canGoNext,
+  prevPageLabel,
+  nextPageLabel,
+  visibleRangeLabel,
+  prevPage,
+  nextPage,
+  isTodayActive,
+  isTripActive,
+  jumpToToday,
+  goToTripDates,
+  weekdayHeaders,
+  calendarTransitionName,
+  calendarPageKey,
+  visibleWeeks,
+  selectDay,
+  initNavigation,
+  formatDay,
+  isToday,
+  isTripDate,
+} = useCalendarNavigation({
+  trip,
+  entriesForDate,
+  accommodationsForDate,
+  weatherEntriesFor,
+  onSelectDay: (date) => {
+    const pending = drawers.pendingSchedule;
+    if (!pending) return;
+    void finishPendingSchedule(pending, date);
   },
 });
-const newDraft = useDraftAutosave('schedule:new', newFormBundle, showAddForm);
 
-const editingItem = ref<ScheduleItem | null>(null);
-const isItemUploadingAttachments = ref(false);
-const viewingItem = ref<ScheduleItem | null>(null);
-
-watch(
-  [() => scheduleStore.selectedItemId, () => scheduleStore.items],
-  ([id]) => {
-    if (id != null) {
-      const item = scheduleStore.items.find((i: ScheduleItem) => i.id === id);
-      if (item) {
-        viewingItem.value = item;
-      }
-    }
-  },
-  { immediate: true }
-);
-
-watch(viewingItem, (val) => {
-  if (val === null && scheduleStore.selectedItemId !== null) {
-    scheduleStore.closeDetail();
-  }
-});
-const editForm = ref({
-  time: '',
-  endTime: '',
-  title: '',
-  note: '',
-  endDate: '',
-  location: '',
-  mapsLink: '',
-  linkKey: '',
-});
-const editDraft = useDraftAutosave(
-  () => `schedule:edit:${editingItem.value?.id}`,
+// 4. Formular für neue/bearbeitete Termine
+const {
+  placeNames,
+  newStartDate,
+  newTime,
+  newEndTime,
+  newTitle,
+  newNote,
+  newEndDate,
+  newLocation,
+  newMapsLink,
+  newLinkKey,
+  showAddForm,
+  showAddLocationSection,
+  newTitleTouched,
+  newStartDateTouched,
+  showNewTitleError,
+  showNewStartDateError,
+  canAddScheduleItem,
+  addScheduleItemTooltip,
+  newDraft,
+  openAddForm,
+  closeAddForm,
+  discardNewDraft,
+  addItem,
+  editingItem,
+  isItemUploadingAttachments,
+  showEditLocationSection,
+  editTitleTouched,
   editForm,
-  computed(() => editingItem.value !== null)
-);
+  showEditTitleError,
+  canSaveEditScheduleItem,
+  editScheduleItemTooltip,
+  editDraft,
+  startEdit,
+  submitEdit,
+  closeEditForm,
+  discardEditDraft,
+  deleteEditingItem,
+} = useScheduleItemForm({ selectedDate });
 
-function parseLinkKey(key: string): { spot_id: number | null; idea_id: number | null } {
-  if (key.startsWith('spot:')) return { spot_id: Number(key.slice('spot:'.length)), idea_id: null };
-  if (key.startsWith('idea:')) return { spot_id: null, idea_id: Number(key.slice('idea:'.length)) };
-  return { spot_id: null, idea_id: null };
-}
-
-function linkKeyFor(item: Pick<ScheduleItem, 'spot_id' | 'idea_id'>): string {
-  if (item.spot_id != null) return `spot:${item.spot_id}`;
-  if (item.idea_id != null) return `idea:${item.idea_id}`;
-  return '';
-}
-
-function titleForLinkKey(key: string): string | null {
-  const { spot_id, idea_id } = parseLinkKey(key);
-  if (spot_id != null) return spotsStore.spots.find((s) => s.id === spot_id)?.title ?? null;
-  if (idea_id != null)
-    return excursionsStore.excursions.find((e) => e.id === idea_id)?.title ?? null;
-  return null;
-}
-
-// Übernimmt den Titel des verknüpften Spots/der Tour als Vorschlag, sobald eine Verknüpfung
-// gewählt wird – nur falls noch kein eigener Titel eingetippt wurde, damit ein bereits getippter
-// Titel nicht überschrieben wird.
-watch(newLinkKey, (key) => {
-  const t = key && titleForLinkKey(key);
-  if (t && !newTitle.value.trim()) newTitle.value = t;
-});
-watch(
-  () => editForm.value.linkKey,
-  (key) => {
-    const t = key && titleForLinkKey(key);
-    if (t && !editForm.value.title.trim()) editForm.value.title = t;
-  }
-);
-
-// Wählt man einen bekannten Ort aus der Vorschlagsliste (Combobox, exakter Namenstreffer), wird
-// automatisch dessen Maps-Link übernommen – die bestehende parseLatLngFromMapsLink()-Logik beim
-// Speichern (toBody/addItem/submitEdit weiter unten) ermittelt daraus dann wie gewohnt die
-// Koordinaten, ganz ohne eigene Zusatzlogik.
-function placeMapsLinkFor(name: string): string | null {
-  return spotsStore.spots.find((s) => s.title === name)?.maps_link ?? null;
-}
-watch(newLocation, (name) => {
-  const mapsLink = placeMapsLinkFor(name);
-  if (mapsLink) newMapsLink.value = mapsLink;
-});
-watch(
-  () => editForm.value.location,
-  (name) => {
-    const mapsLink = placeMapsLinkFor(name);
-    if (mapsLink) editForm.value.mapsLink = mapsLink;
-  }
-);
-
-// "Zum eigenen Kalender hinzufügen"-Menü: welcher Eintrag (per key) hat sein Menü gerade offen –
-// gilt für ALLE Eintrags-Arten (echte wie automatisch erzeugte), nicht nur editierbare Termine.
-// Per Teleport außerhalb der (scrollbaren, auf Desktop in der Kalender-Schublade begrenzten) Liste
-// gerendert und per position:fixed anhand der Button-Position platziert statt relativ zum Button zu
-// hängen – dasselbe Muster wie MapsAppPicker.vue, das genau dieses Abschneiden durch einen
-// scrollbaren/größenbegrenzten Vorfahren löst. top wird zusätzlich nach dem ersten Render anhand der
-// tatsächlichen Menühöhe an den unteren Viewport-Rand geklemmt (MapsAppPicker.vue klemmt nur
-// horizontal, hier war das vertikale Abschneiden der eigentliche Bug).
-const calendarPickerKey = ref<string | null>(null);
-const calendarPickerStyle = ref({ top: '0px', left: '0px' });
-
-async function toggleCalendarPicker(key: string, event: MouseEvent) {
-  if (calendarPickerKey.value === key) {
-    calendarPickerKey.value = null;
-    return;
-  }
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  calendarPickerKey.value = key;
-  calendarPickerStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.right - 188, window.innerWidth - 196))}px`,
-  };
-  await nextTick();
-  // Kein Template-ref: der Trigger-Button (und damit auch sein .picker-menu) steckt im v-for über
-  // die Termine – ein ref mit demselben Namen dort ergäbe ein Array statt eines einzelnen Elements.
-  // Da immer höchstens ein Menü gleichzeitig offen ist (calendarPickerKey), reicht ein simpler
-  // querySelector.
-  const menuRect = document.querySelector('.picker-menu')?.getBoundingClientRect();
-  if (menuRect && menuRect.bottom > window.innerHeight - 8) {
-    calendarPickerStyle.value = {
-      ...calendarPickerStyle.value,
-      top: `${Math.max(8, window.innerHeight - menuRect.height - 8)}px`,
-    };
-  }
-}
-function downloadIcsForEntry(entry: CalendarEntry) {
-  triggerIcsDownload(calendarEventFromEntry(entry));
-  calendarPickerKey.value = null;
-}
-
-async function loadAll() {
-  const tripId = tripStore.currentTripId;
-  if (tripId == null) return;
-  const [todosRes] = await Promise.all([
-    api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
-    spotsStore.load(),
-    scheduleStore.load(),
-  ]);
-  todos.value = todosRes;
-}
-
-// Nicht ein einzelner globaler Wetterort mehr, sondern je nach Tag ein anderer: an Urlaubstagen der
-// Urlaubsort (möglichst die an dem Tag aktive Unterkunft), an Nicht-Urlaubstagen zusätzlich Zuhause
-// (falls unter Reise > Orte als "Zuhause" hinterlegt) – siehe utils/dayWeather.ts. Nutzt denselben
-// modulweiten Cache wie DashboardView.vue (utils/weather.ts) – ein Besuch dort in derselben Session
-// erspart hier den erneuten Netzwerk-Request pro Ort.
-const home = computed(() => {
-  const p = spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null);
-  return p ? { lat: p.lat as number, lng: p.lng as number } : null;
+// 5. Detail-Ansicht für Termine
+const {
+  viewingItem,
+  viewingEntry,
+  viewingImageUrl,
+  viewingCollageImages,
+  viewingCategoryInfo,
+  viewingWeatherEntry,
+  viewingEffectiveCoords,
+  formatViewingDate,
+  linkedTitleFor,
+  navigateToLinkedEntity,
+  openAccommodationSpot,
+  editViewingItem,
+} = useScheduleItemDetail({
+  allEntries,
+  weatherEntriesFor,
+  onStartEdit: startEdit,
 });
 
-const weatherByLocation = ref<Map<string, DailyWeather[]>>(new Map());
+// 6. Kalender-Export Dropdown (Apple, Google, Outlook, Android)
+const { calendarPickerKey, calendarPickerStyle, toggleCalendarPicker, downloadIcsForEntry } =
+  useCalendarExportPicker();
 
-// Bewusst ohne eigenen Lade-/Fehlerzustand: Wetter ist hier nur ein optionales Extra je Tag, bei
-// Fehlschlag eines einzelnen Ortes (Promise.allSettled) bleiben nur dessen Badges weg statt den
-// ganzen Kalender mit einer Fehlermeldung zu blockieren.
-async function loadWeather() {
-  const locations = collectWeatherLocations(trip.value, home.value, accommodations.value);
-  const results = await Promise.allSettled(
-    locations.map(async (loc) => ({
-      key: loc.key,
-      days: await fetchWeatherForecast(loc.lat, loc.lng, weatherProvider.model),
-    }))
-  );
-  const map = new Map<string, DailyWeather[]>();
-  for (const result of results) {
-    if (result.status === 'fulfilled') map.set(result.value.key, result.value.days);
-  }
-  weatherByLocation.value = map;
-}
-
-function weatherEntriesFor(date: string): DayWeatherEntry[] {
-  return dayWeatherEntries(date, trip.value, accommodations.value, weatherByLocation.value);
-}
-
-// Markiert den Kalender als "gesehen" (Nav-Punkt verschwindet) – zusätzlich zum onMounted unten
-// auch bei jedem Öffnen der Desktop-Schublade nötig, da diese View (siehe Kommentar unten) nur
-// einmalig gemountet wird und onMounted daher beim bloßen Auf-/Zuklappen nicht erneut feuert.
-watch(
-  () => drawers.calendarOpen,
-  (open) => {
-    if (open) liveSync.markSeen('schedule');
-  }
-);
-
-onMounted(async () => {
-  liveSync.markSeen('schedule');
-  try {
-    await loadAll();
-  } catch {
-    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Kalender soll
-    // trotzdem rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für
-    // immer blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
-  }
-  loadWeather();
-  selectedDate.value = toLocalDateString(new Date());
-  // Beim ersten Laden direkt zur Woche mit dem heutigen Tag blättern statt bei der (ggf. Monate
-  // zurückliegenden) ersten Woche zu starten; liegt heute außerhalb des Kalenderbereichs (z. B.
-  // Urlaub komplett in der Vergangenheit/Zukunft ohne nahe ToDo-Fälligkeiten), zum Urlaubsstart.
-  if (!goToDate(toLocalDateString(new Date())) && trip.value?.start_date) {
-    goToDate(trip.value.start_date);
-    selectedDate.value = trip.value.start_date;
-    activeJumpTarget.value = 'trip';
-  } else {
-    activeJumpTarget.value = 'today';
-  }
-  loading.value = false;
-});
-
-// ScheduleView ist nicht mehr Teil des per Urlaub-Id gekeyten <router-view> (jetzt global
-// gemountete Schublade), muss also selbst auf einen Urlaubswechsel reagieren.
-watch(
-  () => tripStore.currentTripId,
-  async () => {
-    await loadAll();
-    loadWeather();
-  }
-);
-
-// Aktualisiert Aufgaben/Fälligkeiten im Kalender automatisch, wenn ToDos geändert werden.
-watch(() => liveSync.domainVersion.todos, loadAll);
-
-// Die Kalender-Schublade wird einmalig gemountet und bleibt danach dauerhaft im DOM (siehe
-// App.vue/Drawer.vue) – ohne dieses Signal würde ein nachträglich gesetzter Standort (z. B. über
-// den manuellen Karten-Picker, TripForm.vue/ExcursionsView.vue) nie erneut Wetter laden, da
-// onMounted (unten) nur einmal beim allerersten Mount läuft. drawers.touchLocations() wird von
-// Unterkunft-/Reise-/Ausflüge-/Urlaub-Sicht nach jedem erfolgreichen Anlegen/Bearbeiten eines Orts
-// aufgerufen (gleiches Muster wie TripMap.vue:772-778).
-watch(
-  () => drawers.locationsVersion,
-  async () => {
-    await loadAll();
-    loadWeather();
-  }
-);
-
-// Neu laden, sobald der Wetteranbieter in den Einstellungen gewechselt wird (siehe DashboardView.vue
-// für dieselbe Kopplung).
-watch(() => weatherProvider.model, loadWeather);
-
-function toIso(d: Date) {
-  return toLocalDateString(d);
-}
-
-function accommodationsForDate(date: string) {
-  return accommodations.value.filter(
-    (a) => a.start_date && a.end_date && a.start_date <= date && date <= a.end_date
-  );
-}
-
-const allEntries = computed(() =>
-  buildAllEntries(
-    scheduleStore.items,
-    trip.value,
-    todos.value,
-    travelItems.value,
-    excursionsStore.excursions,
-    spotsStore.spots
-  )
-);
-
-function entriesForDate(date: string) {
-  return allEntries.value
-    .filter((e) => e.date <= date && date <= e.endDate)
-    .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
-}
-
-// Blättern im Kalender: Die Granularität ist wählbar (Woche, 2 Wochen, Monat). In ALLEN Ansichten
-// kann unbegrenzt in die Vergangenheit und Zukunft geblättert werden.
-type PageGranularity = 'week' | 'twoWeeks' | 'month';
-const granularity = ref<PageGranularity>('month');
-
-interface DayCell {
-  date: string;
-  entries: CalendarEntry[];
-  accommodations: Spot[];
-  weatherEntries: DayWeatherEntry[];
-  otherMonth?: boolean;
-}
-
-function startOfMonth(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-// Anker für Monatsansicht (1. des angezeigten Monats) und Wochenansichten (Start der angezeigten Woche).
-const monthAnchor = ref(startOfMonth(new Date()));
-const weekAnchor = ref(startOfWeek(new Date()));
-
-// Erzeugt die 7 Tage einer Kalenderwoche ab dem übergebenen Starttag.
-function buildWeek(weekStartDate: Date): DayCell[] {
-  const result: DayCell[] = [];
-  const cursor = new Date(weekStartDate);
-  for (let i = 0; i < 7; i++) {
-    const iso = toIso(cursor);
-    result.push({
-      date: iso,
-      entries: entriesForDate(iso),
-      accommodations: accommodationsForDate(iso),
-      weatherEntries: weatherEntriesFor(iso),
-      otherMonth: false,
-    });
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return result;
-}
-
-// Baut ein vollständiges Kalendermonat-Raster: Wochenanfang der Woche mit dem 1. bis Wochenende der
-// Woche mit dem letzten Tag des Monats (führende/nachfolgende Tage aus Nachbarmonaten füllen das
-// Raster auf volle Wochen auf, wie bei jedem üblichen Monatskalender – als otherMonth markiert,
-// siehe CalendarWeek.vue). Wochenanfang respektiert die Einstellung (Standard: Montag).
-const monthWeeks = computed<DayCell[][]>(() => {
-  const year = monthAnchor.value.getFullYear();
-  const month = monthAnchor.value.getMonth();
-  const firstOfMonth = new Date(year, month, 1);
-  const lastOfMonth = new Date(year, month + 1, 0);
-
-  const gridStart = startOfWeek(firstOfMonth);
-  const gridEnd = endOfWeek(lastOfMonth);
-
-  const result: DayCell[][] = [];
-  let week: DayCell[] = [];
-  const cursor = new Date(gridStart);
-  while (cursor <= gridEnd) {
-    const iso = toIso(cursor);
-    week.push({
-      date: iso,
-      entries: entriesForDate(iso),
-      accommodations: accommodationsForDate(iso),
-      weatherEntries: weatherEntriesFor(iso),
-      otherMonth: cursor.getMonth() !== month,
-    });
-    if (week.length === 7) {
-      result.push(week);
-      week = [];
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return result;
-});
-
-const monthLabel = computed(() =>
-  monthAnchor.value.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
-);
-
-const visibleWeeks = computed<DayCell[][]>(() => {
-  if (granularity.value === 'month') {
-    return monthWeeks.value;
-  }
-  const count = granularity.value === 'twoWeeks' ? 2 : 1;
-  const result: DayCell[][] = [];
-  const cursor = new Date(startOfWeek(weekAnchor.value));
-  for (let w = 0; w < count; w++) {
-    result.push(buildWeek(cursor));
-    cursor.setDate(cursor.getDate() + 7);
-  }
-  return result;
-});
-
-// In allen Ansichten kann unbegrenzt vor- und zurückgeblättert werden
-const canGoPrev = computed(() => true);
-const canGoNext = computed(() => true);
-
-type CalendarSlideDirection = 'next' | 'prev' | 'fade';
-const slideDirection = ref<CalendarSlideDirection>('next');
-
-const calendarPageKey = computed(() => {
-  if (granularity.value === 'month') {
-    return `month-${monthAnchor.value.getFullYear()}-${monthAnchor.value.getMonth()}`;
-  }
-  return `${granularity.value}-${toIso(weekAnchor.value)}`;
-});
-
-const calendarTransitionName = computed(() => `calendar-slide-${slideDirection.value}`);
-
-function determineSlideDirection(targetIso: string): CalendarSlideDirection {
-  if (granularity.value === 'month') {
-    const targetYearMonth = targetIso.slice(0, 7);
-    const currentYear = monthAnchor.value.getFullYear();
-    const currentMonth = String(monthAnchor.value.getMonth() + 1).padStart(2, '0');
-    const currentYearMonth = `${currentYear}-${currentMonth}`;
-    if (targetYearMonth > currentYearMonth) return 'next';
-    if (targetYearMonth < currentYearMonth) return 'prev';
-    return 'fade';
-  } else {
-    const currentIso = toIso(weekAnchor.value);
-    const count = granularity.value === 'twoWeeks' ? 14 : 7;
-    const end = new Date(weekAnchor.value);
-    end.setDate(end.getDate() + count - 1);
-    const endIso = toIso(end);
-    if (targetIso > endIso) return 'next';
-    if (targetIso < currentIso) return 'prev';
-    return 'fade';
-  }
-}
-
-const prevPageLabel = computed(() => {
-  if (granularity.value === 'month') return 'Vorheriger Monat';
-  if (granularity.value === 'twoWeeks') return 'Vorherige 2 Wochen';
-  return 'Vorherige Woche';
-});
-
-const nextPageLabel = computed(() => {
-  if (granularity.value === 'month') return 'Nächster Monat';
-  if (granularity.value === 'twoWeeks') return 'Nächste 2 Wochen';
-  return 'Nächste Woche';
-});
-
-const visibleRangeLabel = computed(() => {
-  if (granularity.value === 'month') return monthLabel.value;
-  if (!visibleWeeks.value.length) return '';
-  const first = visibleWeeks.value[0][0]?.date;
-  const lastWeek = visibleWeeks.value[visibleWeeks.value.length - 1];
-  const last = lastWeek[lastWeek.length - 1]?.date;
-  if (!first || !last) return '';
-  const currentYear = new Date().getFullYear();
-  const firstYear = new Date(`${first}T00:00:00`).getFullYear();
-  const lastYear = new Date(`${last}T00:00:00`).getFullYear();
-  const includeYear =
-    firstYear !== currentYear || lastYear !== currentYear || firstYear !== lastYear;
-  const fmt = (d: string) => formatDateShared(d, { includeYear });
-  return `${fmt(first)} – ${fmt(last)}`;
-});
-
-function prevMonth() {
-  monthAnchor.value = new Date(
-    monthAnchor.value.getFullYear(),
-    monthAnchor.value.getMonth() - 1,
-    1
-  );
-}
-function nextMonth() {
-  monthAnchor.value = new Date(
-    monthAnchor.value.getFullYear(),
-    monthAnchor.value.getMonth() + 1,
-    1
-  );
-}
-
-function prevPage() {
-  slideDirection.value = 'prev';
-  activeJumpTarget.value = null;
-  if (granularity.value === 'month') {
-    prevMonth();
-  } else if (granularity.value === 'twoWeeks') {
-    const d = new Date(weekAnchor.value);
-    d.setDate(d.getDate() - 14);
-    weekAnchor.value = startOfWeek(d);
-  } else {
-    const d = new Date(weekAnchor.value);
-    d.setDate(d.getDate() - 7);
-    weekAnchor.value = startOfWeek(d);
-  }
-}
-
-function nextPage() {
-  slideDirection.value = 'next';
-  activeJumpTarget.value = null;
-  if (granularity.value === 'month') {
-    nextMonth();
-  } else if (granularity.value === 'twoWeeks') {
-    const d = new Date(weekAnchor.value);
-    d.setDate(d.getDate() + 14);
-    weekAnchor.value = startOfWeek(d);
-  } else {
-    const d = new Date(weekAnchor.value);
-    d.setDate(d.getDate() + 7);
-    weekAnchor.value = startOfWeek(d);
-  }
-}
-
-// Übernimmt beim Wechsel der Granularität den bisher sichtbaren Zeitraum als neuen Anker, statt
-// unvermittelt zu einem unabhängigen Datum zu springen:
-// - Wechsel zu Monat: übernimmt selectedDate (falls in der angezeigten Woche) bzw. die angezeigte Woche
-// - Wechsel zu Woche / 2 Wochen: übernimmt selectedDate (falls im angezeigten Monat) bzw. den 1. des Monats
-watch(granularity, (next, prev) => {
-  slideDirection.value = 'fade';
-  if (next === 'month' && prev !== 'month') {
-    const weekStartIso = toIso(startOfWeek(weekAnchor.value));
-    const count = prev === 'twoWeeks' ? 14 : 7;
-    const endDate = new Date(startOfWeek(weekAnchor.value));
-    endDate.setDate(endDate.getDate() + count - 1);
-    const weekEndIso = toIso(endDate);
-
-    const isSelectedInWeek =
-      !!selectedDate.value &&
-      selectedDate.value >= weekStartIso &&
-      selectedDate.value <= weekEndIso;
-
-    const anchor = isSelectedInWeek ? selectedDate.value! : toIso(weekAnchor.value);
-    monthAnchor.value = startOfMonth(new Date(`${anchor}T00:00:00`));
-  } else if (prev === 'month' && next !== 'month') {
-    const yearMonth = `${monthAnchor.value.getFullYear()}-${String(monthAnchor.value.getMonth() + 1).padStart(2, '0')}`;
-    const isSelectedInMonth = selectedDate.value?.startsWith(yearMonth);
-    const anchor = isSelectedInMonth ? selectedDate.value! : toIso(monthAnchor.value);
-    weekAnchor.value = startOfWeek(new Date(`${anchor}T00:00:00`));
-  }
-});
-
-// Springt so, dass die Woche mit dem übergebenen Datum angezeigt wird bzw. der entsprechende Monat.
-function goToDate(dateIso: string): boolean {
-  const d = new Date(`${dateIso}T00:00:00`);
-  monthAnchor.value = startOfMonth(d);
-  weekAnchor.value = startOfWeek(d);
-  return true;
-}
-
-// Aktiver Sprung-Fokus ('today' | 'trip' | null) für die optische Hervorhebung der Buttons (#audit)
-const activeJumpTarget = ref<'today' | 'trip' | null>(null);
-
-const isTodayActive = computed(() => {
-  const today = toLocalDateString(new Date());
-  const todayVisible = visibleWeeks.value.some((week) => week.some((day) => day.date === today));
-  if (!todayVisible) return false;
-  if (activeJumpTarget.value === 'today') return true;
-  if (activeJumpTarget.value === 'trip') return false;
-  return selectedDate.value === today;
-});
-
-const isTripActive = computed(() => {
-  if (!trip.value?.start_date) return false;
-  const tripStartDate = trip.value.start_date;
-  const tripStartVisible = visibleWeeks.value.some((week) =>
-    week.some((day) => day.date === tripStartDate)
-  );
-  if (!tripStartVisible) return false;
-  if (activeJumpTarget.value === 'trip') return true;
-  if (activeJumpTarget.value === 'today') return false;
-  return selectedDate.value === tripStartDate;
-});
-
-function jumpToToday() {
-  activeJumpTarget.value = 'today';
-  const today = toLocalDateString(new Date());
-  slideDirection.value = determineSlideDirection(today);
-  goToDate(today);
-  selectDay(today);
-}
-
-function goToTripDates() {
-  activeJumpTarget.value = 'trip';
-  if (trip.value?.start_date) {
-    slideDirection.value = determineSlideDirection(trip.value.start_date);
-    goToDate(trip.value.start_date);
-    selectDay(trip.value.start_date);
-  }
-}
-
+// Tages-Detailberechnungen
 const dayEntries = computed(() => (selectedDate.value ? entriesForDate(selectedDate.value) : []));
-
-function showDayOnMap() {
-  if (!selectedDate.value) return;
-  drawers.focusMapOnDate(selectedDate.value);
-  // Analog zur Touren-Schublade (drawers.openMapForExcursion): Schublade schließen, damit die
-  // gerade fokussierte Karte sofort sichtbar ist statt (v. a. mobil als Vollbild-Overlay) verdeckt
-  // zu bleiben.
-  drawers.calendarOpen = false;
-}
-
 const dayAccommodations = computed(() =>
   selectedDate.value ? accommodationsForDate(selectedDate.value) : []
 );
-
 const selectedDateWeatherEntries = computed(() =>
   selectedDate.value ? weatherEntriesFor(selectedDate.value) : []
 );
 
-// Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser als Button):
-// wartet ein Einplanen-Vorhaben (drawers.pendingSchedule, per Klick auf den Anfasser gesetzt), löst
-// der nächste Tages-Klick es auf, statt nur den Tag auszuwählen. mode 'confirm-done' (#106) setzt
-// danach zusätzlich den "gemacht"-Status, siehe finishPendingSchedule.
-function selectDay(date: string) {
-  selectedDate.value = date;
-  const today = toLocalDateString(new Date());
-  if (date === today) {
-    activeJumpTarget.value = 'today';
-  } else if (trip.value?.start_date && date === trip.value.start_date) {
-    activeJumpTarget.value = 'trip';
-  } else {
-    activeJumpTarget.value = null;
-  }
-  const pending = drawers.pendingSchedule;
-  if (!pending) return;
-  void finishPendingSchedule(pending, date);
-}
-
-async function finishPendingSchedule(
-  pending: { kind: 'excursion' | 'spot'; id: number; mode: 'plan' | 'confirm-done' },
-  date: string
-) {
-  if (pending.kind === 'excursion') {
-    await excursionsStore.setDate(pending.id, date);
-    if (pending.mode === 'confirm-done') await excursionsStore.setDone(pending.id, true);
-  } else {
-    // Spot direkt einplanen: legt einen mit dem Spot verknüpften Termin an (statt wie früher
-    // einen unsichtbaren Ein-Spot-Ausflug), siehe stores/schedule.ts.
-    const spot = spotsStore.spots.find((s) => s.id === pending.id);
-    if (spot && tripStore.currentTripId != null) {
-      if (pending.mode === 'confirm-done') {
-        await scheduleStore.setSpotDate(
-          pending.id,
-          tripStore.currentTripId,
-          spot.title,
-          date,
-          true
-        );
-        await spotsStore.setDone(pending.id, true);
-      } else {
-        await scheduleStore.create({
-          trip_id: tripStore.currentTripId,
-          date,
-          title: spot.title,
-          spot_id: spot.id,
-          auto_created: 1,
-          user_modified: 0,
-        });
-      }
-    }
-  }
-  drawers.clearPendingSchedule();
-  returnToCard(pending.kind, pending.id);
-}
-
-// Abbrechen-Button im Banner unten (#106: sowohl beim spontanen Einplanen als auch beim
-// Kalender-Bestätigungs-Flow für "gemacht" muss sich der Vorgang ohne Änderung abbrechen lassen).
-function cancelPendingSchedule() {
-  const pending = drawers.pendingSchedule;
-  if (!pending) return;
-  drawers.clearPendingSchedule();
-  returnToCard(pending.kind, pending.id);
-}
-
-// #106: nach dem Einplanen/Bestätigen (oder Abbrechen) zurück zur Karten-Ansicht mit dem jeweiligen
-// Spot/der jeweiligen Tour, statt (v. a. mobil, wo der Kalender eine eigenständige Seite ist, siehe
-// standalone-Prop) im Kalender hängen zu bleiben. Nutzt denselben Querverweis-Hash-Mechanismus wie
-// sonstige Cross-View-Sprünge (siehe utils/hashHighlight.ts) - ExcursionsView.vue klappt/scrollt die
-// Karte darüber automatisch auf. Auf Desktop (Kalender nur eine Seitenschublade neben dem weiterhin
-// sichtbaren Hauptinhalt) ist kein Rücksprung nötig.
-function returnToCard(kind: 'excursion' | 'spot', id: number) {
-  if (!props.standalone) return;
-  router.push(`/excursions#${kind}-${id}`);
-}
-
-const pendingScheduleLabel = computed(() => {
-  const pending = drawers.pendingSchedule;
-  if (!pending) return null;
-  if (pending.kind === 'excursion')
-    return excursionsStore.excursions.find((e) => e.id === pending.id)?.title ?? null;
-  return spotsStore.spots.find((s) => s.id === pending.id)?.title ?? null;
-});
-
-// Ausflüge werden direkt aus der Ausflüge-Sicht per Drag&Drop hierher gezogen (ExcursionCard.vue) –
-// legt/aktualisiert im Hintergrund den mit der Tour verknüpften Termin (routes/ideas.ts), ohne
-// dass sich hier am Aufruf selbst etwas ändert.
-function onDropExcursion(date: string, excursionId: number) {
-  excursionsStore.setDate(excursionId, date);
-}
-
-// Öffnet den "Termin anlegen"-Dialog (jetzt global im Kalender-Werkzeugleiste statt an den
-// ausgewählten Tag gebunden, siehe Vorlage) – ist ein Tag bereits ausgewählt, wird er als
-// Startdatum vorausgefüllt, sonst bleibt das Feld leer und muss manuell gesetzt werden.
-function openAddForm() {
-  newTitleTouched.value = false;
-  newStartDateTouched.value = false;
-  newStartDate.value = selectedDate.value ?? '';
-  showAddLocationSection.value = !!(newLinkKey.value || newLocation.value || newMapsLink.value);
-  showAddForm.value = true;
-}
-
-function closeAddForm() {
-  newTitleTouched.value = false;
-  newStartDateTouched.value = false;
-  showAddForm.value = false;
-  showAddLocationSection.value = false;
-  newStartDate.value = '';
-  newTime.value = '';
-  newEndTime.value = '';
-  newTitle.value = '';
-  newNote.value = '';
-  newEndDate.value = '';
-  newLocation.value = '';
-  newMapsLink.value = '';
-  newLinkKey.value = '';
-  newDraft.clear();
-}
-
-function discardNewDraft() {
-  newTitleTouched.value = false;
-  newStartDateTouched.value = false;
-  showAddLocationSection.value = false;
-  newStartDate.value = '';
-  newTime.value = '';
-  newEndTime.value = '';
-  newTitle.value = '';
-  newNote.value = '';
-  newEndDate.value = '';
-  newLocation.value = '';
-  newMapsLink.value = '';
-  newLinkKey.value = '';
-  newDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
-}
-
-// Ein direkt über den Schedule-Store angelegter/geänderter/gelöschter, mit einer Tour verknüpfter
-// Termin verändert deren abgeleitetes Datum (schedule_items.idea_id, siehe routes/ideas.ts) –
-// excursionsStore hält davon aber eine eigene, unabhängig geladene Kopie (Excursion.date), die
-// sich ohne diesen Refresh nicht von selbst aktualisieren würde (im Unterschied zu
-// excursionsStore.setDate/PUT /ideas/:id, das die eigene Kopie direkt mitaktualisiert).
-async function syncExcursionsIfLinked(...ideaIds: (number | null | undefined)[]) {
-  if (ideaIds.some((id) => id != null)) await excursionsStore.load();
-}
-
-async function addItem() {
-  if (!newStartDate.value || !newTitle.value.trim() || tripStore.currentTripId == null) {
-    if (!newTitle.value.trim()) newTitleTouched.value = true;
-    if (!newStartDate.value) newStartDateTouched.value = true;
-    return;
-  }
-  const parsed = parseLatLngFromMapsLink(newMapsLink.value);
-  const { spot_id, idea_id } = parseLinkKey(newLinkKey.value);
-  const linked = spot_id != null || idea_id != null;
-  await scheduleStore.create({
-    trip_id: tripStore.currentTripId,
-    date: newStartDate.value,
-    end_date: newEndDate.value || undefined,
-    time: newTime.value || undefined,
-    end_time: newEndTime.value || undefined,
-    title: newTitle.value.trim(),
-    note: newNote.value || undefined,
-    // Verknüpfter Spot/Tour liefert den Standort selbst (routes/schedule.ts) – Freitext-Felder
-    // bleiben dafür unbenutzt (siehe auch v-if in der Vorlage, die sie in dem Fall ausblendet).
-    location: linked ? undefined : newLocation.value || undefined,
-    maps_link: linked ? undefined : newMapsLink.value || undefined,
-    lat: linked ? undefined : parsed?.lat,
-    lng: linked ? undefined : parsed?.lng,
-    spot_id,
-    idea_id,
-  });
-  await syncExcursionsIfLinked(idea_id);
-  closeAddForm();
-}
-
-function startEdit(item: ScheduleItem) {
-  editTitleTouched.value = false;
-  editForm.value = {
-    time: item.time ?? '',
-    endTime: item.end_time ?? '',
-    title: item.title,
-    note: item.note ?? '',
-    endDate: item.end_date ?? '',
-    location: item.location ?? '',
-    mapsLink: item.maps_link ?? '',
-    linkKey: linkKeyFor(item),
-  };
-  showEditLocationSection.value = !!(
-    editForm.value.linkKey ||
-    editForm.value.location ||
-    editForm.value.mapsLink
-  );
-  editingItem.value = item;
-}
-
-async function submitEdit() {
-  if (!editForm.value.title.trim()) {
-    editTitleTouched.value = true;
-    return;
-  }
-  if (!editingItem.value || isItemUploadingAttachments.value || tripStore.currentTripId == null)
-    return;
-  const parsed = parseLatLngFromMapsLink(editForm.value.mapsLink);
-  const { spot_id, idea_id } = parseLinkKey(editForm.value.linkKey);
-  const linked = spot_id != null || idea_id != null;
-  const previousIdeaId = editingItem.value.idea_id;
-  await scheduleStore.update(editingItem.value.id, {
-    trip_id: tripStore.currentTripId,
-    date: editingItem.value.date,
-    end_date: editForm.value.endDate || undefined,
-    time: editForm.value.time || undefined,
-    end_time: editForm.value.endTime || undefined,
-    title: editForm.value.title.trim(),
-    note: editForm.value.note || undefined,
-    location: linked ? undefined : editForm.value.location || undefined,
-    maps_link: linked ? undefined : editForm.value.mapsLink || undefined,
-    lat: linked ? undefined : (parsed?.lat ?? editingItem.value.lat ?? undefined),
-    lng: linked ? undefined : (parsed?.lng ?? editingItem.value.lng ?? undefined),
-    spot_id,
-    idea_id,
-    user_modified: 1,
-  });
-  // Beide IDs (alt UND neu): eine Tour-Verknüpfung kann sich ändern (andere Tour ausgewählt) oder
-  // ganz entfernt werden – in beiden Fällen muss die vorher verknüpfte Tour ihr Datum verlieren.
-  await syncExcursionsIfLinked(previousIdeaId, idea_id);
-  editDraft.clear();
-  editingItem.value = null;
-}
-
-function closeEditForm() {
-  editTitleTouched.value = false;
-  editDraft.clear();
-  editingItem.value = null;
-  showEditLocationSection.value = false;
-}
-
-function discardEditDraft() {
-  if (!editingItem.value) return;
-  startEdit(editingItem.value);
-  editDraft.clear();
-  showToast({ message: 'Änderungen verworfen.', type: 'info' });
+function showDayOnMap() {
+  if (!selectedDate.value) return;
+  drawers.focusMapOnDate(selectedDate.value);
+  drawers.calendarOpen = false;
 }
 
 function jumpToTrip() {
@@ -987,245 +202,23 @@ function jumpToTrip() {
 
 function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') jumpToTrip();
-  // Hash-Sprung (#todo-<id>/#travel-<id>) statt bloß der Ziel-Route: TodoView.vue/ExcursionsView.vue
-  // fokussieren das Ziel über hashHighlightId() gezielt in Brand-Farbe, der Router scrollt
-  // automatisch zum Element mit dieser id (siehe router/index.ts's scrollBehavior).
   else if (entry.kind === 'todo') {
     drawers.calendarOpen = false;
     router.push(`/listen?tab=todo#todo-${entry.todoId}`);
-  }
-  // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bleibt zwar ein echter,
-  // schedule_items-basierter kind:'schedule'-Eintrag (siehe calendarEntries.ts), springt beim Klick
-  // aber weiterhin direkt zur Tour-Karte statt den generischen Termin-Dialog zu öffnen - dieselbe
-  // Optik wie vor der Zusammenlegung. Seit #196 (frühere eigene "Reise"-Gruppierung entfernt) über
-  // denselben #excursion-<id>-Hash wie jede andere Tour (ExcursionsView.vue's
-  // onFocusExcursionFromMap).
-  else if (entry.category === 'travel' && entry.ideaId != null) {
+  } else if (entry.category === 'travel' && entry.ideaId != null) {
     drawers.openMapForExcursion(entry.ideaId);
     drawers.calendarOpen = false;
     router.push(`/excursions#excursion-${entry.ideaId}`);
-  } else if (entry.kind === 'schedule') viewingItem.value = entry.scheduleItem;
+  } else if (entry.kind === 'schedule') {
+    viewingItem.value = entry.scheduleItem;
+  }
 }
 
-/** Für die Todo-Checkbox im Kalender (Tages-Detailliste + CalendarWeek.vue's Kompaktzelle): der
- *  aktuelle Erledigt-Status kommt aus der bereits geladenen todos-Referenz, nicht aus
- *  CalendarEntry.done direkt (das speist nur die kompakte Zellen-Darstellung, siehe unten). */
-function entryDone(entry: CalendarEntry): boolean {
-  return !!todos.value.find((t) => t.id === entry.todoId)?.done;
-}
-
-async function toggleTodoDone(todoId: number) {
-  const todo = todos.value.find((t) => t.id === todoId);
-  if (!todo) return;
-  const updated = await api.put<TodoItem>(`/todos/${todoId}`, {
-    trip_id: tripStore.currentTripId,
-    title: todo.title,
-    assigned_to_user_id: todo.assigned_to_user_id,
-    due_date: todo.due_date ?? undefined,
-    period: todo.period ?? undefined,
-    priority: todo.priority,
-    note: todo.note ?? undefined,
-    done: !todo.done,
-  });
-  const idx = todos.value.findIndex((t) => t.id === todoId);
-  if (idx !== -1) todos.value[idx] = updated;
-}
-
-// Der Anzeige-Dialog (DetailModal) braucht dieselbe Icon-/Kategorie-Auflösung wie die Kalender-
-// Kärtchen selbst (Spot-/Tour-Verknüpfung, siehe calendarEntries.ts) – statt sie ein zweites Mal
-// separat zu berechnen, wird einfach der schon fertig berechnete CalendarEntry wiederverwendet.
-const viewingEntry = computed(() =>
-  viewingItem.value
-    ? (allEntries.value.find((e) => e.scheduleItem?.id === viewingItem.value!.id) ?? null)
-    : null
-);
-
-const viewingLinkedSpot = computed(() => {
-  const spotId = viewingEntry.value?.spotId ?? viewingItem.value?.spot_id;
-  if (spotId == null) return null;
-  return spotsStore.spots.find((s) => s.id === spotId) ?? null;
+onMounted(async () => {
+  await initCalendarData();
+  initNavigation();
+  loading.value = false;
 });
-
-const viewingLinkedExcursion = computed(() => {
-  const ideaId = viewingEntry.value?.ideaId ?? viewingItem.value?.idea_id;
-  if (ideaId == null) return null;
-  return excursionsStore.excursions.find((e) => e.id === ideaId) ?? null;
-});
-
-const viewingImageUrl = computed(() => {
-  if (viewingLinkedSpot.value?.image_url) {
-    return viewingLinkedSpot.value.image_url;
-  }
-  if (viewingLinkedExcursion.value?.image_url) {
-    return viewingLinkedExcursion.value.image_url;
-  }
-  return null;
-});
-
-const viewingCollageImages = computed<string[]>(() => {
-  if (viewingImageUrl.value) return [];
-  if (viewingLinkedExcursion.value?.spot_ids?.length) {
-    const urls: string[] = [];
-    for (const spotId of viewingLinkedExcursion.value.spot_ids) {
-      const spot = spotsStore.spots.find((s) => s.id === spotId);
-      if (spot?.image_url && !urls.includes(spot.image_url)) {
-        urls.push(spot.image_url);
-      }
-    }
-    return urls;
-  }
-  return [];
-});
-
-const viewingCategoryInfo = computed(() => {
-  if (viewingLinkedSpot.value) {
-    const meta = spotCategoryMeta(viewingLinkedSpot.value.category);
-    return {
-      label: viewingLinkedSpot.value.category || 'Ort',
-      icon: viewingEntry.value?.iconDef ?? meta.tabler,
-      themeColor: meta.color,
-      themeTint: undefined as string | undefined,
-    };
-  }
-  if (viewingLinkedExcursion.value) {
-    if (viewingLinkedExcursion.value.role) {
-      return {
-        label: viewingLinkedExcursion.value.transport_type || 'Reise',
-        icon: travelTypeIconDef(viewingLinkedExcursion.value.transport_type),
-        themeColor: 'var(--color-travel)',
-        themeTint: 'var(--color-travel-tint)',
-      };
-    }
-    return {
-      label: 'Tour',
-      icon: viewingEntry.value?.iconDef ?? SCHEDULE_CATEGORY_META.excursion.tabler,
-      themeColor: 'var(--color-tour)',
-      themeTint: 'var(--color-tour-tint)',
-    };
-  }
-  if (viewingEntry.value) {
-    const meta =
-      SCHEDULE_CATEGORY_META[viewingEntry.value.category] ?? SCHEDULE_CATEGORY_META.other;
-    return {
-      label: meta.label,
-      icon: viewingEntry.value.iconDef ?? meta.tabler,
-      themeColor: meta.color,
-      themeTint: undefined as string | undefined,
-    };
-  }
-  return {
-    label: 'Termin',
-    icon: SCHEDULE_CATEGORY_META.other.tabler,
-    themeColor: SCHEDULE_CATEGORY_META.other.color,
-    themeTint: undefined as string | undefined,
-  };
-});
-
-const viewingWeatherEntry = computed(() => {
-  if (!viewingItem.value?.date) return null;
-  const entries = weatherEntriesFor(viewingItem.value.date);
-  return entries.length > 0 ? entries[0] : null;
-});
-
-const viewingEffectiveCoords = computed(() => {
-  if (viewingItem.value?.lat != null && viewingItem.value?.lng != null) {
-    return {
-      lat: viewingItem.value.lat,
-      lng: viewingItem.value.lng,
-      mapsLink: viewingItem.value.maps_link,
-      title: viewingItem.value.title,
-    };
-  }
-  if (viewingLinkedSpot.value?.lat != null && viewingLinkedSpot.value?.lng != null) {
-    return {
-      lat: viewingLinkedSpot.value.lat,
-      lng: viewingLinkedSpot.value.lng,
-      mapsLink: viewingLinkedSpot.value.maps_link,
-      title: viewingLinkedSpot.value.title,
-    };
-  }
-  return null;
-});
-
-const weekdayShortFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
-
-function formatViewingDate(dateStr: string) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  return `${weekdayShortFormatter.format(d)}, ${formatDateShared(dateStr)}`;
-}
-
-function linkedTitleFor(entry: CalendarEntry | null): string | null {
-  if (!entry) return null;
-  if (entry.spotId != null)
-    return spotsStore.spots.find((s) => s.id === entry.spotId)?.title ?? null;
-  if (entry.ideaId != null)
-    return excursionsStore.excursions.find((e) => e.id === entry.ideaId)?.title ?? null;
-  return null;
-}
-
-function navigateToLinkedEntity() {
-  const entry = viewingEntry.value;
-  if (!entry) return;
-  viewingItem.value = null;
-  if (entry.spotId != null) {
-    drawers.openMapAt(`spot-${entry.spotId}`);
-    drawers.calendarOpen = false;
-    router.push(`/excursions#spot-${entry.spotId}`);
-  } else if (entry.ideaId != null) {
-    drawers.openMapForExcursion(entry.ideaId);
-    drawers.calendarOpen = false;
-    router.push(`/excursions#excursion-${entry.ideaId}`);
-  }
-}
-
-function openAccommodationSpot(spotId: number) {
-  drawers.openMapAt(`spot-${spotId}`);
-  drawers.calendarOpen = false;
-  router.push(`/excursions#spot-${spotId}`);
-}
-
-function editViewingItem() {
-  if (!viewingItem.value) return;
-  startEdit(viewingItem.value);
-  viewingItem.value = null;
-}
-
-async function deleteEditingItem() {
-  if (!editingItem.value || isItemUploadingAttachments.value) return;
-  const ideaId = editingItem.value.idea_id;
-  await scheduleStore.remove(editingItem.value.id);
-  showToast({ message: 'Termin gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
-  await syncExcursionsIfLinked(ideaId);
-  closeEditForm();
-}
-
-const calendarSettings = useCalendarSettingsStore();
-const weekdayHeaders = computed(() =>
-  calendarSettings.weekStart === 'sunday'
-    ? ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
-    : ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-);
-
-function isToday(dateStr: string) {
-  return dateStr === toLocalDateString(new Date());
-}
-
-function isTripDate(dateStr: string) {
-  if (!trip.value?.start_date || !trip.value?.end_date) return false;
-  return dateStr >= trip.value.start_date && dateStr <= trip.value.end_date;
-}
-
-function formatDay(date: string) {
-  return new Date(date).toLocaleDateString('de-DE', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-  });
-}
-
-function formatDate(date: string) {
-  return formatDateShared(date);
-}
 </script>
 
 <template>
