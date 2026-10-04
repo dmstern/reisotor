@@ -164,6 +164,8 @@ Alle drei Schichten (<script>, <template>, <style>) wurden in den Vorphasen übe
 1. Branch-weites Diff- & Konsolidierungs-Review:
    - Analysiere das gesamte Diff des aktuellen Branches gegen main (git diff main...HEAD --stat).
    - Prüfe auf Rest-Altlasten über alle Phasen hinweg: Gibt es verwaiste Imports, ungenutzte Types/Interfaces, tote CSS-Klassen oder versehentlich stehen gelassene Debug-Logs/Kommentare?
+   - Gezielter Altlasten-Scan: Suche nach temporären Unterstrich-Präfixen (z. B. `_store = useStore()`), die beim Auslagern in Phase 1 verwaist zurückblieben, sowie nach toten Selektoren aus früher durch Primitives ersetzten Ad-hoc-Elementen (z. B. `.info-dropdown` vs. `InfoPopover`).
+   - Scoped-CSS & Subkomponenten-Audit: Prüfe, ob Selektoren, die Kindkomponenten-Elemente ansprechen, korrekte `:deep()`-Selektoren nutzen oder ob Klassen direkt per Prop/Attribute an die Subkomponente übergeben werden, damit Responsive-Regeln in Breakpoints zuverlässig greifen.
    - Konsistenz-Check: Wurden Composables und Subkomponenten einheitlich benannt und modular in den vorgesehenen Verzeichnissen (frontend/src/composables/, frontend/src/components/...) abgelegt?
 
 2. Finale Verifikation & CI-Readiness:
