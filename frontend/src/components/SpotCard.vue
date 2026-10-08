@@ -1,26 +1,15 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-  type ComponentPublicInstance,
-} from 'vue';
-import type { ScheduleItem, Spot } from '../api/types';
+import { computed, ref, type ComponentPublicInstance } from 'vue';
+import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { parseContact } from '../utils/contact';
-import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
 import { IconFlag, IconFlagFilled } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
-import { usePointerDrag } from '../composables/usePointerDrag';
-import { useExcursionsStore } from '../stores/excursions';
-import { useScheduleStore } from '../stores/schedule';
-import { useSpotsStore } from '../stores/spots';
-import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
-import { useWeatherProviderStore } from '../stores/weatherProvider';
+import { useSpotWeather } from '../composables/useSpotWeather';
+import { useSpotTourAssignment } from '../composables/useSpotTourAssignment';
+import { useSpotCalendarDrag } from '../composables/useSpotCalendarDrag';
+import { useSpotDoneStatus } from '../composables/useSpotDoneStatus';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -42,9 +31,8 @@ import DetailRow from './primitives/DetailRow.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { formatTravelDuration } from '../utils/travelDuration';
-import { computePopoverPosition } from '../utils/popoverPosition';
 
 const props = withDefaults(
   defineProps<{
@@ -73,7 +61,7 @@ const props = withDefaults(
     // Ablageziele sichtbar sind (siehe onDragStart unten).
     groupMode: 'category' | 'tours';
     // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
-    tourOptions: string[];
+    tourOptions?: string[];
     hasMultipleMembers?: boolean;
     /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
     layoverMinutes?: number | null;
@@ -121,191 +109,50 @@ const emit = defineEmits<{
 }>();
 
 const showComments = ref(false);
-
-function formatDate(d: string) {
-  return formatDateShared(d, { includeYear: false });
-}
-
-// Wetter für den geplanten Tag direkt am Chip mit dem Datum (siehe Template) - eigener Fetch statt
-// Prop von der Elternview, da utils/weather.ts's fetchWeatherForecast() modulweit pro Koordinate+
-// Modell cached; mehrere Karten mit demselben Ort verursachen dadurch ohnehin nur einen echten
-// Request. Best effort wie überall sonst bei Wetter (siehe DashboardView.vue) - ein Fehlschlag
-// blendet nur das Wetter-Suffix aus, nicht die ganze Karte.
-//
-// #145: ohne geplantes Datum wird ersatzweise das AKTUELLE Wetter geholt (heutiges Datum) statt gar
-// keines zu zeigen - im Template klar als "Aktuelles Wetter" gekennzeichnet, damit es nicht mit
-// einer Vorhersage für einen bestimmten Tag verwechselt wird. Ein bereits als "gemacht" markierter
-// Spot ohne Datum (Altbestand vor #106/#147, siehe plannedDateLabel-Kommentar unten) zeigt bewusst
-// KEIN aktuelles Wetter - das wäre kein sinnvoller Bezug zu einem bereits vergangenen Besuch. Nur in
-// der aufgeklappten Karte geholt (props.expanded) - anders als beim geplanten Datum (typischerweise
-// wenige Spots) haben in der Mini-Card-Ansicht potenziell sehr viele Spots gar kein Datum; ein Fetch
-// pro sichtbarer Mini-Card würde unnötig viele Open-Meteo-Requests auf einmal auslösen.
-const excursionsStore = useExcursionsStore();
-const scheduleStore = useScheduleStore();
-const spotsStore = useSpotsStore();
-const tripStore = useTripStore();
 const drawers = useDrawersStore();
 
-const scheduledDatesForSpot = computed(() => {
-  const dates = new Set<string>();
-  for (const item of scheduleStore.items) {
-    if (item.spot_id === props.spot.id && item.date) {
-      if (item.end_date && item.end_date > item.date) {
-        let cur = new Date(`${item.date}T00:00:00`);
-        const end = new Date(`${item.end_date}T00:00:00`);
-        while (cur <= end) {
-          dates.add(toLocalDateString(cur));
-          cur.setDate(cur.getDate() + 1);
-        }
-      } else {
-        dates.add(item.date);
-      }
-    }
-  }
-  return dates;
+// Wetter für den geplanten Tag bzw. aktuelles Wetter
+const { scheduledDaysCount, dayWeather, plannedDateLabel } = useSpotWeather({
+  spot: () => props.spot,
+  scheduledDate: () => props.scheduledDate,
+  expanded: () => props.expanded,
 });
 
-const scheduledDaysCount = computed(() => scheduledDatesForSpot.value.size);
-
-const weatherProvider = useWeatherProviderStore();
-const weatherDate = computed(() => {
-  if (scheduledDaysCount.value > 1) return null;
-  if (props.scheduledDate) return props.scheduledDate;
-  if (props.spot.done || !props.expanded) return null;
-  return toLocalDateString(new Date());
-});
-const dayWeather = ref<DailyWeather | null>(null);
-watch(
-  () =>
-    [
-      weatherDate.value,
-      props.spot.lat,
-      props.spot.lng,
-      weatherProvider.model,
-      props.expanded,
-    ] as const,
-  async ([date, lat, lng, model]) => {
-    dayWeather.value = null;
-    if (!date || lat == null || lng == null) return;
-    try {
-      const days = await fetchMergedWeather(props.spot.trip_id, lat, lng, model);
-      dayWeather.value = days.find((d) => d.date === date) ?? null;
-    } catch {
-      // best effort, siehe Kommentar oben
-    }
-  },
-  { immediate: true }
-);
-
-// Nur noch das Datum als String - das Wetter (falls vorhanden) rendert das Template direkt über ein
-// eigenes AppIcon + Temperatur, statt es wie zuvor in einen einzigen, nicht auftrennbaren String
-// einzubacken (der hätte sich nicht zwischen Emoji/Tabler-Icon umschalten lassen).
-const plannedDateLabel = computed(() =>
-  props.scheduledDate ? formatDate(props.scheduledDate) : ''
-);
-
-// Tour-Zuordnungen als Checkliste (#226, #227):
-const tourAssignments = computed(() =>
-  excursionsStore.excursions.map((e) => ({
-    id: e.id,
-    title: e.title,
-    assigned: e.spot_ids.includes(props.spot.id),
-  }))
-);
-
-async function onToggleTour(excursionId: number) {
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (!excursion) return;
-  const isAssigned = excursion.spot_ids.includes(props.spot.id);
-  const nextSpotIds = isAssigned
-    ? excursion.spot_ids.filter((id) => id !== props.spot.id)
-    : [...excursion.spot_ids, props.spot.id];
-  await excursionsStore.update(excursionId, {
-    title: excursion.title,
-    image_url: excursion.image_url ?? undefined,
-    note: excursion.note ?? undefined,
-    date: excursion.date ?? undefined,
-    spot_ids: nextSpotIds,
+// Tour-Zuordnungen als Checkliste & natives Drag-and-Drop (#106, #226, #227)
+const { tourAssignments, onToggleTour, onCreateTour, onDragStart, onDragEnd } =
+  useSpotTourAssignment({
+    spot: () => props.spot,
+    groupMode: () => props.groupMode,
   });
-}
 
-async function onCreateTour(title: string) {
-  const trimmed = title.trim();
-  if (!trimmed) return;
-  await excursionsStore.create({
-    title: trimmed,
-    spot_ids: [props.spot.id],
-  });
-}
-
-// Natives Drag (Zuordnen zu einer Tour) startet über den Tour-Zuordnen-Anfasser (nur in Touren-Ansicht, #audit)
-function onDragStart(event: DragEvent) {
-  if (props.groupMode !== 'tours') {
-    event.preventDefault();
-    return;
-  }
-  drawers.draggingTourSpotId = props.spot.id;
-  event.dataTransfer?.setData('text/spot-id', String(props.spot.id));
-  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-}
-
-function onDragEnd() {
-  drawers.draggingTourSpotId = null;
-}
-
-function onWindowDragEnd() {
-  if (drawers.draggingTourSpotId != null) {
-    drawers.draggingTourSpotId = null;
-  }
-}
-onMounted(() => {
-  window.addEventListener('dragend', onWindowDragEnd);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener('dragend', onWindowDragEnd);
+// Spontanes Einplanen direkt auf einen Kalendertag via Pointer-Drag
+const { dragging, ghostStyle, onPointerDown } = useSpotCalendarDrag({
+  spot: () => props.spot,
 });
 
-// Spontanes Einplanen direkt auf einen Kalendertag, ohne vorher einen Ausflug anzulegen: legt
-// einen mit diesem Spot verknüpften Termin an (siehe stores/schedule.ts) statt (wie früher) im
-// Hintergrund einen unsichtbaren Ein-Spot-Ausflug – 1:1 nach dem Muster von ExcursionCard.vue's
-// 📅-Einplanen-Anfasser (eigener Pointer-Events-Drag statt nativem HTML5-DnD, da Letzteres auf
-// Touch-Geräten unzuverlässig ist). Eigenständig neben dem bestehenden nativen
-const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
-  onStart: () => {
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
-      drawers.calendarOpen = true;
-    }
-    document.body.classList.add('is-dragging-calendar');
-  },
-  onEnd: () => {
-    document.body.classList.remove('is-dragging-calendar');
-  },
-  onDrop: (targetEl) => {
-    const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
-    if (!dayEl?.dataset.date || tripStore.currentTripId == null) return;
-    scheduleStore.create({
-      trip_id: tripStore.currentTripId,
-      date: dayEl.dataset.date,
-      title: props.spot.title,
-      spot_id: props.spot.id,
-      auto_created: 1,
-      user_modified: 0,
-    });
-  },
-  // Klick-Alternative zum Drag: öffnet die Kalender-Schublade und merkt sich den Spot, der beim
-  // nächsten Tages-Klick eingeplant werden soll (siehe drawers.startPendingSchedule/
-  // ScheduleView.vue's selectDay()).
-  onTap: () => {
-    drawers.startPendingSchedule('spot', props.spot.id);
-  },
+// Erledigt-Status & Popover-Verwaltung (#106/#147)
+const {
+  scheduledItemsForSpot,
+  totalItemsCount,
+  doneItemsCount,
+  allItemsDone,
+  isSpotDone,
+  isSpotPartiallyDone,
+  datesPopoverOpen,
+  datesPopoverStyle,
+  unplannedPopoverOpen,
+  unplannedPopoverStyle,
+  unplannedDoneDate,
+  onToggleDone,
+  toggleScheduledItemDone,
+  submitUnplannedDone,
+  openCalendarConfirmDone,
+} = useSpotDoneStatus({
+  spot: () => props.spot,
+  scheduledDate: () => props.scheduledDate,
 });
 
-// Klick auf die Karte klappt sie nur auf-/zu, statt (wie zuvor) einen Modal-Dialog zu öffnen – die
-// direkt danebenliegende Karte (TripMap.vue) bleibt dadurch immer interaktiv, auch während man
-// sich die Details eines Spots ansieht. Fokussiert die Karte NICHT mehr automatisch (#109 - das
-// vermischte zwei unabhängige Absichten: "Detail ansehen" vs. "auf der Karte zeigen", Letzteres
-// schrumpfte dabei ungewollt ein bereits voll ausgefahrenes Sheet). Zuklappen hebt eine per
-// "Auf Karte anzeigen" gesetzte Hervorhebung auf diesen Spot trotzdem mit auf.
+// Klick auf die Karte klappt sie nur auf-/zu, statt einen Modal-Dialog zu öffnen
 const cardRoot = ref<ComponentPublicInstance | HTMLElement | null>(null);
 
 function getCardDomElement(event?: MouseEvent): HTMLElement | null {
@@ -333,117 +180,6 @@ function onShowOnMap() {
 }
 
 const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.id}`);
-
-const scheduledItemsForSpot = computed(() => {
-  return scheduleStore.items
-    .filter((i) => i.spot_id === props.spot.id && i.date)
-    .sort((a, b) => a.date.localeCompare(b.date));
-});
-
-const totalItemsCount = computed(() => scheduledItemsForSpot.value.length);
-const doneItemsCount = computed(() => scheduledItemsForSpot.value.filter((i) => !!i.done).length);
-const allItemsDone = computed(
-  () => totalItemsCount.value > 0 && doneItemsCount.value === totalItemsCount.value
-);
-const isSpotDone = computed(() => {
-  if (totalItemsCount.value > 0) return allItemsDone.value;
-  return !!props.spot.done;
-});
-const isSpotPartiallyDone = computed(() => {
-  return totalItemsCount.value > 1 && doneItemsCount.value > 0 && !allItemsDone.value;
-});
-
-const datesPopoverOpen = ref(false);
-const datesPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
-
-const unplannedPopoverOpen = ref(false);
-const unplannedPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
-
-const defaultDate = computed(() => {
-  const trip = tripStore.currentTrip;
-  const today = toLocalDateString(new Date());
-  if (trip && trip.start_date && trip.end_date) {
-    if (today >= trip.start_date && today <= trip.end_date) return today;
-    return trip.start_date;
-  }
-  return today;
-});
-const unplannedDoneDate = ref(defaultDate.value);
-watch(defaultDate, (d) => {
-  unplannedDoneDate.value = d;
-});
-
-// #106/#147: Status-Kette in Planung -> geplant -> gemacht.
-// Bei mehreren Terminen (>1): Klick öffnet ein Popover mit Checkliste, um Tage einzeln abzuhaken.
-// Bei 1 Termin: Klick hakt direkt diesen Termin ab.
-// Bei ungeplant (0 Termine): Klick öffnet Popover zur schnellen Datumswahl (oder Kalender-Absprung).
-async function onToggleDone(event?: MouseEvent) {
-  if (totalItemsCount.value > 1) {
-    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
-    if (triggerEl) {
-      datesPopoverStyle.value = computePopoverPosition(triggerEl, {
-        menuWidth: 270,
-        menuHeight: 220,
-      });
-    }
-    datesPopoverOpen.value = true;
-    await nextTick();
-    const menuEl = document.querySelector('.spot-dates-popover') as HTMLElement | null;
-    if (menuEl && triggerEl) {
-      const rect = menuEl.getBoundingClientRect();
-      datesPopoverStyle.value = computePopoverPosition(triggerEl, {
-        menuWidth: rect.width,
-        menuHeight: rect.height,
-      });
-    }
-  } else if (totalItemsCount.value === 1) {
-    const item = scheduledItemsForSpot.value[0];
-    await scheduleStore.setDone(item.id, !item.done);
-  } else if (props.scheduledDate) {
-    await spotsStore.setDone(props.spot.id, !props.spot.done);
-  } else {
-    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
-    if (triggerEl) {
-      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
-        menuWidth: 260,
-        menuHeight: 180,
-      });
-    }
-    unplannedPopoverOpen.value = true;
-    await nextTick();
-    const menuEl = document.querySelector('.spot-unplanned-popover') as HTMLElement | null;
-    if (menuEl && triggerEl) {
-      const rect = menuEl.getBoundingClientRect();
-      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
-        menuWidth: rect.width,
-        menuHeight: rect.height,
-      });
-    }
-  }
-}
-
-async function toggleScheduledItemDone(item: ScheduleItem) {
-  await scheduleStore.setDone(item.id, !item.done);
-}
-
-async function submitUnplannedDone() {
-  if (!unplannedDoneDate.value) return;
-  if (tripStore.currentTripId != null) {
-    await scheduleStore.setSpotDate(
-      props.spot.id,
-      tripStore.currentTripId,
-      props.spot.title,
-      unplannedDoneDate.value,
-      true
-    );
-  }
-  unplannedPopoverOpen.value = false;
-}
-
-function openCalendarConfirmDone() {
-  unplannedPopoverOpen.value = false;
-  drawers.startPendingSchedule('spot', props.spot.id, 'confirm-done');
-}
 
 // Subtile, deterministische Drehung für den authentischen Polaroid-Look (z. B. -1.1° bis +0.95°)
 // Bleibt stabil pro Spot-ID, damit die Kärtchen beim Sortieren/Filtern nicht hin- und herwackeln.
