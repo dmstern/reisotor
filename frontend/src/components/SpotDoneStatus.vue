@@ -214,20 +214,20 @@ function handleDoneClick(event: MouseEvent) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: 4px;
+  padding: var(--space-1);
 }
 
 .popover-title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
 }
 
 .popover-subtext {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -239,18 +239,18 @@ function handleDoneClick(event: MouseEvent) {
 .popover-buttons {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
 }
 
 .calendar-alt-link {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
 }
 
 .dates-checklist {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   max-height: 180px;
   overflow-y: auto;
 }
@@ -258,18 +258,19 @@ function handleDoneClick(event: MouseEvent) {
 .date-check-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   text-align: left;
   transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .date-check-item:hover {
@@ -288,7 +289,7 @@ function handleDoneClick(event: MouseEvent) {
 
 .date-check-status {
   margin-left: auto;
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 </style>

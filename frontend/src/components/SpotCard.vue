@@ -329,11 +329,13 @@ const cardRotation = computed(() => {
 
 <style scoped>
 .spot-card {
+  --spot-cover-height: 120px;
+  --spot-card-pad: var(--space-2);
   container: spot-card / inline-size;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-card);
   isolation: isolate;
-  padding: 8px 8px 14px 8px;
+  padding: var(--spot-card-pad) var(--spot-card-pad) 14px var(--spot-card-pad);
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -343,7 +345,7 @@ const cardRotation = computed(() => {
 }
 
 .spot-card:hover {
-  z-index: 5;
+  z-index: var(--z-card-elevated);
 }
 
 .spot-card:not(.expanded) {
@@ -359,7 +361,7 @@ const cardRotation = computed(() => {
 /* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
 .card-badge-group {
   position: absolute;
-  z-index: 5;
+  z-index: var(--z-card-elevated);
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -367,20 +369,20 @@ const cardRotation = computed(() => {
 }
 
 .card-badge-group > * {
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-xs);
 }
 
 .spot-card:not(.expanded) .card-badge-group {
-  top: calc(8px + 120px + var(--space-1));
-  right: calc(8px + var(--space-1));
+  top: calc(var(--spot-card-pad) + var(--spot-cover-height) + var(--space-1));
+  right: calc(var(--spot-card-pad) + var(--space-1));
   transition:
     top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
     right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s;
 }
 
 .spot-card.expanded .card-badge-group {
-  top: calc(8px + var(--space-2));
-  right: calc(8px + var(--space-2));
+  top: calc(var(--spot-card-pad) + var(--space-2));
+  right: calc(var(--spot-card-pad) + var(--space-2));
   transition:
     top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
     right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
@@ -406,7 +408,7 @@ const cardRotation = computed(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 8px var(--space-2) 0 var(--space-2);
+  padding: var(--spot-card-pad) var(--space-2) 0 var(--space-2);
   gap: var(--space-2);
   min-width: 0;
   transition: padding 0.3s cubic-bezier(0.32, 0.72, 0, 1);
@@ -448,7 +450,7 @@ const cardRotation = computed(() => {
 
 .card-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   line-height: 1.3;
   color: var(--color-text);
@@ -460,13 +462,13 @@ const cardRotation = computed(() => {
 .spot-note-container {
   overflow: hidden;
   max-height: 2.8em;
-  margin-top: -4px;
+  margin-top: calc(-1 * var(--space-1));
 }
 
 .note {
   overflow-wrap: anywhere;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   line-height: 1.35;
 }
 
@@ -521,7 +523,7 @@ const cardRotation = computed(() => {
   gap: var(--space-2);
   min-height: 28px;
   position: relative;
-  z-index: 2;
+  z-index: var(--z-card);
   box-sizing: border-box;
 }
 
@@ -533,7 +535,7 @@ const cardRotation = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
   flex: 1;
 }
@@ -564,7 +566,7 @@ const cardRotation = computed(() => {
 .spot-layover-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   max-width: 100%;
 }
 
@@ -584,9 +586,9 @@ const cardRotation = computed(() => {
 
 .spot-card:not(.expanded) .card-attachments-wrap {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 6;
+  top: calc(var(--spot-card-pad) + var(--space-1));
+  left: calc(var(--spot-card-pad) + var(--space-1));
+  z-index: var(--z-map-focus);
   width: auto;
 }
 
@@ -599,7 +601,7 @@ const cardRotation = computed(() => {
 }
 
 .card-attachments-wrap :deep(.heading) {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   margin-bottom: var(--space-1);
@@ -624,7 +626,7 @@ const cardRotation = computed(() => {
   position: absolute;
   bottom: 0;
   right: 0;
-  z-index: 2;
+  z-index: var(--z-card);
 }
 
 .card-actions {
@@ -653,22 +655,23 @@ const cardRotation = computed(() => {
 .spot-destination-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 6px var(--space-2);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
-  transition: all 0.2s ease;
+  corner-shape: squircle;
+  transition: all var(--transition-fast);
 }
 
 .spot-destination-toggle:hover {
-  background: var(--color-background);
+  background: var(--color-hover);
   color: var(--color-text);
-  border-color: var(--color-text-muted);
+  border-color: var(--color-border-strong);
 }
 
 .spot-destination-toggle.is-active {
@@ -748,7 +751,9 @@ const cardRotation = computed(() => {
 
 @container spots-col (max-width: 480px) {
   .spot-card {
-    padding: 6px 6px 10px 6px;
+    --spot-cover-height: 100px;
+    --spot-card-pad: var(--radius-xs);
+    padding: var(--radius-xs) var(--radius-xs) 10px var(--radius-xs);
   }
 
   .spot-card:not(.expanded) {
@@ -757,7 +762,7 @@ const cardRotation = computed(() => {
   }
 
   .body {
-    padding: 6px var(--space-2) 4px var(--space-2);
+    padding: var(--radius-xs) var(--space-2) var(--space-1) var(--space-2);
   }
 
   .spot-card:not(.expanded) .body {
@@ -776,17 +781,17 @@ const cardRotation = computed(() => {
   }
 
   .spot-card:not(.expanded) .card-title {
-    font-size: 0.92rem;
+    font-size: var(--font-size-sm);
   }
 
   .spot-card:not(.expanded) .card-attachments-wrap {
-    top: 10px;
-    left: 10px;
+    top: calc(var(--spot-card-pad) + var(--space-1));
+    left: calc(var(--spot-card-pad) + var(--space-1));
   }
 
   .spot-card:not(.expanded) .card-badge-group {
-    top: calc(6px + 100px + var(--space-1));
-    right: calc(6px + var(--space-1));
+    top: calc(var(--spot-card-pad) + var(--spot-cover-height) + var(--space-1));
+    right: calc(var(--spot-card-pad) + var(--space-1));
     transition:
       top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
       right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s;
@@ -800,15 +805,15 @@ const cardRotation = computed(() => {
   }
 
   .spot-card.expanded .card-badge-group {
-    top: calc(6px + var(--space-2));
-    right: calc(6px + var(--space-2));
+    top: calc(var(--spot-card-pad) + var(--space-2));
+    right: calc(var(--spot-card-pad) + var(--space-2));
     transition:
       top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
       right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
   .spot-card:not(.expanded) .card-social-actions {
-    bottom: 6px;
+    bottom: var(--radius-xs);
     right: var(--space-2);
   }
 
@@ -819,7 +824,7 @@ const cardRotation = computed(() => {
   .note.is-clamped {
     -webkit-line-clamp: 1;
     line-clamp: 1;
-    font-size: 0.78rem;
+    font-size: var(--font-size-xs);
     line-height: 1.3;
   }
 
@@ -843,7 +848,7 @@ const cardRotation = computed(() => {
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
-    padding: 3px 6px;
+    padding: 3px var(--radius-xs);
     gap: 0;
     max-width: none;
   }
@@ -861,7 +866,7 @@ const cardRotation = computed(() => {
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge) {
-    padding: 3px 6px;
+    padding: 3px var(--radius-xs);
     gap: 0;
   }
 

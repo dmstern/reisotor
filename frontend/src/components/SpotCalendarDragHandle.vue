@@ -39,13 +39,12 @@ const { dragging, ghostStyle, onPointerDown } = useSpotCalendarDrag({
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
   background: var(--color-hover);
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px 3px 8px;
-  font-size: 0.72rem;
+  border-radius: var(--radius-pill);
+  padding: 3px var(--space-2) 3px var(--space-2);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: grab;
@@ -64,7 +63,7 @@ const { dragging, ghostStyle, onPointerDown } = useSpotCalendarDrag({
 .calendar-drag-handle.dragging {
   cursor: grabbing;
   transform: scale(0.95) translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-xs);
 }
 
 .calendar-drag-handle.dragging {
@@ -141,14 +140,14 @@ const { dragging, ghostStyle, onPointerDown } = useSpotCalendarDrag({
 
 .drag-ghost {
   position: fixed;
-  z-index: 60;
+  z-index: var(--z-popover);
   transform: translate(-50%, -130%);
   pointer-events: none;
-  background: rgba(35, 34, 32, 0.92);
-  color: #f2efe9;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 0.85rem;
+  background: var(--color-text);
+  color: var(--color-bg);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   white-space: nowrap;
   box-shadow: var(--shadow-md);

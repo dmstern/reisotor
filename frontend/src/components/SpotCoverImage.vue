@@ -91,7 +91,7 @@ function formatAccommodationDate(d: string | null) {
   justify-content: center;
   position: relative;
   transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  border-radius: calc(var(--radius-md-squircle) - 4px);
+  border-radius: calc(var(--radius-md-squircle) - var(--space-1));
   corner-shape: squircle;
   overflow: hidden;
   flex-shrink: 0;
@@ -143,7 +143,7 @@ function formatAccommodationDate(d: string | null) {
   );
   border-radius: inherit;
   pointer-events: none;
-  z-index: 1;
+  z-index: var(--z-card);
 }
 
 .image-expanded-overlay > * {
@@ -171,10 +171,10 @@ function formatAccommodationDate(d: string | null) {
 
 .overlay-bottom-content .card-title {
   margin: 0;
-  font-size: 1.08rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   line-height: 1.25;
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -189,7 +189,7 @@ function formatAccommodationDate(d: string | null) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.76rem;
+  font-size: var(--font-size-xs);
   color: rgba(255, 255, 255, 0.88);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   flex-wrap: wrap;
@@ -203,7 +203,7 @@ function formatAccommodationDate(d: string | null) {
 
 .note.is-banner {
   overflow-wrap: anywhere;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
@@ -238,13 +238,13 @@ function formatAccommodationDate(d: string | null) {
 }
 
 .note.is-banner :deep(a) {
-  color: #93c5fd;
+  color: var(--color-scheduled);
   text-decoration: underline;
 }
 
 .note.is-banner :deep(strong),
 .note.is-banner :deep(b) {
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
 }
 
 .overlay-edit-btn {
@@ -266,7 +266,7 @@ function formatAccommodationDate(d: string | null) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
   flex-wrap: wrap;
@@ -295,12 +295,12 @@ function formatAccommodationDate(d: string | null) {
   }
 
   .overlay-bottom-content .card-title {
-    font-size: 0.95rem;
+    font-size: var(--font-size-md);
     line-height: 1.2;
   }
 
   .note.is-banner {
-    font-size: 0.74rem;
+    font-size: var(--font-size-xs);
     line-height: 1.25;
     -webkit-line-clamp: 1;
     line-clamp: 1;
