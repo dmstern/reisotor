@@ -57,11 +57,12 @@ const isLink = computed(() => !!props.to);
   color: inherit;
   box-shadow: 0 2px 6px var(--tile-shadow, var(--shadow-sm));
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .tile:hover {
@@ -82,28 +83,34 @@ const isLink = computed(() => !!props.to);
   height: 44px;
   border-radius: var(--radius-full);
   corner-shape: round;
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width) solid var(--color-border);
   box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
-  padding: 0.5rem;
+  font-size: var(--font-size-xl);
+  padding: var(--space-2);
   backdrop-filter: blur(2px);
 }
 
 .tile h3 {
   color: var(--color-primary-dark);
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   margin-top: var(--space-2);
   text-align: center;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .tile :deep(p) {
   text-align: center;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   margin-top: auto;
   padding-top: 2px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .tile :deep(.budget-meter) {

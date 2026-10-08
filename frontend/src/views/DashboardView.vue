@@ -326,25 +326,24 @@ onMounted(async () => {
 
 <style scoped>
 .cards {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   padding-top: 22px;
-  /* Zeilenabstand größer als der globale .grid-Standard (--space-3, 16px): .tile-icon (unten) ragt
-     über den oberen Rand seiner eigenen Kachel hinaus (abgerundetes "Badge"-Icon, halb auf/
-     halb über der Kachel) - bei nur 16px Zeilenabstand überdeckt es damit die Kachel der Zeile
-     darüber. Dieser Space hier lässt ein paar Pixel Luft; Spaltenabstand bleibt beim schmaleren Standardwert,
-     da dort kein Icon hineinragt. */
+  /* Zeilenabstand größer als der globale .grid-Standard (--space-3, 16px): .tile-icon ragt
+     über den oberen Rand seiner eigenen Kachel hinaus (44px Kreis-Icon, 22px halb über die Kachel)
+     - bei nur 16px Zeilenabstand überdeckt es damit die Kachel der Zeile darüber.
+     --space-5 lässt dafür ausreichend Luft; Spaltenabstand bleibt beim Standardwert --space-3. */
   row-gap: var(--space-5);
   column-gap: var(--space-3);
 }
 
 .mini-list {
   list-style: none;
-  margin: 4px 0 0;
+  margin: var(--space-1) 0 0;
   padding: 0;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   /* Block als Ganzes bleibt mittig in der Kachel (wie h3/p daneben), schrumpft dabei aber auf
      die tatsächlich benötigte Breite – sonst würde .entry-text (flex:1, s.u.) über die volle
      Kachelbreite gestreckt und sein Text (per :left ausdrücklich statt vom <button>-Element der
@@ -359,7 +358,7 @@ onMounted(async () => {
 .mini-list li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .entry-text {
@@ -371,9 +370,9 @@ onMounted(async () => {
 }
 
 .mini-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
   flex-shrink: 0;
 }
 
@@ -381,7 +380,7 @@ onMounted(async () => {
   color: var(--color-text-muted);
   flex-wrap: wrap;
   flex-direction: row;
-  gap: 4px 10px;
+  gap: var(--space-1) var(--space-2);
   /* Diese Variante (Zeilen-Umbruch statt vertikaler Liste) soll weiterhin die volle Kachelbreite
      nutzen können, nicht auf den engeren Fluchtlinien-Look der Kalender-Liste schrumpfen. */
   align-self: stretch;

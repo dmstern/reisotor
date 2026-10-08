@@ -133,8 +133,8 @@ const heroStyle = computed(() => {
 
 .banner-action-btn {
   position: relative;
-  font-size: 0.8rem;
-  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -147,31 +147,6 @@ const heroStyle = computed(() => {
 }
 
 @container app-main (max-width: 768px) {
-  .banner-action-label {
-    display: none;
-  }
-
-  .banner-action-btn {
-    padding: 6px;
-    min-width: 32px;
-    min-height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .banner-action-btn::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-  }
-}
-
-@media (max-width: 768px) {
   .banner-action-label {
     display: none;
   }

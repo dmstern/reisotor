@@ -260,21 +260,21 @@ onMounted(() => {
 
 .weather-card h3 {
   display: flex;
-  gap: 0.5em;
+  gap: var(--space-2);
   align-items: center;
   color: var(--color-primary-dark);
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   margin-bottom: var(--space-2);
 }
 
 .weather-section-label {
   display: flex;
   align-items: center;
-  gap: 0.5em;
+  gap: var(--space-2);
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
@@ -282,7 +282,7 @@ onMounted(() => {
 .weather-card .hint {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .weather-card .hint.error {
@@ -293,21 +293,22 @@ onMounted(() => {
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: var(--space-1);
 }
 
 .weather-source {
   display: inline-block;
   margin: var(--space-2) 0 var(--space-2);
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   text-decoration: underline;
   text-decoration-style: dotted;
   background: none;
   border: none;
-  padding: 6px 0;
+  padding: var(--space-1) 0;
   cursor: pointer;
   font-family: inherit;
+  word-break: break-word;
 }
 
 .weather-source:hover {
@@ -325,6 +326,6 @@ onMounted(() => {
 
 .region-advisory-score {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
 }
 </style>

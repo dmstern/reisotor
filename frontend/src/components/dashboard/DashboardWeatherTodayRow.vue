@@ -29,7 +29,7 @@ defineEmits<{
   >
     <span class="weather-today-label">
       <AppIcon v-if="icon" :icon="icon" :size="14" group="actions" />
-      {{ label }}
+      <span class="weather-today-text">{{ label }}</span>
     </span>
     <div class="weather-icon-wrapper">
       <WeatherIcon
@@ -67,8 +67,8 @@ defineEmits<{
 .weather-today.clickable {
   cursor: pointer;
   transition:
-    transform 0.15s ease,
-    background 0.15s ease;
+    transform var(--transition-fast),
+    background var(--transition-fast);
 }
 
 .weather-today.clickable:hover {
@@ -78,12 +78,19 @@ defineEmits<{
 .weather-today-label {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--space-1);
   flex: 1;
   min-width: 0;
   color: var(--color-text-muted);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+}
+
+.weather-today-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .weather-icon-wrapper {
@@ -91,10 +98,11 @@ defineEmits<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .weather-icon {
-  font-size: 1.4rem;
+  font-size: var(--font-size-xl);
 }
 
 .weather-alert-badge {
@@ -120,16 +128,19 @@ defineEmits<{
 }
 
 .weather-temp {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .weather-rain {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.72rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   color: var(--color-accent-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 </style>

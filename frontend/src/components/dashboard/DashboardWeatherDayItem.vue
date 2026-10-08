@@ -68,8 +68,8 @@ defineEmits<{
 .weather-day.clickable {
   cursor: pointer;
   transition:
-    transform 0.15s ease,
-    background 0.15s ease;
+    transform var(--transition-fast),
+    background var(--transition-fast);
 }
 
 .weather-day.clickable:hover {
@@ -83,7 +83,7 @@ defineEmits<{
 }
 
 .weather-date {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: capitalize;
@@ -97,7 +97,7 @@ defineEmits<{
 }
 
 .weather-icon {
-  font-size: 1.4rem;
+  font-size: var(--font-size-xl);
 }
 
 .weather-alert-badge {
@@ -123,7 +123,7 @@ defineEmits<{
 }
 
 .weather-temp {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -131,8 +131,8 @@ defineEmits<{
 .weather-rain {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.72rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   color: var(--color-accent-secondary);
 }
 </style>
