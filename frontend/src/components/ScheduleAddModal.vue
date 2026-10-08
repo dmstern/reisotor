@@ -47,9 +47,8 @@ const {
     title="Termin anlegen"
     full-height
     :confirm-close="newDraft.isDirty.value"
-    confirm-close-title="Entwurf verwerfen?"
-    confirm-close-message="Du hast bereits Eingaben für diesen Termin gemacht. Möchtest du den Entwurf verwerfen?"
-    confirm-close-confirm-label="Entwurf verwerfen"
+    confirm-close-mode="draft"
+    confirm-close-entity="Termin"
     @update:model-value="(v) => emit('update:modelValue', v)"
   >
     <form class="edit-form" @submit.prevent="addItem">

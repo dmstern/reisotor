@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { getTourRoleIconDef } from '../utils/travelRole';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
@@ -92,7 +93,7 @@ watch(
         v-else
         :icon="
           focusedExcursion
-            ? SECTION_ICON_DEFS.excursions
+            ? getTourRoleIconDef(focusedExcursion.role)
             : focusedSpot
               ? spotCategoryMeta(focusedSpot.category).tabler
               : focusedAllPhotos
@@ -102,7 +103,7 @@ watch(
                   : FORM_FIELD_ICONS.period
         "
         :size="18"
-        :group="focusedExcursion ? 'navigation' : focusedSpot ? 'categories' : 'formFields'"
+        :group="focusedExcursion || focusedSpot ? 'categories' : 'formFields'"
       />
     </button>
     <div class="focus-banner-content">

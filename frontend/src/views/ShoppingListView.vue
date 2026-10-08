@@ -692,9 +692,7 @@ function hasItemMeta(item: ShoppingItem): boolean {
       title="Artikel bearbeiten"
       full-height
       :confirm-close="editDraft.isDirty.value"
-      confirm-close-title="Ungespeicherte Änderungen verwerfen?"
-      confirm-close-message="Du hast ungespeicherte Änderungen an diesem Eintrag vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?"
-      confirm-close-confirm-label="Änderungen verwerfen"
+      confirm-close-entity="Eintrag"
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="edit-form" @submit.prevent="submitEdit">

@@ -10,6 +10,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
 import { parseLatLngFromMapsLink, tilePreviewUrl, buildGoogleMapsLink } from '../utils/googleMaps';
+import { computePopoverPosition } from '../utils/popoverPosition';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { isEmptyRichText } from '../utils/richText';
@@ -395,23 +396,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
   }
 
-  function computeMenuStyle(
-    btnEl: HTMLElement | ComponentPublicInstance | null,
-    event?: MouseEvent,
-    minWidth = 200
-  ): { top: string; left: string } {
-    const el =
-      (event?.currentTarget as HTMLElement) ||
-      (btnEl as ComponentPublicInstance)?.$el ||
-      (btnEl as HTMLElement);
-    if (!el || typeof el.getBoundingClientRect !== 'function') return { top: '0px', left: '0px' };
-    const rect = el.getBoundingClientRect();
-    return {
-      top: `${rect.bottom + 6}px`,
-      left: `${Math.max(8, Math.min(rect.left, window.innerWidth - minWidth - 8))}px`,
-    };
-  }
-
   const addSchedulePopoverOpen = ref(false);
   const addScheduleDateVal = ref('');
   const addScheduleBtnRef = ref<HTMLElement | null>(null);
@@ -420,7 +404,13 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function toggleAddSchedulePopover(event?: MouseEvent) {
     if (!addSchedulePopoverOpen.value) {
       addScheduleDateVal.value = '';
-      addScheduleMenuStyle.value = computeMenuStyle(addScheduleBtnRef.value, event, 220);
+      const target = (event?.currentTarget || addScheduleBtnRef.value) as HTMLElement | null;
+      if (target) {
+        addScheduleMenuStyle.value = computePopoverPosition(target, {
+          menuWidth: 220,
+          align: 'left',
+        });
+      }
       addSchedulePopoverOpen.value = true;
     } else {
       addSchedulePopoverOpen.value = false;

@@ -351,4 +351,60 @@ describe('Modal', () => {
     expect(closed).toBe(true);
     cleanUp();
   });
+
+  it('formats draft mode confirmation texts with entity correctly', async () => {
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      confirmCloseMode: 'draft',
+      confirmCloseEntity: 'Termin',
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    const titleEl = document.querySelector('.confirm-close-dialog h2');
+    const messageEl = document.querySelector('.confirm-close-message');
+    const discardBtn = Array.from(document.querySelectorAll('.confirm-close-actions button')).find(
+      (b) => b.textContent?.includes('Entwurf verwerfen')
+    );
+
+    expect(titleEl?.textContent?.trim()).toBe('Entwurf verwerfen?');
+    expect(messageEl?.textContent?.trim()).toBe(
+      'Du hast bereits Eingaben für diesen Termin gemacht. Möchtest du den Entwurf verwerfen?'
+    );
+    expect(discardBtn).not.toBeNull();
+    cleanUp();
+  });
+
+  it('formats unsaved mode confirmation texts with entity correctly', async () => {
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+      confirmCloseMode: 'unsaved',
+      confirmCloseEntity: 'Tour',
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    const titleEl = document.querySelector('.confirm-close-dialog h2');
+    const messageEl = document.querySelector('.confirm-close-message');
+    const discardBtn = Array.from(document.querySelectorAll('.confirm-close-actions button')).find(
+      (b) => b.textContent?.includes('Änderungen verwerfen')
+    );
+
+    expect(titleEl?.textContent?.trim()).toBe('Ungespeicherte Änderungen verwerfen?');
+    expect(messageEl?.textContent?.trim()).toBe(
+      'Du hast ungespeicherte Änderungen an dieser Tour vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
+    );
+    expect(discardBtn).not.toBeNull();
+    cleanUp();
+  });
 });

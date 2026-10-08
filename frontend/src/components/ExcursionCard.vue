@@ -30,12 +30,12 @@ import PolaroidStack from './primitives/PolaroidStack.vue';
 import DoneToggle from './primitives/DoneToggle.vue';
 import FileAttachments from './FileAttachments.vue';
 import WeatherIcon from './WeatherIcon.vue';
+import TourRoleBadge from './TourRoleBadge.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { computePopoverPosition } from '../utils/popoverPosition';
-import { TOUR_ROLE_META } from '../utils/travelRole';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, tourTotalDurationMinutes } from '../utils/travelDuration';
 
@@ -138,11 +138,6 @@ watch(
 const statusDateLabel = computed(() =>
   props.excursion.date ? formatDate(props.excursion.date) : ''
 );
-
-// Einheitliche Metadaten für das Tour-Badge (Ausflug vs. Anreise/Abreise/Weiterreise)
-const tourRoleMeta = computed(() => {
-  return (props.excursion.role && TOUR_ROLE_META[props.excursion.role]) || TOUR_ROLE_META.excursion;
-});
 
 // #176: Anreise/Abreise/Weiterreise (ehemalige Reise-Etappe) - dieselbe Card wie eine normale Tour,
 // mit zusätzlicher Rollen-/Route-/Dauer-Anzeige (übernommen aus der früheren TravelView.vue).
@@ -412,10 +407,7 @@ function onSpotDrop(event: DragEvent) {
           </div>
 
           <div class="card-badge-group">
-            <Badge variant="custom" class="tour-type-badge" :title="tourRoleMeta.label">
-              <AppIcon :icon="tourRoleMeta.tabler" :size="14" group="categories" />
-              {{ tourRoleMeta.label }}
-            </Badge>
+            <TourRoleBadge :role="excursion.role" />
             <PendingSyncBadge v-if="excursion._pending" />
             <Transition name="fade">
               <EditButton
@@ -784,13 +776,6 @@ function onSpotDrop(event: DragEvent) {
   align-self: flex-start;
   overflow: visible;
   padding: 2px 0 0 0;
-}
-
-.tour-type-badge {
-  flex-shrink: 0;
-  --badge-bg: var(--excursion-theme-tint);
-  --badge-color: var(--excursion-theme-color);
-  --badge-border: var(--excursion-theme-border);
 }
 
 .tour-placeholder {

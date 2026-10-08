@@ -15,6 +15,16 @@ import ButtonGroup from './primitives/ButtonGroup.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useModalStore } from '../stores/modal';
 
+const ENTITY_ARTICLES: Record<string, { acc: string; dat: string }> = {
+  Termin: { acc: 'diesen Termin', dat: 'diesem Termin' },
+  Spot: { acc: 'diesen Spot', dat: 'diesem Spot' },
+  Tour: { acc: 'diese Tour', dat: 'dieser Tour' },
+  Ausgabe: { acc: 'diese Ausgabe', dat: 'dieser Ausgabe' },
+  Eintrag: { acc: 'diesen Eintrag', dat: 'diesem Eintrag' },
+  Notiz: { acc: 'diese Notiz', dat: 'dieser Notiz' },
+  Aufgabe: { acc: 'diese Aufgabe', dat: 'dieser Aufgabe' },
+};
+
 const props = withDefaults(
   defineProps<{
     modelValue: boolean;
@@ -24,6 +34,8 @@ const props = withDefaults(
     ariaLabel?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl';
     confirmClose?: boolean;
+    confirmCloseMode?: 'unsaved' | 'draft';
+    confirmCloseEntity?: string;
     confirmCloseTitle?: string;
     confirmCloseMessage?: string;
     confirmCloseConfirmLabel?: string;
@@ -32,10 +44,7 @@ const props = withDefaults(
   {
     size: 'md',
     confirmClose: false,
-    confirmCloseTitle: 'Ungespeicherte Änderungen verwerfen?',
-    confirmCloseMessage:
-      'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?',
-    confirmCloseConfirmLabel: 'Änderungen verwerfen',
+    confirmCloseMode: 'unsaved',
     confirmCloseCancelLabel: 'Weiter bearbeiten',
   }
 );
@@ -50,6 +59,36 @@ const titleId = `${modalId}-title`;
 const modalRef = ref<HTMLDivElement | null>(null);
 const confirmModalRef = ref<HTMLDivElement | null>(null);
 const showConfirmClose = ref(false);
+
+const resolvedConfirmTitle = computed(() => {
+  if (props.confirmCloseTitle) return props.confirmCloseTitle;
+  return props.confirmCloseMode === 'draft'
+    ? 'Entwurf verwerfen?'
+    : 'Ungespeicherte Änderungen verwerfen?';
+});
+
+const resolvedConfirmMessage = computed(() => {
+  if (props.confirmCloseMessage) return props.confirmCloseMessage;
+  const entity = props.confirmCloseEntity?.trim();
+  if (props.confirmCloseMode === 'draft') {
+    if (!entity) return 'Du hast bereits Eingaben gemacht. Möchtest du den Entwurf verwerfen?';
+    const phrased =
+      ENTITY_ARTICLES[entity]?.acc ?? (entity.startsWith('diese') ? entity : `diese(n) ${entity}`);
+    return `Du hast bereits Eingaben für ${phrased} gemacht. Möchtest du den Entwurf verwerfen?`;
+  }
+  if (!entity) {
+    return 'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?';
+  }
+  const phrased =
+    ENTITY_ARTICLES[entity]?.dat ??
+    (entity.startsWith('diese') ? entity : `dieser/diesem ${entity}`);
+  return `Du hast ungespeicherte Änderungen an ${phrased} vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?`;
+});
+
+const resolvedConfirmConfirmLabel = computed(() => {
+  if (props.confirmCloseConfirmLabel) return props.confirmCloseConfirmLabel;
+  return props.confirmCloseMode === 'draft' ? 'Entwurf verwerfen' : 'Änderungen verwerfen';
+});
 
 function close() {
   if (props.confirmClose) {
@@ -363,23 +402,20 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
         >
           <div class="modal-head">
             <h2 :id="`${modalId}-confirm-title`">
-              {{ confirmCloseTitle || 'Ungespeicherte Änderungen verwerfen?' }}
+              {{ resolvedConfirmTitle }}
             </h2>
           </div>
           <div class="modal-body-wrap">
             <div class="modal-body confirm-close-body">
               <p class="confirm-close-message">
-                {{
-                  confirmCloseMessage ||
-                  'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
-                }}
+                {{ resolvedConfirmMessage }}
               </p>
               <ButtonGroup class="confirm-close-actions">
                 <Button type="button" variant="secondary" @click="cancelConfirmClose">
                   {{ confirmCloseCancelLabel || 'Weiter bearbeiten' }}
                 </Button>
                 <Button type="button" variant="danger" @click="acceptConfirmClose">
-                  {{ confirmCloseConfirmLabel || 'Änderungen verwerfen' }}
+                  {{ resolvedConfirmConfirmLabel }}
                 </Button>
               </ButtonGroup>
             </div>

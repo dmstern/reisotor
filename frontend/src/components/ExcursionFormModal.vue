@@ -167,17 +167,8 @@ function trackDurationLabel(track: LocationTrack): string | null {
     :title="editingExcursion !== null ? 'Tour bearbeiten' : 'Neue Tour'"
     full-height
     :confirm-close="isExcursionModalDirty"
-    :confirm-close-title="
-      editingExcursion !== null ? 'Ungespeicherte Änderungen verwerfen?' : 'Entwurf verwerfen?'
-    "
-    :confirm-close-message="
-      editingExcursion !== null
-        ? 'Du hast ungespeicherte Änderungen an dieser Tour vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?'
-        : 'Du hast bereits Eingaben für diese Tour gemacht. Möchtest du den Entwurf verwerfen?'
-    "
-    :confirm-close-confirm-label="
-      editingExcursion !== null ? 'Änderungen verwerfen' : 'Entwurf verwerfen'
-    "
+    :confirm-close-mode="editingExcursion !== null ? 'unsaved' : 'draft'"
+    confirm-close-entity="Tour"
     @update:model-value="(v) => !v && handleClose()"
   >
     <form
