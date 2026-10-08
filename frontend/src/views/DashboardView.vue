@@ -1,24 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { api } from '../api/client';
-import type {
-  DiaryEntry,
-  Note,
-  PackingItem,
-  ScheduleItem,
-  ShoppingItem,
-  TodoItem,
-  User,
-} from '../api/types';
-import { deriveTravelItems } from '../utils/deriveTravelItems';
+import { computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
-import { useLiveSyncStore } from '../stores/liveSync';
-import { useExcursionsStore } from '../stores/excursions';
-import { useSpotsStore } from '../stores/spots';
 import { useBudgetStore } from '../stores/budget';
 import { useDrawersStore } from '../stores/drawers';
-import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
@@ -28,31 +13,11 @@ import {
   TRASH_TILE_COLOR,
   TILE_SHADOW_ALPHA,
 } from '../utils/widgetColors';
-import { buildAllEntries } from '../utils/calendarEntries';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACCOMMODATION_ICON, SECURITY_CHECK_ICON } from '../utils/dashboardTiles';
-import {
-  detectWeatherAlerts,
-  fetchMergedWeather,
-  fetchWeatherForecast,
-  weatherCodeMeta,
-  type DailyWeather,
-  type WeatherAlert,
-} from '../utils/weather';
-import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
-import {
-  formatDate as formatDateShared,
-  formatTripDateRange,
-  formatWeekdayDate as formatWeekdayDateShared,
-  toLocalDateString,
-} from '../utils/dateFormat';
-import { computeDepartureCountdown, computeVacationPhase } from '../utils/departureCountdown';
-import {
-  formatDestinationLocationLabel,
-  formatHomeLocationLabel,
-  formatOverDestinationLabel,
-} from '../utils/weatherLocationLabel';
+import { weatherCodeMeta } from '../utils/weather';
+import { formatTripDateRange } from '../utils/dateFormat';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import AppIcon from '../components/AppIcon.vue';
@@ -74,465 +39,111 @@ import DashboardTravelPreview from '../components/dashboard/DashboardTravelPrevi
 import DashboardCalendarPreview from '../components/dashboard/DashboardCalendarPreview.vue';
 import DashboardSecurityPreview from '../components/dashboard/DashboardSecurityPreview.vue';
 
+import { useTripCountdown } from '../composables/useTripCountdown';
+import { useDashboardWeather } from '../composables/useDashboardWeather';
+import { useRegionInfo } from '../composables/useRegionInfo';
+import { useDashboardData } from '../composables/useDashboardData';
+import { useDashboardTileSummaries } from '../composables/useDashboardTileSummaries';
+
 const auth = useAuthStore();
 const tripStore = useTripStore();
-const excursionsStore = useExcursionsStore();
-const spotsStore = useSpotsStore();
 const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
-const liveSync = useLiveSyncStore();
-const weatherProvider = useWeatherProviderStore();
 const homeCurrency = useHomeCurrencyStore();
 const uiSettings = useUiSettingsStore();
 const dashboardConfig = useDashboardConfigStore();
+
 const visibleTileKeys = computed(() =>
   dashboardConfig.entries.filter((e) => e.visible).map((e) => e.key)
 );
-const tripId = tripStore.currentTripId as number;
-const trip = computed(() => tripStore.currentTrip);
-const schedule = ref<ScheduleItem[]>([]);
-const todos = ref<TodoItem[]>([]);
-const packing = ref<PackingItem[]>([]);
-const shopping = ref<ShoppingItem[]>([]);
-// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
-// utils/deriveTravelItems.ts) - excursionsStore lädt automatisch bei erster Verwendung.
-const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
-// Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
-// normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
-const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
-const diaryEntries = ref<DiaryEntry[]>([]);
-const notes = ref<Note[]>([]);
-const users = ref<User[]>([]);
-const trashEntries = ref<{ id: number }[]>([]);
-const trashCount = computed(() => trashEntries.value.length);
-const loading = ref(true);
 
-const weatherDays = ref<DailyWeather[] | null>(null);
-const weatherError = ref<string | null>(null);
-const weatherLoading = ref(false);
+const {
+  trip,
+  tripId,
+  schedule,
+  todos,
+  packing,
+  shopping,
+  diaryEntries,
+  notes,
+  users,
+  trashCount,
+  travelItems,
+  accommodations,
+  loading,
+  loadDashboardData,
+} = useDashboardData();
 
-// Eigenständig geladen statt Teil des großen Promise.all unten: Open-Meteo ist ein externer Dienst,
-// ein Fehlschlag/eine Verzögerung dort soll das Laden des restlichen Dashboards nicht blockieren.
-async function loadWeather() {
-  if (trip.value?.lat == null || trip.value?.lng == null) return;
-  weatherLoading.value = true;
-  weatherError.value = null;
-  try {
-    weatherDays.value = await fetchMergedWeather(
-      tripId,
-      trip.value.lat,
-      trip.value.lng,
-      weatherProvider.model
-    );
-  } catch {
-    weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
-  } finally {
-    weatherLoading.value = false;
-  }
-}
+const { departureCountdown, vacationPhase, isTripOver, todayStr } = useTripCountdown(trip);
 
-// "Zuhause" ist (wie im Kalender, siehe ScheduleView.vue) ein Spot mit is_home-Kennzeichnung statt
-// eines eigenen Account-/Trip-Felds - kein Schema-Änderung nötig, dieselbe Quelle wie dort.
-const homeSpot = computed(() =>
-  spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null)
-);
-const home = computed(() => {
-  const p = homeSpot.value;
-  return p ? { lat: p.lat as number, lng: p.lng as number } : null;
+const {
+  weatherDays,
+  weatherError,
+  weatherLoading,
+  home,
+  homeSpot,
+  homeWeatherDays,
+  homeWeatherError,
+  homeWeatherLoading,
+  destinationName,
+  destinationLocationLabel,
+  homeLocationLabel,
+  overDestinationLabel,
+  weatherModelLabel,
+  vacationForecastDays,
+  homeForecastDays,
+  todayWeather,
+  todayHomeWeather,
+  selectedWeatherDay,
+  selectedWeatherLocation,
+  weatherDayDialogOpen,
+  openWeatherDayDialog,
+  getDayAlert,
+  loadWeather,
+  formatWeekdayDate,
+} = useDashboardWeather({ trip, isTripOver });
+
+const {
+  regionInfo,
+  regionError,
+  regionLoading,
+  regionSourceParts,
+  regionShowsExchange,
+  loadRegionInfo,
+} = useRegionInfo(trip);
+
+const {
+  upcomingEntries,
+  packingTotal,
+  packingLists,
+  shoppingProgress,
+  todoProgress,
+  nextTravelItem,
+  currentOrNextAccommodation,
+  latestDiaryEntry,
+  formatDate,
+} = useDashboardTileSummaries({
+  trip,
+  schedule,
+  todos,
+  packing,
+  shopping,
+  diaryEntries,
+  travelItems,
+  accommodations,
+  users,
+  currentUserId: computed(() => auth.user?.id),
 });
-
-const homeWeatherDays = ref<DailyWeather[] | null>(null);
-const homeWeatherError = ref<string | null>(null);
-const homeWeatherLoading = ref(false);
-
-// Eigenständig geladen, analog zu loadWeather() oben - unabhängiger Fehlschlag (z. B. Zuhause noch
-// nicht markiert) soll weder das restliche Dashboard noch das Reiseziel-Wetter blockieren.
-async function loadHomeWeather() {
-  if (!home.value) return;
-  homeWeatherLoading.value = true;
-  homeWeatherError.value = null;
-  try {
-    homeWeatherDays.value = await fetchWeatherForecast(
-      home.value.lat,
-      home.value.lng,
-      weatherProvider.model
-    );
-  } catch {
-    homeWeatherError.value = 'Wetterdaten konnten nicht geladen werden.';
-  } finally {
-    homeWeatherLoading.value = false;
-  }
-}
-
-// Lädt neu, sobald sich die Koordinaten des Urlaubs oder des Zuhause-Spots tatsächlich ändern (z. B.
-// nach dem Bearbeiten des Urlaubsorts) ODER der Wetteranbieter in den Einstellungen gewechselt wird –
-// vorher lief loadWeather() nur einmal beim Mounten, eine Änderung danach hätte sonst weiterhin die
-// alten (oder gar keine) Wetterdaten gezeigt. weatherDays vorher zurücksetzen, damit währenddessen
-// nicht kurz die Vorhersage des alten Orts/Modells aufblitzt.
-watch(
-  () => [trip.value?.lat, trip.value?.lng, home.value?.lat, home.value?.lng, weatherProvider.model],
-  () => {
-    weatherDays.value = null;
-    homeWeatherDays.value = null;
-    loadWeather();
-    loadHomeWeather();
-  }
-);
-
-const destinationName = computed(
-  () => trip.value?.destination?.trim() || trip.value?.name?.trim() || ''
-);
-
-const destinationLocationLabel = computed(() =>
-  formatDestinationLocationLabel(trip.value?.destination, trip.value?.name)
-);
-
-const homeLocationLabel = computed(() => formatHomeLocationLabel(homeSpot.value?.title));
-
-const overDestinationLabel = computed(() =>
-  formatOverDestinationLabel(trip.value?.destination, trip.value?.name)
-);
-
-const weatherModelLabel = computed(
-  () =>
-    WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ??
-    weatherProvider.model
-);
-
-const selectedWeatherDay = ref<DailyWeather | null>(null);
-const selectedWeatherLocation = ref<{
-  lat?: number | null;
-  lng?: number | null;
-  label: string;
-} | null>(null);
-const weatherDayDialogOpen = ref(false);
-
-function openWeatherDayDialog(
-  day: DailyWeather,
-  loc?: { lat?: number | null; lng?: number | null; label: string }
-) {
-  selectedWeatherDay.value = day;
-  selectedWeatherLocation.value = loc ?? {
-    lat: trip.value?.lat,
-    lng: trip.value?.lng,
-    label: destinationName.value || 'Reiseziel',
-  };
-  weatherDayDialogOpen.value = true;
-}
-
-function getDayAlert(day: DailyWeather | null): WeatherAlert | undefined {
-  if (!day) return undefined;
-  return detectWeatherAlerts([day])[0];
-}
-
-const regionInfo = ref<RegionInfo | null>(null);
-const regionError = ref<string | null>(null);
-const regionLoading = ref(false);
-
-// Eigenständig geladen (analog zu loadWeather() oben): ein externer Dienst soll das Laden des
-// restlichen Dashboards nicht blockieren, ein Fehlschlag blendet nur diese Card aus.
-async function loadRegionInfo() {
-  if (!trip.value) return;
-  regionLoading.value = true;
-  regionError.value = null;
-  try {
-    regionInfo.value = await fetchRegionInfo(trip.value.id);
-  } catch {
-    regionError.value = 'Regionsinfos konnten nicht geladen werden.';
-  } finally {
-    regionLoading.value = false;
-  }
-}
-
-// Neu laden, wenn sich der Urlaub oder die Heimatwährung (Wechselkurs-Vergleich) ändert.
-watch(
-  () => [trip.value?.id, homeCurrency.currency],
-  () => {
-    regionInfo.value = null;
-    loadRegionInfo();
-  }
-);
-
-// Sprache/Währung/Sicherheitshinweis sind je nach Land oft nur teilweise oder gar nicht verfügbar
-// (z. B. keine Einträge bei travel-advisory.info, keine Wechselkurs-Notierung für die Währung) -
-// nur die Quellen nennen, die tatsächlich zu einer sichtbaren Zeile im Template beigetragen haben,
-// statt pauschal alle drei zu zitieren.
-const regionSourceParts = computed(() => {
-  if (!regionInfo.value) return [];
-  const parts: string[] = [];
-  if (regionInfo.value.languages.length || regionInfo.value.currency) parts.push('REST Countries');
-  if (regionInfo.value.currency && regionInfo.value.exchangeRate != null)
-    parts.push('open.er-api.com');
-  if (regionInfo.value.advisory) parts.push('travel-advisory.info');
-  return parts;
-});
-const regionShowsExchange = computed(
-  () => !!(regionInfo.value?.currency && regionInfo.value.exchangeRate != null)
-);
-
-// WIDGET_COLORS/SECURITY_TILE_COLOR liegen jetzt in utils/widgetColors.ts (NavBar.vue nutzt sie für
-// die optionale Nav-Einfärbung mit, siehe NAV_LINK_COLORS dort).
-
-onMounted(async () => {
-  try {
-    const [scheduleRes, todosRes, packingRes, shoppingRes, diaryRes, notesRes, usersRes, trashRes] =
-      await Promise.all([
-        api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
-        api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
-        api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
-        api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
-        api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
-        api.get<Note[]>(`/notes?trip_id=${tripId}`),
-        api.get<User[]>(`/trips/${tripId}/members`),
-        api.get<{ id: number }[]>(`/trash?trip_id=${tripId}`),
-        spotsStore.load(),
-        budgetStore.load(),
-      ]);
-    schedule.value = scheduleRes;
-    todos.value = todosRes;
-    packing.value = packingRes;
-    shopping.value = shoppingRes;
-    diaryEntries.value = diaryRes;
-    notes.value = notesRes;
-    users.value = usersRes;
-    trashEntries.value = trashRes;
-  } catch {
-    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
-    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
-    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
-  } finally {
-    loading.value = false;
-  }
-  loadWeather();
-  loadRegionInfo();
-});
-
-// Echtzeit-Sync (siehe stores/liveSync.ts): Widgets aktualisieren, sobald Änderungen eintreffen
-watch(
-  () => liveSync.domainVersion.schedule,
-  async () => {
-    try {
-      schedule.value = await api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.todos,
-  async () => {
-    try {
-      todos.value = await api.get<TodoItem[]>(`/todos?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.packing,
-  async () => {
-    try {
-      packing.value = await api.get<PackingItem[]>(`/packing?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.shopping,
-  async () => {
-    try {
-      shopping.value = await api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.notes,
-  async () => {
-    try {
-      notes.value = await api.get<Note[]>(`/notes?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.diary,
-  async () => {
-    try {
-      diaryEntries.value = await api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-
-const todayStr = () => toLocalDateString(new Date());
-
-// Tickt einmal pro Minute, damit die Stunden-Anzeige unten (departureCountdown) während einer
-// offen gelassenen Seite nicht stehen bleibt, ohne bei jeder Sekunde unnötig neu zu rendern.
-const now = ref(new Date());
-let nowTimer: ReturnType<typeof setInterval> | null = null;
-onMounted(() => {
-  nowTimer = setInterval(() => {
-    now.value = new Date();
-  }, 60_000);
-});
-onUnmounted(() => {
-  if (nowTimer != null) clearInterval(nowTimer);
-});
-
-const departureCountdown = computed(() =>
-  trip.value?.start_date ? computeDepartureCountdown(trip.value.start_date, now.value) : null
-);
-
-// Löst departureCountdown's frühere 'departed'-Phase ab, die dauerhaft "Gute Reise!" zeigte - auch
-// noch mitten im Urlaub oder lange nach dessen Ende. computeVacationPhase() liefert stattdessen
-// eigene Phasen für Ankunft/laufenden Urlaub/letzten Tag/vorbei (siehe dortiger Kommentar).
-const vacationPhase = computed(() =>
-  trip.value ? computeVacationPhase(trip.value, now.value) : null
-);
-
-const isTripOver = computed(() => {
-  if (vacationPhase.value?.phase === 'over') return true;
-  if (trip.value?.end_date && trip.value.end_date < todayStr()) return true;
-  return false;
-});
-
-// Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
-// mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
-const upcomingEntries = computed(() =>
-  buildAllEntries(
-    schedule.value,
-    trip.value,
-    todos.value,
-    travelItems.value,
-    excursionsStore.excursions,
-    spotsStore.spots
-  )
-    .filter((e) => e.endDate >= todayStr())
-    .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
-    .slice(0, 3)
-);
-
-function formatDate(d: string) {
-  return formatDateShared(d, { includeYear: false });
-}
-
-// Packliste: ein zusammengefasstes Widget (statt drei einzelner Tiles) mit Gesamtfortschritt
-// plus kompakter Aufschlüsselung je Teilliste (Batch 12).
-function progressOf(listItems: PackingItem[]) {
-  const total = listItems.reduce((sum, p) => sum + p.quantity, 0);
-  const checked = listItems.reduce((sum, p) => sum + Math.min(p.packed_count, p.quantity), 0);
-  return { total, checked };
-}
-const packingTotal = computed(() => progressOf(packing.value));
-const packingLists = computed(() => {
-  const shared = {
-    key: 'shared',
-    title: 'Gemeinsam',
-    avatar: '🤝',
-    ...progressOf(packing.value.filter((p) => p.owner_id == null)),
-  };
-  const perUser = users.value.map((u) => ({
-    key: `user-${u.id}`,
-    title: u.id === auth.user?.id ? 'Meine Liste' : u.username,
-    avatar: u.avatar,
-    ...progressOf(packing.value.filter((p) => p.owner_id === u.id)),
-  }));
-  return [...perUser, shared];
-});
-
-const shoppingProgress = computed(() => {
-  const total = shopping.value.length;
-  const checked = shopping.value.filter((s) => s.checked).length;
-  return { total, checked };
-});
-
-const todoProgress = computed(() => {
-  const total = todos.value.length;
-  const done = todos.value.filter((t) => t.done).length;
-  return { total, done };
-});
-
-const nextTravelItem = computed(
-  () =>
-    [...travelItems.value]
-      .filter((t) => t.date && t.date >= todayStr())
-      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0] ?? null
-);
-
-const currentOrNextAccommodation = computed(() => {
-  const today = todayStr();
-  const current = accommodations.value.find(
-    (a) => a.start_date && a.end_date && a.start_date <= today && today <= a.end_date
-  );
-  if (current) return current;
-  return [...accommodations.value]
-    .filter((a) => a.start_date && a.start_date >= today)
-    .sort((a, b) => (a.start_date ?? '').localeCompare(b.start_date ?? ''))[0];
-});
-
-// Sortierung nach dem (frei änderbaren) Eintrags-Datum statt nur created_at - muss mit der
-// Reihenfolge in DiaryView.vue übereinstimmen, sonst zeigt die Kachel hier einen anderen Eintrag
-// als "zuletzt" als den, der dort tatsächlich ganz oben steht (z. B. nach einem rückblickend
-// nachgetragenen Eintrag mit einem älteren Datum).
-const latestDiaryEntry = computed(
-  () =>
-    [...diaryEntries.value].sort(
-      (a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)
-    )[0]
-);
 
 function jumpToTrip() {
   tripStore.requestEditTrip();
 }
 
-// Nur die Tage zeigen, die tatsächlich im Urlaubszeitraum liegen UND von Open-Meteo abgedeckt sind
-// (nur die kommenden ~16 Tage plus 1 Tag rückwirkend, siehe utils/weather.ts) – bei weiter
-// entfernten Urlauben bleibt die Liste vorerst leer statt falsche/fehlende Tage zu zeigen.
-const vacationForecastDays = computed(() => {
-  if (!weatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
-    return [];
-  const s = trip.value.start_date;
-  const e = trip.value.end_date;
-  return weatherDays.value.filter((d) => d.date >= s && d.date <= e);
+onMounted(async () => {
+  await loadDashboardData();
+  loadWeather();
+  loadRegionInfo();
 });
-
-function addDaysToDateStr(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return toLocalDateString(d);
-}
-
-// Standardmäßig nur die letzten paar Urlaubstage (Packen/Heimreise im Blick), wahlweise über
-// uiSettings.showHomeWeatherFullTrip (SettingsView.vue) für den kompletten Urlaubszeitraum wie beim
-// Reiseziel-Wetter oben.
-const HOME_WEATHER_TAIL_DAYS = 3;
-const homeForecastDays = computed(() => {
-  if (!homeWeatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
-    return [];
-  const s = trip.value.start_date;
-  const e = trip.value.end_date;
-  const rangeStart = uiSettings.showHomeWeatherFullTrip
-    ? s
-    : addDaysToDateStr(e, -(HOME_WEATHER_TAIL_DAYS - 1));
-  return homeWeatherDays.value.filter((d) => d.date >= rangeStart && d.date <= e);
-});
-
-// Zeigt zusätzlich zur (ggf. noch nicht verfügbaren) Urlaubs-Vorhersage immer auch das aktuelle
-// Wetter am Zielort – die Vorhersage deckt dank past_days:1 im Fetch (utils/weather.ts) ohnehin
-// bereits heute mit ab, unabhängig davon, ob der Urlaub selbst schon im 16-Tage-Fenster liegt.
-const todayWeather = computed(() => weatherDays.value?.find((d) => d.date === todayStr()) ?? null);
-const todayHomeWeather = computed(
-  () => homeWeatherDays.value?.find((d) => d.date === todayStr()) ?? null
-);
-
-function formatWeekdayDate(d: string) {
-  return formatWeekdayDateShared(d);
-}
 </script>
 
 <template>
