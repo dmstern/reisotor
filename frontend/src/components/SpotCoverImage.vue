@@ -262,16 +262,6 @@ function formatAccommodationDate(d: string | null) {
   }
 }
 
-.overlay-meta-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-xs);
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-  flex-wrap: wrap;
-}
-
 .overlay-author {
   font-weight: 600;
 }

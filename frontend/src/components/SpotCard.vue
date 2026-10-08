@@ -52,8 +52,6 @@ const props = withDefaults(
     // gezeigt wird: der ergibt nur in der Touren-Gruppierung Sinn, wo echte Tour-Karten als
     // Ablageziele sichtbar sind (siehe onDragStart unten).
     groupMode: 'category' | 'tours';
-    // Alle bestehenden Tour-Titel, fürs "Tour zuordnen"-Dropdown (TourAssignDropdown.vue).
-    tourOptions?: string[];
     hasMultipleMembers?: boolean;
     /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
     layoverMinutes?: number | null;
@@ -557,10 +555,6 @@ const cardRotation = computed(() => {
   position: absolute;
   right: 0;
   bottom: 0;
-}
-
-.spot-card.has-layover:not(.expanded) .card-actions {
-  padding-right: 76px;
 }
 
 .spot-layover-badge {

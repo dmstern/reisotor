@@ -207,13 +207,16 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 
 ### Bereits bereitgestellte & wiederverwendbare Bausteine
 
-| Baustein              | Typ & Pfad                                                 | Herkunft          | Potenzielle Ziel-Views                                | Nutzen & Synergie-Potenzial                                                    |
-| :-------------------- | :--------------------------------------------------------- | :---------------- | :---------------------------------------------------- | :----------------------------------------------------------------------------- |
-| `DockTeleport`        | Primitiv (`components/primitives/DockTeleport.vue`)        | Settings / Layout | `ExcursionsView`, `BudgetView`, `ScheduleView`        | Konditionales Teleportieren in externe Docks/Drawer ohne Template-Duplikation. |
-| `DoneToggle`          | Primitiv (`components/primitives/DoneToggle.vue`)          | Todo / Listen     | `ShoppingListView`, `PackingListView`, `ListenView`   | Einheitlicher Check- und Erledigt-Status mit Haptik/Animation.                 |
-| `CollapsibleFieldset` | Primitiv (`components/primitives/CollapsibleFieldset.vue`) | Settings          | `BudgetView`, `ScheduleView`, `DiaryView`             | Einklappbare Formular- & Einstellungsabschnitte mit Pfeil-Indikator.           |
-| `ColorSwatchPicker`   | Primitiv (`components/primitives/ColorSwatchPicker.vue`)   | Settings / Users  | `BudgetView` (Pots), `NotesView` (Tags), `ListenView` | Farbauswahl für Kategorien, Töpfe und Labels.                                  |
-| `CheckableListItem`   | Primitiv (`components/primitives/CheckableListItem.vue`)   | Listen            | `TodoView`, `ShoppingListView`, `PackingListView`     | Standard-Listeneintrag mit Checkbox, Titel, Meta-Text und Action-Slot.         |
+| Baustein                 | Typ & Pfad                                                 | Herkunft           | Potenzielle Ziel-Views                                | Nutzen & Synergie-Potenzial                                                                 |
+| :----------------------- | :--------------------------------------------------------- | :----------------- | :---------------------------------------------------- | :------------------------------------------------------------------------------------------ |
+| `DockTeleport`           | Primitiv (`components/primitives/DockTeleport.vue`)        | Settings / Layout  | `ExcursionsView`, `BudgetView`, `ScheduleView`        | Konditionales Teleportieren in externe Docks/Drawer ohne Template-Duplikation.              |
+| `DoneToggle`             | Primitiv (`components/primitives/DoneToggle.vue`)          | Todo / Listen      | `ShoppingListView`, `PackingListView`, `ListenView`   | Einheitlicher Check- und Erledigt-Status mit Haptik/Animation.                              |
+| `CollapsibleFieldset`    | Primitiv (`components/primitives/CollapsibleFieldset.vue`) | Settings           | `BudgetView`, `ScheduleView`, `DiaryView`             | Einklappbare Formular- & Einstellungsabschnitte mit Pfeil-Indikator.                        |
+| `ColorSwatchPicker`      | Primitiv (`components/primitives/ColorSwatchPicker.vue`)   | Settings / Users   | `BudgetView` (Pots), `NotesView` (Tags), `ListenView` | Farbauswahl für Kategorien, Töpfe und Labels.                                               |
+| `CheckableListItem`      | Primitiv (`components/primitives/CheckableListItem.vue`)   | Listen             | `TodoView`, `ShoppingListView`, `PackingListView`     | Standard-Listeneintrag mit Checkbox, Titel, Meta-Text und Action-Slot.                      |
+| `usePointerDrag`         | Composable (`composables/usePointerDrag.ts`)               | Spots / Excursions | `ExcursionsView` (`ExcursionCard`), `ScheduleView`    | Pointer-Events-basiertes Drag & Drop mit Ghost und Tap-Erkennung (Touch/Desktop-resilient). |
+| `SpotCalendarDragHandle` | Komponente (`components/SpotCalendarDragHandle.vue`)       | Spots              | `ExcursionsView` (`ExcursionCard`)                    | Drag-Anfasser zum Einplanen in Kalendertage inkl. Auto-Öffnen der Schublade.                |
+| `useSpotWeather`         | Composable (`composables/useSpotWeather.ts`)               | Spots              | `ExcursionsView` (`ExcursionCard`), `ScheduleView`    | Reaktiver Wetter-Abruf für geplante Termine/Orte mit Fallbacks.                             |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 

@@ -1,4 +1,4 @@
-import { onUnmounted, ref } from 'vue';
+import { getCurrentInstance, onUnmounted, ref } from 'vue';
 
 // Eigene Pointer-Events-basierte Drag-Erkennung statt nativem HTML5 draggable/dragstart: natives
 // HTML5-DnD feuert auf Android Chrome über Touch i. d. R. gar nicht und ist auf iOS Safari nur
@@ -90,7 +90,9 @@ export function usePointerDrag(options: PointerDragOptions) {
     event.preventDefault();
   }
 
-  onUnmounted(cleanupListeners);
+  if (getCurrentInstance()) {
+    onUnmounted(cleanupListeners);
+  }
 
   return { dragging, ghostStyle, onPointerDown };
 }
