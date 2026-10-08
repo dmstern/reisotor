@@ -1,67 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { api } from '../api/client';
-import type {
-  DiaryEntry,
-  Note,
-  PackingItem,
-  ScheduleItem,
-  ShoppingItem,
-  TodoItem,
-  User,
-} from '../api/types';
-import { deriveTravelItems } from '../utils/deriveTravelItems';
+import { computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
-import { useLiveSyncStore } from '../stores/liveSync';
-import { useExcursionsStore } from '../stores/excursions';
-import { useSpotsStore } from '../stores/spots';
 import { useBudgetStore } from '../stores/budget';
 import { useDrawersStore } from '../stores/drawers';
-import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
-import { useHomeCurrencyStore } from '../stores/homeCurrency';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
-import {
-  WIDGET_COLORS,
-  SECURITY_TILE_COLOR,
-  TRASH_TILE_COLOR,
-  TILE_SHADOW_ALPHA,
-} from '../utils/widgetColors';
-import { buildAllEntries } from '../utils/calendarEntries';
+import { WIDGET_COLORS, SECURITY_TILE_COLOR, TRASH_TILE_COLOR } from '../utils/widgetColors';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { ACCOMMODATION_ICON, SECURITY_CHECK_ICON } from '../utils/dashboardTiles';
-import {
-  detectWeatherAlerts,
-  fetchMergedWeather,
-  fetchWeatherForecast,
-  weatherCodeMeta,
-  type DailyWeather,
-  type WeatherAlert,
-} from '../utils/weather';
-import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
-import {
-  formatDate as formatDateShared,
-  formatTripDateRange,
-  formatWeekdayDate as formatWeekdayDateShared,
-  toLocalDateString,
-} from '../utils/dateFormat';
-import { computeDepartureCountdown, computeVacationPhase } from '../utils/departureCountdown';
-import {
-  formatDestinationLocationLabel,
-  formatHomeLocationLabel,
-  formatOverDestinationLabel,
-} from '../utils/weatherLocationLabel';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
-import AppIcon from '../components/AppIcon.vue';
-import Button from '../components/primitives/Button.vue';
-import DetailRow from '../components/primitives/DetailRow.vue';
-import WeatherIcon from '../components/WeatherIcon.vue';
-import WeatherDayDetailDialog from '../components/WeatherDayDetailDialog.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { DEMO_MODE } from '../demo/isDemoMode';
+import DashboardHero from '../components/dashboard/DashboardHero.vue';
+import DashboardWeatherCard from '../components/dashboard/DashboardWeatherCard.vue';
+import DashboardTile from '../components/dashboard/DashboardTile.vue';
 import DashboardNotesPreview from '../components/dashboard/DashboardNotesPreview.vue';
 import DashboardTrashPreview from '../components/dashboard/DashboardTrashPreview.vue';
 import DashboardAccommodationPreview from '../components/dashboard/DashboardAccommodationPreview.vue';
@@ -74,902 +28,96 @@ import DashboardTravelPreview from '../components/dashboard/DashboardTravelPrevi
 import DashboardCalendarPreview from '../components/dashboard/DashboardCalendarPreview.vue';
 import DashboardSecurityPreview from '../components/dashboard/DashboardSecurityPreview.vue';
 
+import { useTripCountdown } from '../composables/useTripCountdown';
+import { useDashboardData } from '../composables/useDashboardData';
+import { useDashboardTileSummaries } from '../composables/useDashboardTileSummaries';
+
 const auth = useAuthStore();
 const tripStore = useTripStore();
-const excursionsStore = useExcursionsStore();
-const spotsStore = useSpotsStore();
 const budgetStore = useBudgetStore();
 const drawers = useDrawersStore();
-const liveSync = useLiveSyncStore();
-const weatherProvider = useWeatherProviderStore();
-const homeCurrency = useHomeCurrencyStore();
 const uiSettings = useUiSettingsStore();
 const dashboardConfig = useDashboardConfigStore();
+
 const visibleTileKeys = computed(() =>
   dashboardConfig.entries.filter((e) => e.visible).map((e) => e.key)
 );
-const tripId = tripStore.currentTripId as number;
-const trip = computed(() => tripStore.currentTrip);
-const schedule = ref<ScheduleItem[]>([]);
-const todos = ref<TodoItem[]>([]);
-const packing = ref<PackingItem[]>([]);
-const shopping = ref<ShoppingItem[]>([]);
-// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
-// utils/deriveTravelItems.ts) - excursionsStore lädt automatisch bei erster Verwendung.
-const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
-// Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
-// normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
-const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
-const diaryEntries = ref<DiaryEntry[]>([]);
-const notes = ref<Note[]>([]);
-const users = ref<User[]>([]);
-const trashEntries = ref<{ id: number }[]>([]);
-const trashCount = computed(() => trashEntries.value.length);
-const loading = ref(true);
 
-const weatherDays = ref<DailyWeather[] | null>(null);
-const weatherError = ref<string | null>(null);
-const weatherLoading = ref(false);
+const {
+  trip,
+  tripId,
+  schedule,
+  todos,
+  packing,
+  shopping,
+  diaryEntries,
+  notes,
+  users,
+  trashCount,
+  travelItems,
+  accommodations,
+  loading,
+  loadDashboardData,
+} = useDashboardData();
 
-// Eigenständig geladen statt Teil des großen Promise.all unten: Open-Meteo ist ein externer Dienst,
-// ein Fehlschlag/eine Verzögerung dort soll das Laden des restlichen Dashboards nicht blockieren.
-async function loadWeather() {
-  if (trip.value?.lat == null || trip.value?.lng == null) return;
-  weatherLoading.value = true;
-  weatherError.value = null;
-  try {
-    weatherDays.value = await fetchMergedWeather(
-      tripId,
-      trip.value.lat,
-      trip.value.lng,
-      weatherProvider.model
-    );
-  } catch {
-    weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
-  } finally {
-    weatherLoading.value = false;
-  }
-}
+const { departureCountdown, vacationPhase, isTripOver } = useTripCountdown(trip);
 
-// "Zuhause" ist (wie im Kalender, siehe ScheduleView.vue) ein Spot mit is_home-Kennzeichnung statt
-// eines eigenen Account-/Trip-Felds - kein Schema-Änderung nötig, dieselbe Quelle wie dort.
-const homeSpot = computed(() =>
-  spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null)
-);
-const home = computed(() => {
-  const p = homeSpot.value;
-  return p ? { lat: p.lat as number, lng: p.lng as number } : null;
+const {
+  upcomingEntries,
+  packingTotal,
+  packingLists,
+  shoppingProgress,
+  todoProgress,
+  nextTravelItem,
+  currentOrNextAccommodation,
+  latestDiaryEntry,
+  formatDate,
+} = useDashboardTileSummaries({
+  trip,
+  schedule,
+  todos,
+  packing,
+  shopping,
+  diaryEntries,
+  travelItems,
+  accommodations,
+  users,
+  currentUserId: computed(() => auth.user?.id),
 });
-
-const homeWeatherDays = ref<DailyWeather[] | null>(null);
-const homeWeatherError = ref<string | null>(null);
-const homeWeatherLoading = ref(false);
-
-// Eigenständig geladen, analog zu loadWeather() oben - unabhängiger Fehlschlag (z. B. Zuhause noch
-// nicht markiert) soll weder das restliche Dashboard noch das Reiseziel-Wetter blockieren.
-async function loadHomeWeather() {
-  if (!home.value) return;
-  homeWeatherLoading.value = true;
-  homeWeatherError.value = null;
-  try {
-    homeWeatherDays.value = await fetchWeatherForecast(
-      home.value.lat,
-      home.value.lng,
-      weatherProvider.model
-    );
-  } catch {
-    homeWeatherError.value = 'Wetterdaten konnten nicht geladen werden.';
-  } finally {
-    homeWeatherLoading.value = false;
-  }
-}
-
-// Lädt neu, sobald sich die Koordinaten des Urlaubs oder des Zuhause-Spots tatsächlich ändern (z. B.
-// nach dem Bearbeiten des Urlaubsorts) ODER der Wetteranbieter in den Einstellungen gewechselt wird –
-// vorher lief loadWeather() nur einmal beim Mounten, eine Änderung danach hätte sonst weiterhin die
-// alten (oder gar keine) Wetterdaten gezeigt. weatherDays vorher zurücksetzen, damit währenddessen
-// nicht kurz die Vorhersage des alten Orts/Modells aufblitzt.
-watch(
-  () => [trip.value?.lat, trip.value?.lng, home.value?.lat, home.value?.lng, weatherProvider.model],
-  () => {
-    weatherDays.value = null;
-    homeWeatherDays.value = null;
-    loadWeather();
-    loadHomeWeather();
-  }
-);
-
-const destinationName = computed(
-  () => trip.value?.destination?.trim() || trip.value?.name?.trim() || ''
-);
-
-const destinationLocationLabel = computed(() =>
-  formatDestinationLocationLabel(trip.value?.destination, trip.value?.name)
-);
-
-const homeLocationLabel = computed(() => formatHomeLocationLabel(homeSpot.value?.title));
-
-const overDestinationLabel = computed(() =>
-  formatOverDestinationLabel(trip.value?.destination, trip.value?.name)
-);
-
-const weatherModelLabel = computed(
-  () =>
-    WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ??
-    weatherProvider.model
-);
-
-const selectedWeatherDay = ref<DailyWeather | null>(null);
-const selectedWeatherLocation = ref<{
-  lat?: number | null;
-  lng?: number | null;
-  label: string;
-} | null>(null);
-const weatherDayDialogOpen = ref(false);
-
-function openWeatherDayDialog(
-  day: DailyWeather,
-  loc?: { lat?: number | null; lng?: number | null; label: string }
-) {
-  selectedWeatherDay.value = day;
-  selectedWeatherLocation.value = loc ?? {
-    lat: trip.value?.lat,
-    lng: trip.value?.lng,
-    label: destinationName.value || 'Reiseziel',
-  };
-  weatherDayDialogOpen.value = true;
-}
-
-function getDayAlert(day: DailyWeather | null): WeatherAlert | undefined {
-  if (!day) return undefined;
-  return detectWeatherAlerts([day])[0];
-}
-
-const regionInfo = ref<RegionInfo | null>(null);
-const regionError = ref<string | null>(null);
-const regionLoading = ref(false);
-
-// Eigenständig geladen (analog zu loadWeather() oben): ein externer Dienst soll das Laden des
-// restlichen Dashboards nicht blockieren, ein Fehlschlag blendet nur diese Card aus.
-async function loadRegionInfo() {
-  if (!trip.value) return;
-  regionLoading.value = true;
-  regionError.value = null;
-  try {
-    regionInfo.value = await fetchRegionInfo(trip.value.id);
-  } catch {
-    regionError.value = 'Regionsinfos konnten nicht geladen werden.';
-  } finally {
-    regionLoading.value = false;
-  }
-}
-
-// Neu laden, wenn sich der Urlaub oder die Heimatwährung (Wechselkurs-Vergleich) ändert.
-watch(
-  () => [trip.value?.id, homeCurrency.currency],
-  () => {
-    regionInfo.value = null;
-    loadRegionInfo();
-  }
-);
-
-// Sprache/Währung/Sicherheitshinweis sind je nach Land oft nur teilweise oder gar nicht verfügbar
-// (z. B. keine Einträge bei travel-advisory.info, keine Wechselkurs-Notierung für die Währung) -
-// nur die Quellen nennen, die tatsächlich zu einer sichtbaren Zeile im Template beigetragen haben,
-// statt pauschal alle drei zu zitieren.
-const regionSourceParts = computed(() => {
-  if (!regionInfo.value) return [];
-  const parts: string[] = [];
-  if (regionInfo.value.languages.length || regionInfo.value.currency) parts.push('REST Countries');
-  if (regionInfo.value.currency && regionInfo.value.exchangeRate != null)
-    parts.push('open.er-api.com');
-  if (regionInfo.value.advisory) parts.push('travel-advisory.info');
-  return parts;
-});
-const regionShowsExchange = computed(
-  () => !!(regionInfo.value?.currency && regionInfo.value.exchangeRate != null)
-);
-
-// WIDGET_COLORS/SECURITY_TILE_COLOR liegen jetzt in utils/widgetColors.ts (NavBar.vue nutzt sie für
-// die optionale Nav-Einfärbung mit, siehe NAV_LINK_COLORS dort).
-
-onMounted(async () => {
-  try {
-    const [scheduleRes, todosRes, packingRes, shoppingRes, diaryRes, notesRes, usersRes, trashRes] =
-      await Promise.all([
-        api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
-        api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
-        api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
-        api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
-        api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
-        api.get<Note[]>(`/notes?trip_id=${tripId}`),
-        api.get<User[]>(`/trips/${tripId}/members`),
-        api.get<{ id: number }[]>(`/trash?trip_id=${tripId}`),
-        spotsStore.load(),
-        budgetStore.load(),
-      ]);
-    schedule.value = scheduleRes;
-    todos.value = todosRes;
-    packing.value = packingRes;
-    shopping.value = shoppingRes;
-    diaryEntries.value = diaryRes;
-    notes.value = notesRes;
-    users.value = usersRes;
-    trashEntries.value = trashRes;
-  } catch {
-    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
-    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
-    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
-  } finally {
-    loading.value = false;
-  }
-  loadWeather();
-  loadRegionInfo();
-});
-
-// Echtzeit-Sync (siehe stores/liveSync.ts): Widgets aktualisieren, sobald Änderungen eintreffen
-watch(
-  () => liveSync.domainVersion.schedule,
-  async () => {
-    try {
-      schedule.value = await api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.todos,
-  async () => {
-    try {
-      todos.value = await api.get<TodoItem[]>(`/todos?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.packing,
-  async () => {
-    try {
-      packing.value = await api.get<PackingItem[]>(`/packing?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.shopping,
-  async () => {
-    try {
-      shopping.value = await api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.notes,
-  async () => {
-    try {
-      notes.value = await api.get<Note[]>(`/notes?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-watch(
-  () => liveSync.domainVersion.diary,
-  async () => {
-    try {
-      diaryEntries.value = await api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`);
-    } catch {
-      // offline / ignorable
-    }
-  }
-);
-
-const todayStr = () => toLocalDateString(new Date());
-
-// Tickt einmal pro Minute, damit die Stunden-Anzeige unten (departureCountdown) während einer
-// offen gelassenen Seite nicht stehen bleibt, ohne bei jeder Sekunde unnötig neu zu rendern.
-const now = ref(new Date());
-let nowTimer: ReturnType<typeof setInterval> | null = null;
-onMounted(() => {
-  nowTimer = setInterval(() => {
-    now.value = new Date();
-  }, 60_000);
-});
-onUnmounted(() => {
-  if (nowTimer != null) clearInterval(nowTimer);
-});
-
-const departureCountdown = computed(() =>
-  trip.value?.start_date ? computeDepartureCountdown(trip.value.start_date, now.value) : null
-);
-
-// Löst departureCountdown's frühere 'departed'-Phase ab, die dauerhaft "Gute Reise!" zeigte - auch
-// noch mitten im Urlaub oder lange nach dessen Ende. computeVacationPhase() liefert stattdessen
-// eigene Phasen für Ankunft/laufenden Urlaub/letzten Tag/vorbei (siehe dortiger Kommentar).
-const vacationPhase = computed(() =>
-  trip.value ? computeVacationPhase(trip.value, now.value) : null
-);
-
-const isTripOver = computed(() => {
-  if (vacationPhase.value?.phase === 'over') return true;
-  if (trip.value?.end_date && trip.value.end_date < todayStr()) return true;
-  return false;
-});
-
-// Kalender-Widget: echte Termine + eingebettete synthetische Einträge (Urlaub-Start/-Ende, ToDo
-// mit Fälligkeitsdatum), sortiert, die nächsten drei statt nur den einen nächsten (Batch 12).
-const upcomingEntries = computed(() =>
-  buildAllEntries(
-    schedule.value,
-    trip.value,
-    todos.value,
-    travelItems.value,
-    excursionsStore.excursions,
-    spotsStore.spots
-  )
-    .filter((e) => e.endDate >= todayStr())
-    .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
-    .slice(0, 3)
-);
-
-function formatDate(d: string) {
-  return formatDateShared(d, { includeYear: false });
-}
-
-// Packliste: ein zusammengefasstes Widget (statt drei einzelner Tiles) mit Gesamtfortschritt
-// plus kompakter Aufschlüsselung je Teilliste (Batch 12).
-function progressOf(listItems: PackingItem[]) {
-  const total = listItems.reduce((sum, p) => sum + p.quantity, 0);
-  const checked = listItems.reduce((sum, p) => sum + Math.min(p.packed_count, p.quantity), 0);
-  return { total, checked };
-}
-const packingTotal = computed(() => progressOf(packing.value));
-const packingLists = computed(() => {
-  const shared = {
-    key: 'shared',
-    title: 'Gemeinsam',
-    avatar: '🤝',
-    ...progressOf(packing.value.filter((p) => p.owner_id == null)),
-  };
-  const perUser = users.value.map((u) => ({
-    key: `user-${u.id}`,
-    title: u.id === auth.user?.id ? 'Meine Liste' : u.username,
-    avatar: u.avatar,
-    ...progressOf(packing.value.filter((p) => p.owner_id === u.id)),
-  }));
-  return [...perUser, shared];
-});
-
-const shoppingProgress = computed(() => {
-  const total = shopping.value.length;
-  const checked = shopping.value.filter((s) => s.checked).length;
-  return { total, checked };
-});
-
-const todoProgress = computed(() => {
-  const total = todos.value.length;
-  const done = todos.value.filter((t) => t.done).length;
-  return { total, done };
-});
-
-const nextTravelItem = computed(
-  () =>
-    [...travelItems.value]
-      .filter((t) => t.date && t.date >= todayStr())
-      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0] ?? null
-);
-
-const currentOrNextAccommodation = computed(() => {
-  const today = todayStr();
-  const current = accommodations.value.find(
-    (a) => a.start_date && a.end_date && a.start_date <= today && today <= a.end_date
-  );
-  if (current) return current;
-  return [...accommodations.value]
-    .filter((a) => a.start_date && a.start_date >= today)
-    .sort((a, b) => (a.start_date ?? '').localeCompare(b.start_date ?? ''))[0];
-});
-
-// Sortierung nach dem (frei änderbaren) Eintrags-Datum statt nur created_at - muss mit der
-// Reihenfolge in DiaryView.vue übereinstimmen, sonst zeigt die Kachel hier einen anderen Eintrag
-// als "zuletzt" als den, der dort tatsächlich ganz oben steht (z. B. nach einem rückblickend
-// nachgetragenen Eintrag mit einem älteren Datum).
-const latestDiaryEntry = computed(
-  () =>
-    [...diaryEntries.value].sort(
-      (a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)
-    )[0]
-);
 
 function jumpToTrip() {
   tripStore.requestEditTrip();
 }
 
-// Nur die Tage zeigen, die tatsächlich im Urlaubszeitraum liegen UND von Open-Meteo abgedeckt sind
-// (nur die kommenden ~16 Tage plus 1 Tag rückwirkend, siehe utils/weather.ts) – bei weiter
-// entfernten Urlauben bleibt die Liste vorerst leer statt falsche/fehlende Tage zu zeigen.
-const vacationForecastDays = computed(() => {
-  if (!weatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
-    return [];
-  const s = trip.value.start_date;
-  const e = trip.value.end_date;
-  return weatherDays.value.filter((d) => d.date >= s && d.date <= e);
+onMounted(async () => {
+  await loadDashboardData();
 });
-
-function addDaysToDateStr(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return toLocalDateString(d);
-}
-
-// Standardmäßig nur die letzten paar Urlaubstage (Packen/Heimreise im Blick), wahlweise über
-// uiSettings.showHomeWeatherFullTrip (SettingsView.vue) für den kompletten Urlaubszeitraum wie beim
-// Reiseziel-Wetter oben.
-const HOME_WEATHER_TAIL_DAYS = 3;
-const homeForecastDays = computed(() => {
-  if (!homeWeatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
-    return [];
-  const s = trip.value.start_date;
-  const e = trip.value.end_date;
-  const rangeStart = uiSettings.showHomeWeatherFullTrip
-    ? s
-    : addDaysToDateStr(e, -(HOME_WEATHER_TAIL_DAYS - 1));
-  return homeWeatherDays.value.filter((d) => d.date >= rangeStart && d.date <= e);
-});
-
-// Zeigt zusätzlich zur (ggf. noch nicht verfügbaren) Urlaubs-Vorhersage immer auch das aktuelle
-// Wetter am Zielort – die Vorhersage deckt dank past_days:1 im Fetch (utils/weather.ts) ohnehin
-// bereits heute mit ab, unabhängig davon, ob der Urlaub selbst schon im 16-Tage-Fenster liegt.
-const todayWeather = computed(() => weatherDays.value?.find((d) => d.date === todayStr()) ?? null);
-const todayHomeWeather = computed(
-  () => homeWeatherDays.value?.find((d) => d.date === todayStr()) ?? null
-);
-
-function formatWeekdayDate(d: string) {
-  return formatWeekdayDateShared(d);
-}
 </script>
 
 <template>
   <div class="page" v-if="!loading">
-    <header
-      class="hero card"
-      :style="
-        trip?.image_url
-          ? {
-              backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${trip.image_url})`,
-            }
-          : {}
-      "
-      :class="{ 'has-image': trip?.image_url }"
-    >
-      <div class="hero-header">
-        <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
-        <div class="banner-actions">
-          <Button
-            variant="secondary"
-            class="banner-action-btn"
-            title="Urlaub bearbeiten"
-            aria-label="Urlaub bearbeiten"
-            @click="jumpToTrip"
-          >
-            <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
-            <span class="banner-action-label">Bearbeiten</span>
-          </Button>
-        </div>
-      </div>
-      <p v-if="trip?.destination">
-        <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
-        {{ trip.destination }}
-      </p>
-      <p v-if="trip">{{ formatTripDateRange(trip.start_date, trip.end_date) }}</p>
-      <p v-if="departureCountdown?.phase === 'days'" class="countdown">
-        Noch
-        <span class="nobr"
-          >{{ departureCountdown.days }}&nbsp;{{
-            departureCountdown.days === 1 ? 'Tag' : 'Tage'
-          }}</span
-        >
-        bis zur Abreise 🎒
-      </p>
-      <p v-else-if="departureCountdown?.phase === 'hours'" class="countdown">
-        Noch
-        <span class="nobr"
-          >{{ departureCountdown.hours }}&nbsp;{{
-            departureCountdown.hours === 1 ? 'Stunde' : 'Stunden'
-          }}</span
-        >
-        bis zur Abreise 🎒
-      </p>
-      <p v-else-if="vacationPhase?.phase === 'arrived'" class="countdown">
-        Der Urlaub hat begonnen! 🌴
-      </p>
-      <p
-        v-else-if="vacationPhase?.phase === 'ongoing' && uiSettings.showVacationCountdown"
-        class="countdown"
-      >
-        Noch
-        <span class="nobr"
-          >{{ vacationPhase.daysLeft }}&nbsp;{{
-            vacationPhase.daysLeft === 1 ? 'Tag' : 'Tage'
-          }}</span
-        >
-        Urlaub 🏖️
-      </p>
-      <p v-else-if="vacationPhase?.phase === 'ongoing'" class="countdown">
-        Genießt euren Urlaub! 🏖️
-      </p>
-      <p v-else-if="vacationPhase?.phase === 'lastDay'" class="countdown">Letzter Urlaubstag 🌅</p>
-      <p v-else-if="isTripOver" class="countdown">Der Urlaub ist vorbei 👋</p>
-    </header>
+    <DashboardHero
+      :trip="trip"
+      :departure-countdown="departureCountdown"
+      :vacation-phase="vacationPhase"
+      :is-trip-over="isTripOver"
+      :show-vacation-countdown="uiSettings.showVacationCountdown"
+      @edit="jumpToTrip"
+    />
 
-    <!-- Wetter + Reiseregion in einer Card statt zweier separater: beide sind "Infos über das
-         Reiseziel" und passen inhaltlich zusammen; eine eigene, oft nur teilweise befüllte
-         Reiseregion-Card daneben wirkte redundant. Reiseregion-Teil ist rein additiv (eigener
-         v-if/v-else-if-Block unten) und bleibt komplett weg, wenn nichts davon tatsächlich Daten
-         hat - keine Überschrift/Quelle ohne Inhalt. -->
-    <section class="card weather-card">
-      <h3><AppIcon :icon="ACTION_ICONS.sun" :size="16" group="actions" /> Wetter</h3>
-      <template v-if="trip?.lat != null && trip?.lng != null">
-        <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
-        <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
-        <template v-else>
-          <!-- Nach Urlaubsende (isTripOver): Falls ein Heimatort mit Koordinaten
-               hinterlegt ist, wird das heutige Wetter zuhause angezeigt (Nutzer:innen sind wieder
-               daheim), und das Reiseziel-Wetter transparent als "Heute am Reiseziel" ausgewiesen.
-               Vor/während des Urlaubs wird nur das Reiseziel transparent benannt. -->
-          <div
-            v-if="isTripOver && home && todayHomeWeather"
-            class="weather-today clickable"
-            role="button"
-            tabindex="0"
-            @click="
-              openWeatherDayDialog(todayHomeWeather, {
-                lat: home.lat,
-                lng: home.lng,
-                label: homeSpot?.title || 'Zuhause',
-              })
-            "
-            @keydown.enter.prevent="
-              openWeatherDayDialog(todayHomeWeather, {
-                lat: home.lat,
-                lng: home.lng,
-                label: homeSpot?.title || 'Zuhause',
-              })
-            "
-            @keydown.space.prevent="
-              openWeatherDayDialog(todayHomeWeather, {
-                lat: home.lat,
-                lng: home.lng,
-                label: homeSpot?.title || 'Zuhause',
-              })
-            "
-          >
-            <span class="weather-today-label">
-              <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" />
-              Heute {{ homeLocationLabel }}
-            </span>
-            <div class="weather-icon-wrapper">
-              <WeatherIcon
-                class="weather-icon"
-                :size="22"
-                :code="todayHomeWeather.weatherCode"
-                :title="weatherCodeMeta(todayHomeWeather.weatherCode).label"
-              />
-              <span
-                v-if="getDayAlert(todayHomeWeather)"
-                class="weather-alert-badge"
-                :class="getDayAlert(todayHomeWeather)!.severity"
-                :title="getDayAlert(todayHomeWeather)!.title"
-              >
-                <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
-              </span>
-            </div>
-            <span class="weather-temp"
-              >{{ Math.round(todayHomeWeather.tempMax) }}° /
-              {{ Math.round(todayHomeWeather.tempMin) }}°</span
-            >
-            <span v-if="todayHomeWeather.precipitationProbability != null" class="weather-rain">
-              <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
-                todayHomeWeather.precipitationProbability
-              }}%
-            </span>
-          </div>
+    <DashboardWeatherCard v-if="trip" :trip="trip" :is-trip-over="isTripOver" />
 
-          <div
-            v-if="todayWeather"
-            class="weather-today clickable"
-            role="button"
-            tabindex="0"
-            @click="openWeatherDayDialog(todayWeather)"
-            @keydown.enter.prevent="openWeatherDayDialog(todayWeather)"
-            @keydown.space.prevent="openWeatherDayDialog(todayWeather)"
-          >
-            <span class="weather-today-label">
-              <AppIcon v-if="isTripOver" :icon="ACTION_ICONS.vacation" :size="14" group="actions" />
-              Heute
-              {{ isTripOver ? overDestinationLabel : destinationLocationLabel }}
-            </span>
-            <div class="weather-icon-wrapper">
-              <WeatherIcon
-                class="weather-icon"
-                :size="22"
-                :code="todayWeather.weatherCode"
-                :title="weatherCodeMeta(todayWeather.weatherCode).label"
-              />
-              <span
-                v-if="getDayAlert(todayWeather)"
-                class="weather-alert-badge"
-                :class="getDayAlert(todayWeather)!.severity"
-                :title="getDayAlert(todayWeather)!.title"
-              >
-                <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
-              </span>
-            </div>
-            <span class="weather-temp"
-              >{{ Math.round(todayWeather.tempMax) }}° /
-              {{ Math.round(todayWeather.tempMin) }}°</span
-            >
-            <span v-if="todayWeather.precipitationProbability != null" class="weather-rain">
-              <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
-                todayWeather.precipitationProbability
-              }}%
-            </span>
-          </div>
-
-          <p class="weather-section-label">
-            <AppIcon
-              :icon="isTripOver ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
-              :size="14"
-              group="actions"
-            />
-            {{ isTripOver ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
-          </p>
-          <p v-if="!trip?.start_date" class="hint">
-            Hinterlege einen Reisezeitraum beim Urlaub, um hier die Wettervorhersage für die
-            Urlaubstage zu sehen.
-          </p>
-          <p v-else-if="!vacationForecastDays.length && !isTripOver" class="hint">
-            Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
-            ~16 Tage ab, schau kurz vorher nochmal vorbei.
-          </p>
-          <p v-else-if="!vacationForecastDays.length" class="hint">
-            Für diesen Zeitraum sind keine Wetterdaten gespeichert.
-          </p>
-          <div v-else class="weather-days">
-            <div
-              class="weather-day clickable"
-              :class="{ past: day.date < todayStr() }"
-              v-for="day in vacationForecastDays"
-              :key="day.date"
-              role="button"
-              tabindex="0"
-              @click="openWeatherDayDialog(day)"
-              @keydown.enter.prevent="openWeatherDayDialog(day)"
-              @keydown.space.prevent="openWeatherDayDialog(day)"
-            >
-              <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-              <div class="weather-icon-wrapper">
-                <WeatherIcon
-                  class="weather-icon"
-                  :size="22"
-                  :code="day.weatherCode"
-                  :title="weatherCodeMeta(day.weatherCode).label"
-                />
-                <span
-                  v-if="getDayAlert(day)"
-                  class="weather-alert-badge"
-                  :class="getDayAlert(day)!.severity"
-                  :title="getDayAlert(day)!.title"
-                >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
-                </span>
-              </div>
-              <span class="weather-temp"
-                >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
-              >
-              <span v-if="day.precipitationProbability != null" class="weather-rain">
-                <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
-                  day.precipitationProbability
-                }}%
-              </span>
-            </div>
-          </div>
-          <!-- Andere Wetter-Apps (Apple Weather/Google) können abweichende Werte zeigen, v. a. bei der
-               Bewölkung – eigenes Modell/eigene Quelle statt eines Fehlers, deshalb hier explizit
-               benannt (wie DuckDuckGo es bei seinem eigenen Wetter-Widget genauso mit "Quelle: Apple
-               Weather" macht). Klickbar statt reinem Text: springt direkt zur Wetter-Anbieter-Auswahl
-               in den Einstellungen, falls der Wert einmal nicht passt. Im backend-losen Demo-Build
-               (utils/weather.ts's DEMO_MODE-Zweig) sind die Werte erfunden statt echt von Open-Meteo
-               abgefragt - "Anbieter wechseln" wäre dort nur eine Sackgasse (ändert nichts an den
-               Fake-Daten), deshalb eigener, nicht klickbarer Hinweis. -->
-          <p v-if="DEMO_MODE" class="weather-source static">
-            Demo-Wetterdaten (keine echte Vorhersage)
-          </p>
-          <button
-            v-else
-            type="button"
-            class="weather-source"
-            @click="tripStore.requestEditTrip('settings')"
-          >
-            Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
-          </button>
-        </template>
-      </template>
-      <p v-else class="hint">
-        Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu
-        sehen.
-      </p>
-
-      <!-- Unabhängig vom Trip-Maps-Link oben (kein v-if="trip?.lat...", das bezieht sich nur auf
-           das Reiseziel) - Zuhause kommt aus einem eigenen, in Reise > Orte per is_home markierten
-           Spot (siehe home-Computed, dasselbe Muster wie ScheduleView.vue's Kalender-Wetter). -->
-      <template v-if="home && !isTripOver">
-        <p class="weather-section-label">
-          <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause
-        </p>
-        <p v-if="homeWeatherLoading && !homeWeatherDays" class="hint">Lädt …</p>
-        <p v-else-if="homeWeatherError" class="hint error">{{ homeWeatherError }}</p>
-        <p v-else-if="!homeForecastDays.length" class="hint">
-          Für
-          {{
-            uiSettings.showHomeWeatherFullTrip ? 'den Urlaubszeitraum' : 'die letzten Urlaubstage'
-          }}
-          liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16 Tage ab, schau
-          kurz vorher nochmal vorbei.
-        </p>
-        <div v-else class="weather-days">
-          <div
-            class="weather-day clickable"
-            v-for="day in homeForecastDays"
-            :key="day.date"
-            role="button"
-            tabindex="0"
-            @click="
-              openWeatherDayDialog(day, {
-                lat: home.lat,
-                lng: home.lng,
-                label: homeSpot?.title || 'Zuhause',
-              })
-            "
-            @keydown.enter.prevent="
-              openWeatherDayDialog(day, {
-                lat: home.lat,
-                lng: home.lng,
-                label: homeSpot?.title || 'Zuhause',
-              })
-            "
-            @keydown.space.prevent="
-              openWeatherDayDialog(day, {
-                lat: home.lat,
-                lng: home.lng,
-                label: homeSpot?.title || 'Zuhause',
-              })
-            "
-          >
-            <span class="weather-date">{{ formatWeekdayDate(day.date) }}</span>
-            <div class="weather-icon-wrapper">
-              <WeatherIcon
-                class="weather-icon"
-                :size="22"
-                :code="day.weatherCode"
-                :title="weatherCodeMeta(day.weatherCode).label"
-              />
-              <span
-                v-if="getDayAlert(day)"
-                class="weather-alert-badge"
-                :class="getDayAlert(day)!.severity"
-                :title="getDayAlert(day)!.title"
-              >
-                <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
-              </span>
-            </div>
-            <span class="weather-temp"
-              >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
-            >
-            <span v-if="day.precipitationProbability != null" class="weather-rain">
-              <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
-                day.precipitationProbability
-              }}%
-            </span>
-          </div>
-        </div>
-      </template>
-      <p v-else-if="!home && !isTripOver" class="hint">
-        Markiere in der Karte unter Spots einen Spot mit
-        <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
-        zusätzlich das Wetter zuhause gegen Ende des Urlaubs zu sehen.
-      </p>
-
-      <template v-if="regionLoading && !regionInfo">
-        <p class="weather-section-label">
-          <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
-        </p>
-        <p class="hint">Lädt …</p>
-      </template>
-      <template v-else-if="regionError">
-        <p class="weather-section-label">
-          <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
-        </p>
-        <p class="hint error">{{ regionError }}</p>
-      </template>
-      <template
-        v-else-if="
-          regionInfo && (regionInfo.languages.length || regionInfo.currency || regionInfo.advisory)
-        "
-      >
-        <p class="weather-section-label">
-          <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
-        </p>
-        <DetailRow v-if="regionInfo.languages.length" label="Sprache">
-          {{ regionInfo.languages.join(', ') }}
-        </DetailRow>
-        <DetailRow v-if="regionInfo.currency" label="Währung">
-          <AppIcon :icon="ACTION_ICONS.currency" :size="14" group="actions" />
-          {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
-          <span v-if="regionInfo.exchangeRate != null">
-            · <span class="nobr">1&nbsp;{{ regionInfo.currency.code }}</span> ≈
-            <span class="nobr"
-              >{{ regionInfo.exchangeRate.toFixed(2) }}&nbsp;{{ homeCurrency.currency }}</span
-            >
-          </span>
-        </DetailRow>
-        <DetailRow v-if="regionInfo.advisory" label="Sicherheit">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-          {{ regionInfo.advisory.message }}
-          <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
-        </DetailRow>
-        <!-- Nennt nur Quellen, die tatsächlich zu einer der Zeilen oben beigetragen haben (siehe
-             regionSourceParts) - und verlinkt nur zur Heimatwährungs-Auswahl, wenn ein Wechselkurs
-             auch wirklich mit dabei ist (analog zum "Quelle: Open-Meteo"-Hinweis beim Wetter oben). -->
-        <router-link
-          v-if="regionShowsExchange"
-          to="/settings?tab=trip#home-currency-settings"
-          class="weather-source"
-        >
-          Quelle: {{ regionSourceParts.join(' · ') }} · Anbieter wechseln
-        </router-link>
-        <p v-else class="weather-source static">Quelle: {{ regionSourceParts.join(' · ') }}</p>
-      </template>
-    </section>
-
-    <!-- Sichtbarkeit + Reihenfolge der Kacheln kommen aus dashboardConfig.ts (SettingsView.vue's
-         "🧩 Dashboard-Kacheln"-Einstellung, 1:1 nach dem Muster der NavBar-Konfiguration/
-         navConfig.ts) - jede Kachel behält ihre bisherige, unveränderte Markup/Logik, nur die
-         Reihenfolge/Sichtbarkeit ist jetzt datengetrieben statt fest im Template verdrahtet. */-->
     <div class="grid cards animate-cascade-children">
       <template v-for="key in visibleTileKeys" :key="key">
         <!-- Kalender: Desktop-Schublade bzw. Mobil-Seite /calendar (siehe drawers.openCalendar()),
              kein eigener router-link nötig, da die Kachel je nach Breite unterschiedlich navigieren muss -->
-        <button
+        <DashboardTile
           v-if="key === 'calendar'"
-          type="button"
-          class="card tile tile-btn"
-          :style="{
-            background: `${WIDGET_COLORS.get('schedule')}0d`,
-            borderColor: WIDGET_COLORS.get('schedule'),
-            '--tile-shadow': `${WIDGET_COLORS.get('schedule')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('schedule')!"
+          :icon="SECTION_ICON_DEFS.calendar"
+          title="Kalender"
           @click="drawers.openCalendar()"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('schedule')}26`,
-              borderColor: WIDGET_COLORS.get('schedule'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('schedule')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.calendar"
-            group="navigation"
-            :color="WIDGET_COLORS.get('schedule')"
-          />
-          <h3>Kalender</h3>
           <DashboardCalendarPreview :upcoming="upcomingEntries" />
           <ul v-if="upcomingEntries.length" class="mini-list">
             <li v-for="entry in upcomingEntries" :key="entry.key">
@@ -984,32 +132,16 @@ function formatWeekdayDate(d: string) {
             </li>
           </ul>
           <p v-else>Noch nichts geplant</p>
-        </button>
+        </DashboardTile>
 
         <!-- Packliste (zusammengefasst) -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'packing'"
           :to="`/trip/${tripId}/listen?tab=packing`"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('packing')}0d`,
-            borderColor: WIDGET_COLORS.get('packing'),
-            '--tile-shadow': `${WIDGET_COLORS.get('packing')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('packing')!"
+          :icon="SECTION_ICON_DEFS.packing"
+          title="Packliste"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('packing')}26`,
-              borderColor: WIDGET_COLORS.get('packing'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('packing')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.packing"
-            group="navigation"
-            :color="WIDGET_COLORS.get('packing')"
-          />
-          <h3>Packliste</h3>
           <DashboardSuitcasePreview :packed="packingTotal.checked" :total="packingTotal.total" />
           <BudgetMeter
             label="Gepackt"
@@ -1023,32 +155,16 @@ function formatWeekdayDate(d: string) {
               {{ list.avatar }} {{ list.title }}: {{ list.checked }}/{{ list.total }}
             </li>
           </ul>
-        </router-link>
+        </DashboardTile>
 
         <!-- Budget -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'budget'"
           :to="`/trip/${tripId}/budget`"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('budget')}0d`,
-            borderColor: WIDGET_COLORS.get('budget'),
-            '--tile-shadow': `${WIDGET_COLORS.get('budget')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('budget')!"
+          :icon="SECTION_ICON_DEFS.budget"
+          title="Budget"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('budget')}26`,
-              borderColor: WIDGET_COLORS.get('budget'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('budget')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.budget"
-            group="navigation"
-            :color="WIDGET_COLORS.get('budget')"
-          />
-          <h3>Budget</h3>
           <DashboardBudgetPreview
             :spent="budgetStore.totalSpent"
             :target="budgetStore.grandTotal"
@@ -1059,32 +175,16 @@ function formatWeekdayDate(d: string) {
             :target="budgetStore.grandTotal"
             :color="WIDGET_COLORS.get('budget')!"
           />
-        </router-link>
+        </DashboardTile>
 
         <!-- Einkaufsliste -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'shopping'"
           :to="`/trip/${tripId}/listen?tab=shopping`"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('shopping')}0d`,
-            borderColor: WIDGET_COLORS.get('shopping'),
-            '--tile-shadow': `${WIDGET_COLORS.get('shopping')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('shopping')!"
+          :icon="SECTION_ICON_DEFS.shopping"
+          title="Einkaufsliste"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('shopping')}26`,
-              borderColor: WIDGET_COLORS.get('shopping'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('shopping')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.shopping"
-            group="navigation"
-            :color="WIDGET_COLORS.get('shopping')"
-          />
-          <h3>Einkaufsliste</h3>
           <DashboardShoppingPreview
             :checked="shoppingProgress.checked"
             :total="shoppingProgress.total"
@@ -1096,32 +196,16 @@ function formatWeekdayDate(d: string) {
             :target="shoppingProgress.total"
             :color="WIDGET_COLORS.get('shopping')!"
           />
-        </router-link>
+        </DashboardTile>
 
         <!-- ToDo -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'todo'"
           :to="`/trip/${tripId}/listen?tab=todo`"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('todo')}0d`,
-            borderColor: WIDGET_COLORS.get('todo'),
-            '--tile-shadow': `${WIDGET_COLORS.get('todo')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('todo')!"
+          :icon="SECTION_ICON_DEFS.todo"
+          title="ToDo"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('todo')}26`,
-              borderColor: WIDGET_COLORS.get('todo'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('todo')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.todo"
-            group="navigation"
-            :color="WIDGET_COLORS.get('todo')"
-          />
-          <h3>ToDo</h3>
           <DashboardTodoPreview
             :todos="todos"
             :done="todoProgress.done"
@@ -1134,71 +218,36 @@ function formatWeekdayDate(d: string) {
             :target="todoProgress.total"
             :color="WIDGET_COLORS.get('todo')!"
           />
-        </router-link>
+        </DashboardTile>
 
         <!-- Reise (Fahrten/Flüge) -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'travel'"
           :to="`/trip/${tripId}/excursions?group=tours&tourRole=arrival,departure,onward`"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('travel')}0d`,
-            borderColor: WIDGET_COLORS.get('travel'),
-            '--tile-shadow': `${WIDGET_COLORS.get('travel')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('travel')!"
+          :icon="SECTION_ICON_DEFS.travel"
+          title="Reise"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('travel')}26`,
-              borderColor: WIDGET_COLORS.get('travel'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('travel')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.travel"
-            group="navigation"
-            :color="WIDGET_COLORS.get('travel')"
-          />
-          <h3>Reise</h3>
           <DashboardTravelPreview :next-item="nextTravelItem" :count="travelItems.length" />
           <p v-if="nextTravelItem">
             {{ formatDate(nextTravelItem.date!) }} — {{ nextTravelItem.title }}
           </p>
           <p v-else-if="travelItems.length">{{ travelItems.length }} Einträge</p>
           <p v-else>Noch nichts eingetragen</p>
-        </router-link>
+        </DashboardTile>
 
-        <!-- Unterkunft: seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts)
-             kein eigener Bereich mehr - Sprung zur Spots-Sicht (/excursions), bei bekannter aktueller/
-             nächster Unterkunft direkt mit Hash-Hervorhebung des jeweiligen Spots (siehe
-             ExcursionsView.vue's hashHighlightId-Verdrahtung). -->
-        <router-link
+        <!-- Unterkunft -->
+        <DashboardTile
           v-else-if="key === 'accommodation'"
           :to="{
             path: `/trip/${tripId}/excursions`,
             query: { category: 'Unterkunft' },
             hash: currentOrNextAccommodation ? `#spot-${currentOrNextAccommodation.id}` : undefined,
           }"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('accommodation')}0d`,
-            borderColor: WIDGET_COLORS.get('accommodation'),
-            '--tile-shadow': `${WIDGET_COLORS.get('accommodation')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('accommodation')!"
+          :icon="ACCOMMODATION_ICON"
+          title="Unterkunft"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('accommodation')}26`,
-              borderColor: WIDGET_COLORS.get('accommodation'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('accommodation')}26`,
-            }"
-            :icon="ACCOMMODATION_ICON"
-            group="navigation"
-            :color="WIDGET_COLORS.get('accommodation')"
-          />
-          <h3>Unterkunft</h3>
           <DashboardAccommodationPreview :accommodation="currentOrNextAccommodation" />
           <p v-if="currentOrNextAccommodation">
             {{ currentOrNextAccommodation.title
@@ -1208,32 +257,16 @@ function formatWeekdayDate(d: string) {
           </p>
           <p v-else-if="accommodations.length">{{ accommodations.length }} Einträge</p>
           <p v-else>Noch nichts eingetragen</p>
-        </router-link>
+        </DashboardTile>
 
         <!-- Tagebuch -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'diary'"
           :to="`/trip/${tripId}/diary`"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('diary')}0d`,
-            borderColor: WIDGET_COLORS.get('diary'),
-            '--tile-shadow': `${WIDGET_COLORS.get('diary')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('diary')!"
+          :icon="SECTION_ICON_DEFS.diary"
+          title="Tagebuch"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('diary')}26`,
-              borderColor: WIDGET_COLORS.get('diary'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('diary')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.diary"
-            group="navigation"
-            :color="WIDGET_COLORS.get('diary')"
-          />
-          <h3>Tagebuch</h3>
           <DashboardDiaryPreview :entries="diaryEntries" :latest-entry="latestDiaryEntry" />
           <p v-if="diaryEntries.length">
             {{ diaryEntries.length }} {{ diaryEntries.length === 1 ? 'Eintrag' : 'Einträge'
@@ -1242,489 +275,75 @@ function formatWeekdayDate(d: string) {
             >
           </p>
           <p v-else>Noch nichts geschrieben</p>
-        </router-link>
+        </DashboardTile>
 
         <!-- Notizen -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'notes'"
           :to="`/trip/${tripId}/notes`"
-          class="card tile"
-          :style="{
-            background: `${WIDGET_COLORS.get('notes')}0d`,
-            borderColor: WIDGET_COLORS.get('notes'),
-            '--tile-shadow': `${WIDGET_COLORS.get('notes')}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="WIDGET_COLORS.get('notes')!"
+          :icon="SECTION_ICON_DEFS.notes"
+          title="Notizen"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${WIDGET_COLORS.get('notes')}26`,
-              borderColor: WIDGET_COLORS.get('notes'),
-              '--tile-icon-shadow': `${WIDGET_COLORS.get('notes')}26`,
-            }"
-            :icon="SECTION_ICON_DEFS.notes"
-            group="navigation"
-            :color="WIDGET_COLORS.get('notes')"
-          />
-          <h3>Notizen</h3>
           <DashboardNotesPreview :notes="notes" />
           <p v-if="notes.length">
             {{ notes.length }} {{ notes.length === 1 ? 'Notiz' : 'Notizen' }}
           </p>
           <p v-else>Noch nichts notiert</p>
-        </router-link>
+        </DashboardTile>
 
-        <!-- Sicherheits-Check: reines Spaß-Gimmick ohne echte Funktion, siehe SecurityCheckView.vue -->
-        <router-link
+        <!-- Sicherheits-Check -->
+        <DashboardTile
           v-else-if="key === 'securityCheck'"
           to="/security-check"
-          class="card tile"
-          :style="{
-            background: `${SECURITY_TILE_COLOR}0d`,
-            borderColor: SECURITY_TILE_COLOR,
-            '--tile-shadow': `${SECURITY_TILE_COLOR}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="SECURITY_TILE_COLOR"
+          :icon="SECURITY_CHECK_ICON"
+          title="Sicherheits-Check"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${SECURITY_TILE_COLOR}26`,
-              borderColor: SECURITY_TILE_COLOR,
-              '--tile-icon-shadow': `${SECURITY_TILE_COLOR}26`,
-            }"
-            :icon="SECURITY_CHECK_ICON"
-            group="navigation"
-            :color="SECURITY_TILE_COLOR"
-          />
-          <h3>Sicherheits-Check</h3>
           <DashboardSecurityPreview :destination="trip?.destination" />
           <p>Der Reisotor scannt eure Reiseregion 🤖🔍</p>
-        </router-link>
+        </DashboardTile>
 
         <!-- Papierkorb -->
-        <router-link
+        <DashboardTile
           v-else-if="key === 'trash'"
           :to="`/trip/${tripId}/trash`"
-          class="card tile"
-          :style="{
-            background: `${TRASH_TILE_COLOR}0d`,
-            borderColor: TRASH_TILE_COLOR,
-            '--tile-shadow': `${TRASH_TILE_COLOR}${TILE_SHADOW_ALPHA}`,
-          }"
+          :color="TRASH_TILE_COLOR"
+          :icon="ACTION_ICONS.delete"
+          title="Papierkorb"
         >
-          <AppIcon
-            class="tile-icon"
-            :size="18"
-            :style="{
-              background: `${TRASH_TILE_COLOR}26`,
-              borderColor: TRASH_TILE_COLOR,
-              '--tile-icon-shadow': `${TRASH_TILE_COLOR}26`,
-            }"
-            :icon="ACTION_ICONS.delete"
-            group="navigation"
-            :color="TRASH_TILE_COLOR"
-          />
-          <h3>Papierkorb</h3>
           <DashboardTrashPreview :count="trashCount" />
           <p v-if="trashCount > 0">
             {{ trashCount }} gelöschte{{ trashCount === 1 ? 's Objekt' : ' Objekte' }}
           </p>
           <p v-else>Der Papierkorb ist leer</p>
-        </router-link>
+        </DashboardTile>
       </template>
     </div>
   </div>
   <ViewLoadingState v-else />
-
-  <WeatherDayDetailDialog
-    v-model="weatherDayDialogOpen"
-    :day="selectedWeatherDay"
-    :lat="selectedWeatherLocation?.lat ?? trip?.lat"
-    :lng="selectedWeatherLocation?.lng ?? trip?.lng"
-    :location-label="selectedWeatherLocation?.label || destinationName || 'Reiseziel'"
-  />
 </template>
 
 <style scoped>
-.hero {
-  position: relative;
-  margin-bottom: var(--space-4);
-  background: linear-gradient(135deg, var(--color-primary-tint), var(--color-surface));
-  background-size: cover;
-  background-position: center;
-}
-
-.hero.has-image {
-  color: #fff;
-}
-
-.hero.has-image h1,
-.hero.has-image p,
-.hero.has-image .countdown {
-  /* Die globale p { color: var(--color-text-muted) }-Regel (style.css) setzt die Farbe direkt auf
-     jedes <p> selbst – ein per Vererbung von .hero.has-image kommendes color:#fff greift dadurch
-     NICHT (eine eigene Deklaration am Element schlägt Vererbung immer, unabhängig von der
-     Spezifität des Vorfahren). Ort- und Datumszeile (reine <p> ohne eigene Klasse) waren deshalb
-     bei hinterlegtem Bild weiterhin kontrastarm grau statt weiß. */
-  color: #fff;
-}
-
-.hero-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.hero-header h1 {
-  margin: 0;
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-.banner-actions {
-  display: flex;
-  gap: var(--space-2);
-  flex-shrink: 0;
-  align-items: flex-start;
-}
-
-.banner-action-btn {
-  position: relative;
-  font-size: 0.8rem;
-  padding: 4px 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  box-shadow: none;
-  flex-shrink: 0;
-}
-
-.banner-action-label {
-  display: inline;
-}
-
-@container app-main (max-width: 768px) {
-  .banner-action-label {
-    display: none;
-  }
-
-  .banner-action-btn {
-    padding: 6px;
-    min-width: 32px;
-    min-height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .banner-action-btn::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-  }
-}
-
-@media (max-width: 768px) {
-  .banner-action-label {
-    display: none;
-  }
-
-  .banner-action-btn {
-    padding: 6px;
-    min-width: 32px;
-    min-height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .banner-action-btn::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-  }
-}
-
-.banner-action-btn:hover {
-  box-shadow: var(--shadow-sm);
-}
-
-/* .secondary ist transparent mit --color-primary-Schrift – über einem Foto (statt dem sonst
-   einfarbigen Verlaufs-Hintergrund) oft zu wenig Kontrast, je nach Bildmotiv. Bei hinterlegtem
-   Bild deshalb ein fester halbtransparenter dunkler Chip mit weißer Schrift, unabhängig vom
-   jeweiligen Bildmotiv immer gut lesbar (gleiches Muster wie die schwebenden Bearbeiten-/
-   Löschen-Buttons auf Karten-Vorschaubildern). */
-.hero.has-image .banner-action-btn {
-  background: rgba(20, 20, 18, 0.55);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: none;
-}
-
-.hero.has-image .banner-action-btn:hover {
-  background: rgba(20, 20, 18, 0.75);
-  box-shadow: var(--shadow-sm);
-}
-
-.hero h1 {
-  color: var(--color-primary-dark);
-}
-
-.countdown {
-  color: var(--color-accent);
-  font-weight: 600;
-}
-
-.weather-card {
-  margin-bottom: var(--space-4);
-}
-
-.weather-card h3 {
-  display: flex;
-  gap: 0.5em;
-  align-items: center;
-  color: var(--color-primary-dark);
-  font-size: 1rem;
-  margin-bottom: var(--space-2);
-}
-
-.weather-today {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-  font-weight: 600;
-}
-
-.weather-today-label {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex: 1;
-  min-width: 0;
-  color: var(--color-text-muted);
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.weather-section-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  margin: 0 0 var(--space-2);
-  color: var(--color-text-muted);
-  font-weight: 600;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.weather-card .hint {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-}
-
-.weather-card .hint.error {
-  color: var(--color-danger);
-}
-
-.weather-days {
-  display: flex;
-  gap: var(--space-2);
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.weather-day {
-  position: relative;
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 68px;
-  padding: var(--space-2);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-hover);
-}
-
-.day-alert-icon {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-}
-
-.day-alert-icon.warning {
-  color: var(--color-warning-dark);
-}
-
-.day-alert-icon.danger {
-  color: var(--color-danger-dark);
-}
-
-/* Bereits vergangene Urlaubstage (Rückblick-Modus, siehe vacationPhase 'over') optisch abgesetzt -
-   gleiches Muster wie .hint (gedämpfte Textfarbe) statt eines neuen Farb-Tokens. */
-.weather-day.past {
-  color: var(--color-text-muted);
-  opacity: 0.75;
-}
-
-.weather-date {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: capitalize;
-}
-
-.weather-icon {
-  font-size: 1.4rem;
-}
-
-.weather-temp {
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.weather-rain {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.72rem;
-  color: var(--color-accent-secondary);
-}
-
-.weather-source {
-  display: inline-block;
-  margin: var(--space-2) 0 var(--space-2);
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  background: none;
-  border: none;
-  padding: 6px 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.weather-source:hover {
-  color: var(--color-primary-dark);
-}
-
-/* Reine Text-Variante (kein <router-link>) für den Fall, dass keine der genannten Quellen zur
-   Heimatwährungs-Einstellung verlinkt werden soll (kein Wechselkurs unter den gezeigten Zeilen). */
-.weather-source.static {
-  text-decoration: none;
-  cursor: default;
-}
-
-.weather-source.static:hover {
-  color: var(--color-text-muted);
-}
-
-.region-advisory-score {
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-}
-
 .cards {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   padding-top: 22px;
-  /* Zeilenabstand größer als der globale .grid-Standard (--space-3, 16px): .tile-icon (unten) ragt
-     über den oberen Rand seiner eigenen Kachel hinaus (abgerundetes "Badge"-Icon, halb auf/
-     halb über der Kachel) - bei nur 16px Zeilenabstand überdeckt es damit die Kachel der Zeile
-     darüber. Dieser Space hier lässt ein paar Pixel Luft; Spaltenabstand bleibt beim schmaleren Standardwert,
-     da dort kein Icon hineinragt. */
+  /* Zeilenabstand größer als der globale .grid-Standard (--space-3, 16px): .tile-icon ragt
+     über den oberen Rand seiner eigenen Kachel hinaus (44px Kreis-Icon, 22px halb über die Kachel)
+     - bei nur 16px Zeilenabstand überdeckt es damit die Kachel der Zeile darüber.
+     --space-5 lässt dafür ausreichend Luft; Spaltenabstand bleibt beim Standardwert --space-3. */
   row-gap: var(--space-5);
   column-gap: var(--space-3);
 }
 
-.tile {
-  position: relative;
-  text-decoration: none;
-  color: inherit;
-  box-shadow: 0 2px 6px var(--tile-shadow, var(--shadow-sm));
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tile:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--tile-shadow, var(--shadow-md));
-}
-
-.tile-btn {
-  width: 100%;
-}
-
-.tile-icon {
-  position: absolute;
-  top: -22px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-full);
-  corner-shape: round;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  padding: 0.5rem;
-  backdrop-filter: blur(2px);
-}
-
-.tile h3 {
-  color: var(--color-primary-dark);
-  font-size: 1rem;
-  margin-top: var(--space-2);
-  text-align: center;
-}
-
-.tile > p {
-  text-align: center;
-  font-size: 0.88rem;
-  margin-top: auto;
-  padding-top: 2px;
-}
-
-.tile :deep(.budget-meter) {
-  margin-top: auto;
-}
-
 .mini-list {
   list-style: none;
-  margin: 4px 0 0;
+  margin: var(--space-1) 0 0;
   padding: 0;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   /* Block als Ganzes bleibt mittig in der Kachel (wie h3/p daneben), schrumpft dabei aber auf
      die tatsächlich benötigte Breite – sonst würde .entry-text (flex:1, s.u.) über die volle
      Kachelbreite gestreckt und sein Text (per :left ausdrücklich statt vom <button>-Element der
@@ -1739,7 +358,7 @@ function formatWeekdayDate(d: string) {
 .mini-list li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .entry-text {
@@ -1751,9 +370,9 @@ function formatWeekdayDate(d: string) {
 }
 
 .mini-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
   flex-shrink: 0;
 }
 
@@ -1761,7 +380,7 @@ function formatWeekdayDate(d: string) {
   color: var(--color-text-muted);
   flex-wrap: wrap;
   flex-direction: row;
-  gap: 4px 10px;
+  gap: var(--space-1) var(--space-2);
   /* Diese Variante (Zeilen-Umbruch statt vertikaler Liste) soll weiterhin die volle Kachelbreite
      nutzen können, nicht auf den engeren Fluchtlinien-Look der Kalender-Liste schrumpfen. */
   align-self: stretch;
@@ -1771,47 +390,5 @@ function formatWeekdayDate(d: string) {
 
 .mini-list.breakdown li {
   gap: 0;
-}
-
-.weather-icon-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.weather-alert-badge {
-  position: absolute;
-  top: -4px;
-  right: -6px;
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-full);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  box-shadow: var(--shadow-sm);
-}
-
-.weather-alert-badge.warning {
-  background: var(--color-warning);
-}
-
-.weather-alert-badge.danger {
-  background: var(--color-danger);
-}
-
-.weather-today.clickable,
-.weather-day.clickable {
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    background 0.15s ease;
-}
-
-.weather-today.clickable:hover,
-.weather-day.clickable:hover {
-  transform: translateY(-2px);
 }
 </style>

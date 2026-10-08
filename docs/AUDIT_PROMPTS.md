@@ -134,6 +134,7 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
    - Eckenrundungen (Squircle vs. Kreisbogen), Typografie und Schatten (--shadow-sm/--shadow-md) strikt gemäß DESIGN.md vereinheitlichen.
    - Additive Token-Ergänzungen in style.css: Fehlt für kleine UI-Elemente (z. B. Sub-Badges, Kalender-Pillen, Metatags) ein kleinerer Radius- oder Abstandswert im Design-System, darf dieser additiv in style.css ergänzt werden (z. B. --radius-xs: 6px; und --radius-xs-squircle inklusive Squircle-Feature-Query), anstatt unsaubere Ad-hoc-Pixelwerte im Komponenten-Style zu belassen.
    - Beseitige CSS-Hacks früherer Agenten (!important, negative Margins, willkürliche Z-Indizes) durch sauberes Flexbox/Grid.
+   - Grid-Row-Gaps bei herausragenden Elementen: Ragen visuelle Elemente (z. B. absolute Icons oder Badges) über den oberen Rand einer Kachel hinaus, muss der vertikale Abstand des Grids defensiv erhöht werden (z. B. `row-gap: var(--space-5)`), um Überdeckungen der darüberliegenden Kachelreihe zu verhindern.
    - Imperatives Third-Party-DOM (Leaflet, Mapbox, Canvas): Markup, das von externen Bibliotheken per JavaScript oder innerHTML erzeugt wird, erhält keine Scoped-CSS-Attribute (data-v-*). Kapsele solche Stile in einem separaten, ungescopten <style>-Block mit präzisen Selektoren und Begründungskommentar.
 
 2. Container-Queries & Enge-Resilienz (Ersetzen statt Duplizieren):
@@ -207,13 +208,16 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 
 ### Bereits bereitgestellte & wiederverwendbare Bausteine
 
-| Baustein              | Typ & Pfad                                                 | Herkunft          | Potenzielle Ziel-Views                                | Nutzen & Synergie-Potenzial                                                    |
-| :-------------------- | :--------------------------------------------------------- | :---------------- | :---------------------------------------------------- | :----------------------------------------------------------------------------- |
-| `DockTeleport`        | Primitiv (`components/primitives/DockTeleport.vue`)        | Settings / Layout | `ExcursionsView`, `BudgetView`, `ScheduleView`        | Konditionales Teleportieren in externe Docks/Drawer ohne Template-Duplikation. |
-| `DoneToggle`          | Primitiv (`components/primitives/DoneToggle.vue`)          | Todo / Listen     | `ShoppingListView`, `PackingListView`, `ListenView`   | Einheitlicher Check- und Erledigt-Status mit Haptik/Animation.                 |
-| `CollapsibleFieldset` | Primitiv (`components/primitives/CollapsibleFieldset.vue`) | Settings          | `BudgetView`, `ScheduleView`, `DiaryView`             | Einklappbare Formular- & Einstellungsabschnitte mit Pfeil-Indikator.           |
-| `ColorSwatchPicker`   | Primitiv (`components/primitives/ColorSwatchPicker.vue`)   | Settings / Users  | `BudgetView` (Pots), `NotesView` (Tags), `ListenView` | Farbauswahl für Kategorien, Töpfe und Labels.                                  |
-| `CheckableListItem`   | Primitiv (`components/primitives/CheckableListItem.vue`)   | Listen            | `TodoView`, `ShoppingListView`, `PackingListView`     | Standard-Listeneintrag mit Checkbox, Titel, Meta-Text und Action-Slot.         |
+| Baustein              | Typ & Pfad                                                 | Herkunft          | Potenzielle Ziel-Views                                | Nutzen & Synergie-Potenzial                                                          |
+| :-------------------- | :--------------------------------------------------------- | :---------------- | :---------------------------------------------------- | :----------------------------------------------------------------------------------- |
+| `DockTeleport`        | Primitiv (`components/primitives/DockTeleport.vue`)        | Settings / Layout | `ExcursionsView`, `BudgetView`, `ScheduleView`        | Konditionales Teleportieren in externe Docks/Drawer ohne Template-Duplikation.       |
+| `DoneToggle`          | Primitiv (`components/primitives/DoneToggle.vue`)          | Todo / Listen     | `ShoppingListView`, `PackingListView`, `ListenView`   | Einheitlicher Check- und Erledigt-Status mit Haptik/Animation.                       |
+| `CollapsibleFieldset` | Primitiv (`components/primitives/CollapsibleFieldset.vue`) | Settings          | `BudgetView`, `ScheduleView`, `DiaryView`             | Einklappbare Formular- & Einstellungsabschnitte mit Pfeil-Indikator.                 |
+| `ColorSwatchPicker`   | Primitiv (`components/primitives/ColorSwatchPicker.vue`)   | Settings / Users  | `BudgetView` (Pots), `NotesView` (Tags), `ListenView` | Farbauswahl für Kategorien, Töpfe und Labels.                                        |
+| `CheckableListItem`   | Primitiv (`components/primitives/CheckableListItem.vue`)   | Listen            | `TodoView`, `ShoppingListView`, `PackingListView`     | Standard-Listeneintrag mit Checkbox, Titel, Meta-Text und Action-Slot.               |
+| `useTripCountdown`    | Composable (`composables/useTripCountdown.ts`)             | Dashboard         | `ScheduleView`, `DiaryView`, Navigation / Header      | Reaktiv berechneter Abreise-Countdown (Tage/Stunden) & Urlaubsphase mit Auto-Ticker. |
+| `useRegionInfo`       | Composable (`composables/useRegionInfo.ts`)                | Dashboard         | `ListenView`, `BudgetView`, `SecurityCheckView`       | Isoliertes Nachladen von Landesinfos (Sprache, Währung, Wechselkurs, Reisehinweis).  |
+| `DashboardTile`       | Subkomponente (`components/dashboard/DashboardTile.vue`)   | Dashboard         | `ListenView` (Hub), `SettingsView` (Kategorien)       | Universelle Kachel mit Akzentfarbe, Schatten, schwebendem Kreis-Icon und Slot.       |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 
