@@ -233,6 +233,7 @@ defineExpose({
 
 <style scoped>
 .add-form {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -249,8 +250,8 @@ defineExpose({
 }
 
 .hint {
-  margin: -4px 0 0;
-  font-size: 0.82rem;
+  margin: 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -260,6 +261,7 @@ defineExpose({
 
 .actions-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-3);
@@ -267,6 +269,22 @@ defineExpose({
 
 .spacer {
   flex: 1;
+}
+
+@container (max-width: 360px) {
+  .actions-row {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  .actions-row :deep(button),
+  .actions-row button {
+    width: 100%;
+  }
 }
 
 .diary-editor :deep(.richtext-content) {

@@ -125,27 +125,40 @@ function toggleSpot(spotId: number) {
 .excursion-option {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: 0.9rem;
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+  column-gap: var(--space-2);
+  font-size: var(--font-size-sm);
   font-weight: 400;
+  width: 100%;
+  cursor: pointer;
 }
 
 .excursion-option-title {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .spot-option-btn {
   background: none;
   border: none;
   box-shadow: none;
-  padding: 2px 0;
+  padding: var(--space-1) 0;
   width: 100%;
   text-align: left;
   cursor: pointer;
   color: var(--color-text);
+  min-height: 36px;
+}
+
+.spot-option-btn:hover {
+  background: var(--color-hover);
 }
 
 .spot-option-btn:active {
@@ -155,17 +168,24 @@ function toggleSpot(spotId: number) {
 .excursion-option-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   color: var(--color-success);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .excursion-option-badge.recommended {
   background: var(--color-primary-tint);
-  padding: 2px 8px;
+  padding: 2px var(--space-2);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
+}
+
+@container (max-width: 360px) {
+  label.excursion-option .excursion-option-badge {
+    margin-left: calc(20px + var(--space-2));
+  }
 }
 </style>

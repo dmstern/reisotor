@@ -118,7 +118,7 @@ onMounted(() => {
   <div class="page" v-if="!loading">
     <div class="header">
       <h1>Tagebuch</h1>
-      <Button @click="openNewEntry">
+      <Button class="header-btn" @click="openNewEntry">
         <AppIcon :icon="ACTION_ICONS.write" :size="14" group="actions" /> Neuer Eintrag
       </Button>
     </div>
@@ -202,11 +202,28 @@ onMounted(() => {
   margin-right: auto;
 }
 
+.header h1 {
+  margin: 0;
+}
+
+@container app-main (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .entries {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   max-width: 800px;
   margin: 0 auto;
+  width: 100%;
 }
 </style>

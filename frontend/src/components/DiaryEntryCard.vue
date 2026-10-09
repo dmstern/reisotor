@@ -143,6 +143,8 @@ const drawers = useDrawersStore();
           type="button"
           variant="ghost"
           class="excursion-chip"
+          :title="ex.title"
+          :aria-label="ex.title"
           @click="drawers.openMapForExcursion(ex.id)"
         >
           <span
@@ -164,6 +166,8 @@ const drawers = useDrawersStore();
           type="button"
           variant="ghost"
           class="excursion-chip"
+          :title="spot.title"
+          :aria-label="spot.title"
           @click="drawers.openMapAt(`spot-${spot.id}`)"
         >
           <span
@@ -212,35 +216,48 @@ const drawers = useDrawersStore();
 }
 
 .avatar {
-  font-size: 1.6rem;
+  font-size: var(--font-size-2xl);
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .entry-meta {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
+}
+
+.entry-meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .date {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+  overflow-wrap: break-word;
 }
 
 .edited-by-avatar {
   font-size: 0.9em;
+  margin-right: 2px;
 }
 
 .entry-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .entry h3 {
   margin: 0 0 var(--space-1);
   font-family: var(--font-diary);
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-primary-dark);
+  overflow-wrap: anywhere;
 }
 
 .content {
@@ -255,7 +272,7 @@ const drawers = useDrawersStore();
 
 .diary-polaroid-wrap {
   margin: var(--space-2) 0;
-  padding: 4px 0 6px 4px;
+  padding: var(--space-1) 0 var(--space-2) var(--space-1);
 }
 
 .card-actions-wrapper {
@@ -274,53 +291,83 @@ const drawers = useDrawersStore();
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
 }
 
 .excursion-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   background: var(--color-hover);
   border: none;
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 4px 12px 4px 4px;
-  font-size: 0.82rem;
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  font-size: var(--font-size-sm);
   font-family: inherit;
   color: var(--color-text);
   text-decoration: none;
   cursor: pointer;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .excursion-chip:hover {
   background: var(--color-primary-tint);
 }
 
+.excursion-chip-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 .excursion-chip-img {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-primary-tint) center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   flex-shrink: 0;
 }
 
 .diary-weather {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   background: var(--color-hover);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 4px 12px;
-  font-size: 0.82rem;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
   color: var(--color-text);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .diary-weather .weather-icon {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
+}
+
+@container app-main (max-width: 480px) {
+  .card-actions-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .card-actions-wrapper :deep(.card-social-actions) {
+    margin-left: 0;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .excursion-chip-title {
+    max-width: 180px;
+  }
 }
 </style>
