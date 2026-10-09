@@ -61,7 +61,7 @@ const drawers = useDrawersStore();
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .show-on-map-btn {
@@ -87,6 +87,12 @@ const drawers = useDrawersStore();
 .track-btn-avatar {
   margin-right: 3px;
   line-height: 1;
+}
+
+@container spots-col (max-width: 360px), @container (max-width: 360px) {
+  .show-on-map-btn .btn-label {
+    max-width: 110px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

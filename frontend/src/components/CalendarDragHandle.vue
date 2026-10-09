@@ -158,8 +158,8 @@ const computedAriaLabel = computed(() => {
   top: 50%;
   transform: translateY(-50%);
   inset-inline: 0;
-  height: 44px;
-  min-height: 44px;
+  height: var(--input-default-height, 44px);
+  min-height: var(--input-default-height, 44px);
 }
 
 @media (pointer: fine) {
@@ -170,7 +170,7 @@ const computedAriaLabel = computed(() => {
 
 .drag-ghost {
   position: fixed;
-  z-index: var(--z-popover);
+  z-index: var(--z-popover, 1100);
   transform: translate(-50%, -130%);
   pointer-events: none;
   background: var(--color-text);

@@ -47,7 +47,7 @@ defineProps<{
 
 .route {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   line-height: 1.35;
   color: var(--color-text-muted);
   overflow: hidden;
@@ -56,7 +56,7 @@ defineProps<{
 }
 
 .tour-stations-summary {
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -68,9 +68,9 @@ defineProps<{
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   line-height: 1.35;
   color: var(--color-text-muted);
 }
@@ -78,7 +78,7 @@ defineProps<{
 .departure-arrival .time-block {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   white-space: nowrap;
 }
 

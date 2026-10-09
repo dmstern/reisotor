@@ -80,7 +80,7 @@ defineProps<{
   position: absolute;
   top: 2px;
   left: 2px;
-  z-index: 6;
+  z-index: var(--z-map-focus, 6);
 }
 
 .tour-collapsed-attachments :deep(.file-attachments) {
@@ -110,7 +110,7 @@ defineProps<{
   font-size: 0.42rem;
 }
 
-@container spots-col (max-width: 360px) {
+@container spots-col (max-width: 360px), @container (max-width: 360px) {
   .tour-visual-col {
     width: 52px;
     min-width: 52px;

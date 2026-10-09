@@ -261,13 +261,13 @@ const {
   container: excursion-card / inline-size;
 
   position: relative;
-  z-index: 1;
+  z-index: var(--z-card, 1);
   isolation: isolate;
   padding: 0;
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  min-height: 80px;
+  min-height: 5rem;
   border: none !important;
   border-radius: 0 !important;
   corner-shape: auto !important;
@@ -275,7 +275,7 @@ const {
   background: transparent !important;
   cursor: pointer;
   overflow: visible;
-  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, 48px));
+  scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance, var(--space-6)));
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease;
@@ -290,7 +290,7 @@ const {
     0 8px 24px -4px color-mix(in srgb, var(--color-tour) 45%, transparent) !important;
   animation: tour-glow-pulse 2.2s ease-in-out infinite alternate;
   position: relative;
-  z-index: 4;
+  z-index: var(--z-card-elevated, 5);
 }
 
 @keyframes tour-glow-pulse {
@@ -315,7 +315,7 @@ const {
   box-shadow:
     inset 0 0 0 3px var(--color-tour),
     0 12px 32px -2px color-mix(in srgb, var(--color-tour) 65%, transparent) !important;
-  z-index: 6;
+  z-index: var(--z-map-focus, 6);
 }
 
 :global(body.is-dragging-tour .excursion-card.drop-disabled),
@@ -358,12 +358,12 @@ const {
   flex-direction: row;
   align-items: stretch;
   position: relative;
-  padding: 12px var(--space-3);
-  gap: 12px;
+  padding: calc(var(--space-2) + var(--space-1)) var(--space-3);
+  gap: calc(var(--space-2) + var(--space-1));
 }
 
 .excursion-card.expanded .tour-card-main {
-  padding: 14px var(--space-3) 10px var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-2) var(--space-3);
 }
 
 .tour-edit-btn {
@@ -377,7 +377,7 @@ const {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -401,7 +401,7 @@ const {
 
 .card-title {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--font-size-md);
   font-weight: 700;
   line-height: 1.3;
   color: var(--color-text);
@@ -420,7 +420,7 @@ const {
 }
 
 .excursion-card.expanded .card-title {
-  font-size: 1.125rem;
+  font-size: var(--font-size-lg);
   line-height: 1.3;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -429,11 +429,11 @@ const {
 .card-title-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8125rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   flex-wrap: wrap;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .overlay-author {
@@ -471,7 +471,7 @@ const {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
   min-width: 0;
   flex: 0 1 auto;
 }
@@ -497,7 +497,7 @@ const {
 
 .note {
   overflow-wrap: anywhere;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   line-height: 1.45;
   color: var(--color-text);
   transition: color 0.2s ease;
@@ -510,7 +510,7 @@ const {
   line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   line-height: 1.35;
   color: var(--color-text-muted);
 }
@@ -554,45 +554,25 @@ const {
 }
 
 .excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
-  box-shadow:
-    0 6px 14px rgba(0, 0, 0, 0.2),
-    0 2px 5px rgba(0, 0, 0, 0.12);
-}
-
-:root[data-theme='dark']
-  .excursion-card:not(.expanded):hover
-  :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.55),
-    0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light'])
-    .excursion-card:not(.expanded):hover
-    :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
-    box-shadow:
-      0 6px 16px rgba(0, 0, 0, 0.55),
-      0 2px 5px rgba(0, 0, 0, 0.3);
-  }
+  box-shadow: var(--shadow-md);
 }
 
 .tour-attachments-wrap {
   margin-top: var(--space-2);
 }
 
-@container spots-col (max-width: 360px) {
+@container spots-col (max-width: 360px), @container (max-width: 360px) {
   .tour-card-main {
-    padding: 8px var(--space-3) 8px var(--space-3);
-    gap: 8px;
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
   }
 
   .card-title {
-    font-size: 0.88rem;
+    font-size: var(--font-size-sm);
   }
 
   .excursion-card.expanded .card-title {
-    font-size: 1rem;
+    font-size: var(--font-size-md);
   }
 
   .tour-note-container:not(.is-expanded) {
@@ -606,7 +586,7 @@ const {
   .note.is-clamped {
     -webkit-line-clamp: 1;
     line-clamp: 1;
-    font-size: 0.78rem;
+    font-size: var(--font-size-xs);
     line-height: 1.3;
   }
 

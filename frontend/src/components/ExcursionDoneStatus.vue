@@ -146,19 +146,20 @@ const {
   gap: var(--space-2);
   padding: var(--space-2);
   min-width: 250px;
+  max-width: min(280px, calc(100vw - var(--space-4)));
 }
 
 .popover-title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.86rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .popover-subtext {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: 0;
   line-height: 1.3;
@@ -176,7 +177,7 @@ const {
 }
 
 .calendar-alt-link {
-  font-size: 0.78rem !important;
+  font-size: var(--font-size-xs) !important;
   color: var(--color-text-muted) !important;
   justify-content: center;
 }
@@ -185,10 +186,10 @@ const {
   color: var(--color-primary) !important;
 }
 
-@container spots-col (max-width: 360px) {
+@container spots-col (max-width: 360px), @container (max-width: 360px) {
   :deep(.done-toggle) {
-    font-size: 0.72rem;
-    padding: 2px 8px;
+    font-size: var(--font-size-xs);
+    padding: 2px var(--space-2);
   }
 }
 </style>
