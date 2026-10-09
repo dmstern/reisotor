@@ -1,33 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { api } from '../api/client';
-import type {
-  DiaryComment,
-  DiaryEntry,
-  DiaryImage,
-  DiaryLike,
-  Excursion,
-  Spot,
-  User,
-} from '../api/types';
+import { computed, onMounted } from 'vue';
+import type { DiaryImage } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
-import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
-import { deriveTravelItems } from '../utils/deriveTravelItems';
-import { buildDayStations } from '../utils/dayStations';
-import { useLiveSyncStore } from '../stores/liveSync';
-import { useWeatherProviderStore } from '../stores/weatherProvider';
-import { isEmptyRichText } from '../utils/richText';
-import { fetchMergedWeather, weatherCodeMeta, type DailyWeather } from '../utils/weather';
+import { spotCategoryMeta } from '../utils/spotCategory';
+import { formatDate } from '../utils/dateFormat';
+import { weatherCodeMeta } from '../utils/weather';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+
+// Components
 import RichTextEditor from '../components/RichTextEditor.vue';
 import FormField from '../components/FormField.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
-import { compressImage, isHeicFile } from '../utils/imageCompression';
-import { spotCategoryMeta } from '../utils/spotCategory';
-import { formatDate } from '../utils/dateFormat';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import SocialRow from '../components/SocialRow.vue';
@@ -45,776 +34,186 @@ import EmptyState from '../components/primitives/EmptyState.vue';
 import Input from '../components/primitives/Input.vue';
 import UploadProgressBar from '../components/UploadProgressBar.vue';
 import WeatherIcon from '../components/WeatherIcon.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import AttachmentPreviewModal from '../components/AttachmentPreviewModal.vue';
 import AttachmentThumbnails from '../components/AttachmentThumbnails.vue';
 import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import PolaroidStack from '../components/primitives/PolaroidStack.vue';
-import { useToast } from '../composables/useToast';
-import { useDraftAutosave } from '../composables/useDraftAutosave';
+
+// Composables
+import { useDiaryData } from '../composables/useDiaryData';
+import { useDiarySocial } from '../composables/useDiarySocial';
+import { useDiaryWeather } from '../composables/useDiaryWeather';
+import { useDiaryEntityLinks } from '../composables/useDiaryEntityLinks';
+import { useDiaryNewForm } from '../composables/useDiaryNewForm';
+import { useDiaryEditForm } from '../composables/useDiaryEditForm';
+import { useDiaryPreview } from '../composables/useDiaryPreview';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
+const trip = computed(() => tripStore.currentTrip);
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
-const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
-const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
-const liveSync = useLiveSyncStore();
-const weatherProvider = useWeatherProviderStore();
-const trip = computed(() => tripStore.currentTrip);
-const entries = ref<DiaryEntry[]>([]);
-const { showToast } = useToast();
-const likes = ref<DiaryLike[]>([]);
-const comments = ref<DiaryComment[]>([]);
-const users = ref<User[]>([]);
-const loading = ref(true);
-const highlightedIds = ref<Set<number>>(new Set());
 
-const showForm = ref(false);
-// date: vorausgewählt mit dem heutigen Tag (siehe localDateStr() weiter unten - als Funktions-
-// deklaration bereits hier aufrufbar, auch wenn sie textuell später im Modul steht), aber frei
-// änderbar - z. B. für einen rückblickend erst am Folgetag geschriebenen Eintrag über den Vortag.
-const emptyForm = () => ({
-  title: '',
-  content: '',
-  images: [] as DiaryImage[],
-  excursion_ids: [] as number[],
-  spot_ids: [] as number[],
-  date: localDateStr(new Date()),
+// 1. Data & Live Sync
+const diaryData = useDiaryData({
+  tripId,
+  onSocialLoaded: (likes, comments) => {
+    social.likes.value = likes;
+    social.comments.value = comments;
+  },
 });
-const form = ref(emptyForm());
-const uploading = ref(false);
-const uploadError = ref('');
-const newFileInputRef = ref<HTMLInputElement | null>(null);
-const newUploadCurrent = ref(1);
-const newUploadTotal = ref(0);
-const newUploadFileName = ref('');
-const newUploadPercent = ref(0);
-let newAbortController: AbortController | null = null;
+const {
+  entries,
+  loading,
+  highlightedIds,
+  author,
+  coEditorsFor,
+  removeEntry,
+  removeImageFromEntry,
+} = diaryData;
 
-function abortNewUpload() {
-  if (newAbortController) {
-    newAbortController.abort();
-    newAbortController = null;
-  }
-  uploading.value = false;
-  newUploadCurrent.value = 1;
-  newUploadTotal.value = 0;
-  newUploadFileName.value = '';
-  newUploadPercent.value = 0;
-}
+// 2. Social (Likes & Comments)
+const social = useDiarySocial({
+  users: diaryData.users,
+});
+const {
+  likesFor,
+  likedByMe,
+  commentsFor,
+  openComments,
+  toggleLike,
+  toggleComments,
+  commentItemsFor,
+  submitComment,
+  removeComment,
+  updateComment,
+  toggleCommentLike,
+} = social;
 
-const editingEntry = ref<DiaryEntry | null>(null);
-const editForm = ref(emptyForm());
-const editUploading = ref(false);
-const editUploadError = ref('');
-const editFileInputRef = ref<HTMLInputElement | null>(null);
-const editUploadCurrent = ref(1);
-const editUploadTotal = ref(0);
-const editUploadFileName = ref('');
-const editUploadPercent = ref(0);
-let editAbortController: AbortController | null = null;
+// 3. Weather
+const weather = useDiaryWeather({
+  trip,
+  tripId,
+});
+const { weatherForEntry } = weather;
 
-function abortEditUpload() {
-  if (editAbortController) {
-    editAbortController.abort();
-    editAbortController = null;
-  }
-  editUploading.value = false;
-  editUploadCurrent.value = 1;
-  editUploadTotal.value = 0;
-  editUploadFileName.value = '';
-  editUploadPercent.value = 0;
-}
+// 4. Entity Links & Map
+const links = useDiaryEntityLinks();
+const {
+  pickerExcursions,
+  pickerSpots,
+  spotAlreadyPlanned,
+  toggleSpot,
+  hasMapContent,
+  showEntryDayOnMap,
+  excursionsForEntry,
+  spotsForEntry,
+} = links;
 
-const diaryPreviewOpen = ref(false);
-const diaryPreviewImages = ref<DiaryImage[]>([]);
-const diaryPreviewIndex = ref(0);
-const diaryPreviewEditable = ref(false);
-const diaryPreviewOnRemove = ref<((idx: number) => void) | null>(null);
+// 5. Image Preview Modal
+const preview = useDiaryPreview();
+const {
+  diaryPreviewOpen,
+  diaryPreviewImages,
+  diaryPreviewIndex,
+  diaryPreviewEditable,
+  openDiaryPreview,
+  handleDiaryPreviewRemove,
+} = preview;
 
-function openDiaryPreview(
-  images: DiaryImage[],
-  index: number,
-  editable = false,
-  onRemove?: (idx: number) => void
-) {
-  diaryPreviewImages.value = images;
-  diaryPreviewIndex.value = index;
-  diaryPreviewEditable.value = editable;
-  diaryPreviewOnRemove.value = onRemove ?? null;
-  diaryPreviewOpen.value = true;
-}
-
-function handleDiaryPreviewRemove(index: number) {
-  if (diaryPreviewOnRemove.value) {
-    diaryPreviewOnRemove.value(index);
-  }
-}
-
-// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - images/excursion_ids/
-// spot_ids sind bereits gespeicherte Bild-URLs bzw. ids, nicht der flüchtige Upload-Fortschritt
-// (uploading/uploadError bleiben bewusst außen vor, kommen nicht in `form`/`editForm`).
-const newDraft = useDraftAutosave('diary:new', form, showForm);
-const editDraft = useDraftAutosave(
-  () => `diary:edit:${editingEntry.value?.id}`,
+// 6. Edit Form State & Lifecycle
+const editFormLogic = useDiaryEditForm({
+  onEntryUpdated: (updated) => {
+    const idx = entries.value.findIndex((e) => e.id === updated.id);
+    if (idx !== -1) entries.value[idx] = updated;
+    diaryData.sortEntries();
+  },
+  onEntryRemoved: (id) => removeEntry(id),
+  onLinkDone: (excursionIds, spotIds, date) => {
+    links.markLinkedAsDone(excursionIds, spotIds, date);
+  },
+});
+const {
+  editingEntry,
   editForm,
-  computed(() => editingEntry.value !== null)
-);
+  editShowExcursionPicker,
+  editShowSpotPicker,
+  editorRef: editEditorRef,
+  contentTouched: editContentTouched,
+  dateTouched: editDateTouched,
+  showDateError: showEditDateError,
+  showContentError: showEditContentError,
+  canSave: canSaveEditEntry,
+  saveTooltip: editEntrySaveTooltip,
+  isDeleteDisabled: isEditDeleteDisabled,
+  deleteTooltip: editDeleteTooltip,
+  editDraft,
+  startEdit,
+  submitEditEntry,
+  closeEditForm,
+  discardEditDraft,
+  deleteEditingEntry,
+} = editFormLogic;
+const editUploading = editFormLogic.upload.uploading;
+const editUploadError = editFormLogic.upload.uploadError;
+const editFileInputRef = editFormLogic.upload.fileInputRef;
+const editUploadCurrent = editFormLogic.upload.uploadCurrent;
+const editUploadTotal = editFormLogic.upload.uploadTotal;
+const editUploadFileName = editFormLogic.upload.uploadFileName;
+const editUploadPercent = editFormLogic.upload.uploadPercent;
+const abortEditUpload = editFormLogic.upload.abortUpload;
+const onEditFilesSelected = (e: Event) => editFormLogic.upload.onFilesSelected(e, editForm.value);
 
-// Bereits als Entwurf gesicherter, aber noch nicht veröffentlichter eigener Eintrag (#89) - höchstens
-// einer gleichzeitig, siehe openNewForm()/closeForm() unten, die genau diesen statt eines
-// zusätzlichen zweiten Entwurfs weiterverwenden.
-const myDraft = computed(
-  () => entries.value.find((e) => e.is_draft && e.author_id === auth.user?.id) ?? null
-);
-
-function hasEntryContent(f: { title: string; content: string; images: DiaryImage[] }) {
-  return f.title.trim().length > 0 || !isEmptyRichText(f.content) || f.images.length > 0;
-}
-
-const newEditorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
-const newContentTouched = ref(false);
-const newDateTouched = ref(false);
-
-const isNewContentEmpty = computed(() => isEmptyRichText(form.value.content));
-const showNewContentError = computed(() => newContentTouched.value && isNewContentEmpty.value);
-const isNewDateEmpty = computed(() => !form.value.date);
-const showNewDateError = computed(() => newDateTouched.value && isNewDateEmpty.value);
-
-const canSubmitNewEntry = computed(
-  () => !isNewContentEmpty.value && !isNewDateEmpty.value && !uploading.value
-);
-const newEntrySaveTooltip = computed(() => {
-  if (uploading.value) return 'Bilder werden noch hochgeladen…';
-  if (isNewDateEmpty.value) return 'Bitte wähle ein Datum aus';
-  if (isNewContentEmpty.value) return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
-  return undefined;
+// 7. New Form State & Lifecycle
+const newFormLogic = useDiaryNewForm({
+  tripId,
+  myDraft: diaryData.myDraft,
+  onStartEditDraft: (draft) => startEdit(draft),
+  onEntryCreated: (created) => {
+    entries.value.unshift(created);
+    diaryData.sortEntries();
+  },
+  onLinkDone: (excursionIds, spotIds, date) => {
+    links.markLinkedAsDone(excursionIds, spotIds, date);
+  },
 });
-
-const editEditorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
-const editContentTouched = ref(false);
-const editDateTouched = ref(false);
-
-const isEditContentEmpty = computed(() => isEmptyRichText(editForm.value.content));
-const showEditContentError = computed(() => editContentTouched.value && isEditContentEmpty.value);
-const isEditDateEmpty = computed(() => !editForm.value.date);
-const showEditDateError = computed(() => editDateTouched.value && isEditDateEmpty.value);
-
-const canSaveEditEntry = computed(
-  () => !isEditContentEmpty.value && !isEditDateEmpty.value && !editUploading.value
-);
-const editEntrySaveTooltip = computed(() => {
-  if (editUploading.value) return 'Bilder werden noch hochgeladen…';
-  if (isEditDateEmpty.value) return 'Bitte wähle ein Datum aus';
-  if (isEditContentEmpty.value) return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
-  return undefined;
-});
-
-const isEditDraftEmpty = computed(
-  () => Boolean(editingEntry.value?.is_draft) && !hasEntryContent(editForm.value)
-);
-const isEditDeleteDisabled = computed(() => editUploading.value || isEditDraftEmpty.value);
-const editDeleteTooltip = computed(() => {
-  if (editUploading.value) return 'Bilder werden noch hochgeladen…';
-  if (isEditDraftEmpty.value) return 'Neuer Entwurf ist noch leer';
-  return undefined;
-});
-
-// Standardmäßig eingeklappt (siehe Konsistenz-Check-Anlass: die Auswahllisten nahmen auf mobile so
-// viel Platz weg, dass das RichTextEditor-Haupttextfeld nicht mehr sichtbar war) - Zurücksetzen in
-// openNewForm()/startEdit() unten, damit ein neuer Formular-Aufruf nicht die zuletzt aufgeklappte
-// Liste des vorherigen Eintrags übernimmt.
-const showExcursionPicker = ref(false);
-const showSpotPicker = ref(false);
-const editShowExcursionPicker = ref(false);
-const editShowSpotPicker = ref(false);
-
-const openComments = ref<Set<number>>(new Set());
-
-// Lokales Datum (nicht toISOString, das ist UTC) im selben "YYYY-MM-DD"-Format wie
-// Excursion.date (aus <input type="date">), damit sich beide direkt vergleichen lassen.
-function localDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// Sortiert nach dem (frei änderbaren) Eintrags-Datum statt nur nach created_at - ein rückblickend
-// nachgetragener oder auf einen anderen Tag verschobener Eintrag muss auch optisch an seine neue
-// chronologische Stelle wandern statt an der Position seines tatsächlichen Speicherzeitpunkts
-// hängen zu bleiben. created_at/id bleiben als Tiebreaker für mehrere Einträge am selben Tag.
-function sortEntries() {
-  entries.value.sort(
-    (a, b) =>
-      b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at) || b.id - a.id
-  );
-}
-
-// Ausflüge, die am angegebenen Tag geplant sind, zuerst (Vorschlag, "⭐ Empfohlen" im Template) –
-// der Rest bleibt in Store-Reihenfolge dahinter, damit man bei Bedarf auch einen Ausflug an einem
-// anderen Tag zuordnen kann (z. B. ein Rückblick, der erst am Folgetag geschrieben wird).
-function pickerExcursions(dateStr: string) {
-  const matching = excursionsStore.excursions.filter((e) => e.date === dateStr);
-  const rest = excursionsStore.excursions.filter((e) => e.date !== dateStr);
-  return [...matching, ...rest];
-}
-
-// Analog zu pickerExcursions oben: an diesem Tag bereits geplante Spots (siehe spotAlreadyPlanned
-// unten) zuerst, damit die "⭐ Empfohlen"-Markierung nicht in der übrigen Liste untergeht.
-function pickerSpots(dateStr: string) {
-  const matching = spotsStore.spots.filter((s) => spotAlreadyPlanned(s.id, dateStr));
-  const rest = spotsStore.spots.filter((s) => !spotAlreadyPlanned(s.id, dateStr));
-  return [...matching, ...rest];
-}
-
-function excursionsForEntry(entry: DiaryEntry): Excursion[] {
-  return entry.excursion_ids
-    .map((id) => excursionsStore.excursions.find((e) => e.id === id))
-    .filter((e): e is Excursion => !!e);
-}
-
-function spotsForEntry(entry: DiaryEntry): Spot[] {
-  return entry.spot_ids
-    .map((id) => spotsStore.spots.find((s) => s.id === id))
-    .filter((s): s is Spot => !!s);
-}
-
-// Wetter am jeweiligen Eintrags-Tag in der Urlaubsregion - eigenständig geladen (wie das Dashboard-
-// Wetter-Widget), ein Fehlschlag soll das restliche Tagebuch nicht blockieren. Nutzt dieselbe
-// gemergte Quelle (Live-Vorhersage + dauerhaft gespeicherte Ist-Werte, siehe utils/weather.ts) wie
-// DashboardView.vue - funktioniert dadurch auch für Einträge aus lange vergangenen Urlauben.
-const weatherDays = ref<DailyWeather[] | null>(null);
-async function loadDiaryWeather() {
-  if (trip.value?.lat == null || trip.value?.lng == null) return;
-  try {
-    weatherDays.value = await fetchMergedWeather(
-      tripId,
-      trip.value.lat,
-      trip.value.lng,
-      weatherProvider.model
-    );
-  } catch {
-    weatherDays.value = null;
-  }
-}
-function weatherForEntry(entry: DiaryEntry): DailyWeather | null {
-  return weatherDays.value?.find((d) => d.date === entry.date) ?? null;
-}
-
-// Ob ein Spot an diesem Tag bereits geplant ist – entweder direkt (schedule_items.spot_id, z. B.
-// über den Kalender/die Karte eingeplant) oder als Station eines an diesem Tag geplanten Ausflugs.
-// Nur dieser bereits VOR dem Öffnen des Formulars bestehende Zustand zählt als "⭐ Empfohlen" (#216)
-// - anders als früher wird das Zuordnen eines Spots hier selbst nicht mehr sofort zu einer eigenen
-// Planung (siehe toggleSpot unten), verfälscht die Empfehlung also nicht mehr rückwirkend.
-function spotAlreadyPlanned(spotId: number, dateStr: string) {
-  return (
-    scheduleStore.items.some((i) => i.spot_id === spotId && i.date === dateStr) ||
-    excursionsStore.excursions.some((e) => e.date === dateStr && e.spot_ids.includes(spotId))
-  );
-}
-
-// Spot einem Tagebucheintrag zu-/aberkennen: rein lokales Umschalten in spot_ids (#216) - anders
-// als früher (excursionsStore.planSpotOnDate) legt das HIER noch keinen Kalendertermin/Ausflug an,
-// das passiert erst beim tatsächlichen Speichern des Eintrags (siehe markLinkedAsDone unten), genau
-// wie bei den Touren-Checkboxen daneben. Dadurch entstehen auch keine Karteileichen mehr, wenn das
-// Formular ohne Speichern geschlossen wird.
-function toggleSpot(spotId: number, target: { spot_ids: number[] }) {
-  const idx = target.spot_ids.indexOf(spotId);
-  if (idx === -1) target.spot_ids.push(spotId);
-  else target.spot_ids.splice(idx, 1);
-}
-
-// Setzt automatisch gemacht=true (mit dem Datum des Eintrags, falls noch nicht anderweitig
-// geplant) auf jede Tour/jeden Spot, die/der beim Speichern dieses Eintrags per Checkbox/Spot-
-// Picker verknüpft wurde (Nutzer-Entscheidung: explizites Zuordnen soll zusätzlich zur Verknüpfung
-// auch den "gemacht"-Status setzen) – ein Tagebucheintrag dokumentiert per Definition etwas
-// tatsächlich Erlebtes. Bewusst best-effort/nicht blockierend für den Save-Erfolg – ein einzelner
-// fehlgeschlagener Toggle soll den bereits gespeicherten Tagebucheintrag nicht als fehlgeschlagen
-// erscheinen lassen.
-async function markLinkedAsDone(excursionIds: number[], spotIds: number[], date: string) {
-  const tripId = tripStore.currentTripId;
-  try {
-    await Promise.all([
-      ...excursionIds.map(async (id) => {
-        const excursion = excursionsStore.excursions.find((e) => e.id === id);
-        if (excursion && !excursion.date) await excursionsStore.setDate(id, date);
-        await excursionsStore.setDone(id, true);
-      }),
-      ...spotIds.map(async (id) => {
-        if (tripId != null && !spotAlreadyPlanned(id, date)) {
-          const spot = spotsStore.spots.find((s) => s.id === id);
-          if (spot) await scheduleStore.setSpotDate(id, tripId, spot.title, date);
-        }
-        await spotsStore.setDone(id, true);
-      }),
-    ]);
-  } catch {
-    // Best effort - der Tagebucheintrag selbst ist bereits gespeichert, siehe Kommentar oben.
-  }
-}
-
-async function load() {
-  try {
-    const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
-      api.get<DiaryEntry[]>(`/diary?trip_id=${tripId}`),
-      api.get<DiaryLike[]>(`/diary/likes?trip_id=${tripId}`),
-      api.get<DiaryComment[]>(`/diary/comments?trip_id=${tripId}`),
-      api.get<User[]>(`/trips/${tripId}/members`),
-      excursionsStore.load(),
-      spotsStore.load(),
-      scheduleStore.load(),
-    ]);
-    entries.value = entriesRes;
-    likes.value = likesRes;
-    comments.value = commentsRes;
-    users.value = usersRes;
-  } catch {
-    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
-    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
-    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
-  } finally {
-    loading.value = false;
-  }
-}
-
-watch(() => liveSync.domainVersion.diary, load);
-
-onMounted(async () => {
-  highlightedIds.value = liveSync.markSeen('diary');
-  await load();
-  loadDiaryWeather();
-});
-
-onUnmounted(() => {
-  abortNewUpload();
-  abortEditUpload();
-});
-
-function author(id: number) {
-  return users.value.find((u) => u.id === id);
-}
-
-// Mit-Bearbeiter:innen für die "bearbeitet von"-Zeile (#93) - author_id selbst zählt nicht als
-// Mit-Bearbeiter:in, auch wenn die Haupt-Autorin/der Haupt-Autor den eigenen Eintrag erneut speichert.
-function coEditorsFor(entry: DiaryEntry): User[] {
-  return entry.editor_ids
-    .filter((id) => id !== entry.author_id)
-    .map((id) => author(id))
-    .filter((u): u is User => !!u);
-}
-
-function likesFor(entryId: number) {
-  return likes.value.filter((l) => l.entry_id === entryId);
-}
-function likedByMe(entryId: number) {
-  return likesFor(entryId).some((l) => l.user_id === auth.user?.id);
-}
-function commentsFor(entryId: number) {
-  return comments.value
-    .filter((c) => c.entry_id === entryId)
-    .sort((a, b) => a.created_at.localeCompare(b.created_at));
-}
-function commentItemsFor(entryId: number) {
-  return commentsFor(entryId).map((c) => ({
-    id: c.id,
-    avatar: c.author_avatar ?? author(c.author_id)?.avatar ?? '❓',
-    username: c.author_username ?? author(c.author_id)?.username ?? '?',
-    content: c.content,
-    created_at: c.created_at,
-    updated_at: c.updated_at,
-    canRemove: c.author_id === auth.user?.id,
-    canEdit: c.author_id === auth.user?.id,
-    likeCount: c.like_count ?? 0,
-    liked: Boolean(c.liked),
-  }));
-}
-
-/** Komprimiert ausgewählte Bilder im Browser (Canvas-API) und lädt sie hoch – spart Traffic
- *  und vermeidet serverseitige Bildverarbeitung auf dem ressourcenschwachen Pi. */
-async function uploadFiles(
-  fileList: FileList | null,
-  target: { images: DiaryImage[] },
-  uploadingRef: typeof uploading,
-  errorRef: typeof uploadError,
-  tracker: {
-    setAbortController: (ac: AbortController | null) => void;
-    setCurrent: (v: number) => void;
-    setTotal: (v: number) => void;
-    setFileName: (v: string) => void;
-    setPercent: (v: number) => void;
-  }
-) {
-  const files = fileList ? Array.from(fileList) : [];
-  if (!files.length) return;
-
-  const controller = new AbortController();
-  tracker.setAbortController(controller);
-  tracker.setTotal(files.length);
-  tracker.setCurrent(1);
-  tracker.setFileName(files[0].name);
-  tracker.setPercent(0);
-
-  uploadingRef.value = true;
-  errorRef.value = '';
-  try {
-    for (let i = 0; i < files.length; i++) {
-      if (controller.signal.aborted) break;
-      const file = files[i];
-      tracker.setCurrent(i + 1);
-      tracker.setFileName(file.name);
-      tracker.setPercent(Math.round((i / files.length) * 100));
-
-      const compressed = await compressImage(file);
-      if (controller.signal.aborted) break;
-
-      tracker.setPercent(Math.round(((i + 0.5) / files.length) * 100));
-
-      const filename = isHeicFile(file) ? file.name.replace(/\.(heic|heif)$/i, '.jpg') : file.name;
-      const res = await api.post<{ url: string; original_name?: string }>(
-        '/diary/images',
-        {
-          data: compressed,
-          filename,
-        },
-        { signal: controller.signal }
-      );
-      if (controller.signal.aborted) break;
-
-      target.images.push({
-        url: res.url,
-        original_name: res.original_name || filename,
-      });
-      tracker.setPercent(Math.round(((i + 1) / files.length) * 100));
-    }
-  } catch {
-    if (controller.signal.aborted) return;
-    errorRef.value = 'Bild-Upload fehlgeschlagen. Bitte erneut versuchen.';
-  } finally {
-    uploadingRef.value = false;
-    tracker.setAbortController(null);
-  }
-}
-
-function onNewFilesSelected(event: Event) {
-  const input = event.target as HTMLInputElement;
-  uploadFiles(input.files, form.value, uploading, uploadError, {
-    setAbortController: (ac) => (newAbortController = ac),
-    setCurrent: (v) => (newUploadCurrent.value = v),
-    setTotal: (v) => (newUploadTotal.value = v),
-    setFileName: (v) => (newUploadFileName.value = v),
-    setPercent: (v) => (newUploadPercent.value = v),
-  });
-  input.value = '';
-}
-
-function onEditFilesSelected(event: Event) {
-  const input = event.target as HTMLInputElement;
-  uploadFiles(input.files, editForm.value, editUploading, editUploadError, {
-    setAbortController: (ac) => (editAbortController = ac),
-    setCurrent: (v) => (editUploadCurrent.value = v),
-    setTotal: (v) => (editUploadTotal.value = v),
-    setFileName: (v) => (editUploadFileName.value = v),
-    setPercent: (v) => (editUploadPercent.value = v),
-  });
-  input.value = '';
-}
+const {
+  showForm,
+  form,
+  showExcursionPicker,
+  showSpotPicker,
+  editorRef: newEditorRef,
+  contentTouched: newContentTouched,
+  dateTouched: newDateTouched,
+  showDateError: showNewDateError,
+  showContentError: showNewContentError,
+  canSubmit: canSubmitNewEntry,
+  saveTooltip: newEntrySaveTooltip,
+  newDraft,
+  openNewForm,
+  submitEntry,
+  closeForm,
+  discardNewDraft,
+} = newFormLogic;
+const uploading = newFormLogic.upload.uploading;
+const uploadError = newFormLogic.upload.uploadError;
+const newFileInputRef = newFormLogic.upload.fileInputRef;
+const newUploadCurrent = newFormLogic.upload.uploadCurrent;
+const newUploadTotal = newFormLogic.upload.uploadTotal;
+const newUploadFileName = newFormLogic.upload.uploadFileName;
+const newUploadPercent = newFormLogic.upload.uploadPercent;
+const abortNewUpload = newFormLogic.upload.abortUpload;
+const onNewFilesSelected = (e: Event) => newFormLogic.upload.onFilesSelected(e, form.value);
 
 function removeImage(target: { images: DiaryImage[] }, index: number) {
   target.images.splice(index, 1);
 }
 
-async function removeImageFromEntry(entry: DiaryEntry, index: number) {
-  if (auth.user?.restricted) return;
-  const removed = entry.images[index];
-  entry.images.splice(index, 1);
-  const body = {
-    title: entry.title || undefined,
-    content: entry.content,
-    content_format: entry.content_format || 'html',
-    images: entry.images,
-    excursion_ids: entry.excursion_ids ?? [],
-    spot_ids: entry.spot_ids ?? [],
-    date: entry.date,
-    is_draft: Boolean(entry.is_draft),
-  };
-  try {
-    const updated = await api.put<DiaryEntry>(`/diary/${entry.id}`, body);
-    const idx = entries.value.findIndex((e) => e.id === updated.id);
-    if (idx !== -1) entries.value[idx] = updated;
-    sortEntries();
-  } catch (err) {
-    entry.images.splice(index, 0, removed);
-    console.error('Fehler beim Entfernen des Bildes aus dem Tagebucheintrag:', err);
-  }
-}
-
-// "+ Neuer Eintrag": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen
-// zweiten, parallelen Entwurf anzulegen (#89).
-function openNewForm() {
-  newContentTouched.value = false;
-  newDateTouched.value = false;
-  if (myDraft.value) {
-    startEdit(myDraft.value);
-    return;
-  }
-  form.value = emptyForm();
-  showSpotPicker.value = false;
-  // Vorschlag: an diesem Tag geplante Ausflüge direkt vorauswählen, statt sie nur anzuzeigen –
-  // meist wird ein Eintrag ja am selben Tag über genau diesen Ausflug geschrieben.
-  form.value.excursion_ids = excursionsStore.excursions
-    .filter((e) => e.date === form.value.date)
-    .map((e) => e.id);
-  // Picker bei einer Vorauswahl direkt aufklappen, damit die "Empfohlen"-Markierung sichtbar ist
-  // (Standard sonst eingeklappt, siehe showExcursionPicker oben).
-  showExcursionPicker.value = form.value.excursion_ids.length > 0;
-  showForm.value = true;
-}
-
-async function submitEntry() {
-  if (isNewDateEmpty.value || isNewContentEmpty.value) {
-    if (isNewDateEmpty.value) newDateTouched.value = true;
-    if (isNewContentEmpty.value) {
-      newContentTouched.value = true;
-      newEditorRef.value?.focus();
-    }
-    return;
-  }
-  if (uploading.value) return;
-  const body = {
-    trip_id: tripId,
-    title: form.value.title || undefined,
-    content: form.value.content,
-    content_format: 'html',
-    images: form.value.images,
-    excursion_ids: form.value.excursion_ids,
-    spot_ids: form.value.spot_ids,
-    date: form.value.date,
-  };
-  const created = await api.post<DiaryEntry>('/diary', body);
-  entries.value.unshift(created);
-  sortEntries();
-  markLinkedAsDone(form.value.excursion_ids, form.value.spot_ids, form.value.date);
-  form.value = emptyForm();
-  showForm.value = false;
-  newDraft.clear();
-}
-
-// Schließen ohne "Eintragen" verwirft nicht mehr kommentarlos den eingegebenen Inhalt (#89) -
-// stattdessen wird ein echter, für andere Trip-Mitglieder unsichtbarer Entwurfs-Eintrag angelegt
-// (is_draft:true), sichtbar/weiterbearbeitbar über die Tagebuch-Liste. Ganz leere Formulare erzeugen
-// weiterhin keinen Eintrag; markLinkedAsDone() läuft bewusst nicht mit - das "gemacht"-Setzen soll
-// erst beim tatsächlichen Veröffentlichen greifen.
-async function closeForm() {
-  abortNewUpload();
-  showForm.value = false;
-  if (hasEntryContent(form.value)) {
-    const body = {
-      trip_id: tripId,
-      title: form.value.title || undefined,
-      content: form.value.content,
-      content_format: 'html',
-      images: form.value.images,
-      excursion_ids: form.value.excursion_ids,
-      spot_ids: form.value.spot_ids,
-      date: form.value.date,
-      is_draft: true,
-    };
-    const created = await api.post<DiaryEntry>('/diary', body);
-    entries.value.unshift(created);
-    sortEntries();
-  }
-  form.value = emptyForm();
-  newDraft.clear();
-}
-
-function discardNewDraft() {
-  newContentTouched.value = false;
-  newDateTouched.value = false;
-  form.value = emptyForm();
-  newDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
-}
-
-function startEdit(entry: DiaryEntry) {
-  editContentTouched.value = false;
-  editDateTouched.value = false;
-  editForm.value = {
-    title: entry.title ?? '',
-    content: entry.content,
-    images: [...entry.images],
-    excursion_ids: [...entry.excursion_ids],
-    spot_ids: [...entry.spot_ids],
-    date: entry.date,
-  };
-  editShowExcursionPicker.value = editForm.value.excursion_ids.length > 0;
-  editShowSpotPicker.value = editForm.value.spot_ids.length > 0;
-  editingEntry.value = entry;
-}
-
-// Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer einen veröffentlichten
-// Eintrag (is_draft:false) - für bereits veröffentlichte Einträge ist das ein No-op, da dort schon 0.
-async function submitEditEntry() {
-  if (isEditDateEmpty.value || isEditContentEmpty.value) {
-    if (isEditDateEmpty.value) editDateTouched.value = true;
-    if (isEditContentEmpty.value) {
-      editContentTouched.value = true;
-      editEditorRef.value?.focus();
-    }
-    return;
-  }
-  if (!editingEntry.value || editUploading.value) return;
-  const body = {
-    title: editForm.value.title || undefined,
-    content: editForm.value.content,
-    content_format: 'html',
-    images: editForm.value.images,
-    excursion_ids: editForm.value.excursion_ids,
-    spot_ids: editForm.value.spot_ids,
-    date: editForm.value.date,
-    is_draft: false,
-  };
-  const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
-  const idx = entries.value.findIndex((e) => e.id === updated.id);
-  if (idx !== -1) entries.value[idx] = updated;
-  sortEntries();
-  markLinkedAsDone(editForm.value.excursion_ids, editForm.value.spot_ids, editForm.value.date);
-  editDraft.clear();
-  editingEntry.value = null;
-}
-
-// Schließen ohne "Speichern" bei einem noch unveröffentlichten Entwurf sichert den aktuellen Stand
-// weiterhin als Entwurf (statt die Änderungen zu verwerfen) - bei einem bereits veröffentlichten
-// Eintrag bleibt es wie bisher beim reinen Verwerfen des Bearbeitungs-Zwischenstands.
-async function closeEditForm() {
-  abortEditUpload();
-  if (editingEntry.value?.is_draft && hasEntryContent(editForm.value)) {
-    const body = {
-      title: editForm.value.title || undefined,
-      content: editForm.value.content,
-      content_format: 'html',
-      images: editForm.value.images,
-      excursion_ids: editForm.value.excursion_ids,
-      spot_ids: editForm.value.spot_ids,
-      date: editForm.value.date,
-      is_draft: true,
-    };
-    const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
-    const idx = entries.value.findIndex((e) => e.id === updated.id);
-    if (idx !== -1) entries.value[idx] = updated;
-    sortEntries();
-  }
-  editDraft.clear();
-  editingEntry.value = null;
-}
-
-function discardEditDraft() {
-  if (!editingEntry.value) return;
-  const isDraft = editingEntry.value.is_draft;
-  startEdit(editingEntry.value);
-  editDraft.clear();
-  showToast({
-    message: isDraft ? 'Entwurf verworfen.' : 'Änderungen verworfen.',
-    type: 'info',
-  });
-}
-
-async function deleteEditingEntry() {
-  if (!editingEntry.value || editUploading.value) return;
-  const id = editingEntry.value.id;
-  editDraft.clear();
-  editingEntry.value = null;
-  await removeEntry(id);
-}
-
-async function removeEntry(id: number) {
-  await api.delete(`/diary/${id}`);
-  entries.value = entries.value.filter((e) => e.id !== id);
-  showToast({
-    message: 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
-    type: 'info',
-  });
-}
-
-async function toggleLike(entryId: number) {
-  const result = await api.post<{ liked: boolean }>(`/diary/${entryId}/like`);
-  if (result.liked) {
-    likes.value.push({ id: Date.now(), entry_id: entryId, user_id: auth.user!.id });
-  } else {
-    likes.value = likes.value.filter(
-      (l) => !(l.entry_id === entryId && l.user_id === auth.user!.id)
-    );
-  }
-}
-
-function toggleComments(entryId: number) {
-  if (openComments.value.has(entryId)) openComments.value.delete(entryId);
-  else openComments.value.add(entryId);
-}
-
-async function submitComment(entryId: number, content: string) {
-  const created = await api.post<DiaryComment>(`/diary/${entryId}/comments`, { content });
-  comments.value.push(created);
-}
-
-async function removeComment(id: number) {
-  await api.delete(`/diary/comments/${id}`);
-  comments.value = comments.value.filter((c) => c.id !== id);
-}
-
-async function updateComment(id: number, content: string) {
-  const updated = await api.put<DiaryComment>(`/diary/comments/${id}`, { content });
-  const idx = comments.value.findIndex((c) => c.id === id);
-  if (idx !== -1) {
-    comments.value[idx] = updated;
-  }
-}
-
-async function toggleCommentLike(commentId: number) {
-  const c = comments.value.find((item) => item.id === commentId);
-  if (c) {
-    const wasLiked = Boolean(c.liked);
-    c.liked = !wasLiked;
-    c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
-  }
-  try {
-    const result = await api.post<{ liked: boolean; like_count: number }>(
-      `/diary/comments/${commentId}/like`
-    );
-    if (c) {
-      c.liked = result.liked;
-      c.like_count = result.like_count;
-    }
-  } catch (err) {
-    if (c) {
-      const wasLiked = Boolean(c.liked);
-      c.liked = !wasLiked;
-      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
-    }
-    throw err;
-  }
-}
-
-function hasMapContent(entry: DiaryEntry): boolean {
-  if (entry.spot_ids && entry.spot_ids.length > 0) return true;
-  if (entry.excursion_ids && entry.excursion_ids.length > 0) return true;
-  const stations = buildDayStations(
-    entry.date,
-    scheduleStore.items,
-    excursionsStore.excursions,
-    travelItems.value,
-    spotsStore.spots
-  );
-  return stations.length > 0;
-}
-
-// Neuer Button (#216): den Tag des Eintrags (inkl. aller an diesem Tag geplanten Touren/Spots) auf
-// der Karte zeigen - gleiches Muster wie ScheduleView.vue's "Tag auf Karte anzeigen".
-function showEntryDayOnMap(entry: DiaryEntry) {
-  drawers.focusMapOnDate(entry.date);
-}
+onMounted(() => {
+  weather.loadDiaryWeather();
+});
 </script>
 
 <template>
