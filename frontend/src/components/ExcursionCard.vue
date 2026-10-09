@@ -3,30 +3,21 @@ import { computed, ref } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionStations } from '../composables/useExcursionStations';
-import { useExcursionWeather } from '../composables/useExcursionWeather';
-import { useExcursionCalendarDrag } from '../composables/useExcursionCalendarDrag';
-import { useExcursionDoneStatus } from '../composables/useExcursionDoneStatus';
 import { useExcursionSpotDrop } from '../composables/useExcursionSpotDrop';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import SocialRow from './SocialRow.vue';
-import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Accordion from './primitives/Accordion.vue';
-import Button from './primitives/Button.vue';
-import Input from './primitives/Input.vue';
-import PickerMenu from './primitives/PickerMenu.vue';
-import PolaroidStack from './primitives/PolaroidStack.vue';
-import DoneToggle from './primitives/DoneToggle.vue';
 import FileAttachments from './FileAttachments.vue';
-import WeatherIcon from './WeatherIcon.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { ACTION_ICONS } from '../utils/actionIcons';
-import { travelTypeIconDef } from '../utils/travelTypeIcon';
+import CalendarDragHandle from './CalendarDragHandle.vue';
+import ExcursionCoverStack from './ExcursionCoverStack.vue';
+import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
+import ExcursionRouteMeta from './ExcursionRouteMeta.vue';
+import ExcursionMapLinks from './ExcursionMapLinks.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -90,26 +81,6 @@ const {
   travelItems: () => props.travelItems,
 });
 
-const { weatherSummary, statusDateLabel } = useExcursionWeather({
-  excursion: () => props.excursion,
-  resolvedStations,
-});
-
-const { dragging, ghostStyle, onPointerDown } = useExcursionCalendarDrag({
-  excursion: () => props.excursion,
-});
-
-const {
-  unplannedPopoverOpen,
-  unplannedPopoverStyle,
-  unplannedDoneDate,
-  onToggleDone,
-  submitUnplannedDone,
-  openCalendarConfirmDone,
-} = useExcursionDoneStatus({
-  excursion: () => props.excursion,
-});
-
 const {
   spotDragOverCount,
   isDropCandidate,
@@ -145,34 +116,11 @@ const {
   >
     <div class="tour-card-main">
       <!-- Linke visuelle Spalte: Polaroid-Stapel (Stationen) im eingeklappten Zustand (#layout) -->
-      <div v-if="!expanded" class="tour-visual-col">
-        <PolaroidStack
-          v-if="resolvedStations.length"
-          class="tour-polaroid-stack"
-          :items="resolvedStations"
-          :expanded="false"
-          :interactive="false"
-          :title="`${resolvedStations.length} Stationen`"
-          aria-hidden="true"
-        />
-        <div v-else class="tour-placeholder">
-          <AppIcon
-            class="placeholder"
-            :size="26"
-            :icon="
-              excursion.role
-                ? travelTypeIconDef(excursion.transport_type)
-                : SECTION_ICON_DEFS.excursions
-            "
-            group="categories"
-          />
-        </div>
-
-        <!-- Floating Paperclip Badge im eingeklappten Zustand (#396 Pattern) -->
-        <div class="tour-collapsed-attachments">
-          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" collapsed />
-        </div>
-      </div>
+      <ExcursionCoverStack
+        v-if="!expanded"
+        :excursion="excursion"
+        :resolved-stations="resolvedStations"
+      />
 
       <div class="body">
         <div class="card-header-row">
@@ -228,36 +176,17 @@ const {
         </div>
 
         <!-- Strecken- und Zeit-Info (nur im eingeklappten Zustand, im aufgeklappten Zustand in der Header-Meta) -->
-        <div
+        <ExcursionRouteMeta
           v-if="
             !expanded &&
             (routeLabel || stationsSummaryText || effectiveDepartureTime || effectiveArrivalTime)
           "
-          class="tour-route-line"
-        >
-          <p v-if="routeLabel" class="route" :title="routeLabel">{{ routeLabel }}</p>
-          <p
-            v-else-if="stationsSummaryText"
-            class="route tour-stations-summary"
-            :title="stationsSummaryText"
-          >
-            {{ stationsSummaryText }}
-          </p>
-          <p v-if="effectiveDepartureTime || effectiveArrivalTime" class="departure-arrival">
-            <span class="time-block" v-if="effectiveDepartureTime">
-              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
-              {{ effectiveDepartureTime
-              }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
-              >&nbsp;Uhr
-            </span>
-            <span v-else-if="effectiveArrivalTime" class="time-block">
-              <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
-              Ankunft {{ effectiveArrivalTime }}&nbsp;Uhr
-            </span>
-            <span v-if="travelDuration" class="duration-separator">·</span>
-            <span v-if="travelDuration" class="duration">{{ travelDuration }}</span>
-          </p>
-        </div>
+          :route-label="routeLabel"
+          :stations-summary-text="stationsSummaryText"
+          :effective-departure-time="effectiveDepartureTime"
+          :effective-arrival-time="effectiveArrivalTime"
+          :travel-duration="travelDuration"
+        />
 
         <!-- Tour-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
         <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
@@ -274,108 +203,22 @@ const {
           <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
         </div>
 
-        <div class="links" v-if="expanded && (hasMappedStations || linkedTracks.length)">
-          <Button
-            v-if="hasMappedStations"
-            variant="card-action"
-            class="show-on-map-btn"
-            aria-label="Auf Karte anzeigen"
-            title="Auf Karte anzeigen"
-            @click.stop="emit('show-on-map')"
-          >
-            <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
-            <span class="btn-label">Auf Karte anzeigen</span>
-          </Button>
-          <Button
-            v-for="trk in linkedTracks"
-            :key="trk.id"
-            variant="card-action"
-            class="show-on-map-btn"
-            :title="
-              'Aufzeichnung „' +
-              (trk.title || 'Aufzeichnung') +
-              '“' +
-              (trk.author_username ? ' von ' + trk.author_username : '') +
-              ' auf Karte abspielen'
-            "
-            @click.stop="drawers.openMapForTrack(trk.id)"
-          >
-            <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" />
-            <span class="btn-label">
-              <span
-                v-if="trk.author_avatar"
-                class="track-btn-avatar"
-                :title="trk.author_username"
-                >{{ trk.author_avatar }}</span
-              >
-              {{ trk.title || 'Aufzeichnung' }}
-            </span>
-          </Button>
-        </div>
+        <!-- Auf Karte anzeigen & verknüpfte Aufzeichnungen -->
+        <ExcursionMapLinks
+          v-if="expanded"
+          :has-mapped-stations="hasMappedStations"
+          :linked-tracks="linkedTracks"
+          @show-on-map="emit('show-on-map')"
+        />
+
         <div class="card-actions-wrapper">
           <div class="card-actions">
-            <button
-              v-if="!excursion.date"
-              type="button"
-              class="calendar-drag-handle"
-              :class="{ dragging }"
-              aria-label="Auf Kalender ziehen zum Einplanen"
-              title="Auf Kalender ziehen zum Einplanen"
-              @pointerdown="onPointerDown"
-              @click.stop
-            >
-              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" /> Einplanen
-            </button>
-            <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) – in beiden Zuständen -->
-            <DoneToggle
-              :done="!!excursion.done"
-              :planned="!!excursion.date"
-              :aria-label="
-                excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'
-              "
-              :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-              @click="onToggleDone"
-            >
-              <template v-if="excursion.done">
-                <template v-if="excursion.date">
-                  <span class="done-toggle-prefix">Gemacht am </span>
-                  <span class="done-toggle-date">
-                    <AppIcon
-                      :icon="FORM_FIELD_ICONS.date"
-                      :size="12"
-                      group="formFields"
-                      class="done-toggle-calendar-icon"
-                    />
-                    {{ statusDateLabel }}
-                  </span>
-                </template>
-                <template v-else>Gemacht</template>
-                <span v-if="weatherSummary" class="done-toggle-weather">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}
-                </span>
-              </template>
-              <template v-else-if="excursion.date">
-                <span class="done-toggle-prefix">Geplant für </span>
-                <span class="done-toggle-date">
-                  <AppIcon
-                    :icon="FORM_FIELD_ICONS.date"
-                    :size="12"
-                    group="formFields"
-                    class="done-toggle-calendar-icon"
-                  />
-                  {{ statusDateLabel }}
-                </span>
-                <span v-if="weatherSummary" class="done-toggle-weather">
-                  · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-                  {{ weatherSummary.tempLabel }}
-                </span>
-              </template>
-              <template v-else>
-                <template v-if="expanded">Als gemacht markieren</template>
-                <template v-else>Gemacht</template>
-              </template>
-            </DoneToggle>
+            <CalendarDragHandle v-if="!excursion.date" :excursion="excursion" />
+            <ExcursionDoneStatus
+              :excursion="excursion"
+              :expanded="expanded"
+              :resolved-stations="resolvedStations"
+            />
           </div>
 
           <SocialRow
@@ -389,55 +232,6 @@ const {
             @toggle-comments="showComments = !showComments"
           />
         </div>
-
-        <Teleport to="body">
-          <div v-if="dragging" class="drag-ghost" :style="ghostStyle ?? {}">
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-            {{ excursion.title }}
-          </div>
-          <PickerMenu
-            v-if="unplannedPopoverOpen"
-            class="tour-unplanned-popover"
-            :style="unplannedPopoverStyle"
-            @close="unplannedPopoverOpen = false"
-          >
-            <div class="unplanned-popover-content">
-              <div class="popover-title-row">
-                <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                <span class="popover-heading">Tour als gemacht markieren</span>
-              </div>
-              <p class="popover-subtext">An welchem Tag wurde diese Tour gemacht?</p>
-              <Input
-                v-model="unplannedDoneDate"
-                type="date"
-                class="popover-date-input"
-                aria-label="Datum der gemachten Tour"
-                @keyup.enter="submitUnplannedDone"
-              />
-              <div class="popover-buttons">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  :disabled="!unplannedDoneDate"
-                  @click="submitUnplannedDone"
-                >
-                  Als gemacht markieren
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  class="calendar-alt-link"
-                  @click="openCalendarConfirmDone"
-                >
-                  <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
-                  Im Kalender auswählen
-                </Button>
-              </div>
-            </div>
-          </PickerMenu>
-        </Teleport>
 
         <Accordion :expanded="expanded && showComments">
           <Comments
@@ -572,50 +366,8 @@ const {
   padding: 14px var(--space-3) 10px var(--space-3);
 }
 
-.tour-visual-col {
-  width: 68px;
-  min-width: 68px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  position: relative;
-  align-self: flex-start;
-  overflow: visible;
-  padding: 2px 0 0 0;
-}
-
-.tour-placeholder {
-  width: 54px;
-  height: 64px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-primary-tint);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.tour-placeholder .placeholder {
-  font-size: 1.75rem;
-  color: var(--excursion-theme-color);
-  opacity: 0.7;
-}
-
 .tour-edit-btn {
   flex-shrink: 0;
-}
-
-.tour-collapsed-attachments {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  z-index: 6;
-}
-
-.tour-collapsed-attachments :deep(.file-attachments) {
-  margin-top: 0;
 }
 
 .body {
@@ -700,155 +452,6 @@ const {
   margin-top: 1px;
 }
 
-.show-on-map-btn {
-  transition:
-    width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    border-radius 0.28s ease,
-    padding 0.28s ease;
-}
-
-.show-on-map-btn .btn-label {
-  display: inline-block;
-  max-width: 140px;
-  opacity: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  transition:
-    max-width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 0.2s ease,
-    margin 0.28s ease;
-}
-
-.track-btn-avatar {
-  margin-right: 3px;
-  line-height: 1;
-}
-
-.card-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 0 1 auto;
-}
-
-/* Eigener Anfasser statt des gesamten Card-Roots als Drag-Quelle (siehe usePointerDrag-Wiring im
-   Script) – touch-action:none verhindert, dass der Browser das Ziehen als Seiten-Scroll
-   interpretiert. Das ::before-Punkte-Raster macht ihn auf einen Blick als Zieh-Griff statt als
-   normalen Button erkennbar (identisches Muster wie SpotCard.vue's Anfasser). */
-.calendar-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  corner-shape: round;
-  padding: 3px 10px 3px 8px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  cursor: grab;
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
-  transition:
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.2s ease;
-}
-
-:deep(.done-toggle) {
-  --toggle-hover-border: var(--excursion-theme-color);
-}
-
-.calendar-drag-handle:active,
-.calendar-drag-handle.dragging {
-  cursor: grabbing;
-  transform: scale(0.95) translateY(0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.calendar-drag-handle.dragging {
-  opacity: 0.55;
-}
-
-.calendar-drag-handle:focus-visible {
-  outline: 2px solid var(--color-scheduled);
-  outline-offset: 2px;
-}
-
-.calendar-drag-handle::before {
-  content: '';
-  flex-shrink: 0;
-  width: 6px;
-  height: 12px;
-  background-image:
-    radial-gradient(circle, currentColor 1px, transparent 1.3px),
-    radial-gradient(circle, currentColor 1px, transparent 1.3px);
-  background-size:
-    3px 4px,
-    3px 4px;
-  background-position:
-    0 0,
-    3px 0;
-  background-repeat: repeat-y, repeat-y;
-  opacity: 0.65;
-  transition:
-    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 0.18s ease;
-  transform-origin: center center;
-}
-
-.calendar-drag-handle :deep(.app-icon) {
-  flex-shrink: 0;
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform-origin: center bottom;
-}
-
-.calendar-drag-handle:hover {
-  background: var(--color-scheduled-tint);
-  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
-  color: var(--color-scheduled);
-  transform: translateY(-1.5px);
-  box-shadow:
-    0 4px 12px -2px color-mix(in srgb, var(--color-scheduled) 22%, transparent),
-    0 2px 4px rgba(0, 0, 0, 0.06);
-}
-
-.calendar-drag-handle:hover::before {
-  opacity: 1;
-  transform: scale(1.25);
-}
-
-.calendar-drag-handle:hover :deep(.app-icon) {
-  transform: translateY(-0.5px) rotate(8deg) scale(1.15);
-}
-
-/* Schwebt während des Drags am Zeiger, per Teleport außerhalb der Karte (sonst würde sie beim
-   Öffnen der Kalender-Schublade durch deren Backdrop/Panel überlagert). z-index 60: über dem
-   Drawer-Overlay (11/12), unter Modal.vue (100, wird während eines Drags nie gleichzeitig
-   gebraucht). Fester dunkler Chip statt Dark-Mode-Override, da sie über beliebigem Seiteninhalt
-   schwebt statt über einem Foto. */
-.drag-ghost {
-  position: fixed;
-  z-index: 60;
-  transform: translate(-50%, -130%);
-  pointer-events: none;
-  background: rgba(35, 34, 32, 0.92);
-  color: #f2efe9;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  white-space: nowrap;
-  box-shadow: var(--shadow-md);
-}
-
 .card-actions-wrapper {
   display: flex;
   align-items: center;
@@ -864,11 +467,13 @@ const {
   margin-left: auto;
 }
 
-.links {
+.card-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: 4px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 /* Tour-Notiz: Fließender Übergang zwischen 1-2-zeiligem Teaser und voller Höhe (#235) */
@@ -943,50 +548,6 @@ const {
   content: ' ';
 }
 
-.route {
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  color: var(--color-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.departure-arrival {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  color: var(--color-text-muted);
-}
-
-.departure-arrival .time-block {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.departure-arrival .duration-separator {
-  color: var(--color-text-muted);
-  opacity: 0.6;
-}
-
-.departure-arrival .duration {
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-.tour-route-line {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 /* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
 .excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile) {
   transform: var(--tile-fanned-transform);
@@ -1016,48 +577,8 @@ const {
   }
 }
 
-:deep(.tour-polaroid-stack) {
-  width: 54px;
-  height: 64px;
-}
-
-:deep(.tour-polaroid-stack .polaroid-tile) {
-  width: 48px;
-  height: 58px;
-  padding: 2px 2px 8px 2px;
-}
-
-:deep(.tour-polaroid-stack .polaroid-photo-frame) {
-  height: 38px;
-}
-
-:deep(.tour-polaroid-stack .polaroid-chin) {
-  height: 10px;
-}
-
-:deep(.tour-polaroid-stack .polaroid-caption) {
-  font-size: 0.42rem;
-}
-
 .tour-attachments-wrap {
   margin-top: var(--space-2);
-}
-
-.tour-stations-meta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.tour-stations-summary {
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
 }
 
 @container spots-col (max-width: 360px) {
@@ -1066,49 +587,12 @@ const {
     gap: 8px;
   }
 
-  .tour-visual-col {
-    width: 52px;
-    min-width: 52px;
-  }
-
-  .tour-placeholder {
-    width: 42px;
-    height: 52px;
-  }
-
-  .tour-placeholder .placeholder {
-    font-size: 1.25rem;
-  }
-
   .card-title {
     font-size: 0.88rem;
   }
 
   .excursion-card.expanded .card-title {
     font-size: 1rem;
-  }
-
-  :deep(.tour-polaroid-stack) {
-    width: 42px;
-    height: 52px;
-  }
-
-  :deep(.tour-polaroid-stack .polaroid-tile) {
-    width: 38px;
-    height: 48px;
-    padding: 2px 2px 6px 2px;
-  }
-
-  :deep(.tour-polaroid-stack .polaroid-photo-frame) {
-    height: 30px;
-  }
-
-  :deep(.tour-polaroid-stack .polaroid-chin) {
-    height: 8px;
-  }
-
-  :deep(.tour-polaroid-stack .polaroid-caption) {
-    font-size: 0.38rem;
   }
 
   .tour-note-container:not(.is-expanded) {
@@ -1142,84 +626,14 @@ const {
     line-clamp: unset;
     display: block;
   }
-
-  .done-toggle {
-    font-size: 0.72rem;
-    padding: 2px 8px;
-  }
-
-  .calendar-drag-handle {
-    font-size: 0.7rem;
-    padding: 2px 8px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .excursion-card,
   .body,
-  .show-on-map-btn,
-  .show-on-map-btn .btn-label,
-  .polaroid-tile,
   .tour-note-container {
     transform: none !important;
     transition: opacity 0.15s ease !important;
   }
-}
-
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-}
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.unplanned-popover-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  min-width: 250px;
-}
-
-.popover-title-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.popover-subtext {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  margin: 0;
-  line-height: 1.3;
-}
-
-.popover-date-input {
-  width: 100%;
-}
-
-.popover-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
-}
-
-.calendar-alt-link {
-  font-size: 0.78rem !important;
-  color: var(--color-text-muted) !important;
-  justify-content: center;
-}
-
-.calendar-alt-link:hover {
-  color: var(--color-primary) !important;
 }
 </style>
