@@ -287,9 +287,6 @@ defineProps<{
   .scrolly-visual-wrapper {
     display: none;
   }
-  .mobile-device-mockup:not(.inline) {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -8,18 +8,13 @@ defineProps<{
   repoUrl: string;
 }>();
 
-const { robotPhase } = useLandingRobot();
+const { robotPhase, onPackingDone } = useLandingRobot();
 </script>
 
 <template>
   <header class="hero">
     <div class="hero-robot">
-      <ReisotorRobot
-        size="240px"
-        :phase="robotPhase"
-        interactive
-        @packing-done="robotPhase = 'idle'"
-      />
+      <ReisotorRobot size="240px" :phase="robotPhase" interactive @packing-done="onPackingDone" />
     </div>
     <h1 class="title">Reisotor</h1>
     <p class="tagline">
