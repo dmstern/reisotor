@@ -5,8 +5,12 @@ import { parseRouteGeometry } from '../utils/mapRoute';
 
 export interface UseRouteCalculationOptions {
   tripId: ComputedRef<number | undefined | null> | Ref<number | undefined | null>;
-  fromCoords: ComputedRef<{ lat?: number | null; lng?: number | null } | null>;
-  toCoords: ComputedRef<{ lat?: number | null; lng?: number | null } | null>;
+  fromCoords:
+    | ComputedRef<{ lat?: number | null; lng?: number | null } | null>
+    | Ref<{ lat?: number | null; lng?: number | null } | null>;
+  toCoords:
+    | ComputedRef<{ lat?: number | null; lng?: number | null } | null>
+    | Ref<{ lat?: number | null; lng?: number | null } | null>;
   transportType: Ref<string> | ComputedRef<string>;
   onRouteSelected?: (route: RouteResult) => void;
 }
@@ -342,6 +346,17 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     }
   );
 
+  function clearRoute() {
+    calculatedDurationSeconds.value = null;
+    calculatedDistanceMeters.value = null;
+    routeGeometry.value = null;
+    routingProfile.value = null;
+    calculatedRoutes.value = [];
+    selectedRouteIndex.value = 0;
+    cachedExactRoute.value = null;
+    routeCalculationError.value = null;
+  }
+
   return {
     isCalculatingRoute,
     routeCalculationError,
@@ -367,5 +382,6 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     onRouteModeChange,
     resetToDirectLine,
     setInitialRoute,
+    clearRoute,
   };
 }
