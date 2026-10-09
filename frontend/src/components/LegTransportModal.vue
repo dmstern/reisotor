@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, toRef, watch } from 'vue';
+import { computed, toRef, watch } from 'vue';
 import type { ExcursionLeg, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
@@ -22,15 +22,14 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatDuration } from '../utils/formatRoute';
 import {
   TRANSPORT_MODE_OPTIONS,
-  DEFAULT_TRANSIT_OPTIONS,
   ROUTE_MODE_OPTIONS,
   ROUTE_PREFERENCE_OPTIONS,
-  getCategoryFromType,
-  getDepartureLabel,
-  getExtendedFieldsConfig,
   type TransportCategory,
 } from '../utils/legTransportConfig';
-import { useLegTimeSync, calcElapsedMinutes } from '../composables/useLegTimeSync';
+import { useLegTransportForm } from '../composables/useLegTransportForm';
+import { useLegTransportMode } from '../composables/useLegTransportMode';
+import { useLegRoutingAccordion } from '../composables/useLegRoutingAccordion';
+import { useLegTimeSync } from '../composables/useLegTimeSync';
 import { useRouteCalculation } from '../composables/useRouteCalculation';
 
 const props = defineProps<{
@@ -47,28 +46,26 @@ const emit = defineEmits<{
   (e: 'delete'): void;
 }>();
 
-const isLegUploadingAttachments = ref(false);
-const transportCategory = ref<TransportCategory>('zu Fuß');
-const selectedTransitType = ref('Zug');
+const legPropRef = toRef(props, 'leg');
+const {
+  form,
+  isLegUploadingAttachments,
+  departureLabel,
+  extendedConfig,
+  showsSeatField,
+  hasExtendedData,
+  canDelete,
+  resetForm,
+  populateFromLeg,
+  buildLegPayload,
+} = useLegTransportForm({ leg: legPropRef });
 
-const form = ref({
-  transport_type: 'zu Fuß',
-  departure_time: '',
-  arrival_time: '',
-  checkin_info: '',
-  seat: '',
-  luggage: '',
-  ticket_link: '',
-  note: '',
-  amount: '',
-  paid_by_user_id: '',
+const transportTypeRef = computed({
+  get: () => form.value.transport_type,
+  set: (val: string) => {
+    form.value.transport_type = val;
+  },
 });
-
-const departureLabel = computed(() => getDepartureLabel(form.value.transport_type));
-const extendedConfig = computed(() => getExtendedFieldsConfig(form.value.transport_type));
-const showsSeatField = computed(
-  () => extendedConfig.value.showsSeat || Boolean(form.value.seat?.trim())
-);
 
 const fromCoords = computed(() => ({
   lat: props.fromSpot?.lat,
@@ -81,8 +78,6 @@ const toCoords = computed(() => ({
 }));
 
 const tripId = computed(() => props.fromSpot?.trip_id || props.toSpot?.trip_id);
-
-const transportTypeRef = computed(() => form.value.transport_type);
 
 const {
   isCalculatingRoute,
@@ -106,6 +101,7 @@ const {
   onPreferenceToggle,
   onRouteModeChange,
   setInitialRoute,
+  clearRoute,
 } = useRouteCalculation({
   tripId,
   fromCoords,
@@ -118,35 +114,28 @@ const {
   },
 });
 
-const isRoutingOpen = ref(true);
-const miniMapRef = ref<{ render?: () => void; invalidateSize?: () => void } | null>(null);
-
-watch(isRoutingOpen, async (open) => {
-  if (open) {
-    await nextTick();
-    setTimeout(() => {
-      miniMapRef.value?.invalidateSize?.();
-      miniMapRef.value?.render?.();
-    }, 150);
-  }
+const {
+  transportCategory,
+  selectedTransitType,
+  transitOptions,
+  selectCategory,
+  selectTransit,
+  initTransportMode,
+} = useLegTransportMode({
+  transportType: transportTypeRef,
 });
 
-const isRoutingDisabled = computed(() => !isRoutable.value);
-
-const routingDisabledTitle = computed(() => {
-  if (transportCategory.value === 'ÖPNV') {
-    return 'Für ÖPNV ist aktuell noch keine Routenberechnung möglich – bitte trage die Routendetails daher selbst ein.';
-  }
-  if (!hasCoordinates.value) {
-    return 'Für diese Teilstrecke liegen keine Koordinaten für Start oder Ziel vor.';
-  }
-  return undefined;
-});
-
-watch(isRoutingDisabled, (disabled) => {
-  if (disabled) {
-    isRoutingOpen.value = false;
-  }
+const {
+  isRoutingOpen,
+  miniMapRef,
+  isRoutingDisabled,
+  routingDisabledTitle,
+  openRouting,
+  closeRouting,
+} = useLegRoutingAccordion({
+  isRoutable,
+  hasCoordinates,
+  transportCategory,
 });
 
 const activeDurationSeconds = computed<number | null>(() => {
@@ -160,58 +149,41 @@ const activeDurationSeconds = computed<number | null>(() => {
   return null;
 });
 
-const departureTimeRef = toRef(form.value, 'departure_time');
-const arrivalTimeRef = toRef(form.value, 'arrival_time');
+const departureTimeRef = computed({
+  get: () => form.value.departure_time,
+  set: (val: string) => {
+    form.value.departure_time = val;
+  },
+});
+
+const arrivalTimeRef = computed({
+  get: () => form.value.arrival_time,
+  set: (val: string) => {
+    form.value.arrival_time = val;
+  },
+});
 
 const {
-  lastModifiedTimeField,
+  lastModifiedTimeField: _lastModifiedTimeField,
   isTimeLinked,
   canToggleLink,
   timeLinkTitle,
   timeDurationStatus,
+  timeDurationInfo,
   syncTimesWithDuration,
   onDepartureInput,
   onArrivalInput,
   toggleTimeLink,
   applySuggestedTime,
+  clearLinkedTimes,
+  initTimeState,
 } = useLegTimeSync({
   departureTime: departureTimeRef,
   arrivalTime: arrivalTimeRef,
   activeDurationSeconds,
   departureLabel,
-});
-
-const timeDurationInfo = computed<{ label: string; duration: string } | null>(() => {
-  if (
-    timeDurationStatus.value?.type === 'mismatch' ||
-    timeDurationStatus.value?.type === 'suggest'
-  ) {
-    return null;
-  }
-
-  if (activeDurationSeconds.value && activeDurationSeconds.value > 0) {
-    const durStr = formatDuration(activeDurationSeconds.value);
-    let label = 'Reisedauer';
-    const cat = transportCategory.value;
-    if (cat === 'zu Fuß') label = 'Gehzeit';
-    else if (cat === 'Auto' || cat === 'Fahrrad') label = 'Fahrzeit';
-    else if (form.value.transport_type === 'Flugzeug') label = 'Flugdauer';
-    return { label, duration: durStr };
-  }
-
-  if (form.value.departure_time && form.value.arrival_time) {
-    const elapsed = calcElapsedMinutes(form.value.departure_time, form.value.arrival_time);
-    if (elapsed != null && elapsed > 0) {
-      let label = 'Reisedauer';
-      const cat = transportCategory.value;
-      if (cat === 'zu Fuß') label = 'Gehzeit';
-      else if (cat === 'Auto' || cat === 'Fahrrad' || cat === 'ÖPNV') label = 'Fahrzeit';
-      else if (form.value.transport_type === 'Flugzeug') label = 'Flugdauer';
-      return { label, duration: formatDuration(elapsed * 60) };
-    }
-  }
-
-  return null;
+  transportCategory,
+  transportType: transportTypeRef,
 });
 
 const timeLinkedIconDef: IconDef = {
@@ -232,50 +204,23 @@ const routeHeadingIconDef: IconDef = {
   outline: IconMapRoute,
 };
 
-const transitOptions = computed(() => {
-  const current = form.value.transport_type;
-  if (
-    current &&
-    !['zu Fuß', 'Zu Fuß', 'Auto', 'Fahrrad'].includes(current) &&
-    !DEFAULT_TRANSIT_OPTIONS.includes(current)
-  ) {
-    return [...DEFAULT_TRANSIT_OPTIONS, current];
-  }
-  return DEFAULT_TRANSIT_OPTIONS;
-});
-
 function onCategorySelect(cat: string) {
-  transportCategory.value = cat as TransportCategory;
-  if (cat === 'ÖPNV') {
-    form.value.transport_type = selectedTransitType.value || 'Zug';
-    isRoutingOpen.value = false;
-    // Wenn von Auto/Fahrrad/zu Fuß auf ÖPNV gewechselt wird:
-    // Aktive Routenberechnung leeren, damit die alte Auto-/Gehzeit nicht im ÖPNV verbleibt
-    calculatedDurationSeconds.value = null;
-    calculatedDistanceMeters.value = null;
-    routeGeometry.value = null;
-    calculatedRoutes.value = [];
-    if (isTimeLinked.value) {
-      if (lastModifiedTimeField.value === 'departure' && form.value.arrival_time) {
-        form.value.arrival_time = '';
-      } else if (lastModifiedTimeField.value === 'arrival' && form.value.departure_time) {
-        form.value.departure_time = '';
+  selectCategory(cat as TransportCategory, {
+    onÖpnvSelected: () => {
+      closeRouting();
+      clearRoute();
+      clearLinkedTimes();
+    },
+    onRoutableCategorySelected: () => {
+      if (hasCoordinates.value) {
+        openRouting();
       }
-    }
-  } else {
-    form.value.transport_type = cat;
-    if (hasCoordinates.value) {
-      isRoutingOpen.value = true;
-    }
-  }
-  routeCalculationError.value = null;
+    },
+  });
 }
 
 function onTransitSelect(val: string) {
-  selectedTransitType.value = val;
-  if (transportCategory.value === 'ÖPNV') {
-    form.value.transport_type = val;
-  }
+  selectTransit(val);
 }
 
 watch(
@@ -284,41 +229,14 @@ watch(
     if (!open) return;
     routeCalculationError.value = null;
     if (props.leg) {
-      const initialType = props.leg.transport_type || 'zu Fuß';
-      const cat = getCategoryFromType(initialType);
-      transportCategory.value = cat;
+      populateFromLeg(props.leg);
+      const cat = initTransportMode(props.leg.transport_type);
       if (cat === 'ÖPNV') {
-        selectedTransitType.value = initialType === 'ÖPNV' ? 'Zug' : initialType;
-        form.value.transport_type = selectedTransitType.value;
-        isRoutingOpen.value = false;
+        closeRouting();
       } else {
-        selectedTransitType.value = 'Zug';
-        form.value.transport_type = cat;
-        isRoutingOpen.value = isRoutable.value;
+        if (isRoutable.value) openRouting();
       }
-      form.value.departure_time = props.leg.departure_time || '';
-      form.value.arrival_time = props.leg.arrival_time || '';
-      if (form.value.arrival_time && !form.value.departure_time) {
-        lastModifiedTimeField.value = 'arrival';
-      } else {
-        lastModifiedTimeField.value = 'departure';
-      }
-      if (form.value.departure_time && form.value.arrival_time && props.leg.duration_seconds) {
-        const elapsed = calcElapsedMinutes(form.value.departure_time, form.value.arrival_time);
-        const durMins = Math.round(props.leg.duration_seconds / 60);
-        isTimeLinked.value = elapsed != null && Math.abs(elapsed - durMins) <= 1;
-      } else {
-        isTimeLinked.value = true;
-      }
-      form.value.checkin_info = props.leg.checkin_info || '';
-      form.value.seat = props.leg.seat || '';
-      form.value.luggage = props.leg.luggage || '';
-      form.value.ticket_link = props.leg.ticket_link || '';
-      form.value.note = props.leg.note || '';
-      form.value.amount = props.leg.amount != null ? String(props.leg.amount) : '';
-      form.value.paid_by_user_id =
-        props.leg.paid_by_user_id != null ? String(props.leg.paid_by_user_id) : '';
-
+      initTimeState(props.leg.departure_time, props.leg.arrival_time, props.leg.duration_seconds);
       setInitialRoute(
         props.leg.route_geometry,
         props.leg.distance_meters,
@@ -326,23 +244,10 @@ watch(
         props.leg.routing_profile
       );
     } else {
-      transportCategory.value = 'zu Fuß';
-      selectedTransitType.value = 'Zug';
-      form.value = {
-        transport_type: 'zu Fuß',
-        departure_time: '',
-        arrival_time: '',
-        checkin_info: '',
-        seat: '',
-        luggage: '',
-        ticket_link: '',
-        note: '',
-        amount: '',
-        paid_by_user_id: '',
-      };
-      lastModifiedTimeField.value = 'departure';
-      isTimeLinked.value = true;
-      isRoutingOpen.value = isRoutable.value;
+      resetForm();
+      initTransportMode('zu Fuß');
+      initTimeState(null, null, null);
+      if (isRoutable.value) openRouting();
       setInitialRoute(null, null, null, null);
     }
   },
@@ -355,58 +260,19 @@ const modalTitle = computed(() => {
   return `Teilstrecke: ${fromName} → ${toName}`;
 });
 
-const hasExtendedData = computed(() => {
-  return !!(
-    form.value.checkin_info ||
-    form.value.seat ||
-    form.value.luggage ||
-    form.value.ticket_link ||
-    form.value.amount ||
-    form.value.note
-  );
-});
-
-const canDelete = computed(() => {
-  return (
-    props.leg != null ||
-    !!(
-      form.value.departure_time ||
-      form.value.arrival_time ||
-      form.value.checkin_info ||
-      form.value.seat ||
-      form.value.luggage ||
-      form.value.ticket_link ||
-      form.value.note ||
-      form.value.amount
-    )
-  );
-});
-
 function onSave() {
   if (!props.fromSpot || !props.toSpot || isLegUploadingAttachments.value) return;
   const isExact = isRoutable.value && routeDisplayMode.value === 'exact' && !!routeGeometry.value;
-  const legData: ExcursionLeg = {
-    id: props.leg?.id,
-    position: props.leg?.position ?? 0,
-    from_spot_id: props.fromSpot.id,
-    to_spot_id: props.toSpot.id,
-    transport_type: form.value.transport_type || null,
-    departure_time: form.value.departure_time || null,
-    arrival_time: form.value.arrival_time || null,
-    checkin_info: form.value.checkin_info.trim() || null,
-    seat: form.value.seat.trim() || null,
-    luggage: form.value.luggage.trim() || null,
-    ticket_link: form.value.ticket_link.trim() || null,
-    note: form.value.note.trim() || null,
-    amount: form.value.amount ? Number(form.value.amount) : null,
-    paid_by_user_id:
-      form.value.amount && form.value.paid_by_user_id ? Number(form.value.paid_by_user_id) : null,
-    budget_expense_id: props.leg?.budget_expense_id,
-    route_geometry: isExact ? routeGeometry.value : null,
-    distance_meters: isExact ? calculatedDistanceMeters.value : null,
-    duration_seconds: isExact ? calculatedDurationSeconds.value : null,
-    routing_profile: isExact ? routingProfile.value : null,
-  };
+  const legData = buildLegPayload(form.value, {
+    fromSpot: props.fromSpot,
+    toSpot: props.toSpot,
+    leg: props.leg,
+    isExactRoute: isExact,
+    routeGeometry: routeGeometry.value,
+    distanceMeters: calculatedDistanceMeters.value,
+    durationSeconds: calculatedDurationSeconds.value,
+    routingProfile: routingProfile.value,
+  });
   emit('save', legData);
   emit('update:modelValue', false);
 }

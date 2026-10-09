@@ -1,4 +1,4 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue';
+import { computed, ref, toValue, type ComputedRef, type Ref } from 'vue';
 import type { AlertVariant } from '../components/primitives/Alert.vue';
 import type { IconDef } from '../utils/icon';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -73,6 +73,8 @@ export interface UseLegTimeSyncOptions {
   arrivalTime: Ref<string>;
   activeDurationSeconds: ComputedRef<number | null> | Ref<number | null>;
   departureLabel: ComputedRef<string> | Ref<string>;
+  transportCategory?: ComputedRef<string> | Ref<string>;
+  transportType?: ComputedRef<string> | Ref<string>;
 }
 
 export function useLegTimeSync(options: UseLegTimeSyncOptions) {
@@ -292,12 +294,78 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
     }
   });
 
+  const timeDurationInfo = computed<{ label: string; duration: string } | null>(() => {
+    if (
+      timeDurationStatus.value?.type === 'mismatch' ||
+      timeDurationStatus.value?.type === 'suggest'
+    ) {
+      return null;
+    }
+
+    const cat = options.transportCategory ? toValue(options.transportCategory) : '';
+    const type = options.transportType ? toValue(options.transportType) : '';
+    const durSec = activeDurationSeconds.value;
+
+    if (durSec && durSec > 0) {
+      const durStr = formatDuration(durSec);
+      let label = 'Reisedauer';
+      if (cat === 'zu Fuß') label = 'Gehzeit';
+      else if (cat === 'Auto' || cat === 'Fahrrad') label = 'Fahrzeit';
+      else if (type === 'Flugzeug' || type === 'Flug') label = 'Flugdauer';
+      return { label, duration: durStr };
+    }
+
+    if (departureTime.value && arrivalTime.value) {
+      const elapsed = calcElapsedMinutes(departureTime.value, arrivalTime.value);
+      if (elapsed != null && elapsed > 0) {
+        let label = 'Reisedauer';
+        if (cat === 'zu Fuß') label = 'Gehzeit';
+        else if (cat === 'Auto' || cat === 'Fahrrad' || cat === 'ÖPNV') label = 'Fahrzeit';
+        else if (type === 'Flugzeug' || type === 'Flug') label = 'Flugdauer';
+        return { label, duration: formatDuration(elapsed * 60) };
+      }
+    }
+
+    return null;
+  });
+
+  function clearLinkedTimes() {
+    if (isTimeLinked.value) {
+      if (lastModifiedTimeField.value === 'departure' && arrivalTime.value) {
+        arrivalTime.value = '';
+      } else if (lastModifiedTimeField.value === 'arrival' && departureTime.value) {
+        departureTime.value = '';
+      }
+    }
+  }
+
+  function initTimeState(
+    departure?: string | null,
+    arrival?: string | null,
+    durationSeconds?: number | null
+  ) {
+    if (arrival && !departure) {
+      lastModifiedTimeField.value = 'arrival';
+    } else {
+      lastModifiedTimeField.value = 'departure';
+    }
+
+    if (departure && arrival && durationSeconds) {
+      const elapsed = calcElapsedMinutes(departure, arrival);
+      const durMins = Math.round(durationSeconds / 60);
+      isTimeLinked.value = elapsed != null && Math.abs(elapsed - durMins) <= 1;
+    } else {
+      isTimeLinked.value = true;
+    }
+  }
+
   return {
     lastModifiedTimeField,
     isTimeLinked,
     canToggleLink,
     timeLinkTitle,
     timeDurationStatus,
+    timeDurationInfo,
     alertVariantForStatus,
     alertIconForStatus,
     syncTimesWithDuration,
@@ -305,5 +373,7 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
     onArrivalInput,
     toggleTimeLink,
     applySuggestedTime,
+    clearLinkedTimes,
+    initTimeState,
   };
 }
