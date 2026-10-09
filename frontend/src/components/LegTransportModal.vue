@@ -141,7 +141,6 @@ const arrivalTimeRef = computed({
 });
 
 const {
-  lastModifiedTimeField: _lastModifiedTimeField,
   isTimeLinked,
   canToggleLink,
   timeLinkTitle,
