@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
-import { excursionStationKeys, resolveStations } from '../utils/excursionStations';
-import {
-  fetchMergedWeather,
-  summarizeWeatherRange,
-  type DailyWeather,
-  type WeatherRangeSummary,
-} from '../utils/weather';
-import { usePointerDrag } from '../composables/usePointerDrag';
-import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
-import { useTracksStore } from '../stores/tracks';
-import { useTripStore } from '../stores/trip';
-import { useWeatherProviderStore } from '../stores/weatherProvider';
+import { useExcursionStations } from '../composables/useExcursionStations';
+import { useExcursionWeather } from '../composables/useExcursionWeather';
+import { useExcursionCalendarDrag } from '../composables/useExcursionCalendarDrag';
+import { useExcursionDoneStatus } from '../composables/useExcursionDoneStatus';
+import { useExcursionSpotDrop } from '../composables/useExcursionSpotDrop';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -23,7 +16,6 @@ import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
-import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
@@ -34,10 +26,7 @@ import TourRoleBadge from './TourRoleBadge.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
-import { computePopoverPosition } from '../utils/popoverPosition';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
-import { formatTravelDuration, tourTotalDurationMinutes } from '../utils/travelDuration';
 
 const props = withDefaults(
   defineProps<{
@@ -70,6 +59,8 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
+const drawers = useDrawersStore();
+
 function onCardClick() {
   if (props.expanded) {
     emit('close');
@@ -82,238 +73,54 @@ function onCardClick() {
 }
 
 const isMapFocused = computed(() => drawers.mapFocusExcursionId === props.excursion.id);
-
-const resolvedStations = computed(() =>
-  resolveStations(excursionStationKeys(props.excursion.spot_ids), props.stations, props.travelItems)
-);
-
-const hasMappedStations = computed(() =>
-  resolvedStations.value.some((s) => s.lat != null && s.lng != null)
-);
-
 const showComments = ref(false);
 
-function formatDate(d: string) {
-  return formatDateShared(d, { includeYear: false });
-}
-
-// Wetter für den geplanten Tag an allen Orten der kartierten Stationen der Tour (Issue #152)
-// mit Temperatur-Range und prägnantestem Weathercode.
-const weatherProvider = useWeatherProviderStore();
-const mappedStations = computed(() =>
-  resolvedStations.value.filter((s) => s.lat != null && s.lng != null)
-);
-const weatherSummary = ref<WeatherRangeSummary | null>(null);
-
-watch(
-  () => [props.excursion.date, mappedStations.value, weatherProvider.model] as const,
-  async ([date, stations, model]) => {
-    weatherSummary.value = null;
-    if (!date || !stations.length) return;
-    try {
-      const stationWeathers: DailyWeather[] = [];
-      const fetchedKeys = new Set<string>();
-
-      for (const st of stations) {
-        if (st.lat == null || st.lng == null) continue;
-        const locKey = `${st.lat.toFixed(3)},${st.lng.toFixed(3)}`;
-        if (fetchedKeys.has(locKey)) continue;
-        fetchedKeys.add(locKey);
-
-        const days = await fetchMergedWeather(props.excursion.trip_id, st.lat, st.lng, model);
-        const match = days.find((d) => d.date === date);
-        if (match) stationWeathers.push(match);
-      }
-
-      weatherSummary.value = summarizeWeatherRange(stationWeathers);
-    } catch {
-      // best effort
-    }
-  },
-  { immediate: true }
-);
-
-// Nur noch das Datum als String - Icon/Wetter rendert das Template direkt (siehe dort), statt es
-// wie zuvor in einen einzigen, nicht auftrennbaren String einzubacken.
-const statusDateLabel = computed(() =>
-  props.excursion.date ? formatDate(props.excursion.date) : ''
-);
-
-// #176: Anreise/Abreise/Weiterreise (ehemalige Reise-Etappe) - dieselbe Card wie eine normale Tour,
-// mit zusätzlicher Rollen-/Route-/Dauer-Anzeige (übernommen aus der früheren TravelView.vue).
-// resolvedStations[0]/[1] sind bei gesetzter role immer Von/Nach (siehe routes/ideas.ts's
-// Zwei-Stationen-Validierung).
-const routeLabel = computed(() => {
-  if (!props.excursion.role || resolvedStations.value.length < 2) return null;
-  if (resolvedStations.value.length === 2) {
-    return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
-  }
-  const stopCount = resolvedStations.value.length - 2;
-  const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
-  return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
-});
-const effectiveDepartureTime = computed(() => {
-  if (props.excursion.legs && props.excursion.legs.length > 0) {
-    return (
-      props.excursion.legs.find((l) => !!l.departure_time)?.departure_time ||
-      props.excursion.departure_time
-    );
-  }
-  return props.excursion.departure_time;
+const {
+  resolvedStations,
+  hasMappedStations,
+  routeLabel,
+  effectiveDepartureTime,
+  effectiveArrivalTime,
+  travelDuration,
+  stationsSummaryText,
+  linkedTracks,
+} = useExcursionStations({
+  excursion: () => props.excursion,
+  stations: () => props.stations,
+  travelItems: () => props.travelItems,
 });
 
-const effectiveArrivalTime = computed(() => {
-  if (props.excursion.legs && props.excursion.legs.length > 0) {
-    return (
-      [...props.excursion.legs].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
-      props.excursion.arrival_time
-    );
-  }
-  return props.excursion.arrival_time;
+const { weatherSummary, statusDateLabel } = useExcursionWeather({
+  excursion: () => props.excursion,
+  resolvedStations,
 });
 
-const travelDuration = computed(() => {
-  const minutes = tourTotalDurationMinutes(props.excursion);
-  return minutes == null ? null : formatTravelDuration(minutes);
+const { dragging, ghostStyle, onPointerDown } = useExcursionCalendarDrag({
+  excursion: () => props.excursion,
 });
 
-const stationsSummaryText = computed(() => {
-  if (!resolvedStations.value.length) return null;
-  if (resolvedStations.value.length === 1) {
-    return resolvedStations.value[0].title;
-  }
-  if (resolvedStations.value.length === 2) {
-    return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
-  }
-  const stopCount = resolvedStations.value.length - 2;
-  const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
-  return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
+const {
+  unplannedPopoverOpen,
+  unplannedPopoverStyle,
+  unplannedDoneDate,
+  onToggleDone,
+  submitUnplannedDone,
+  openCalendarConfirmDone,
+} = useExcursionDoneStatus({
+  excursion: () => props.excursion,
 });
 
-// Einplanen per Zeige-/Touch-Drag am eigenen Anfasser (📅 Einplanen) statt am gesamten Card-Root:
-// natives HTML5-draggable/dragstart wurde ersetzt, da es auf Touch-Geräten (v. a. Android Chrome)
-// nicht zuverlässig funktioniert. onStart öffnet die Kalender-Schublade automatisch, damit die
-// Tageszellen im DOM existieren; onDrop sucht per elementFromPoint die getroffene Tageszelle
-// (data-date, siehe CalendarWeek.vue) und plant den Ausflug direkt über den Store ein.
-const excursionsStore = useExcursionsStore();
-const drawers = useDrawersStore();
-const tracksStore = useTracksStore();
-const linkedTracks = computed(() =>
-  tracksStore.tracks.filter((t) => t.excursion_id === props.excursion.id)
-);
-const { dragging, ghostStyle, onPointerDown } = usePointerDrag({
-  onStart: () => {
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
-      drawers.calendarOpen = true;
-    }
-  },
-  onDrop: (targetEl) => {
-    const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
-    if (!dayEl?.dataset.date) return;
-    excursionsStore.setDate(props.excursion.id, dayEl.dataset.date);
-  },
-  // Klick-Alternative zum Drag: öffnet die Kalender-Schublade und merkt sich den Ausflug, der beim
-  // nächsten Tages-Klick eingeplant werden soll (siehe drawers.startPendingSchedule/
-  // ScheduleView.vue's selectDay()).
-  onTap: () => {
-    drawers.startPendingSchedule('excursion', props.excursion.id);
-  },
+const {
+  spotDragOverCount,
+  isDropCandidate,
+  isDropDisabled,
+  onSpotDragEnter,
+  onSpotDragLeave,
+  onSpotDrop,
+} = useExcursionSpotDrop({
+  excursion: () => props.excursion,
+  onDropSpot: (spotId) => emit('drop-spot', spotId),
 });
-
-const tripStore = useTripStore();
-const unplannedPopoverOpen = ref(false);
-const unplannedPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
-const defaultDate = computed(() => {
-  const trip = tripStore.currentTrip;
-  const today = toLocalDateString(new Date());
-  if (trip && trip.start_date && trip.end_date) {
-    if (today >= trip.start_date && today <= trip.end_date) return today;
-    return trip.start_date;
-  }
-  return today;
-});
-const unplannedDoneDate = ref(defaultDate.value);
-watch(defaultDate, (d) => {
-  unplannedDoneDate.value = d;
-});
-
-// #106/#147: Status-Kette in Planung -> geplant -> gemacht statt (wie zuvor) eines von geplant/
-// ungeplant unabhängigen Flags - eine Tour darf nicht ohne Datum "gemacht" sein. Zurück auf
-// "geplant" braucht dafür kein neues Datum (setDone(false) direkt). Beim Übergang zu "gemacht":
-// mit Datum direkt markieren; ohne Datum (noch "in Planung") öffnet sich direkt ein kompaktes
-// Popover zur Datumsauswahl (inkl. Option, in den Kalender abzuspringen).
-async function onToggleDone(event?: MouseEvent) {
-  if (props.excursion.done) {
-    await excursionsStore.setDone(props.excursion.id, false);
-  } else if (props.excursion.date) {
-    await excursionsStore.setDone(props.excursion.id, true);
-  } else {
-    const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
-    if (triggerEl) {
-      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
-        menuWidth: 260,
-        menuHeight: 180,
-      });
-    }
-    unplannedPopoverOpen.value = true;
-    await nextTick();
-    const menuEl = document.querySelector('.tour-unplanned-popover') as HTMLElement | null;
-    if (menuEl && triggerEl) {
-      const rect = menuEl.getBoundingClientRect();
-      unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
-        menuWidth: rect.width,
-        menuHeight: rect.height,
-      });
-    }
-  }
-}
-
-async function submitUnplannedDone() {
-  if (!unplannedDoneDate.value) return;
-  await excursionsStore.setDate(props.excursion.id, unplannedDoneDate.value);
-  await excursionsStore.setDone(props.excursion.id, true);
-  unplannedPopoverOpen.value = false;
-}
-
-function openCalendarConfirmDone() {
-  unplannedPopoverOpen.value = false;
-  drawers.startPendingSchedule('excursion', props.excursion.id, 'confirm-done');
-}
-
-// Drop-Zone fürs Zuordnen: ein Spot kann direkt auf diese Karte gezogen werden (SpotCard.vue's
-// "🎒 Auf Tour ziehen"-Anfasser), um ihn als Station hinzuzufügen – "Tour zuordnen" im Spot-Formular
-// (TourAssignPicker.vue, ExcursionsView.vue) bleibt daneben als schnellerer Weg ohne Reihenfolge
-// bestehen, beide Wege schreiben in dasselbe spot_ids-Feld. Zähler statt Boolean, da dragenter/
-// dragleave beim Überqueren von Kind-Elementen mehrfach feuern. Der types-Check filtert gezielt auf
-// den von SpotCard.vue gesetzten MIME-Typ, damit andere Drags (z. B. SpotOrderPicker.vue's interne
-// Umsortierung) hier keine ungewollte drop-target-Hervorhebung auslösen.
-const spotDragOverCount = ref(0);
-function isStationDrag(event: DragEvent) {
-  return !!event.dataTransfer?.types.includes('text/spot-id');
-}
-const isDropCandidate = computed(() => {
-  if (drawers.draggingTourSpotId == null) return false;
-  return !props.excursion.spot_ids.includes(drawers.draggingTourSpotId);
-});
-const isDropDisabled = computed(() => {
-  if (drawers.draggingTourSpotId == null) return false;
-  return props.excursion.spot_ids.includes(drawers.draggingTourSpotId);
-});
-
-function onSpotDragEnter(event: DragEvent) {
-  if (!isStationDrag(event) || isDropDisabled.value) return;
-  spotDragOverCount.value++;
-}
-function onSpotDragLeave(event: DragEvent) {
-  if (!isStationDrag(event)) return;
-  spotDragOverCount.value = Math.max(0, spotDragOverCount.value - 1);
-}
-function onSpotDrop(event: DragEvent) {
-  spotDragOverCount.value = 0;
-  if (isDropDisabled.value) return;
-  const rawSpotId = event.dataTransfer?.getData('text/spot-id');
-  if (rawSpotId) emit('drop-spot', Number(rawSpotId));
-}
 </script>
 
 <template>
