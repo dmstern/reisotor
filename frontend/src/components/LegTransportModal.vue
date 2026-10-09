@@ -364,11 +364,13 @@ function onDelete() {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  container-type: inline-size;
+  container-name: leg-modal;
 }
 
 .attachments-hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
 }

@@ -211,7 +211,7 @@ const routeHeadingIconDef: IconDef = {
 }
 
 .route-calc-hint {
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -270,21 +270,23 @@ const routeHeadingIconDef: IconDef = {
   position: relative;
   width: 100%;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle, 12px);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   overflow: hidden;
   isolation: isolate;
   display: block;
+  container-type: inline-size;
+  container-name: route-map;
 }
 
 .route-calc-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  font-size: 0.6875rem;
+  padding: 2px var(--space-2);
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.03em;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-primary-tint);
   color: var(--color-primary);
   line-height: 1.2;
@@ -313,36 +315,26 @@ const routeHeadingIconDef: IconDef = {
   position: absolute;
   top: 22px;
   left: 12px;
+  right: auto;
   width: 260px;
   max-width: calc(100% - 24px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle, 12px);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+  box-shadow: var(--shadow-md);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 8px;
-  gap: 8px;
+  padding: var(--space-2);
+  gap: var(--space-2);
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color var(--transition-fast, 0.15s ease),
+    box-shadow var(--transition-fast, 0.15s ease);
   z-index: var(--z-card-elevated, 5);
 }
 
-@media (min-width: 581px) {
-  .route-floating-card {
-    position: absolute;
-    top: 22px;
-    left: 12px;
-    right: auto;
-    width: 260px;
-    max-width: calc(100% - 24px);
-  }
-}
-
-@media (max-width: 580px) {
+@container route-map (max-width: 400px), (max-width: 400px) {
   .route-floating-card {
     position: absolute;
     top: 22px;
@@ -377,12 +369,12 @@ const routeHeadingIconDef: IconDef = {
 .route-card-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   width: 100%;
 }
 
 .route-direct-detail {
-  padding: 4px 6px;
+  padding: var(--space-1) 6px;
 }
 
 .route-direct-detail .route-calc-hint {
@@ -434,14 +426,14 @@ const routeHeadingIconDef: IconDef = {
   align-items: flex-start;
   gap: var(--space-1);
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   color: var(--color-danger);
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .route-floating-card .route-calc-error {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   color: var(--color-danger);
 }
 
@@ -467,7 +459,7 @@ const routeHeadingIconDef: IconDef = {
   }
 }
 
-@media (max-width: 600px) {
+@container (max-width: 480px) {
   .route-calc-header {
     flex-direction: column;
     align-items: flex-start;
@@ -484,12 +476,10 @@ const routeHeadingIconDef: IconDef = {
     align-items: stretch;
     gap: 0;
   }
-}
 
-@media (max-width: 480px) {
   .route-mode-toggle :deep(.segmented-option) {
-    padding: 6px 4px;
-    font-size: 0.8rem;
+    padding: 6px var(--space-1);
+    font-size: var(--font-size-xs);
     gap: var(--space-1);
   }
 }

@@ -71,7 +71,7 @@ const emit = defineEmits<{
 }
 
 .transport-toggle :deep(.segmented-option) {
-  padding: 6px 8px;
+  padding: 6px var(--space-2);
 }
 
 .transit-dropdown-wrapper {
@@ -102,8 +102,8 @@ const emit = defineEmits<{
 .transit-dropdown-inner {
   min-height: 0;
   overflow: hidden;
-  padding: 4px;
-  margin: -4px;
+  padding: var(--space-1);
+  margin: calc(-1 * var(--space-1));
 }
 
 .transit-dropdown-wrapper:not(.is-expanded) .transit-dropdown-inner {
@@ -128,10 +128,10 @@ const emit = defineEmits<{
   }
 }
 
-@media (max-width: 480px) {
+@container (max-width: 480px) {
   .transport-toggle :deep(.segmented-option) {
-    padding: 6px 4px;
-    font-size: 0.8rem;
+    padding: 6px var(--space-1);
+    font-size: var(--font-size-xs);
     gap: var(--space-1);
   }
 }

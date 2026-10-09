@@ -114,11 +114,11 @@ const props = defineProps<{
 
 .hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
-@media (max-width: 600px) {
+@container (max-width: 480px) {
   .row {
     grid-template-columns: 1fr;
   }

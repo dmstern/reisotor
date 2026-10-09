@@ -179,7 +179,7 @@ const singleRouteDistance = computed(() => {
 }
 
 .route-alt-card:hover:not(.is-selected) {
-  border-color: var(--color-primary-light, var(--color-primary));
+  border-color: var(--color-primary);
   background: var(--color-hover);
 }
 
@@ -206,7 +206,7 @@ const singleRouteDistance = computed(() => {
 .route-alt-badges {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   flex-wrap: wrap;
   flex-shrink: 0;
 }
@@ -215,10 +215,10 @@ const singleRouteDistance = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 6px;
-  font-size: 0.6875rem;
+  padding: 2px var(--space-1);
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   line-height: 1.3;
 }
 
@@ -233,14 +233,14 @@ const singleRouteDistance = computed(() => {
 }
 
 :root[data-theme='dark'] .badge-fastest {
-  color: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .route-alt-stats {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8125rem;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   flex-wrap: wrap;
 }
@@ -256,7 +256,7 @@ const singleRouteDistance = computed(() => {
 }
 
 .route-alt-diff {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
 }

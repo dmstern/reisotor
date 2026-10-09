@@ -197,16 +197,16 @@ function onArrivalChange(event: Event) {
 .time-input-wrap :deep(.input) {
   width: 100%;
   font-variant-numeric: tabular-nums;
-  padding: 9px 8px;
+  padding: 9px var(--space-2);
 }
 
 .time-link-connector {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 44px;
+  height: var(--input-height, 44px);
   position: relative;
-  padding: 0 4px;
+  padding: 0 var(--space-1);
 }
 
 .time-link-connector::before,
@@ -214,10 +214,10 @@ function onArrivalChange(event: Event) {
   content: '';
   position: absolute;
   top: 50%;
-  width: 8px;
+  width: var(--space-2);
   height: 1.5px;
   background: var(--color-border-strong);
-  transition: background-color 0.18s ease;
+  transition: background-color var(--transition-fast, 0.15s ease);
   pointer-events: none;
 }
 
@@ -240,7 +240,7 @@ function onArrivalChange(event: Event) {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-sm-squircle, 8px);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
@@ -253,13 +253,13 @@ function onArrivalChange(event: Event) {
     border-color 0.16s ease,
     box-shadow 0.16s ease;
   padding: 0;
-  z-index: 2;
+  z-index: 1;
 }
 
 .time-link-btn:hover:not(:disabled) {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  background: var(--color-surface-hover, var(--color-hover));
+  background: var(--color-hover);
   transform: scale(1.1);
   box-shadow: var(--shadow-sm);
 }
@@ -276,8 +276,8 @@ function onArrivalChange(event: Event) {
 
 .time-link-btn.is-linked:hover:not(:disabled) {
   background: var(--color-primary-tint);
-  border-color: var(--color-primary-hover, var(--color-primary-dark));
-  color: var(--color-primary-hover, var(--color-primary-dark));
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-dark);
 }
 
 .time-link-btn:disabled {
@@ -301,15 +301,15 @@ function onArrivalChange(event: Event) {
   align-items: center;
   gap: var(--space-1);
   padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.8125rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--transition-fast, 0.15s ease),
+    border-color var(--transition-fast, 0.15s ease),
+    color var(--transition-fast, 0.15s ease);
 }
 
 .time-duration-chip.is-linked {
@@ -351,10 +351,10 @@ function onArrivalChange(event: Event) {
   }
 }
 
-@media (max-width: 600px) {
+@container (max-width: 480px) {
   .time-input-wrap :deep(.input) {
     padding: 9px 6px;
-    font-size: 0.9375rem;
+    font-size: var(--font-size-sm);
   }
 }
 </style>

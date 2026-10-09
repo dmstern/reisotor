@@ -47,34 +47,35 @@ function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
     };
   }
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 580;
-  if (mapEl.value) {
-    const container = mapEl.value.closest('.route-calc-map-wrap') || mapEl.value.parentElement;
-    if (container) {
-      const cardEl = container.querySelector<HTMLElement>('.route-floating-card');
-      if (cardEl) {
-        const cardRect = cardEl.getBoundingClientRect();
-        const mapRect = mapEl.value.getBoundingClientRect();
+  const container = mapEl.value?.closest('.route-calc-map-wrap') || mapEl.value?.parentElement;
+  const isNarrow =
+    (container && container.clientWidth > 0 && container.clientWidth <= 400) ||
+    (typeof window !== 'undefined' && window.innerWidth <= 580);
 
-        if (cardRect.height > 0 || cardRect.width > 0) {
-          if (isMobile) {
-            // Auf Mobile überdeckt die Card den oberen Bereich der Karte.
-            // Sichtbar ist der Bereich unterhalb der Card bis zum unteren Kartenrand.
-            const coveredTopPx = Math.max(0, cardRect.bottom - mapRect.top);
-            return { coveredTopPx, coveredLeftPx: 0 };
-          } else {
-            // Auf Desktop überdeckt die Card die linke Seite der Karte.
-            // Sichtbar ist der Bereich rechts von der Card.
-            const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
-            return { coveredTopPx: 0, coveredLeftPx };
-          }
+  if (mapEl.value && container) {
+    const cardEl = container.querySelector<HTMLElement>('.route-floating-card');
+    if (cardEl) {
+      const cardRect = cardEl.getBoundingClientRect();
+      const mapRect = mapEl.value.getBoundingClientRect();
+
+      if (cardRect.height > 0 || cardRect.width > 0) {
+        if (isNarrow || (mapRect.width > 0 && cardRect.width >= mapRect.width - 40)) {
+          // Auf Mobile / schmalen Containern überdeckt die Card den oberen Bereich der Karte.
+          // Sichtbar ist der Bereich unterhalb der Card bis zum unteren Kartenrand.
+          const coveredTopPx = Math.max(0, cardRect.bottom - mapRect.top);
+          return { coveredTopPx, coveredLeftPx: 0 };
+        } else {
+          // Auf Desktop / breiten Containern überdeckt die Card die linke Seite der Karte.
+          // Sichtbar ist der Bereich rechts von der Card.
+          const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
+          return { coveredTopPx: 0, coveredLeftPx };
         }
       }
     }
   }
 
   // Fallback für Tests (jsdom liefert 0 für getBoundingClientRect) und initiales Rendern:
-  if (isMobile) {
+  if (isNarrow) {
     return { coveredTopPx: 170, coveredLeftPx: 0 };
   }
   return { coveredTopPx: 0, coveredLeftPx: 272 };
@@ -303,37 +304,42 @@ defineExpose({
 .leg-mini-map {
   height: 420px;
   width: 100%;
-  background: var(--color-surface-subtle, var(--color-hover));
+  background: var(--color-hover);
 }
 
-@media (max-width: 580px) {
+@container (max-width: 400px) {
   .leg-mini-map {
     height: 500px;
   }
 }
+</style>
 
-:deep(.alternative-route-polyline) {
+<style>
+/* Imperatives Third-Party-DOM (Leaflet):
+   Leaflet erzeugt SVG-Pfade und Tile-Container dynamisch per JS außerhalb des Vue-Scoped-CSS.
+   Daher werden diese Selektoren isoliert unter .leg-mini-map ungescopt definiert. */
+.leg-mini-map .alternative-route-polyline {
   cursor: pointer;
   transition:
-    stroke 0.15s ease,
-    stroke-width 0.15s ease;
+    stroke var(--transition-fast, 0.15s ease),
+    stroke-width var(--transition-fast, 0.15s ease);
 }
 
-:deep(.alternative-route-polyline:hover) {
-  stroke: #64748b;
+.leg-mini-map .alternative-route-polyline:hover {
+  stroke: var(--color-text-muted);
   stroke-width: 6;
 }
 
-:deep(.active-route-polyline) {
+.leg-mini-map .active-route-polyline {
   pointer-events: none;
 }
 
-:root[data-theme='dark'] .leg-mini-map :deep(.leaflet-tile-pane) {
+:root[data-theme='dark'] .leg-mini-map .leaflet-tile-pane {
   filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .leg-mini-map :deep(.leaflet-tile-pane) {
+  :root:not([data-theme='light']) .leg-mini-map .leaflet-tile-pane {
     filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
   }
 }

@@ -46,10 +46,12 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .leg-modal-spot-name {
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .leg-modal-arrow {
