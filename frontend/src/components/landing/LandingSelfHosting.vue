@@ -18,13 +18,23 @@ defineProps<{
 <style scoped>
 .self-hosting {
   text-align: center;
+  width: calc(100% - 2 * var(--space-4));
   max-width: 800px;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: var(--space-5);
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   border-radius: var(--radius-xl-squircle);
+  corner-shape: squircle;
   border: 1px dashed var(--color-border-strong);
+}
+
+@container landing (max-width: 480px) {
+  .self-hosting {
+    width: calc(100% - 2 * var(--space-3));
+    padding: var(--space-4);
+  }
 }
 
 .self-hosting h2 {

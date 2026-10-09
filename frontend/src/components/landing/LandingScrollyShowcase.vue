@@ -115,9 +115,7 @@ defineProps<{
   border-radius: var(--radius-xl-squircle);
   corner-shape: squircle;
   border: 1px solid var(--color-border);
-  box-shadow:
-    var(--shadow-lg),
-    0 20px 40px -15px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -125,19 +123,19 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: var(--space-2) var(--space-3);
   background: var(--color-hover);
   border-bottom: 1px solid var(--color-border);
 }
 
 .chrome-controls {
   display: flex;
-  gap: 6px;
+  gap: var(--space-1-5, 6px);
 }
 
 .control-dot {
-  width: 10px;
-  height: 10px;
+  width: var(--radius-sm);
+  height: var(--radius-sm);
   border-radius: var(--radius-full);
 }
 
@@ -156,17 +154,17 @@ defineProps<{
 .chrome-address-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5, 6px);
   background: var(--color-surface);
-  padding: 3px 12px;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
 }
 
 .chrome-tag {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-primary);
 }
@@ -238,8 +236,8 @@ defineProps<{
 .mobile-device-mockup {
   position: absolute;
   z-index: 4;
-  bottom: -40px;
-  right: -30px;
+  bottom: calc(var(--space-5) * -1);
+  right: calc(var(--space-3) * -1);
   width: 25%;
   min-width: 140px;
   max-width: 220px;
@@ -248,11 +246,9 @@ defineProps<{
   border-radius: calc(var(--radius-xl-squircle) * 0.8);
   corner-shape: squircle;
   border: 1px solid var(--color-border);
-  box-shadow:
-    var(--shadow-lg),
-    -10px 20px 40px -10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
-  padding: 4px; /* Simulate bezel */
+  padding: var(--space-1);
 }
 
 .mobile-device-mockup .mockup-screen {
@@ -264,13 +260,13 @@ defineProps<{
   position: relative;
 }
 
-@media (min-width: 1920px) {
+@container landing (min-width: 1920px) {
   .scrolly-visual-wrapper {
     max-height: 850px;
   }
 }
 
-@media (max-width: 1023px) and (min-width: 768px) {
+@container landing (max-width: 1023px) and (min-width: 768px) {
   .scrolly-visual-wrapper {
     top: 10vh;
     height: calc(100vh - 20vh);
@@ -280,9 +276,14 @@ defineProps<{
   .chrome-address-bar {
     display: none;
   }
+  .mobile-device-mockup {
+    right: calc(var(--space-2) * -1);
+    bottom: calc(var(--space-3) * -1);
+    width: 28%;
+  }
 }
 
-@media (max-width: 767px) {
+@container landing (max-width: 767px) {
   .scrolly-visual-wrapper {
     display: none;
   }
@@ -293,10 +294,10 @@ defineProps<{
 
 @media (prefers-reduced-motion: reduce) {
   .screenshot-frame {
-    transition: none !important;
+    transition: none;
   }
   .stage-glow {
-    transition: none !important;
+    transition: none;
   }
 }
 </style>

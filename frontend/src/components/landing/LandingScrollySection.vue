@@ -105,19 +105,19 @@ defineProps<{
   min-width: 0;
 }
 
-@media (min-width: 1920px) {
+@container landing (min-width: 1920px) {
   .scrollytelling-section {
     max-width: 1800px;
   }
 }
 
-@media (max-width: 1023px) and (min-width: 768px) {
+@container landing (max-width: 1023px) and (min-width: 768px) {
   .scrolly-steps {
     gap: 25vh;
   }
 }
 
-@media (max-width: 767px) {
+@container landing (max-width: 767px) {
   .scrolly-layout {
     flex-direction: column;
   }

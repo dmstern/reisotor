@@ -99,8 +99,8 @@ defineProps<{
 }
 
 .step-icon {
-  width: 52px;
-  height: 52px;
+  width: var(--space-6);
+  height: var(--space-6);
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
   display: flex;
@@ -162,7 +162,7 @@ defineProps<{
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  padding: 4px;
+  padding: var(--space-1);
 }
 
 .mobile-device-mockup.inline .mockup-screen {
@@ -182,7 +182,7 @@ defineProps<{
   object-position: top;
 }
 
-@media (max-width: 767px) {
+@container landing (max-width: 767px) {
   .scrolly-step {
     min-height: auto;
   }
@@ -199,7 +199,7 @@ defineProps<{
 
 @media (prefers-reduced-motion: reduce) {
   .step-card {
-    transition: none !important;
+    transition: none;
   }
 }
 </style>

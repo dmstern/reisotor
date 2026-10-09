@@ -105,18 +105,19 @@ const { robotPhase } = useLandingRobot();
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
-  padding: 8px;
+  padding: var(--space-2);
   border-radius: var(--radius-pill);
-  box-shadow:
-    var(--shadow-lg),
-    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-floating-island);
 }
 
 .island-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
-  padding: 12px 24px;
+  padding: 12px var(--space-4);
+  min-height: var(--input-default-height, 44px);
+  box-sizing: border-box;
   border-radius: var(--radius-pill);
   font-weight: 600;
   font-size: 1.05rem;
@@ -126,7 +127,7 @@ const { robotPhase } = useLandingRobot();
 
 .island-btn.primary {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-primary-contrast, white);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 .island-btn.primary:hover {
@@ -143,8 +144,34 @@ const { robotPhase } = useLandingRobot();
 
 .island-divider {
   width: 1px;
-  height: 24px;
+  height: var(--space-4);
   background: var(--color-border);
-  margin: 0 8px;
+  margin: 0 var(--space-2);
+}
+
+@container landing (max-width: 480px) {
+  .floating-island {
+    flex-direction: column;
+    width: calc(100% - 2 * var(--space-3));
+    max-width: 320px;
+    border-radius: var(--radius-xl-squircle);
+    corner-shape: squircle;
+    gap: var(--space-1);
+  }
+  .island-btn {
+    width: 100%;
+  }
+  .island-divider {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-robot {
+    animation: none;
+  }
+  .island-btn {
+    transition: none;
+  }
 }
 </style>

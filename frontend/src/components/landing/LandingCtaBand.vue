@@ -24,6 +24,7 @@ defineProps<{
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-xl-squircle);
+  corner-shape: squircle;
   color: white;
   margin: var(--space-6) auto;
   width: calc(100% - 2 * var(--space-4));
@@ -57,7 +58,7 @@ defineProps<{
 .cta-content {
   position: relative;
   z-index: 3;
-  padding: 60px 24px;
+  padding: var(--space-6) var(--space-4);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -79,10 +80,13 @@ defineProps<{
 .cta-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   background: white;
   color: var(--color-primary);
-  padding: 16px 32px;
+  padding: var(--space-3) var(--space-5);
+  min-height: var(--input-default-height, 44px);
+  box-sizing: border-box;
   border-radius: var(--radius-pill);
   font-weight: 700;
   font-size: 1.1rem;
@@ -95,5 +99,23 @@ defineProps<{
 .cta-btn:hover {
   transform: translateY(-3px) scale(1.02);
   box-shadow: var(--shadow-lg);
+}
+
+@container landing (max-width: 480px) {
+  .cta-band {
+    width: calc(100% - 2 * var(--space-3));
+  }
+  .cta-content {
+    padding: var(--space-5) var(--space-3);
+  }
+  .cta-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-btn {
+    transition: none;
+  }
 }
 </style>

@@ -82,6 +82,8 @@ const { activeIndex, glowOpacities } = useLandingScrollytelling({
 }
 
 .landing {
+  container-type: inline-size;
+  container-name: landing;
   position: relative;
   overflow-x: clip;
   width: 100%;
@@ -89,7 +91,7 @@ const { activeIndex, glowOpacities } = useLandingScrollytelling({
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 80px;
+  gap: clamp(var(--space-6), 6vw, calc(var(--space-6) * 1.75));
   min-height: 100vh;
 }
 

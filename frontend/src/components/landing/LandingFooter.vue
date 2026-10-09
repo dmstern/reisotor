@@ -35,16 +35,22 @@ const currentYear = new Date().getFullYear();
 
 .hint-links {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
+  padding: 0 var(--space-3);
 }
 
 .hint-links a {
   color: var(--color-text-muted);
   text-decoration: none;
   font-weight: 500;
+  min-height: var(--input-default-height, 44px);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-1);
 }
 
 .hint-links a:hover {
@@ -58,6 +64,7 @@ const currentYear = new Date().getFullYear();
 .hint {
   font-size: 0.95rem;
   margin: 0;
+  padding: 0 var(--space-3);
   color: var(--color-text-muted);
 }
 
