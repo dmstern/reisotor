@@ -195,6 +195,7 @@ Der Script-State ist bereits sauber entflochten. Nun wird das <template> modular
    - Nutze saubere TypeScript defineProps<{...}>() und defineEmits<{...}>(). Da der State in Phase 1 modularisiert wurde, binde Subkomponenten entweder direkt an das passende Composable an oder übergebe minimale, fokussierte Props.
    - Vermeide monolithisches Prop-Drilling ganzer Composable-Return-Typen (z. B. props.form: ReturnType<typeof useForm>) und Destrukturierungen in <script setup>, die Reaktivität gefährden. Modals/Drawers mit isoliertem Formular-Lifecycle sollten ihr Composable bevorzugt direkt selbst instanziieren.
    - Konditionale Teleports & Docks: Werden UI-Elemente je nach Layout in externe Container verschoben (z. B. Schubladen oder Navigationsleisten), kapsele das konditionale Teleportieren in eine schlanke Hilfskomponente (z. B. DockTeleport mit <Teleport v-if="active" :to="to"><slot /></Teleport><slot v-else />), um doppelte Template-Bäume zu vermeiden.
+   - Tastatur-Fokus & Collapsibles (:inert): Bei per CSS (z. B. Grid 0fr/1fr) animierten Ein-/Ausklappbereichen stets `:inert="!isOpen ? true : undefined"` setzen, damit verdeckte Formularfelder und Buttons nicht fälschlich per Tab-Taste fokussiert werden können.
 
 5. Lokalisierung & Refinement von State und Assets:
    - Sobald Subkomponenten stehen: Prüfe, ob in Phase 1 erstellte Composables, Helper oder Icon-Definitionen, die ausschließlich in einer einzigen Subkomponente benötigt werden, direkt dorthin umgezogen oder feiner aufgeteilt werden können (z. B. tab-spezifische Reset-Logik direkt im Tab halten; Sektions-Icons direkt in der Subkomponente instanziieren statt im globalen Tab-Composable).
@@ -233,6 +234,7 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
 2. Container-Queries & Enge-Resilienz (Ersetzen statt Duplizieren):
    - Keine starren Pixelbreiten in Subkomponenten.
    - Ersetze bestehende @media-Breakpoints innerhalb von .app-main restlos durch @container app-main (max-width/min-width: ...) oder flexibles Flexbox-Wrapping (flex-wrap: wrap).
+   - Container-Queries in Modals & Dialogen: Dialoge liegen außerhalb von .app-main; das Modal/Formular deklariert container-type: inline-size und Subkomponenten nutzen unbenannte Queries @container (max-width: ...).
    - Keine redundanten @media-Blöcke parallel stehen lassen: Alte @media-Regeln müssen gelöscht werden, um CSS-Duplikate und unerwünschte Drawer-Effekte zu vermeiden.
    - Teleport-Kontext beachten: Teleportierte DOM-Knoten (z. B. in #map-focus-dock oder body) liegen außerhalb des lokalen @container-Geltungsbereichs ihrer Ursprungskomponente. Stelle sicher, dass ihre Styles kontextunabhängig greifen.
 
@@ -323,6 +325,9 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 | `DiaryEntityPicker` | Subkomponente (`components/DiaryEntityPicker.vue`) | Diary | `NotesView`, `ScheduleView` | Datum-reaktive Touren- & Spot-Zuordnung mit 'Empfohlen'-Chips & CollapsibleFieldsets. |
 | `useDiaryImageUpload` | Composable (`composables/useDiaryImageUpload.ts`) | Diary | `NotesView`, `ExcursionsView` | Multi-Bild-Upload mit clientseitiger Kompression, Fortschrittsbalken & AbortController. |
 | `useDiaryPreview` | Composable (`composables/useDiaryPreview.ts`) | Diary | `NotesView`, `ExcursionsView` | Gekapselter State für Vollbild-Vorschau (`AttachmentPreviewModal`) mit Index & Lösch-Handler. |
+| `useRouteCalculation` | Composable (`composables/useRouteCalculation.ts`) | Legs / Tours | `ExcursionsView`, `TripMap`, `ScheduleView` | Isoliertes Berechnen von Routen (Auto, Rad, Fuß) mit Multi-Routen-Vergleich & Debouncing. |
+| `LegTransportModeSelector` | Komponente (`components/LegTransportModeSelector.vue`) | Legs / Tours | `ExcursionsView`, `ScheduleView`, `SettingsView` | Universelle Fortbewegungsart-Auswahl (SegmentedToggle) mit animiertem ÖPNV-Fahrzeug-Dropdown. |
+| `useLegTimeSync` | Composable (`composables/useLegTimeSync.ts`) | Legs / Tours | `ScheduleView`, `ExcursionsView` | Bidirektionale Kopplung von Start- und Endzeitpunkten basierend auf Solldauer mit Validierung. |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 
