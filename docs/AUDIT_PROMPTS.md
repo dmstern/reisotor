@@ -1,15 +1,30 @@
-# View- & Komponenten-Refactoring Prompts
+# View- & Komponenten-Refactoring Prompts (Phasen 0 bis 4)
 
-Diese Prompts dienen der systematischen Qualitätsprüfung und Überarbeitung überlanger oder historisch gewachsener Views und Komponenten in Reisotor (z. B. im Rahmen von Refactoring-Tickets wie #446).
+Diese Prompts dienen der systematischen Qualitätsprüfung und zielgerichteten Überarbeitung überlanger oder historisch gewachsener Views und Komponenten in Reisotor (z. B. im Rahmen von Refactoring-Tickets wie #446).
 
-Statt einer oberflächlichen Code-Verschiebung folgt die Überarbeitung dem **SFC-Schichten-Modell (von innen nach außen entlang der Vue-Natur: `<script>` → `<template>` → `<style>`)**:
+### Leitphilosophie: Keine blinde Fließbandarbeit – Triage vor Aktion!
+
+Ein stures, lineares Abarbeiten aller Phasen ohne vorherige Prüfung führt zu **Over-Modularization (Über-Modularisierung)**, **Prop-Drilling-Spaghetti** und dem Verlust von Kohäsion (_Loss of Locality of Behavior_ / _Indirection Hell_).
+
+- **Legitime Orchestratoren vs. God-Components:** Eine View, die komplexe UI-Bereiche wie Karte, Schubladen, Routing und Realtime-Sync koordiniert, ist oft bei ~1.500–2.000 Zeilen im gesunden **Sweet Spot**. Sie krampfhaft in 10 isolierte Mikro-Komponenten zu zerlegen, die nur an dieser einzigen Stelle gebraucht werden, schadet der Lesbarkeit und Reaktivität massiv.
+- **Kopplung vor Zeilenreduktion:** Braucht ein Template-Block mehr als 3–4 Props/Emits und wird er nirgendwo sonst wiederverwendet? **Dann bleibt er im Template der View!**
+- **Flexibler Pfad:** Jedes Refactoring beginnt zwingend mit **Phase 0 (Triage)**, um den optimalen Pfad festzulegen (z. B. nur Logik-Composables & CSS-Tokens, während das Template unberührt bleibt).
 
 ```mermaid
-flowchart LR
-    P1["Phase 1: Logik & State<br/><b>&lt;script setup&gt;</b><br/><i>Composables, Dead Code & State-Entflechtung</i>"]
-    --> P2["Phase 2: UI & Deduplizierung<br/><b>&lt;template&gt;</b><br/><i>Subkomponenten, Primitives & Konsolidierung</i>"]
-    --> P3["Phase 3: Tokens & Stresstest<br/><b>&lt;style&gt; & Browser</b><br/><i>Design-Tokens, Container Queries & Layout-Audit</i>"]
-    --> P4["Phase 4: Review, Synergien & Meta<br/><b>Branch, Synergien & Lerneffekt</b><br/><i>Konsolidierung, Cross-View-Transfer & PR-Bilanz</i>"]
+flowchart TD
+    P0["<b>Phase 0: Triage & Zielbild-Assessment</b><br/><i>Lohnt sich das? Anti-Patterns prüfen & Phasen-Pfad maßschneidern</i>"]
+
+    P0 -->|Vollständiger Pfad| P1["Phase 1: Logik & State<br/><b>&lt;script setup&gt;</b><br/><i>Composables & Dead Code</i>"]
+    P1 --> P2["Phase 2: UI & Subkomponenten<br/><b>&lt;template&gt;</b><br/><i>Nur bei Synergien / ohne Prop-Drilling</i>"]
+    P2 --> P3["Phase 3: Tokens & Stresstest<br/><b>&lt;style&gt; & Browser</b><br/><i>Design-Tokens & Container Queries</i>"]
+    P3 --> P4["Phase 4: Review & Synergien<br/><b>Branch, PR-Bilanz & Meta</b>"]
+
+    P0 -.->|Angepasster Pfad A<br/><i>(Template bleibt intakt)</i>| P1
+    P1 -.->|Phase 2 überspringen| P3
+
+    P0 -.->|Angepasster Pfad B<br/><i>(Nur CSS/Enge-Härtung)</i>| P3
+
+    P0 -.->|Bereits im Sweet Spot<br/><i>(Orchestrator intakt lassen)</i>| Stop["<b>Kein Refactoring nötig (Stop!)</b><br/><i>Vermeidet künstliche Indirektionen</i>"]
 ```
 
 > [!NOTE]
@@ -17,27 +32,94 @@ flowchart LR
 
 ---
 
+## Verbindlicher Workflow: 1 Branch/Worktree, 1 PR, Frischer Chat pro Phase
+
+Um maximale Qualität zu gewährleisten, Token-Kosten gering zu halten und Kontext-Drift auszuschließen, gilt für jedes Refactoring folgende Arbeitsdisziplin:
+
+1. **Ein Branch & ein Worktree pro Refactoring-Ziel:**
+   Die gesamte Überarbeitung einer Komponente läuft in einem dedizierten Git-Worktree auf einem gemeinsamen Feature-Branch (z. B. `refactor/excursions-view`).
+2. **Ein einziger PR für den gesamten Durchlauf:**
+   Das gesamte Refactoring wird über **einen einzigen PR** abgewickelt, der über alle Phasen hinweg schrittweise wächst und aktualisiert wird.
+3. **Frischer Chat pro Phase (Token- & Kontext-Schutz):**
+   Um das Kontextfenster nicht zu überstrapazieren, wird **für jede Phase eine neue Agent-Session / ein neuer Chat geöffnet**.
+4. **Pflicht-Abschluss jeder Phase (Handoff & PR-Update):**
+   Am Ende jeder Phase MUSS der Agent:
+   - Den Code gezielt testen (`npm run typecheck`, betroffene Tests) und formatieren (`npx -y prettier --write <dateien>`).
+   - Die Änderungen sauber und semantisch committen (`refactor(...): phase X - ...`).
+   - **Die PR-Beschreibung aktualisieren** (z. B. via `gh pr edit` oder Bereitstellung des formatierten Markdown-Texts), die erledigte Checkbox abhaken und die Zwischenbilanz (Zeilen, extrahierte Module) festhalten.
+   - **Den nächsten Kurz-Trigger im Chat prominent ausgeben** (z. B. `👉 Nächster Schritt: Öffne einen frischen Chat und starte mit: Refactor Phase 2: frontend/src/views/...`).
+
+---
+
 ## Kurz-Trigger für Sessions (Schnellstart)
 
-Um in Agent-Sessions (Antigravity / Claude Code) für Refactoring-Tickets wie [#446](https://github.com/dmstern/reisotor/issues/446) nicht jedes Mal die langen Prompt-Blöcke kopieren zu müssen, reagieren Agenten auf folgende standardisierte Kurz-Trigger:
+Agenten reagieren auf folgende standardisierte Kurz-Trigger:
 
-| Phase       | Kurz-Trigger                                                   | Fokus & Umfang                                                                                                                                      |
-| :---------- | :------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 1** | `Refactor Phase 1: <datei>`                                    | Synergie-Katalog prüfen, `<script setup>` entflechten, Dead Code tilgen, Composables erstellen. Template & Styles bleiben unangetastet.             |
-| **Phase 2** | `Refactor Phase 2: <datei>`                                    | Synergie-Katalog nutzen, `<template>` dekomponieren, Subkomponenten & Primitives nutzen, State & Assets lokalisieren.                               |
-| **Phase 3** | `Refactor Phase 3: <datei>`                                    | `<style>` mit Design-Tokens säubern, `@media` restlos durch `@container` ersetzen & Layout-Audit.                                                   |
-| **Phase 4** | `Refactor Phase 4: <datei>`<br/>_(`Refactor Review: <datei>`)_ | Ganzheitlicher Branch-Check (`git diff main`), Rest-Altlasten tilgen, Cross-View-Synergien erfassen & Katalog pflegen, PR-Bilanz & Meta-Refinement. |
-
-> [!TIP]
-> **Kontext-Disziplin & Session-Trennung:** Jede Phase baut auf dem sauberen Git-Stand der Vorphase auf und wird bevorzugt in einer **frischen Agent-Session / einem separaten Chat auf demselben Branch** ausgeführt (mit jeweils vorangehendem semantischem Commit). Dies verhindert Kontext-Drift, Token-Explosion und Error-Compounding, die bei unbeaufsichtigten Multi-Agent-Kaskaden auftreten würden.
+| Phase       | Kurz-Trigger                                                   | Fokus & Umfang                                                                                                                                                                     |
+| :---------- | :------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0** | `Refactor Assess: <datei>`<br/>_(`Refactor Triage: <datei>`)_  | **Triage & Zielbild:** Rollenanalyse (Orchestrator vs. God-Component), Over-Modularization-/Prop-Drilling-Check, Festlegung des maßgeschneiderten Phasen-Pfads & PR-Init.          |
+| **Phase 1** | `Refactor Phase 1: <datei>`                                    | Synergie-Katalog prüfen, `<script setup>` entflechten, Dead Code tilgen, Composables erstellen. Template & Styles bleiben unangetastet. PR aktualisieren & Folge-Trigger ausgeben. |
+| **Phase 2** | `Refactor Phase 2: <datei>`                                    | _(Nur wenn in Phase 0 empfohlen)_ Synergie-Katalog nutzen, `<template>` dekomponieren, Subkomponenten & Primitives nutzen. PR aktualisieren & Folge-Trigger ausgeben.              |
+| **Phase 3** | `Refactor Phase 3: <datei>`                                    | `<style>` mit Design-Tokens säubern, `@media` restlos durch `@container` ersetzen & Layout-Audit. PR aktualisieren & Folge-Trigger ausgeben.                                       |
+| **Phase 4** | `Refactor Phase 4: <datei>`<br/>_(`Refactor Review: <datei>`)_ | Ganzheitlicher Branch-Check (`git diff main`), Rest-Altlasten tilgen, Synergiekatalog pflegen, finale PR-Bilanz & Meta-Refinement.                                                 |
 
 _Beispiel-Eingabe im Chat:_
 
 ```text
-Refactor Phase 1: frontend/src/views/ExcursionsView.vue
+Refactor Assess: frontend/src/views/ExcursionsView.vue
 ```
 
 Sobald dieser Trigger fällt, zieht der Agent eigenständig die detaillierten Regeln und Prüfschritte der jeweiligen Phase heran.
+
+---
+
+## Phase 0: Triage & Zielbild-Assessment (`Refactor Assess: <datei>`)
+
+Kopiere diesen Prompt vor dem eigentlichen Refactoring für eine unvoreingenommene Kosten-Nutzen-Analyse.
+**Ziel:** Verhindern von _Over-Modularization_ und _Prop-Drilling Hell_. Feststellen, ob ein Refactoring wirklich nötig ist, und Definieren des maßgeschneiderten Phasen-Pfads.
+
+````text
+Führe Phase 0 (Triage & Zielbild-Assessment) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
+Prüfe objektiv und token-sparend, ob und welche Refactoring-Schritte für diese Datei sinnvoll sind.
+
+1. Ist-Zustand & Schichten-Metriken erfassen:
+   - Ermittle die Zeilenzahlen der drei SFC-Blöcke (<script>, <template>, <style>).
+   - Analysiere die Komplexität: Wie viele Imports, reaktive States (ref/computed), Event-Handler und CSS-Regeln existieren?
+
+2. Rollenanalyse & Sweet-Spot-Prüfung:
+   - Handelt es sich um eine legitime Orchestrator-View (z. B. ~1.500–2.000 Zeilen zur Koordination von Karte, Kalender, Drawern und Realtime-Sync)?
+   - Wurden bereits in früheren Schritten grobe Klumpen ausgelagert, sodass die Komponente bereits in einem gesunden "Sweet Spot" ist?
+   - Stop-Kriterium: Wenn der verbleibende Code kohärent ist und eine weitere Zerlegung nur indifferente Wrapper erzeugen würde -> Transparent begründen und KEIN Refactoring durchführen!
+
+3. Anti-Pattern-Radar (Gefahr von "Separation Hell"):
+   - Kopplungs-Kostenrechnung: Würde das Herauslösen von Template-Abschnitten in Subkomponenten dazu führen, dass mehr als 3–4 Props/Emits durchgereicht werden müssen (Prop-Drilling)?
+   - Locality of Behavior: Geht der Überblick über Benutzerinteraktionen verloren, wenn zusammenhängender UI-State künstlich auf mehrere Dateien verteilt wird?
+   - Echte Synergien: Gibt es tatsächlich wiederverwendbare UI-Elemente (Kandidaten für Primitives) oder in sich geschlossene Großdialoge mit eigenem Lifecycle?
+
+4. Maßgeschneiderte Phasen-Empfehlung ableiten:
+   - Lege fest, welche der Phasen 1 bis 4 ausgeführt werden sollen und welche explizit übersprungen werden:
+     * Phase 1 (Script): Nur wenn fachliche Logik, Berechnungen oder Form-Drafts sauber in Composables isoliert werden können.
+     * Phase 2 (Template): NUR wenn echte Wiederverwendbarkeit vorliegt oder Modals einen autarken Lifecycle haben. Bei hoher Kopplung: Phase 2 überspringen!
+     * Phase 3 (Styles): Nur wenn harte @media-Queries, fehlende Design-Tokens oder Enge-Probleme vorliegen.
+     * Phase 4 (Review): Zur finalen PR-Konsolidierung des gewählten Pfads.
+
+5. PR-Vorbereitung / Initialisierung:
+   - Erstelle oder formatiere die PR-Beschreibung mit einer individuellen Phasen-Checkliste:
+     ```markdown
+     ## Refactoring-Phasen: [Komponenten-Name]
+     - [x] Phase 0: Triage & Zielbild-Assessment
+     - [ ] Phase 1: Logik & State-Entflechtung (Composables) <!-- [Status: Geplant / Übersprungen] -->
+     - [ ] Phase 2: UI-Dekomposition & Subkomponenten <!-- [Status: Geplant / Übersprungen wegen Kopplung] -->
+     - [ ] Phase 3: Design-Tokens & Enge-Härtung <!-- [Status: Geplant / Übersprungen] -->
+     - [ ] Phase 4: Review, Synergien & Meta-Refinement
+     ```
+
+6. Handoff & Ausgabe des nächsten Schritts:
+   - Fasse die Analyse kurz und prägnant zusammen (Metriken, identifizierter Pfad, Begründung).
+   - Gib prominent den genauen Kurz-Trigger für den Folge-Schritt aus:
+     👉 Nächster Schritt: Öffne einen frischen Chat und starte mit:
+     `Refactor Phase <N>: <datei>`
+````
 
 ---
 
@@ -69,11 +151,14 @@ Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altla
    - Zerlege in diesem Schritt noch KEIN Template in Kindkomponenten! Zuerst muss der State sauber sein, damit wir in Phase 2 wissen, welche Subkomponente welche Schnittstelle benötigt.
    - Ändere keine CSS-Klassen oder Styles.
 
-5. Verifikation & Qualitätssicherung:
+5. Verifikation, PR-Update & Handoff:
    - Führe npm run typecheck und betroffene Unit-Tests aus (Backend: npx -y vitest run <testdatei> --bail 1, Frontend: npm --prefix frontend test -- <testdatei> --bail 1).
    - Formatiere alle geänderten und neu erstellten Dateien (npx -y prettier --write <datei>).
-   - Fasse transparent zusammen: Welche Composables wurden erstellt/wiederverwendet, wie viel Dead Code wurde gelöscht und um wie viele Zeilen ist das <script setup> geschrumpft?
-   - Hinweis: Nach erfolgreichem Review folgt Phase 2 (UI-Dekomposition & Deduplizierung).
+   - Führe einen sauberen semantischen Commit durch: `refactor(<scope>): phase 1 - extract composables from <Name>`.
+   - Aktualisiere die PR-Beschreibung (z. B. via `gh pr edit`): Checkbox für Phase 1 abhaken, Vorher/Nachher-Zeilenstand und extrahierte Composables dokumentieren.
+   - Gib prominent den genauen Kurz-Trigger für den Folge-Schritt im Chat aus (gemäß in Phase 0 festgelegtem Pfad; falls Phase 2 übersprungen wird, direkt Phase 3):
+     👉 **Nächster Schritt:** Öffne einen **frischen Chat** und starte mit:
+     `Refactor Phase <N>: <datei>`
 ```
 
 ---
@@ -81,7 +166,12 @@ Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altla
 ## Phase 2: UI-Dekomposition & Deduplizierung (`<template>`, Subkomponenten & Primitives)
 
 Kopiere diesen Prompt für den zweiten Schritt, nachdem der State sauber in Composables entflochten ist.
-**Ziel:** Das Template modularisieren, redundante UI-Muster zusammenführen und bestehende Design-System-Primitives einbinden.
+
+> [!IMPORTANT]
+> **Nur bei klarer Empfehlung aus Phase 0 ausführen!**
+> Wenn die View eine legitime Orchestrator-Komponente ist oder ein Template-Schnitt mehr als 3–4 Props/Emits erfordern würde (Gefahr von _Prop-Drilling Hell_ oder _Loss of Cohesion_), wird Phase 2 zwingend übersprungen und direkt mit Phase 3 fortgefahren.
+
+**Ziel:** Das Template modularisieren, redundante UI-Muster zusammenführen und bestehende Design-System-Primitives einbinden – ohne unnötige Indirektionen zu schaffen.
 
 ```text
 Führe Phase 2 (UI-Dekomposition & Deduplizierung) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
@@ -110,12 +200,15 @@ Der Script-State ist bereits sauber entflochten. Nun wird das <template> modular
    - Sobald Subkomponenten stehen: Prüfe, ob in Phase 1 erstellte Composables, Helper oder Icon-Definitionen, die ausschließlich in einer einzigen Subkomponente benötigt werden, direkt dorthin umgezogen oder feiner aufgeteilt werden können (z. B. tab-spezifische Reset-Logik direkt im Tab halten; Sektions-Icons direkt in der Subkomponente instanziieren statt im globalen Tab-Composable).
    - Bereinige historische CSS-Klassennamen aus Copy-Paste-Ursprüngen, damit sie zum neuen Kontext passen.
 
-6. Verifikation & Qualitätssicherung:
+6. Verifikation, PR-Update & Handoff:
    - Führe npm run typecheck und betroffene Tests aus.
    - Schreibe gezielte Unit-Tests (frontend/src/components/<Name>.test.ts) für neue, deduplizierte Kernkomponenten (insbesondere Toolbars, Formularfeld-Gruppen oder Dropdowns) und führe sie isoliert aus (npm --prefix frontend test -- <testdatei>).
    - Formatiere alle geänderten Dateien (npx -y prettier --write <datei>).
-   - Fasse transparent zusammen: Welche Subkomponenten wurden extrahiert, welche Primitives wurden wiederverwendet und welche Redundanzen wurden eliminiert?
-   - Hinweis: Nach erfolgreichem Review folgt Phase 3 (Design-Tokens & Layout-Härtung).
+   - Führe einen sauberen semantischen Commit durch: `refactor(<scope>): phase 2 - decompose template and integrate primitives`.
+   - Aktualisiere die PR-Beschreibung (z. B. via `gh pr edit`): Checkbox für Phase 2 abhaken, extrahierte Subkomponenten und Primitives festhalten.
+   - Gib prominent den genauen Kurz-Trigger für den Folge-Schritt im Chat aus:
+     👉 **Nächster Schritt:** Öffne einen **frischen Chat** und starte mit:
+     `Refactor Phase 3: <datei>`
 ```
 
 ---
@@ -151,12 +244,15 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
   - Behebe gefundene Layout-Kollisionen direkt defensiv mit Tokens.
   - Scope-Disziplin: Härte primär die dekomponierten Subkomponenten und die View selbst. Externe, bereits eigenständige Komponenten nur anpassen, wenn der Stresstest auf der Route dort konkrete Kollisionen meldet.
 
-4. Verifikation & Qualitätssicherung:
+4. Verifikation, PR-Update & Handoff:
   - Führe npm run typecheck und AUDIT_ROUTE=<route> npm run test:audit aus.
   - Formatiere alle geänderten Dateien (npx -y prettier --write <datei>).
   - Binde Screenshots nur auf explizite Aufforderung in den Walkthrough ein.
-  - Fasse transparent zusammen: Welche Tokens wurden vereinheitlicht und welche Layout-Kollisionen wurden behoben?
-  - Hinweis: Nach erfolgreichem Abschluss folgt Phase 4 (Konsolidierung, Review & Meta-Refinement).
+  - Führe einen sauberen semantischen Commit durch: `refactor(<scope>): phase 3 - token cleanup and layout hardening`.
+  - Aktualisiere die PR-Beschreibung (z. B. via `gh pr edit`): Checkbox für Phase 3 abhaken, vereinheitlichte Tokens und Enge-Korrekturen festhalten.
+  - Gib prominent den genauen Kurz-Trigger für den Folge-Schritt im Chat aus:
+    👉 **Nächster Schritt:** Öffne einen **frischen Chat** und starte mit:
+    `Refactor Phase 4: <datei>`
 ```
 
 ---
@@ -187,17 +283,20 @@ Alle drei Schichten (<script>, <template>, <style>) wurden in den Vorphasen übe
    - Stelle sicher, dass alle geänderten Dateien mit Prettier formatiert sind (npx -y prettier --write <dateien>).
    - Prüfe git status auf absolute Sauberkeit (keine ungetrackten Testdateien, Scratch-Specs oder temporäre Artefakte).
 
-4. PR-Walkthrough & quantitative Bilanz:
-   - Erstelle eine strukturierte Zusammenfassung für den PR:
-     - Vorher/Nachher-Zeilenbilanz der Haupt-View / Komponente.
+4. PR-Walkthrough, finale PR-Aktualisierung & Bilanz:
+   - Aktualisiere die finale PR-Beschreibung (via `gh pr edit`):
+     - Alle durchlaufenen Phasen in der Checkliste abhaken (`[x]`).
+     - Vorher/Nachher-Gesamtzeilenbilanz der Haupt-View / Komponente.
      - Liste neu entstandener Composables (inkl. fachlicher Domäne).
      - Liste neu entstandener Subkomponenten & genutzter Primitives.
      - Vereinheitlichte Design-Tokens und behobene Enge-/Layout-Probleme.
-     - Identifizierte Cross-View-Synergien und aktualisierter Synergie-Katalog (welche Folge-Views profitieren davon?).
+     - Identifizierte Cross-View-Synergien und aktualisierter Synergie-Katalog.
+   - Führe einen sauberen semantischen Commit durch: `refactor(<scope>): phase 4 - consolidation, synergies and pr summary`.
 
-5. Meta-Evaluation des Refactoring-Workflows:
+5. Meta-Evaluation & Chat-Abschluss:
    - Reflektiere den Durchlauf: Gab es spezifische Hürden oder wiederkehrende Fallstricke (z. B. Reaktivitätsverlust beim Prop-Passing, Container-Query-Sonderfälle, unvollständige Mockups in Tests)?
    - Schärfe bei Bedarf direkt die Prompts in docs/AUDIT_PROMPTS.md oder die Design-Vorgaben in DESIGN.md additiv mit den neu gewonnenen Erkenntnissen nach, damit nachfolgende Refactorings automatisch davon profitieren.
+   - Informiere den Nutzer, dass das gesamte Refactoring im PR konsolidiert ist und der PR nun bereit für das finale Review ist.
 ```
 
 ---
