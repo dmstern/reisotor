@@ -334,7 +334,7 @@ const routeHeadingIconDef: IconDef = {
   z-index: var(--z-card-elevated, 5);
 }
 
-@container route-map (max-width: 400px), (max-width: 400px) {
+@container route-map (max-width: 400px) {
   .route-floating-card {
     position: absolute;
     top: 22px;
