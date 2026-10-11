@@ -44,8 +44,20 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
 - `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
 - Bei gezielten UI-Audits: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen. **Nicht** bei normalen Bugfixes oder kleineren UI-Änderungen im Chat ausführen (erzeugt massive Test-Logs; für Standard-Änderungen reichen fokussierte Unit-Tests).
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
-- **Prompt-Vorlagen & 4-Phasen-Refactoring:** `docs/AUDIT_PROMPTS.md` (SFC-Schichten-Refactoring für Views/Komponenten: Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Audit via Subagents).
-  - **Kurz-Trigger für Refactoring-Sessions (#446):** Eingaben wie `Refactor Phase 1: <datei>`, `Refactor Phase 2: <datei>`, `Refactor Phase 3: <datei>` oder `Refactor Phase 4: <datei>` (bzw. `Refactor Review: <datei>`) weisen den Agenten an, automatisch die genauen Schritte und Leitplanken der jeweiligen Phase aus `docs/AUDIT_PROMPTS.md` zu befolgen.
+- **Prompt-Vorlagen & modulares Refactoring (Phasen 0 bis 4):** `docs/AUDIT_PROMPTS.md` (Triage & Zielbild, Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Audit via Subagents).
+  - **Kurz-Trigger für Refactoring-Sessions (#446):**
+    - `Refactor Assess: <datei>` (Phase 0: Triage & Zielbild vorab – prüft Sinnhaftigkeit, analysiert Orchestrator vs. God-Component, schützt vor Over-Modularization/Prop-Drilling und bestimmt den maßgeschneiderten Phasen-Pfad)
+    - `Refactor Phase 1: <datei>` (Logik & Composables)
+    - `Refactor Phase 2: <datei>` (Template & Subkomponenten – nur falls in Phase 0 empfohlen)
+    - `Refactor Phase 3: <datei>` (Styles, Tokens & Enge-Audit)
+    - `Refactor Phase 4: <datei>` / `Refactor Review: <datei>` (Review & Synergien)
+  - **Refactoring-Workflow (1 PR & 1 Worktree, Frischer Chat pro Phase):**
+    - Für das gesamte Refactoring einer Komponente wird **ein gemeinsamer Branch/Worktree** und **ein einziger PR** genutzt.
+    - Zur Schonung des Kontextfensters und Vermeidung von Fehlern läuft **jede Phase in einem separaten, frischen Chat**.
+    - **Pflicht nach jeder Phase:**
+      1. Semantischer Commit für die Phase.
+      2. PR-Beschreibung aktualisieren (`gh pr edit` mit Checkliste, Vorher/Nachher-Zeilen und Zwischenstand).
+      3. Im Chat zwingend den **nächsten Kurz-Trigger** prominent ausgeben (z. B. `👉 Nächster Schritt im frischen Chat: Refactor Phase 2: <datei>`).
 
 ## Typecheck, Linting & Formatting
 
