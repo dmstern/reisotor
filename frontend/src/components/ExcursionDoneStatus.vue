@@ -186,7 +186,7 @@ const {
   color: var(--color-primary) !important;
 }
 
-@container spots-col (max-width: 360px), @container (max-width: 360px) {
+@container spots-col (max-width: 360px) {
   :deep(.done-toggle) {
     font-size: var(--font-size-xs);
     padding: 2px var(--space-2);

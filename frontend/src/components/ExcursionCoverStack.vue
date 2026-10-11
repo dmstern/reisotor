@@ -110,7 +110,7 @@ defineProps<{
   font-size: 0.42rem;
 }
 
-@container spots-col (max-width: 360px), @container (max-width: 360px) {
+@container spots-col (max-width: 360px) {
   .tour-visual-col {
     width: 52px;
     min-width: 52px;

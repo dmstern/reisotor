@@ -89,7 +89,7 @@ const drawers = useDrawersStore();
   line-height: 1;
 }
 
-@container spots-col (max-width: 360px), @container (max-width: 360px) {
+@container spots-col (max-width: 360px) {
   .show-on-map-btn .btn-label {
     max-width: 110px;
   }

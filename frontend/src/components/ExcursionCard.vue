@@ -561,7 +561,7 @@ const {
   margin-top: var(--space-2);
 }
 
-@container spots-col (max-width: 360px), @container (max-width: 360px) {
+@container spots-col (max-width: 360px) {
   .tour-card-main {
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2);
