@@ -1,32 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
+import type { Budget, BudgetExpense } from '../api/types';
+import type { SettlementSuggestion } from '../utils/budgetBalances';
 import { useSpotsStore } from '../stores/spots';
 import { useBudgetStore } from '../stores/budget';
 import { useLiveSyncStore } from '../stores/liveSync';
-import BudgetMeter from '../components/BudgetMeter.vue';
+import BudgetOverviewCard from '../components/BudgetOverviewCard.vue';
 import BudgetPotCard from '../components/BudgetPotCard.vue';
 import BudgetSettlementCard from '../components/BudgetSettlementCard.vue';
 import BudgetExpenseList from '../components/BudgetExpenseList.vue';
 import BudgetTransferList from '../components/BudgetTransferList.vue';
-import Modal from '../components/Modal.vue';
-import CategoryCombobox from '../components/CategoryCombobox.vue';
-import FormField from '../components/FormField.vue';
-import FileAttachments from '../components/FileAttachments.vue';
+import BudgetPotModal from '../components/BudgetPotModal.vue';
+import BudgetExpenseModal from '../components/BudgetExpenseModal.vue';
+import BudgetTransferModal from '../components/BudgetTransferModal.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
-import DraftStatusBar from '../components/DraftStatusBar.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
-import Badge from '../components/primitives/Badge.vue';
-import Input from '../components/primitives/Input.vue';
-import Select from '../components/primitives/Select.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
-import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { useBudgetPotForms } from '../composables/useBudgetPotForms';
-import { useBudgetExpenseForms } from '../composables/useBudgetExpenseForms';
-import { useBudgetTransferForm } from '../composables/useBudgetTransferForm';
 import { useBudgetSources } from '../composables/useBudgetSources';
 
 const spotsStore = useSpotsStore();
@@ -34,6 +26,18 @@ const budgetStore = useBudgetStore();
 const liveSync = useLiveSyncStore();
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
+
+// Modals state
+const showPotModal = ref(false);
+const editingBudget = ref<Budget | null>(null);
+
+const showExpenseModal = ref(false);
+const editingExpense = ref<BudgetExpense | null>(null);
+
+const showTransferModal = ref(false);
+const settlementSuggestion = ref<SettlementSuggestion | null>(null);
+
+const { autoSourceFor, categoryColors } = useBudgetSources();
 
 async function load() {
   try {
@@ -54,51 +58,35 @@ onMounted(() => {
 
 watch(() => liveSync.domainVersion.budget, load);
 
-// --- Töpfe, Ausgaben, Überweisungen & Quellen via Composables ---
-const {
-  newBudgetForm,
-  showNewBudgetForm,
-  addBudget,
-  closeNewBudgetForm,
-  editingBudget,
-  editBudgetForm,
-  startEditBudget,
-  closeEditBudgetForm,
-  submitEditBudget,
-  deleteEditingBudget,
-} = useBudgetPotForms();
+function openCreateBudget() {
+  editingBudget.value = null;
+  showPotModal.value = true;
+}
 
-const {
-  showExpenseForm,
-  showExpenseDetails,
-  expenseForm,
-  editingExpense,
-  isExpenseUploadingAttachments,
-  showEditExpenseDetails,
-  editExpenseForm,
-  expenseDetailsCount,
-  editExpenseDetailsCount,
-  newExpenseDraft,
-  editExpenseDraft,
-  submitExpense,
-  closeExpenseForm,
-  discardNewExpenseDraft,
-  startEditExpense,
-  submitEditExpense,
-  closeEditExpenseForm,
-  discardEditExpenseDraft,
-} = useBudgetExpenseForms();
+function openEditBudget(budget: Budget) {
+  editingBudget.value = budget;
+  showPotModal.value = true;
+}
 
-const {
-  showTransferForm,
-  showTransferDetails,
-  transferForm,
-  submitTransfer,
-  closeTransferForm,
-  useSettlementSuggestion,
-} = useBudgetTransferForm();
+function openCreateExpense() {
+  editingExpense.value = null;
+  showExpenseModal.value = true;
+}
 
-const { autoSourceFor, categoryColors } = useBudgetSources();
+function openEditExpense(expense: BudgetExpense) {
+  editingExpense.value = expense;
+  showExpenseModal.value = true;
+}
+
+function openCreateTransfer() {
+  settlementSuggestion.value = null;
+  showTransferModal.value = true;
+}
+
+function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
+  settlementSuggestion.value = suggestion;
+  showTransferModal.value = true;
+}
 </script>
 
 <template>
@@ -132,32 +120,12 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
     <div class="budget-main-grid">
       <!-- Linke Spalte: Gesamt-Übersicht & Budgets / Töpfe -->
       <div class="budget-col-pots">
-        <Card class="overview-card">
-          <div class="overview-header">
-            <h2>Gesamt-Übersicht</h2>
-            <Badge v-if="budgetStore.expenses.length">
-              {{ budgetStore.expenses.length }}
-              {{ budgetStore.expenses.length === 1 ? 'Ausgabe' : 'Ausgaben' }}
-            </Badge>
-          </div>
-          <BudgetMeter
-            label="Budget"
-            :spent="budgetStore.totalSpent"
-            :target="budgetStore.grandTotal"
-            color="var(--color-primary-dark)"
-          />
-          <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
-               positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
-               ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
-          <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
-            Noch übrig: <strong class="nobr">{{ budgetStore.remaining.toFixed(2) }}&nbsp;€</strong>
-          </p>
-        </Card>
+        <BudgetOverviewCard />
 
         <Card class="pots-card">
           <div class="header">
             <h2>Budgets</h2>
-            <Button @click="showNewBudgetForm = true"
+            <Button @click="openCreateBudget"
               ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget
               anlegen</Button
             >
@@ -172,118 +140,13 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
             aufteilen, um daraus ein Gesamtbudget zusammenzustellen.
           </p>
 
-          <Modal
-            :model-value="showNewBudgetForm"
-            title="Budget anlegen"
-            @update:model-value="(v) => !v && closeNewBudgetForm()"
-          >
-            <form class="new-budget-form edit-form" @submit.prevent="addBudget">
-              <FormField icon="title" label="Name" required v-slot="{ id }">
-                <Input
-                  :id="id"
-                  v-model="newBudgetForm.name"
-                  type="text"
-                  placeholder="Name (z. B. Souvenirs)"
-                  required
-                />
-              </FormField>
-              <div v-if="budgetStore.users.length > 1" class="row">
-                <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
-                  <Select :id="id" v-model="newBudgetForm.kind">
-                    <option value="shared">Geteilt (für alle im Urlaub sichtbar)</option>
-                    <option value="personal">Privat (nur für mich sichtbar)</option>
-                  </Select>
-                </FormField>
-              </div>
-              <FormField icon="amount" label="Gesamtziel" v-slot="{ id }">
-                <Input
-                  :id="id"
-                  v-model="newBudgetForm.target_amount"
-                  type="number"
-                  inputmode="decimal"
-                  step="0.01"
-                  placeholder="Gesamtziel €"
-                />
-              </FormField>
-              <div class="actions-row">
-                <div class="spacer"></div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  class="btn-cancel"
-                  @click="closeNewBudgetForm"
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit">Anlegen</Button>
-              </div>
-            </form>
-          </Modal>
-
-          <Modal
-            :model-value="editingBudget !== null"
-            title="Budget bearbeiten"
-            @update:model-value="(v) => !v && closeEditBudgetForm()"
-          >
-            <form class="edit-budget-form edit-form" @submit.prevent="submitEditBudget">
-              <FormField icon="title" label="Name" required v-slot="{ id }">
-                <Input
-                  :id="id"
-                  v-model="editBudgetForm.name"
-                  type="text"
-                  placeholder="Name (z. B. Souvenirs)"
-                  required
-                />
-              </FormField>
-              <div v-if="budgetStore.users.length > 1" class="row">
-                <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
-                  <Select :id="id" v-model="editBudgetForm.kind">
-                    <option value="shared">Geteilt (für alle im Urlaub sichtbar)</option>
-                    <option value="personal">Privat (nur für mich sichtbar)</option>
-                  </Select>
-                </FormField>
-              </div>
-              <FormField icon="amount" label="Gesamtziel" v-slot="{ id }">
-                <Input
-                  :id="id"
-                  v-model="editBudgetForm.target_amount"
-                  type="number"
-                  inputmode="decimal"
-                  step="0.01"
-                  placeholder="Gesamtziel €"
-                />
-              </FormField>
-              <div class="actions-row">
-                <Button
-                  type="button"
-                  variant="danger"
-                  secondary
-                  :icon="ACTION_ICONS.delete"
-                  @click="deleteEditingBudget"
-                >
-                  Löschen
-                </Button>
-                <div class="spacer"></div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  class="btn-cancel"
-                  @click="closeEditBudgetForm"
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit">Speichern</Button>
-              </div>
-            </form>
-          </Modal>
-
           <TransitionGroup tag="div" name="list" class="pot-grid">
             <BudgetPotCard
               v-for="budget in budgetStore.budgets"
               :key="budget.id"
               :budget="budget"
               :category-colors="categoryColors"
-              @edit="startEditBudget"
+              @edit="openEditBudget"
             />
             <EmptyState v-if="!budgetStore.budgets.length" key="empty">
               Noch keine Budgets angelegt.
@@ -297,126 +160,23 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
         <BudgetSettlementCard
           v-if="budgetStore.users.length > 1"
           class="budget-settlement-card"
-          @use-suggestion="useSettlementSuggestion"
+          @use-suggestion="openTransferWithSuggestion"
         />
 
         <!-- Ausgaben -->
         <Card class="expenses-card">
           <div class="header">
             <h2>Ausgaben</h2>
-            <Button @click="showExpenseForm = true"
+            <Button @click="openCreateExpense"
               ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Ausgabe
               eintragen</Button
             >
           </div>
 
-          <Modal
-            :model-value="showExpenseForm"
-            title="Ausgabe eintragen"
-            :confirm-close="newExpenseDraft.isDirty.value"
-            confirm-close-mode="draft"
-            confirm-close-entity="Ausgabe"
-            @update:model-value="(v) => !v && closeExpenseForm()"
-          >
-            <form class="edit-form add-form" @submit.prevent="submitExpense">
-              <FormField icon="title" label="Titel" required v-slot="{ id }">
-                <Input
-                  :id="id"
-                  v-model="expenseForm.title"
-                  type="text"
-                  placeholder="Titel (z. B. Restaurant, Tickets)"
-                  required
-                />
-              </FormField>
-
-              <div class="row">
-                <FormField icon="amount" label="Betrag" required v-slot="{ id }">
-                  <Input
-                    :id="id"
-                    v-model="expenseForm.amount"
-                    type="number"
-                    inputmode="decimal"
-                    step="0.01"
-                    placeholder="Betrag €"
-                    required
-                  />
-                </FormField>
-                <FormField icon="category" label="Kategorie" v-slot="{ id }">
-                  <CategoryCombobox
-                    :id="id"
-                    v-model="expenseForm.category"
-                    type="expense"
-                    placeholder="Kategorie"
-                  />
-                </FormField>
-              </div>
-
-              <div class="row">
-                <FormField
-                  v-if="budgetStore.users.length > 1"
-                  icon="shared"
-                  label="Bezahlt von"
-                  required
-                  v-slot="{ id }"
-                >
-                  <Select :id="id" v-model="expenseForm.paid_by_user_id" required>
-                    <option value="" disabled>Bezahlt von…</option>
-                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                      {{ u.avatar }} {{ u.username }}
-                    </option>
-                  </Select>
-                </FormField>
-                <FormField icon="date" label="Datum" v-slot="{ id }">
-                  <Input :id="id" v-model="expenseForm.date" type="date" />
-                </FormField>
-              </div>
-
-              <CollapsibleFieldset
-                v-model="showExpenseDetails"
-                label="Weitere Angaben"
-                :count="expenseDetailsCount"
-                :icon="FORM_FIELD_ICONS.pot"
-                icon-group="formFields"
-              >
-                <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-                  <Select :id="id" v-model="expenseForm.budget_id">
-                    <option value="">Kein Budget</option>
-                    <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
-                      {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
-                    </option>
-                  </Select>
-                </FormField>
-                <FormField icon="note" label="Notiz" v-slot="{ id }">
-                  <Input :id="id" v-model="expenseForm.note" type="text" placeholder="Notiz" />
-                </FormField>
-              </CollapsibleFieldset>
-
-              <DraftStatusBar
-                :status="newExpenseDraft.status.value"
-                :restored="newExpenseDraft.restored.value"
-                :can-discard="true"
-                mode="create"
-                @discard="discardNewExpenseDraft"
-              />
-              <div class="actions-row">
-                <div class="spacer"></div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  class="btn-cancel"
-                  @click="closeExpenseForm"
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit">Eintragen</Button>
-              </div>
-            </form>
-          </Modal>
-
           <BudgetExpenseList
             :highlighted-ids="highlightedIds"
             :auto-source-for="autoSourceFor"
-            @edit="startEditExpense"
+            @edit="openEditExpense"
           />
         </Card>
 
@@ -424,205 +184,21 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
         <Card v-if="budgetStore.users.length > 1" class="transfers-card">
           <div class="header">
             <h2>Überweisungen</h2>
-            <Button @click="showTransferForm = true"
+            <Button @click="openCreateTransfer"
               ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung
               eintragen</Button
             >
           </div>
-
-          <Modal
-            :model-value="showTransferForm"
-            title="Überweisung eintragen"
-            @update:model-value="(v) => !v && closeTransferForm()"
-          >
-            <form class="edit-form add-form" @submit.prevent="submitTransfer">
-              <div class="row">
-                <FormField icon="person" label="Von" required v-slot="{ id }">
-                  <Select :id="id" v-model="transferForm.from_user_id" required>
-                    <option value="" disabled>Von…</option>
-                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                      {{ u.avatar }} {{ u.username }}
-                    </option>
-                  </Select>
-                </FormField>
-                <FormField icon="person" label="An" required v-slot="{ id }">
-                  <Select :id="id" v-model="transferForm.to_user_id" required>
-                    <option value="" disabled>An…</option>
-                    <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                      {{ u.avatar }} {{ u.username }}
-                    </option>
-                  </Select>
-                </FormField>
-              </div>
-
-              <div class="row">
-                <FormField icon="amount" label="Betrag" required v-slot="{ id }">
-                  <Input
-                    :id="id"
-                    v-model="transferForm.amount"
-                    type="number"
-                    inputmode="decimal"
-                    step="0.01"
-                    placeholder="Betrag €"
-                    required
-                  />
-                </FormField>
-                <FormField icon="date" label="Datum" v-slot="{ id }">
-                  <Input :id="id" v-model="transferForm.date" type="date" />
-                </FormField>
-              </div>
-
-              <CollapsibleFieldset
-                v-model="showTransferDetails"
-                label="Weitere Angaben"
-                :count="transferForm.note ? 1 : undefined"
-                :icon="FORM_FIELD_ICONS.note"
-                icon-group="formFields"
-              >
-                <FormField icon="note" label="Notiz" v-slot="{ id }">
-                  <Input :id="id" v-model="transferForm.note" type="text" placeholder="Notiz" />
-                </FormField>
-              </CollapsibleFieldset>
-
-              <div class="actions-row">
-                <div class="spacer"></div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  class="btn-cancel"
-                  @click="closeTransferForm"
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit">Eintragen</Button>
-              </div>
-            </form>
-          </Modal>
 
           <BudgetTransferList :highlighted-ids="highlightedIds" />
         </Card>
       </div>
     </div>
 
-    <Modal
-      :model-value="editingExpense !== null"
-      title="Ausgabe bearbeiten"
-      :confirm-close="editExpenseDraft.isDirty.value"
-      confirm-close-entity="Ausgabe"
-      @update:model-value="(v) => !v && closeEditExpenseForm()"
-    >
-      <form class="edit-form add-form" @submit.prevent="submitEditExpense">
-        <FormField icon="title" label="Titel" required v-slot="{ id }">
-          <Input
-            :id="id"
-            v-model="editExpenseForm.title"
-            type="text"
-            placeholder="Titel (z. B. Restaurant, Tickets)"
-            required
-          />
-        </FormField>
-
-        <div class="row">
-          <FormField icon="amount" label="Betrag" required v-slot="{ id }">
-            <Input
-              :id="id"
-              v-model="editExpenseForm.amount"
-              type="number"
-              inputmode="decimal"
-              step="0.01"
-              placeholder="Betrag €"
-              required
-            />
-          </FormField>
-          <FormField icon="category" label="Kategorie" v-slot="{ id }">
-            <CategoryCombobox
-              :id="id"
-              v-model="editExpenseForm.category"
-              type="expense"
-              placeholder="Kategorie"
-            />
-          </FormField>
-        </div>
-
-        <div class="row">
-          <FormField
-            v-if="budgetStore.users.length > 1"
-            icon="shared"
-            label="Bezahlt von"
-            required
-            v-slot="{ id }"
-          >
-            <Select :id="id" v-model="editExpenseForm.paid_by_user_id" required>
-              <option value="" disabled>Bezahlt von…</option>
-              <option
-                v-if="
-                  editExpenseForm.paid_by_user_id &&
-                  !budgetStore.users.some(
-                    (u) => String(u.id) === String(editExpenseForm.paid_by_user_id)
-                  )
-                "
-                :value="String(editExpenseForm.paid_by_user_id)"
-                disabled
-              >
-                👤 Ehemaliges Mitglied
-              </option>
-              <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
-                {{ u.avatar }} {{ u.username }}
-              </option>
-            </Select>
-          </FormField>
-          <FormField icon="date" label="Datum" v-slot="{ id }">
-            <Input :id="id" v-model="editExpenseForm.date" type="date" />
-          </FormField>
-        </div>
-
-        <CollapsibleFieldset
-          v-model="showEditExpenseDetails"
-          label="Weitere Angaben"
-          :count="editExpenseDetailsCount"
-          :icon="FORM_FIELD_ICONS.pot"
-          icon-group="formFields"
-        >
-          <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-            <Select :id="id" v-model="editExpenseForm.budget_id">
-              <option value="">Kein Budget</option>
-              <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
-                {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
-              </option>
-            </Select>
-          </FormField>
-          <FormField icon="note" label="Notiz" v-slot="{ id }">
-            <Input :id="id" v-model="editExpenseForm.note" type="text" placeholder="Notiz" />
-          </FormField>
-        </CollapsibleFieldset>
-
-        <FileAttachments
-          v-if="editingExpense"
-          domain="budget"
-          :entity-id="editingExpense.id"
-          v-model:uploading="isExpenseUploadingAttachments"
-        />
-        <DraftStatusBar
-          :status="editExpenseDraft.status.value"
-          :restored="editExpenseDraft.restored.value"
-          :can-discard="true"
-          mode="edit"
-          @discard="discardEditExpenseDraft"
-        />
-        <div class="actions-row">
-          <div class="spacer"></div>
-          <Button
-            type="button"
-            variant="secondary"
-            class="btn-cancel"
-            @click="closeEditExpenseForm"
-          >
-            Abbrechen
-          </Button>
-          <Button type="submit" :disabled="isExpenseUploadingAttachments">Speichern</Button>
-        </div>
-      </form>
-    </Modal>
+    <!-- Modals -->
+    <BudgetPotModal v-model="showPotModal" :budget="editingBudget" />
+    <BudgetExpenseModal v-model="showExpenseModal" :expense="editingExpense" />
+    <BudgetTransferModal v-model="showTransferModal" :suggestion="settlementSuggestion" />
   </div>
   <ViewLoadingState v-else />
 </template>
@@ -727,40 +303,6 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
   min-width: 0;
 }
 
-.overview-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: 0;
-}
-
-.overview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-1);
-}
-
-.overview-header h2 {
-  font-size: 1.05rem;
-  color: var(--color-primary-dark);
-  margin: 0;
-}
-
-.overview-card :deep(.meter-head) {
-  font-size: 1.05rem;
-}
-
-.overview-card :deep(.track) {
-  height: 14px;
-}
-
-.remaining-line {
-  margin: var(--space-1) 0 0;
-  font-size: 0.9rem;
-  color: var(--color-success);
-}
-
 .budget-page :deep(h2) {
   font-size: 1.05rem;
   color: var(--color-primary-dark);
@@ -781,36 +323,6 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
   margin-bottom: var(--space-3);
 }
 
-.edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.edit-form .row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.edit-form .row > * {
-  flex: 1;
-  min-width: 140px;
-}
-
-.edit-form .actions-row {
-  margin-top: var(--space-2);
-}
-
-.privacy-hint {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-}
-
 /* Budget-Cards werden immer einspaltig untereinander dargestellt, damit ungleiche
    Höhen durch ein-/ausgeklappte Kategorien keine Lücken im Layout erzeugen */
 .pot-grid {
@@ -821,16 +333,10 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
 }
 
 /* Cards animation on view mount */
-.overview-card,
-.settlement-card,
 .pots-card,
 .expenses-card,
 .transfers-card {
   animation: card-appear 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.settlement-card {
-  animation-delay: 70ms;
 }
 
 .pots-card {
@@ -858,8 +364,6 @@ const { autoSourceFor, categoryColors } = useBudgetSources();
 
 @media (prefers-reduced-motion: reduce) {
   .budget-kpi-pill,
-  .overview-card,
-  .settlement-card,
   .pots-card,
   .expenses-card,
   .transfers-card {
