@@ -232,10 +232,10 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 .budget-kpi-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.82rem;
+  gap: var(--radius-xs);
+  font-size: var(--font-size-sm);
   font-weight: 600;
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
   color: var(--color-primary-dark);
@@ -250,9 +250,9 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 }
 
 .pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: var(--radius-xs);
+  height: var(--radius-xs);
+  border-radius: var(--radius-full);
   background: currentColor;
 }
 
@@ -269,17 +269,14 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 
 /* Main 2-Column Content Grid:
    Desktop: Linke Spalte (Gesamt-Übersicht + Budgets), Rechte Spalte (Abrechnung + Bezahlungen + Überweisungen).
-   Dadurch muss die Gesamt-Übersicht nicht künstlich auf die Höhe der Abrechnungskarte gestreckt werden
-   und die Budgets-Kachel rutscht unmittelbar darunter, ohne verschenkten vertikalen Leerraum.
-   Mobil: display: contents löst die Spalten-Wrapper auf, sodass die Karten in logischer Reihenfolge
-   (Gesamt-Übersicht -> Wer schuldet wem? -> Budgets -> Bezahlungen -> Überweisungen) untereinander stehen. */
+   Container-resilient gegenüber der Kalenderschublade auf Desktop. */
 .budget-main-grid {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-@media (min-width: 960px) {
+@container app-main (min-width: 960px) {
   .budget-main-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -288,7 +285,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   }
 }
 
-@media (min-width: 1500px) {
+@container app-main (min-width: 1500px) {
   .budget-main-grid {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     gap: var(--space-5);
@@ -304,12 +301,12 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 }
 
 .budget-page :deep(h2) {
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
   color: var(--color-primary-dark);
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: var(--space-2) 0 var(--space-3);
 }

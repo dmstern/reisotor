@@ -48,13 +48,13 @@ const budgetStore = useBudgetStore();
 }
 
 .overview-header h2 {
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   margin: 0;
 }
 
 .overview-card :deep(.meter-head) {
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
 }
 
 .overview-card :deep(.track) {
@@ -63,7 +63,7 @@ const budgetStore = useBudgetStore();
 
 .remaining-line {
   margin: var(--space-1) 0 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-success);
 }
 
