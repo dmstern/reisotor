@@ -281,7 +281,7 @@ async function handleEditDelete(id: number) {
 /* Desktop: Listen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen
    (Batch-Anfrage) – auto-fit/minmax statt einer festen Spaltenzahl, damit sich die Spaltenzahl der
    tatsächlichen Fensterbreite und Anzahl an Listen (gemeinsam + je Person) anpasst. */
-@media (min-width: 900px) {
+@container app-main (min-width: 900px) {
   .lists-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));

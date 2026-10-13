@@ -169,13 +169,16 @@ function userName(id: number | null | undefined) {
 .link {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  color: var(--color-brand);
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
   text-decoration: underline;
+  text-underline-offset: 2px;
+  flex-shrink: 0;
 }
 
 .link:hover {
-  color: var(--color-brand-hover);
+  color: var(--color-primary-dark);
 }
 
 .note {
@@ -202,10 +205,19 @@ function userName(id: number | null | undefined) {
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
+  border-radius: var(--radius-pill);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
   cursor: pointer;
   flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.buyer-avatar-picker:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
 }
 
 .avatar-display {
@@ -241,6 +253,6 @@ function userName(id: number | null | undefined) {
 
 .edit-btn:hover {
   color: var(--color-text);
-  background: var(--color-surface-hover);
+  background: var(--color-hover);
 }
 </style>

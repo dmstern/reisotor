@@ -233,7 +233,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
 }
 
 /* Desktop: Gruppen nebeneinander statt untereinander */
-@media (min-width: 900px) {
+@container app-main (min-width: 900px) {
   .groups-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));

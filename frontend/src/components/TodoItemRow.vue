@@ -195,7 +195,7 @@ function userName(id: number | null | undefined) {
   width: 26px;
   height: 26px;
   border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
+  background: var(--color-hover);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -222,6 +222,6 @@ function userName(id: number | null | undefined) {
 
 .edit-btn:hover {
   color: var(--color-text);
-  background: var(--color-surface-hover);
+  background: var(--color-hover);
 }
 </style>

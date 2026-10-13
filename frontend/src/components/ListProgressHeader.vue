@@ -91,7 +91,7 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
   width: 100%;
   max-width: 320px;
   height: 4px;
-  background: var(--color-surface-hover);
+  background: var(--color-hover);
   border-radius: var(--radius-pill);
   overflow: hidden;
   margin-top: var(--space-1);
@@ -99,7 +99,7 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
 
 .header-progress-bar {
   height: 100%;
-  background: var(--color-brand);
+  background: var(--color-primary);
   border-radius: var(--radius-pill);
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
