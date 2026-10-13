@@ -258,9 +258,11 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
    - Beseitige CSS-Hacks früherer Agenten (!important, negative Margins, willkürliche Z-Indizes) durch sauberes Flexbox/Grid.
    - Grid-Row-Gaps bei herausragenden Elementen: Ragen visuelle Elemente (z. B. absolute Icons oder Badges) über den oberen Rand einer Kachel hinaus, muss der vertikale Abstand des Grids defensiv erhöht werden (z. B. `row-gap: var(--space-5)`), um Überdeckungen der darüberliegenden Kachelreihe zu verhindern.
    - Imperatives Third-Party-DOM (Leaflet, Mapbox, Canvas): Markup, das von externen Bibliotheken per JavaScript oder innerHTML erzeugt wird, erhält keine Scoped-CSS-Attribute (data-v-*). Kapsele solche Stile in einem separaten, ungescopten <style>-Block mit präzisen Selektoren und Begründungskommentar.
+   - Vestibuläre Sicherheit & Animationen (prefers-reduced-motion): Bei Reduktion von Animationen für Barrierefreiheit immer auch `animation-iteration-count: 1 !important` setzen, wenn unendliche Keyframe-Schleifen (infinite) existieren, um ein 100Hz-Strobe-Flickern bei minimierter Dauer zu verhindern.
 
 2. Container-Queries & Enge-Resilienz (Ersetzen statt Duplizieren):
    - Keine starren Pixelbreiten in Subkomponenten.
+   - Vektor- & Artwork-Stages: Auf grafischen/SVG-Bühnen `container-type: inline-size` nutzen und absolute Overlays/Partikel per `clamp(min, Xcqi, max)` skalieren, statt feste Viewport-Einheiten (`vw`) zu nutzen, damit Maskottchen und Grafiken auch in miniaturisierten Kontexten (z. B. Dashboards) stimmig bleiben.
    - Ersetze bestehende @media-Breakpoints innerhalb von .app-main restlos durch @container app-main (max-width/min-width: ...) oder flexibles Flexbox-Wrapping (flex-wrap: wrap).
    - Container-Queries in Modals & Dialogen: Dialoge liegen außerhalb von .app-main; das Modal/Formular deklariert container-type: inline-size und Subkomponenten nutzen unbenannte Queries @container (max-width: ...).
    - Keine redundanten @media-Blöcke parallel stehen lassen: Alte @media-Regeln müssen gelöscht werden, um CSS-Duplikate und unerwünschte Drawer-Effekte zu vermeiden.
@@ -362,6 +364,7 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 | `useRouteCalculation` | Composable (`composables/useRouteCalculation.ts`) | Legs / Tours | `ExcursionsView`, `TripMap`, `ScheduleView` | Isoliertes Berechnen von Routen (Auto, Rad, Fuß) mit Multi-Routen-Vergleich & Debouncing. |
 | `LegTransportModeSelector` | Komponente (`components/LegTransportModeSelector.vue`) | Legs / Tours | `ExcursionsView`, `ScheduleView`, `SettingsView` | Universelle Fortbewegungsart-Auswahl (SegmentedToggle) mit animiertem ÖPNV-Fahrzeug-Dropdown. |
 | `useLegTimeSync` | Composable (`composables/useLegTimeSync.ts`) | Legs / Tours | `ScheduleView`, `ExcursionsView` | Bidirektionale Kopplung von Start- und Endzeitpunkten basierend auf Solldauer mit Validierung. |
+| `useRobotEyeTracking` | Composable (`composables/useRobotEyeTracking.ts`) | UI / Mascot | `LoginView`, `SecurityCheckView`, `LandingView`, Onboarding / Splash | Interaktives 2D-Eye- & Pointer-Tracking für Maskottchen und Avatare mit Einheitskreis-Begrenzung & Reaktionswächtern. |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 
