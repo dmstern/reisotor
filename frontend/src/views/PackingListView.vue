@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { api } from '../api/client';
-import type { PackingItem, User } from '../api/types';
+import { ref } from 'vue';
+import type { PackingItem } from '../api/types';
 import { useAuthStore } from '../stores/auth';
-import { useTripStore } from '../stores/trip';
-import { useLiveSyncStore } from '../stores/liveSync';
 import { useUiSettingsStore } from '../stores/uiSettings';
+import { usePackingList, DEFAULT_PACKING_CATEGORY } from '../composables/usePackingList';
 import PackingItemRow from '../components/PackingItem.vue';
 import Modal from '../components/Modal.vue';
 import Combobox from '../components/Combobox.vue';
@@ -18,205 +16,41 @@ import Input from '../components/primitives/Input.vue';
 import Badge from '../components/primitives/Badge.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
-import { useToast } from '../composables/useToast';
-import { sortWithDoneLast } from '../composables/useCheckedSort';
-import { isFullyPacked } from '../utils/packing';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const auth = useAuthStore();
-const tripStore = useTripStore();
-const liveSync = useLiveSyncStore();
 const uiSettings = useUiSettingsStore();
-const tripId = tripStore.currentTripId as number;
-const items = ref<PackingItem[]>([]);
-const { showToast } = useToast();
-const users = ref<User[]>([]);
-const loading = ref(true);
-const highlightedIds = ref<Set<number>>(new Set());
 
-// Ein Hinzufügen-Formular direkt über jeder Liste (statt eines einzigen globalen Formulars mit
-// Listen-Auswahl) – welche Liste gemeint ist, ergibt sich schon aus der Position, ein Auswahlfeld
-// dafür entfällt. Kategorie/Unterkategorie/Anzahl sind gleich mit dabei statt erst nachträglich per
-// "Bearbeiten" ergänzbar zu sein. Das Label selbst verwaltet die gemeinsame QuickAddRow-Komponente
-// intern; Kategorie/Unterkategorie/Anzahl bleiben hier als Records (ein Eintrag pro Liste, Vue legt
-// den Schlüssel beim ersten Tippen reaktiv an), damit sie über einen quickAdd()-Aufruf hinweg
-// bewusst stehen bleiben können (siehe Kommentar an quickAdd() unten).
-const quickAddCategories = ref<Record<string, string>>({});
-const quickAddSubcategories = ref<Record<string, string>>({});
-const quickAddQuantities = ref<Record<string, number>>({});
+const {
+  tripId,
+  items,
+  users,
+  loading,
+  highlightedIds,
+  categoryRequired,
+  categories,
+  subcategories,
+  lists,
+  overallProgress,
+  quickAddCategories,
+  quickAddSubcategories,
+  quickAddQuantities,
+  updateCounts,
+  quickAdd,
+  submitEdit: submitEditItem,
+  remove,
+  groupByCategory,
+  progress,
+} = usePackingList();
 
 const editingItem = ref<PackingItem | null>(null);
 const editForm = ref({ label: '', category: '', subcategory: '', quantity: 1, ownerId: 'shared' });
-
-// Pro-Trip-Einstellung (trips.packing_category_required, siehe TripForm.vue): standardmäßig Pflicht,
-// per Trip abschaltbar. Ist eine Kategorie Pflicht, wird "Sonstiges" vorbelegt statt das Feld leer zu
-// lassen - wer wirklich keine Kategorie will, muss das explizit auswählen/ändern, statt es aus
-// Versehen leer zu lassen (siehe CLAUDE.md-Wunsch dazu).
-const categoryRequired = computed(() => tripStore.currentTrip?.packing_category_required !== 0);
-const DEFAULT_CATEGORY = 'Sonstiges';
-
-async function load() {
-  try {
-    const [itemsRes, usersRes] = await Promise.all([
-      api.get<PackingItem[]>(`/packing?trip_id=${tripId}`),
-      api.get<User[]>(`/trips/${tripId}/members`),
-    ]);
-    items.value = itemsRes;
-    users.value = usersRes;
-  } catch {
-    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
-    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
-    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(() => {
-  highlightedIds.value = liveSync.markSeen('packing');
-  load();
-});
-
-watch(() => liveSync.domainVersion.packing, load);
-
-const categories = computed(() => {
-  const set = new Set(items.value.map((i) => i.category?.trim()).filter((c): c is string => !!c));
-  return [...set].sort((a, b) => a.localeCompare(b, 'de'));
-});
-
-const subcategories = computed(() => {
-  const set = new Set(
-    items.value.map((i) => i.subcategory?.trim()).filter((c): c is string => !!c)
-  );
-  return [...set].sort((a, b) => a.localeCompare(b, 'de'));
-});
-
-interface ListGroup {
-  key: string;
-  title: string;
-  ownerId: number | null;
-  items: PackingItem[];
-}
-
-const lists = computed<ListGroup[]>(() => {
-  const memberIds = new Set(users.value.map((u) => u.id));
-  const shared: ListGroup = {
-    key: 'shared',
-    title: '👥 Gemeinsame Packliste',
-    ownerId: null,
-    items: items.value.filter((i) => i.owner_id == null || !memberIds.has(i.owner_id)),
-  };
-  const perUser: ListGroup[] = users.value.map((u) => ({
-    key: `user-${u.id}`,
-    title:
-      u.id === auth.user?.id
-        ? `${u.avatar} Meine Packliste`
-        : `${u.avatar} Packliste von ${u.username}`,
-    ownerId: u.id,
-    items: items.value.filter(
-      (i) =>
-        i.owner_id === u.id ||
-        (users.value.length <= 1 && (i.owner_id == null || !memberIds.has(i.owner_id)))
-    ),
-  }));
-
-  if (users.value.length <= 1) {
-    return perUser;
-  }
-
-  const mine = perUser.filter((l) => l.ownerId === auth.user?.id);
-  const others = perUser.filter((l) => l.ownerId !== auth.user?.id);
-  return [...mine, shared, ...others];
-});
-
-// Belegt das Kategorie-Quick-Add-Feld jeder (neu hinzugekommenen) Liste mit "Sonstiges" vor, sobald
-// eine Kategorie Pflicht ist - rein additiv (überschreibt nie einen bereits vom Nutzer getippten
-// Wert), läuft deshalb gefahrlos bei jeder Neuberechnung von `lists` mit.
-watch(
-  lists,
-  (ls) => {
-    if (!categoryRequired.value) return;
-    for (const list of ls) {
-      if (quickAddCategories.value[list.key] === undefined) {
-        quickAddCategories.value[list.key] = DEFAULT_CATEGORY;
-      }
-    }
-  },
-  { immediate: true }
-);
-
-interface SubGroup {
-  subcategory: string | null;
-  items: PackingItem[];
-}
-interface CategoryGroup {
-  category: string;
-  subgroups: SubGroup[];
-}
-
-// Zweistufige Gruppierung: Kategorie (wie bisher) -> Unterkategorie (neu, z. B. "Outfit Tag 1"
-// innerhalb "Kleidung") – Gegenstände ohne Unterkategorie laufen ohne eigene Zwischenüberschrift
-// direkt unter der Kategorie mit (leerer subcategory-Schlüssel sortiert alphabetisch zuerst).
-function groupByCategory(listItems: PackingItem[]): CategoryGroup[] {
-  const visibleItems = uiSettings.hideCompletedPacking
-    ? listItems.filter((i) => !isFullyPacked(i))
-    : listItems;
-  const catMap = new Map<string, PackingItem[]>();
-  for (const item of visibleItems) {
-    const key = item.category?.trim() || 'Sonstiges';
-    if (!catMap.has(key)) catMap.set(key, []);
-    catMap.get(key)!.push(item);
-  }
-  return [...catMap.entries()]
-    .sort(([a], [b]) => a.localeCompare(b, 'de'))
-    .map(([category, catItems]) => {
-      const subMap = new Map<string, PackingItem[]>();
-      for (const item of catItems) {
-        const subKey = item.subcategory?.trim() || '';
-        if (!subMap.has(subKey)) subMap.set(subKey, []);
-        subMap.get(subKey)!.push(item);
-      }
-      const subgroups = [...subMap.entries()]
-        .sort(([a], [b]) => a.localeCompare(b, 'de'))
-        .map(([subcategory, subItems]) => ({
-          subcategory: subcategory || null,
-          items: sortWithDoneLast(subItems, isFullyPacked),
-        }))
-        .filter((sub) => sub.items.length > 0);
-      return { category, subgroups };
-    })
-    .filter((catGroup) => catGroup.subgroups.length > 0);
-}
-
-// Fortschritt zählt jetzt Exemplare statt Zeilen (ein Gegenstand mit Anzahl 5 zählt für den
-// Fortschritt auch als 5, "3/5 eingepackt" statt nur "gepackt/ungepackt" pro Zeile).
-function progress(listItems: PackingItem[]) {
-  const total = listItems.reduce((sum, i) => sum + i.quantity, 0);
-  const packed = listItems.reduce((sum, i) => sum + Math.min(i.packed_count, i.quantity), 0);
-  return { total, packed };
-}
-
-const overallProgress = computed(() => progress(items.value));
-
-async function updateCounts(item: PackingItem, laidOutCount: number, packedCount: number) {
-  const updated = await api.put<PackingItem>(`/packing/${item.id}`, {
-    category: item.category ?? undefined,
-    subcategory: item.subcategory ?? undefined,
-    label: item.label,
-    quantity: item.quantity,
-    laid_out_count: laidOutCount,
-    packed_count: packedCount,
-    owner_id: item.owner_id,
-  });
-  const idx = items.value.findIndex((i) => i.id === item.id);
-  if (idx !== -1) items.value[idx] = updated;
-}
 
 function startEdit(item: PackingItem) {
   editingItem.value = item;
   editForm.value = {
     label: item.label,
-    category: item.category ?? (categoryRequired.value ? DEFAULT_CATEGORY : ''),
+    category: item.category ?? (categoryRequired.value ? DEFAULT_PACKING_CATEGORY : ''),
     subcategory: item.subcategory ?? '',
     quantity: item.quantity,
     ownerId: item.owner_id == null ? 'shared' : String(item.owner_id),
@@ -224,20 +58,13 @@ function startEdit(item: PackingItem) {
 }
 
 async function submitEdit() {
-  if (!editingItem.value || !editForm.value.label.trim()) return;
-  if (categoryRequired.value && !editForm.value.category.trim()) return;
-  const owner_id = editForm.value.ownerId === 'shared' ? null : Number(editForm.value.ownerId);
-  const updated = await api.put<PackingItem>(`/packing/${editingItem.value.id}`, {
-    label: editForm.value.label.trim(),
-    category: editForm.value.category.trim() || undefined,
-    subcategory: editForm.value.subcategory.trim() || undefined,
-    quantity: Math.max(1, Math.round(editForm.value.quantity) || 1),
-    laid_out_count: editingItem.value.laid_out_count,
-    packed_count: editingItem.value.packed_count,
-    owner_id,
-  });
-  const idx = items.value.findIndex((i) => i.id === updated.id);
-  if (idx !== -1) items.value[idx] = updated;
+  if (!editingItem.value) return;
+  await submitEditItem(
+    editingItem.value.id,
+    editForm.value,
+    editingItem.value.laid_out_count,
+    editingItem.value.packed_count
+  );
   editingItem.value = null;
 }
 
@@ -246,32 +73,6 @@ async function deleteEditingItem() {
   const id = editingItem.value.id;
   editingItem.value = null;
   await remove(id);
-}
-
-async function remove(id: number) {
-  await api.delete(`/packing/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
-  showToast({ message: 'Gegenstand gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
-}
-
-async function quickAdd(list: ListGroup, label: string) {
-  if (!label.trim()) return;
-  const category = (quickAddCategories.value[list.key] ?? '').trim();
-  if (categoryRequired.value && !category) return;
-  const subcategory = (quickAddSubcategories.value[list.key] ?? '').trim();
-  const quantity = Math.max(1, Math.round(quickAddQuantities.value[list.key] || 1));
-  const created = await api.post<PackingItem>('/packing', {
-    trip_id: tripId,
-    label: label.trim(),
-    category: category || undefined,
-    subcategory: subcategory || undefined,
-    quantity,
-    owner_id: list.ownerId,
-  });
-  items.value.push(created);
-  quickAddQuantities.value[list.key] = 1;
-  // Kategorie/Unterkategorie bleiben bewusst stehen: praktisch, wenn mehrere Gegenstände derselben
-  // Kategorie hintereinander erfasst werden (z. B. mehrere "Kleidung"-Teile).
 }
 </script>
 

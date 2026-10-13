@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { api } from '../api/client';
-import type { Period, ShoppingItem, User } from '../api/types';
-import { useTripStore } from '../stores/trip';
-import { useLiveSyncStore } from '../stores/liveSync';
+import { computed, ref, watch } from 'vue';
+import type { Period, ShoppingItem } from '../api/types';
+import { useUiSettingsStore } from '../stores/uiSettings';
+import { useToast } from '../composables/useToast';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
+import { usePersistedRef } from '../composables/usePersistedRef';
+import { useShoppingList } from '../composables/useShoppingList';
+import {
+  useShoppingGrouping,
+  UNASSIGNED_SHOP,
+  type ShoppingGroup as Group,
+} from '../composables/useShoppingGrouping';
 import { PERIOD_META } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
@@ -13,11 +20,6 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import DraftStatusBar from '../components/DraftStatusBar.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
-import { useToast } from '../composables/useToast';
-import { useDraftAutosave } from '../composables/useDraftAutosave';
-import { sortWithDoneLast } from '../composables/useCheckedSort';
-import { usePersistedRef } from '../composables/usePersistedRef';
-import { useUiSettingsStore } from '../stores/uiSettings';
 import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
@@ -30,41 +32,36 @@ import Badge from '../components/primitives/Badge.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import type { IconDef } from '../utils/icon';
 
-const tripStore = useTripStore();
-const liveSync = useLiveSyncStore();
 const uiSettings = useUiSettingsStore();
-const tripId = tripStore.currentTripId as number;
-const items = ref<ShoppingItem[]>([]);
 const { showToast } = useToast();
-const users = ref<User[]>([]);
-const loading = ref(true);
-const highlightedIds = ref<Set<number>>(new Set());
 
-type GroupBy = 'buyer' | 'shop' | 'period';
-// Gruppierung sowie zuletzt gewählter Shop/Zeitraum bleiben über localStorage auch nach einem
-// Reload/erneuten Besuch erhalten (siehe usePersistedRef.ts) - bewusst NICHT nach jedem addItem()
-// zurückgesetzt (anders als Label/Link/Notiz, die je Gegenstand unterschiedlich sind), damit sie beim
-const groupBy = usePersistedRef<GroupBy>('reisotor-shopping-group-by', 'buyer');
+const {
+  tripId,
+  items,
+  users,
+  loading,
+  highlightedIds,
+  progress,
+  toggle,
+  reassign: reassignItem,
+  addItem: submitNewItem,
+  quickAddToGroup: submitQuickAdd,
+  submitEdit: updateItem,
+  remove,
+} = useShoppingList();
 
-const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'buyer' : 'shop'));
-
-watch(users, () => {
-  if (users.value.length <= 1 && groupBy.value === 'buyer') {
-    groupBy.value = 'period';
-  }
-});
-
-const groupByOptions = computed(() => {
-  const opts = [];
-  if (users.value.length > 1) {
-    opts.push({ value: 'buyer', label: 'nach Einkäufer:in', icon: FORM_FIELD_ICONS.person });
-  }
-  opts.push({ value: 'shop', label: 'nach Shop', icon: FORM_FIELD_ICONS.shop });
-  opts.push({ value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period });
-  return opts;
-});
+const {
+  groupBy,
+  defaultGroupBy,
+  groupByOptions,
+  groupedItems,
+  knownShops,
+  userAvatar,
+  userName,
+  isChecked,
+  hasItemMeta,
+} = useShoppingGrouping(items, users);
 
 const newLabel = ref('');
 const newBuyer = ref('');
@@ -76,10 +73,6 @@ const newPeriod = usePersistedRef<Period | ''>('reisotor-shopping-last-period', 
 const editingItem = ref<ShoppingItem | null>(null);
 const editForm = ref({ label: '', link: '', note: '', shop: '', period: '' as Period | '' });
 
-// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts): Create-Formular besteht aus
-// lauter einzelnen Refs statt eines Objekt-Refs, ein schreibbarer computed() bündelt sie (gleiches
-// Muster wie ScheduleView.vue). Immer sichtbares Inline-Formular statt Modal, daher `active`
-// konstant true.
 const newFormBundle = computed<Record<string, unknown>>({
   get: () => ({
     newLabel: newLabel.value,
@@ -117,180 +110,10 @@ watch(
   }
 );
 
-async function load() {
-  try {
-    const [itemsRes, usersRes] = await Promise.all([
-      api.get<ShoppingItem[]>(`/shopping?trip_id=${tripId}`),
-      api.get<User[]>(`/trips/${tripId}/members`),
-    ]);
-    items.value = itemsRes;
-    users.value = usersRes;
-  } catch {
-    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
-    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
-    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(() => {
-  highlightedIds.value = liveSync.markSeen('shopping');
-  load();
-});
-
-watch(() => liveSync.domainVersion.shopping, load);
-
-watch(
-  () => users.value.length,
-  (len) => {
-    if (len <= 1 && groupBy.value === 'buyer') {
-      groupBy.value = 'shop';
-    }
-  },
-  { immediate: true }
-);
-
-const UNASSIGNED_SHOP = 'Ohne Shop';
-
-function userAvatar(id: number | null | undefined) {
-  if (id == null) return null;
-  const u = users.value.find((u) => u.id === id);
-  return u ? u.avatar : '👤';
-}
-
-function userName(id: number | null | undefined) {
-  if (id == null) return null;
-  const u = users.value.find((u) => u.id === id);
-  return u ? u.username : 'Ehemaliges Mitglied';
-}
-
-function isChecked(item: ShoppingItem) {
-  return !!item.checked;
-}
-
-interface Group {
-  key: string;
-  label: string;
-  iconDef?: IconDef;
-  items: ShoppingItem[];
-}
-
-const groupedItems = computed<Group[]>(() => {
-  const visibleItems = uiSettings.hideCompletedShopping
-    ? items.value.filter((i) => !isChecked(i))
-    : items.value;
-
-  if (groupBy.value === 'shop') {
-    const groups = new Map<string, ShoppingItem[]>();
-    for (const item of visibleItems) {
-      const key = item.shop?.trim() || UNASSIGNED_SHOP;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(item);
-    }
-    return [...groups.entries()]
-      .sort(([a], [b]) =>
-        a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')
-      )
-      .map(([shop, shopItems]) => ({
-        key: shop,
-        label: shop,
-        iconDef: FORM_FIELD_ICONS.shop,
-        items: sortWithDoneLast(shopItems, isChecked),
-      }));
-  }
-  if (groupBy.value === 'period') {
-    const groups: Group[] = [
-      {
-        key: 'before',
-        label: PERIOD_META.before,
-        items: sortWithDoneLast(
-          visibleItems.filter((i) => i.period === 'before'),
-          isChecked
-        ),
-      },
-      {
-        key: 'during',
-        label: PERIOD_META.during,
-        items: sortWithDoneLast(
-          visibleItems.filter((i) => i.period === 'during'),
-          isChecked
-        ),
-      },
-      {
-        key: 'none',
-        label: 'Ohne Zeitraum',
-        items: sortWithDoneLast(
-          visibleItems.filter((i) => !i.period),
-          isChecked
-        ),
-      },
-    ];
-    return groups;
-  }
-  // buyer
-  const memberIds = new Set(users.value.map((u) => u.id));
-  const perUser: Group[] = users.value.map((u) => ({
-    key: `user-${u.id}`,
-    label: `${u.avatar} ${u.username}`,
-    items: sortWithDoneLast(
-      visibleItems.filter((i) => i.assigned_to_user_id === u.id),
-      isChecked
-    ),
-  }));
-  const unassigned: Group = {
-    key: 'unassigned',
-    label: 'Nicht zugewiesen',
-    items: sortWithDoneLast(
-      visibleItems.filter(
-        (i) => i.assigned_to_user_id == null || !memberIds.has(i.assigned_to_user_id)
-      ),
-      isChecked
-    ),
-  };
-  return [...perUser, unassigned];
-});
-
-const knownShops = computed(() => {
-  const set = new Set<string>();
-  items.value.forEach((i) => i.shop && set.add(i.shop));
-  return [...set].sort((a, b) => a.localeCompare(b, 'de'));
-});
-
-const progress = computed(() => {
-  const total = items.value.length;
-  const checked = items.value.filter((i) => i.checked).length;
-  return { total, checked };
-});
-
-async function toggle(item: ShoppingItem) {
-  const updated = await api.put<ShoppingItem>(`/shopping/${item.id}`, {
-    label: item.label,
-    assigned_to_user_id: item.assigned_to_user_id,
-    checked: !item.checked,
-    link: item.link ?? undefined,
-    note: item.note ?? undefined,
-    shop: item.shop ?? undefined,
-    period: item.period ?? undefined,
-  });
-  const idx = items.value.findIndex((i) => i.id === item.id);
-  if (idx !== -1) items.value[idx] = updated;
-}
-
 async function reassign(item: ShoppingItem, event: Event) {
   const value = (event.target as HTMLSelectElement).value;
   const assigned_to_user_id = value ? Number(value) : null;
-  const updated = await api.put<ShoppingItem>(`/shopping/${item.id}`, {
-    label: item.label,
-    assigned_to_user_id,
-    checked: !!item.checked,
-    link: item.link ?? undefined,
-    note: item.note ?? undefined,
-    shop: item.shop ?? undefined,
-    period: item.period ?? undefined,
-  });
-  const idx = items.value.findIndex((i) => i.id === item.id);
-  if (idx !== -1) items.value[idx] = updated;
+  await reassignItem(item, assigned_to_user_id);
 }
 
 function startEdit(item: ShoppingItem) {
@@ -311,17 +134,18 @@ async function submitEdit() {
     return;
   }
   if (!editingItem.value) return;
-  const updated = await api.put<ShoppingItem>(`/shopping/${editingItem.value.id}`, {
-    label: editForm.value.label.trim(),
-    assigned_to_user_id: editingItem.value.assigned_to_user_id,
-    checked: !!editingItem.value.checked,
-    link: editForm.value.link || undefined,
-    note: editForm.value.note || undefined,
-    shop: editForm.value.shop || undefined,
-    period: editForm.value.period || undefined,
-  });
-  const idx = items.value.findIndex((i) => i.id === updated.id);
-  if (idx !== -1) items.value[idx] = updated;
+  await updateItem(
+    editingItem.value.id,
+    {
+      label: editForm.value.label,
+      assigned_to_user_id: editingItem.value.assigned_to_user_id,
+      link: editForm.value.link,
+      note: editForm.value.note,
+      shop: editForm.value.shop,
+      period: editForm.value.period,
+    },
+    !!editingItem.value.checked
+  );
   editDraft.clear();
   editingItem.value = null;
 }
@@ -346,31 +170,19 @@ async function deleteEditingItem() {
   await remove(id);
 }
 
-async function remove(id: number) {
-  await api.delete(`/shopping/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
-  showToast({ message: 'Artikel gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
-}
-
 async function addItem() {
   if (!newLabel.value.trim()) return;
-  const created = await api.post<ShoppingItem>('/shopping', {
-    trip_id: tripId,
-    label: newLabel.value.trim(),
+  await submitNewItem({
+    label: newLabel.value,
     assigned_to_user_id: newBuyer.value ? Number(newBuyer.value) : undefined,
-    link: newLink.value || undefined,
-    note: newNote.value || undefined,
-    shop: newShop.value || undefined,
-    period: newPeriod.value || undefined,
+    link: newLink.value,
+    note: newNote.value,
+    shop: newShop.value,
+    period: newPeriod.value,
   });
-  items.value.push(created);
   newLabel.value = '';
   newLink.value = '';
   newNote.value = '';
-  // Details bleiben bewusst im aktuellen Zustand (geöffnet oder geschlossen) erhalten.
-  // Shop/Zeitraum bleiben bewusst stehen (siehe usePersistedRef oben) - praktisch, wenn mehrere
-  // Artikel für denselben Shop/Zeitraum hintereinander erfasst werden, und dient gleichzeitig als
-  // Vorbelegung fürs nächste Öffnen der Liste.
   newDraft.clear();
 }
 
@@ -383,51 +195,16 @@ function discardNewDraft() {
   showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
-// Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
-// gruppierte Dimension ergibt sich aus der Gruppe selbst, die jeweils anderen beiden bleiben als
-// kompakte Zusatzfelder übrig (gebunden an dieselben newBuyer/newShop/newPeriod-Refs wie das große
-// Formular oben, damit es EINE "aktuelle Auswahl" gibt statt mehrerer unabhängiger Kopien).
 async function quickAddToGroup(group: Group, label: string) {
-  if (!label.trim()) return;
-  const assigned_to_user_id =
-    groupBy.value === 'buyer'
-      ? group.key.startsWith('user-')
-        ? Number(group.key.slice(5))
-        : undefined
-      : newBuyer.value
-        ? Number(newBuyer.value)
-        : undefined;
-  const shop =
-    groupBy.value === 'shop'
-      ? group.key === UNASSIGNED_SHOP
-        ? undefined
-        : group.key
-      : newShop.value || undefined;
-  const period =
-    groupBy.value === 'period'
-      ? group.key === 'before' || group.key === 'during'
-        ? group.key
-        : undefined
-      : newPeriod.value || undefined;
-
-  const created = await api.post<ShoppingItem>('/shopping', {
-    trip_id: tripId,
-    label: label.trim(),
-    assigned_to_user_id,
-    shop,
-    period,
+  await submitQuickAdd({
+    groupKey: group.key,
+    groupBy: groupBy.value,
+    label,
+    fallbackBuyer: newBuyer.value,
+    fallbackShop: newShop.value,
+    fallbackPeriod: newPeriod.value,
+    unassignedShopLabel: UNASSIGNED_SHOP,
   });
-  items.value.push(created);
-}
-
-function hasItemMeta(item: ShoppingItem): boolean {
-  return Boolean(
-    item._pending ||
-    (groupBy.value !== 'shop' && item.shop) ||
-    (groupBy.value !== 'period' && item.period) ||
-    item.link ||
-    item.note
-  );
 }
 </script>
 

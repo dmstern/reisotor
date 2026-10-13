@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { api } from '../api/client';
-import type { TodoItem, TodoPriority, User, Period } from '../api/types';
+import { computed, ref, watch } from 'vue';
+import type { TodoItem, TodoPriority, Period } from '../api/types';
 import { useTripStore } from '../stores/trip';
-import { useLiveSyncStore } from '../stores/liveSync';
-import { PERIOD_META, computePeriod } from '../utils/period';
-import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
-import { hashHighlightId } from '../utils/hashHighlight';
-import { sortWithDoneLast } from '../composables/useCheckedSort';
+import { useUiSettingsStore } from '../stores/uiSettings';
+import { useToast } from '../composables/useToast';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
+import { usePersistedRef } from '../composables/usePersistedRef';
+import { useTodoList } from '../composables/useTodoList';
+import {
+  useTodoGrouping,
+  TODO_PRIORITY_META as PRIORITY_META,
+} from '../composables/useTodoGrouping';
+import { PERIOD_META } from '../utils/period';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -16,10 +19,6 @@ import DraftStatusBar from '../components/DraftStatusBar.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import FormField from '../components/FormField.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
-import { useToast } from '../composables/useToast';
-import { useDraftAutosave } from '../composables/useDraftAutosave';
-import { usePersistedRef } from '../composables/usePersistedRef';
-import { useUiSettingsStore } from '../stores/uiSettings';
 import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
@@ -34,68 +33,47 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const tripStore = useTripStore();
-const liveSync = useLiveSyncStore();
 const uiSettings = useUiSettingsStore();
-const route = useRoute();
-const router = useRouter();
-const tripId = tripStore.currentTripId as number;
-const items = ref<TodoItem[]>([]);
 const { showToast } = useToast();
-const users = ref<User[]>([]);
-const loading = ref(true);
-// Von anderen Mitgliedern seit dem letzten Besuch geänderte ToDos (siehe stores/liveSync.ts) –
-// einmalig beim Mounten eingefroren, damit die Hervorhebung nicht sofort wieder verschwindet (grün).
-const highlightedIds = ref<Set<number>>(new Set());
-// Durch Kalender-/Hash-Sprung gezielt fokussiertes ToDo (in Brand-Farbe hervorgehoben).
-const focusedTodoId = ref<number | null>(null);
 
-function clearFocusedTodo() {
-  if (focusedTodoId.value != null) {
-    focusedTodoId.value = null;
-    if (route.hash.startsWith('#todo-')) {
-      router.replace({ path: route.path, query: route.query, hash: '' });
-    }
-  }
-}
+const {
+  tripId,
+  items,
+  users,
+  loading,
+  highlightedIds,
+  focusedTodoId,
+  progress,
+  clearFocusedTodo,
+  addItem: submitNewTodo,
+  quickAddToGroup: submitQuickAdd,
+  toggleDone,
+  submitEdit: updateTodo,
+  remove,
+  toBody,
+} = useTodoList();
 
-type GroupBy = 'assignee' | 'period';
-type SortBy = 'due_date' | 'priority' | 'assignee';
-const groupBy = usePersistedRef<GroupBy>('reisotor-todo-group-by', 'assignee');
-const sortBy = usePersistedRef<SortBy>('reisotor-todo-sort-by', 'priority');
+const {
+  groupBy,
+  sortBy,
+  defaultGroupBy,
+  defaultSortBy,
+  groupByOptions,
+  sortByOptions,
+  groupedItems,
+  periodFor,
+  userLabel,
+  userAvatar,
+  userName,
+  formatDate,
+  isOverdue,
+  hasTodoMeta,
+} = useTodoGrouping(
+  items,
+  users,
+  computed(() => tripStore.currentTrip)
+);
 
-const defaultGroupBy = computed<GroupBy>(() => (users.value.length > 1 ? 'assignee' : 'period'));
-const defaultSortBy: SortBy = 'priority';
-
-const groupByOptions = computed(() => {
-  const opts = [];
-  if (users.value.length > 1) {
-    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person });
-  }
-  opts.push({ value: 'period', label: 'nach Zeitraum', icon: FORM_FIELD_ICONS.period });
-  return opts;
-});
-
-const sortByOptions = computed(() => {
-  const opts = [
-    { value: 'priority', label: 'nach Priorität', icon: FORM_FIELD_ICONS.priority },
-    { value: 'due_date', label: 'nach Datum', icon: FORM_FIELD_ICONS.date },
-  ];
-  if (users.value.length > 1) {
-    opts.push({ value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person });
-  }
-  return opts;
-});
-
-const PRIORITY_META: Record<TodoPriority, { label: string; icon: string; color: string }> = {
-  low: { label: 'Niedrig', icon: '🟢', color: 'var(--color-success)' },
-  medium: { label: 'Mittel', icon: '🟡', color: 'var(--color-accent)' },
-  high: { label: 'Hoch', icon: '🔴', color: 'var(--color-danger)' },
-};
-const PRIORITY_ORDER: Record<TodoPriority, number> = { high: 0, medium: 1, low: 2 };
-
-// Merkt sich die zuletzt für ein neues ToDo gewählte Bearbeiter:in (z. B. wenn mehrere Aufgaben
-// hintereinander für dieselbe Person angelegt werden) und schlägt sie beim nächsten neuen Eintrag
-// direkt vor, statt jedes Mal wieder "Nicht zugewiesen" zu zeigen.
 const lastAssignee = usePersistedRef('reisotor-todo-last-assignee', '');
 
 const emptyForm = () => ({
@@ -107,17 +85,7 @@ const emptyForm = () => ({
   note: '',
 });
 
-// Zeitraum (vor/während des Urlaubs) wird aus dem Fälligkeitsdatum + den Urlaubs-Eckdaten
-// hergeleitet statt manuell abgefragt – ToDo-Einträge haben dafür (anders als die Einkaufsliste)
-// immer ein Datum.
-function periodFor(item: TodoItem) {
-  if (item.due_date) {
-    return computePeriod(item.due_date, tripStore.currentTrip);
-  }
-  return item.period || null;
-}
 const newForm = ref(emptyForm());
-
 const editingItem = ref<TodoItem | null>(null);
 const editForm = ref(emptyForm());
 const editTitleTouched = ref(false);
@@ -141,9 +109,6 @@ watch(
   }
 );
 
-// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - das Create-Formular ist
-// hier (anders als bei den meisten anderen Domänen) immer sichtbar statt in einem Modal, daher
-// `active` konstant true: die Wiederherstellung läuft einmalig beim Mounten der View.
 const newDraft = useDraftAutosave('todos:new', newForm, ref(true));
 const editDraft = useDraftAutosave(
   () => `todos:edit:${editingItem.value?.id}`,
@@ -162,172 +127,11 @@ watch(
   }
 );
 
-async function load() {
-  try {
-    const [itemsRes, usersRes] = await Promise.all([
-      api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
-      api.get<User[]>(`/trips/${tripId}/members`),
-    ]);
-    items.value = itemsRes;
-    users.value = usersRes;
-  } catch {
-    // Offline und (noch) kein Cache-Eintrag für mindestens einen der Endpunkte - Seite soll trotzdem
-    // rendern (ggf. mit leeren/vorherigen Daten) statt durch das v-if="!loading" unten für immer
-    // blank zu bleiben (siehe api/client.ts's Offline-Fallback-Konzept).
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(() => {
-  highlightedIds.value = liveSync.markSeen('todos');
-  // Querverweis-Sprung (z. B. aus dem Kalender, siehe ScheduleView.vue's openEntry()) – gezielter
-  // Fokus in Brand-Farbe statt des grünen LiveSync-Neu-Highlights.
-  const hashId = hashHighlightId(route.hash, 'todo');
-  if (hashId != null) focusedTodoId.value = hashId;
-  load();
-});
-
-watch(
-  () => route.hash,
-  (newHash) => {
-    if (!newHash) {
-      focusedTodoId.value = null;
-      return;
-    }
-    const hashId = hashHighlightId(newHash, 'todo');
-    if (hashId != null) focusedTodoId.value = hashId;
-  }
-);
-
-// Aktualisiert die Liste automatisch, wenn ein anderes Mitglied etwas an den ToDos ändert (siehe
-// stores/liveSync.ts) – analog zum bestehenden drawers.locationsVersion-Muster in ScheduleView.vue.
-watch(() => liveSync.domainVersion.todos, load);
-
-watch(
-  () => users.value.length,
-  (len) => {
-    if (len <= 1) {
-      if (groupBy.value === 'assignee') groupBy.value = 'period';
-      if (sortBy.value === 'assignee') sortBy.value = 'priority';
-    }
-  },
-  { immediate: true }
-);
-
-function userLabel(id: number | null) {
-  if (id == null) return null;
-  const u = users.value.find((u) => u.id === id);
-  return u ? `${u.avatar} ${u.username}` : '👤 Ehemaliges Mitglied';
-}
-
-function userAvatar(id: number | null | undefined) {
-  if (id == null) return null;
-  const u = users.value.find((u) => u.id === id);
-  return u ? u.avatar : '👤';
-}
-
-function userName(id: number | null | undefined) {
-  if (id == null) return null;
-  const u = users.value.find((u) => u.id === id);
-  return u ? u.username : 'Ehemaliges Mitglied';
-}
-
-function sortItems(list: TodoItem[]) {
-  const visible = uiSettings.hideCompletedTodos ? list.filter((i) => !i.done) : list;
-  return sortWithDoneLast(
-    visible,
-    (i) => !!i.done,
-    (a, b) => {
-      if (sortBy.value === 'due_date') {
-        if (!a.due_date && !b.due_date) return 0;
-        if (!a.due_date) return 1;
-        if (!b.due_date) return -1;
-        return a.due_date.localeCompare(b.due_date);
-      }
-      if (sortBy.value === 'assignee') {
-        return (userLabel(a.assigned_to_user_id) ?? '').localeCompare(
-          userLabel(b.assigned_to_user_id) ?? '',
-          'de'
-        );
-      }
-      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-    }
-  );
-}
-
-interface Group {
-  key: string;
-  label: string;
-  items: TodoItem[];
-}
-
-const groupedItems = computed<Group[]>(() => {
-  if (groupBy.value === 'period') {
-    return [
-      {
-        key: 'before',
-        label: `⏳ ${PERIOD_META.before}`,
-        items: sortItems(items.value.filter((i) => periodFor(i) === 'before')),
-      },
-      {
-        key: 'during',
-        label: `🌴 ${PERIOD_META.during}`,
-        items: sortItems(items.value.filter((i) => periodFor(i) === 'during')),
-      },
-      {
-        key: 'none',
-        label: '📋 Ohne Zeitraum',
-        items: sortItems(items.value.filter((i) => !periodFor(i))),
-      },
-    ];
-  }
-  const memberIds = new Set(users.value.map((u) => u.id));
-  const perUser: Group[] = users.value.map((u) => ({
-    key: `user-${u.id}`,
-    label: `${u.avatar} ${u.username}`,
-    items: sortItems(items.value.filter((i) => i.assigned_to_user_id === u.id)),
-  }));
-  const unassigned: Group = {
-    key: 'unassigned',
-    label: 'Nicht zugewiesen',
-    items: sortItems(
-      items.value.filter(
-        (i) => i.assigned_to_user_id == null || !memberIds.has(i.assigned_to_user_id)
-      )
-    ),
-  };
-  return [...perUser, unassigned];
-});
-
-const progress = computed(() => {
-  const total = items.value.length;
-  const done = items.value.filter((i) => i.done).length;
-  return { total, done };
-});
-
-function toBody(f: ReturnType<typeof emptyForm>) {
-  // Wenn ein Fälligkeitsdatum explizit gesetzt ist, hat es immer Vorrang und
-  // der manuell ausgewählte grobe Zeitraum wird verworfen, um Inkonsistenzen zu vermeiden.
-  const isPeriodValid = !f.due_date;
-  return {
-    trip_id: tripId,
-    title: f.title.trim(),
-    assigned_to_user_id: f.assigned_to_user_id ? Number(f.assigned_to_user_id) : undefined,
-    due_date: f.due_date || undefined,
-    period: isPeriodValid && f.period ? f.period : undefined,
-    priority: f.priority,
-    note: f.note || undefined,
-  };
-}
-
 async function addItem() {
   if (!newForm.value.title.trim()) return;
-  const created = await api.post<TodoItem>('/todos', toBody(newForm.value));
-  items.value.push(created);
+  await submitNewTodo(newForm.value);
   lastAssignee.value = newForm.value.assigned_to_user_id;
   newForm.value = emptyForm();
-  // Details bleiben bewusst im aktuellen Zustand (geöffnet oder geschlossen) erhalten.
   newDraft.clear();
 }
 
@@ -338,55 +142,18 @@ function discardNewDraft() {
   showToast({ message: 'Entwurf verworfen.', type: 'info' });
 }
 
-// Inline-Quick-Add direkt in einer Gruppen-Kopfzeile (siehe QuickAddRow.vue) - die aktuell
-// gruppierte Dimension (Bearbeiter:in oder Zeitraum) ergibt sich aus der Gruppe selbst.
-// Die jeweils andere Dimension (Zuweisung bei Zeitraum-Gruppierung, Zeitraum bei Bearbeiter:innen-Gruppierung)
-// sowie die Priorität stehen als kompakte Zusatzfelder bereit.
 const quickAddPriority = ref<TodoPriority>('medium');
 const quickAddPeriod = ref<Period | ''>('');
 
-async function quickAddToGroup(group: Group, label: string) {
-  if (!label.trim()) return;
-  const assigned_to_user_id =
-    groupBy.value === 'assignee'
-      ? group.key.startsWith('user-')
-        ? Number(group.key.slice(5))
-        : undefined
-      : lastAssignee.value
-        ? Number(lastAssignee.value)
-        : undefined;
-
-  const period =
-    groupBy.value === 'period'
-      ? group.key === 'before' || group.key === 'during'
-        ? (group.key as Period)
-        : undefined
-      : quickAddPeriod.value || undefined;
-
-  const created = await api.post<TodoItem>('/todos', {
-    trip_id: tripId,
-    title: label.trim(),
-    assigned_to_user_id,
-    period,
+async function quickAddToGroup(group: { key: string }, label: string) {
+  await submitQuickAdd({
+    groupKey: group.key,
+    groupBy: groupBy.value,
+    label,
     priority: quickAddPriority.value,
+    period: quickAddPeriod.value,
+    fallbackAssignee: lastAssignee.value,
   });
-  items.value.push(created);
-}
-
-async function toggleDone(item: TodoItem) {
-  clearFocusedTodo();
-  const updated = await api.put<TodoItem>(`/todos/${item.id}`, {
-    trip_id: tripId,
-    title: item.title,
-    assigned_to_user_id: item.assigned_to_user_id,
-    due_date: item.due_date ?? undefined,
-    period: item.period ?? undefined,
-    priority: item.priority,
-    note: item.note ?? undefined,
-    done: !item.done,
-  });
-  const idx = items.value.findIndex((i) => i.id === item.id);
-  if (idx !== -1) items.value[idx] = updated;
 }
 
 function startEdit(item: TodoItem) {
@@ -409,12 +176,7 @@ async function submitEdit() {
     return;
   }
   if (!editingItem.value) return;
-  const updated = await api.put<TodoItem>(`/todos/${editingItem.value.id}`, {
-    ...toBody(editForm.value),
-    done: !!editingItem.value.done,
-  });
-  const idx = items.value.findIndex((i) => i.id === updated.id);
-  if (idx !== -1) items.value[idx] = updated;
+  await updateTodo(editingItem.value.id, editForm.value, !!editingItem.value.done);
   editDraft.clear();
   editingItem.value = null;
 }
@@ -437,28 +199,6 @@ async function deleteEditingItem() {
   const id = editingItem.value.id;
   closeEditForm();
   await remove(id);
-}
-
-async function remove(id: number) {
-  await api.delete(`/todos/${id}`);
-  items.value = items.value.filter((i) => i.id !== id);
-  showToast({ message: 'Aufgabe gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
-}
-
-function formatDate(d: string | null) {
-  if (!d) return null;
-  return formatDateShared(d);
-}
-
-function isOverdue(item: TodoItem) {
-  if (!item.due_date || item.done) return false;
-  return item.due_date < toLocalDateString(new Date());
-}
-
-function hasTodoMeta(item: TodoItem): boolean {
-  return Boolean(
-    item._pending || item.due_date || (groupBy.value !== 'period' && periodFor(item)) || item.note
-  );
 }
 </script>
 
