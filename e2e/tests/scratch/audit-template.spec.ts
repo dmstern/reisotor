@@ -48,7 +48,9 @@ test.describe(`Adversarial Layout Audit: ${targetRoute}`, () => {
       await expectNoHorizontalOverflow(page);
 
       // 2. Sichtbarkeits-Check: Hauptcontainer muss vorhanden und sichtbar sein
-      const mainContainer = page.locator('.page, .app-main, .dashboard, .budget-page').first();
+      const mainContainer = page
+        .locator('.page, .app-main, .dashboard, .budget-page, .landing')
+        .first();
       await expect(mainContainer).toBeVisible();
 
       if (process.env.AUDIT_SCREENSHOTS) {

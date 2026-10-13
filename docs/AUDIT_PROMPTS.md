@@ -195,6 +195,7 @@ Der Script-State ist bereits sauber entflochten. Nun wird das <template> modular
    - Nutze saubere TypeScript defineProps<{...}>() und defineEmits<{...}>(). Da der State in Phase 1 modularisiert wurde, binde Subkomponenten entweder direkt an das passende Composable an oder übergebe minimale, fokussierte Props.
    - Vermeide monolithisches Prop-Drilling ganzer Composable-Return-Typen (z. B. props.form: ReturnType<typeof useForm>) und Destrukturierungen in <script setup>, die Reaktivität gefährden. Modals/Drawers mit isoliertem Formular-Lifecycle sollten ihr Composable bevorzugt direkt selbst instanziieren.
    - Konditionale Teleports & Docks: Werden UI-Elemente je nach Layout in externe Container verschoben (z. B. Schubladen oder Navigationsleisten), kapsele das konditionale Teleportieren in eine schlanke Hilfskomponente (z. B. DockTeleport mit <Teleport v-if="active" :to="to"><slot /></Teleport><slot v-else />), um doppelte Template-Bäume zu vermeiden.
+   - Tastatur-Fokus & Collapsibles (:inert): Bei per CSS (z. B. Grid 0fr/1fr) animierten Ein-/Ausklappbereichen stets `:inert="!isOpen ? true : undefined"` setzen, damit verdeckte Formularfelder und Buttons nicht fälschlich per Tab-Taste fokussiert werden können.
 
 5. Lokalisierung & Refinement von State und Assets:
    - Sobald Subkomponenten stehen: Prüfe, ob in Phase 1 erstellte Composables, Helper oder Icon-Definitionen, die ausschließlich in einer einzigen Subkomponente benötigt werden, direkt dorthin umgezogen oder feiner aufgeteilt werden können (z. B. tab-spezifische Reset-Logik direkt im Tab halten; Sektions-Icons direkt in der Subkomponente instanziieren statt im globalen Tab-Composable).
@@ -233,6 +234,7 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
 2. Container-Queries & Enge-Resilienz (Ersetzen statt Duplizieren):
    - Keine starren Pixelbreiten in Subkomponenten.
    - Ersetze bestehende @media-Breakpoints innerhalb von .app-main restlos durch @container app-main (max-width/min-width: ...) oder flexibles Flexbox-Wrapping (flex-wrap: wrap).
+   - Container-Queries in Modals & Dialogen: Dialoge liegen außerhalb von .app-main; das Modal/Formular deklariert container-type: inline-size und Subkomponenten nutzen unbenannte Queries @container (max-width: ...).
    - Keine redundanten @media-Blöcke parallel stehen lassen: Alte @media-Regeln müssen gelöscht werden, um CSS-Duplikate und unerwünschte Drawer-Effekte zu vermeiden.
    - Teleport-Kontext beachten: Teleportierte DOM-Knoten (z. B. in #map-focus-dock oder body) liegen außerhalb des lokalen @container-Geltungsbereichs ihrer Ursprungskomponente. Stelle sicher, dass ihre Styles kontextunabhängig greifen.
 
@@ -307,24 +309,33 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 
 ### Bereits bereitgestellte & wiederverwendbare Bausteine
 
-| Baustein                 | Typ & Pfad                                                 | Herkunft           | Potenzielle Ziel-Views                                | Nutzen & Synergie-Potenzial                                                                 |
-| :----------------------- | :--------------------------------------------------------- | :----------------- | :---------------------------------------------------- | :------------------------------------------------------------------------------------------ |
-| `DockTeleport`           | Primitiv (`components/primitives/DockTeleport.vue`)        | Settings / Layout  | `ExcursionsView`, `BudgetView`, `ScheduleView`        | Konditionales Teleportieren in externe Docks/Drawer ohne Template-Duplikation.              |
-| `DoneToggle`             | Primitiv (`components/primitives/DoneToggle.vue`)          | Todo / Listen      | `ShoppingListView`, `PackingListView`, `ListenView`   | Einheitlicher Check- und Erledigt-Status mit Haptik/Animation.                              |
-| `CollapsibleFieldset`    | Primitiv (`components/primitives/CollapsibleFieldset.vue`) | Settings           | `BudgetView`, `ScheduleView`, `DiaryView`             | Einklappbare Formular- & Einstellungsabschnitte mit Pfeil-Indikator.                        |
-| `ColorSwatchPicker`      | Primitiv (`components/primitives/ColorSwatchPicker.vue`)   | Settings / Users   | `BudgetView` (Pots), `NotesView` (Tags), `ListenView` | Farbauswahl für Kategorien, Töpfe und Labels.                                               |
-| `CheckableListItem`      | Primitiv (`components/primitives/CheckableListItem.vue`)   | Listen             | `TodoView`, `ShoppingListView`, `PackingListView`     | Standard-Listeneintrag mit Checkbox, Titel, Meta-Text und Action-Slot.                      |
-| `useTripCountdown`       | Composable (`composables/useTripCountdown.ts`)             | Dashboard          | `ScheduleView`, `DiaryView`, Navigation / Header      | Reaktiv berechneter Abreise-Countdown (Tage/Stunden) & Urlaubsphase mit Auto-Ticker.        |
-| `useRegionInfo`          | Composable (`composables/useRegionInfo.ts`)                | Dashboard          | `ListenView`, `BudgetView`, `SecurityCheckView`       | Isoliertes Nachladen von Landesinfos (Sprache, Währung, Wechselkurs, Reisehinweis).         |
-| `DashboardTile`          | Subkomponente (`components/dashboard/DashboardTile.vue`)   | Dashboard          | `ListenView` (Hub), `SettingsView` (Kategorien)       | Universelle Kachel mit Akzentfarbe, Schatten, schwebendem Kreis-Icon und Slot.              |
-| `usePointerDrag`         | Composable (`composables/usePointerDrag.ts`)               | Spots / Excursions | `ExcursionsView` (`ExcursionCard`), `ScheduleView`    | Pointer-Events-basiertes Drag & Drop mit Ghost und Tap-Erkennung (Touch/Desktop-resilient). |
-| `SpotCalendarDragHandle` | Komponente (`components/SpotCalendarDragHandle.vue`)       | Spots              | `ExcursionsView` (`ExcursionCard`)                    | Drag-Anfasser zum Einplanen in Kalendertage inkl. Auto-Öffnen der Schublade.                |
-| `useSpotWeather`         | Composable (`composables/useSpotWeather.ts`)               | Spots              | `ExcursionsView` (`ExcursionCard`), `ScheduleView`    | Reaktiver Wetter-Abruf für geplante Termine/Orte mit Fallbacks.                             |
+| `DockTeleport` | Primitiv (`components/primitives/DockTeleport.vue`) | Settings / Layout | `ExcursionsView`, `BudgetView`, `ScheduleView` | Konditionales Teleportieren in externe Docks/Drawer ohne Template-Duplikation. |
+| `DoneToggle` | Primitiv (`components/primitives/DoneToggle.vue`) | Todo / Listen | `ShoppingListView`, `PackingListView`, `ListenView` | Einheitlicher Check- und Erledigt-Status mit Haptik/Animation. |
+| `CollapsibleFieldset` | Primitiv (`components/primitives/CollapsibleFieldset.vue`) | Settings | `BudgetView`, `ScheduleView`, `DiaryView` | Einklappbare Formular- & Einstellungsabschnitte mit Pfeil-Indikator. |
+| `ColorSwatchPicker` | Primitiv (`components/primitives/ColorSwatchPicker.vue`) | Settings / Users | `BudgetView` (Pots), `NotesView` (Tags), `ListenView` | Farbauswahl für Kategorien, Töpfe und Labels. |
+| `CheckableListItem` | Primitiv (`components/primitives/CheckableListItem.vue`) | Listen | `TodoView`, `ShoppingListView`, `PackingListView` | Standard-Listeneintrag mit Checkbox, Titel, Meta-Text und Action-Slot. |
+| `useTripCountdown` | Composable (`composables/useTripCountdown.ts`) | Dashboard | `ScheduleView`, `DiaryView`, Navigation / Header | Reaktiv berechneter Abreise-Countdown (Tage/Stunden) & Urlaubsphase mit Auto-Ticker. |
+| `useRegionInfo` | Composable (`composables/useRegionInfo.ts`) | Dashboard | `ListenView`, `BudgetView`, `SecurityCheckView` | Isoliertes Nachladen von Landesinfos (Sprache, Währung, Wechselkurs, Reisehinweis). |
+| `DashboardTile` | Subkomponente (`components/dashboard/DashboardTile.vue`) | Dashboard | `ListenView` (Hub), `SettingsView` (Kategorien) | Universelle Kachel mit Akzentfarbe, Schatten, schwebendem Kreis-Icon und Slot. |
+| `usePointerDrag` | Composable (`composables/usePointerDrag.ts`) | Spots / Excursions | `ExcursionsView` (`ExcursionCard`), `ScheduleView` | Pointer-Events-basiertes Drag & Drop mit Ghost und Tap-Erkennung (Touch/Desktop-resilient). |
+| `CalendarDragHandle` | Komponente (`components/CalendarDragHandle.vue`) | Spots / Excursions | `ScheduleView`, `ListenView` | Universeller Drag-Anfasser zum Einplanen von Spots & Touren in Kalendertage inkl. Schubladen-Öffnen und Tap-Fallback. |
+| `SpotCalendarDragHandle` | Komponente (`components/SpotCalendarDragHandle.vue`) | Spots | `ExcursionsView` (`ExcursionCard`) | Drag-Anfasser zum Einplanen in Kalendertage inkl. Auto-Öffnen der Schublade (Wrapper um `CalendarDragHandle`). |
+| `useSpotWeather` | Composable (`composables/useSpotWeather.ts`) | Spots | `ExcursionsView` (`ExcursionCard`), `ScheduleView` | Reaktiver Wetter-Abruf für geplante Termine/Orte mit Fallbacks. |
+| `useExcursionWeather` | Composable (`composables/useExcursionWeather.ts`) | Excursions | `ScheduleView`, `DayView` | Aggregierter Wetter-Abruf über mehrere Stationen einer Route für ein Reisedatum. |
+| `Kicker` | Primitiv (`components/primitives/Kicker.vue`) | Landing / UI | `SpotCard`, `DashboardTile`, `ExcursionCard`, Listen | Semantische Dachzeile / Kicker-Typografie für Sektionsüberschriften und Card-Metadaten. |
+| `useLandingScrollytelling` | Composable (`composables/useLandingScrollytelling.ts`) | Landing | `LandingView`, Onboarding, Guides / Storybook | Viewport-zentriertes Scrollytelling mit Hysterese & Scroll-Driven-Animation-Fallbacks. |
+| `DiaryEntityPicker` | Subkomponente (`components/DiaryEntityPicker.vue`) | Diary | `NotesView`, `ScheduleView` | Datum-reaktive Touren- & Spot-Zuordnung mit 'Empfohlen'-Chips & CollapsibleFieldsets. |
+| `useDiaryImageUpload` | Composable (`composables/useDiaryImageUpload.ts`) | Diary | `NotesView`, `ExcursionsView` | Multi-Bild-Upload mit clientseitiger Kompression, Fortschrittsbalken & AbortController. |
+| `useDiaryPreview` | Composable (`composables/useDiaryPreview.ts`) | Diary | `NotesView`, `ExcursionsView` | Gekapselter State für Vollbild-Vorschau (`AttachmentPreviewModal`) mit Index & Lösch-Handler. |
+| `useRouteCalculation` | Composable (`composables/useRouteCalculation.ts`) | Legs / Tours | `ExcursionsView`, `TripMap`, `ScheduleView` | Isoliertes Berechnen von Routen (Auto, Rad, Fuß) mit Multi-Routen-Vergleich & Debouncing. |
+| `LegTransportModeSelector` | Komponente (`components/LegTransportModeSelector.vue`) | Legs / Tours | `ExcursionsView`, `ScheduleView`, `SettingsView` | Universelle Fortbewegungsart-Auswahl (SegmentedToggle) mit animiertem ÖPNV-Fahrzeug-Dropdown. |
+| `useLegTimeSync` | Composable (`composables/useLegTimeSync.ts`) | Legs / Tours | `ScheduleView`, `ExcursionsView` | Bidirektionale Kopplung von Start- und Endzeitpunkten basierend auf Solldauer mit Validierung. |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 
-### Heuristik für den Promotion-Check (Wann gehört etwas in den Katalog?)
+### Heuristik für den Promotion-Check & Modal-Design
 
 - **1x genutzt & sehr domänenspezifisch:** Bleibt lokale Subkomponente (z. B. `frontend/src/components/settings/SettingsSectionDanger.vue`).
 - **In 2+ Views benötigt oder generisches UI-Muster:** Wird zu Primitiv (`frontend/src/components/primitives/`) oder Shared-Komponente (`frontend/src/components/common/`) befördert, hier im Katalog eingetragen und im PR erwähnt.
 - **Wiederkehrende State-Logik (Filter, Suche, Form-Drafts, Paging):** Wird als generisches Composable unter `frontend/src/composables/` angelegt und hier für andere Listen/Views annotiert.
+- **Container-Queries in Modals & Drawers:** Liegen Formulare in Modals oder Drawers, greift `@container app-main` dort oft nicht verlässlich oder bildet nicht die tatsächliche Dialog-Breite ab. Setze daher `container-type: inline-size` direkt auf die Formular-Wurzelklasse (z. B. `.add-form`), um reaktive Umbrüche (z. B. `@container (max-width: 360px) { .actions-row { flex-direction: column-reverse; } }`) isoliert und stabil zu steuern.
