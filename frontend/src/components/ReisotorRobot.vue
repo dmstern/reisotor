@@ -701,11 +701,25 @@ function onAnimationEnd(event: AnimationEvent) {
 
 <style scoped>
 .robot-stage {
+  /* Scoped Tokens: Reisotor-Mascot-Farbkanon & dynamische Skalierung */
+  --robot-color-orange: #ff9800;
+  --robot-color-cyan: #00e5ff;
+  --robot-color-magenta: #e91e63;
+  --robot-color-gold: #ffb703;
+  --robot-color-blush: #ff4081;
+  --robot-color-visor: #141922;
+  --robot-backpack-bg: #1f3a3d;
+  --robot-backpack-stroke: #2f8f86;
+
+  /* Federnde Easing-Kurve für lebendige Wall-E-Gesten */
+  --robot-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
   position: relative;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  max-width: 60vw;
+  max-width: 100%;
+  container-type: inline-size;
 }
 
 .robot {
@@ -779,7 +793,7 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 .robot.scanning .pupil-group {
-  animation: scan-sweep 1.6s ease-in-out infinite alternate !important;
+  animation: scan-sweep 1.6s ease-in-out infinite alternate;
 }
 
 @keyframes scan-sweep {
@@ -807,22 +821,22 @@ function onAnimationEnd(event: AnimationEvent) {
 @keyframes antenna-pulse {
   0% {
     opacity: 0.45;
-    filter: drop-shadow(0 0 2px #ff9800);
+    filter: drop-shadow(0 0 2px var(--robot-color-orange));
   }
   100% {
     opacity: 1;
-    filter: drop-shadow(0 0 10px #00e5ff);
+    filter: drop-shadow(0 0 10px var(--robot-color-cyan));
   }
 }
 
 @keyframes antenna-glow {
   0% {
     opacity: 0.7;
-    filter: drop-shadow(0 0 4px #ff9800);
+    filter: drop-shadow(0 0 4px var(--robot-color-orange));
   }
   100% {
     opacity: 1;
-    filter: drop-shadow(0 0 12px #ffb703);
+    filter: drop-shadow(0 0 12px var(--robot-color-gold));
   }
 }
 
@@ -851,10 +865,10 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 .scan-line {
-  stroke: #00e5ff;
+  stroke: var(--robot-color-cyan);
   stroke-width: 3.5;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 6px #00e5ff);
+  filter: drop-shadow(0 0 6px var(--robot-color-cyan));
   animation: scan-line-sweep 1.5s ease-in-out infinite alternate;
 }
 
@@ -876,13 +890,13 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 .ping-1 {
-  stroke: #ff9800;
+  stroke: var(--robot-color-orange);
 }
 .ping-2 {
-  stroke: #e91e63;
+  stroke: var(--robot-color-magenta);
 }
 .ping-3 {
-  stroke: #00e5ff;
+  stroke: var(--robot-color-cyan);
 }
 
 .robot.scanning .ping-1 {
@@ -910,7 +924,7 @@ function onAnimationEnd(event: AnimationEvent) {
 .robot.done {
   animation:
     hover-bob 3.2s ease-in-out infinite,
-    cheer-hop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+    cheer-hop 0.65s var(--robot-ease-spring) 1;
 }
 
 @keyframes cheer-hop {
@@ -948,7 +962,7 @@ function onAnimationEnd(event: AnimationEvent) {
   animation: pupil-look-wander 5.5s ease-in-out infinite;
 }
 
-.robot.is-interactive .pupil-group {
+.robot.is-interactive:not(.scanning):not(.packing):not(.covering-eyes) .pupil-group {
   animation: none;
 }
 
@@ -981,6 +995,7 @@ function onAnimationEnd(event: AnimationEvent) {
 /* Schüchterne Wangen-Röte auf dem Visier */
 .blush-cheek {
   opacity: 0;
+  fill: var(--robot-color-blush);
   filter: blur(1.5px);
   transition: opacity 0.35s ease;
   pointer-events: none;
@@ -999,7 +1014,7 @@ function onAnimationEnd(event: AnimationEvent) {
 .robot.covering-eyes .robot-head {
   transform: translate(0px, 3px) rotate(-4deg);
   transform-origin: 250px 210px;
-  transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.42s var(--robot-ease-spring);
 }
 
 .robot.covering-eyes .antenna {
@@ -1011,12 +1026,12 @@ function onAnimationEnd(event: AnimationEvent) {
 /* Wall-E Augenzukneifen: Linsen neigen sich verlegen (/ \) und kneifen sich mechanisch zusammen */
 .robot.covering-eyes .eye-lens-right {
   transform: rotate(-14deg) scaleY(0.16) scaleX(1.05);
-  transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.38s var(--robot-ease-spring);
 }
 
 /* Linkes Auge kneift zu, linst aber alle ~3.6s neugierig hervor (Wall-E Peek) */
 .robot.covering-eyes .eye-lens-left {
-  animation: wall-e-squint-peek-left 3.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  animation: wall-e-squint-peek-left 3.6s var(--robot-ease-spring) infinite;
 }
 
 @keyframes wall-e-squint-peek-left {
@@ -1062,13 +1077,13 @@ function onAnimationEnd(event: AnimationEvent) {
 
 /* Mechanische Shutter-Lider (für kurzes Idle-Blinzeln) */
 .shutter-lid {
-  fill: #141922;
-  stroke: #ff9800;
+  fill: var(--robot-color-visor);
+  stroke: var(--robot-color-orange);
   stroke-width: 6;
   opacity: 0.96;
   transform-box: fill-box;
   transform: translateY(-360px);
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.35s var(--robot-ease-spring);
 }
 
 /* Gelegentliches kurzes Roboter-Blinzeln im Idle-Zustand */
@@ -1098,23 +1113,23 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 .backpack-body {
-  fill: #1f3a3d;
-  stroke: #2f8f86;
+  fill: var(--robot-backpack-bg);
+  stroke: var(--robot-backpack-stroke);
   stroke-width: 3;
 }
 
 .backpack-pocket {
-  fill: #e91e63;
+  fill: var(--robot-color-magenta);
 }
 
 .backpack-zip {
-  stroke: #ff9800;
+  stroke: var(--robot-color-orange);
   stroke-width: 2.5;
   stroke-linecap: round;
 }
 
 .backpack-strap {
-  stroke: #ff9800;
+  stroke: var(--robot-color-orange);
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
@@ -1140,7 +1155,7 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 .robot.packing .pupil-group {
-  animation: pack-pupils-down 2.1s ease-in-out 1 !important;
+  animation: pack-pupils-down 2.1s ease-in-out 1;
 }
 
 @keyframes pack-look-down {
@@ -1256,7 +1271,7 @@ function onAnimationEnd(event: AnimationEvent) {
    ========================================================================== */
 .sparkle {
   position: absolute;
-  font-size: 1.3rem;
+  font-size: clamp(var(--font-size-xs), 12cqi, var(--font-size-xl));
   animation: float-sparkle 1.6s ease-out infinite;
   pointer-events: none;
 }
@@ -1292,7 +1307,7 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 /* ==========================================================================
-   6. Reduzierte Bewegung (Barrierefreiheit)
+   6. Reduzierte Bewegung (Barrierefreiheit & Vestibuläre Sicherheit)
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
   .robot,
@@ -1315,6 +1330,7 @@ function onAnimationEnd(event: AnimationEvent) {
   .sparkle {
     animation-duration: 0.01s !important;
     animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01s !important;
   }
 }
