@@ -9,78 +9,50 @@
 // - SplashScreen.vue: 'packing' (Roboter fokussiert Reisegepäck, saugt Flugticket & Reisekamera elastisch ein,
 //   Rucksack dockt an Rücken an, stolzer Blick, feuert packingDone).
 import { useId } from 'vue';
+import { useRobotEyeTracking, type RobotPhase } from '../composables/useRobotEyeTracking';
 
-const props = withDefaults(
-  defineProps<{
-    /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
-     *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue. */
-    phase?: 'idle' | 'scanning' | 'done' | 'packing' | 'pack';
-    /** Hält sich mit beiden Armen die Augen zu (z. B. während ein Passwort sichtbar ist). */
-    coveringEyes?: boolean;
-    /** CSS-Breite; Höhe ergibt sich aus dem quadratischen 500x500 SVG-Seitenverhältnis. */
-    size?: string;
-    /** Hintergrund-Variante des Logos: blank (transparent), circle (runder Farbverlauf), full (Squircle) */
-    variant?: 'blank' | 'circle' | 'full';
-    /** Ob die Augen der Maus folgen sollen (funktioniert nur in Phase 'idle') */
-    interactive?: boolean;
-  }>(),
-  {
-    phase: 'idle',
-    coveringEyes: false,
-    size: '200px',
-    variant: 'blank',
-    interactive: false,
-  }
-);
+export type { RobotPhase };
+export type RobotVariant = 'blank' | 'circle' | 'full';
 
-const uid = useId();
+export interface ReisotorRobotProps {
+  /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
+   *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue. */
+  phase?: RobotPhase;
+  /** Hält sich mit beiden Armen die Augen zu (z. B. während ein Passwort sichtbar ist). */
+  coveringEyes?: boolean;
+  /** CSS-Breite; Höhe ergibt sich aus dem quadratischen 500x500 SVG-Seitenverhältnis. */
+  size?: string;
+  /** Hintergrund-Variante des Logos: blank (transparent), circle (runder Farbverlauf), full (Squircle) */
+  variant?: RobotVariant;
+  /** Ob die Augen der Maus folgen sollen (funktioniert nur in Phase 'idle') */
+  interactive?: boolean;
+}
+
+const props = withDefaults(defineProps<ReisotorRobotProps>(), {
+  phase: 'idle',
+  coveringEyes: false,
+  size: '200px',
+  variant: 'blank',
+  interactive: false,
+});
 
 // Signalisiert das Ende der Rucksack-Pack-Sequenz für SplashScreen.vue
 const emit = defineEmits<{ packingDone: [] }>();
+
+const uid = useId();
+
+// Interaktives Augen- und Pupillen-Tracking
+const { pupilOffset } = useRobotEyeTracking({
+  interactive: () => props.interactive,
+  coveringEyes: () => props.coveringEyes,
+  phase: () => props.phase,
+});
 
 function onAnimationEnd(event: AnimationEvent) {
   if (event.animationName === 'pack-backpack-anim') {
     emit('packingDone');
   }
 }
-
-// Maus-Tracking für interaktive Augen
-import { ref, onMounted, onUnmounted } from 'vue';
-const pupilOffset = ref({ x: 0, y: 0 });
-
-function onMouseMove(e: MouseEvent) {
-  if (
-    !props.interactive ||
-    props.coveringEyes ||
-    props.phase === 'scanning' ||
-    props.phase === 'done'
-  ) {
-    pupilOffset.value = { x: 0, y: 0 };
-    return;
-  }
-  // Max. Verschiebung im lokalen <g>-Koordinatensystem (Radius der Linse ist 237, Pupille 105 -> max 132 Einheiten Platz)
-  // Wir nehmen 130, um den Spielraum maximal auszunutzen, bevor es clippt.
-  const maxShift = 130;
-  let rx = (e.clientX / window.innerWidth - 0.5) * 2;
-  let ry = (e.clientY / window.innerHeight - 0.5) * 2;
-
-  // Vektor-Länge kappen, damit die Pupillen auch in den Bildschirmecken (rx=1, ry=1 -> Länge 1.41)
-  // nicht aus der runden Linse (Radius-Limit 132) herausrutschen!
-  const dist = Math.sqrt(rx * rx + ry * ry);
-  if (dist > 1) {
-    rx /= dist;
-    ry /= dist;
-  }
-
-  pupilOffset.value = { x: rx * maxShift, y: ry * maxShift };
-}
-
-onMounted(() => {
-  window.addEventListener('mousemove', onMouseMove);
-});
-onUnmounted(() => {
-  window.removeEventListener('mousemove', onMouseMove);
-});
 </script>
 
 <template>
