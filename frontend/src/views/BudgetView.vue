@@ -1,16 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import type { Budget, BudgetExpense } from '../api/types';
-import { useTripStore } from '../stores/trip';
-import { useAuthStore } from '../stores/auth';
+import { onMounted, ref, watch } from 'vue';
 import { useSpotsStore } from '../stores/spots';
-import { useExcursionsStore } from '../stores/excursions';
 import { useBudgetStore } from '../stores/budget';
 import { useLiveSyncStore } from '../stores/liveSync';
-import { deriveTravelItems } from '../utils/deriveTravelItems';
-import { assignCategoryColors } from '../utils/categoryColors';
-import { toLocalDateString } from '../utils/dateFormat';
-import type { SettlementSuggestion } from '../utils/budgetBalances';
 import BudgetMeter from '../components/BudgetMeter.vue';
 import BudgetPotCard from '../components/BudgetPotCard.vue';
 import BudgetSettlementCard from '../components/BudgetSettlementCard.vue';
@@ -32,27 +24,16 @@ import EmptyState from '../components/primitives/EmptyState.vue';
 import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { useDraftAutosave } from '../composables/useDraftAutosave';
-import { useToast } from '../composables/useToast';
+import { useBudgetPotForms } from '../composables/useBudgetPotForms';
+import { useBudgetExpenseForms } from '../composables/useBudgetExpenseForms';
+import { useBudgetTransferForm } from '../composables/useBudgetTransferForm';
+import { useBudgetSources } from '../composables/useBudgetSources';
 
-const tripStore = useTripStore();
-const auth = useAuthStore();
 const spotsStore = useSpotsStore();
-const excursionsStore = useExcursionsStore();
 const budgetStore = useBudgetStore();
 const liveSync = useLiveSyncStore();
-const { showToast } = useToast();
-const tripId = tripStore.currentTripId as number;
-// Unterkunft ist seit der Verschmelzung in Spots (siehe Migrationskommentar in db/index.ts) ganz
-// normal ein Spot der Kategorie "Unterkunft" - kein eigener Fetch mehr nötig.
-const accommodations = computed(() => spotsStore.spots.filter((s) => s.category === 'Unterkunft'));
-// #176: keine eigene Reise-Etappen-Liste mehr, sondern aus role-getaggten Touren abgeleitet (siehe
-// utils/deriveTravelItems.ts) - excursionsStore lädt automatisch bei erster Verwendung.
-const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 const loading = ref(true);
 const highlightedIds = ref<Set<number>>(new Set());
-
-const today = () => toLocalDateString(new Date());
 
 async function load() {
   try {
@@ -73,285 +54,51 @@ onMounted(() => {
 
 watch(() => liveSync.domainVersion.budget, load);
 
-/** Bezahlungen, die automatisch aus einem Unterkunft-Spot oder einer Reise-Etappe (Tour mit
- *  gesetzter role) erzeugt wurden (siehe spots.ts/ideas.ts `planBudgetExpense`/
- *  `planIdeaBudgetExpense`), sind hier gemäß der Architekturregel aus Batch 3 nicht direkt
- *  editier-/löschbar – stattdessen springt man zur Ursprungssicht. Ein Unterkunft-Spot lebt seit der
- *  Verschmelzung (siehe Migrationskommentar in db/index.ts) in der normalen Spots-Sicht
- *  (/excursions) statt einer eigenen Seite, eine Reise-Etappe seit #176 als normale Tour in
- *  derselben Sicht (#196: keine eigene "Reise"-Gruppierung mehr) - beide per Hash-Sprung
- *  (hashHighlight.ts). */
-function autoSourceFor(expenseId: number): { label: string; path: string } | null {
-  const accommodation = accommodations.value.find((a) => a.budget_expense_id === expenseId);
-  if (accommodation) {
-    return { label: 'Zur Unterkunft', path: `/excursions#spot-${accommodation.id}` };
-  }
-  const travelItem = travelItems.value.find((t) => t.budget_expense_id === expenseId);
-  if (travelItem) {
-    return { label: 'Zur Reise', path: `/excursions#excursion-${travelItem.id}` };
-  }
-  return null;
-}
+// --- Töpfe, Ausgaben, Überweisungen & Quellen via Composables ---
+const {
+  newBudgetForm,
+  showNewBudgetForm,
+  addBudget,
+  closeNewBudgetForm,
+  editingBudget,
+  editBudgetForm,
+  startEditBudget,
+  closeEditBudgetForm,
+  submitEditBudget,
+  deleteEditingBudget,
+} = useBudgetPotForms();
 
-// --- Budgets (persönlich oder geteilt) ---
-const newBudgetForm = ref({
-  name: '',
-  kind: 'shared' as 'shared' | 'personal',
-  target_amount: '',
-});
-const showNewBudgetForm = ref(false);
-
-async function addBudget() {
-  if (!newBudgetForm.value.name.trim()) return;
-  await budgetStore.addBudget(tripId, {
-    name: newBudgetForm.value.name.trim(),
-    owner_id: newBudgetForm.value.kind === 'personal' ? auth.user?.id : undefined,
-    target_amount: newBudgetForm.value.target_amount
-      ? Number(newBudgetForm.value.target_amount)
-      : undefined,
-  });
-  newBudgetForm.value = { name: '', kind: 'shared', target_amount: '' };
-  showNewBudgetForm.value = false;
-}
-
-function closeNewBudgetForm() {
-  showNewBudgetForm.value = false;
-  newBudgetForm.value = { name: '', kind: 'shared', target_amount: '' };
-}
-
-const editingBudget = ref<Budget | null>(null);
-const editBudgetForm = ref({
-  name: '',
-  kind: 'shared' as 'shared' | 'personal',
-  target_amount: '',
-});
-
-function startEditBudget(budget: Budget) {
-  editingBudget.value = budget;
-  editBudgetForm.value = {
-    name:
-      budget.name === 'Gemeinsames Budget' && budgetStore.users.length <= 1
-        ? 'Hauptbudget'
-        : budget.name,
-    kind: budget.owner_id != null ? 'personal' : 'shared',
-    target_amount: budget.target_amount != null ? String(budget.target_amount) : '',
-  };
-}
-
-function closeEditBudgetForm() {
-  editingBudget.value = null;
-  editBudgetForm.value = { name: '', kind: 'shared', target_amount: '' };
-}
-
-async function submitEditBudget() {
-  if (!editingBudget.value || !editBudgetForm.value.name.trim()) return;
-  await budgetStore.updateBudget(editingBudget.value.id, {
-    name: editBudgetForm.value.name.trim(),
-    owner_id: editBudgetForm.value.kind === 'personal' ? auth.user?.id : null,
-    target_amount: editBudgetForm.value.target_amount
-      ? Number(editBudgetForm.value.target_amount)
-      : null,
-  });
-  editingBudget.value = null;
-}
-
-async function deleteEditingBudget() {
-  if (!editingBudget.value) return;
-  const id = editingBudget.value.id;
-  editingBudget.value = null;
-  await budgetStore.removeBudget(id);
-}
-
-// --- Ausgaben (Bezahlungen) ---
-const showExpenseForm = ref(false);
-const showExpenseDetails = ref(false);
-const emptyExpenseForm = () => ({
-  title: '',
-  category: '',
-  amount: '',
-  paid_by_user_id: '',
-  date: today(),
-  note: '',
-  budget_id: '',
-});
-const expenseForm = ref(emptyExpenseForm());
-
-const editingExpense = ref<BudgetExpense | null>(null);
-const isExpenseUploadingAttachments = ref(false);
-const showEditExpenseDetails = ref(false);
-const editExpenseForm = ref(emptyExpenseForm());
-
-const expenseDetailsCount = computed(() => {
-  let count = 0;
-  if (expenseForm.value.budget_id) count++;
-  if (expenseForm.value.note) count++;
-  return count > 0 ? count : undefined;
-});
-
-const editExpenseDetailsCount = computed(() => {
-  let count = 0;
-  if (editExpenseForm.value.budget_id) count++;
-  if (editExpenseForm.value.note) count++;
-  return count > 0 ? count : undefined;
-});
-
-// Entwurfs-Zwischenspeicherung (siehe composables/useDraftAutosave.ts) - nur für die Ausgaben-
-// Formulare (Titel/Notiz sind hier Freitext), nicht für Budget-Anlegen/Überweisung/Kategorie-
-// Zuteilung (kurze, einzelne Felder mit geringem Verlustrisiko).
-const newExpenseDraft = useDraftAutosave('budgetExpense:new', expenseForm, showExpenseForm);
-const editExpenseDraft = useDraftAutosave(
-  () => `budgetExpense:edit:${editingExpense.value?.id}`,
+const {
+  showExpenseForm,
+  showExpenseDetails,
+  expenseForm,
+  editingExpense,
+  isExpenseUploadingAttachments,
+  showEditExpenseDetails,
   editExpenseForm,
-  computed(() => editingExpense.value !== null)
-);
+  expenseDetailsCount,
+  editExpenseDetailsCount,
+  newExpenseDraft,
+  editExpenseDraft,
+  submitExpense,
+  closeExpenseForm,
+  discardNewExpenseDraft,
+  startEditExpense,
+  submitEditExpense,
+  closeEditExpenseForm,
+  discardEditExpenseDraft,
+} = useBudgetExpenseForms();
 
-watch(
-  () => [showExpenseForm.value, expenseForm.value.budget_id, expenseForm.value.note],
-  ([isOpen, budgetId, note]) => {
-    if (isOpen && (budgetId || note)) {
-      showExpenseDetails.value = true;
-    }
-  }
-);
+const {
+  showTransferForm,
+  showTransferDetails,
+  transferForm,
+  submitTransfer,
+  closeTransferForm,
+  useSettlementSuggestion,
+} = useBudgetTransferForm();
 
-function expenseToBody(f: ReturnType<typeof emptyExpenseForm>) {
-  const fallbackPaidBy = budgetStore.users.length === 1 ? budgetStore.users[0].id : auth.user?.id;
-  return {
-    trip_id: tripId,
-    title: f.title.trim(),
-    category: f.category || undefined,
-    amount: Number(f.amount),
-    paid_by_user_id: f.paid_by_user_id ? Number(f.paid_by_user_id) : fallbackPaidBy,
-    date: f.date || undefined,
-    note: f.note || undefined,
-    budget_id: f.budget_id ? Number(f.budget_id) : undefined,
-  };
-}
-
-async function submitExpense() {
-  if (!expenseForm.value.title.trim() || !expenseForm.value.amount) return;
-  await budgetStore.submitExpense(expenseToBody(expenseForm.value));
-  expenseForm.value = emptyExpenseForm();
-  showExpenseForm.value = false;
-  showExpenseDetails.value = false;
-  newExpenseDraft.clear();
-}
-
-function closeExpenseForm() {
-  showExpenseForm.value = false;
-  showExpenseDetails.value = false;
-  expenseForm.value = emptyExpenseForm();
-  newExpenseDraft.clear();
-}
-
-function discardNewExpenseDraft() {
-  expenseForm.value = emptyExpenseForm();
-  showExpenseDetails.value = false;
-  newExpenseDraft.clear();
-  showToast({ message: 'Entwurf verworfen.', type: 'info' });
-}
-
-function startEditExpense(expense: BudgetExpense) {
-  editExpenseForm.value = {
-    title: expense.title,
-    category: expense.category ?? '',
-    amount: String(expense.amount),
-    paid_by_user_id: expense.paid_by_user_id != null ? String(expense.paid_by_user_id) : '',
-    date: expense.date ?? today(),
-    note: expense.note ?? '',
-    budget_id: expense.budget_id != null ? String(expense.budget_id) : '',
-  };
-  showEditExpenseDetails.value = Boolean(expense.budget_id || expense.note);
-  editingExpense.value = expense;
-}
-
-async function submitEditExpense() {
-  if (
-    !editingExpense.value ||
-    isExpenseUploadingAttachments.value ||
-    !editExpenseForm.value.title.trim() ||
-    !editExpenseForm.value.amount
-  )
-    return;
-  await budgetStore.updateExpense(editingExpense.value.id, expenseToBody(editExpenseForm.value));
-  editExpenseDraft.clear();
-  editingExpense.value = null;
-  showEditExpenseDetails.value = false;
-}
-
-function closeEditExpenseForm() {
-  editExpenseDraft.clear();
-  editingExpense.value = null;
-  showEditExpenseDetails.value = false;
-}
-
-function discardEditExpenseDraft() {
-  if (!editingExpense.value) return;
-  startEditExpense(editingExpense.value);
-  editExpenseDraft.clear();
-  showToast({ message: 'Änderungen verworfen.', type: 'info' });
-}
-
-// --- Überweisungen ---
-const showTransferForm = ref(false);
-const showTransferDetails = ref(false);
-const emptyTransferForm = () => ({
-  from_user_id: '',
-  to_user_id: '',
-  amount: '',
-  date: today(),
-  note: '',
-});
-const transferForm = ref(emptyTransferForm());
-
-async function submitTransfer() {
-  if (
-    !transferForm.value.from_user_id ||
-    !transferForm.value.to_user_id ||
-    !transferForm.value.amount
-  )
-    return;
-  if (transferForm.value.from_user_id === transferForm.value.to_user_id) return;
-  await budgetStore.submitTransfer({
-    trip_id: tripId,
-    from_user_id: Number(transferForm.value.from_user_id),
-    to_user_id: Number(transferForm.value.to_user_id),
-    amount: Number(transferForm.value.amount),
-    date: transferForm.value.date || undefined,
-    note: transferForm.value.note || undefined,
-  });
-  transferForm.value = emptyTransferForm();
-  showTransferForm.value = false;
-  showTransferDetails.value = false;
-}
-
-function closeTransferForm() {
-  showTransferForm.value = false;
-  showTransferDetails.value = false;
-  transferForm.value = emptyTransferForm();
-}
-
-// Splitwise-artiger Ausgleichsvorschlag (siehe BudgetSettlementCard.vue): ein Klick befüllt das
-// Überweisungs-Formular direkt mit dem Vorschlag, statt die Zahlen manuell abtippen zu müssen.
-function useSettlementSuggestion(suggestion: SettlementSuggestion) {
-  transferForm.value = {
-    from_user_id: String(suggestion.from.id),
-    to_user_id: String(suggestion.to.id),
-    amount: suggestion.amount.toFixed(2),
-    date: today(),
-    note: '',
-  };
-  showTransferDetails.value = false;
-  showTransferForm.value = true;
-}
-
-// --- Kategorienfarben (konsistent über alle Budgets hinweg) ---
-const categoryColors = computed(() => {
-  const names = new Set<string>();
-  budgetStore.allocations.forEach((a) => names.add(a.category));
-  const sorted = [...names].sort((a, b) => a.localeCompare(b, 'de'));
-  return assignCategoryColors(sorted);
-});
+const { autoSourceFor, categoryColors } = useBudgetSources();
 </script>
 
 <template>
