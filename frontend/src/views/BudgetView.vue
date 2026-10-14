@@ -145,14 +145,14 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
               anlegen</Button
             >
           </div>
+          <p class="hint">Ganz einfach: ein Topf mit nur einer Gesamtsumme.</p>
           <p v-if="budgetStore.users.length > 1" class="hint">
-            Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
-            aufteilen, um daraus ein Gesamtbudget zusammenzustellen. Geteilte Töpfe sehen alle
-            Mitreisenden, private Töpfe nur du selbst.
+            Oder detaillierter: in Kategorien aufteilen, um daraus ein Gesamtbudget
+            zusammenzustellen. Geteilte Töpfe sehen alle Mitreisenden, private Töpfe nur du selbst.
           </p>
           <p v-else class="hint">
-            Ganz einfach: ein Topf mit nur einer Gesamtsumme. Oder detaillierter: in Kategorien
-            aufteilen, um daraus ein Gesamtbudget zusammenzustellen.
+            Oder detaillierter: in Kategorien aufteilen, um daraus ein Gesamtbudget
+            zusammenzustellen.
           </p>
 
           <TransitionGroup tag="div" name="list" class="pot-grid">
