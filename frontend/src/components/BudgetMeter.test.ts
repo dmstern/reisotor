@@ -93,7 +93,8 @@ describe('BudgetMeter', () => {
     cleanUp();
   });
 
-  it('renders full danger bar (100%) and warning badge when budget is exceeded', () => {
+  it('scales the danger bar by the relative overspend percentage up to 100%', () => {
+    // 15 % Überschreitung: 30 € über 200 € -> 15 % gefüllt
     const { container, cleanUp } = mountMeter({
       label: 'Transport',
       spent: 230,
@@ -102,7 +103,7 @@ describe('BudgetMeter', () => {
 
     const fill = container.querySelector('.fill') as HTMLElement;
     expect(fill).not.toBeNull();
-    expect(fill.style.width).toBe('100%');
+    expect(fill.style.width).toBe('15%');
     expect(fill.style.background).toBe('var(--color-danger)');
     expect(fill.classList.contains('fill-over')).toBe(true);
 
@@ -111,6 +112,38 @@ describe('BudgetMeter', () => {
     expect(badge?.textContent).toContain('30.00\u00A0€ über Budget');
 
     cleanUp();
+  });
+
+  it('renders 50% fill at 50% overspend and caps at 100% at or above 100% overspend', () => {
+    // 50 % Überschreitung: 50 € über 100 € -> 50 %
+    const meter50 = mountMeter({
+      label: 'Hotel',
+      spent: 150,
+      target: 100,
+    });
+    const fill50 = meter50.container.querySelector('.fill') as HTMLElement;
+    expect(fill50.style.width).toBe('50%');
+    meter50.cleanUp();
+
+    // 100 % Überschreitung: 100 € über 100 € -> 100 %
+    const meter100 = mountMeter({
+      label: 'Hotel',
+      spent: 200,
+      target: 100,
+    });
+    const fill100 = meter100.container.querySelector('.fill') as HTMLElement;
+    expect(fill100.style.width).toBe('100%');
+    meter100.cleanUp();
+
+    // 150 % Überschreitung: 150 € über 100 € -> auf 100 % gedeckelt
+    const meter150 = mountMeter({
+      label: 'Hotel',
+      spent: 250,
+      target: 100,
+    });
+    const fill150 = meter150.container.querySelector('.fill') as HTMLElement;
+    expect(fill150.style.width).toBe('100%');
+    meter150.cleanUp();
   });
 
   it('supports fill mode for checklist counts', () => {

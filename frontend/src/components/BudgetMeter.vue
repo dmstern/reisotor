@@ -80,8 +80,10 @@ const fillPercent = computed(() => {
   if (!hasTarget.value) return 100;
   if (resolvedMode.value === 'drain') {
     if (isOver.value) {
-      // Alarmsignal bei Budgetüberschreitung: Voller roter Balken
-      return 100;
+      // Füllstand zeigt das relative Ausmaß der Budgetüberschreitung:
+      // z. B. 50 % Überschreitung = 50 % gefüllt, 100 % (oder mehr) Überschreitung = 100 % gefüllt.
+      const overRatio = overBy.value / props.target;
+      return Math.max(2, Math.min(100, overRatio * 100));
     }
     // Entleert sich mit Ausgaben (100% -> 0%)
     return Math.max(0, Math.min(100, remainingRatio.value * 100));
@@ -315,6 +317,7 @@ function fmt(n: number) {
 }
 
 .fill.fill-over {
+  min-width: 6px;
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,
