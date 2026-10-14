@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { createApp, h, markRaw } from 'vue';
 import { renderToString } from 'vue/server-renderer';
-import { IconCalendarEvent, IconCoin } from '@tabler/icons-vue';
+import { IconCalendarEvent, IconPigMoney } from '@tabler/icons-vue';
 import LandingScrollyShowcase from './LandingScrollyShowcase.vue';
 import type { ScrollyFeature } from '../../composables/useLandingFeatures';
 
@@ -29,7 +29,7 @@ const mockFeatures: ScrollyFeature[] = [
     title: 'Budget',
     description: 'Desc 2',
     highlights: ['Point 2'],
-    icon: markRaw(IconCoin),
+    icon: markRaw(IconPigMoney),
     color: '#10b981',
     iconBg: 'rgba(16, 185, 129, 0.1)',
     screenshotLight: '/screen-2-light.png',

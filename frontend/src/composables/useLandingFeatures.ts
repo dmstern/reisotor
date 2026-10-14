@@ -1,7 +1,7 @@
 import type { Component } from 'vue';
 import {
   IconCalendarEvent,
-  IconCoin,
+  IconPigMoney,
   IconListCheck,
   IconMapPin,
   IconBook,
@@ -97,7 +97,7 @@ export function getScrollyFeatures(baseUrl: string): ScrollyFeature[] {
         'Automatischer Verrechnungs- und Ausgleichsrechner',
         'Kategoriestatistiken & Ausgabenverlauf',
       ],
-      icon: IconCoin,
+      icon: IconPigMoney,
       color: 'var(--color-success)',
       iconBg: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
       screenshotLight: `${baseUrl}landing/screenshot-budget-light.png`,

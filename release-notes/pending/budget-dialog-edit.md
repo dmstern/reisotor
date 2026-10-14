@@ -16,3 +16,4 @@
 - 📉 **Intuitiver Budget-Verlauf**: Budget-Balken visualisieren nun das verbleibende Budget statt der Ausgaben – sie starten voll und leeren sich mit jeder getätigten Ausgabe bis zum leeren Balken bei vollständiger Ausschöpfung.
 - 🚦 **Klare Ampel-Signalfarben**: Budget-Balken und Status-Pillen nutzen nun verlässliche Signalfarben statt willkürlicher Kategorietöne oder der Urlaubs-Brandfarbe – Grün für ausreichendes Restbudget, Orange bei weniger als 20 % verbleibend und Rot bei Überschreitung.
 - 🏷️ **Kategorie-Icons statt Farbpunkten**: Neben den Budgetzeilen wird nun direkt das jeweilige Kategorie- oder Budget-Symbol angezeigt, abgestimmt auf deine persönliche Icon-Einstellung.
+- 🐷 **Neues Sparschwein-Icon für Budgets**: Der Budget-Bereich wird in der Navigation und auf dem Dashboard ab sofort durch ein währungsneutrales Sparschwein-Symbol (Tabler-Icon) bzw. ein passendes Sparschwein-Emoji dargestellt – anstelle des bisherigen Dollar-Zeichens.

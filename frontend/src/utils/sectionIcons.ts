@@ -12,8 +12,7 @@ import {
   IconBackpack,
   IconPlane,
   IconPlaneFilled,
-  IconCoin,
-  IconCoinFilled,
+  IconPigMoney,
   IconNotebook,
   IconNotes,
 } from '@tabler/icons-vue';
@@ -47,7 +46,7 @@ export const SECTION_ICONS: Record<SectionKey, string> = {
   todo: '📋',
   excursions: '🎒',
   travel: '✈️',
-  budget: '💶',
+  budget: '🐷',
   diary: '📔',
   notes: '📝',
 };
@@ -85,7 +84,7 @@ export const SECTION_ICON_DEFS: Record<SectionKey, IconDef> = {
   },
   excursions: { id: 'backpack', emoji: SECTION_ICONS.excursions, outline: IconBackpack },
   travel: { id: 'plane', emoji: SECTION_ICONS.travel, outline: IconPlane, filled: IconPlaneFilled },
-  budget: { id: 'coin', emoji: SECTION_ICONS.budget, outline: IconCoin, filled: IconCoinFilled },
+  budget: { id: 'pig-money', emoji: SECTION_ICONS.budget, outline: IconPigMoney },
   diary: { id: 'notebook', emoji: SECTION_ICONS.diary, outline: IconNotebook },
   notes: { id: 'notes', emoji: SECTION_ICONS.notes, outline: IconNotes },
 };
