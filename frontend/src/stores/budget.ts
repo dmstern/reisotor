@@ -241,11 +241,9 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   async function removeBudget(id: number) {
-    const { showToast } = useToast();
     await api.delete(`/budget/budgets/${id}`);
     budgets.value = budgets.value.filter((b) => b.id !== id);
     allocations.value = allocations.value.filter((a) => a.budget_id !== id);
-    showToast({ message: 'Budget gelöscht. Es befindet sich nun im Papierkorb.', type: 'info' });
   }
 
   async function saveAllocation(budgetId: number, category: string, amount: number) {

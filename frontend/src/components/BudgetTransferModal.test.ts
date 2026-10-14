@@ -5,6 +5,13 @@ import { createPinia, setActivePinia } from 'pinia';
 import BudgetTransferModal from './BudgetTransferModal.vue';
 import { useBudgetStore } from '../stores/budget';
 
+const mockShowToast = vi.fn();
+vi.mock('../composables/useToast', () => ({
+  useToast: () => ({
+    showToast: mockShowToast,
+  }),
+}));
+
 vi.mock('../api/client', () => ({
   api: {
     get: vi.fn().mockImplementation((url: string) => {
@@ -28,6 +35,7 @@ describe('BudgetTransferModal', () => {
   let store: ReturnType<typeof useBudgetStore>;
 
   beforeEach(() => {
+    mockShowToast.mockClear();
     vi.stubGlobal('EventSource', MockEventSource);
     pinia = createPinia();
     setActivePinia(pinia);
@@ -48,6 +56,7 @@ describe('BudgetTransferModal', () => {
     suggestion?: any;
     'onUpdate:modelValue'?: (v: boolean) => void;
     onSubmitted?: () => void;
+    onSaved?: () => void;
     onDeleted?: () => void;
   }) {
     const container = document.createElement('div');
@@ -141,6 +150,69 @@ describe('BudgetTransferModal', () => {
 
     expect(removeSpy).toHaveBeenCalledWith(12);
     expect(onDeleted).toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+    });
+
+    cleanUp();
+  });
+
+  it('shows toast "Überweisung eingetragen." when submitting a new transfer', async () => {
+    const submitSpy = vi.spyOn(store, 'submitTransfer').mockResolvedValue({ id: 99 } as any);
+    const onSaved = vi.fn();
+
+    const { cleanUp } = mountModal({
+      modelValue: true,
+      suggestion: {
+        from: { id: 1, username: 'Alice', avatar: '👩' },
+        to: { id: 2, username: 'Bob', avatar: '👨' },
+        amount: 25,
+      },
+      onSaved,
+    });
+    await nextTick();
+
+    const form = document.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(submitSpy).toHaveBeenCalled();
+    expect(onSaved).toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Überweisung eingetragen.',
+      type: 'success',
+    });
+
+    cleanUp();
+  });
+
+  it('shows toast "Überweisung aktualisiert." when submitting an edited transfer', async () => {
+    const transfer = {
+      id: 12,
+      trip_id: 1,
+      from_user_id: 1,
+      to_user_id: 2,
+      amount: 120,
+      date: '2026-11-01',
+      note: 'Hotel',
+    };
+    const updateSpy = vi.spyOn(store, 'updateTransfer').mockResolvedValue({ id: 12 } as any);
+    const onSaved = vi.fn();
+
+    const { cleanUp } = mountModal({ modelValue: true, transfer, onSaved });
+    await nextTick();
+
+    const form = document.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(updateSpy).toHaveBeenCalled();
+    expect(onSaved).toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Überweisung aktualisiert.',
+      type: 'success',
+    });
 
     cleanUp();
   });

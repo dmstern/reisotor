@@ -25,7 +25,6 @@ const store = useBudgetStore();
       class="row"
       :class="{
         'new-highlight': highlightedIds.has(e.id),
-        'is-income-row': e.amount < 0,
       }"
     >
       <div class="row-main">

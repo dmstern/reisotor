@@ -4,6 +4,15 @@ import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import BudgetPotModal from './BudgetPotModal.vue';
 import type { Budget } from '../api/types';
+import { useBudgetStore } from '../stores/budget';
+import { useTripStore } from '../stores/trip';
+
+const mockShowToast = vi.fn();
+vi.mock('../composables/useToast', () => ({
+  useToast: () => ({
+    showToast: mockShowToast,
+  }),
+}));
 
 vi.mock('../api/client', () => ({
   api: {
@@ -25,6 +34,7 @@ class MockEventSource {
 
 describe('BudgetPotModal', () => {
   beforeEach(() => {
+    mockShowToast.mockClear();
     vi.stubGlobal('EventSource', MockEventSource);
     setActivePinia(createPinia());
   });
@@ -41,6 +51,11 @@ describe('BudgetPotModal', () => {
     onDeleted?: () => void;
   }) {
     const pinia = createPinia();
+    setActivePinia(pinia);
+    const store = useBudgetStore();
+    const tripStore = useTripStore();
+    tripStore.currentTripId = 1;
+
     const container = document.createElement('div');
     document.body.appendChild(container);
     const app = createApp({
@@ -50,6 +65,7 @@ describe('BudgetPotModal', () => {
     app.mount(container);
     return {
       container,
+      store,
       cleanUp: () => {
         app.unmount();
         container.remove();
@@ -101,6 +117,85 @@ describe('BudgetPotModal', () => {
     // Ensure legacy dollar icon (tabler-icon-coin) is NOT present
     const dollarIcon = document.querySelector('.tabler-icon-coin');
     expect(dollarIcon).toBeNull();
+
+    cleanUp();
+  });
+
+  it('shows toast "Budget angelegt." when submitting a new budget', async () => {
+    const onSaved = vi.fn();
+    const { cleanUp, store } = mountModal({ modelValue: true, budget: null, onSaved });
+    const addSpy = vi.spyOn(store, 'addBudget').mockResolvedValue({ id: 10 } as any);
+    await nextTick();
+
+    const nameInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+    nameInput.value = 'Mietwagen';
+    nameInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    const form = document.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await nextTick();
+
+    expect(addSpy).toHaveBeenCalled();
+    expect(onSaved).toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Budget angelegt.',
+      type: 'success',
+    });
+
+    cleanUp();
+  });
+
+  it('shows toast "Budget aktualisiert." when updating an existing budget', async () => {
+    const mockBudget: Budget = {
+      id: 5,
+      trip_id: 1,
+      name: 'Verpflegung',
+      owner_id: null,
+      target_amount: 300,
+    };
+    const onSaved = vi.fn();
+    const { cleanUp, store } = mountModal({ modelValue: true, budget: mockBudget, onSaved });
+    const updateSpy = vi.spyOn(store, 'updateBudget').mockResolvedValue({ id: 5 } as any);
+    await nextTick();
+
+    const form = document.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await nextTick();
+
+    expect(updateSpy).toHaveBeenCalled();
+    expect(onSaved).toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Budget aktualisiert.',
+      type: 'success',
+    });
+
+    cleanUp();
+  });
+
+  it('shows toast "Budget gelöscht. Es befindet sich nun im Papierkorb." when deleting a budget', async () => {
+    const mockBudget: Budget = {
+      id: 5,
+      trip_id: 1,
+      name: 'Verpflegung',
+      owner_id: null,
+      target_amount: 300,
+    };
+    const onDeleted = vi.fn();
+    const { cleanUp, store } = mountModal({ modelValue: true, budget: mockBudget, onDeleted });
+    const removeSpy = vi.spyOn(store, 'removeBudget').mockResolvedValue(undefined as any);
+    await nextTick();
+
+    const deleteBtn = document.querySelector('button.btn--danger') as HTMLButtonElement;
+    deleteBtn.click();
+    await nextTick();
+
+    expect(removeSpy).toHaveBeenCalledWith(5);
+    expect(onDeleted).toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Budget gelöscht. Es befindet sich nun im Papierkorb.',
+      type: 'info',
+    });
 
     cleanUp();
   });

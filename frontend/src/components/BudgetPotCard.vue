@@ -17,7 +17,6 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
   budget: Budget;
-  categoryColors?: Map<string, string>;
 }>();
 
 const emit = defineEmits<{

@@ -67,7 +67,12 @@ function handleClose() {
 }
 
 async function handleSubmit() {
+  const wasEdit = isEdit.value;
   await submitTransfer();
+  showToast({
+    message: wasEdit ? 'Überweisung aktualisiert.' : 'Überweisung eingetragen.',
+    type: 'success',
+  });
   emit('update:modelValue', false);
   emit('submitted');
   emit('saved');

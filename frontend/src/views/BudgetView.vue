@@ -39,7 +39,7 @@ const showTransferModal = ref(false);
 const editingTransfer = ref<BudgetTransfer | null>(null);
 const settlementSuggestion = ref<SettlementSuggestion | null>(null);
 
-const { autoSourceFor, categoryColors } = useBudgetSources();
+const { autoSourceFor } = useBudgetSources();
 
 async function load() {
   try {
@@ -160,7 +160,6 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
               v-for="budget in budgetStore.budgets"
               :key="budget.id"
               :budget="budget"
-              :category-colors="categoryColors"
               @edit="openEditBudget"
             />
             <EmptyState v-if="!budgetStore.budgets.length" key="empty">

@@ -10,6 +10,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { useBudgetStore } from '../stores/budget';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
+import { useToast } from '../composables/useToast';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 const budgetStore = useBudgetStore();
 const auth = useAuthStore();
 const tripStore = useTripStore();
+const { showToast } = useToast();
 
 const form = ref({
   name: '',
@@ -69,6 +71,7 @@ async function handleSubmit() {
       owner_id: form.value.kind === 'personal' ? auth.user?.id : null,
       target_amount: form.value.target_amount ? Number(form.value.target_amount) : null,
     });
+    showToast({ message: 'Budget aktualisiert.', type: 'success' });
   } else {
     const tripId = tripStore.currentTripId as number;
     await budgetStore.addBudget(tripId, {
@@ -76,6 +79,7 @@ async function handleSubmit() {
       owner_id: form.value.kind === 'personal' ? auth.user?.id : undefined,
       target_amount: form.value.target_amount ? Number(form.value.target_amount) : undefined,
     });
+    showToast({ message: 'Budget angelegt.', type: 'success' });
   }
 
   emit('update:modelValue', false);
@@ -85,6 +89,10 @@ async function handleSubmit() {
 async function handleDelete() {
   if (props.budget) {
     await budgetStore.removeBudget(props.budget.id);
+    showToast({
+      message: 'Budget gelöscht. Es befindet sich nun im Papierkorb.',
+      type: 'info',
+    });
   }
   emit('update:modelValue', false);
   emit('deleted');

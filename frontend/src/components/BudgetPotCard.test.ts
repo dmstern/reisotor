@@ -16,14 +16,11 @@ describe('BudgetPotCard', () => {
     setActivePinia(pinia);
   });
 
-  function mountCard(
-    budget: Budget,
-    categoryColors: Map<string, string> = new Map([['Essen', '#3b82f6']])
-  ) {
+  function mountCard(budget: Budget) {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const app = createApp({
-      render: () => h(BudgetPotCard, { budget, categoryColors }),
+      render: () => h(BudgetPotCard, { budget }),
     });
     app.use(pinia);
     app.mount(container);
