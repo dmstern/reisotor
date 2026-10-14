@@ -154,7 +154,11 @@ export const useBudgetStore = defineStore('budget', () => {
       .filter((e) => {
         if ((e.category ?? '').trim().toLowerCase() !== normCategory) return false;
         if (budget.owner_id == null) {
-          return isSharedExpense(e, budgets.value);
+          if (!isSharedExpense(e, budgets.value)) return false;
+          // Wenn eine Ausgabe explizit einem Budget zugeordnet ist, fließt sie vorrangig
+          // in genau diesen Topf. Nur wenn budget_id null ist, greift der automatische Kategorie-Fallback.
+          if (e.budget_id != null) return e.budget_id === budget.id;
+          return true;
         } else {
           if (isSharedExpense(e, budgets.value)) return false;
           if (e.budget_id != null) return e.budget_id === budget.id;

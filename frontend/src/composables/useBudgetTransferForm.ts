@@ -2,6 +2,7 @@ import { ref, type Ref } from 'vue';
 import type { BudgetTransfer } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import { useTripStore } from '../stores/trip';
+import { useToast } from './useToast';
 import { toLocalDateString } from '../utils/dateFormat';
 import type { SettlementSuggestion } from '../utils/budgetBalances';
 
@@ -26,6 +27,7 @@ export function createEmptyTransferForm(): BudgetTransferFormData {
 export function useBudgetTransferForm(options?: { tripId?: number | Ref<number> }) {
   const tripStore = useTripStore();
   const budgetStore = useBudgetStore();
+  const { showToast } = useToast();
 
   const getTripId = (): number => {
     if (options?.tripId !== undefined) {
@@ -41,14 +43,20 @@ export function useBudgetTransferForm(options?: { tripId?: number | Ref<number> 
   const editingTransfer = ref<BudgetTransfer | null>(null);
   const transferForm = ref<BudgetTransferFormData>(createEmptyTransferForm());
 
-  async function submitTransfer() {
+  async function submitTransfer(): Promise<boolean> {
     if (
       !transferForm.value.from_user_id ||
       !transferForm.value.to_user_id ||
       !transferForm.value.amount
     )
-      return;
-    if (transferForm.value.from_user_id === transferForm.value.to_user_id) return;
+      return false;
+    if (transferForm.value.from_user_id === transferForm.value.to_user_id) {
+      showToast({
+        message: 'Sender und Empfänger dürfen nicht identisch sein.',
+        type: 'warning',
+      });
+      return false;
+    }
 
     if (editingTransfer.value) {
       await budgetStore.updateTransfer(editingTransfer.value.id, {
@@ -73,6 +81,7 @@ export function useBudgetTransferForm(options?: { tripId?: number | Ref<number> 
     transferForm.value = createEmptyTransferForm();
     showTransferForm.value = false;
     showTransferDetails.value = false;
+    return true;
   }
 
   function closeTransferForm() {

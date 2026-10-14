@@ -49,13 +49,22 @@ const store = useBudgetStore();
     <ul class="balance-list">
       <li v-for="b in store.balances" :key="b.user.id" class="balance-row">
         <span class="balance-user">{{ b.user.avatar }} {{ b.user.username }}</span>
-        <Badge :variant="b.net >= 0 ? 'success' : 'danger'">
+        <Badge :variant="Math.abs(b.net) < 0.01 ? 'default' : b.net > 0 ? 'success' : 'danger'">
           <AppIcon
-            :icon="b.net >= 0 ? ACTION_ICONS.cashBanknoteMoveBack : ACTION_ICONS.cashMove"
+            :icon="
+              Math.abs(b.net) < 0.01
+                ? ACTION_ICONS.done
+                : b.net > 0
+                  ? ACTION_ICONS.cashBanknoteMoveBack
+                  : ACTION_ICONS.cashMove
+            "
             :size="12"
             group="actions"
           />
-          {{ b.net >= 0 ? 'bekommt' : 'schuldet' }} {{ Math.abs(b.net).toFixed(2) }}&nbsp;€
+          <template v-if="Math.abs(b.net) < 0.01"> 0,00&nbsp;€ ausgeglichen </template>
+          <template v-else>
+            {{ b.net > 0 ? 'bekommt' : 'schuldet' }} {{ Math.abs(b.net).toFixed(2) }}&nbsp;€
+          </template>
         </Badge>
       </li>
     </ul>

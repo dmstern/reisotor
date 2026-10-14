@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { effectiveBudgetTarget, grandTotalTarget } from './budgetTargets';
 import type { Budget, BudgetAllocation } from '../api/types';
 
-function budget(id: number, targetAmount: number | null): Budget {
-  return { id, trip_id: 1, name: 'Topf', owner_id: null, target_amount: targetAmount };
+function budget(id: number, targetAmount: number | null, ownerId: number | null = null): Budget {
+  return { id, trip_id: 1, name: 'Topf', owner_id: ownerId, target_amount: targetAmount };
 }
 
 function allocation(budgetId: number, category: string, amount: number): BudgetAllocation {
@@ -40,6 +40,15 @@ describe('grandTotalTarget', () => {
     const budgets = [budget(1, 500), budget(2, null)];
     const allocations = [allocation(2, 'Essen', 100), allocation(2, 'Transport', 50)];
     expect(grandTotalTarget(budgets, allocations)).toBe(650);
+  });
+
+  it('excludes private budgets from grandTotalTarget (only sums shared budgets)', () => {
+    const sharedSimple = budget(1, 500, null);
+    const sharedDetailed = budget(2, null, null);
+    const privateBudget = budget(3, 200, 42); // Privates Budget von User 42
+    const allocations = [allocation(2, 'Essen', 100), allocation(3, 'Taschengeld', 200)];
+    // Nur Topf 1 (500) und Topf 2 (100) dürfen zählen = 600, nicht 800
+    expect(grandTotalTarget([sharedSimple, sharedDetailed, privateBudget], allocations)).toBe(600);
   });
 
   it('returns 0 for an empty list of budgets', () => {

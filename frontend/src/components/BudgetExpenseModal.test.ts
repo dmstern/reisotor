@@ -172,4 +172,97 @@ describe('BudgetExpenseModal', () => {
 
     cleanUp();
   });
+
+  it('allows choosing "Gemeinsam (Reisekasse / Barkasse)" for expenses and submits with paid_by_user_id null', async () => {
+    const store = useBudgetStore();
+    store.users = [
+      { id: 1, username: 'Alice', avatar: '👩' },
+      { id: 2, username: 'Bob', avatar: '👨' },
+    ];
+    const submitSpy = vi.spyOn(store, 'submitExpense').mockResolvedValue({} as any);
+
+    const { cleanUp } = mountModal({ modelValue: true, expense: null });
+    await nextTick();
+
+    const titleInput = document.querySelector('input[placeholder*="Titel"]') as HTMLInputElement;
+    titleInput.value = 'Gruppentickets';
+    titleInput.dispatchEvent(new Event('input'));
+
+    const amountInput = document.querySelector('input[type="number"]') as HTMLInputElement;
+    amountInput.value = '60';
+    amountInput.dispatchEvent(new Event('input'));
+
+    const paidBySelect = document.querySelectorAll('select')[0] as HTMLSelectElement;
+    expect(paidBySelect).not.toBeNull();
+    // Prüfen, ob die Option für gemeinsame Reisekasse/Barkasse vorhanden ist
+    const jointOption = Array.from(paidBySelect.options).find((opt) => opt.value === '');
+    expect(jointOption?.text).toContain('Gemeinsam (Reisekasse / Barkasse)');
+
+    paidBySelect.value = '';
+    paidBySelect.dispatchEvent(new Event('change'));
+
+    const form = document.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    expect(submitSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Gruppentickets',
+        amount: 60,
+        paid_by_user_id: null,
+      })
+    );
+
+    cleanUp();
+  });
+
+  it('locks paid_by_user_id to owner and disables the select when a private pot is selected', async () => {
+    const store = useBudgetStore();
+    store.users = [
+      { id: 1, username: 'Alice', avatar: '👩' },
+      { id: 2, username: 'Bob', avatar: '👨' },
+    ];
+    store.budgets = [
+      { id: 10, trip_id: 1, name: 'Bobs Taschengeld', owner_id: 2, target_amount: 100 },
+    ];
+    const submitSpy = vi.spyOn(store, 'submitExpense').mockResolvedValue({} as any);
+
+    const { cleanUp } = mountModal({ modelValue: true, expense: null });
+    await nextTick();
+
+    const titleInput = document.querySelector('input[placeholder*="Titel"]') as HTMLInputElement;
+    titleInput.value = 'Souvenir für Bob';
+    titleInput.dispatchEvent(new Event('input'));
+
+    const amountInput = document.querySelector('input[type="number"]') as HTMLInputElement;
+    amountInput.value = '25';
+    amountInput.dispatchEvent(new Event('input'));
+
+    // Details ausklappen und Budget 10 auswählen
+    const budgetSelect = document.querySelectorAll('select')[1] as HTMLSelectElement;
+    expect(budgetSelect).not.toBeNull();
+    budgetSelect.value = '10';
+    budgetSelect.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    // Der "Bezahlt von"-Select muss nun auf Bob (User 2) fixiert und disabled sein
+    const paidBySelect = document.querySelectorAll('select')[0] as HTMLSelectElement;
+    expect(paidBySelect.disabled).toBe(true);
+    expect(paidBySelect.value).toBe('2');
+
+    const form = document.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    expect(submitSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Souvenir für Bob',
+        amount: 25,
+        paid_by_user_id: 2,
+        budget_id: 10,
+      })
+    );
+
+    cleanUp();
+  });
 });
