@@ -206,6 +206,7 @@
   /* Semantische Oberflächen-/Akzent-Töne für wiederkehrende Pastell-Hintergründe */
   --color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   --color-hover: #f4f1ec;
+  --color-surface-sunken: #f4f1eb;
   --color-highlight: #fff4e8;
   --color-highlight-border: #f0d3ac;
   --color-accent-secondary: #485acf;
@@ -434,6 +435,7 @@
 
     --color-primary-tint: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
     --color-hover: #2a2823;
+    --color-surface-sunken: #1d1c1a;
     --color-highlight: #332a1c;
     --color-highlight-border: #5c4a2c;
     --color-accent-secondary: #8b98f0;
@@ -500,6 +502,7 @@
 
   --color-primary-tint: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
   --color-hover: #2a2823;
+  --color-surface-sunken: #1d1c1a;
   --color-highlight: #332a1c;
   --color-highlight-border: #5c4a2c;
   --color-accent-secondary: #8b98f0;
