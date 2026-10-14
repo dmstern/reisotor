@@ -5,8 +5,7 @@ import {
   IconClockFilled,
   IconUser,
   IconUserFilled,
-  IconCoin,
-  IconCoinFilled,
+  IconCoins,
   IconTag,
   IconTagFilled,
   IconUsersGroup,
@@ -39,8 +38,8 @@ import type { IconDef } from './icon';
 // eingetippten Emoji-Literale (siehe DESIGN.md "Formularfelder") an allen ~109 Aufrufstellen.
 // IconDefs statt einzelner Icon-Komponenten, damit dieselbe Auflösung wie überall sonst (AppIcon.vue,
 // utils/icon.ts) gilt. Manche Konzepte teilen sich absichtlich dieselbe Tabler-Komponente wie eine
-// der 5 Kategorie-Registries (z. B. 'date' = SECTION_ICON_DEFS-ähnliches Calendar, 'amount' = Coin
-// wie budget), damit dasselbe Konzept app-weit nicht mit unterschiedlichen Icons auseinanderläuft.
+// der 5 Kategorie-Registries (z. B. 'date' = SECTION_ICON_DEFS-ähnliches Calendar, 'amount' = Coins
+// für währungsneutrale Beträge/Budgetziele), damit dasselbe Konzept app-weit nicht mit unterschiedlichen Icons auseinanderläuft.
 export type FormFieldIconKey =
   | 'title'
   | 'date'
@@ -75,7 +74,7 @@ export const FORM_FIELD_ICONS: Record<FormFieldIconKey, IconDef> = {
   time: { id: 'clock', emoji: '🕒', outline: IconClock, filled: IconClockFilled },
   note: { id: 'notes', emoji: '📝', outline: IconNotes },
   person: { id: 'user', emoji: '🧑', outline: IconUser, filled: IconUserFilled },
-  amount: { id: 'coin', emoji: '💶', outline: IconCoin, filled: IconCoinFilled },
+  amount: { id: 'coins', emoji: '🪙', outline: IconCoins },
   category: { id: 'tag', emoji: '🏷️', outline: IconTag, filled: IconTagFilled },
   shared: { id: 'users-group', emoji: '🤝', outline: IconUsersGroup },
   maps: { id: 'map-2', emoji: '🗺️', outline: IconMap2 },

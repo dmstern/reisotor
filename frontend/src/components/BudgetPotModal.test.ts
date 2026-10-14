@@ -3,7 +3,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import BudgetPotModal from './BudgetPotModal.vue';
-import { useBudgetStore } from '../stores/budget';
 import type { Budget } from '../api/types';
 
 vi.mock('../api/client', () => ({
@@ -88,6 +87,20 @@ describe('BudgetPotModal', () => {
 
     const deleteBtn = document.querySelector('button.btn--danger');
     expect(deleteBtn).not.toBeNull();
+
+    cleanUp();
+  });
+
+  it('renders currency-neutral coins icon for Gesamtziel instead of a dollar sign', async () => {
+    const { cleanUp } = mountModal({ modelValue: true, budget: null });
+    await nextTick();
+
+    const coinsIcon = document.querySelector('.tabler-icon-coins');
+    expect(coinsIcon).not.toBeNull();
+
+    // Ensure legacy dollar icon (tabler-icon-coin) is NOT present
+    const dollarIcon = document.querySelector('.tabler-icon-coin');
+    expect(dollarIcon).toBeNull();
 
     cleanUp();
   });
