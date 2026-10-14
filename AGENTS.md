@@ -54,10 +54,15 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
   - **Refactoring-Workflow (1 PR & 1 Worktree, Frischer Chat pro Phase):**
     - Für das gesamte Refactoring einer Komponente wird **ein gemeinsamer Branch/Worktree** und **ein einziger PR** genutzt.
     - Zur Schonung des Kontextfensters und Vermeidung von Fehlern läuft **jede Phase in einem separaten, frischen Chat**.
+    - **Single Source of Truth im PR (Cross-Session-Gedächtnis):**
+      - **Phase 0 initialisiert den PR:** Phase 0 committet die Triage (z. B. `git commit --allow-empty -m "refactor(<scope>): phase 0 - triage & target architecture assessment"`) und legt sofort per `gh pr create --draft` den zentralen PR an. Die PR-Beschreibung enthält die maßgeschneiderte Checkliste (geplante vs. übersprungene Phasen) und das Zielbild.
+      - **Pre-Flight für Folgesessions (`gh pr view` Pflicht):** Jeder Folge-Agent (Phase 1 bis 4) MUSS zu Beginn zwingend `gh pr view` ausführen, um die Triage-Vorgaben und den festgelegten Phasen-Pfad einzulesen.
+      - **Skip-Guard in Phase 2:** Wurde Phase 2 in Phase 0 als übersprungen deklariert (z. B. wegen hoher SVG-/Scoped-CSS-Kopplung), bricht Phase 2 sofort defensiv ab und verweist auf Phase 3.
+      - **Handoff-Intelligenz:** Ist die Folgephase laut PR übersprungen, empfiehlt der Agent im Handoff-Trigger direkt die nächste aktive Phase (z. B. Phase 3 statt Phase 2).
     - **Pflicht nach jeder Phase:**
       1. Semantischer Commit für die Phase.
       2. PR-Beschreibung aktualisieren (`gh pr edit` mit Checkliste, Vorher/Nachher-Zeilen und Zwischenstand).
-      3. Im Chat zwingend den **nächsten Kurz-Trigger** prominent ausgeben (z. B. `👉 Nächster Schritt im frischen Chat: Refactor Phase 2: <datei>`).
+      3. Im Chat zwingend den **nächsten aktiven Kurz-Trigger** prominent ausgeben (z. B. `👉 Nächster Schritt im frischen Chat: Refactor Phase 3: <datei>`).
 
 ## Typecheck, Linting & Formatting
 

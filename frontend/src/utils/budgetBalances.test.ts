@@ -188,6 +188,24 @@ describe('computeBalances', () => {
     expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(0);
   });
 
+  it('handles shared expenses paid jointly from kitty (paid_by_user_id null) without creating debts', () => {
+    // Ausgabe bezahlt aus der gemeinsamen Reisekasse (Barkasse)
+    const jointExpense: BudgetExpense = {
+      id: 100,
+      trip_id: 1,
+      title: 'Gemeinsame Tickets aus Barkasse',
+      category: null,
+      amount: 80,
+      paid_by_user_id: null,
+      date: null,
+      note: null,
+      budget_id: null,
+    };
+    const balances = computeBalances([userA, userB], [jointExpense], [], []);
+    expect(balances.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(0);
+    expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(0);
+  });
+
   it('excludes an income linked to a private budget from the split entirely', () => {
     const budgets = [privateBudget(1, userA.id)];
     const balances = computeBalances([userA, userB], [expense(userA.id, -100, 1)], [], budgets);

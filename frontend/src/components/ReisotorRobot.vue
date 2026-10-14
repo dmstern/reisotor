@@ -9,78 +9,50 @@
 // - SplashScreen.vue: 'packing' (Roboter fokussiert Reisegepäck, saugt Flugticket & Reisekamera elastisch ein,
 //   Rucksack dockt an Rücken an, stolzer Blick, feuert packingDone).
 import { useId } from 'vue';
+import { useRobotEyeTracking, type RobotPhase } from '../composables/useRobotEyeTracking';
 
-const props = withDefaults(
-  defineProps<{
-    /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
-     *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue. */
-    phase?: 'idle' | 'scanning' | 'done' | 'packing' | 'pack';
-    /** Hält sich mit beiden Armen die Augen zu (z. B. während ein Passwort sichtbar ist). */
-    coveringEyes?: boolean;
-    /** CSS-Breite; Höhe ergibt sich aus dem quadratischen 500x500 SVG-Seitenverhältnis. */
-    size?: string;
-    /** Hintergrund-Variante des Logos: blank (transparent), circle (runder Farbverlauf), full (Squircle) */
-    variant?: 'blank' | 'circle' | 'full';
-    /** Ob die Augen der Maus folgen sollen (funktioniert nur in Phase 'idle') */
-    interactive?: boolean;
-  }>(),
-  {
-    phase: 'idle',
-    coveringEyes: false,
-    size: '200px',
-    variant: 'blank',
-    interactive: false,
-  }
-);
+export type { RobotPhase };
+export type RobotVariant = 'blank' | 'circle' | 'full';
 
-const uid = useId();
+export interface ReisotorRobotProps {
+  /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
+   *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue. */
+  phase?: RobotPhase;
+  /** Hält sich mit beiden Armen die Augen zu (z. B. während ein Passwort sichtbar ist). */
+  coveringEyes?: boolean;
+  /** CSS-Breite; Höhe ergibt sich aus dem quadratischen 500x500 SVG-Seitenverhältnis. */
+  size?: string;
+  /** Hintergrund-Variante des Logos: blank (transparent), circle (runder Farbverlauf), full (Squircle) */
+  variant?: RobotVariant;
+  /** Ob die Augen der Maus folgen sollen (funktioniert nur in Phase 'idle') */
+  interactive?: boolean;
+}
+
+const props = withDefaults(defineProps<ReisotorRobotProps>(), {
+  phase: 'idle',
+  coveringEyes: false,
+  size: '200px',
+  variant: 'blank',
+  interactive: false,
+});
 
 // Signalisiert das Ende der Rucksack-Pack-Sequenz für SplashScreen.vue
 const emit = defineEmits<{ packingDone: [] }>();
+
+const uid = useId();
+
+// Interaktives Augen- und Pupillen-Tracking
+const { pupilOffset } = useRobotEyeTracking({
+  interactive: () => props.interactive,
+  coveringEyes: () => props.coveringEyes,
+  phase: () => props.phase,
+});
 
 function onAnimationEnd(event: AnimationEvent) {
   if (event.animationName === 'pack-backpack-anim') {
     emit('packingDone');
   }
 }
-
-// Maus-Tracking für interaktive Augen
-import { ref, onMounted, onUnmounted } from 'vue';
-const pupilOffset = ref({ x: 0, y: 0 });
-
-function onMouseMove(e: MouseEvent) {
-  if (
-    !props.interactive ||
-    props.coveringEyes ||
-    props.phase === 'scanning' ||
-    props.phase === 'done'
-  ) {
-    pupilOffset.value = { x: 0, y: 0 };
-    return;
-  }
-  // Max. Verschiebung im lokalen <g>-Koordinatensystem (Radius der Linse ist 237, Pupille 105 -> max 132 Einheiten Platz)
-  // Wir nehmen 130, um den Spielraum maximal auszunutzen, bevor es clippt.
-  const maxShift = 130;
-  let rx = (e.clientX / window.innerWidth - 0.5) * 2;
-  let ry = (e.clientY / window.innerHeight - 0.5) * 2;
-
-  // Vektor-Länge kappen, damit die Pupillen auch in den Bildschirmecken (rx=1, ry=1 -> Länge 1.41)
-  // nicht aus der runden Linse (Radius-Limit 132) herausrutschen!
-  const dist = Math.sqrt(rx * rx + ry * ry);
-  if (dist > 1) {
-    rx /= dist;
-    ry /= dist;
-  }
-
-  pupilOffset.value = { x: rx * maxShift, y: ry * maxShift };
-}
-
-onMounted(() => {
-  window.addEventListener('mousemove', onMouseMove);
-});
-onUnmounted(() => {
-  window.removeEventListener('mousemove', onMouseMove);
-});
 </script>
 
 <template>
@@ -729,11 +701,25 @@ onUnmounted(() => {
 
 <style scoped>
 .robot-stage {
+  /* Scoped Tokens: Reisotor-Mascot-Farbkanon & dynamische Skalierung */
+  --robot-color-orange: #ff9800;
+  --robot-color-cyan: #00e5ff;
+  --robot-color-magenta: #e91e63;
+  --robot-color-gold: #ffb703;
+  --robot-color-blush: #ff4081;
+  --robot-color-visor: #141922;
+  --robot-backpack-bg: #1f3a3d;
+  --robot-backpack-stroke: #2f8f86;
+
+  /* Federnde Easing-Kurve für lebendige Wall-E-Gesten */
+  --robot-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
   position: relative;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  max-width: 60vw;
+  max-width: 100%;
+  container-type: inline-size;
 }
 
 .robot {
@@ -807,7 +793,7 @@ onUnmounted(() => {
 }
 
 .robot.scanning .pupil-group {
-  animation: scan-sweep 1.6s ease-in-out infinite alternate !important;
+  animation: scan-sweep 1.6s ease-in-out infinite alternate;
 }
 
 @keyframes scan-sweep {
@@ -835,22 +821,22 @@ onUnmounted(() => {
 @keyframes antenna-pulse {
   0% {
     opacity: 0.45;
-    filter: drop-shadow(0 0 2px #ff9800);
+    filter: drop-shadow(0 0 2px var(--robot-color-orange));
   }
   100% {
     opacity: 1;
-    filter: drop-shadow(0 0 10px #00e5ff);
+    filter: drop-shadow(0 0 10px var(--robot-color-cyan));
   }
 }
 
 @keyframes antenna-glow {
   0% {
     opacity: 0.7;
-    filter: drop-shadow(0 0 4px #ff9800);
+    filter: drop-shadow(0 0 4px var(--robot-color-orange));
   }
   100% {
     opacity: 1;
-    filter: drop-shadow(0 0 12px #ffb703);
+    filter: drop-shadow(0 0 12px var(--robot-color-gold));
   }
 }
 
@@ -879,10 +865,10 @@ onUnmounted(() => {
 }
 
 .scan-line {
-  stroke: #00e5ff;
+  stroke: var(--robot-color-cyan);
   stroke-width: 3.5;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 6px #00e5ff);
+  filter: drop-shadow(0 0 6px var(--robot-color-cyan));
   animation: scan-line-sweep 1.5s ease-in-out infinite alternate;
 }
 
@@ -904,13 +890,13 @@ onUnmounted(() => {
 }
 
 .ping-1 {
-  stroke: #ff9800;
+  stroke: var(--robot-color-orange);
 }
 .ping-2 {
-  stroke: #e91e63;
+  stroke: var(--robot-color-magenta);
 }
 .ping-3 {
-  stroke: #00e5ff;
+  stroke: var(--robot-color-cyan);
 }
 
 .robot.scanning .ping-1 {
@@ -938,7 +924,7 @@ onUnmounted(() => {
 .robot.done {
   animation:
     hover-bob 3.2s ease-in-out infinite,
-    cheer-hop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+    cheer-hop 0.65s var(--robot-ease-spring) 1;
 }
 
 @keyframes cheer-hop {
@@ -976,7 +962,7 @@ onUnmounted(() => {
   animation: pupil-look-wander 5.5s ease-in-out infinite;
 }
 
-.robot.is-interactive .pupil-group {
+.robot.is-interactive:not(.scanning):not(.packing):not(.covering-eyes) .pupil-group {
   animation: none;
 }
 
@@ -1009,6 +995,7 @@ onUnmounted(() => {
 /* Schüchterne Wangen-Röte auf dem Visier */
 .blush-cheek {
   opacity: 0;
+  fill: var(--robot-color-blush);
   filter: blur(1.5px);
   transition: opacity 0.35s ease;
   pointer-events: none;
@@ -1027,7 +1014,7 @@ onUnmounted(() => {
 .robot.covering-eyes .robot-head {
   transform: translate(0px, 3px) rotate(-4deg);
   transform-origin: 250px 210px;
-  transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.42s var(--robot-ease-spring);
 }
 
 .robot.covering-eyes .antenna {
@@ -1039,12 +1026,12 @@ onUnmounted(() => {
 /* Wall-E Augenzukneifen: Linsen neigen sich verlegen (/ \) und kneifen sich mechanisch zusammen */
 .robot.covering-eyes .eye-lens-right {
   transform: rotate(-14deg) scaleY(0.16) scaleX(1.05);
-  transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.38s var(--robot-ease-spring);
 }
 
 /* Linkes Auge kneift zu, linst aber alle ~3.6s neugierig hervor (Wall-E Peek) */
 .robot.covering-eyes .eye-lens-left {
-  animation: wall-e-squint-peek-left 3.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  animation: wall-e-squint-peek-left 3.6s var(--robot-ease-spring) infinite;
 }
 
 @keyframes wall-e-squint-peek-left {
@@ -1090,13 +1077,13 @@ onUnmounted(() => {
 
 /* Mechanische Shutter-Lider (für kurzes Idle-Blinzeln) */
 .shutter-lid {
-  fill: #141922;
-  stroke: #ff9800;
+  fill: var(--robot-color-visor);
+  stroke: var(--robot-color-orange);
   stroke-width: 6;
   opacity: 0.96;
   transform-box: fill-box;
   transform: translateY(-360px);
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.35s var(--robot-ease-spring);
 }
 
 /* Gelegentliches kurzes Roboter-Blinzeln im Idle-Zustand */
@@ -1126,23 +1113,23 @@ onUnmounted(() => {
 }
 
 .backpack-body {
-  fill: #1f3a3d;
-  stroke: #2f8f86;
+  fill: var(--robot-backpack-bg);
+  stroke: var(--robot-backpack-stroke);
   stroke-width: 3;
 }
 
 .backpack-pocket {
-  fill: #e91e63;
+  fill: var(--robot-color-magenta);
 }
 
 .backpack-zip {
-  stroke: #ff9800;
+  stroke: var(--robot-color-orange);
   stroke-width: 2.5;
   stroke-linecap: round;
 }
 
 .backpack-strap {
-  stroke: #ff9800;
+  stroke: var(--robot-color-orange);
   stroke-width: 4;
   stroke-linecap: round;
   fill: none;
@@ -1168,7 +1155,7 @@ onUnmounted(() => {
 }
 
 .robot.packing .pupil-group {
-  animation: pack-pupils-down 2.1s ease-in-out 1 !important;
+  animation: pack-pupils-down 2.1s ease-in-out 1;
 }
 
 @keyframes pack-look-down {
@@ -1284,7 +1271,7 @@ onUnmounted(() => {
    ========================================================================== */
 .sparkle {
   position: absolute;
-  font-size: 1.3rem;
+  font-size: clamp(var(--font-size-xs), 12cqi, var(--font-size-xl));
   animation: float-sparkle 1.6s ease-out infinite;
   pointer-events: none;
 }
@@ -1320,7 +1307,7 @@ onUnmounted(() => {
 }
 
 /* ==========================================================================
-   6. Reduzierte Bewegung (Barrierefreiheit)
+   6. Reduzierte Bewegung (Barrierefreiheit & Vestibuläre Sicherheit)
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
   .robot,
@@ -1343,6 +1330,7 @@ onUnmounted(() => {
   .sparkle {
     animation-duration: 0.01s !important;
     animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01s !important;
   }
 }

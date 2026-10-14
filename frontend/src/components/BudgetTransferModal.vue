@@ -68,7 +68,8 @@ function handleClose() {
 
 async function handleSubmit() {
   const wasEdit = isEdit.value;
-  await submitTransfer();
+  const success = await submitTransfer();
+  if (!success) return;
   showToast({
     message: wasEdit ? 'Überweisung aktualisiert.' : 'Überweisung eingetragen.',
     type: 'success',
@@ -107,7 +108,19 @@ async function handleDelete() {
             </option>
           </Select>
         </FormField>
-        <FormField icon="person" label="An" required v-slot="{ id }">
+        <FormField
+          icon="person"
+          label="An"
+          required
+          :error="
+            transferForm.from_user_id &&
+            transferForm.to_user_id &&
+            transferForm.from_user_id === transferForm.to_user_id
+              ? 'Sender und Empfänger dürfen nicht identisch sein.'
+              : undefined
+          "
+          v-slot="{ id }"
+        >
           <Select :id="id" v-model="transferForm.to_user_id" required>
             <option value="" disabled>An…</option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">

@@ -16,6 +16,13 @@ vi.mock('../api/client', () => ({
   },
 }));
 
+const mockShowToast = vi.fn();
+vi.mock('./useToast', () => ({
+  useToast: () => ({
+    showToast: mockShowToast,
+  }),
+}));
+
 class MockEventSource {
   addEventListener() {}
   removeEventListener() {}
@@ -77,8 +84,13 @@ describe('useBudgetTransferForm', () => {
       note: 'Self transfer',
     };
 
-    await transferForm.submitTransfer();
+    const result = await transferForm.submitTransfer();
+    expect(result).toBe(false);
     expect(budgetStore.submitTransfer).not.toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Sender und Empfänger dürfen nicht identisch sein.',
+      type: 'warning',
+    });
   });
 
   it('applies settlement suggestion directly into the form and opens it', () => {

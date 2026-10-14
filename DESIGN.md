@@ -323,7 +323,11 @@ ease-in-out`, ergänzt um ein leichtes Scale/Translate am `.modal` selbst. Diese
 
 Durchgehend `ease`/`ease-in-out` bzw. saubere Bezier-Kurven (`cubic-bezier(0.16, 1, 0.3, 1)`), nie eine
 "bouncy"/Spring-artige Easing-Funktion – passt zum insgesamt eher zurückhaltenden, nativen App-Gefühl
-statt auffälliger Spielereien. Alle Übergänge respektieren `@media (prefers-reduced-motion: reduce)`.
+statt auffälliger Spielereien (einzige Ausnahme: das Reisotor-Maskottchen `ReisotorRobot.vue`, bei dem
+federnde Gesten via `--robot-ease-spring` gezielt den lebendigen Wall-E-Charakter erzeugen). Alle Übergänge
+respektieren `@media (prefers-reduced-motion: reduce)`. Bei unendlichen Keyframe-Schleifen (`infinite`) wird
+in Reduced-Motion-Blöcken zusätzlich `animation-iteration-count: 1 !important` gesetzt, um 100Hz-Strobe-Flickern
+bei minimierter Dauer für Personen mit vestibulären Einschränkungen zuverlässig zu unterbinden.
 
 **Landet ein Element durch eine Interaktion woanders als vorher, muss die Bewegung selbst animiert
 sein** – nicht nur der Endzustand hübsch gestylt. Das schließt scheinbar "nur strukturelle" Wechsel
