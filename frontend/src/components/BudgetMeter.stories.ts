@@ -21,9 +21,8 @@ type Story = StoryObj<typeof BudgetMeter>;
 export const UnderBudget: Story = {
   args: {
     label: 'Unterkünfte',
-    spent: 450,
+    spent: 150,
     target: 600,
-    color: '#e08e45',
     format: 'currency',
   },
 };
@@ -31,9 +30,26 @@ export const UnderBudget: Story = {
 export const OverBudget: Story = {
   args: {
     label: 'Essen & Trinken',
-    spent: 380,
+    spent: 360,
     target: 300,
-    color: '#c1503f',
+    format: 'currency',
+  },
+};
+
+export const SlightOverBudget: Story = {
+  args: {
+    label: 'Transport',
+    spent: 315,
+    target: 300,
+    format: 'currency',
+  },
+};
+
+export const HeavyOverBudget: Story = {
+  args: {
+    label: 'Unterkunft',
+    spent: 500,
+    target: 300,
     format: 'currency',
   },
 };

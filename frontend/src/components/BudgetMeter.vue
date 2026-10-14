@@ -10,8 +10,9 @@ const props = withDefaults(
     label: string;
     spent: number;
     target: number;
-    // Optional. Wenn nicht angegeben oder im Budget-Modus (trafficLight), werden automatisch
-    // Signalfarben (Ampelsystem: Grün > 20%, Orange <= 20%, Rot bei Überschreitung) genutzt.
+    // Optional. Wenn nicht angegeben oder im Budget-Modus (trafficLight), wird ein fließender
+    // Ampel-Farbverlauf genutzt: 50-100% Grün, 50-15% Grün->Gelb, 15-0% Gelb->Orange,
+    // bei Überschreitung bis 20% Orange->Rot und 20-50%+ Rot->Dunkelrot.
     color?: string;
     /** 'currency' (Standard, mit €) oder 'count' für einfache Stückzahlen (z. B. Dashboard-Widgets). */
     format?: 'currency' | 'count';
@@ -73,6 +74,7 @@ const useTrafficLight = computed(() => props.trafficLight ?? resolvedMode.value 
 const hasTarget = computed(() => props.target > 0);
 const isOver = computed(() => hasTarget.value && props.spent > props.target);
 const overBy = computed(() => Math.max(0, props.spent - props.target));
+const overRatio = computed(() => (hasTarget.value ? overBy.value / props.target : 0));
 const remaining = computed(() => (hasTarget.value ? props.target - props.spent : 0));
 const remainingRatio = computed(() => (hasTarget.value ? remaining.value / props.target : 0));
 
@@ -82,8 +84,7 @@ const fillPercent = computed(() => {
     if (isOver.value) {
       // Füllstand zeigt das relative Ausmaß der Budgetüberschreitung:
       // z. B. 50 % Überschreitung = 50 % gefüllt, 100 % (oder mehr) Überschreitung = 100 % gefüllt.
-      const overRatio = overBy.value / props.target;
-      return Math.max(2, Math.min(100, overRatio * 100));
+      return Math.max(2, Math.min(100, overRatio.value * 100));
     }
     // Entleert sich mit Ausgaben (100% -> 0%)
     return Math.max(0, Math.min(100, remainingRatio.value * 100));
@@ -96,13 +97,42 @@ const fillPercent = computed(() => {
 const effectiveColor = computed(() => {
   if (useTrafficLight.value) {
     if (isOver.value) {
-      return 'var(--color-danger)';
-    }
-    if (hasTarget.value && remainingRatio.value <= 0.2) {
-      return 'var(--color-warning)';
+      // Bis 20 % Überschreitung: Sanfter Übergang von Orange nach Kräftiges Rot (Danger)
+      if (overRatio.value <= 0.2) {
+        const redPct = Math.max(0, Math.min(100, Math.round((overRatio.value / 0.2) * 100)));
+        if (redPct <= 0) return 'var(--color-meter-orange, #ea580c)';
+        if (redPct >= 100) return 'var(--color-danger)';
+        return `color-mix(in srgb, var(--color-danger) ${redPct}%, var(--color-meter-orange, #ea580c))`;
+      }
+      // Ab 20 % bis 50 %+ Überschreitung: Sanfter Übergang von Kräftigem Rot in tiefes Dunkelrot
+      const darkRedPct = Math.max(
+        0,
+        Math.min(100, Math.round(((overRatio.value - 0.2) / 0.3) * 100))
+      );
+      if (darkRedPct <= 0) return 'var(--color-danger)';
+      if (darkRedPct >= 100) return 'var(--color-meter-dark-red, #7f1d1d)';
+      return `color-mix(in srgb, var(--color-meter-dark-red, #7f1d1d) ${darkRedPct}%, var(--color-danger))`;
     }
     if (hasTarget.value) {
-      return 'var(--color-success)';
+      // 50 % bis 100 % Restbudget: Vollständig Grün
+      if (remainingRatio.value >= 0.5) {
+        return 'var(--color-success)';
+      }
+      // 15 % bis 50 % Restbudget: Sanfter Übergang von Grün nach Gelb
+      if (remainingRatio.value >= 0.15) {
+        const greenPct = Math.max(
+          0,
+          Math.min(100, Math.round(((remainingRatio.value - 0.15) / 0.35) * 100))
+        );
+        if (greenPct >= 100) return 'var(--color-success)';
+        if (greenPct <= 0) return 'var(--color-meter-yellow, #eab308)';
+        return `color-mix(in srgb, var(--color-success) ${greenPct}%, var(--color-meter-yellow, #eab308))`;
+      }
+      // 0 % bis 15 % Restbudget: Sanfter Übergang von Gelb nach Orange (bei 0 % = Orange)
+      const yellowPct = Math.max(0, Math.min(100, Math.round((remainingRatio.value / 0.15) * 100)));
+      if (yellowPct >= 100) return 'var(--color-meter-yellow, #eab308)';
+      if (yellowPct <= 0) return 'var(--color-meter-orange, #ea580c)';
+      return `color-mix(in srgb, var(--color-meter-yellow, #eab308) ${yellowPct}%, var(--color-meter-orange, #ea580c))`;
     }
     return props.color ?? 'var(--color-text-muted)';
   }
@@ -114,7 +144,7 @@ const effectiveColor = computed(() => {
 
 const trackBackground = computed(() => {
   if (isOver.value) {
-    return 'color-mix(in srgb, var(--color-danger) 18%, transparent)';
+    return `color-mix(in srgb, ${effectiveColor.value} 18%, transparent)`;
   }
   return `color-mix(in srgb, ${effectiveColor.value} 15%, transparent)`;
 });
@@ -166,6 +196,9 @@ function fmt(n: number) {
         :style="{
           width: isMounted ? (hasTarget ? `${fillPercent}%` : '100%') : '0%',
           background: effectiveColor,
+          boxShadow: isOver
+            ? `0 0 8px color-mix(in srgb, ${effectiveColor} 35%, transparent)`
+            : undefined,
           transitionDelay: `${delay}ms`,
         }"
       >

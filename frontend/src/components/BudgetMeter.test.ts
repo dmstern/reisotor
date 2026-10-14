@@ -48,7 +48,7 @@ describe('BudgetMeter', () => {
     cleanUp();
   });
 
-  it('drains the bar proportionally as spending increases', () => {
+  it('drains the bar proportionally as spending increases and stays green above 50% remaining', () => {
     const { container, cleanUp } = mountMeter({
       label: 'Unterkunft',
       spent: 100,
@@ -63,59 +63,103 @@ describe('BudgetMeter', () => {
     cleanUp();
   });
 
-  it('switches to warning orange when remaining budget is 20% or less', () => {
-    const { container, cleanUp } = mountMeter({
+  it('smoothly transitions from green to yellow between 50% and 15% remaining', () => {
+    // 32.5 % Restbudget (Halbwert zwischen 50 % und 15 %): 50 % Grün / 50 % Gelb Mix
+    const meterMix = mountMeter({
+      label: 'Transport',
+      spent: 135,
+      target: 200,
+    });
+    const fillMix = meterMix.container.querySelector('.fill') as HTMLElement;
+    expect(fillMix.style.width).toBe('32.5%');
+    expect(fillMix.style.background).toBe(
+      'color-mix(in srgb, var(--color-success) 50%, var(--color-meter-yellow, #eab308))'
+    );
+    meterMix.cleanUp();
+
+    // Exakt 15 % Restbudget: Reines Warn-Gelb
+    const meterYellow = mountMeter({
       label: 'Transport',
       spent: 170,
       target: 200,
     });
-
-    const fill = container.querySelector('.fill') as HTMLElement;
-    expect(fill).not.toBeNull();
-    expect(fill.style.width).toBe('15%');
-    expect(fill.style.background).toBe('var(--color-warning)');
-
-    cleanUp();
+    const fillYellow = meterYellow.container.querySelector('.fill') as HTMLElement;
+    expect(fillYellow.style.width).toBe('15%');
+    expect(fillYellow.style.background).toBe('var(--color-meter-yellow, #eab308)');
+    meterYellow.cleanUp();
   });
 
-  it('renders empty bar (0%) when budget is completely exhausted', () => {
-    const { container, cleanUp } = mountMeter({
+  it('smoothly transitions from yellow to orange between 15% and 0% remaining', () => {
+    // 7.5 % Restbudget (Halbwert zwischen 15 % und 0 %): 50 % Gelb / 50 % Orange Mix
+    const meterMix = mountMeter({
+      label: 'Essen',
+      spent: 185,
+      target: 200,
+    });
+    const fillMix = meterMix.container.querySelector('.fill') as HTMLElement;
+    expect(fillMix.style.width).toBe('7.5%');
+    expect(fillMix.style.background).toBe(
+      'color-mix(in srgb, var(--color-meter-yellow, #eab308) 50%, var(--color-meter-orange, #ea580c))'
+    );
+    meterMix.cleanUp();
+
+    // 0 % Restbudget (vollständig ausgeschöpft): Reines Orange
+    const meterExhausted = mountMeter({
       label: 'Aktivitäten',
       spent: 200,
       target: 200,
     });
-
-    const fill = container.querySelector('.fill') as HTMLElement;
-    expect(fill).not.toBeNull();
-    expect(fill.style.width).toBe('0%');
-    expect(container.querySelector('.over-badge')).toBeNull();
-
-    cleanUp();
+    const fillExhausted = meterExhausted.container.querySelector('.fill') as HTMLElement;
+    expect(fillExhausted.style.width).toBe('0%');
+    expect(fillExhausted.style.background).toBe('var(--color-meter-orange, #ea580c)');
+    expect(meterExhausted.container.querySelector('.over-badge')).toBeNull();
+    meterExhausted.cleanUp();
   });
 
-  it('scales the danger bar by the relative overspend percentage up to 100%', () => {
-    // 15 % Überschreitung: 30 € über 200 € -> 15 % gefüllt
-    const { container, cleanUp } = mountMeter({
+  it('smoothly transitions from orange to danger red for slight overspend (up to 20%)', () => {
+    // 10 % Überschreitung: Halbwert zwischen Orange (0%) und Danger-Rot (20%)
+    const meter10 = mountMeter({
       label: 'Transport',
-      spent: 230,
+      spent: 220,
       target: 200,
     });
+    const fill10 = meter10.container.querySelector('.fill') as HTMLElement;
+    expect(fill10.style.width).toBe('10%');
+    expect(fill10.style.background).toBe(
+      'color-mix(in srgb, var(--color-danger) 50%, var(--color-meter-orange, #ea580c))'
+    );
+    expect(fill10.classList.contains('fill-over')).toBe(true);
+    const badge10 = meter10.container.querySelector('.over-badge');
+    expect(badge10?.textContent).toContain('20.00\u00A0€ über Budget');
+    meter10.cleanUp();
 
-    const fill = container.querySelector('.fill') as HTMLElement;
-    expect(fill).not.toBeNull();
-    expect(fill.style.width).toBe('15%');
-    expect(fill.style.background).toBe('var(--color-danger)');
-    expect(fill.classList.contains('fill-over')).toBe(true);
-
-    const badge = container.querySelector('.over-badge');
-    expect(badge).not.toBeNull();
-    expect(badge?.textContent).toContain('30.00\u00A0€ über Budget');
-
-    cleanUp();
+    // Exakt 20 % Überschreitung: Reines Danger-Rot
+    const meter20 = mountMeter({
+      label: 'Transport',
+      spent: 240,
+      target: 200,
+    });
+    const fill20 = meter20.container.querySelector('.fill') as HTMLElement;
+    expect(fill20.style.width).toBe('20%');
+    expect(fill20.style.background).toBe('var(--color-danger)');
+    meter20.cleanUp();
   });
 
-  it('renders 50% fill at 50% overspend and caps at 100% at or above 100% overspend', () => {
-    // 50 % Überschreitung: 50 € über 100 € -> 50 %
+  it('smoothly transitions from danger red to dark red for heavy overspend (above 20% up to 50%+)', () => {
+    // 35 % Überschreitung: Halbwert zwischen Danger-Rot (20%) und Dunkelrot (50%)
+    const meter35 = mountMeter({
+      label: 'Hotel',
+      spent: 135,
+      target: 100,
+    });
+    const fill35 = meter35.container.querySelector('.fill') as HTMLElement;
+    expect(fill35.style.width).toBe('35%');
+    expect(fill35.style.background).toBe(
+      'color-mix(in srgb, var(--color-meter-dark-red, #7f1d1d) 50%, var(--color-danger))'
+    );
+    meter35.cleanUp();
+
+    // 50 % Überschreitung: Vollständiges Dunkelrot
     const meter50 = mountMeter({
       label: 'Hotel',
       spent: 150,
@@ -123,9 +167,10 @@ describe('BudgetMeter', () => {
     });
     const fill50 = meter50.container.querySelector('.fill') as HTMLElement;
     expect(fill50.style.width).toBe('50%');
+    expect(fill50.style.background).toBe('var(--color-meter-dark-red, #7f1d1d)');
     meter50.cleanUp();
 
-    // 100 % Überschreitung: 100 € über 100 € -> 100 %
+    // 100 % Überschreitung: Dunkelrot, auf 100 % Füllung gedeckelt
     const meter100 = mountMeter({
       label: 'Hotel',
       spent: 200,
@@ -133,9 +178,10 @@ describe('BudgetMeter', () => {
     });
     const fill100 = meter100.container.querySelector('.fill') as HTMLElement;
     expect(fill100.style.width).toBe('100%');
+    expect(fill100.style.background).toBe('var(--color-meter-dark-red, #7f1d1d)');
     meter100.cleanUp();
 
-    // 150 % Überschreitung: 150 € über 100 € -> auf 100 % gedeckelt
+    // 150 % Überschreitung: Gedeckelt auf 100 %
     const meter150 = mountMeter({
       label: 'Hotel',
       spent: 250,
@@ -143,6 +189,7 @@ describe('BudgetMeter', () => {
     });
     const fill150 = meter150.container.querySelector('.fill') as HTMLElement;
     expect(fill150.style.width).toBe('100%');
+    expect(fill150.style.background).toBe('var(--color-meter-dark-red, #7f1d1d)');
     meter150.cleanUp();
   });
 
