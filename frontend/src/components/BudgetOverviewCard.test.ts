@@ -4,6 +4,7 @@ import { createApp, h } from 'vue';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import BudgetOverviewCard from './BudgetOverviewCard.vue';
 import { useBudgetStore } from '../stores/budget';
+import { useIconStyleStore } from '../stores/iconStyle';
 import type { BudgetExpense } from '../api/types';
 
 describe('BudgetOverviewCard', () => {
@@ -111,6 +112,16 @@ describe('BudgetOverviewCard', () => {
     expect(badges[0].classList.contains('badge--success')).toBe(false);
     expect(badges[1].textContent?.trim()).toBe('1 Einnahme');
     expect(badges[1].classList.contains('badge--success')).toBe(true);
+    cleanUp();
+  });
+
+  it('renders moneybag icon in total budget meter', () => {
+    const iconStyle = useIconStyleStore();
+    iconStyle.groups.categories = 'icons';
+
+    const { container, cleanUp } = mountCard();
+    const meterIcon = container.querySelector('.meter-head svg.tabler-icon-moneybag');
+    expect(meterIcon).not.toBeNull();
     cleanUp();
   });
 });

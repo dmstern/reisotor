@@ -14,7 +14,6 @@ import Accordion from './primitives/Accordion.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const props = defineProps<{
   budget: Budget;
@@ -128,7 +127,12 @@ function onTotalSectionClick(e: MouseEvent) {
         </span>
       </div>
       <div class="pot-actions">
-        <EditButton small aria-label="Budget bearbeiten" @click="emit('edit', budget)" />
+        <EditButton
+          small
+          :icon="ACTION_ICONS.moneybagEdit"
+          aria-label="Budget bearbeiten"
+          @click="emit('edit', budget)"
+        />
         <IconButton
           v-if="hasCategories"
           variant="ghost"
@@ -157,7 +161,7 @@ function onTotalSectionClick(e: MouseEvent) {
       <div class="total-row">
         <BudgetMeter
           label="Gesamt"
-          :icon="SECTION_ICON_DEFS.budget"
+          :icon="ACTION_ICONS.moneybag"
           :spent="totalSpentForBudget"
           :target="effectiveTarget"
           :prominent="hasCategories"

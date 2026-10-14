@@ -105,6 +105,8 @@ import {
   IconSendFilled,
   IconMap,
   IconMapPinShare,
+  IconMoneybag,
+  IconMoneybagEdit,
   IconMoneybagMinus,
   IconMoneybagPlus,
   IconCashMove,
@@ -204,6 +206,8 @@ export type ActionIconKey =
   | 'send'
   | 'mapsApp'
   | 'write'
+  | 'moneybag'
+  | 'moneybagEdit'
   | 'moneybagMinus'
   | 'moneybagPlus'
   | 'cashMove'
@@ -373,6 +377,8 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   send: { id: 'send', emoji: '✈️', outline: IconSend, filled: IconSendFilled },
   mapsApp: { id: 'map-pin-share', emoji: '📍', outline: IconMapPinShare },
   write: { id: 'pencil-plus', emoji: '✍️', outline: IconPencilPlus },
+  moneybag: { id: 'moneybag', emoji: '💰', outline: IconMoneybag },
+  moneybagEdit: { id: 'moneybag-edit', emoji: '✏️', outline: IconMoneybagEdit },
   moneybagMinus: { id: 'moneybag-minus', emoji: '💸', outline: IconMoneybagMinus },
   moneybagPlus: { id: 'moneybag-plus', emoji: '💰', outline: IconMoneybagPlus },
   cashMove: { id: 'cash-move', emoji: '💸', outline: IconCashMove },

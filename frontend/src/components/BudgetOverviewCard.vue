@@ -4,7 +4,7 @@ import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import BudgetMeter from './BudgetMeter.vue';
 import { useBudgetStore } from '../stores/budget';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const budgetStore = useBudgetStore();
 
@@ -27,7 +27,7 @@ const incomeCount = computed(() => budgetStore.expenses.filter((e) => e.amount <
     </div>
     <BudgetMeter
       label="Budget"
-      :icon="SECTION_ICON_DEFS.budget"
+      :icon="ACTION_ICONS.moneybag"
       :spent="budgetStore.totalSpent"
       :target="budgetStore.grandTotal"
       :prominent="true"

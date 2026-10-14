@@ -4,6 +4,7 @@ import { createApp, h } from 'vue';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import BudgetPotCard from './BudgetPotCard.vue';
 import { useBudgetStore } from '../stores/budget';
+import { useIconStyleStore } from '../stores/iconStyle';
 import type { Budget } from '../api/types';
 
 describe('BudgetPotCard', () => {
@@ -68,6 +69,37 @@ describe('BudgetPotCard', () => {
     // Click remove button
     removeBtn?.click();
     expect(removeAllocationSpy).toHaveBeenCalledWith(42);
+
+    cleanUp();
+  });
+
+  it('renders moneybag-edit icon for budget editing and moneybag icon for total budget meter', () => {
+    const iconStyle = useIconStyleStore();
+    iconStyle.groups.categories = 'icons';
+
+    const budget: Budget = {
+      id: 1,
+      trip_id: 1,
+      name: 'Gemeinsames Budget',
+      owner_id: null,
+      target_amount: 300,
+    };
+
+    const { container, cleanUp } = mountCard(budget);
+
+    // Edit button with moneybag-edit
+    const editBtn = container.querySelector(
+      '.pot-actions button[aria-label="Budget bearbeiten"]'
+    ) as HTMLButtonElement | null;
+    expect(editBtn).not.toBeNull();
+    const editIcon = editBtn?.querySelector('svg.tabler-icon-moneybag-edit');
+    expect(editIcon).not.toBeNull();
+
+    // Budget meter for total with moneybag icon
+    const totalRow = container.querySelector('.total-row');
+    expect(totalRow).not.toBeNull();
+    const totalIcon = totalRow?.querySelector('svg.tabler-icon-moneybag');
+    expect(totalIcon).not.toBeNull();
 
     cleanUp();
   });
