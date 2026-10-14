@@ -190,6 +190,10 @@ function discardDraft() {
   min-width: 160px;
 }
 
+.main-input-wrap :deep(.form-field) {
+  margin-bottom: 0;
+}
+
 .input-inline-action-wrap {
   position: relative;
   display: flex;
@@ -225,7 +229,7 @@ function discardDraft() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: 2px;
+  flex-shrink: 0;
 }
 
 @container app-main (max-width: 640px) {
@@ -238,8 +242,8 @@ function discardDraft() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  padding: var(--space-2) var(--space-3);
+  height: var(--input-height, 44px);
+  padding: 0 var(--space-3);
   color: var(--color-text-muted);
 }
 
