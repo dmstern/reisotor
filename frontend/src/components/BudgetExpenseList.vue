@@ -2,13 +2,11 @@
 import type { BudgetExpense } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import CategoryChip from './CategoryChip.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { useToast } from '../composables/useToast';
 
 defineProps<{
   highlightedIds: Set<number>;
@@ -17,12 +15,6 @@ defineProps<{
 const emit = defineEmits<{ (e: 'edit', expense: BudgetExpense): void }>();
 
 const store = useBudgetStore();
-const { showToast } = useToast();
-
-async function removeExpense(id: number) {
-  await store.removeExpense(id);
-  showToast({ message: 'Ausgabe gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
-}
 </script>
 
 <template>
@@ -31,7 +23,9 @@ async function removeExpense(id: number) {
       v-for="e in store.expenses"
       :key="e.id"
       class="row"
-      :class="{ 'new-highlight': highlightedIds.has(e.id) }"
+      :class="{
+        'new-highlight': highlightedIds.has(e.id),
+      }"
     >
       <div class="row-main">
         <span class="row-title"
@@ -39,6 +33,7 @@ async function removeExpense(id: number) {
         >
         <span class="row-meta">
           <Badge v-if="e.date">{{ e.date }}</Badge>
+          <Badge v-if="e.amount < 0" variant="success">Einnahme</Badge>
           <CategoryChip v-if="e.category" type="expense" :category="e.category" />
           <Badge v-if="store.users.length > 1"
             >{{ store.userAvatar(e.paid_by_user_id) }}
@@ -46,7 +41,9 @@ async function removeExpense(id: number) {
           >
         </span>
       </div>
-      <strong class="row-amount">{{ e.amount.toFixed(2) }}&nbsp;€</strong>
+      <strong class="row-amount" :class="e.amount < 0 ? 'is-income' : 'is-expense'">
+        {{ e.amount < 0 ? '+ ' : '- ' }}{{ Math.abs(e.amount).toFixed(2) }}&nbsp;€
+      </strong>
       <!-- Sparkle-Badge für LiveSync-Updates von anderen Nutzern -->
       <span
         v-if="highlightedIds.has(e.id)"
@@ -63,13 +60,17 @@ async function removeExpense(id: number) {
           </Button>
         </template>
         <template v-else>
-          <EditButton small @click="emit('edit', e)" />
-          <DeleteButton small @click="removeExpense(e.id)" />
+          <EditButton
+            small
+            :icon="ACTION_ICONS.cashBanknoteEdit"
+            :aria-label="e.amount < 0 ? 'Einnahme bearbeiten' : 'Ausgabe bearbeiten'"
+            @click="emit('edit', e)"
+          />
         </template>
       </div>
     </li>
     <li v-if="!store.expenses.length" key="empty" class="empty">
-      Noch keine Ausgaben eingetragen.
+      Noch keine Ausgaben oder Einnahmen eingetragen.
     </li>
   </TransitionGroup>
 </template>
@@ -123,6 +124,14 @@ async function removeExpense(id: number) {
 .row-amount {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+.row-amount.is-expense {
+  color: var(--color-danger);
+}
+
+.row-amount.is-income {
+  color: var(--color-success);
 }
 
 .row-actions {

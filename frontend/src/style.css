@@ -194,6 +194,9 @@
   --color-warning-tint: #fffbeb;
   --color-warning-dark: #b45309;
   --color-success: #3f8f5c;
+  --color-meter-yellow: #eab308;
+  --color-meter-orange: #ea580c;
+  --color-meter-dark-red: #7f1d1d;
 
   /* Eigene Farbe für gelikte Elemente (Purple-Magenta) statt Gefahr/Danger */
   --color-like: #d946ef;
@@ -421,6 +424,9 @@
     --color-warning-tint: #2e2315;
     --color-warning-dark: #fcd34d;
     --color-success: #5cb37e;
+    --color-meter-yellow: #facc15;
+    --color-meter-orange: #f0a05a;
+    --color-meter-dark-red: #991b1b;
 
     --color-like: #f0abfc;
     --color-like-tint: rgba(240, 171, 252, 0.15);
@@ -484,6 +490,9 @@
   --color-warning-tint: #2e2315;
   --color-warning-dark: #fcd34d;
   --color-success: #5cb37e;
+  --color-meter-yellow: #facc15;
+  --color-meter-orange: #f0a05a;
+  --color-meter-dark-red: #991b1b;
 
   --color-like: #f0abfc;
   --color-like-tint: rgba(240, 171, 252, 0.15);
@@ -547,6 +556,9 @@
   --color-warning-tint: #fffbeb;
   --color-warning-dark: #b45309;
   --color-success: #3f8f5c;
+  --color-meter-yellow: #eab308;
+  --color-meter-orange: #ea580c;
+  --color-meter-dark-red: #7f1d1d;
   --color-primary-tint: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   --color-hover: #f4f1ec;
   --color-highlight: #fff4e8;

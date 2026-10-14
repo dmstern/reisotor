@@ -1,23 +1,15 @@
 <script setup lang="ts">
+import type { BudgetTransfer } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
-import DeleteButton from './DeleteButton.vue';
+import EditButton from './EditButton.vue';
 import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { useToast } from '../composables/useToast';
 
 defineProps<{ highlightedIds: Set<number> }>();
+const emit = defineEmits<{ (e: 'edit', transfer: BudgetTransfer): void }>();
 
 const store = useBudgetStore();
-const { showToast } = useToast();
-
-async function removeTransfer(id: number) {
-  await store.removeTransfer(id);
-  showToast({
-    message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.',
-    type: 'info',
-  });
-}
 </script>
 
 <template>
@@ -50,7 +42,12 @@ async function removeTransfer(id: number) {
         <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
       </span>
       <div class="row-actions">
-        <DeleteButton small @click="removeTransfer(t.id)" />
+        <EditButton
+          small
+          :icon="ACTION_ICONS.cashEdit"
+          aria-label="Überweisung bearbeiten"
+          @click="emit('edit', t)"
+        />
       </div>
     </li>
     <li v-if="!store.transfers.length" key="empty" class="empty">

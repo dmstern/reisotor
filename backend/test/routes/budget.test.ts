@@ -102,17 +102,37 @@ describe('budget routes', () => {
       expect(list.json().find((e: { id: number }) => e.id === expenseId)).toBeUndefined();
     });
 
-    it('rejects an expense amount of 0 or negative', async () => {
+    it('rejects an expense amount of 0', async () => {
       const { owner, tripId } = await setupTripWithTwoMembers('exp2');
-      for (const amount of [0, -5]) {
-        const res = await app.inject({
-          method: 'POST',
-          url: '/api/budget',
-          headers: { cookie: owner.cookie },
-          payload: { trip_id: tripId, title: 'Ungueltig', amount },
-        });
-        expect(res.statusCode).toBe(400);
-      }
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/budget',
+        headers: { cookie: owner.cookie },
+        payload: { trip_id: tripId, title: 'Ungueltig', amount: 0 },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('allows negative amounts for incomes and retrieves them correctly', async () => {
+      const { owner, tripId } = await setupTripWithTwoMembers('exp2income');
+      const create = await app.inject({
+        method: 'POST',
+        url: '/api/budget',
+        headers: { cookie: owner.cookie },
+        payload: { trip_id: tripId, title: 'Zuschuss von Oma', amount: -100 },
+      });
+      expect(create.statusCode).toBe(201);
+      expect(create.json().amount).toBe(-100);
+
+      const list = await app.inject({
+        method: 'GET',
+        url: `/api/budget?trip_id=${tripId}`,
+        headers: { cookie: owner.cookie },
+      });
+      expect(list.statusCode).toBe(200);
+      const found = list.json().find((e: { title: string }) => e.title === 'Zuschuss von Oma');
+      expect(found).toBeDefined();
+      expect(found.amount).toBe(-100);
     });
 
     it('rejects a transfer between the same user, to a non-member, or with amount <= 0', async () => {

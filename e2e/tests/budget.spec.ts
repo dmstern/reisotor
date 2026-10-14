@@ -66,7 +66,7 @@ test('creates a shared budget pot with categories and the KPIs reflect the new e
   }).toPass();
 
   // Ausgabe von 40 € gegen diese Kategorie und diesen Topf eintragen.
-  await page.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+  await page.getByRole('button', { name: /Ausgabe.*eintragen/i }).click();
   await page.getByPlaceholder('Titel').fill('E2E Testausgabe');
   await page
     .locator('.add-form')
@@ -143,7 +143,7 @@ test('a private budget pot stays invisible to another member, but shared expense
   await expect(pageA.locator('.pot-card', { hasText: privatePotName })).toBeVisible();
 
   const privateExpenseTitle = `E2E Private Ausgabe ${Date.now()}`;
-  await pageA.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+  await pageA.getByRole('button', { name: /Ausgabe.*eintragen/i }).click();
   await pageA.getByPlaceholder('Titel').fill(privateExpenseTitle);
   await pageA.locator('.add-form').getByPlaceholder('Betrag').fill('20');
   await selectOptionByText(pageA.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
@@ -163,7 +163,7 @@ test('a private budget pot stays invisible to another member, but shared expense
   const netBBefore = await netFor(pageB, E2E_USERNAME_2);
 
   const sharedExpenseTitle = `E2E Geteilte Ausgabe ${Date.now()}`;
-  await pageA.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+  await pageA.getByRole('button', { name: /Ausgabe.*eintragen/i }).click();
   await pageA.getByPlaceholder('Titel').fill(sharedExpenseTitle);
   await pageA.locator('.add-form').getByPlaceholder('Betrag').fill('15');
   await selectOptionByText(pageA.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
@@ -201,7 +201,7 @@ test('clicking a settlement suggestion pre-fills the transfer form', async ({ pa
 
   // Eine unbezahlt bleibende, ausschließlich von user1 getragene Ausgabe erzeugt garantiert einen
   // Ausgleichsvorschlag (unabhängig vom bereits vorhandenen Seed-/Testzustand).
-  await page.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+  await page.getByRole('button', { name: /Ausgabe.*eintragen/i }).click();
   await page.getByPlaceholder('Titel').fill(`E2E Suggestion-Ausgabe ${Date.now()}`);
   await page.locator('.add-form').getByPlaceholder('Betrag').fill('30');
   await selectOptionByText(page.locator('.modal:visible .add-form select').nth(0), E2E_USERNAME);
@@ -209,7 +209,7 @@ test('clicking a settlement suggestion pre-fills the transfer form', async ({ pa
 
   const suggestionRow = page.locator('.suggestion-row').first();
   await expect(suggestionRow).toBeVisible();
-  await suggestionRow.getByRole('button', { name: 'Als Überweisung eintragen' }).click();
+  await suggestionRow.getByRole('button', { name: 'Als überwiesen eintragen' }).click();
 
   const transferModal = page.locator('.modal:visible', { hasText: 'Überweisung eintragen' });
   await expect(transferModal).toBeVisible();
@@ -364,7 +364,7 @@ test('displays category icon in combobox input and dropdown options', async ({ p
   await page.goto('/budget');
 
   // Ausgabe-Eintragen-Modal öffnen
-  await page.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+  await page.getByRole('button', { name: /Ausgabe.*eintragen/i }).click();
   const modal = page.getByRole('dialog', { name: 'Ausgabe eintragen' });
   await expect(modal).toBeVisible();
 

@@ -62,7 +62,7 @@ test.describe('Trip Categories Management', () => {
     await page.goto('/budget');
     await expect(page.locator('.budget-page')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Ausgabe eintragen' }).click();
+    await page.getByRole('button', { name: /Ausgabe.*eintragen/i }).click();
     const expenseModal = page.locator('.modal', { hasText: 'Ausgabe eintragen' });
     await expect(expenseModal).toBeVisible();
 

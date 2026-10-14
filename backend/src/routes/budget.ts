@@ -166,7 +166,9 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: ExpenseBody }>('/budget', async (req, reply) => {
     const { trip_id, title, category, amount, paid_by_user_id, date, note, budget_id } = req.body;
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-    if (!(amount > 0)) return reply.code(400).send({ error: 'Betrag muss größer als 0 sein' });
+    if (typeof amount !== 'number' || isNaN(amount) || amount === 0) {
+      return reply.code(400).send({ error: 'Betrag darf nicht 0 sein' });
+    }
     if (!requireBudgetAccessIfLinked(reply, budget_id, req.session.userId)) return;
     if (category?.trim()) {
       ensureTripCategory(trip_id, 'expense', category);
@@ -200,7 +202,9 @@ export const budgetRoutes: FastifyPluginAsync = async (app) => {
     if (!requireBudgetAccessIfLinked(reply, existingExpense.budget_id, req.session.userId)) return;
 
     const { title, category, amount, paid_by_user_id, date, note, budget_id } = req.body;
-    if (!(amount > 0)) return reply.code(400).send({ error: 'Betrag muss größer als 0 sein' });
+    if (typeof amount !== 'number' || isNaN(amount) || amount === 0) {
+      return reply.code(400).send({ error: 'Betrag darf nicht 0 sein' });
+    }
     if (!requireBudgetAccessIfLinked(reply, budget_id, req.session.userId)) return;
     if (category?.trim()) {
       ensureTripCategory(existingExpense.trip_id, 'expense', category);
