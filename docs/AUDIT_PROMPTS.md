@@ -335,6 +335,7 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 | `BudgetExpenseModal` | Subkomponente (`components/BudgetExpenseModal.vue`) | Budget | `BudgetView`, `ExcursionsView` | Gekapseltes Modal für Ausgaben (Create/Edit) mit Draft-Autosave, Datei-Uploads und Kategorie-Auswahl. |
 | `BudgetTransferModal` | Subkomponente (`components/BudgetTransferModal.vue`) | Budget | `BudgetView` | Schlankes Ausgleichs- und Überweisungs-Modal mit direkter Anbindung an Split-Vorschläge. |
 | `useBudgetSources` | Composable (`composables/useBudgetSources.ts`) | Budget / Spots | `BudgetView`, `ExcursionsView` | Ableitung von Entitäten-Quellen für Ausgaben (autoSourceFor) sowie deterministische Farbzuweisung für Kategorien. |
+| `ListProgressHeader` | Komponente (`components/ListProgressHeader.vue`) | Listen / Header | `TodoView`, `ShoppingListView`, `PackingListView`, `BudgetView` | Einheitlicher Seitenkopf mit Titel, Fortschritts-Badge, Prozentanzeige, animiertem Fortschrittsbalken und Slot für Actions. |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 
