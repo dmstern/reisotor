@@ -170,10 +170,10 @@ onMounted(async () => {
             :target="budgetStore.grandTotal"
           />
           <BudgetMeter
-            label="Ausgegeben"
+            label="Budget"
+            :icon="SECTION_ICON_DEFS.budget"
             :spent="budgetStore.totalSpent"
             :target="budgetStore.grandTotal"
-            :color="WIDGET_COLORS.get('budget')!"
           />
         </DashboardTile>
 

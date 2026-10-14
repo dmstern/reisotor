@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
 import BudgetMeter from './BudgetMeter.vue';
 import { STRESS_STRINGS, STRESS_CONTAINERS } from '../stories/stressFixtures';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const meta: Meta<typeof BudgetMeter> = {
   title: 'Components/Budget & Progress/BudgetMeter',
@@ -20,9 +21,8 @@ type Story = StoryObj<typeof BudgetMeter>;
 export const UnderBudget: Story = {
   args: {
     label: 'Unterkünfte',
-    spent: 450,
+    spent: 150,
     target: 600,
-    color: '#e08e45',
     format: 'currency',
   },
 };
@@ -30,9 +30,26 @@ export const UnderBudget: Story = {
 export const OverBudget: Story = {
   args: {
     label: 'Essen & Trinken',
-    spent: 380,
+    spent: 360,
     target: 300,
-    color: '#c1503f',
+    format: 'currency',
+  },
+};
+
+export const SlightOverBudget: Story = {
+  args: {
+    label: 'Transport',
+    spent: 315,
+    target: 300,
+    format: 'currency',
+  },
+};
+
+export const HeavyOverBudget: Story = {
+  args: {
+    label: 'Unterkunft',
+    spent: 500,
+    target: 300,
     format: 'currency',
   },
 };
@@ -47,13 +64,32 @@ export const CountFormat: Story = {
   },
 };
 
+export const NearLimit: Story = {
+  args: {
+    label: 'Souvenirs',
+    spent: 70,
+    target: 80,
+    format: 'currency',
+  },
+};
+
 export const WithoutTarget: Story = {
   args: {
     label: 'Sonstige Ausgaben',
     spent: 85.5,
     target: 0,
-    color: '#5b6ee1',
     format: 'currency',
+  },
+};
+
+export const WithBudgetIcon: Story = {
+  args: {
+    label: 'Gesamt',
+    spent: 450,
+    target: 1200,
+    format: 'currency',
+    icon: SECTION_ICON_DEFS.budget,
+    prominent: true,
   },
 };
 

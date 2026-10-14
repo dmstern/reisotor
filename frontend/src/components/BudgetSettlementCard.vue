@@ -26,7 +26,11 @@ const store = useBudgetStore();
     <ul v-else class="suggestion-list">
       <li v-for="(s, i) in store.settlementSuggestions" :key="i" class="suggestion-row">
         <span class="suggestion-text">
-          {{ store.userAvatar(s.from.id) }} <strong>{{ s.from.username }}</strong> schuldet
+          {{ store.userAvatar(s.from.id) }} <strong>{{ s.from.username }}</strong>
+          <span class="suggestion-debt-flow">
+            <AppIcon :icon="ACTION_ICONS.cashMove" :size="13" group="actions" />
+            schuldet
+          </span>
           {{ store.userAvatar(s.to.id) }} <strong>{{ s.to.username }}</strong> noch
           <strong class="debt-amount">{{ s.amount.toFixed(2) }}&nbsp;€</strong>
         </span>
@@ -34,9 +38,10 @@ const store = useBudgetStore();
           variant="secondary"
           size="sm"
           class="settle-btn"
+          :icon="ACTION_ICONS.cashMove"
           @click="$emit('use-suggestion', s)"
         >
-          Als Überweisung eintragen
+          Als überwiesen eintragen
         </Button>
       </li>
     </ul>
@@ -45,6 +50,11 @@ const store = useBudgetStore();
       <li v-for="b in store.balances" :key="b.user.id" class="balance-row">
         <span class="balance-user">{{ b.user.avatar }} {{ b.user.username }}</span>
         <Badge :variant="b.net >= 0 ? 'success' : 'danger'">
+          <AppIcon
+            :icon="b.net >= 0 ? ACTION_ICONS.cashBanknoteMoveBack : ACTION_ICONS.cashMove"
+            :size="12"
+            group="actions"
+          />
           {{ b.net >= 0 ? 'bekommt' : 'schuldet' }} {{ Math.abs(b.net).toFixed(2) }}&nbsp;€
         </Badge>
       </li>
@@ -119,6 +129,14 @@ const store = useBudgetStore();
 .suggestion-text {
   font-size: 0.9rem;
   min-width: 0;
+}
+
+.suggestion-debt-flow {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  vertical-align: middle;
+  margin: 0 2px;
 }
 
 .debt-amount {

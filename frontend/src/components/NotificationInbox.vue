@@ -81,7 +81,7 @@ const DOMAIN_EMOJI: Record<string, string> = {
   spots: '🗺️',
   ideas: '🎒',
   travel: '✈️',
-  budget: '💶',
+  budget: '🐷',
   diary: '📔',
   notes: '📝',
   members: '👥',

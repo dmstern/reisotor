@@ -24,10 +24,10 @@ export interface ExpenseInput {
   title: string;
   category?: string;
   amount: number;
-  paid_by_user_id?: number;
+  paid_by_user_id?: number | null;
   date?: string;
   note?: string;
-  budget_id?: number;
+  budget_id?: number | null;
 }
 
 export interface TransferInput {
@@ -241,11 +241,9 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   async function removeBudget(id: number) {
-    const { showToast } = useToast();
     await api.delete(`/budget/budgets/${id}`);
     budgets.value = budgets.value.filter((b) => b.id !== id);
     allocations.value = allocations.value.filter((a) => a.budget_id !== id);
-    showToast({ message: 'Budget gelöscht. Es befindet sich nun im Papierkorb.', type: 'info' });
   }
 
   async function saveAllocation(budgetId: number, category: string, amount: number) {
@@ -266,8 +264,16 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   async function removeAllocation(id: number) {
+    const { showToast } = useToast();
+    const allocation = allocations.value.find((a) => a.id === id);
     await api.delete(`/budget/allocations/${id}`);
     allocations.value = allocations.value.filter((a) => a.id !== id);
+    showToast({
+      message: allocation?.category
+        ? `Kategorie „${allocation.category}“ aus dem Budget entfernt.`
+        : 'Kategorie aus dem Budget entfernt.',
+      type: 'info',
+    });
   }
 
   // --- Ausgaben (Bezahlungen) ---
@@ -298,6 +304,20 @@ export const useBudgetStore = defineStore('budget', () => {
     const created = await api.post<BudgetTransfer>('/budget/transfers', body);
     transfers.value = [created, ...transfers.value];
     return created;
+  }
+
+  async function updateTransfer(
+    id: number,
+    body: Omit<TransferInput, 'trip_id'> & { trip_id?: number }
+  ) {
+    const updated = await api.put<BudgetTransfer>(`/budget/transfers/${id}`, body);
+    const idx = transfers.value.findIndex((t) => t.id === updated.id);
+    if (idx !== -1) {
+      const next = [...transfers.value];
+      next[idx] = updated;
+      transfers.value = next;
+    }
+    return updated;
   }
 
   async function removeTransfer(id: number) {
@@ -336,6 +356,7 @@ export const useBudgetStore = defineStore('budget', () => {
     updateExpense,
     removeExpense,
     submitTransfer,
+    updateTransfer,
     removeTransfer,
   };
 });
