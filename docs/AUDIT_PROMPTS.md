@@ -7,6 +7,7 @@ Diese Prompts dienen der systematischen Qualitätsprüfung und zielgerichteten �
 Ein stures, lineares Abarbeiten aller Phasen ohne vorherige Prüfung führt zu **Over-Modularization (Über-Modularisierung)**, **Prop-Drilling-Spaghetti** und dem Verlust von Kohäsion (_Loss of Locality of Behavior_ / _Indirection Hell_).
 
 - **Legitime Orchestratoren vs. God-Components:** Eine View, die komplexe UI-Bereiche wie Karte, Schubladen, Routing und Realtime-Sync koordiniert, ist oft bei ~1.500–2.000 Zeilen im gesunden **Sweet Spot**. Sie krampfhaft in 10 isolierte Mikro-Komponenten zu zerlegen, die nur an dieser einzigen Stelle gebraucht werden, schadet der Lesbarkeit und Reaktivität massiv.
+- **Fundamentale Basis-Primitives & Layout-Komponenten:** Atomare Bausteine wie `Modal.vue` (~710 Z.), `Drawer.vue` (~640 Z.) oder `Card.vue` (~600 Z.) enthalten hochkohärente Verhaltens- und Design-Logik (Focus-Trap, Scroll-Fade, Pointer-Resizing, Oberflächenvarianten). Eine künstliche Zerstückelung würde Indirektions-Hölle und Prop-Drilling erzeugen – sie verbleiben nach Phase-0-Triage intakt im gesunden Sweet Spot.
 - **Kopplung vor Zeilenreduktion:** Braucht ein Template-Block mehr als 3–4 Props/Emits und wird er nirgendwo sonst wiederverwendet? **Dann bleibt er im Template der View!**
 - **Flexibler Pfad:** Jedes Refactoring beginnt zwingend mit **Phase 0 (Triage)**, um den optimalen Pfad festzulegen (z. B. nur Logik-Composables & CSS-Tokens, während das Template unberührt bleibt).
 
@@ -24,7 +25,7 @@ flowchart TD
 
     P0 -.->|Angepasster Pfad B<br/><i>(Nur CSS/Enge-Härtung)</i>| P3
 
-    P0 -.->|Bereits im Sweet Spot<br/><i>(Orchestrator intakt lassen)</i>| Stop["<b>Kein Refactoring nötig (Stop!)</b><br/><i>Vermeidet künstliche Indirektionen</i>"]
+    P0 -.->|Bereits im Sweet Spot<br/><i>(Orchestrator/Primitiv intakt lassen)</i>| Stop["<b>Kein Refactoring nötig (Stop!)</b><br/><i>Vermeidet künstliche Indirektionen</i>"]
 ```
 
 > [!NOTE]
