@@ -63,6 +63,7 @@ const store = useBudgetStore();
         <template v-else>
           <EditButton
             small
+            :icon="ACTION_ICONS.cashBanknoteEdit"
             :aria-label="e.amount < 0 ? 'Einnahme bearbeiten' : 'Ausgabe bearbeiten'"
             @click="emit('edit', e)"
           />

@@ -42,7 +42,12 @@ const store = useBudgetStore();
         <AppIcon :icon="ACTION_ICONS.sparkles" :size="13" group="actions" />
       </span>
       <div class="row-actions">
-        <EditButton small aria-label="Überweisung bearbeiten" @click="emit('edit', t)" />
+        <EditButton
+          small
+          :icon="ACTION_ICONS.cashEdit"
+          aria-label="Überweisung bearbeiten"
+          @click="emit('edit', t)"
+        />
       </div>
     </li>
     <li v-if="!store.transfers.length" key="empty" class="empty">

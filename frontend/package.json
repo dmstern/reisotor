@@ -24,8 +24,8 @@
   },
   "dependencies": {
     "@keeratita/heic-converter": "^0.4.1",
-    "@tabler/icons": "^3.46.0",
-    "@tabler/icons-vue": "^3.46.0",
+    "@tabler/icons": "^3.49.0",
+    "@tabler/icons-vue": "^3.49.0",
     "@tiptap/extension-link": "^3.29.2",
     "@tiptap/pm": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
