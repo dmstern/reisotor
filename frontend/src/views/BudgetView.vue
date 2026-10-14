@@ -139,7 +139,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
           <div class="header">
             <h2>Budgets</h2>
             <Button @click="openCreateBudget"
-              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Budget
+              ><AppIcon :icon="ACTION_ICONS.moneybagPlus" :size="14" group="actions" /> Budget
               anlegen</Button
             >
           </div>
@@ -181,7 +181,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
           <div class="header">
             <h2>Ausgaben</h2>
             <Button @click="openCreateExpense"
-              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Ausgabe
+              ><AppIcon :icon="ACTION_ICONS.moneybagMinus" :size="14" group="actions" /> Ausgabe
               eintragen</Button
             >
           </div>
@@ -198,7 +198,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
           <div class="header">
             <h2>Überweisungen</h2>
             <Button @click="openCreateTransfer"
-              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Überweisung
+              ><AppIcon :icon="ACTION_ICONS.cashMove" :size="14" group="actions" /> Überweisung
               eintragen</Button
             >
           </div>

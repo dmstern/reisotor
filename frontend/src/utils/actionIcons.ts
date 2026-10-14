@@ -105,6 +105,10 @@ import {
   IconSendFilled,
   IconMap,
   IconMapPinShare,
+  IconMoneybagMinus,
+  IconMoneybagPlus,
+  IconCashMove,
+  IconCashBanknoteMoveBack,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -195,7 +199,11 @@ export type ActionIconKey =
   | 'browserMenu'
   | 'send'
   | 'mapsApp'
-  | 'write';
+  | 'write'
+  | 'moneybagMinus'
+  | 'moneybagPlus'
+  | 'cashMove'
+  | 'cashBanknoteMoveBack';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -357,4 +365,12 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   send: { id: 'send', emoji: '✈️', outline: IconSend, filled: IconSendFilled },
   mapsApp: { id: 'map-pin-share', emoji: '📍', outline: IconMapPinShare },
   write: { id: 'pencil-plus', emoji: '✍️', outline: IconPencilPlus },
+  moneybagMinus: { id: 'moneybag-minus', emoji: '💸', outline: IconMoneybagMinus },
+  moneybagPlus: { id: 'moneybag-plus', emoji: '💰', outline: IconMoneybagPlus },
+  cashMove: { id: 'cash-move', emoji: '💸', outline: IconCashMove },
+  cashBanknoteMoveBack: {
+    id: 'cash-banknote-move-back',
+    emoji: '💵',
+    outline: IconCashBanknoteMoveBack,
+  },
 };
