@@ -33,6 +33,7 @@ const editingBudget = ref<Budget | null>(null);
 
 const showExpenseModal = ref(false);
 const editingExpense = ref<BudgetExpense | null>(null);
+const expenseInitialType = ref<'expense' | 'income'>('expense');
 
 const showTransferModal = ref(false);
 const editingTransfer = ref<BudgetTransfer | null>(null);
@@ -69,8 +70,9 @@ function openEditBudget(budget: Budget) {
   showPotModal.value = true;
 }
 
-function openCreateExpense() {
+function openCreateExpense(type: 'expense' | 'income' = 'expense') {
   editingExpense.value = null;
+  expenseInitialType.value = type;
   showExpenseModal.value = true;
 }
 
@@ -120,7 +122,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
           <span v-else>
             <span class="nobr"
               >{{
-                Math.round((budgetStore.totalSpent / budgetStore.grandTotal) * 100)
+                Math.max(0, Math.round((budgetStore.totalSpent / budgetStore.grandTotal) * 100))
               }}&nbsp;%</span
             >
             ausgeschöpft
@@ -176,12 +178,12 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
           @use-suggestion="openTransferWithSuggestion"
         />
 
-        <!-- Ausgaben -->
+        <!-- Ausgaben & Einnahmen -->
         <Card class="expenses-card">
           <div class="header">
-            <h2>Ausgaben</h2>
-            <Button @click="openCreateExpense"
-              ><AppIcon :icon="ACTION_ICONS.cashBanknoteMinus" :size="14" group="actions" /> Ausgabe
+            <h2>Ausgaben & Einnahmen</h2>
+            <Button @click="openCreateExpense('expense')"
+              ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Ausgabe / Einnahme
               eintragen</Button
             >
           </div>
@@ -210,7 +212,11 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 
     <!-- Modals -->
     <BudgetPotModal v-model="showPotModal" :budget="editingBudget" />
-    <BudgetExpenseModal v-model="showExpenseModal" :expense="editingExpense" />
+    <BudgetExpenseModal
+      v-model="showExpenseModal"
+      :expense="editingExpense"
+      :initial-type="expenseInitialType"
+    />
     <BudgetTransferModal
       v-model="showTransferModal"
       :transfer="editingTransfer"

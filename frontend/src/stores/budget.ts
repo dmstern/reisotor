@@ -24,10 +24,10 @@ export interface ExpenseInput {
   title: string;
   category?: string;
   amount: number;
-  paid_by_user_id?: number;
+  paid_by_user_id?: number | null;
   date?: string;
   note?: string;
-  budget_id?: number;
+  budget_id?: number | null;
 }
 
 export interface TransferInput {

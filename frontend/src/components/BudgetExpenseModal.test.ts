@@ -133,4 +133,43 @@ describe('BudgetExpenseModal', () => {
 
     cleanUp();
   });
+
+  it('renders "Einnahme bearbeiten" and shows positive amount when expense has amount < 0', async () => {
+    const mockIncome: BudgetExpense = {
+      id: 99,
+      trip_id: 1,
+      title: 'Zuschuss Oma',
+      amount: -100,
+      category: 'Zuschuss',
+      paid_by_user_id: 1,
+      date: '2026-07-12',
+      note: 'Viel Spaß im Urlaub!',
+      budget_id: null,
+    };
+
+    const { cleanUp } = mountModal({ modelValue: true, expense: mockIncome });
+    await nextTick();
+
+    const titleEl = document.querySelector('.modal-head h2');
+    expect(titleEl?.textContent).toContain('Einnahme bearbeiten');
+
+    const amountInput = document.querySelector('input[type="number"]') as HTMLInputElement;
+    expect(amountInput?.value).toBe('100');
+
+    cleanUp();
+  });
+
+  it('renders "Einnahme eintragen" when initialType is income', async () => {
+    const { cleanUp } = mountModal({
+      modelValue: true,
+      expense: null,
+      initialType: 'income',
+    } as any);
+    await nextTick();
+
+    const titleEl = document.querySelector('.modal-head h2');
+    expect(titleEl?.textContent).toContain('Einnahme eintragen');
+
+    cleanUp();
+  });
 });

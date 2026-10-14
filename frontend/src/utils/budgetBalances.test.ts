@@ -156,6 +156,44 @@ describe('computeBalances', () => {
     expect(balances.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(50);
     expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(-50);
   });
+
+  it('handles shared income received by one user (A receives 100, so A owes B 50)', () => {
+    // Einkommen als negativer Betrag: A hat 100 € empfangen (z. B. Überweisung von Oma für beide)
+    const balances = computeBalances([userA, userB], [expense(userA.id, -100)], [], []);
+    expect(balances.find((b) => b.user.id === userA.id)!.paid).toBeCloseTo(-100);
+    expect(balances.find((b) => b.user.id === userA.id)!.fairShare).toBeCloseTo(-50);
+    expect(balances.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(-50); // A schuldet 50
+    expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(50); // B bekommt 50
+
+    const suggestions = computeSettlementSuggestions(balances);
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0]).toEqual({ from: userA, to: userB, amount: 50 });
+  });
+
+  it('handles shared income received jointly (paid_by_user_id null) without creating debts', () => {
+    // Einnahme in die gemeinsame Reisekasse (z. B. Pfand, Fundgeld, Flohmarkt)
+    const jointIncome: BudgetExpense = {
+      id: 99,
+      trip_id: 1,
+      title: 'Gemeinsame Einnahme',
+      category: null,
+      amount: -100,
+      paid_by_user_id: null,
+      date: null,
+      note: null,
+      budget_id: null,
+    };
+    const balances = computeBalances([userA, userB], [jointIncome], [], []);
+    expect(balances.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(0);
+    expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(0);
+  });
+
+  it('excludes an income linked to a private budget from the split entirely', () => {
+    const budgets = [privateBudget(1, userA.id)];
+    const balances = computeBalances([userA, userB], [expense(userA.id, -100, 1)], [], budgets);
+    expect(balances.find((b) => b.user.id === userA.id)!.net).toBeCloseTo(0);
+    expect(balances.find((b) => b.user.id === userB.id)!.net).toBeCloseTo(0);
+  });
 });
 
 function applySettlements(

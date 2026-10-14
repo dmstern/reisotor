@@ -74,6 +74,15 @@ describe('useBudgetStore computeds', () => {
     expect(store.remaining).toBe(-50);
   });
 
+  it('income reduces totalSpent and increases remaining budget', () => {
+    const store = useBudgetStore();
+    store.budgets = [budget(1, 500, null)];
+    // Ausgabe von 200 €, Einnahme von 50 € (z. B. Zuschuss)
+    store.expenses = [expense(200, 1), expense(-50, 1)];
+    expect(store.totalSpent).toBe(150);
+    expect(store.remaining).toBe(350);
+  });
+
   it('spentFor strictly matches category and does not leak into other categories of the same budget', () => {
     const store = useBudgetStore();
     const shared = budget(1, null, null);

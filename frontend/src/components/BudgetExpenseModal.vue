@@ -10,18 +10,24 @@ import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
+import SegmentedToggle from './SegmentedToggle.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useBudgetStore } from '../stores/budget';
-import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { useToast } from '../composables/useToast';
 import { toLocalDateString } from '../utils/dateFormat';
 
+const TYPE_OPTIONS = [
+  { value: 'expense', label: 'Ausgabe', icon: ACTION_ICONS.moneybagMinus },
+  { value: 'income', label: 'Einnahme', icon: ACTION_ICONS.moneybagPlus },
+];
+
 const props = defineProps<{
   modelValue: boolean;
   expense?: BudgetExpense | null;
+  initialType?: 'expense' | 'income';
 }>();
 
 const emit = defineEmits<{
@@ -31,11 +37,20 @@ const emit = defineEmits<{
 }>();
 
 const budgetStore = useBudgetStore();
-const auth = useAuthStore();
 const tripStore = useTripStore();
 const { showToast } = useToast();
 
-const form = ref({
+const form = ref<{
+  type: 'expense' | 'income';
+  title: string;
+  category: string;
+  amount: string;
+  paid_by_user_id: string;
+  date: string;
+  note: string;
+  budget_id: string;
+}>({
+  type: 'expense',
   title: '',
   category: '',
   amount: '',
@@ -49,7 +64,18 @@ const showDetails = ref(false);
 const isUploading = ref(false);
 
 const isEdit = computed(() => Boolean(props.expense));
-const modalTitle = computed(() => (isEdit.value ? 'Ausgabe bearbeiten' : 'Ausgabe eintragen'));
+const isIncome = computed(() => form.value.type === 'income');
+const modalTitle = computed(() => {
+  if (isEdit.value) {
+    return isIncome.value ? 'Einnahme bearbeiten' : 'Ausgabe bearbeiten';
+  }
+  return isIncome.value ? 'Einnahme eintragen' : 'Ausgabe eintragen';
+});
+
+const submitLabel = computed(() => {
+  if (isEdit.value) return 'Speichern';
+  return isIncome.value ? 'Einnahme eintragen' : 'Ausgabe eintragen';
+});
 
 const detailsCount = computed(() => {
   let count = 0;
@@ -69,10 +95,12 @@ watch(
   ([isOpen, exp]) => {
     if (isOpen) {
       if (exp) {
+        const income = exp.amount < 0;
         form.value = {
+          type: income ? 'income' : 'expense',
           title: exp.title,
           category: exp.category ?? '',
-          amount: String(exp.amount),
+          amount: String(Math.abs(exp.amount)),
           paid_by_user_id: exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '',
           date: exp.date ?? toLocalDateString(new Date()),
           note: exp.note ?? '',
@@ -81,6 +109,7 @@ watch(
         showDetails.value = Boolean(exp.budget_id || exp.note);
       } else {
         form.value = {
+          type: props.initialType ?? 'expense',
           title: '',
           category: '',
           amount: '',
@@ -113,10 +142,12 @@ function handleClose() {
 function discardDraft() {
   if (props.expense) {
     const exp = props.expense;
+    const income = exp.amount < 0;
     form.value = {
+      type: income ? 'income' : 'expense',
       title: exp.title,
       category: exp.category ?? '',
-      amount: String(exp.amount),
+      amount: String(Math.abs(exp.amount)),
       paid_by_user_id: exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '',
       date: exp.date ?? toLocalDateString(new Date()),
       note: exp.note ?? '',
@@ -126,6 +157,7 @@ function discardDraft() {
     showToast({ message: 'Änderungen verworfen.', type: 'info' });
   } else {
     form.value = {
+      type: props.initialType ?? 'expense',
       title: '',
       category: '',
       amount: '',
@@ -141,44 +173,74 @@ function discardDraft() {
 }
 
 async function handleSubmit() {
-  if (!form.value.title.trim() || !form.value.amount || isUploading.value) return;
+  const numericAmount = Math.abs(Number(form.value.amount));
+  if (!form.value.title.trim()) {
+    showToast({ message: 'Bitte einen Titel eingeben.', type: 'warning' });
+    return;
+  }
+  if (!form.value.amount || isNaN(numericAmount) || numericAmount <= 0) {
+    showToast({ message: 'Bitte einen Betrag größer als 0 eingeben.', type: 'warning' });
+    return;
+  }
+  if (isUploading.value) return;
 
-  const fallbackPaidBy = budgetStore.users.length === 1 ? budgetStore.users[0].id : auth.user?.id;
+  const fallbackPaidBy = budgetStore.users.length === 1 ? budgetStore.users[0].id : null;
+  const paidBy = form.value.paid_by_user_id ? Number(form.value.paid_by_user_id) : fallbackPaidBy;
+
+  const finalAmount = isIncome.value ? -numericAmount : numericAmount;
 
   const body = {
     trip_id: tripStore.currentTripId as number,
     title: form.value.title.trim(),
     category: form.value.category || undefined,
-    amount: Number(form.value.amount),
-    paid_by_user_id: form.value.paid_by_user_id
-      ? Number(form.value.paid_by_user_id)
-      : fallbackPaidBy,
+    amount: finalAmount,
+    paid_by_user_id: paidBy,
     date: form.value.date || undefined,
     note: form.value.note || undefined,
     budget_id: form.value.budget_id ? Number(form.value.budget_id) : undefined,
   };
 
-  if (isEdit.value && props.expense) {
-    await budgetStore.updateExpense(props.expense.id, body);
-  } else {
-    await budgetStore.submitExpense(body);
-  }
+  try {
+    if (isEdit.value && props.expense) {
+      await budgetStore.updateExpense(props.expense.id, body);
+      showToast({
+        message: isIncome.value ? 'Einnahme aktualisiert.' : 'Ausgabe aktualisiert.',
+        type: 'success',
+      });
+    } else {
+      await budgetStore.submitExpense(body);
+      showToast({
+        message: isIncome.value ? 'Einnahme eingetragen.' : 'Ausgabe eingetragen.',
+        type: 'success',
+      });
+    }
 
-  draft.clear();
-  emit('update:modelValue', false);
-  emit('saved');
+    draft.clear();
+    emit('update:modelValue', false);
+    emit('saved');
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Fehler beim Speichern';
+    showToast({ message, type: 'error' });
+  }
 }
 
 async function handleDelete() {
   if (props.expense) {
-    await budgetStore.removeExpense(props.expense.id);
-    showToast({
-      message: 'Ausgabe gelöscht. Sie befindet sich nun im Papierkorb.',
-      type: 'info',
-    });
-    draft.clear();
-    emit('update:modelValue', false);
-    emit('deleted');
+    try {
+      await budgetStore.removeExpense(props.expense.id);
+      showToast({
+        message: isIncome.value
+          ? 'Einnahme gelöscht. Sie befindet sich nun im Papierkorb.'
+          : 'Ausgabe gelöscht. Sie befindet sich nun im Papierkorb.',
+        type: 'info',
+      });
+      draft.clear();
+      emit('update:modelValue', false);
+      emit('deleted');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Löschen';
+      showToast({ message, type: 'error' });
+    }
   }
 }
 </script>
@@ -189,16 +251,24 @@ async function handleDelete() {
     :title="modalTitle"
     :confirm-close="draft.isDirty.value"
     :confirm-close-mode="isEdit ? undefined : 'draft'"
-    confirm-close-entity="Ausgabe"
+    :confirm-close-entity="isIncome ? 'Einnahme' : 'Ausgabe'"
     @update:model-value="(v) => !v && handleClose()"
   >
     <form class="edit-form" @submit.prevent="handleSubmit">
+      <div class="type-toggle-wrapper">
+        <SegmentedToggle v-model="form.type" :options="TYPE_OPTIONS" class="type-toggle" />
+      </div>
+
       <FormField icon="title" label="Titel" required v-slot="{ id }">
         <Input
           :id="id"
           v-model="form.title"
           type="text"
-          placeholder="Titel (z. B. Restaurant, Tickets)"
+          :placeholder="
+            isIncome
+              ? 'Titel (z. B. Zuschuss Oma, Pfand, Verkauf)'
+              : 'Titel (z. B. Restaurant, Tickets)'
+          "
           required
         />
       </FormField>
@@ -211,6 +281,7 @@ async function handleDelete() {
             type="number"
             inputmode="decimal"
             step="0.01"
+            min="0.01"
             placeholder="Betrag €"
             required
           />
@@ -229,12 +300,13 @@ async function handleDelete() {
         <FormField
           v-if="budgetStore.users.length > 1"
           icon="shared"
-          label="Bezahlt von"
-          required
+          :label="isIncome ? 'Eingegangen bei' : 'Bezahlt von'"
+          :required="!isIncome"
           v-slot="{ id }"
         >
-          <Select :id="id" v-model="form.paid_by_user_id" required>
-            <option value="" disabled>Bezahlt von…</option>
+          <Select :id="id" v-model="form.paid_by_user_id" :required="!isIncome">
+            <option v-if="!isIncome" value="" disabled>Bezahlt von…</option>
+            <option v-else value="">🤝 Gemeinsam (Reisekasse / alle)</option>
             <option
               v-if="
                 isEdit &&
@@ -308,7 +380,7 @@ async function handleDelete() {
           Abbrechen
         </Button>
         <Button type="submit" :disabled="isUploading">
-          {{ isEdit ? 'Speichern' : 'Eintragen' }}
+          {{ submitLabel }}
         </Button>
       </div>
     </form>
@@ -316,6 +388,10 @@ async function handleDelete() {
 </template>
 
 <style scoped>
+.type-toggle-wrapper {
+  margin-bottom: var(--space-1);
+}
+
 .edit-form {
   container-type: inline-size;
   display: flex;

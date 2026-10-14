@@ -23,7 +23,10 @@ const store = useBudgetStore();
       v-for="e in store.expenses"
       :key="e.id"
       class="row"
-      :class="{ 'new-highlight': highlightedIds.has(e.id) }"
+      :class="{
+        'new-highlight': highlightedIds.has(e.id),
+        'is-income-row': e.amount < 0,
+      }"
     >
       <div class="row-main">
         <span class="row-title"
@@ -31,6 +34,7 @@ const store = useBudgetStore();
         >
         <span class="row-meta">
           <Badge v-if="e.date">{{ e.date }}</Badge>
+          <Badge v-if="e.amount < 0" variant="success">Einnahme</Badge>
           <CategoryChip v-if="e.category" type="expense" :category="e.category" />
           <Badge v-if="store.users.length > 1"
             >{{ store.userAvatar(e.paid_by_user_id) }}
@@ -38,7 +42,9 @@ const store = useBudgetStore();
           >
         </span>
       </div>
-      <strong class="row-amount">{{ e.amount.toFixed(2) }}&nbsp;€</strong>
+      <strong class="row-amount" :class="e.amount < 0 ? 'is-income' : 'is-expense'">
+        {{ e.amount < 0 ? '+ ' : '- ' }}{{ Math.abs(e.amount).toFixed(2) }}&nbsp;€
+      </strong>
       <!-- Sparkle-Badge für LiveSync-Updates von anderen Nutzern -->
       <span
         v-if="highlightedIds.has(e.id)"
@@ -55,12 +61,16 @@ const store = useBudgetStore();
           </Button>
         </template>
         <template v-else>
-          <EditButton small aria-label="Ausgabe bearbeiten" @click="emit('edit', e)" />
+          <EditButton
+            small
+            :aria-label="e.amount < 0 ? 'Einnahme bearbeiten' : 'Ausgabe bearbeiten'"
+            @click="emit('edit', e)"
+          />
         </template>
       </div>
     </li>
     <li v-if="!store.expenses.length" key="empty" class="empty">
-      Noch keine Ausgaben eingetragen.
+      Noch keine Ausgaben oder Einnahmen eingetragen.
     </li>
   </TransitionGroup>
 </template>
@@ -114,6 +124,14 @@ const store = useBudgetStore();
 .row-amount {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+.row-amount.is-expense {
+  color: var(--color-danger);
+}
+
+.row-amount.is-income {
+  color: var(--color-success);
 }
 
 .row-actions {

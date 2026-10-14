@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import BudgetMeter from './BudgetMeter.vue';
@@ -6,6 +7,15 @@ import { useBudgetStore } from '../stores/budget';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const budgetStore = useBudgetStore();
+
+const expenseCountLabel = computed(() => {
+  const count = budgetStore.expenses.length;
+  const hasIncome = budgetStore.expenses.some((e) => e.amount < 0);
+  if (hasIncome) {
+    return count === 1 ? 'Eintrag' : 'Einträge';
+  }
+  return count === 1 ? 'Ausgabe' : 'Ausgaben';
+});
 </script>
 
 <template>
@@ -13,8 +23,7 @@ const budgetStore = useBudgetStore();
     <div class="overview-header">
       <h2>Gesamt-Übersicht</h2>
       <Badge v-if="budgetStore.expenses.length">
-        {{ budgetStore.expenses.length }}
-        {{ budgetStore.expenses.length === 1 ? 'Ausgabe' : 'Ausgaben' }}
+        {{ budgetStore.expenses.length }} {{ expenseCountLabel }}
       </Badge>
     </div>
     <BudgetMeter
