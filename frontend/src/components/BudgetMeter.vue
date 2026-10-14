@@ -2,17 +2,17 @@
 import { computed, onMounted, ref } from 'vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
+import type { IconGroup } from '../stores/iconStyle';
 
 const props = withDefaults(
   defineProps<{
     label: string;
     spent: number;
     target: number;
-    // Akzeptiert sowohl Hex-Strings (z. B. Kategoriefarben aus categoryColors.ts) als auch
-    // CSS-Variablen-Referenzen (z. B. "var(--color-primary-dark)") - die Track-Farbe unten nutzt
-    // deshalb color-mix() statt eines Hex-Alpha-Suffix (`${color}26`), das bei einer var()-Referenz
-    // nur ein ungültiges "var(...)26" ergäbe und stillschweigend keinen sichtbaren Track zeichnet.
-    color: string;
+    // Optional. Wenn nicht angegeben oder im Budget-Modus (trafficLight), werden automatisch
+    // Signalfarben (Ampelsystem: Grün > 20%, Orange <= 20%, Rot bei Überschreitung) genutzt.
+    color?: string;
     /** 'currency' (Standard, mit €) oder 'count' für einfache Stückzahlen (z. B. Dashboard-Widgets). */
     format?: 'currency' | 'count';
     /** Optionaler Verzögerungs-Offset in ms für gestaffelte Animationen mehrerer Meter. */
@@ -23,12 +23,32 @@ const props = withDefaults(
     warning?: string;
     /** Hebt den Meter optisch hervor (z. B. für Gesamtbudget in Töpfen mit Kategorien). */
     prominent?: boolean;
+    /**
+     * 'drain': Budget-Modus (Balken beginnt bei 100% und leert sich mit Ausgaben, 100% Rot bei Überzug).
+     * 'fill': Fortschritts-Modus (0% bis 100%, z. B. für Packlisten/Aufgaben).
+     * Standard: 'drain' bei currency, 'fill' bei count.
+     */
+    mode?: 'drain' | 'fill';
+    /**
+     * Ob das Ampel-Farbschema (Grün / Orange / Rot) aktiv ist.
+     * Standard: true im 'drain'-Modus, false im 'fill'-Modus.
+     */
+    trafficLight?: boolean;
+    /** Optionales Kategorie- oder Bereichs-Icon statt des farbigen Punkts. */
+    icon?: IconDef;
+    /** Icon-Gruppe für AppIcon (Standard: 'categories'). */
+    iconGroup?: IconGroup;
   }>(),
   {
+    color: undefined,
     format: 'currency',
     delay: 0,
     animated: true,
     prominent: false,
+    mode: undefined,
+    trafficLight: undefined,
+    icon: undefined,
+    iconGroup: 'categories',
   }
 );
 
@@ -44,11 +64,58 @@ onMounted(() => {
   }
 });
 
+const resolvedMode = computed<'drain' | 'fill'>(
+  () => props.mode ?? (props.format === 'currency' ? 'drain' : 'fill')
+);
+
+const useTrafficLight = computed(() => props.trafficLight ?? resolvedMode.value === 'drain');
+
 const hasTarget = computed(() => props.target > 0);
-const ratio = computed(() => (hasTarget.value ? props.spent / props.target : 0));
-const fillPercent = computed(() => Math.min(100, ratio.value * 100));
 const isOver = computed(() => hasTarget.value && props.spent > props.target);
-const overBy = computed(() => props.spent - props.target);
+const overBy = computed(() => Math.max(0, props.spent - props.target));
+const remaining = computed(() => (hasTarget.value ? props.target - props.spent : 0));
+const remainingRatio = computed(() => (hasTarget.value ? remaining.value / props.target : 0));
+
+const fillPercent = computed(() => {
+  if (!hasTarget.value) return 100;
+  if (resolvedMode.value === 'drain') {
+    if (isOver.value) {
+      // Alarmsignal bei Budgetüberschreitung: Voller roter Balken
+      return 100;
+    }
+    // Entleert sich mit Ausgaben (100% -> 0%)
+    return Math.max(0, Math.min(100, remainingRatio.value * 100));
+  }
+  // mode === 'fill' (Fortschritt 0% -> 100%)
+  const fillRatio = props.spent / props.target;
+  return Math.max(0, Math.min(100, fillRatio * 100));
+});
+
+const effectiveColor = computed(() => {
+  if (useTrafficLight.value) {
+    if (isOver.value) {
+      return 'var(--color-danger)';
+    }
+    if (hasTarget.value && remainingRatio.value <= 0.2) {
+      return 'var(--color-warning)';
+    }
+    if (hasTarget.value) {
+      return 'var(--color-success)';
+    }
+    return props.color ?? 'var(--color-text-muted)';
+  }
+  if (isOver.value) {
+    return 'var(--color-danger)';
+  }
+  return props.color ?? 'var(--color-primary-dark)';
+});
+
+const trackBackground = computed(() => {
+  if (isOver.value) {
+    return 'color-mix(in srgb, var(--color-danger) 18%, transparent)';
+  }
+  return `color-mix(in srgb, ${effectiveColor.value} 15%, transparent)`;
+});
 
 function fmt(n: number) {
   return props.format === 'count' ? String(n) : `${n.toFixed(2)}\u00A0€`;
@@ -61,7 +128,18 @@ function fmt(n: number) {
     :class="{ 'has-target': hasTarget, 'is-over': isOver, 'is-prominent': prominent }"
   >
     <div class="meter-head">
-      <span class="dot" :style="{ background: color }"></span>
+      <AppIcon
+        v-if="icon"
+        :icon="icon"
+        :size="prominent ? 18 : 16"
+        :group="iconGroup"
+        class="meter-icon"
+      />
+      <span
+        v-else-if="props.color || !icon"
+        class="dot"
+        :style="{ background: effectiveColor }"
+      ></span>
       <span class="label">
         {{ label }}
         <span
@@ -79,13 +157,13 @@ function fmt(n: number) {
         <span v-if="hasTarget" class="of"> / {{ fmt(target) }}</span>
       </span>
     </div>
-    <div class="track" :style="{ background: `color-mix(in srgb, ${color} 15%, transparent)` }">
+    <div class="track" :style="{ background: trackBackground }">
       <div
         class="fill"
         :class="{ 'fill-over': isOver, 'fill-untargeted': !hasTarget }"
         :style="{
           width: isMounted ? (hasTarget ? `${fillPercent}%` : '100%') : '0%',
-          background: isOver ? 'var(--color-danger)' : color,
+          background: effectiveColor,
           transitionDelay: `${delay}ms`,
         }"
       >
@@ -140,11 +218,23 @@ function fmt(n: number) {
 
 .meter-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   row-gap: 2px;
   gap: var(--space-2);
   font-size: 0.9rem;
+}
+
+.meter-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.meter-row:hover .meter-icon {
+  transform: scale(1.15);
 }
 
 .dot {
@@ -211,6 +301,7 @@ function fmt(n: number) {
   border-radius: var(--radius-pill);
   overflow: hidden;
   position: relative;
+  background-color: color-mix(in srgb, var(--color-text) 8%, transparent);
 }
 
 .fill {
@@ -221,6 +312,17 @@ function fmt(n: number) {
   transition:
     width 0.95s cubic-bezier(0.16, 1, 0.3, 1),
     background 0.3s ease;
+}
+
+.fill.fill-over {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    rgba(255, 255, 255, 0.15) 8px,
+    rgba(255, 255, 255, 0.15) 16px
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-danger) 35%, transparent);
 }
 
 .fill.fill-untargeted {

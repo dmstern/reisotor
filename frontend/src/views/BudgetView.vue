@@ -106,7 +106,11 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
         <span
           v-if="budgetStore.grandTotal > 0"
           class="budget-kpi-pill"
-          :class="{ 'is-over': budgetStore.remaining < 0 }"
+          :class="{
+            'is-over': budgetStore.remaining < 0,
+            'is-warning':
+              budgetStore.remaining >= 0 && budgetStore.remaining / budgetStore.grandTotal <= 0.2,
+          }"
         >
           <span class="pill-dot" aria-hidden="true"></span>
           <span v-if="budgetStore.remaining < 0">
@@ -250,10 +254,16 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   font-weight: 600;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
-  color: var(--color-primary-dark);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+  color: var(--color-success);
+  border: 1px solid color-mix(in srgb, var(--color-success) 25%, transparent);
   animation: pill-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.budget-kpi-pill.is-warning {
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 25%, transparent);
 }
 
 .budget-kpi-pill.is-over {

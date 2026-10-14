@@ -4,6 +4,7 @@ import Input from './primitives/Input.vue';
 import { computed, ref, watch } from 'vue';
 import type { Budget } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
+import { useTripCategoriesStore } from '../stores/tripCategories';
 import BudgetMeter from './BudgetMeter.vue';
 import EditButton from './EditButton.vue';
 import FormField from './FormField.vue';
@@ -13,10 +14,11 @@ import Accordion from './primitives/Accordion.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const props = defineProps<{
   budget: Budget;
-  categoryColors: Map<string, string>;
+  categoryColors?: Map<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -24,6 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const store = useBudgetStore();
+const tripCategoriesStore = useTripCategoriesStore();
 
 const allocations = computed(() => store.allocationsFor(props.budget.id));
 const effectiveTarget = computed(() => store.budgetTarget(props.budget));
@@ -154,9 +157,9 @@ function onTotalSectionClick(e: MouseEvent) {
       <div class="total-row">
         <BudgetMeter
           label="Gesamt"
+          :icon="SECTION_ICON_DEFS.budget"
           :spent="totalSpentForBudget"
           :target="effectiveTarget"
-          color="var(--color-primary-dark)"
           :prominent="hasCategories"
         />
         <div class="category-edit total-edit">
@@ -192,9 +195,9 @@ function onTotalSectionClick(e: MouseEvent) {
           <div class="category-row" v-for="(a, idx) in allocations" :key="a.id">
             <BudgetMeter
               :label="a.category"
+              :icon="tripCategoriesStore.categoryMeta(a.category, 'expense').tabler"
               :spent="store.spentFor(budget, a.category)"
               :target="a.amount"
-              :color="categoryColors.get(a.category) ?? 'var(--color-text-muted)'"
               :delay="(idx + 1) * 45"
               :warning="
                 store.isDuplicateCategory(budget.id, a.category)

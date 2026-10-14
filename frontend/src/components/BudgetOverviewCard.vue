@@ -3,6 +3,7 @@ import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import BudgetMeter from './BudgetMeter.vue';
 import { useBudgetStore } from '../stores/budget';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const budgetStore = useBudgetStore();
 </script>
@@ -18,14 +19,21 @@ const budgetStore = useBudgetStore();
     </div>
     <BudgetMeter
       label="Budget"
+      :icon="SECTION_ICON_DEFS.budget"
       :spent="budgetStore.totalSpent"
       :target="budgetStore.grandTotal"
-      color="var(--color-primary-dark)"
+      :prominent="true"
     />
     <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
          positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
          ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
-    <p v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0" class="remaining-line">
+    <p
+      v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0"
+      class="remaining-line"
+      :class="{
+        'is-low': budgetStore.remaining / budgetStore.grandTotal <= 0.2,
+      }"
+    >
       Noch übrig: <strong class="nobr">{{ budgetStore.remaining.toFixed(2) }}&nbsp;€</strong>
     </p>
   </Card>
@@ -65,6 +73,10 @@ const budgetStore = useBudgetStore();
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-success);
+}
+
+.remaining-line.is-low {
+  color: var(--color-warning);
 }
 
 @keyframes card-appear {
