@@ -209,7 +209,7 @@ test('clicking a settlement suggestion pre-fills the transfer form', async ({ pa
 
   const suggestionRow = page.locator('.suggestion-row').first();
   await expect(suggestionRow).toBeVisible();
-  await suggestionRow.getByRole('button', { name: 'Als Überweisung eintragen' }).click();
+  await suggestionRow.getByRole('button', { name: 'Als überwiesen eintragen' }).click();
 
   const transferModal = page.locator('.modal:visible', { hasText: 'Überweisung eintragen' });
   await expect(transferModal).toBeVisible();

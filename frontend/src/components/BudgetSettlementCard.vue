@@ -36,7 +36,7 @@ const store = useBudgetStore();
           class="settle-btn"
           @click="$emit('use-suggestion', s)"
         >
-          Als Überweisung eintragen
+          Als überwiesen eintragen
         </Button>
       </li>
     </ul>

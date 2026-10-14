@@ -11,4 +11,5 @@
 - 📐 **Einheitlich vertikales Budget-Layout**: Budget-Karten werden auf allen Bildschirmgrößen konsistent untereinander dargestellt. Dadurch entstehen auch bei unterschiedlich vielen oder ein-/ausgeklappten Kategorien keine unschönen Höhenlücken mehr.
 - ✕ **Kategorie-Zuordnung entfernen**: Beim Entfernen einer Kategorie aus einem Budget-Topf symbolisiert nun ein dezenter Schließen-/Entfernen-Button (✕) anstelle einer Mülltonne das Lösen der Zuordnung, da die Kategorie selbst dabei erhalten bleibt.
 - 💸 **Überweisungen bearbeiten**: Eingetragene Überweisungen können jetzt nachträglich über den Stift-Button bearbeitet und angepasst werden.
+- 🤝 **Ausgleichsvorschläge übernehmen**: Der Button bei Ausgleichsvorschlägen heißt nun verständlicher „Als überwiesen eintragen“.
 - 🗑️ **Konsistentes Löschen im Dialog**: Ausgaben und Überweisungen werden nicht mehr über ein Mülleimer-Icon in der Liste gelöscht, sondern einheitlich und sicher über den „Löschen“-Button im jeweiligen Bearbeiten-Dialog.
