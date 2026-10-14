@@ -109,6 +109,7 @@ import {
   IconMoneybagPlus,
   IconCashMove,
   IconCashBanknoteMoveBack,
+  IconCashBanknoteMinus,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -203,7 +204,8 @@ export type ActionIconKey =
   | 'moneybagMinus'
   | 'moneybagPlus'
   | 'cashMove'
-  | 'cashBanknoteMoveBack';
+  | 'cashBanknoteMoveBack'
+  | 'cashBanknoteMinus';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -372,5 +374,10 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'cash-banknote-move-back',
     emoji: '💵',
     outline: IconCashBanknoteMoveBack,
+  },
+  cashBanknoteMinus: {
+    id: 'cash-banknote-minus',
+    emoji: '💸',
+    outline: IconCashBanknoteMinus,
   },
 };

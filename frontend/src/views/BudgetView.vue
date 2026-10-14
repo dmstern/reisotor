@@ -181,7 +181,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
           <div class="header">
             <h2>Ausgaben</h2>
             <Button @click="openCreateExpense"
-              ><AppIcon :icon="ACTION_ICONS.moneybagMinus" :size="14" group="actions" /> Ausgabe
+              ><AppIcon :icon="ACTION_ICONS.cashBanknoteMinus" :size="14" group="actions" /> Ausgabe
               eintragen</Button
             >
           </div>
