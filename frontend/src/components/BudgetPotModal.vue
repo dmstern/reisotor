@@ -97,7 +97,7 @@ async function handleDelete() {
     :title="modalTitle"
     @update:model-value="(v) => !v && handleClose()"
   >
-    <form class="edit-form" @submit.prevent="handleSubmit">
+    <form class="edit-form add-form" @submit.prevent="handleSubmit">
       <FormField icon="title" label="Name" required v-slot="{ id }">
         <Input
           :id="id"

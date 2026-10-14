@@ -254,7 +254,7 @@ async function handleDelete() {
     :confirm-close-entity="isIncome ? 'Einnahme' : 'Ausgabe'"
     @update:model-value="(v) => !v && handleClose()"
   >
-    <form class="edit-form" @submit.prevent="handleSubmit">
+    <form class="edit-form add-form" @submit.prevent="handleSubmit">
       <div class="type-toggle-wrapper">
         <SegmentedToggle v-model="form.type" :options="TYPE_OPTIONS" class="type-toggle" />
       </div>

@@ -92,7 +92,7 @@ async function handleDelete() {
     :title="modalTitle"
     @update:model-value="(v) => !v && handleClose()"
   >
-    <form class="edit-form" @submit.prevent="handleSubmit">
+    <form class="edit-form add-form" @submit.prevent="handleSubmit">
       <div class="row">
         <FormField icon="person" label="Von" required v-slot="{ id }">
           <Select :id="id" v-model="transferForm.from_user_id" required>
