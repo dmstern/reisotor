@@ -38,16 +38,18 @@ Um maximale Qualität zu gewährleisten, Token-Kosten gering zu halten und Konte
 
 1. **Ein Branch & ein Worktree pro Refactoring-Ziel:**
    Die gesamte Überarbeitung einer Komponente läuft in einem dedizierten Git-Worktree auf einem gemeinsamen Feature-Branch (z. B. `refactor/excursions-view`).
-2. **Ein einziger PR für den gesamten Durchlauf:**
-   Das gesamte Refactoring wird über **einen einzigen PR** abgewickelt, der über alle Phasen hinweg schrittweise wächst und aktualisiert wird.
+2. **Ein einziger PR für den gesamten Durchlauf (Cross-Session-Gedächtnis):**
+   Das gesamte Refactoring wird über **einen einzigen PR** abgewickelt, der über alle Phasen hinweg schrittweise wächst und als **Single Source of Truth** für alle Agenten dient. Phase 0 initialisiert den PR (`gh pr create --draft`) mit der maßgeschneiderten Phasen-Checkliste und dem Triage-Zielbild.
 3. **Frischer Chat pro Phase (Token- & Kontext-Schutz):**
    Um das Kontextfenster nicht zu überstrapazieren, wird **für jede Phase eine neue Agent-Session / ein neuer Chat geöffnet**.
-4. **Pflicht-Abschluss jeder Phase (Handoff & PR-Update):**
+4. **Pre-Flight-Check zu Beginn jeder Folgephase (Pflicht):**
+   Zu Beginn jeder Session (Phase 1 bis 4) führt der Agent zwingend `gh pr view` aus, um die Triage-Vorgaben und den festgelegten Phasen-Pfad (insbesondere übersprungene Phasen) einzulesen.
+5. **Pflicht-Abschluss jeder Phase (Handoff & PR-Update):**
    Am Ende jeder Phase MUSS der Agent:
    - Den Code gezielt testen (`npm run typecheck`, betroffene Tests) und formatieren (`npx -y prettier --write <dateien>`).
    - Die Änderungen sauber und semantisch committen (`refactor(...): phase X - ...`).
-   - **Die PR-Beschreibung aktualisieren** (z. B. via `gh pr edit` oder Bereitstellung des formatierten Markdown-Texts), die erledigte Checkbox abhaken und die Zwischenbilanz (Zeilen, extrahierte Module) festhalten.
-   - **Den nächsten Kurz-Trigger im Chat prominent ausgeben** (z. B. `👉 Nächster Schritt: Öffne einen frischen Chat und starte mit: Refactor Phase 2: frontend/src/views/...`).
+   - **Die PR-Beschreibung aktualisieren** (via `gh pr edit`), die erledigte Checkbox abhaken und die Zwischenbilanz (Zeilen, extrahierte Module) festhalten.
+   - **Den nächsten aktiven Kurz-Trigger im Chat prominent ausgeben** (gemäß PR-Checkliste; übersprungene Phasen werden im Handoff direkt übersprungen, z. B. `👉 Nächster Schritt: Öffne einen frischen Chat und starte mit: Refactor Phase 3: frontend/src/...`).
 
 ---
 
@@ -103,8 +105,12 @@ Prüfe objektiv und token-sparend, ob und welche Refactoring-Schritte für diese
      * Phase 3 (Styles): Nur wenn harte @media-Queries, fehlende Design-Tokens oder Enge-Probleme vorliegen.
      * Phase 4 (Review): Zur finalen PR-Konsolidierung des gewählten Pfads.
 
-5. PR-Vorbereitung / Initialisierung:
-   - Erstelle oder formatiere die PR-Beschreibung mit einer individuellen Phasen-Checkliste:
+5. PR-Initialisierung (Single Source of Truth im PR):
+   - Phase 0 legt den PR an, damit die Triage-Ergebnisse für Folgesessions persistent verfügbar sind:
+     - Initial-Commit durchführen: `git commit --allow-empty -m "refactor(<scope>): phase 0 - triage & target architecture assessment"`.
+     - Branch pushen: `git push -u origin <branch>`.
+     - Draft-PR erstellen: `gh pr create --draft --title "refactor(<scope>): 4-Phasen-Refactoring <Name> (#446)" --body "..."`.
+   - Die PR-Beschreibung MUSS die maßgeschneiderte Phasen-Checkliste (geplante vs. übersprungene Phasen) sowie die Triage-Befunde enthalten:
      ```markdown
      ## Refactoring-Phasen: [Komponenten-Name]
      - [x] Phase 0: Triage & Zielbild-Assessment
@@ -112,11 +118,16 @@ Prüfe objektiv und token-sparend, ob und welche Refactoring-Schritte für diese
      - [ ] Phase 2: UI-Dekomposition & Subkomponenten <!-- [Status: Geplant / Übersprungen wegen Kopplung] -->
      - [ ] Phase 3: Design-Tokens & Enge-Härtung <!-- [Status: Geplant / Übersprungen] -->
      - [ ] Phase 4: Review, Synergien & Meta-Refinement
+
+     ### 🎯 Triage-Ergebnis & Zielbild (Phase 0)
+     - **Rollenanalyse:** ...
+     - **Anti-Pattern-Radar:** ...
+     - **Maßgeschneiderter Pfad:** ...
      ```
 
 6. Handoff & Ausgabe des nächsten Schritts:
    - Fasse die Analyse kurz und prägnant zusammen (Metriken, identifizierter Pfad, Begründung).
-   - Gib prominent den genauen Kurz-Trigger für den Folge-Schritt aus:
+   - Prüfe die PR-Checkliste: Gib als Folge-Trigger die erste **aktive (nicht übersprungene)** Phase aus:
      👉 Nächster Schritt: Öffne einen frischen Chat und starte mit:
      `Refactor Phase <N>: <datei>`
 ````
@@ -131,6 +142,11 @@ Kopiere diesen Prompt für den ersten Schritt bei großen, historisch gewachsene
 ```text
 Führe Phase 1 (Logik- & State-Entflechtung) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
 Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altlasten und das Auslagern von Logik in fokussierte Composables.
+
+0. Pre-Flight PR-Check & Triage einlesen (Pflicht):
+   - Führe zuerst `gh pr view` aus!
+   - Lies die Triage-Ergebnisse und die individuelle Phasen-Checkliste aus Phase 0 ein.
+   - Merke dir den geplanten Phasen-Pfad (insbesondere, ob Phase 2 geplant oder übersprungen ist).
 
 1. Synergie-Harvesting vor Neuentwicklung (Wiederverwenden statt Klonen):
    - Konsultiere vor der Neuerstellung eigener Composables den "Cross-View-Synergien & Wiederverwendungs-Katalog" unten in docs/AUDIT_PROMPTS.md sowie frontend/src/composables/.
@@ -155,8 +171,8 @@ Ziel ist die Entflechtung des <script setup>-Bereichs, die Beseitigung von Altla
    - Führe npm run typecheck und betroffene Unit-Tests aus (Backend: npx -y vitest run <testdatei> --bail 1, Frontend: npm --prefix frontend test -- <testdatei> --bail 1).
    - Formatiere alle geänderten und neu erstellten Dateien (npx -y prettier --write <datei>).
    - Führe einen sauberen semantischen Commit durch: `refactor(<scope>): phase 1 - extract composables from <Name>`.
-   - Aktualisiere die PR-Beschreibung (z. B. via `gh pr edit`): Checkbox für Phase 1 abhaken, Vorher/Nachher-Zeilenstand und extrahierte Composables dokumentieren.
-   - Gib prominent den genauen Kurz-Trigger für den Folge-Schritt im Chat aus (gemäß in Phase 0 festgelegtem Pfad; falls Phase 2 übersprungen wird, direkt Phase 3):
+   - Aktualisiere die PR-Beschreibung (via `gh pr edit`): Checkbox für Phase 1 abhaken, Vorher/Nachher-Zeilenstand und extrahierte Composables dokumentieren.
+   - Handoff-Intelligenz: Prüfe die PR-Checkliste! Falls Phase 2 laut PR übersprungen ist, überspringe sie zwingend im Handoff-Trigger und gib direkt Phase 3 aus:
      👉 **Nächster Schritt:** Öffne einen **frischen Chat** und starte mit:
      `Refactor Phase <N>: <datei>`
 ```
@@ -176,6 +192,14 @@ Kopiere diesen Prompt für den zweiten Schritt, nachdem der State sauber in Comp
 ```text
 Führe Phase 2 (UI-Dekomposition & Deduplizierung) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
 Der Script-State ist bereits sauber entflochten. Nun wird das <template> modularisiert und auf Wiederverwendbarkeit getrimmt.
+
+0. Pre-Flight Skip-Guard & Triage-Check (Pflicht):
+   - Führe zuerst `gh pr view` aus!
+   - **Defensiver Abbruch:** Prüfe die Phasen-Checkliste im PR. Wurde Phase 2 in Phase 0 als übersprungen markiert (z. B. `[ ] Phase 2: UI-Dekomposition & Subkomponenten <!-- [Status: Zwingend übersprungen ...] -->`), führe **KEINE Änderungen am Template** durch!
+   - Informiere die Nutzerin / den Nutzer transparent ("Phase 2 wurde in Phase 0 explizit übersprungen, da ...") und leite sofort zu Phase 3 über:
+     👉 **Nächster Schritt:** Öffne einen **frischen Chat** und starte mit:
+     `Refactor Phase 3: <datei>`
+   - Stoppe die Ausführung hier vollständig (keine weiteren Tool-Calls / Edits).
 
 1. Synergie-Harvesting vor Neuentwicklung (Bestehendes nutzen):
    - Prüfe vor dem Schnitt neuer Subkomponenten den "Cross-View-Synergien & Wiederverwendungs-Katalog" unten in docs/AUDIT_PROMPTS.md sowie frontend/src/components/primitives/.
@@ -223,6 +247,10 @@ Kopiere diesen Prompt für den dritten Schritt, wenn Struktur und Komponenten st
 Führe Phase 3 (Design-Tokens & Layout-Härtung) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
 Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Stresstest durch:
 
+0. Pre-Flight PR-Check & Triage einlesen (Pflicht):
+   - Führe zuerst `gh pr view` aus!
+   - Lies die Vorarbeiten (Phase 0, 1 und ggf. 2) sowie die spezifischen Styling-/Token-Vorgaben ein.
+
 1. Design-Tokens & CSS-Bereinigung:
    - Keine freien Pixelwerte oder Ad-hoc-Farben: Ersetze lokale Werte konsequent durch --space-*, --font-size-*, --radius-* und --color-*-Tokens aus style.css.
    - Eckenrundungen (Squircle vs. Kreisbogen), Typografie und Schatten (--shadow-sm/--shadow-md) strikt gemäß DESIGN.md vereinheitlichen.
@@ -230,9 +258,11 @@ Prüfe auf Einhaltung der Richtlinien aus DESIGN.md und führe einen Browser-Str
    - Beseitige CSS-Hacks früherer Agenten (!important, negative Margins, willkürliche Z-Indizes) durch sauberes Flexbox/Grid.
    - Grid-Row-Gaps bei herausragenden Elementen: Ragen visuelle Elemente (z. B. absolute Icons oder Badges) über den oberen Rand einer Kachel hinaus, muss der vertikale Abstand des Grids defensiv erhöht werden (z. B. `row-gap: var(--space-5)`), um Überdeckungen der darüberliegenden Kachelreihe zu verhindern.
    - Imperatives Third-Party-DOM (Leaflet, Mapbox, Canvas): Markup, das von externen Bibliotheken per JavaScript oder innerHTML erzeugt wird, erhält keine Scoped-CSS-Attribute (data-v-*). Kapsele solche Stile in einem separaten, ungescopten <style>-Block mit präzisen Selektoren und Begründungskommentar.
+   - Vestibuläre Sicherheit & Animationen (prefers-reduced-motion): Bei Reduktion von Animationen für Barrierefreiheit immer auch `animation-iteration-count: 1 !important` setzen, wenn unendliche Keyframe-Schleifen (infinite) existieren, um ein 100Hz-Strobe-Flickern bei minimierter Dauer zu verhindern.
 
 2. Container-Queries & Enge-Resilienz (Ersetzen statt Duplizieren):
    - Keine starren Pixelbreiten in Subkomponenten.
+   - Vektor- & Artwork-Stages: Auf grafischen/SVG-Bühnen `container-type: inline-size` nutzen und absolute Overlays/Partikel per `clamp(min, Xcqi, max)` skalieren, statt feste Viewport-Einheiten (`vw`) zu nutzen, damit Maskottchen und Grafiken auch in miniaturisierten Kontexten (z. B. Dashboards) stimmig bleiben.
    - Ersetze bestehende @media-Breakpoints innerhalb von .app-main restlos durch @container app-main (max-width/min-width: ...) oder flexibles Flexbox-Wrapping (flex-wrap: wrap).
    - Container-Queries in Modals & Dialogen: Dialoge liegen außerhalb von .app-main; das Modal/Formular deklariert container-type: inline-size und Subkomponenten nutzen unbenannte Queries @container (max-width: ...).
    - Keine redundanten @media-Blöcke parallel stehen lassen: Alte @media-Regeln müssen gelöscht werden, um CSS-Duplikate und unerwünschte Drawer-Effekte zu vermeiden.
@@ -267,6 +297,10 @@ Kopiere diesen Prompt für den abschließenden Schritt nach Durchlauf der Phasen
 ```text
 Führe Phase 4 (Konsolidierung, Review & Meta-Refinement) für [KOMPONENTE / VIEW, z. B. frontend/src/views/SettingsView.vue] durch.
 Alle drei Schichten (<script>, <template>, <style>) wurden in den Vorphasen überarbeitet. Nun erfolgt die ganzheitliche Konsolidierung, der Synergie-Transfer und der Meta-Review.
+
+0. Pre-Flight PR-Check & Zwischenbilanz einlesen (Pflicht):
+   - Führe zuerst `gh pr view` aus!
+   - Lies die Vorarbeiten aller bisherigen Phasen und die Checkliste ein.
 
 1. Branch-weites Diff- & Konsolidierungs-Review:
    - Analysiere das gesamte Diff des aktuellen Branches gegen main (git diff main...HEAD --stat).
@@ -336,6 +370,7 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 | `BudgetTransferModal` | Subkomponente (`components/BudgetTransferModal.vue`) | Budget | `BudgetView` | Schlankes Ausgleichs- und Überweisungs-Modal mit direkter Anbindung an Split-Vorschläge. |
 | `useBudgetSources` | Composable (`composables/useBudgetSources.ts`) | Budget / Spots | `BudgetView`, `ExcursionsView` | Ableitung von Entitäten-Quellen für Ausgaben (autoSourceFor) sowie deterministische Farbzuweisung für Kategorien. |
 | `ListProgressHeader` | Komponente (`components/ListProgressHeader.vue`) | Listen / Header | `TodoView`, `ShoppingListView`, `PackingListView`, `BudgetView` | Einheitlicher Seitenkopf mit Titel, Fortschritts-Badge, Prozentanzeige, animiertem Fortschrittsbalken und Slot für Actions. |
+| `useRobotEyeTracking` | Composable (`composables/useRobotEyeTracking.ts`) | UI / Mascot | `LoginView`, `SecurityCheckView`, `LandingView`, Onboarding / Splash | Interaktives 2D-Eye- & Pointer-Tracking für Maskottchen und Avatare mit Einheitskreis-Begrenzung & Reaktionswächtern. |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 
