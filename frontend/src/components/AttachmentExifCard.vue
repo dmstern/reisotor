@@ -104,11 +104,11 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   margin-top: var(--space-3);
-  background: var(--color-surface-sunken, rgba(0, 0, 0, 0.03));
+  background: var(--color-surface-sunken);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  transition: border-color var(--duration-fast, 150ms) ease;
+  transition: border-color var(--transition-fast);
 }
 
 .preview-exif-card:hover {
@@ -125,7 +125,7 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
     padding-top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
     padding-bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.25s ease;
-  max-height: 180px;
+  max-height: 280px;
   overflow: hidden;
 }
 
@@ -138,7 +138,7 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
     padding-top 0.24s cubic-bezier(0.16, 1, 0.3, 1),
     padding-bottom 0.24s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.2s ease;
-  max-height: 180px;
+  max-height: 280px;
   overflow: hidden;
 }
 
@@ -189,23 +189,25 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-4);
+  min-width: 0;
 }
 
 .exif-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .exif-icon-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: var(--color-primary-tint);
   color: var(--color-primary);
   flex-shrink: 0;
 }
@@ -214,10 +216,11 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   display: flex;
   flex-direction: column;
   line-height: 1.25;
+  min-width: 0;
 }
 
 .exif-label {
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -225,11 +228,12 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
 }
 
 .exif-value {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
   font-feature-settings: 'tnum';
   font-variant-numeric: tabular-nums;
+  word-break: break-word;
 }
 
 .exif-actions {
@@ -239,7 +243,7 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   flex-wrap: wrap;
 }
 
-@media (max-width: 640px) {
+@container (max-width: 580px) {
   .preview-exif-card {
     flex-direction: column;
     align-items: stretch;
@@ -256,6 +260,20 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   .exif-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+}
+
+@container (max-width: 380px) {
+  .exif-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .exif-actions :deep(.btn-show-map),
+  .exif-actions :deep(.maps-picker),
+  .exif-actions :deep(.maps-picker .btn) {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

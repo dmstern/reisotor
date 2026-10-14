@@ -244,13 +244,14 @@ function onRemoveCurrent() {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  container-type: inline-size;
 }
 
 .preview-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -265,6 +266,35 @@ function onRemoveCurrent() {
 
 .nav-btn {
   flex-shrink: 0;
+  transition:
+    transform var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+@container (max-width: 520px) {
+  .preview-stage {
+    position: relative;
+  }
+
+  .nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: var(--color-surface-glass);
+    backdrop-filter: var(--backdrop-blur-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+  }
+
+  .nav-btn.prev-btn {
+    left: var(--space-2);
+  }
+
+  .nav-btn.next-btn {
+    right: var(--space-2);
+  }
 }
 
 .preview-content {
@@ -278,11 +308,10 @@ function onRemoveCurrent() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.preview-content:not(.has-transition) {
-  transition: none !important;
+.preview-content.has-transition {
+  transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .preview-content.is-draggable {
@@ -315,7 +344,7 @@ function onRemoveCurrent() {
 
 .image-wrapper {
   width: 100%;
-  max-height: 65vh;
+  max-height: min(65vh, 680px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,7 +355,7 @@ function onRemoveCurrent() {
 
 .preview-img {
   max-width: 100%;
-  max-height: 65vh;
+  max-height: min(65vh, 680px);
   object-fit: contain;
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -352,7 +381,7 @@ function onRemoveCurrent() {
   justify-content: center;
   padding: var(--space-6) var(--space-4);
   text-align: center;
-  background: var(--color-surface-sunken, rgba(0, 0, 0, 0.03));
+  background: var(--color-surface-sunken);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -367,26 +396,34 @@ function onRemoveCurrent() {
 
 .unsupported-title {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   color: var(--color-text);
   margin: 0 0 var(--space-1);
 }
 
 .unsupported-hint {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0 0 var(--space-2);
 }
 
 .unsupported-filename {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-primary);
   word-break: break-all;
   margin: 0;
 }
 
+@container (max-width: 480px) {
+  .unsupported-wrapper {
+    padding: var(--space-4) var(--space-3);
+    min-height: 180px;
+  }
+}
+
 .preview-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
@@ -398,6 +435,25 @@ function onRemoveCurrent() {
 .preview-actions-right {
   margin-left: auto;
   display: flex;
+  align-items: center;
   gap: var(--space-2);
+}
+
+@container (max-width: 420px) {
+  .preview-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .preview-actions-right {
+    margin-left: 0;
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .preview-actions :deep(.btn) {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
