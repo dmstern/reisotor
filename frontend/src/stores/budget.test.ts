@@ -1,8 +1,16 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useBudgetStore } from './budget';
 import { useTripCategoriesStore } from './tripCategories';
+import { api } from '../api/client';
 import type { Budget, BudgetAllocation, BudgetExpense } from '../api/types';
+
+const mockShowToast = vi.fn();
+vi.mock('../composables/useToast', () => ({
+  useToast: () => ({
+    showToast: mockShowToast,
+  }),
+}));
 
 // Regressionsnetz für die im Store zentralisierten Computeds (reines Wiring, die eigentliche
 // Rechenlogik steckt in utils/budgetBalances.ts/budgetTargets.ts und ist dort bereits ausführlich
@@ -184,5 +192,32 @@ describe('useBudgetStore computeds', () => {
 
     expect(budgetStore.expenseCategories).not.toContain('Flug');
     expect(budgetStore.expenseCategories).toContain('Kaffee');
+  });
+});
+
+describe('removeAllocation', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.restoreAllMocks();
+  });
+
+  it('removes allocation from store, calls api.delete and displays toast notification', async () => {
+    const store = useBudgetStore();
+    store.allocations = [
+      { id: 42, budget_id: 1, category: 'Essen & Trinken', amount: 150 },
+      { id: 43, budget_id: 1, category: 'Transport', amount: 50 },
+    ];
+
+    const deleteSpy = vi.spyOn(api, 'delete').mockResolvedValue(undefined as never);
+
+    await store.removeAllocation(42);
+
+    expect(deleteSpy).toHaveBeenCalledWith('/budget/allocations/42');
+    expect(store.allocations.find((a) => a.id === 42)).toBeUndefined();
+    expect(store.allocations.length).toBe(1);
+    expect(mockShowToast).toHaveBeenCalledWith({
+      message: 'Kategorie „Essen & Trinken“ aus dem Budget entfernt.',
+      type: 'info',
+    });
   });
 });

@@ -266,8 +266,16 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   async function removeAllocation(id: number) {
+    const { showToast } = useToast();
+    const allocation = allocations.value.find((a) => a.id === id);
     await api.delete(`/budget/allocations/${id}`);
     allocations.value = allocations.value.filter((a) => a.id !== id);
+    showToast({
+      message: allocation?.category
+        ? `Kategorie „${allocation.category}“ aus dem Budget entfernt.`
+        : 'Kategorie aus dem Budget entfernt.',
+      type: 'info',
+    });
   }
 
   // --- Ausgaben (Bezahlungen) ---
