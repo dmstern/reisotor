@@ -4,12 +4,23 @@ import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import BudgetMeter from './BudgetMeter.vue';
 import { useBudgetStore } from '../stores/budget';
+import { isSharedExpense } from '../utils/budgetBalances';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const budgetStore = useBudgetStore();
 
-const expenseCount = computed(() => budgetStore.expenses.filter((e) => e.amount >= 0).length);
-const incomeCount = computed(() => budgetStore.expenses.filter((e) => e.amount < 0).length);
+const sharedExpenses = computed(() =>
+  budgetStore.expenses.filter((e) => isSharedExpense(e, budgetStore.budgets))
+);
+
+const grossExpenses = computed(() => sharedExpenses.value.filter((e) => e.amount >= 0));
+const grossIncomes = computed(() => sharedExpenses.value.filter((e) => e.amount < 0));
+
+const expenseCount = computed(() => grossExpenses.value.length);
+const incomeCount = computed(() => grossIncomes.value.length);
+
+const totalGrossExpenses = computed(() => grossExpenses.value.reduce((s, e) => s + e.amount, 0));
+const totalIncomes = computed(() => grossIncomes.value.reduce((s, e) => s + Math.abs(e.amount), 0));
 </script>
 
 <template>
@@ -17,11 +28,22 @@ const incomeCount = computed(() => budgetStore.expenses.filter((e) => e.amount <
     <div class="overview-header">
       <h2>Gesamt-Übersicht</h2>
       <div v-if="expenseCount > 0 || incomeCount > 0" class="overview-badges">
-        <Badge v-if="expenseCount > 0">
-          {{ expenseCount }} {{ expenseCount === 1 ? 'Ausgabe' : 'Ausgaben' }}
+        <Badge
+          v-if="expenseCount > 0"
+          :title="`Gesamtsumme Ausgaben: ${totalGrossExpenses.toFixed(2)} €`"
+        >
+          {{ expenseCount }} {{ expenseCount === 1 ? 'Ausgabe' : 'Ausgaben' }} ({{
+            totalGrossExpenses.toFixed(2)
+          }}&nbsp;€)
         </Badge>
-        <Badge v-if="incomeCount > 0" variant="success">
-          {{ incomeCount }} {{ incomeCount === 1 ? 'Einnahme' : 'Einnahmen' }}
+        <Badge
+          v-if="incomeCount > 0"
+          variant="success"
+          :title="`Gesamtsumme Einnahmen: ${totalIncomes.toFixed(2)} €`"
+        >
+          {{ incomeCount }} {{ incomeCount === 1 ? 'Einnahme' : 'Einnahmen' }} (+{{
+            totalIncomes.toFixed(2)
+          }}&nbsp;€)
         </Badge>
       </div>
     </div>

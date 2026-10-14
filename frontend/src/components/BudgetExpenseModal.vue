@@ -15,6 +15,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useBudgetStore } from '../stores/budget';
 import { useTripStore } from '../stores/trip';
+import { useAuthStore } from '../stores/auth';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { useToast } from '../composables/useToast';
 import { toLocalDateString } from '../utils/dateFormat';
@@ -38,7 +39,15 @@ const emit = defineEmits<{
 
 const budgetStore = useBudgetStore();
 const tripStore = useTripStore();
+const auth = useAuthStore();
 const { showToast } = useToast();
+
+const selectedBudget = computed(() => {
+  if (!form.value.budget_id) return null;
+  return budgetStore.budgets.find((b) => String(b.id) === String(form.value.budget_id)) ?? null;
+});
+
+const isPrivateBudget = computed(() => selectedBudget.value?.owner_id != null);
 
 const form = ref<{
   type: 'expense' | 'income';
@@ -96,24 +105,36 @@ watch(
     if (isOpen) {
       if (exp) {
         const income = exp.amount < 0;
+        let initialPaidBy = exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '';
+        const b =
+          exp.budget_id != null ? budgetStore.budgets.find((x) => x.id === exp.budget_id) : null;
+        if (b?.owner_id != null) {
+          initialPaidBy = String(b.owner_id);
+        }
         form.value = {
           type: income ? 'income' : 'expense',
           title: exp.title,
           category: exp.category ?? '',
           amount: String(Math.abs(exp.amount)),
-          paid_by_user_id: exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '',
+          paid_by_user_id: initialPaidBy,
           date: exp.date ?? toLocalDateString(new Date()),
           note: exp.note ?? '',
           budget_id: exp.budget_id != null ? String(exp.budget_id) : '',
         };
         showDetails.value = Boolean(exp.budget_id || exp.note);
       } else {
+        const isInitialIncome = (props.initialType ?? 'expense') === 'income';
+        const defaultPaidBy =
+          !isInitialIncome && auth.user?.id && budgetStore.users.some((u) => u.id === auth.user?.id)
+            ? String(auth.user.id)
+            : '';
+
         form.value = {
           type: props.initialType ?? 'expense',
           title: '',
           category: '',
           amount: '',
-          paid_by_user_id: '',
+          paid_by_user_id: defaultPaidBy,
           date: toLocalDateString(new Date()),
           note: '',
           budget_id: '',
@@ -123,6 +144,17 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => form.value.budget_id,
+  (budgetId) => {
+    if (!budgetId) return;
+    const b = budgetStore.budgets.find((x) => String(x.id) === String(budgetId));
+    if (b?.owner_id != null) {
+      form.value.paid_by_user_id = String(b.owner_id);
+    }
+  }
 );
 
 watch(
@@ -143,12 +175,18 @@ function discardDraft() {
   if (props.expense) {
     const exp = props.expense;
     const income = exp.amount < 0;
+    let initialPaidBy = exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '';
+    const b =
+      exp.budget_id != null ? budgetStore.budgets.find((x) => x.id === exp.budget_id) : null;
+    if (b?.owner_id != null) {
+      initialPaidBy = String(b.owner_id);
+    }
     form.value = {
       type: income ? 'income' : 'expense',
       title: exp.title,
       category: exp.category ?? '',
       amount: String(Math.abs(exp.amount)),
-      paid_by_user_id: exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '',
+      paid_by_user_id: initialPaidBy,
       date: exp.date ?? toLocalDateString(new Date()),
       note: exp.note ?? '',
       budget_id: exp.budget_id != null ? String(exp.budget_id) : '',
@@ -156,12 +194,17 @@ function discardDraft() {
     draft.clear();
     showToast({ message: 'Änderungen verworfen.', type: 'info' });
   } else {
+    const isInitialIncome = (props.initialType ?? 'expense') === 'income';
+    const defaultPaidBy =
+      !isInitialIncome && auth.user?.id && budgetStore.users.some((u) => u.id === auth.user?.id)
+        ? String(auth.user.id)
+        : '';
     form.value = {
       type: props.initialType ?? 'expense',
       title: '',
       category: '',
       amount: '',
-      paid_by_user_id: '',
+      paid_by_user_id: defaultPaidBy,
       date: toLocalDateString(new Date()),
       note: '',
       budget_id: '',
@@ -185,7 +228,14 @@ async function handleSubmit() {
   if (isUploading.value) return;
 
   const fallbackPaidBy = budgetStore.users.length === 1 ? budgetStore.users[0].id : null;
-  const paidBy = form.value.paid_by_user_id ? Number(form.value.paid_by_user_id) : fallbackPaidBy;
+  let paidBy: number | null = null;
+  if (isPrivateBudget.value && selectedBudget.value?.owner_id != null) {
+    paidBy = selectedBudget.value.owner_id;
+  } else if (form.value.paid_by_user_id) {
+    paidBy = Number(form.value.paid_by_user_id);
+  } else {
+    paidBy = fallbackPaidBy;
+  }
 
   const finalAmount = isIncome.value ? -numericAmount : numericAmount;
 
@@ -301,12 +351,23 @@ async function handleDelete() {
           v-if="budgetStore.users.length > 1"
           icon="shared"
           :label="isIncome ? 'Eingegangen bei' : 'Bezahlt von'"
-          :required="!isIncome"
           v-slot="{ id }"
         >
-          <Select :id="id" v-model="form.paid_by_user_id" :required="!isIncome">
-            <option v-if="!isIncome" value="" disabled>Bezahlt von…</option>
-            <option v-else value="">🤝 Gemeinsam (Reisekasse / alle)</option>
+          <Select
+            :id="id"
+            v-model="form.paid_by_user_id"
+            :disabled="isPrivateBudget"
+            :title="
+              isPrivateBudget ? 'Bei privaten Töpfen fest dem Besitzer zugeordnet' : undefined
+            "
+          >
+            <option value="">
+              {{
+                isIncome
+                  ? '🤝 Gemeinsam (Reisekasse / alle)'
+                  : '🤝 Gemeinsam (Reisekasse / Barkasse)'
+              }}
+            </option>
             <option
               v-if="
                 isEdit &&

@@ -125,6 +125,28 @@ describe('useBudgetStore computeds', () => {
     expect(store.spentFor(budget2, 'Freizeit')).toBe(0);
   });
 
+  it('spentFor avoids double-dipping when expense is explicitly linked to one shared budget', () => {
+    const store = useBudgetStore();
+    const budget1 = budget(1, null, null);
+    const budget2 = budget(2, null, null);
+    store.budgets = [budget1, budget2];
+    store.allocations = [allocation(1, 'Essen', 200), allocation(2, 'Essen', 150)];
+    // Ausgabe von 45 € explizit für Topf 1: darf NICHT von Topf 2 abgezogen werden!
+    store.expenses = [expense(45, 1, 'Essen')];
+
+    expect(store.spentFor(budget1, 'Essen')).toBe(45);
+    expect(store.spentFor(budget2, 'Essen')).toBe(0);
+  });
+
+  it('grandTotal excludes private budgets and only reflects shared travel budgets', () => {
+    const store = useBudgetStore();
+    store.budgets = [
+      budget(1, 1000, null), // Urlaubskasse (geteilt)
+      budget(2, 300, 99), // Privates Taschengeld von User 99
+    ];
+    expect(store.grandTotal).toBe(1000);
+  });
+
   it('isDuplicateCategory detects categories assigned to multiple budgets in the same scope', () => {
     const store = useBudgetStore();
     const shared1 = budget(1, null, null);

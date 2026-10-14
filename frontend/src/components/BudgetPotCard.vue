@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue';
 import type { Budget } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import { useTripCategoriesStore } from '../stores/tripCategories';
+import { isSharedExpense } from '../utils/budgetBalances';
 import BudgetMeter from './BudgetMeter.vue';
 import EditButton from './EditButton.vue';
 import FormField from './FormField.vue';
@@ -29,16 +30,33 @@ const tripCategoriesStore = useTripCategoriesStore();
 const allocations = computed(() => store.allocationsFor(props.budget.id));
 const effectiveTarget = computed(() => store.budgetTarget(props.budget));
 
-// Einfacher Modus (nur target_amount, keine Kategorien): alle direkt diesem Topf zugeordneten
-// Ausgaben zählen unmittelbar. Detaillierter Modus: Summe je Kategorie über spentFor (das auch
-// Alt-Ausgaben ohne budget_id per Kategorienamen dem geteilten Topf zuordnet).
-const totalSpentForBudget = computed(() =>
-  allocations.value.length
-    ? allocations.value.reduce((s, a) => s + store.spentFor(props.budget, a.category), 0)
-    : store.expenses
-        .filter((e) => e.budget_id === props.budget.id)
-        .reduce((s, e) => s + e.amount, 0)
-);
+// Einfacher Modus (nur target_amount, keine Kategorien): Wenn es im Urlaub nur einen einzigen
+// geteilten Topf gibt (oder dieser als Hauptbudget deklariert ist), werden unzugeordnete geteilte
+// Ausgaben (budget_id == null) diesem Topf standardmäßig zugerechnet. Detaillierter Modus: Summe je
+// Kategorie über spentFor (das auch Alt-Ausgaben ohne budget_id per Kategorienamen dem geteilten
+// Topf zuordnet).
+const totalSpentForBudget = computed(() => {
+  if (allocations.value.length > 0) {
+    return allocations.value.reduce((s, a) => s + store.spentFor(props.budget, a.category), 0);
+  }
+
+  const sharedBudgets = store.budgets.filter((b) => b.owner_id == null);
+  const isOnlySharedBudget =
+    props.budget.owner_id == null &&
+    (sharedBudgets.length === 1 ||
+      props.budget.name.trim().toLowerCase() === 'hauptbudget' ||
+      props.budget.name.trim().toLowerCase() === 'gemeinsames budget');
+
+  return store.expenses
+    .filter((e) => {
+      if (e.budget_id === props.budget.id) return true;
+      if (e.budget_id == null && isOnlySharedBudget && isSharedExpense(e, store.budgets)) {
+        return true;
+      }
+      return false;
+    })
+    .reduce((s, e) => s + e.amount, 0);
+});
 
 const targetInput = ref<string>(
   props.budget.target_amount != null ? String(props.budget.target_amount) : ''
@@ -174,7 +192,7 @@ function onTotalSectionClick(e: MouseEvent) {
             size="sm"
             class="category-amount-input"
             :aria-label="`Ziel (gesamt) für ${displayBudgetName}`"
-            placeholder="0"
+            :placeholder="effectiveTarget > 0 ? String(effectiveTarget) : '0'"
             @change="updateTargetAmount"
           />
           <span v-if="hasCategories" class="btn-spacer" aria-hidden="true"></span>
