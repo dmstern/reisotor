@@ -8,23 +8,22 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const budgetStore = useBudgetStore();
 
-const expenseCountLabel = computed(() => {
-  const count = budgetStore.expenses.length;
-  const hasIncome = budgetStore.expenses.some((e) => e.amount < 0);
-  if (hasIncome) {
-    return count === 1 ? 'Eintrag' : 'Einträge';
-  }
-  return count === 1 ? 'Ausgabe' : 'Ausgaben';
-});
+const expenseCount = computed(() => budgetStore.expenses.filter((e) => e.amount >= 0).length);
+const incomeCount = computed(() => budgetStore.expenses.filter((e) => e.amount < 0).length);
 </script>
 
 <template>
   <Card class="overview-card">
     <div class="overview-header">
       <h2>Gesamt-Übersicht</h2>
-      <Badge v-if="budgetStore.expenses.length">
-        {{ budgetStore.expenses.length }} {{ expenseCountLabel }}
-      </Badge>
+      <div v-if="expenseCount > 0 || incomeCount > 0" class="overview-badges">
+        <Badge v-if="expenseCount > 0">
+          {{ expenseCount }} {{ expenseCount === 1 ? 'Ausgabe' : 'Ausgaben' }}
+        </Badge>
+        <Badge v-if="incomeCount > 0" variant="success">
+          {{ incomeCount }} {{ incomeCount === 1 ? 'Einnahme' : 'Einnahmen' }}
+        </Badge>
+      </div>
     </div>
     <BudgetMeter
       label="Budget"
@@ -61,6 +60,8 @@ const expenseCountLabel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
 
@@ -68,6 +69,13 @@ const expenseCountLabel = computed(() => {
   font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   margin: 0;
+}
+
+.overview-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
 }
 
 .overview-card :deep(.meter-head) {
