@@ -195,14 +195,21 @@ function discardDraft() {
 }
 
 .input-inline-action-wrap :deep(.input) {
+  width: 100%;
   padding-right: 44px;
 }
 
 .inline-submit-btn {
   position: absolute;
   right: 6px;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  translate: none;
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   padding: 0;
   display: inline-flex;
   align-items: center;
