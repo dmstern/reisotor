@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
+import type { BudgetTransfer } from '../api/types';
 import type { SettlementSuggestion } from '../utils/budgetBalances';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
@@ -8,34 +9,50 @@ import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { useBudgetStore } from '../stores/budget';
 import { useBudgetTransferForm } from '../composables/useBudgetTransferForm';
+import { useToast } from '../composables/useToast';
 
 const props = defineProps<{
   modelValue: boolean;
+  transfer?: BudgetTransfer | null;
   suggestion?: SettlementSuggestion | null;
 }>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
   (e: 'submitted'): void;
+  (e: 'saved'): void;
+  (e: 'deleted'): void;
 }>();
 
 const budgetStore = useBudgetStore();
+const { showToast } = useToast();
 const {
   transferForm,
   showTransferDetails,
+  initFromTransfer,
   submitTransfer,
   closeTransferForm,
   useSettlementSuggestion,
 } = useBudgetTransferForm();
 
+const isEdit = computed(() => Boolean(props.transfer));
+const modalTitle = computed(() =>
+  isEdit.value ? 'Überweisung bearbeiten' : 'Überweisung eintragen'
+);
+
 watch(
-  () => [props.modelValue, props.suggestion] as const,
-  ([isOpen, sugg]) => {
+  () => [props.modelValue, props.transfer, props.suggestion] as const,
+  ([isOpen, transfer, sugg]) => {
     if (isOpen) {
-      if (sugg) {
+      if (transfer) {
+        initFromTransfer(transfer);
+      } else if (sugg) {
         useSettlementSuggestion(sugg);
+      } else {
+        closeTransferForm();
       }
     } else {
       closeTransferForm();
@@ -53,13 +70,26 @@ async function handleSubmit() {
   await submitTransfer();
   emit('update:modelValue', false);
   emit('submitted');
+  emit('saved');
+}
+
+async function handleDelete() {
+  if (props.transfer) {
+    await budgetStore.removeTransfer(props.transfer.id);
+    showToast({
+      message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+    });
+  }
+  handleClose();
+  emit('deleted');
 }
 </script>
 
 <template>
   <Modal
     :model-value="modelValue"
-    title="Überweisung eintragen"
+    :title="modalTitle"
     @update:model-value="(v) => !v && handleClose()"
   >
     <form class="edit-form" @submit.prevent="handleSubmit">
@@ -112,11 +142,21 @@ async function handleSubmit() {
       </CollapsibleFieldset>
 
       <div class="actions-row">
+        <Button
+          v-if="isEdit"
+          type="button"
+          variant="danger"
+          secondary
+          :icon="ACTION_ICONS.delete"
+          @click="handleDelete"
+        >
+          Löschen
+        </Button>
         <div class="spacer"></div>
         <Button type="button" variant="secondary" class="btn-cancel" @click="handleClose">
           Abbrechen
         </Button>
-        <Button type="submit">Eintragen</Button>
+        <Button type="submit">{{ isEdit ? 'Speichern' : 'Eintragen' }}</Button>
       </div>
     </form>
   </Modal>

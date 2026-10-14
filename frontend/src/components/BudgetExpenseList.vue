@@ -2,13 +2,11 @@
 import type { BudgetExpense } from '../api/types';
 import { useBudgetStore } from '../stores/budget';
 import EditButton from './EditButton.vue';
-import DeleteButton from './DeleteButton.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import CategoryChip from './CategoryChip.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { useToast } from '../composables/useToast';
 
 defineProps<{
   highlightedIds: Set<number>;
@@ -17,12 +15,6 @@ defineProps<{
 const emit = defineEmits<{ (e: 'edit', expense: BudgetExpense): void }>();
 
 const store = useBudgetStore();
-const { showToast } = useToast();
-
-async function removeExpense(id: number) {
-  await store.removeExpense(id);
-  showToast({ message: 'Ausgabe gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
-}
 </script>
 
 <template>
@@ -63,8 +55,7 @@ async function removeExpense(id: number) {
           </Button>
         </template>
         <template v-else>
-          <EditButton small @click="emit('edit', e)" />
-          <DeleteButton small @click="removeExpense(e.id)" />
+          <EditButton small aria-label="Ausgabe bearbeiten" @click="emit('edit', e)" />
         </template>
       </div>
     </li>

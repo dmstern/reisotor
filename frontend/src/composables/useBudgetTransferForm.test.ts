@@ -31,6 +31,7 @@ describe('useBudgetTransferForm', () => {
     budgetStore = useBudgetStore();
 
     vi.spyOn(budgetStore, 'submitTransfer').mockResolvedValue({} as any);
+    vi.spyOn(budgetStore, 'updateTransfer').mockResolvedValue({} as any);
   });
 
   it('initializes with closed form and empty fields', () => {
@@ -94,5 +95,41 @@ describe('useBudgetTransferForm', () => {
     expect(transferForm.transferForm.value.from_user_id).toBe('1');
     expect(transferForm.transferForm.value.to_user_id).toBe('2');
     expect(transferForm.transferForm.value.amount).toBe('42.50');
+  });
+
+  it('populates form from existing transfer and updates it on submit', async () => {
+    const transferForm = useBudgetTransferForm({ tripId: 123 });
+    const existingTransfer = {
+      id: 99,
+      trip_id: 123,
+      from_user_id: 1,
+      to_user_id: 2,
+      amount: 80,
+      date: '2026-08-01',
+      note: 'Mietwagenanteil',
+    };
+
+    transferForm.initFromTransfer(existingTransfer);
+
+    expect(transferForm.showTransferForm.value).toBe(true);
+    expect(transferForm.showTransferDetails.value).toBe(true);
+    expect(transferForm.transferForm.value.from_user_id).toBe('1');
+    expect(transferForm.transferForm.value.to_user_id).toBe('2');
+    expect(transferForm.transferForm.value.amount).toBe('80');
+    expect(transferForm.transferForm.value.date).toBe('2026-08-01');
+    expect(transferForm.transferForm.value.note).toBe('Mietwagenanteil');
+
+    transferForm.transferForm.value.amount = '95.50';
+    await transferForm.submitTransfer();
+
+    expect(budgetStore.updateTransfer).toHaveBeenCalledWith(99, {
+      from_user_id: 1,
+      to_user_id: 2,
+      amount: 95.5,
+      date: '2026-08-01',
+      note: 'Mietwagenanteil',
+    });
+    expect(transferForm.showTransferForm.value).toBe(false);
+    expect(transferForm.editingTransfer.value).toBeNull();
   });
 });

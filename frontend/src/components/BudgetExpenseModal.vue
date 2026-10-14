@@ -11,6 +11,7 @@ import CategoryCombobox from './CategoryCombobox.vue';
 import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { useBudgetStore } from '../stores/budget';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
@@ -26,6 +27,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
   (e: 'saved'): void;
+  (e: 'deleted'): void;
 }>();
 
 const budgetStore = useBudgetStore();
@@ -166,6 +168,19 @@ async function handleSubmit() {
   emit('update:modelValue', false);
   emit('saved');
 }
+
+async function handleDelete() {
+  if (props.expense) {
+    await budgetStore.removeExpense(props.expense.id);
+    showToast({
+      message: 'Ausgabe gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+    });
+    draft.clear();
+    emit('update:modelValue', false);
+    emit('deleted');
+  }
+}
 </script>
 
 <template>
@@ -277,6 +292,17 @@ async function handleSubmit() {
       />
 
       <div class="actions-row">
+        <Button
+          v-if="isEdit"
+          type="button"
+          variant="danger"
+          secondary
+          :icon="ACTION_ICONS.delete"
+          :disabled="isUploading"
+          @click="handleDelete"
+        >
+          Löschen
+        </Button>
         <div class="spacer"></div>
         <Button type="button" variant="secondary" class="btn-cancel" @click="handleClose">
           Abbrechen

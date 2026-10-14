@@ -24,10 +24,14 @@ class MockEventSource {
 }
 
 describe('BudgetTransferModal', () => {
+  let pinia: ReturnType<typeof createPinia>;
+  let store: ReturnType<typeof useBudgetStore>;
+
   beforeEach(() => {
     vi.stubGlobal('EventSource', MockEventSource);
-    setActivePinia(createPinia());
-    const store = useBudgetStore();
+    pinia = createPinia();
+    setActivePinia(pinia);
+    store = useBudgetStore();
     store.users = [
       { id: 1, username: 'Alice', avatar: '👩' },
       { id: 2, username: 'Bob', avatar: '👨' },
@@ -40,11 +44,12 @@ describe('BudgetTransferModal', () => {
 
   function mountModal(props: {
     modelValue: boolean;
+    transfer?: any;
     suggestion?: any;
     'onUpdate:modelValue'?: (v: boolean) => void;
     onSubmitted?: () => void;
+    onDeleted?: () => void;
   }) {
-    const pinia = createPinia();
     const container = document.createElement('div');
     document.body.appendChild(container);
     const app = createApp({
@@ -83,6 +88,59 @@ describe('BudgetTransferModal', () => {
 
     const amountInput = document.querySelector('input[placeholder*="Betrag"]') as HTMLInputElement;
     expect(amountInput?.value).toBe('45.50');
+
+    cleanUp();
+  });
+
+  it('renders "Überweisung bearbeiten" and delete button when editing an existing transfer', async () => {
+    const transfer = {
+      id: 12,
+      trip_id: 1,
+      from_user_id: 1,
+      to_user_id: 2,
+      amount: 120,
+      date: '2026-11-01',
+      note: 'Teilausgleich für Hotel',
+    };
+
+    const { cleanUp } = mountModal({ modelValue: true, transfer });
+    await nextTick();
+
+    const titleEl = document.querySelector('.modal-head h2');
+    expect(titleEl?.textContent).toContain('Überweisung bearbeiten');
+
+    const amountInput = document.querySelector('input[placeholder*="Betrag"]') as HTMLInputElement;
+    expect(amountInput?.value).toBe('120');
+
+    const deleteBtn = document.querySelector('button.btn--danger');
+    expect(deleteBtn).not.toBeNull();
+    expect(deleteBtn?.textContent).toContain('Löschen');
+
+    cleanUp();
+  });
+
+  it('calls removeTransfer and emits deleted when clicking delete button', async () => {
+    const transfer = {
+      id: 12,
+      trip_id: 1,
+      from_user_id: 1,
+      to_user_id: 2,
+      amount: 120,
+      date: '2026-11-01',
+      note: 'Teilausgleich für Hotel',
+    };
+    const removeSpy = vi.spyOn(store, 'removeTransfer').mockResolvedValue(undefined as any);
+    const onDeleted = vi.fn();
+
+    const { cleanUp } = mountModal({ modelValue: true, transfer, onDeleted });
+    await nextTick();
+
+    const deleteBtn = document.querySelector('button.btn--danger') as HTMLButtonElement;
+    deleteBtn.click();
+    await nextTick();
+
+    expect(removeSpy).toHaveBeenCalledWith(12);
+    expect(onDeleted).toHaveBeenCalled();
 
     cleanUp();
   });

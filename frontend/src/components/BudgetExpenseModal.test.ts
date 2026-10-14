@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import BudgetExpenseModal from './BudgetExpenseModal.vue';
+import { useBudgetStore } from '../stores/budget';
 import type { BudgetExpense } from '../api/types';
 
 vi.mock('../api/client', () => ({
@@ -24,9 +25,12 @@ class MockEventSource {
 }
 
 describe('BudgetExpenseModal', () => {
+  let pinia: ReturnType<typeof createPinia>;
+
   beforeEach(() => {
     vi.stubGlobal('EventSource', MockEventSource);
-    setActivePinia(createPinia());
+    pinia = createPinia();
+    setActivePinia(pinia);
   });
 
   afterEach(() => {
@@ -38,8 +42,8 @@ describe('BudgetExpenseModal', () => {
     expense?: BudgetExpense | null;
     'onUpdate:modelValue'?: (v: boolean) => void;
     onSaved?: () => void;
+    onDeleted?: () => void;
   }) {
-    const pinia = createPinia();
     const container = document.createElement('div');
     document.body.appendChild(container);
     const app = createApp({
@@ -87,6 +91,45 @@ describe('BudgetExpenseModal', () => {
 
     const titleInput = document.querySelector('input[placeholder*="Titel"]') as HTMLInputElement;
     expect(titleInput?.value).toBe('Konzertkarten');
+
+    const deleteBtn = document.querySelector('button.btn--danger');
+    expect(deleteBtn).not.toBeNull();
+    expect(deleteBtn?.textContent).toContain('Löschen');
+
+    cleanUp();
+  });
+
+  it('calls removeExpense and emits deleted when clicking delete button', async () => {
+    const store = useBudgetStore();
+    const removeSpy = vi.spyOn(store, 'removeExpense').mockResolvedValue(undefined as any);
+    const onDeleted = vi.fn();
+
+    const mockExpense: BudgetExpense = {
+      id: 88,
+      trip_id: 1,
+      title: 'Konzertkarten',
+      amount: 75,
+      category: 'Kultur',
+      paid_by_user_id: 1,
+      date: '2026-07-12',
+      note: 'Stehplatz',
+      budget_id: null,
+    };
+
+    const { cleanUp } = mountModal({
+      modelValue: true,
+      expense: mockExpense,
+      onDeleted,
+    } as any);
+    await nextTick();
+
+    const deleteBtn = document.querySelector('button.btn--danger') as HTMLButtonElement;
+    expect(deleteBtn).not.toBeNull();
+    deleteBtn.click();
+    await nextTick();
+
+    expect(removeSpy).toHaveBeenCalledWith(88);
+    expect(onDeleted).toHaveBeenCalled();
 
     cleanUp();
   });

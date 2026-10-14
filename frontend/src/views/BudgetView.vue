@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import type { Budget, BudgetExpense } from '../api/types';
+import type { Budget, BudgetExpense, BudgetTransfer } from '../api/types';
 import type { SettlementSuggestion } from '../utils/budgetBalances';
 import { useSpotsStore } from '../stores/spots';
 import { useBudgetStore } from '../stores/budget';
@@ -35,6 +35,7 @@ const showExpenseModal = ref(false);
 const editingExpense = ref<BudgetExpense | null>(null);
 
 const showTransferModal = ref(false);
+const editingTransfer = ref<BudgetTransfer | null>(null);
 const settlementSuggestion = ref<SettlementSuggestion | null>(null);
 
 const { autoSourceFor, categoryColors } = useBudgetSources();
@@ -79,11 +80,19 @@ function openEditExpense(expense: BudgetExpense) {
 }
 
 function openCreateTransfer() {
+  editingTransfer.value = null;
+  settlementSuggestion.value = null;
+  showTransferModal.value = true;
+}
+
+function openEditTransfer(transfer: BudgetTransfer) {
+  editingTransfer.value = transfer;
   settlementSuggestion.value = null;
   showTransferModal.value = true;
 }
 
 function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
+  editingTransfer.value = null;
   settlementSuggestion.value = suggestion;
   showTransferModal.value = true;
 }
@@ -190,7 +199,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
             >
           </div>
 
-          <BudgetTransferList :highlighted-ids="highlightedIds" />
+          <BudgetTransferList :highlighted-ids="highlightedIds" @edit="openEditTransfer" />
         </Card>
       </div>
     </div>
@@ -198,7 +207,11 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
     <!-- Modals -->
     <BudgetPotModal v-model="showPotModal" :budget="editingBudget" />
     <BudgetExpenseModal v-model="showExpenseModal" :expense="editingExpense" />
-    <BudgetTransferModal v-model="showTransferModal" :suggestion="settlementSuggestion" />
+    <BudgetTransferModal
+      v-model="showTransferModal"
+      :transfer="editingTransfer"
+      :suggestion="settlementSuggestion"
+    />
   </div>
   <ViewLoadingState v-else />
 </template>

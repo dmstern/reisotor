@@ -300,6 +300,20 @@ export const useBudgetStore = defineStore('budget', () => {
     return created;
   }
 
+  async function updateTransfer(
+    id: number,
+    body: Omit<TransferInput, 'trip_id'> & { trip_id?: number }
+  ) {
+    const updated = await api.put<BudgetTransfer>(`/budget/transfers/${id}`, body);
+    const idx = transfers.value.findIndex((t) => t.id === updated.id);
+    if (idx !== -1) {
+      const next = [...transfers.value];
+      next[idx] = updated;
+      transfers.value = next;
+    }
+    return updated;
+  }
+
   async function removeTransfer(id: number) {
     await api.delete(`/budget/transfers/${id}`);
     transfers.value = transfers.value.filter((t) => t.id !== id);
@@ -336,6 +350,7 @@ export const useBudgetStore = defineStore('budget', () => {
     updateExpense,
     removeExpense,
     submitTransfer,
+    updateTransfer,
     removeTransfer,
   };
 });
