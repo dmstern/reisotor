@@ -330,6 +330,7 @@ Dieser Katalog dient als **lebendes Gedächtnis zwischen separaten Agent-Session
 | `useRouteCalculation` | Composable (`composables/useRouteCalculation.ts`) | Legs / Tours | `ExcursionsView`, `TripMap`, `ScheduleView` | Isoliertes Berechnen von Routen (Auto, Rad, Fuß) mit Multi-Routen-Vergleich & Debouncing. |
 | `LegTransportModeSelector` | Komponente (`components/LegTransportModeSelector.vue`) | Legs / Tours | `ExcursionsView`, `ScheduleView`, `SettingsView` | Universelle Fortbewegungsart-Auswahl (SegmentedToggle) mit animiertem ÖPNV-Fahrzeug-Dropdown. |
 | `useLegTimeSync` | Composable (`composables/useLegTimeSync.ts`) | Legs / Tours | `ScheduleView`, `ExcursionsView` | Bidirektionale Kopplung von Start- und Endzeitpunkten basierend auf Solldauer mit Validierung. |
+| `ListProgressHeader` | Komponente (`components/ListProgressHeader.vue`) | Listen / Header | `TodoView`, `ShoppingListView`, `PackingListView`, `BudgetView` | Einheitlicher Seitenkopf mit Titel, Fortschritts-Badge, Prozentanzeige, animiertem Fortschrittsbalken und Slot für Actions. |
 
 _(Wird bei jedem Phase-4-Durchlauf um neu geschnittene oder generalisierte Bausteine ergänzt)_
 
