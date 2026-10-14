@@ -166,6 +166,7 @@ function discardDraft() {
     <DraftStatusBar
       :status="newDraft.status.value"
       :restored="newDraft.restored.value"
+      :can-discard="true"
       mode="create"
       @discard="discardDraft"
     />
