@@ -5,7 +5,7 @@ import FileFormatGraphic from './FileFormatGraphic.vue';
 import type { IconDef } from '../../utils/icon';
 import type { IconGroup } from '../../stores/iconStyle';
 import type { Attachment } from '../../api/types';
-import type { AttachmentPreviewItem } from '../AttachmentPreviewModal.vue';
+import type { AttachmentPreviewItem } from '../../utils/attachment';
 
 export interface PolaroidStationItem {
   key?: string | number;

@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { Attachment, DiaryEntry, ExcursionLeg } from '../api/types';
-import type { AttachmentPreviewItem } from '../components/AttachmentPreviewModal.vue';
+import type { AttachmentPreviewItem } from '../utils/attachment';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore, type MapFocusGalleryItem } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
