@@ -1,9 +1,10 @@
 import {
   IconSearch,
   IconBeach,
+  IconHome,
+  IconHomeFilled,
   IconBed,
   IconBedFilled,
-  IconBackpack,
   IconCompass,
   IconCompassFilled,
   IconTelescope,
@@ -19,7 +20,7 @@ import {
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
-// Konzept-Icons für TripMap.vue's Kartenwerkzeug-Buttons/-Popover-Menüs (Fokus-Gruppe, Standort &
+// Konzept-Icons für TripMap.vue's Kartenwerkzeug-Buttons/-Popover-Menüs (Kartenausschnitt &
 // Ausrichtung, Standort teilen, Aufzeichnen) - gleiches Registry-Muster wie formFieldIcons.ts
 // (Einzelfälle ohne eigene Kategorie-Registry, aber trotzdem als IconDef statt rohem Emoji-Literal
 // im Template, damit die Emoji/Symbole-Einstellung (stores/iconStyle.ts) hier genauso greift wie
@@ -28,8 +29,8 @@ import type { IconDef } from './icon';
 export type MapToolIconKey =
   | 'fitAll'
   | 'vacation'
+  | 'home'
   | 'accommodation'
-  | 'excursions'
   | 'photos'
   | 'orientationNorth'
   | 'orientationHeading'
@@ -37,14 +38,13 @@ export type MapToolIconKey =
   | 'shareLocation'
   | 'record'
   | 'recordStop'
-  | 'focusGroup'
-  | 'locationGroup';
+  | 'focusGroup';
 
 export const MAP_TOOL_ICONS: Record<MapToolIconKey, IconDef> = {
   fitAll: { id: 'search', emoji: '🔍', outline: IconSearch },
   vacation: { id: 'beach', emoji: '🏖️', outline: IconBeach },
+  home: { id: 'home', emoji: '🏠', outline: IconHome, filled: IconHomeFilled },
   accommodation: { id: 'bed', emoji: '🛏️', outline: IconBed, filled: IconBedFilled },
-  excursions: { id: 'backpack', emoji: '🎒', outline: IconBackpack },
   photos: { id: 'photo', emoji: '📸', outline: IconCamera, filled: IconCameraFilled },
   orientationNorth: { id: 'compass', emoji: '🧭', outline: IconCompass, filled: IconCompassFilled },
   orientationHeading: { id: 'telescope', emoji: '🔭', outline: IconTelescope },
@@ -62,9 +62,8 @@ export const MAP_TOOL_ICONS: Record<MapToolIconKey, IconDef> = {
     outline: IconPlayerStop,
     filled: IconPlayerStopFilled,
   },
-  // Gruppen-Trigger (siehe TripMap.vue): fassen mehrere der obigen Werkzeuge hinter einem Popover
-  // zusammen, brauchen deshalb ein eigenes, vom Inhalt unabhängiges Icon statt eines der obigen
-  // wiederzuverwenden (sonst wirkt es wie genau dieses eine Werkzeug statt einer Auswahl).
+  // Gruppen-Trigger (siehe TripMap.vue): fasst Kartenausschnitt, Standort-Sprünge und Ausrichtung
+  // hinter einem Popover zusammen, braucht deshalb ein eigenes, vom Inhalt unabhängiges Icon statt
+  // eines der obigen wiederzuverwenden (sonst wirkt es wie genau dieses eine Werkzeug statt einer Auswahl).
   focusGroup: { id: 'focus-2', emoji: '🔍', outline: IconFocus2 },
-  locationGroup: { id: 'compass', emoji: '🧭', outline: IconCompass, filled: IconCompassFilled },
 };

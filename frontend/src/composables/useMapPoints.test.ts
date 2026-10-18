@@ -153,4 +153,45 @@ describe('useMapPoints', () => {
     toggleDayFocus('2026-06-01');
     expect(drawers.mapFocusDate).toBeNull();
   });
+
+  it('splits filteredPoints into vacationPoints and homePoints based on is_home', () => {
+    const spotsStore = useSpotsStore();
+    spotsStore.spots = [
+      {
+        id: 1,
+        trip_id: 1,
+        title: 'Strandhotel',
+        category: 'Unterkunft',
+        lat: 38.7,
+        lng: -9.1,
+        done: 0,
+        is_home: 0,
+      },
+      {
+        id: 2,
+        trip_id: 1,
+        title: 'Heimatflughafen',
+        category: 'Flughafen',
+        lat: 50.0,
+        lng: 8.5,
+        done: 0,
+        is_home: 1,
+      },
+    ] as unknown as Spot[];
+
+    const travelItems = computed<TravelItem[]>(() => []);
+    const scheduleItems = ref<ScheduleItem[]>([]);
+    const excursionPhotoPoints = ref([]);
+    const allTripPhotoPoints = ref([]);
+
+    const { vacationPoints, homePoints } = useMapPoints({
+      travelItems,
+      scheduleItems,
+      excursionPhotoPoints,
+      allTripPhotoPoints,
+    });
+
+    expect(vacationPoints.value.map((p) => p.title)).toEqual(['Strandhotel']);
+    expect(homePoints.value.map((p) => p.title)).toEqual(['Heimatflughafen']);
+  });
 });

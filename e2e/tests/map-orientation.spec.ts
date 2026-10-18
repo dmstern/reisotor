@@ -23,15 +23,15 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     page,
   }) => {
     await page.goto('/excursions');
-    // Norden/Fahrtrichtung-Umschalter lebt hinter dem "Standort & Ausrichtung"-Popover (siehe
-    // TripMap.vue's .location-btn/locationMenuOpen) statt eines eigenen, immer sichtbaren Buttons.
-    const locationBtn = page.locator('.location-btn');
-    await expect(locationBtn).toBeVisible({ timeout: 10_000 });
+    // Norden/Fahrtrichtung-Umschalter lebt hinter dem "Kartenausschnitt & Ausrichtung"-Popover (siehe
+    // TripMapTools.vue's .focus-btn/focusMenuOpen) statt eines eigenen, immer sichtbaren Buttons.
+    const focusBtn = page.locator('.focus-btn');
+    await expect(focusBtn).toBeVisible({ timeout: 10_000 });
 
     // Standardmäßig "Norden" (🧭) - Kompass-Events verändern die Kartendrehung NICHT. Die
     // Rotations-Pane (leaflet-rotate) existiert unabhängig vom Modus immer, bleibt hier aber bei
     // 0° (Identitäts-Transform).
-    await locationBtn.click();
+    await focusBtn.click();
     await expect(page.getByRole('button', { name: 'Norden oben' })).toHaveClass(/active/);
     await page.locator('.picker-backdrop').click();
     await page.evaluate(() => {
@@ -52,9 +52,9 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     expect(Math.abs(rotationAngleFromMatrix(idleTransform))).toBeLessThan(1);
 
     // Umschalten auf "Fahrtrichtung" (🔭) - ab jetzt dreht sich die Karte mit dem Heading mit.
-    await locationBtn.click();
+    await focusBtn.click();
     await page.getByRole('button', { name: 'Fahrtrichtung oben' }).click();
-    await locationBtn.click();
+    await focusBtn.click();
     await expect(page.getByRole('button', { name: 'Fahrtrichtung oben' })).toHaveClass(/active/);
     await page.locator('.picker-backdrop').click();
 

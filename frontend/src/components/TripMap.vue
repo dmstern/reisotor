@@ -144,13 +144,13 @@ const {
   points,
   filteredPoints,
   vacationPoints,
+  homePoints,
   visiblePoints,
   vacationDays,
   dayHasContent,
   toggleDayFocus,
   totalAccommodationsCount,
   accommodationPoints,
-  excursionPoints,
 } = mapPoints;
 
 // 3. Offline Download composable
@@ -190,9 +190,9 @@ const leafletTripMap = useLeafletTripMap({
   points,
   filteredPoints,
   vacationPoints,
+  homePoints,
   visiblePoints,
   accommodationPoints,
-  excursionPoints,
   focusedExcursion,
   focusedTrack,
   focusedTrackPoints,
@@ -207,7 +207,7 @@ const leafletTripMap = useLeafletTripMap({
   onPointClick: handlePointClick,
 });
 
-const { fitAll, fitVacation, fitAccommodations, fitExcursions, focusCategory } = leafletTripMap;
+const { fitAll, fitVacation, fitHome, fitAccommodations, focusCategory } = leafletTripMap;
 
 defineExpose({ focusCategory });
 
@@ -473,10 +473,9 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
       <TripMapTools
         :filtered-points-count="filteredPoints.length"
         :vacation-points-count="vacationPoints.length"
+        :home-points-count="homePoints.length"
         :accommodation-points-count="accommodationPoints.length"
         :total-accommodations-count="totalAccommodationsCount"
-        :has-excursions="excursionsStore.excursions.length > 0"
-        :excursion-points-count="excursionPoints.length"
         :all-trip-photos-loaded="allTripPhotosLoaded"
         :all-trip-photo-points-count="allTripPhotoPoints.length"
         :has-own-position="!!ownPosition"
@@ -488,8 +487,8 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
         :tile-download-state="tileDownloadState"
         @fit-all="fitAll"
         @fit-vacation="fitVacation"
+        @fit-home="fitHome"
         @fit-accommodations="fitAccommodations"
-        @fit-excursions="fitExcursions"
         @focus-all-photos="focusAllPhotos"
         @open-focus-menu="loadAllTripPhotos"
         @jump-my-location="jumpToMyLocation"
@@ -587,7 +586,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 .map-wrap {
   /* Eckenabstand/Lücke über --space-3/--space-2, auf Mobil wie auf Desktop einheitlich.
      Touch-Targets halten stets mindestens 44px x 44px gemäß DESIGN.md §7.1 und WCAG 2.5.5 ein.
-     Der Stapel umfasst 5 Buttons hinter Popover-Triggern (.focus-btn/.location-btn). */
+     Der Stapel umfasst 4 Buttons (.focus-btn, .offline-download-btn, .share-location-btn, .record-btn). */
   --fit-btn-size: 44px;
   --fit-btn-gap: var(--space-2);
   --fit-btn-inset: var(--space-3);

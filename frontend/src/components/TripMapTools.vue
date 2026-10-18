@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useMapToolMenus } from '../composables/useMapToolMenus';
 import { useMapTrackRecording } from '../composables/useMapTrackRecording';
 import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
@@ -12,10 +13,9 @@ import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
 interface Props {
   filteredPointsCount: number;
   vacationPointsCount: number;
+  homePointsCount: number;
   accommodationPointsCount: number;
   totalAccommodationsCount: number;
-  hasExcursions: boolean;
-  excursionPointsCount: number;
   allTripPhotosLoaded: boolean;
   allTripPhotoPointsCount: number;
   hasOwnPosition: boolean;
@@ -27,7 +27,7 @@ interface Props {
   tileDownloadState?: 'idle' | 'downloading' | 'done';
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   userAvatar: '📍',
   otherMembers: () => [],
   isMemberOnline: () => false,
@@ -39,8 +39,8 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'fit-all'): void;
   (e: 'fit-vacation'): void;
+  (e: 'fit-home'): void;
   (e: 'fit-accommodations'): void;
-  (e: 'fit-excursions'): void;
   (e: 'focus-all-photos'): void;
   (e: 'open-focus-menu'): void;
   (e: 'jump-my-location'): void;
@@ -49,17 +49,16 @@ const emit = defineEmits<{
   (e: 'download-offline-map'): void;
 }>();
 
+const activeMembersWithPosition = computed(() =>
+  props.otherMembers.filter((member) => props.hasMemberPosition(member.id))
+);
+
 const {
   focusMenuOpen,
   focusButtonRef,
   focusMenuStyle,
   toggleFocusMenu,
   selectFocus,
-  locationMenuOpen,
-  locationButtonRef,
-  locationMenuStyle,
-  toggleLocationMenu,
-  selectLocation,
   shareMenuOpen,
   shareButtonRef,
   shareMenuStyle,
@@ -80,29 +79,16 @@ const {
 </script>
 
 <template>
-  <!-- Fasst "Alle anzeigen"/"Nur Urlaubsort"/"Nur Unterkünfte"/"Nur Tourziele" hinter einem Popover zusammen -->
+  <!-- Fasst Kartenausschnitts-Sprünge (Orte, Fotos, Live-Standorte) und Kartenausrichtung hinter einem Popover zusammen -->
   <IconButton
     ref="focusButtonRef"
     variant="floating"
     shape="circle"
     class="fit-btn focus-btn"
-    title="Kartenausschnitt fokussieren"
-    aria-label="Kartenausschnitt fokussieren"
-    :disabled="!filteredPointsCount"
+    title="Kartenausschnitt & Ausrichtung"
+    aria-label="Kartenausschnitt & Ausrichtung"
     :icon="MAP_TOOL_ICONS.focusGroup"
     @click="toggleFocusMenu($event)"
-  />
-
-  <!-- Fasst "Zu meinem Standort springen" und den Ausrichtungs-Umschalter hinter einem Popover zusammen -->
-  <IconButton
-    ref="locationButtonRef"
-    variant="floating"
-    shape="circle"
-    class="fit-btn location-btn"
-    title="Standort & Ausrichtung"
-    aria-label="Standort & Ausrichtung"
-    :icon="MAP_TOOL_ICONS.locationGroup"
-    @click="toggleLocationMenu($event)"
   />
 
   <IconButton
@@ -143,7 +129,12 @@ const {
 
   <Teleport to="body">
     <template v-if="focusMenuOpen">
-      <PickerMenu wide :style="focusMenuStyle" @close="focusMenuOpen = false">
+      <PickerMenu
+        wide
+        class="focus-picker-menu"
+        :style="focusMenuStyle"
+        @close="focusMenuOpen = false"
+      >
         <DropdownItem
           :disabled="!filteredPointsCount"
           :title="
@@ -165,6 +156,15 @@ const {
           @click="selectFocus(() => emit('fit-vacation'))"
         />
         <DropdownItem
+          :disabled="!homePointsCount"
+          :title="
+            !homePointsCount ? 'Keine Heimatorte eingetragen' : 'Auf die Heimatorte fokussieren'
+          "
+          :icon="MAP_TOOL_ICONS.home"
+          label="Nur Heimatorte"
+          @click="selectFocus(() => emit('fit-home'))"
+        />
+        <DropdownItem
           :disabled="!accommodationPointsCount"
           :title="
             !accommodationPointsCount
@@ -178,18 +178,6 @@ const {
           :icon="MAP_TOOL_ICONS.accommodation"
           label="Nur Unterkünfte"
           @click="selectFocus(() => emit('fit-accommodations'))"
-        />
-        <DropdownItem
-          v-if="hasExcursions"
-          :disabled="!excursionPointsCount"
-          :title="
-            !excursionPointsCount
-              ? 'Keine Tourziele mit Koordinaten vorhanden'
-              : 'Auf Tourziele fokussieren'
-          "
-          :icon="MAP_TOOL_ICONS.excursions"
-          label="Nur Tourziele"
-          @click="selectFocus(() => emit('fit-excursions'))"
         />
         <DropdownItem
           :disabled="allTripPhotosLoaded && !allTripPhotoPointsCount"
@@ -206,23 +194,26 @@ const {
           label="Alle Fotos mit Standort"
           @click="selectFocus(() => emit('focus-all-photos'))"
         />
-      </PickerMenu>
-    </template>
-    <template v-if="locationMenuOpen">
-      <PickerMenu wide :style="locationMenuStyle" @close="locationMenuOpen = false">
+
+        <hr class="picker-divider" />
+
         <DropdownItem
           :disabled="!hasOwnPosition"
-          @click="selectLocation(() => emit('jump-my-location'))"
+          :title="
+            !hasOwnPosition
+              ? 'Kein eigener Standort verfügbar'
+              : 'Auf meinen aktuellen Standort zentrieren'
+          "
+          @click="selectFocus(() => emit('jump-my-location'))"
         >
           <span class="picker-item-emoji" aria-hidden="true">{{ userAvatar || '📍' }}</span>
           Zu meinem Standort springen
         </DropdownItem>
         <DropdownItem
-          v-for="member in otherMembers"
+          v-for="member in activeMembersWithPosition"
           :key="member.id"
-          :disabled="!hasMemberPosition(member.id)"
-          :title="`${member.username} teilt gerade ${hasMemberPosition(member.id) ? '' : 'keinen '}Standort`"
-          @click="selectLocation(() => emit('jump-member-location', member.id))"
+          :title="`${member.username} teilt gerade den Standort`"
+          @click="selectFocus(() => emit('jump-member-location', member.id))"
         >
           <span
             class="picker-item-emoji"
@@ -234,17 +225,20 @@ const {
           </span>
           Zu Standort von {{ member.username }} springen
         </DropdownItem>
+
+        <hr class="picker-divider" />
+
         <DropdownItem
           :active="mapOrientationMode === 'north'"
           :icon="MAP_TOOL_ICONS.orientationNorth"
           label="Norden oben"
-          @click="selectLocation(() => emit('set-orientation-mode', 'north'))"
+          @click="selectFocus(() => emit('set-orientation-mode', 'north'))"
         />
         <DropdownItem
           :active="mapOrientationMode === 'heading'"
           :icon="MAP_TOOL_ICONS.orientationHeading"
           label="Fahrtrichtung oben"
-          @click="selectLocation(() => emit('set-orientation-mode', 'heading'))"
+          @click="selectFocus(() => emit('set-orientation-mode', 'heading'))"
         />
       </PickerMenu>
     </template>
@@ -326,20 +320,16 @@ const {
   cursor: not-allowed;
 }
 
-.location-btn {
+.offline-download-btn {
   top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + var(--fit-btn-step));
 }
 
-.offline-download-btn {
+.share-location-btn {
   top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 2 * var(--fit-btn-step));
 }
 
-.share-location-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 3 * var(--fit-btn-step));
-}
-
 .record-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 4 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 3 * var(--fit-btn-step));
 }
 
 .share-location-btn.active,
@@ -352,6 +342,17 @@ const {
 .share-location-btn.active:hover:not(:disabled),
 .record-btn.active:hover:not(:disabled) {
   background: var(--color-primary-dark);
+}
+
+:global(.focus-picker-menu) {
+  max-height: calc(100dvh - 80px);
+  overflow-y: auto;
+}
+
+.picker-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-1) 0;
 }
 
 .picker-item-emoji {
