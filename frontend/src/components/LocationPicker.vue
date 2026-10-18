@@ -479,6 +479,7 @@ defineExpose({
 }
 
 .polaroid-slide-leave-active {
+  pointer-events: none;
   transform-origin: top center;
   transition:
     opacity 0.18s ease-in,

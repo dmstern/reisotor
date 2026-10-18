@@ -567,6 +567,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     isSpotUploadingCoverImage.value = false;
     spotPreviewImages.value = [];
     selectedSpotCity.value = null;
+    spotLocationPickerRef.value?.reset();
     newSpotDraft.clear();
   }
 
@@ -582,6 +583,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     isSpotUploadingCoverImage.value = false;
     spotPreviewImages.value = [];
     selectedSpotCity.value = null;
+    spotLocationPickerRef.value?.reset();
     newSpotDraft.clear();
     showToast({ message: 'Entwurf verworfen.', type: 'info' });
   }
