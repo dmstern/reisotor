@@ -62,6 +62,8 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
         { root: el.closest('.spots-col'), threshold: 0 }
       );
       categoryNavObserver.observe(el);
+    } else {
+      isCategoryNavStuck.value = false;
     }
   }
 
@@ -234,7 +236,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
       navClearance = Math.max(0, bodyPaddingTop + navTop + navHeight);
     } else if (categoryNavEl.value && categoryNavEl.value.offsetParent !== null) {
       navClearance = bodyPaddingTop + categoryNavEl.value.getBoundingClientRect().height;
-    } else if (categoryNavHeight.value) {
+    } else if (categoryNavEl.value && categoryNavHeight.value) {
       navClearance = bodyPaddingTop + categoryNavHeight.value;
     } else {
       navClearance = bodyPaddingTop;
@@ -374,12 +376,14 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     categoryNavResizeObserver = null;
     categoryNavEl.value = el instanceof HTMLElement ? el : null;
     if (el instanceof HTMLElement) {
-      categoryNavResizeObserver = new ResizeObserver(() => {
-        updateCategoryNavUnderline();
-        categoryNavHeight.value = el.getBoundingClientRect().height;
-        updateNavArrows();
-      });
-      categoryNavResizeObserver.observe(el);
+      if (typeof ResizeObserver !== 'undefined') {
+        categoryNavResizeObserver = new ResizeObserver(() => {
+          updateCategoryNavUnderline();
+          categoryNavHeight.value = el.getBoundingClientRect().height;
+          updateNavArrows();
+        });
+        categoryNavResizeObserver.observe(el);
+      }
       updateNavArrows();
       nextTick(updateCategoryNavUnderline);
     }

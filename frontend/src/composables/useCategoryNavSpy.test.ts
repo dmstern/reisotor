@@ -126,4 +126,39 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
 
     body.remove();
   });
+
+  it('scrollToExcursion does not subtract categoryNavHeight when categoryNavEl is unmounted', async () => {
+    const { setExcursionRef, setCategoryNavRef, scrollToExcursion, spotsColBodyEl } = createSpy();
+
+    const body = document.createElement('div');
+    body.className = 'spots-col-body';
+    body.getBoundingClientRect = () => ({ top: 100 }) as DOMRect;
+    document.body.appendChild(body);
+    spotsColBodyEl.value = body;
+
+    let scrolledToTop: number | null = null;
+    body.scrollTo = (options?: ScrollToOptions | number) => {
+      if (typeof options === 'object' && options?.top !== undefined) {
+        scrolledToTop = options.top;
+      }
+    };
+
+    const targetEl = document.createElement('article');
+    targetEl.getBoundingClientRect = () => ({ top: 300 }) as DOMRect;
+    body.appendChild(targetEl);
+    setExcursionRef(7, targetEl);
+
+    // Without categoryNavEl mounted (Tours mode): elTopInBody (200) - spacing (16) = 184
+    await scrollToExcursion(7);
+    expect(scrolledToTop).toBe(184);
+
+    // With categoryNavEl mounted (Category mode): 200 - navHeight (44) - spacing (16) = 140
+    const navEl = document.createElement('nav');
+    setCategoryNavRef(navEl);
+    await scrollToExcursion(7);
+    expect(scrolledToTop).toBe(140);
+
+    setCategoryNavRef(null);
+    body.remove();
+  });
 });

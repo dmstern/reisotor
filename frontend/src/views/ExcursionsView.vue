@@ -159,7 +159,6 @@ const {
   setCategoryNavRef,
   setNavItemRef,
   scrollNavBy,
-  setProgrammaticActiveCategory,
   scrollToCategory,
   scrollToExcursion,
   scrollToSpot,
@@ -487,48 +486,6 @@ function onCancelProgrammaticScroll() {
   cancelProgrammaticScroll();
 }
 
-async function onSelectCategory(category: string) {
-  const grp = spotGroups.value.find((g) => g.category === category);
-  const excursion = grp?.excursion;
-
-  if (!excursion) {
-    scrollToCategory(category);
-    return;
-  }
-
-  const token = ++excursionOpenSequenceToken;
-
-  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursion.id) {
-    drawers.mapFocusExcursionId = null;
-  }
-  if (drawers.mapFocusKey != null) {
-    drawers.mapFocusKey = null;
-  }
-
-  setProgrammaticActiveCategory(category, 2000);
-
-  const wasAlreadyExpanded = expandedExcursionId.value === excursion.id;
-  if (!wasAlreadyExpanded) {
-    expandedExcursionId.value = excursion.id;
-    expandedSpotId.value = null;
-
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (!prefersReduced) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 400));
-      if (token !== excursionOpenSequenceToken) return;
-    } else {
-      await nextTick();
-      if (token !== excursionOpenSequenceToken) return;
-    }
-  }
-
-  await scrollToExcursion(excursion.id);
-}
-
 function onSpotShowOnMap(spot: Spot) {
   sheetState.value = 'partial';
   drawers.openMapAt(`spot-${spot.id}`);
@@ -805,9 +762,10 @@ onUnmounted(() => {
         </div>
         <div
           class="spots-col-body"
-          :class="{ 'has-tour-groups': groupMode === 'tours' }"
           ref="spotsColBodyEl"
-          :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
+          :style="{
+            '--category-nav-clearance': groupMode === 'category' ? `${categoryNavHeight}px` : '0px',
+          }"
           @pointerdown="onSheetBodyPointerDown"
           @wheel.passive="onCancelProgrammaticScroll"
           @touchmove.passive="onCancelProgrammaticScroll"
@@ -1046,6 +1004,7 @@ onUnmounted(() => {
 
           <!-- Sticky Category Nav Bar (#144, #446) -->
           <ExcursionCategoryNav
+            v-if="groupMode === 'category'"
             :spot-groups="spotGroups"
             :active-category="activeCategory"
             :is-stuck="isCategoryNavStuck"
@@ -1057,7 +1016,7 @@ onUnmounted(() => {
             :set-sentinel-ref="setCategoryNavSentinelRef"
             :set-nav-ref="setCategoryNavRef"
             :set-nav-item-ref="setNavItemRef"
-            @select-category="onSelectCategory"
+            @select-category="scrollToCategory"
             @scroll-nav="scrollNavBy"
             @update-nav-arrows="updateNavArrows"
           />
@@ -1987,10 +1946,6 @@ onUnmounted(() => {
   border-top: 1px solid var(--color-border);
 }
 
-.category-nav-wrap ~ .category-group.is-tour-group:first-of-type {
-  border-top: none;
-}
-
 .category-group.is-tour-group.is-expanded {
   background: var(--tour-theme-tint);
   border-bottom-color: var(--tour-theme-border);
@@ -2004,10 +1959,6 @@ onUnmounted(() => {
 
 .category-group.is-tour-group + .category-group:not(.is-tour-group) {
   margin-top: var(--space-4);
-}
-
-.spots-col-body.has-tour-groups .category-nav-wrap {
-  margin-bottom: 0;
 }
 
 .group h3 {
