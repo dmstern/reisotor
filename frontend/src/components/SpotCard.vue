@@ -276,7 +276,7 @@ const cardRotation = computed(() => {
         </div>
       </div>
 
-      <!-- Untere Zeile (Footer): Umsteigezeit/Anhänge links, Social Actions im collapsed Zustand -->
+      <!-- Untere Zeile (Footer): Umsteigezeit/Anhänge links, Social Actions & Aufklapp-Hinweis im collapsed Zustand -->
       <div
         class="card-footer-row"
         :class="{ 'is-expanded': expanded, 'has-layover': layoverMinutes != null }"
@@ -306,13 +306,29 @@ const cardRotation = computed(() => {
           </Badge>
         </div>
 
-        <SocialRow
-          v-if="!expanded"
-          readonly
-          :like-count="likeCount"
-          :liked="liked"
-          :comment-count="comments.length"
-        />
+        <div v-if="!expanded" class="card-footer-right">
+          <SocialRow
+            readonly
+            :like-count="likeCount"
+            :liked="liked"
+            :comment-count="comments.length"
+          />
+          <span
+            class="spot-expand-pill"
+            :class="{
+              'is-compact': likeCount > 0 || comments.length > 0 || layoverMinutes != null,
+            }"
+            aria-hidden="true"
+          >
+            <span class="spot-expand-label">Details</span>
+            <AppIcon
+              :icon="ACTION_ICONS.chevronDown"
+              :size="13"
+              group="actions"
+              class="spot-expand-chevron"
+            />
+          </span>
+        </div>
       </div>
 
       <Accordion :expanded="expanded && showComments">
@@ -415,8 +431,37 @@ const cardRotation = computed(() => {
   padding: var(--spot-card-pad) var(--space-2) 0 var(--space-2);
   gap: var(--space-2);
   min-width: 0;
-  transition: padding 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition:
+    padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
   box-sizing: border-box;
+}
+
+.spot-card.expanded:has(
+    .image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)),
+    .card-badge-group:hover
+  )
+  .body {
+  transform: translateY(-2px);
+  opacity: 0.84;
+}
+
+.spot-card.expanded:has(.card-badge-group:hover) :deep(.image.is-expanded) {
+  box-shadow:
+    inset 0 0 0 2px var(--color-primary),
+    0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.spot-card.expanded:has(.card-badge-group:hover) :deep(.spot-collapse-pill) {
+  background: var(--color-primary);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.spot-card.expanded:has(.card-badge-group:hover) :deep(.spot-collapse-chevron) {
+  transform: translateY(-2px);
 }
 
 .spot-card:not(.expanded) .body {
@@ -461,6 +506,11 @@ const cardRotation = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.spot-card:not(.expanded):hover .card-title {
+  color: var(--color-primary-dark);
 }
 
 .spot-note-container {
@@ -544,10 +594,6 @@ const cardRotation = computed(() => {
   flex: 1;
 }
 
-.spot-card:not(.expanded) .card-footer-left {
-  max-width: calc(100% - 70px);
-}
-
 .spot-card:not(.expanded) .card-footer-row {
   margin-top: auto;
 }
@@ -557,10 +603,59 @@ const cardRotation = computed(() => {
   min-height: 32px;
 }
 
-.spot-card.has-layover:not(.expanded) .card-social-actions {
-  position: absolute;
-  right: 0;
-  bottom: 0;
+.card-footer-right {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.spot-expand-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spot-expand-pill.is-compact {
+  width: 22px;
+  padding: 0;
+}
+
+.spot-expand-pill.is-compact .spot-expand-label {
+  display: none;
+}
+
+.spot-expand-chevron {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spot-card:not(.expanded):hover .spot-expand-pill {
+  background: var(--color-primary-tint);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  color: var(--color-primary-dark);
+  box-shadow: var(--shadow-xs);
+}
+
+.spot-card:not(.expanded):hover .spot-expand-chevron {
+  transform: translateY(1.5px);
 }
 
 .spot-layover-badge {
@@ -620,13 +715,6 @@ const cardRotation = computed(() => {
 
 .card-social-actions.is-expanded {
   margin-left: auto;
-}
-
-.spot-card:not(.expanded) .card-social-actions {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  z-index: var(--z-card);
 }
 
 .card-actions {
@@ -812,11 +900,6 @@ const cardRotation = computed(() => {
       right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
-  .spot-card:not(.expanded) .card-social-actions {
-    bottom: var(--radius-xs);
-    right: var(--space-2);
-  }
-
   .spot-note-container {
     max-height: 1.4em;
   }
@@ -877,14 +960,26 @@ const cardRotation = computed(() => {
   .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
     padding-right: 76px;
   }
+
+  .spot-expand-pill {
+    width: 22px;
+    padding: 0;
+  }
+
+  .spot-expand-label {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .spot-card,
   .body,
+  .spot-expand-pill,
+  .spot-expand-chevron,
   .actions-accordion,
   .actions-accordion-inner > * {
     transition: none;
+    transform: none !important;
   }
 }
 </style>

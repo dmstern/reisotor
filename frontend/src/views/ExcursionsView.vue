@@ -1977,7 +1977,10 @@ onUnmounted(() => {
   margin-right: calc(var(--space-3) * -1);
   margin-bottom: 0;
   border-bottom: 1px solid var(--color-border);
-  transition: background 0.25s ease;
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .category-group.is-tour-group:first-of-type {
@@ -1990,6 +1993,8 @@ onUnmounted(() => {
 
 .category-group.is-tour-group.is-expanded {
   background: var(--tour-theme-tint);
+  border-bottom-color: var(--tour-theme-border);
+  box-shadow: inset 4px 0 0 var(--tour-theme-color);
 }
 
 .category-group.is-tour-group .empty {

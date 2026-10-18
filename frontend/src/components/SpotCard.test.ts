@@ -66,6 +66,8 @@ describe('SpotCard', () => {
     expect(html).toContain('Sehenswürdigkeit');
     expect(html).toContain('social-row');
     expect(html).toContain('is-readonly');
+    expect(html).toContain('spot-expand-pill');
+    expect(html).not.toContain('spot-collapse-pill');
     expect(html).not.toContain('like-btn');
   });
 
@@ -84,6 +86,8 @@ describe('SpotCard', () => {
     expect(html).toContain('expanded');
     expect(html).toContain('show-on-map-btn');
     expect(html).toContain('image-expanded-overlay');
+    expect(html).toContain('spot-collapse-pill');
+    expect(html).toContain('Einklappen');
     expect(html).toContain('Von Daniel');
     expect(html).toContain('Maulbeerallee, 14469 Potsdam');
     expect(html).toContain('spot-accordion');

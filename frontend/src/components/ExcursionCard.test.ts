@@ -81,6 +81,8 @@ describe('ExcursionCard', () => {
     expect(html).toContain('excursion-card');
     expect(html).toContain('tour-status-meta');
     expect(html).toContain('is-readonly');
+    expect(html).toContain('card-disclosure-pill');
+    expect(html).not.toContain('Einklappen');
     expect(html).not.toContain('card-title-meta');
     expect(html).not.toContain('calendar-drag-handle');
     expect(html).not.toContain('like-btn');
@@ -106,6 +108,8 @@ describe('ExcursionCard', () => {
     expect(html).toContain('Auf Karte anzeigen');
     expect(html).toContain('done-toggle');
     expect(html).toContain('like-btn');
+    expect(html).toContain('card-disclosure-pill is-expanded');
+    expect(html).toContain('Einklappen');
   });
 
   it('rendert Travel-Leg mit Route und Transportart-Rolle korrekt', async () => {
