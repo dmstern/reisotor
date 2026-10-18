@@ -49,15 +49,26 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     return undefined;
   });
 
+  const canSaveDraft = computed(
+    () => !upload.uploading.value && hasDiaryEntryContent(editForm.value)
+  );
+
+  const saveDraftTooltip = computed(() => {
+    if (upload.uploading.value) return 'Bilder werden noch hochgeladen…';
+    if (!hasDiaryEntryContent(editForm.value)) {
+      return 'Bitte fülle zuerst den Titel, Text oder ein Bild aus';
+    }
+    return undefined;
+  });
+
   const isDraftEmpty = computed(
     () => Boolean(editingEntry.value?.is_draft) && !hasDiaryEntryContent(editForm.value)
   );
 
-  const isDeleteDisabled = computed(() => upload.uploading.value || isDraftEmpty.value);
+  const isDeleteDisabled = computed(() => upload.uploading.value);
 
   const deleteTooltip = computed(() => {
     if (upload.uploading.value) return 'Bilder werden noch hochgeladen…';
-    if (isDraftEmpty.value) return 'Neuer Entwurf ist noch leer';
     return undefined;
   });
 
@@ -93,6 +104,7 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
       return;
     }
     if (!editingEntry.value || upload.uploading.value) return;
+    const entryId = editingEntry.value.id;
     const body = {
       title: editForm.value.title || undefined,
       content: editForm.value.content,
@@ -103,31 +115,70 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
       date: editForm.value.date,
       is_draft: false,
     };
-    const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
-    onEntryUpdated(updated);
-    onLinkDone(editForm.value.excursion_ids, editForm.value.spot_ids, editForm.value.date);
+    const excursionIds = editForm.value.excursion_ids;
+    const spotIds = editForm.value.spot_ids;
+    const date = editForm.value.date;
+
+    const updated = await api.put<DiaryEntry>(`/diary/${entryId}`, body);
     editDraft.clear();
     editingEntry.value = null;
+    onEntryUpdated(updated);
+    onLinkDone(excursionIds, spotIds, date);
+  }
+
+  async function saveDraftOnly() {
+    if (!editingEntry.value || upload.uploading.value) return;
+    if (!hasDiaryEntryContent(editForm.value)) return;
+    const entryId = editingEntry.value.id;
+    const now = new Date().toISOString();
+    const body = {
+      title: editForm.value.title || undefined,
+      content: editForm.value.content,
+      content_format: 'html',
+      images: editForm.value.images,
+      excursion_ids: editForm.value.excursion_ids,
+      spot_ids: editForm.value.spot_ids,
+      date: editForm.value.date || now.slice(0, 10),
+      is_draft: true,
+    };
+    const excursionIds = editForm.value.excursion_ids;
+    const spotIds = editForm.value.spot_ids;
+    const date = editForm.value.date;
+
+    const updated = await api.put<DiaryEntry>(`/diary/${entryId}`, body);
+    editDraft.clear();
+    editingEntry.value = null;
+    onEntryUpdated(updated);
+    onLinkDone(excursionIds, spotIds, date);
+    showToast({
+      message: 'Entwurf gespeichert.',
+      type: 'info',
+    });
   }
 
   async function closeEditForm() {
     upload.abortUpload();
-    if (editingEntry.value?.is_draft && hasDiaryEntryContent(editForm.value)) {
-      const body = {
-        title: editForm.value.title || undefined,
-        content: editForm.value.content,
-        content_format: 'html',
-        images: editForm.value.images,
-        excursion_ids: editForm.value.excursion_ids,
-        spot_ids: editForm.value.spot_ids,
-        date: editForm.value.date,
-        is_draft: true,
-      };
-      const updated = await api.put<DiaryEntry>(`/diary/${editingEntry.value.id}`, body);
-      onEntryUpdated(updated);
-    }
+    const entryToSave = editingEntry.value;
+    if (!entryToSave) return;
+    const formToSave = { ...editForm.value };
     editDraft.clear();
     editingEntry.value = null;
+
+    if (entryToSave.is_draft && hasDiaryEntryContent(formToSave)) {
+      const now = new Date().toISOString();
+      const body = {
+        title: formToSave.title || undefined,
+        content: formToSave.content,
+        content_format: 'html',
+        images: formToSave.images,
+        excursion_ids: formToSave.excursion_ids,
+        spot_ids: formToSave.spot_ids,
+        date: formToSave.date || now.slice(0, 10),
+        is_draft: true,
+      };
+      const updated = await api.put<DiaryEntry>(`/diary/${entryToSave.id}`, body);
+      onEntryUpdated(updated);
+    }
   }
 
   function discardEditDraft() {
@@ -163,6 +214,8 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     showDateError,
     canSave,
     saveTooltip,
+    canSaveDraft,
+    saveDraftTooltip,
     isDraftEmpty,
     isDeleteDisabled,
     deleteTooltip,
@@ -170,6 +223,7 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     upload,
     startEdit,
     submitEditEntry,
+    saveDraftOnly,
     closeEditForm,
     discardEditDraft,
     deleteEditingEntry,

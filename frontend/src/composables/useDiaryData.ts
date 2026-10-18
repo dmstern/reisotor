@@ -78,10 +78,14 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   }
 
   async function removeEntry(id: number) {
+    const entry = entries.value.find((e) => e.id === id);
+    const isDraft = Boolean(entry?.is_draft);
     await api.delete(`/diary/${id}`);
     entries.value = entries.value.filter((e) => e.id !== id);
     showToast({
-      message: 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
+      message: isDraft
+        ? 'Entwurf verworfen.'
+        : 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
       type: 'info',
     });
   }

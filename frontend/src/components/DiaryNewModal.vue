@@ -32,11 +32,6 @@ const auth = useAuthStore();
 
 const newFormLogic = useDiaryNewForm({
   tripId: computed(() => props.tripId),
-  myDraft: computed(() => props.myDraft ?? null),
-  onStartEditDraft: (draft) => {
-    emit('startEditDraft', draft);
-    emit('update:modelValue', false);
-  },
   onEntryCreated: (created) => {
     emit('created', created);
     emit('update:modelValue', false);

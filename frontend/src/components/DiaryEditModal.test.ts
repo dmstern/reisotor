@@ -81,7 +81,7 @@ describe('DiaryEditModal', () => {
     cleanUp();
   });
 
-  it('zeigt Veröffentlichen-Button bei Entwürfen', async () => {
+  it('zeigt Veröffentlichen-, Entwurf speichern- und Entwurf verwerfen-Buttons bei Entwürfen', async () => {
     const { cleanUp } = mountModal({
       entry: { ...dummyEntry, is_draft: 1 },
     });
@@ -90,6 +90,8 @@ describe('DiaryEditModal', () => {
     const bodyHtml = document.body.innerHTML;
     expect(bodyHtml).toContain('Eintrag anlegen');
     expect(bodyHtml).toContain('Veröffentlichen');
+    expect(bodyHtml).toContain('Entwurf speichern');
+    expect(bodyHtml).toContain('Entwurf verwerfen');
     cleanUp();
   });
 });
