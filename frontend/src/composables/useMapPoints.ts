@@ -215,6 +215,7 @@ export function useMapPoints(options: UseMapPointsOptions) {
   });
 
   const vacationPoints = computed(() => filteredPoints.value.filter((p) => !p.homeSide));
+  const homePoints = computed(() => filteredPoints.value.filter((p) => !!p.homeSide));
 
   const visiblePoints = computed(() => {
     if (drawers.mapFocusAllPhotos) {
@@ -280,16 +281,6 @@ export function useMapPoints(options: UseMapPointsOptions) {
     points.value.filter((p) => p.category === 'Unterkunft')
   );
 
-  const excursionSpotIds = computed(
-    () => new Set(excursionsStore.excursions.flatMap((e) => e.spot_ids))
-  );
-
-  const excursionPoints = computed(() =>
-    filteredPoints.value.filter(
-      (p) => p.origin === 'spot' && excursionSpotIds.value.has(Number(p.key.slice('spot-'.length)))
-    )
-  );
-
   return {
     focusedExcursion,
     focusedSpot,
@@ -300,13 +291,12 @@ export function useMapPoints(options: UseMapPointsOptions) {
     spotScheduledDates,
     filteredPoints,
     vacationPoints,
+    homePoints,
     visiblePoints,
     vacationDays,
     dayHasContent,
     toggleDayFocus,
     totalAccommodationsCount,
     accommodationPoints,
-    excursionSpotIds,
-    excursionPoints,
   };
 }
