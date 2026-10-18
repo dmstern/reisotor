@@ -159,6 +159,7 @@ const {
   setCategoryNavRef,
   setNavItemRef,
   scrollNavBy,
+  setProgrammaticActiveCategory,
   scrollToCategory,
   scrollToExcursion,
   scrollToSpot,
@@ -481,6 +482,53 @@ function onExcursionCardClose() {
   drawers.mapFocusExcursionId = null;
 }
 
+function onCancelProgrammaticScroll() {
+  excursionOpenSequenceToken++;
+  cancelProgrammaticScroll();
+}
+
+async function onSelectCategory(category: string) {
+  const grp = spotGroups.value.find((g) => g.category === category);
+  const excursion = grp?.excursion;
+
+  if (!excursion) {
+    scrollToCategory(category);
+    return;
+  }
+
+  const token = ++excursionOpenSequenceToken;
+
+  if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursion.id) {
+    drawers.mapFocusExcursionId = null;
+  }
+  if (drawers.mapFocusKey != null) {
+    drawers.mapFocusKey = null;
+  }
+
+  setProgrammaticActiveCategory(category, 2000);
+
+  const wasAlreadyExpanded = expandedExcursionId.value === excursion.id;
+  if (!wasAlreadyExpanded) {
+    expandedExcursionId.value = excursion.id;
+    expandedSpotId.value = null;
+
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!prefersReduced) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 400));
+      if (token !== excursionOpenSequenceToken) return;
+    } else {
+      await nextTick();
+      if (token !== excursionOpenSequenceToken) return;
+    }
+  }
+
+  await scrollToExcursion(excursion.id);
+}
+
 function onSpotShowOnMap(spot: Spot) {
   sheetState.value = 'partial';
   drawers.openMapAt(`spot-${spot.id}`);
@@ -761,8 +809,8 @@ onUnmounted(() => {
           ref="spotsColBodyEl"
           :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
           @pointerdown="onSheetBodyPointerDown"
-          @wheel.passive="cancelProgrammaticScroll"
-          @touchmove.passive="cancelProgrammaticScroll"
+          @wheel.passive="onCancelProgrammaticScroll"
+          @touchmove.passive="onCancelProgrammaticScroll"
         >
           <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
            Teleport) landet sie hier statt als Overlay über der Karte zu schweben (verdeckte dort
@@ -1009,7 +1057,7 @@ onUnmounted(() => {
             :set-sentinel-ref="setCategoryNavSentinelRef"
             :set-nav-ref="setCategoryNavRef"
             :set-nav-item-ref="setNavItemRef"
-            @select-category="scrollToCategory"
+            @select-category="onSelectCategory"
             @scroll-nav="scrollNavBy"
             @update-nav-arrows="updateNavArrows"
           />

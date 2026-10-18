@@ -92,4 +92,38 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
 
     body.remove();
   });
+
+  it('setProgrammaticActiveCategory updates activeCategory immediately', () => {
+    const { setProgrammaticActiveCategory, activeCategory } = createSpy();
+    expect(activeCategory.value).toBeNull();
+    setProgrammaticActiveCategory('Wanderung', 1000);
+    expect(activeCategory.value).toBe('Wanderung');
+  });
+
+  it('scrollToCategory sets activeCategory and scrolls body to category element', async () => {
+    const { setCategoryRef, scrollToCategory, spotsColBodyEl, activeCategory } = createSpy();
+
+    const body = document.createElement('div');
+    body.className = 'spots-col-body';
+    document.body.appendChild(body);
+    spotsColBodyEl.value = body;
+
+    let scrolledToTop: number | null = null;
+    body.scrollTo = (options?: ScrollToOptions | number) => {
+      if (typeof options === 'object' && options?.top !== undefined) {
+        scrolledToTop = options.top;
+      }
+    };
+
+    const targetEl = document.createElement('section');
+    targetEl.className = 'tour-group-card';
+    body.appendChild(targetEl);
+    setCategoryRef('Wanderung', targetEl);
+
+    await scrollToCategory('Wanderung');
+    expect(activeCategory.value).toBe('Wanderung');
+    expect(scrolledToTop).not.toBeNull();
+
+    body.remove();
+  });
 });

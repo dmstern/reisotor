@@ -391,20 +391,24 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
   }
 
-  function scrollToCategory(category: string) {
+  function setProgrammaticActiveCategory(category: string, timeoutMs = 1500) {
     activeCategory.value = category;
     programmaticScrollTarget = category;
     if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout);
     programmaticScrollTimeout = setTimeout(() => {
       programmaticScrollTarget = null;
-    }, 1000);
+    }, timeoutMs);
 
     nextTick(() => {
       updateCategoryNavUnderline();
     });
 
-    scrollToElementInBody(() => categoryRefs.get(category));
     tripMapRef.value?.focusCategory(category);
+  }
+
+  function scrollToCategory(category: string) {
+    setProgrammaticActiveCategory(category);
+    return scrollToElementInBody(() => categoryRefs.get(category));
   }
 
   watch(spotGroups, () => {
@@ -466,6 +470,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     setCategoryNavRef,
     scrollNavBy,
     scrollToElementInBody,
+    setProgrammaticActiveCategory,
     scrollToCategory,
     scrollToExcursion,
     scrollToSpot,
