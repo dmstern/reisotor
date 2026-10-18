@@ -35,7 +35,13 @@ test.beforeEach(async ({ page }) => {
 async function goToTripMonth(page: import('@playwright/test').Page) {
   // Auf ".jump-row" statt page-weit gescoped: "Urlaub" ist sonst mehrdeutig (u. a. der
   // Trip-Switcher-Button im Header trägt denselben Trip-Namen als accessible name).
-  await page.locator('.jump-row').getByRole('button', { name: 'Urlaub' }).click();
+  const urlaubBtn = page.locator('.jump-row').getByRole('button', { name: 'Urlaub' });
+  await urlaubBtn.click();
+  await expect(urlaubBtn).toHaveClass(/is-active/);
+  // Warten bis eine eventuelle Monats-Transition beendet ist und die alte Seite aus dem DOM
+  // entfernt wurde — andernfalls existieren Übergangstage (z. B. der 1. des Monats) kurzzeitig
+  // doppelt im DOM und führen zu Strict-Mode-Kollisionen.
+  await expect(page.locator('.calendar-weeks-viewport .calendar-weeks-page')).toHaveCount(1);
 }
 
 test('day selection shows the seeded schedule entry for that day', async ({ page }) => {

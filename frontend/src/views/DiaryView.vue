@@ -43,7 +43,6 @@ const {
   coEditorsFor,
   removeEntry,
   removeImageFromEntry,
-  myDraft,
 } = diaryData;
 
 // 2. Social (Likes & Comments)
@@ -91,11 +90,7 @@ const showNewModal = ref(false);
 const editingEntry = ref<DiaryEntry | null>(null);
 
 function openNewEntry() {
-  if (myDraft.value) {
-    editingEntry.value = myDraft.value;
-  } else {
-    showNewModal.value = true;
-  }
+  showNewModal.value = true;
 }
 
 function onEntryCreated(created: DiaryEntry) {
@@ -163,9 +158,7 @@ onMounted(() => {
     <DiaryNewModal
       v-model="showNewModal"
       :trip-id="tripId"
-      :my-draft="myDraft"
       @created="onEntryCreated"
-      @start-edit-draft="(draft) => (editingEntry = draft)"
       @link-done="markLinkedAsDone"
       @preview-image="(images, idx, onRemove) => openDiaryPreview(images, idx, true, onRemove)"
     />

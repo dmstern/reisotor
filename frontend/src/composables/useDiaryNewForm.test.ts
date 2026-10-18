@@ -51,7 +51,7 @@ describe('useDiaryNewForm', () => {
     expect(startEditDraftSpy).not.toHaveBeenCalled();
   });
 
-  it('openNewForm resumes existing draft if one exists (#89)', () => {
+  it('openNewForm opens fresh form even if draft exists', () => {
     const draft: DiaryEntry = {
       id: 99,
       trip_id: 1,
@@ -82,8 +82,8 @@ describe('useDiaryNewForm', () => {
 
     newForm.openNewForm();
 
-    expect(newForm.showForm.value).toBe(false);
-    expect(startEditDraftSpy).toHaveBeenCalledWith(draft);
+    expect(newForm.showForm.value).toBe(true);
+    expect(startEditDraftSpy).not.toHaveBeenCalled();
   });
 
   it('validates required fields for submission', () => {

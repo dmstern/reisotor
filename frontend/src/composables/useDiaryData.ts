@@ -34,7 +34,11 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   function sortEntries() {
     entries.value.sort(
       (a, b) =>
-        b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at) || b.id - a.id
+        (b.date ?? b.created_at?.slice(0, 10) ?? '').localeCompare(
+          a.date ?? a.created_at?.slice(0, 10) ?? ''
+        ) ||
+        (b.created_at ?? '').localeCompare(a.created_at ?? '') ||
+        b.id - a.id
     );
   }
 
@@ -74,10 +78,14 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   }
 
   async function removeEntry(id: number) {
+    const entry = entries.value.find((e) => e.id === id);
+    const isDraft = Boolean(entry?.is_draft);
     await api.delete(`/diary/${id}`);
     entries.value = entries.value.filter((e) => e.id !== id);
     showToast({
-      message: 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
+      message: isDraft
+        ? 'Entwurf verworfen.'
+        : 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
       type: 'info',
     });
   }
@@ -93,7 +101,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
       images: entry.images,
       excursion_ids: entry.excursion_ids ?? [],
       spot_ids: entry.spot_ids ?? [],
-      date: entry.date,
+      date: entry.date ?? entry.created_at?.slice(0, 10),
       is_draft: Boolean(entry.is_draft),
     };
     try {

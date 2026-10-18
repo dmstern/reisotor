@@ -32,11 +32,11 @@ const auth = useAuthStore();
 const editFormLogic = useDiaryEditForm({
   onEntryUpdated: (updated) => {
     emit('updated', updated);
-    closeEdit();
+    emit('update:entry', null);
   },
   onEntryRemoved: async (id) => {
     emit('removed', id);
-    closeEdit();
+    emit('update:entry', null);
   },
   onLinkDone: (excursionIds, spotIds, date) => {
     emit('linkDone', excursionIds, spotIds, date);
@@ -53,11 +53,14 @@ const {
   showContentError,
   canSave,
   saveTooltip,
+  canSaveDraft,
+  saveDraftTooltip,
   isDeleteDisabled,
   deleteTooltip,
   editDraft,
   startEdit,
   submitEditEntry,
+  saveDraftOnly,
   closeEditForm: internalCloseEditForm,
   discardEditDraft,
   deleteEditingEntry,
@@ -226,11 +229,21 @@ defineExpose({
           :title="deleteTooltip"
           @click="deleteEditingEntry"
         >
-          Löschen
+          {{ editingEntry?.is_draft ? 'Entwurf verwerfen' : 'Löschen' }}
         </Button>
         <div class="spacer"></div>
         <Button type="button" variant="secondary" class="btn-cancel" @click="closeEdit">
           Abbrechen
+        </Button>
+        <Button
+          v-if="editingEntry?.is_draft"
+          type="button"
+          variant="secondary"
+          :disabled="!canSaveDraft"
+          :title="saveDraftTooltip"
+          @click="saveDraftOnly"
+        >
+          Entwurf speichern
         </Button>
         <Button type="submit" :disabled="!canSave" :title="saveTooltip">
           {{ editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern' }}
@@ -280,7 +293,7 @@ defineExpose({
   flex: 1;
 }
 
-@container (max-width: 360px) {
+@container (max-width: 440px) {
   .actions-row {
     flex-direction: column-reverse;
     align-items: stretch;

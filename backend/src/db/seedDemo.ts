@@ -835,7 +835,7 @@ db.prepare(
 // --- Tagebuch ---
 const diaryResult = db
   .prepare(
-    'INSERT INTO diary_entries (trip_id, author_id, title, content, images, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO diary_entries (trip_id, author_id, title, content, images, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
   )
   .run(
     tripId,
@@ -843,6 +843,7 @@ const diaryResult = db
     'Ankunft in Lissabon',
     'Nach dem Flug direkt ins Hotel und dann noch einen Abendspaziergang durch die Alfama gemacht. Traumhafter Blick vom Miradouro!',
     JSON.stringify(['/demo/lissabon.jpg', '/demo/lissabon.jpg', '/demo/lissabon.jpg']),
+    isScreenshotMode ? '2026-08-14' : fmt(startDate),
     isScreenshotMode ? '2026-08-14T20:30:00.000Z' : new Date().toISOString()
   );
 const diaryEntryId = diaryResult.lastInsertRowid as number;

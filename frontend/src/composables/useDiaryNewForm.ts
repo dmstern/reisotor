@@ -15,14 +15,14 @@ import type RichTextEditor from '../components/RichTextEditor.vue';
 
 export interface UseDiaryNewFormOptions {
   tripId: number | Ref<number> | ComputedRef<number>;
-  myDraft: ComputedRef<DiaryEntry | null> | Ref<DiaryEntry | null>;
-  onStartEditDraft: (draft: DiaryEntry) => void;
+  myDraft?: ComputedRef<DiaryEntry | null> | Ref<DiaryEntry | null>;
+  onStartEditDraft?: (draft: DiaryEntry) => void;
   onEntryCreated: (entry: DiaryEntry) => void;
   onLinkDone: (excursionIds: number[], spotIds: number[], date: string) => void;
 }
 
 export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
-  const { tripId, myDraft, onStartEditDraft, onEntryCreated, onLinkDone } = options;
+  const { tripId, onEntryCreated, onLinkDone } = options;
   const excursionsStore = useExcursionsStore();
   const { showToast } = useToast();
 
@@ -58,11 +58,6 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
   function openNewForm() {
     contentTouched.value = false;
     dateTouched.value = false;
-    const draft = unref(myDraft);
-    if (draft) {
-      onStartEditDraft(draft);
-      return;
-    }
     form.value = createEmptyDiaryForm();
     showSpotPicker.value = false;
     form.value.excursion_ids = excursionsStore.excursions

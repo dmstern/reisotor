@@ -123,6 +123,111 @@ describe('useDiaryEditForm', () => {
     expect(editForm.editingEntry.value).toBeNull();
   });
 
+  it('submitEditEntry publishes draft entry with is_draft false and clears state before notification', async () => {
+    const updatedSpy = vi.fn();
+    const linkDoneSpy = vi.fn();
+
+    const editForm = useDiaryEditForm({
+      onEntryUpdated: updatedSpy,
+      onEntryRemoved: vi.fn(),
+      onLinkDone: linkDoneSpy,
+    });
+
+    const draftEntry: DiaryEntry = {
+      ...mockEntry,
+      id: 88,
+      is_draft: 1,
+      title: 'Mein Entwurf',
+      content: '<p>Halbfertig</p>',
+    };
+
+    editForm.startEdit(draftEntry);
+    editForm.editForm.value.content = '<p>Jetzt fertig zum Veröffentlichen</p>';
+
+    const publishedEntry = {
+      ...draftEntry,
+      content: '<p>Jetzt fertig zum Veröffentlichen</p>',
+      is_draft: 0,
+    };
+    vi.mocked(api.put).mockResolvedValueOnce(publishedEntry);
+
+    // Verify state inside onEntryUpdated callback: editingEntry must already be null!
+    updatedSpy.mockImplementation(() => {
+      expect(editForm.editingEntry.value).toBeNull();
+    });
+
+    await editForm.submitEditEntry();
+
+    expect(api.put).toHaveBeenCalledWith(
+      '/diary/88',
+      expect.objectContaining({
+        content: '<p>Jetzt fertig zum Veröffentlichen</p>',
+        is_draft: false,
+      })
+    );
+    expect(updatedSpy).toHaveBeenCalledWith(publishedEntry);
+    expect(editForm.editingEntry.value).toBeNull();
+  });
+
+  it('saveDraftOnly saves changes with is_draft true without publishing', async () => {
+    const updatedSpy = vi.fn();
+    const linkDoneSpy = vi.fn();
+
+    const editForm = useDiaryEditForm({
+      onEntryUpdated: updatedSpy,
+      onEntryRemoved: vi.fn(),
+      onLinkDone: linkDoneSpy,
+    });
+
+    const draftEntry: DiaryEntry = {
+      ...mockEntry,
+      id: 88,
+      is_draft: 1,
+      title: 'Mein Entwurf',
+      content: '<p>Halbfertig</p>',
+    };
+
+    editForm.startEdit(draftEntry);
+    editForm.editForm.value.content = '<p>Neuer Zwischenstand</p>';
+
+    const updatedDraft = {
+      ...draftEntry,
+      content: '<p>Neuer Zwischenstand</p>',
+      is_draft: 1,
+    };
+    vi.mocked(api.put).mockResolvedValueOnce(updatedDraft);
+
+    await editForm.saveDraftOnly();
+
+    expect(api.put).toHaveBeenCalledWith(
+      '/diary/88',
+      expect.objectContaining({
+        content: '<p>Neuer Zwischenstand</p>',
+        is_draft: true,
+      })
+    );
+    expect(updatedSpy).toHaveBeenCalledWith(updatedDraft);
+    expect(editForm.editingEntry.value).toBeNull();
+  });
+
+  it('canSaveDraft validates whether draft has content', () => {
+    const editForm = useDiaryEditForm({
+      onEntryUpdated: vi.fn(),
+      onEntryRemoved: vi.fn(),
+      onLinkDone: vi.fn(),
+    });
+
+    editForm.startEdit(mockEntry);
+    editForm.editForm.value.title = '';
+    editForm.editForm.value.content = '<p></p>';
+    editForm.editForm.value.images = [];
+
+    expect(editForm.canSaveDraft.value).toBe(false);
+
+    editForm.editForm.value.title = 'Nur ein Titel';
+    expect(editForm.canSaveDraft.value).toBe(true);
+  });
+
   it('deleteEditingEntry deletes entry and resets modal', async () => {
     const removeSpy = vi.fn();
 
