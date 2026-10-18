@@ -162,6 +162,8 @@ function formatAccommodationDate(d: string | null) {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .overlay-bottom-content .card-title-block.is-expanded {
@@ -175,7 +177,7 @@ function formatAccommodationDate(d: string | null) {
   font-size: var(--font-size-lg);
   font-weight: 700;
   line-height: 1.25;
-  color: var(--color-primary-contrast, #ffffff);
+  color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -245,7 +247,7 @@ function formatAccommodationDate(d: string | null) {
 
 .note.is-banner :deep(strong),
 .note.is-banner :deep(b) {
-  color: var(--color-primary-contrast, #ffffff);
+  color: #ffffff;
 }
 
 .overlay-edit-btn {
