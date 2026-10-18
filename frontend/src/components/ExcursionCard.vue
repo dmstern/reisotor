@@ -52,8 +52,10 @@ const emit = defineEmits<{
 
 const drawers = useDrawersStore();
 
-function onCardClick() {
+function onCardClick(event?: MouseEvent) {
   if (props.expanded) {
+    const target = event?.target as HTMLElement | null;
+    if (target && !target.closest('.card-header-row')) return;
     emit('close');
     if (drawers.mapFocusExcursionId === props.excursion.id) {
       drawers.mapFocusExcursionId = null;
@@ -211,9 +213,14 @@ const {
           @show-on-map="emit('show-on-map')"
         />
 
-        <div class="card-actions-wrapper">
+        <div
+          v-if="
+            expanded || excursion.done || excursion.date || likeCount > 0 || comments.length > 0
+          "
+          class="card-actions-wrapper"
+        >
           <div class="card-actions">
-            <CalendarDragHandle v-if="!excursion.date" :excursion="excursion" />
+            <CalendarDragHandle v-if="expanded && !excursion.date" :excursion="excursion" />
             <ExcursionDoneStatus
               :excursion="excursion"
               :expanded="expanded"
@@ -223,11 +230,11 @@ const {
 
           <SocialRow
             :class="{ 'is-expanded': expanded }"
+            :readonly="!expanded"
             :like-count="likeCount"
             :liked="liked"
             :comment-count="comments.length"
             :comments-open="showComments"
-            :show-comments-button="expanded"
             @toggle-like="emit('toggle-like')"
             @toggle-comments="showComments = !showComments"
           />
@@ -349,6 +356,7 @@ const {
   corner-shape: auto !important;
   background: transparent !important;
   box-shadow: none !important;
+  cursor: default;
 }
 
 .tour-card-main {
@@ -389,6 +397,10 @@ const {
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
+}
+
+.excursion-card.expanded .card-header-row {
+  cursor: pointer;
 }
 
 .card-title-block {

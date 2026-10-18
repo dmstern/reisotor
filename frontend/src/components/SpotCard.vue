@@ -114,6 +114,10 @@ function getCardDomElement(event?: MouseEvent): HTMLElement | null {
 
 function onCardClick(event?: MouseEvent) {
   if (props.expanded) {
+    const target = event?.target as HTMLElement | null;
+    if (target && (!target.closest('.image, .card-badge-group') || target.closest('a, button'))) {
+      return;
+    }
     emit('close');
     if (drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
   } else {
@@ -304,10 +308,10 @@ const cardRotation = computed(() => {
 
         <SocialRow
           v-if="!expanded"
+          readonly
           :like-count="likeCount"
           :liked="liked"
-          :show-comments-button="false"
-          @toggle-like="emit('toggle-like')"
+          :comment-count="comments.length"
         />
       </div>
 
@@ -354,6 +358,7 @@ const cardRotation = computed(() => {
 .spot-card.expanded {
   border-color: var(--color-primary);
   transform: translateY(0) rotate(0deg) scale(1);
+  cursor: default;
 }
 
 /* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
@@ -381,13 +386,14 @@ const cardRotation = computed(() => {
 .spot-card.expanded .card-badge-group {
   top: calc(var(--spot-card-pad) + var(--space-2));
   right: calc(var(--spot-card-pad) + var(--space-2));
+  cursor: pointer;
   transition:
     top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
     right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
 .card-badge-group :deep(.category-chip) {
-  cursor: default;
+  cursor: inherit;
   transition:
     background-color 0.2s ease,
     color 0.2s ease,

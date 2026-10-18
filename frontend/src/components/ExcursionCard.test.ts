@@ -64,7 +64,7 @@ describe('ExcursionCard', () => {
     return renderToString(app);
   }
 
-  it('rendert den eingeklappten Zustand mit Titel, Stationen-Zusammenfassung und Status', async () => {
+  it('rendert den eingeklappten Zustand im reinen Anzeigemodus ohne interaktive Aktions-Buttons', async () => {
     const html = await mountComponent({
       excursion: mockExcursion,
       creatorLabel: 'Daniel',
@@ -79,7 +79,12 @@ describe('ExcursionCard', () => {
     expect(html).toContain('Wanderung zum Wasserfall');
     expect(html).toContain('Parkplatz → Wasserfall');
     expect(html).toContain('excursion-card');
+    expect(html).toContain('tour-status-meta');
+    expect(html).toContain('is-readonly');
     expect(html).not.toContain('card-title-meta');
+    expect(html).not.toContain('calendar-drag-handle');
+    expect(html).not.toContain('like-btn');
+    expect(html).not.toContain('Als gemacht markieren');
   });
 
   it('rendert den ausgeklappten Zustand mit Header-Metadaten und Aktionen', async () => {
@@ -99,6 +104,8 @@ describe('ExcursionCard', () => {
     expect(html).toContain('Von Daniel');
     expect(html).toContain('2 Stationen');
     expect(html).toContain('Auf Karte anzeigen');
+    expect(html).toContain('done-toggle');
+    expect(html).toContain('like-btn');
   });
 
   it('rendert Travel-Leg mit Route und Transportart-Rolle korrekt', async () => {

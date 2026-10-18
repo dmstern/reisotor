@@ -69,7 +69,7 @@ function formatAccommodationDate(d: string | null) {
             </div>
           </div>
           <!-- Spot-Notiz im Image Banner unterhalb vom Spot-Titel -->
-          <div v-if="spot.note" class="overlay-note" @click.stop>
+          <div v-if="spot.note" class="overlay-note">
             <RichTextDisplay
               class="note is-banner"
               :content="spot.note"
@@ -99,6 +99,7 @@ function formatAccommodationDate(d: string | null) {
 
 .image.is-expanded {
   height: 165px;
+  cursor: pointer;
 }
 
 .overlay-fade-enter-active {

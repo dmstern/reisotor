@@ -65,6 +65,8 @@ describe('SpotCard', () => {
     expect(html).toContain('category-chip');
     expect(html).toContain('Sehenswürdigkeit');
     expect(html).toContain('social-row');
+    expect(html).toContain('is-readonly');
+    expect(html).not.toContain('like-btn');
   });
 
   it('renders expanded state with map actions, details, and cover overlay', async () => {
