@@ -216,6 +216,7 @@ function serializeEntry(
   }
   return {
     ...row,
+    date: row.date || row.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
     images,
     excursion_ids: excursionIds,
     spot_ids: spotIds,
@@ -362,7 +363,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       isHtml ? sanitizeHtml(content) : content,
       isHtml ? 'html' : 'legacy',
       JSON.stringify(images ?? []),
-      date || entry.date,
+      date || entry.date || now.slice(0, 10),
       now,
       isDraft,
       req.params.id

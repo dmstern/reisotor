@@ -76,7 +76,7 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
       images: [...entry.images],
       excursion_ids: [...entry.excursion_ids],
       spot_ids: [...entry.spot_ids],
-      date: entry.date,
+      date: entry.date ?? entry.created_at?.slice(0, 10) ?? '',
     };
     editShowExcursionPicker.value = editForm.value.excursion_ids.length > 0;
     editShowSpotPicker.value = editForm.value.spot_ids.length > 0;
