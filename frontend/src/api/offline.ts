@@ -238,6 +238,11 @@ export async function flushOutbox(
           `Outbox-Eintrag vom Server dauerhaft abgelehnt (HTTP ${status}), wird übersprungen:`,
           entry
         );
+        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+          window.dispatchEvent(
+            new CustomEvent('reisotor:outbox-rejected', { detail: { entry, error: err } })
+          );
+        }
         list = list.slice(1);
         writeOutboxList(list);
         continue;

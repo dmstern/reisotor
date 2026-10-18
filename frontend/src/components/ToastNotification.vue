@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { useToast } from '../composables/useToast';
+import { useToast, type ToastItem } from '../composables/useToast';
 
 const { toasts, removeToast } = useToast();
+
+function handleActionClick(toast: ToastItem) {
+  toast.action?.onClick?.();
+  removeToast(toast.id);
+}
 </script>
 
 <template>
@@ -13,18 +18,26 @@ const { toasts, removeToast } = useToast();
           :key="toast.id"
           class="toast-item"
           :class="`toast-${toast.type}`"
-          role="status"
+          :role="toast.type === 'error' ? 'alert' : 'status'"
         >
           <div class="toast-content">
             <span class="toast-message">{{ toast.message }}</span>
             <RouterLink
-              v-if="toast.action"
+              v-if="toast.action && toast.action.to"
               :to="toast.action.to"
               class="toast-action"
-              @click="removeToast(toast.id)"
+              @click="handleActionClick(toast)"
             >
               {{ toast.action.label }}
             </RouterLink>
+            <button
+              v-else-if="toast.action"
+              type="button"
+              class="toast-action toast-action-btn"
+              @click="handleActionClick(toast)"
+            >
+              {{ toast.action.label }}
+            </button>
           </div>
           <button
             type="button"
@@ -107,6 +120,15 @@ const { toasts, removeToast } = useToast();
   text-underline-offset: 2px;
   align-self: flex-start;
   margin-top: 2px;
+}
+
+.toast-action-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
 }
 
 .toast-action:hover {

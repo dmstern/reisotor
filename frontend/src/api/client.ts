@@ -15,9 +15,14 @@ import { demoRequest } from '../demo/demoClient';
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  method?: string;
+  path?: string;
+  constructor(status: number, message: string, meta?: { method?: string; path?: string }) {
     super(message);
+    this.name = 'ApiError';
     this.status = status;
+    this.method = meta?.method;
+    this.path = meta?.path;
   }
 }
 
@@ -107,7 +112,10 @@ export async function rawRequest<T>(path: string, options: RequestInit = {}): Pr
     } catch {
       // ignore, kein JSON-Body
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, {
+      method: (options.method ?? 'GET').toUpperCase(),
+      path,
+    });
   }
 
   if (res.status === 204) {
@@ -161,7 +169,8 @@ async function get<T>(path: string): Promise<T> {
     if (cached !== undefined) return withPending(path, cached);
     throw new ApiError(
       0,
-      'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden'
+      'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden',
+      { method: 'GET', path }
     );
   } finally {
     activity.finish('read');

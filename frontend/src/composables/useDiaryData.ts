@@ -7,6 +7,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useToast } from './useToast';
+import { useErrorNotifier } from './useErrorNotifier';
 
 export interface UseDiaryDataOptions {
   tripId: number | Ref<number> | ComputedRef<number>;
@@ -21,6 +22,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   const scheduleStore = useScheduleStore();
   const liveSync = useLiveSyncStore();
   const { showToast } = useToast();
+  const { notifyError } = useErrorNotifier();
 
   const entries = ref<DiaryEntry[]>([]);
   const users = ref<User[]>([]);
@@ -111,7 +113,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
       sortEntries();
     } catch (err) {
       entry.images.splice(index, 0, removed);
-      console.error('Fehler beim Entfernen des Bildes aus dem Tagebucheintrag:', err);
+      notifyError(err, 'Bild konnte nicht aus dem Tagebucheintrag entfernt werden');
     }
   }
 

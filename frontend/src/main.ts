@@ -6,6 +6,8 @@ import { useThemeStore } from './stores/theme';
 import { useUiSettingsStore } from './stores/uiSettings';
 import { usePwaInstallStore } from './stores/pwaInstall';
 import { usePwaUpdateStore } from './stores/pwaUpdate';
+import { useErrorNotifier } from './composables/useErrorNotifier';
+import type { OutboxEntry } from './api/offline';
 import './style.css';
 
 // Vor dem ersten Render anwenden, damit die Seite nicht kurz im falschen Theme aufblitzt.
@@ -21,6 +23,30 @@ usePwaUpdateStore().init();
 const app = createApp(App);
 app.use(pinia);
 app.use(router);
+
+const { notifyError, notifyOutboxRejected } = useErrorNotifier();
+
+app.config.errorHandler = (err, instance, info) => {
+  console.error(err);
+  const compName =
+    instance?.$options?.name ||
+    (instance?.$options as { __name?: string } | undefined)?.__name ||
+    undefined;
+  const componentInfo = [compName, info].filter(Boolean).join(' · ') || undefined;
+  notifyError(err, { componentInfo });
+};
+
+window.addEventListener('unhandledrejection', (event) => {
+  notifyError(event.reason, { componentInfo: 'unhandledrejection' });
+});
+
+window.addEventListener('reisotor:outbox-rejected', (event) => {
+  const detail = (event as CustomEvent<{ entry: OutboxEntry; error: unknown }>).detail;
+  if (detail?.entry) {
+    notifyOutboxRejected(detail.entry, detail.error);
+  }
+});
+
 app.mount('#app');
 
 // Statischer Splash aus index.html (siehe dort) - erst hier entfernen, nicht dort per Timer, damit
