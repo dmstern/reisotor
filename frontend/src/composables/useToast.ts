@@ -1,14 +1,23 @@
 import { ref, readonly } from 'vue';
 import { useUiSettingsStore } from '../stores/uiSettings';
 
+export type ToastAction =
+  | {
+      label: string;
+      to: string | object;
+      onClick?: () => void;
+    }
+  | {
+      label: string;
+      onClick: () => void;
+      to?: undefined;
+    };
+
 export interface ToastOptions {
   message: string;
   type?: 'info' | 'success' | 'warning' | 'error';
   duration?: number;
-  action?: {
-    label: string;
-    to: string | object;
-  };
+  action?: ToastAction;
 }
 
 export interface ToastItem {
@@ -16,10 +25,7 @@ export interface ToastItem {
   message: string;
   type: 'info' | 'success' | 'warning' | 'error';
   duration: number;
-  action?: {
-    label: string;
-    to: string | object;
-  };
+  action?: ToastAction;
 }
 
 const toasts = ref<ToastItem[]>([]);
@@ -31,12 +37,16 @@ export function useToast() {
     const defaultDuration = (uiSettingsStore.toastTimeout ?? 5) * 1000;
 
     const opts: ToastOptions = typeof options === 'string' ? { message: options } : options;
+    const type = opts.type ?? 'info';
+    const rawDuration = opts.duration ?? defaultDuration;
+    const duration =
+      type === 'error' && rawDuration > 0 ? Math.max(rawDuration, 8000) : rawDuration;
     const id = nextId++;
     const item: ToastItem = {
       id,
       message: opts.message,
-      type: opts.type ?? 'info',
-      duration: opts.duration ?? defaultDuration,
+      type,
+      duration,
       action: opts.action,
     };
 

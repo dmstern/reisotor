@@ -55,29 +55,6 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
     action();
   }
 
-  // Location menu
-  const locationMenuOpen = ref(false);
-  const locationButtonRef = ref<HTMLButtonElement | null>(null);
-  const locationMenuStyle = ref({ top: '0px', left: '0px' });
-
-  function toggleLocationMenu(event?: MouseEvent) {
-    if (!locationMenuOpen.value) {
-      locationMenuStyle.value = computeTeleportMenuPosition(
-        locationButtonRef,
-        event,
-        WIDE_PICKER_MENU_WIDTH
-      );
-      locationMenuOpen.value = true;
-    } else {
-      locationMenuOpen.value = false;
-    }
-  }
-
-  function selectLocation(action: () => void) {
-    locationMenuOpen.value = false;
-    action();
-  }
-
   // Share menu
   const shareMenuOpen = ref(false);
   const shareButtonRef = ref<HTMLButtonElement | null>(null);
@@ -110,18 +87,12 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   }
 
   return {
-    // Focus menu
+    // Focus & orientation menu
     focusMenuOpen,
     focusButtonRef,
     focusMenuStyle,
     toggleFocusMenu,
     selectFocus,
-    // Location menu
-    locationMenuOpen,
-    locationButtonRef,
-    locationMenuStyle,
-    toggleLocationMenu,
-    selectLocation,
     // Share menu
     shareMenuOpen,
     shareButtonRef,

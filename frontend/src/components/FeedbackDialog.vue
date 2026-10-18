@@ -10,7 +10,12 @@ import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
-const props = defineProps<{ modelValue: boolean }>();
+const props = defineProps<{
+  modelValue: boolean;
+  initialTitle?: string;
+  initialDescription?: string;
+  initialType?: 'bug' | 'feature';
+}>();
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 
 type FeedbackType = 'bug' | 'feature';
@@ -20,9 +25,9 @@ interface FeedbackResult {
 }
 
 const form = ref<{ type: FeedbackType; title: string; description: string }>({
-  type: 'bug',
-  title: '',
-  description: '',
+  type: props.initialType ?? 'bug',
+  title: props.initialTitle ?? '',
+  description: props.initialDescription ?? '',
 });
 const screenshot = ref<string | null>(null);
 const screenshotName = ref('');
@@ -37,7 +42,11 @@ watch(
   () => props.modelValue,
   (open) => {
     if (!open) return;
-    form.value = { type: 'bug', title: '', description: '' };
+    form.value = {
+      type: props.initialType ?? 'bug',
+      title: props.initialTitle ?? '',
+      description: props.initialDescription ?? '',
+    };
     screenshot.value = null;
     screenshotName.value = '';
     error.value = '';

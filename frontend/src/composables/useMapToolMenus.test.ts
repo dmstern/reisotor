@@ -54,19 +54,6 @@ describe('useMapToolMenus', () => {
     expect(action).toHaveBeenCalled();
   });
 
-  it('toggles location menu and selectLocation closes it', () => {
-    const menus = useMapToolMenus();
-
-    expect(menus.locationMenuOpen.value).toBe(false);
-    menus.toggleLocationMenu();
-    expect(menus.locationMenuOpen.value).toBe(true);
-
-    const action = vi.fn();
-    menus.selectLocation(action);
-    expect(menus.locationMenuOpen.value).toBe(false);
-    expect(action).toHaveBeenCalled();
-  });
-
   it('toggles share menu and chooses share duration', async () => {
     const locationSharing = useLocationSharingStore();
     const setDurationSpy = vi.spyOn(locationSharing, 'setDuration').mockResolvedValue();

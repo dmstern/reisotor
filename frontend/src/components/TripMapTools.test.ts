@@ -18,10 +18,9 @@ describe('TripMapTools', () => {
         h(TripMapTools, {
           filteredPointsCount: 5,
           vacationPointsCount: 1,
+          homePointsCount: 1,
           accommodationPointsCount: 1,
           totalAccommodationsCount: 1,
-          hasExcursions: true,
-          excursionPointsCount: 2,
           allTripPhotosLoaded: true,
           allTripPhotoPointsCount: 3,
           hasOwnPosition: true,
@@ -40,12 +39,12 @@ describe('TripMapTools', () => {
     };
   }
 
-  it('renders all 5 floating map buttons', async () => {
+  it('renders all 4 floating map buttons and merges location button into focus button', async () => {
     const { container, unmount } = mountComponent();
     await nextTick();
 
     expect(container.querySelector('.focus-btn')).not.toBeNull();
-    expect(container.querySelector('.location-btn')).not.toBeNull();
+    expect(container.querySelector('.location-btn')).toBeNull();
     expect(container.querySelector('.offline-download-btn')).not.toBeNull();
     expect(container.querySelector('.share-location-btn')).not.toBeNull();
     expect(container.querySelector('.record-btn')).not.toBeNull();
@@ -53,14 +52,14 @@ describe('TripMapTools', () => {
     unmount();
   });
 
-  it('disables focus button when no filtered points exist', async () => {
+  it('keeps focus button enabled even when no filtered points exist so location and orientation remain accessible', async () => {
     const { container, unmount } = mountComponent({
       filteredPointsCount: 0,
     });
     await nextTick();
 
     const focusBtn = container.querySelector<HTMLButtonElement>('.focus-btn');
-    expect(focusBtn?.disabled).toBe(true);
+    expect(focusBtn?.disabled).toBe(false);
 
     unmount();
   });
@@ -79,13 +78,15 @@ describe('TripMapTools', () => {
     unmount();
   });
 
-  it('opens focus menu and emits fit-all when selecting fit-all item', async () => {
+  it('opens focus menu and emits fit-all and fit-home when selecting corresponding items', async () => {
     const onFitAll = vi.fn();
+    const onFitHome = vi.fn();
     const onOpenFocusMenu = vi.fn();
     const { container, unmount } = mountComponent(
       {},
       {
         onFitAll,
+        onFitHome,
         onOpenFocusMenu,
       }
     );
@@ -106,25 +107,66 @@ describe('TripMapTools', () => {
 
     expect(onFitAll).toHaveBeenCalledTimes(1);
 
+    focusBtn?.click();
+    await nextTick();
+
+    const fitHomeItem = document.body.querySelector<HTMLButtonElement>(
+      '.picker-menu [title="Auf die Heimatorte fokussieren"]'
+    );
+    expect(fitHomeItem).not.toBeNull();
+    fitHomeItem?.click();
+    await nextTick();
+
+    expect(onFitHome).toHaveBeenCalledTimes(1);
+
     unmount();
   });
 
-  it('opens location menu and emits jump-my-location', async () => {
+  it('shows jump-my-location, only members sharing a position, and orientation controls in the merged focus menu', async () => {
     const onJumpMyLocation = vi.fn();
-    const { container, unmount } = mountComponent({}, { onJumpMyLocation });
+    const onJumpMemberLocation = vi.fn();
+    const onSetOrientationMode = vi.fn();
+    const { container, unmount } = mountComponent(
+      {
+        otherMembers: [
+          { id: 2, username: 'Amari', avatar: '🐼' },
+          { id: 3, username: 'Alex', avatar: '🐱' },
+        ],
+        hasMemberPosition: (id: number) => id === 2,
+      },
+      {
+        onJumpMyLocation,
+        onJumpMemberLocation,
+        onSetOrientationMode,
+      }
+    );
     await nextTick();
 
-    const locationBtn = container.querySelector<HTMLButtonElement>('.location-btn');
-    locationBtn?.click();
+    const focusBtn = container.querySelector<HTMLButtonElement>('.focus-btn');
+    focusBtn?.click();
     await nextTick();
 
-    const items = document.body.querySelectorAll<HTMLButtonElement>('.picker-menu button');
-    expect(items.length).toBeGreaterThan(0);
-    // The first item is "Zu meinem Standort springen"
-    items[0].click();
-    await nextTick();
+    const menuText = document.body.querySelector('.picker-menu')?.textContent ?? '';
+    expect(menuText).toContain('Zu meinem Standort springen');
+    expect(menuText).toContain('Zu Standort von Amari springen');
+    expect(menuText).not.toContain('Zu Standort von Alex springen');
+    expect(menuText).not.toContain('Nur Tourziele');
 
+    const myLocBtn = document.body.querySelector<HTMLButtonElement>(
+      '.picker-menu [title="Auf meinen aktuellen Standort zentrieren"]'
+    );
+    myLocBtn?.click();
+    await nextTick();
     expect(onJumpMyLocation).toHaveBeenCalledTimes(1);
+
+    focusBtn?.click();
+    await nextTick();
+    const memberBtn = document.body.querySelector<HTMLButtonElement>(
+      '.picker-menu [title="Amari teilt gerade den Standort"]'
+    );
+    memberBtn?.click();
+    await nextTick();
+    expect(onJumpMemberLocation).toHaveBeenCalledWith(2);
 
     unmount();
   });

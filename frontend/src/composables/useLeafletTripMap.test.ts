@@ -30,9 +30,9 @@ describe('useLeafletTripMap', () => {
     const points = computed<MapPoint[]>(() => []);
     const filteredPoints = computed<MapPoint[]>(() => []);
     const vacationPoints = computed<MapPoint[]>(() => []);
+    const homePoints = computed<MapPoint[]>(() => []);
     const visiblePoints = computed<MapPoint[]>(() => []);
     const accommodationPoints = computed<MapPoint[]>(() => []);
-    const excursionPoints = computed<MapPoint[]>(() => []);
     const focusedExcursion = computed(() => null);
     const focusedTrack = computed(() => null);
     const focusedTrackPoints = computed(() => []);
@@ -51,9 +51,9 @@ describe('useLeafletTripMap', () => {
       points,
       filteredPoints,
       vacationPoints,
+      homePoints,
       visiblePoints,
       accommodationPoints,
-      excursionPoints,
       focusedExcursion,
       focusedTrack,
       focusedTrackPoints,
@@ -71,8 +71,8 @@ describe('useLeafletTripMap', () => {
     expect(() => {
       leafletTripMap.fitAll();
       leafletTripMap.fitVacation();
+      leafletTripMap.fitHome();
       leafletTripMap.fitAccommodations();
-      leafletTripMap.fitExcursions();
       leafletTripMap.fitAllPhotos();
       leafletTripMap.focusCategory('Sonstiges');
       leafletTripMap.renderMarkers();

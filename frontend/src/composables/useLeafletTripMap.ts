@@ -71,9 +71,9 @@ export interface UseLeafletTripMapOptions {
   points: ComputedRef<MapPoint[]>;
   filteredPoints: ComputedRef<MapPoint[]>;
   vacationPoints: ComputedRef<MapPoint[]>;
+  homePoints: ComputedRef<MapPoint[]>;
   visiblePoints: ComputedRef<MapPoint[]>;
   accommodationPoints: ComputedRef<MapPoint[]>;
-  excursionPoints: ComputedRef<MapPoint[]>;
   focusedExcursion: ComputedRef<Excursion | null>;
   focusedTrack: ComputedRef<LocationTrack | null>;
   focusedTrackPoints: ComputedRef<TrackPoint[]>;
@@ -280,10 +280,10 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }
   }
 
-  function fitExcursions() {
+  function fitHome() {
     if (!map) return;
     clearFocusState();
-    const latLngs = options.excursionPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+    const latLngs = options.homePoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
@@ -682,8 +682,8 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     focusCategory,
     fitAll,
     fitVacation,
+    fitHome,
     fitAccommodations,
-    fitExcursions,
     fitAllPhotos,
     renderMarkers,
     renderRoutes,
