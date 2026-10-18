@@ -22,6 +22,7 @@ import ScheduleView from './views/ScheduleView.vue';
 import SplashScreen from './components/SplashScreen.vue';
 import MustChangePasswordModal from './components/MustChangePasswordModal.vue';
 import ToastNotification from './components/ToastNotification.vue';
+import ErrorDetailModal from './components/ErrorDetailModal.vue';
 import UpdateAvailableModal from './components/UpdateAvailableModal.vue';
 import ChangelogModal from './components/ChangelogModal.vue';
 
@@ -161,6 +162,7 @@ const firstLoadDone = ref(
 
 <template>
   <ToastNotification />
+  <ErrorDetailModal />
   <MustChangePasswordModal v-if="auth.user?.must_change_password" />
   <UpdateAvailableModal />
   <ChangelogModal v-if="auth.user" />
