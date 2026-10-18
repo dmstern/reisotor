@@ -42,6 +42,7 @@ const {
 
 <template>
   <DoneToggle
+    v-if="expanded"
     :done="!!excursion.done"
     :planned="!!excursion.date"
     :aria-label="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
@@ -83,11 +84,60 @@ const {
         {{ weatherSummary.tempLabel }}
       </span>
     </template>
-    <template v-else>
-      <template v-if="expanded">Als gemacht markieren</template>
-      <template v-else>Gemacht</template>
-    </template>
+    <template v-else>Als gemacht markieren</template>
   </DoneToggle>
+
+  <div
+    v-else-if="excursion.done || excursion.date"
+    class="tour-status-meta status"
+    :class="{
+      'status-done': !!excursion.done,
+      planned: !!excursion.date && !excursion.done,
+    }"
+  >
+    <template v-if="excursion.done">
+      <AppIcon
+        :icon="ACTION_ICONS.done"
+        :size="13"
+        group="actions"
+        active
+        class="tour-status-done-icon"
+      />
+      <template v-if="excursion.date">
+        <span class="done-toggle-prefix">Gemacht am </span>
+        <span class="done-toggle-date">
+          <AppIcon
+            :icon="FORM_FIELD_ICONS.date"
+            :size="12"
+            group="formFields"
+            class="done-toggle-calendar-icon"
+          />
+          {{ statusDateLabel }}
+        </span>
+      </template>
+      <template v-else>Gemacht</template>
+      <span v-if="weatherSummary" class="done-toggle-weather">
+        · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+        {{ weatherSummary.tempLabel }}
+      </span>
+    </template>
+    <template v-else-if="excursion.date">
+      <span class="done-toggle-prefix">Geplant für </span>
+      <span class="done-toggle-date">
+        <AppIcon
+          :icon="FORM_FIELD_ICONS.date"
+          :size="12"
+          group="formFields"
+          class="done-toggle-calendar-icon"
+        />
+        {{ statusDateLabel }}
+      </span>
+      <span v-if="weatherSummary" class="done-toggle-weather">
+        · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+        {{ weatherSummary.tempLabel }}
+      </span>
+    </template>
+  </div>
 
   <Teleport to="body">
     <PickerMenu
@@ -138,6 +188,52 @@ const {
 <style scoped>
 :deep(.done-toggle) {
   --toggle-hover-border: var(--excursion-theme-color, var(--color-tour));
+}
+
+.tour-status-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tour-status-meta.status-done {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.tour-status-done-icon {
+  flex-shrink: 0;
+}
+
+.tour-status-meta :deep(.done-toggle-date) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.tour-status-meta :deep(.done-toggle-calendar-icon) {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.tour-status-meta :deep(.done-toggle-weather) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .unplanned-popover-content {

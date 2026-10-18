@@ -481,6 +481,11 @@ function onExcursionCardClose() {
   drawers.mapFocusExcursionId = null;
 }
 
+function onCancelProgrammaticScroll() {
+  excursionOpenSequenceToken++;
+  cancelProgrammaticScroll();
+}
+
 function onSpotShowOnMap(spot: Spot) {
   sheetState.value = 'partial';
   drawers.openMapAt(`spot-${spot.id}`);
@@ -757,12 +762,13 @@ onUnmounted(() => {
         </div>
         <div
           class="spots-col-body"
-          :class="{ 'has-tour-groups': groupMode === 'tours' }"
           ref="spotsColBodyEl"
-          :style="{ '--category-nav-clearance': `${categoryNavHeight}px` }"
+          :style="{
+            '--category-nav-clearance': groupMode === 'category' ? `${categoryNavHeight}px` : '0px',
+          }"
           @pointerdown="onSheetBodyPointerDown"
-          @wheel.passive="cancelProgrammaticScroll"
-          @touchmove.passive="cancelProgrammaticScroll"
+          @wheel.passive="onCancelProgrammaticScroll"
+          @touchmove.passive="onCancelProgrammaticScroll"
         >
           <!-- Sprungziel für TripMap.vue's Tag-/Ausflug-Stationen-Liste: mobil (siehe TripMap.vue's
            Teleport) landet sie hier statt als Overlay über der Karte zu schweben (verdeckte dort
@@ -998,6 +1004,7 @@ onUnmounted(() => {
 
           <!-- Sticky Category Nav Bar (#144, #446) -->
           <ExcursionCategoryNav
+            v-if="groupMode === 'category'"
             :spot-groups="spotGroups"
             :active-category="activeCategory"
             :is-stuck="isCategoryNavStuck"
@@ -1929,19 +1936,20 @@ onUnmounted(() => {
   margin-right: calc(var(--space-3) * -1);
   margin-bottom: 0;
   border-bottom: 1px solid var(--color-border);
-  transition: background 0.25s ease;
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .category-group.is-tour-group:first-of-type {
   border-top: 1px solid var(--color-border);
 }
 
-.category-nav-wrap ~ .category-group.is-tour-group:first-of-type {
-  border-top: none;
-}
-
 .category-group.is-tour-group.is-expanded {
   background: var(--tour-theme-tint);
+  border-bottom-color: var(--tour-theme-border);
+  box-shadow: inset 4px 0 0 var(--tour-theme-color);
 }
 
 .category-group.is-tour-group .empty {
@@ -1951,10 +1959,6 @@ onUnmounted(() => {
 
 .category-group.is-tour-group + .category-group:not(.is-tour-group) {
   margin-top: var(--space-4);
-}
-
-.spots-col-body.has-tour-groups .category-nav-wrap {
-  margin-bottom: 0;
 }
 
 .group h3 {

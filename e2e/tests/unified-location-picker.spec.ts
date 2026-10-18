@@ -148,15 +148,24 @@ async function openNewSpotModal(page: Page) {
   }
   const addBtn = page.getByRole('button', { name: 'Neuer Spot' });
   await expect(addBtn).toBeVisible();
+  const draftsLoaded = page
+    .waitForResponse(
+      (res) => res.url().includes('/api/drafts') && res.request().method() === 'GET',
+      { timeout: 5000 }
+    )
+    .catch(() => null);
   await addBtn.click();
 
   const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
   await expect(modal).toBeVisible();
+  await draftsLoaded;
 
   // If a draft was restored, discard it to ensure pristine state
   const discardBtn = modal.locator('.draft-discard-btn');
   if (await discardBtn.isVisible()) {
     await discardBtn.click();
+    await expect(discardBtn).toBeHidden();
+    await expect(modal.locator('[data-testid="location-status"]')).toBeHidden();
   }
 
   // If Standort section is collapsed, expand it
@@ -168,9 +177,10 @@ async function openNewSpotModal(page: Page) {
     }
   }
 
-  // Ensure LocationPicker container is visible
+  // Ensure LocationPicker container is visible and scrolled back into view
   const picker = modal.locator('.spot-location-fieldset, .location-picker').first();
   await expect(picker).toBeVisible();
+  await picker.scrollIntoViewIfNeeded();
 
   return { modal, picker };
 }
@@ -239,6 +249,7 @@ function getMapMarker(picker: Locator) {
 async function clickMiniMap(picker: Locator, xRatio = 0.5, yRatio = 0.5) {
   const mapEl = picker.locator('.location-picker-map');
   await expect(mapEl).toBeVisible();
+  await mapEl.scrollIntoViewIfNeeded();
   const box = await mapEl.boundingBox();
   if (!box) throw new Error('Location picker map has no bounding box');
   await mapEl.click({

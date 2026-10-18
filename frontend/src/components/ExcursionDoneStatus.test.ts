@@ -33,16 +33,19 @@ describe('ExcursionDoneStatus', () => {
     return renderToString(app);
   }
 
-  it('renders planned status when excursion has a date and is not done', async () => {
+  it('renders passive planned status text without button when excursion has a date and is collapsed', async () => {
     const html = await mountComponent({
       excursion: mockExcursion,
       expanded: false,
     });
     expect(html).toContain('Geplant für');
     expect(html).toContain('15.07');
+    expect(html).toContain('tour-status-meta');
+    expect(html).not.toContain('done-toggle ');
+    expect(html).not.toContain('<button');
   });
 
-  it('renders done status when excursion is done', async () => {
+  it('renders passive done status text without button when excursion is done and collapsed', async () => {
     const doneExcursion: Excursion = {
       ...mockExcursion,
       done: 1,
@@ -53,9 +56,25 @@ describe('ExcursionDoneStatus', () => {
     });
     expect(html).toContain('Gemacht am');
     expect(html).toContain('15.07');
+    expect(html).toContain('tour-status-meta');
+    expect(html).not.toContain('<button');
   });
 
-  it('renders mark as done label when unplanned and expanded', async () => {
+  it('renders nothing when excursion is unplanned, not done, and collapsed', async () => {
+    const unplannedExcursion: Excursion = {
+      ...mockExcursion,
+      date: null,
+      done: 0,
+    };
+    const html = await mountComponent({
+      excursion: unplannedExcursion,
+      expanded: false,
+    });
+    expect(html).not.toContain('tour-status-meta');
+    expect(html).not.toContain('<button');
+  });
+
+  it('renders interactive DoneToggle button when unplanned and expanded', async () => {
     const unplannedExcursion: Excursion = {
       ...mockExcursion,
       date: null,
@@ -66,5 +85,7 @@ describe('ExcursionDoneStatus', () => {
       expanded: true,
     });
     expect(html).toContain('Als gemacht markieren');
+    expect(html).toContain('done-toggle');
+    expect(html).toContain('<button');
   });
 });

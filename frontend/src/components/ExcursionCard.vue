@@ -18,6 +18,8 @@ import ExcursionCoverStack from './ExcursionCoverStack.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionRouteMeta from './ExcursionRouteMeta.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = withDefaults(
   defineProps<{
@@ -52,8 +54,10 @@ const emit = defineEmits<{
 
 const drawers = useDrawersStore();
 
-function onCardClick() {
+function onCardClick(event?: MouseEvent) {
   if (props.expanded) {
+    const target = event?.target as HTMLElement | null;
+    if (target && !target.closest('.card-header-row')) return;
     emit('close');
     if (drawers.mapFocusExcursionId === props.excursion.id) {
       drawers.mapFocusExcursionId = null;
@@ -123,7 +127,10 @@ const {
       />
 
       <div class="body">
-        <div class="card-header-row">
+        <div
+          class="card-header-row"
+          :title="expanded ? 'Klicken zum Einklappen' : 'Klicken zum Aufklappen'"
+        >
           <div class="card-title-block">
             <component :is="headingTag" class="card-title" :title="excursion.title">
               {{ excursion.title }}
@@ -172,6 +179,19 @@ const {
                 @click="emit('edit', excursion)"
               />
             </Transition>
+            <span
+              class="card-disclosure-pill"
+              :class="{ 'is-expanded': expanded }"
+              aria-hidden="true"
+            >
+              <span v-if="expanded" class="disclosure-label">Einklappen</span>
+              <AppIcon
+                :icon="expanded ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+                :size="14"
+                group="actions"
+                class="disclosure-chevron"
+              />
+            </span>
           </div>
         </div>
 
@@ -211,9 +231,14 @@ const {
           @show-on-map="emit('show-on-map')"
         />
 
-        <div class="card-actions-wrapper">
+        <div
+          v-if="
+            expanded || excursion.done || excursion.date || likeCount > 0 || comments.length > 0
+          "
+          class="card-actions-wrapper"
+        >
           <div class="card-actions">
-            <CalendarDragHandle v-if="!excursion.date" :excursion="excursion" />
+            <CalendarDragHandle v-if="expanded && !excursion.date" :excursion="excursion" />
             <ExcursionDoneStatus
               :excursion="excursion"
               :expanded="expanded"
@@ -223,11 +248,11 @@ const {
 
           <SocialRow
             :class="{ 'is-expanded': expanded }"
+            :readonly="!expanded"
             :like-count="likeCount"
             :liked="liked"
             :comment-count="comments.length"
             :comments-open="showComments"
-            :show-comments-button="expanded"
             @toggle-like="emit('toggle-like')"
             @toggle-comments="showComments = !showComments"
           />
@@ -331,10 +356,37 @@ const {
   --excursion-theme-border: var(--color-travel-border);
 }
 
+.excursion-card:not(.expanded)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: 3px;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--excursion-theme-color);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition:
+    opacity 0.2s ease,
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 3;
+}
+
 .excursion-card:not(.expanded):hover {
   transform: none;
   background: var(--color-hover) !important;
   box-shadow: none !important;
+}
+
+.excursion-card:not(.expanded):hover::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.excursion-card:not(.expanded):hover .card-title {
+  color: var(--excursion-theme-dark);
 }
 
 .excursion-card:not(.expanded):active {
@@ -349,6 +401,7 @@ const {
   corner-shape: auto !important;
   background: transparent !important;
   box-shadow: none !important;
+  cursor: default;
 }
 
 .tour-card-main {
@@ -383,12 +436,53 @@ const {
   padding: 0;
 }
 
+.body > :not(.card-header-row) {
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
+}
+
 .card-header-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
+  box-sizing: border-box;
+}
+
+.excursion-card.expanded .card-header-row {
+  cursor: pointer;
+  padding: var(--space-2) calc(var(--space-2) + 2px);
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: color-mix(in srgb, var(--excursion-theme-color) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
+  box-shadow: var(--shadow-xs);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.excursion-card.expanded .card-header-row:hover:not(:has(.tour-edit-btn:hover)) {
+  background: color-mix(in srgb, var(--excursion-theme-color) 16%, var(--color-surface));
+  border-color: var(--excursion-theme-color);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.excursion-card.expanded .card-header-row:active:not(:has(.tour-edit-btn:hover)) {
+  transform: translateY(0) scale(0.995);
+}
+
+.excursion-card.expanded:has(.card-header-row:hover:not(:has(.tour-edit-btn:hover)))
+  .body
+  > :not(.card-header-row) {
+  transform: translateY(-2px);
+  opacity: 0.82;
 }
 
 .card-title-block {
@@ -447,9 +541,70 @@ const {
 .card-badge-group {
   flex-shrink: 0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-1);
   margin-top: 1px;
+}
+
+.card-disclosure-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--excursion-theme-color) 10%, var(--color-hover));
+  border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
+  color: var(--excursion-theme-dark);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-disclosure-pill.is-expanded {
+  width: auto;
+  padding: 0 var(--space-2);
+  background: var(--excursion-theme-tint);
+  border-color: var(--excursion-theme-border);
+}
+
+.disclosure-chevron {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.excursion-card:not(.expanded):hover .card-disclosure-pill {
+  background: var(--excursion-theme-color);
+  border-color: var(--excursion-theme-color);
+  color: #ffffff;
+  box-shadow: var(--shadow-xs);
+}
+
+.excursion-card:not(.expanded):hover .disclosure-chevron {
+  transform: translateY(2px);
+}
+
+.excursion-card.expanded
+  .card-header-row:hover:not(:has(.tour-edit-btn:hover))
+  .card-disclosure-pill {
+  background: var(--excursion-theme-color);
+  border-color: var(--excursion-theme-color);
+  color: #ffffff;
+  box-shadow: var(--shadow-xs);
+}
+
+.excursion-card.expanded
+  .card-header-row:hover:not(:has(.tour-edit-btn:hover))
+  .disclosure-chevron {
+  transform: translateY(-2px);
 }
 
 .card-actions-wrapper {
@@ -561,6 +716,17 @@ const {
   margin-top: var(--space-2);
 }
 
+@container excursion-card (max-width: 400px) {
+  .card-disclosure-pill.is-expanded {
+    width: 26px;
+    padding: 0;
+  }
+
+  .disclosure-label {
+    display: none;
+  }
+}
+
 @container spots-col (max-width: 360px) {
   .tour-card-main {
     padding: var(--space-2) var(--space-3);
@@ -610,7 +776,12 @@ const {
 
 @media (prefers-reduced-motion: reduce) {
   .excursion-card,
+  .excursion-card::before,
   .body,
+  .body > :not(.card-header-row),
+  .card-header-row,
+  .card-disclosure-pill,
+  .disclosure-chevron,
   .tour-note-container {
     transform: none !important;
     transition: opacity 0.15s ease !important;

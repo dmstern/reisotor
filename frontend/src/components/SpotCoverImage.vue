@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
 import EditButton from './EditButton.vue';
@@ -33,6 +34,7 @@ function formatAccommodationDate(d: string | null) {
   <div
     class="image"
     :class="{ 'is-expanded': expanded }"
+    :title="expanded ? 'Klicken zum Einklappen' : 'Klicken zum Aufklappen'"
     :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
   >
     <AppIcon
@@ -43,38 +45,52 @@ function formatAccommodationDate(d: string | null) {
       group="categories"
     />
 
-    <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button, Titel, Metadaten und Notiz -->
+    <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button, Titel, Metadaten, Notiz & Einklapp-Pille -->
     <Transition name="overlay-fade">
       <div v-if="expanded" class="image-expanded-overlay">
         <div class="overlay-top-row">
           <EditButton floating class="overlay-edit-btn" @click="emit('edit', spot)" />
         </div>
         <div class="overlay-bottom-content">
-          <div class="card-title-block is-expanded">
-            <component :is="headingTag" class="card-title" :title="spot.title">
-              {{ spot.title }}
-            </component>
-            <div
-              v-if="creatorLabel || (isAccommodation && (spot.start_date || spot.end_date))"
-              class="card-title-meta"
-            >
-              <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-              <span
-                v-if="isAccommodation && (spot.start_date || spot.end_date)"
-                class="overlay-submeta"
-              >
-                {{ formatAccommodationDate(spot.start_date) || '?' }} –
-                {{ formatAccommodationDate(spot.end_date) || '?' }}
-              </span>
+          <div class="overlay-bottom-row">
+            <div class="overlay-bottom-text">
+              <div class="card-title-block is-expanded">
+                <component :is="headingTag" class="card-title" :title="spot.title">
+                  {{ spot.title }}
+                </component>
+                <div
+                  v-if="creatorLabel || (isAccommodation && (spot.start_date || spot.end_date))"
+                  class="card-title-meta"
+                >
+                  <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+                  <span
+                    v-if="isAccommodation && (spot.start_date || spot.end_date)"
+                    class="overlay-submeta"
+                  >
+                    {{ formatAccommodationDate(spot.start_date) || '?' }} –
+                    {{ formatAccommodationDate(spot.end_date) || '?' }}
+                  </span>
+                </div>
+              </div>
+              <!-- Spot-Notiz im Image Banner unterhalb vom Spot-Titel -->
+              <div v-if="spot.note" class="overlay-note">
+                <RichTextDisplay
+                  class="note is-banner"
+                  :content="spot.note"
+                  :format="spot.note_format"
+                />
+              </div>
             </div>
-          </div>
-          <!-- Spot-Notiz im Image Banner unterhalb vom Spot-Titel -->
-          <div v-if="spot.note" class="overlay-note" @click.stop>
-            <RichTextDisplay
-              class="note is-banner"
-              :content="spot.note"
-              :format="spot.note_format"
-            />
+
+            <span class="spot-collapse-pill" aria-hidden="true">
+              <span class="spot-collapse-label">Einklappen</span>
+              <AppIcon
+                :icon="ACTION_ICONS.chevronUp"
+                :size="14"
+                group="actions"
+                class="spot-collapse-chevron"
+              />
+            </span>
           </div>
         </div>
       </div>
@@ -90,7 +106,9 @@ function formatAccommodationDate(d: string | null) {
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition:
+    height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.2s ease;
   border-radius: calc(var(--radius-md-squircle) - var(--space-1));
   corner-shape: squircle;
   overflow: hidden;
@@ -99,6 +117,13 @@ function formatAccommodationDate(d: string | null) {
 
 .image.is-expanded {
   height: 165px;
+  cursor: pointer;
+}
+
+.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) {
+  box-shadow:
+    inset 0 0 0 2px var(--color-primary),
+    0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .overlay-fade-enter-active {
@@ -161,6 +186,70 @@ function formatAccommodationDate(d: string | null) {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.overlay-bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  width: 100%;
+}
+
+.overlay-bottom-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) .overlay-bottom-text {
+  transform: translateY(-1px);
+}
+
+.spot-collapse-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1;
+  backdrop-filter: var(--backdrop-blur-md, blur(8px));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  flex-shrink: 0;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+}
+
+.spot-collapse-chevron {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) .spot-collapse-pill {
+  background: var(--color-primary);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) .spot-collapse-chevron {
+  transform: translateY(-2px);
 }
 
 .overlay-bottom-content .card-title-block.is-expanded {
@@ -174,7 +263,7 @@ function formatAccommodationDate(d: string | null) {
   font-size: var(--font-size-lg);
   font-weight: 700;
   line-height: 1.25;
-  color: var(--color-primary-contrast, #ffffff);
+  color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -244,7 +333,7 @@ function formatAccommodationDate(d: string | null) {
 
 .note.is-banner :deep(strong),
 .note.is-banner :deep(b) {
-  color: var(--color-primary-contrast, #ffffff);
+  color: #ffffff;
 }
 
 .overlay-edit-btn {
@@ -268,6 +357,17 @@ function formatAccommodationDate(d: string | null) {
 
 .overlay-submeta {
   opacity: 0.85;
+}
+
+@container spot-card (max-width: 360px) {
+  .spot-collapse-pill {
+    width: 26px;
+    padding: 0;
+  }
+
+  .spot-collapse-label {
+    display: none;
+  }
 }
 
 @container spots-col (max-width: 480px) {
@@ -298,8 +398,12 @@ function formatAccommodationDate(d: string | null) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .image {
+  .image,
+  .overlay-bottom-text,
+  .spot-collapse-pill,
+  .spot-collapse-chevron {
     transition: none;
+    transform: none !important;
   }
 }
 </style>

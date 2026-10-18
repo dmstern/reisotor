@@ -16,6 +16,7 @@ describe('SocialRow', () => {
     commentsOpen?: boolean;
     active?: boolean;
     showCommentsButton?: boolean;
+    readonly?: boolean;
   }) {
     const app = createApp({
       render: () => h(SocialRow, props),
@@ -60,5 +61,29 @@ describe('SocialRow', () => {
     expect(html).not.toContain('comment-btn');
     expect(html).toContain('like-btn');
     expect(html).toContain('liked');
+  });
+
+  it('renders nothing in readonly mode when likeCount and commentCount are 0', async () => {
+    const html = await mountComponent({
+      likeCount: 0,
+      liked: false,
+      commentCount: 0,
+      readonly: true,
+    });
+    expect(html).not.toContain('social-row');
+    expect(html).not.toContain('<button');
+  });
+
+  it('renders static indicators without buttons in readonly mode when counts > 0', async () => {
+    const html = await mountComponent({
+      likeCount: 2,
+      liked: true,
+      commentCount: 1,
+      readonly: true,
+    });
+    expect(html).toContain('is-readonly');
+    expect(html).toContain('like-indicator');
+    expect(html).toContain('comment-indicator');
+    expect(html).not.toContain('<button');
   });
 });
