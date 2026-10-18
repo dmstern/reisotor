@@ -37,7 +37,16 @@ export const InteractiveDemo: Story = {
       }
 
       function triggerError() {
-        showToast({ message: 'Fehler beim Löschen des Elements.', type: 'error' });
+        showToast({
+          message: 'Speichern fehlgeschlagen: Datenbank-Verbindung unterbrochen (HTTP 500)',
+          type: 'error',
+          action: {
+            label: 'Details anzeigen',
+            onClick: () => {
+              showToast({ message: 'Diagnose-Ansicht geöffnet.', type: 'info' });
+            },
+          },
+        });
       }
 
       return { triggerInfo, triggerSuccess, triggerWarning, triggerError };
@@ -47,7 +56,7 @@ export const InteractiveDemo: Story = {
         <Button @click="triggerInfo">Toast (Info - Papierkorb)</Button>
         <Button variant="secondary" @click="triggerSuccess">Toast (Erfolg)</Button>
         <Button variant="secondary" @click="triggerWarning">Toast (Warnung)</Button>
-        <Button variant="danger" @click="triggerError">Toast (Fehler)</Button>
+        <Button variant="danger" @click="triggerError">Toast (Fehler + Action)</Button>
         <ToastNotification />
       </div>
     `,
