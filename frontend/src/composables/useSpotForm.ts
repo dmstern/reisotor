@@ -453,6 +453,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   );
 
   let lastPreviewFetchKey = '';
+  let previewRequestId = 0;
   const spotPreviewImages = ref<string[]>([]);
   const selectedSpotCity = ref<string | null>(null);
 
@@ -465,6 +466,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     const key = `${mapsLink}|${extra?.name || ''}|${extra?.lat || ''}|${extra?.lng || ''}|${extra?.city || ''}`;
     if (lastPreviewFetchKey === key) return;
     lastPreviewFetchKey = key;
+    const reqId = ++previewRequestId;
 
     try {
       const params = new URLSearchParams();
@@ -479,6 +481,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
         imageUrl: string | null;
         images?: string[];
       }>(`/spots/preview?${params.toString()}`);
+      if (reqId !== previewRequestId) return;
       if (preview.images && preview.images.length > 0) {
         spotPreviewImages.value = preview.images;
       } else if (preview.imageUrl) {
@@ -500,6 +503,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
         lat: pin?.lat,
         lng: pin?.lng,
       });
+    } else {
+      previewRequestId++;
+      lastPreviewFetchKey = '';
     }
   }
 
@@ -555,6 +561,8 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function closeSpotForm() {
+    previewRequestId++;
+    lastPreviewFetchKey = '';
     spotTitleTouched.value = false;
     showSpotForm.value = false;
     spotForm.value = emptySpotForm();
@@ -572,6 +580,8 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function discardNewSpotDraft() {
+    previewRequestId++;
+    lastPreviewFetchKey = '';
     spotTitleTouched.value = false;
     spotForm.value = emptySpotForm();
     spotManualPin.value = null;
@@ -694,12 +704,16 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function onSpotLocationClear() {
+    previewRequestId++;
+    lastPreviewFetchKey = '';
     spotManualPin.value = null;
     editSpotManualPin.value = null;
     activeSpotForm.value.maps_link = '';
   }
 
   function resetEditSpotLocation() {
+    previewRequestId++;
+    lastPreviewFetchKey = '';
     if (!editingSpot.value) {
       triggerSpotLocationClear();
       return;
@@ -720,6 +734,8 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function startEditSpot(spot: Spot) {
+    previewRequestId++;
+    lastPreviewFetchKey = '';
     spotTitleTouched.value = false;
     selectedSpotCity.value = null;
     spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
@@ -771,6 +787,8 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function closeEditSpotForm() {
+    previewRequestId++;
+    lastPreviewFetchKey = '';
     spotTitleTouched.value = false;
     spotManualPin.value = null;
     editSpotManualPin.value = null;
