@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import type { CalendarEntry } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
@@ -25,6 +25,7 @@ import { useScheduleItemDetail } from '../composables/useScheduleItemDetail';
 // style.css; im Schubladen-Kontext übernimmt das stattdessen Drawer.vue's eigenes Scroll-Panel).
 const props = defineProps<{ standalone?: boolean }>();
 const router = useRouter();
+const route = useRoute();
 const tripStore = useTripStore();
 const drawers = useDrawersStore();
 
@@ -60,6 +61,7 @@ const {
   isTripActive,
   jumpToToday,
   goToTripDates,
+  jumpToDate,
   weekdayHeaders,
   calendarTransitionName,
   calendarPageKey,
@@ -120,15 +122,53 @@ function openEntry(entry: CalendarEntry) {
   } else if (entry.category === 'travel' && entry.ideaId != null) {
     drawers.openMapForExcursion(entry.ideaId);
     drawers.calendarOpen = false;
-    router.push(`/excursions#excursion-${entry.ideaId}`);
+    const path = tripStore.currentTripId
+      ? `/trip/${tripStore.currentTripId}/excursions`
+      : '/excursions';
+    router.push({
+      path,
+      query: { group: 'tours' },
+      hash: `#excursion-${entry.ideaId}`,
+    });
   } else if (entry.kind === 'schedule') {
     viewingItem.value = entry.scheduleItem;
   }
 }
 
+watch(
+  () => drawers.calendarTargetDate,
+  (targetDate) => {
+    if (targetDate) {
+      jumpToDate(targetDate);
+      drawers.calendarTargetDate = null;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => route.query.date,
+  (queryDate) => {
+    if (typeof queryDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(queryDate)) {
+      jumpToDate(queryDate);
+    }
+  },
+  { immediate: true }
+);
+
 onMounted(async () => {
   await initCalendarData();
-  initNavigation();
+  const queryDate =
+    typeof route.query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(route.query.date)
+      ? route.query.date
+      : null;
+  const targetDate = drawers.calendarTargetDate || queryDate;
+  if (targetDate) {
+    jumpToDate(targetDate);
+    drawers.calendarTargetDate = null;
+  } else {
+    initNavigation();
+  }
   loading.value = false;
 });
 </script>

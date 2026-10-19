@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 import { useExcursionsFilter } from './useExcursionsFilter';
 import { useSpotsStore } from '../stores/spots';
+import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
 import type { Excursion, ScheduleItem, Spot } from '../api/types';
 
@@ -172,5 +173,65 @@ describe('useExcursionsFilter', () => {
     expect(filter.isTourAllSpotsFiltered(excursion, 0)).toBe(true);
     // 1 von 2 Spots sichtbar mit aktivem Filter -> PartiallyFiltered
     expect(filter.isTourPartiallyFiltered(excursion, 1)).toBe(true);
+  });
+
+  it('übernimmt group=spots und group=category aus der Route-Query und schaltet auf die Spotansicht (category)', () => {
+    const route = {
+      path: '/trip/1/excursions',
+      query: { group: 'tours' },
+      hash: '',
+    } as unknown as RouteLocationNormalizedLoaded;
+
+    const filter = useExcursionsFilter({
+      route,
+      router: mockRouter,
+    });
+
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('tours');
+
+    route.query = { group: 'spots' };
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('category');
+
+    route.query = { group: 'tours' };
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('tours');
+
+    route.query = { group: 'category' };
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('category');
+  });
+
+  it('bezieht Datumsangaben aus Touren in spotScheduledDates ein und filtert danach als geplant', () => {
+    const spotsStore = useSpotsStore();
+    const excursionsStore = useExcursionsStore();
+
+    spotsStore.spots = [
+      createMockSpot({ id: 10, trip_id: 1, title: 'Museum', category: 'Kultur' }),
+      createMockSpot({ id: 20, trip_id: 1, title: 'Park', category: 'Natur' }),
+    ];
+
+    excursionsStore.excursions = [
+      createMockExcursion({
+        id: 5,
+        trip_id: 1,
+        title: 'Kulturtour',
+        date: '2026-08-01',
+        spot_ids: [10],
+      }),
+    ];
+
+    const filter = useExcursionsFilter({
+      route: mockRoute,
+      router: mockRouter,
+    });
+
+    expect(filter.spotScheduledDates.value.get(10)).toBe('2026-08-01');
+    expect(filter.spotScheduledDates.value.has(20)).toBe(false);
+
+    filter.statusFilter.value = ['planned'];
+    expect(filter.filteredSpotItems.value.length).toBe(1);
+    expect(filter.filteredSpotItems.value[0].spot.id).toBe(10);
   });
 });

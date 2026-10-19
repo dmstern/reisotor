@@ -15,10 +15,18 @@ const meta: Meta<typeof Badge> = {
       control: 'select',
       options: ['sm', 'md'],
     },
+    as: {
+      control: 'text',
+    },
+    interactive: {
+      control: 'boolean',
+    },
   },
   args: {
     variant: 'default',
     size: 'sm',
+    as: 'span',
+    interactive: false,
   },
 };
 
@@ -98,6 +106,20 @@ export const AccentSecondary: Story = {
       return { args };
     },
     template: `<Badge v-bind="args">Admin</Badge>`,
+  }),
+};
+
+export const InteractiveButton: Story = {
+  args: {
+    as: 'button',
+    variant: 'accent-secondary',
+  },
+  render: (args) => ({
+    components: { Badge },
+    setup() {
+      return { args };
+    },
+    template: `<Badge v-bind="args">Klickbarer Badge</Badge>`,
   }),
 };
 
