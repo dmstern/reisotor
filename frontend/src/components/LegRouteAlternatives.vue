@@ -152,7 +152,6 @@ const singleRouteDistance = computed(() => {
   flex-direction: column;
   gap: var(--space-1);
   width: 100%;
-  padding: 1px;
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -164,7 +163,7 @@ const singleRouteDistance = computed(() => {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   box-shadow: none;
   text-align: left;
   cursor: pointer;
@@ -173,7 +172,6 @@ const singleRouteDistance = computed(() => {
   transition:
     border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
   width: 100%;
 }
@@ -187,10 +185,14 @@ const singleRouteDistance = computed(() => {
   transform: scale(0.995);
 }
 
+.route-alt-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .route-alt-card.is-selected {
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
-  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 .route-alt-content {
@@ -263,8 +265,9 @@ const singleRouteDistance = computed(() => {
 
 .route-alt-card--single {
   cursor: default;
-  border: 1.5px solid var(--color-primary);
+  border: var(--ui-border-width, 1px) solid var(--color-primary);
   background: var(--color-primary-tint);
+  box-shadow: none;
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
