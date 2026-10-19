@@ -416,7 +416,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               title="Zu einem Datum einplanen"
               @click="toggleAddSchedulePopover($event)"
             >
-              <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
+              <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="13" group="actions" />
               <span>Datum hinzufügen</span>
             </button>
             <Teleport to="body">

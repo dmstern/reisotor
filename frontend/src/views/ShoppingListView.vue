@@ -20,6 +20,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import ShoppingAddForm from '../components/ShoppingAddForm.vue';
 import ShoppingItemRow from '../components/ShoppingItemRow.vue';
 import ShoppingEditModal from '../components/ShoppingEditModal.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const uiSettings = useUiSettingsStore();
 
@@ -118,6 +119,7 @@ async function quickAddToGroup(group: Group, label: string) {
 
           <QuickAddRow
             class="group-quick-add"
+            :icon="ACTION_ICONS.shoppingCartPlus"
             placeholder="Artikel hinzufügen…"
             @submit="(label) => quickAddToGroup(group, label)"
           >

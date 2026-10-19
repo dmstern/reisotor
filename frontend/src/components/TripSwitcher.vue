@@ -211,7 +211,7 @@ function selectAndClose(id: number) {
               }
             "
           >
-            + Neuer Urlaub
+            <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
           </Button>
           <p v-else class="empty">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
           <router-link to="/trips" class="manage-trips-btn" @click="close"

@@ -896,7 +896,9 @@ onUnmounted(() => {
                       ? hasActiveRecording
                         ? ACTION_ICONS.recordStop
                         : ACTION_ICONS.recordStart
-                      : ACTION_ICONS.add
+                      : groupMode === 'tours'
+                        ? ACTION_ICONS.mapPlus
+                        : ACTION_ICONS.mapPinPlus
                   "
                   :size="14"
                   group="actions"

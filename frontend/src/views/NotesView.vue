@@ -341,7 +341,7 @@ async function remove(id: number) {
     <div class="header">
       <h1>Notizen</h1>
       <Button @click="openNew"
-        ><AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neue Notiz</Button
+        ><AppIcon :icon="ACTION_ICONS.filePlus" :size="14" group="actions" /> Neue Notiz</Button
       >
     </div>
 

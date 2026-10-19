@@ -4,6 +4,7 @@ import Button from './primitives/Button.vue';
 import Accordion from './primitives/Accordion.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import type { IconDef } from '../utils/icon';
 
 // Wiederverwendbare Inline-Quick-Add-Zeile für Listen (Einkauf, ToDo, Packliste):
 // Im Ruhezustand eine dezente, einladende Eingabekapsel mit Plus-Icon.
@@ -11,10 +12,14 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 // integriertem Papierflieger-Absenden-Button (ACTION_ICONS.send) und optionalen Zusatzfeldern
 // (Slot "extra", z. B. Shop/Zeitraum bei Einkauf, Zuweisung/Priorität bei ToDo) mit sauber
 // an der linken Fluchtlinie ausgerichteten Dropdowns (siehe DESIGN.md).
-const props = withDefaults(defineProps<{ placeholder?: string; disabled?: boolean }>(), {
-  placeholder: 'Hinzufügen…',
-  disabled: false,
-});
+const props = withDefaults(
+  defineProps<{ placeholder?: string; disabled?: boolean; icon?: IconDef }>(),
+  {
+    placeholder: 'Hinzufügen…',
+    disabled: false,
+    icon: () => ACTION_ICONS.add,
+  }
+);
 const emit = defineEmits<{ (e: 'submit', label: string): void }>();
 
 const label = ref('');
@@ -54,7 +59,7 @@ function onBlur(event: FocusEvent) {
   <form ref="formRef" class="quick-add-row" :class="{ expanded }" @submit.prevent="submit">
     <div class="input-container">
       <AppIcon
-        :icon="ACTION_ICONS.add"
+        :icon="props.icon"
         :size="16"
         group="actions"
         class="leading-icon"

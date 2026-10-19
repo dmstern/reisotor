@@ -157,7 +157,8 @@ function close() {
             class="hidden-input"
             @change="onScreenshotSelected"
           />
-          + Screenshot hinzufügen
+          <AppIcon :icon="ACTION_ICONS.photoPlus" :size="14" group="actions" /> Screenshot
+          hinzufügen
         </label>
         <div v-else class="screenshot-preview">
           <img :src="screenshot" alt="" />

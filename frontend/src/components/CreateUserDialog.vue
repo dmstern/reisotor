@@ -164,7 +164,7 @@ async function submit() {
         <Button type="submit" variant="primary" :disabled="submitting">
           <template v-if="submitting">Speichere…</template>
           <template v-else>
-            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer anlegen
+            <AppIcon :icon="ACTION_ICONS.userPlus" :size="14" group="actions" /> Nutzer anlegen
           </template>
         </Button>
       </div>

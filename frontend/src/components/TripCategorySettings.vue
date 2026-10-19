@@ -129,7 +129,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
         type="button"
         variant="primary"
         size="sm"
-        :icon="ACTION_ICONS.add"
+        :icon="ACTION_ICONS.categoryPlus"
         @click="showCreateForm = true"
       >
         Neue Kategorie

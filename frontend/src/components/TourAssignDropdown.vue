@@ -193,7 +193,7 @@ onUnmounted(() => {
               aria-label="Neue Tour erstellen"
               @click.stop
             >
-              <AppIcon :icon="ACTION_ICONS.add" :size="13" group="actions" />
+              <AppIcon :icon="ACTION_ICONS.mapPlus" :size="13" group="actions" />
             </button>
           </form>
         </div>

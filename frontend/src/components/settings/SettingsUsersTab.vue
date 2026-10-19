@@ -38,7 +38,7 @@ onMounted(() => {
       <SettingsCardHeader title="Nutzerverwaltung" :icon="USERS_ICON">
         <template #actions>
           <Button variant="primary" size="sm" @click="showCreateUserDialog = true">
-            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Nutzer anlegen
+            <AppIcon :icon="ACTION_ICONS.userPlus" :size="14" group="actions" /> Nutzer anlegen
           </Button>
         </template>
       </SettingsCardHeader>
