@@ -116,9 +116,17 @@ export const useDrawersStore = defineStore('drawers', () => {
   // Anfasser, TripMap-Detailsprünge, …), ruft deshalb diese Funktion statt direkt calendarOpen zu
   // setzen – so bleibt die Desktop/Mobil-Weiche an einer einzigen Stelle statt an jedem einzelnen
   // Aufrufort dupliziert.
-  function openCalendar() {
-    if (isDesktop()) calendarOpen.value = true;
-    else router.push('/calendar');
+  const calendarTargetDate = ref<string | null>(null);
+
+  function openCalendar(date?: string) {
+    if (date) {
+      calendarTargetDate.value = date;
+    }
+    if (isDesktop()) {
+      calendarOpen.value = true;
+    } else {
+      router.push(date ? { path: '/calendar', query: { date } } : '/calendar');
+    }
   }
 
   // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser): statt den
@@ -279,6 +287,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     locationsVersion,
     draggingTourSpotId,
     pendingSchedule,
+    calendarTargetDate,
     openCalendar,
     openMapAt,
     openMapForExcursion,
