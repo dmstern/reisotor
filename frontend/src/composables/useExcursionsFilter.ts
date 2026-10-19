@@ -151,7 +151,7 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
       groupMode.value = 'tours';
     } else if (q.group === 'tracks') {
       groupMode.value = 'tracks';
-    } else if (q.group === 'category') {
+    } else if (q.group === 'category' || q.group === 'spots') {
       groupMode.value = 'category';
     } else if (q.group === 'travel') {
       groupMode.value = 'tours';

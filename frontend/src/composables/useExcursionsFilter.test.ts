@@ -173,4 +173,32 @@ describe('useExcursionsFilter', () => {
     // 1 von 2 Spots sichtbar mit aktivem Filter -> PartiallyFiltered
     expect(filter.isTourPartiallyFiltered(excursion, 1)).toBe(true);
   });
+
+  it('übernimmt group=spots und group=category aus der Route-Query und schaltet auf die Spotansicht (category)', () => {
+    const route = {
+      path: '/trip/1/excursions',
+      query: { group: 'tours' },
+      hash: '',
+    } as unknown as RouteLocationNormalizedLoaded;
+
+    const filter = useExcursionsFilter({
+      route,
+      router: mockRouter,
+    });
+
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('tours');
+
+    route.query = { group: 'spots' };
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('category');
+
+    route.query = { group: 'tours' };
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('tours');
+
+    route.query = { group: 'category' };
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('category');
+  });
 });
