@@ -602,7 +602,7 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-budget-expense',
     path: '/budget',
     open: async (page) => {
-      const btn = page.locator('button:has-text("Ausgabe eintragen")').first();
+      const btn = page.getByRole('button', { name: /Ausgabe.*eintragen/i }).first();
       await btn.waitFor({ state: 'visible', timeout: 15000 });
       await btn.scrollIntoViewIfNeeded();
       await btn.click();
