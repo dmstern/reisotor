@@ -520,7 +520,14 @@ function onFocusSpotFromMap(spotId: number) {
   }
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
   if (groupMode.value === 'tours' && !isAccommodation) {
-    const parentExcursion = excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
+    const parentExcursion =
+      (drawers.mapFocusDate
+        ? excursionsStore.excursions.find(
+            (e) => e.spot_ids.includes(spotId) && e.date === drawers.mapFocusDate
+          )
+        : null) ??
+      excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId) && e.date) ??
+      excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
     if (parentExcursion) {
       expandedExcursionId.value = parentExcursion.id;
     }

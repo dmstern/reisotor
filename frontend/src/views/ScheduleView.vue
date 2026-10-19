@@ -122,7 +122,14 @@ function openEntry(entry: CalendarEntry) {
   } else if (entry.category === 'travel' && entry.ideaId != null) {
     drawers.openMapForExcursion(entry.ideaId);
     drawers.calendarOpen = false;
-    router.push(`/excursions#excursion-${entry.ideaId}`);
+    const path = tripStore.currentTripId
+      ? `/trip/${tripStore.currentTripId}/excursions`
+      : '/excursions';
+    router.push({
+      path,
+      query: { group: 'tours' },
+      hash: `#excursion-${entry.ideaId}`,
+    });
   } else if (entry.kind === 'schedule') {
     viewingItem.value = entry.scheduleItem;
   }

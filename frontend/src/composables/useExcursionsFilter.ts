@@ -85,6 +85,13 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
       const existing = map.get(item.spot_id);
       if (!existing || item.date < existing) map.set(item.spot_id, item.date);
     }
+    for (const excursion of excursionsStore.excursions) {
+      if (!excursion.date) continue;
+      for (const spotId of excursion.spot_ids) {
+        const existing = map.get(spotId);
+        if (!existing || excursion.date < existing) map.set(spotId, excursion.date);
+      }
+    }
     return map;
   });
 

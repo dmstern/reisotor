@@ -189,12 +189,25 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
       ? `/trip/${tripStore.currentTripId}/excursions`
       : '/excursions';
     if (entry.spotId != null) {
+      const spot = spotsStore.spots.find((s) => s.id === entry.spotId);
+      const isAccommodation = spot?.category === 'Unterkunft';
+
+      const matchingTour = !isAccommodation
+        ? excursionsStore.excursions.find(
+            (e) =>
+              e.spot_ids.includes(entry.spotId!) &&
+              (e.date === entry.date ||
+                (entry.ideaId != null && e.id === entry.ideaId) ||
+                (entry.scheduleItem?.idea_id != null && e.id === entry.scheduleItem.idea_id))
+          )
+        : null;
+
       drawers.openMapAt(`spot-${entry.spotId}`);
       drawers.calendarOpen = false;
       router
         .push({
           path,
-          query: { group: 'spots' },
+          query: { group: matchingTour ? 'tours' : 'spots' },
           hash: `#spot-${entry.spotId}`,
         })
         .catch(() => {});

@@ -5,3 +5,4 @@
 - 🔲 **Saubere Tagesmarkierungen**: Ausgewählte Tage im Kalender werden nun auch an den äußeren Rändern mit einem vollständig sichtbaren, abgerundeten Rahmen hervorgehoben, ohne abgeschnitten zu werden.
 - 🏨 **Unterkunfts-Hinweis**: Die Unterkunfts-Plakette in den Tagesdetails des Kalenders nutzt nun die einheitliche Design-System-Schriftgröße und fügt sich harmonisch neben Wetter-Informationen und Terminen ein.
 - 📍 **Direktsprung zur Unterkunft**: Ein Klick auf das Unterkunfts-Badge in den Tagesdetails des Kalenders öffnet die Unterkunft nun zuverlässig immer in der Spotansicht, selbst wenn zuvor der Touren-Reiter aktiv war.
+- 🧭 **Kontextbezogene Navigation**: Beim Klick auf einen Termin im Kalender öffnet sich der verknüpfte Ort nun genau in der passenden Ansicht: Spots mit rein eigenem Datum öffnen in der Spotansicht, während Spots, deren Termin aus einer hinterlegten Tour stammt, direkt in der Tourenansicht mit aufgeklappter Tour hervorgehoben werden.
