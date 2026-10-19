@@ -63,6 +63,8 @@ describe('ScheduleDayDetail', () => {
     expect(html).toContain('18°');
     expect(html).toContain('11°');
     expect(html).toContain('Hotel Adlon');
+    expect(html).toContain('badge--accent-secondary');
+    expect(html).toContain('badge--size-sm');
   });
 
   it('rendert Termineinträge mit Titel und Ort', async () => {
