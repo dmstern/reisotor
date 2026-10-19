@@ -260,7 +260,7 @@ function onTotalSectionClick(e: MouseEvent) {
             :aria-expanded="showAddCategory"
             @click="showAddCategory = !showAddCategory"
           >
-            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
+            <AppIcon :icon="ACTION_ICONS.categoryPlus" :size="14" group="actions" />
             <span>Kategorie hinzufügen</span>
             <AppIcon
               :icon="ACTION_ICONS.chevronDown"
@@ -291,7 +291,7 @@ function onTotalSectionClick(e: MouseEvent) {
                 />
               </FormField>
               <Button type="submit">
-                <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen
+                <AppIcon :icon="ACTION_ICONS.categoryPlus" :size="14" group="actions" /> Hinzufügen
               </Button>
             </form>
           </Accordion>
@@ -309,7 +309,7 @@ function onTotalSectionClick(e: MouseEvent) {
         :aria-expanded="showAddCategory"
         @click="showAddCategory = !showAddCategory"
       >
-        <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" />
+        <AppIcon :icon="ACTION_ICONS.categoryPlus" :size="14" group="actions" />
         <span>Kategorie hinzufügen</span>
         <AppIcon
           :icon="ACTION_ICONS.chevronDown"
@@ -340,7 +340,7 @@ function onTotalSectionClick(e: MouseEvent) {
             />
           </FormField>
           <Button type="submit">
-            <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Hinzufügen
+            <AppIcon :icon="ACTION_ICONS.categoryPlus" :size="14" group="actions" /> Hinzufügen
           </Button>
         </form>
       </Accordion>

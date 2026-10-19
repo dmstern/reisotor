@@ -125,7 +125,7 @@ defineEmits<{
           </Button>
         </div>
         <Button size="sm" @click="$emit('openAdd')">
-          <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neu
+          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="14" group="actions" /> Neu
         </Button>
       </div>
     </div>

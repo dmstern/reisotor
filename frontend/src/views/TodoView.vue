@@ -19,6 +19,7 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 import TodoAddForm from '../components/TodoAddForm.vue';
 import TodoItemRow from '../components/TodoItemRow.vue';
 import TodoEditModal from '../components/TodoEditModal.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const tripStore = useTripStore();
 const uiSettings = useUiSettingsStore();
@@ -138,6 +139,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
 
           <QuickAddRow
             class="group-quick-add"
+            :icon="ACTION_ICONS.clipboardPlus"
             placeholder="Aufgabe hinzufügen…"
             @submit="(label) => quickAddToGroup(group, label)"
           >

@@ -273,7 +273,7 @@ async function remove(attachment: Attachment) {
           v-else
           variant="secondary"
           size="sm"
-          :icon="ACTION_ICONS.add"
+          :icon="ACTION_ICONS.filePlus"
           type="button"
           @click="fileInputRef?.click()"
         >

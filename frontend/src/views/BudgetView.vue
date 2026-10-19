@@ -182,8 +182,8 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
           <div class="header">
             <h2>Ausgaben & Einnahmen</h2>
             <Button @click="openCreateExpense('expense')"
-              ><AppIcon :icon="ACTION_ICONS.cashCoin" :size="14" group="actions" /> Ausgabe /
-              Einnahme eintragen</Button
+              ><AppIcon :icon="ACTION_ICONS.cashBanknotePlus" :size="14" group="actions" /> Ausgabe
+              / Einnahme eintragen</Button
             >
           </div>
 

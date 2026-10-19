@@ -115,6 +115,17 @@ import {
   IconCashCoin,
   IconCashBanknoteEdit,
   IconCashEdit,
+  IconCalendarPlus,
+  IconFilePlus,
+  IconCashBanknotePlus,
+  IconUserPlus,
+  IconCategoryPlus,
+  IconMapPinPlus,
+  IconMapPlus,
+  IconShoppingCartPlus,
+  IconClipboardPlus,
+  IconClipboardPlusFilled,
+  IconPhotoPlus,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -215,7 +226,17 @@ export type ActionIconKey =
   | 'cashBanknoteMinus'
   | 'cashCoin'
   | 'cashBanknoteEdit'
-  | 'cashEdit';
+  | 'cashEdit'
+  | 'calendarPlus'
+  | 'filePlus'
+  | 'cashBanknotePlus'
+  | 'userPlus'
+  | 'categoryPlus'
+  | 'mapPinPlus'
+  | 'mapPlus'
+  | 'shoppingCartPlus'
+  | 'clipboardPlus'
+  | 'photoPlus';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -402,5 +423,56 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'cash-edit',
     emoji: '✏️',
     outline: IconCashEdit,
+  },
+  calendarPlus: {
+    id: 'calendar-plus',
+    emoji: '📅',
+    outline: IconCalendarPlus,
+  },
+  filePlus: {
+    id: 'file-plus',
+    emoji: '📄',
+    outline: IconFilePlus,
+  },
+  cashBanknotePlus: {
+    id: 'cash-banknote-plus',
+    emoji: '💵',
+    outline: IconCashBanknotePlus,
+  },
+  userPlus: {
+    id: 'user-plus',
+    emoji: '👤',
+    outline: IconUserPlus,
+  },
+  categoryPlus: {
+    id: 'category-plus',
+    emoji: '🏷️',
+    outline: IconCategoryPlus,
+  },
+  mapPinPlus: {
+    id: 'map-pin-plus',
+    emoji: '📍',
+    outline: IconMapPinPlus,
+  },
+  mapPlus: {
+    id: 'map-plus',
+    emoji: '🗺️',
+    outline: IconMapPlus,
+  },
+  shoppingCartPlus: {
+    id: 'shopping-cart-plus',
+    emoji: '🛒',
+    outline: IconShoppingCartPlus,
+  },
+  clipboardPlus: {
+    id: 'clipboard-plus',
+    emoji: '📋',
+    outline: IconClipboardPlus,
+    filled: IconClipboardPlusFilled,
+  },
+  photoPlus: {
+    id: 'photo-plus',
+    emoji: '🖼️',
+    outline: IconPhotoPlus,
   },
 };

@@ -187,7 +187,7 @@ async function removeMember(user: User) {
       <li v-for="u in results" :key="u.id">
         <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
         <Button variant="primary" size="sm" :disabled="loading" @click="invite(u)">
-          <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Einladen
+          <AppIcon :icon="ACTION_ICONS.userPlus" :size="14" group="actions" /> Einladen
         </Button>
       </li>
     </TransitionGroup>

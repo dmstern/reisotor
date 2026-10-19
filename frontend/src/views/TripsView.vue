@@ -52,7 +52,7 @@ function openMembers(trip: Trip) {
     <div class="header">
       <h1>Meine Urlaube</h1>
       <Button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">
-        <AppIcon :icon="ACTION_ICONS.add" :size="14" group="actions" /> Neuer Urlaub
+        <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
       </Button>
       <p v-else-if="tripCreationBlocked()" class="restricted-hint">
         Eingeschränkter Modus - Nur ein Urlaub pro Nutzer
