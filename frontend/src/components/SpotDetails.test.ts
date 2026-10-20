@@ -55,6 +55,7 @@ describe('SpotDetails', () => {
     expect(html).toContain('is-expanded');
     expect(html).toContain('Adresse');
     expect(html).toContain('Alexanderplatz 1');
+    expect(html).toContain('Adresse kopieren');
   });
 
   it('renders accommodation details including dates, checkin, contact and cost', async () => {
@@ -84,6 +85,7 @@ describe('SpotDetails', () => {
     expect(html).toContain('15:00 · 11:00');
     expect(html).toContain('Kontakt');
     expect(html).toContain('tel:+4930123456');
+    expect(html).toContain('Telefonnummer kopieren');
     expect(html).toContain('Kosten');
     expect(html).toContain('450.00');
     expect(html).toContain('bezahlt von Sarah');

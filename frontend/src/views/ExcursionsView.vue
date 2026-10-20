@@ -512,15 +512,27 @@ function onExcursionShowOnMap(excursionId: number) {
 }
 
 function onFocusSpotFromMap(spotId: number) {
-  if (groupMode.value === 'tracks') {
+  const spot = spotsStore.spots.find((s) => s.id === spotId);
+  const isAccommodation = spot?.category === 'Unterkunft';
+
+  if (groupMode.value === 'tracks' || isAccommodation) {
     groupMode.value = 'category';
   }
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
-  if (groupMode.value === 'tours') {
-    const parentExcursion = excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
+  if (groupMode.value === 'tours' && !isAccommodation) {
+    const parentExcursion =
+      (drawers.mapFocusDate
+        ? excursionsStore.excursions.find(
+            (e) => e.spot_ids.includes(spotId) && e.date === drawers.mapFocusDate
+          )
+        : null) ??
+      excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId) && e.date) ??
+      excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
     if (parentExcursion) {
       expandedExcursionId.value = parentExcursion.id;
     }
+  } else if (isAccommodation) {
+    expandedExcursionId.value = null;
   }
   openSpotWithScroll(spotId);
 }
@@ -573,12 +585,11 @@ watch(
 watch(
   () => [drawers.mapFocusKey, drawers.focusVersion],
   ([key]) => {
-    if (typeof key === 'string' && key.startsWith('spot-') && isSheetOverlayMode.value) {
+    if (typeof key === 'string' && key.startsWith('spot-')) {
       const spotId = Number(key.replace('spot-', ''));
       if (!Number.isNaN(spotId)) {
         nextTick(() => {
-          const el = getSpotElement(spotId, expandedExcursionId.value);
-          scrollToSpot(el ?? spotId);
+          onFocusSpotFromMap(spotId);
         });
       }
     }

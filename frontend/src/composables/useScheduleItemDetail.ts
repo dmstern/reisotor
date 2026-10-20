@@ -5,6 +5,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
+import { useTripStore } from '../stores/trip';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
@@ -30,6 +31,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
   const excursionsStore = useExcursionsStore();
   const scheduleStore = useScheduleStore();
   const drawers = useDrawersStore();
+  const tripStore = useTripStore();
 
   const viewingItem = ref<ScheduleItem | null>(null);
 
@@ -183,21 +185,58 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     const entry = viewingEntry.value;
     if (!entry) return;
     viewingItem.value = null;
+    const path = tripStore.currentTripId
+      ? `/trip/${tripStore.currentTripId}/excursions`
+      : '/excursions';
     if (entry.spotId != null) {
+      const spot = spotsStore.spots.find((s) => s.id === entry.spotId);
+      const isAccommodation = spot?.category === 'Unterkunft';
+
+      const matchingTour = !isAccommodation
+        ? excursionsStore.excursions.find(
+            (e) =>
+              e.spot_ids.includes(entry.spotId!) &&
+              (e.date === entry.date ||
+                (entry.ideaId != null && e.id === entry.ideaId) ||
+                (entry.scheduleItem?.idea_id != null && e.id === entry.scheduleItem.idea_id))
+          )
+        : null;
+
       drawers.openMapAt(`spot-${entry.spotId}`);
       drawers.calendarOpen = false;
-      router.push(`/excursions#spot-${entry.spotId}`);
+      router
+        .push({
+          path,
+          query: { group: matchingTour ? 'tours' : 'spots' },
+          hash: `#spot-${entry.spotId}`,
+        })
+        .catch(() => {});
     } else if (entry.ideaId != null) {
       drawers.openMapForExcursion(entry.ideaId);
       drawers.calendarOpen = false;
-      router.push(`/excursions#excursion-${entry.ideaId}`);
+      router
+        .push({
+          path,
+          query: { group: 'tours' },
+          hash: `#excursion-${entry.ideaId}`,
+        })
+        .catch(() => {});
     }
   }
 
   function openAccommodationSpot(spotId: number) {
     drawers.openMapAt(`spot-${spotId}`);
     drawers.calendarOpen = false;
-    router.push(`/excursions#spot-${spotId}`);
+    const path = tripStore.currentTripId
+      ? `/trip/${tripStore.currentTripId}/excursions`
+      : '/excursions';
+    router
+      .push({
+        path,
+        query: { group: 'spots' },
+        hash: `#spot-${spotId}`,
+      })
+      .catch(() => {});
   }
 
   function editViewingItem() {

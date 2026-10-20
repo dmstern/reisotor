@@ -126,6 +126,8 @@ import {
   IconClipboardPlus,
   IconClipboardPlusFilled,
   IconPhotoPlus,
+  IconCopy,
+  IconCheck,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -236,7 +238,9 @@ export type ActionIconKey =
   | 'mapPlus'
   | 'shoppingCartPlus'
   | 'clipboardPlus'
-  | 'photoPlus';
+  | 'photoPlus'
+  | 'copy'
+  | 'check';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -474,5 +478,15 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'photo-plus',
     emoji: '🖼️',
     outline: IconPhotoPlus,
+  },
+  copy: {
+    id: 'copy',
+    emoji: '📋',
+    outline: IconCopy,
+  },
+  check: {
+    id: 'check',
+    emoji: '✓',
+    outline: IconCheck,
   },
 };

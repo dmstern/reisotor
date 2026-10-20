@@ -6,6 +6,7 @@ import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import AppIcon from './AppIcon.vue';
 import DetailRow from './primitives/DetailRow.vue';
+import CopyButton from './primitives/CopyButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 
 const props = defineProps<{
@@ -33,7 +34,12 @@ function formatAccommodationDate(d: string | null) {
         {{ formatAccommodationDate(spot.end_date) || '?' }}
       </DetailRow>
       <DetailRow v-if="spot.address" label="Adresse">
-        {{ spot.address }}
+        <span>{{ spot.address }}</span>
+        <CopyButton
+          :text="spot.address"
+          label="Adresse kopieren"
+          toast-message="Adresse in die Zwischenablage kopiert."
+        />
       </DetailRow>
       <template v-if="isAccommodation">
         <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out">
@@ -45,6 +51,11 @@ function formatAccommodationDate(d: string | null) {
         >
           <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
           <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+          <CopyButton
+            :text="spot.contact"
+            label="Telefonnummer kopieren"
+            toast-message="Telefonnummer in die Zwischenablage kopiert."
+          />
         </DetailRow>
         <DetailRow
           v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'"
@@ -52,9 +63,19 @@ function formatAccommodationDate(d: string | null) {
         >
           <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
           <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
+          <CopyButton
+            :text="spot.contact"
+            label="E-Mail-Adresse kopieren"
+            toast-message="E-Mail-Adresse in die Zwischenablage kopiert."
+          />
         </DetailRow>
         <DetailRow v-else-if="spot.contact" label="Kontakt">
           <RichTextDisplay class="contact-text" :content="spot.contact" />
+          <CopyButton
+            :text="spot.contact"
+            label="Kontakt kopieren"
+            toast-message="Kontakt in die Zwischenablage kopiert."
+          />
         </DetailRow>
         <DetailRow v-if="spot.amount != null" label="Kosten">
           <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />

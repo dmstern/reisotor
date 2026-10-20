@@ -59,4 +59,26 @@ describe('DoneToggle primitive', () => {
     expect(html).toContain('aria-label="Als gemacht markieren"');
     expect(html).toContain('title="Klicken zum Markieren"');
   });
+
+  it('renders split container with separate check and action buttons when split=true', async () => {
+    const html = await mountComponent(
+      {
+        split: true,
+        planned: true,
+        checkAriaLabel: 'Als gemacht markieren',
+        checkTitle: 'Als gemacht markieren',
+        actionAriaLabel: 'Im Kalender öffnen',
+        actionTitle: 'Zum 05.11. im Kalender springen',
+      },
+      '05.11.'
+    );
+    expect(html).toContain('done-toggle--split');
+    expect(html).toContain('role="group"');
+    expect(html).toContain('done-toggle-btn--check');
+    expect(html).toContain('title="Als gemacht markieren"');
+    expect(html).toContain('done-toggle-divider');
+    expect(html).toContain('done-toggle-btn--action');
+    expect(html).toContain('title="Zum 05.11. im Kalender springen"');
+    expect(html).toContain('05.11.');
+  });
 });

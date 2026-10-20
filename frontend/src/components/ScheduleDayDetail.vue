@@ -67,18 +67,19 @@ defineEmits<{
         </span>
       </div>
 
-      <button
-        type="button"
+      <Badge
         v-for="acc in accommodations"
         :key="acc.id"
-        class="day-meta-pill acc-pill is-clickable"
+        as="button"
+        variant="accent-secondary"
+        size="sm"
         :title="`Unterkunft: ${acc.title} auf Karte anzeigen`"
         @click="$emit('openAccommodation', acc.id)"
       >
         <AppIcon :icon="spotCategoryMeta('Unterkunft').tabler" :size="14" group="categories" />
-        <span class="meta-label">Unterkunft:</span>
+        <span>Unterkunft:</span>
         <strong>{{ acc.title }}</strong>
-      </button>
+      </Badge>
     </div>
 
     <TransitionGroup tag="ul" name="list" class="items">
@@ -136,6 +137,7 @@ defineEmits<{
 .day-meta-bar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
@@ -157,35 +159,9 @@ defineEmits<{
   border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
-.day-meta-pill.acc-pill {
-  background: var(--color-accent-secondary-bg);
-  border-color: color-mix(in srgb, var(--color-accent-secondary) 25%, transparent);
-  color: var(--color-accent-secondary);
-}
-
-.day-meta-pill.acc-pill.is-clickable {
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  text-align: left;
-  transition:
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.day-meta-pill.acc-pill.is-clickable:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
 .meta-label {
   font-weight: 500;
   color: var(--color-text-muted);
-}
-
-.day-meta-pill.acc-pill .meta-label {
-  color: var(--color-accent-secondary);
-  opacity: 0.85;
 }
 
 .temp-range {
