@@ -1,7 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcrypt';
 import type { FastifyInstance } from 'fastify';
 import { buildTestApp } from '../helpers/buildTestApp.js';
+import { clearPhotoCache } from '../../src/utils/placePhoto.js';
 
 describe('spots route coordinate preservation', () => {
   let app: FastifyInstance;
@@ -124,7 +125,32 @@ describe('spots route coordinate preservation', () => {
   });
 
   describe('GET /api/spots/preview', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      clearPhotoCache();
+    });
+
     it('returns place name and resolves a photo when name and coordinates are provided', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div id="resitem-0">
+                  <a data-origurl="https://upload.wikimedia.org/wikipedia/commons/stephansdom.jpg"
+                     data-referenceurl="https://example.com/stephansdom">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/stephansdom.jpg" />
+                    <p class="tile-title">Stephansdom</p>
+                  </a>
+                </div>`
+              ),
+            json: () => Promise.resolve({ query: { pages: [] } }),
+          })
+        )
+      );
+
       const res = await app.inject({
         method: 'GET',
         url: '/api/spots/preview?name=Stephansdom&lat=48.2085&lng=16.3738&city=Wien',
@@ -139,6 +165,17 @@ describe('spots route coordinate preservation', () => {
     });
 
     it('returns imageUrl null when place has no photo without throwing', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve(''),
+            json: () => Promise.resolve({ query: { pages: [] } }),
+          })
+        )
+      );
+
       const res = await app.inject({
         method: 'GET',
         url: '/api/spots/preview?name=UnbekannterOrtXYZ12345',
