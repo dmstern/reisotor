@@ -8,6 +8,7 @@ vi.mock('../utils/offlineMapTiles', () => ({
   estimateTileDownload: vi.fn(),
   downloadTiles: vi.fn(),
   formatApproxSize: vi.fn((bytes) => `${bytes} B`),
+  MAX_OFFLINE_TILES: 3000,
 }));
 
 describe('useMapOfflineDownload', () => {
@@ -26,6 +27,42 @@ describe('useMapOfflineDownload', () => {
     const { downloadOfflineMap, tileDownloadState } = useMapOfflineDownload();
     await downloadOfflineMap(() => null);
     expect(tileDownloadState.value).toBe('idle');
+  });
+
+  it('does nothing when estimate returns 0 tiles', async () => {
+    vi.mocked(offlineMapTiles.estimateTileDownload).mockReturnValue({
+      count: 0,
+      approxBytes: 0,
+    });
+    const confirmSpy = vi.spyOn(window, 'confirm');
+
+    const { downloadOfflineMap, tileDownloadState } = useMapOfflineDownload();
+    const fakeBounds = {} as L.LatLngBounds;
+    await downloadOfflineMap(() => fakeBounds);
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(tileDownloadState.value).toBe('idle');
+    confirmSpy.mockRestore();
+  });
+
+  it('alerts and aborts when tile count exceeds MAX_OFFLINE_TILES', async () => {
+    vi.mocked(offlineMapTiles.estimateTileDownload).mockReturnValue({
+      count: 50_000,
+      approxBytes: 50_000 * 15_000,
+    });
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const confirmSpy = vi.spyOn(window, 'confirm');
+
+    const { downloadOfflineMap, tileDownloadState } = useMapOfflineDownload();
+    const fakeBounds = {} as L.LatLngBounds;
+    await downloadOfflineMap(() => fakeBounds);
+
+    expect(alertSpy).toHaveBeenCalled();
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(tileDownloadState.value).toBe('idle');
+    expect(offlineMapTiles.downloadTiles).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+    confirmSpy.mockRestore();
   });
 
   it('cancels download when user cancels confirm prompt', async () => {
