@@ -375,12 +375,6 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       }
     } else if (focusPoint) {
       centerOnPoint([focusPoint.lat, focusPoint.lng], 15);
-    } else if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
-    } else if (latLngs.length === 1) {
-      centerOnPoint(latLngs[0], 13);
-    } else {
-      map.setView([48.1351, 11.582], 5);
     }
   }
 
@@ -635,6 +629,17 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     renderRoutes();
     renderPositions();
     renderTracks();
+
+    const hasFocus =
+      drawers.mapFocusAllPhotos ||
+      options.focusedExcursion.value != null ||
+      drawers.mapFocusLocation != null ||
+      drawers.mapFocusDate != null ||
+      drawers.mapFocusKey != null;
+
+    if (!hasFocus) {
+      fitAll();
+    }
 
     map.on('rotate', () => {
       options.currentBearing.value = map!.getBearing();
