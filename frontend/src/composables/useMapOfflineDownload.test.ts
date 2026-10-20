@@ -8,7 +8,7 @@ vi.mock('../utils/offlineMapTiles', () => ({
   estimateTileDownload: vi.fn(),
   downloadTiles: vi.fn(),
   formatApproxSize: vi.fn((bytes) => `${bytes} B`),
-  MAX_OFFLINE_TILES: 3000,
+  MAX_OFFLINE_TILES: 10_000,
 }));
 
 describe('useMapOfflineDownload', () => {

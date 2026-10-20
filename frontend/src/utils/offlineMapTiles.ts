@@ -14,7 +14,7 @@ export const MAX_ZOOM = 16;
 // Größenangabe vor dem Download (siehe estimateTiles()), keine exakte Messung nötig/möglich (die
 // echte Größe hängt vom Kartenausschnitt selbst ab).
 export const AVG_TILE_BYTES = 15_000;
-export const MAX_OFFLINE_TILES = 3_000;
+export const MAX_OFFLINE_TILES = 10_000;
 const SUBDOMAINS = ['a', 'b', 'c'];
 const MAX_LATITUDE = 85.0511287798066;
 
@@ -109,14 +109,18 @@ export async function downloadTiles(
   let downloaded = 0;
   let failed = 0;
   let index = 0;
-  const CONCURRENCY = 6;
+  const CONCURRENCY = 20;
+  const PROGRESS_INTERVAL = 25;
 
   async function worker() {
     while (index < urls.length) {
       const url = urls[index++];
       if (await downloadOne(url)) downloaded++;
       else failed++;
-      onProgress(downloaded + failed, urls.length);
+      const done = downloaded + failed;
+      if (done % PROGRESS_INTERVAL === 0 || done === urls.length) {
+        onProgress(done, urls.length);
+      }
     }
   }
 

@@ -35,7 +35,7 @@ export function useMapOfflineDownload() {
     if (estimate.count > MAX_OFFLINE_TILES) {
       if (typeof window !== 'undefined') {
         window.alert(
-          `Der Kartenausschnitt ist zu groß für den Offline-Download (${estimate.count.toLocaleString('de-DE')} Kacheln, ca. ${formatApproxSize(estimate.approxBytes)}).\n\nBitte zoome näher an den gewünschten Bereich heran.`
+          `Der Kartenausschnitt ist zu groß für den Offline-Download (${estimate.count.toLocaleString('de-DE')} Kacheln, ca. ${formatApproxSize(estimate.approxBytes)}).\n\nBitte zoome näher an die Urlaubsregion heran.`
         );
       }
       return;

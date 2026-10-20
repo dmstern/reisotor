@@ -41,7 +41,7 @@ registerRoute(
     cacheName: 'osm-tiles',
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 3000, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+      new ExpirationPlugin({ maxEntries: 10000, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
   })
 );
