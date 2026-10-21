@@ -2,6 +2,7 @@
   "name": "reisotor-frontend",
   "version": "1.0.0",
   "private": true,
+  "license": "EUPL-1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",

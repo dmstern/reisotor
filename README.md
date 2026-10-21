@@ -350,3 +350,11 @@ Da das Einspielen einer kompletten Datenbank während des laufenden Betriebs feh
 - **Leaflet-Kartenmarker unsichtbar:** Leaflets `Icon.Default._getIconUrl` versucht automatisch, den Bildpfad aus einer CSS-Regel (`.leaflet-default-icon-path`) zu erkennen und stellt diesen den eigentlichen Icon-URLs voran – auch wenn man über `mergeOptions` bereits vollständige, von Vite aufgelöste URLs gesetzt hat. Das Ergebnis war eine doppelt verschachtelte, 404-URL, wodurch der Browser nur das `alt`-Attribut ("marker icon", abgeschnitten zu "mark") anzeigte. Gelöst durch eigene Emoji-`divIcon`s statt der Standard-Icons.
 - **`FOREIGN KEY constraint failed` beim Löschen von Reise-/Unterkunft-Kosten:** Die Budget-Sync-Logik hat beim Entfernen eines Betrags zuerst die verknüpfte `budget_items`-Zeile gelöscht, während `travel_items.budget_expense_id`/`spots.budget_expense_id` (Unterkunft ist eine Spot-Kategorie, siehe `ARCHITECTURE.md`) noch darauf verwiesen – SQLite verweigert das per Foreign-Key-Constraint. Reihenfolge umgekehrt: erst die referenzierende Zeile aktualisieren/löschen, danach die verwaiste `budget_items`-Zeile entfernen.
 - **Karte plötzlich leer, ohne erkennbaren Code-Fehler:** meist ein verwaister, alter Vite-Dev-Server-Prozess mit veraltetem Modul-Cache (z. B. nach größeren lokalen Git-Historie-Operationen). Hilft: alte Prozesse beenden, `frontend/node_modules/.vite` löschen, Dev-Server neu starten.
+
+## Lizenz
+
+Copyright © 2026 Daniel Morgenstern und Mitwirkende.
+
+Dieses Projekt ist unter der **European Union Public Licence (EUPL-1.2)** lizenziert – siehe die [LICENSE](LICENSE)-Datei für den vollständigen Lizenztext.
+
+Der offizielle Lizenztext ist in 24 Amtssprachen der EU (einschließlich Deutsch) auf [Joinup (Europäische Kommission)](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12) verfügbar.
