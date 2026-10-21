@@ -12,11 +12,13 @@ const props = withDefaults(
     category: string | null | undefined;
     type?: 'spot' | 'expense';
     iconOnly?: boolean;
+    size?: number;
     customMeta?: { label: string; icon: string; color: string; tabler: IconDef };
   }>(),
   {
     type: 'spot',
     iconOnly: false,
+    size: 14,
   }
 );
 
@@ -40,7 +42,7 @@ const meta = computed(() => {
     }"
   >
     <!-- Das Icon im bunten Badge übernimmt die kontrastoptimierte Textfarbe (#142, #audit) -->
-    <AppIcon :icon="meta.tabler" group="categories" :size="14" color="currentColor" />
+    <AppIcon :icon="meta.tabler" group="categories" :size="size" color="currentColor" />
     <span class="category-chip-label" :class="{ 'sr-only': iconOnly }">{{ category }}</span>
   </Badge>
 </template>
