@@ -160,7 +160,8 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
     }
   }
 
-  async function loadAllTripPhotos() {
+  async function loadAllTripPhotos(force = false) {
+    if (allTripPhotosLoaded.value && !force) return;
     const tripId = tripStore.currentTripId;
     if (tripId == null) {
       allTripPhotoPoints.value = [];
@@ -305,7 +306,9 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
           },
         };
       });
-      options.onPhotosUpdated?.();
+      if (drawers.mapFocusAllPhotos) {
+        options.onPhotosUpdated?.();
+      }
     } catch (err) {
       console.warn('Fehler beim Laden aller Urlaubs-Fotos für die Karte:', err);
       allTripPhotoPoints.value = [];
@@ -327,7 +330,7 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
   );
 
   function onAttachmentsChanged(e: Event) {
-    loadAllTripPhotos();
+    loadAllTripPhotos(true);
     const custom = e as CustomEvent<{ domain: string; entityId: number }>;
     if (
       custom.detail &&
