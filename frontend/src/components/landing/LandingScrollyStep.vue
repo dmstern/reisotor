@@ -1,13 +1,39 @@
 <script setup lang="ts">
 import { IconCheck } from '@tabler/icons-vue';
 import Kicker from '../primitives/Kicker.vue';
-import type { ScrollyFeature } from '../../composables/useLandingFeatures';
+import {
+  getHighlightText,
+  getHighlightScreenshot,
+  type ScrollyFeature,
+} from '../../composables/useLandingFeatures';
 
-defineProps<{
-  feature: ScrollyFeature;
-  index: number;
-  isActive: boolean;
+const props = withDefaults(
+  defineProps<{
+    feature: ScrollyFeature;
+    index: number;
+    isActive: boolean;
+    activeHighlightIndex?: number;
+  }>(),
+  {
+    activeHighlightIndex: 0,
+  }
+);
+
+const emit = defineEmits<{
+  (e: 'selectHighlight', index: number): void;
 }>();
+
+function isRevealed(hIdx: number): boolean {
+  if (props.isActive) {
+    return hIdx <= props.activeHighlightIndex;
+  }
+  // Falls die Kachel bereits passiert wurde, bleiben alle Punkte sichtbar
+  if (props.activeHighlightIndex >= props.feature.highlights.length - 1) {
+    return true;
+  }
+  // Wenn noch nicht erreicht, zeigen wir mindestens den ersten Punkt als Einstieg
+  return hIdx === 0;
+}
 </script>
 
 <template>
@@ -28,9 +54,30 @@ defineProps<{
       </div>
       <p class="step-desc">{{ feature.description }}</p>
       <ul class="step-highlights">
-        <li v-for="point in feature.highlights" :key="point">
-          <IconCheck :size="18" class="check-icon" :style="{ color: feature.color }" />
-          <span>{{ point }}</span>
+        <li
+          v-for="(point, hIdx) in feature.highlights"
+          :key="hIdx"
+          class="step-highlight-item"
+          :class="{
+            'is-revealed': isRevealed(hIdx),
+            'is-current': isActive && activeHighlightIndex === hIdx,
+          }"
+          role="button"
+          tabindex="0"
+          @click="emit('selectHighlight', hIdx)"
+          @keydown.enter="emit('selectHighlight', hIdx)"
+        >
+          <div
+            class="check-icon-wrapper"
+            :style="{
+              color: feature.color,
+              background:
+                isActive && activeHighlightIndex === hIdx ? feature.iconBg : 'transparent',
+            }"
+          >
+            <IconCheck :size="18" class="check-icon" />
+          </div>
+          <span class="highlight-text">{{ getHighlightText(point) }}</span>
         </li>
       </ul>
 
@@ -38,15 +85,27 @@ defineProps<{
       <div class="mobile-screenshot-preview">
         <div class="mobile-device-mockup inline">
           <div class="mockup-screen mobile-screen">
-            <picture>
-              <source :srcset="feature.screenshotMobileDark" media="(prefers-color-scheme: dark)" />
-              <img
-                :src="feature.screenshotMobileLight"
-                :alt="feature.alt"
-                loading="lazy"
-                class="screenshot-img"
-              />
-            </picture>
+            <div
+              v-for="(_, hIdx) in feature.highlights"
+              :key="'m-frame-' + hIdx"
+              class="screenshot-frame"
+              :class="{
+                'is-active': (activeHighlightIndex ?? 0) === hIdx,
+              }"
+            >
+              <picture>
+                <source
+                  :srcset="getHighlightScreenshot(feature, hIdx).screenshotMobileDark"
+                  media="(prefers-color-scheme: dark)"
+                />
+                <img
+                  :src="getHighlightScreenshot(feature, hIdx).screenshotMobileLight"
+                  :alt="getHighlightScreenshot(feature, hIdx).alt"
+                  loading="lazy"
+                  class="screenshot-img"
+                />
+              </picture>
+            </div>
           </div>
         </div>
       </div>
@@ -56,7 +115,9 @@ defineProps<{
 
 <style scoped>
 .scrolly-step {
-  min-height: 45vh;
+  position: sticky;
+  top: 14vh;
+  min-height: auto;
   display: flex;
   align-items: center;
 }
@@ -130,16 +191,68 @@ defineProps<{
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
-.step-highlights li {
+.step-highlight-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-size: 0.95rem;
-  color: var(--color-text);
+  color: var(--color-text-muted);
   font-weight: 500;
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-2);
+  margin: 0 calc(-1 * var(--space-2));
+  cursor: pointer;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    max-height 0.35s ease,
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+.step-highlight-item:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.step-highlight-item.is-revealed {
+  opacity: 0.85;
+  max-height: 80px;
+  transform: translateY(0);
+  pointer-events: auto;
+  color: var(--color-text);
+}
+
+.step-highlight-item.is-current {
+  opacity: 1;
+  font-weight: 600;
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface-hover, currentColor) 10%, transparent);
+}
+
+.check-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  transition:
+    transform 0.25s ease,
+    background-color 0.25s ease;
+  flex-shrink: 0;
+}
+
+.step-highlight-item.is-current .check-icon-wrapper {
+  transform: scale(1.08);
 }
 
 .check-icon {
@@ -174,6 +287,23 @@ defineProps<{
   position: relative;
 }
 
+.mobile-device-mockup.inline .screenshot-frame {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(0.97);
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.mobile-device-mockup.inline .screenshot-frame.is-active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
 .mobile-device-mockup.inline img {
   display: block;
   width: 100%;
@@ -184,6 +314,7 @@ defineProps<{
 
 @container landing (max-width: 767px) {
   .scrolly-step {
+    position: static;
     min-height: auto;
   }
   .step-card {
@@ -200,6 +331,15 @@ defineProps<{
 @media (prefers-reduced-motion: reduce) {
   .step-card {
     transition: none;
+  }
+  .step-highlight-item {
+    opacity: 1 !important;
+    max-height: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .mobile-device-mockup.inline .screenshot-frame {
+    transition: none !important;
   }
 }
 </style>

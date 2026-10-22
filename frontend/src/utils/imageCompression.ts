@@ -198,6 +198,14 @@ const exifCache = new Map<string, Promise<ImageExifMetadata | null>>();
  */
 export async function extractExifFromUrl(url: string): Promise<ImageExifMetadata | null> {
   if (!url) return null;
+  if (
+    typeof window !== 'undefined' &&
+    (window as unknown as { __REISOTOR_EXIF_MAP__?: Record<string, ImageExifMetadata> })
+      .__REISOTOR_EXIF_MAP__?.[url]
+  ) {
+    return (window as unknown as { __REISOTOR_EXIF_MAP__?: Record<string, ImageExifMetadata> })
+      .__REISOTOR_EXIF_MAP__![url];
+  }
   if (exifCache.has(url)) {
     return exifCache.get(url)!;
   }

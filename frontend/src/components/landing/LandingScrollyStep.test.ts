@@ -45,14 +45,15 @@ describe('LandingScrollyStep', () => {
     expect(html).toContain('Wettervorhersage');
   });
 
-  it('toggles is-active class based on isActive prop and sets data-index', async () => {
+  it('toggles is-active class on root container based on isActive prop and sets data-index', async () => {
     const htmlInactive = await renderComponent({
       feature: mockFeature,
       index: 2,
       isActive: false,
     });
     expect(htmlInactive).toContain('data-index="2"');
-    expect(htmlInactive).not.toContain('is-active');
+    expect(htmlInactive).toMatch(/class="scrolly-step"/);
+    expect(htmlInactive).not.toMatch(/class="[^"]*scrolly-step[^"]*is-active/);
 
     const htmlActive = await renderComponent({
       feature: mockFeature,
@@ -60,7 +61,31 @@ describe('LandingScrollyStep', () => {
       isActive: true,
     });
     expect(htmlActive).toContain('data-index="2"');
-    expect(htmlActive).toContain('is-active');
+    expect(htmlActive).toMatch(/class="[^"]*scrolly-step[^"]*is-active/);
+  });
+
+  it('progressively marks highlights with is-revealed and is-current', async () => {
+    const htmlH0 = await renderComponent({
+      feature: mockFeature,
+      index: 0,
+      isActive: true,
+      activeHighlightIndex: 0,
+    });
+    // First highlight is revealed and current
+    expect(htmlH0).toContain('is-revealed');
+    expect(htmlH0).toContain('is-current');
+
+    // Second highlight should not be revealed yet when activeHighlightIndex is 0
+    expect(htmlH0).toMatch(/<li class="step-highlight-item" role="button"/);
+
+    const htmlH1 = await renderComponent({
+      feature: mockFeature,
+      index: 0,
+      isActive: true,
+      activeHighlightIndex: 1,
+    });
+    // Both highlights revealed when activeHighlightIndex is 1
+    expect(htmlH1).not.toMatch(/<li class="step-highlight-item" role="button"/);
   });
 
   it('renders the inline mobile screenshot preview', async () => {

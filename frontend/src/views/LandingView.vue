@@ -8,9 +8,10 @@ import { useLandingFeatures } from '../composables/useLandingFeatures';
 import { useLandingScrollytelling } from '../composables/useLandingScrollytelling';
 
 const { scrollyFeatures, repoUrl, demoUrl, storybookUrl } = useLandingFeatures();
-const { activeIndex, glowOpacities } = useLandingScrollytelling({
-  stepCount: scrollyFeatures.length,
-});
+const { activeStepIndex, activeHighlightIndex, glowOpacities, setActiveHighlight } =
+  useLandingScrollytelling({
+    stepCount: scrollyFeatures.length,
+  });
 </script>
 
 <template>
@@ -24,8 +25,10 @@ const { activeIndex, glowOpacities } = useLandingScrollytelling({
 
     <LandingScrollySection
       :features="scrollyFeatures"
-      :active-index="activeIndex"
+      :active-step-index="activeStepIndex"
+      :active-highlight-index="activeHighlightIndex"
       :glow-opacities="glowOpacities"
+      @select-highlight="setActiveHighlight"
     />
 
     <LandingCtaBand :demo-url="demoUrl" class="scroll-animate" />

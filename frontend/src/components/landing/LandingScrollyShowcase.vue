@@ -1,11 +1,36 @@
 <script setup lang="ts">
-import type { ScrollyFeature } from '../../composables/useLandingFeatures';
+import { computed } from 'vue';
+import { getHighlightScreenshot, type ScrollyFeature } from '../../composables/useLandingFeatures';
 
-defineProps<{
-  features: readonly ScrollyFeature[];
-  activeIndex: number;
-  glowOpacities: number[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    features: readonly ScrollyFeature[];
+    activeIndex?: number;
+    activeStepIndex?: number;
+    activeHighlightIndex?: number;
+    glowOpacities: number[];
+  }>(),
+  {
+    activeIndex: 0,
+    activeStepIndex: undefined,
+    activeHighlightIndex: 0,
+  }
+);
+
+const effectiveStepIndex = computed(() => props.activeStepIndex ?? props.activeIndex ?? 0);
+const effectiveHighlightIndex = computed(() => props.activeHighlightIndex ?? 0);
+
+const currentShowcase = computed(() => {
+  const f = props.features[effectiveStepIndex.value];
+  if (!f) return null;
+  return getHighlightScreenshot(f, effectiveHighlightIndex.value);
+});
+
+const currentRoutePill = computed(() => {
+  return (
+    currentShowcase.value?.routePill || props.features[effectiveStepIndex.value]?.routePill || ''
+  );
+});
 </script>
 
 <template>
@@ -20,59 +45,77 @@ defineProps<{
           </div>
           <div class="chrome-address-bar">
             <span class="address-lock">🔒</span>
-            <span class="address-domain">reisotor.app/{{ features[activeIndex]?.id }}</span>
+            <span class="address-domain">reisotor.app/{{ features[effectiveStepIndex]?.id }}</span>
           </div>
           <div class="chrome-tag">
-            {{ features[activeIndex]?.routePill }}
+            {{ currentRoutePill }}
           </div>
         </div>
         <div class="mockup-screen">
-          <div
-            v-for="(feature, idx) in features"
-            :key="feature.id"
-            class="screenshot-frame"
-            :class="{
-              'is-active': activeIndex === idx,
-              'is-prev': activeIndex > idx,
-              'is-next': activeIndex < idx,
-            }"
-          >
-            <picture>
-              <source :srcset="feature.screenshotDark" media="(prefers-color-scheme: dark)" />
-              <img
-                :src="feature.screenshotLight"
-                :alt="feature.alt"
-                loading="lazy"
-                class="screenshot-img"
-              />
-            </picture>
-          </div>
+          <template v-for="(feature, stepIdx) in features" :key="feature.id">
+            <div
+              v-for="(_, hIdx) in feature.highlights"
+              :key="feature.id + '-' + hIdx"
+              class="screenshot-frame"
+              :class="{
+                'is-active': effectiveStepIndex === stepIdx && effectiveHighlightIndex === hIdx,
+                'is-prev':
+                  effectiveStepIndex > stepIdx ||
+                  (effectiveStepIndex === stepIdx && effectiveHighlightIndex > hIdx),
+                'is-next':
+                  effectiveStepIndex < stepIdx ||
+                  (effectiveStepIndex === stepIdx && effectiveHighlightIndex < hIdx),
+              }"
+            >
+              <picture>
+                <source
+                  :srcset="getHighlightScreenshot(feature, hIdx).screenshotDark"
+                  media="(prefers-color-scheme: dark)"
+                />
+                <img
+                  :src="getHighlightScreenshot(feature, hIdx).screenshotLight"
+                  :alt="getHighlightScreenshot(feature, hIdx).alt"
+                  loading="lazy"
+                  class="screenshot-img"
+                />
+              </picture>
+            </div>
+          </template>
         </div>
       </div>
 
       <!-- Mobile Device Mockup Overlay -->
       <div class="mobile-device-mockup">
         <div class="mockup-screen mobile-screen">
-          <div
-            v-for="(feature, idx) in features"
-            :key="'mobile-' + feature.id"
-            class="screenshot-frame"
-            :class="{
-              'is-active': activeIndex === idx,
-              'is-prev': activeIndex > idx,
-              'is-next': activeIndex < idx,
-            }"
-          >
-            <picture>
-              <source :srcset="feature.screenshotMobileDark" media="(prefers-color-scheme: dark)" />
-              <img
-                :src="feature.screenshotMobileLight"
-                :alt="feature.alt"
-                loading="lazy"
-                class="screenshot-img"
-              />
-            </picture>
-          </div>
+          <template v-for="(feature, stepIdx) in features" :key="'mobile-' + feature.id">
+            <div
+              v-for="(_, hIdx) in feature.highlights"
+              :key="'m-' + feature.id + '-' + hIdx"
+              class="screenshot-frame"
+              :class="{
+                'is-active': effectiveStepIndex === stepIdx && effectiveHighlightIndex === hIdx,
+                'is-prev':
+                  effectiveStepIndex > stepIdx ||
+                  (effectiveStepIndex === stepIdx && effectiveHighlightIndex > hIdx),
+                'is-next':
+                  effectiveStepIndex < stepIdx ||
+                  (effectiveStepIndex === stepIdx && effectiveHighlightIndex < hIdx),
+              }"
+            >
+              <picture>
+                <source
+                  :srcset="getHighlightScreenshot(feature, hIdx).screenshotMobileDark"
+                  media="(prefers-color-scheme: dark)"
+                />
+                <img
+                  :src="getHighlightScreenshot(feature, hIdx).screenshotMobileLight"
+                  :alt="getHighlightScreenshot(feature, hIdx).alt"
+                  loading="lazy"
+                  class="screenshot-img"
+                />
+              </picture>
+            </div>
+          </template>
         </div>
       </div>
 

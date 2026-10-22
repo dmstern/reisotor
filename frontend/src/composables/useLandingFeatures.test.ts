@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { getBaseUrl, getScrollyFeatures, useLandingFeatures } from './useLandingFeatures';
+import {
+  getBaseUrl,
+  getScrollyFeatures,
+  useLandingFeatures,
+  getHighlightText,
+  getHighlightScreenshot,
+} from './useLandingFeatures';
 
 describe('useLandingFeatures', () => {
   describe('getBaseUrl', () => {
@@ -75,6 +81,27 @@ describe('useLandingFeatures', () => {
       expect(repoUrl).toBe('https://github.com/custom/repo');
       expect(demoUrl).toBe('/custom-demo/');
       expect(storybookUrl).toBe('/custom-storybook/');
+    });
+  });
+
+  describe('getHighlightText and getHighlightScreenshot', () => {
+    it('returns the text from string or object highlights', () => {
+      expect(getHighlightText('Simple text')).toBe('Simple text');
+      expect(getHighlightText({ text: 'Object text' })).toBe('Object text');
+    });
+
+    it('returns custom screenshots when defined on highlight, and falls back to feature defaults', () => {
+      const features = getScrollyFeatures('/');
+      const spots = features.find((f) => f.id === 'spots')!;
+      const hl0 = getHighlightScreenshot(spots, 0);
+      expect(hl0.screenshotLight).toContain('screenshot-dialog-spot-create-light.png');
+      expect(hl0.routePill).toBe('Spot-Suche');
+
+      const dashboard = features.find((f) => f.id === 'dashboard')!;
+      // Index 2 is a plain string highlight
+      const hl2 = getHighlightScreenshot(dashboard, 2);
+      expect(hl2.screenshotLight).toBe(dashboard.screenshotLight);
+      expect(hl2.routePill).toBe(dashboard.routePill);
     });
   });
 });

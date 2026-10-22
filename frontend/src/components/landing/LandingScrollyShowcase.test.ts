@@ -81,4 +81,46 @@ describe('LandingScrollyShowcase', () => {
     expect(html).toContain('class="mobile-device-mockup"');
     expect(html).toContain('/screen-2-m-light.png');
   });
+
+  it('updates route pill and active screenshot frame when activeHighlightIndex changes', async () => {
+    const featureWithHighlight: ScrollyFeature = {
+      ...mockFeatures[0],
+      highlights: [
+        {
+          text: 'Base feature',
+          screenshotLight: '/base-light.png',
+          screenshotDark: '/base-dark.png',
+          screenshotMobileLight: '/base-m-light.png',
+          screenshotMobileDark: '/base-m-dark.png',
+          routePill: 'Base Pill',
+        },
+        {
+          text: 'Granular feature',
+          screenshotLight: '/granular-light.png',
+          screenshotDark: '/granular-dark.png',
+          screenshotMobileLight: '/granular-m-light.png',
+          screenshotMobileDark: '/granular-m-dark.png',
+          routePill: 'Granular Pill',
+        },
+      ],
+    };
+
+    const htmlH0 = await renderComponent({
+      features: [featureWithHighlight],
+      activeStepIndex: 0,
+      activeHighlightIndex: 0,
+      glowOpacities: [1],
+    });
+    expect(htmlH0).toContain('Base Pill');
+    expect(htmlH0).toContain('/base-light.png');
+
+    const htmlH1 = await renderComponent({
+      features: [featureWithHighlight],
+      activeStepIndex: 0,
+      activeHighlightIndex: 1,
+      glowOpacities: [1],
+    });
+    expect(htmlH1).toContain('Granular Pill');
+    expect(htmlH1).toContain('/granular-light.png');
+  });
 });

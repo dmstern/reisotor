@@ -7,12 +7,24 @@ import {
   IconBook,
 } from '@tabler/icons-vue';
 
+export interface ScrollyHighlight {
+  text: string;
+  screenshotLight?: string;
+  screenshotDark?: string;
+  screenshotMobileLight?: string;
+  screenshotMobileDark?: string;
+  alt?: string;
+  routePill?: string;
+}
+
+export type HighlightItem = string | ScrollyHighlight;
+
 export interface ScrollyFeature {
   id: string;
   kicker: string;
   title: string;
   description: string;
-  highlights: string[];
+  highlights: HighlightItem[];
   icon: Component;
   color: string;
   iconBg: string;
@@ -29,6 +41,42 @@ export interface UseLandingFeaturesOptions {
   repoUrl?: string;
   demoUrl?: string;
   storybookUrl?: string;
+}
+
+export function getHighlightText(hl: HighlightItem): string {
+  return typeof hl === 'string' ? hl : hl.text;
+}
+
+export function getHighlightScreenshot(
+  feature: ScrollyFeature,
+  highlightIndex: number
+): {
+  screenshotLight: string;
+  screenshotDark: string;
+  screenshotMobileLight: string;
+  screenshotMobileDark: string;
+  routePill: string;
+  alt: string;
+} {
+  const hl = feature.highlights[highlightIndex];
+  if (hl && typeof hl === 'object') {
+    return {
+      screenshotLight: hl.screenshotLight ?? feature.screenshotLight,
+      screenshotDark: hl.screenshotDark ?? feature.screenshotDark,
+      screenshotMobileLight: hl.screenshotMobileLight ?? feature.screenshotMobileLight,
+      screenshotMobileDark: hl.screenshotMobileDark ?? feature.screenshotMobileDark,
+      routePill: hl.routePill ?? feature.routePill,
+      alt: hl.alt ?? feature.alt,
+    };
+  }
+  return {
+    screenshotLight: feature.screenshotLight,
+    screenshotDark: feature.screenshotDark,
+    screenshotMobileLight: feature.screenshotMobileLight,
+    screenshotMobileDark: feature.screenshotMobileDark,
+    routePill: feature.routePill,
+    alt: feature.alt,
+  };
 }
 
 export function getBaseUrl(envBaseUrl?: string): string {
@@ -49,8 +97,22 @@ export function getScrollyFeatures(baseUrl: string): ScrollyFeature[] {
       description:
         'Der gemeinsame Startpunkt für euren Urlaub: Termine, Etappen, Countdown und 14-Tage-Wettervorhersage auf einen Blick. Der integrierte Kalender hält alle Mitreisenden live synchron.',
       highlights: [
-        'Gemeinsamer Kalender mit Live-Synchronisation',
-        '14-Tage Wettervorhersage für das Reiseziel',
+        {
+          text: 'Gemeinsamer Kalender mit Live-Synchronisation',
+          screenshotLight: `${baseUrl}landing/screenshot-calendar-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-calendar-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-calendar-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-calendar-mobile-dark.png`,
+          routePill: 'Kalender & Etappen',
+        },
+        {
+          text: '14-Tage Wettervorhersage für das Reiseziel',
+          screenshotLight: `${baseUrl}landing/screenshot-dashboard-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-dashboard-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-dashboard-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-dashboard-mobile-dark.png`,
+          routePill: 'Dashboard & Wetter',
+        },
         'Flug- & Unterkunfts-Countdown auf einen Blick',
         'Schnellzugriffs-Kacheln für Status-Überblick (Budgets, Packliste & Co.)',
       ],
@@ -67,14 +129,42 @@ export function getScrollyFeatures(baseUrl: string): ScrollyFeature[] {
     {
       id: 'spots',
       kicker: 'INTERAKTIVE KARTE & ROUTEN',
-      title: 'Spots & Touren mit dynamischem Routen-Verlauf',
+      title: 'Spots speichern & Ausflugsideen planen',
       description:
-        'Unterkünfte, Sehenswürdigkeiten und Ausflugsziele auf der Karte markieren. Die neue Tour-Ansicht verbindet besuchte Stationen mit eleganten Farbverläufen und gestrichelten Linien.',
+        'Unterkünfte, Sehenswürdigkeiten und Ausflugsziele auf der Karte markieren. Die Touren-Ansicht verbindet besuchte Stationen mit eleganten Farbverläufen und interaktiven Routenpfaden.',
       highlights: [
-        'Visuelle Tour-Pfade mit geschwungenen Verlaufslinien',
-        'Kategorisierte Spots mit Notizen, Likes & Kommentaren',
-        'Offline-fähige Navigation auf der Karte',
-        'An- und Abreise mit Tickets und Umsteigezeiten tracken',
+        {
+          text: 'Orte direkt über die App suchen und finden',
+          screenshotLight: `${baseUrl}landing/screenshot-dialog-spot-create-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-dialog-spot-create-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-dialog-spot-create-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-dialog-spot-create-mobile-dark.png`,
+          routePill: 'Spot-Suche',
+        },
+        {
+          text: 'Integrierter Routenplaner für Fußwege, Auto und Fahrrad',
+          screenshotLight: `${baseUrl}landing/screenshot-dialog-leg-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-dialog-leg-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-dialog-leg-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-dialog-leg-mobile-dark.png`,
+          routePill: 'Routen- & Wegeplaner',
+        },
+        {
+          text: 'Visuelle Tour-Pfade mit geschwungenen Verlaufslinien',
+          screenshotLight: `${baseUrl}landing/screenshot-tour-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-tour-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-tour-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-tour-mobile-dark.png`,
+          routePill: 'Touren-Verlauf',
+        },
+        {
+          text: 'Kategorisierte Spots mit Notizen, Likes & Kommentaren',
+          screenshotLight: `${baseUrl}landing/screenshot-spots-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-spots-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-spots-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-spots-mobile-dark.png`,
+          routePill: 'Spots & Kategorien',
+        },
       ],
       icon: IconMapPin,
       color: 'var(--color-tour)',
@@ -93,8 +183,22 @@ export function getScrollyFeatures(baseUrl: string): ScrollyFeature[] {
       description:
         'Wer hat was bezahlt? Erfasst Ausgaben in gemeinsamen oder persönlichen Töpfen. Reisotor berechnet den automatischen Schuldenausgleich transparent und ohne Kopfzerbrechen.',
       highlights: [
-        'Gemeinsame & persönliche Budget-Töpfe',
-        'Automatischer Verrechnungs- und Ausgleichsrechner',
+        {
+          text: 'Gemeinsame & persönliche Budget-Töpfe',
+          screenshotLight: `${baseUrl}landing/screenshot-dialog-budget-pot-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-dialog-budget-pot-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-dialog-budget-pot-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-dialog-budget-pot-mobile-dark.png`,
+          routePill: 'Budget-Töpfe',
+        },
+        {
+          text: 'Automatischer Verrechnungs- und Ausgleichsrechner',
+          screenshotLight: `${baseUrl}landing/screenshot-budget-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-budget-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-budget-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-budget-mobile-dark.png`,
+          routePill: 'Ausgleichsrechner',
+        },
         'Kategoriestatistiken & Ausgabenverlauf',
       ],
       icon: IconPigMoney,
@@ -114,8 +218,22 @@ export function getScrollyFeatures(baseUrl: string): ScrollyFeature[] {
       description:
         'Nichts vergessen – strukturierte Listen für Kleidung, Dokumente, Reiseapotheke und Vorräte. Weist Gegenstände Personen zu und verfolgt den Packfortschritt in Echtzeit.',
       highlights: [
-        'Kategorisierte Listen mit Packfortschrittsbalken',
-        'Zuweisung von Gegenständen an Mitreisende',
+        {
+          text: 'Kategorisierte Listen mit Packfortschrittsbalken',
+          screenshotLight: `${baseUrl}landing/screenshot-packing-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-packing-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-packing-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-packing-mobile-dark.png`,
+          routePill: 'Packlisten-Übersicht',
+        },
+        {
+          text: 'Zuweisung von Gegenständen an Mitreisende',
+          screenshotLight: `${baseUrl}landing/screenshot-dialog-packing-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-dialog-packing-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-dialog-packing-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-dialog-packing-mobile-dark.png`,
+          routePill: 'Gegenstand zuweisen',
+        },
         '100% offline nutzbar im Flugzeug und unterwegs',
       ],
       icon: IconListCheck,
@@ -135,7 +253,22 @@ export function getScrollyFeatures(baseUrl: string): ScrollyFeature[] {
       description:
         'Dokumentiert eure schönsten Momente. Verknüpft Tagebucheinträge automatisch mit Ausflügen und teilt eure Notizen und Bilder mit der ganzen Gruppe.',
       highlights: [
-        'Gemeinsames Tagebuch für die Reisegruppe',
+        {
+          text: 'Gemeinsames Tagebuch für die Reisegruppe',
+          screenshotLight: `${baseUrl}landing/screenshot-diary-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-diary-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-diary-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-diary-mobile-dark.png`,
+          routePill: 'Reise-Tagebuch',
+        },
+        {
+          text: 'Bilder mit GPS-Standort auf der Karte ansehen und als interaktives Karten-Fotoalbum festhalten',
+          screenshotLight: `${baseUrl}landing/screenshot-map-photos-light.png`,
+          screenshotDark: `${baseUrl}landing/screenshot-map-photos-dark.png`,
+          screenshotMobileLight: `${baseUrl}landing/screenshot-map-photos-mobile-light.png`,
+          screenshotMobileDark: `${baseUrl}landing/screenshot-map-photos-mobile-dark.png`,
+          routePill: 'Karten-Fotoalbum',
+        },
         'Direkte Verknüpfung mit Spots und Touren',
         'Offline-verfügbar für das Schreiben unterwegs',
       ],
