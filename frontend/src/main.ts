@@ -8,6 +8,7 @@ import { usePwaInstallStore } from './stores/pwaInstall';
 import { usePwaUpdateStore } from './stores/pwaUpdate';
 import { useErrorNotifier } from './composables/useErrorNotifier';
 import type { OutboxEntry } from './api/offline';
+import { migrateLocalData } from './utils/localMigrations';
 import './style.css';
 
 // Vor dem ersten Render anwenden, damit die Seite nicht kurz im falschen Theme aufblitzt.
@@ -15,6 +16,11 @@ const pinia = createPinia();
 setActivePinia(pinia);
 useThemeStore().init();
 useUiSettingsStore().init();
+try {
+  migrateLocalData();
+} catch (e) {
+  console.warn('Fehler bei lokaler Datenmigration:', e);
+}
 // So früh wie möglich, damit das beforeinstallprompt-Event (siehe stores/pwaInstall.ts) sicher
 // abgefangen wird, auch wenn es der Browser schon direkt beim Laden feuert.
 usePwaInstallStore().init();
@@ -24,7 +30,7 @@ const app = createApp(App);
 app.use(pinia);
 app.use(router);
 
-const { notifyError, notifyOutboxRejected } = useErrorNotifier();
+const { notifyError, notifyOutboxRejected, notifyOutboxFailed } = useErrorNotifier();
 
 app.config.errorHandler = (err, instance, info) => {
   console.error(err);
@@ -44,6 +50,13 @@ window.addEventListener('reisotor:outbox-rejected', (event) => {
   const detail = (event as CustomEvent<{ entry: OutboxEntry; error: unknown }>).detail;
   if (detail?.entry) {
     notifyOutboxRejected(detail.entry, detail.error);
+  }
+});
+
+window.addEventListener('reisotor:outbox-failed', (event) => {
+  const detail = (event as CustomEvent<{ entry: OutboxEntry; error: unknown }>).detail;
+  if (detail?.entry) {
+    notifyOutboxFailed(detail.entry, detail.error);
   }
 });
 
