@@ -98,7 +98,7 @@ export interface FitBoundsPaddingOptions {
 
 export function calcFitBoundsPadding(params: {
   isPhotos: boolean;
-  hasFocusBanner: boolean;
+  hasFocusBanner?: boolean;
   coveredLeftPx?: number;
   coveredBottomPx?: number;
   mapSize?: { x: number; y: number } | null;
@@ -111,12 +111,11 @@ export function calcFitBoundsPadding(params: {
   // Marker ragen als Pin bis zu ~42-56px über ihre Koordinate hinaus.
   // Für Fotos ("Alle Fotos mit Standort") lassen wir zu allen Seiten großzügigen Freiraum,
   // damit kein Bild hinter dem Fokus-Banner oder Tages-Strip verdeckt wird und alle zentriert wirken.
-  const defaultTop = params.isPhotos ? 190 : params.hasFocusBanner ? 170 : 96;
-  const defaultBottom = params.isPhotos
-    ? Math.max(coveredBottom + 48, 120)
-    : Math.max(coveredBottom + 32, 80);
-  const defaultLeft = coveredLeft + (params.isPhotos ? 90 : 64);
-  const defaultRight = params.isPhotos ? 90 : 64;
+  // Für reguläre Orte (Ausflüge, Spots, Urlaubsort) bleibt das bewährte Standard-Padding (32px) erhalten.
+  const defaultTop = params.isPhotos ? 190 : 32;
+  const defaultBottom = params.isPhotos ? Math.max(coveredBottom + 48, 120) : 32 + coveredBottom;
+  const defaultLeft = coveredLeft + (params.isPhotos ? 90 : 32);
+  const defaultRight = params.isPhotos ? 90 : 32;
 
   let paddingTop = params.custom?.paddingTop ?? defaultTop;
   let paddingBottom = params.custom?.paddingBottom ?? defaultBottom;
@@ -179,26 +178,16 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     isProgrammaticMove = true;
     const coveredBottomPx = options.coveredBottomPx?.value ?? 0;
     const coveredLeftPx = options.coveredLeftPx?.value ?? 0;
-    const isPhotos = drawers.mapFocusAllPhotos;
-    const hasFocusBanner =
-      isPhotos ||
-      options.focusedExcursion.value != null ||
-      drawers.mapFocusDate != null ||
-      drawers.mapFocusLocation != null;
-    const coveredTopPx = hasFocusBanner ? 116 : 56;
-    const effectiveBottomPx = Math.max(coveredBottomPx, 60);
-
-    if (typeof map.project !== 'function' || typeof map.unproject !== 'function') {
+    if (!coveredBottomPx && !coveredLeftPx) {
       map.setView(latlng, zoom, { animate: false });
       setTimeout(() => {
         isProgrammaticMove = false;
       }, 100);
       return;
     }
-
     const targetPoint = map.project(latlng, zoom);
     const shiftedCenter = map.unproject(
-      targetPoint.add([-coveredLeftPx / 2, (effectiveBottomPx - coveredTopPx) / 2]),
+      targetPoint.add([-coveredLeftPx / 2, coveredBottomPx / 2]),
       zoom
     );
     map.setView(shiftedCenter, zoom, { animate: false });

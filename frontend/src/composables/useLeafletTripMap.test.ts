@@ -127,19 +127,16 @@ describe('useLeafletTripMap', () => {
     expect(padding.paddingLeft + padding.paddingRight).toBeLessThanOrEqual(150);
   });
 
-  it('uses standard banner-aware padding when not in photo mode', () => {
-    const withBanner = calcFitBoundsPadding({
+  it('uses standard padding when not in photo mode', () => {
+    const standard = calcFitBoundsPadding({
       isPhotos: false,
-      hasFocusBanner: true,
+      coveredLeftPx: 0,
+      coveredBottomPx: 0,
       mapSize: { x: 1000, y: 800 },
     });
-    expect(withBanner.paddingTop).toBe(170);
-
-    const withoutBanner = calcFitBoundsPadding({
-      isPhotos: false,
-      hasFocusBanner: false,
-      mapSize: { x: 1000, y: 800 },
-    });
-    expect(withoutBanner.paddingTop).toBe(96);
+    expect(standard.paddingTop).toBe(32);
+    expect(standard.paddingBottom).toBe(32);
+    expect(standard.paddingLeft).toBe(32);
+    expect(standard.paddingRight).toBe(32);
   });
 });
