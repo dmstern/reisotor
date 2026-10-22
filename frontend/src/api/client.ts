@@ -3,6 +3,7 @@ import {
   enqueue,
   findCachedItemInCollection,
   isConfirmedOffline,
+  isQueueablePath,
   mergePendingIntoList,
   nextTempId,
   readCache,
@@ -12,6 +13,11 @@ import {
 import { useRequestActivityStore } from '../stores/requestActivity';
 import { DEMO_MODE } from '../demo/isDemoMode';
 import { demoRequest } from '../demo/demoClient';
+
+export interface RequestOptions extends RequestInit {
+  timeoutMs?: number;
+  noQueue?: boolean;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -38,10 +44,18 @@ const AUTH_SELF_HANDLED_PATHS = ['/auth/login', '/auth/me', '/auth/logout'];
 // navigator.onLine === true für immer im Ladezustand hängen statt auf den Cache zurückzufallen.
 // Eigener Timeout per AbortController erzwingt stattdessen einen definierten Fehlschlag.
 const REQUEST_TIMEOUT_MS = 8_000;
+const ROUTING_TIMEOUT_MS = 25_000;
 
-export async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
+export async function fetchWithTimeout(
+  input: string,
+  init: RequestOptions = {}
+): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const defaultTimeout = input.includes('/routes/directions')
+    ? ROUTING_TIMEOUT_MS
+    : REQUEST_TIMEOUT_MS;
+  const timeoutMs = init.timeoutMs ?? defaultTimeout;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const onAbort = () => controller.abort();
   if (init.signal) {
     if (init.signal.aborted) {
@@ -65,7 +79,7 @@ export async function fetchWithTimeout(input: string, init: RequestInit = {}): P
 // (stores/connectivity.ts) verwendet. Ein erneuter Fehlschlag beim Nachsenden aus der Warteschlange
 // heraus darf NICHT wieder in dieselbe Warteschlange zurückgequeued werden, deshalb ein eigener,
 // unveränderter Kern statt der öffentlichen request()-Wrapper-Funktion.
-export async function rawRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function rawRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   // Backend-loser Demo-Build (Issue #172): alle Requests gegen die Dummy-Daten aus
   // demo/demoClient.ts statt gegen ein echtes Backend. Einziger Abzweig - api/offline.ts (Cache/
   // Outbox) darum herum bleibt unverändert und läuft einfach mit (harmlos, da demoRequest() nie
@@ -144,7 +158,7 @@ function withPending<T>(path: string, data: T): T {
   return mergePendingIntoList(path, data as Array<{ id: number }>) as unknown as T;
 }
 
-async function get<T>(path: string): Promise<T> {
+async function get<T>(path: string, options?: RequestOptions): Promise<T> {
   const activity = useRequestActivityStore();
   activity.start('read');
   try {
@@ -153,7 +167,7 @@ async function get<T>(path: string): Promise<T> {
     // (echtes Online) unverändert sofort einen Netzversuch macht.
     if (navigator.onLine && !isConfirmedOffline()) {
       try {
-        const data = await rawRequest<T>(path, { method: 'GET' });
+        const data = await rawRequest<T>(path, { method: 'GET', ...options });
         writeCache(path, data);
         return withPending(path, data);
       } catch (err) {
@@ -217,11 +231,12 @@ async function mutate<T>(
   method: MutateMethod,
   path: string,
   body?: unknown,
-  options?: RequestInit
+  options?: RequestOptions
 ): Promise<T> {
   const activity = useRequestActivityStore();
   activity.start(MUTATE_KIND[method]);
   try {
+    const queueable = !options?.noQueue && isQueueablePath(path);
     if (navigator.onLine && !isConfirmedOffline()) {
       try {
         return await rawRequest<T>(path, {
@@ -231,9 +246,18 @@ async function mutate<T>(
         });
       } catch (err) {
         if (!isNetworkFailure(err)) throw err;
+        // Wenn dieser Pfad nicht in die Outbox gehört (z. B. Routenberechnung oder Realtime-Position),
+        // Fehler direkt werfen statt in die Outbox zu schieben!
+        if (!queueable) throw err;
         setConfirmedOffline(true);
         // durchfallen zur Offline-Warteschlange unten
       }
+    }
+    if (!queueable) {
+      throw new ApiError(0, `Offline: ${path} kann offline nicht ausgeführt werden`, {
+        method,
+        path,
+      });
     }
     return queueMutation<T>(method, path, body);
   } finally {
@@ -242,10 +266,11 @@ async function mutate<T>(
 }
 
 export const api = {
-  get: <T>(path: string) => get<T>(path),
-  post: <T>(path: string, body?: unknown, options?: RequestInit) =>
+  get: <T>(path: string, options?: RequestOptions) => get<T>(path, options),
+  post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     mutate<T>('POST', path, body, options),
-  put: <T>(path: string, body?: unknown, options?: RequestInit) =>
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     mutate<T>('PUT', path, body, options),
-  delete: <T>(path: string, options?: RequestInit) => mutate<T>('DELETE', path, undefined, options),
+  delete: <T>(path: string, options?: RequestOptions) =>
+    mutate<T>('DELETE', path, undefined, options),
 };

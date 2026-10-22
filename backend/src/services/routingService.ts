@@ -183,7 +183,7 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(25000),
     });
 
     // Fallback: Falls alternative_routes vom ORS-Server abgelehnt wurden (z. B. Server-Limits oder unerwartete Restriktionen),
@@ -197,7 +197,7 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(25000),
       });
     }
 

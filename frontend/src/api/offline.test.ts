@@ -182,20 +182,66 @@ describe('flushOutbox and outbox events', () => {
     expect(sendRaw).toHaveBeenCalledTimes(2);
   });
 
-  it('stops and preserves the queue on network failure', async () => {
-    enqueue('POST', '/spots', { title: 'Offline 1' });
-    enqueue('POST', '/spots', { title: 'Offline 2' });
+  it('does not block independent items when one item fails', async () => {
+    enqueue('POST', '/notes', { title: 'Fehlerhafte Notiz' });
+    enqueue('POST', '/todos', { title: 'Erfolgreiches Todo' });
 
-    const sendRaw = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const sendRaw = vi.fn().mockImplementation(async (_method, path) => {
+      if (path === '/notes') {
+        const err = Object.assign(new Error('Fetch is aborted'), { name: 'AbortError' });
+        throw err;
+      }
+      return { id: 101, title: 'Erfolgreiches Todo' };
+    });
 
     const success = await flushOutbox(sendRaw);
 
     expect(success).toBe(false);
+    expect(sendRaw).toHaveBeenCalledTimes(2);
+
+    const outbox = getOutbox();
+    // Das erfolgreiche Todo wurde übertragen und aus der Outbox entfernt.
+    // Nur die fehlerhafte Notiz bleibt zurück!
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0].path).toBe('/notes');
+    expect(outbox[0].lastError?.message).toBe('Fetch is aborted');
+    expect(outbox[0].retryCount).toBe(1);
+  });
+
+  it('preserves order and waits for parent when items depend on each other', async () => {
+    const tempId = -888;
+    enqueue('POST', '/spots', { title: 'Neuer Spot' }, tempId);
+    enqueue('PUT', `/spots/${tempId}`, { title: 'Spot Update' });
+
+    const sendRaw = vi.fn().mockImplementation(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+
+    const success = await flushOutbox(sendRaw);
+
+    expect(success).toBe(false);
+    // Da PUT von POST (tempId) abhängt, darf PUT nicht ausgeführt werden, solange POST fehlschlägt!
     expect(sendRaw).toHaveBeenCalledTimes(1);
+
     const outbox = getOutbox();
     expect(outbox).toHaveLength(2);
     expect(outbox[0].lastError?.message).toBe('Failed to fetch');
-    expect(outbox[0].retryCount).toBe(1);
+  });
+
+  it('automatically purges unqueueable paths (e.g. /routes/directions or /realtime) from the outbox', async () => {
+    enqueue('POST', '/trips/1/routes/directions', { from_lat: 47, to_lat: 52 });
+    enqueue('POST', '/realtime/position', { lat: 47, lng: 9 });
+    enqueue('POST', '/todos', { title: 'Gültiges Todo' });
+
+    const sendRaw = vi.fn().mockResolvedValue({ id: 50, title: 'Gültiges Todo' });
+
+    const success = await flushOutbox(sendRaw);
+
+    expect(success).toBe(true);
+    // Nur das gültige Todo wurde gesendet:
+    expect(sendRaw).toHaveBeenCalledTimes(1);
+    expect(sendRaw).toHaveBeenCalledWith('POST', '/todos', { title: 'Gültiges Todo' });
+    expect(getOutbox()).toHaveLength(0);
   });
 
   it('records lastError and emits reisotor:outbox-failed on server error 500', async () => {
