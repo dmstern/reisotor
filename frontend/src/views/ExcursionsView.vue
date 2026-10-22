@@ -162,6 +162,7 @@ const {
   scrollToCategory,
   scrollToExcursion,
   scrollToSpot,
+  isCardWellVisibleInBody,
   getSpotElement,
   cancelProgrammaticScroll,
 } = navSpy;
@@ -333,6 +334,10 @@ async function openExcursionWithScroll(excursionId: number) {
 
   const previousExcursionId = expandedExcursionId.value;
   if (previousExcursionId === excursionId) {
+    const targetEl = excursionRefs.get(excursionId);
+    if (targetEl && isCardWellVisibleInBody(targetEl)) {
+      return;
+    }
     await scrollToExcursion(excursionId);
     return;
   }
@@ -369,6 +374,11 @@ async function openExcursionWithScroll(excursionId: number) {
   await nextTick();
   if (token !== excursionOpenSequenceToken) return;
 
+  const targetEl = excursionRefs.get(excursionId);
+  if (targetEl && isCardWellVisibleInBody(targetEl, offsetAdjustment)) {
+    return;
+  }
+
   await scrollToExcursion(excursionId, offsetAdjustment);
   if (token !== excursionOpenSequenceToken) return;
 
@@ -396,6 +406,9 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
     targetEl && targetEl.isConnected ? targetEl : getSpotElement(spotId, expandedExcursionId.value);
 
   if (previousSpotId === spotId) {
+    if (resolvedTarget && isCardWellVisibleInBody(resolvedTarget)) {
+      return;
+    }
     await scrollToSpot(resolvedTarget ?? spotId);
     return;
   }
@@ -445,6 +458,10 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
     resolvedTarget && resolvedTarget.isConnected
       ? resolvedTarget
       : getSpotElement(spotId, expandedExcursionId.value);
+
+  if (currentTarget && isCardWellVisibleInBody(currentTarget, offsetAdjustment)) {
+    return;
+  }
 
   await scrollToSpot(currentTarget ?? spotId, offsetAdjustment);
   if (token !== spotOpenSequenceToken) return;
@@ -564,10 +581,11 @@ watch(
 watch(
   () => [drawers.mapFocusTrackId, drawers.focusVersion],
   ([trackId]) => {
-    if (trackId != null && isSheetOverlayMode.value) {
+    if (trackId != null) {
       groupMode.value = 'tracks';
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(

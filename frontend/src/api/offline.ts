@@ -3,6 +3,12 @@
 // Bewusst localStorage statt IndexedDB – die hier gecachten Datenmengen (JSON einer Reiseplanung)
 // sind klein, localStorage ist synchron und braucht keine zusätzliche Abstraktionsebene.
 
+export interface OutboxEntryError {
+  status?: number;
+  message: string;
+  timestamp: string;
+}
+
 export interface OutboxEntry {
   id: string;
   method: 'POST' | 'PUT' | 'DELETE';
@@ -14,6 +20,8 @@ export interface OutboxEntry {
    *  Nachsenden auf die echte Server-id umgeschrieben werden können (siehe remapTempId). */
   tempId?: number;
   createdAt: string;
+  lastError?: OutboxEntryError;
+  retryCount?: number;
 }
 
 const OUTBOX_KEY = 'reisotor-outbox';
@@ -172,6 +180,39 @@ export function getOutboxLength(): number {
   return readOutbox().length;
 }
 
+export function getOutbox(): OutboxEntry[] {
+  return readOutbox();
+}
+
+export function removeOutboxEntry(id: string): boolean {
+  const list = readOutbox();
+  const next = list.filter((e) => e.id !== id);
+  if (next.length !== list.length) {
+    writeOutboxList(next);
+    return true;
+  }
+  return false;
+}
+
+export function clearOutbox(): void {
+  writeOutboxList([]);
+}
+
+export function updateOutboxEntry(
+  id: string,
+  updates: Partial<Pick<OutboxEntry, 'path' | 'body' | 'method' | 'lastError' | 'retryCount'>>
+): boolean {
+  const list = readOutbox();
+  const index = list.findIndex((e) => e.id === id);
+  if (index === -1) return false;
+  list[index] = {
+    ...list[index],
+    ...updates,
+  };
+  writeOutboxList(list);
+  return true;
+}
+
 export function enqueue(
   method: OutboxEntry['method'],
   path: string,
@@ -222,10 +263,6 @@ export async function flushOutbox(
     try {
       response = await sendRaw(entry.method, entry.path, entry.body);
     } catch (err: unknown) {
-      // Unbehebbare Client-Fehler (4xx wie 400 Bad Request, 404 Not Found, 422 etc., außer
-      // 408 Request Timeout und 429 Too Many Requests): der Server lehnt diese Mutation endgültig ab.
-      // Würde dieser Eintrag in der Outbox verbleiben, blockiert er alle nachfolgenden Mutationen
-      // dauerhaft. Daher überspringen und aus der Outbox entfernen.
       const status =
         typeof err === 'object' &&
         err !== null &&
@@ -233,6 +270,25 @@ export async function flushOutbox(
         typeof (err as { status: unknown }).status === 'number'
           ? (err as { status: number }).status
           : undefined;
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+            ? String((err as { message: unknown }).message)
+            : 'Unbekannter Serverfehler';
+
+      entry.lastError = {
+        status,
+        message,
+        timestamp: new Date().toISOString(),
+      };
+      entry.retryCount = (entry.retryCount || 0) + 1;
+      writeOutboxList(list);
+
+      // Unbehebbare Client-Fehler (4xx wie 400 Bad Request, 404 Not Found, 422 etc., außer
+      // 408 Request Timeout und 429 Too Many Requests): der Server lehnt diese Mutation endgültig ab.
+      // Würde dieser Eintrag in der Outbox verbleiben, blockiert er alle nachfolgenden Mutationen
+      // dauerhaft. Daher überspringen und aus der Outbox entfernen.
       if (status != null && status >= 400 && status < 500 && status !== 408 && status !== 429) {
         console.warn(
           `Outbox-Eintrag vom Server dauerhaft abgelehnt (HTTP ${status}), wird übersprungen:`,
@@ -246,6 +302,12 @@ export async function flushOutbox(
         list = list.slice(1);
         writeOutboxList(list);
         continue;
+      }
+
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(
+          new CustomEvent('reisotor:outbox-failed', { detail: { entry, error: err } })
+        );
       }
       return false;
     }

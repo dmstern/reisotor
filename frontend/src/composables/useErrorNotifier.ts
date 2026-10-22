@@ -295,6 +295,15 @@ export function useErrorNotifier() {
     });
   }
 
+  function notifyOutboxFailed(entry: OutboxEntry, error: unknown): CapturedError | null {
+    return notifyError(error, {
+      kind: 'sync',
+      method: entry.method,
+      path: entry.path,
+      context: 'Synchronisierung fehlgeschlagen',
+    });
+  }
+
   function clearErrors() {
     recentErrors.value = [];
     activeError.value = null;
@@ -308,6 +317,7 @@ export function useErrorNotifier() {
     isErrorModalOpen,
     notifyError,
     notifyOutboxRejected,
+    notifyOutboxFailed,
     openErrorModal,
     closeErrorModal,
     clearErrors,

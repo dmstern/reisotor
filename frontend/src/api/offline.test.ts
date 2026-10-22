@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearOutbox,
   enqueue,
   findCachedItemInCollection,
   flushOutbox,
+  getOutbox,
   mergePendingIntoList,
   nextTempId,
+  removeOutboxEntry,
+  updateOutboxEntry,
   writeCache,
 } from './offline';
 
@@ -188,5 +192,60 @@ describe('flushOutbox and outbox events', () => {
 
     expect(success).toBe(false);
     expect(sendRaw).toHaveBeenCalledTimes(1);
+    const outbox = getOutbox();
+    expect(outbox).toHaveLength(2);
+    expect(outbox[0].lastError?.message).toBe('Failed to fetch');
+    expect(outbox[0].retryCount).toBe(1);
+  });
+
+  it('records lastError and emits reisotor:outbox-failed on server error 500', async () => {
+    enqueue('POST', '/budget', { amount: 10, title: 'Essen' });
+
+    const failedHandler = vi.fn();
+    window.addEventListener('reisotor:outbox-failed', failedHandler);
+
+    const err = Object.assign(new Error('Internal Server Error'), { status: 500 });
+    const sendRaw = vi.fn().mockRejectedValue(err);
+
+    const success = await flushOutbox(sendRaw);
+
+    expect(success).toBe(false);
+    expect(failedHandler).toHaveBeenCalledTimes(1);
+    const detail = failedHandler.mock.calls[0][0].detail;
+    expect(detail.entry.path).toBe('/budget');
+    expect(detail.error.status).toBe(500);
+
+    const outbox = getOutbox();
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0].lastError).toEqual({
+      status: 500,
+      message: 'Internal Server Error',
+      timestamp: expect.any(String),
+    });
+    expect(outbox[0].retryCount).toBe(1);
+
+    window.removeEventListener('reisotor:outbox-failed', failedHandler);
+  });
+
+  it('allows getting, updating, removing and clearing outbox entries', () => {
+    enqueue('POST', '/todos', { title: 'Koffer packen' });
+    enqueue('PUT', '/todos/1', { title: 'Fertig' });
+
+    const list = getOutbox();
+    expect(list).toHaveLength(2);
+
+    const firstId = list[0].id;
+    const updated = updateOutboxEntry(firstId, {
+      body: { title: 'Großen Koffer packen' },
+    });
+    expect(updated).toBe(true);
+    expect(getOutbox()[0].body).toEqual({ title: 'Großen Koffer packen' });
+
+    const removed = removeOutboxEntry(firstId);
+    expect(removed).toBe(true);
+    expect(getOutbox()).toHaveLength(1);
+
+    clearOutbox();
+    expect(getOutbox()).toHaveLength(0);
   });
 });

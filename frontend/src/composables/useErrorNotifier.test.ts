@@ -136,4 +136,24 @@ describe('useErrorNotifier', () => {
     expect(md).toContain('`POST /schedule`');
     expect(md).toContain('v1.12.0 (abcdef1)');
   });
+
+  it('notifies on outbox failure with 500 error', () => {
+    const { notifyOutboxFailed } = useErrorNotifier();
+    const err = new ApiError(500, 'Internal Server Error', { method: 'POST', path: '/budget' });
+    const captured = notifyOutboxFailed(
+      {
+        id: 'outbox-2',
+        method: 'POST',
+        path: '/budget',
+        body: { amount: 50 },
+        createdAt: '2026-10-18T12:00:00Z',
+      },
+      err
+    );
+
+    expect(captured).not.toBeNull();
+    expect(captured?.kind).toBe('sync');
+    expect(captured?.summary).toContain('Synchronisierung fehlgeschlagen');
+    expect(captured?.status).toBe(500);
+  });
 });

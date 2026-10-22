@@ -161,4 +161,142 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
     setCategoryNavRef(null);
     body.remove();
   });
+
+  describe('isCardWellVisibleInBody', () => {
+    it('returns false when target element or body is not connected', () => {
+      const { isCardWellVisibleInBody } = createSpy();
+      const detachedEl = document.createElement('article');
+      expect(isCardWellVisibleInBody(null)).toBe(false);
+      expect(isCardWellVisibleInBody(detachedEl)).toBe(false);
+    });
+
+    it('returns true when card is comfortably inside visible bounds', () => {
+      const { isCardWellVisibleInBody, spotsColBodyEl } = createSpy();
+
+      const body = document.createElement('div');
+      body.className = 'spots-col-body';
+      body.getBoundingClientRect = () => ({ top: 100, bottom: 900, height: 800 }) as DOMRect;
+      document.body.appendChild(body);
+      spotsColBodyEl.value = body;
+
+      const targetEl = document.createElement('article');
+      targetEl.getBoundingClientRect = () => ({ top: 250, bottom: 550, height: 300 }) as DOMRect;
+      body.appendChild(targetEl);
+
+      expect(isCardWellVisibleInBody(targetEl)).toBe(true);
+
+      body.remove();
+    });
+
+    it('returns false when card bottom extends beyond visible bottom', () => {
+      const { isCardWellVisibleInBody, spotsColBodyEl } = createSpy();
+
+      const body = document.createElement('div');
+      body.className = 'spots-col-body';
+      body.getBoundingClientRect = () => ({ top: 100, bottom: 900, height: 800 }) as DOMRect;
+      document.body.appendChild(body);
+      spotsColBodyEl.value = body;
+
+      const targetEl = document.createElement('article');
+      // Card bottom 920 extends past body bottom 900
+      targetEl.getBoundingClientRect = () => ({ top: 650, bottom: 920, height: 270 }) as DOMRect;
+      body.appendChild(targetEl);
+
+      expect(isCardWellVisibleInBody(targetEl)).toBe(false);
+
+      body.remove();
+    });
+
+    it('returns false when card top is under nav clearance', () => {
+      const { isCardWellVisibleInBody, spotsColBodyEl, setCategoryNavRef } = createSpy();
+
+      const body = document.createElement('div');
+      body.className = 'spots-col-body';
+      body.getBoundingClientRect = () => ({ top: 100, bottom: 900, height: 800 }) as DOMRect;
+      document.body.appendChild(body);
+      spotsColBodyEl.value = body;
+
+      const navEl = document.createElement('nav');
+      setCategoryNavRef(navEl);
+
+      const targetEl = document.createElement('article');
+      // Nav clearance is 44px, body.top is 100, visibleTop is 144. Target top at 120 is behind nav!
+      targetEl.getBoundingClientRect = () => ({ top: 120, bottom: 420, height: 300 }) as DOMRect;
+      body.appendChild(targetEl);
+
+      expect(isCardWellVisibleInBody(targetEl)).toBe(false);
+
+      setCategoryNavRef(null);
+      body.remove();
+    });
+
+    it('returns false when expanded card height is taller than visible height', () => {
+      const { isCardWellVisibleInBody, spotsColBodyEl } = createSpy();
+
+      const body = document.createElement('div');
+      body.className = 'spots-col-body';
+      body.getBoundingClientRect = () => ({ top: 100, bottom: 500, height: 400 }) as DOMRect;
+      document.body.appendChild(body);
+      spotsColBodyEl.value = body;
+
+      const targetEl = document.createElement('article');
+      // Card height 420 > visible height 400
+      targetEl.getBoundingClientRect = () => ({ top: 100, bottom: 520, height: 420 }) as DOMRect;
+      body.appendChild(targetEl);
+
+      expect(isCardWellVisibleInBody(targetEl)).toBe(false);
+
+      body.remove();
+    });
+
+    it('accounts for offsetAdjustment from preceding collapsing card', () => {
+      const { isCardWellVisibleInBody, spotsColBodyEl } = createSpy();
+
+      const body = document.createElement('div');
+      body.className = 'spots-col-body';
+      body.getBoundingClientRect = () => ({ top: 100, bottom: 900, height: 800 }) as DOMRect;
+      document.body.appendChild(body);
+      spotsColBodyEl.value = body;
+
+      const targetEl = document.createElement('article');
+      // Currently at 650 with bottom 910 (too far down). But preceding card will collapse -100px.
+      // Projected top: 550, projected bottom: 810 <= 900 - 8 -> fits!
+      targetEl.getBoundingClientRect = () => ({ top: 650, bottom: 910, height: 260 }) as DOMRect;
+      body.appendChild(targetEl);
+
+      expect(isCardWellVisibleInBody(targetEl, 0)).toBe(false);
+      expect(isCardWellVisibleInBody(targetEl, -100)).toBe(true);
+
+      body.remove();
+    });
+
+    it('accounts for inner accordion expanding height', () => {
+      const { isCardWellVisibleInBody, spotsColBodyEl } = createSpy();
+
+      const body = document.createElement('div');
+      body.className = 'spots-col-body';
+      body.getBoundingClientRect = () => ({ top: 100, bottom: 900, height: 800 }) as DOMRect;
+      document.body.appendChild(body);
+      spotsColBodyEl.value = body;
+
+      const targetEl = document.createElement('article');
+      targetEl.getBoundingClientRect = () => ({ top: 600, bottom: 750, height: 150 }) as DOMRect;
+
+      const acc = document.createElement('div');
+      acc.className = 'spot-accordion is-expanded';
+      acc.getBoundingClientRect = () => ({ height: 0 }) as DOMRect;
+
+      const inner = document.createElement('div');
+      // Inner content will expand by 200px (150 + 200 = 350, so bottom will be 600 + 350 = 950 > 892)
+      Object.defineProperty(inner, 'scrollHeight', { value: 200, configurable: true });
+      acc.appendChild(inner);
+      targetEl.appendChild(acc);
+
+      body.appendChild(targetEl);
+
+      expect(isCardWellVisibleInBody(targetEl)).toBe(false);
+
+      body.remove();
+    });
+  });
 });

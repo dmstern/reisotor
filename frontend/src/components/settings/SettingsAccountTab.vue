@@ -6,6 +6,7 @@ import IconButton from '../primitives/IconButton.vue';
 import Input from '../primitives/Input.vue';
 import PasswordInput from '../PasswordInput.vue';
 import AppIcon from '../AppIcon.vue';
+import PendingSyncCard from './PendingSyncCard.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useConnectivityStore } from '../../stores/connectivity';
 import { useAccountSettings } from '../../composables/useAccountSettings';
@@ -13,6 +14,13 @@ import { ACTION_ICONS } from '../../utils/actionIcons';
 
 const auth = useAuthStore();
 const connectivity = useConnectivityStore();
+
+function scrollToUnsynced() {
+  const el = document.getElementById('unsynced-items');
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 
 const {
   avatarSaving,
@@ -112,6 +120,9 @@ onMounted(() => {
             {{ connectivity.pendingCount }}
             {{ connectivity.pendingCount === 1 ? 'Änderung ist' : 'Änderungen sind' }}
             noch nicht mit dem Server synchronisiert.
+            <button type="button" class="jump-to-unsynced" @click="scrollToUnsynced">
+              Einträge ansehen ↓
+            </button>
           </p>
         </div>
         <Button type="button" variant="secondary" @click="logout" class="logout-btn">
@@ -215,12 +226,28 @@ onMounted(() => {
         </Button>
       </form>
     </Card>
+
+    <PendingSyncCard />
   </div>
 </template>
 
 <style scoped>
 .account-tab :deep(.card) {
   margin-bottom: var(--space-4);
+}
+
+.jump-to-unsynced {
+  display: inline-block;
+  margin-left: var(--space-2);
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .header {

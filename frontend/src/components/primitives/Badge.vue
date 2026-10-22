@@ -71,8 +71,8 @@ withDefaults(
 }
 
 .badge--success {
-  background: var(--color-primary-tint);
-  color: var(--color-success);
+  background: var(--color-success-tint);
+  color: var(--color-success-dark, var(--color-success));
   border-color: transparent;
 }
 
