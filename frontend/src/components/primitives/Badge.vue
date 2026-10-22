@@ -11,18 +11,31 @@ withDefaults(
       | 'accent-secondary'
       | 'custom';
     size?: 'sm' | 'md';
+    as?: string;
+    interactive?: boolean;
   }>(),
   {
     variant: 'default',
     size: 'sm',
+    as: 'span',
+    interactive: false,
   }
 );
 </script>
 
 <template>
-  <span class="badge" :class="[`badge--${variant}`, `badge--size-${size}`]">
+  <component
+    :is="as"
+    class="badge"
+    :class="[
+      `badge--${variant}`,
+      `badge--size-${size}`,
+      { 'badge--interactive': interactive || as === 'button' },
+    ]"
+    :type="as === 'button' ? 'button' : undefined"
+  >
     <slot />
-  </span>
+  </component>
 </template>
 
 <style scoped>
@@ -30,6 +43,7 @@ withDefaults(
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  font-family: inherit;
   font-weight: 600;
   border-radius: var(--radius-pill);
   line-height: 1.2;
@@ -37,6 +51,7 @@ withDefaults(
   background: var(--color-hover);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
+  margin: 0;
 }
 
 .badge--size-sm {
@@ -89,5 +104,28 @@ withDefaults(
   background: var(--badge-bg, var(--color-hover));
   color: var(--badge-color, var(--color-text));
   border-color: var(--badge-border, transparent);
+}
+
+.badge--interactive {
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.badge--interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.badge--interactive:active {
+  transform: translateY(0);
+}
+
+.badge--interactive:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

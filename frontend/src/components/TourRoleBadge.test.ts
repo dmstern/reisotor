@@ -28,6 +28,10 @@ describe('TourRoleBadge', () => {
     const { container, cleanUp } = mountBadge();
     expect(container.textContent).toContain('Ausflug');
     expect(container.querySelector('.tour-type-badge')?.getAttribute('title')).toBe('Ausflug');
+    expect(container.querySelector('.category-chip-label')?.textContent).toBe('Ausflug');
+    expect(container.querySelector('.tour-type-badge')?.classList.contains('category-chip')).toBe(
+      true
+    );
     cleanUp();
   });
 

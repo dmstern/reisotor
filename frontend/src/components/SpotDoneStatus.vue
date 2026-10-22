@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Spot } from '../api/types';
 import { useSpotWeather } from '../composables/useSpotWeather';
 import { useSpotDoneStatus } from '../composables/useSpotDoneStatus';
+import { useDrawersStore } from '../stores/drawers';
 import DoneToggle from './primitives/DoneToggle.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
@@ -22,11 +24,7 @@ const emit = defineEmits<{
   (e: 'card-click', event: MouseEvent): void;
 }>();
 
-const { scheduledDaysCount, dayWeather, plannedDateLabel } = useSpotWeather({
-  spot: () => props.spot,
-  scheduledDate: () => props.scheduledDate,
-  expanded: () => props.expanded,
-});
+const drawers = useDrawersStore();
 
 const {
   scheduledItemsForSpot,
@@ -49,12 +47,42 @@ const {
   scheduledDate: () => props.scheduledDate,
 });
 
+const targetCalendarDate = computed<string | null>(() => {
+  if (props.scheduledDate) return props.scheduledDate;
+  if (scheduledItemsForSpot.value.length === 1 && scheduledItemsForSpot.value[0].date) {
+    return scheduledItemsForSpot.value[0].date;
+  }
+  return null;
+});
+
+const { scheduledDaysCount, dayWeather, plannedDateLabel } = useSpotWeather({
+  spot: () => props.spot,
+  scheduledDate: () => targetCalendarDate.value,
+  expanded: () => props.expanded,
+});
+
+const isSplit = computed(() => {
+  return totalItemsCount.value <= 1 && !!targetCalendarDate.value;
+});
+
 function handleDoneClick(event: MouseEvent) {
   if (props.expanded) {
     onToggleDone(event);
   } else {
     emit('card-click', event);
   }
+}
+
+function handleCalendarJump(event: MouseEvent) {
+  event.stopPropagation();
+  if (targetCalendarDate.value) {
+    drawers.openCalendar(targetCalendarDate.value);
+  }
+}
+
+function openCalendarAtDate(date: string) {
+  datesPopoverOpen.value = false;
+  drawers.openCalendar(date);
 }
 </script>
 
@@ -64,9 +92,16 @@ function handleDoneClick(event: MouseEvent) {
     :done="isSpotDone"
     :partially-done="isSpotPartiallyDone"
     :planned="!!(scheduledDate || totalItemsCount > 0)"
+    :split="isSplit"
+    :check-aria-label="isSpotDone ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
+    :check-title="isSpotDone ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
+    :action-aria-label="targetCalendarDate ? `${plannedDateLabel} im Kalender öffnen` : undefined"
+    :action-title="targetCalendarDate ? `Zum ${plannedDateLabel} im Kalender springen` : undefined"
     :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     @click="handleDoneClick"
+    @click-check="handleDoneClick"
+    @click-action="handleCalendarJump"
   >
     <template v-if="totalItemsCount > 1">
       <template v-if="allItemsDone">
@@ -181,22 +216,31 @@ function handleDoneClick(event: MouseEvent) {
         </div>
         <p class="popover-subtext">Wähle die Tage aus, an denen dieser Spot besucht wurde:</p>
         <div class="dates-checklist">
-          <button
-            v-for="item in scheduledItemsForSpot"
-            :key="item.id"
-            type="button"
-            class="date-check-item"
-            :class="{ checked: !!item.done }"
-            @click="toggleScheduledItemDone(item)"
-          >
-            <AppIcon
-              :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
-              :size="15"
-              group="actions"
-            />
-            <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
-            <span class="date-check-status">{{ item.done ? 'Besucht' : 'Geplant' }}</span>
-          </button>
+          <div v-for="item in scheduledItemsForSpot" :key="item.id" class="date-check-row">
+            <button
+              type="button"
+              class="date-check-item"
+              :class="{ checked: !!item.done }"
+              @click="toggleScheduledItemDone(item)"
+            >
+              <AppIcon
+                :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
+                :size="15"
+                group="actions"
+              />
+              <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
+              <span class="date-check-status">{{ item.done ? 'Besucht' : 'Geplant' }}</span>
+            </button>
+            <button
+              type="button"
+              class="date-calendar-jump-btn"
+              title="Diesen Tag im Kalender öffnen"
+              :aria-label="`${formatDateShared(item.date)} im Kalender öffnen`"
+              @click.stop="openCalendarAtDate(item.date)"
+            >
+              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+            </button>
+          </div>
         </div>
         <div class="popover-buttons">
           <Button type="button" variant="secondary" size="sm" @click="datesPopoverOpen = false">
@@ -255,7 +299,15 @@ function handleDoneClick(event: MouseEvent) {
   overflow-y: auto;
 }
 
+.date-check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .date-check-item {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -291,5 +343,30 @@ function handleDoneClick(event: MouseEvent) {
   margin-left: auto;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.date-calendar-jump-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.date-calendar-jump-btn:hover {
+  background: var(--color-hover);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 </style>

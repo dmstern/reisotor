@@ -291,6 +291,13 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     }
   }
 
+  function jumpToDate(date: string) {
+    activeJumpTarget.value = null;
+    slideDirection.value = determineSlideDirection(date);
+    goToDate(date);
+    selectDay(date);
+  }
+
   function selectDay(date: string) {
     selectedDate.value = date;
     const today = toLocalDateString(new Date());
@@ -366,6 +373,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     goToDate,
     jumpToToday,
     goToTripDates,
+    jumpToDate,
     selectDay,
     initNavigation,
     isToday,

@@ -90,6 +90,13 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 - 🎨 **Modernes Design**: Dark Mode & Light Mode, optimierte Glassmorphism-Oberflächen, Gestensteuerung und barrierefreie Kontraste
 - 🛡️ **Nutzerverwaltung & Rechte**: Integrierte Admin-Kontoverwaltung, temporäre Passwörter, konfigurierbare Registrierung und ZIP-Vollbackups
 
+## 🤖 Hintergrund & Motivation
+
+Reisotor ist als persönliches Projekt entstanden – angetrieben von zwei zentralen Ideen:
+
+- **Agentic Coding in der Praxis:** Das gesamte Projekt wurde und wird per **Agentic Coding** (mit KI-Coding-Assistenten) entwickelt. Es dient mir als kontinuierliches Experimentierfeld, um mich intensiv in modernes Agentic Coding reinzufuchsen und in der Praxis zu erproben, wie weit man mit autonomen KI-Agenten bei einer vollwertigen, langlebigen Fullstack-Web-App in puncto Architektur, Code-Qualität und UX kommt.
+- **Echte Datenhoheit statt Cloud-Datenkraken:** Der Wunsch nach einer richtig coolen, alltagstauglichen Reiseplanungs-App – ohne dafür private Urlaubsplanungen, Buchungen, Standorte oder Notizen an kommerzielle US-Datenfresser abgeben zu müssen. Reisotor ist daher voll auf Self-Hosting (z. B. auf einem Raspberry Pi im Heimnetzwerk), Datensparsamkeit und Offline-Nutzung als PWA ausgelegt: Deine Reisedaten bleiben bei dir.
+
 ## Struktur
 
 ```
@@ -350,3 +357,11 @@ Da das Einspielen einer kompletten Datenbank während des laufenden Betriebs feh
 - **Leaflet-Kartenmarker unsichtbar:** Leaflets `Icon.Default._getIconUrl` versucht automatisch, den Bildpfad aus einer CSS-Regel (`.leaflet-default-icon-path`) zu erkennen und stellt diesen den eigentlichen Icon-URLs voran – auch wenn man über `mergeOptions` bereits vollständige, von Vite aufgelöste URLs gesetzt hat. Das Ergebnis war eine doppelt verschachtelte, 404-URL, wodurch der Browser nur das `alt`-Attribut ("marker icon", abgeschnitten zu "mark") anzeigte. Gelöst durch eigene Emoji-`divIcon`s statt der Standard-Icons.
 - **`FOREIGN KEY constraint failed` beim Löschen von Reise-/Unterkunft-Kosten:** Die Budget-Sync-Logik hat beim Entfernen eines Betrags zuerst die verknüpfte `budget_items`-Zeile gelöscht, während `travel_items.budget_expense_id`/`spots.budget_expense_id` (Unterkunft ist eine Spot-Kategorie, siehe `ARCHITECTURE.md`) noch darauf verwiesen – SQLite verweigert das per Foreign-Key-Constraint. Reihenfolge umgekehrt: erst die referenzierende Zeile aktualisieren/löschen, danach die verwaiste `budget_items`-Zeile entfernen.
 - **Karte plötzlich leer, ohne erkennbaren Code-Fehler:** meist ein verwaister, alter Vite-Dev-Server-Prozess mit veraltetem Modul-Cache (z. B. nach größeren lokalen Git-Historie-Operationen). Hilft: alte Prozesse beenden, `frontend/node_modules/.vite` löschen, Dev-Server neu starten.
+
+## Lizenz
+
+Copyright © 2026 [Daniel Morgenstern](https://github.com/dmstern) und Mitwirkende · agentic-coded.
+
+Dieses Projekt ist unter der **European Union Public Licence (EUPL-1.2)** lizenziert – siehe die [LICENSE](LICENSE)-Datei für den vollständigen Lizenztext.
+
+Der offizielle Lizenztext ist in 24 Amtssprachen der EU (einschließlich Deutsch) auf [Joinup (Europäische Kommission)](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12) verfügbar.
