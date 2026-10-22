@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Excursion } from '../api/types';
 import type { ExcursionStation } from '../utils/excursionStations';
 import { useExcursionWeather } from '../composables/useExcursionWeather';
 import { useExcursionDoneStatus } from '../composables/useExcursionDoneStatus';
+import { useDrawersStore } from '../stores/drawers';
 import DoneToggle from './primitives/DoneToggle.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
@@ -23,10 +25,21 @@ const props = withDefaults(
   }
 );
 
+const drawers = useDrawersStore();
+
 const { weatherSummary, statusDateLabel } = useExcursionWeather({
   excursion: () => props.excursion,
   resolvedStations: () => props.resolvedStations,
 });
+
+const isSplit = computed(() => !!props.excursion.date);
+
+function handleCalendarJump(event: MouseEvent) {
+  event.stopPropagation();
+  if (props.excursion.date) {
+    drawers.openCalendar(props.excursion.date);
+  }
+}
 
 const {
   unplannedPopoverOpen,
@@ -43,11 +56,21 @@ const {
 <template>
   <DoneToggle
     v-if="expanded"
+    key="btn-done"
     :done="!!excursion.done"
     :planned="!!excursion.date"
+    :split="isSplit"
+    :check-aria-label="
+      excursion.done ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'
+    "
+    :check-title="excursion.done ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
+    :action-aria-label="excursion.date ? `${statusDateLabel} im Kalender öffnen` : undefined"
+    :action-title="excursion.date ? `Zum ${statusDateLabel} im Kalender springen` : undefined"
     :aria-label="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     @click="onToggleDone"
+    @click-check="onToggleDone"
+    @click-action="handleCalendarJump"
   >
     <template v-if="excursion.done">
       <template v-if="excursion.date">

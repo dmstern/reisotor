@@ -77,6 +77,16 @@ describe('drawers store', () => {
       expect(pushSpy).toHaveBeenCalledWith('/calendar');
       expect(store.calendarOpen).toBe(false);
     });
+
+    it('routes to /calendar with query param when openCalendar is invoked with date on mobile', () => {
+      const pushSpy = vi.spyOn(router, 'push').mockResolvedValue(undefined as never);
+      const store = useDrawersStore();
+
+      store.openCalendar('2026-11-05');
+      expect(pushSpy).toHaveBeenCalledWith({ path: '/calendar', query: { date: '2026-11-05' } });
+      expect(store.calendarTargetDate).toBe('2026-11-05');
+      expect(store.calendarOpen).toBe(false);
+    });
   });
 
   describe('Desktop behavior (>=1024px)', () => {
@@ -116,6 +126,15 @@ describe('drawers store', () => {
 
       store.openCalendar();
       expect(store.calendarOpen).toBe(true);
+    });
+
+    it('sets calendarTargetDate and calendarOpen on desktop when openCalendar is invoked with date', () => {
+      const store = useDrawersStore();
+      store.calendarOpen = false;
+
+      store.openCalendar('2026-11-05');
+      expect(store.calendarOpen).toBe(true);
+      expect(store.calendarTargetDate).toBe('2026-11-05');
     });
   });
 });

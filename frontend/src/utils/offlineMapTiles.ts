@@ -8,38 +8,59 @@ import type L from 'leaflet';
 // Zoomstufen herunter - fetch() für eine Kachel-URL wird vom bereits registrierten Service-Worker-
 // Handler transparent abgefangen und landet automatisch im selben "osm-tiles"-Cache, es ist also
 // KEIN eigener caches.open()/put() nötig.
-const MIN_ZOOM = 12;
-const MAX_ZOOM = 16;
+export const MIN_ZOOM = 12;
+export const MAX_ZOOM = 16;
 // Grober Erfahrungswert für eine typische 256x256px-OSM-PNG-Kachel - reicht für eine ungefähre
 // Größenangabe vor dem Download (siehe estimateTiles()), keine exakte Messung nötig/möglich (die
 // echte Größe hängt vom Kartenausschnitt selbst ab).
-const AVG_TILE_BYTES = 15_000;
+export const AVG_TILE_BYTES = 15_000;
+export const MAX_OFFLINE_TILES = 10_000;
 const SUBDOMAINS = ['a', 'b', 'c'];
+const MAX_LATITUDE = 85.0511287798066;
 
-function lngToTileX(lng: number, zoom: number): number {
-  return Math.floor(((lng + 180) / 360) * 2 ** zoom);
+function clamp(val: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, val));
 }
 
-function latToTileY(lat: number, zoom: number): number {
-  const rad = (lat * Math.PI) / 180;
-  return Math.floor(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * 2 ** zoom);
+export function lngToTileX(lng: number, zoom: number): number {
+  const maxTile = 2 ** zoom - 1;
+  const clampedLng = clamp(lng, -180, 180);
+  const x = Math.floor(((clampedLng + 180) / 360) * 2 ** zoom);
+  return clamp(x, 0, maxTile);
 }
 
-function tileRange(bounds: L.LatLngBounds, zoom: number) {
+export function latToTileY(lat: number, zoom: number): number {
+  const maxTile = 2 ** zoom - 1;
+  const clampedLat = clamp(lat, -MAX_LATITUDE, MAX_LATITUDE);
+  const rad = (clampedLat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * 2 ** zoom
+  );
+  return clamp(y, 0, maxTile);
+}
+
+export function tileRange(bounds: L.LatLngBounds, zoom: number) {
+  const x1 = lngToTileX(bounds.getWest(), zoom);
+  const x2 = lngToTileX(bounds.getEast(), zoom);
+  const y1 = latToTileY(bounds.getNorth(), zoom);
+  const y2 = latToTileY(bounds.getSouth(), zoom);
   return {
-    xMin: lngToTileX(bounds.getWest(), zoom),
-    xMax: lngToTileX(bounds.getEast(), zoom),
-    yMin: latToTileY(bounds.getNorth(), zoom),
-    yMax: latToTileY(bounds.getSouth(), zoom),
+    xMin: Math.min(x1, x2),
+    xMax: Math.max(x1, x2),
+    yMin: Math.min(y1, y2),
+    yMax: Math.max(y1, y2),
   };
 }
 
-function allTileUrls(bounds: L.LatLngBounds): string[] {
+export function allTileUrls(bounds: L.LatLngBounds, maxTiles = MAX_OFFLINE_TILES): string[] {
   const urls: string[] = [];
   for (let z = MIN_ZOOM; z <= MAX_ZOOM; z++) {
     const { xMin, xMax, yMin, yMax } = tileRange(bounds, z);
     for (let x = xMin; x <= xMax; x++) {
       for (let y = yMin; y <= yMax; y++) {
+        if (urls.length >= maxTiles) {
+          return urls;
+        }
         const sub = SUBDOMAINS[(x + y) % SUBDOMAINS.length];
         urls.push(`https://${sub}.tile.openstreetmap.org/${z}/${x}/${y}.png`);
       }
@@ -52,7 +73,13 @@ export function estimateTileDownload(bounds: L.LatLngBounds): {
   count: number;
   approxBytes: number;
 } {
-  const count = allTileUrls(bounds).length;
+  let count = 0;
+  for (let z = MIN_ZOOM; z <= MAX_ZOOM; z++) {
+    const { xMin, xMax, yMin, yMax } = tileRange(bounds, z);
+    const xCount = Math.max(0, xMax - xMin + 1);
+    const yCount = Math.max(0, yMax - yMin + 1);
+    count += xCount * yCount;
+  }
   return { count, approxBytes: count * AVG_TILE_BYTES };
 }
 
@@ -82,14 +109,18 @@ export async function downloadTiles(
   let downloaded = 0;
   let failed = 0;
   let index = 0;
-  const CONCURRENCY = 6;
+  const CONCURRENCY = 20;
+  const PROGRESS_INTERVAL = 25;
 
   async function worker() {
     while (index < urls.length) {
       const url = urls[index++];
       if (await downloadOne(url)) downloaded++;
       else failed++;
-      onProgress(downloaded + failed, urls.length);
+      const done = downloaded + failed;
+      if (done % PROGRESS_INTERVAL === 0 || done === urls.length) {
+        onProgress(done, urls.length);
+      }
     }
   }
 

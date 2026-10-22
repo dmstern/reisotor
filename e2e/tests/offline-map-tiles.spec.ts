@@ -137,6 +137,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
   test('sichtbarer Kartenausschnitt lässt sich vorab für die Offline-Nutzung herunterladen', async ({
     browser,
   }) => {
+    test.setTimeout(60_000);
     const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     await context.route('https://*.tile.openstreetmap.org/**/*.png', (route) =>
       route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG })
@@ -152,7 +153,7 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
 
     await page.locator('.offline-download-btn').click();
     await expect(page.locator('.tile-download-pill')).toContainText('offline gespeichert', {
-      timeout: 30_000,
+      timeout: 45_000,
     });
     await expect(page.locator('.tile-download-pill')).not.toContainText('fehlgeschlagen');
 

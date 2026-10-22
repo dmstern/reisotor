@@ -2,6 +2,7 @@
   "name": "reisotor",
   "version": "1.3.0",
   "private": true,
+  "license": "EUPL-1.2",
   "type": "module",
   "description": "Einzige Versionsquelle für Reisotor (Backend + Frontend) — siehe backend/scripts/generate-build-info.mjs und frontend/vite.config.ts.",
   "scripts": {

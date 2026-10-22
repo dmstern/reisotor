@@ -9,6 +9,7 @@ import {
 } from 'vue';
 import type { Spot } from '../api/types';
 import { useScheduleStore } from '../stores/schedule';
+import { useExcursionsStore } from '../stores/excursions';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
@@ -29,6 +30,7 @@ export interface UseSpotWeatherReturn {
 
 export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherReturn {
   const scheduleStore = useScheduleStore();
+  const excursionsStore = useExcursionsStore();
   const weatherProvider = useWeatherProviderStore();
 
   const scheduledDatesForSpot = computed(() => {
@@ -46,6 +48,11 @@ export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherRe
         } else {
           dates.add(item.date);
         }
+      }
+    }
+    for (const excursion of excursionsStore.excursions) {
+      if (excursion.date && excursion.spot_ids.includes(spot.id)) {
+        dates.add(excursion.date);
       }
     }
     return dates;

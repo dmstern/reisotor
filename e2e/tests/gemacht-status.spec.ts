@@ -64,8 +64,9 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     // #147: kein Textlabel mehr im "gemacht"-Zustand (nur noch das Icon) - das Datums-/Status-Badge
     // auf dem Vorschaubild zeigt den Status bereits an, ein zweites "Gemacht"-Label wäre eine
     // unnötige Dopplung.
+    const checkBtn = spotCard.locator('.done-toggle-btn--check, button.done-toggle');
     await expect(toggle).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(checkBtn).toHaveAttribute('aria-pressed', 'true');
     await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am');
 
     await page.reload();
@@ -99,7 +100,9 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await spotCard.locator('.card-title').click();
     await expect(spotCard.locator('.status.planned')).toContainText('Geplant für');
 
-    await spotCard.locator('.done-toggle').click();
+    // Im Split-Modus (bereits geplanter Spot) schaltet der Klick auf die Checkbox den Status um
+    const checkBtn = spotCard.locator('.done-toggle-btn--check, button.done-toggle');
+    await checkBtn.click();
 
     // Kein Kalender-Bestätigungs-Flow - das bereits vorhandene geplante Datum wird direkt als
     // Gemacht-/Besucht-Datum übernommen.

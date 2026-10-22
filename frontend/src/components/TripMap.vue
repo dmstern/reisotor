@@ -319,6 +319,7 @@ watch(
     await loadAll();
     leafletTripMap.renderMarkers();
     leafletTripMap.renderRoutes();
+    leafletTripMap.fitAll();
   }
 );
 
@@ -361,7 +362,9 @@ watch(
 );
 
 watch(allTripPhotoPoints, () => {
-  leafletTripMap.renderMarkers();
+  if (drawers.mapFocusAllPhotos) {
+    leafletTripMap.renderMarkers();
+  }
 });
 
 watch(excursionPhotoPoints, () => {
