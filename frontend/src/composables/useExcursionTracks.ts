@@ -1,11 +1,8 @@
 import { ref, computed, type Ref } from 'vue';
 import type { LocationTrack, TrackVisibility, User, Excursion } from '../api/types';
-import {
-  formatDateTime,
-  toLocalDatetimeInputValue,
-  fromLocalDatetimeInputValue,
-} from '../utils/dateFormat';
+import { toLocalDatetimeInputValue, fromLocalDatetimeInputValue } from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
+import { getTrackTitle } from '../utils/trackTitles';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { TabBarItem } from '../components/TabBar.vue';
 import type { TourItem } from '../components/TourAssignDropdown.vue';
@@ -33,7 +30,7 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   const drawers = useDrawersStore();
 
   function trackTitle(track: LocationTrack): string {
-    return track.title || `Aufzeichnung vom ${formatDateTime(track.started_at)}`;
+    return getTrackTitle(track);
   }
 
   function trackDurationLabel(track: LocationTrack): string {

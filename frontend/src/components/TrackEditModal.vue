@@ -9,10 +9,13 @@ import TabBar from './TabBar.vue';
 import TourAssignDropdown from './TourAssignDropdown.vue';
 import ItemVisibilitySettings from './ItemVisibilitySettings.vue';
 import TrackShareWarningModal from './TrackShareWarningModal.vue';
+import SparkleButton from './primitives/SparkleButton.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { toLocalDatetimeInputValue, fromLocalDatetimeInputValue } from '../utils/dateFormat';
+import { formatFallbackTrackTitle } from '../utils/trackTitles';
+import { api } from '../api/client';
 import { useTracksStore } from '../stores/tracks';
 import { useTrackRecordingStore } from '../stores/trackRecording';
 import { useExcursionsStore } from '../stores/excursions';
@@ -46,6 +49,25 @@ const editTrackTitle = ref('');
 const editTrackStartedAt = ref('');
 const editTrackVisibility = ref<TrackVisibility>('private');
 const editTrackExcursionId = ref<number | null>(null);
+
+const isSuggestingTitle = ref(false);
+
+async function suggestTitle() {
+  if (!props.track || isSuggestingTitle.value) return;
+  isSuggestingTitle.value = true;
+  try {
+    const res = await api.post<{ title: string }>(`/tracks/${props.track.id}/suggest-title`);
+    if (res?.title?.trim()) {
+      editTrackTitle.value = res.title.trim();
+    } else {
+      editTrackTitle.value = formatFallbackTrackTitle(props.track.started_at);
+    }
+  } catch {
+    editTrackTitle.value = formatFallbackTrackTitle(props.track.started_at);
+  } finally {
+    isSuggestingTitle.value = false;
+  }
+}
 
 const showTrackShareWarningModal = ref(false);
 const shareWarningTrackTitle = ref('');
@@ -233,13 +255,22 @@ async function deleteEditingTrack() {
           :modified="isEditTrackTitleModified"
           v-slot="{ modified }"
         >
-          <Input
-            v-model="editTrackTitle"
-            type="text"
-            placeholder="z. B. Wanderung zur Berghütte"
-            :maxlength="100"
-            :modified="modified"
-          />
+          <div class="track-title-field">
+            <Input
+              v-model="editTrackTitle"
+              type="text"
+              placeholder="z. B. Wanderung zur Berghütte"
+              :maxlength="100"
+              :modified="modified"
+            />
+            <SparkleButton
+              :loading="isSuggestingTitle"
+              title="Passenden Namen automatisch ermitteln"
+              aria-label="Passenden Namen automatisch ermitteln"
+              data-testid="track-suggest-title-btn"
+              @click="suggestTitle"
+            />
+          </div>
         </FormField>
         <FormField
           icon="date"
@@ -398,6 +429,21 @@ async function deleteEditingTrack() {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.track-title-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.track-title-field :deep(.form-input) {
+  padding-right: 32px;
+}
+
+.track-title-field :deep(.sparkle-suggest-btn) {
+  right: 6px;
 }
 
 .track-tour-selected-badge {

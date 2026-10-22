@@ -344,6 +344,8 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     expect(stopRes.statusCode).toBe(200);
     expect(stopRes.json().ended_at).toBeTruthy();
     expect(stopRes.json().end_reason).toBe('completed');
+    expect(stopRes.json().title).toBeTruthy();
+    expect(stopRes.json().title).not.toMatch(/^Aufzeichnung vom/);
 
     // Abbruch einer neuen Aufzeichnung testen
     const createAborted = await app.inject({
@@ -363,6 +365,26 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     expect(abortRes.statusCode).toBe(200);
     expect(abortRes.json().ended_at).toBeTruthy();
     expect(abortRes.json().end_reason).toBe('aborted');
+    expect(abortRes.json().title).toBeTruthy();
+  });
+
+  it('erlaubt das Abfragen eines vorgeschlagenen Titels über POST /tracks/:id/suggest-title', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/tracks',
+      headers: { cookie: ownerCookie },
+      payload: { trip_id: tripId },
+    });
+    const trackId = create.json().id as number;
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/tracks/${trackId}/suggest-title`,
+      headers: { cookie: ownerCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().title).toBeTruthy();
+    expect(typeof res.json().title).toBe('string');
   });
 
   it('kann started_at nachträglich anpassen und verschiebt ended_at sowie Punkte synchron', async () => {

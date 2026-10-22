@@ -80,14 +80,28 @@ describe('TrackEditModal', () => {
     cleanUp();
   });
 
-  it('does not render modal content when track is null', async () => {
+  it('suggests a smart title via sparkle button click', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.post).mockResolvedValueOnce({ title: 'Spaziergang durch den Plänterwald' });
+
     const { cleanUp } = mountModal({
-      track: null,
+      track: dummyTrack,
       users: [dummyUser],
     });
     await nextTick();
 
-    expect(document.body.textContent).not.toContain('Aufzeichnung bearbeiten');
+    const sparkleBtn = document.querySelector(
+      '[data-testid="track-suggest-title-btn"]'
+    ) as HTMLButtonElement | null;
+    expect(sparkleBtn).toBeTruthy();
+
+    sparkleBtn?.click();
+    await nextTick();
+    await nextTick();
+
+    expect(api.post).toHaveBeenCalledWith('/tracks/55/suggest-title');
+    const input = document.querySelector('input[type="text"]') as HTMLInputElement | null;
+    expect(input?.value).toBe('Spaziergang durch den Plänterwald');
     cleanUp();
   });
 });

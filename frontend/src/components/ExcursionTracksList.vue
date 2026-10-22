@@ -8,6 +8,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDateTime } from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
+import { getTrackTitle } from '../utils/trackTitles';
 import { useExcursionsStore } from '../stores/excursions';
 
 const props = defineProps<{
@@ -26,8 +27,7 @@ const emit = defineEmits<{
 const excursionsStore = useExcursionsStore();
 
 function trackTitle(track: LocationTrack): string {
-  if (track.title && track.title.trim()) return track.title;
-  return `Aufzeichnung vom ${formatDateTime(track.started_at)}`;
+  return getTrackTitle(track);
 }
 
 function trackAuthorAvatar(track: LocationTrack): string {

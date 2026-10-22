@@ -356,6 +356,9 @@ export interface ReverseGeocodeResult {
   osmKey?: string;
   osmValue?: string;
   city?: string;
+  district?: string;
+  locality?: string;
+  state?: string;
   country?: string;
   postcode?: string;
 }
@@ -461,6 +464,9 @@ export async function reverseGeocode(
       osmKey: props.osm_key,
       osmValue: props.osm_value,
       city: props.city || props.district || props.locality,
+      district: props.district,
+      locality: props.locality,
+      state: props.state,
       country: props.country,
       postcode: props.postcode,
     };
