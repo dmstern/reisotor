@@ -231,91 +231,246 @@ export function enqueue(
   writeOutboxList(list);
 }
 
+/** Prüft, ob ein Pfad für die persistente Outbox-Warteschlange geeignet ist.
+ *  Ephemere Echtzeitdaten (/realtime), Berechnungs-/RPC-Abfragen (/routes/directions),
+ *  Push-Registrierungen (/push) oder Authentifizierungs-Requests (/auth) dürfen
+ *  niemals in der Outbox landen. */
+export function isQueueablePath(path: string): boolean {
+  const cleanPath = path.split('?')[0];
+  if (
+    cleanPath.startsWith('/auth') ||
+    cleanPath.startsWith('/realtime') ||
+    cleanPath.startsWith('/push') ||
+    cleanPath.startsWith('/trip-activity') ||
+    cleanPath.startsWith('/users/search') ||
+    cleanPath.includes('/routes/directions')
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function bodyContainsId(body: unknown, id: number): boolean {
+  if (body == null) return false;
+  if (body === id || body === String(id)) return true;
+  if (Array.isArray(body)) return body.some((item) => bodyContainsId(item, id));
+  if (typeof body === 'object') {
+    return Object.values(body as Record<string, unknown>).some((val) => bodyContainsId(val, id));
+  }
+  return false;
+}
+
+/** Ermittelt, ob ein Child-Eintrag von einem früheren Parent-Eintrag abhängt.
+ *  Abhängigkeiten entstehen, wenn Child die tempId des Parents referenziert oder
+ *  wenn beide denselben spezifischen Endpunkt/dieselbe Entität mutieren. */
+export function entryDependsOn(child: OutboxEntry, parent: OutboxEntry): boolean {
+  if (parent.tempId != null) {
+    if (child.path.includes(`/${parent.tempId}`)) return true;
+    if (bodyContainsId(child.body, parent.tempId)) return true;
+  }
+
+  // Zwei unabhängige Neuerstellungen per POST auf denselben Collection-Endpunkt
+  // (z. B. 2x POST /todos oder 2x POST /notes) sind unabhängig und können parallel laufen.
+  if (child.path === parent.path) {
+    const isIndependentCollectionPost =
+      child.method === 'POST' &&
+      parent.method === 'POST' &&
+      !child.path.endsWith('/like') &&
+      !child.path.endsWith('/done') &&
+      !child.path.endsWith('/read');
+    if (!isIndependentCollectionPost) {
+      return true;
+    }
+  }
+
+  const childCol = collectionOf(child.path);
+  const parentCol = collectionOf(parent.path);
+  if (childCol === parentCol) {
+    const childIdMatch = /\/(-?\d+)$/.exec(child.path.split('?')[0]);
+    const parentIdMatch = /\/(-?\d+)$/.exec(parent.path.split('?')[0]);
+    if (childIdMatch && parentIdMatch && childIdMatch[1] === parentIdMatch[1]) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function remapTempIdInValue(val: unknown, tempId: number, realId: number): unknown {
+  if (val === tempId) return realId;
+  if (val === String(tempId)) return String(realId);
+  if (Array.isArray(val)) {
+    return val.map((v) => remapTempIdInValue(v, tempId, realId));
+  }
+  if (val !== null && typeof val === 'object') {
+    const res: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+      res[k] = remapTempIdInValue(v, tempId, realId);
+    }
+    return res;
+  }
+  return val;
+}
+
 function remapTempId(list: OutboxEntry[], tempId: number, realId: number) {
   for (const entry of list) {
     entry.path = entry.path.replace(`/${tempId}`, `/${realId}`);
     if (entry.body && typeof entry.body === 'object') {
-      const bodyObj = entry.body as Record<string, unknown>;
-      for (const [key, value] of Object.entries(bodyObj)) {
-        if (value === tempId) {
-          bodyObj[key] = realId;
-        } else if (Array.isArray(value)) {
-          bodyObj[key] = value.map((v) => (v === tempId ? realId : v));
-        }
-      }
+      entry.body = remapTempIdInValue(entry.body, tempId, realId);
     }
   }
 }
 
-/** Sendet die Warteschlange der Reihe nach über `sendRaw` (die echte Netzwerk-Funktion, ohne
- *  Offline-Fallback – siehe api/client.ts's rawRequest) – bricht beim ersten erneuten Fehlschlag ab
- *  und lässt den Rest für den nächsten Versuch stehen, damit die Reihenfolge erhalten bleibt und
- *  nichts übersprungen wird. Endgültig vom Server abgelehnte Client-Fehler (4xx außer 408/429)
- *  werden übersprungen, damit sie die Warteschlange nicht dauerhaft blockieren.
- *  Gibt zurück, ob die Warteschlange komplett geleert werden konnte. */
+export function remapOutboxTempId(tempId: number, realId: number) {
+  const list = readOutbox();
+  remapTempId(list, tempId, realId);
+  writeOutboxList(list);
+}
+
+const MAX_CONCURRENCY = 3;
+let isFlushing = false;
+
+/** Sendet die Warteschlange parallel (bis zu MAX_CONCURRENCY gleichzeitige Anfragen) über `sendRaw`.
+ *  - Berücksichtigt Kausalitäts-Abhängigkeiten (z. B. PUT auf vorherige temporäre ID wartet auf POST).
+ *  - Unabhängige Mutationen laufen parallel, sodass ein Fehler in einem Eintrag NICHT die anderen blockiert.
+ *  - Fehlerhafte Einträge verbleiben mit Fehlermeldung und Inkrementierung von retryCount in der Outbox.
+ *  - 4xx Client-Fehler (außer 408/429) werden übersprungen und entfernt.
+ *  - Gibt zurück, ob die Warteschlange komplett geleert werden konnte. */
 export async function flushOutbox(
   sendRaw: (method: string, path: string, body: unknown) => Promise<unknown>
 ): Promise<boolean> {
-  let list = readOutbox();
-  while (list.length) {
-    const entry = list[0];
-    let response: unknown;
-    try {
-      response = await sendRaw(entry.method, entry.path, entry.body);
-    } catch (err: unknown) {
-      const status =
-        typeof err === 'object' &&
-        err !== null &&
-        'status' in err &&
-        typeof (err as { status: unknown }).status === 'number'
-          ? (err as { status: number }).status
-          : undefined;
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === 'object' && err !== null && 'message' in err
-            ? String((err as { message: unknown }).message)
-            : 'Unbekannter Serverfehler';
+  if (isFlushing) return false;
+  isFlushing = true;
 
-      entry.lastError = {
-        status,
-        message,
-        timestamp: new Date().toISOString(),
-      };
-      entry.retryCount = (entry.retryCount || 0) + 1;
-      writeOutboxList(list);
+  try {
+    // 1. Zuerst alte/ungültige oder nicht-synchronisierbare Einträge (z. B. versehentlich gequeuete
+    // Routenberechnungen oder Realtime-Positionen aus früheren Versionen) sofort bereinigen.
+    let initialList = readOutbox();
+    const invalidEntries = initialList.filter((e) => !isQueueablePath(e.path));
+    if (invalidEntries.length > 0) {
+      console.warn(
+        `Ungültige/nicht-synchronisierbare Einträge aus Outbox entfernt:`,
+        invalidEntries.map((e) => e.path)
+      );
+      initialList = initialList.filter((e) => isQueueablePath(e.path));
+      writeOutboxList(initialList);
+    }
 
-      // Unbehebbare Client-Fehler (4xx wie 400 Bad Request, 404 Not Found, 422 etc., außer
-      // 408 Request Timeout und 429 Too Many Requests): der Server lehnt diese Mutation endgültig ab.
-      // Würde dieser Eintrag in der Outbox verbleiben, blockiert er alle nachfolgenden Mutationen
-      // dauerhaft. Daher überspringen und aus der Outbox entfernen.
-      if (status != null && status >= 400 && status < 500 && status !== 408 && status !== 429) {
-        console.warn(
-          `Outbox-Eintrag vom Server dauerhaft abgelehnt (HTTP ${status}), wird übersprungen:`,
-          entry
-        );
-        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-          window.dispatchEvent(
-            new CustomEvent('reisotor:outbox-rejected', { detail: { entry, error: err } })
-          );
+    if (initialList.length === 0) return true;
+
+    const inFlight = new Map<string, Promise<void>>();
+    const failedIds = new Set<string>();
+
+    function findNextReady(): OutboxEntry | undefined {
+      const currentList = readOutbox();
+      for (let i = 0; i < currentList.length; i++) {
+        const entry = currentList[i];
+        if (inFlight.has(entry.id) || failedIds.has(entry.id)) {
+          continue;
         }
-        list = list.slice(1);
-        writeOutboxList(list);
-        continue;
+        let hasUnresolvedDep = false;
+        for (let j = 0; j < i; j++) {
+          const prev = currentList[j];
+          if (entryDependsOn(entry, prev)) {
+            hasUnresolvedDep = true;
+            break;
+          }
+        }
+        if (!hasUnresolvedDep) {
+          return entry;
+        }
+      }
+      return undefined;
+    }
+
+    while (true) {
+      // Starte so viele bereite Einträge parallel wie möglich (bis MAX_CONCURRENCY)
+      while (inFlight.size < MAX_CONCURRENCY) {
+        const entry = findNextReady();
+        if (!entry) break;
+
+        const promise = (async () => {
+          try {
+            const response = await sendRaw(entry.method, entry.path, entry.body);
+            if (
+              entry.tempId != null &&
+              response &&
+              typeof response === 'object' &&
+              'id' in response
+            ) {
+              remapOutboxTempId(entry.tempId, (response as { id: number }).id);
+            }
+            removeOutboxEntry(entry.id);
+          } catch (err: unknown) {
+            const status =
+              typeof err === 'object' &&
+              err !== null &&
+              'status' in err &&
+              typeof (err as { status: unknown }).status === 'number'
+                ? (err as { status: number }).status
+                : undefined;
+            const message =
+              err instanceof Error
+                ? err.message
+                : typeof err === 'object' && err !== null && 'message' in err
+                  ? String((err as { message: unknown }).message)
+                  : 'Unbekannter Serverfehler';
+
+            // Unbehebbare Client-Fehler (4xx wie 400 Bad Request, 404 Not Found, 422 etc., außer
+            // 408 Request Timeout und 429 Too Many Requests): der Server lehnt diese Mutation endgültig ab.
+            if (
+              status != null &&
+              status >= 400 &&
+              status < 500 &&
+              status !== 408 &&
+              status !== 429
+            ) {
+              console.warn(
+                `Outbox-Eintrag vom Server dauerhaft abgelehnt (HTTP ${status}), wird übersprungen:`,
+                entry
+              );
+              if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+                window.dispatchEvent(
+                  new CustomEvent('reisotor:outbox-rejected', { detail: { entry, error: err } })
+                );
+              }
+              removeOutboxEntry(entry.id);
+              return;
+            }
+
+            failedIds.add(entry.id);
+            updateOutboxEntry(entry.id, {
+              lastError: {
+                status,
+                message,
+                timestamp: new Date().toISOString(),
+              },
+              retryCount: (entry.retryCount || 0) + 1,
+            });
+
+            if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+              window.dispatchEvent(
+                new CustomEvent('reisotor:outbox-failed', { detail: { entry, error: err } })
+              );
+            }
+          } finally {
+            inFlight.delete(entry.id);
+          }
+        })();
+
+        inFlight.set(entry.id, promise);
       }
 
-      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-        window.dispatchEvent(
-          new CustomEvent('reisotor:outbox-failed', { detail: { entry, error: err } })
-        );
+      if (inFlight.size === 0) {
+        break;
       }
-      return false;
+
+      // Auf das nächste fertig werdende Promise warten
+      await Promise.race(inFlight.values());
     }
-    if (entry.tempId != null && response && typeof response === 'object' && 'id' in response) {
-      remapTempId(list, entry.tempId, (response as { id: number }).id);
-    }
-    list = list.slice(1);
-    writeOutboxList(list);
+
+    return readOutbox().length === 0;
+  } finally {
+    isFlushing = false;
   }
-  return true;
 }

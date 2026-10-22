@@ -15,6 +15,7 @@ import {
   removeOutboxEntry,
   clearOutbox,
   updateOutboxEntry,
+  remapOutboxTempId,
   type OutboxEntry,
 } from '../../api/offline';
 import { rawRequest } from '../../api/client';
@@ -170,10 +171,14 @@ async function syncSingle(entry: OutboxEntry) {
   singleSyncingId.value = entry.id;
 
   try {
-    await rawRequest(entry.path, {
+    const res = await rawRequest(entry.path, {
       method: entry.method,
       body: entry.body ? JSON.stringify(entry.body) : undefined,
     });
+
+    if (entry.tempId != null && res && typeof res === 'object' && 'id' in res) {
+      remapOutboxTempId(entry.tempId, (res as { id: number }).id);
+    }
 
     removeOutboxEntry(entry.id);
     refreshOutbox();

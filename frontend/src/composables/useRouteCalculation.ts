@@ -294,14 +294,18 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
         return false;
       }
 
-      const res = await api.post<DirectionsResponse>(`/trips/${id}/routes/directions`, {
-        from_lat: from.lat,
-        from_lng: from.lng,
-        to_lat: to.lat,
-        to_lng: to.lng,
-        transport_type: transportType.value,
-        preference: routePreference.value,
-      });
+      const res = await api.post<DirectionsResponse>(
+        `/trips/${id}/routes/directions`,
+        {
+          from_lat: from.lat,
+          from_lng: from.lng,
+          to_lat: to.lat,
+          to_lng: to.lng,
+          transport_type: transportType.value,
+          preference: routePreference.value,
+        },
+        { timeoutMs: 25_000, noQueue: true }
+      );
 
       if (reqId !== activeCalcRequestId) return false;
 
