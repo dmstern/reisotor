@@ -8,6 +8,7 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
       lat?: string | number;
       lng?: string | number;
       limit?: string | number;
+      offset?: string | number;
       lang?: string;
     };
   }>(
@@ -21,6 +22,7 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
             lat: { type: 'number' },
             lng: { type: 'number' },
             limit: { type: 'number' },
+            offset: { type: 'number' },
             lang: { type: 'string' },
           },
         },
@@ -39,6 +41,10 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
       if (!Number.isFinite(limit) || limit < 1) limit = 10;
       if (limit > 10) limit = 10;
 
+      let offset = req.query.offset != null ? Number(req.query.offset) : 0;
+      if (!Number.isFinite(offset) || offset < 0) offset = 0;
+      if (offset > 100) offset = 100;
+
       const lat = rawLat != null && Number.isFinite(rawLat) ? rawLat : undefined;
       const lng = rawLng != null && Number.isFinite(rawLng) ? rawLng : undefined;
 
@@ -47,6 +53,7 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
         lat,
         lng,
         limit,
+        offset,
         lang: req.query.lang,
       });
 

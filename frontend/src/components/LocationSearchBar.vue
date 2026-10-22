@@ -9,7 +9,7 @@ import InfoPopover from './primitives/InfoPopover.vue';
 import CategoryChip from './CategoryChip.vue';
 import type { PlaceSearchResult } from '../composables/usePlaceSearch';
 
-defineProps<{
+const props = defineProps<{
   modelValue: string;
   isSearching: boolean;
   isOpen: boolean;
@@ -17,6 +17,8 @@ defineProps<{
   activeIndex: number;
   placeholder?: string;
   isDetailsVisible: boolean;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -26,7 +28,18 @@ const emit = defineEmits<{
   (e: 'focus', event: FocusEvent): void;
   (e: 'blur', event: FocusEvent): void;
   (e: 'openManualDetails'): void;
+  (e: 'loadMore'): void;
 }>();
+
+function onDropdownScroll(e: Event) {
+  const el = e.target as HTMLElement;
+  if (!el) return;
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 36) {
+    if (props.hasMore && !props.isLoadingMore && !props.isSearching) {
+      emit('loadMore');
+    }
+  }
+}
 </script>
 
 <template>
@@ -90,6 +103,7 @@ const emit = defineEmits<{
           class="location-dropdown options"
           role="listbox"
           aria-label="Suchergebnisse"
+          @scroll="onDropdownScroll"
         >
           <li
             v-if="!isSearching && results.length === 0"
@@ -136,6 +150,33 @@ const emit = defineEmits<{
                 place.formatted_address || place.address
               }}</span>
             </div>
+          </li>
+
+          <!-- "Weiter suchen" Lazy Loading Meta-Eintrag -->
+          <li
+            v-if="results.length > 0 && (hasMore || isLoadingMore)"
+            role="button"
+            tabindex="0"
+            class="location-load-more"
+            :class="{ 'is-loading': isLoadingMore }"
+            aria-label="Weitere Orte suchen"
+            @mousedown.prevent="emit('loadMore')"
+            @click="emit('loadMore')"
+            @keydown.enter.prevent="emit('loadMore')"
+            @keydown.space.prevent="emit('loadMore')"
+          >
+            <LoadingSpinner v-if="isLoadingMore" size="sm" class="load-more-spinner" />
+            <AppIcon
+              v-else
+              :icon="ACTION_ICONS.search"
+              :size="14"
+              group="actions"
+              class="load-more-icon"
+              aria-hidden="true"
+            />
+            <span class="load-more-text">
+              {{ isLoadingMore ? 'Weitere Orte werden geladen…' : 'Weitere Orte suchen…' }}
+            </span>
           </li>
         </ul>
       </Transition>
@@ -359,5 +400,39 @@ const emit = defineEmits<{
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.4;
+}
+
+.location-load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 12px;
+  margin-top: var(--space-1);
+  border-top: 1px dashed var(--color-border);
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+  user-select: none;
+}
+
+.location-load-more:hover,
+.location-load-more:focus-visible {
+  background: var(--color-hover);
+  outline: none;
+}
+
+.location-load-more.is-loading {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+
+.load-more-spinner,
+.load-more-icon {
+  flex-shrink: 0;
 }
 </style>

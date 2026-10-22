@@ -52,6 +52,7 @@ export interface SearchPlacesOptions {
   lat?: number;
   lng?: number;
   limit?: number;
+  offset?: number;
   lang?: string;
 }
 
@@ -989,7 +990,12 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   const lat = options.lat != null && Number.isFinite(options.lat) ? options.lat : undefined;
   const lng = options.lng != null && Number.isFinite(options.lng) ? options.lng : undefined;
 
-  const cacheKey = buildCacheKey(rawQ, lat, lng, limit, lang);
+  const offset =
+    options.offset != null && Number.isFinite(options.offset)
+      ? Math.max(Math.floor(options.offset), 0)
+      : 0;
+
+  const cacheKey = buildCacheKey(`${rawQ}|off:${offset}`, lat, lng, limit, lang);
   const cached = getCachedPlaces(cacheKey);
   if (cached) {
     return cached;
@@ -997,6 +1003,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
 
   const parsed = parseLocationQuery(rawQ);
   const baseUrl = process.env.PHOTON_API_URL || 'https://photon.komoot.io/api/';
+  const fetchLimit = Math.min(Math.max(limit + offset, 10), 30);
 
   // 1. Primäre Photon-Abfrage (mit bereinigter Suchanfrage)
   let primaryUrl: URL;
@@ -1007,7 +1014,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   }
 
   primaryUrl.searchParams.set('q', parsed.cleaned);
-  primaryUrl.searchParams.set('limit', String(limit));
+  primaryUrl.searchParams.set('limit', String(offset === 0 ? limit : fetchLimit));
   primaryUrl.searchParams.set('lang', lang);
 
   if (lat != null) {
@@ -1045,17 +1052,32 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   const primaryResults = parsePhotonFeatures(primaryData);
   const allCandidates: PlaceSearchResult[] = [...primaryResults];
 
+  // Prüfen, ob Primärabfrage bereits die gesuchte Kategorie + Name gefunden hat (z. B. "Hotel Sacher", "Café Central")
+  const hasExactCategoryInPrimary =
+    parsed.category &&
+    primaryResults.some((p) => {
+      if (!parsed.category) return false;
+      const tagMatch = parsed.category.tags.some(
+        (t) => t.key === p.osmKey && (!t.value || t.value === p.osmValue)
+      );
+      const nameMatch =
+        parsed.cleanedTerms.length === 0 ||
+        parsed.cleanedTerms.some((term) => p.name.toLowerCase().includes(term));
+      return tagMatch && nameMatch;
+    });
+
   // 2. Sekundäre Strategien: Tag-Filterung & Nominatim-Bereicherung
-  if (parsed.category) {
+  // Nur nötig, wenn ein Orts-/Namensbegriff neben der Kategorie existiert und noch kein passender Ort gefunden wurde (oder offset > 0)
+  if (parsed.category && parsed.strippedQuery && (!hasExactCategoryInPrimary || offset > 0)) {
     const secondaryTasks: Promise<PlaceSearchResult[]>[] = [];
 
     // Tag-gefilterte Photon-Abfrage mit bereinigtem Suchbegriff (z. B. "else berlin" mit Tags für Club/Bar)
-    if (parsed.strippedQuery && parsed.category.tags.length > 0) {
+    if (parsed.category.tags.length > 0) {
       secondaryTasks.push(
         fetchPhotonPlaces(baseUrl, parsed.strippedQuery, {
           lat,
           lng,
-          limit,
+          limit: fetchLimit,
           lang,
           tags: parsed.category.tags,
         })
@@ -1067,17 +1089,17 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
       fetchNominatimPlaces(rawQ, {
         lat,
         lng,
-        limit,
+        limit: fetchLimit,
         lang,
       })
     );
 
-    if (parsed.strippedQuery && parsed.strippedQuery !== rawQ) {
+    if (parsed.strippedQuery !== rawQ) {
       secondaryTasks.push(
         fetchNominatimPlaces(parsed.strippedQuery, {
           lat,
           lng,
-          limit,
+          limit: fetchLimit,
           lang,
         })
       );
@@ -1089,12 +1111,18 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
         allCandidates.push(...res.value);
       }
     }
-  } else if (primaryResults.length === 0 && !parsed.wantsStreet) {
+  } else if (
+    !parsed.category &&
+    primaryResults.length === 0 &&
+    !parsed.wantsStreet &&
+    parsed.cleaned.length > 2 &&
+    (parsed.cleaned.includes(' ') || parsed.cleanedTerms.length > 1)
+  ) {
     // Falls keine Kategorie erkannt wurde, Photon aber 0 Treffer lieferte: Nominatim als Fallback versuchen
     const nomFallback = await fetchNominatimPlaces(parsed.cleaned, {
       lat,
       lng,
-      limit,
+      limit: fetchLimit,
       lang,
     });
     allCandidates.push(...nomFallback);
@@ -1139,7 +1167,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
 
   scored.sort((a, b) => b.score - a.score);
 
-  const results = scored.slice(0, limit).map((s) => s.place);
+  const results = scored.slice(offset, offset + limit).map((s) => s.place);
   setCachedPlaces(cacheKey, results);
   return results;
 }

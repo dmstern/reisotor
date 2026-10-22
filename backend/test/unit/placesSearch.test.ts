@@ -311,5 +311,42 @@ describe('Smart Location Search & Query Parsing (#510)', () => {
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe('N12345');
     });
+
+    it('supports pagination with offset and limit', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((_url: string) => {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                type: 'FeatureCollection',
+                features: Array.from({ length: 15 }, (_, i) => ({
+                  type: 'Feature',
+                  geometry: { type: 'Point', coordinates: [13.4 + i * 0.01, 52.5 + i * 0.01] },
+                  properties: {
+                    osm_type: 'N',
+                    osm_id: 1000 + i,
+                    osm_key: 'amenity',
+                    osm_value: 'cafe',
+                    name: `Cafe ${i + 1}`,
+                    city: 'Berlin',
+                  },
+                })),
+              }),
+          });
+        })
+      );
+
+      const page1 = await searchPlaces({ q: 'cafe berlin pagination', limit: 5, offset: 0 });
+      expect(page1).toHaveLength(5);
+      expect(page1[0].name).toBe('Cafe 1');
+      expect(page1[4].name).toBe('Cafe 5');
+
+      const page2 = await searchPlaces({ q: 'cafe berlin pagination', limit: 5, offset: 5 });
+      expect(page2).toHaveLength(5);
+      expect(page2[0].name).toBe('Cafe 6');
+      expect(page2[4].name).toBe('Cafe 10');
+    });
   });
 });
