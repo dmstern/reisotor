@@ -16,6 +16,7 @@ import { api } from '../api/client';
 export interface ImageSearchContext {
   name?: string;
   city?: string;
+  category?: string;
   lat?: number;
   lng?: number;
   maps_link?: string;
@@ -175,6 +176,9 @@ async function executeSearch(queryOverride?: string, action: 'query' | 'next' = 
     if (props.searchContext?.city) {
       params.set('city', props.searchContext.city);
     }
+    if (props.searchContext?.category) {
+      params.set('category', props.searchContext.category);
+    }
     if (props.searchContext?.lat != null) {
       params.set('lat', String(props.searchContext.lat));
     }
@@ -228,6 +232,9 @@ async function fetchSuggestionsFromApi(termOverride?: string): Promise<number> {
   }
   if (props.searchContext?.city) {
     params.set('city', props.searchContext.city);
+  }
+  if (props.searchContext?.category) {
+    params.set('category', props.searchContext.category);
   }
   if (props.searchContext?.lat != null) {
     params.set('lat', String(props.searchContext.lat));

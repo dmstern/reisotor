@@ -1,4 +1,4 @@
-import { ref, computed, watch, type Ref, type ComponentPublicInstance } from 'vue';
+import { ref, computed, watch, type Ref } from 'vue';
 import { api } from '../api/client';
 import type { ScheduleItem, Spot, User } from '../api/types';
 import { useSpotsStore } from '../stores/spots';
@@ -305,6 +305,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     return {
       name: activeSpotForm.value.title.trim() || undefined,
       city: selectedSpotCity.value || undefined,
+      category: activeSpotForm.value.category || undefined,
       lat: pin?.lat,
       lng: pin?.lng,
       maps_link: activeSpotForm.value.maps_link || undefined,
@@ -460,10 +461,10 @@ export function useSpotForm(options: UseSpotFormOptions) {
   async function fetchSpotPreview(
     mapsLink: string,
     form: Ref<SpotFormData>,
-    extra?: { name?: string; lat?: number; lng?: number; city?: string }
+    extra?: { name?: string; lat?: number; lng?: number; city?: string; category?: string }
   ) {
     if (!mapsLink && !extra?.name) return;
-    const key = `${mapsLink}|${extra?.name || ''}|${extra?.lat || ''}|${extra?.lng || ''}|${extra?.city || ''}`;
+    const key = `${mapsLink}|${extra?.name || ''}|${extra?.lat || ''}|${extra?.lng || ''}|${extra?.city || ''}|${extra?.category || ''}`;
     if (lastPreviewFetchKey === key) return;
     lastPreviewFetchKey = key;
     const reqId = ++previewRequestId;
@@ -475,6 +476,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (extra?.lat != null) params.set('lat', String(extra.lat));
       if (extra?.lng != null) params.set('lng', String(extra.lng));
       if (extra?.city) params.set('city', extra.city);
+      if (extra?.category) params.set('category', extra.category);
 
       const preview = await api.get<{
         name: string | null;
@@ -502,6 +504,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
         name: activeSpotForm.value.title.trim() || undefined,
         lat: pin?.lat,
         lng: pin?.lng,
+        category: activeSpotForm.value.category || undefined,
       });
     } else {
       previewRequestId++;
@@ -689,6 +692,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
         lat: place.lat,
         lng: place.lng,
         city: place.city,
+        category: place.category || activeSpotForm.value.category || undefined,
       }
     );
   }

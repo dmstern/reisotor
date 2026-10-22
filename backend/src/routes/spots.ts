@@ -199,9 +199,10 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       lat?: string;
       lng?: string;
       city?: string;
+      category?: string;
     };
   }>('/spots/preview', async (req) => {
-    const { maps_link, name, lat, lng, city } = req.query;
+    const { maps_link, name, lat, lng, city, category } = req.query;
 
     const parsedLat = lat != null ? parseFloat(lat) : undefined;
     const parsedLng = lng != null ? parseFloat(lng) : undefined;
@@ -228,6 +229,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
           lat: Number.isFinite(parsedLat) ? parsedLat : undefined,
           lng: Number.isFinite(parsedLng) ? parsedLng : undefined,
           city: city?.trim() || undefined,
+          category: category?.trim() || undefined,
         },
         10
       );
