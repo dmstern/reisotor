@@ -18,6 +18,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { formatDateTime } from '../utils/dateFormat';
 import { formatDurationShort } from '../utils/trackGeometry';
+import { getTrackTitle } from '../utils/trackTitles';
 import { TRAVEL_ROLE_OPTIONS, TRAVEL_ROLE_META } from '../utils/travelRole';
 import { useSpotsStore } from '../stores/spots';
 import { useTracksStore } from '../stores/tracks';
@@ -150,8 +151,7 @@ function onConfirmShareModal() {
 }
 
 function trackTitle(track: LocationTrack): string {
-  if (track.title && track.title.trim()) return track.title;
-  return `Aufzeichnung vom ${formatDateTime(track.started_at)}`;
+  return getTrackTitle(track);
 }
 
 function trackDurationLabel(track: LocationTrack): string | null {

@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { generateSmartTrackTitle } from '../utils/trackTitleGenerator.js';
 
 interface TrackRow {
   id: number;
@@ -165,14 +166,60 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
           .send({ error: 'Nur die aufzeichnende Person kann die Aufzeichnung beenden' });
       }
       const endReason = req.body?.end_reason === 'aborted' ? 'aborted' : 'completed';
-      db.prepare('UPDATE location_tracks SET ended_at = ?, end_reason = ? WHERE id = ?').run(
-        new Date().toISOString(),
-        endReason,
-        track.id
-      );
+      const endedAt = new Date().toISOString();
+
+      let finalTitle = track.title;
+      if (!finalTitle || !finalTitle.trim()) {
+        const points = db
+          .prepare(
+            'SELECT lat, lng, recorded_at, altitude FROM location_track_points WHERE track_id = ? ORDER BY recorded_at ASC'
+          )
+          .all(track.id) as {
+          lat: number;
+          lng: number;
+          recorded_at: string;
+          altitude?: number | null;
+        }[];
+
+        finalTitle = await generateSmartTrackTitle({
+          startedAt: track.started_at,
+          endedAt,
+          points,
+        });
+      }
+
+      db.prepare(
+        'UPDATE location_tracks SET ended_at = ?, end_reason = ?, title = ? WHERE id = ?'
+      ).run(endedAt, endReason, finalTitle, track.id);
       return selectTrackByIdStmt.get(track.id) as TrackRow;
     }
   );
+
+  app.post<{ Params: { id: string } }>('/tracks/:id/suggest-title', async (req, reply) => {
+    const track = db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(req.params.id) as
+      TrackRow | undefined;
+    if (!track || track.deleted_at) return reply.code(404).send({ error: 'Nicht gefunden' });
+    if (!requireTripMember(reply, track.trip_id, req.session.userId)) return;
+
+    const points = db
+      .prepare(
+        'SELECT lat, lng, recorded_at, altitude FROM location_track_points WHERE track_id = ? ORDER BY recorded_at ASC'
+      )
+      .all(track.id) as {
+      lat: number;
+      lng: number;
+      recorded_at: string;
+      altitude?: number | null;
+    }[];
+
+    const suggestedTitle = await generateSmartTrackTitle({
+      startedAt: track.started_at,
+      endedAt: track.ended_at,
+      points,
+    });
+
+    return { title: suggestedTitle };
+  });
 
   app.put<{ Params: { id: string }; Body: UpdateTrackBody }>('/tracks/:id', async (req, reply) => {
     const track = db.prepare('SELECT * FROM location_tracks WHERE id = ?').get(req.params.id) as
