@@ -88,6 +88,65 @@ export interface UseLeafletTripMapOptions {
   onPointClick: (point: MapPoint) => void;
 }
 
+export interface FitBoundsPaddingOptions {
+  paddingTop?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+  maxZoom?: number;
+}
+
+export function calcFitBoundsPadding(params: {
+  isPhotos: boolean;
+  hasFocusBanner: boolean;
+  coveredLeftPx?: number;
+  coveredBottomPx?: number;
+  mapSize?: { x: number; y: number } | null;
+  custom?: FitBoundsPaddingOptions;
+}) {
+  const coveredLeft = params.coveredLeftPx ?? 0;
+  const coveredBottom = params.coveredBottomPx ?? 0;
+
+  // Header ist 56px (--app-header-height). Bei sichtbarem Fokus-Banner reicht dieses bis ~116px von oben.
+  // Marker ragen als Pin bis zu ~42-56px über ihre Koordinate hinaus.
+  // Für Fotos ("Alle Fotos mit Standort") lassen wir zu allen Seiten großzügigen Freiraum,
+  // damit kein Bild hinter dem Fokus-Banner oder Tages-Strip verdeckt wird und alle zentriert wirken.
+  const defaultTop = params.isPhotos ? 190 : params.hasFocusBanner ? 170 : 96;
+  const defaultBottom = params.isPhotos
+    ? Math.max(coveredBottom + 48, 120)
+    : Math.max(coveredBottom + 32, 80);
+  const defaultLeft = coveredLeft + (params.isPhotos ? 90 : 64);
+  const defaultRight = params.isPhotos ? 90 : 64;
+
+  let paddingTop = params.custom?.paddingTop ?? defaultTop;
+  let paddingBottom = params.custom?.paddingBottom ?? defaultBottom;
+  let paddingLeft = params.custom?.paddingLeft ?? defaultLeft;
+  let paddingRight = params.custom?.paddingRight ?? defaultRight;
+
+  if (params.mapSize) {
+    if (params.mapSize.y > 0) {
+      const totalV = paddingTop + paddingBottom;
+      const maxV = Math.floor(params.mapSize.y * 0.75);
+      if (totalV > maxV && totalV > 0) {
+        const scale = maxV / totalV;
+        paddingTop = Math.max(16, Math.floor(paddingTop * scale));
+        paddingBottom = Math.max(16, Math.floor(paddingBottom * scale));
+      }
+    }
+    if (params.mapSize.x > 0) {
+      const totalH = paddingLeft + paddingRight;
+      const maxH = Math.floor(params.mapSize.x * 0.75);
+      if (totalH > maxH && totalH > 0) {
+        const scale = maxH / totalH;
+        paddingLeft = Math.max(16, Math.floor(paddingLeft * scale));
+        paddingRight = Math.max(16, Math.floor(paddingRight * scale));
+      }
+    }
+  }
+
+  return { paddingTop, paddingBottom, paddingLeft, paddingRight };
+}
+
 export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   const drawers = useDrawersStore();
   const spotsStore = useSpotsStore();
@@ -120,16 +179,26 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     isProgrammaticMove = true;
     const coveredBottomPx = options.coveredBottomPx?.value ?? 0;
     const coveredLeftPx = options.coveredLeftPx?.value ?? 0;
-    if (!coveredBottomPx && !coveredLeftPx) {
+    const isPhotos = drawers.mapFocusAllPhotos;
+    const hasFocusBanner =
+      isPhotos ||
+      options.focusedExcursion.value != null ||
+      drawers.mapFocusDate != null ||
+      drawers.mapFocusLocation != null;
+    const coveredTopPx = hasFocusBanner ? 116 : 56;
+    const effectiveBottomPx = Math.max(coveredBottomPx, 60);
+
+    if (typeof map.project !== 'function' || typeof map.unproject !== 'function') {
       map.setView(latlng, zoom, { animate: false });
       setTimeout(() => {
         isProgrammaticMove = false;
       }, 100);
       return;
     }
+
     const targetPoint = map.project(latlng, zoom);
     const shiftedCenter = map.unproject(
-      targetPoint.add([-coveredLeftPx / 2, coveredBottomPx / 2]),
+      targetPoint.add([-coveredLeftPx / 2, (effectiveBottomPx - coveredTopPx) / 2]),
       zoom
     );
     map.setView(shiftedCenter, zoom, { animate: false });
@@ -138,15 +207,36 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }, 100);
   }
 
-  function fitBoundsWithCoveredBottom(bounds: L.LatLngBoundsExpression) {
+  function getCameraPadding(custom?: FitBoundsPaddingOptions) {
+    const isPhotos = drawers.mapFocusAllPhotos;
+    const hasFocusBanner =
+      isPhotos ||
+      options.focusedExcursion.value != null ||
+      drawers.mapFocusDate != null ||
+      drawers.mapFocusLocation != null;
+
+    return calcFitBoundsPadding({
+      isPhotos,
+      hasFocusBanner,
+      coveredLeftPx: options.coveredLeftPx?.value,
+      coveredBottomPx: options.coveredBottomPx?.value,
+      mapSize: map ? map.getSize() : null,
+      custom,
+    });
+  }
+
+  function fitBoundsWithCoveredBottom(
+    bounds: L.LatLngBoundsExpression,
+    customPadding?: FitBoundsPaddingOptions
+  ) {
     if (!map) return;
     isProgrammaticMove = true;
-    const coveredBottomPx = options.coveredBottomPx?.value ?? 0;
-    const coveredLeftPx = options.coveredLeftPx?.value ?? 0;
+    const { paddingTop, paddingBottom, paddingLeft, paddingRight } =
+      getCameraPadding(customPadding);
     map.fitBounds(bounds, {
-      paddingTopLeft: [32 + coveredLeftPx, 32],
-      paddingBottomRight: [32, 32 + coveredBottomPx],
-      maxZoom: 15,
+      paddingTopLeft: [paddingLeft, paddingTop],
+      paddingBottomRight: [paddingRight, paddingBottom],
+      maxZoom: customPadding?.maxZoom ?? 15,
       animate: false,
     });
     setTimeout(() => {
@@ -295,7 +385,12 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     if (!map) return;
     const latLngs = options.allTripPhotoPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
     if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
+      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs), {
+        paddingTop: 190,
+        paddingBottom: Math.max((options.coveredBottomPx?.value ?? 0) + 48, 120),
+        paddingLeft: (options.coveredLeftPx?.value ?? 0) + 90,
+        paddingRight: 90,
+      });
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 14);
     }
