@@ -18,7 +18,7 @@ describe('Smart Location Search & Query Parsing (#510)', () => {
       const parsed = parseLocationQuery('else club berlin');
       expect(parsed.category).toBeDefined();
       expect(parsed.category?.keyword).toBe('club');
-      expect(parsed.category?.label).toBe('Nachtleben');
+      expect(parsed.category?.label).toBe('Club');
       expect(parsed.category?.tags).toEqual(
         expect.arrayContaining([
           { key: 'amenity', value: 'nightclub' },
@@ -33,13 +33,23 @@ describe('Smart Location Search & Query Parsing (#510)', () => {
       const parsed = parseLocationQuery('else bar berlin');
       expect(parsed.category).toBeDefined();
       expect(parsed.category?.keyword).toBe('bar');
+      expect(parsed.category?.label).toBe('Bar');
       expect(parsed.strippedQuery).toBe('else berlin');
+    });
+
+    it('detects "kneipe" category for "kneipe treptow"', () => {
+      const parsed = parseLocationQuery('kneipe treptow');
+      expect(parsed.category).toBeDefined();
+      expect(parsed.category?.keyword).toBe('kneipe');
+      expect(parsed.category?.label).toBe('Kneipe');
+      expect(parsed.strippedQuery).toBe('treptow');
     });
 
     it('detects "nachtleben" category for "else berlin nachtleben"', () => {
       const parsed = parseLocationQuery('else berlin nachtleben');
       expect(parsed.category).toBeDefined();
       expect(parsed.category?.keyword).toBe('nachtleben');
+      expect(parsed.category?.label).toBe('Nachtleben');
       expect(parsed.strippedQuery).toBe('else berlin');
     });
 
@@ -47,7 +57,7 @@ describe('Smart Location Search & Query Parsing (#510)', () => {
       const parsed = parseLocationQuery('init berlin agentur');
       expect(parsed.category).toBeDefined();
       expect(parsed.category?.keyword).toBe('agentur');
-      expect(parsed.category?.label).toBe('Unternehmen');
+      expect(parsed.category?.label).toBe('Agentur');
       expect(parsed.category?.tags).toEqual(
         expect.arrayContaining([{ key: 'office' }, { key: 'office', value: 'company' }])
       );
@@ -209,7 +219,7 @@ describe('Smart Location Search & Query Parsing (#510)', () => {
       const results = await searchPlaces({ q: 'else club berlin', limit: 5 });
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].name).toBe('Else');
-      expect(results[0].category).toBe('Nachtleben');
+      expect(results[0].category).toBe('Club');
       expect(results[0].osmValue).toBe('nightclub');
     });
 

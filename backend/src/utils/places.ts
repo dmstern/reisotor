@@ -74,25 +74,41 @@ export function mapOsmToCategory(osmKey?: string, osmValue?: string): string {
   }
 
   if (osmKey === 'office') {
+    if (
+      ['advertising', 'graphic_design', 'it', 'web_design', 'media', 'marketing'].includes(osmValue)
+    ) {
+      return 'Agentur';
+    }
     return 'Unternehmen';
   }
 
   if (osmKey === 'healthcare') {
+    if (['hospital', 'clinic'].includes(osmValue)) return 'Krankenhaus & Klinik';
     return 'Gesundheit';
   }
 
   if (osmKey === 'amenity') {
     if (['restaurant', 'fast_food', 'food_court'].includes(osmValue)) return 'Restaurant';
     if (osmValue === 'cafe') return 'Café';
-    if (['bar', 'pub', 'nightclub', 'biergarten'].includes(osmValue)) return 'Nachtleben';
+    if (osmValue === 'ice_cream') return 'Eiscafé';
+    if (osmValue === 'nightclub') return 'Club';
+    if (osmValue === 'bar') return 'Bar';
+    if (['pub', 'biergarten'].includes(osmValue)) return 'Kneipe';
+    if (osmValue === 'cinema') return 'Kino';
+    if (osmValue === 'library') return 'Bibliothek & Buchhandlung';
+    if (osmValue === 'hospital') return 'Krankenhaus & Klinik';
     if (osmValue === 'pharmacy') return 'Apotheke';
-    if (['dentist', 'doctors', 'clinic', 'hospital'].includes(osmValue)) return 'Gesundheit';
+    if (['dentist', 'doctors', 'clinic'].includes(osmValue)) return 'Gesundheit';
     if (['fuel', 'charging_station'].includes(osmValue)) return 'Tankstelle';
     if (['bank', 'atm'].includes(osmValue)) return 'Geldautomat & Bank';
     if (osmValue === 'place_of_worship') return 'Kirche & Tempel';
-    if (['theatre', 'cinema', 'arts_centre'].includes(osmValue)) return 'Theater & Bühne';
+    if (['theatre', 'arts_centre'].includes(osmValue)) return 'Theater & Bühne';
     if (['parking', 'parking_space', 'parking_entrance'].includes(osmValue)) return 'Parkplatz';
     if (osmValue === 'bus_station') return 'Busbahnhof';
+  }
+
+  if (osmKey === 'craft' && ['brewery'].includes(osmValue)) {
+    return 'Kneipe';
   }
 
   if (osmKey === 'historic') {
@@ -122,6 +138,7 @@ export function mapOsmToCategory(osmKey?: string, osmValue?: string): string {
   if (osmKey === 'shop') {
     if (['supermarket', 'convenience', 'grocery'].includes(osmValue)) return 'Supermarkt';
     if (['bakery', 'pastry'].includes(osmValue)) return 'Bäckerei';
+    if (['books', 'bookstore'].includes(osmValue)) return 'Bibliothek & Buchhandlung';
     return 'Shop';
   }
 
@@ -258,28 +275,26 @@ const CATEGORY_KEYWORDS: Record<
   string,
   { label: string; tags: Array<{ key: string; value?: string }> }
 > = {
-  // Nightlife & Clubs
+  // Clubs
   club: {
     tags: [
       { key: 'amenity', value: 'nightclub' },
       { key: 'amenity', value: 'bar' },
-      { key: 'amenity', value: 'pub' },
     ],
-    label: 'Nachtleben',
+    label: 'Club',
   },
   clubs: {
     tags: [
       { key: 'amenity', value: 'nightclub' },
       { key: 'amenity', value: 'bar' },
-      { key: 'amenity', value: 'pub' },
     ],
-    label: 'Nachtleben',
+    label: 'Club',
   },
-  nachtclub: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Nachtleben' },
-  nightclub: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Nachtleben' },
-  disco: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Nachtleben' },
-  diskothek: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Nachtleben' },
-  discotheque: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Nachtleben' },
+  nachtclub: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Club' },
+  nightclub: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Club' },
+  disco: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Club' },
+  diskothek: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Club' },
+  discotheque: { tags: [{ key: 'amenity', value: 'nightclub' }], label: 'Club' },
   nachtleben: {
     tags: [
       { key: 'amenity', value: 'nightclub' },
@@ -297,60 +312,89 @@ const CATEGORY_KEYWORDS: Record<
     label: 'Nachtleben',
   },
 
-  // Bars & Pubs
+  // Bars
   bar: {
     tags: [
       { key: 'amenity', value: 'bar' },
       { key: 'amenity', value: 'pub' },
-      { key: 'amenity', value: 'biergarten' },
     ],
-    label: 'Nachtleben',
+    label: 'Bar',
   },
   bars: {
     tags: [
       { key: 'amenity', value: 'bar' },
       { key: 'amenity', value: 'pub' },
-      { key: 'amenity', value: 'biergarten' },
     ],
-    label: 'Nachtleben',
+    label: 'Bar',
   },
+  cocktailbar: { tags: [{ key: 'amenity', value: 'bar' }], label: 'Bar' },
+  lounge: { tags: [{ key: 'amenity', value: 'bar' }], label: 'Bar' },
+
+  // Kneipen & Pubs
   kneipe: {
     tags: [
       { key: 'amenity', value: 'pub' },
       { key: 'amenity', value: 'bar' },
+      { key: 'amenity', value: 'biergarten' },
     ],
-    label: 'Nachtleben',
+    label: 'Kneipe',
   },
   kneipen: {
     tags: [
       { key: 'amenity', value: 'pub' },
       { key: 'amenity', value: 'bar' },
+      { key: 'amenity', value: 'biergarten' },
     ],
-    label: 'Nachtleben',
+    label: 'Kneipe',
   },
   pub: {
     tags: [
       { key: 'amenity', value: 'pub' },
       { key: 'amenity', value: 'bar' },
     ],
-    label: 'Nachtleben',
+    label: 'Kneipe',
   },
   pubs: {
     tags: [
       { key: 'amenity', value: 'pub' },
       { key: 'amenity', value: 'bar' },
     ],
-    label: 'Nachtleben',
+    label: 'Kneipe',
   },
-  biergarten: { tags: [{ key: 'amenity', value: 'biergarten' }], label: 'Nachtleben' },
-  lounge: { tags: [{ key: 'amenity', value: 'bar' }], label: 'Nachtleben' },
+  biergarten: {
+    tags: [
+      { key: 'amenity', value: 'biergarten' },
+      { key: 'amenity', value: 'pub' },
+    ],
+    label: 'Kneipe',
+  },
+  brauhaus: {
+    tags: [
+      { key: 'amenity', value: 'pub' },
+      { key: 'craft', value: 'brewery' },
+    ],
+    label: 'Kneipe',
+  },
 
-  // Companies / Agencies / Offices
+  // Agencies
   agentur: {
-    tags: [{ key: 'office' }, { key: 'office', value: 'company' }, { key: 'office', value: 'it' }],
-    label: 'Unternehmen',
+    tags: [{ key: 'office', value: 'company' }, { key: 'office', value: 'it' }, { key: 'office' }],
+    label: 'Agentur',
   },
-  agency: { tags: [{ key: 'office' }, { key: 'office', value: 'company' }], label: 'Unternehmen' },
+  agency: { tags: [{ key: 'office', value: 'company' }, { key: 'office' }], label: 'Agentur' },
+  digitalagentur: {
+    tags: [
+      { key: 'office', value: 'company' },
+      { key: 'office', value: 'it' },
+    ],
+    label: 'Agentur',
+  },
+  werbeagentur: {
+    tags: [{ key: 'office', value: 'advertising' }, { key: 'office' }],
+    label: 'Agentur',
+  },
+
+  // Companies / Offices
   firma: { tags: [{ key: 'office', value: 'company' }, { key: 'office' }], label: 'Unternehmen' },
   unternehmen: {
     tags: [{ key: 'office', value: 'company' }, { key: 'office' }],
@@ -455,10 +499,11 @@ const CATEGORY_KEYWORDS: Record<
       { key: 'amenity', value: 'clinic' },
       { key: 'amenity', value: 'hospital' },
     ],
-    label: 'Gesundheit',
+    label: 'Krankenhaus & Klinik',
   },
-  krankenhaus: { tags: [{ key: 'amenity', value: 'hospital' }], label: 'Gesundheit' },
-  hospital: { tags: [{ key: 'amenity', value: 'hospital' }], label: 'Gesundheit' },
+  krankenhaus: { tags: [{ key: 'amenity', value: 'hospital' }], label: 'Krankenhaus & Klinik' },
+  hospital: { tags: [{ key: 'amenity', value: 'hospital' }], label: 'Krankenhaus & Klinik' },
+  spital: { tags: [{ key: 'amenity', value: 'hospital' }], label: 'Krankenhaus & Klinik' },
 
   // Accommodations
   hotel: {
@@ -522,9 +567,10 @@ const CATEGORY_KEYWORDS: Record<
   },
   beach: { tags: [{ key: 'natural', value: 'beach' }], label: 'Strand' },
 
-  // Entertainment
-  kino: { tags: [{ key: 'amenity', value: 'cinema' }], label: 'Theater & Bühne' },
-  cinema: { tags: [{ key: 'amenity', value: 'cinema' }], label: 'Theater & Bühne' },
+  // Entertainment & Cinema
+  kino: { tags: [{ key: 'amenity', value: 'cinema' }], label: 'Kino' },
+  cinema: { tags: [{ key: 'amenity', value: 'cinema' }], label: 'Kino' },
+  filmpalast: { tags: [{ key: 'amenity', value: 'cinema' }], label: 'Kino' },
   theater: {
     tags: [
       { key: 'amenity', value: 'theatre' },
@@ -533,6 +579,18 @@ const CATEGORY_KEYWORDS: Record<
     label: 'Theater & Bühne',
   },
   theatre: { tags: [{ key: 'amenity', value: 'theatre' }], label: 'Theater & Bühne' },
+
+  // Ice Cream / Eiscafé
+  eiscafé: { tags: [{ key: 'amenity', value: 'ice_cream' }], label: 'Eiscafé' },
+  eiscafe: { tags: [{ key: 'amenity', value: 'ice_cream' }], label: 'Eiscafé' },
+  eisdiele: { tags: [{ key: 'amenity', value: 'ice_cream' }], label: 'Eiscafé' },
+  gelateria: { tags: [{ key: 'amenity', value: 'ice_cream' }], label: 'Eiscafé' },
+
+  // Books & Library
+  bibliothek: { tags: [{ key: 'amenity', value: 'library' }], label: 'Bibliothek & Buchhandlung' },
+  bücherei: { tags: [{ key: 'amenity', value: 'library' }], label: 'Bibliothek & Buchhandlung' },
+  buchhandlung: { tags: [{ key: 'shop', value: 'books' }], label: 'Bibliothek & Buchhandlung' },
+  buchladen: { tags: [{ key: 'shop', value: 'books' }], label: 'Bibliothek & Buchhandlung' },
 
   // Transport & Mobility
   tankstelle: {

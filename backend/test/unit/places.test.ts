@@ -42,7 +42,13 @@ describe('places utility (unit)', () => {
     it('maps amenity tags correctly', () => {
       expect(mapOsmToCategory('amenity', 'restaurant')).toBe('Restaurant');
       expect(mapOsmToCategory('amenity', 'cafe')).toBe('Café');
-      expect(mapOsmToCategory('amenity', 'bar')).toBe('Nachtleben');
+      expect(mapOsmToCategory('amenity', 'bar')).toBe('Bar');
+      expect(mapOsmToCategory('amenity', 'pub')).toBe('Kneipe');
+      expect(mapOsmToCategory('amenity', 'nightclub')).toBe('Club');
+      expect(mapOsmToCategory('amenity', 'cinema')).toBe('Kino');
+      expect(mapOsmToCategory('amenity', 'ice_cream')).toBe('Eiscafé');
+      expect(mapOsmToCategory('amenity', 'library')).toBe('Bibliothek & Buchhandlung');
+      expect(mapOsmToCategory('amenity', 'hospital')).toBe('Krankenhaus & Klinik');
       expect(mapOsmToCategory('amenity', 'pharmacy')).toBe('Apotheke');
       expect(mapOsmToCategory('amenity', 'fuel')).toBe('Tankstelle');
       expect(mapOsmToCategory('amenity', 'bank')).toBe('Geldautomat & Bank');
@@ -50,6 +56,8 @@ describe('places utility (unit)', () => {
       expect(mapOsmToCategory('amenity', 'theatre')).toBe('Theater & Bühne');
       expect(mapOsmToCategory('amenity', 'parking')).toBe('Parkplatz');
       expect(mapOsmToCategory('amenity', 'bus_station')).toBe('Busbahnhof');
+      expect(mapOsmToCategory('office', 'advertising')).toBe('Agentur');
+      expect(mapOsmToCategory('office', 'company')).toBe('Unternehmen');
     });
 
     it('maps historic, leisure, shop, natural and transport tags correctly', () => {
