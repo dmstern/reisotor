@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia } from 'pinia';
-import CoverImagePicker from './CoverImagePicker.vue';
+import CoverImagePicker, { buildDefaultImageSearchQuery } from './CoverImagePicker.vue';
 import { api } from '../api/client';
 
 vi.mock('../api/client', () => ({
@@ -258,7 +258,7 @@ describe('CoverImagePicker component', () => {
 
     const searchInput = document.querySelector('.browse-search-input') as HTMLInputElement;
     expect(searchInput).not.toBeNull();
-    expect(searchInput.value).toBe('Eiffel Tower');
+    expect(searchInput.value).toBe('Eiffel Tower Paris');
 
     searchInput.value = 'Louvre';
     searchInput.dispatchEvent(new Event('input'));
@@ -352,5 +352,28 @@ describe('CoverImagePicker component', () => {
     expect(msg?.textContent).toContain('Keine Bilder für „UnbekannterOrtXYZ“ gefunden.');
 
     cleanUp();
+  });
+
+  describe('buildDefaultImageSearchQuery', () => {
+    it('combines name, city, and category without duplicates', () => {
+      expect(
+        buildDefaultImageSearchQuery({
+          name: 'Trinkteufel',
+          city: 'Berlin',
+          category: 'Nachtleben',
+        })
+      ).toBe('Trinkteufel Berlin Nachtleben');
+
+      expect(
+        buildDefaultImageSearchQuery({
+          name: 'Flughafen Berlin Brandenburg',
+          city: 'Berlin',
+          category: 'Flughafen',
+        })
+      ).toBe('Flughafen Berlin Brandenburg');
+
+      expect(buildDefaultImageSearchQuery({ name: 'Sesamstraße' })).toBe('Sesamstraße');
+      expect(buildDefaultImageSearchQuery(undefined)).toBe('');
+    });
   });
 });

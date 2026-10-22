@@ -82,6 +82,44 @@ export function areCoordsEqual(
   return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
 }
 
+export function extractCityFromAddress(address?: string): string | undefined {
+  if (!address) return undefined;
+  const parts = address
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return undefined;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i];
+    if (
+      [
+        'deutschland',
+        'germany',
+        'österreich',
+        'austria',
+        'schweiz',
+        'switzerland',
+        'france',
+        'frankreich',
+        'italien',
+        'italy',
+        'spanien',
+        'spain',
+        'portugal',
+        'uk',
+        'usa',
+      ].includes(part.toLowerCase())
+    ) {
+      continue;
+    }
+    const cleaned = part.replace(/^[a-z]{0,3}[-\s]?\d{3,5}(-\d{3,4})?\s+/i, '').trim();
+    if (cleaned && !/^\d+$/.test(cleaned) && cleaned.length >= 2) {
+      return cleaned;
+    }
+  }
+  return undefined;
+}
+
 export interface UseSpotFormOptions {
   tripId: number;
   users: Ref<User[]>;
@@ -302,9 +340,11 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   const spotImageSearchContext = computed(() => {
     const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
+    const city =
+      selectedSpotCity.value || extractCityFromAddress(activeSpotForm.value.address) || undefined;
     return {
       name: activeSpotForm.value.title.trim() || undefined,
-      city: selectedSpotCity.value || undefined,
+      city,
       category: activeSpotForm.value.category || undefined,
       lat: pin?.lat,
       lng: pin?.lng,

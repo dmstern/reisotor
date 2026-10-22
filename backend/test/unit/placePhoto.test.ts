@@ -6,6 +6,7 @@ import {
   isGoodPhoto,
   isTitleMatch,
   buildPhotoCacheKey,
+  buildSearchQueries,
 } from '../../src/utils/placePhoto.js';
 
 describe('placePhoto utility', () => {
@@ -67,6 +68,31 @@ describe('placePhoto utility', () => {
       const key1 = buildPhotoCacheKey('  Stephansdom  ', 48.2085, 16.3738, ' Wien ');
       const key2 = buildPhotoCacheKey('stephansdom', 48.2085, 16.3738, 'wien');
       expect(key1).toBe(key2);
+    });
+  });
+
+  describe('buildSearchQueries', () => {
+    it('generates cascading queries from specific to broad', () => {
+      const queries = buildSearchQueries('Trinkteufel', 'Berlin', 'Nachtleben');
+      expect(queries).toEqual([
+        'Trinkteufel Berlin Nachtleben',
+        'Trinkteufel Berlin',
+        'Trinkteufel',
+      ]);
+    });
+
+    it('handles query strings that already contain city and category', () => {
+      const queries = buildSearchQueries('Trinkteufel Berlin Nachtleben', 'Berlin', 'Nachtleben');
+      expect(queries).toEqual([
+        'Trinkteufel Berlin Nachtleben',
+        'Trinkteufel Berlin',
+        'Trinkteufel',
+      ]);
+    });
+
+    it('falls back to bare name when city and category are absent', () => {
+      const queries = buildSearchQueries('Sesamstraße');
+      expect(queries).toEqual(['Sesamstraße']);
     });
   });
 
@@ -398,7 +424,28 @@ describe('placePhoto utility', () => {
       expect(calledUrl).toContain('Trinkteufel');
       expect(calledUrl).toContain('Berlin');
       expect(calledUrl).toContain('Nachtleben');
-      expect(photo).toBe('https://example.com/trinkteufel.jpg');
+      expect(photo).toBe('https://ts4.mm.bing.net/th?id=OIP.123&w=1000');
+    });
+
+    it('falls back to murl if Bing turl is missing or invalid', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div class="iusc" style="height:198px;width:264px" m="{&quot;murl&quot;:&quot;https://example.com/trinkteufel_direct.jpg&quot;,&quot;t&quot;:&quot;Trinkteufel Kreuzberg Berlin&quot;}"></div>`
+              ),
+          })
+        )
+      );
+
+      const photo = await fetchPlacePhoto({
+        name: 'Trinkteufel',
+        city: 'Berlin',
+      });
+      expect(photo).toBe('https://example.com/trinkteufel_direct.jpg');
     });
   });
 });

@@ -66,12 +66,14 @@ export function isGoodPhoto(filenameOrUrl: string): boolean {
     if (lower.includes(kw)) return false;
   }
 
-  // Akzeptierte Bildformate
+  // Akzeptierte Bildformate oder verifizierte Bild-CDNs (z. B. Bing CDN)
   return (
     lower.includes('.jpg') ||
     lower.includes('.jpeg') ||
     lower.includes('.png') ||
-    lower.includes('.webp')
+    lower.includes('.webp') ||
+    lower.includes('bing.net/th') ||
+    lower.includes('bing.com/th')
   );
 }
 
@@ -263,7 +265,9 @@ async function queryBingImages(
   query: string,
   rawName: string,
   limit: number,
-  seen: Set<string>
+  seen: Set<string>,
+  city?: string,
+  category?: string
 ): Promise<string[]> {
   const url = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}`;
 
@@ -275,15 +279,37 @@ async function queryBingImages(
     if (!res.ok || typeof res.text !== 'function') return [];
     const html = await res.text();
 
-    const nameWords = rawName
+    const stopWords = new Set([
+      'bar',
+      'cafe',
+      'café',
+      'restaurant',
+      'hotel',
+      'der',
+      'die',
+      'das',
+      'den',
+      'dem',
+      'des',
+      'ein',
+      'eine',
+      ...(city ? city.toLowerCase().split(/\s+/) : []),
+      ...(category ? category.toLowerCase().split(/\s+/) : []),
+    ]);
+
+    let nameWords = rawName
       .toLowerCase()
       .replace(/[^a-z0-9äöüß]/gi, ' ')
       .split(/\s+/)
-      .filter(
-        (w) =>
-          w.length >= 3 &&
-          !['bar', 'cafe', 'café', 'restaurant', 'hotel', 'der', 'die', 'das'].includes(w)
-      );
+      .filter((w) => w.length >= 3 && !stopWords.has(w));
+
+    if (nameWords.length === 0) {
+      nameWords = rawName
+        .toLowerCase()
+        .replace(/[^a-z0-9äöüß]/gi, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length >= 3);
+    }
 
     const photos: string[] = [];
 
@@ -307,11 +333,13 @@ async function queryBingImages(
 
         if (!isRelevant) continue;
 
+        // Bing Edge CDN (turl mit &w=1000): Hohe Auflösung, 100% Verfügbarkeit, keine 509 Bandbreiten-Limits, keine 403 Hotlinking-Sperren
+        const cdnUrl = turl ? (turl.includes('?') ? `${turl}&w=1000` : `${turl}?w=1000`) : null;
         const candidate =
-          murl && isSafeUrl(murl) && isGoodPhoto(murl)
-            ? murl
-            : turl && isSafeUrl(turl) && isGoodPhoto(turl)
-              ? turl
+          cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
+            ? cdnUrl
+            : murl && isSafeUrl(murl) && isGoodPhoto(murl)
+              ? murl
               : null;
 
         if (candidate && !seen.has(candidate)) {
@@ -352,9 +380,61 @@ async function queryBingImages(
 }
 
 /**
+ * Erzeugt eine kaskadierende Liste von Suchanfragen vom Spezifischen zum Allgemeinen.
+ * Beispiel:
+ * 1. "Trinkteufel Berlin Nachtleben" (falls Bing spezifische Einträge hat)
+ * 2. "Trinkteufel Berlin" (falls Kategorie die Suche übermäßig einschränkt)
+ * 3. "Trinkteufel" (Basis-Name als Fallback)
+ */
+export function buildSearchQueries(rawName: string, city?: string, category?: string): string[] {
+  const queries: string[] = [];
+
+  const add = (q: string) => {
+    const trimmed = q.trim();
+    if (trimmed && !queries.some((existing) => existing.toLowerCase() === trimmed.toLowerCase())) {
+      queries.push(trimmed);
+    }
+  };
+
+  // 1. Spezifische Suche: Name + Stadt + Kategorie (falls nicht ohnehin enthalten)
+  const fullParts = [rawName];
+  if (city && !rawName.toLowerCase().includes(city.toLowerCase())) {
+    fullParts.push(city);
+  }
+  if (category && !rawName.toLowerCase().includes(category.toLowerCase())) {
+    fullParts.push(category);
+  }
+  add(fullParts.join(' '));
+
+  // 2. Suche ohne Kategorie: Name + Stadt
+  // Falls category am Ende von rawName stand (z. B. aus Suchfeld übergeben: "Trinkteufel Berlin Nachtleben")
+  let nameWithoutCat = rawName;
+  if (category && nameWithoutCat.toLowerCase().endsWith(category.toLowerCase())) {
+    nameWithoutCat = nameWithoutCat.slice(0, -category.length).trim();
+  }
+  const cityParts = [nameWithoutCat];
+  if (city && !nameWithoutCat.toLowerCase().includes(city.toLowerCase())) {
+    cityParts.push(city);
+  }
+  add(cityParts.join(' '));
+
+  // 3. Suche nur mit dem Kern-Namen (falls Stadt ebenfalls am Ende stand)
+  let baseName = nameWithoutCat;
+  if (city && baseName.toLowerCase().endsWith(city.toLowerCase())) {
+    baseName = baseName.slice(0, -city.length).trim();
+  }
+  add(baseName);
+
+  // 4. Fallback auf den ursprünglichen rawName
+  add(rawName);
+
+  return queries;
+}
+
+/**
  * Durchsucht den Web-Bilder-Index nach echten Fotos für eine Location (z. B. Bar, Restaurant, Hotel, Attraktion).
  * Nutzt den Bing-Web-Index (denselben Datenbestand wie DuckDuckGo), ist kostenfrei und stabil ohne API-Key abrufbar.
- * Unterstützt gezielte Suchanfragen mit Name + Stadt + Kategorie (mit automatischem Fallback auf Name + Stadt).
+ * Unterstützt gezielte, kaskadierende Suchanfragen (Name + Stadt + Kategorie -> Name + Stadt -> Name).
  */
 export async function searchWebPlacePhotos(
   name: string,
@@ -370,36 +450,19 @@ export async function searchWebPlacePhotos(
   const seen = new Set<string>();
   const photos: string[] = [];
 
-  // 1. Suche mit Kategorie falls vorhanden (z. B. "Trinkteufel Berlin Nachtleben" oder "BER Berlin Flughafen")
-  if (cleanCategory) {
-    const parts = [rawName];
-    if (cleanCity && !rawName.toLowerCase().includes(cleanCity.toLowerCase())) {
-      parts.push(cleanCity);
-    }
-    if (!rawName.toLowerCase().includes(cleanCategory.toLowerCase())) {
-      parts.push(cleanCategory);
-    }
-    const catPhotos = await queryBingImages(parts.join(' '), rawName, limit, seen);
-    for (const p of catPhotos) {
+  const queries = buildSearchQueries(rawName, cleanCity, cleanCategory);
+  for (const q of queries) {
+    if (photos.length >= limit) break;
+    const batch = await queryBingImages(
+      q,
+      rawName,
+      limit - photos.length,
+      seen,
+      cleanCity,
+      cleanCategory
+    );
+    for (const p of batch) {
       photos.push(p);
-    }
-  }
-
-  // 2. Falls keine Kategorie übergeben wurde oder zu wenige relevante Ergebnisse geliefert wurden:
-  // Fallback auf Suche mit Name + Ort (z. B. falls die Kategorie die Websuche zu stark verwässert hat)
-  if (photos.length < limit) {
-    const parts = [rawName];
-    if (cleanCity && !rawName.toLowerCase().includes(cleanCity.toLowerCase())) {
-      parts.push(cleanCity);
-    }
-    const query = parts.join(' ');
-    // Nur anfragen, wenn sich die Query von der Kategoriesuche unterscheidet
-    const catQuery = [rawName, cleanCity, cleanCategory].filter(Boolean).join(' ').toLowerCase();
-    if (!cleanCategory || query.toLowerCase() !== catQuery) {
-      const morePhotos = await queryBingImages(query, rawName, limit - photos.length, seen);
-      for (const p of morePhotos) {
-        photos.push(p);
-      }
     }
   }
 

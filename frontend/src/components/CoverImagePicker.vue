@@ -1,3 +1,36 @@
+<script lang="ts">
+export interface ImageSearchContext {
+  name?: string;
+  city?: string;
+  category?: string;
+  lat?: number;
+  lng?: number;
+  maps_link?: string;
+}
+
+export function buildDefaultImageSearchQuery(context?: ImageSearchContext): string {
+  if (!context) return '';
+  const parts: string[] = [];
+  const rawName = context.name?.trim();
+  if (rawName) {
+    parts.push(rawName);
+  }
+  const rawCity = context.city?.trim();
+  if (rawCity && (!rawName || !rawName.toLowerCase().includes(rawCity.toLowerCase()))) {
+    parts.push(rawCity);
+  }
+  const rawCategory = context.category?.trim();
+  if (
+    rawCategory &&
+    (!rawName || !rawName.toLowerCase().includes(rawCategory.toLowerCase())) &&
+    (!rawCity || !rawCity.toLowerCase().includes(rawCategory.toLowerCase()))
+  ) {
+    parts.push(rawCategory);
+  }
+  return parts.join(' ');
+}
+</script>
+
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { IconDef } from '../utils/icon';
@@ -12,15 +45,6 @@ import ImageUrlInput from './ImageUrlInput.vue';
 import Input from './primitives/Input.vue';
 import Modal from './Modal.vue';
 import { api } from '../api/client';
-
-export interface ImageSearchContext {
-  name?: string;
-  city?: string;
-  category?: string;
-  lat?: number;
-  lng?: number;
-  maps_link?: string;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -67,15 +91,16 @@ const isSearchingAction = ref<'query' | 'next' | null>(null);
 const isSearching = computed(() => isSearchingAction.value !== null);
 const searchMessage = ref<string | null>(null);
 
-const searchQuery = ref(props.searchContext?.name ?? '');
-const lastSearchedQuery = ref(props.searchContext?.name ?? '');
+const searchQuery = ref(buildDefaultImageSearchQuery(props.searchContext));
+const lastSearchedQuery = ref(buildDefaultImageSearchQuery(props.searchContext));
 
 watch(
-  () => props.searchContext?.name,
-  (newName) => {
+  () => [props.searchContext?.name, props.searchContext?.city, props.searchContext?.category],
+  () => {
     if (!showModal.value) {
-      searchQuery.value = newName ?? '';
-      lastSearchedQuery.value = newName ?? '';
+      const q = buildDefaultImageSearchQuery(props.searchContext);
+      searchQuery.value = q;
+      lastSearchedQuery.value = q;
     }
   }
 );
@@ -84,8 +109,9 @@ watch(
   () => showModal.value,
   (isOpen) => {
     if (isOpen) {
-      searchQuery.value = props.searchContext?.name ?? '';
-      lastSearchedQuery.value = props.searchContext?.name ?? '';
+      const q = buildDefaultImageSearchQuery(props.searchContext);
+      searchQuery.value = q;
+      lastSearchedQuery.value = q;
       searchMessage.value = null;
     }
   }
