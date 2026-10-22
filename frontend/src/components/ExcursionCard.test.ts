@@ -77,6 +77,8 @@ describe('ExcursionCard', () => {
     });
 
     expect(html).toContain('Wanderung zum Wasserfall');
+    expect(html).toContain('card-title-row');
+    expect(html).toContain('tour-type-badge');
     expect(html).toContain('Parkplatz → Wasserfall');
     expect(html).toContain('excursion-card');
     expect(html).toContain('tour-status-meta');

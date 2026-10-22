@@ -132,9 +132,12 @@ const {
           :title="expanded ? 'Klicken zum Einklappen' : 'Klicken zum Aufklappen'"
         >
           <div class="card-title-block">
-            <component :is="headingTag" class="card-title" :title="excursion.title">
-              {{ excursion.title }}
-            </component>
+            <div class="card-title-row">
+              <component :is="headingTag" class="card-title" :title="excursion.title">
+                {{ excursion.title }}
+              </component>
+              <TourRoleBadge :role="excursion.role" />
+            </div>
             <Transition name="fade">
               <div
                 v-if="
@@ -169,7 +172,6 @@ const {
           </div>
 
           <div class="card-badge-group">
-            <TourRoleBadge :role="excursion.role" />
             <PendingSyncBadge v-if="excursion._pending" />
             <Transition name="fade">
               <EditButton
@@ -491,6 +493,13 @@ const {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .card-title {
