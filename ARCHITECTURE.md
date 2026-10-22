@@ -43,8 +43,7 @@ bleiben diese leer. Auch Reise-Etappen (`travel_items`) wurden vollständig durc
 `role = 'travel'`) abgelöst. Bewusst quer liegender Zusammenhang: Unterkunfts-/Reisekosten hängen per
 `budget_expense_id`-FK an `budget_items` (Sync-Logik in `routes/spots.ts`/`routes/ideas.ts`) —
 beim Löschen zuerst die referenzierende Zeile aktualisieren/entfernen, danach die `budget_items`-
-Zeile (siehe "Bekannte Stolpersteine" in `README.md` zum genauen FK-Constraint-Fehler bei falscher
-Reihenfolge).
+Zeile, um Foreign-Key-Constraint-Fehler in SQLite zu vermeiden.
 
 Alle 11 Domänen-Tabellen haben zusätzlich eine `deleted_at`-Spalte statt echtem `DELETE`
 (Soft-Delete/Papierkorb, siehe unten).
@@ -103,8 +102,8 @@ einen Spot ohne Reihenfolge einer (ggf. neuen) Tour zuzuordnen — beide schreib
 API-Zugriff läuft zentral über `api/client.ts` (`fetch`-Wrapper mit `credentials: 'include'`); ein
 `401` leitet dort hart auf `/login` um (außer auf selbst-behandelten Auth-Pfaden wie `/auth/login`),
 da eine im Arbeitsspeicher gehaltene Session einen Backend-Neustart nicht übersteht. Karte
-(`components/TripMap.vue` u. a.) nutzt Leaflet/OpenStreetMap mit eigenen Emoji-`divIcon`s statt der
-Standard-Marker (siehe "Bekannte Stolpersteine" in `README.md`).
+(`components/TripMap.vue` u. a.) nutzt Leaflet/OpenStreetMap mit eigenen Emoji- und SVG-`divIcon`s statt der
+Standard-Marker.
 
 ## Echtzeit-Sync & Präsenz
 
