@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createApp, h } from 'vue';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import ExcursionTracksList from './ExcursionTracksList.vue';
@@ -79,5 +79,27 @@ describe('ExcursionTracksList', () => {
     expect(html).toContain('tracks-empty-state');
     expect(html).toContain('Noch keine Tracks aufgezeichnet.');
     expect(html).not.toContain('track-row');
+  });
+
+  it('scrolls active track into view on mount', async () => {
+    const scrollIntoViewMock = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+
+    const container = document.createElement('div');
+    const app = createApp({
+      render: () =>
+        h(ExcursionTracksList, {
+          tracks: dummyTracks,
+          users: [dummyUser],
+          activeTrackId: 101,
+          currentUserId: 1,
+        }),
+    });
+    app.use(createPinia());
+    app.mount(container);
+
+    await nextTick();
+    expect(scrollIntoViewMock).toHaveBeenCalled();
+    app.unmount();
   });
 });

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, onMounted, watch } from 'vue';
 import type { Excursion, LocationTrack, User } from '../api/types';
 import AppIcon from './AppIcon.vue';
 import EmptyState from './primitives/EmptyState.vue';
@@ -53,6 +54,47 @@ function getTourForTrack(track: LocationTrack): Excursion | undefined {
   if (track.excursion_id == null) return undefined;
   return excursionsStore.excursions.find((e) => e.id === track.excursion_id);
 }
+
+const rowRefs = new Map<number, HTMLElement>();
+
+function setRowRef(trackId: number, el: unknown) {
+  if (el instanceof HTMLElement) {
+    rowRefs.set(trackId, el);
+  } else {
+    rowRefs.delete(trackId);
+  }
+}
+
+function scrollToActiveTrack() {
+  if (props.activeTrackId == null) return;
+  const targetId = Number(props.activeTrackId);
+  const el = rowRefs.get(targetId);
+  if (el && typeof el.scrollIntoView === 'function') {
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({
+      behavior: prefersReduced ? 'auto' : 'smooth',
+      block: 'nearest',
+    });
+    if (typeof document !== 'undefined' && document.activeElement === document.body) {
+      const btn = el.querySelector<HTMLButtonElement>('.track-row-main');
+      btn?.focus({ preventScroll: true });
+    }
+  }
+}
+
+watch(
+  [() => props.activeTrackId, () => props.tracks],
+  () => {
+    nextTick(scrollToActiveTrack);
+  },
+  { flush: 'post' }
+);
+
+onMounted(() => {
+  nextTick(scrollToActiveTrack);
+});
 </script>
 
 <template>
@@ -69,6 +111,7 @@ function getTourForTrack(track: LocationTrack): Excursion | undefined {
         <li
           v-for="track in tracks"
           :key="track.id"
+          :ref="(el) => setRowRef(track.id, el)"
           class="track-row"
           :class="{ active: Number(activeTrackId) === Number(track.id) }"
         >
