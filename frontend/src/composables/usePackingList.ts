@@ -6,6 +6,7 @@ import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { useToast } from './useToast';
+import { restoreTrashItem } from '../api/trash';
 import { sortWithDoneLast } from './useCheckedSort';
 import { isFullyPacked } from '../utils/packing';
 
@@ -237,6 +238,10 @@ export function usePackingList(tripIdOverride?: number) {
     showToast({
       message: 'Gegenstand gelöscht. Er befindet sich nun im Papierkorb.',
       type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('packing_item', id);
+        await load();
+      },
     });
   }
 

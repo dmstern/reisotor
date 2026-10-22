@@ -4,6 +4,7 @@ import type { Period, ShoppingItem, User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useToast } from './useToast';
+import { restoreTrashItem } from '../api/trash';
 
 export interface ShoppingFormInput {
   label: string;
@@ -169,7 +170,14 @@ export function useShoppingList(tripIdOverride?: number) {
   async function remove(id: number) {
     await api.delete(`/shopping/${id}`);
     items.value = items.value.filter((i) => i.id !== id);
-    showToast({ message: 'Artikel gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
+    showToast({
+      message: 'Artikel gelöscht. Er befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('shopping_item', id);
+        await load();
+      },
+    });
   }
 
   return {

@@ -1,3 +1,3 @@
 ### Papierkorb
 
-- 🗑️ **Direktzugriff bei Löschungen**: In der Bestätigungsmeldung beim Löschen von Objekten (z. B. Termine, Aufgaben, Notizen, Ausgaben) ist der Papierkorb nun direkt verlinkt, um gelöschte Einträge mit einem Klick einzusehen oder wiederherzustellen.
+- 🗑️ **Wiederherstellen direkt per Benachrichtigung**: Nach dem Löschen eines Objekts (z. B. Termine, Aufgaben, Notizen, Ausgaben) enthält die Hinweis-Meldung nun einen praktischen „Wiederherstellen“-Button zum sofortigen Rückgängigmachen sowie einen direkten Link in den Papierkorb.

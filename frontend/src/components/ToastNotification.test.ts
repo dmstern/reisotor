@@ -152,4 +152,50 @@ describe('ToastNotification', () => {
     expect(onClick).toHaveBeenCalled();
     expect(toasts.value.length).toBe(0);
   });
+
+  it('renders Wiederherstellen button when onRestore is provided and calls it on click', async () => {
+    const onRestore = vi.fn();
+    const { showToast, toasts } = useToast();
+    showToast({
+      message: 'Aufgabe gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore,
+    });
+    await nextTick();
+
+    const actionBtn = document.querySelector('button.toast-action-btn') as HTMLButtonElement;
+    expect(actionBtn).not.toBeNull();
+    expect(actionBtn.textContent?.trim()).toBe('Wiederherstellen');
+
+    actionBtn.click();
+    await nextTick();
+
+    expect(onRestore).toHaveBeenCalledTimes(1);
+    expect(toasts.value.length).toBe(0);
+  });
+
+  it('supports async onRestore callback and removes toast upon completion', async () => {
+    let resolved = false;
+    const onRestore = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+      resolved = true;
+    });
+    const { showToast, toasts } = useToast();
+    showToast({
+      message: 'Ort gelöscht. Er befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore,
+    });
+    await nextTick();
+
+    const actionBtn = document.querySelector('button.toast-action-btn') as HTMLButtonElement;
+    actionBtn.click();
+    await nextTick();
+
+    await new Promise((r) => setTimeout(r, 20));
+    await nextTick();
+
+    expect(resolved).toBe(true);
+    expect(toasts.value.length).toBe(0);
+  });
 });

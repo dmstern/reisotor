@@ -38,9 +38,17 @@ function parseMessageSegments(message: string): MessageSegment[] {
     }));
 }
 
-function handleActionClick(toast: ToastItem) {
-  toast.action?.onClick?.();
-  removeToast(toast.id);
+async function handleActionClick(toast: ToastItem) {
+  try {
+    await toast.action?.onClick?.();
+  } catch {
+    useToast().showToast({
+      message: 'Wiederherstellen fehlgeschlagen. Bitte erneut versuchen.',
+      type: 'error',
+    });
+  } finally {
+    removeToast(toast.id);
+  }
 }
 </script>
 
@@ -180,11 +188,13 @@ function handleActionClick(toast: ToastItem) {
 
 .toast-action {
   font-weight: 600;
-  color: inherit;
+  color: var(--color-primary, #9141ac);
   text-decoration: underline;
   text-underline-offset: 2px;
   align-self: flex-start;
   margin-top: 2px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
 .toast-action-btn {
@@ -194,10 +204,22 @@ function handleActionClick(toast: ToastItem) {
   font-family: inherit;
   font-size: inherit;
   cursor: pointer;
+  text-align: left;
 }
 
 .toast-action:hover {
   text-decoration: none;
+  opacity: 0.85;
+}
+
+.toast-action:focus-visible {
+  outline: 2px solid var(--color-primary, #9141ac);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs, 2px);
+}
+
+.toast-item.toast-error .toast-action {
+  color: #ef4444;
 }
 
 .toast-close {

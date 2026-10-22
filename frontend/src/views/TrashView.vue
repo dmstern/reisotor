@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api/client';
+import { restoreTrashItem } from '../api/trash';
 import type { User } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
@@ -143,7 +144,7 @@ async function restore(entry: TrashEntry) {
   const key = keyOf(entry);
   restoringKey.value = key;
   try {
-    await api.post(`/trash/${entry.type}/${entry.id}/restore`);
+    await restoreTrashItem(entry.type, entry.id);
     entries.value = entries.value.filter((e) => keyOf(e) !== key);
   } catch {
     error.value = 'Wiederherstellen fehlgeschlagen. Bitte erneut versuchen.';

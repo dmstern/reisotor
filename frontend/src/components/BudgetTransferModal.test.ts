@@ -153,6 +153,7 @@ describe('BudgetTransferModal', () => {
     expect(mockShowToast).toHaveBeenCalledWith({
       message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.',
       type: 'info',
+      onRestore: expect.any(Function),
     });
 
     cleanUp();

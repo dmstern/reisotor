@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { api } from '../api/client';
 import { useTripStore } from './trip';
 import { useToast } from '../composables/useToast';
+import { restoreTrashItem } from '../api/trash';
 import { EXPENSE_CATEGORY_SUGGESTIONS } from '../utils/expenseCategory';
 import { SPOT_CATEGORY_SUGGESTIONS } from '../utils/spotCategory';
 import { resolveCategoryMeta, type ResolvedCategoryMeta } from '../utils/categoryIcons';
@@ -220,6 +221,10 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     showToast({
       message: 'Kategorie gelöscht. Sie befindet sich nun im Papierkorb.',
       type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('trip_category', id);
+        await load(tripId, true);
+      },
     });
   }
 

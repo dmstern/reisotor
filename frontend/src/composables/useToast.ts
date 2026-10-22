@@ -5,11 +5,11 @@ export type ToastAction =
   | {
       label: string;
       to: string | object;
-      onClick?: () => void;
+      onClick?: () => void | Promise<void>;
     }
   | {
       label: string;
-      onClick: () => void;
+      onClick: () => void | Promise<void>;
       to?: undefined;
     };
 
@@ -18,6 +18,7 @@ export interface ToastOptions {
   type?: 'info' | 'success' | 'warning' | 'error';
   duration?: number;
   action?: ToastAction;
+  onRestore?: () => void | Promise<void>;
 }
 
 export interface ToastItem {
@@ -41,13 +42,21 @@ export function useToast() {
     const rawDuration = opts.duration ?? defaultDuration;
     const duration =
       type === 'error' && rawDuration > 0 ? Math.max(rawDuration, 8000) : rawDuration;
+    const action =
+      opts.action ??
+      (opts.onRestore
+        ? {
+            label: 'Wiederherstellen',
+            onClick: opts.onRestore,
+          }
+        : undefined);
     const id = nextId++;
     const item: ToastItem = {
       id,
       message: opts.message,
       type,
       duration,
-      action: opts.action,
+      action,
     };
 
     toasts.value.push(item);

@@ -18,6 +18,7 @@ import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import { useToast } from '../composables/useToast';
+import { restoreTrashItem } from '../api/trash';
 import { toLocalDateString } from '../utils/dateFormat';
 
 const TYPE_OPTIONS = [
@@ -277,12 +278,17 @@ async function handleSubmit() {
 async function handleDelete() {
   if (props.expense) {
     try {
-      await budgetStore.removeExpense(props.expense.id);
+      const expenseId = props.expense.id;
+      await budgetStore.removeExpense(expenseId);
       showToast({
         message: isIncome.value
           ? 'Einnahme gelöscht. Sie befindet sich nun im Papierkorb.'
           : 'Ausgabe gelöscht. Sie befindet sich nun im Papierkorb.',
         type: 'info',
+        onRestore: async () => {
+          await restoreTrashItem('budget_item', expenseId);
+          await budgetStore.load();
+        },
       });
       draft.clear();
       emit('update:modelValue', false);
