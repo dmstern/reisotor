@@ -1,4 +1,4 @@
-import { computed, getCurrentInstance, onMounted, ref, watch, type Ref } from 'vue';
+import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { TodoItem, TodoPriority, User, Period } from '../api/types';
@@ -6,6 +6,7 @@ import { useTripStore } from '../stores/trip';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { hashHighlightId } from '../utils/hashHighlight';
 import { useToast } from './useToast';
+import { restoreTrashItem } from '../api/trash';
 
 export interface TodoFormInput {
   title: string;
@@ -182,7 +183,14 @@ export function useTodoList(tripIdOverride?: number) {
   async function remove(id: number) {
     await api.delete(`/todos/${id}`);
     items.value = items.value.filter((i) => i.id !== id);
-    showToast({ message: 'Aufgabe gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
+    showToast({
+      message: 'Aufgabe gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('todo', id);
+        await load();
+      },
+    });
   }
 
   return {

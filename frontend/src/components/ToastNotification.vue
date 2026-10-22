@@ -1,11 +1,54 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { getActivePinia } from 'pinia';
 import { useToast, type ToastItem } from '../composables/useToast';
+import { useTripStore } from '../stores/trip';
 
 const { toasts, removeToast } = useToast();
 
-function handleActionClick(toast: ToastItem) {
-  toast.action?.onClick?.();
-  removeToast(toast.id);
+const trashRoute = computed(() => {
+  if (getActivePinia()) {
+    try {
+      const tripStore = useTripStore();
+      if (tripStore.currentTripId != null) {
+        return `/trip/${tripStore.currentTripId}/trash`;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+  return '/trash';
+});
+
+interface MessageSegment {
+  text: string;
+  isTrashLink: boolean;
+}
+
+function parseMessageSegments(message: string): MessageSegment[] {
+  if (!message.includes('Papierkorb')) {
+    return [{ text: message, isTrashLink: false }];
+  }
+  const parts = message.split(/(Papierkorb)/g);
+  return parts
+    .filter((part) => part.length > 0)
+    .map((part) => ({
+      text: part,
+      isTrashLink: part === 'Papierkorb',
+    }));
+}
+
+async function handleActionClick(toast: ToastItem) {
+  try {
+    await toast.action?.onClick?.();
+  } catch {
+    useToast().showToast({
+      message: 'Wiederherstellen fehlgeschlagen. Bitte erneut versuchen.',
+      type: 'error',
+    });
+  } finally {
+    removeToast(toast.id);
+  }
 }
 </script>
 
@@ -21,7 +64,19 @@ function handleActionClick(toast: ToastItem) {
           :role="toast.type === 'error' ? 'alert' : 'status'"
         >
           <div class="toast-content">
-            <span class="toast-message">{{ toast.message }}</span>
+            <span class="toast-message">
+              <template v-for="(seg, idx) in parseMessageSegments(toast.message)" :key="idx">
+                <RouterLink
+                  v-if="seg.isTrashLink"
+                  :to="trashRoute"
+                  class="toast-inline-link"
+                  @click="removeToast(toast.id)"
+                >
+                  {{ seg.text }}
+                </RouterLink>
+                <template v-else>{{ seg.text }}</template>
+              </template>
+            </span>
             <RouterLink
               v-if="toast.action && toast.action.to"
               :to="toast.action.to"
@@ -113,13 +168,33 @@ function handleActionClick(toast: ToastItem) {
   gap: var(--space-1);
 }
 
+.toast-inline-link {
+  font-weight: 600;
+  color: var(--color-primary, #9141ac);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.toast-inline-link:hover {
+  text-decoration: none;
+}
+
+.toast-inline-link:focus-visible {
+  outline: 2px solid var(--color-primary, #9141ac);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs, 2px);
+}
+
 .toast-action {
   font-weight: 600;
-  color: inherit;
+  color: var(--color-primary, #9141ac);
   text-decoration: underline;
   text-underline-offset: 2px;
   align-self: flex-start;
   margin-top: 2px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
 .toast-action-btn {
@@ -129,10 +204,22 @@ function handleActionClick(toast: ToastItem) {
   font-family: inherit;
   font-size: inherit;
   cursor: pointer;
+  text-align: left;
 }
 
 .toast-action:hover {
   text-decoration: none;
+  opacity: 0.85;
+}
+
+.toast-action:focus-visible {
+  outline: 2px solid var(--color-primary, #9141ac);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs, 2px);
+}
+
+.toast-item.toast-error .toast-action {
+  color: #ef4444;
 }
 
 .toast-close {

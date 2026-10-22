@@ -7,6 +7,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useToast } from './useToast';
+import { restoreTrashItem } from '../api/trash';
 import { useErrorNotifier } from './useErrorNotifier';
 
 export interface UseDiaryDataOptions {
@@ -89,6 +90,12 @@ export function useDiaryData(options: UseDiaryDataOptions) {
         ? 'Entwurf verworfen.'
         : 'Tagebucheintrag gelöscht. Er befindet sich nun im Papierkorb.',
       type: 'info',
+      onRestore: isDraft
+        ? undefined
+        : async () => {
+            await restoreTrashItem('diary_entry', id);
+            await load();
+          },
     });
   }
 

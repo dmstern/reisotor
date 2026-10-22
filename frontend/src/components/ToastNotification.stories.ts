@@ -22,6 +22,9 @@ export const InteractiveDemo: Story = {
         showToast({
           message: 'Element gelöscht. Es befindet sich nun im Papierkorb.',
           type: 'info',
+          onRestore: () => {
+            showToast({ message: 'Element wiederhergestellt!', type: 'success' });
+          },
         });
       }
 

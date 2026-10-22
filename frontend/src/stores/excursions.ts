@@ -6,6 +6,7 @@ import { useScheduleStore } from './schedule';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
+import { restoreTrashItem } from '../api/trash';
 export interface ExcursionFormData {
   trip_id?: number;
   title: string;
@@ -82,7 +83,15 @@ export const useExcursionsStore = defineStore('excursions', () => {
     await api.delete(`/ideas/${id}`);
     excursions.value = excursions.value.filter((e) => e.id !== id);
     await useScheduleStore().load();
-    showToast('Element gelöscht. Es befindet sich nun im Papierkorb.');
+    showToast({
+      message: 'Element gelöscht. Es befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('excursion', id);
+        await load();
+        await useScheduleStore().load();
+      },
+    });
   }
 
   /** Setzt/ändert nur das Datum (Drag&Drop auf einen Kalendertag) – restliche Felder bleiben,

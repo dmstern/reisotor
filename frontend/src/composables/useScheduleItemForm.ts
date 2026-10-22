@@ -6,6 +6,7 @@ import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
+import { restoreTrashItem } from '../api/trash';
 import { parseLatLngFromMapsLink } from '../utils/googleMaps';
 
 export interface UseScheduleItemFormOptions {
@@ -307,8 +308,17 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
   async function deleteEditingItem() {
     if (!editingItem.value || isItemUploadingAttachments.value) return;
     const ideaId = editingItem.value.idea_id;
-    await scheduleStore.remove(editingItem.value.id);
-    showToast({ message: 'Termin gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
+    const id = editingItem.value.id;
+    await scheduleStore.remove(id);
+    showToast({
+      message: 'Termin gelöscht. Er befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('schedule_item', id);
+        await scheduleStore.load();
+        await syncExcursionsIfLinked(ideaId);
+      },
+    });
     await syncExcursionsIfLinked(ideaId);
     closeEditForm();
   }

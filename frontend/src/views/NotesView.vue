@@ -20,6 +20,7 @@ import DraftBadge from '../components/DraftBadge.vue';
 import PendingSyncBadge from '../components/PendingSyncBadge.vue';
 import { formatDateTime } from '../utils/dateFormat';
 import { useToast } from '../composables/useToast';
+import { restoreTrashItem } from '../api/trash';
 import { useDraftAutosave } from '../composables/useDraftAutosave';
 import AppIcon from '../components/AppIcon.vue';
 import Accordion from '../components/primitives/Accordion.vue';
@@ -329,7 +330,14 @@ async function remove(id: number) {
   try {
     await api.delete(`/notes/${id}`);
     notes.value = notes.value.filter((n) => n.id !== id);
-    showToast({ message: 'Notiz gelöscht. Sie befindet sich nun im Papierkorb.', type: 'info' });
+    showToast({
+      message: 'Notiz gelöscht. Sie befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('note', id);
+        await load();
+      },
+    });
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Notiz konnte nicht gelöscht werden.';
   }

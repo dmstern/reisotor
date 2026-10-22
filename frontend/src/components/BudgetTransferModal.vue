@@ -13,6 +13,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { useBudgetStore } from '../stores/budget';
 import { useBudgetTransferForm } from '../composables/useBudgetTransferForm';
 import { useToast } from '../composables/useToast';
+import { restoreTrashItem } from '../api/trash';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -81,10 +82,15 @@ async function handleSubmit() {
 
 async function handleDelete() {
   if (props.transfer) {
-    await budgetStore.removeTransfer(props.transfer.id);
+    const transferId = props.transfer.id;
+    await budgetStore.removeTransfer(transferId);
     showToast({
       message: 'Überweisung gelöscht. Sie befindet sich nun im Papierkorb.',
       type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('budget_transfer', transferId);
+        await budgetStore.load();
+      },
     });
   }
   handleClose();

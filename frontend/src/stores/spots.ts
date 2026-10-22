@@ -6,6 +6,7 @@ import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useScheduleStore } from './schedule';
 import { useToast } from '../composables/useToast';
+import { restoreTrashItem } from '../api/trash';
 import { useTripCategoriesStore } from './tripCategories';
 export interface SpotFormData {
   trip_id: number;
@@ -119,7 +120,14 @@ export const useSpotsStore = defineStore('spots', () => {
     const { showToast } = useToast();
     await api.delete(`/spots/${id}`);
     spots.value = spots.value.filter((s) => s.id !== id);
-    showToast({ message: 'Ort gelöscht. Er befindet sich nun im Papierkorb.', type: 'info' });
+    showToast({
+      message: 'Ort gelöscht. Er befindet sich nun im Papierkorb.',
+      type: 'info',
+      onRestore: async () => {
+        await restoreTrashItem('spot', id);
+        await load();
+      },
+    });
   }
 
   async function toggleLike(spotId: number, userId: number) {
