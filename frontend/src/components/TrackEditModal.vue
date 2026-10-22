@@ -259,7 +259,7 @@ async function deleteEditingTrack() {
             <Input
               v-model="editTrackTitle"
               type="text"
-              placeholder="z. B. Spaziergang im Plänterwald"
+              placeholder="z. B. Wanderung zur Berghütte"
               :maxlength="100"
               :modified="modified"
             />
