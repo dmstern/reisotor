@@ -6,6 +6,7 @@ import {
   isGoodPhoto,
   isTitleMatch,
   buildPhotoCacheKey,
+  buildSearchQueries,
 } from '../../src/utils/placePhoto.js';
 
 describe('placePhoto utility', () => {
@@ -67,6 +68,31 @@ describe('placePhoto utility', () => {
       const key1 = buildPhotoCacheKey('  Stephansdom  ', 48.2085, 16.3738, ' Wien ');
       const key2 = buildPhotoCacheKey('stephansdom', 48.2085, 16.3738, 'wien');
       expect(key1).toBe(key2);
+    });
+  });
+
+  describe('buildSearchQueries', () => {
+    it('generates cascading queries from specific to broad', () => {
+      const queries = buildSearchQueries('Trinkteufel', 'Berlin', 'Nachtleben');
+      expect(queries).toEqual([
+        'Trinkteufel Berlin Nachtleben',
+        'Trinkteufel Berlin',
+        'Trinkteufel',
+      ]);
+    });
+
+    it('handles query strings that already contain city and category', () => {
+      const queries = buildSearchQueries('Trinkteufel Berlin Nachtleben', 'Berlin', 'Nachtleben');
+      expect(queries).toEqual([
+        'Trinkteufel Berlin Nachtleben',
+        'Trinkteufel Berlin',
+        'Trinkteufel',
+      ]);
+    });
+
+    it('falls back to bare name when city and category are absent', () => {
+      const queries = buildSearchQueries('Sesamstraße');
+      expect(queries).toEqual(['Sesamstraße']);
     });
   });
 
@@ -350,7 +376,7 @@ describe('placePhoto utility', () => {
 
     it('prefers web image search before falling back to Wikipedia', async () => {
       const fetchMock = vi.fn((url: string) => {
-        if (url.includes('images.search.yahoo.com')) {
+        if (url.includes('bing.com') || url.includes('images.search.yahoo.com')) {
           return Promise.resolve({
             ok: true,
             text: () =>
@@ -371,6 +397,55 @@ describe('placePhoto utility', () => {
 
       const photo = await fetchPlacePhoto({ name: 'Franken Bar', city: 'Berlin' });
       expect(photo).toBe('https://media-cdn.tripadvisor.com/media/photo-s/bar.jpg');
+    });
+
+    it('includes category in web search query and parses Bing iusc JSON attributes', async () => {
+      let calledUrl = '';
+      const fetchMock = vi.fn((url: string) => {
+        calledUrl = url;
+        if (url.includes('bing.com')) {
+          return Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div class="iusc" style="height:198px;width:264px" m="{&quot;murl&quot;:&quot;https://example.com/trinkteufel.jpg&quot;,&quot;turl&quot;:&quot;https://ts4.mm.bing.net/th?id=OIP.123&quot;,&quot;t&quot;:&quot;Trinkteufel Kreuzberg Berlin&quot;,&quot;purl&quot;:&quot;https://kreuzberg24.net/trinkteufel&quot;}"></div>`
+              ),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const photo = await fetchPlacePhoto({
+        name: 'Trinkteufel',
+        city: 'Berlin',
+        category: 'Nachtleben',
+      });
+      expect(calledUrl).toContain('Trinkteufel');
+      expect(calledUrl).toContain('Berlin');
+      expect(calledUrl).toContain('Nachtleben');
+      expect(photo).toBe('https://ts4.mm.bing.net/th?id=OIP.123&w=1000');
+    });
+
+    it('falls back to murl if Bing turl is missing or invalid', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div class="iusc" style="height:198px;width:264px" m="{&quot;murl&quot;:&quot;https://example.com/trinkteufel_direct.jpg&quot;,&quot;t&quot;:&quot;Trinkteufel Kreuzberg Berlin&quot;}"></div>`
+              ),
+          })
+        )
+      );
+
+      const photo = await fetchPlacePhoto({
+        name: 'Trinkteufel',
+        city: 'Berlin',
+      });
+      expect(photo).toBe('https://example.com/trinkteufel_direct.jpg');
     });
   });
 });
