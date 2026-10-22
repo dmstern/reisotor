@@ -6,3 +6,6 @@
 - 🎨 **Farbmodus für Icons**: In den Icon-Einstellungen lässt sich die Farbgebung (Farbig oder Monochrom) für Navigation, Wetter und Kategorien nun über kompakte Umschalter direkt unter den jeweiligen Bereichen festlegen.
 - 🌈 **Alle Akzentfarben auf einen Blick**: Die Trennung zwischen kräftigen und pastellfarbenen Farbtönen wurde vereinfacht – alle 24 vorbereiteten Akzentfarben stehen nun direkt in einer gemeinsamen, übersichtlichen Farbauswahl bereit.
 - 🎨 **Erscheinungsbild-Auswahl**: Das Dropdown-Menü für das Farbschema legt sich beim Ausklappen nun zuverlässig über nachfolgende Einstellungs-Karten, anstatt von ihnen verdeckt zu werden.
+- 🔄 **Offline-Synchronisation im Überblick**: Ausstehende Änderungen können in den Konto-Einstellungen nun direkt im Detail eingesehen, einzeln übertragen, bearbeitet oder verworfen werden.
+- ⚠️ **Fehlerhinweise bei Sync-Problemen**: Schlägt die Synchronisation von Offline-Änderungen fehl (z. B. durch Server- oder Schemakonflikte), informiert nun ein direkter Hinweis mit Einsicht in die Fehlerursache.
+- 🛠️ **Automatische Daten-Reparatur**: Veraltete lokal gespeicherte Daten und Cache-Einträge werden bei Versions- oder Schemaänderungen automatisch überprüft, repariert und auf das neueste Format migriert.
