@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { computed, ref } from 'vue';
 import {
   useLeafletTripMap,
+  calcFitBoundsPadding,
   trackPlaybackIcon,
   TRACK_START_ICON,
   TRACK_GOAL_ICON,
@@ -81,5 +82,61 @@ describe('useLeafletTripMap', () => {
       leafletTripMap.renderPositions();
       leafletTripMap.updateTrackPlaybackMarker();
     }).not.toThrow();
+  });
+
+  it('calculates generous centered padding for photos with room for focus banner and day strip', () => {
+    // Foto-Fokus: Mindestens 190px oben (unter Fokus-Banner), 120px unten (über Day-Strip), 90px links/rechts
+    const padding = calcFitBoundsPadding({
+      isPhotos: true,
+      hasFocusBanner: true,
+      coveredLeftPx: 0,
+      coveredBottomPx: 0,
+      mapSize: { x: 1200, y: 800 },
+    });
+
+    expect(padding.paddingTop).toBe(190);
+    expect(padding.paddingBottom).toBe(120);
+    expect(padding.paddingLeft).toBe(90);
+    expect(padding.paddingRight).toBe(90);
+  });
+
+  it('incorporates coveredLeftPx and coveredBottomPx with photo margins', () => {
+    const padding = calcFitBoundsPadding({
+      isPhotos: true,
+      hasFocusBanner: true,
+      coveredLeftPx: 400,
+      coveredBottomPx: 200,
+      mapSize: { x: 1400, y: 900 },
+    });
+
+    expect(padding.paddingLeft).toBe(400 + 90);
+    expect(padding.paddingBottom).toBe(200 + 48);
+    expect(padding.paddingTop).toBe(190);
+    expect(padding.paddingRight).toBe(90);
+  });
+
+  it('scales down padding on small screens to prevent map clipping', () => {
+    // 300px Höhe -> max 75% = 225px. 190 + 120 = 310 > 225
+    const padding = calcFitBoundsPadding({
+      isPhotos: true,
+      hasFocusBanner: true,
+      mapSize: { x: 200, y: 300 },
+    });
+
+    expect(padding.paddingTop + padding.paddingBottom).toBeLessThanOrEqual(225);
+    expect(padding.paddingLeft + padding.paddingRight).toBeLessThanOrEqual(150);
+  });
+
+  it('uses standard padding when not in photo mode', () => {
+    const standard = calcFitBoundsPadding({
+      isPhotos: false,
+      coveredLeftPx: 0,
+      coveredBottomPx: 0,
+      mapSize: { x: 1000, y: 800 },
+    });
+    expect(standard.paddingTop).toBe(32);
+    expect(standard.paddingBottom).toBe(32);
+    expect(standard.paddingLeft).toBe(32);
+    expect(standard.paddingRight).toBe(32);
   });
 });
