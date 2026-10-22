@@ -1,7 +1,42 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { getActivePinia } from 'pinia';
 import { useToast, type ToastItem } from '../composables/useToast';
+import { useTripStore } from '../stores/trip';
 
 const { toasts, removeToast } = useToast();
+
+const trashRoute = computed(() => {
+  if (getActivePinia()) {
+    try {
+      const tripStore = useTripStore();
+      if (tripStore.currentTripId != null) {
+        return `/trip/${tripStore.currentTripId}/trash`;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+  return '/trash';
+});
+
+interface MessageSegment {
+  text: string;
+  isTrashLink: boolean;
+}
+
+function parseMessageSegments(message: string): MessageSegment[] {
+  if (!message.includes('Papierkorb')) {
+    return [{ text: message, isTrashLink: false }];
+  }
+  const parts = message.split(/(Papierkorb)/g);
+  return parts
+    .filter((part) => part.length > 0)
+    .map((part) => ({
+      text: part,
+      isTrashLink: part === 'Papierkorb',
+    }));
+}
 
 function handleActionClick(toast: ToastItem) {
   toast.action?.onClick?.();
@@ -21,7 +56,19 @@ function handleActionClick(toast: ToastItem) {
           :role="toast.type === 'error' ? 'alert' : 'status'"
         >
           <div class="toast-content">
-            <span class="toast-message">{{ toast.message }}</span>
+            <span class="toast-message">
+              <template v-for="(seg, idx) in parseMessageSegments(toast.message)" :key="idx">
+                <RouterLink
+                  v-if="seg.isTrashLink"
+                  :to="trashRoute"
+                  class="toast-inline-link"
+                  @click="removeToast(toast.id)"
+                >
+                  {{ seg.text }}
+                </RouterLink>
+                <template v-else>{{ seg.text }}</template>
+              </template>
+            </span>
             <RouterLink
               v-if="toast.action && toast.action.to"
               :to="toast.action.to"
@@ -111,6 +158,24 @@ function handleActionClick(toast: ToastItem) {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.toast-inline-link {
+  font-weight: 600;
+  color: var(--color-primary, #9141ac);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.toast-inline-link:hover {
+  text-decoration: none;
+}
+
+.toast-inline-link:focus-visible {
+  outline: 2px solid var(--color-primary, #9141ac);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs, 2px);
 }
 
 .toast-action {
