@@ -564,10 +564,11 @@ watch(
 watch(
   () => [drawers.mapFocusTrackId, drawers.focusVersion],
   ([trackId]) => {
-    if (trackId != null && isSheetOverlayMode.value) {
+    if (trackId != null) {
       groupMode.value = 'tracks';
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(

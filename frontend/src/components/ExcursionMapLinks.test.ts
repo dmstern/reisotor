@@ -45,4 +45,28 @@ describe('ExcursionMapLinks', () => {
     expect(html).toContain('GPS Wanderung');
     expect(html).toContain('🦊');
   });
+
+  it('calls drawers.openMapForTrack when track button is clicked', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const { useDrawersStore } = await import('../stores/drawers');
+    const drawers = useDrawersStore();
+    const container = document.createElement('div');
+    const app = createApp({
+      render: () =>
+        h(ExcursionMapLinks, {
+          hasMappedStations: false,
+          linkedTracks: mockTracks,
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+
+    const btn = container.querySelector<HTMLButtonElement>('.show-on-map-btn');
+    expect(btn).not.toBeNull();
+    btn?.click();
+
+    expect(drawers.mapFocusTrackId).toBe(1);
+    app.unmount();
+  });
 });
