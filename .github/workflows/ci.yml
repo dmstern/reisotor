@@ -81,6 +81,7 @@ jobs:
         run: |
           npm run lint
           npm run format:check
+          npm run check:release-notes
 
   backend-unit-and-build:
     name: Backend (Unit Tests & Build)
