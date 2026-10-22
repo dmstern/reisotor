@@ -47,6 +47,8 @@ import {
   IconTent,
   IconParking,
   IconCash,
+  IconBriefcase,
+  IconStethoscope,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -349,6 +351,20 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     color: '#059669',
     tabler: { id: 'cash', emoji: '🏧', outline: IconCash },
     aliases: ['atm', 'geldautomat', 'bank', 'wechselstube'],
+  },
+  {
+    label: 'Unternehmen',
+    icon: '💼',
+    color: '#475569',
+    tabler: { id: 'briefcase', emoji: '💼', outline: IconBriefcase },
+    aliases: ['unternehmen', 'büro', 'firma', 'agentur', 'office', 'company', 'arbeitsplatz'],
+  },
+  {
+    label: 'Gesundheit',
+    icon: '🩺',
+    color: '#0284c7',
+    tabler: { id: 'stethoscope', emoji: '🩺', outline: IconStethoscope },
+    aliases: ['gesundheit', 'arzt', 'ärzte', 'zahnarzt', 'praxis', 'klinik', 'doctor', 'dentist'],
   },
 ];
 

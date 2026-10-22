@@ -135,7 +135,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
       try {
         activeAbortController = new AbortController();
         const bias = options.proximityBias?.value ?? options.center?.value;
-        let url = `/api/places/search?q=${encodeURIComponent(trimmed)}`;
+        let url = `/api/places/search?q=${encodeURIComponent(trimmed)}&limit=10`;
         if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
           url += `&lat=${bias.lat}&lng=${bias.lng}`;
         }
