@@ -161,6 +161,101 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     }
   }
 
+  function getNavClearance(body: HTMLElement): number {
+    const navWrap = categoryNavEl.value?.closest('.category-nav-wrap') as HTMLElement | null;
+    const bodyStyle = getComputedStyle(body);
+    const bodyPaddingTop = parseFloat(bodyStyle.paddingTop) || 0;
+
+    if (navWrap && navWrap.offsetParent !== null) {
+      const navTop = parseFloat(getComputedStyle(navWrap).top) || 0;
+      const navHeight = navWrap.getBoundingClientRect().height;
+      return Math.max(0, bodyPaddingTop + navTop + navHeight);
+    }
+    if (categoryNavEl.value && categoryNavEl.value.offsetParent !== null) {
+      return bodyPaddingTop + categoryNavEl.value.getBoundingClientRect().height;
+    }
+    if (categoryNavEl.value && categoryNavHeight.value) {
+      return bodyPaddingTop + categoryNavHeight.value;
+    }
+    return bodyPaddingTop;
+  }
+
+  function getEstimatedExpandedHeight(el: HTMLElement): number {
+    let height = el.getBoundingClientRect().height;
+
+    // Accordions transitioning with grid-template-rows 0fr -> 1fr (Spot details, action bar)
+    const accordions = el.querySelectorAll<HTMLElement>(
+      '.spot-accordion.is-expanded, .actions-accordion.is-expanded'
+    );
+    for (const acc of accordions) {
+      const inner = acc.firstElementChild as HTMLElement | null;
+      if (inner) {
+        const currentAccHeight = acc.getBoundingClientRect().height;
+        const fullInnerHeight = inner.scrollHeight;
+        if (fullInnerHeight > currentAccHeight) {
+          height += fullInnerHeight - currentAccHeight;
+        }
+      }
+    }
+
+    // Tour note container max-height animation
+    const tourNote = el.querySelector<HTMLElement>('.tour-note-container.is-expanded');
+    if (tourNote) {
+      const currentNoteHeight = tourNote.getBoundingClientRect().height;
+      const fullNoteHeight = tourNote.scrollHeight;
+      if (fullNoteHeight > currentNoteHeight) {
+        height += fullNoteHeight - currentNoteHeight;
+      }
+    }
+
+    // Spot cover image expanding on narrow containers (100px -> 145px)
+    const img = el.querySelector<HTMLElement>('.image.is-expanded');
+    if (img) {
+      const imgHeight = img.getBoundingClientRect().height;
+      const spotsColEl = el.closest('.spots-col');
+      if (imgHeight < 145 && spotsColEl && spotsColEl.clientWidth <= 480) {
+        height += 145 - imgHeight;
+      }
+    }
+
+    return height;
+  }
+
+  function isCardWellVisibleInBody(el: HTMLElement | null, offsetAdjustment = 0): boolean {
+    if (!el || !el.isConnected) return false;
+    const body = spotsColBodyEl.value;
+    if (!body) return false;
+
+    const bodyRect = body.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const navClearance = getNavClearance(body);
+    const bodyPaddingBottom = parseFloat(getComputedStyle(body).paddingBottom) || 0;
+
+    const visibleTop = bodyRect.top + navClearance;
+    const visibleBottom = bodyRect.bottom - bodyPaddingBottom;
+    const visibleHeight = visibleBottom - visibleTop;
+
+    const projectedTop = elRect.top + offsetAdjustment;
+    const expandedHeight = getEstimatedExpandedHeight(el);
+    const projectedBottom = projectedTop + expandedHeight;
+
+    const safetyMargin = 8;
+
+    if (expandedHeight > visibleHeight - safetyMargin * 2) {
+      return false;
+    }
+
+    if (projectedTop < visibleTop + safetyMargin) {
+      return false;
+    }
+
+    if (projectedBottom > visibleBottom - safetyMargin) {
+      return false;
+    }
+
+    return true;
+  }
+
   async function scrollToElementInBody(
     elGetter: () => HTMLElement | null | undefined,
     offsetAdjustment = 0,
@@ -225,22 +320,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     const currentScrollTop = body.scrollTop;
     const elTopInBody = currentScrollTop + (elRect.top - bodyRect.top) + offsetAdjustment;
 
-    let navClearance = 0;
-    const navWrap = categoryNavEl.value?.closest('.category-nav-wrap') as HTMLElement | null;
-    const bodyStyle = getComputedStyle(body);
-    const bodyPaddingTop = parseFloat(bodyStyle.paddingTop) || 0;
-
-    if (navWrap && navWrap.offsetParent !== null) {
-      const navTop = parseFloat(getComputedStyle(navWrap).top) || 0;
-      const navHeight = navWrap.getBoundingClientRect().height;
-      navClearance = Math.max(0, bodyPaddingTop + navTop + navHeight);
-    } else if (categoryNavEl.value && categoryNavEl.value.offsetParent !== null) {
-      navClearance = bodyPaddingTop + categoryNavEl.value.getBoundingClientRect().height;
-    } else if (categoryNavEl.value && categoryNavHeight.value) {
-      navClearance = bodyPaddingTop + categoryNavHeight.value;
-    } else {
-      navClearance = bodyPaddingTop;
-    }
+    const navClearance = getNavClearance(body);
 
     const spacing = 16;
     const targetScrollTop = Math.max(0, elTopInBody - navClearance - spacing);
@@ -479,6 +559,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     scrollToExcursion,
     scrollToSpot,
     getSpotElement,
+    isCardWellVisibleInBody,
     cancelProgrammaticScroll,
   };
 }
