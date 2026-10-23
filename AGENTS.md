@@ -6,10 +6,10 @@ Reisotor ist eine Vue 3 + Fastify-Web-App zur gemeinsamen Reiseplanung, ursprün
 Personen pro Haushalt gebaut. Registrierung ist offen (E-Mail-Adresse, `routes/auth.ts`), Zugriff
 auf einen Urlaub ist aber zusätzlich per Mitgliedschaft (`trip_members`) beschränkt — wer einen
 Urlaub anlegt, ist zunächst allein darauf, weitere Personen müssen erst per Autocomplete-Suche
-eingeladen werden. Siehe `README.md` für Features, lokale Setup-/Deploy-Schritte und
-Umgebungsvariablen; **`ARCHITECTURE.md`** für die vollständige Architektur-Beschreibung (Backend,
+eingeladen werden. Siehe `README.md` für Features und lokale Setup-Schritte sowie `DEPLOYMENT.md` für
+Server-Deployment und Umgebungsvariablen; **`ARCHITECTURE.md`** für die vollständige Architektur-Beschreibung (Backend,
 Datenbank, Auth-Details, Frontend, Realtime/Offline, Deployment) **und eine Code-Map** (welche
-Route/welcher Store/welche View zu welcher Domäne gehört) — beide Dateien werden nicht automatisch
+Route/welcher Store/welche View zu welcher Domäne gehört) — diese Dateien werden nicht automatisch
 geladen, bei Bedarf gezielt lesen statt den Code selbst zu explorieren/zu grep'en. Diese Datei hält
 nur fest, was Claude Code bei **jeder** Session parat haben soll: Befehle und verbindliche
 Arbeits-/Workflow-Konventionen.
@@ -19,7 +19,7 @@ Arbeits-/Workflow-Konventionen.
 Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.json`](package.json) (`npm run dev`, `test`, `build`, `typecheck`, `lint`, `format`, `seed` etc.). Bei Bedarf direkt in `package.json` nachschlagen.
 
 - **Einzelne Tests ausführen (strikte Pflicht für Agenten):** Backend: `npx -y vitest run backend/test/<pfad> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1`; Frontend: `npm --prefix frontend test -- <pfad> --bail 1`; E2E: `npx -y playwright test <pfad-zur-spec>`. Niemals gesamte Test-Suiten im Chat ausführen.
-- **Voraussetzungen:** Node.js 20+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md`.
+- **Voraussetzungen:** Node.js 20+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md` und `DEPLOYMENT.md`.
 
 ## Parallele Sessions & Worktree-Disziplin (Konfliktvermeidung & Clean Exit)
 
