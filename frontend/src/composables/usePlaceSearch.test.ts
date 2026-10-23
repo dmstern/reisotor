@@ -128,5 +128,58 @@ describe('usePlaceSearch', () => {
     expect(search.isOpen.value).toBe(false);
     expect(search.results.value).toEqual([]);
     expect(search.shortlinkDetected.value).toBe(false);
+    expect(search.hasMore.value).toBe(false);
+    expect(search.isLoadingMore.value).toBe(false);
+  });
+
+  it('supports lazy loading with hasMore and loadMore', async () => {
+    const page1 = Array.from({ length: 10 }, (_, i) => ({
+      id: `id-${i}`,
+      name: `Cafe ${i}`,
+      formatted_address: `Address ${i}`,
+      lat: 52 + i * 0.01,
+      lng: 13 + i * 0.01,
+    }));
+    const page2 = Array.from({ length: 5 }, (_, i) => ({
+      id: `id-${i + 10}`,
+      name: `Cafe ${i + 10}`,
+      formatted_address: `Address ${i + 10}`,
+      lat: 52.2 + i * 0.01,
+      lng: 13.2 + i * 0.01,
+    }));
+
+    const requestedUrls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        requestedUrls.push(url);
+        if (url.includes('offset=10')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(page2),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(page1),
+        });
+      })
+    );
+
+    const search = usePlaceSearch();
+    search.handleInput('cafe berlin', true);
+
+    await vi.waitFor(() => {
+      expect(search.results.value.length).toBe(10);
+      expect(search.hasMore.value).toBe(true);
+    });
+
+    expect(requestedUrls[0]).toContain('/api/places/search?q=cafe%20berlin&limit=10');
+
+    await search.loadMore();
+
+    expect(requestedUrls[1]).toContain('/api/places/search?q=cafe%20berlin&limit=10&offset=10');
+    expect(search.results.value.length).toBe(15);
+    expect(search.hasMore.value).toBe(false); // second batch had 5 (<10)
   });
 });

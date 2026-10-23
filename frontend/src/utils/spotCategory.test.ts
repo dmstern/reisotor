@@ -13,6 +13,15 @@ describe('spotCategory', () => {
     expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Campingplatz');
     expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Parkplatz');
     expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Geldautomat & Bank');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Bar');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Kneipe');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Club');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Agentur');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Unternehmen');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Kino');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Eiscafé');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Bibliothek & Buchhandlung');
+    expect(SPOT_CATEGORY_SUGGESTIONS).toContain('Krankenhaus & Klinik');
   });
 
   it('provides valid IconDef and emoji for all known spot categories', () => {
@@ -33,6 +42,14 @@ describe('spotCategory', () => {
     expect(spotCategoryMeta('camping').icon).toBe('⛺');
     expect(spotCategoryMeta('atm').icon).toBe('🏧');
     expect(spotCategoryMeta('parkplatz').icon).toBe('🅿️');
+    expect(spotCategoryMeta('club').icon).toBe('🪩');
+    expect(spotCategoryMeta('kneipe').icon).toBe('🍺');
+    expect(spotCategoryMeta('bar').icon).toBe('🍸');
+    expect(spotCategoryMeta('agentur').icon).toBe('💻');
+    expect(spotCategoryMeta('kino').icon).toBe('🎬');
+    expect(spotCategoryMeta('eisdiele').icon).toBe('🍨');
+    expect(spotCategoryMeta('krankenhaus').icon).toBe('🏥');
+    expect(spotCategoryMeta('bibliothek').icon).toBe('📚');
   });
 
   it('falls back to map-pin for unknown categories', () => {

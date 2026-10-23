@@ -30,6 +30,8 @@ export interface UsePlaceSearchOptions {
 export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
   const inputText = ref('');
   const isSearching = ref(false);
+  const isLoadingMore = ref(false);
+  const hasMore = ref(false);
   const isOpen = ref(false);
   const results = ref<PlaceSearchResult[]>([]);
   const activeIndex = ref(-1);
@@ -96,6 +98,8 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
 
     if (classification.type === 'empty') {
       isSearching.value = false;
+      isLoadingMore.value = false;
+      hasMore.value = false;
       isOpen.value = false;
       results.value = [];
       activeIndex.value = -1;
@@ -104,6 +108,8 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
 
     if (classification.type === 'maps_link') {
       isSearching.value = false;
+      isLoadingMore.value = false;
+      hasMore.value = false;
       isOpen.value = false;
       results.value = [];
       activeIndex.value = -1;
@@ -122,6 +128,8 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
     const trimmed = classification.query.trim();
     if (trimmed.length < 2) {
       isSearching.value = false;
+      isLoadingMore.value = false;
+      hasMore.value = false;
       isOpen.value = false;
       results.value = [];
       activeIndex.value = -1;
@@ -129,13 +137,14 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
     }
 
     isSearching.value = true;
+    hasMore.value = false;
     activeIndex.value = -1;
 
     const runSearch = async () => {
       try {
         activeAbortController = new AbortController();
         const bias = options.proximityBias?.value ?? options.center?.value;
-        let url = `/api/places/search?q=${encodeURIComponent(trimmed)}`;
+        let url = `/api/places/search?q=${encodeURIComponent(trimmed)}&limit=10`;
         if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
           url += `&lat=${bias.lat}&lng=${bias.lng}`;
         }
@@ -143,17 +152,21 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
         const res = await fetch(url, { signal: activeAbortController.signal });
         if (!res.ok) {
           results.value = [];
+          hasMore.value = false;
           isOpen.value = true;
           return;
         }
         const data = (await res.json()) as PlaceSearchResult[];
-        results.value = Array.isArray(data) ? data : [];
+        const list = Array.isArray(data) ? data : [];
+        results.value = list;
+        hasMore.value = list.length >= 10;
         isOpen.value = true;
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           return;
         }
         results.value = [];
+        hasMore.value = false;
       } finally {
         isSearching.value = false;
       }
@@ -166,10 +179,75 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
     }
   }
 
+  async function loadMore() {
+    if (isLoadingMore.value || isSearching.value || !hasMore.value) {
+      return;
+    }
+
+    const classification = classifyLocationInput(inputText.value);
+    if (classification.type !== 'query') {
+      return;
+    }
+
+    const trimmed = classification.query.trim();
+    if (trimmed.length < 2) {
+      return;
+    }
+
+    isLoadingMore.value = true;
+    try {
+      const bias = options.proximityBias?.value ?? options.center?.value;
+      const offset = results.value.length;
+      let url = `/api/places/search?q=${encodeURIComponent(trimmed)}&limit=10&offset=${offset}`;
+      if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
+        url += `&lat=${bias.lat}&lng=${bias.lng}`;
+      }
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        hasMore.value = false;
+        return;
+      }
+
+      const data = (await res.json()) as PlaceSearchResult[];
+      if (!Array.isArray(data) || data.length === 0) {
+        hasMore.value = false;
+        return;
+      }
+
+      const existingIds = new Set(results.value.map((r) => r.id).filter(Boolean));
+      const newItems: PlaceSearchResult[] = [];
+      for (const item of data) {
+        if (item.id && existingIds.has(item.id)) {
+          continue;
+        }
+        const isDup = results.value.some(
+          (r) =>
+            Math.abs(r.lat - item.lat) < 0.0005 &&
+            Math.abs(r.lng - item.lng) < 0.0005 &&
+            r.name.toLowerCase() === item.name.toLowerCase()
+        );
+        if (!isDup) {
+          newItems.push(item);
+          if (item.id) existingIds.add(item.id);
+        }
+      }
+
+      results.value = [...results.value, ...newItems];
+      hasMore.value = data.length >= 10 && results.value.length < 50;
+    } catch {
+      hasMore.value = false;
+    } finally {
+      isLoadingMore.value = false;
+    }
+  }
+
   function selectPlace(place: PlaceSearchResult) {
     selectedPlace.value = place;
     inputText.value = '';
     isOpen.value = false;
+    hasMore.value = false;
+    isLoadingMore.value = false;
     results.value = [];
     activeIndex.value = -1;
     options.onSelectPlace?.(place);
@@ -178,6 +256,8 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
   function resetSearch() {
     selectedPlace.value = null;
     isOpen.value = false;
+    hasMore.value = false;
+    isLoadingMore.value = false;
     results.value = [];
     activeIndex.value = -1;
     shortlinkDetected.value = false;
@@ -241,12 +321,15 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
   return {
     inputText,
     isSearching,
+    isLoadingMore,
+    hasMore,
     isOpen,
     results,
     activeIndex,
     selectedPlace,
     shortlinkDetected,
     handleInput,
+    loadMore,
     selectPlace,
     resetSearch,
     clearSearch,

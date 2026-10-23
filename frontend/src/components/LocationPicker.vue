@@ -263,11 +263,14 @@ function onBlur(e: FocusEvent) {
 const {
   inputText,
   isSearching,
+  isLoadingMore,
+  hasMore,
   isOpen,
   results,
   activeIndex,
   shortlinkDetected,
   handleInput,
+  loadMore,
   selectPlace,
   onKeydown,
   onFocus,
@@ -342,6 +345,8 @@ defineExpose({
       <LocationSearchBar
         :model-value="inputText"
         :is-searching="isSearching"
+        :is-loading-more="isLoadingMore"
+        :has-more="hasMore"
         :is-open="isOpen"
         :results="results"
         :active-index="activeIndex"
@@ -352,6 +357,7 @@ defineExpose({
         @keydown="onKeydown"
         @focus="onFocus"
         @blur="onBlur"
+        @load-more="loadMore"
         @open-manual-details="openManualDetails"
       />
 
