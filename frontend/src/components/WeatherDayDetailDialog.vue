@@ -14,7 +14,7 @@ import {
   type DailyWeather,
   type HourlyWeather,
 } from '../utils/weather';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -37,6 +37,11 @@ const hourlyList = ref<HourlyWeather[]>([]);
 const loading = ref(false);
 
 const dayAlerts = computed(() => (props.day ? detectWeatherAlerts([props.day]) : []));
+
+const isPastDay = computed(() => {
+  if (!props.day) return false;
+  return props.day.date < toLocalDateString(new Date());
+});
 
 const weatherModelLabel = computed(
   () =>
@@ -194,7 +199,13 @@ function formatDate(dateStr: string) {
             </div>
 
             <!-- Leerer Zustand -->
-            <div v-else key="empty" class="hourly-empty">Kein stündlicher Verlauf verfügbar.</div>
+            <div v-else key="empty" class="hourly-empty">
+              {{
+                isPastDay
+                  ? 'Für diesen vergangenen Tag sind keine stündlichen Verlaufsdaten verfügbar.'
+                  : 'Kein stündlicher Verlauf verfügbar.'
+              }}
+            </div>
           </Transition>
         </div>
       </div>
