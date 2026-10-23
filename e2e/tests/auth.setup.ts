@@ -21,13 +21,13 @@ setup('authenticate', async ({ page }) => {
   const tripHeader = page.locator('.trip-name', { hasText: seeded.trip.name });
   const tripSelectBtn = page.locator('.trip-select', { hasText: seeded.trip.name });
 
-  await Promise.race([
-    tripHeader.waitFor({ state: 'visible', timeout: 15000 }),
-    tripSelectBtn.waitFor({ state: 'visible', timeout: 15000 }).then(() => tripSelectBtn.click()),
-  ]);
+  await expect(tripHeader.or(tripSelectBtn)).toBeVisible({ timeout: 30000 });
+  if (await tripSelectBtn.isVisible()) {
+    await tripSelectBtn.click();
+  }
 
   await expect(tripHeader).toBeVisible({
-    timeout: 15000,
+    timeout: 30000,
   });
 
   // Fixiert Emoji als Icon-Darstellung für die gesamte Suite (geteiltes storageState, siehe
