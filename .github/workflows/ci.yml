@@ -5,7 +5,7 @@ name: CI
 # Build- und Test-Jobs im PR automatisch (spart 20 E2E-Runner und Wartezeit).
 # Nur bei Push/workflow_dispatch (nicht auf PRs): zusätzlich "Publish Release Asset" — packt
 # Frontend + Backend als reisotor-staging.tar.gz (main) bzw. reisotor-release.tar.gz (Release-Tag).
-# Der Rollout auf den Raspberry Pi passiert per Cronjob auf dem Server (README.md).
+# Der Rollout auf den Raspberry Pi passiert per Cronjob auf dem Server (DEPLOYMENT.md).
 
 on:
   push:

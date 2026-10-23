@@ -170,7 +170,7 @@ Push auf `main` baut via `.github/workflows/ci.yml` (Workflow „CI": Unit-Tests
 alles gated) und veröffentlicht das Release-Paket `reisotor-staging.tar.gz` auf dem Pre-Release-Tag
 `staging` (Server pollt das, deployt auf DEV). Produktion bekommt nur semver-Tags: `release.yml` setzt
 `vX.Y.Z`, dessen Push den gleichen Workflow mit Paket `reisotor-release.tar.gz` an das neue Release
-anhängt (siehe `README.md`). Die SQLite-Datei wird beim Deploy nie überschrieben. Details/Befehle: `README.md`.
+anhängt (siehe `DEPLOYMENT.md`). Die SQLite-Datei wird beim Deploy nie überschrieben. Details/Befehle: `DEPLOYMENT.md`.
 
 ## Code-Map
 
