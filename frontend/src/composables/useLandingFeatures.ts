@@ -43,6 +43,18 @@ export interface UseLandingFeaturesOptions {
   storybookUrl?: string;
 }
 
+export interface DistinctFrame {
+  id: string;
+  stepIndex: number;
+  highlightIndices: number[];
+  screenshotLight: string;
+  screenshotDark: string;
+  screenshotMobileLight: string;
+  screenshotMobileDark: string;
+  routePill: string;
+  alt: string;
+}
+
 export function getHighlightText(hl: HighlightItem): string {
   return typeof hl === 'string' ? hl : hl.text;
 }
@@ -58,17 +70,26 @@ export function getHighlightScreenshot(
   routePill: string;
   alt: string;
 } {
-  const hl = feature.highlights[highlightIndex];
-  if (hl && typeof hl === 'object') {
-    return {
-      screenshotLight: hl.screenshotLight ?? feature.screenshotLight,
-      screenshotDark: hl.screenshotDark ?? feature.screenshotDark,
-      screenshotMobileLight: hl.screenshotMobileLight ?? feature.screenshotMobileLight,
-      screenshotMobileDark: hl.screenshotMobileDark ?? feature.screenshotMobileDark,
-      routePill: hl.routePill ?? feature.routePill,
-      alt: hl.alt ?? feature.alt,
-    };
+  const maxIdx = Math.max(0, feature.highlights.length - 1);
+  const clampedIdx = Math.max(0, Math.min(highlightIndex, maxIdx));
+
+  // If the current highlight has an explicit screenshot, use it.
+  // Otherwise, inherit from the most recent previous highlight with an explicit screenshot
+  // to avoid jitter when multiple bullet points belong to the same screenshot.
+  for (let i = clampedIdx; i >= 0; i--) {
+    const hl = feature.highlights[i];
+    if (hl && typeof hl === 'object' && hl.screenshotLight) {
+      return {
+        screenshotLight: hl.screenshotLight,
+        screenshotDark: hl.screenshotDark ?? feature.screenshotDark,
+        screenshotMobileLight: hl.screenshotMobileLight ?? feature.screenshotMobileLight,
+        screenshotMobileDark: hl.screenshotMobileDark ?? feature.screenshotMobileDark,
+        routePill: hl.routePill ?? feature.routePill,
+        alt: hl.alt ?? feature.alt,
+      };
+    }
   }
+
   return {
     screenshotLight: feature.screenshotLight,
     screenshotDark: feature.screenshotDark,
@@ -77,6 +98,30 @@ export function getHighlightScreenshot(
     routePill: feature.routePill,
     alt: feature.alt,
   };
+}
+
+export function getFeatureDistinctFrames(feature: ScrollyFeature, stepIdx = 0): DistinctFrame[] {
+  const frames: DistinctFrame[] = [];
+  feature.highlights.forEach((_, hIdx) => {
+    const sc = getHighlightScreenshot(feature, hIdx);
+    const existing = frames.find((f) => f.screenshotLight === sc.screenshotLight);
+    if (existing) {
+      existing.highlightIndices.push(hIdx);
+    } else {
+      frames.push({
+        id: `${feature.id}-${frames.length}`,
+        stepIndex: stepIdx,
+        highlightIndices: [hIdx],
+        screenshotLight: sc.screenshotLight,
+        screenshotDark: sc.screenshotDark,
+        screenshotMobileLight: sc.screenshotMobileLight,
+        screenshotMobileDark: sc.screenshotMobileDark,
+        routePill: sc.routePill || feature.routePill,
+        alt: sc.alt || feature.alt,
+      });
+    }
+  });
+  return frames;
 }
 
 export function getBaseUrl(envBaseUrl?: string): string {

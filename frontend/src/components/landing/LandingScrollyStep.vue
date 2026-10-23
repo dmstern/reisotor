@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { IconCheck } from '@tabler/icons-vue';
 import Kicker from '../primitives/Kicker.vue';
 import {
+  getFeatureDistinctFrames,
   getHighlightText,
-  getHighlightScreenshot,
   type ScrollyFeature,
 } from '../../composables/useLandingFeatures';
 
@@ -22,6 +23,10 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'selectHighlight', index: number): void;
 }>();
+
+const distinctFrames = computed(() => {
+  return getFeatureDistinctFrames(props.feature, props.index);
+});
 
 function isRevealed(hIdx: number): boolean {
   if (props.isActive) {
@@ -86,21 +91,18 @@ function isRevealed(hIdx: number): boolean {
         <div class="mobile-device-mockup inline">
           <div class="mockup-screen mobile-screen">
             <div
-              v-for="(_, hIdx) in feature.highlights"
-              :key="'m-frame-' + hIdx"
+              v-for="frame in distinctFrames"
+              :key="'m-frame-' + frame.id"
               class="screenshot-frame"
               :class="{
-                'is-active': (activeHighlightIndex ?? 0) === hIdx,
+                'is-active': frame.highlightIndices.includes(activeHighlightIndex ?? 0),
               }"
             >
               <picture>
-                <source
-                  :srcset="getHighlightScreenshot(feature, hIdx).screenshotMobileDark"
-                  media="(prefers-color-scheme: dark)"
-                />
+                <source :srcset="frame.screenshotMobileDark" media="(prefers-color-scheme: dark)" />
                 <img
-                  :src="getHighlightScreenshot(feature, hIdx).screenshotMobileLight"
-                  :alt="getHighlightScreenshot(feature, hIdx).alt"
+                  :src="frame.screenshotMobileLight"
+                  :alt="frame.alt"
                   loading="lazy"
                   class="screenshot-img"
                 />

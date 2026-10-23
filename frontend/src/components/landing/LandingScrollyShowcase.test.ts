@@ -123,4 +123,41 @@ describe('LandingScrollyShowcase', () => {
     expect(htmlH1).toContain('Granular Pill');
     expect(htmlH1).toContain('/granular-light.png');
   });
+
+  it('does not swap or duplicate frames when consecutive highlights share the same screenshot', async () => {
+    const featureWithShared: ScrollyFeature = {
+      ...mockFeatures[0],
+      highlights: [
+        {
+          text: 'Calendar point',
+          screenshotLight: '/calendar.png',
+          screenshotDark: '/calendar-dark.png',
+          screenshotMobileLight: '/calendar-m.png',
+          screenshotMobileDark: '/calendar-m-dark.png',
+          routePill: 'Kalender',
+        },
+        {
+          text: 'Dashboard point 1',
+          screenshotLight: '/dashboard.png',
+          screenshotDark: '/dashboard-dark.png',
+          screenshotMobileLight: '/dashboard-m.png',
+          screenshotMobileDark: '/dashboard-m-dark.png',
+          routePill: 'Dashboard',
+        },
+        'Dashboard point 2 without custom screenshot',
+        'Dashboard point 3 without custom screenshot',
+      ],
+    };
+
+    const html = await renderComponent({
+      features: [featureWithShared],
+      activeStepIndex: 0,
+      activeHighlightIndex: 1,
+      glowOpacities: [1],
+    });
+
+    // Exactly 1 frame rendered for /dashboard.png, not 3!
+    const matches = html.match(/src="\/dashboard\.png"/g);
+    expect(matches).toHaveLength(1);
+  });
 });
