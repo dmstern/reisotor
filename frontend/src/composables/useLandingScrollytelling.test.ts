@@ -124,8 +124,18 @@ describe('useLandingScrollytelling', () => {
     initObservers();
     const stepObserver = createdObservers[0];
     cleanupObservers();
-
     expect(removeEventListenerSpy).toHaveBeenCalledWith('scroll', expect.any(Function));
     expect(stepObserver.disconnect).toHaveBeenCalled();
+  });
+
+  it('supports tracking and setting activeHighlightIndex', () => {
+    const { activeStepIndex, activeHighlightIndex, setActiveHighlight } =
+      useLandingScrollytelling();
+    expect(activeStepIndex.value).toBe(0);
+    expect(activeHighlightIndex.value).toBe(0);
+
+    setActiveHighlight(1, 2);
+    expect(activeStepIndex.value).toBe(1);
+    expect(activeHighlightIndex.value).toBe(2);
   });
 });

@@ -39,6 +39,32 @@ const LANDING_SYNC_MAP: Record<string, string> = {
   'diary-mobile-dark.png': 'screenshot-diary-mobile-dark.png',
   'spots-desktop-light.png': 'screenshot-spots-light.png',
   'spots-desktop-dark.png': 'screenshot-spots-dark.png',
+  'spots-mobile-light.png': 'screenshot-spots-mobile-light.png',
+  'spots-mobile-dark.png': 'screenshot-spots-mobile-dark.png',
+  'calendar-desktop-light.png': 'screenshot-calendar-light.png',
+  'calendar-desktop-dark.png': 'screenshot-calendar-dark.png',
+  'calendar-mobile-light.png': 'screenshot-calendar-mobile-light.png',
+  'calendar-mobile-dark.png': 'screenshot-calendar-mobile-dark.png',
+  'dialog-leg-desktop-light.png': 'screenshot-dialog-leg-light.png',
+  'dialog-leg-desktop-dark.png': 'screenshot-dialog-leg-dark.png',
+  'dialog-leg-mobile-light.png': 'screenshot-dialog-leg-mobile-light.png',
+  'dialog-leg-mobile-dark.png': 'screenshot-dialog-leg-mobile-dark.png',
+  'dialog-budget-pot-desktop-light.png': 'screenshot-dialog-budget-pot-light.png',
+  'dialog-budget-pot-desktop-dark.png': 'screenshot-dialog-budget-pot-dark.png',
+  'dialog-budget-pot-mobile-light.png': 'screenshot-dialog-budget-pot-mobile-light.png',
+  'dialog-budget-pot-mobile-dark.png': 'screenshot-dialog-budget-pot-mobile-dark.png',
+  'dialog-packing-desktop-light.png': 'screenshot-dialog-packing-light.png',
+  'dialog-packing-desktop-dark.png': 'screenshot-dialog-packing-dark.png',
+  'dialog-packing-mobile-light.png': 'screenshot-dialog-packing-mobile-light.png',
+  'dialog-packing-mobile-dark.png': 'screenshot-dialog-packing-mobile-dark.png',
+  'dialog-spot-create-desktop-light.png': 'screenshot-dialog-spot-create-light.png',
+  'dialog-spot-create-desktop-dark.png': 'screenshot-dialog-spot-create-dark.png',
+  'dialog-spot-create-mobile-light.png': 'screenshot-dialog-spot-create-mobile-light.png',
+  'dialog-spot-create-mobile-dark.png': 'screenshot-dialog-spot-create-mobile-dark.png',
+  'map-photos-desktop-light.png': 'screenshot-map-photos-light.png',
+  'map-photos-desktop-dark.png': 'screenshot-map-photos-dark.png',
+  'map-photos-mobile-light.png': 'screenshot-map-photos-mobile-light.png',
+  'map-photos-mobile-dark.png': 'screenshot-map-photos-mobile-dark.png',
 };
 
 const ALIAS_COPY_MAP: Record<string, string> = {
@@ -392,6 +418,119 @@ async function setupScreenshotMocks(page: Page) {
     }
     await route.fulfill({ json });
   });
+
+  // 11. Mock places search for spot creation dialog
+  await page.route('**/api/places/search*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 'node/101',
+          name: 'Pastéis de Belém',
+          formatted_address: 'Rua de Belém 84-92, 1300-085 Lissabon',
+          address: 'Rua de Belém 84-92',
+          lat: 38.6975,
+          lng: -9.2032,
+          category: 'Bäckerei / Café',
+          city: 'Lissabon',
+          country: 'Portugal',
+        },
+        {
+          id: 'node/102',
+          name: 'Antiga Confeitaria de Belém',
+          formatted_address: 'Belém, 1300-085 Lissabon',
+          address: 'Belém',
+          lat: 38.6976,
+          lng: -9.2033,
+          category: 'Sehenswürdigkeit',
+          city: 'Lissabon',
+          country: 'Portugal',
+        },
+      ]),
+    });
+  });
+
+  // 12. Mock attachments for map-photos view
+  await page.route('**/api/attachments*', async (route) => {
+    const url = route.request().url();
+    if (url.includes('trip_id=')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: 101,
+            url: '/demo/spot-hotel-alfama.jpg',
+            original_name: 'Hotel Alfama Innenhof.jpg',
+            mime_type: 'image/jpeg',
+            created_at: '2026-08-14T16:00:00Z',
+          },
+          {
+            id: 102,
+            url: '/demo/spot-santa-luzia.jpg',
+            original_name: 'Miradouro Santa Luzia Azulejos.jpg',
+            mime_type: 'image/jpeg',
+            created_at: '2026-08-15T10:30:00Z',
+          },
+          {
+            id: 103,
+            url: '/demo/spot-castelo-de-sao-jorge.jpg',
+            original_name: 'Ausblick vom Castelo.jpg',
+            mime_type: 'image/jpeg',
+            created_at: '2026-08-15T14:00:00Z',
+          },
+          {
+            id: 104,
+            url: '/demo/spot-time-out-market.jpg',
+            original_name: 'Time Out Market Petiscos.jpg',
+            mime_type: 'image/jpeg',
+            created_at: '2026-08-15T19:30:00Z',
+          },
+          {
+            id: 105,
+            url: '/demo/spot-torre-de-belem.jpg',
+            original_name: 'Torre de Belém Sonnenuntergang.jpg',
+            mime_type: 'image/jpeg',
+            created_at: '2026-08-16T11:00:00Z',
+          },
+        ]),
+      });
+      return;
+    }
+    const response = await route.fetch();
+    await route.fulfill({ response });
+  });
+
+  await page.addInitScript(() => {
+    (window as any).__REISOTOR_EXIF_MAP__ = {
+      '/demo/spot-hotel-alfama.jpg': {
+        latitude: 38.7125,
+        longitude: -9.1298,
+        dateTime: new Date('2026-08-14T16:00:00Z'),
+      },
+      '/demo/spot-santa-luzia.jpg': {
+        latitude: 38.7116,
+        longitude: -9.1302,
+        dateTime: new Date('2026-08-15T10:30:00Z'),
+      },
+      '/demo/spot-castelo-de-sao-jorge.jpg': {
+        latitude: 38.7139,
+        longitude: -9.1334,
+        dateTime: new Date('2026-08-15T14:00:00Z'),
+      },
+      '/demo/spot-time-out-market.jpg': {
+        latitude: 38.7069,
+        longitude: -9.1459,
+        dateTime: new Date('2026-08-15T19:30:00Z'),
+      },
+      '/demo/spot-torre-de-belem.jpg': {
+        latitude: 38.6916,
+        longitude: -9.216,
+        dateTime: new Date('2026-08-16T11:00:00Z'),
+      },
+    };
+  });
 }
 
 async function applyScreenshotStyles(page: Page) {
@@ -426,6 +565,7 @@ const VIEWS = [
   { slug: 'spots', path: '/excursions?group=category' },
   { slug: 'tour', path: '/excursions?group=tours#excursion-3' },
   { slug: 'tracks', path: '/excursions?group=tracks' },
+  { slug: 'map-photos', path: '/excursions?group=category' },
   { slug: 'calendar', path: '/calendar' },
   { slug: 'budget', path: '/budget' },
   { slug: 'notes', path: '/notes' },
@@ -500,6 +640,27 @@ const DIALOGS: DialogSpec[] = [
       await btn.click();
     },
     waitSelector: '.modal:has-text("Spot bearbeiten")',
+  },
+  {
+    slug: 'dialog-spot-create',
+    path: '/excursions?group=category',
+    open: async (page) => {
+      const addBtn = page
+        .locator('button[aria-label="Neuer Spot"], button[title="Neuer Spot"]')
+        .first();
+      await addBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await addBtn.click();
+      const modal = page.locator('.modal:has-text("Neuer Spot")');
+      await modal.waitFor({ state: 'visible', timeout: 10000 });
+      const searchInput = modal.locator('.location-picker-input');
+      await searchInput.fill('Pastéis de Belém');
+      await page
+        .locator('.location-result-item')
+        .first()
+        .waitFor({ state: 'visible', timeout: 10000 });
+      await page.waitForTimeout(400);
+    },
+    waitSelector: '.modal:has-text("Neuer Spot")',
   },
   {
     slug: 'dialog-tour',
@@ -748,10 +909,16 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             } else {
               localStorage.setItem('reisotor-drawer-calendar-open', 'false');
             }
-            if (isDesktop && (slug === 'spots' || slug === 'tour' || slug === 'tracks')) {
+            if (
+              isDesktop &&
+              (slug === 'spots' || slug === 'tour' || slug === 'tracks' || slug === 'map-photos')
+            ) {
               localStorage.setItem('reisotor-spots-col-width', '960');
             } else if (!isDesktop) {
               localStorage.setItem('reisotor-spots-col-width', '380');
+              if (slug === 'map-photos') {
+                localStorage.setItem('reisotor-spots-sheet-state', 'collapsed');
+              }
             }
           },
           { slug: view.slug, isDesktop: vp.name === 'desktop' }
@@ -805,10 +972,36 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
           await page.waitForTimeout(400);
         }
 
-        // Spots / Tour / Tracks view specific preparation: wait for spots drawer & map container to be visible
-        if (view.slug === 'spots' || view.slug === 'tour' || view.slug === 'tracks') {
+        // Spots / Tour / Tracks / Map-Photos view specific preparation: wait for spots drawer & map container to be visible
+        if (
+          view.slug === 'spots' ||
+          view.slug === 'tour' ||
+          view.slug === 'tracks' ||
+          view.slug === 'map-photos'
+        ) {
           await page.locator('.spots-col').waitFor({ state: 'visible', timeout: 15_000 });
           await page.locator('.leaflet-container').waitFor({ state: 'visible', timeout: 15_000 });
+          await waitForMapTiles(page);
+        }
+
+        // Map-Photos view specific preparation: trigger map focus on all photos
+        if (view.slug === 'map-photos') {
+          const focusBtn = page
+            .locator('.fit-btn.focus-btn, button[aria-label*="Kartenausschnitt & Ausrichtung"]')
+            .first();
+          if (await focusBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+            await focusBtn.click();
+            const photoItem = page.locator(
+              '.focus-picker-menu button:has-text("Alle Fotos mit Standort"), .dropdown-item:has-text("Alle Fotos mit Standort")'
+            );
+            await photoItem.waitFor({ state: 'visible', timeout: 5000 });
+            await photoItem.click();
+          }
+          await page
+            .locator('.photo-map-pin')
+            .first()
+            .waitFor({ state: 'visible', timeout: 10000 })
+            .catch(() => {});
           await waitForMapTiles(page);
         }
 

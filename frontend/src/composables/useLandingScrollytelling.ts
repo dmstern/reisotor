@@ -5,6 +5,8 @@ export interface UseLandingScrollytellingOptions {
   stepCount?: number;
   /** DOM-Selektor für die Scrollytelling-Textschritte (Standard: '.scrolly-step'). */
   stepSelector?: string;
+  /** DOM-Selektor für die Granularitäts-Trigger einzelner Highlights (Standard: '.highlight-trigger'). */
+  triggerSelector?: string;
   /** DOM-Selektor für scrollanimierte Container (Standard: '.scroll-animate'). */
   scrollSelector?: string;
   /** Vertikaler Faktor für das Sichtfeld-Zentrum (Standard: 0.5 für 50% der Fensterhöhe). */
@@ -17,7 +19,10 @@ export interface UseLandingScrollytellingOptions {
 
 export interface UseLandingScrollytellingReturn {
   activeIndex: Ref<number>;
+  activeStepIndex: Ref<number>;
+  activeHighlightIndex: Ref<number>;
   glowOpacities: Ref<number[]>;
+  setActiveHighlight: (stepIndex: number, highlightIndex: number) => void;
   updateGlow: () => void;
   initObservers: () => void;
   cleanupObservers: () => void;
@@ -25,7 +30,7 @@ export interface UseLandingScrollytellingReturn {
 
 /**
  * Kapselt das Scrollytelling-Verhalten der Landingpage:
- * - Ermittlung des aktiven Scrolly-Schritts per IntersectionObserver (mit Hysterese-Margen)
+ * - Ermittlung des aktiven Scrolly-Schritts und aktiven Unter-Highlights per Scroll & IntersectionObserver
  * - Dynamische Berechnung von Ambient-Glow-Opazitäten anhand der Scroll-Distanz zum Viewport-Zentrum
  * - Fallback-IntersectionObserver für Browser ohne CSS animation-timeline view() Support
  */
@@ -35,6 +40,7 @@ export function useLandingScrollytelling(
   const {
     stepCount = 5,
     stepSelector = '.scrolly-step',
+    triggerSelector = '.highlight-trigger',
     scrollSelector = '.scroll-animate',
     viewportCenterRatio = 0.5,
     maxDistRatio = 0.6,
@@ -44,8 +50,14 @@ export function useLandingScrollytelling(
     },
   } = options;
 
-  const activeIndex = ref(0);
+  const activeStepIndex = ref(0);
+  const activeHighlightIndex = ref(0);
   const glowOpacities = ref<number[]>(Array.from({ length: stepCount }, () => 0));
+
+  function setActiveHighlight(stepIdx: number, highlightIdx: number) {
+    activeStepIndex.value = stepIdx;
+    activeHighlightIndex.value = highlightIdx;
+  }
 
   let stepObserver: IntersectionObserver | null = null;
   let scrollObserver: IntersectionObserver | null = null;
@@ -68,6 +80,36 @@ export function useLandingScrollytelling(
     glowOpacities.value = opacities;
   }
 
+  function updateScrollState() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    updateGlow();
+
+    const triggers = document.querySelectorAll(triggerSelector);
+    if (triggers.length) {
+      const triggerLine = window.innerHeight * 0.45;
+      let foundStep = -1;
+      let foundHighlight = -1;
+      for (const trigger of triggers) {
+        if ((trigger as HTMLElement).offsetParent === null) continue;
+        const rect = trigger.getBoundingClientRect();
+        if (rect.top <= triggerLine) {
+          const s = trigger.getAttribute('data-step');
+          const h = trigger.getAttribute('data-highlight');
+          if (s !== null && h !== null) {
+            foundStep = parseInt(s, 10);
+            foundHighlight = parseInt(h, 10);
+          }
+        } else {
+          break;
+        }
+      }
+      if (foundStep !== -1) {
+        activeStepIndex.value = foundStep;
+        activeHighlightIndex.value = foundHighlight;
+      }
+    }
+  }
+
   function initObservers() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
@@ -79,7 +121,12 @@ export function useLandingScrollytelling(
           if (entry.isIntersecting) {
             const indexAttr = entry.target.getAttribute('data-index');
             if (indexAttr !== null) {
-              activeIndex.value = parseInt(indexAttr, 10);
+              const parsed = parseInt(indexAttr, 10);
+              activeStepIndex.value = parsed;
+              const triggers = document.querySelectorAll(triggerSelector);
+              if (!triggers.length) {
+                activeHighlightIndex.value = 0;
+              }
             }
           }
         });
@@ -118,6 +165,7 @@ export function useLandingScrollytelling(
 
   function cleanupObservers() {
     if (typeof window !== 'undefined') {
+      window.removeEventListener('scroll', updateScrollState);
       window.removeEventListener('scroll', updateGlow);
     }
     stepObserver?.disconnect();
@@ -129,8 +177,8 @@ export function useLandingScrollytelling(
   if (getCurrentInstance()) {
     onMounted(() => {
       if (typeof window !== 'undefined') {
-        window.addEventListener('scroll', updateGlow, { passive: true });
-        updateGlow();
+        window.addEventListener('scroll', updateScrollState, { passive: true });
+        updateScrollState();
         initObservers();
       }
     });
@@ -141,8 +189,11 @@ export function useLandingScrollytelling(
   }
 
   return {
-    activeIndex,
+    activeIndex: activeStepIndex,
+    activeStepIndex,
+    activeHighlightIndex,
     glowOpacities,
+    setActiveHighlight,
     updateGlow,
     initObservers,
     cleanupObservers,

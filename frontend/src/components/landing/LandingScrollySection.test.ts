@@ -33,7 +33,7 @@ describe('LandingScrollySection', () => {
     return renderToString(app);
   }
 
-  it('renders section header, badge, and scrolly layout', async () => {
+  it('renders section header, badge, and scrolly layout with step tracks and triggers', async () => {
     const html = await renderComponent({
       features: mockFeatures,
       activeIndex: 0,
@@ -45,5 +45,9 @@ describe('LandingScrollySection', () => {
     expect(html).toContain('scrolly-badge');
     expect(html).toContain('scrolly-layout');
     expect(html).toContain('reisotor.app/dashboard');
+    expect(html).toContain('class="scrolly-step-track"');
+    expect(html).toContain('class="highlight-trigger"');
+    expect(html).toContain('data-step="0"');
+    expect(html).toContain('data-highlight="0"');
   });
 });

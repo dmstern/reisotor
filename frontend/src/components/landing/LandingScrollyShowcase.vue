@@ -1,11 +1,53 @@
 <script setup lang="ts">
-import type { ScrollyFeature } from '../../composables/useLandingFeatures';
+import { computed } from 'vue';
+import {
+  getFeatureDistinctFrames,
+  getHighlightScreenshot,
+  type ScrollyFeature,
+} from '../../composables/useLandingFeatures';
 
-defineProps<{
-  features: readonly ScrollyFeature[];
-  activeIndex: number;
-  glowOpacities: number[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    features: readonly ScrollyFeature[];
+    activeIndex?: number;
+    activeStepIndex?: number;
+    activeHighlightIndex?: number;
+    glowOpacities: number[];
+  }>(),
+  {
+    activeIndex: 0,
+    activeStepIndex: undefined,
+    activeHighlightIndex: 0,
+  }
+);
+
+const effectiveStepIndex = computed(() => props.activeStepIndex ?? props.activeIndex ?? 0);
+const effectiveHighlightIndex = computed(() => props.activeHighlightIndex ?? 0);
+
+const currentShowcase = computed(() => {
+  const f = props.features[effectiveStepIndex.value];
+  if (!f) return null;
+  return getHighlightScreenshot(f, effectiveHighlightIndex.value);
+});
+
+const currentRoutePill = computed(() => {
+  return (
+    currentShowcase.value?.routePill || props.features[effectiveStepIndex.value]?.routePill || ''
+  );
+});
+
+const allDistinctFrames = computed(() => {
+  return props.features.flatMap((f, idx) => getFeatureDistinctFrames(f, idx));
+});
+
+const activeFrameIndex = computed(() => {
+  const step = effectiveStepIndex.value;
+  const highlight = effectiveHighlightIndex.value;
+  const idx = allDistinctFrames.value.findIndex(
+    (f) => f.stepIndex === step && f.highlightIndices.includes(highlight)
+  );
+  return idx !== -1 ? idx : 0;
+});
 </script>
 
 <template>
@@ -20,28 +62,28 @@ defineProps<{
           </div>
           <div class="chrome-address-bar">
             <span class="address-lock">🔒</span>
-            <span class="address-domain">reisotor.app/{{ features[activeIndex]?.id }}</span>
+            <span class="address-domain">reisotor.app/{{ features[effectiveStepIndex]?.id }}</span>
           </div>
           <div class="chrome-tag">
-            {{ features[activeIndex]?.routePill }}
+            {{ currentRoutePill }}
           </div>
         </div>
         <div class="mockup-screen">
           <div
-            v-for="(feature, idx) in features"
-            :key="feature.id"
+            v-for="(frame, fIdx) in allDistinctFrames"
+            :key="'desktop-frame-' + frame.id"
             class="screenshot-frame"
             :class="{
-              'is-active': activeIndex === idx,
-              'is-prev': activeIndex > idx,
-              'is-next': activeIndex < idx,
+              'is-active': fIdx === activeFrameIndex,
+              'is-prev': fIdx < activeFrameIndex,
+              'is-next': fIdx > activeFrameIndex,
             }"
           >
             <picture>
-              <source :srcset="feature.screenshotDark" media="(prefers-color-scheme: dark)" />
+              <source :srcset="frame.screenshotDark" media="(prefers-color-scheme: dark)" />
               <img
-                :src="feature.screenshotLight"
-                :alt="feature.alt"
+                :src="frame.screenshotLight"
+                :alt="frame.alt"
                 loading="lazy"
                 class="screenshot-img"
               />
@@ -54,20 +96,20 @@ defineProps<{
       <div class="mobile-device-mockup">
         <div class="mockup-screen mobile-screen">
           <div
-            v-for="(feature, idx) in features"
-            :key="'mobile-' + feature.id"
+            v-for="(frame, fIdx) in allDistinctFrames"
+            :key="'overlay-mobile-frame-' + frame.id"
             class="screenshot-frame"
             :class="{
-              'is-active': activeIndex === idx,
-              'is-prev': activeIndex > idx,
-              'is-next': activeIndex < idx,
+              'is-active': fIdx === activeFrameIndex,
+              'is-prev': fIdx < activeFrameIndex,
+              'is-next': fIdx > activeFrameIndex,
             }"
           >
             <picture>
-              <source :srcset="feature.screenshotMobileDark" media="(prefers-color-scheme: dark)" />
+              <source :srcset="frame.screenshotMobileDark" media="(prefers-color-scheme: dark)" />
               <img
-                :src="feature.screenshotMobileLight"
-                :alt="feature.alt"
+                :src="frame.screenshotMobileLight"
+                :alt="frame.alt"
                 loading="lazy"
                 class="screenshot-img"
               />

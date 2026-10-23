@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getBaseUrl, getScrollyFeatures, useLandingFeatures } from './useLandingFeatures';
+import {
+  getBaseUrl,
+  getScrollyFeatures,
+  useLandingFeatures,
+  getHighlightText,
+  getHighlightScreenshot,
+  getFeatureDistinctFrames,
+} from './useLandingFeatures';
 
 describe('useLandingFeatures', () => {
   describe('getBaseUrl', () => {
@@ -75,6 +82,38 @@ describe('useLandingFeatures', () => {
       expect(repoUrl).toBe('https://github.com/custom/repo');
       expect(demoUrl).toBe('/custom-demo/');
       expect(storybookUrl).toBe('/custom-storybook/');
+    });
+  });
+
+  describe('getHighlightText and getHighlightScreenshot', () => {
+    it('returns the text from string or object highlights', () => {
+      expect(getHighlightText('Simple text')).toBe('Simple text');
+      expect(getHighlightText({ text: 'Object text' })).toBe('Object text');
+    });
+
+    it('returns custom screenshots when defined on highlight, and inherits from preceding highlights or falls back to feature defaults', () => {
+      const features = getScrollyFeatures('/');
+      const spots = features.find((f) => f.id === 'spots')!;
+      const hl0 = getHighlightScreenshot(spots, 0);
+      expect(hl0.screenshotLight).toContain('screenshot-dialog-spot-create-light.png');
+      expect(hl0.routePill).toBe('Spot-Suche');
+
+      const dashboard = features.find((f) => f.id === 'dashboard')!;
+      // Index 2 is a plain string highlight that inherits from index 1 (Dashboard & Wetter)
+      const hl2 = getHighlightScreenshot(dashboard, 2);
+      expect(hl2.screenshotLight).toBe(dashboard.screenshotLight);
+      expect(hl2.routePill).toBe('Dashboard & Wetter');
+    });
+
+    it('groups highlights that share the same screenshot into distinct frames', () => {
+      const features = getScrollyFeatures('/');
+      const dashboard = features.find((f) => f.id === 'dashboard')!;
+      const frames = getFeatureDistinctFrames(dashboard, 0);
+
+      // Dashboard has 4 highlights, but only 2 distinct screenshots (calendar and dashboard overview)
+      expect(frames).toHaveLength(2);
+      expect(frames[0].highlightIndices).toEqual([0]);
+      expect(frames[1].highlightIndices).toEqual([1, 2, 3]);
     });
   });
 });
