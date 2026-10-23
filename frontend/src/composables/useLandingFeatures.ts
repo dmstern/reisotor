@@ -208,6 +208,7 @@ export function getScrollyFeatures(baseUrl: string): ScrollyFeature[] {
           screenshotDark: `${baseUrl}landing/screenshot-spots-dark.png`,
           screenshotMobileLight: `${baseUrl}landing/screenshot-spots-mobile-light.png`,
           screenshotMobileDark: `${baseUrl}landing/screenshot-spots-mobile-dark.png`,
+          alt: 'Kategorisierte Spots mit Notizen und Kommentaren',
           routePill: 'Spots & Kategorien',
         },
       ],

@@ -39,6 +39,8 @@ const LANDING_SYNC_MAP: Record<string, string> = {
   'diary-mobile-dark.png': 'screenshot-diary-mobile-dark.png',
   'spots-desktop-light.png': 'screenshot-spots-light.png',
   'spots-desktop-dark.png': 'screenshot-spots-dark.png',
+  'spots-mobile-light.png': 'screenshot-spots-mobile-light.png',
+  'spots-mobile-dark.png': 'screenshot-spots-mobile-dark.png',
   'calendar-desktop-light.png': 'screenshot-calendar-light.png',
   'calendar-desktop-dark.png': 'screenshot-calendar-dark.png',
   'calendar-mobile-light.png': 'screenshot-calendar-mobile-light.png',
