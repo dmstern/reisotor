@@ -95,7 +95,7 @@ Gruppieren dieser Liste nach Touren (statt nach Kategorie) rendert die Gruppen-�
 echte Tour eine anklickbare `ExcursionCard.vue` statt einer reinen Text-Überschrift — ein Klick
 visualisiert die Tour-Route direkt in der danebenliegenden Karte (`drawers.openMapForExcursion()`).
 Reihenfolge/Mehrfachbesuch lassen sich im Anlege-/Bearbeiten-Formular per `SpotOrderPicker.vue`
-(Drag&Drop) pflegen; `TourAssignPicker.vue` bietet daneben im Spot-Formular einen schnelleren Weg,
+(Drag&Drop) pflegen; `TourAssignDropdown.vue` bietet daneben im Spot-Formular sowie auf der Spot-Karte einen schnelleren Weg,
 einen Spot ohne Reihenfolge einer (ggf. neuen) Tour zuzuordnen — beide schreiben in dasselbe
 `Excursion.spot_ids`.
 

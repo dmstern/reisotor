@@ -109,4 +109,20 @@ describe('SpotFormModal', () => {
     expect(document.body.textContent).not.toContain('Neuer Spot');
     cleanUp();
   });
+
+  it('renders TourAssignDropdown ("Tour zuordnen") button in edit mode', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: dummySpot,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const tourAssignBtn = document.querySelector('.tour-assign-btn');
+    expect(tourAssignBtn).not.toBeNull();
+    expect(tourAssignBtn?.textContent).toContain('Tour zuordnen');
+    cleanUp();
+  });
 });
