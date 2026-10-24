@@ -158,4 +158,63 @@ describe('SpotDoneStatus', () => {
     });
     expect(html).toContain('Geplant an 3 Tagen');
   });
+
+  it('renders calendar jump button as a compact primitive button in dates popover', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const { useDrawersStore } = await import('../stores/drawers');
+    const drawers = useDrawersStore();
+    const openCalendarSpy = vi.spyOn(drawers, 'openCalendar').mockImplementation(() => {});
+
+    const { useExcursionsStore } = await import('../stores/excursions');
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      {
+        id: 1,
+        trip_id: 1,
+        title: 'Hinflug nach Lissabon',
+        date: '2026-11-07',
+        spot_ids: [1],
+      } as unknown as Excursion,
+      {
+        id: 2,
+        trip_id: 1,
+        title: 'Rückflug nach Berlin',
+        date: '2026-11-17',
+        spot_ids: [1],
+      } as unknown as Excursion,
+    ];
+
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const app = createApp({
+      render: () =>
+        h(SpotDoneStatus, {
+          spot: mockSpot,
+          scheduledDate: '2026-11-07',
+          expanded: true,
+        }),
+    });
+    app.use(pinia);
+    app.mount(el);
+
+    // Klick auf den DoneToggle öffnet das Popover bei 2 Terminen
+    const toggleBtn = el.querySelector<HTMLButtonElement>('.done-toggle');
+    expect(toggleBtn).not.toBeNull();
+    toggleBtn?.click();
+
+    // Warten auf Teleport-Rendering im body
+    await new Promise((r) => setTimeout(r, 20));
+
+    const jumpBtns = document.body.querySelectorAll<HTMLButtonElement>('.date-calendar-jump-btn');
+    expect(jumpBtns.length).toBe(2);
+    // Button primitive hat stets die Klasse 'btn'
+    expect(jumpBtns[0].classList.contains('btn')).toBe(true);
+
+    jumpBtns[1].click();
+    expect(openCalendarSpy).toHaveBeenCalledWith('2026-11-17');
+
+    app.unmount();
+    el.remove();
+  });
 });

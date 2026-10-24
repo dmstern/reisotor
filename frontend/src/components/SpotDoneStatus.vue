@@ -227,7 +227,7 @@ function openCalendarAtDate(date: string) {
           <div v-for="item in scheduledItemsForSpot" :key="item.id" class="date-check-row">
             <button
               type="button"
-              class="date-check-item"
+              class="date-check-item btn"
               :class="{ checked: !!item.done }"
               @click="toggleScheduledItemDone(item)"
             >
@@ -248,15 +248,18 @@ function openCalendarAtDate(date: string) {
               </span>
               <span class="date-check-status">{{ item.done ? 'Besucht' : 'Geplant' }}</span>
             </button>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              icon-only
               class="date-calendar-jump-btn"
               title="Diesen Tag im Kalender öffnen"
               :aria-label="`${formatDateShared(item.date)} im Kalender öffnen`"
               @click.stop="openCalendarAtDate(item.date)"
             >
               <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
-            </button>
+            </Button>
           </div>
         </div>
         <div class="popover-buttons">
@@ -326,6 +329,7 @@ function openCalendarAtDate(date: string) {
   flex: 1;
   min-width: 0;
   display: flex;
+  justify-content: flex-start;
   align-items: center;
   gap: var(--space-2);
   padding: 6px var(--space-2);
@@ -335,8 +339,13 @@ function openCalendarAtDate(date: string) {
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--font-size-sm);
+  font-weight: 400;
   cursor: pointer;
   text-align: left;
+  box-shadow: none;
+  translate: none;
+  transform: none;
+  width: auto;
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast);
@@ -385,27 +394,18 @@ function openCalendarAtDate(date: string) {
 }
 
 .date-calendar-jump-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 !important;
   color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    color var(--transition-fast),
-    border-color var(--transition-fast);
 }
 
 .date-calendar-jump-btn:hover {
-  background: var(--color-hover);
   color: var(--color-primary);
-  border-color: var(--color-primary);
 }
 </style>
