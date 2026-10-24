@@ -125,4 +125,26 @@ describe('CollapsibleFieldset primitive', () => {
     expect(html).toContain('route-calc-badge');
     expect(html).toContain('Exakte Route aktiv');
   });
+
+  it('applies is-open class to anim wrapper when open to allow dropdown overflow', async () => {
+    const closedApp = createTestApp(
+      CollapsibleFieldset,
+      { label: 'Closed' },
+      { default: () => h('div', 'Content') }
+    );
+    const closedHtml = await renderToString(closedApp);
+    expect(closedHtml).toContain('collapsible-anim-wrapper');
+    expect(closedHtml).not.toContain('collapsible-anim-wrapper is-open');
+
+    const openApp = createTestApp(
+      CollapsibleFieldset,
+      { label: 'Open', modelValue: true },
+      { default: () => h('div', 'Content') }
+    );
+    const openHtml = await renderToString(openApp);
+    expect(openHtml).toMatch(/class="[^"]*\bcollapsible-anim-wrapper\b[^"]*"/);
+    expect(openHtml).toMatch(
+      /<div class="[^"]*\bcollapsible-anim-wrapper\b[^"]*\bis-open\b[^"]*"|<div class="[^"]*\bis-open\b[^"]*\bcollapsible-anim-wrapper\b[^"]*"/
+    );
+  });
 });

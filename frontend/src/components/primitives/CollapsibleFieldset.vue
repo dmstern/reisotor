@@ -202,6 +202,10 @@ function toggle() {
   visibility: hidden;
 }
 
+.collapsible-anim-wrapper:not(.is-open) {
+  overflow: hidden;
+}
+
 .collapsible-anim-wrapper.is-open {
   grid-template-rows: 1fr;
   opacity: 1;
@@ -209,12 +213,19 @@ function toggle() {
 }
 
 .collapsible-anim-inner {
+  min-height: 0;
   overflow: hidden;
   /* 4px Padding + -4px Margin reservieren Platz für Fokus-Rahmen von Kind-Elementen (z. B. Input-Felder
      mit 2px outline + 1px outline-offset = 3px), damit diese an den Rändern nicht durch overflow: hidden
      abgeschnitten werden, während der visuelle Inhalt exakt ausgerichtet bleibt. */
   padding: var(--space-1, 4px);
   margin: calc(-1 * var(--space-1, 4px));
+  transition: overflow 0s 0s;
+}
+
+.collapsible-anim-wrapper.is-open .collapsible-anim-inner {
+  overflow: visible;
+  transition: overflow 0s 0.28s allow-discrete;
 }
 
 .collapsible-content {
@@ -227,7 +238,9 @@ function toggle() {
 @media (prefers-reduced-motion: reduce) {
   .collapsible-fieldset,
   .caret,
-  .collapsible-anim-wrapper {
+  .collapsible-anim-wrapper,
+  .collapsible-anim-inner,
+  .collapsible-anim-wrapper.is-open .collapsible-anim-inner {
     transition: none !important;
   }
 }
