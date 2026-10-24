@@ -33,8 +33,9 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
     - **Transparenter Stopp:** Bei uncommitteten Fremdänderungen sofort stoppen und den Nutzer kurz und sachlich informieren (z. B. welche Dateien modifiziert sind) und fragen, ob gewartet, gestasht oder in einem separaten Worktree gearbeitet werden soll.
 - **Empfehlung für echte Parallelität (Git Worktrees):**
   - Sollen mehrere Aufgaben gleichzeitig bearbeitet werden, ist die Nutzung separater Git Worktrees der verbindliche Best-Practice-Weg (in Antigravity direkt per UI-Dropdown **„New Worktree“** / `Ctrl+.` unter dem Chat-Eingabefeld, alternativ per CLI `git worktree add ../reisotor-<task> -b <task-branch>`). Dies verhindert Lock-Konflikte (`.git/index.lock`), Dateikollisionen und Wartezeiten vollständig.
-- **Clean Exit & Commit-Pflicht:**
+- **Clean Exit, Commit- & PR-Pflicht:**
   - Jede Session MUSS nach erfolgreicher Arbeit, Formatierung (`npx -y prettier --write <dateien>`), Typecheck und fokussierten Tests die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
+  - Wurde auf einem neuen Feature-Branch gearbeitet und existiert noch kein PR (`gh pr view 2>/dev/null`), MUSS der Branch gepusht (`git push -u origin <branch>`) und **automatisch ein Pull Request angelegt** werden (`gh pr create`).
   - Der Worktree darf am Ende einer Session NIEMALS mit uncommitteten Änderungen, ungetrackten Testdateien oder unformatiertem Code hinterlassen werden, damit nachfolgende Sessions sofort eine saubere Ausgangsbasis vorfinden.
 
 ## UI-Audits & Layout-Testing
@@ -152,7 +153,11 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 
 ## PR-Workflow
 
-**PR-Merge-Regel:** PRs **nicht automatisch mergen** sobald CI grün ist — auf Review/Freigabe des Nutzers warten (visueller Check anhand Screenshots).
+- **Automatische PR-Erstellung bei neuen Branches / Worktrees:**
+  - Wurde für eine Aufgabe ein neuer Branch / Worktree angelegt und existiert noch kein PR (Prüfung: `gh pr view 2>/dev/null`), MUSS der Agent am Ende der Aufgabe nach Formatierung, Tests und Commit den Branch pushen (`git push -u origin <branch>`) und **automatisch unaufgefordert einen Pull Request via `gh pr create` erstellen** (mit treffendem Titel, prägnanter Beschreibung und ggf. Issue-Referenzen wie `Fixes #...`).
+  - Der Link zum erstellten PR wird am Ende der Nachricht für die Nutzerin / den Nutzer ausgegeben.
+  - **Bestehende Branches / Folge-Chats:** Existiert für den Branch bereits ein PR (z. B. bei Folge-Chats im selben Worktree oder Multi-Phasen-Refactorings), wird **kein** zweiter PR angelegt, sondern der bestehende Branch gepusht und bei Bedarf die PR-Beschreibung aktualisiert (`gh pr edit`).
+- **PR-Merge-Regel:** PRs **nicht automatisch mergen** sobald CI grün ist — auf Review/Freigabe des Nutzers warten (visueller Check anhand Screenshots).
 
 **Issues schließen:** `Fixes #101`, `Closes #102` etc. (englische Keywords vor jeder Issue-Nummer wiederholen).
 
