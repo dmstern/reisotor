@@ -495,6 +495,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   let lastPreviewFetchKey = '';
   let previewRequestId = 0;
+  const isFetchingSpotPreview = ref(false);
   const spotPreviewImages = ref<string[]>([]);
   const selectedSpotCity = ref<string | null>(null);
 
@@ -508,6 +509,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     if (lastPreviewFetchKey === key) return;
     lastPreviewFetchKey = key;
     const reqId = ++previewRequestId;
+    isFetchingSpotPreview.value = true;
 
     try {
       const params = new URLSearchParams();
@@ -533,6 +535,10 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
     } catch {
       // Vorschau fehlgeschlagen
+    } finally {
+      if (reqId === previewRequestId) {
+        isFetchingSpotPreview.value = false;
+      }
     }
   }
 
@@ -549,6 +555,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     } else {
       previewRequestId++;
       lastPreviewFetchKey = '';
+      isFetchingSpotPreview.value = false;
     }
   }
 
@@ -606,6 +613,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function closeSpotForm() {
     previewRequestId++;
     lastPreviewFetchKey = '';
+    isFetchingSpotPreview.value = false;
     spotTitleTouched.value = false;
     showSpotForm.value = false;
     spotForm.value = emptySpotForm();
@@ -625,6 +633,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function discardNewSpotDraft() {
     previewRequestId++;
     lastPreviewFetchKey = '';
+    isFetchingSpotPreview.value = false;
     spotTitleTouched.value = false;
     spotForm.value = emptySpotForm();
     spotManualPin.value = null;
@@ -750,6 +759,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function onSpotLocationClear() {
     previewRequestId++;
     lastPreviewFetchKey = '';
+    isFetchingSpotPreview.value = false;
     spotManualPin.value = null;
     editSpotManualPin.value = null;
     activeSpotForm.value.maps_link = '';
@@ -758,6 +768,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function resetEditSpotLocation() {
     previewRequestId++;
     lastPreviewFetchKey = '';
+    isFetchingSpotPreview.value = false;
     if (!editingSpot.value) {
       triggerSpotLocationClear();
       return;
@@ -780,6 +791,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function startEditSpot(spot: Spot) {
     previewRequestId++;
     lastPreviewFetchKey = '';
+    isFetchingSpotPreview.value = false;
     spotTitleTouched.value = false;
     selectedSpotCity.value = null;
     spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
@@ -833,6 +845,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function closeEditSpotForm() {
     previewRequestId++;
     lastPreviewFetchKey = '';
+    isFetchingSpotPreview.value = false;
     spotTitleTouched.value = false;
     spotManualPin.value = null;
     editSpotManualPin.value = null;
@@ -908,6 +921,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     spotPendingFixId,
     isSpotUploadingAttachments,
     isSpotUploadingCoverImage,
+    isFetchingSpotPreview,
     spotPreviewImages,
     selectedSpotCity,
     spotPreviewImage,

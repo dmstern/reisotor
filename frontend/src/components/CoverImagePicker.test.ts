@@ -393,6 +393,33 @@ describe('CoverImagePicker component', () => {
     cleanUp();
   });
 
+  it('renders loading overlay with spinner and default text when loading is true', () => {
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      loading: true,
+    });
+
+    const overlay = container.querySelector('.banner-loading-overlay');
+    expect(overlay).not.toBeNull();
+    expect(overlay?.textContent).toContain('Bild wird gesucht…');
+    expect(container.querySelector('.banner-edit-btn')).toBeNull();
+
+    cleanUp();
+  });
+
+  it('customizes loadingText when provided', () => {
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      loading: true,
+      loadingText: 'Flughafenbild wird geladen…',
+    });
+
+    const overlay = container.querySelector('.banner-loading-overlay');
+    expect(overlay?.textContent).toContain('Flughafenbild wird geladen…');
+
+    cleanUp();
+  });
+
   describe('buildDefaultImageSearchQuery', () => {
     it('combines name, city, and category without duplicates', () => {
       expect(

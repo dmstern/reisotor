@@ -56,6 +56,8 @@ const props = withDefaults(
     variant?: 'banner' | 'polaroid';
     modified?: boolean;
     uploading?: boolean;
+    loading?: boolean;
+    loadingText?: string;
     initialValue?: string;
     searchContext?: ImageSearchContext;
     initialSuggestions?: string[];
@@ -69,6 +71,8 @@ const props = withDefaults(
     variant: 'banner',
     modified: false,
     uploading: false,
+    loading: false,
+    loadingText: 'Bild wird gesucht…',
     initialValue: undefined,
     searchContext: undefined,
     initialSuggestions: () => [],
@@ -409,45 +413,56 @@ function handleModalClose(visible: boolean) {
   <div class="cover-image-picker" :class="`cover-image-picker--${variant}`">
     <div
       class="form-image-banner"
-      :class="[`form-image-banner--${variant}`, { 'is-modified': isModified }]"
+      :class="[
+        `form-image-banner--${variant}`,
+        { 'is-modified': isModified, 'is-loading': loading },
+      ]"
       :style="effectivePreview ? { backgroundImage: `url(${effectivePreview})` } : {}"
     >
-      <Badge v-if="isModified" variant="accent" size="sm" class="banner-badge-modified">
-        <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
-        Bild geändert
-      </Badge>
-      <AppIcon
-        v-if="!effectivePreview"
-        class="placeholder"
-        :size="variant === 'polaroid' ? 28 : 35"
-        :icon="placeholderIcon"
-        :group="iconGroup"
-      />
-      <div class="banner-actions">
-        <Button
-          v-if="isModified"
-          type="button"
-          variant="ghost"
-          class="banner-reset-btn"
-          title="Änderungen am Bild zurücksetzen"
-          @click.stop="resetImage"
-        >
-          <AppIcon :icon="ACTION_ICONS.restore" :size="13" group="actions" />
-          {{ variant === 'polaroid' ? '' : 'Zurücksetzen' }}
-        </Button>
-        <Button type="button" variant="ghost" class="banner-edit-btn" @click="showModal = true">
-          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-          {{
-            variant === 'polaroid'
-              ? modelValue
-                ? 'Ändern'
-                : 'Foto'
-              : modelValue
-                ? 'Bild bearbeiten'
-                : 'Bild hinzufügen'
-          }}
-        </Button>
+      <div v-if="loading" class="banner-loading-overlay" aria-live="polite">
+        <div class="banner-loading-shimmer" aria-hidden="true" />
+        <LoadingSpinner :size="variant === 'polaroid' ? 'md' : 'sm'" />
+        <span class="banner-loading-text">{{ loadingText || 'Bild wird gesucht…' }}</span>
       </div>
+
+      <template v-else>
+        <Badge v-if="isModified" variant="accent" size="sm" class="banner-badge-modified">
+          <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
+          Bild geändert
+        </Badge>
+        <AppIcon
+          v-if="!effectivePreview"
+          class="placeholder"
+          :size="variant === 'polaroid' ? 28 : 35"
+          :icon="placeholderIcon"
+          :group="iconGroup"
+        />
+        <div class="banner-actions">
+          <Button
+            v-if="isModified"
+            type="button"
+            variant="ghost"
+            class="banner-reset-btn"
+            title="Änderungen am Bild zurücksetzen"
+            @click.stop="resetImage"
+          >
+            <AppIcon :icon="ACTION_ICONS.restore" :size="13" group="actions" />
+            {{ variant === 'polaroid' ? '' : 'Zurücksetzen' }}
+          </Button>
+          <Button type="button" variant="ghost" class="banner-edit-btn" @click="showModal = true">
+            <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+            {{
+              variant === 'polaroid'
+                ? modelValue
+                  ? 'Ändern'
+                  : 'Foto'
+                : modelValue
+                  ? 'Bild bearbeiten'
+                  : 'Bild hinzufügen'
+            }}
+          </Button>
+        </div>
+      </template>
     </div>
 
     <Modal :model-value="showModal" :title="modalTitle" @update:model-value="handleModalClose">
@@ -630,6 +645,79 @@ function handleModalClose(visible: boolean) {
   padding: 3px 8px;
   backdrop-filter: blur(6px);
   background: color-mix(in srgb, var(--color-surface) 85%, transparent) !important;
+}
+
+.banner-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+  border-radius: inherit;
+  padding: var(--space-2);
+  text-align: center;
+  overflow: hidden;
+}
+
+.cover-image-picker--banner .banner-loading-overlay {
+  flex-direction: row;
+  gap: var(--space-3);
+}
+
+.banner-loading-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  line-height: 1.2;
+}
+
+.banner-loading-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.15) 65%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: banner-shimmer-sweep 1.8s infinite;
+  pointer-events: none;
+}
+
+[data-theme='dark'] .banner-loading-shimmer,
+:root:not([data-theme='light']) .banner-loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 35%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 65%,
+    transparent 100%
+  );
+}
+
+@keyframes banner-shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner-loading-shimmer {
+    animation: none;
+    display: none;
+  }
 }
 
 .banner-badge-modified {
