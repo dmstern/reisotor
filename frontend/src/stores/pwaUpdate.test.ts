@@ -44,6 +44,9 @@ describe('usePwaUpdateStore', () => {
 
     store.dismissUpdateDialog();
     expect(store.showUpdateDialog).toBe(false);
+
+    store.simulateUpdateAvailable();
+    expect(store.showUpdateDialog).toBe(true);
   });
 
   it('does not show update dialog when showUpdateDialogs is disabled in uiSettings', () => {

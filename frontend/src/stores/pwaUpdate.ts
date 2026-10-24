@@ -79,6 +79,26 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     updateDialogDismissed.value = true;
   }
 
+  function simulateUpdateAvailable() {
+    needRefresh.value = true;
+    updateDialogDismissed.value = false;
+  }
+
+  if (typeof window !== 'undefined') {
+    // @ts-expect-error Dev/Debug helper on window
+    window.__triggerUpdateDialog = simulateUpdateAvailable;
+    // @ts-expect-error Dev/Debug helper on window
+    window.__fakeUpdate = simulateUpdateAvailable;
+    window.addEventListener('reisotor:fake-update', simulateUpdateAvailable);
+
+    if (
+      window.location.search.includes('testUpdate') ||
+      window.location.search.includes('fakeUpdate')
+    ) {
+      simulateUpdateAvailable();
+    }
+  }
+
   // Analog zu stores/pwaInstall.ts's init(): wird einmalig aus main.ts aufgerufen.
   function init() {
     initVersionCheck();
@@ -130,6 +150,7 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     init,
     reload,
     dismissOfflineReady,
+    simulateUpdateAvailable,
     cleanup,
   };
 });
