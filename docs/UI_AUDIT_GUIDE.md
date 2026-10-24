@@ -113,7 +113,7 @@ Vor großen Releases (z. B. Reisotor 2.0) oder Meilensteinen erfolgt die ganzhei
 
 Ein vollständiger UI-Check darf **niemals als ein einziger, unstrukturierter Durchlauf in einem einzigen Kontextfenster** beauftragt werden. Solche Aufträge führen bei LLMs zu kombinatorischer Überlastung und blinden Falsch-Positiven („Alles geprüft, sieht gut aus“).
 
-Stattdessen **muss** eine systematische Aufteilung in 6 fokussierte Fachdomänen (Divide & Conquer via Subagents in Antigravity) erfolgen:
+Stattdessen **muss** eine systematische Aufteilung in 6 fokussierte Fachdomänen (Divide & Conquer via Subagents) erfolgen:
 
 - **Team 1 (Dashboard, Navigation & Trips):** `/trip/1`, `/trips` (Header, Navbar, Widgets, Reise-Wechsel)
 - **Team 2 (Spots, Touren & Karten):** `/trip/1/spots`, `/trip/1/excursions` (MapLibre-Karte, Split-View, stufenlose Spots-Spalte, Bottom-Sheets)
