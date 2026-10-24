@@ -12,6 +12,7 @@ import MapsAppPicker from './MapsAppPicker.vue';
 import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
+import SpotLocationBadge from './SpotLocationBadge.vue';
 import SocialRow from './SocialRow.vue';
 import AppIcon from './AppIcon.vue';
 import Accordion from './primitives/Accordion.vue';
@@ -163,6 +164,12 @@ const cardRotation = computed(() => {
 
     <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
     <div class="card-badge-group">
+      <SpotLocationBadge
+        v-if="spot.lat == null || spot.lng == null"
+        :spot="spot"
+        :expanded="expanded"
+        @edit="emit('edit', spot)"
+      />
       <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
       <PendingSyncBadge v-if="spot._pending" />
     </div>
@@ -205,6 +212,24 @@ const cardRotation = computed(() => {
           :maps-link="spot.maps_link"
           @click.stop
         />
+      </div>
+      <div class="map-actions map-actions--missing" v-else-if="expanded">
+        <Button
+          variant="card-action"
+          size="sm"
+          class="set-location-btn"
+          aria-label="Standort festlegen"
+          title="Standort jetzt im Bearbeiten-Dialog festlegen"
+          @click.stop="emit('edit', spot)"
+        >
+          <AppIcon
+            :icon="ACTION_ICONS.warning"
+            :size="14"
+            group="actions"
+            class="map-action-warning-icon"
+          />
+          <span class="btn-label">Standort festlegen</span>
+        </Button>
       </div>
 
       <SpotDetails
@@ -418,7 +443,8 @@ const cardRotation = computed(() => {
     gap 0.2s ease;
 }
 
-.spot-card.expanded .card-badge-group :deep(.category-chip) {
+.spot-card.expanded .card-badge-group :deep(.category-chip),
+.spot-card.expanded .card-badge-group :deep(.spot-location-badge) {
   box-shadow:
     0 1px 4px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.15);
@@ -440,7 +466,7 @@ const cardRotation = computed(() => {
 
 .spot-card.expanded:has(
     .image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)),
-    .card-badge-group:hover
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover))
   )
   .body {
   transform: translateY(-2px);
@@ -488,13 +514,33 @@ const cardRotation = computed(() => {
   padding-right: 165px;
 }
 
+.spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
+  padding-right: 235px;
+}
+
+.spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
+  padding-right: 275px;
+}
+
 .spot-card:not(.expanded):has(.category-chip.is-icon-only) .card-title-block {
   padding-right: 48px;
+}
+
+.spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.spot-location-badge)
+  .card-title-block {
+  padding-right: 155px;
 }
 
 .spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.pending-sync-badge)
   .card-title-block {
   padding-right: 84px;
+}
+
+.spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.spot-location-badge):has(
+    .pending-sync-badge
+  )
+  .card-title-block {
+  padding-right: 190px;
 }
 
 .card-title {
@@ -740,6 +786,10 @@ const cardRotation = computed(() => {
   flex-wrap: wrap;
 }
 
+.map-action-warning-icon {
+  color: var(--color-warning);
+}
+
 .spot-destination-toggle {
   display: flex;
   align-items: center;
@@ -868,6 +918,14 @@ const cardRotation = computed(() => {
     padding-right: 160px;
   }
 
+  .spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
+    padding-right: 225px;
+  }
+
+  .spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
+    padding-right: 265px;
+  }
+
   .spot-card:not(.expanded) .card-title {
     font-size: var(--font-size-sm);
   }
@@ -917,6 +975,33 @@ const cardRotation = computed(() => {
   }
 }
 
+@container spot-card (max-width: 380px) {
+  .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge) {
+    padding: 2px 4px;
+    gap: 2px;
+  }
+
+  .spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
+    padding-right: 165px;
+  }
+
+  .spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
+    padding-right: 195px;
+  }
+}
+
 @container spot-card (max-width: 340px) {
   .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label) {
     position: absolute;
@@ -959,6 +1044,14 @@ const cardRotation = computed(() => {
 
   .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
     padding-right: 76px;
+  }
+
+  .spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
+    padding-right: 76px;
+  }
+
+  .spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
+    padding-right: 104px;
   }
 
   .spot-expand-pill {

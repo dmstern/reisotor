@@ -111,4 +111,41 @@ describe('SpotCard', () => {
     expect(html).toContain('Umstieg');
     expect(html).toContain('45');
   });
+
+  it('renders spot location warning badge when spot has no coordinates in collapsed state', async () => {
+    const spotNoCoords = { ...mockSpot, lat: null, lng: null };
+    const html = await mountComponent({
+      spot: spotNoCoords,
+      creatorLabel: 'Daniel',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      expanded: false,
+      scheduledDate: null,
+      groupMode: 'category',
+    });
+
+    expect(html).toContain('spot-location-badge');
+    expect(html).toContain('Standort fehlt');
+    expect(html).not.toContain('show-on-map-btn');
+  });
+
+  it('renders "Standort festlegen" button in map-actions when expanded and coordinates are missing', async () => {
+    const spotNoCoords = { ...mockSpot, lat: null, lng: null };
+    const html = await mountComponent({
+      spot: spotNoCoords,
+      creatorLabel: 'Daniel',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      expanded: true,
+      scheduledDate: null,
+      groupMode: 'category',
+    });
+
+    expect(html).toContain('spot-location-badge');
+    expect(html).toContain('set-location-btn');
+    expect(html).toContain('Standort festlegen');
+    expect(html).not.toContain('show-on-map-btn');
+  });
 });
