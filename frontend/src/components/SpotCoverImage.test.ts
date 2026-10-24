@@ -59,7 +59,9 @@ describe('SpotCoverImage', () => {
       creatorLabel: 'Daniel',
       isAccommodation: false,
     });
-    expect(html).toContain('https://example.com/gate.jpg');
+    expect(html).toContain(
+      '/api/images/proxy?url=' + encodeURIComponent('https://example.com/gate.jpg')
+    );
     expect(html).not.toContain('placeholder');
   });
 

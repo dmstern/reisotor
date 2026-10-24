@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import type { DiaryEntry, DiaryImage, Excursion, Spot } from '../api/types';
 import type { DailyWeather } from '../utils/weather';
 import { useDrawersStore } from '../stores/drawers';
@@ -158,7 +159,9 @@ const drawers = useDrawersStore();
         >
           <span
             class="excursion-chip-img"
-            :style="ex.image_url ? { backgroundImage: `url(${ex.image_url})` } : {}"
+            :style="
+              ex.image_url ? { backgroundImage: `url(${imageDisplayUrl(ex.image_url)})` } : {}
+            "
           >
             <AppIcon
               v-if="!ex.image_url"
@@ -181,7 +184,9 @@ const drawers = useDrawersStore();
         >
           <span
             class="excursion-chip-img"
-            :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
+            :style="
+              spot.image_url ? { backgroundImage: `url(${imageDisplayUrl(spot.image_url)})` } : {}
+            "
           >
             <AppIcon
               v-if="!spot.image_url"

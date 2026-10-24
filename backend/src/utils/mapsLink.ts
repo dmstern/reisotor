@@ -122,6 +122,18 @@ const BLOCKED_HOSTNAMES = new Set([
   'lvh.me',
 ]);
 
+/** Prüft, ob eine aufgelöste IP-Adresse (v4/v6) in einem privaten/lokalen Bereich liegt.
+ *  Unbekannte/ungültige Formate gelten vorsichtshalber als privat. */
+export function isPrivateIp(ip: string): boolean {
+  const type = isIP(ip);
+  if (type === 4) {
+    const parts = ip.split('.').map(Number);
+    return isPrivateIpv4(parts[0], parts[1]);
+  }
+  if (type === 6) return isPrivateIpv6(ip.toLowerCase());
+  return true;
+}
+
 /** Prüft, ob eine URL sicher für serverseitige Fetch-Anfragen ist (SSRF-Schutz). */
 export function isSafeUrl(urlString: string): boolean {
   let parsed: URL;

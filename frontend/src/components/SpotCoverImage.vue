@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -35,7 +36,7 @@ function formatAccommodationDate(d: string | null) {
     class="image"
     :class="{ 'is-expanded': expanded }"
     :title="expanded ? 'Klicken zum Einklappen' : 'Klicken zum Aufklappen'"
-    :style="spot.image_url ? { backgroundImage: `url(${spot.image_url})` } : {}"
+    :style="spot.image_url ? { backgroundImage: `url(${imageDisplayUrl(spot.image_url)})` } : {}"
   >
     <AppIcon
       v-if="!spot.image_url"

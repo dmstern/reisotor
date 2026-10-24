@@ -3,6 +3,7 @@ import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
+import { localizeImageUrl } from '../utils/remoteImage.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { uploadsDir } from '../uploads.js';
@@ -71,6 +72,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }
     let { lat, lng, image_url } = req.body;
+    image_url = await localizeImageUrl(image_url);
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
@@ -126,6 +128,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }
     let { lat, lng, image_url } = req.body;
+    image_url = await localizeImageUrl(image_url);
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;

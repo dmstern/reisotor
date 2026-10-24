@@ -4,6 +4,7 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { uploadsDir } from '../uploads.js';
 import { isUserRestricted } from '../registrationConfig.js';
+import { downloadRemoteImage } from '../utils/remoteImage.js';
 
 interface ImageUploadBody {
   data: string;
@@ -46,5 +47,21 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
     await writeFile(path.join(uploadsDir, filename), buffer);
     reply.code(201);
     return { url: `/api/uploads/${filename}` };
+  });
+
+  // Proxy für Bildvorschläge der Web-Bildersuche: Der Browser lädt das Vorschaubild über den
+  // eigenen Server, sodass seine IP-Adresse nicht an beliebige Fremdhosts geht. Gleiche
+  // SSRF-/Größen-/Typprüfung wie beim Speichern (utils/remoteImage.ts). Kein serverseitiger
+  // Cache, nur Browser-Cache (private, 1 Tag) – spart Speicher auf dem Raspberry Pi.
+  app.get<{ Querystring: { url?: string } }>('/images/proxy', async (req, reply) => {
+    const url = req.query.url;
+    if (!url) return reply.code(400).send({ error: 'url erforderlich' });
+    const image = await downloadRemoteImage(url);
+    if (!image) return reply.code(502).send({ error: 'Bild nicht abrufbar' });
+    return reply
+      .header('Cache-Control', 'private, max-age=86400')
+      .header('X-Content-Type-Options', 'nosniff')
+      .type(image.mimeType)
+      .send(image.buffer);
   });
 };

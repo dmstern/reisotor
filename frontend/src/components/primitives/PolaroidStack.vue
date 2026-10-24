@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../../utils/imageDisplayUrl';
 import { computed, ref } from 'vue';
 import AppIcon from '../AppIcon.vue';
 import FileFormatGraphic from './FileFormatGraphic.vue';
@@ -230,7 +231,7 @@ function handleClick(e: Event) {
         <div class="polaroid-photo-frame">
           <img
             v-if="tile.imageUrl && tile.isImage && !failedImageUrls[tile.imageUrl]"
-            :src="tile.imageUrl"
+            :src="imageDisplayUrl(tile.imageUrl)"
             class="polaroid-photo"
             :alt="tile.title"
             loading="lazy"

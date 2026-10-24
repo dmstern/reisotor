@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import type { ExcursionStation } from '../utils/excursionStations';
 
 // Ganz bewusst ohne Like/Kommentar/Edit/Löschen/Drag – dient in der Ausflug-Stationsliste
@@ -14,7 +15,9 @@ defineProps<{ station: ExcursionStation }>();
   <div class="mini-station-card">
     <div
       class="image"
-      :style="station.imageUrl ? { backgroundImage: `url(${station.imageUrl})` } : {}"
+      :style="
+        station.imageUrl ? { backgroundImage: `url(${imageDisplayUrl(station.imageUrl)})` } : {}
+      "
     >
       <span v-if="!station.imageUrl" class="placeholder">{{ station.icon }}</span>
     </div>

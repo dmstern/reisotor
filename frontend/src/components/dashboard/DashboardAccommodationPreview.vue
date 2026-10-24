@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../../utils/imageDisplayUrl';
 import { computed } from 'vue';
 import type { Spot } from '../../api/types';
 import AppIcon from '../AppIcon.vue';
@@ -25,7 +26,7 @@ const title = computed(() => {
         <!-- Echtes Foto vorhanden -->
         <img
           v-if="accommodation?.image_url"
-          :src="accommodation.image_url"
+          :src="imageDisplayUrl(accommodation.image_url)"
           class="photo-img"
           alt=""
           loading="lazy"

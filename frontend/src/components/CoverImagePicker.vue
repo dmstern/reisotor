@@ -45,6 +45,7 @@ import ImageUrlInput from './ImageUrlInput.vue';
 import Input from './primitives/Input.vue';
 import Modal from './Modal.vue';
 import { api } from '../api/client';
+import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 
 const props = withDefaults(
   defineProps<{
@@ -181,8 +182,8 @@ watch(
 );
 
 const effectivePreview = computed(() => {
-  if (props.modelValue) return props.modelValue;
-  if (props.previewImage) return props.previewImage;
+  if (props.modelValue) return imageDisplayUrl(props.modelValue) ?? null;
+  if (props.previewImage) return imageDisplayUrl(props.previewImage) ?? null;
   return null;
 });
 
@@ -417,7 +418,7 @@ function handleModalClose(visible: boolean) {
         `form-image-banner--${variant}`,
         { 'is-modified': isModified, 'is-loading': loading },
       ]"
-      :style="effectivePreview ? { backgroundImage: `url(${effectivePreview})` } : {}"
+      :style="effectivePreview ? { backgroundImage: `url(&quot;${effectivePreview}&quot;)` } : {}"
     >
       <div v-if="loading" class="banner-loading-overlay" aria-live="polite">
         <div class="banner-loading-shimmer" aria-hidden="true" />
