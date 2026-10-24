@@ -202,7 +202,7 @@ describe('feedback routes', () => {
     expect(sentBody?.body).toContain('Screenshot konnte nicht angehängt werden');
   });
 
-  it('surfaces a 502 when the GitHub API rejects the request', async () => {
+  it('surfaces a 502 with the specific error when the GitHub API rejects the request', async () => {
     const cookie = await register('feedback-user4', 'fb4@example.com');
     vi.stubGlobal(
       'fetch',
@@ -217,9 +217,27 @@ describe('feedback routes', () => {
     });
 
     expect(res.statusCode).toBe(502);
-    expect(res.json().error).toBe(
-      'Meldung konnte nicht an den Feedback-Dienst übermittelt werden.'
-    );
+    expect(res.json().error).toBe('GitHub hat die Meldung abgelehnt (Status 422).');
+  });
+
+  it('surfaces a 503 with self-hosting hint and repo link when GITHUB_TOKEN is unset', async () => {
+    const savedToken = process.env.GITHUB_TOKEN;
+    delete process.env.GITHUB_TOKEN;
+    try {
+      const cookie = await register('feedback-user-no-token', 'notoken@example.com');
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/feedback',
+        headers: { cookie },
+        payload: { type: 'bug', title: 'x', description: 'y' },
+      });
+
+      expect(res.statusCode).toBe(503);
+      expect(res.json().error).toContain('GITHUB_TOKEN');
+      expect(res.json().error).toContain('https://github.com/someone/somerepo/issues');
+    } finally {
+      process.env.GITHUB_TOKEN = savedToken;
+    }
   });
 
   it('requires authentication', async () => {
