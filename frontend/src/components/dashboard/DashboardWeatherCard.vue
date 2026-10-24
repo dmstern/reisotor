@@ -45,11 +45,15 @@ const {
   todayWeather,
   todayHomeWeather,
   selectedWeatherDay,
+  selectedWeatherLocationType,
   selectedWeatherLocation,
+  selectedVacationDay,
+  selectedHomeDay,
   weatherDayDialogOpen,
   openWeatherDayDialog,
   getDayAlert,
   loadWeather,
+  loadHomeWeather,
   formatWeekdayDate,
 } = useDashboardWeather({ trip: tripRef, isTripOver: isTripOverRef });
 
@@ -72,6 +76,7 @@ const todayStr = () => {
 
 onMounted(() => {
   loadWeather();
+  loadHomeWeather();
   loadRegionInfo();
 });
 </script>
@@ -98,6 +103,7 @@ onMounted(() => {
               lat: home.lat,
               lng: home.lng,
               label: homeSpot?.title || 'Zuhause',
+              type: 'home',
             })
           "
         />
@@ -184,6 +190,7 @@ onMounted(() => {
               lat: home.lat,
               lng: home.lng,
               label: homeSpot?.title || 'Zuhause',
+              type: 'home',
             })
           "
         />
@@ -246,10 +253,20 @@ onMounted(() => {
 
   <WeatherDayDetailDialog
     v-model="weatherDayDialogOpen"
+    :date="selectedWeatherDay?.date"
     :day="selectedWeatherDay"
     :lat="selectedWeatherLocation?.lat ?? trip.lat"
     :lng="selectedWeatherLocation?.lng ?? trip.lng"
     :location-label="selectedWeatherLocation?.label || destinationName || 'Reiseziel'"
+    :vacation-day="selectedVacationDay"
+    :vacation-lat="trip.lat"
+    :vacation-lng="trip.lng"
+    :vacation-location-label="destinationName || 'Reiseziel'"
+    :home-day="selectedHomeDay"
+    :home-lat="home?.lat"
+    :home-lng="home?.lng"
+    :home-location-label="homeSpot?.title || 'Zuhause'"
+    :initial-location="selectedWeatherLocationType"
   />
 </template>
 

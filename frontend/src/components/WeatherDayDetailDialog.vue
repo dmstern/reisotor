@@ -6,6 +6,7 @@ import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
+import SegmentedToggle from './SegmentedToggle.vue';
 import WeatherAlertCard from './WeatherAlertCard.vue';
 import {
   detectWeatherAlerts,
@@ -21,10 +22,20 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = defineProps<{
   modelValue: boolean;
-  day: DailyWeather | null;
+  date?: string;
+  day?: DailyWeather | null;
   lat?: number | null;
   lng?: number | null;
   locationLabel?: string;
+  vacationDay?: DailyWeather | null;
+  vacationLat?: number | null;
+  vacationLng?: number | null;
+  vacationLocationLabel?: string;
+  homeDay?: DailyWeather | null;
+  homeLat?: number | null;
+  homeLng?: number | null;
+  homeLocationLabel?: string;
+  initialLocation?: 'vacation' | 'home';
 }>();
 
 const emit = defineEmits<{
@@ -33,10 +44,101 @@ const emit = defineEmits<{
 
 const tripStore = useTripStore();
 const weatherProvider = useWeatherProviderStore();
+const activeLocation = ref<'vacation' | 'home'>('vacation');
 const hourlyList = ref<HourlyWeather[]>([]);
 const loading = ref(false);
+const hourlyCache = new Map<string, HourlyWeather[]>();
 
-const dayAlerts = computed(() => (props.day ? detectWeatherAlerts([props.day]) : []));
+watch(
+  () => [props.modelValue, props.initialLocation] as const,
+  ([open, initial]) => {
+    if (open) {
+      activeLocation.value = initial || 'vacation';
+    }
+  },
+  { immediate: true }
+);
+
+const hasHomeLocation = computed(() => {
+  const hasVacation =
+    (props.vacationLat != null && props.vacationLng != null) ||
+    (props.lat != null && props.lng != null);
+  const hasHome = props.homeLat != null && props.homeLng != null;
+  return Boolean(hasVacation && hasHome);
+});
+
+const locationToggleOptions = computed(() => [
+  {
+    value: 'vacation',
+    label: 'Urlaubsort',
+    icon: ACTION_ICONS.vacation,
+    iconGroup: 'actions' as const,
+  },
+  {
+    value: 'home',
+    label: 'Heimatort',
+    icon: ACTION_ICONS.home,
+    iconGroup: 'actions' as const,
+  },
+]);
+
+const currentLat = computed(() =>
+  activeLocation.value === 'home'
+    ? (props.homeLat ?? null)
+    : (props.vacationLat ?? props.lat ?? null)
+);
+
+const currentLng = computed(() =>
+  activeLocation.value === 'home'
+    ? (props.homeLng ?? null)
+    : (props.vacationLng ?? props.lng ?? null)
+);
+
+const currentLocationLabel = computed(() =>
+  activeLocation.value === 'home'
+    ? props.homeLocationLabel || 'Zuhause'
+    : props.vacationLocationLabel || props.locationLabel || 'Reiseziel'
+);
+
+const currentLocationIcon = computed(() =>
+  activeLocation.value === 'home' ? ACTION_ICONS.home : FORM_FIELD_ICONS.maps
+);
+
+const currentLocationIconGroup = computed(() =>
+  activeLocation.value === 'home' ? ('actions' as const) : ('formFields' as const)
+);
+
+const currentDate = computed(
+  () => props.date || props.day?.date || props.vacationDay?.date || props.homeDay?.date || ''
+);
+
+const currentDay = computed<DailyWeather | null>(() => {
+  if (activeLocation.value === 'home') {
+    return props.homeDay ?? null;
+  }
+  return props.vacationDay ?? props.day ?? null;
+});
+
+const derivedDayFromHourly = computed<DailyWeather | null>(() => {
+  if (currentDay.value) return currentDay.value;
+  if (!hourlyList.value.length || !currentDate.value) return null;
+  const temps = hourlyList.value.map((h) => h.temp);
+  const rainProbs = hourlyList.value
+    .map((h) => h.precipitationProbability)
+    .filter((p): p is number => p != null);
+  const midday =
+    hourlyList.value.find((h) => h.time === '12:00' || h.time === '15:00') ?? hourlyList.value[0];
+  return {
+    date: currentDate.value,
+    tempMax: Math.max(...temps),
+    tempMin: Math.min(...temps),
+    weatherCode: midday.weatherCode,
+    precipitationProbability: rainProbs.length ? Math.max(...rainProbs) : null,
+  };
+});
+
+const displayDay = computed(() => currentDay.value ?? derivedDayFromHourly.value);
+const dayAlerts = computed(() => (displayDay.value ? detectWeatherAlerts([displayDay.value]) : []));
 
 const weatherModelLabel = computed(
   () =>
@@ -45,15 +147,29 @@ const weatherModelLabel = computed(
 );
 
 watch(
-  () => [props.modelValue, props.day, props.lat, props.lng, weatherProvider.model] as const,
-  async ([open, day, lat, lng, model]) => {
-    if (!open || !day || lat == null || lng == null) {
+  () =>
+    [
+      props.modelValue,
+      currentDate.value,
+      currentLat.value,
+      currentLng.value,
+      weatherProvider.model,
+    ] as const,
+  async ([open, date, lat, lng, model]) => {
+    if (!open || !date || lat == null || lng == null) {
       hourlyList.value = [];
+      return;
+    }
+    const cacheKey = `${lat},${lng},${date},${model}`;
+    if (hourlyCache.has(cacheKey)) {
+      hourlyList.value = hourlyCache.get(cacheKey)!;
       return;
     }
     loading.value = true;
     try {
-      hourlyList.value = await fetchHourlyForecast(lat, lng, day.date, model);
+      const data = await fetchHourlyForecast(lat, lng, date, model);
+      hourlyCache.set(cacheKey, data);
+      hourlyList.value = data;
     } catch {
       hourlyList.value = [];
     } finally {
@@ -80,13 +196,24 @@ function formatDate(dateStr: string) {
 <template>
   <Modal
     :model-value="modelValue"
-    :title="day ? `Wetter am ${formatDate(day.date)}` : 'Wetter-Details'"
+    :title="currentDate ? `Wetter am ${formatDate(currentDate)}` : 'Wetter-Details'"
     @update:model-value="close"
   >
-    <div v-if="day" class="weather-detail-body">
+    <div v-if="currentDate || displayDay" class="weather-detail-body">
+      <!-- Standort-Toggle (Urlaubsort vs. Heimatort) -->
+      <div v-if="hasHomeLocation" class="location-toggle-wrap">
+        <SegmentedToggle
+          :model-value="activeLocation"
+          :options="locationToggleOptions"
+          aria-label="Wetter-Standort umschalten"
+          @update:model-value="(val) => (activeLocation = val as 'vacation' | 'home')"
+        />
+      </div>
+
       <!-- Standort-Information -->
-      <div v-if="locationLabel" class="location-badge">
-        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" /> {{ locationLabel }}
+      <div v-if="currentLocationLabel" class="location-badge">
+        <AppIcon :icon="currentLocationIcon" :size="14" :group="currentLocationIconGroup" />
+        <span>{{ currentLocationLabel }}</span>
       </div>
 
       <!-- Unwetter- / Wetter-Warnungen für diesen Tag (Issue #296) -->
@@ -101,21 +228,27 @@ function formatDate(dateStr: string) {
       </div>
 
       <!-- Haupt-Zusammenfassung -->
-      <div class="summary-card">
+      <div v-if="displayDay" class="summary-card">
         <div class="main-weather">
-          <WeatherIcon :code="day.weatherCode" :size="42" />
+          <WeatherIcon :code="displayDay.weatherCode" :size="42" />
           <div class="meta">
-            <span class="label">{{ weatherCodeMeta(day.weatherCode).label }}</span>
+            <span class="label">{{ weatherCodeMeta(displayDay.weatherCode).label }}</span>
             <div class="temps">
-              <span class="temp-max">{{ Math.round(day.tempMax) }}°</span>
-              <span class="temp-min">{{ Math.round(day.tempMin) }}°</span>
+              <span class="temp-max">{{ Math.round(displayDay.tempMax) }}°</span>
+              <span class="temp-min">{{ Math.round(displayDay.tempMin) }}°</span>
             </div>
           </div>
         </div>
-        <div v-if="day.precipitationProbability != null" class="rain-meta">
+        <div v-if="displayDay.precipitationProbability != null" class="rain-meta">
           <span class="rain-label">Regenwahrscheinlichkeit</span>
-          <span class="rain-val">💧 {{ day.precipitationProbability }}%</span>
+          <span class="rain-val">💧 {{ displayDay.precipitationProbability }}%</span>
         </div>
+      </div>
+      <div v-else class="summary-card empty-card">
+        <p class="hint">
+          Keine Wetterdaten für diesen Tag
+          {{ activeLocation === 'home' ? 'am Heimatort' : 'am Reiseziel' }} verfügbar.
+        </p>
       </div>
 
       <!-- Stündlicher Verlauf -->
@@ -219,6 +352,25 @@ function formatDate(dateStr: string) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.location-toggle-wrap {
+  display: flex;
+  width: 100%;
+}
+
+.location-toggle-wrap :deep(.segmented-toggle) {
+  width: 100%;
+}
+
+.summary-card.empty-card {
+  text-align: center;
+  padding: var(--space-4) var(--space-3);
+}
+
+.empty-card .hint {
+  margin: 0;
+  color: var(--color-text-muted);
 }
 
 .weather-dialog-alerts {

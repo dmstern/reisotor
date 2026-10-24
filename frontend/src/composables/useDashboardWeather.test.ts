@@ -85,4 +85,39 @@ describe('useDashboardWeather', () => {
       '2026-07-10',
     ]);
   });
+
+  it('selects home location and matches days when opening home weather', () => {
+    const trip = ref<Trip | null>(baseTrip);
+    const weather = useDashboardWeather({ trip });
+
+    const vacationDay: DailyWeather = {
+      date: '2026-07-05',
+      weatherCode: 0,
+      tempMax: 30,
+      tempMin: 20,
+      precipitationProbability: null,
+    };
+    const homeDay: DailyWeather = {
+      date: '2026-07-05',
+      weatherCode: 3,
+      tempMax: 22,
+      tempMin: 14,
+      precipitationProbability: 40,
+    };
+
+    weather.weatherDays.value = [vacationDay];
+    weather.homeWeatherDays.value = [homeDay];
+
+    weather.openWeatherDayDialog(homeDay, {
+      lat: 52.52,
+      lng: 13.4,
+      label: 'Berlin',
+      type: 'home',
+    });
+
+    expect(weather.weatherDayDialogOpen.value).toBe(true);
+    expect(weather.selectedWeatherLocationType.value).toBe('home');
+    expect(weather.selectedVacationDay.value).toEqual(vacationDay);
+    expect(weather.selectedHomeDay.value).toEqual(homeDay);
+  });
 });
