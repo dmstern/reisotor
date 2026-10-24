@@ -74,6 +74,7 @@ const {
   editSpotLocationError,
   isSpotUploadingAttachments,
   isSpotUploadingCoverImage,
+  isFetchingSpotPreview,
   spotPreviewImages,
   spotPreviewImage,
   editSpotPreviewImage,
@@ -211,6 +212,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
             <CoverImagePicker
               v-model="activeSpotForm.image_url"
               v-model:uploading="isSpotUploadingCoverImage"
+              :loading="isFetchingSpotPreview && !activeSpotForm.image_url.trim()"
               variant="polaroid"
               :preview-image="editingSpot !== null ? editSpotPreviewImage : spotPreviewImage"
               :placeholder-icon="spotCategoryMeta(activeSpotForm.category).tabler"
