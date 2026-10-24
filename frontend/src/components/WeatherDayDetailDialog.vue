@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import { useTripStore } from '../stores/trip';
 import Modal from './Modal.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
+import IconButton from './primitives/IconButton.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import WeatherAlertCard from './WeatherAlertCard.vue';
 import {
@@ -32,15 +33,20 @@ const props = defineProps<{
   vacationLat?: number | null;
   vacationLng?: number | null;
   vacationLocationLabel?: string;
+  vacationDays?: DailyWeather[];
   homeDay?: DailyWeather | null;
   homeLat?: number | null;
   homeLng?: number | null;
   homeLocationLabel?: string;
+  homeDays?: DailyWeather[];
   initialLocation?: 'vacation' | 'home';
+  days?: DailyWeather[];
 }>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
+  (e: 'update:date', date: string): void;
+  (e: 'navigate-day', day: DailyWeather): void;
 }>();
 
 const tripStore = useTripStore();
@@ -49,12 +55,47 @@ const activeLocation = ref<'vacation' | 'home'>('vacation');
 const hourlyList = ref<HourlyWeather[]>([]);
 const loading = ref(false);
 const hourlyCache = new Map<string, HourlyWeather[]>();
+const selectedDate = ref<string>('');
+
+const navigationDays = computed<DailyWeather[]>(() => {
+  if (props.vacationDays && props.vacationDays.length > 0) {
+    return props.vacationDays;
+  }
+  if (props.days && props.days.length > 0) {
+    return props.days;
+  }
+  if (props.homeDays && props.homeDays.length > 0) {
+    return props.homeDays;
+  }
+  const single = props.day ?? props.vacationDay ?? props.homeDay;
+  return single ? [single] : [];
+});
+
+const sortedNavigationDays = computed(() => {
+  const map = new Map<string, DailyWeather>();
+  for (const d of navigationDays.value) {
+    if (d?.date && !map.has(d.date)) {
+      map.set(d.date, d);
+    }
+  }
+  return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+});
 
 watch(
-  () => [props.modelValue, props.initialLocation] as const,
-  ([open, initial]) => {
+  () =>
+    [
+      props.modelValue,
+      props.date,
+      props.day?.date,
+      props.vacationDay?.date,
+      props.homeDay?.date,
+      props.initialLocation,
+    ] as const,
+  ([open, propDate, dayDate, vacDate, homeDate, initial]) => {
     if (open) {
       activeLocation.value = initial || 'vacation';
+      selectedDate.value =
+        propDate || dayDate || vacDate || homeDate || sortedNavigationDays.value[0]?.date || '';
     }
   },
   { immediate: true }
@@ -110,14 +151,134 @@ const currentLocationIconGroup = computed(() =>
 );
 
 const currentDate = computed(
-  () => props.date || props.day?.date || props.vacationDay?.date || props.homeDay?.date || ''
+  () =>
+    selectedDate.value ||
+    props.date ||
+    props.day?.date ||
+    props.vacationDay?.date ||
+    props.homeDay?.date ||
+    ''
 );
+
+const currentVacationDay = computed<DailyWeather | null>(() => {
+  if (props.vacationDays?.length) {
+    const found = props.vacationDays.find((d) => d.date === currentDate.value);
+    if (found) return found;
+  }
+  if (props.days?.length) {
+    const found = props.days.find((d) => d.date === currentDate.value);
+    if (found) return found;
+  }
+  if (props.vacationDay && props.vacationDay.date === currentDate.value) {
+    return props.vacationDay;
+  }
+  if (props.day && props.day.date === currentDate.value) {
+    return props.day;
+  }
+  return null;
+});
+
+const currentHomeDay = computed<DailyWeather | null>(() => {
+  if (props.homeDays?.length) {
+    const found = props.homeDays.find((d) => d.date === currentDate.value);
+    if (found) return found;
+  }
+  if (props.homeDay && props.homeDay.date === currentDate.value) {
+    return props.homeDay;
+  }
+  return null;
+});
 
 const currentDay = computed<DailyWeather | null>(() => {
   if (activeLocation.value === 'home') {
-    return props.homeDay ?? null;
+    return currentHomeDay.value;
   }
-  return props.vacationDay ?? props.day ?? null;
+  return currentVacationDay.value;
+});
+
+const currentIndex = computed(() => {
+  if (!currentDate.value || !sortedNavigationDays.value.length) return -1;
+  return sortedNavigationDays.value.findIndex((d) => d.date === currentDate.value);
+});
+
+const hasMultipleDays = computed(() => sortedNavigationDays.value.length > 1);
+const canGoPrev = computed(() => currentIndex.value > 0);
+const canGoNext = computed(
+  () => currentIndex.value >= 0 && currentIndex.value < sortedNavigationDays.value.length - 1
+);
+
+function goToPrevDay() {
+  if (!canGoPrev.value) return;
+  const targetDay = sortedNavigationDays.value[currentIndex.value - 1];
+  if (targetDay) {
+    selectedDate.value = targetDay.date;
+    emit('update:date', targetDay.date);
+    emit('navigate-day', targetDay);
+  }
+}
+
+function goToNextDay() {
+  if (!canGoNext.value) return;
+  const targetDay = sortedNavigationDays.value[currentIndex.value + 1];
+  if (targetDay) {
+    selectedDate.value = targetDay.date;
+    emit('update:date', targetDay.date);
+    emit('navigate-day', targetDay);
+  }
+}
+
+const prevDayLabel = computed(() => {
+  if (!canGoPrev.value) return 'Vorheriger Tag';
+  const prev = sortedNavigationDays.value[currentIndex.value - 1];
+  return prev ? `Vorheriger Tag (${formatDate(prev.date)})` : 'Vorheriger Tag';
+});
+
+const nextDayLabel = computed(() => {
+  if (!canGoNext.value) return 'Nächster Tag';
+  const next = sortedNavigationDays.value[currentIndex.value + 1];
+  return next ? `Nächster Tag (${formatDate(next.date)})` : 'Nächster Tag';
+});
+
+const prevDayTitle = computed(() =>
+  canGoPrev.value ? `${prevDayLabel.value} (Pfeiltaste links)` : 'Kein vorheriger Tag'
+);
+
+const nextDayTitle = computed(() =>
+  canGoNext.value ? `${nextDayLabel.value} (Pfeiltaste rechts)` : 'Kein weiterer Tag'
+);
+
+function handleKeydown(e: KeyboardEvent) {
+  if (!props.modelValue) return;
+  const tag = (e.target as HTMLElement | null)?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  if (e.key === 'ArrowLeft') {
+    if (canGoPrev.value) {
+      e.preventDefault();
+      goToPrevDay();
+    }
+  } else if (e.key === 'ArrowRight') {
+    if (canGoNext.value) {
+      e.preventDefault();
+      goToNextDay();
+    }
+  }
+}
+
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (open) {
+      window.addEventListener('keydown', handleKeydown);
+    } else {
+      window.removeEventListener('keydown', handleKeydown);
+    }
+  },
+  { immediate: true }
+);
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
 });
 
 const derivedDayFromHourly = computed<DailyWeather | null>(() => {
@@ -162,10 +323,10 @@ const isPastDay = computed(() => {
 });
 
 const hourlyEmptyText = computed(() => {
-  const today = toLocalDateString(new Date());
-  if (currentDate.value && currentDate.value < today) {
+  if (isPastDay.value) {
     return 'Für diesen vergangenen Tag sind keine stündlichen Verlaufsdaten verfügbar.';
   }
+  const today = toLocalDateString(new Date());
   if (currentDate.value && currentDate.value > today) {
     return 'Kein stündlicher Verlauf verfügbar (Tag liegt zu weit in der Zukunft).';
   }
@@ -231,6 +392,28 @@ function formatDate(dateStr: string) {
     :title="currentDate ? `Wetter am ${formatDate(currentDate)}` : 'Wetter-Details'"
     @update:model-value="close"
   >
+    <template #header-actions>
+      <div v-if="hasMultipleDays" class="weather-pager">
+        <IconButton
+          variant="ghost"
+          size="sm"
+          :disabled="!canGoPrev"
+          :icon="ACTION_ICONS.scrollLeft"
+          :aria-label="prevDayLabel"
+          :title="prevDayTitle"
+          @click="goToPrevDay"
+        />
+        <IconButton
+          variant="ghost"
+          size="sm"
+          :disabled="!canGoNext"
+          :icon="ACTION_ICONS.scrollRight"
+          :aria-label="nextDayLabel"
+          :title="nextDayTitle"
+          @click="goToNextDay"
+        />
+      </div>
+    </template>
     <div v-if="currentDate || displayDay" class="weather-detail-body">
       <!-- Standort-Toggle (Urlaubsort vs. Heimatort) -->
       <div v-if="hasHomeLocation" class="location-toggle-wrap">
@@ -792,5 +975,12 @@ function formatDate(dateStr: string) {
 
 .model-btn {
   align-self: flex-start;
+}
+
+.weather-pager {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: var(--space-1);
 }
 </style>

@@ -325,4 +325,204 @@ describe('WeatherDayDetailDialog', () => {
 
     cleanUp();
   });
+
+  it('renders day pager buttons when multiple days are provided and disables prev on first day', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const day1: DailyWeather = {
+      date: '2026-08-06',
+      weatherCode: 0,
+      tempMax: 30,
+      tempMin: 18,
+      precipitationProbability: 0,
+    };
+    const day2: DailyWeather = {
+      date: '2026-08-07',
+      weatherCode: 1,
+      tempMax: 28,
+      tempMin: 17,
+      precipitationProbability: 20,
+    };
+    const day3: DailyWeather = {
+      date: '2026-08-08',
+      weatherCode: 3,
+      tempMax: 24,
+      tempMin: 15,
+      precipitationProbability: 60,
+    };
+
+    const onNavigateDay = vi.fn();
+    const onUpdateDate = vi.fn();
+
+    const { cleanUp } = mountComponent({
+      modelValue: true,
+      date: '2026-08-06',
+      vacationDays: [day1, day2, day3],
+      lat: 38.72,
+      lng: -9.14,
+      locationLabel: 'Lissabon',
+      'onNavigate-day': onNavigateDay,
+      'onUpdate:date': onUpdateDate,
+    });
+
+    await flushAsync();
+
+    const pager = document.querySelector('.weather-pager');
+    expect(pager).not.toBeNull();
+
+    const buttons = pager?.querySelectorAll<HTMLButtonElement>('button');
+    expect(buttons).toHaveLength(2);
+
+    const prevBtn = buttons?.[0];
+    const nextBtn = buttons?.[1];
+
+    // Day 1 is first: prev disabled, next enabled
+    expect(prevBtn?.disabled).toBe(true);
+    expect(nextBtn?.disabled).toBe(false);
+    expect(document.querySelector('h2')?.textContent).toContain('06.08');
+    expect(document.querySelector('.temp-max')?.textContent).toBe('30°');
+
+    // Click next button -> Day 2
+    nextBtn?.click();
+    await flushAsync();
+
+    expect(onUpdateDate).toHaveBeenCalledWith('2026-08-07');
+    expect(onNavigateDay).toHaveBeenCalledWith(day2);
+    expect(document.querySelector('h2')?.textContent).toContain('07.08');
+    expect(document.querySelector('.temp-max')?.textContent).toBe('28°');
+    expect(prevBtn?.disabled).toBe(false);
+    expect(nextBtn?.disabled).toBe(false);
+
+    // Click next button -> Day 3 (last day)
+    nextBtn?.click();
+    await flushAsync();
+
+    expect(document.querySelector('h2')?.textContent).toContain('08.08');
+    expect(document.querySelector('.temp-max')?.textContent).toBe('24°');
+    expect(prevBtn?.disabled).toBe(false);
+    expect(nextBtn?.disabled).toBe(true);
+
+    // Click prev button -> Day 2 again
+    prevBtn?.click();
+    await flushAsync();
+
+    expect(document.querySelector('h2')?.textContent).toContain('07.08');
+    expect(document.querySelector('.temp-max')?.textContent).toBe('28°');
+
+    cleanUp();
+  });
+
+  it('supports keyboard navigation via ArrowLeft and ArrowRight', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const day1: DailyWeather = {
+      date: '2026-08-06',
+      weatherCode: 0,
+      tempMax: 30,
+      tempMin: 18,
+      precipitationProbability: 0,
+    };
+    const day2: DailyWeather = {
+      date: '2026-08-07',
+      weatherCode: 1,
+      tempMax: 28,
+      tempMin: 17,
+      precipitationProbability: 20,
+    };
+
+    const { cleanUp } = mountComponent({
+      modelValue: true,
+      date: '2026-08-06',
+      vacationDays: [day1, day2],
+      lat: 38.72,
+      lng: -9.14,
+    });
+
+    await flushAsync();
+    expect(document.querySelector('h2')?.textContent).toContain('06.08');
+
+    // ArrowRight to next day
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await flushAsync();
+    expect(document.querySelector('h2')?.textContent).toContain('07.08');
+
+    // ArrowLeft back to first day
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    await flushAsync();
+    expect(document.querySelector('h2')?.textContent).toContain('06.08');
+
+    cleanUp();
+  });
+
+  it('preserves navigated date when toggling between vacation and home location', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const vac1: DailyWeather = {
+      date: '2026-08-06',
+      weatherCode: 0,
+      tempMax: 35,
+      tempMin: 22,
+      precipitationProbability: 0,
+    };
+    const vac2: DailyWeather = {
+      date: '2026-08-07',
+      weatherCode: 1,
+      tempMax: 32,
+      tempMin: 20,
+      precipitationProbability: 10,
+    };
+    const home1: DailyWeather = {
+      date: '2026-08-06',
+      weatherCode: 3,
+      tempMax: 20,
+      tempMin: 12,
+      precipitationProbability: 40,
+    };
+    const home2: DailyWeather = {
+      date: '2026-08-07',
+      weatherCode: 61,
+      tempMax: 18,
+      tempMin: 11,
+      precipitationProbability: 80,
+    };
+
+    const { cleanUp } = mountComponent({
+      modelValue: true,
+      date: '2026-08-06',
+      vacationDays: [vac1, vac2],
+      vacationLat: 38.72,
+      vacationLng: -9.14,
+      vacationLocationLabel: 'Lissabon',
+      homeDays: [home1, home2],
+      homeLat: 52.52,
+      homeLng: 13.4,
+      homeLocationLabel: 'Berlin',
+    });
+
+    await flushAsync();
+
+    // Advance to day 2 (07.08)
+    const nextBtn = document.querySelectorAll<HTMLButtonElement>('.weather-pager button')[1];
+    nextBtn.click();
+    await flushAsync();
+
+    expect(document.querySelector('h2')?.textContent).toContain('07.08');
+    expect(document.querySelector('.location-badge')?.textContent).toContain('Lissabon');
+    expect(document.querySelector('.temp-max')?.textContent).toBe('32°');
+
+    // Toggle to Heimatort
+    const toggleOptions = document.querySelectorAll<HTMLButtonElement>('.segmented-option');
+    toggleOptions[1].click();
+    await flushAsync();
+
+    // Still on 07.08, but home weather is shown
+    expect(document.querySelector('h2')?.textContent).toContain('07.08');
+    expect(document.querySelector('.location-badge')?.textContent).toContain('Berlin');
+    expect(document.querySelector('.temp-max')?.textContent).toBe('18°');
+
+    cleanUp();
+  });
 });
