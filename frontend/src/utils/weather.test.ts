@@ -1,6 +1,14 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { detectWeatherAlerts, type DailyWeather } from './weather';
+import {
+  detectWeatherAlerts,
+  formatWeatherTemp,
+  formatWeatherTempRange,
+  getWeatherUnknownExplanation,
+  isWeatherUnknown,
+  weatherCodeMeta,
+  type DailyWeather,
+} from './weather';
 import { toLocalDateString } from './dateFormat';
 
 describe('detectWeatherAlerts', () => {
@@ -74,6 +82,71 @@ describe('detectWeatherAlerts', () => {
     };
 
     expect(detectWeatherAlerts([pastDay])).toHaveLength(0);
+  });
+
+  it('behandelt Tage mit null-Werten sicher ohne Exception', () => {
+    const emptyDay: DailyWeather = {
+      date: mockToday,
+      tempMax: null,
+      tempMin: null,
+      weatherCode: null,
+      precipitationProbability: null,
+    };
+
+    expect(detectWeatherAlerts([emptyDay])).toHaveLength(0);
+  });
+});
+
+describe('weather helpers and formatting', () => {
+  it('weatherCodeMeta handles null and undefined as UNKNOWN_META', () => {
+    expect(weatherCodeMeta(null).label).toBe('Unbekannt');
+    expect(weatherCodeMeta(undefined).label).toBe('Unbekannt');
+    expect(weatherCodeMeta(0).label).toBe('Klar');
+  });
+
+  it('formatWeatherTemp formats true 0° correctly and null as dash', () => {
+    expect(formatWeatherTemp(0)).toBe('0°');
+    expect(formatWeatherTemp(21.4)).toBe('21°');
+    expect(formatWeatherTemp(-3)).toBe('-3°');
+    expect(formatWeatherTemp(null)).toBe('–');
+    expect(formatWeatherTemp(undefined)).toBe('–');
+  });
+
+  it('formatWeatherTempRange handles nulls and true 0° correctly', () => {
+    expect(formatWeatherTempRange(0, -3)).toBe('0° / -3°');
+    expect(formatWeatherTempRange(null, null)).toBe('–');
+    expect(formatWeatherTempRange(22, null)).toBe('22°');
+    expect(formatWeatherTempRange(null, 15)).toBe('15°');
+  });
+
+  it('isWeatherUnknown identifies days without data', () => {
+    expect(
+      isWeatherUnknown({
+        date: '2026-11-08',
+        weatherCode: null,
+        tempMax: null,
+        tempMin: null,
+        precipitationProbability: null,
+      })
+    ).toBe(true);
+
+    expect(
+      isWeatherUnknown({
+        date: '2026-11-08',
+        weatherCode: 0,
+        tempMax: 0,
+        tempMin: 0,
+        precipitationProbability: null,
+      })
+    ).toBe(false);
+  });
+
+  it('getWeatherUnknownExplanation returns future vs past reasons', () => {
+    const futureExplanation = getWeatherUnknownExplanation('2099-01-01');
+    expect(futureExplanation).toContain('zu weit in der Zukunft');
+
+    const pastExplanation = getWeatherUnknownExplanation('2000-01-01');
+    expect(pastExplanation).toContain('keine gespeicherten Wetteraufzeichnungen');
   });
 });
 

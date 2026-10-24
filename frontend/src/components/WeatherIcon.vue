@@ -12,7 +12,8 @@ import AppIcon from './AppIcon.vue';
 // aktivierter Einfärbung zwei einzeln eingefärbte Icons, statt das kombinierte Icon pauschal
 // umzufärben. Ohne Einfärbung (Default aus) bleibt exakt das bisherige, einzelne Kombi-Icon
 // bestehen - keine optische Änderung für Nutzer:innen, die das Setting nicht anfassen.
-const props = withDefaults(defineProps<{ code: number; size?: number; title?: string }>(), {
+const props = withDefaults(defineProps<{ code?: number | null; size?: number; title?: string }>(), {
+  code: null,
   size: 20,
 });
 

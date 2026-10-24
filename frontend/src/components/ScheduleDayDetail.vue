@@ -58,8 +58,19 @@ defineEmits<{
         <WeatherIcon :code="entry.weather.weatherCode" :size="16" />
         <span class="meta-label">{{ entry.label }}:</span>
         <span class="temp-range">
-          <strong>{{ Math.round(entry.weather.tempMax) }}°</strong>
-          <span class="temp-min"> / {{ Math.round(entry.weather.tempMin) }}°</span>
+          <template v-if="entry.weather.tempMax != null && entry.weather.tempMin != null">
+            <strong>{{ Math.round(entry.weather.tempMax) }}°</strong>
+            <span class="temp-min"> / {{ Math.round(entry.weather.tempMin) }}°</span>
+          </template>
+          <template v-else-if="entry.weather.tempMax != null">
+            <strong>{{ Math.round(entry.weather.tempMax) }}°</strong>
+          </template>
+          <template v-else-if="entry.weather.tempMin != null">
+            <strong>{{ Math.round(entry.weather.tempMin) }}°</strong>
+          </template>
+          <template v-else>
+            <strong>–</strong>
+          </template>
         </span>
         <span v-if="entry.weather.precipitationProbability != null" class="rain-prob">
           · <AppIcon :icon="ACTION_ICONS.rain" :size="12" group="actions" />

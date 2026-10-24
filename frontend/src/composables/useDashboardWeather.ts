@@ -45,11 +45,20 @@ export interface UseDashboardWeatherReturn {
   weatherDayDialogOpen: Ref<boolean>;
   vacationForecastDays: ComputedRef<DailyWeather[]>;
   homeForecastDays: ComputedRef<DailyWeather[]>;
+  allWeatherDays: ComputedRef<DailyWeather[]>;
   todayWeather: ComputedRef<DailyWeather | null>;
   todayHomeWeather: ComputedRef<DailyWeather | null>;
+  selectedWeatherLocationType: Ref<'vacation' | 'home'>;
+  selectedVacationDay: ComputedRef<DailyWeather | null>;
+  selectedHomeDay: ComputedRef<DailyWeather | null>;
   openWeatherDayDialog: (
     day: DailyWeather,
-    loc?: { lat?: number | null; lng?: number | null; label: string }
+    loc?: {
+      lat?: number | null;
+      lng?: number | null;
+      label?: string;
+      type?: 'vacation' | 'home';
+    }
   ) => void;
   getDayAlert: (day: DailyWeather | null) => WeatherAlert | undefined;
   loadWeather: () => Promise<void>;
@@ -97,6 +106,9 @@ export function useDashboardWeather(
         currentTrip.lng,
         weatherProvider.model
       );
+      if (home.value && !homeWeatherDays.value && !homeWeatherLoading.value) {
+        void loadHomeWeather();
+      }
     } catch {
       weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
     } finally {
@@ -158,6 +170,7 @@ export function useDashboardWeather(
   );
 
   const selectedWeatherDay = ref<DailyWeather | null>(null);
+  const selectedWeatherLocationType = ref<'vacation' | 'home'>('vacation');
   const selectedWeatherLocation = ref<{
     lat?: number | null;
     lng?: number | null;
@@ -167,16 +180,53 @@ export function useDashboardWeather(
 
   function openWeatherDayDialog(
     day: DailyWeather,
-    loc?: { lat?: number | null; lng?: number | null; label: string }
+    loc?: {
+      lat?: number | null;
+      lng?: number | null;
+      label?: string;
+      type?: 'vacation' | 'home';
+    }
   ) {
     selectedWeatherDay.value = day;
-    selectedWeatherLocation.value = loc ?? {
-      lat: trip.value?.lat,
-      lng: trip.value?.lng,
-      label: destinationName.value || 'Reiseziel',
-    };
+    const isHome =
+      loc?.type === 'home' ||
+      Boolean(
+        home.value &&
+        loc?.lat != null &&
+        loc.lat === home.value.lat &&
+        loc?.lng != null &&
+        loc.lng === home.value.lng
+      );
+    selectedWeatherLocationType.value = isHome ? 'home' : 'vacation';
+    selectedWeatherLocation.value = loc
+      ? {
+          lat: loc.lat,
+          lng: loc.lng,
+          label:
+            loc.label ||
+            (isHome ? homeSpot.value?.title || 'Zuhause' : destinationName.value || 'Reiseziel'),
+        }
+      : {
+          lat: trip.value?.lat,
+          lng: trip.value?.lng,
+          label: destinationName.value || 'Reiseziel',
+        };
     weatherDayDialogOpen.value = true;
   }
+
+  const selectedVacationDay = computed(() => {
+    if (!selectedWeatherDay.value) return null;
+    const found = weatherDays.value?.find((d) => d.date === selectedWeatherDay.value?.date);
+    if (found) return found;
+    return selectedWeatherLocationType.value === 'vacation' ? selectedWeatherDay.value : null;
+  });
+
+  const selectedHomeDay = computed(() => {
+    if (!selectedWeatherDay.value) return null;
+    const found = homeWeatherDays.value?.find((d) => d.date === selectedWeatherDay.value?.date);
+    if (found) return found;
+    return selectedWeatherLocationType.value === 'home' ? selectedWeatherDay.value : null;
+  });
 
   function getDayAlert(day: DailyWeather | null): WeatherAlert | undefined {
     if (!day) return undefined;
@@ -218,6 +268,61 @@ export function useDashboardWeather(
     () => homeWeatherDays.value?.find((d) => d.date === todayStr()) ?? null
   );
 
+  const allWeatherDays = computed<DailyWeather[]>(() => {
+    const map = new Map<string, DailyWeather>();
+
+    // 1. Alle bekannten Wettertage (Historie + Live-Vorhersage)
+    if (weatherDays.value) {
+      for (const day of weatherDays.value) {
+        if (day?.date) map.set(day.date, day);
+      }
+    }
+
+    // 2. Nahtloser Übergang zwischen heute, der nahen Zukunft und dem Urlaub:
+    // Falls ein Reisezeitraum definiert ist, stellen wir sicher, dass alle
+    // Tage des Urlaubs sowie die Tage von heute (oder dem frühesten bekannten Tag)
+    // bis zum Urlaubsende lückenlos enthalten sind.
+    if (trip.value?.start_date && trip.value?.end_date) {
+      const today = todayStr();
+      const tripStart = trip.value.start_date;
+      const tripEnd = trip.value.end_date;
+
+      let rangeStart = tripStart;
+      if (today < tripStart) {
+        const earliestWeather = weatherDays.value?.[0]?.date;
+        rangeStart = earliestWeather && earliestWeather < today ? earliestWeather : today;
+      }
+
+      const rangeEnd = tripEnd;
+
+      // Begrenzung auf maximal 45 Tage Spanne
+      const startDateObj = new Date(`${rangeStart}T00:00:00`);
+      const endDateObj = new Date(`${rangeEnd}T00:00:00`);
+      const diffDays = Math.round(
+        (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (diffDays >= 0 && diffDays <= 45) {
+        const cur = new Date(startDateObj);
+        while (cur <= endDateObj) {
+          const dStr = toLocalDateString(cur);
+          if (!map.has(dStr)) {
+            map.set(dStr, {
+              date: dStr,
+              weatherCode: null,
+              tempMax: null,
+              tempMin: null,
+              precipitationProbability: null,
+            });
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+      }
+    }
+
+    return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+  });
+
   function formatWeekdayDate(d: string) {
     return formatWeekdayDateShared(d);
   }
@@ -241,8 +346,12 @@ export function useDashboardWeather(
     weatherDayDialogOpen,
     vacationForecastDays,
     homeForecastDays,
+    allWeatherDays,
     todayWeather,
     todayHomeWeather,
+    selectedWeatherLocationType,
+    selectedVacationDay,
+    selectedHomeDay,
     openWeatherDayDialog,
     getDayAlert,
     loadWeather,

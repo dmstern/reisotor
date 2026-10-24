@@ -133,7 +133,10 @@ function openCalendarAtDate(date: string) {
         </span>
       </template>
       <template v-else>Besucht</template>
-      <span v-if="dayWeather && scheduledDaysCount <= 1" class="done-toggle-weather">
+      <span
+        v-if="dayWeather && dayWeather.tempMax != null && scheduledDaysCount <= 1"
+        class="done-toggle-weather"
+      >
         · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
         {{ Math.round(dayWeather.tempMax) }}°
       </span>
@@ -149,7 +152,10 @@ function openCalendarAtDate(date: string) {
         />
         {{ plannedDateLabel }}
       </span>
-      <span v-if="dayWeather && scheduledDaysCount <= 1" class="done-toggle-weather">
+      <span
+        v-if="dayWeather && dayWeather.tempMax != null && scheduledDaysCount <= 1"
+        class="done-toggle-weather"
+      >
         · <WeatherIcon :code="dayWeather.weatherCode" :size="14" />
         {{ Math.round(dayWeather.tempMax) }}°
       </span>

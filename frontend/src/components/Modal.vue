@@ -357,15 +357,18 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
             <h2 v-if="title || $slots.title" :id="titleId">
               <slot name="title">{{ title }}</slot>
             </h2>
-            <IconButton
-              variant="ghost"
-              class="close-btn"
-              :icon="ACTION_ICONS.close"
-              size="sm"
-              title="Schließen"
-              aria-label="Schließen"
-              @click="close"
-            />
+            <div class="modal-head-actions">
+              <slot name="header-actions" />
+              <IconButton
+                variant="ghost"
+                class="close-btn"
+                :icon="ACTION_ICONS.close"
+                size="sm"
+                title="Schließen"
+                aria-label="Schließen"
+                @click="close"
+              />
+            </div>
           </div>
           <div class="modal-body-wrap">
             <div class="modal-body" ref="modalBodyRef">
@@ -643,6 +646,13 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   font-size: 1.1rem;
   color: var(--color-primary-dark);
   min-width: 0;
+}
+
+.modal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .close-btn {
