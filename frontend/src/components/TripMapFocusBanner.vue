@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -85,7 +86,7 @@ watch(
     >
       <img
         v-if="!focusedExcursion && !focusedSpot && !focusedAllPhotos && focusedLocation?.imageUrl"
-        :src="focusedLocation.imageUrl"
+        :src="imageDisplayUrl(focusedLocation.imageUrl)"
         alt=""
         class="focus-banner-thumb"
       />

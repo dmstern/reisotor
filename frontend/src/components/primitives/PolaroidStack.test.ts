@@ -30,7 +30,7 @@ describe('PolaroidStack primitive', () => {
     const html = await renderToString(app);
     expect(html).toContain('polaroid-stack');
     expect(html).toContain('polaroid-tile');
-    expect(html).toContain('src="https://example.com/photo.jpg"');
+    expect(html).toContain('src="/api/images/proxy?url=https%3A%2F%2Fexample.com%2Fphoto.jpg"');
     expect(html).not.toContain('polaroid-paperclip');
     expect(html).not.toContain('polaroid-badge');
   });
@@ -131,7 +131,7 @@ describe('PolaroidStack primitive', () => {
     });
     const html = await renderToString(app);
     expect(html).toContain('polaroid-photo');
-    expect(html).toContain('src="https://example.com/cafe.jpg"');
+    expect(html).toContain('src="/api/images/proxy?url=https%3A%2F%2Fexample.com%2Fcafe.jpg"');
     expect(html).toContain('Café Lisboa');
     expect(html).not.toContain('polaroid-placeholder');
   });
@@ -150,7 +150,7 @@ describe('PolaroidStack primitive', () => {
     });
     const html = await renderToString(app);
     expect(html).toContain('polaroid-photo');
-    expect(html).toContain('src="https://picsum.photos/400/300"');
+    expect(html).toContain('src="/api/images/proxy?url=https%3A%2F%2Fpicsum.photos%2F400%2F300"');
     expect(html).toContain('Belém Tower');
     expect(html).not.toContain('polaroid-placeholder');
   });

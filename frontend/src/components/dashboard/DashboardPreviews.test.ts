@@ -136,7 +136,7 @@ describe('Dashboard 3D Preview Components', () => {
       });
       const html = await renderToString(app);
       expect(html).toContain('Strandvilla');
-      expect(html).toContain('src="https://example.com/villa.jpg"');
+      expect(html).toContain('src="/api/images/proxy?url=https%3A%2F%2Fexample.com%2Fvilla.jpg"');
       expect(html).toContain('polaroid-card');
     });
 

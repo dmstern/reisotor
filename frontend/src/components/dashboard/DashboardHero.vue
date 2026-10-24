@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../../utils/imageDisplayUrl';
 import { computed } from 'vue';
 import type { Trip } from '../../api/types';
 import type { DepartureCountdown, VacationPhase } from '../../utils/departureCountdown';
@@ -22,7 +23,7 @@ defineEmits<{
 const heroStyle = computed(() => {
   if (!props.trip?.image_url) return {};
   return {
-    backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${props.trip.image_url})`,
+    backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${imageDisplayUrl(props.trip.image_url)})`,
   };
 });
 </script>

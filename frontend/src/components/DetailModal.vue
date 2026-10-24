@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import { computed } from 'vue';
 import Modal from './Modal.vue';
 import SpotImageCollage from './SpotImageCollage.vue';
@@ -129,7 +130,7 @@ const hasPhoto = computed(() => {
             <div
               v-if="imageUrl"
               class="detail-photo"
-              :style="{ backgroundImage: `url(${imageUrl})` }"
+              :style="{ backgroundImage: `url(${imageDisplayUrl(imageUrl)})` }"
               role="img"
               :aria-label="title"
             />

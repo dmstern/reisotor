@@ -182,8 +182,8 @@ watch(
 );
 
 const effectivePreview = computed(() => {
-  if (props.modelValue) return imageDisplayUrl(props.modelValue);
-  if (props.previewImage) return imageDisplayUrl(props.previewImage);
+  if (props.modelValue) return imageDisplayUrl(props.modelValue) ?? null;
+  if (props.previewImage) return imageDisplayUrl(props.previewImage) ?? null;
   return null;
 });
 
