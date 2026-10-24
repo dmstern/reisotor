@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 import { useThemeStore } from '../stores/theme';
-import { useNavConfigStore } from '../stores/navConfig';
+import { useNavConfigStore, defaultEntries } from '../stores/navConfig';
 import { NAV_LINKS } from '../utils/navLinks';
 import { useDashboardConfigStore } from '../stores/dashboardConfig';
 import { DASHBOARD_TILES } from '../utils/dashboardTiles';
@@ -48,11 +48,18 @@ export function useAppSettingsReset() {
   }
 
   const isNavDefault = computed(() => {
-    if (navConfig.customMobile) return false;
-    const defaults = NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
-    if (navConfig.entries.length !== defaults.length) return false;
-    return navConfig.entries.every(
-      (e, i) => e.key === defaults[i].key && e.visible === defaults[i].visible
+    if (!navConfig.customMobile) return false;
+    const desktopDefaults = defaultEntries('desktop');
+    const mobileDefaults = defaultEntries('mobile');
+    if (navConfig.entries.length !== desktopDefaults.length) return false;
+    if (navConfig.mobileEntries.length !== mobileDefaults.length) return false;
+    return (
+      navConfig.entries.every(
+        (e, i) => e.key === desktopDefaults[i].key && e.visible === desktopDefaults[i].visible
+      ) &&
+      navConfig.mobileEntries.every(
+        (e, i) => e.key === mobileDefaults[i].key && e.visible === mobileDefaults[i].visible
+      )
     );
   });
   function resetNav() {

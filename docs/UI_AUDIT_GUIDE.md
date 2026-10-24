@@ -83,13 +83,19 @@ Wird ausgeführt nach Änderungen an einer View, im Rahmen von Phase 3 eines Ref
 1. **Route ermitteln:** Prüfe `git status` / `git diff` und ermittle die modifizierte Frontend-Komponente und die passende Route:
    - `SpotsView.vue` → `/trip/1/spots`
    - `ExcursionsView.vue` → `/trip/1/excursions`
+   - `ScheduleView.vue` → `/trip/1/calendar` (sowie Desktop-Schublade `Drawer.vue`)
    - `PackingListView.vue` → `/trip/1/packing`
+   - `ShoppingListView` (Tab) → `/trip/1/shopping`
    - `TodoView.vue` → `/trip/1/todo`
+   - `NotesView.vue` → `/trip/1/notes`
    - `DiaryView.vue` → `/trip/1/diary`
    - `BudgetView.vue` → `/trip/1/budget`
    - `DashboardView.vue` → `/trip/1`
+   - `TripsView.vue` → `/trips`
    - `SettingsView.vue` → `/settings`
    - `LoginView.vue` → `/login`
+   - `SecurityCheckView.vue` → `/security-check`
+   - `TrashView.vue` → `/trip/1/trash`
 2. **Audit ausführen:** Führe `AUDIT_ROUTE=<route> npm run test:audit` aus (standardmäßig **ohne** `AUDIT_SCREENSHOTS=true`).
 3. **Ergebnis bewerten:**
    - Wurden horizontale Overflows oder Berührungsziel-Verletzungen gefunden?
@@ -107,28 +113,46 @@ Vor großen Releases (z. B. Reisotor 2.0) oder Meilensteinen erfolgt die ganzhei
 
 Ein vollständiger UI-Check darf **niemals als ein einziger, unstrukturierter Durchlauf in einem einzigen Kontextfenster** beauftragt werden. Solche Aufträge führen bei LLMs zu kombinatorischer Überlastung und blinden Falsch-Positiven („Alles geprüft, sieht gut aus“).
 
-Stattdessen **muss** eine systematische Aufteilung in 4 Fachdomänen (Divide & Conquer via Subagents) erfolgen:
+Stattdessen **muss** eine systematische Aufteilung in 6 fokussierte Fachdomänen (Divide & Conquer via Subagents) erfolgen:
 
-- **Team 1 (Dashboard & Trips):** `/trip/1`, `/trips`
-- **Team 2 (Spots & Touren):** `/trip/1/spots`, `/trip/1/excursions`
-- **Team 3 (Listen & Content):** `/trip/1/packing`, `/trip/1/todo`, `/trip/1/diary`
-- **Team 4 (Finanzen & Auth/Settings):** `/trip/1/budget`, `/settings`, `/profile`, `/login`
+- **Team 1 (Dashboard, Navigation & Trips):** `/trip/1`, `/trips` (Header, Navbar, Widgets, Reise-Wechsel)
+- **Team 2 (Spots, Touren & Karten):** `/trip/1/spots`, `/trip/1/excursions` (MapLibre-Karte, Split-View, stufenlose Spots-Spalte, Bottom-Sheets)
+- **Team 3 (Kalender & Zeitplan):** `/trip/1/calendar`, Desktop-Kalenderschublade `Drawer.vue` (Tages-/Wochenansicht, Drag-Handles, Termin-Modals, Export)
+- **Team 4 (Listen, Notizen & Content):** `/trip/1/packing`, `/trip/1/shopping`, `/trip/1/todo`, `/trip/1/notes`, `/trip/1/diary` (Tabs in `ListenView`, Notizen-Grid & Rich-Text, Tagebuch-Timeline)
+- **Team 5 (Finanzen & Budget):** `/trip/1/budget` (Budget-Töpfe, Transaktionslisten, Währungsumrechnung, Ausgleichs-Karten, Modals; Enge-Stresstest auf 320px)
+- **Team 6 (Einstellungen, Auth & Hilfsansichten):** `/settings` (7 Tabs: Account, Users, App/Wetter, Trip, Notifications, Data, About), `/login`, `/security-check`, `/trip/1/trash`
+
+### Pflicht: Die State- & Interaktions-Matrix
+
+Ein reines Aufrufen der URL im initialen Ruhezustand ist visuell unzureichend, da Layout-Brüche und horizontale Overflows häufig erst durch Interaktion entstehen. Jeder Subagent muss folgende Zustände aktiv überprüfen:
+
+1. **Tab-Matrix:** Alle Reiter einer View durchschalten (z. B. `ListenView`: Packliste, Einkauf, ToDo; `SettingsView`: alle 7 Tabs).
+2. **Akkordeon- & Detail-Matrix:** Einklappbare Sektionen ausklappen (z. B. Tour-Details, Spot-Karten, Budget-Ausgleich, Notiz-Inhalte).
+3. **Modal- & Sheet-Matrix (auf 320px):** Primäre Dialoge und Bottom-Sheets öffnen (z. B. Neuer Eintrag, Filter, Ausgaben-Modal) und mathematisch mit `expectWithinViewport` absichern.
+4. **Schubladen-Matrix (Desktop):** Kalenderschublade und Spots-Spalte geschlossen, normal und maximal breit (500px+) geöffnet testen.
 
 ### Orchestrierungs-Prompt (Kopieren bei Release-Vorbereitung)
 
 ```text
 /teamwork-preview Wir bereiten das Release vor. Führe ein vollständiges, strukturiertes UI- und Layout-Audit durch.
 
+Referenzregelwerk:
+Lies als verbindliche Grundlage docs/UI_AUDIT_GUIDE.md und DESIGN.md. Behebe etwaige Layout-Fehler defensiv ausschließlich mit CSS-Tokens (--space-*, --color-*) und Container Queries (@container app-main). Keine ungefragten Screenshots (Token-Schutz).
+
 Vorgehensweise:
-1. Teile die Anwendung in 4 parallele Subagents auf:
+1. Teile die Anwendung in 6 parallele Subagents auf:
    - Team 1: Dashboard, Header, Navbar & Trip-Verwaltung (/trip/1, /trips)
    - Team 2: Spots, Touren & Kartenansichten (/trip/1/spots, /trip/1/excursions)
-   - Team 3: Listen, Packliste, ToDo, Einkauf & Tagebuch (/trip/1/packing, /trip/1/todo, /trip/1/diary)
-   - Team 4: Budget, Einstellungen, Profil & Auth (/trip/1/budget, /settings, /login)
-2. Jeder Subagent nutzt e2e/tests/scratch/audit-template.spec.ts für seine Routen:
-   - 320x568 (narrowMobile), 390x844 (mobile), 1080x900 (narrowDesktop) und 1280x800 (desktop)
-   - Schubladen-Matrix (Desktop mit offener und geschlossener Schublade)
-   - expectNoHorizontalOverflow(page)
-   - Touch-Targets und Stacking Contexts
-3. Führe die Ergebnisse in einem gemeinsamen Audit-Report zusammen und behebe gefundene Layout-Fehler defensiv mit Tokens.
+   - Team 3: Kalender & Zeitplan (/trip/1/calendar sowie Desktop-Kalenderschublade Drawer.vue)
+   - Team 4: Listen, Packliste, Einkauf, ToDo, Notizen & Tagebuch (/trip/1/packing, /trip/1/shopping, /trip/1/todo, /trip/1/notes, /trip/1/diary)
+   - Team 5: Finanzen & Budget (/trip/1/budget) - Fokus: Zahlen- & Tabellen-Wrapping auf 320px, Modals & Filter
+   - Team 6: Einstellungen, Auth & Hilfsansichten (/settings mit allen 7 Tabs, /login, /security-check, /trip/1/trash)
+
+2. Jeder Subagent führt für seine Routen das E2E-Layout-Audit aus:
+   - Viewport-Matrix: 320x568 (narrowMobile), 390x844 (mobile), 1080x900 (narrowDesktop) und 1280x800 (desktop)
+   - Desktop-Drawer-Matrix: Kalenderschublade geschlossen, 360px und 500px breit gezogen
+   - State-Matrix: Tabs durchschalten, Details/Akkordeons aufklappen, primäre Modals auf 320px öffnen
+   - Layout-Defensiv-Checks: expectNoHorizontalOverflow(page), expectWithinViewport, Touch-Targets >= 44px
+
+3. Führe die Ergebnisse aller Teams in einem konsolidierten Markdown-Audit-Report zusammen und behebe gefundene Layout-Fehler.
 ```

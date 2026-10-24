@@ -1,62 +1,67 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createApp, h, nextTick, type Component } from 'vue';
-import { createPinia } from 'pinia';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createApp, h, nextTick } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 import WeatherDayDetailDialog from './WeatherDayDetailDialog.vue';
 import type { DailyWeather } from '../utils/weather';
 
-function mountTestApp(rootComponent: Component, props: Record<string, unknown> = {}) {
-  const pinia = createPinia();
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-  const app = createApp({
-    render: () => h(rootComponent, props),
-  });
-  app.use(pinia);
-  const vm = app.mount(container);
+vi.mock('../utils/weather', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/weather')>();
   return {
-    app,
-    container,
-    vm,
-    cleanUp: () => {
-      app.unmount();
-      container.remove();
-      document.body.innerHTML = '';
-    },
+    ...actual,
+    fetchHourlyForecast: vi.fn(),
   };
-}
+});
+
+vi.mock('vue', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('vue')>();
+  return {
+    ...actual,
+    Transition: (
+      _props: unknown,
+      { slots }: { slots: Record<string, (() => unknown) | undefined> }
+    ) => slots.default?.(),
+  };
+});
 
 describe('WeatherDayDetailDialog', () => {
+  let pinia: ReturnType<typeof createPinia>;
+
   beforeEach(() => {
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
-      cb(0);
-      return 0;
-    });
-    // Mock fetch for hourly weather
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        hourly: {
-          time: [
-            '2026-08-06T06:00',
-            '2026-08-06T09:00',
-            '2026-08-06T12:00',
-            '2026-08-06T15:00',
-            '2026-08-06T18:00',
-            '2026-08-06T21:00',
-          ],
-          weathercode: [0, 0, 1, 1, 0, 0],
-          temperature_2m: [18, 24, 32, 36, 34, 27],
-          precipitation_probability: [0, 0, 5, 10, 0, 0],
-        },
-      }),
-    });
+    document.body.innerHTML = '';
+    pinia = createPinia();
+    setActivePinia(pinia);
+    localStorage.clear();
+    vi.restoreAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     document.body.innerHTML = '';
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function mountComponent(props: any) {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () => h(WeatherDayDetailDialog, props),
+    });
+    app.use(pinia);
+    app.mount(container);
+    return {
+      cleanUp: () => {
+        app.unmount();
+        container.remove();
+        document.body.innerHTML = '';
+      },
+    };
+  }
+
+  async function flushAsync() {
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await nextTick();
+  }
 
   const vacationDay: DailyWeather = {
     date: '2026-08-06',
@@ -75,14 +80,17 @@ describe('WeatherDayDetailDialog', () => {
   };
 
   it('renders without toggle button when no home location is configured', async () => {
-    const { cleanUp } = mountTestApp(WeatherDayDetailDialog, {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const { cleanUp } = mountComponent({
       modelValue: true,
       day: vacationDay,
       lat: 38.72,
       lng: -9.13,
       locationLabel: 'Lissabon, Portugal',
     });
-    await nextTick();
+    await flushAsync();
 
     expect(document.querySelector('.location-toggle-wrap')).toBeNull();
     expect(document.querySelector('.location-badge')?.textContent).toContain('Lissabon, Portugal');
@@ -92,7 +100,10 @@ describe('WeatherDayDetailDialog', () => {
   });
 
   it('renders toggle button when home location is configured and toggles between vacation and home', async () => {
-    const { cleanUp } = mountTestApp(WeatherDayDetailDialog, {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const { cleanUp } = mountComponent({
       modelValue: true,
       date: '2026-08-06',
       vacationDay,
@@ -105,7 +116,7 @@ describe('WeatherDayDetailDialog', () => {
       homeLocationLabel: 'Berlin',
       initialLocation: 'vacation',
     });
-    await nextTick();
+    await flushAsync();
 
     const toggleWrap = document.querySelector('.location-toggle-wrap');
     expect(toggleWrap).not.toBeNull();
@@ -121,7 +132,7 @@ describe('WeatherDayDetailDialog', () => {
 
     // Click Heimatort
     options[1].click();
-    await nextTick();
+    await flushAsync();
 
     expect(document.querySelector('.location-badge')?.textContent).toContain('Berlin');
     expect(document.querySelector('.temp-max')?.textContent).toBe('23°');
@@ -130,7 +141,7 @@ describe('WeatherDayDetailDialog', () => {
 
     // Click Urlaubsort again
     options[0].click();
-    await nextTick();
+    await flushAsync();
 
     expect(document.querySelector('.location-badge')?.textContent).toContain('Lissabon, Portugal');
     expect(document.querySelector('.temp-max')?.textContent).toBe('37°');
@@ -139,7 +150,10 @@ describe('WeatherDayDetailDialog', () => {
   });
 
   it('respects initialLocation="home"', async () => {
-    const { cleanUp } = mountTestApp(WeatherDayDetailDialog, {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const { cleanUp } = mountComponent({
       modelValue: true,
       date: '2026-08-06',
       vacationDay,
@@ -152,7 +166,7 @@ describe('WeatherDayDetailDialog', () => {
       homeLocationLabel: 'Berlin',
       initialLocation: 'home',
     });
-    await nextTick();
+    await flushAsync();
 
     expect(document.querySelector('.location-badge')?.textContent).toContain('Berlin');
     expect(document.querySelector('.temp-max')?.textContent).toBe('23°');
@@ -161,6 +175,9 @@ describe('WeatherDayDetailDialog', () => {
   });
 
   it('does not display 0° on missing weather data and displays clear explanation', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
     const unknownDay: DailyWeather = {
       date: '2099-11-08',
       weatherCode: null,
@@ -169,7 +186,7 @@ describe('WeatherDayDetailDialog', () => {
       precipitationProbability: null,
     };
 
-    const { cleanUp } = mountTestApp(WeatherDayDetailDialog, {
+    const { cleanUp } = mountComponent({
       modelValue: true,
       date: '2099-11-08',
       day: unknownDay,
@@ -177,9 +194,8 @@ describe('WeatherDayDetailDialog', () => {
       lng: -9.13,
       locationLabel: 'Lissabon, Portugal',
     });
-    await nextTick();
+    await flushAsync();
 
-    // No 0° in temp elements
     expect(document.querySelector('.temp-max')).toBeNull();
     expect(document.querySelector('.temp-unavailable')?.textContent).toBe('–');
     expect(document.querySelector('.unknown-explanation')?.textContent).toContain(
@@ -190,6 +206,9 @@ describe('WeatherDayDetailDialog', () => {
   });
 
   it('correctly displays 0° when temperature is genuinely 0°C', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
     const freezingDay: DailyWeather = {
       date: '2026-12-15',
       weatherCode: 71,
@@ -198,7 +217,7 @@ describe('WeatherDayDetailDialog', () => {
       precipitationProbability: 40,
     };
 
-    const { cleanUp } = mountTestApp(WeatherDayDetailDialog, {
+    const { cleanUp } = mountComponent({
       modelValue: true,
       date: '2026-12-15',
       day: freezingDay,
@@ -206,11 +225,103 @@ describe('WeatherDayDetailDialog', () => {
       lng: 8.54,
       locationLabel: 'Zürich',
     });
-    await nextTick();
+    await flushAsync();
 
     expect(document.querySelector('.temp-max')?.textContent).toBe('0°');
     expect(document.querySelector('.temp-min')?.textContent).toBe('-4°');
     expect(document.querySelector('.unknown-explanation')).toBeNull();
+
+    cleanUp();
+  });
+
+  it('zeigt für vergangene Tage ohne Verlaufsdaten den passenden Hinweis', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const pastDay: DailyWeather = {
+      date: '2024-08-04',
+      weatherCode: 0,
+      tempMax: 30,
+      tempMin: 18,
+      precipitationProbability: 0,
+    };
+
+    const { cleanUp } = mountComponent({
+      modelValue: true,
+      day: pastDay,
+      lat: 38.72,
+      lng: -9.14,
+    });
+
+    await flushAsync();
+
+    const emptyMsg = document.querySelector('.hourly-empty');
+    expect(emptyMsg?.textContent?.trim()).toBe(
+      'Für diesen vergangenen Tag sind keine stündlichen Verlaufsdaten verfügbar.'
+    );
+
+    cleanUp();
+  });
+
+  it('zeigt für zukünftige Tage ohne Verlaufsdaten den Standard-Hinweis', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([]);
+
+    const futureDay: DailyWeather = {
+      date: '2099-08-04',
+      weatherCode: 0,
+      tempMax: 30,
+      tempMin: 18,
+      precipitationProbability: 0,
+    };
+
+    const { cleanUp } = mountComponent({
+      modelValue: true,
+      day: futureDay,
+      lat: 38.72,
+      lng: -9.14,
+    });
+
+    await flushAsync();
+
+    const emptyMsg = document.querySelector('.hourly-empty');
+    expect(emptyMsg?.textContent?.trim()).toBe(
+      'Kein stündlicher Verlauf verfügbar (Tag liegt zu weit in der Zukunft).'
+    );
+
+    cleanUp();
+  });
+
+  it('rendert geladene stündliche Wetterdaten', async () => {
+    const { fetchHourlyForecast } = await import('../utils/weather');
+    vi.mocked(fetchHourlyForecast).mockResolvedValue([
+      { time: '06:00', temp: 19, weatherCode: 0, precipitationProbability: null },
+      { time: '12:00', temp: 28, weatherCode: 1, precipitationProbability: 10 },
+    ]);
+
+    const pastDay: DailyWeather = {
+      date: '2024-08-04',
+      weatherCode: 0,
+      tempMax: 30,
+      tempMin: 18,
+      precipitationProbability: 0,
+    };
+
+    const { cleanUp } = mountComponent({
+      modelValue: true,
+      day: pastDay,
+      lat: 38.72,
+      lng: -9.14,
+    });
+
+    await flushAsync();
+
+    const items = document.querySelectorAll('.hourly-item.loaded-item');
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toContain('06:00');
+    expect(items[0].textContent).toContain('19°');
+    expect(items[1].textContent).toContain('12:00');
+    expect(items[1].textContent).toContain('28°');
 
     cleanUp();
   });

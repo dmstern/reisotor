@@ -100,17 +100,17 @@ describe('uiSettings list visibility', () => {
   it('triggers persist when mobile nav entries are updated', async () => {
     const { useNavConfigStore } = await import('./navConfig');
     const navStore = useNavConfigStore();
-    const uiStore = useUiSettingsStore();
+    useUiSettingsStore();
 
-    // Trigger watcher
-    navStore.customMobile = true;
+    // Trigger watcher by toggling customMobile
+    navStore.customMobile = false;
     await nextTick();
 
     expect(api.put).toHaveBeenCalledWith(
       '/users/me/app-settings',
       expect.objectContaining({
         settings: expect.objectContaining({
-          customMobileNav: true,
+          customMobileNav: false,
         }),
       })
     );

@@ -640,7 +640,40 @@ interface OpenMeteoHourlyResponse {
   };
 }
 
-/** Holt stündliche Wetterdaten für die Tages-Detail-Ansicht (Issue #133). */
+function parseHourlyResponse(data: OpenMeteoHourlyResponse): HourlyWeather[] {
+  const result: HourlyWeather[] = [];
+  if (data.hourly?.time && Array.isArray(data.hourly.time)) {
+    data.hourly.time.forEach((t, i) => {
+      const hourStr = t.split('T')[1] ?? '';
+      const hourNum = parseInt(hourStr.split(':')[0], 10);
+      if ([6, 9, 12, 15, 18, 21].includes(hourNum)) {
+        const rawTemp = data.hourly.temperature_2m?.[i];
+        const rawCode = data.hourly.weathercode?.[i];
+        // Strikte Validierung: null oder undefined darf niemals durch Math.round() zu 0° verfälscht werden!
+        if (
+          rawTemp != null &&
+          typeof rawTemp === 'number' &&
+          !Number.isNaN(rawTemp) &&
+          rawCode != null &&
+          typeof rawCode === 'number' &&
+          !Number.isNaN(rawCode)
+        ) {
+          result.push({
+            time: hourStr,
+            temp: Math.round(rawTemp),
+            weatherCode: rawCode,
+            precipitationProbability: data.hourly.precipitation_probability?.[i] ?? null,
+          });
+        }
+      }
+    });
+  }
+  return result;
+}
+
+/** Holt stündliche Wetterdaten für die Tages-Detail-Ansicht (Issue #133).
+ *  Unterstützt sowohl zukünftige Tage (Forecast-API) als auch vergangene Urlaubs-Tage
+ *  (Archive-API mit ERA5/Modell-Reanalysis). */
 export async function fetchHourlyForecast(
   lat: number,
   lng: number,
@@ -660,39 +693,82 @@ export async function fetchHourlyForecast(
     return hours.map((h, i) => ({ time: h, ...demoPattern[i % demoPattern.length] }));
   }
 
-  const params = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lng),
-    hourly: 'weathercode,temperature_2m,precipitation_probability',
-    timezone: 'auto',
-    start_date: date,
-    end_date: date,
-    models: model,
-  });
+  const today = toLocalDateString(new Date());
+  const isPast = date < today;
 
-  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-  if (!res.ok)
-    throw new Error(`Stündliche Wetterdaten konnten nicht geladen werden (${res.status})`);
-  const data = (await res.json()) as OpenMeteoHourlyResponse;
-
-  const result: HourlyWeather[] = [];
-  if (data.hourly?.time) {
-    data.hourly.time.forEach((t, i) => {
-      const hourStr = t.split('T')[1] ?? '';
-      const hourNum = parseInt(hourStr.split(':')[0], 10);
-      if ([6, 9, 12, 15, 18, 21].includes(hourNum)) {
-        const rawTemp = data.hourly.temperature_2m[i];
-        const rawCode = data.hourly.weathercode[i];
-        if (rawTemp != null || rawCode != null) {
-          result.push({
-            time: hourStr,
-            temp: rawTemp != null ? Math.round(rawTemp) : null,
-            weatherCode: rawCode ?? null,
-            precipitationProbability: data.hourly.precipitation_probability?.[i] ?? null,
-          });
-        }
-      }
+  async function tryFetch(baseUrl: string, useModel: boolean): Promise<HourlyWeather[]> {
+    const params = new URLSearchParams({
+      latitude: String(lat),
+      longitude: String(lng),
+      hourly: 'weathercode,temperature_2m,precipitation_probability',
+      timezone: 'auto',
+      start_date: date,
+      end_date: date,
     });
+    if (useModel && model) {
+      params.set('models', model);
+    }
+    const res = await fetch(`${baseUrl}?${params}`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as OpenMeteoHourlyResponse;
+    return parseHourlyResponse(data);
   }
-  return result;
+
+  if (isPast) {
+    // Für vergangene Tage nutzen wir die Open-Meteo Archive-API, da die Forecast-API
+    // für frühere Termine keine stündlichen Vorhersagedaten mehr vorhält bzw. null zurückgibt.
+    try {
+      const fromArchive = await tryFetch('https://archive-api.open-meteo.com/v1/archive', true);
+      if (fromArchive.length > 0) return fromArchive;
+    } catch {
+      // Weiter zum nächsten Fallback
+    }
+
+    try {
+      // Falls das spezifische Wettermodell für diesen vergangenen Zeitraum keine Daten hat,
+      // liefert das globale ERA5-Reanalysis-Archiv von Open-Meteo verlässliche Verlaufsdaten.
+      const fromArchiveDefault = await tryFetch(
+        'https://archive-api.open-meteo.com/v1/archive',
+        false
+      );
+      if (fromArchiveDefault.length > 0) return fromArchiveDefault;
+    } catch {
+      // Weiter zum nächsten Fallback
+    }
+
+    try {
+      // Zusätzlicher Fallback auf Forecast-API für ganz junge vergangene Tage (z. B. gestern)
+      const fromForecast = await tryFetch('https://api.open-meteo.com/v1/forecast', true);
+      if (fromForecast.length > 0) return fromForecast;
+    } catch {
+      // Keine Daten verfügbar
+    }
+
+    return [];
+  }
+
+  // Für heute oder die Zukunft: reguläre Forecast-API
+  try {
+    const fromForecast = await tryFetch('https://api.open-meteo.com/v1/forecast', true);
+    if (fromForecast.length > 0) return fromForecast;
+  } catch {
+    // Weiter zum Fallback
+  }
+
+  try {
+    const fromForecastDefault = await tryFetch('https://api.open-meteo.com/v1/forecast', false);
+    if (fromForecastDefault.length > 0) return fromForecastDefault;
+  } catch {
+    // Weiter zum Fallback
+  }
+
+  // Falls für den heutigen Tag im Grenzfall die Forecast-API versagt, liefert das Archiv ggf. bereits Werte
+  try {
+    const fromArchive = await tryFetch('https://archive-api.open-meteo.com/v1/archive', false);
+    if (fromArchive.length > 0) return fromArchive;
+  } catch {
+    // Keine Daten verfügbar
+  }
+
+  return [];
 }

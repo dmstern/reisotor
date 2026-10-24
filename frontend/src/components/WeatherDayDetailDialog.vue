@@ -156,8 +156,16 @@ const isDayUnknown = computed(() => {
 
 const weatherUnknownExplanation = computed(() => getWeatherUnknownExplanation(currentDate.value));
 
+const isPastDay = computed(() => {
+  if (!currentDate.value) return false;
+  return currentDate.value < toLocalDateString(new Date());
+});
+
 const hourlyEmptyText = computed(() => {
   const today = toLocalDateString(new Date());
+  if (currentDate.value && currentDate.value < today) {
+    return 'Für diesen vergangenen Tag sind keine stündlichen Verlaufsdaten verfügbar.';
+  }
   if (currentDate.value && currentDate.value > today) {
     return 'Kein stündlicher Verlauf verfügbar (Tag liegt zu weit in der Zukunft).';
   }
