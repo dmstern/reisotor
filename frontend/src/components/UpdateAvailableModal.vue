@@ -106,6 +106,10 @@ function goToSettings() {
   width: 100%;
   height: 140px;
   margin-top: var(--space-1);
+  /* Der Modal-Body schneidet überstehenden Inhalt (Glow, aufsteigende Glitzer) am oberen Rand hart
+     ab. Eine Maske blendet die Bühne dort weich aus, bevor die Kante erreicht wird. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 22%);
 }
 
 .glow-backdrop {
