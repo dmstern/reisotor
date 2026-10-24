@@ -183,6 +183,9 @@ npm run install:all
 
 # Startet Backend & Frontend parallel (inkl. automatischem DB-Seed)
 npm run dev
+
+# Schneller Start in Git-Worktrees (ohne doppelten Download via Symlinks + automatischer Demo-Seed)
+npm run dev:fresh
 ```
 
 Die App ist direkt unter `http://localhost:5173` erreichbar.
