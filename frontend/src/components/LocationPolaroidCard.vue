@@ -5,8 +5,8 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import AppIcon from './AppIcon.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
-import InfoPopover from './primitives/InfoPopover.vue';
 import SparkleButton from './primitives/SparkleButton.vue';
+import SpotLocationBadge from './SpotLocationBadge.vue';
 import CategoryChip from './CategoryChip.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 
@@ -317,42 +317,15 @@ defineExpose({
               </div>
             </template>
             <template v-else>
-              <span
-                class="status-row-icon status-warning-icon"
-                title="Standort fehlt"
-                aria-hidden="true"
-              >
-                <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+              <span class="status-row-icon" title="Koordinaten" aria-hidden="true">
+                <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
               </span>
               <div class="status-meta-display">
-                <span class="status-coords status-coords-missing" data-testid="spot-coords-missing">
-                  Standort fehlt
-                </span>
-                <InfoPopover
-                  title="Standort festlegen"
-                  aria-label="Hinweise zum Festlegen des Standorts anzeigen"
-                  placement="bottom"
-                  align="left"
-                  :icon-size="14"
-                  :menu-width="260"
-                  class="coords-info-popover"
-                >
-                  <p>
-                    <strong>Standort festlegen:</strong>
-                  </p>
-                  <p>
-                    • <strong>Ortssuche:</strong> Nutze die Suchleiste oben für Adressen oder
-                    Sehenswürdigkeiten.
-                  </p>
-                  <p>
-                    • <strong>Karten-Link:</strong> Kopiere einen Google Maps-, Apple Maps- oder
-                    OSM-Link in das Suchfeld.
-                  </p>
-                  <p class="popover-tip">
-                    📍 Tippe alternativ direkt auf die Karte, um die Stecknadel manuell zu
-                    platzieren.
-                  </p>
-                </InfoPopover>
+                <SpotLocationBadge
+                  context="dialog"
+                  data-testid="spot-coords-missing"
+                  popover-class="coords-info-popover"
+                />
                 <SparkleButton
                   v-if="showLocationSparkle"
                   variant="coords"

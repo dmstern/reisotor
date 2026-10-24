@@ -113,4 +113,69 @@ describe('SpotLocationBadge', () => {
     app.unmount();
     container.remove();
   });
+
+  it('clicking the badge button directly emits edit event', async () => {
+    const pinia = createPinia();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const onEdit = vi.fn();
+
+    const app = createApp({
+      render: () =>
+        h(SpotLocationBadge, {
+          spot: spotWithoutLocation,
+          onEdit,
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+
+    const actionBtn = container.querySelector(
+      '.spot-location-badge-action-btn'
+    ) as HTMLButtonElement;
+    expect(actionBtn).not.toBeNull();
+
+    actionBtn.click();
+    await nextTick();
+
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(onEdit).toHaveBeenCalledWith(spotWithoutLocation);
+
+    app.unmount();
+    container.remove();
+  });
+
+  it('renders dialog context with instructions for setting location', async () => {
+    const pinia = createPinia();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(SpotLocationBadge, {
+          context: 'dialog',
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+
+    expect(container.querySelector('.spot-location-badge-display')).not.toBeNull();
+    expect(container.querySelector('.spot-location-badge-action-btn')).toBeNull();
+
+    const infoBtn = container.querySelector('.info-popover-btn') as HTMLButtonElement;
+    expect(infoBtn).not.toBeNull();
+    infoBtn.click();
+    await nextTick();
+
+    const popoverContent = document.body.querySelector('.spot-location-popover-content');
+    expect(popoverContent).not.toBeNull();
+    expect(popoverContent?.textContent).toContain('Standort festlegen');
+    expect(popoverContent?.textContent).toContain('Ortssuche');
+    expect(popoverContent?.textContent).toContain('Karten-Link');
+    expect(popoverContent?.textContent).not.toContain('Standort jetzt festlegen');
+
+    app.unmount();
+    container.remove();
+  });
 });
