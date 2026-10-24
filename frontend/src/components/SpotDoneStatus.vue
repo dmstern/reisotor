@@ -48,9 +48,11 @@ const {
 });
 
 const targetCalendarDate = computed<string | null>(() => {
-  if (props.scheduledDate) return props.scheduledDate;
-  if (scheduledItemsForSpot.value.length === 1 && scheduledItemsForSpot.value[0].date) {
+  if (totalItemsCount.value === 1 && scheduledItemsForSpot.value[0]?.date) {
     return scheduledItemsForSpot.value[0].date;
+  }
+  if (totalItemsCount.value <= 1 && props.scheduledDate) {
+    return props.scheduledDate;
   }
   return null;
 });
@@ -234,7 +236,16 @@ function openCalendarAtDate(date: string) {
                 :size="15"
                 group="actions"
               />
-              <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
+              <span class="date-check-info">
+                <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
+                <span
+                  v-if="item.type === 'tour' && item.title"
+                  class="date-check-title"
+                  :title="item.title"
+                >
+                  {{ item.title }}
+                </span>
+              </span>
               <span class="date-check-status">{{ item.done ? 'Besucht' : 'Geplant' }}</span>
             </button>
             <button
@@ -341,8 +352,30 @@ function openCalendarAtDate(date: string) {
   color: var(--color-primary-dark);
 }
 
+.date-check-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
 .date-check-date {
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.date-check-title {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.date-check-item.checked .date-check-title {
+  color: inherit;
+  opacity: 0.8;
 }
 
 .date-check-status {

@@ -4,10 +4,11 @@ import { createPinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
 import { useSpotDoneStatus } from './useSpotDoneStatus';
 import { useScheduleStore } from '../stores/schedule';
+import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
-import type { ScheduleItem, Spot } from '../api/types';
+import type { Excursion, ScheduleItem, Spot } from '../api/types';
 
 vi.mock('../api/client', () => ({
   api: {
@@ -37,6 +38,16 @@ function createMockSpot(partial: Partial<Spot>): Spot {
 
 function createMockScheduleItem(partial: Partial<ScheduleItem>): ScheduleItem {
   return partial as unknown as ScheduleItem;
+}
+
+function createMockExcursion(partial: Partial<Excursion>): Excursion {
+  return {
+    id: 1,
+    trip_id: 10,
+    title: 'Test Tour',
+    spot_ids: [],
+    ...partial,
+  } as Excursion;
 }
 
 describe('useSpotDoneStatus', () => {
@@ -193,5 +204,108 @@ describe('useSpotDoneStatus', () => {
 
     expect(unplannedPopoverOpen.value).toBe(false);
     expect(pendingSpy).toHaveBeenCalledWith('spot', 42, 'confirm-done');
+  });
+
+  it('erfasst und zählt Daten aus zwei Touren (z. B. Hinflug und Rückflug)', async () => {
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      createMockExcursion({
+        id: 201,
+        title: 'Hinflug nach Lissabon',
+        date: '2026-11-07',
+        spot_ids: [1],
+        done: 0,
+      }),
+      createMockExcursion({
+        id: 202,
+        title: 'Rückflug nach Berlin',
+        date: '2026-11-17',
+        spot_ids: [1],
+        done: 0,
+      }),
+    ];
+
+    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue(undefined);
+    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const scheduledDate = ref<string | null>('2026-11-07');
+
+    const {
+      scheduledItemsForSpot,
+      totalItemsCount,
+      doneItemsCount,
+      isSpotDone,
+      isSpotPartiallyDone,
+      toggleScheduledItemDone,
+    } = useSpotDoneStatus({ spot, scheduledDate });
+
+    expect(totalItemsCount.value).toBe(2);
+    expect(scheduledItemsForSpot.value.map((i) => i.date)).toEqual(['2026-11-07', '2026-11-17']);
+    expect(scheduledItemsForSpot.value[0].title).toBe('Hinflug nach Lissabon');
+    expect(scheduledItemsForSpot.value[1].title).toBe('Rückflug nach Berlin');
+    expect(doneItemsCount.value).toBe(0);
+    expect(isSpotDone.value).toBe(false);
+
+    // Hinflug als erledigt markieren
+    await toggleScheduledItemDone(scheduledItemsForSpot.value[0]);
+    expect(setDoneSpy).toHaveBeenCalledWith(201, true);
+
+    // Wenn Hinflug erledigt ist
+    excursionsStore.excursions = [
+      { ...excursionsStore.excursions[0], done: 1 },
+      excursionsStore.excursions[1],
+    ];
+    expect(doneItemsCount.value).toBe(1);
+    expect(isSpotPartiallyDone.value).toBe(true);
+    expect(isSpotDone.value).toBe(false);
+
+    // Wenn beide Touren erledigt sind
+    excursionsStore.excursions = [
+      excursionsStore.excursions[0],
+      { ...excursionsStore.excursions[1], done: 1 },
+    ];
+    expect(doneItemsCount.value).toBe(2);
+    expect(isSpotPartiallyDone.value).toBe(false);
+    expect(isSpotDone.value).toBe(true);
+  });
+
+  it('erfasst und zählt gemischte Daten aus Tour und Kalendertermin', async () => {
+    const scheduleStore = useScheduleStore();
+    scheduleStore.items = [
+      createMockScheduleItem({ id: 101, spot_id: 1, date: '2026-10-27', done: 0, trip_id: 10 }),
+    ];
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      createMockExcursion({
+        id: 201,
+        title: 'Panoramatour',
+        date: '2026-11-08',
+        spot_ids: [1],
+        done: 0,
+      }),
+    ];
+
+    const schedSetDoneSpy = vi.spyOn(scheduleStore, 'setDone').mockResolvedValue({ done: true });
+    const excSetDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue(undefined);
+
+    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const scheduledDate = ref<string | null>('2026-10-27');
+
+    const { scheduledItemsForSpot, totalItemsCount, toggleScheduledItemDone } = useSpotDoneStatus({
+      spot,
+      scheduledDate,
+    });
+
+    expect(totalItemsCount.value).toBe(2);
+    expect(scheduledItemsForSpot.value.map((i) => i.date)).toEqual(['2026-10-27', '2026-11-08']);
+    expect(scheduledItemsForSpot.value[0].type).toBe('schedule');
+    expect(scheduledItemsForSpot.value[1].type).toBe('tour');
+
+    // Togglen des Termins
+    await toggleScheduledItemDone(scheduledItemsForSpot.value[0]);
+    expect(schedSetDoneSpy).toHaveBeenCalledWith(101, true);
+
+    // Togglen der Tour
+    await toggleScheduledItemDone(scheduledItemsForSpot.value[1]);
+    expect(excSetDoneSpy).toHaveBeenCalledWith(201, true);
   });
 });

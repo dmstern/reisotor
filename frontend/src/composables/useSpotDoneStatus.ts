@@ -8,13 +8,23 @@ import {
   type MaybeRefOrGetter,
   type Ref,
 } from 'vue';
-import type { ScheduleItem, Spot } from '../api/types';
+import type { Spot } from '../api/types';
 import { useScheduleStore } from '../stores/schedule';
+import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { toLocalDateString } from '../utils/dateFormat';
 import { computePopoverPosition } from '../utils/popoverPosition';
+
+export interface ScheduledSpotItem {
+  id: string | number;
+  date: string;
+  done: boolean | number;
+  type: 'schedule' | 'tour' | 'prop';
+  sourceId: number;
+  title?: string;
+}
 
 export interface UseSpotDoneStatusOptions {
   spot: MaybeRefOrGetter<Spot>;
@@ -22,7 +32,7 @@ export interface UseSpotDoneStatusOptions {
 }
 
 export interface UseSpotDoneStatusReturn {
-  scheduledItemsForSpot: ComputedRef<ScheduleItem[]>;
+  scheduledItemsForSpot: ComputedRef<ScheduledSpotItem[]>;
   totalItemsCount: ComputedRef<number>;
   doneItemsCount: ComputedRef<number>;
   allItemsDone: ComputedRef<boolean>;
@@ -34,22 +44,68 @@ export interface UseSpotDoneStatusReturn {
   unplannedPopoverStyle: Ref<{ top: string; left: string }>;
   unplannedDoneDate: Ref<string>;
   onToggleDone: (event?: MouseEvent) => Promise<void>;
-  toggleScheduledItemDone: (item: ScheduleItem) => Promise<void>;
+  toggleScheduledItemDone: (item: ScheduledSpotItem) => Promise<void>;
   submitUnplannedDone: () => Promise<void>;
   openCalendarConfirmDone: () => void;
 }
 
 export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDoneStatusReturn {
   const scheduleStore = useScheduleStore();
+  const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
   const tripStore = useTripStore();
   const drawers = useDrawersStore();
 
-  const scheduledItemsForSpot = computed(() => {
+  const scheduledItemsForSpot = computed<ScheduledSpotItem[]>(() => {
     const spot = toValue(options.spot);
-    return scheduleStore.items
-      .filter((i) => i.spot_id === spot.id && i.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const result: ScheduledSpotItem[] = [];
+
+    for (const item of scheduleStore.items) {
+      if (item.spot_id === spot.id && item.date) {
+        result.push({
+          id: item.id,
+          date: item.date,
+          done: !!item.done,
+          type: 'schedule',
+          sourceId: item.id,
+          title: item.title,
+        });
+      }
+    }
+
+    for (const excursion of excursionsStore.excursions) {
+      if (excursion.date && excursion.spot_ids.includes(spot.id)) {
+        result.push({
+          id: `tour-${excursion.id}`,
+          date: excursion.date,
+          done: !!excursion.done,
+          type: 'tour',
+          sourceId: excursion.id,
+          title: excursion.title,
+        });
+      }
+    }
+
+    if (result.length === 0) {
+      const fallbackDate = toValue(options.scheduledDate);
+      if (fallbackDate) {
+        result.push({
+          id: `prop-${fallbackDate}`,
+          date: fallbackDate,
+          done: !!spot.done,
+          type: 'prop',
+          sourceId: spot.id,
+          title: spot.title,
+        });
+      }
+    }
+
+    const isSingleTour = result.length === 1 && result[0].type === 'tour';
+    if (isSingleTour && spot.done) {
+      result[0].done = true;
+    }
+
+    return result.sort((a, b) => a.date.localeCompare(b.date));
   });
 
   const totalItemsCount = computed(() => scheduledItemsForSpot.value.length);
@@ -94,8 +150,8 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
       if (triggerEl) {
         datesPopoverStyle.value = computePopoverPosition(triggerEl, {
-          menuWidth: 270,
-          menuHeight: 220,
+          menuWidth: 290,
+          menuHeight: 240,
         });
       }
       datesPopoverOpen.value = true;
@@ -110,7 +166,13 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
       }
     } else if (totalItemsCount.value === 1) {
       const item = scheduledItemsForSpot.value[0];
-      await scheduleStore.setDone(item.id, !item.done);
+      if (item.type === 'tour') {
+        await spotsStore.setDone(spot.id, !isSpotDone.value);
+      } else if (item.type === 'schedule') {
+        await scheduleStore.setDone(item.sourceId, !item.done);
+      } else {
+        await spotsStore.setDone(spot.id, !spot.done);
+      }
     } else if (scheduledDate) {
       await spotsStore.setDone(spot.id, !spot.done);
     } else {
@@ -134,8 +196,15 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     }
   }
 
-  async function toggleScheduledItemDone(item: ScheduleItem) {
-    await scheduleStore.setDone(item.id, !item.done);
+  async function toggleScheduledItemDone(item: ScheduledSpotItem) {
+    if (item.type === 'tour') {
+      await excursionsStore.setDone(item.sourceId, !item.done);
+    } else if (item.type === 'schedule') {
+      await scheduleStore.setDone(item.sourceId, !item.done);
+    } else {
+      const spot = toValue(options.spot);
+      await spotsStore.setDone(spot.id, !item.done);
+    }
   }
 
   async function submitUnplannedDone() {
