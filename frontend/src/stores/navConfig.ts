@@ -11,59 +11,65 @@ export interface NavConfigEntry {
   visible: boolean;
 }
 
-export function defaultEntries(): NavConfigEntry[] {
-  return NAV_LINKS.map((l) => ({ key: l.key, visible: l.defaultVisible ?? true }));
+export function defaultEntries(target: 'desktop' | 'mobile' = 'desktop'): NavConfigEntry[] {
+  return NAV_LINKS.map((l) => ({
+    key: l.key,
+    visible:
+      target === 'mobile'
+        ? (l.defaultVisibleMobile ?? l.defaultVisible ?? true)
+        : (l.defaultVisible ?? true),
+  }));
 }
 
 function loadEntries(): NavConfigEntry[] {
   const stored = localStorage.getItem(STORAGE_KEY);
-  let parsed: NavConfigEntry[] = [];
-  if (stored) {
-    try {
-      parsed = JSON.parse(stored);
-    } catch {
-      parsed = [];
-    }
-  }
-  // Nur bekannte Keys aus dem gespeicherten Zustand übernehmen (Reihenfolge + Sichtbarkeit); Keys,
-  // die es beim letzten Speichern noch nicht gab (z. B. ein künftig neu hinzugekommener Nav-Punkt),
-  // werden standardmäßig gemäß l.defaultVisible angehängt (standardmäßig true, außer explizit false
-  // wie bei An-/Abreise).
-  const known = new Set(NAV_LINKS.map((l) => l.key));
-  const validExisting = parsed.filter((e) => known.has(e.key));
-  const existingKeys = new Set(validExisting.map((e) => e.key));
-  const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({
-    key: l.key,
-    visible: l.defaultVisible ?? true,
-  }));
-  return [...validExisting, ...missing];
-}
-
-function loadCustomMobile(): boolean {
-  return localStorage.getItem(CUSTOM_MOBILE_STORAGE_KEY) === 'true';
-}
-
-function loadMobileEntries(): NavConfigEntry[] {
-  const stored = localStorage.getItem(MOBILE_STORAGE_KEY);
   if (!stored) {
-    return loadEntries();
+    return defaultEntries('desktop');
   }
   let parsed: NavConfigEntry[] = [];
   try {
     parsed = JSON.parse(stored);
   } catch {
-    return loadEntries();
+    return defaultEntries('desktop');
   }
-  return sanitizeNavEntries(parsed);
+  return sanitizeNavEntries(parsed, 'desktop');
 }
 
-export function sanitizeNavEntries(parsed: NavConfigEntry[]): NavConfigEntry[] {
+function loadCustomMobile(): boolean {
+  const stored = localStorage.getItem(CUSTOM_MOBILE_STORAGE_KEY);
+  if (stored === null) {
+    return true;
+  }
+  return stored === 'true';
+}
+
+function loadMobileEntries(): NavConfigEntry[] {
+  const stored = localStorage.getItem(MOBILE_STORAGE_KEY);
+  if (!stored) {
+    return defaultEntries('mobile');
+  }
+  let parsed: NavConfigEntry[] = [];
+  try {
+    parsed = JSON.parse(stored);
+  } catch {
+    return defaultEntries('mobile');
+  }
+  return sanitizeNavEntries(parsed, 'mobile');
+}
+
+export function sanitizeNavEntries(
+  parsed: NavConfigEntry[],
+  target: 'desktop' | 'mobile' = 'desktop'
+): NavConfigEntry[] {
   const known = new Set(NAV_LINKS.map((l) => l.key));
   const validExisting = parsed.filter((e) => known.has(e.key) && typeof e.visible === 'boolean');
   const existingKeys = new Set(validExisting.map((e) => e.key));
   const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({
     key: l.key,
-    visible: l.defaultVisible ?? true,
+    visible:
+      target === 'mobile'
+        ? (l.defaultVisibleMobile ?? l.defaultVisible ?? true)
+        : (l.defaultVisible ?? true),
   }));
   return [...validExisting, ...missing];
 }
@@ -84,8 +90,13 @@ export const useNavConfigStore = defineStore('navConfig', () => {
 
   function setCustomMobile(enabled: boolean | unknown) {
     const val = Boolean(enabled);
-    if (val && !customMobile.value && !localStorage.getItem(MOBILE_STORAGE_KEY)) {
-      mobileEntries.value = entries.value.map((e) => ({ ...e }));
+    if (
+      val &&
+      !customMobile.value &&
+      !localStorage.getItem(MOBILE_STORAGE_KEY) &&
+      !mobileEntries.value?.length
+    ) {
+      mobileEntries.value = defaultEntries('mobile');
     }
     customMobile.value = val;
   }
@@ -115,9 +126,9 @@ export const useNavConfigStore = defineStore('navConfig', () => {
   }
 
   function reset() {
-    entries.value = defaultEntries();
-    customMobile.value = false;
-    mobileEntries.value = defaultEntries();
+    entries.value = defaultEntries('desktop');
+    customMobile.value = true;
+    mobileEntries.value = defaultEntries('mobile');
     localStorage.removeItem(CUSTOM_MOBILE_STORAGE_KEY);
     localStorage.removeItem(MOBILE_STORAGE_KEY);
   }
