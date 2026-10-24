@@ -51,6 +51,97 @@ function dateRange(startStr: string, endStr: string): string[] {
   return dates;
 }
 
+const FORECAST_CACHE_TTL_MS = 30 * 60 * 1000;
+const ARCHIVE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const weatherProxyCache = new Map<string, { expiresAt: number; data: unknown }>();
+
+/** Rundet Koordinaten auf 2 Nachkommastellen (~1,1 km) – erhöht die Cache-Trefferquote und
+ *  reduziert die Präzision der an Open-Meteo übermittelten Standortdaten (Issue #538). */
+export function roundWeatherCoord(val: number): number {
+  return Math.round(val * 100) / 100;
+}
+
+export function clearWeatherProxyCache() {
+  weatherProxyCache.clear();
+}
+
+export interface WeatherProxyQuery {
+  lat: number;
+  lng: number;
+  source?: 'forecast' | 'archive';
+  daily?: string;
+  hourly?: string;
+  timezone?: string;
+  past_days?: string | number;
+  forecast_days?: string | number;
+  start_date?: string;
+  end_date?: string;
+  models?: string;
+}
+
+/** Holt Wetterdaten (Vorhersage oder Archiv) über das Backend von Open-Meteo mit serverseitigem
+ *  In-Memory-Cache und auf 2 Nachkommastellen gerundeten Koordinaten (Issue #538). */
+export async function fetchWeatherProxy(query: WeatherProxyQuery): Promise<unknown> {
+  const roundedLat = roundWeatherCoord(query.lat);
+  const roundedLng = roundWeatherCoord(query.lng);
+  const source = query.source === 'archive' ? 'archive' : 'forecast';
+
+  const params = new URLSearchParams({
+    latitude: String(roundedLat),
+    longitude: String(roundedLng),
+  });
+  if (query.hourly) {
+    params.set('hourly', query.hourly);
+  } else {
+    params.set(
+      'daily',
+      query.daily ||
+        'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    );
+  }
+  params.set('timezone', query.timezone || 'auto');
+  if (query.past_days != null && query.past_days !== '') {
+    params.set('past_days', String(query.past_days));
+  }
+  if (query.forecast_days != null && query.forecast_days !== '') {
+    params.set('forecast_days', String(query.forecast_days));
+  }
+  if (query.start_date) {
+    params.set('start_date', query.start_date);
+  }
+  if (query.end_date) {
+    params.set('end_date', query.end_date);
+  }
+  if (query.models && query.models.trim()) {
+    params.set('models', query.models.trim());
+  }
+
+  const cacheKey = `${source}:${roundedLat.toFixed(2)},${roundedLng.toFixed(2)}:${params.toString()}`;
+  const cached = weatherProxyCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
+
+  const baseUrl =
+    source === 'archive'
+      ? 'https://archive-api.open-meteo.com/v1/archive'
+      : 'https://api.open-meteo.com/v1/forecast';
+
+  const res = await fetch(`${baseUrl}?${params}`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) {
+    throw new Error(`Open-Meteo request failed (${res.status})`);
+  }
+  const data = await res.json();
+  const ttl = source === 'archive' ? ARCHIVE_CACHE_TTL_MS : FORECAST_CACHE_TTL_MS;
+  weatherProxyCache.set(cacheKey, {
+    expiresAt: Date.now() + ttl,
+    data,
+  });
+  return data;
+}
+
 const upsertSnapshot = db.prepare(`
   INSERT INTO trip_weather_snapshots (trip_id, lat, lng, date, weathercode, temp_max, temp_min, precipitation_probability)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -149,8 +240,8 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
 
     const pastDays = Math.min(MAX_PAST_DAYS, daysBetween(missingDates[0], today));
     const params = new URLSearchParams({
-      latitude: String(target.lat),
-      longitude: String(target.lng),
+      latitude: String(roundWeatherCoord(target.lat)),
+      longitude: String(roundWeatherCoord(target.lng)),
       daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
       timezone: 'auto',
       past_days: String(pastDays),

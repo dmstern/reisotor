@@ -260,8 +260,8 @@ async function setupScreenshotMocks(page: Page) {
     await route.fulfill({ json });
   });
 
-  // 2. Mock Open-Meteo weather forecast with 18 days of static realistic summer weather in Lisbon
-  await page.route('**/api.open-meteo.com/**', async (route) => {
+  // 2. Mock weather forecast proxy with 18 days of static realistic summer weather in Lisbon
+  await page.route('**/api/weather*', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
