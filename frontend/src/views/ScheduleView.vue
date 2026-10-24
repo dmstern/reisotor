@@ -76,12 +76,14 @@ const {
   entriesForDate,
   accommodationsForDate,
   weatherEntriesFor,
-  onSelectDay: (date) => {
-    const pending = drawers.pendingSchedule;
-    if (!pending) return;
-    void finishPendingSchedule(pending, date);
-  },
 });
+
+function handleDaySelect(date: string) {
+  selectDay(date);
+  const pending = drawers.pendingSchedule;
+  if (!pending) return;
+  void finishPendingSchedule(pending, date);
+}
 
 // 4. Formular für neue/bearbeitete Termine
 const scheduleItemForm = useScheduleItemForm({ selectedDate });
@@ -212,7 +214,7 @@ onMounted(async () => {
               :selected-date="selectedDate"
               :trip-start-date="trip?.start_date"
               :trip-end-date="trip?.end_date"
-              @select="selectDay"
+              @select="handleDaySelect"
               @drop-excursion="onDropExcursion"
             />
           </div>

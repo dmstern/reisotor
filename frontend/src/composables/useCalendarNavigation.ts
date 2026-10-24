@@ -20,7 +20,6 @@ export interface UseCalendarNavigationOptions {
   entriesForDate: (date: string) => CalendarEntry[];
   accommodationsForDate: (date: string) => Spot[];
   weatherEntriesFor: (date: string) => DayWeatherEntry[];
-  onSelectDay?: (date: string) => void;
 }
 
 function startOfMonth(d: Date) {
@@ -308,7 +307,6 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     } else {
       activeJumpTarget.value = null;
     }
-    options.onSelectDay?.(date);
   }
 
   function initNavigation() {
