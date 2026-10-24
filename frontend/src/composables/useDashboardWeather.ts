@@ -45,6 +45,7 @@ export interface UseDashboardWeatherReturn {
   weatherDayDialogOpen: Ref<boolean>;
   vacationForecastDays: ComputedRef<DailyWeather[]>;
   homeForecastDays: ComputedRef<DailyWeather[]>;
+  allWeatherDays: ComputedRef<DailyWeather[]>;
   todayWeather: ComputedRef<DailyWeather | null>;
   todayHomeWeather: ComputedRef<DailyWeather | null>;
   selectedWeatherLocationType: Ref<'vacation' | 'home'>;
@@ -267,6 +268,61 @@ export function useDashboardWeather(
     () => homeWeatherDays.value?.find((d) => d.date === todayStr()) ?? null
   );
 
+  const allWeatherDays = computed<DailyWeather[]>(() => {
+    const map = new Map<string, DailyWeather>();
+
+    // 1. Alle bekannten Wettertage (Historie + Live-Vorhersage)
+    if (weatherDays.value) {
+      for (const day of weatherDays.value) {
+        if (day?.date) map.set(day.date, day);
+      }
+    }
+
+    // 2. Nahtloser Übergang zwischen heute, der nahen Zukunft und dem Urlaub:
+    // Falls ein Reisezeitraum definiert ist, stellen wir sicher, dass alle
+    // Tage des Urlaubs sowie die Tage von heute (oder dem frühesten bekannten Tag)
+    // bis zum Urlaubsende lückenlos enthalten sind.
+    if (trip.value?.start_date && trip.value?.end_date) {
+      const today = todayStr();
+      const tripStart = trip.value.start_date;
+      const tripEnd = trip.value.end_date;
+
+      let rangeStart = tripStart;
+      if (today < tripStart) {
+        const earliestWeather = weatherDays.value?.[0]?.date;
+        rangeStart = earliestWeather && earliestWeather < today ? earliestWeather : today;
+      }
+
+      const rangeEnd = tripEnd;
+
+      // Begrenzung auf maximal 45 Tage Spanne
+      const startDateObj = new Date(`${rangeStart}T00:00:00`);
+      const endDateObj = new Date(`${rangeEnd}T00:00:00`);
+      const diffDays = Math.round(
+        (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (diffDays >= 0 && diffDays <= 45) {
+        const cur = new Date(startDateObj);
+        while (cur <= endDateObj) {
+          const dStr = toLocalDateString(cur);
+          if (!map.has(dStr)) {
+            map.set(dStr, {
+              date: dStr,
+              weatherCode: null,
+              tempMax: null,
+              tempMin: null,
+              precipitationProbability: null,
+            });
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+      }
+    }
+
+    return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
+  });
+
   function formatWeekdayDate(d: string) {
     return formatWeekdayDateShared(d);
   }
@@ -290,6 +346,7 @@ export function useDashboardWeather(
     weatherDayDialogOpen,
     vacationForecastDays,
     homeForecastDays,
+    allWeatherDays,
     todayWeather,
     todayHomeWeather,
     selectedWeatherLocationType,

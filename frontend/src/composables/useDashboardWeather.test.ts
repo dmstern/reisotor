@@ -120,4 +120,47 @@ describe('useDashboardWeather', () => {
     expect(weather.selectedVacationDay.value).toEqual(vacationDay);
     expect(weather.selectedHomeDay.value).toEqual(homeDay);
   });
+
+  it('provides allWeatherDays bridging forecast days and trip days continuously', () => {
+    const trip = ref<Trip | null>({
+      ...baseTrip,
+      start_date: '2026-07-10',
+      end_date: '2026-07-12',
+    });
+    const weather = useDashboardWeather({ trip });
+
+    weather.weatherDays.value = [
+      {
+        date: '2026-07-08',
+        weatherCode: 0,
+        tempMax: 26,
+        tempMin: 18,
+        precipitationProbability: 0,
+      },
+      {
+        date: '2026-07-09',
+        weatherCode: 1,
+        tempMax: 27,
+        tempMin: 19,
+        precipitationProbability: 10,
+      },
+      {
+        date: '2026-07-10',
+        weatherCode: 2,
+        tempMax: 28,
+        tempMin: 20,
+        precipitationProbability: 20,
+      },
+    ];
+
+    const allDates = weather.allWeatherDays.value.map((d) => d.date);
+    // Should include weatherDays (07-08, 07-09, 07-10) and bridge to end of trip (07-11, 07-12)
+    expect(allDates).toEqual([
+      '2026-07-08',
+      '2026-07-09',
+      '2026-07-10',
+      '2026-07-11',
+      '2026-07-12',
+    ]);
+  });
 });

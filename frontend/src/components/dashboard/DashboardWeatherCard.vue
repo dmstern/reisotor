@@ -42,6 +42,7 @@ const {
   weatherModelLabel,
   vacationForecastDays,
   homeForecastDays,
+  allWeatherDays,
   todayWeather,
   todayHomeWeather,
   selectedWeatherDay,
@@ -65,19 +66,6 @@ const {
   regionShowsExchange,
   loadRegionInfo,
 } = useRegionInfo(tripRef);
-
-const availableWeatherDays = computed(() => {
-  if (
-    selectedWeatherDay.value &&
-    vacationForecastDays.value.length > 0 &&
-    !vacationForecastDays.value.some((d) => d.date === selectedWeatherDay.value?.date)
-  ) {
-    return weatherDays.value ?? vacationForecastDays.value;
-  }
-  return vacationForecastDays.value.length > 0
-    ? vacationForecastDays.value
-    : (weatherDays.value ?? []);
-});
 
 const todayStr = () => {
   const d = new Date();
@@ -275,7 +263,7 @@ onMounted(() => {
     :vacation-lat="trip.lat"
     :vacation-lng="trip.lng"
     :vacation-location-label="destinationName || 'Reiseziel'"
-    :vacation-days="availableWeatherDays"
+    :vacation-days="allWeatherDays"
     :home-day="selectedHomeDay"
     :home-lat="home?.lat"
     :home-lng="home?.lng"

@@ -78,6 +78,27 @@ const sortedNavigationDays = computed(() => {
       map.set(d.date, d);
     }
   }
+  const cur =
+    selectedDate.value ||
+    props.date ||
+    props.day?.date ||
+    props.vacationDay?.date ||
+    props.homeDay?.date;
+  if (cur && !map.has(cur)) {
+    const single = props.day ?? props.vacationDay ?? props.homeDay;
+    map.set(
+      cur,
+      single && single.date === cur
+        ? single
+        : {
+            date: cur,
+            weatherCode: null,
+            tempMax: null,
+            tempMin: null,
+            precipitationProbability: null,
+          }
+    );
+  }
   return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
 });
 
