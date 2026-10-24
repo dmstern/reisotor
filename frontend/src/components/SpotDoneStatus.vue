@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import type { Spot } from '../api/types';
 import { useSpotWeather } from '../composables/useSpotWeather';
-import { useSpotDoneStatus } from '../composables/useSpotDoneStatus';
+import { useSpotDoneStatus, type ScheduledSpotItem } from '../composables/useSpotDoneStatus';
 import { useDrawersStore } from '../stores/drawers';
 import DoneToggle from './primitives/DoneToggle.vue';
 import Button from './primitives/Button.vue';
@@ -12,6 +13,7 @@ import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { getTourRoleIconDef } from '../utils/travelRole';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -25,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const drawers = useDrawersStore();
+const router = useRouter();
 
 const {
   scheduledItemsForSpot,
@@ -87,10 +90,10 @@ function openCalendarAtDate(date: string) {
   drawers.openCalendar(date);
 }
 
-function handleItemJump(item: { type: string; date: string; sourceId: number | string }) {
+function handleItemJump(item: ScheduledSpotItem) {
   if (item.type === 'tour') {
     datesPopoverOpen.value = false;
-    drawers.openMapForExcursion(Number(item.sourceId));
+    router.push(`/excursions#excursion-${item.sourceId}`);
     return;
   }
   openCalendarAtDate(item.date);
@@ -277,10 +280,12 @@ function handleItemJump(item: { type: string; date: string; sourceId: number | s
               @click.stop="handleItemJump(item)"
             >
               <AppIcon
-                :icon="item.type === 'tour' ? FORM_FIELD_ICONS.tour : FORM_FIELD_ICONS.date"
+                v-if="item.type === 'tour'"
+                :icon="getTourRoleIconDef(item.role)"
                 :size="13"
-                group="formFields"
+                group="categories"
               />
+              <AppIcon v-else :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
             </Button>
           </div>
         </div>

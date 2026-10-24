@@ -8,7 +8,7 @@ import {
   type MaybeRefOrGetter,
   type Ref,
 } from 'vue';
-import type { Spot } from '../api/types';
+import type { IdeaRole, Spot } from '../api/types';
 import { useScheduleStore } from '../stores/schedule';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
@@ -24,6 +24,8 @@ export interface ScheduledSpotItem {
   type: 'schedule' | 'tour' | 'prop';
   sourceId: number;
   title?: string;
+  /** Nur bei type 'tour': Reiserolle (Anreise/Abreise/Weiterreise) bzw. null für Ausflüge. */
+  role?: IdeaRole | null;
 }
 
 export interface UseSpotDoneStatusOptions {
@@ -82,6 +84,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
           type: 'tour',
           sourceId: excursion.id,
           title: excursion.title,
+          role: excursion.role,
         });
       }
     }

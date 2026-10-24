@@ -7,6 +7,12 @@ import SpotDoneStatus from './SpotDoneStatus.vue';
 import type { Spot, ScheduleItem, Excursion } from '../api/types';
 import { useScheduleStore } from '../stores/schedule';
 
+const routerPush = vi.fn();
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-router')>()),
+  useRouter: () => ({ push: routerPush }),
+}));
+
 describe('SpotDoneStatus', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -211,12 +217,11 @@ describe('SpotDoneStatus', () => {
     // Button primitive hat stets die Klasse 'btn'
     expect(jumpBtns[0].classList.contains('btn')).toBe(true);
 
-    // Tour-Einträge springen direkt zur Tour statt zum Kalendertag
-    const openMapSpy = vi.spyOn(drawers, 'openMapForExcursion').mockImplementation(() => {});
+    // Tour-Einträge springen direkt zur Tour in der Ausflugsliste statt zum Kalendertag
     expect(document.body.querySelectorAll('.date-check-row.is-tour').length).toBe(2);
 
     jumpBtns[1].click();
-    expect(openMapSpy).toHaveBeenCalledWith(2);
+    expect(routerPush).toHaveBeenCalledWith('/excursions#excursion-2');
     expect(openCalendarSpy).not.toHaveBeenCalled();
 
     app.unmount();
