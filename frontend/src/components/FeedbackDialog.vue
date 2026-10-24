@@ -3,12 +3,14 @@ import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Textarea from './primitives/Textarea.vue';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { api, ApiError } from '../api/client';
 import { compressImage, isHeicFile } from '../utils/imageCompression';
 import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { renderRichText } from '../utils/richText';
+import { useBuildInfoStore } from '../stores/buildInfo';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -24,6 +26,8 @@ interface FeedbackResult {
   issue_url: string;
 }
 
+const buildInfoStore = useBuildInfoStore();
+
 const form = ref<{ type: FeedbackType; title: string; description: string }>({
   type: props.initialType ?? 'bug',
   title: props.initialTitle ?? '',
@@ -35,6 +39,19 @@ const submitting = ref(false);
 const error = ref('');
 const result = ref<FeedbackResult | null>(null);
 
+const gitHubIssueUrl = computed(() => {
+  if (!error.value) return null;
+  const baseUrl = buildInfoStore.buildInfo?.repoUrl ?? 'https://github.com/dmstern/reisotor';
+  const params = new URLSearchParams();
+  if (form.value.title.trim()) {
+    params.set('title', form.value.title.trim());
+  }
+  if (form.value.description.trim()) {
+    params.set('body', form.value.description.trim());
+  }
+  return `${baseUrl}/issues/new?${params.toString()}`;
+});
+
 // Formular bei jedem erneuten Öffnen zurücksetzen statt beim Schließen - sonst würde ein Klick auf
 // den Schließen-Button mitten im Tippen den Entwurf verwerfen, bevor klar ist, ob wirklich ein
 // neues Formular gewünscht ist.
@@ -42,6 +59,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (!open) return;
+    buildInfoStore.load();
     form.value = {
       type: props.initialType ?? 'bug',
       title: props.initialTitle ?? '',
@@ -166,7 +184,22 @@ function close() {
           <Button variant="secondary" size="sm" @click="removeScreenshot">Entfernen</Button>
         </div>
 
-        <p v-if="error" class="hint error">{{ error }}</p>
+        <div v-if="error" class="error-container">
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <p class="hint error" v-html="renderRichText(error)"></p>
+          <Button
+            v-if="gitHubIssueUrl"
+            :href="gitHubIssueUrl"
+            target="_blank"
+            rel="noopener"
+            variant="secondary"
+            size="sm"
+            class="github-fallback-btn"
+          >
+            <AppIcon :icon="ACTION_ICONS.share" :size="14" group="actions" />
+            Als Issue auf GitHub öffnen
+          </Button>
+        </div>
 
         <div class="actions-row">
           <div class="spacer"></div>
@@ -210,6 +243,12 @@ label {
   gap: 2px;
 }
 
+.error-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .hint {
   margin: 0;
   font-size: 0.85rem;
@@ -217,6 +256,17 @@ label {
 
 .hint.error {
   color: var(--color-danger);
+}
+
+.hint.error :deep(a) {
+  color: var(--color-danger);
+  font-weight: 600;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.github-fallback-btn {
+  align-self: flex-start;
 }
 
 .hint.success {

@@ -5,12 +5,12 @@ export interface CreateIssueInput {
 }
 
 export type CreateIssueResult =
-  { ok: true; number: number; url: string } | { ok: false; error: string };
+  { ok: true; number: number; url: string } | { ok: false; error: string; status?: number };
 
 export type UploadScreenshotResult = { ok: true; url: string } | { ok: false; error: string };
 
-const githubToken = process.env.GITHUB_TOKEN;
-const githubRepo = process.env.GITHUB_REPO ?? 'dmstern/reisotor';
+const getGithubToken = () => process.env.GITHUB_TOKEN;
+const getGithubRepo = () => process.env.GITHUB_REPO ?? 'dmstern/reisotor';
 
 // Eigener, ansonsten ungenutzter Branch statt des Default-Branchs: Screenshots landen so nicht in
 // der normalen Commit-Historie/dem normalen Diff von main, sondern nur in diesem Ablage-Branch.
@@ -18,7 +18,7 @@ const SCREENSHOT_BRANCH = 'feedback-screenshots';
 
 function githubApiHeaders() {
   return {
-    Authorization: `Bearer ${githubToken}`,
+    Authorization: `Bearer ${getGithubToken()}`,
     Accept: 'application/vnd.github+json',
     'User-Agent': 'reisotor-feedback',
   };
@@ -27,8 +27,9 @@ function githubApiHeaders() {
 // Legt SCREENSHOT_BRANCH beim allerersten Feedback-Screenshot einmalig an (vom Default-Branch
 // abgezweigt) - die Contents-API kann Dateien nur auf einem bereits existierenden Branch anlegen.
 async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const repo = getGithubRepo();
   const refRes = await fetch(
-    `https://api.github.com/repos/${githubRepo}/git/ref/heads/${SCREENSHOT_BRANCH}`,
+    `https://api.github.com/repos/${repo}/git/ref/heads/${SCREENSHOT_BRANCH}`,
     { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
   );
   if (refRes.ok) return { ok: true };
@@ -36,7 +37,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
     return { ok: false, error: `GitHub-Branch-Abfrage fehlgeschlagen (Status ${refRes.status}).` };
   }
 
-  const repoRes = await fetch(`https://api.github.com/repos/${githubRepo}`, {
+  const repoRes = await fetch(`https://api.github.com/repos/${repo}`, {
     headers: githubApiHeaders(),
     signal: AbortSignal.timeout(10_000),
   });
@@ -46,7 +47,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
   const { default_branch: defaultBranch } = (await repoRes.json()) as { default_branch: string };
 
   const defaultRefRes = await fetch(
-    `https://api.github.com/repos/${githubRepo}/git/ref/heads/${defaultBranch}`,
+    `https://api.github.com/repos/${repo}/git/ref/heads/${defaultBranch}`,
     { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
   );
   if (!defaultRefRes.ok) {
@@ -57,7 +58,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
   }
   const { object } = (await defaultRefRes.json()) as { object: { sha: string } };
 
-  const createRefRes = await fetch(`https://api.github.com/repos/${githubRepo}/git/refs`, {
+  const createRefRes = await fetch(`https://api.github.com/repos/${repo}/git/refs`, {
     method: 'POST',
     headers: { ...githubApiHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ ref: `refs/heads/${SCREENSHOT_BRANCH}`, sha: object.sha }),
@@ -86,8 +87,13 @@ export async function uploadFeedbackScreenshot(
   extension: string,
   filename = `${Date.now()}.${extension}`
 ): Promise<UploadScreenshotResult> {
-  if (!githubToken) {
-    return { ok: false, error: 'Feedback ist auf diesem Server nicht konfiguriert.' };
+  const token = getGithubToken();
+  const repo = getGithubRepo();
+  if (!token) {
+    return {
+      ok: false,
+      error: 'Auf diesem Server ist kein GitHub-Zugang (GITHUB_TOKEN) eingerichtet.',
+    };
   }
 
   const branchResult = await ensureScreenshotBranch();
@@ -96,7 +102,7 @@ export async function uploadFeedbackScreenshot(
   const path = `feedback-screenshots/${filename}`;
   let res: Response;
   try {
-    res = await fetch(`https://api.github.com/repos/${githubRepo}/contents/${path}`, {
+    res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
       method: 'PUT',
       headers: { ...githubApiHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -119,13 +125,13 @@ export async function uploadFeedbackScreenshot(
 
   return {
     ok: true,
-    url: `https://raw.githubusercontent.com/${githubRepo}/${SCREENSHOT_BRANCH}/${path}`,
+    url: `https://raw.githubusercontent.com/${repo}/${SCREENSHOT_BRANCH}/${path}`,
   };
 }
 
 // Wie push.ts's VAPID-Keys: Feature ist optional, ohne gesetzten Token bleibt die App lauffähig,
 // nur ohne In-App-Feedback (siehe routes/feedback.ts).
-export const githubIssuesEnabled = !!githubToken;
+export const githubIssuesEnabled = !process.env.GITHUB_TOKEN ? false : true;
 
 /** Legt ein echtes GitHub-Issue über die REST-API an. Anders als mapsLink.ts's best-effort-fetch
  *  (dort ist ein Fehlschlag ein akzeptabler stiller Fallback) wird hier der Fehler an den Aufrufer
@@ -136,16 +142,22 @@ export const githubIssuesEnabled = !!githubToken;
  *  Schaden auf Issues und den feedback-screenshots-Branch beschränkt.
  */
 export async function createGithubIssue(input: CreateIssueInput): Promise<CreateIssueResult> {
-  if (!githubToken) {
-    return { ok: false, error: 'Feedback ist auf diesem Server nicht konfiguriert.' };
+  const token = getGithubToken();
+  const repo = getGithubRepo();
+  if (!token) {
+    return {
+      ok: false,
+      status: 503,
+      error: `Auf diesem Server ist kein GitHub-Zugang (GITHUB_TOKEN) eingerichtet. Bei selbstgehosteten Instanzen können Fehler und Feedback direkt auf GitHub gemeldet werden: https://github.com/${repo}/issues`,
+    };
   }
 
   let res: Response;
   try {
-    res = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
+    res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${githubToken}`,
+        Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github+json',
         'Content-Type': 'application/json',
         'User-Agent': 'reisotor-feedback',
@@ -156,12 +168,26 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
   } catch {
     return {
       ok: false,
-      error: 'Meldung konnte nicht an GitHub übermittelt werden. Bitte später erneut versuchen.',
+      status: 502,
+      error:
+        'Meldung konnte nicht an GitHub übermittelt werden (Verbindungsfehler). Bitte später erneut versuchen.',
     };
   }
 
   if (!res.ok) {
-    return { ok: false, error: `GitHub hat die Meldung abgelehnt (Status ${res.status}).` };
+    let detail = `Status ${res.status}`;
+    if (res.status === 401) {
+      detail = 'Status 401 – Der hinterlegte GitHub-Token ist ungültig oder abgelaufen';
+    } else if (res.status === 403) {
+      detail = 'Status 403 – Fehlende Berechtigung oder GitHub-Rate-Limit erreicht';
+    } else if (res.status === 404) {
+      detail = `Status 404 – GitHub-Repository '${repo}' nicht gefunden`;
+    }
+    return {
+      ok: false,
+      status: 502,
+      error: `GitHub hat die Meldung abgelehnt (${detail}).`,
+    };
   }
 
   const data = (await res.json()) as { number: number; html_url: string };
