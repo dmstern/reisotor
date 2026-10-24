@@ -60,6 +60,10 @@ describe('UpdateAvailableModal', () => {
 
     expect(document.body.innerHTML).toContain('Neues Update verfügbar');
     expect(document.body.innerHTML).toContain('Eine neuere Version von Reisotor steht bereit');
+    expect(document.body.innerHTML).toContain('Neue Version bereit');
+    expect(document.body.querySelector('.update-hero-stage')).toBeTruthy();
+    expect(document.body.querySelector('.stage-sparkles')).toBeTruthy();
+    expect(document.body.querySelector('.robot.upgrade')).toBeTruthy();
     expect(document.body.innerHTML).toContain('Jetzt aktualisieren');
     expect(document.body.innerHTML).toContain('Später');
     expect(document.body.innerHTML).toContain('Einstellungen');

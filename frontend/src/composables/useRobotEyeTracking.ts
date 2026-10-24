@@ -9,7 +9,7 @@ import {
   type Ref,
 } from 'vue';
 
-export type RobotPhase = 'idle' | 'scanning' | 'done' | 'packing' | 'pack';
+export type RobotPhase = 'idle' | 'scanning' | 'done' | 'packing' | 'pack' | 'upgrade';
 
 export interface UseRobotEyeTrackingOptions {
   /** Ob interaktives Augen-Tracking aktiviert ist */
