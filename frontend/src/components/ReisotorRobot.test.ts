@@ -45,6 +45,19 @@ describe('ReisotorRobot', () => {
     expect(html).toContain('robot done');
   });
 
+  it('renders sparkles and antenna signals in upgrade phase', async () => {
+    const upgradeApp = createApp({
+      render: () => h(ReisotorRobot, { phase: 'upgrade' }),
+    });
+    const html = await renderToString(upgradeApp);
+
+    expect(html).toContain('class="sparkle sparkle-1"');
+    expect(html).toContain('class="sparkle sparkle-4"');
+    expect(html).toContain('class="sparkle sparkle-5"');
+    expect(html).toContain('class="antenna-signals"');
+    expect(html).toContain('robot upgrade');
+  });
+
   it('handles coveringEyes and interactive props in SVG class list', async () => {
     const app = createApp({
       render: () => h(ReisotorRobot, { coveringEyes: true, interactive: true }),

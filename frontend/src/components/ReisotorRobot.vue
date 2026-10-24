@@ -16,7 +16,8 @@ export type RobotVariant = 'blank' | 'circle' | 'full';
 
 export interface ReisotorRobotProps {
   /** idle: schwebt/blinzelt normal. scanning/done: siehe SecurityCheckView.vue. packing: packt
-   *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue. */
+   *  einmalig Reiseutensilien in den Rucksack und dockt ihn an, siehe SplashScreen.vue.
+   *  upgrade: fröhliches Schweben mit Signalwellen an der Antenne, neugierigen Linsen und Glitzer, siehe UpdateAvailableModal.vue. */
   phase?: RobotPhase;
   /** Hält sich mit beiden Armen die Augen zu (z. B. während ein Passwort sichtbar ist). */
   coveringEyes?: boolean;
@@ -62,10 +63,14 @@ function onAnimationEnd(event: AnimationEvent) {
     :class="[`variant-${variant}`]"
     @animationend="onAnimationEnd"
   >
-    <!-- Glitzer & Sterne im Erfolgszustand -->
-    <span v-if="phase === 'done'" class="sparkle sparkle-1" aria-hidden="true">✨</span>
-    <span v-if="phase === 'done'" class="sparkle sparkle-2" aria-hidden="true">✨</span>
-    <span v-if="phase === 'done'" class="sparkle sparkle-3" aria-hidden="true">⭐</span>
+    <!-- Glitzer & Sterne im Erfolgs- & Upgradezustand -->
+    <template v-if="phase === 'done' || phase === 'upgrade'">
+      <span class="sparkle sparkle-1" aria-hidden="true">✨</span>
+      <span class="sparkle sparkle-2" aria-hidden="true">✨</span>
+      <span class="sparkle sparkle-3" aria-hidden="true">⭐</span>
+      <span v-if="phase === 'upgrade'" class="sparkle sparkle-4" aria-hidden="true">✨</span>
+      <span v-if="phase === 'upgrade'" class="sparkle sparkle-5" aria-hidden="true">🌟</span>
+    </template>
 
     <svg
       viewBox="0 0 500 500"
@@ -162,6 +167,13 @@ function onAnimationEnd(event: AnimationEvent) {
           <stop offset="25%" stop-color="#eb198c" />
           <stop offset="55%" stop-color="#f2367d" />
           <stop offset="100%" stop-color="#ff9800" />
+        </linearGradient>
+
+        <!-- Upgrade Signalwellen Gradient -->
+        <linearGradient :id="`${uid}-signalGrad`" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.95" />
+          <stop offset="50%" stop-color="#ff9800" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="#e91e63" stop-opacity="0.3" />
         </linearGradient>
 
         <!-- 3D Edge Highlights (Vector Light from Above) -->
@@ -447,6 +459,33 @@ function onAnimationEnd(event: AnimationEvent) {
 
         <!-- Antenne -->
         <g class="antenna" transform="translate(1.0972,2.5602)">
+          <!-- Upgrade-Signalwellen (pulsieren konzentrisch über der Antennenspitze) -->
+          <g v-if="phase === 'upgrade'" class="antenna-signals" aria-hidden="true">
+            <path
+              class="signal-arc signal-arc-1"
+              d="M 238,53 A 16,16 0 0 1 262,53"
+              fill="none"
+              :stroke="`url(#${uid}-signalGrad)`"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
+            <path
+              class="signal-arc signal-arc-2"
+              d="M 231,46 A 26,26 0 0 1 269,46"
+              fill="none"
+              :stroke="`url(#${uid}-signalGrad)`"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
+            <path
+              class="signal-arc signal-arc-3"
+              d="M 224,39 A 36,36 0 0 1 276,39"
+              fill="none"
+              :stroke="`url(#${uid}-signalGrad)`"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
+          </g>
           <rect
             x="246.8"
             y="70.25"
@@ -954,6 +993,130 @@ function onAnimationEnd(event: AnimationEvent) {
 }
 
 /* ==========================================================================
+   1b. Upgrade Phase (UpdateAvailableModal)
+   ========================================================================== */
+.robot.upgrade {
+  animation:
+    hover-bob 2.8s ease-in-out infinite,
+    upgrade-float 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes upgrade-float {
+  0% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(1.5deg);
+  }
+  100% {
+    transform: translateY(2px) rotate(-1deg);
+  }
+}
+
+.robot.upgrade .robot-head {
+  animation: upgrade-head-wiggle 3.4s ease-in-out infinite;
+}
+
+@keyframes upgrade-head-wiggle {
+  0%,
+  100% {
+    transform: translate(2px, -3px) rotate(0deg);
+  }
+  35% {
+    transform: translate(2px, -5px) rotate(2deg);
+  }
+  75% {
+    transform: translate(2px, -2px) rotate(-2deg);
+  }
+}
+
+.robot.upgrade .eye-lens {
+  animation: upgrade-eyes-gleam 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes upgrade-eyes-gleam {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.07);
+  }
+}
+
+.robot.upgrade:not(.is-interactive) .pupil-group {
+  animation: upgrade-pupil-wander 4.2s ease-in-out infinite;
+}
+
+@keyframes upgrade-pupil-wander {
+  0%,
+  100% {
+    transform: translate(0, -12px);
+  }
+  30% {
+    transform: translate(-14px, -18px);
+  }
+  70% {
+    transform: translate(14px, -18px);
+  }
+}
+
+.antenna-signals {
+  transform-origin: 250px 65px;
+}
+
+.signal-arc {
+  transform-origin: 250px 65px;
+  animation: signal-radiate 1.8s ease-out infinite;
+}
+
+.signal-arc-1 {
+  animation-delay: 0s;
+}
+
+.signal-arc-2 {
+  animation-delay: 0.5s;
+}
+
+.signal-arc-3 {
+  animation-delay: 1s;
+}
+
+@keyframes signal-radiate {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.65);
+  }
+  30% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(1.2);
+  }
+}
+
+.robot.upgrade .antenna-tip {
+  animation: antenna-upgrade-pulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes antenna-upgrade-pulse {
+  0% {
+    filter: drop-shadow(0 0 2px var(--robot-color-orange));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 8px var(--robot-color-cyan))
+      drop-shadow(0 0 12px var(--robot-color-gold));
+    transform: scale(1.15);
+  }
+  100% {
+    filter: drop-shadow(0 0 6px var(--robot-color-magenta))
+      drop-shadow(0 0 10px var(--robot-color-orange));
+    transform: scale(1.05);
+  }
+}
+
+/* ==========================================================================
    2. Pupillen- und Linsen-Lebendigkeit (Wall-E Vibe)
    ========================================================================== */
 .pupil-group {
@@ -1291,6 +1454,16 @@ function onAnimationEnd(event: AnimationEvent) {
   left: 2%;
   animation-delay: 0.8s;
 }
+.sparkle-4 {
+  top: 8%;
+  right: 18%;
+  animation-delay: 0.6s;
+}
+.sparkle-5 {
+  bottom: 28%;
+  right: 4%;
+  animation-delay: 1.1s;
+}
 
 @keyframes float-sparkle {
   0% {
@@ -1314,6 +1487,12 @@ function onAnimationEnd(event: AnimationEvent) {
   .robot.scanning,
   .robot.done,
   .robot.packing,
+  .robot.upgrade,
+  .robot.upgrade .robot-head,
+  .robot.upgrade .eye-lens,
+  .robot.upgrade .antenna-tip,
+  .antenna-signals,
+  .signal-arc,
   .robot-character,
   .robot-head,
   .antenna-tip,

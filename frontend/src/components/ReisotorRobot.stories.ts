@@ -10,7 +10,7 @@ const meta: Meta<typeof ReisotorRobot> = {
   argTypes: {
     phase: {
       control: { type: 'select' },
-      options: ['idle', 'scanning', 'done', 'packing'],
+      options: ['idle', 'scanning', 'done', 'packing', 'upgrade'],
     },
     coveringEyes: { control: 'boolean' },
     size: { control: 'text' },
@@ -90,6 +90,28 @@ export const SecurityCheckDone: Story = {
         <ReisotorRobot v-bind="args" />
         <p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted, #666);">
           Freudiger Hüpfer, leuchtende Linsenreflexionen und Glitzer-Partikel.
+        </p>
+      </div>
+    `,
+  }),
+};
+
+export const UpdateUpgrade: Story = {
+  name: '3b. Update-Modus (Shiny & Glitzer)',
+  args: {
+    phase: 'upgrade',
+    size: '180px',
+  },
+  render: (args) => ({
+    components: { ReisotorRobot },
+    setup() {
+      return { args };
+    },
+    template: `
+      <div style="padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; background: var(--color-surface, #fff); border-radius: 12px;">
+        <ReisotorRobot v-bind="args" />
+        <p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted, #666);">
+          Pulsierende Antennen-Signalwellen, freudiges Schweben und aufsteigende Glitzer-Sterne.
         </p>
       </div>
     `,
