@@ -14,7 +14,7 @@ import {
   RESTRICTED_MAX_TRIPS,
   RESTRICTED_MAX_MEMBERS,
 } from '../registrationConfig.js';
-import { refreshTripWeatherSnapshots } from '../weatherSnapshots.js';
+import { fetchWeatherProxy, refreshTripWeatherSnapshots } from '../weatherSnapshots.js';
 
 interface TripBody {
   name: string;
@@ -276,6 +276,76 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         'SELECT date, lat, lng, weathercode, temp_max, temp_min, precipitation_probability FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date'
       )
       .all(req.params.id);
+  });
+
+  // Serverseitiger Open-Meteo-Proxy für Forecast & Archiv (Issue #538) – verhindert, dass die
+  // Client-IP-Adresse zusammen mit genauen Ortskoordinaten direkt aus dem Browser an Open-Meteo
+  // übertragen wird, rundet Koordinaten auf 2 Nachkommastellen und cacht Antworten im Backend.
+  app.get<{
+    Querystring: {
+      lat?: string | number;
+      lng?: string | number;
+      latitude?: string | number;
+      longitude?: string | number;
+      source?: string;
+      daily?: string;
+      hourly?: string;
+      timezone?: string;
+      past_days?: string | number;
+      forecast_days?: string | number;
+      start_date?: string;
+      end_date?: string;
+      models?: string;
+    };
+  }>('/weather', async (req, reply) => {
+    const rawLat = req.query.lat ?? req.query.latitude;
+    const rawLng = req.query.lng ?? req.query.longitude;
+    const lat = rawLat != null && rawLat !== '' ? Number(rawLat) : NaN;
+    const lng = rawLng != null && rawLng !== '' ? Number(rawLng) : NaN;
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      return reply.code(400).send({ error: 'Gültige Koordinaten (lat, lng) erforderlich' });
+    }
+
+    if (req.query.source && req.query.source !== 'forecast' && req.query.source !== 'archive') {
+      return reply
+        .code(400)
+        .send({ error: 'Ungültige Wetter-Quelle (nur forecast oder archive erlaubt)' });
+    }
+    const source = req.query.source === 'archive' ? 'archive' : 'forecast';
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (
+      (req.query.start_date && !dateRegex.test(req.query.start_date)) ||
+      (req.query.end_date && !dateRegex.test(req.query.end_date))
+    ) {
+      return reply.code(400).send({ error: 'Ungültiges Datumsformat (YYYY-MM-DD erwartet)' });
+    }
+
+    try {
+      return await fetchWeatherProxy({
+        lat,
+        lng,
+        source,
+        daily: req.query.daily,
+        hourly: req.query.hourly,
+        timezone: req.query.timezone,
+        past_days: req.query.past_days,
+        forecast_days: req.query.forecast_days,
+        start_date: req.query.start_date,
+        end_date: req.query.end_date,
+        models: req.query.models,
+      });
+    } catch {
+      return reply.code(500).send({ error: 'Wetterdaten konnten nicht geladen werden' });
+    }
   });
 
   // --- Mitgliedschaft/Einladung (Batch: Registrierung + Einladung) ---

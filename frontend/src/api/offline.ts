@@ -243,6 +243,7 @@ export function isQueueablePath(path: string): boolean {
     cleanPath.startsWith('/push') ||
     cleanPath.startsWith('/trip-activity') ||
     cleanPath.startsWith('/users/search') ||
+    cleanPath.startsWith('/weather') ||
     cleanPath.includes('/routes/directions')
   ) {
     return false;

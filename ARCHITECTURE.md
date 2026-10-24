@@ -26,6 +26,12 @@ zuerst `resolveViaRedirectHeaders()` (folgt nur den `Location`-Headern Hop für 
 volle Zielseite ab — umgeht so Googles Bot-Erkennung bei bestimmten Kurzlink-Varianten wie
 `g_st=ic`), erst danach als Fallback ein vollständiger Redirect-Follow.
 
+Wetter läuft serverseitig: `GET /api/weather` (`routes/trips.ts`, Logik/Cache in `weatherSnapshots.ts`'s
+`fetchWeatherProxy()`) proxyt Open-Meteo (Forecast und Archiv, `source=forecast|archive`), rundet
+Koordinaten auf 2 Nachkommastellen und cacht im Speicher. Das Frontend (`utils/weather.ts`) nutzt
+nur noch diesen Endpunkt über `api.get`, damit keine Client-IP an Open-Meteo geht (Issue #538);
+die GET-Antworten landen wie alle anderen im localStorage-Offline-Cache.
+
 ## Datenbank (`backend/src/db/index.ts`)
 
 Eine SQLite-Datei (`data.sqlite`), Schema wird bei jedem Prozessstart synchron per

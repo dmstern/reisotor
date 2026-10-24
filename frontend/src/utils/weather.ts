@@ -19,10 +19,11 @@ import { DEMO_MODE } from '../demo/isDemoMode';
 import { formatDate as formatDateShared, toLocalDateString } from './dateFormat';
 import type { IconDef } from './icon';
 
-// Wettervorhersage über Open-Meteo (kostenlos, kein API-Key nötig, CORS-freundlich für direkte
-// Browser-Aufrufe) – deckt nur die kommenden ~16 Tage plus wenige Tage rückwirkend ab, für weiter
-// entfernte Urlaube liefert die Abfrage entsprechend keine (oder nur teilweise) Tage im
-// Urlubszeitraum zurück; das filtert der Aufrufer (DashboardView.vue) selbst gegen die Trip-Daten.
+// Wettervorhersage über den Backend-Proxy (/api/weather -> Open-Meteo, kostenlos, kein API-Key
+// nötig, keine Weitergabe der Client-IP an Dritte) – deckt nur die kommenden ~16 Tage plus wenige
+// Tage rückwirkend ab, für weiter entfernte Urlaube liefert die Abfrage entsprechend keine (oder
+// nur teilweise) Tage im Urlaubszeitraum zurück; das filtert der Aufrufer (DashboardView.vue)
+// selbst gegen die Trip-Daten.
 export interface DailyWeather {
   date: string;
   weatherCode: number | null;
@@ -393,12 +394,22 @@ function demoWeatherForecast(): DailyWeather[] {
   });
 }
 
+export function roundWeatherCoord(val: number): number {
+  return Math.round(val * 100) / 100;
+}
+
+export function resetWeatherCache() {
+  cache = null;
+}
+
 export function fetchWeatherForecast(
   lat: number,
   lng: number,
   model = 'ecmwf_ifs025'
 ): Promise<DailyWeather[]> {
-  const key = `${lat.toFixed(3)},${lng.toFixed(3)},${model}`;
+  const roundedLat = roundWeatherCoord(lat);
+  const roundedLng = roundWeatherCoord(lng);
+  const key = `${roundedLat.toFixed(2)},${roundedLng.toFixed(2)},${model}`;
   if (cache?.key === key) return cache.promise;
 
   if (DEMO_MODE) {
@@ -408,28 +419,23 @@ export function fetchWeatherForecast(
   }
 
   const params = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lng),
+    lat: String(roundedLat),
+    lng: String(roundedLng),
     daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
     timezone: 'auto',
     past_days: '1',
     forecast_days: '16',
     models: model,
   });
-  const promise = fetch(`https://api.open-meteo.com/v1/forecast?${params}`)
-    .then((res) => {
-      if (!res.ok) throw new Error(`Wetterdaten konnten nicht geladen werden (${res.status})`);
-      return res.json() as Promise<OpenMeteoResponse>;
-    })
-    .then((data) =>
-      data.daily.time.map((date, i) => ({
-        date,
-        weatherCode: data.daily.weathercode[i],
-        tempMax: data.daily.temperature_2m_max[i],
-        tempMin: data.daily.temperature_2m_min[i],
-        precipitationProbability: data.daily.precipitation_probability_max?.[i] ?? null,
-      }))
-    );
+  const promise = api.get<OpenMeteoResponse>(`/weather?${params}`).then((data) =>
+    data.daily.time.map((date, i) => ({
+      date,
+      weatherCode: data.daily.weathercode[i],
+      tempMax: data.daily.temperature_2m_max[i],
+      tempMin: data.daily.temperature_2m_min[i],
+      precipitationProbability: data.daily.precipitation_probability_max?.[i] ?? null,
+    }))
+  );
   cache = { key, promise };
   // Bei einem Fehlschlag darf der Cache nicht "vergiftet" bleiben – sonst würde ein erneuter
   // Versuch (z. B. nächster Dashboard-Besuch) nie wieder einen neuen Fetch auslösen.
@@ -449,7 +455,7 @@ interface WeatherHistoryRow {
   precipitation_probability: number | null;
 }
 
-// Ergänzt die live von Open-Meteo geholte Vorhersage (deckt nur ~16 Tage im Voraus + 1 Tag
+// Ergänzt die über den Backend-Proxy geholte Vorhersage (deckt nur ~16 Tage im Voraus + 1 Tag
 // rückwirkend ab) um dauerhaft gespeicherte Ist-Werte vergangener Tage (backend/src/
 // weatherSnapshots.ts, GET /trips/:id/weather-history) – dadurch bleibt das Wetter eines Urlaubs
 // auch lange nach dessen Ende noch anzeigbar. Für "heute"/Zukunft bleibt weiterhin die Live-Vorhersage
@@ -671,9 +677,9 @@ function parseHourlyResponse(data: OpenMeteoHourlyResponse): HourlyWeather[] {
   return result;
 }
 
-/** Holt stündliche Wetterdaten für die Tages-Detail-Ansicht (Issue #133).
- *  Unterstützt sowohl zukünftige Tage (Forecast-API) als auch vergangene Urlaubs-Tage
- *  (Archive-API mit ERA5/Modell-Reanalysis). */
+/** Holt stündliche Wetterdaten für die Tages-Detail-Ansicht (Issue #133, über Backend-Proxy #538).
+ *  Unterstützt sowohl zukünftige Tage (Forecast-Quelle) als auch vergangene Urlaubs-Tage
+ *  (Archive-Quelle mit ERA5/Modell-Reanalysis). */
 export async function fetchHourlyForecast(
   lat: number,
   lng: number,
@@ -693,13 +699,19 @@ export async function fetchHourlyForecast(
     return hours.map((h, i) => ({ time: h, ...demoPattern[i % demoPattern.length] }));
   }
 
+  const roundedLat = roundWeatherCoord(lat);
+  const roundedLng = roundWeatherCoord(lng);
   const today = toLocalDateString(new Date());
   const isPast = date < today;
 
-  async function tryFetch(baseUrl: string, useModel: boolean): Promise<HourlyWeather[]> {
+  async function tryFetch(
+    source: 'forecast' | 'archive',
+    useModel: boolean
+  ): Promise<HourlyWeather[]> {
     const params = new URLSearchParams({
-      latitude: String(lat),
-      longitude: String(lng),
+      source,
+      lat: String(roundedLat),
+      lng: String(roundedLng),
       hourly: 'weathercode,temperature_2m,precipitation_probability',
       timezone: 'auto',
       start_date: date,
@@ -708,17 +720,15 @@ export async function fetchHourlyForecast(
     if (useModel && model) {
       params.set('models', model);
     }
-    const res = await fetch(`${baseUrl}?${params}`);
-    if (!res.ok) return [];
-    const data = (await res.json()) as OpenMeteoHourlyResponse;
+    const data = await api.get<OpenMeteoHourlyResponse>(`/weather?${params}`);
     return parseHourlyResponse(data);
   }
 
   if (isPast) {
-    // Für vergangene Tage nutzen wir die Open-Meteo Archive-API, da die Forecast-API
+    // Für vergangene Tage nutzen wir die Archive-Quelle, da die Forecast-API
     // für frühere Termine keine stündlichen Vorhersagedaten mehr vorhält bzw. null zurückgibt.
     try {
-      const fromArchive = await tryFetch('https://archive-api.open-meteo.com/v1/archive', true);
+      const fromArchive = await tryFetch('archive', true);
       if (fromArchive.length > 0) return fromArchive;
     } catch {
       // Weiter zum nächsten Fallback
@@ -726,19 +736,16 @@ export async function fetchHourlyForecast(
 
     try {
       // Falls das spezifische Wettermodell für diesen vergangenen Zeitraum keine Daten hat,
-      // liefert das globale ERA5-Reanalysis-Archiv von Open-Meteo verlässliche Verlaufsdaten.
-      const fromArchiveDefault = await tryFetch(
-        'https://archive-api.open-meteo.com/v1/archive',
-        false
-      );
+      // liefert das globale ERA5-Reanalysis-Archiv verlässliche Verlaufsdaten.
+      const fromArchiveDefault = await tryFetch('archive', false);
       if (fromArchiveDefault.length > 0) return fromArchiveDefault;
     } catch {
       // Weiter zum nächsten Fallback
     }
 
     try {
-      // Zusätzlicher Fallback auf Forecast-API für ganz junge vergangene Tage (z. B. gestern)
-      const fromForecast = await tryFetch('https://api.open-meteo.com/v1/forecast', true);
+      // Zusätzlicher Fallback auf Forecast-Quelle für ganz junge vergangene Tage (z. B. gestern)
+      const fromForecast = await tryFetch('forecast', true);
       if (fromForecast.length > 0) return fromForecast;
     } catch {
       // Keine Daten verfügbar
@@ -747,24 +754,24 @@ export async function fetchHourlyForecast(
     return [];
   }
 
-  // Für heute oder die Zukunft: reguläre Forecast-API
+  // Für heute oder die Zukunft: reguläre Forecast-Quelle
   try {
-    const fromForecast = await tryFetch('https://api.open-meteo.com/v1/forecast', true);
+    const fromForecast = await tryFetch('forecast', true);
     if (fromForecast.length > 0) return fromForecast;
   } catch {
     // Weiter zum Fallback
   }
 
   try {
-    const fromForecastDefault = await tryFetch('https://api.open-meteo.com/v1/forecast', false);
+    const fromForecastDefault = await tryFetch('forecast', false);
     if (fromForecastDefault.length > 0) return fromForecastDefault;
   } catch {
     // Weiter zum Fallback
   }
 
-  // Falls für den heutigen Tag im Grenzfall die Forecast-API versagt, liefert das Archiv ggf. bereits Werte
+  // Falls für den heutigen Tag im Grenzfall die Forecast-Quelle versagt, liefert das Archiv ggf. bereits Werte
   try {
-    const fromArchive = await tryFetch('https://archive-api.open-meteo.com/v1/archive', false);
+    const fromArchive = await tryFetch('archive', false);
     if (fromArchive.length > 0) return fromArchive;
   } catch {
     // Keine Daten verfügbar

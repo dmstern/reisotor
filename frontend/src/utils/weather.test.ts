@@ -150,17 +150,75 @@ describe('weather helpers and formatting', () => {
   });
 });
 
-describe('fetchHourlyForecast', () => {
+describe('fetchWeatherForecast & fetchHourlyForecast (Backend-Proxy #538)', () => {
   const pastDate = '2024-08-04';
   const futureDate = '2099-08-04';
+  let storageMap: Map<string, string>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
+    storageMap = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((k: string) => storageMap.get(k) ?? null),
+      setItem: vi.fn((k: string, v: string) => storageMap.set(k, v)),
+      removeItem: vi.fn((k: string) => storageMap.delete(k)),
+    });
+    vi.stubGlobal('navigator', { onLine: true });
+    setActivePinia(createPinia());
+    const { resetWeatherCache } = await import('./weather');
+    resetWeatherCache();
   });
 
-  it('ruft für vergangene Tage die Archive-API von Open-Meteo auf', async () => {
+  it('fetchWeatherForecast nutzt /api/weather mit gerundeten Koordinaten, Session-Cache und localStorage-Offline-Cache', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
+      json: async () => ({
+        daily: {
+          time: ['2026-08-14'],
+          weathercode: [0],
+          temperature_2m_max: [28],
+          temperature_2m_min: [19],
+          precipitation_probability_max: [5],
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { fetchWeatherForecast } = await import('./weather');
+    const first = await fetchWeatherForecast(38.7223, -9.1393, 'ecmwf_ifs025');
+    expect(first).toEqual([
+      {
+        date: '2026-08-14',
+        weatherCode: 0,
+        tempMax: 28,
+        tempMin: 19,
+        precipitationProbability: 5,
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const calledUrl = fetchMock.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('/api/weather?');
+    expect(calledUrl).toContain('lat=38.72');
+    expect(calledUrl).toContain('lng=-9.14');
+    expect(calledUrl).not.toContain('open-meteo.com');
+
+    // Zweiter Aufruf mit leicht abweichenden Koordinaten (gleiche 2-Dezimalstellen-Rundung) trifft Session-Cache
+    const second = await fetchWeatherForecast(38.7241, -9.136, 'ecmwf_ifs025');
+    expect(second).toEqual(first);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Antwort wurde für den Offline-Modus in localStorage gecacht (api/offline.ts)
+    const cacheKeys = [...storageMap.keys()].filter((k) =>
+      k.startsWith('reisotor-cache:/weather?')
+    );
+    expect(cacheKeys).toHaveLength(1);
+  });
+
+  it('ruft für vergangene Tage den Backend-Proxy mit source=archive auf', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
       json: async () => ({
         hourly: {
           time: [
@@ -180,12 +238,16 @@ describe('fetchHourlyForecast', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const { fetchHourlyForecast } = await import('./weather');
-    const result = await fetchHourlyForecast(38.72, -9.14, pastDate, 'ecmwf_ifs025');
+    const result = await fetchHourlyForecast(38.7223, -9.1393, pastDate, 'ecmwf_ifs025');
 
     expect(fetchMock).toHaveBeenCalled();
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('https://archive-api.open-meteo.com/v1/archive');
+    expect(calledUrl).toContain('/api/weather?');
+    expect(calledUrl).toContain('source=archive');
+    expect(calledUrl).toContain('lat=38.72');
+    expect(calledUrl).toContain('lng=-9.14');
     expect(calledUrl).toContain(`start_date=${pastDate}`);
+    expect(calledUrl).not.toContain('open-meteo.com');
     expect(result).toHaveLength(6);
     expect(result[0]).toEqual({
       time: '06:00',
@@ -201,9 +263,64 @@ describe('fetchHourlyForecast', () => {
     });
   });
 
+  it('behält die Fallback-Reihenfolge (archive mit Modell -> archive ohne Modell -> forecast) bei', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: async () => ({ error: 'Failed' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          hourly: {
+            time: [`${pastDate}T12:00`],
+            temperature_2m: [null],
+            weathercode: [null],
+            precipitation_probability: [null],
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          hourly: {
+            time: [`${pastDate}T12:00`],
+            temperature_2m: [22.4],
+            weathercode: [1],
+            precipitation_probability: [10],
+          },
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { fetchHourlyForecast } = await import('./weather');
+    const result = await fetchHourlyForecast(38.72, -9.14, pastDate, 'ecmwf_ifs025');
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[0][0]).toContain('source=archive');
+    expect(fetchMock.mock.calls[0][0]).toContain('models=ecmwf_ifs025');
+    expect(fetchMock.mock.calls[1][0]).toContain('source=archive');
+    expect(fetchMock.mock.calls[1][0]).not.toContain('models=');
+    expect(fetchMock.mock.calls[2][0]).toContain('source=forecast');
+    expect(result).toEqual([
+      {
+        time: '12:00',
+        temp: 22,
+        weatherCode: 1,
+        precipitationProbability: 10,
+      },
+    ]);
+  });
+
   it('wandelt null-Werte bei unvollständigen Daten NIEMALS in 0° um', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
         hourly: {
           time: [
@@ -232,6 +349,7 @@ describe('fetchHourlyForecast', () => {
   it('behält echte 0°C-Temperaturen im Winter korrekt bei', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
         hourly: {
           time: [`${pastDate}T12:00`],
@@ -255,9 +373,10 @@ describe('fetchHourlyForecast', () => {
     });
   });
 
-  it('ruft für zukünftige Tage die Forecast-API auf', async () => {
+  it('ruft für zukünftige Tage den Backend-Proxy mit source=forecast auf', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
         hourly: {
           time: [`${futureDate}T12:00`],
@@ -274,7 +393,9 @@ describe('fetchHourlyForecast', () => {
 
     expect(fetchMock).toHaveBeenCalled();
     const calledUrl = fetchMock.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('https://api.open-meteo.com/v1/forecast');
+    expect(calledUrl).toContain('/api/weather?');
+    expect(calledUrl).toContain('source=forecast');
+    expect(calledUrl).not.toContain('open-meteo.com');
     expect(result).toHaveLength(1);
     expect(result[0].temp).toBe(25);
   });

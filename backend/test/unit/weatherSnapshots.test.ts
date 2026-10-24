@@ -296,4 +296,106 @@ describe('recordWeatherSnapshots', () => {
       expect(stored).toHaveLength(3);
     });
   });
+
+  describe('GET /api/weather (Open-Meteo-Proxy & Cache, Issue #538)', () => {
+    afterEach(async () => {
+      const { clearWeatherProxyCache } = await import('../../src/weatherSnapshots.js');
+      clearWeatherProxyCache();
+    });
+
+    it('erfordert Authentifizierung (401 ohne Session)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/weather?lat=38.72&lng=-9.14',
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('validiert Koordinaten und Quelle (400 bei ungültigen Parametern)', async () => {
+      const missingCoords = await app.inject({
+        method: 'GET',
+        url: '/api/weather',
+        headers: { cookie },
+      });
+      expect(missingCoords.statusCode).toBe(400);
+
+      const outOfRange = await app.inject({
+        method: 'GET',
+        url: '/api/weather?lat=999&lng=-9.14',
+        headers: { cookie },
+      });
+      expect(outOfRange.statusCode).toBe(400);
+
+      const invalidSource = await app.inject({
+        method: 'GET',
+        url: '/api/weather?lat=38.72&lng=-9.14&source=invalid',
+        headers: { cookie },
+      });
+      expect(invalidSource.statusCode).toBe(400);
+    });
+
+    it('rundet Koordinaten auf 2 Nachkommastellen und cacht Forecast-Antworten serverseitig', async () => {
+      const fetchMock = vi.fn(() =>
+        Promise.resolve(
+          mockOpenMeteoResponse([{ date: '2026-08-14', code: 0, max: 28, min: 19, rain: 5 }])
+        )
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const res1 = await app.inject({
+        method: 'GET',
+        url: '/api/weather?lat=38.7223&lng=-9.1393&past_days=1&forecast_days=16&models=ecmwf_ifs025',
+        headers: { cookie },
+      });
+      expect(res1.statusCode).toBe(200);
+      expect(res1.json().daily.time).toEqual(['2026-08-14']);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      const calledUrl = String(fetchMock.mock.calls[0][0]);
+      expect(calledUrl).toContain('https://api.open-meteo.com/v1/forecast?');
+      expect(calledUrl).toContain('latitude=38.72');
+      expect(calledUrl).toContain('longitude=-9.14');
+      expect(calledUrl).not.toContain('38.7223');
+
+      // Zweite Anfrage mit nahegelegenen Koordinaten (gleiche 2-Dezimalstellen-Rundung) kommt aus dem Server-Cache
+      const res2 = await app.inject({
+        method: 'GET',
+        url: '/api/weather?lat=38.7241&lng=-9.136&past_days=1&forecast_days=16&models=ecmwf_ifs025',
+        headers: { cookie },
+      });
+      expect(res2.statusCode).toBe(200);
+      expect(res2.json()).toEqual(res1.json());
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('leitet source=archive an archive-api.open-meteo.com weiter', async () => {
+      const fetchMock = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              hourly: {
+                time: ['2024-08-04T12:00'],
+                temperature_2m: [26.5],
+                weathercode: [1],
+                precipitation_probability: [10],
+              },
+            }),
+        })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/weather?source=archive&lat=38.7223&lng=-9.1393&hourly=weathercode,temperature_2m,precipitation_probability&start_date=2024-08-04&end_date=2024-08-04',
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const calledUrl = String(fetchMock.mock.calls[0][0]);
+      expect(calledUrl).toContain('https://archive-api.open-meteo.com/v1/archive?');
+      expect(calledUrl).toContain('latitude=38.72');
+      expect(calledUrl).toContain('longitude=-9.14');
+      expect(res.json().hourly.temperature_2m).toEqual([26.5]);
+    });
+  });
 });
