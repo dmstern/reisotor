@@ -20,12 +20,12 @@ flowchart TD
     P2 --> P3["Phase 3: Tokens & Stresstest<br/><b>&lt;style&gt; & Browser</b><br/><i>Design-Tokens & Container Queries</i>"]
     P3 --> P4["Phase 4: Review & Synergien<br/><b>Branch, PR-Bilanz & Meta</b>"]
 
-    P0 -.->|Angepasster Pfad A<br/><i>(Template bleibt intakt)</i>| P1
+    P0 -.->|"Angepasster Pfad A<br/><i>(Template bleibt intakt)</i>"| P1
     P1 -.->|Phase 2 überspringen| P3
 
-    P0 -.->|Angepasster Pfad B<br/><i>(Nur CSS/Enge-Härtung)</i>| P3
+    P0 -.->|"Angepasster Pfad B<br/><i>(Nur CSS/Enge-Härtung)</i>"| P3
 
-    P0 -.->|Bereits im Sweet Spot<br/><i>(Orchestrator/Primitiv intakt lassen)</i>| Stop["<b>Kein Refactoring nötig (Stop!)</b><br/><i>Vermeidet künstliche Indirektionen</i>"]
+    P0 -.->|"Bereits im Sweet Spot<br/><i>(Orchestrator/Primitiv intakt lassen)</i>"| Stop["<b>Kein Refactoring nötig (Stop!)</b><br/><i>Vermeidet künstliche Indirektionen</i>"]
 ```
 
 > [!NOTE]
