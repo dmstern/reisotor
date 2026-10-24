@@ -50,7 +50,7 @@ function goToSettings() {
         </div>
 
         <!-- Reisotor-Roboter im Update-Modus mit lebendigen Linsen und Signalwellen -->
-        <ReisotorRobot size="120px" phase="upgrade" interactive />
+        <ReisotorRobot size="92px" phase="upgrade" interactive />
       </div>
 
       <!-- Glänzender "Neue Version bereit"-Pill-Badge -->
@@ -104,18 +104,24 @@ function goToSettings() {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 140px;
+  height: 184px;
   margin-top: var(--space-1);
   /* Der Modal-Body schneidet überstehenden Inhalt (Glow, aufsteigende Glitzer) am oberen Rand hart
-     ab. Eine Maske blendet die Bühne dort weich aus, bevor die Kante erreicht wird. */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%);
-  mask-image: linear-gradient(to bottom, transparent 0%, black 22%);
+     ab. Eine Maske blendet die Bühne oben und unten weich aus, bevor die Kanten erreicht werden. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 20%,
+    black 80%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
 }
 
 .glow-backdrop {
   position: absolute;
-  width: 140px;
-  height: 140px;
+  width: 120px;
+  height: 120px;
   border-radius: var(--radius-pill);
   background: radial-gradient(
     circle,
@@ -123,7 +129,7 @@ function goToSettings() {
     color-mix(in srgb, var(--color-accent, #ff9800) 20%, transparent) 45%,
     transparent 72%
   );
-  filter: blur(14px);
+  filter: blur(12px);
   pointer-events: none;
   animation: glow-pulse 3.6s ease-in-out infinite alternate;
 }
@@ -141,12 +147,12 @@ function goToSettings() {
 
 .shimmer-ring {
   position: absolute;
-  width: 130px;
-  height: 130px;
+  width: 116px;
+  height: 116px;
   border-radius: var(--radius-pill);
-  border: 1.5px dashed color-mix(in srgb, var(--color-primary) 35%, transparent);
+  border: 1.5px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 0.7;
   animation: ring-rotate 20s linear infinite;
 }
 
