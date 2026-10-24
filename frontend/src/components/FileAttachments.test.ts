@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
+// @vitest-environment jsdom
+import { describe, it, expect, vi } from 'vitest';
 import { createApp, h, type Component } from 'vue';
 import { createPinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import FileAttachments from './FileAttachments.vue';
 import type { Attachment } from '../api/types';
+import { api, ApiError } from '../api/client';
 
 function createTestApp(rootComponent: Component, props: Record<string, unknown> = {}) {
   const pinia = createPinia();
@@ -105,5 +107,31 @@ describe('FileAttachments component', () => {
     expect(html).toContain('Anhänge');
     expect(html).toContain('polaroid-stack');
     expect(html).not.toContain('attachments-badge');
+  });
+
+  it('handles api.get failure during load() gracefully without unhandled rejection (#527)', async () => {
+    const unhandledRejections: unknown[] = [];
+    const onUnhandled = (e: PromiseRejectionEvent) => {
+      unhandledRejections.push(e.reason);
+    };
+    window.addEventListener('unhandledrejection', onUnhandled);
+
+    vi.spyOn(api, 'get').mockRejectedValue(
+      new ApiError(502, 'Bad Gateway (Server nicht erreichbar)')
+    );
+
+    const container = document.createElement('div');
+    const app = createTestApp(FileAttachments, {
+      domain: 'ideas',
+      entityId: 14,
+      editable: false,
+    });
+    app.mount(container);
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(unhandledRejections).toHaveLength(0);
+    app.unmount();
+    window.removeEventListener('unhandledrejection', onUnhandled);
   });
 });

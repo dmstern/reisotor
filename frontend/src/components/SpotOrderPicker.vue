@@ -9,7 +9,7 @@ import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
 import LegTransportModal from './LegTransportModal.vue';
 
-// Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignPicker.vue
+// Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignDropdown.vue
 // bietet daneben im Spot-Formular einen schnelleren Weg, einen Spot ohne Reihenfolge einer Tour
 // zuzuordnen. Eine Tour-Station ist seit der Verschmelzung von Unterkunft/Reise-Orten in Spots
 // (siehe Migrationskommentar in db/index.ts) immer ein echter Spot.

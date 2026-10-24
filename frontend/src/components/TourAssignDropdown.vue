@@ -97,6 +97,8 @@ function onDragEnd(_event: DragEvent) {
 
 function onWindowKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
+    event.stopPropagation();
+    event.stopImmediatePropagation();
     close();
   }
 }
@@ -104,16 +106,16 @@ function onWindowKeydown(event: KeyboardEvent) {
 watch(open, (isOpen) => {
   if (isOpen) {
     window.addEventListener('resize', close, { passive: true });
-    window.addEventListener('keydown', onWindowKeydown);
+    window.addEventListener('keydown', onWindowKeydown, true);
   } else {
     window.removeEventListener('resize', close);
-    window.removeEventListener('keydown', onWindowKeydown);
+    window.removeEventListener('keydown', onWindowKeydown, true);
   }
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', close);
-  window.removeEventListener('keydown', onWindowKeydown);
+  window.removeEventListener('keydown', onWindowKeydown, true);
 });
 </script>
 
@@ -319,13 +321,13 @@ onUnmounted(() => {
 .options-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-popover, 1100);
   background: transparent;
 }
 
 .options-popup {
   position: fixed;
-  z-index: 1001;
+  z-index: calc(var(--z-popover, 1100) + 1);
   min-width: 200px;
   max-width: 280px;
   background: var(--color-surface);
