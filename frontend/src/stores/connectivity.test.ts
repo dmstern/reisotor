@@ -117,4 +117,22 @@ describe('useConnectivityStore', () => {
     expect(store.isOnline).toBe(true);
     expect(mockFlushOutbox).toHaveBeenCalled();
   });
+
+  it('keeps store offline when health check returns 502 Bad Gateway', async () => {
+    mockGetOutboxLength.mockReturnValue(1);
+    vi.stubGlobal('navigator', { onLine: false });
+    mockIsConfirmedOffline.mockReturnValue(true);
+    mockFetchWithTimeout.mockResolvedValue(
+      new Response('', { status: 502, statusText: 'Bad Gateway' })
+    );
+
+    store = useConnectivityStore();
+    expect(store.isOnline).toBe(false);
+
+    await store.syncNow();
+
+    expect(mockFetchWithTimeout).toHaveBeenCalledWith('/api/auth/me', { credentials: 'include' });
+    expect(store.isOnline).toBe(false);
+    expect(mockFlushOutbox).not.toHaveBeenCalled();
+  });
 });

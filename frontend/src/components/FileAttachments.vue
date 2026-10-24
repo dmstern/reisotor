@@ -87,9 +87,19 @@ function openPreview(index?: number) {
 
 async function load() {
   if (props.initialAttachments) return;
-  attachments.value = await api.get<Attachment[]>(
-    `/attachments?domain=${props.domain}&entity_id=${props.entityId}`
-  );
+  if (!props.entityId || props.entityId <= 0 || Number.isNaN(props.entityId)) return;
+  try {
+    attachments.value = await api.get<Attachment[]>(
+      `/attachments?domain=${props.domain}&entity_id=${props.entityId}`
+    );
+  } catch (err) {
+    // Fehler beim Laden (z. B. Server kurzzeitig nicht erreichbar oder offline ohne Cache)
+    // abfangen, um unhandledrejection zu verhindern (#527).
+    console.debug(
+      `[FileAttachments] Konnte Anhänge für ${props.domain}:${props.entityId} nicht laden:`,
+      err
+    );
+  }
 }
 
 function onAttachmentsChanged(e: Event) {
