@@ -102,6 +102,7 @@ Für alle Änderungen gelten folgende Software-Design-Prinzipien als verbindlich
 - **`style.css` nur für globale Basis-Styles** → Komponenten-Styles gehören in die jeweilige `.vue`-Datei
 - **Neue UI-Bausteine** → `DESIGN.md` konsultieren; Storybook-Stories (`*.stories.ts`) **nur anlegen, wenn explizit im Prompt gefordert**.
 - **Standard-CSS** statt manueller Webkit-Präfixe (LightningCSS macht Autoprefixing)
+- **Border-Radius für Badges/Pillen/Kreise:** Niemals `border-radius: 50%` für Badges oder Rechtecke verwenden (verzieht Elemente zu einem ovalen Ei). Stattdessen immer `--radius-pill` (`9999px`) nutzen. 9999px skaliert bei Rechtecken zur perfekten Pillen-Form und bei 1:1-Quadraten zum perfekten Kreis.
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 

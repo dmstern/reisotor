@@ -112,7 +112,7 @@ function goToSettings() {
   position: absolute;
   width: 140px;
   height: 140px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   background: radial-gradient(
     circle,
     color-mix(in srgb, var(--color-primary) 34%, transparent) 0%,
@@ -139,7 +139,7 @@ function goToSettings() {
   position: absolute;
   width: 130px;
   height: 130px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   border: 1.5px dashed color-mix(in srgb, var(--color-primary) 35%, transparent);
   pointer-events: none;
   opacity: 0.55;
@@ -242,7 +242,7 @@ function goToSettings() {
   align-items: center;
   gap: var(--space-1);
   padding: 3px 12px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   color: var(--color-primary-dark);

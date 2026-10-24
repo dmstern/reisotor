@@ -278,9 +278,12 @@
   --radius-lg: 26px;
   --radius-xl: 32px;
 
-  /* Spezielle Radien-Tokens für Pillen (Chips/Badges/Toggles) und exakte Kreise (Dashboard-Icon-Badges/runde FABs) */
+  /* Spezielle Radien-Tokens für Pillen (Chips/Badges/Toggles) und vollkommen runde Formen (Kreise/Avatare/FABs).
+     Einheitlich 9999px (stadium shape) statt 50% nutzen: 9999px skaliert bei Rechtecken zur echten Pillen-Form
+     und bei 1:1-Quadraten zum perfekten Kreis. border-radius: 50% darf NIEMALS auf Rechtecken/Badges liegen,
+     da es diese zu unschönen ovalen Eiern verzieht. */
   --radius-pill: 9999px;
-  --radius-full: 50%;
+  --radius-full: var(--radius-pill);
 
   /* Eigene "squircle"-Variante je Radius-Stufe: Default = identisch zum normalen Radius (Fallback
      für Browser ohne corner-shape-Unterstützung, sieht dort wie ein gewöhnlicher Kreisbogen aus).

@@ -39,13 +39,14 @@ export const ShadowsAndRadiiSystem: Story = {
           var: '--radius-pill',
           px: '9999px',
           shape: 'pill',
-          usage: 'Ovale Pillen für CategoryChips, Badges, TabBar-Indikatoren & Filter-Toggles',
+          usage: 'Pillen für CategoryChips, Badges, TabBar-Indikatoren & Filter-Toggles',
         },
         {
           var: '--radius-full',
-          px: '50%',
+          px: 'var(--radius-pill) (9999px)',
           shape: 'circle',
-          usage: 'Kreisrunde Elemente (Dashboard Tile Card Circle Icons, runde FAB Buttons)',
+          usage:
+            'Kreise (Dashboard Tile Icons, FABs) & Alias für --radius-pill (verhindert ovale Eier)',
         },
       ];
 
@@ -114,7 +115,7 @@ export const ShadowsAndRadiiSystem: Story = {
         <!-- 2. Pillen & Kreise -->
         <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">2. Pillen & Kreisrunde Elemente</h3>
         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
-          Pillen nutzen volle 9999px Rundung. Kreisrunde Icons & Action-Buttons nutzen 50% Radius mit 1:1 Seitenverhältnis.
+          Pillen und Kreise nutzen einheitlich 9999px Rundung (--radius-pill). Bei Quadraten (1:1) entsteht ein exakter Kreis, bei Rechtecken eine saubere Pille – ohne ovales Verziehen.
         </p>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-bottom: 36px;">
           <div
