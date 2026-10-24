@@ -105,6 +105,19 @@ export default defineConfig({
   // Nur für die statischen Pages-Builds gesetzt (dist-landing/dist-demo unter
   // <owner>.github.io/reisotor/[demo/]) - der normale Build (echtes Backend-Deploy) bleibt bei '/'.
   base: pagesBase ?? '/',
+  optimizeDeps: {
+    include: [
+      'leaflet',
+      'leaflet-rotate',
+      '@tiptap/vue-3',
+      '@tiptap/starter-kit',
+      '@tiptap/extension-link',
+      'dompurify',
+      'piexifjs',
+      'exifreader',
+    ],
+    exclude: ['@tabler/icons-vue'],
+  },
   build:
     buildTarget === 'landing'
       ? {
