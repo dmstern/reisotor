@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp, h } from 'vue';
-import { createPinia, setActivePinia } from 'pinia';
+import { createPinia, setActivePinia, getActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import SpotDoneStatus from './SpotDoneStatus.vue';
-import type { Spot, ScheduleItem } from '../api/types';
+import type { Spot, ScheduleItem, Excursion } from '../api/types';
 import { useScheduleStore } from '../stores/schedule';
+
+const routerPush = vi.fn();
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-router')>()),
+  useRouter: () => ({ push: routerPush }),
+}));
 
 describe('SpotDoneStatus', () => {
   beforeEach(() => {
@@ -27,7 +33,7 @@ describe('SpotDoneStatus', () => {
     const app = createApp({
       render: () => h(SpotDoneStatus, props),
     });
-    app.use(createPinia());
+    app.use(getActivePinia() ?? createPinia());
     return renderToString(app);
   }
 
@@ -94,6 +100,130 @@ describe('SpotDoneStatus', () => {
     actionBtn?.click();
 
     expect(openCalendarSpy).toHaveBeenCalledWith('2026-06-12');
+    app.unmount();
+    el.remove();
+  });
+
+  it('renders "Geplant an 2 Tagen" (expanded) and "2x geplant" (collapsed) when spot is in 2 tours', async () => {
+    const { useExcursionsStore } = await import('../stores/excursions');
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      {
+        id: 1,
+        trip_id: 1,
+        title: 'Hinflug nach Lissabon',
+        date: '2026-11-07',
+        spot_ids: [1],
+      } as unknown as Excursion,
+      {
+        id: 2,
+        trip_id: 1,
+        title: 'Rückflug nach Berlin',
+        date: '2026-11-17',
+        spot_ids: [1],
+      } as unknown as Excursion,
+    ];
+
+    const htmlExpanded = await mountComponent({
+      spot: mockSpot,
+      scheduledDate: '2026-11-07',
+      expanded: true,
+    });
+    expect(htmlExpanded).toContain('Geplant an 2 Tagen');
+
+    const htmlCollapsed = await mountComponent({
+      spot: mockSpot,
+      scheduledDate: '2026-11-07',
+      expanded: false,
+    });
+    expect(htmlCollapsed).toContain('2x geplant');
+  });
+
+  it('renders "Geplant an 3 Tagen" when spot has 1 tour and 2 schedule items', async () => {
+    const scheduleStore = useScheduleStore();
+    scheduleStore.items = [
+      { id: 101, trip_id: 1, spot_id: 1, date: '2026-10-27' } as unknown as ScheduleItem,
+      { id: 102, trip_id: 1, spot_id: 1, date: '2026-10-28' } as unknown as ScheduleItem,
+    ];
+    const { useExcursionsStore } = await import('../stores/excursions');
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      {
+        id: 1,
+        trip_id: 1,
+        title: 'Panoramatour',
+        date: '2026-11-08',
+        spot_ids: [1],
+      } as unknown as Excursion,
+    ];
+
+    const html = await mountComponent({
+      spot: mockSpot,
+      scheduledDate: '2026-10-27',
+      expanded: true,
+    });
+    expect(html).toContain('Geplant an 3 Tagen');
+  });
+
+  it('renders calendar jump button as a compact primitive button in dates popover', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const { useDrawersStore } = await import('../stores/drawers');
+    const drawers = useDrawersStore();
+    const openCalendarSpy = vi.spyOn(drawers, 'openCalendar').mockImplementation(() => {});
+
+    const { useExcursionsStore } = await import('../stores/excursions');
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      {
+        id: 1,
+        trip_id: 1,
+        title: 'Hinflug nach Lissabon',
+        date: '2026-11-07',
+        spot_ids: [1],
+      } as unknown as Excursion,
+      {
+        id: 2,
+        trip_id: 1,
+        title: 'Rückflug nach Berlin',
+        date: '2026-11-17',
+        spot_ids: [1],
+      } as unknown as Excursion,
+    ];
+
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const app = createApp({
+      render: () =>
+        h(SpotDoneStatus, {
+          spot: mockSpot,
+          scheduledDate: '2026-11-07',
+          expanded: true,
+        }),
+    });
+    app.use(pinia);
+    app.mount(el);
+
+    // Klick auf den DoneToggle öffnet das Popover bei 2 Terminen
+    const toggleBtn = el.querySelector<HTMLButtonElement>('.done-toggle');
+    expect(toggleBtn).not.toBeNull();
+    toggleBtn?.click();
+
+    // Warten auf Teleport-Rendering im body
+    await new Promise((r) => setTimeout(r, 20));
+
+    const jumpBtns = document.body.querySelectorAll<HTMLButtonElement>('.date-calendar-jump-btn');
+    expect(jumpBtns.length).toBe(2);
+    // Button primitive hat stets die Klasse 'btn'
+    expect(jumpBtns[0].classList.contains('btn')).toBe(true);
+
+    // Tour-Einträge springen direkt zur Tour in der Ausflugsliste statt zum Kalendertag
+    expect(document.body.querySelectorAll('.date-check-row.is-tour').length).toBe(2);
+
+    jumpBtns[1].click();
+    expect(routerPush).toHaveBeenCalledWith('/excursions#excursion-2');
+    expect(openCalendarSpy).not.toHaveBeenCalled();
+
     app.unmount();
     el.remove();
   });

@@ -148,11 +148,11 @@ defineEmits<{
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: var(--color-highlight);
-  border: 1px solid var(--color-highlight-border);
+  background: var(--color-scheduled-tint);
+  border: 1px solid color-mix(in srgb, var(--color-scheduled) 50%, transparent);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-primary-dark);
+  color: var(--color-scheduled);
 }
 
 .pending-schedule-banner .btn {

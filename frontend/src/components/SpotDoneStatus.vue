@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import type { Spot } from '../api/types';
 import { useSpotWeather } from '../composables/useSpotWeather';
-import { useSpotDoneStatus } from '../composables/useSpotDoneStatus';
+import { useSpotDoneStatus, type ScheduledSpotItem } from '../composables/useSpotDoneStatus';
 import { useDrawersStore } from '../stores/drawers';
 import DoneToggle from './primitives/DoneToggle.vue';
 import Button from './primitives/Button.vue';
@@ -12,6 +13,7 @@ import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { getTourRoleIconDef } from '../utils/travelRole';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = defineProps<{
@@ -25,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const drawers = useDrawersStore();
+const router = useRouter();
 
 const {
   scheduledItemsForSpot,
@@ -48,9 +51,11 @@ const {
 });
 
 const targetCalendarDate = computed<string | null>(() => {
-  if (props.scheduledDate) return props.scheduledDate;
-  if (scheduledItemsForSpot.value.length === 1 && scheduledItemsForSpot.value[0].date) {
+  if (totalItemsCount.value === 1 && scheduledItemsForSpot.value[0]?.date) {
     return scheduledItemsForSpot.value[0].date;
+  }
+  if (totalItemsCount.value <= 1 && props.scheduledDate) {
+    return props.scheduledDate;
   }
   return null;
 });
@@ -83,6 +88,21 @@ function handleCalendarJump(event: MouseEvent) {
 function openCalendarAtDate(date: string) {
   datesPopoverOpen.value = false;
   drawers.openCalendar(date);
+}
+
+/** Herkunft eines Termins: Kalender, Ausflug (Tour-Farbe) oder Reise-Etappe (Reise-Farbe). */
+function dateSourceClass(item: ScheduledSpotItem): string {
+  if (item.type !== 'tour') return 'is-calendar';
+  return item.role ? 'is-travel' : 'is-tour';
+}
+
+function handleItemJump(item: ScheduledSpotItem) {
+  if (item.type === 'tour') {
+    datesPopoverOpen.value = false;
+    router.push(`/excursions#excursion-${item.sourceId}`);
+    return;
+  }
+  openCalendarAtDate(item.date);
 }
 </script>
 
@@ -222,10 +242,15 @@ function openCalendarAtDate(date: string) {
         </div>
         <p class="popover-subtext">Wähle die Tage aus, an denen dieser Spot besucht wurde:</p>
         <div class="dates-checklist">
-          <div v-for="item in scheduledItemsForSpot" :key="item.id" class="date-check-row">
+          <div
+            v-for="item in scheduledItemsForSpot"
+            :key="item.id"
+            class="date-check-row"
+            :class="dateSourceClass(item)"
+          >
             <button
               type="button"
-              class="date-check-item"
+              class="date-check-item btn"
               :class="{ checked: !!item.done }"
               @click="toggleScheduledItemDone(item)"
             >
@@ -234,18 +259,40 @@ function openCalendarAtDate(date: string) {
                 :size="15"
                 group="actions"
               />
-              <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
+              <span class="date-check-info">
+                <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
+                <span
+                  v-if="item.type === 'tour' && item.title"
+                  class="date-check-title"
+                  :title="item.title"
+                >
+                  {{ item.title }}
+                </span>
+              </span>
               <span class="date-check-status">{{ item.done ? 'Besucht' : 'Geplant' }}</span>
             </button>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              icon-only
               class="date-calendar-jump-btn"
-              title="Diesen Tag im Kalender öffnen"
-              :aria-label="`${formatDateShared(item.date)} im Kalender öffnen`"
-              @click.stop="openCalendarAtDate(item.date)"
+              :title="item.type === 'tour' ? 'Zur Tour springen' : 'Diesen Tag im Kalender öffnen'"
+              :aria-label="
+                item.type === 'tour'
+                  ? `Tour ${item.title ?? ''} öffnen`
+                  : `${formatDateShared(item.date)} im Kalender öffnen`
+              "
+              @click.stop="handleItemJump(item)"
             >
-              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
-            </button>
+              <AppIcon
+                v-if="item.type === 'tour'"
+                :icon="getTourRoleIconDef(item.role)"
+                :size="13"
+                group="categories"
+              />
+              <AppIcon v-else :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+            </Button>
           </div>
         </div>
         <div class="popover-buttons">
@@ -315,6 +362,7 @@ function openCalendarAtDate(date: string) {
   flex: 1;
   min-width: 0;
   display: flex;
+  justify-content: flex-start;
   align-items: center;
   gap: var(--space-2);
   padding: 6px var(--space-2);
@@ -324,8 +372,13 @@ function openCalendarAtDate(date: string) {
   background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--font-size-sm);
+  font-weight: 400;
   cursor: pointer;
   text-align: left;
+  box-shadow: none;
+  translate: none;
+  transform: none;
+  width: auto;
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast);
@@ -341,8 +394,30 @@ function openCalendarAtDate(date: string) {
   color: var(--color-primary-dark);
 }
 
+.date-check-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
 .date-check-date {
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.date-check-title {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.date-check-item.checked .date-check-title {
+  color: inherit;
+  opacity: 0.8;
 }
 
 .date-check-status {
@@ -352,27 +427,51 @@ function openCalendarAtDate(date: string) {
 }
 
 .date-calendar-jump-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 !important;
   color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    color var(--transition-fast),
-    border-color var(--transition-fast);
 }
 
 .date-calendar-jump-btn:hover {
-  background: var(--color-hover);
   color: var(--color-primary);
-  border-color: var(--color-primary);
+}
+
+/* Quelle des Termins: Kalender (blau) vs. Tour (orange) */
+.is-calendar .date-check-item {
+  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
+}
+
+.is-calendar .date-calendar-jump-btn {
+  color: var(--color-scheduled);
+}
+
+.is-tour .date-check-item {
+  border-color: var(--color-tour-border);
+}
+
+.is-tour .date-calendar-jump-btn {
+  color: var(--color-tour);
+}
+
+.is-tour .date-calendar-jump-btn:hover {
+  color: var(--color-tour-dark);
+}
+
+.is-travel .date-check-item {
+  border-color: var(--color-travel-border);
+}
+
+.is-travel .date-calendar-jump-btn {
+  color: var(--color-travel);
+}
+
+.is-travel .date-calendar-jump-btn:hover {
+  color: var(--color-travel-dark);
 }
 </style>
