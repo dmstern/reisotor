@@ -94,6 +94,14 @@ describe('placePhoto utility', () => {
       const queries = buildSearchQueries('Sesamstraße');
       expect(queries).toEqual(['Sesamstraße']);
     });
+
+    it('handles category differences with accents (Café vs Cafe) and words in middle', () => {
+      const queries = buildSearchQueries('Froindlichst Berlin Cafe', 'Berlin', 'Café');
+      expect(queries).toEqual(['Froindlichst Berlin Cafe', 'Froindlichst Berlin', 'Froindlichst']);
+
+      const barQueries = buildSearchQueries('Else Bar Berlin', 'Berlin', 'Bar');
+      expect(barQueries).toEqual(['Else Bar Berlin', 'Else Berlin', 'Else']);
+    });
   });
 
   describe('searchWebPlacePhoto', () => {
@@ -446,6 +454,116 @@ describe('placePhoto utility', () => {
         city: 'Berlin',
       });
       expect(photo).toBe('https://example.com/trinkteufel_direct.jpg');
+    });
+
+    it('falls back to DuckDuckGo when Bing search fails or returns no results', async () => {
+      const fetchMock = vi.fn((url: string) => {
+        if (url.includes('bing.com')) {
+          return Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve('<html><body>Keine Ergebnisse</body></html>'),
+          });
+        }
+        if (url.includes('duckduckgo.com/?q=')) {
+          return Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve('<html><script>vqd="4-123456789"</script></html>'),
+          });
+        }
+        if (url.includes('duckduckgo.com/i.js')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                results: [
+                  {
+                    title: 'Else Open Air Club Berlin',
+                    image: 'https://example.com/else_ddg.jpg',
+                    thumbnail: 'https://tse1.mm.bing.net/th/id/thumb.jpg',
+                    url: 'https://example.com/else',
+                  },
+                ],
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const photo = await fetchPlacePhoto({
+        name: 'Else Berlin Kneipe',
+        city: 'Berlin',
+        category: 'Kneipe',
+      });
+      expect(photo).toBe('https://example.com/else_ddg.jpg');
+    });
+
+    it('falls back to Wikimedia Commons image search when web search and Wikipedia have no match', async () => {
+      const fetchMock = vi.fn((url: string) => {
+        if (url.includes('bing.com') || url.includes('duckduckgo.com')) {
+          return Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve(''),
+          });
+        }
+        if (url.includes('wikipedia.org')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ query: { pages: {} } }),
+          });
+        }
+        if (url.includes('commons.wikimedia.org')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                query: {
+                  pages: {
+                    '100': {
+                      pageid: 100,
+                      title: 'File:Flughafen BER Terminal 1.jpg',
+                      imageinfo: [
+                        {
+                          thumburl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/ber.jpg',
+                          url: 'https://upload.wikimedia.org/wikipedia/commons/ber.jpg',
+                        },
+                      ],
+                    },
+                  },
+                },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const photo = await fetchPlacePhoto({
+        name: 'Flughafen BER',
+        city: 'Berlin',
+      });
+      expect(photo).toBe('https://thumb.wikimedia.org/wikipedia/commons/thumb/ber.jpg');
+    });
+
+    it('does not cache empty results so subsequent searches can retry', async () => {
+      const fetchMock = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ query: { pages: {} } }),
+          text: () => Promise.resolve(''),
+        })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const photo1 = await fetchPlacePhoto({ name: 'Unbekannter Ort XYZ' });
+      expect(photo1).toBeNull();
+      expect(fetchMock).toHaveBeenCalled();
+
+      fetchMock.mockClear();
+      const photo2 = await fetchPlacePhoto({ name: 'Unbekannter Ort XYZ' });
+      expect(photo2).toBeNull();
+      // Should retry fetch because empty results are not cached for 24h
+      expect(fetchMock).toHaveBeenCalled();
     });
   });
 });
