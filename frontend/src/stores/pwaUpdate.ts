@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { registerSW } from 'virtual:pwa-register';
 import { useUiSettingsStore } from './uiSettings';
+import { api } from '../api/client';
+import type { BuildInfo } from '../api/types';
 
 // Volle PWA (siehe vite.config.ts's VitePWA-Konfiguration, injectManifest-Strategie): registriert
 // denselben public/sw.js wie zuvor (über das von vite-plugin-pwa generierte Modul), zeigt aber
@@ -84,6 +86,22 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     updateDialogDismissed.value = false;
   }
 
+  // Version, auf die das Update wechselt. Das Backend wird zusammen mit dem Frontend ausgerollt
+  // und liefert daher bereits die neue Version. Bewusst kein buildInfo-Store (cached die alte).
+  const availableVersion = ref<string | null>(null);
+  let availableVersionRequested = false;
+
+  async function loadAvailableVersion() {
+    if (availableVersionRequested) return;
+    availableVersionRequested = true;
+    try {
+      const info = await api.get<BuildInfo>('/build-info');
+      availableVersion.value = info.version ?? null;
+    } catch {
+      availableVersionRequested = false;
+    }
+  }
+
   if (typeof window !== 'undefined') {
     // @ts-expect-error Dev/Debug helper on window
     window.__triggerUpdateDialog = simulateUpdateAvailable;
@@ -141,6 +159,8 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     updateDialogDismissed,
     dismissUpdateDialog,
     currentVersion,
+    availableVersion,
+    loadAvailableVersion,
     showChangelogDialog,
     showReleaseNotesNotice,
     initVersionCheck,

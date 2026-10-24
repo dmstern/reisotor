@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
@@ -10,6 +10,22 @@ import { usePwaUpdateStore } from '../stores/pwaUpdate';
 const pwaUpdate = usePwaUpdateStore();
 const router = useRouter();
 const isUpdating = ref(false);
+
+// Nur anzeigen, wenn beide Versionen bekannt sind und sich unterscheiden.
+const versionChange = computed(() => {
+  const from = pwaUpdate.currentVersion;
+  const to = pwaUpdate.availableVersion;
+  if (from === 'unknown' || !to || to === from) return null;
+  return { from: `v${from}`, to: `v${to}` };
+});
+
+watch(
+  () => pwaUpdate.showUpdateDialog,
+  (visible) => {
+    if (visible) pwaUpdate.loadAvailableVersion();
+  },
+  { immediate: true }
+);
 
 function onClose() {
   pwaUpdate.dismissUpdateDialog();
@@ -54,10 +70,15 @@ function goToSettings() {
       </div>
 
       <!-- Glänzender "Neue Version bereit"-Pill-Badge -->
-      <div class="update-pill-badge" aria-hidden="true">
-        <span class="badge-icon">✨</span>
+      <div class="update-pill-badge">
+        <span class="badge-icon" aria-hidden="true">✨</span>
         <span class="badge-text">Neue Version bereit</span>
-        <span class="badge-icon">✨</span>
+        <span class="badge-icon" aria-hidden="true">✨</span>
+        <span v-if="versionChange" class="badge-versions" data-testid="version-change">
+          {{ versionChange.from }}
+          <span aria-label="auf">→</span>
+          {{ versionChange.to }}
+        </span>
       </div>
 
       <p class="update-desc">
@@ -249,8 +270,10 @@ function goToSettings() {
 
 .update-pill-badge {
   display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: var(--space-1);
+  gap: 2px var(--space-1);
   padding: 3px 12px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
@@ -295,6 +318,17 @@ function goToSettings() {
 
 .badge-text {
   line-height: 1.2;
+}
+
+/* Eigene Zeile unterhalb des Labels, damit die Pille auch bei langen Versionsnummern schmal bleibt. */
+.badge-versions {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  opacity: 0.85;
 }
 
 .update-desc {

@@ -6,6 +6,7 @@ import { createRouter, createMemoryHistory } from 'vue-router';
 import UpdateAvailableModal from './UpdateAvailableModal.vue';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { useUiSettingsStore } from '../stores/uiSettings';
+import { api } from '../api/client';
 
 vi.mock('virtual:pwa-register', () => ({
   registerSW: vi.fn(() => vi.fn()),
@@ -106,6 +107,37 @@ describe('UpdateAvailableModal', () => {
 
     expect(dismissSpy).toHaveBeenCalled();
     expect(pushSpy).toHaveBeenCalledWith({ path: '/settings', query: { tab: 'notifications' } });
+
+    cleanUp();
+  });
+
+  it('shows old and new version in the badge when they differ', async () => {
+    const pwaUpdate = usePwaUpdateStore();
+    vi.spyOn(api, 'get').mockResolvedValue({ version: '99.0.0' });
+    useUiSettingsStore().showUpdateDialogs = true;
+    pwaUpdate.needRefresh = true;
+
+    const { cleanUp } = mountComponent();
+    await vi.waitFor(() => expect(pwaUpdate.availableVersion).toBe('99.0.0'));
+    await nextTick();
+
+    const text = document.body.querySelector('[data-testid="version-change"]')?.textContent ?? '';
+    expect(text).toContain(`v${pwaUpdate.currentVersion}`);
+    expect(text).toContain('v99.0.0');
+
+    cleanUp();
+  });
+
+  it('hides the version line when the new version is unknown', async () => {
+    const pwaUpdate = usePwaUpdateStore();
+    vi.spyOn(api, 'get').mockRejectedValue(new Error('offline'));
+    useUiSettingsStore().showUpdateDialogs = true;
+    pwaUpdate.needRefresh = true;
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+
+    expect(document.body.querySelector('[data-testid="version-change"]')).toBeNull();
 
     cleanUp();
   });
