@@ -97,7 +97,10 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     checking.value = true;
     const startTime = Date.now();
     try {
-      await fetchWithTimeout('/api/auth/me', { credentials: 'include' });
+      const res = await fetchWithTimeout('/api/auth/me', { credentials: 'include' });
+      if (!res.ok && res.status >= 500) {
+        throw new Error(`Server nicht erreichbar: ${res.status}`);
+      }
       setOnline(true);
       await trySync();
     } catch {

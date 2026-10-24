@@ -126,6 +126,12 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
     } catch {
       // ignore, kein JSON-Body
     }
+    if (!message || !message.trim()) {
+      if (res.status === 502) message = 'Bad Gateway (Server nicht erreichbar)';
+      else if (res.status === 503)
+        message = 'Service Unavailable (Server vorübergehend nicht erreichbar)';
+      else if (res.status === 504) message = 'Gateway Timeout (Server antwortet nicht)';
+    }
     throw new ApiError(res.status, message, {
       method: (options.method ?? 'GET').toUpperCase(),
       path,
@@ -140,12 +146,19 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
 
 // fetch() wirft einen TypeError, wenn die Anfrage den Server gar nicht erst erreicht (offline,
 // DNS-Fehler, …); ein per fetchWithTimeout() oben abgebrochener, hängender Request wirft stattdessen
-// einen DOMException("AbortError") – im Unterschied zu einer echten HTTP-Fehlerantwort (4xx/5xx), die
-// ganz normal als ApiError oben geworfen wird. Nur die ersten beiden Fälle sollen offline behandelt
-// werden (Cache-Fallback bzw. Outbox-Warteschlange); eine echte 403/404/500 soll weiterhin sofort als
-// Fehler sichtbar werden.
+// einen DOMException("AbortError"). Zusätzlich gelten Gateway-/Proxy-Fehler (502 Bad Gateway, 503
+// Service Unavailable, 504 Gateway Timeout) als Netzwerkausfall, da sie vom Reverse Proxy (Caddy/
+// Nginx) signalisieren, dass das Backend offline, im Neustart oder nicht erreichbar ist – im
+// Unterschied zu echten Applikations-Antworten (400, 403, 404, 500). Dadurch greift bei einem
+// Serverneustart oder temporärem Proxy-Fehler der Cache-Fallback bzw. die Outbox-Warteschlange.
 function isNetworkFailure(err: unknown): boolean {
-  return err instanceof TypeError || (err instanceof DOMException && err.name === 'AbortError');
+  if (err instanceof TypeError || (err instanceof DOMException && err.name === 'AbortError')) {
+    return true;
+  }
+  if (err instanceof ApiError && [502, 503, 504].includes(err.status)) {
+    return true;
+  }
+  return false;
 }
 
 // Ergänzt eine Array-Antwort um noch nicht synchronisierte Outbox-Einträge derselben Sammlung
