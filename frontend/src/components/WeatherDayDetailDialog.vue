@@ -11,11 +11,12 @@ import WeatherAlertCard from './WeatherAlertCard.vue';
 import {
   detectWeatherAlerts,
   fetchHourlyForecast,
+  getWeatherUnknownExplanation,
   weatherCodeMeta,
   type DailyWeather,
   type HourlyWeather,
 } from '../utils/weather';
-import { formatDate as formatDateShared } from '../utils/dateFormat';
+import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
 import { useWeatherProviderStore, WEATHER_MODEL_OPTIONS } from '../stores/weatherProvider';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -122,23 +123,46 @@ const currentDay = computed<DailyWeather | null>(() => {
 const derivedDayFromHourly = computed<DailyWeather | null>(() => {
   if (currentDay.value) return currentDay.value;
   if (!hourlyList.value.length || !currentDate.value) return null;
-  const temps = hourlyList.value.map((h) => h.temp);
+  const temps = hourlyList.value.map((h) => h.temp).filter((t): t is number => t != null);
   const rainProbs = hourlyList.value
     .map((h) => h.precipitationProbability)
     .filter((p): p is number => p != null);
   const midday =
-    hourlyList.value.find((h) => h.time === '12:00' || h.time === '15:00') ?? hourlyList.value[0];
+    hourlyList.value.find(
+      (h) => (h.time === '12:00' || h.time === '15:00') && h.weatherCode != null
+    ) ??
+    hourlyList.value.find((h) => h.weatherCode != null) ??
+    hourlyList.value[0];
   return {
     date: currentDate.value,
-    tempMax: Math.max(...temps),
-    tempMin: Math.min(...temps),
-    weatherCode: midday.weatherCode,
+    tempMax: temps.length ? Math.max(...temps) : null,
+    tempMin: temps.length ? Math.min(...temps) : null,
+    weatherCode: midday?.weatherCode ?? null,
     precipitationProbability: rainProbs.length ? Math.max(...rainProbs) : null,
   };
 });
 
 const displayDay = computed(() => currentDay.value ?? derivedDayFromHourly.value);
 const dayAlerts = computed(() => (displayDay.value ? detectWeatherAlerts([displayDay.value]) : []));
+
+const isDayUnknown = computed(() => {
+  if (!displayDay.value) return true;
+  const isUnknownCode =
+    displayDay.value.weatherCode == null ||
+    weatherCodeMeta(displayDay.value.weatherCode).label === 'Unbekannt';
+  const noTemps = displayDay.value.tempMax == null && displayDay.value.tempMin == null;
+  return isUnknownCode && noTemps;
+});
+
+const weatherUnknownExplanation = computed(() => getWeatherUnknownExplanation(currentDate.value));
+
+const hourlyEmptyText = computed(() => {
+  const today = toLocalDateString(new Date());
+  if (currentDate.value && currentDate.value > today) {
+    return 'Kein stündlicher Verlauf verfügbar (Tag liegt zu weit in der Zukunft).';
+  }
+  return 'Kein stündlicher Verlauf verfügbar.';
+});
 
 const weatherModelLabel = computed(
   () =>
@@ -228,26 +252,37 @@ function formatDate(dateStr: string) {
       </div>
 
       <!-- Haupt-Zusammenfassung -->
-      <div v-if="displayDay" class="summary-card">
+      <div v-if="displayDay" class="summary-card" :class="{ 'is-unknown': isDayUnknown }">
         <div class="main-weather">
           <WeatherIcon :code="displayDay.weatherCode" :size="42" />
           <div class="meta">
             <span class="label">{{ weatherCodeMeta(displayDay.weatherCode).label }}</span>
             <div class="temps">
-              <span class="temp-max">{{ Math.round(displayDay.tempMax) }}°</span>
-              <span class="temp-min">{{ Math.round(displayDay.tempMin) }}°</span>
+              <template v-if="displayDay.tempMax != null && displayDay.tempMin != null">
+                <span class="temp-max">{{ Math.round(displayDay.tempMax) }}°</span>
+                <span class="temp-min">{{ Math.round(displayDay.tempMin) }}°</span>
+              </template>
+              <template v-else-if="displayDay.tempMax != null">
+                <span class="temp-max">{{ Math.round(displayDay.tempMax) }}°</span>
+              </template>
+              <template v-else-if="displayDay.tempMin != null">
+                <span class="temp-min">{{ Math.round(displayDay.tempMin) }}°</span>
+              </template>
+              <span v-else class="temp-unavailable">–</span>
             </div>
           </div>
         </div>
-        <div v-if="displayDay.precipitationProbability != null" class="rain-meta">
+        <p v-if="isDayUnknown" class="unknown-explanation">
+          {{ weatherUnknownExplanation }}
+        </p>
+        <div v-else-if="displayDay.precipitationProbability != null" class="rain-meta">
           <span class="rain-label">Regenwahrscheinlichkeit</span>
           <span class="rain-val">💧 {{ displayDay.precipitationProbability }}%</span>
         </div>
       </div>
       <div v-else class="summary-card empty-card">
         <p class="hint">
-          Keine Wetterdaten für diesen Tag
-          {{ activeLocation === 'home' ? 'am Heimatort' : 'am Reiseziel' }} verfügbar.
+          {{ weatherUnknownExplanation }}
         </p>
       </div>
 
@@ -315,7 +350,7 @@ function formatDate(dateStr: string) {
               >
                 <span class="time">{{ h.time }}</span>
                 <WeatherIcon :code="h.weatherCode" :size="20" />
-                <span class="temp">{{ h.temp }}°</span>
+                <span class="temp">{{ h.temp != null ? `${Math.round(h.temp)}°` : '–' }}</span>
                 <span
                   v-if="h.precipitationProbability != null && h.precipitationProbability > 0"
                   class="rain"
@@ -327,7 +362,7 @@ function formatDate(dateStr: string) {
             </div>
 
             <!-- Leerer Zustand -->
-            <div v-else key="empty" class="hourly-empty">Kein stündlicher Verlauf verfügbar.</div>
+            <div v-else key="empty" class="hourly-empty">{{ hourlyEmptyText }}</div>
           </Transition>
         </div>
       </div>
@@ -428,6 +463,19 @@ function formatDate(dateStr: string) {
 .temp-min {
   font-size: 1rem;
   color: var(--color-text-muted);
+}
+
+.temp-unavailable {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.unknown-explanation {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 .rain-meta {

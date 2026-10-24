@@ -25,19 +25,19 @@ import type { IconDef } from './icon';
 // Urlubszeitraum zurück; das filtert der Aufrufer (DashboardView.vue) selbst gegen die Trip-Daten.
 export interface DailyWeather {
   date: string;
-  weatherCode: number;
-  tempMax: number;
-  tempMin: number;
+  weatherCode: number | null;
+  tempMax: number | null;
+  tempMin: number | null;
   precipitationProbability: number | null;
 }
 
 interface OpenMeteoResponse {
   daily: {
     time: string[];
-    weathercode: number[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_probability_max?: number[];
+    weathercode: (number | null)[];
+    temperature_2m_max: (number | null)[];
+    temperature_2m_min: (number | null)[];
+    precipitation_probability_max?: (number | null)[];
   };
 }
 
@@ -303,8 +303,57 @@ const UNKNOWN_META: WeatherCodeMeta = {
   color: COLOR_CLOUD,
 };
 
-export function weatherCodeMeta(code: number): WeatherCodeMeta {
+export function weatherCodeMeta(code?: number | null): WeatherCodeMeta {
+  if (code == null) return UNKNOWN_META;
   return WEATHER_CODE_META[code] ?? UNKNOWN_META;
+}
+
+export function formatWeatherTemp(temp?: number | null): string {
+  if (temp == null || Number.isNaN(temp)) return '–';
+  return `${Math.round(temp)}°`;
+}
+
+export function formatWeatherTempRange(tempMax?: number | null, tempMin?: number | null): string {
+  if (tempMax == null && tempMin == null) return '–';
+  if (tempMax != null && tempMin != null) {
+    return `${Math.round(tempMax)}° / ${Math.round(tempMin)}°`;
+  }
+  if (tempMax != null) {
+    return `${Math.round(tempMax)}°`;
+  }
+  return `${Math.round(tempMin!)}°`;
+}
+
+export function isWeatherUnknown(weather?: DailyWeather | null): boolean {
+  if (!weather) return true;
+  const isUnknownCode =
+    weather.weatherCode == null || weatherCodeMeta(weather.weatherCode).label === 'Unbekannt';
+  const noTemps = weather.tempMax == null && weather.tempMin == null;
+  return isUnknownCode && noTemps;
+}
+
+export function getWeatherUnknownReason(date?: string | null): string {
+  if (!date) return 'Keine Wetterdaten verfügbar.';
+  const today = toLocalDateString(new Date());
+  if (date > today) {
+    return 'Vorhersage noch nicht verfügbar (liegt zu weit in der Zukunft)';
+  }
+  if (date < today) {
+    return 'Keine historischen Wetteraufzeichnungen verfügbar';
+  }
+  return 'Wetterdaten konnten nicht abgerufen werden';
+}
+
+export function getWeatherUnknownExplanation(date?: string | null): string {
+  if (!date) return 'Wetterdaten für diesen Tag konnten nicht geladen werden.';
+  const today = toLocalDateString(new Date());
+  if (date > today) {
+    return 'Dieser Tag liegt noch zu weit in der Zukunft. Wetterdienste liefern verlässliche Vorhersagen meist nur für die kommenden 7 bis 14 Tage.';
+  }
+  if (date < today) {
+    return 'Für diesen vergangenen Tag liegen keine gespeicherten Wetteraufzeichnungen vor.';
+  }
+  return 'Wetterdaten konnten vom Wetterdienst zurzeit nicht abgerufen werden.';
 }
 
 // Einfacher Modul-Cache statt Store: pro (gerundeter) Koordinate+Modell reicht ein Fetch pro
@@ -457,17 +506,21 @@ const WEATHER_CODE_SEVERITY_ORDER = [
  *  zusammenfassende Temperatur-Range und bestimmt das prägnanteste Wetter-Icon (Issue #152). */
 export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSummary | null {
   if (!weathers.length) return null;
-  const temps = weathers.map((w) => Math.round(w.tempMax));
+  const temps = weathers
+    .map((w) => (w.tempMax != null ? Math.round(w.tempMax) : null))
+    .filter((t): t is number => t != null);
+  if (!temps.length) return null;
   const minTemp = Math.min(...temps);
   const maxTemp = Math.max(...temps);
   const tempLabel = minTemp === maxTemp ? `${minTemp}°` : `${minTemp}°–${maxTemp}°`;
 
-  let bestCode = weathers[0].weatherCode;
+  const validCodes = weathers.map((w) => w.weatherCode).filter((c): c is number => c != null);
+  let bestCode = validCodes[0] ?? 0;
   let bestIdx = WEATHER_CODE_SEVERITY_ORDER.indexOf(bestCode);
   if (bestIdx === -1) bestIdx = 999;
 
-  for (let i = 1; i < weathers.length; i++) {
-    const code = weathers[i].weatherCode;
+  for (let i = 1; i < validCodes.length; i++) {
+    const code = validCodes[i];
     let idx = WEATHER_CODE_SEVERITY_ORDER.indexOf(code);
     if (idx === -1) idx = 999;
     if (idx < bestIdx) {
@@ -504,7 +557,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
     const formattedDate = formatDateShared(day.date, { includeYear: false });
 
     // Hitze
-    if (day.tempMax >= 35) {
+    if (day.tempMax != null && day.tempMax >= 35) {
       alerts.push({
         id: `heat-danger-${day.date}`,
         type: 'heat',
@@ -513,7 +566,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
         description: `Extreme Hitze bis zu ${Math.round(day.tempMax)}°C am ${formattedDate} erwartet.`,
         date: day.date,
       });
-    } else if (day.tempMax >= 31) {
+    } else if (day.tempMax != null && day.tempMax >= 31) {
       alerts.push({
         id: `heat-warning-${day.date}`,
         type: 'heat',
@@ -525,7 +578,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
     }
 
     // Gewitter / Unwetter / Starkregen
-    if ([95, 96, 99].includes(day.weatherCode)) {
+    if (day.weatherCode != null && [95, 96, 99].includes(day.weatherCode)) {
       alerts.push({
         id: `storm-${day.date}`,
         type: 'storm',
@@ -534,7 +587,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
         description: `Schwere Gewitter oder Sturmböen am ${formattedDate} erwartet.`,
         date: day.date,
       });
-    } else if ([82, 65, 67].includes(day.weatherCode)) {
+    } else if (day.weatherCode != null && [82, 65, 67].includes(day.weatherCode)) {
       alerts.push({
         id: `rain-${day.date}`,
         type: 'rain',
@@ -543,7 +596,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
         description: `Heftiger Niederschlag am ${formattedDate} vorhergesagt.`,
         date: day.date,
       });
-    } else if ([75, 86].includes(day.weatherCode)) {
+    } else if (day.weatherCode != null && [75, 86].includes(day.weatherCode)) {
       alerts.push({
         id: `snow-${day.date}`,
         type: 'snow',
@@ -555,7 +608,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
     }
 
     // Kälte
-    if (day.tempMin <= -10) {
+    if (day.tempMin != null && day.tempMin <= -10) {
       alerts.push({
         id: `cold-${day.date}`,
         type: 'cold',
@@ -572,18 +625,18 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
 
 export interface HourlyWeather {
   time: string;
-  temp: number;
-  weatherCode: number;
+  temp: number | null;
+  weatherCode: number | null;
   precipitationProbability: number | null;
 }
 
 interface OpenMeteoHourlyResponse {
   hourly: {
     time: string[];
-    weathercode: number[];
-    temperature_2m: number[];
-    precipitation_probability_max?: number[];
-    precipitation_probability?: number[];
+    weathercode: (number | null)[];
+    temperature_2m: (number | null)[];
+    precipitation_probability_max?: (number | null)[];
+    precipitation_probability?: (number | null)[];
   };
 }
 
@@ -628,12 +681,16 @@ export async function fetchHourlyForecast(
       const hourStr = t.split('T')[1] ?? '';
       const hourNum = parseInt(hourStr.split(':')[0], 10);
       if ([6, 9, 12, 15, 18, 21].includes(hourNum)) {
-        result.push({
-          time: hourStr,
-          temp: Math.round(data.hourly.temperature_2m[i]),
-          weatherCode: data.hourly.weathercode[i],
-          precipitationProbability: data.hourly.precipitation_probability?.[i] ?? null,
-        });
+        const rawTemp = data.hourly.temperature_2m[i];
+        const rawCode = data.hourly.weathercode[i];
+        if (rawTemp != null || rawCode != null) {
+          result.push({
+            time: hourStr,
+            temp: rawTemp != null ? Math.round(rawTemp) : null,
+            weatherCode: rawCode ?? null,
+            precipitationProbability: data.hourly.precipitation_probability?.[i] ?? null,
+          });
+        }
       }
     });
   }

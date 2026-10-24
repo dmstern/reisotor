@@ -125,7 +125,9 @@ function onDrop(event: DragEvent, date: string) {
               :title="`${entry.label}: ${weatherCodeMeta(entry.weather.weatherCode).label}`"
             >
               <WeatherIcon :code="entry.weather.weatherCode" :size="11" />
-              <span>{{ Math.round(entry.weather.tempMax) }}°</span>
+              <span>{{
+                entry.weather.tempMax != null ? `${Math.round(entry.weather.tempMax)}°` : '–'
+              }}</span>
             </span>
           </div>
         </div>

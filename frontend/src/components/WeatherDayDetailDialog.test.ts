@@ -159,4 +159,59 @@ describe('WeatherDayDetailDialog', () => {
 
     cleanUp();
   });
+
+  it('does not display 0° on missing weather data and displays clear explanation', async () => {
+    const unknownDay: DailyWeather = {
+      date: '2099-11-08',
+      weatherCode: null,
+      tempMax: null,
+      tempMin: null,
+      precipitationProbability: null,
+    };
+
+    const { cleanUp } = mountTestApp(WeatherDayDetailDialog, {
+      modelValue: true,
+      date: '2099-11-08',
+      day: unknownDay,
+      lat: 38.72,
+      lng: -9.13,
+      locationLabel: 'Lissabon, Portugal',
+    });
+    await nextTick();
+
+    // No 0° in temp elements
+    expect(document.querySelector('.temp-max')).toBeNull();
+    expect(document.querySelector('.temp-unavailable')?.textContent).toBe('–');
+    expect(document.querySelector('.unknown-explanation')?.textContent).toContain(
+      'zu weit in der Zukunft'
+    );
+
+    cleanUp();
+  });
+
+  it('correctly displays 0° when temperature is genuinely 0°C', async () => {
+    const freezingDay: DailyWeather = {
+      date: '2026-12-15',
+      weatherCode: 71,
+      tempMax: 0,
+      tempMin: -4,
+      precipitationProbability: 40,
+    };
+
+    const { cleanUp } = mountTestApp(WeatherDayDetailDialog, {
+      modelValue: true,
+      date: '2026-12-15',
+      day: freezingDay,
+      lat: 47.37,
+      lng: 8.54,
+      locationLabel: 'Zürich',
+    });
+    await nextTick();
+
+    expect(document.querySelector('.temp-max')?.textContent).toBe('0°');
+    expect(document.querySelector('.temp-min')?.textContent).toBe('-4°');
+    expect(document.querySelector('.unknown-explanation')).toBeNull();
+
+    cleanUp();
+  });
 });

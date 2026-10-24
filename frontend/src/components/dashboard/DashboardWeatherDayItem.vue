@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { DailyWeather, WeatherAlert } from '../../utils/weather';
-import { weatherCodeMeta } from '../../utils/weather';
+import { weatherCodeMeta, getWeatherUnknownReason, isWeatherUnknown } from '../../utils/weather';
 import AppIcon from '../AppIcon.vue';
 import WeatherIcon from '../WeatherIcon.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 
-defineProps<{
+const props = defineProps<{
   day: DailyWeather;
   dateLabel: string;
   isPast?: boolean;
@@ -15,33 +16,41 @@ defineProps<{
 defineEmits<{
   (e: 'click'): void;
 }>();
+
+const itemTitle = computed(() => {
+  if (isWeatherUnknown(props.day)) {
+    return `${props.dateLabel}: ${getWeatherUnknownReason(props.day.date)}`;
+  }
+  return `${props.dateLabel}: ${weatherCodeMeta(props.day.weatherCode).label}`;
+});
 </script>
 
 <template>
   <div
     class="weather-day clickable"
-    :class="{ past: isPast }"
+    :class="{ past: isPast, unknown: isWeatherUnknown(day) }"
     role="button"
     tabindex="0"
+    :title="itemTitle"
     @click="$emit('click')"
     @keydown.enter.prevent="$emit('click')"
     @keydown.space.prevent="$emit('click')"
   >
     <span class="weather-date">{{ dateLabel }}</span>
     <div class="weather-icon-wrapper">
-      <WeatherIcon
-        class="weather-icon"
-        :size="22"
-        :code="day.weatherCode"
-        :title="weatherCodeMeta(day.weatherCode).label"
-      />
+      <WeatherIcon class="weather-icon" :size="22" :code="day.weatherCode" :title="itemTitle" />
       <span v-if="alert" class="weather-alert-badge" :class="alert.severity" :title="alert.title">
         <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
       </span>
     </div>
-    <span class="weather-temp"
-      >{{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°</span
-    >
+    <span class="weather-temp">
+      <template v-if="day.tempMax != null && day.tempMin != null">
+        {{ Math.round(day.tempMax) }}° / {{ Math.round(day.tempMin) }}°
+      </template>
+      <template v-else-if="day.tempMax != null"> {{ Math.round(day.tempMax) }}° </template>
+      <template v-else-if="day.tempMin != null"> {{ Math.round(day.tempMin) }}° </template>
+      <template v-else> – </template>
+    </span>
     <span v-if="day.precipitationProbability != null" class="weather-rain">
       <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
         day.precipitationProbability

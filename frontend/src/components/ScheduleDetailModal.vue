@@ -48,14 +48,29 @@ const emit = defineEmits<{
       <span
         v-if="
           detail.viewingWeatherEntry.value &&
-          (detail.viewingWeatherEntry.value.weather.tempMax !== 0 ||
-            detail.viewingWeatherEntry.value.weather.tempMin !== 0)
+          (detail.viewingWeatherEntry.value.weather.tempMax != null ||
+            detail.viewingWeatherEntry.value.weather.tempMin != null)
         "
         class="detail-badge weather-badge"
       >
         <WeatherIcon :code="detail.viewingWeatherEntry.value.weather.weatherCode" :size="13" />
-        {{ Math.round(detail.viewingWeatherEntry.value.weather.tempMax) }}° /
-        {{ Math.round(detail.viewingWeatherEntry.value.weather.tempMin) }}°
+        <template
+          v-if="
+            detail.viewingWeatherEntry.value.weather.tempMax != null &&
+            detail.viewingWeatherEntry.value.weather.tempMin != null
+          "
+        >
+          {{ Math.round(detail.viewingWeatherEntry.value.weather.tempMax) }}° /
+          {{ Math.round(detail.viewingWeatherEntry.value.weather.tempMin) }}°
+        </template>
+        <template v-else>
+          {{
+            Math.round(
+              detail.viewingWeatherEntry.value.weather.tempMax ??
+                detail.viewingWeatherEntry.value.weather.tempMin!
+            )
+          }}°
+        </template>
       </span>
       <Badge v-if="detail.viewingItem.value?.auto_created" variant="primary" size="sm">
         <AppIcon :icon="ACTION_ICONS.sparkles" :size="12" group="actions" />

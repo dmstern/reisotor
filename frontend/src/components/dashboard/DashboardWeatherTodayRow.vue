@@ -42,9 +42,14 @@ defineEmits<{
         <AppIcon :icon="ACTION_ICONS.warning" :size="10" group="actions" />
       </span>
     </div>
-    <span class="weather-temp"
-      >{{ Math.round(weather.tempMax) }}° / {{ Math.round(weather.tempMin) }}°</span
-    >
+    <span class="weather-temp">
+      <template v-if="weather.tempMax != null && weather.tempMin != null">
+        {{ Math.round(weather.tempMax) }}° / {{ Math.round(weather.tempMin) }}°
+      </template>
+      <template v-else-if="weather.tempMax != null"> {{ Math.round(weather.tempMax) }}° </template>
+      <template v-else-if="weather.tempMin != null"> {{ Math.round(weather.tempMin) }}° </template>
+      <template v-else> – </template>
+    </span>
     <span v-if="weather.precipitationProbability != null" class="weather-rain">
       <AppIcon :icon="ACTION_ICONS.rain" :size="13" group="actions" />{{
         weather.precipitationProbability

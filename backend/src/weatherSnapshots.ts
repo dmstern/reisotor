@@ -166,6 +166,13 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
     const missingSet = new Set(missingDates);
     data.daily.time.forEach((date, i) => {
       if (!missingSet.has(date)) return;
+      if (
+        data.daily.weathercode[i] == null &&
+        data.daily.temperature_2m_max[i] == null &&
+        data.daily.temperature_2m_min[i] == null
+      ) {
+        return;
+      }
       upsertSnapshot.run(
         trip.id,
         target.lat,

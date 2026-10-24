@@ -124,9 +124,18 @@ const drawers = useDrawersStore();
           :title="weatherCodeMeta(weather.weatherCode).label"
         >
           <WeatherIcon class="weather-icon" :size="16" :code="weather.weatherCode" />
-          <span class="weather-temp"
-            >{{ Math.round(weather.tempMax) }}° / {{ Math.round(weather.tempMin) }}°</span
-          >
+          <span class="weather-temp">
+            <template v-if="weather.tempMax != null && weather.tempMin != null">
+              {{ Math.round(weather.tempMax) }}° / {{ Math.round(weather.tempMin) }}°
+            </template>
+            <template v-else-if="weather.tempMax != null">
+              {{ Math.round(weather.tempMax) }}°
+            </template>
+            <template v-else-if="weather.tempMin != null">
+              {{ Math.round(weather.tempMin) }}°
+            </template>
+            <template v-else> – </template>
+          </span>
         </div>
         <Button
           type="button"
