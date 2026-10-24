@@ -86,6 +86,15 @@ function openCalendarAtDate(date: string) {
   datesPopoverOpen.value = false;
   drawers.openCalendar(date);
 }
+
+function handleItemJump(item: { type: string; date: string; sourceId: number | string }) {
+  if (item.type === 'tour') {
+    datesPopoverOpen.value = false;
+    drawers.openMapForExcursion(Number(item.sourceId));
+    return;
+  }
+  openCalendarAtDate(item.date);
+}
 </script>
 
 <template>
@@ -224,7 +233,12 @@ function openCalendarAtDate(date: string) {
         </div>
         <p class="popover-subtext">Wähle die Tage aus, an denen dieser Spot besucht wurde:</p>
         <div class="dates-checklist">
-          <div v-for="item in scheduledItemsForSpot" :key="item.id" class="date-check-row">
+          <div
+            v-for="item in scheduledItemsForSpot"
+            :key="item.id"
+            class="date-check-row"
+            :class="item.type === 'tour' ? 'is-tour' : 'is-calendar'"
+          >
             <button
               type="button"
               class="date-check-item btn"
@@ -254,11 +268,19 @@ function openCalendarAtDate(date: string) {
               size="sm"
               icon-only
               class="date-calendar-jump-btn"
-              title="Diesen Tag im Kalender öffnen"
-              :aria-label="`${formatDateShared(item.date)} im Kalender öffnen`"
-              @click.stop="openCalendarAtDate(item.date)"
+              :title="item.type === 'tour' ? 'Zur Tour springen' : 'Diesen Tag im Kalender öffnen'"
+              :aria-label="
+                item.type === 'tour'
+                  ? `Tour ${item.title ?? ''} öffnen`
+                  : `${formatDateShared(item.date)} im Kalender öffnen`
+              "
+              @click.stop="handleItemJump(item)"
             >
-              <AppIcon :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+              <AppIcon
+                :icon="item.type === 'tour' ? FORM_FIELD_ICONS.tour : FORM_FIELD_ICONS.date"
+                :size="13"
+                group="formFields"
+              />
             </Button>
           </div>
         </div>
@@ -407,5 +429,26 @@ function openCalendarAtDate(date: string) {
 
 .date-calendar-jump-btn:hover {
   color: var(--color-primary);
+}
+
+/* Quelle des Termins: Kalender (blau) vs. Tour (orange) */
+.is-calendar .date-check-item {
+  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
+}
+
+.is-calendar .date-calendar-jump-btn {
+  color: var(--color-scheduled);
+}
+
+.is-tour .date-check-item {
+  border-color: var(--color-tour-border);
+}
+
+.is-tour .date-calendar-jump-btn {
+  color: var(--color-tour);
+}
+
+.is-tour .date-calendar-jump-btn:hover {
+  color: var(--color-tour-dark);
 }
 </style>

@@ -211,8 +211,13 @@ describe('SpotDoneStatus', () => {
     // Button primitive hat stets die Klasse 'btn'
     expect(jumpBtns[0].classList.contains('btn')).toBe(true);
 
+    // Tour-Einträge springen direkt zur Tour statt zum Kalendertag
+    const openMapSpy = vi.spyOn(drawers, 'openMapForExcursion').mockImplementation(() => {});
+    expect(document.body.querySelectorAll('.date-check-row.is-tour').length).toBe(2);
+
     jumpBtns[1].click();
-    expect(openCalendarSpy).toHaveBeenCalledWith('2026-11-17');
+    expect(openMapSpy).toHaveBeenCalledWith(2);
+    expect(openCalendarSpy).not.toHaveBeenCalled();
 
     app.unmount();
     el.remove();
