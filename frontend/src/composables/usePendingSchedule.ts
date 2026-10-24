@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
@@ -30,6 +30,14 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
     }
     return spotsStore.spots.find((s) => s.id === pending.id)?.title ?? null;
   });
+
+  // Gleiches Blau-Highlighting der Tage wie beim Drag & Drop, solange der Auswahlmodus aktiv ist
+  watch(
+    () => drawers.pendingSchedule,
+    (pending) => document.body.classList.toggle('is-dragging-calendar', !!pending),
+    { immediate: true }
+  );
+  onBeforeUnmount(() => document.body.classList.remove('is-dragging-calendar'));
 
   function returnToCard(kind: 'excursion' | 'spot', id: number) {
     if (!options.standalone) return;
