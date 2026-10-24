@@ -90,6 +90,12 @@ function openCalendarAtDate(date: string) {
   drawers.openCalendar(date);
 }
 
+/** Herkunft eines Termins: Kalender, Ausflug (Tour-Farbe) oder Reise-Etappe (Reise-Farbe). */
+function dateSourceClass(item: ScheduledSpotItem): string {
+  if (item.type !== 'tour') return 'is-calendar';
+  return item.role ? 'is-travel' : 'is-tour';
+}
+
 function handleItemJump(item: ScheduledSpotItem) {
   if (item.type === 'tour') {
     datesPopoverOpen.value = false;
@@ -240,7 +246,7 @@ function handleItemJump(item: ScheduledSpotItem) {
             v-for="item in scheduledItemsForSpot"
             :key="item.id"
             class="date-check-row"
-            :class="item.type === 'tour' ? 'is-tour' : 'is-calendar'"
+            :class="dateSourceClass(item)"
           >
             <button
               type="button"
@@ -455,5 +461,17 @@ function handleItemJump(item: ScheduledSpotItem) {
 
 .is-tour .date-calendar-jump-btn:hover {
   color: var(--color-tour-dark);
+}
+
+.is-travel .date-check-item {
+  border-color: var(--color-travel-border);
+}
+
+.is-travel .date-calendar-jump-btn {
+  color: var(--color-travel);
+}
+
+.is-travel .date-calendar-jump-btn:hover {
+  color: var(--color-travel-dark);
 }
 </style>
