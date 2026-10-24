@@ -3,6 +3,7 @@ import { db, ensureDefaultSharedBudget, purgeAttachmentsForEntities } from '../d
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
+import { localizeImageUrl } from '../utils/remoteImage.js';
 
 // role/transport_type/... (#176): eine Tour mit gesetzter role ist die ehemalige Reise-Etappe
 // (Anreise/Abreise/Weiterreise) - dieselbe ideas-Zeile trägt jetzt sowohl die normale Tour- als auch
@@ -584,10 +585,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       ? legs.find((l) => !!l.transport_type)?.transport_type || null
       : transport_type || null;
 
+    const localImageUrl = await localizeImageUrl(image_url);
     const result = insertIdeaStmt.run(
       trip_id,
       title,
-      image_url ?? null,
+      localImageUrl ?? null,
       note ? (isHtml ? sanitizeHtml(note) : note) : null,
       isHtml ? 'html' : 'legacy',
       req.session.userId,
@@ -666,9 +668,10 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       ? legs.find((l) => !!l.transport_type)?.transport_type || null
       : transport_type || null;
 
+    const localImageUrl = await localizeImageUrl(image_url);
     const result = updateIdeaStmt.run(
       title,
-      image_url ?? null,
+      localImageUrl ?? null,
       note ? (isHtml ? sanitizeHtml(note) : note) : null,
       isHtml ? 'html' : 'legacy',
       role ?? null,

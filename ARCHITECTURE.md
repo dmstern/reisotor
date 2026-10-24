@@ -148,6 +148,15 @@ von 5 Domänen (Reise, Unterkunft, Notizen, Kalender, Budget) über die gemeinsa
 `components/FileAttachments.vue`. Verwaiste Dateien (z. B. nach gelöschtem verknüpftem Objekt)
 werden per eigener Cleanup-Routine entfernt.
 
+**Titelbilder (`image_url`) & Datenschutz (#539):** Externe Bild-URLs (Web-Bildersuche) werden nicht
+gehotlinkt. Beim Speichern von Trip/Spot/Tour lädt das Backend sie per `localizeImageUrl()`
+(`utils/remoteImage.ts`) herunter und legt sie als Upload ab (`/api/uploads/…`). Schutz: nur
+http/https, SSRF-Prüfung auf jedem Redirect-Hop inkl. DNS-Auflösung, 5-MB-Limit, 8-s-Timeout,
+Typprüfung per Magic Bytes (JPEG/PNG/WebP). Schlägt der Download fehl, bleibt die URL erhalten.
+Die OSM-Kartenvorschau (`tilePreviewUrl`) bleibt extern (siehe #540). Vorschläge in
+`CoverImagePicker.vue` laufen per `imageDisplayUrl()` über `GET /api/images/proxy?url=` (nur
+Browser-Cache). Bestehende externe Werte werden lazy beim nächsten Speichern lokalisiert.
+
 ## Papierkorb/Soft-Delete
 
 Lese-Routen filtern `deleted_at IS NULL`. `routes/trash.ts` listet/restauriert/purged endgültig.

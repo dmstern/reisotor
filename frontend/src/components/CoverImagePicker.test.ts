@@ -54,7 +54,9 @@ describe('CoverImagePicker component', () => {
     const btn = container.querySelector('.banner-edit-btn');
     expect(btn?.textContent).toContain('Bild bearbeiten');
     const banner = container.querySelector('.form-image-banner') as HTMLElement;
-    expect(banner.style.backgroundImage).toContain('https://example.com/banner.jpg');
+    expect(banner.style.backgroundImage).toContain(
+      '/api/images/proxy?url=' + encodeURIComponent('https://example.com/banner.jpg')
+    );
 
     cleanUp();
   });

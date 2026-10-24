@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { fetchPlacePhotos } from '../utils/placePhoto.js';
+import { localizeImageUrl } from '../utils/remoteImage.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
@@ -258,6 +259,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       ensureTripCategory(trip_id, 'spot', category);
     }
     let { lat, lng, image_url } = body;
+    image_url = await localizeImageUrl(image_url);
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
@@ -322,6 +324,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       ensureTripCategory(existing.trip_id, 'spot', category);
     }
     let { lat, lng, image_url } = body;
+    image_url = await localizeImageUrl(image_url);
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
