@@ -54,9 +54,15 @@ test('reordering nav entries in SettingsView changes their order in the NavBar',
   await page.locator('.nav-config-row').first().getByLabel('Nach unten verschieben').click();
 });
 
-test('enabling accommodation nav entry in SettingsView adds it to the NavBar and filters by category', async ({
-  page,
-}) => {
+test('accommodation nav entry in SettingsView and category filter behavior', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('nav.navbar a', { hasText: 'Unterkunft' })).toBeVisible();
+
+  // Unterkunft in Navigationseinstellungen ausblenden
+  await page.goto('/settings?tab=app');
+  const accRow = page.locator('.nav-config-row', { hasText: 'Unterkunft' });
+  await accRow.locator('input[type="checkbox"]').uncheck();
+
   await page.goto('/');
   await expect(page.locator('nav.navbar a', { hasText: 'Unterkunft' })).toHaveCount(0);
 
@@ -66,10 +72,12 @@ test('enabling accommodation nav entry in SettingsView adds it to the NavBar and
   // Bei ausgeblendeter Unterkunft bleibt "Karte" aktiv
   await expect(page.locator('nav.navbar a.link.active', { hasText: 'Karte' })).toBeVisible();
 
-  // Unterkunft in Navigationseinstellungen aktivieren
+  // Unterkunft in Navigationseinstellungen wieder aktivieren
   await page.goto('/settings?tab=app');
-  const accRow = page.locator('.nav-config-row', { hasText: 'Unterkunft' });
-  await accRow.locator('input[type="checkbox"]').check();
+  await page
+    .locator('.nav-config-row', { hasText: 'Unterkunft' })
+    .locator('input[type="checkbox"]')
+    .check();
 
   await page.goto('/');
   const accNavLink = page.locator('nav.navbar a', { hasText: 'Unterkunft' });
@@ -85,11 +93,4 @@ test('enabling accommodation nav entry in SettingsView adds it to the NavBar and
   await page.locator('nav.navbar a', { hasText: 'Karte' }).click();
   await expect(page.locator('nav.navbar a.link.active', { hasText: 'Karte' })).toBeVisible();
   await expect(page.locator('.filter-chip', { hasText: 'Unterkunft' })).toHaveCount(0);
-
-  // Aufräumen: wieder deaktivieren
-  await page.goto('/settings?tab=app');
-  await page
-    .locator('.nav-config-row', { hasText: 'Unterkunft' })
-    .locator('input[type="checkbox"]')
-    .uncheck();
 });

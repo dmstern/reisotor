@@ -498,13 +498,13 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         }
       }
       if (Array.isArray(stored.navConfig)) {
-        navCfgStore.entries = sanitizeNavEntries(stored.navConfig);
+        navCfgStore.entries = sanitizeNavEntries(stored.navConfig, 'desktop');
       }
       if (typeof stored.customMobileNav === 'boolean') {
         navCfgStore.customMobile = stored.customMobileNav;
       }
       if (Array.isArray(stored.navConfigMobile)) {
-        navCfgStore.mobileEntries = sanitizeNavEntries(stored.navConfigMobile);
+        navCfgStore.mobileEntries = sanitizeNavEntries(stored.navConfigMobile, 'mobile');
       }
       if (Array.isArray(stored.dashboardConfig)) {
         dashCfgStore.entries = sanitizeDashboardEntries(stored.dashboardConfig);

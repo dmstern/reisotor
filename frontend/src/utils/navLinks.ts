@@ -12,6 +12,7 @@ export interface NavLinkDef {
   domain?: LiveDomain;
   domains?: LiveDomain[];
   defaultVisible?: boolean;
+  defaultVisibleMobile?: boolean;
 }
 
 // Registry der konfigurierbaren NavBar-Einträge (siehe stores/navConfig.ts, SettingsView.vue) -
@@ -43,7 +44,7 @@ export const NAV_LINKS: NavLinkDef[] = [
     label: 'An-/Abreise',
     icon: SECTION_ICON_DEFS.travel,
     domains: ['ideas'],
-    defaultVisible: false,
+    defaultVisibleMobile: false,
   },
   {
     key: 'accommodation',
@@ -51,7 +52,7 @@ export const NAV_LINKS: NavLinkDef[] = [
     label: 'Unterkunft',
     icon: ACCOMMODATION_ICON,
     domains: ['spots'],
-    defaultVisible: false,
+    defaultVisibleMobile: false,
   },
   {
     key: 'budget',
@@ -61,12 +62,20 @@ export const NAV_LINKS: NavLinkDef[] = [
     domain: 'budget',
   },
   { key: 'diary', to: '/diary', label: 'Tagebuch', icon: SECTION_ICON_DEFS.diary, domain: 'diary' },
-  { key: 'notes', to: '/notes', label: 'Notizen', icon: SECTION_ICON_DEFS.notes, domain: 'notes' },
+  {
+    key: 'notes',
+    to: '/notes',
+    label: 'Notizen',
+    icon: SECTION_ICON_DEFS.notes,
+    domain: 'notes',
+    defaultVisibleMobile: false,
+  },
   {
     key: 'trash',
     to: '/trash',
     label: 'Papierkorb',
     icon: ACTION_ICONS.delete,
     defaultVisible: false,
+    defaultVisibleMobile: false,
   },
 ];
