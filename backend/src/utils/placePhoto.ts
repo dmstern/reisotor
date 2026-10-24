@@ -127,6 +127,75 @@ const PLACE_WORDS = new Set([
   'beach',
 ]);
 
+export const AIRPORT_KEYWORDS = new Set([
+  'flughafen',
+  'airport',
+  'aeroporto',
+  'aeropuerto',
+  'aéroport',
+  'aerodrome',
+  'flugplatz',
+]);
+
+export const AIRPORT_RELEVANCE_TERMS = [
+  'flughafen',
+  'airport',
+  'aeroporto',
+  'aeropuerto',
+  'aéroport',
+  'aerodrome',
+  'terminal',
+  'runway',
+  'gate',
+  'flugzeug',
+  'airplane',
+  'aircraft',
+  'airline',
+  'aviation',
+  'flug',
+  'flight',
+];
+
+export function isAirportQuery(name: string, category?: string): boolean {
+  if (category) {
+    const c = category.trim().toLowerCase();
+    if (c === 'flughafen' || c === 'airport' || c === 'flugplatz') {
+      return true;
+    }
+  }
+  const lower = (name || '').toLowerCase();
+  for (const kw of AIRPORT_KEYWORDS) {
+    if (lower.includes(kw)) return true;
+  }
+  if (/\([A-Za-z]{3}\)/.test(name)) {
+    return true;
+  }
+  return false;
+}
+
+const FACILITY_WORDS = new Set([
+  'flughafen',
+  'airport',
+  'aeroporto',
+  'aeropuerto',
+  'aerodrome',
+  'flugplatz',
+  'bahnhof',
+  'station',
+  'hbf',
+  'hauptbahnhof',
+  'krankenhaus',
+  'hospital',
+  'klinik',
+  'hotel',
+  'hostel',
+  'restaurant',
+  'café',
+  'cafe',
+  'bar',
+  'museum',
+]);
+
 export function isTitleMatch(
   articleTitle: string,
   placeName: string,
@@ -158,6 +227,20 @@ export function isTitleMatch(
   const bWords = bClean.split(/\s+/).filter(Boolean);
   const cityWords = targetCity ? targetCity.toLowerCase().split(/\s+/).filter(Boolean) : [];
 
+  // Spezifiziert die Suche eine konkrete Einrichtung (z. B. Flughafen, Bahnhof, Hotel),
+  // darf ein bloßer Stadt-Artikel (z. B. "Lissabon") nicht als Treffer gewertet werden.
+  if (bWords.some((w) => FACILITY_WORDS.has(w)) && !aWords.some((w) => FACILITY_WORDS.has(w))) {
+    return false;
+  }
+
+  const aSet = new Set(aWords);
+  const bSet = new Set(bWords);
+
+  // Gleiche Wörter unabhängig von der Reihenfolge (z. B. "Flughafen Lissabon" vs "Lissabon Flughafen")
+  if (aWords.length === bWords.length && aWords.every((w) => bSet.has(w))) {
+    return true;
+  }
+
   // Wenn aClean bClean enthält oder umgekehrt (z. B. "Schloss Neuschwanstein" vs "Neuschwanstein")
   if (aClean.includes(bClean) || bClean.includes(aClean)) {
     const longerWords = aWords.length >= bWords.length ? aWords : bWords;
@@ -170,6 +253,13 @@ export function isTitleMatch(
 
     // Wenn der kürzere Begriff mindestens 2 Wörter hat und komplett im längeren vorkommt
     if (shorterWords.length >= 2) return true;
+  }
+
+  // Wenn alle Wörter des kürzeren im längeren enthalten sind (ab 2 Wörtern)
+  const shorterList = aWords.length <= bWords.length ? aWords : bWords;
+  const longerSet = aWords.length <= bWords.length ? bSet : aSet;
+  if (shorterList.length >= 2 && shorterList.every((w) => longerSet.has(w))) {
+    return true;
   }
 
   return false;
@@ -281,6 +371,7 @@ function buildNameWords(
   city?: string,
   category?: string
 ): { nameWords: string[]; stopWords: Set<string> } {
+  const isAirport = isAirportQuery(rawName, category);
   const stopWords = new Set([
     'bar',
     'cafe',
@@ -296,7 +387,7 @@ function buildNameWords(
     'ein',
     'eine',
     ...(city ? city.toLowerCase().split(/\s+/) : []),
-    ...(category ? category.toLowerCase().split(/\s+/) : []),
+    ...(category && !isAirport ? category.toLowerCase().split(/\s+/) : []),
   ]);
 
   let nameWords = rawName
@@ -321,7 +412,8 @@ function parseBingHtml(
   rawName: string,
   limit: number,
   seen: Set<string>,
-  nameWords: string[]
+  nameWords: string[],
+  isAirport = false
 ): string[] {
   const photos: string[] = [];
 
@@ -338,6 +430,15 @@ function parseBingHtml(
       const purl: string = (data.purl || '').toLowerCase();
 
       const searchable = `${title} ${purl} ${(murl || '').toLowerCase()}`;
+
+      if (isAirport) {
+        const hasAirportTerm = AIRPORT_RELEVANCE_TERMS.some((term) => searchable.includes(term));
+        const iataMatch = rawName.match(/\(([A-Za-z]{3})\)/) || rawName.match(/\b([A-Z]{3})\b/);
+        const iata = iataMatch ? iataMatch[1].toLowerCase() : null;
+        const hasIata = iata ? new RegExp(`\\b${iata}\\b`).test(searchable) : false;
+        if (!hasAirportTerm && !hasIata) continue;
+      }
+
       const isRelevant =
         nameWords.length === 0
           ? searchable.includes(rawName.toLowerCase().trim())
@@ -397,6 +498,7 @@ async function queryBingImages(
   category?: string
 ): Promise<string[]> {
   const { nameWords } = buildNameWords(rawName, city, category);
+  const isAirport = isAirportQuery(rawName, category);
 
   // Primär den async AJAX-Endpunkt nutzen (saubere Bildkacheln ohne Decoy-Trends oder Werbe-Seiten)
   // Sekundär als Fallback die reguläre Suchseite (stellt auch Unit-Test-Mocks sicher)
@@ -413,7 +515,7 @@ async function queryBingImages(
       });
       if (!res.ok || typeof res.text !== 'function') continue;
       const html = await res.text();
-      const photos = parseBingHtml(html, rawName, limit, seen, nameWords);
+      const photos = parseBingHtml(html, rawName, limit, seen, nameWords, isAirport);
       if (photos.length > 0) {
         return photos;
       }
@@ -467,6 +569,7 @@ async function queryDuckDuckGoImages(
     if (!Array.isArray(data?.results)) return [];
 
     const { nameWords } = buildNameWords(rawName, city, category);
+    const isAirport = isAirportQuery(rawName, category);
     const photos: string[] = [];
 
     for (const item of data.results) {
@@ -475,6 +578,15 @@ async function queryDuckDuckGoImages(
       const purl = (item.url || '').toLowerCase();
       const murl = (item.image || '').toLowerCase();
       const searchable = `${title} ${purl} ${murl}`;
+
+      if (isAirport) {
+        const hasAirportTerm = AIRPORT_RELEVANCE_TERMS.some((term) => searchable.includes(term));
+        const iataMatch = rawName.match(/\(([A-Za-z]{3})\)/) || rawName.match(/\b([A-Z]{3})\b/);
+        const iata = iataMatch ? iataMatch[1].toLowerCase() : null;
+        const hasIata = iata ? new RegExp(`\\b${iata}\\b`).test(searchable) : false;
+        if (!hasAirportTerm && !hasIata) continue;
+      }
+
       const isRelevant =
         nameWords.length === 0
           ? searchable.includes(rawName.toLowerCase().trim())
@@ -506,7 +618,8 @@ async function queryDuckDuckGoImages(
 async function queryCommonsImages(
   query: string,
   limit: number,
-  seen: Set<string>
+  seen: Set<string>,
+  isAirport = false
 ): Promise<string[]> {
   try {
     const url = new URL('https://commons.wikimedia.org/w/api.php');
@@ -543,6 +656,13 @@ async function queryCommonsImages(
       if (photos.length >= limit) break;
       const title = page.title || '';
       if (!isGoodPhoto(title)) continue;
+
+      if (isAirport) {
+        const titleLower = title.toLowerCase();
+        const hasAirportTerm = AIRPORT_RELEVANCE_TERMS.some((term) => titleLower.includes(term));
+        if (!hasAirportTerm) continue;
+      }
+
       const info = page.imageinfo?.[0];
       const candidate = info?.thumburl || info?.url;
       if (candidate && isSafeUrl(candidate) && isGoodPhoto(candidate) && !seen.has(candidate)) {
@@ -556,6 +676,53 @@ async function queryCommonsImages(
   }
 }
 
+export function buildAirportSearchQueries(rawName: string, city?: string): string[] {
+  const iataMatch = rawName.match(/\(([A-Za-z]{3})\)/) || rawName.match(/\b([A-Z]{3})\b/);
+  const iata = iataMatch ? iataMatch[1].toUpperCase() : null;
+
+  let baseName = rawName.replace(/\([^)]*\)/g, ' ').trim();
+  for (const kw of AIRPORT_KEYWORDS) {
+    baseName = baseName.replace(new RegExp(`\\b${kw}\\b`, 'gi'), ' ').trim();
+  }
+  baseName = baseName.replace(/\s+/g, ' ').trim();
+
+  const targetCity = city?.trim() || '';
+  const queries: string[] = [];
+  const add = (q: string) => {
+    const t = q.trim();
+    if (t && !queries.some((x) => x.toLowerCase() === t.toLowerCase())) queries.push(t);
+  };
+
+  const nameHasAirport = Array.from(AIRPORT_KEYWORDS).some((kw) =>
+    rawName.toLowerCase().includes(kw)
+  );
+  const rawWithAirport = nameHasAirport ? rawName : `${rawName} Flughafen`;
+
+  if (baseName && targetCity && baseName.toLowerCase() !== targetCity.toLowerCase()) {
+    add(`Flughafen ${baseName} ${targetCity} ${iata ? `(${iata})` : ''}`);
+    add(`${baseName} Airport ${targetCity} ${iata || ''}`);
+    add(`Flughafen ${baseName}`);
+    add(`${baseName} Airport`);
+    add(`Flughafen ${targetCity} ${iata ? `(${iata})` : ''}`);
+    add(`${targetCity} Airport ${iata || ''}`);
+  } else {
+    const mainPlace = targetCity || baseName || rawName;
+    add(`Flughafen ${mainPlace} ${iata ? `(${iata})` : ''}`);
+    add(`${mainPlace} Airport ${iata || ''}`);
+    add(`Flughafen ${mainPlace}`);
+    add(`${mainPlace} Airport`);
+  }
+
+  if (iata) {
+    add(`Airport ${iata}`);
+    add(`Flughafen ${iata}`);
+  }
+
+  add(rawWithAirport);
+
+  return queries;
+}
+
 /**
  * Erzeugt eine kaskadierende Liste von Suchanfragen vom Spezifischen zum Allgemeinen.
  * Beispiel:
@@ -564,6 +731,10 @@ async function queryCommonsImages(
  * 3. "Trinkteufel" (Basis-Name als Fallback)
  */
 export function buildSearchQueries(rawName: string, city?: string, category?: string): string[] {
+  if (isAirportQuery(rawName, category)) {
+    return buildAirportSearchQueries(rawName, city);
+  }
+
   const queries: string[] = [];
 
   const add = (q: string) => {
@@ -742,7 +913,10 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
 
     // 2b. Textsuche nach Name (+ Stadt) auf Wikipedia
     if (photos.length < limit) {
-      const searchQuery = [rawName, city].filter(Boolean).join(' ');
+      const isAirport = isAirportQuery(rawName, category);
+      const searchQuery = isAirport
+        ? buildAirportSearchQueries(rawName, city)[0] || [rawName, city].filter(Boolean).join(' ')
+        : [rawName, city].filter(Boolean).join(' ');
       for (const lang of languages) {
         if (photos.length >= limit) break;
         const pages = await queryWiki(lang, {
@@ -768,10 +942,13 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
 
     // 2c. Direkte Bildsuche auf Wikimedia Commons
     if (photos.length < limit) {
-      const commonsQueries = [[rawName, city].filter(Boolean).join(' '), rawName];
+      const isAirport = isAirportQuery(rawName, category);
+      const commonsQueries = isAirport
+        ? buildAirportSearchQueries(rawName, city)
+        : [[rawName, city].filter(Boolean).join(' '), rawName];
       for (const cq of commonsQueries) {
         if (photos.length >= limit) break;
-        const commonsPhotos = await queryCommonsImages(cq, limit - photos.length, seen);
+        const commonsPhotos = await queryCommonsImages(cq, limit - photos.length, seen, isAirport);
         for (const cp of commonsPhotos) {
           photos.push(cp);
         }

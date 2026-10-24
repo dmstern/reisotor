@@ -92,7 +92,11 @@ const isSearching = computed(() => isSearchingAction.value !== null);
 const searchMessage = ref<string | null>(null);
 
 const searchQuery = ref(buildDefaultImageSearchQuery(props.searchContext));
-const lastSearchedQuery = ref(buildDefaultImageSearchQuery(props.searchContext));
+const lastSearchedQuery = ref(
+  props.initialSuggestions && props.initialSuggestions.length > 0
+    ? buildDefaultImageSearchQuery(props.searchContext)
+    : ''
+);
 
 watch(
   () => [props.searchContext?.name, props.searchContext?.city, props.searchContext?.category],
@@ -100,7 +104,9 @@ watch(
     if (!showModal.value) {
       const q = buildDefaultImageSearchQuery(props.searchContext);
       searchQuery.value = q;
-      lastSearchedQuery.value = q;
+      if (suggestions.value.length === 0) {
+        lastSearchedQuery.value = '';
+      }
     }
   }
 );
@@ -111,7 +117,9 @@ watch(
     if (isOpen) {
       const q = buildDefaultImageSearchQuery(props.searchContext);
       searchQuery.value = q;
-      lastSearchedQuery.value = q;
+      if (suggestions.value.length === 0) {
+        lastSearchedQuery.value = '';
+      }
       searchMessage.value = null;
     }
   }
@@ -146,6 +154,9 @@ watch(
   () => props.initialSuggestions,
   (val) => {
     syncSuggestions(val);
+    if (!val || val.length === 0) {
+      lastSearchedQuery.value = '';
+    }
   },
   { immediate: true }
 );
@@ -337,9 +348,16 @@ async function nextSuggestion() {
   emit('update:modelValue', suggestions.value[currentIndex.value]);
 }
 
-function prevSuggestion() {
+async function prevSuggestion() {
   if (isSearching.value || isUploading.value) return;
   searchMessage.value = null;
+
+  const currentTerm = searchQuery.value.trim();
+  if (currentTerm !== lastSearchedQuery.value) {
+    await executeSearch(currentTerm, 'query');
+    return;
+  }
+
   if (currentIndex.value > 0) {
     currentIndex.value--;
     emit('update:modelValue', suggestions.value[currentIndex.value]);
