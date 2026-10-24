@@ -95,7 +95,11 @@ const emit = defineEmits<{
 
 .coords-sparkle-btn,
 .sparkle-suggest-btn--coords {
-  position: static;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
   transform: none;
   margin-left: auto;
   flex-shrink: 0;

@@ -320,6 +320,45 @@ describe('CoverImagePicker component', () => {
     cleanUp();
   });
 
+  it('triggers custom search when search query changed and user clicks prev suggestion', async () => {
+    const onUpdateModelValue = vi.fn();
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Flughafen Lissabon',
+      imageUrl: 'https://example.com/lisbon_airport.jpg',
+      images: ['https://example.com/lisbon_airport.jpg'],
+    });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: 'https://example.com/item2.jpg',
+      initialSuggestions: ['https://example.com/item1.jpg', 'https://example.com/item2.jpg'],
+      searchContext: { name: 'Lissabon (LIS)' },
+      'onUpdate:modelValue': onUpdateModelValue,
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const searchInput = document.querySelector('.browse-search-input') as HTMLInputElement;
+    searchInput.value = 'Lissabon (LIS) Flughafen';
+    searchInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    const prevBtn = document.querySelector(
+      '.browse-buttons button[title*="vorherigen"]'
+    ) as HTMLButtonElement;
+    await prevBtn.click();
+    await nextTick();
+    await nextTick();
+
+    expect(api.get).toHaveBeenCalledWith(
+      expect.stringContaining('/spots/preview?name=Lissabon+%28LIS%29+Flughafen')
+    );
+    expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/lisbon_airport.jpg');
+
+    cleanUp();
+  });
+
   it('displays message when search finds no images', async () => {
     vi.mocked(api.get).mockResolvedValueOnce({
       name: 'UnbekannterOrtXYZ',
@@ -350,6 +389,33 @@ describe('CoverImagePicker component', () => {
 
     const msg = document.querySelector('.browse-msg');
     expect(msg?.textContent).toContain('Keine Bilder für „UnbekannterOrtXYZ“ gefunden.');
+
+    cleanUp();
+  });
+
+  it('renders loading overlay with spinner and default text when loading is true', () => {
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      loading: true,
+    });
+
+    const overlay = container.querySelector('.banner-loading-overlay');
+    expect(overlay).not.toBeNull();
+    expect(overlay?.textContent).toContain('Bild wird gesucht…');
+    expect(container.querySelector('.banner-edit-btn')).toBeNull();
+
+    cleanUp();
+  });
+
+  it('customizes loadingText when provided', () => {
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      loading: true,
+      loadingText: 'Flughafenbild wird geladen…',
+    });
+
+    const overlay = container.querySelector('.banner-loading-overlay');
+    expect(overlay?.textContent).toContain('Flughafenbild wird geladen…');
 
     cleanUp();
   });

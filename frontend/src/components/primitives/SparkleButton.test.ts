@@ -59,6 +59,16 @@ describe('SparkleButton primitive', () => {
     expect(btn.classList.contains('sparkle-suggest-btn--address')).toBe(true);
     expect(btn.classList.contains('custom-sparkle')).toBe(true);
     cleanUp();
+
+    const { container: coordsContainer, cleanUp: cleanUpCoords } = mountSparkle({
+      variant: 'coords',
+      dataTestid: 'sparkle-coords-btn',
+    });
+    const coordsBtn = coordsContainer.querySelector(
+      '[data-testid="sparkle-coords-btn"]'
+    ) as HTMLButtonElement;
+    expect(coordsBtn.classList.contains('sparkle-suggest-btn--coords')).toBe(true);
+    cleanUpCoords();
   });
 
   it('handles click events when not disabled', () => {

@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   fetchPlacePhoto,
+  fetchPlacePhotos,
   searchWebPlacePhoto,
   clearPhotoCache,
   isGoodPhoto,
   isTitleMatch,
   buildPhotoCacheKey,
   buildSearchQueries,
+  buildAirportSearchQueries,
+  isAirportQuery,
 } from '../../src/utils/placePhoto.js';
 
 describe('placePhoto utility', () => {
@@ -61,6 +64,33 @@ describe('placePhoto utility', () => {
       expect(isTitleMatch('Steve Franken', 'Franken Bar')).toBe(false);
       expect(isTitleMatch('Steve Franken', 'Franken', 'Berlin')).toBe(false);
     });
+
+    it('rejects general city articles when searching for a specific facility like airport or station', () => {
+      expect(isTitleMatch('Lissabon', 'Lissabon (LIS) Flughafen', 'Lissabon')).toBe(false);
+      expect(isTitleMatch('Lissabon', 'Flughafen Lissabon', 'Lissabon')).toBe(false);
+      expect(isTitleMatch('Berlin', 'Berlin Hauptbahnhof', 'Berlin')).toBe(false);
+    });
+
+    it('matches facility articles even with reversed word order or official prefix', () => {
+      expect(isTitleMatch('Flughafen Lissabon', 'Lissabon (LIS) Flughafen', 'Lissabon')).toBe(true);
+      expect(
+        isTitleMatch('Flughafen Humberto Delgado Lissabon', 'Lissabon (LIS) Flughafen', 'Lissabon')
+      ).toBe(true);
+    });
+  });
+
+  describe('isAirportQuery', () => {
+    it('detects airport intent from keywords, categories, and IATA codes', () => {
+      expect(isAirportQuery('Lissabon (LIS) Flughafen')).toBe(true);
+      expect(isAirportQuery('Lissabon (LIS)')).toBe(true);
+      expect(isAirportQuery('Berlin (BER)')).toBe(true);
+      expect(isAirportQuery('Airport JFK')).toBe(true);
+      expect(isAirportQuery('Aeroporto de Lisboa')).toBe(true);
+      expect(isAirportQuery('Lissabon', 'Flughafen')).toBe(true);
+      expect(isAirportQuery('Lissabon', 'Airport')).toBe(true);
+      expect(isAirportQuery('Lissabon', 'Ausflugsziel')).toBe(false);
+      expect(isAirportQuery('Stephansdom', 'Kirche')).toBe(false);
+    });
   });
 
   describe('buildPhotoCacheKey', () => {
@@ -101,6 +131,25 @@ describe('placePhoto utility', () => {
 
       const barQueries = buildSearchQueries('Else Bar Berlin', 'Berlin', 'Bar');
       expect(barQueries).toEqual(['Else Bar Berlin', 'Else Berlin', 'Else']);
+    });
+
+    it('generates focused airport queries without degrading to bare city names', () => {
+      const airportQueries = buildSearchQueries(
+        'Lissabon (LIS) Flughafen',
+        'Lissabon',
+        'Flughafen'
+      );
+      expect(airportQueries).toContain('Flughafen Lissabon (LIS)');
+      expect(airportQueries).toContain('Lissabon Airport LIS');
+      expect(airportQueries).toContain('Airport LIS');
+      // Must NOT contain bare "Lissabon" or "(LIS)"
+      expect(airportQueries).not.toContain('Lissabon');
+      expect(airportQueries).not.toContain('(LIS)');
+
+      const codeQueries = buildSearchQueries('Lissabon (LIS)');
+      expect(codeQueries).toContain('Flughafen Lissabon (LIS)');
+      expect(codeQueries).toContain('Lissabon Airport LIS');
+      expect(codeQueries).not.toContain('Lissabon');
     });
   });
 
@@ -564,6 +613,35 @@ describe('placePhoto utility', () => {
       expect(photo2).toBeNull();
       // Should retry fetch because empty results are not cached for 24h
       expect(fetchMock).toHaveBeenCalled();
+    });
+
+    it('filters out generic city photos and prefers actual airport photos when searching for airports', async () => {
+      const fetchMock = vi.fn((url: string) => {
+        if (url.includes('bing.com')) {
+          return Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div class="iusc" m="{&quot;murl&quot;:&quot;https://example.com/castelo.jpg&quot;,&quot;turl&quot;:&quot;https://ts1.mm.bing.net/th?id=castelo&quot;,&quot;t&quot;:&quot;Castelo de Sao Jorge Lissabon Panorama&quot;,&quot;purl&quot;:&quot;https://lisbon-guide.com/castelo&quot;}"></div>
+                 <div class="iusc" m="{&quot;murl&quot;:&quot;https://example.com/belem.jpg&quot;,&quot;turl&quot;:&quot;https://ts2.mm.bing.net/th?id=belem&quot;,&quot;t&quot;:&quot;Torre de Belem Lissabon Wahrzeichen&quot;,&quot;purl&quot;:&quot;https://lisbon-guide.com/belem&quot;}"></div>
+                 <div class="iusc" m="{&quot;murl&quot;:&quot;https://example.com/airport.jpg&quot;,&quot;turl&quot;:&quot;https://ts3.mm.bing.net/th?id=airport&quot;,&quot;t&quot;:&quot;Flughafen Lissabon Humberto Delgado Terminal LIS&quot;,&quot;purl&quot;:&quot;https://lisbon-airport.com/terminal&quot;}"></div>`
+              ),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const photos = await fetchPlacePhotos({
+        name: 'Lissabon (LIS) Flughafen',
+        city: 'Lissabon',
+        category: 'Flughafen',
+      });
+
+      // City attractions (Castelo, Belem) must be filtered out; airport photo must be returned
+      expect(photos).toContain('https://ts3.mm.bing.net/th?id=airport&w=1000');
+      expect(photos).not.toContain('https://ts1.mm.bing.net/th?id=castelo&w=1000');
+      expect(photos).not.toContain('https://ts2.mm.bing.net/th?id=belem&w=1000');
     });
   });
 });
