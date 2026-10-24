@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
@@ -85,6 +85,12 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
     drawers.clearPendingSchedule();
     returnToCard(pending.kind, pending.id);
   }
+
+  function onEscape(event: KeyboardEvent) {
+    if (event.key === 'Escape' && drawers.pendingSchedule) cancelPendingSchedule();
+  }
+  onMounted(() => document.addEventListener('keydown', onEscape));
+  onBeforeUnmount(() => document.removeEventListener('keydown', onEscape));
 
   function onDropExcursion(date: string, excursionId: number) {
     excursionsStore.setDate(excursionId, date);
