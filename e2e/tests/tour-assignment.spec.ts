@@ -9,8 +9,8 @@ const seeded = JSON.parse(
 );
 
 // Regressionsnetz für den zentralen Kern-Ablauf des Spots/Touren-Redesigns (siehe CLAUDE.md,
-// "Standardverhalten, nicht Ausnahme"): man kann einen Spot entweder per "Tour zuordnen"-Combobox
-// (TourAssignPicker.vue) direkt im Spot-Formular ohne Reihenfolge einer Tour zuordnen, oder über
+// "Standardverhalten, nicht Ausnahme"): man kann einen Spot entweder per "Tour zuordnen"-Pop-over
+// (TourAssignDropdown.vue) direkt im Spot-Formular ohne Reihenfolge einer Tour zuordnen, oder über
 // den Drag&Drop-Reihenfolge-Editor (SpotOrderPicker.vue, inkl. Mehrfachbesuch derselben Station) im
 // Touren-Formular - beide Wege schreiben in dasselbe Excursion.spot_ids-Feld, das ist der
 // eigentliche Punkt dieses Tests, kein UI-Detail. Seit dem Zurückbau des früheren "erweiterten
@@ -45,14 +45,16 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
 
     await modal.locator('.collapsible-toggle', { hasText: 'Einplanen' }).click();
 
-    // Tour-Titel tippen und per Enter (#207: eigener "Hinzufügen"-Button des TourAssignPicker
-    // entfernt, klebte als Listeneintrag zu eng am Formular-Submit-Button gleichen Namens) als Chip
-    // übernehmen - ein bislang unbekannter Titel legt beim Speichern eine neue Tour an (siehe
-    // ExcursionsView.vue's syncSpotTours()).
-    const tourInput = modal.locator('.tour-assign-picker input[type="text"]');
+    // Tour über das "Tour zuordnen"-Pop-over anlegen und zuordnen (TourAssignDropdown):
+    await modal.locator('.tour-assign-btn').click();
+    const tourPopup = page.locator('.tour-assign-popup');
+    await expect(tourPopup).toBeVisible();
+    const tourInput = tourPopup.locator('.create-tour-input');
     await tourInput.fill(tourTitle);
     await tourInput.press('Enter');
     await expect(modal.locator('.tour-chip', { hasText: tourTitle })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(tourPopup).toBeHidden();
 
     await modal.locator('form.edit-form button[type="submit"]').click();
     await expect(modal).toBeHidden();

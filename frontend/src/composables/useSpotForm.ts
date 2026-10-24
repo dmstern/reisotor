@@ -17,6 +17,7 @@ import { isEmptyRichText } from '../utils/richText';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 import type LocationPicker from '../components/LocationPicker.vue';
 import type { PlaceSearchResult } from '../components/LocationPicker.vue';
+import type { TourItem } from '../components/TourAssignDropdown.vue';
 
 export interface SpotFormData {
   title: string;
@@ -434,6 +435,47 @@ export function useSpotForm(options: UseSpotFormOptions) {
       editSpotForm.value.tourTitles = editSpotForm.value.tourTitles.filter((t) => t !== title);
     } else {
       spotForm.value.tourTitles = spotForm.value.tourTitles.filter((t) => t !== title);
+    }
+  }
+
+  const modalTourAssignments = computed<TourItem[]>(() => {
+    return excursionsStore.excursions.map((e) => ({
+      id: e.id,
+      title: e.title,
+      assigned: activeSpotForm.value.tourTitles.some(
+        (t) => t.toLowerCase() === e.title.toLowerCase()
+      ),
+    }));
+  });
+
+  function toggleTourAssignment(tourId: number) {
+    const tour = excursionsStore.excursions.find((e) => e.id === tourId);
+    if (!tour) return;
+    const titles =
+      editingSpot.value !== null ? editSpotForm.value.tourTitles : spotForm.value.tourTitles;
+    const index = titles.findIndex((t) => t.toLowerCase() === tour.title.toLowerCase());
+    if (index >= 0) {
+      titles.splice(index, 1);
+    } else {
+      titles.push(tour.title);
+    }
+  }
+
+  async function createTourAssignment(title: string) {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    const existing = excursionsStore.excursions.find(
+      (e) => e.title.toLowerCase() === trimmed.toLowerCase()
+    );
+    const titles =
+      editingSpot.value !== null ? editSpotForm.value.tourTitles : spotForm.value.tourTitles;
+    if (existing) {
+      if (!titles.some((t) => t.toLowerCase() === existing.title.toLowerCase())) {
+        titles.push(existing.title);
+      }
+    } else {
+      const created = await excursionsStore.create({ title: trimmed });
+      titles.push(created.title);
     }
   }
 
@@ -934,6 +976,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
     allTourTitles,
     tourTitlesFor,
     removeTourTitle,
+    modalTourAssignments,
+    toggleTourAssignment,
+    createTourAssignment,
     getTourDate,
     isTourTravel,
     onSpotMapsLinkUpdate,

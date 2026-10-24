@@ -212,7 +212,7 @@ export interface Excursion {
    *  einem Rundgang) – seit Unterkunft/Reise-Orte längst normale Spots sind, ist eine Tour-Station
    *  IMMER ein echter Spot (siehe Migrationskommentar in db/index.ts). Reihenfolge/Mehrfachbesuch
    *  lassen sich per Drag&Drop im Touren-Formular editieren (SpotOrderPicker.vue,
-   *  ExcursionsView.vue); TourAssignPicker.vue bietet daneben einen schnelleren Weg, einen Spot
+   *  ExcursionsView.vue); TourAssignDropdown.vue bietet daneben einen schnelleren Weg, einen Spot
    *  ohne Reihenfolge einer Tour zuzuordnen. Bei gesetzter `role` (siehe unten) mindestens zwei
    *  Stationen (Von/Nach). */
   spot_ids: number[];

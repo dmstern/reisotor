@@ -12,7 +12,7 @@ import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import LocationPicker from './LocationPicker.vue';
 import CoverImagePicker from './CoverImagePicker.vue';
 import RichTextEditor from './RichTextEditor.vue';
-import TourAssignPicker from './TourAssignPicker.vue';
+import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
@@ -93,7 +93,9 @@ const {
   addScheduleMenuStyle,
   toggleAddSchedulePopover,
   submitAddSpotToDate,
-  allTourTitles,
+  modalTourAssignments,
+  toggleTourAssignment,
+  createTourAssignment,
   removeTourTitle,
   getTourDate,
   isTourTravel,
@@ -406,9 +408,14 @@ function handleOpenScheduledItem(item: ScheduleItem) {
           Ordne den Spot einer Tour zu oder plane ihn direkt für ein Datum ein (ohne Tour).
         </p>
 
-        <!-- Oben: Datum-Hinzufügen-Button (nur im Edit-Modus) & Tour-zuordnen-Combobox -->
+        <!-- Oben: Tour zuordnen (Pop-over) & Datum-Hinzufügen-Button (nur im Edit-Modus) -->
         <div class="schedule-controls">
           <div v-if="editingSpot !== null" class="schedule-actions-row">
+            <TourAssignDropdown
+              :tours="modalTourAssignments"
+              @toggle-tour="toggleTourAssignment"
+              @create-tour="createTourAssignment"
+            />
             <button
               ref="addScheduleBtnRef"
               type="button"
@@ -467,21 +474,20 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               </template>
             </Teleport>
           </div>
-          <div v-else class="new-spot-schedule-row">
-            <FormField icon="date" label="Direkt für Datum einplanen">
-              <Input type="date" v-model="spotForm.scheduledDate" placeholder="Datum auswählen" />
-            </FormField>
+          <div v-else class="new-spot-schedule-controls">
+            <div class="new-spot-schedule-row">
+              <FormField icon="date" label="Direkt für Datum einplanen">
+                <Input type="date" v-model="spotForm.scheduledDate" placeholder="Datum auswählen" />
+              </FormField>
+            </div>
+            <div class="new-spot-tour-row">
+              <TourAssignDropdown
+                :tours="modalTourAssignments"
+                @toggle-tour="toggleTourAssignment"
+                @create-tour="createTourAssignment"
+              />
+            </div>
           </div>
-
-          <!-- Tour zuordnen (Combobox, in beiden Modi: Neu + Edit) -->
-          <TourAssignPicker
-            v-model="activeSpotForm.tourTitles"
-            :tour-options="allTourTitles"
-            :category="activeSpotForm.category"
-            :is-home="activeSpotForm.is_home"
-            :hide-chips="true"
-            :hide-hint="true"
-          />
         </div>
 
         <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
@@ -692,15 +698,26 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   gap: var(--space-2);
 }
 
+.schedule-actions-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.new-spot-tour-row {
+  display: flex;
+  align-items: center;
+}
+
 .add-schedule-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  align-self: flex-start;
-  padding: 5px 12px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  font-size: 0.82rem;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  font-size: 0.72rem;
   font-weight: 500;
   border: 1px dashed var(--color-border-strong);
   background: var(--color-hover);
