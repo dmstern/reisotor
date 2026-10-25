@@ -185,8 +185,6 @@ sequenceDiagram
 
 ---
 
----
-
 ### Die 6 Fachdomänen
 
 Um das Kontextfenster zu schonen, wird die Anwendung in 6 klar abgegrenzte Domänen aufgeteilt:
@@ -271,8 +269,8 @@ STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
 - Sei schonungslos objektiv: Bestätige nicht einfach, dass alles gut aussieht, sondern suche aktiv nach Enge-Problemen, abgeschnittenen Popovers, falschen Z-Indizes und fehlenden Hover-Effekten.
 
 Vorgehensweise:
-1. Starte den fokussierten E2E-Layout-Check:
-   AUDIT_ROUTE=<route> npm run test:audit
+1. Starte den fokussierten E2E-Layout-Check (bei Multi-Routen-Teams komma-separiert):
+   AUDIT_ROUTE=<route1,route2> npm run test:audit
 2. Untersuche den Quellcode der relevanten Vue-Komponenten auf die 5 Prüf-Dimensionen:
    - Enge-Resilienz (320px / 390px: Zahlen, Badges, Tabellen, nowrap vs. wrap)
    - Overlays & Popovers (Z-Index, Clipping bei overflow: hidden, Teleport-Nutzung)
@@ -341,11 +339,9 @@ Release Audit Gate
 Führe das finale Release-Gate durch, um die Stabilität und Sauberkeit des Releases zu zertifizieren.
 
 Prüfschritte:
-1. Gesamte Typprüfung: npm run typecheck:all
-2. Code-Style & Linter: npm run lint && npm run format:check
-3. Barrierefreiheit: npm run test:a11y
-4. Release-Notes-Integrität: npm run check:release-notes
-5. Layout-Regressionen: AUDIT_ROUTE=/trip/1 npm run test:audit
+1. Statisches Gesamt-Gate (Lint, Format, Release-Notes, Typecheck Frontend & Backend): npm run check
+2. Barrierefreiheit (Axe): npm run test:a11y
+3. Layout-Regressionen: AUDIT_ROUTE=/trip/1 npm run test:audit
 
 Ergebnis:
 Gib eine klare Bestätigung im Chat aus:
