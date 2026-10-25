@@ -129,40 +129,4 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
 
     await context.close();
   });
-
-  // Regressionstest für utils/offlineMapTiles.ts (Task: Kartenmaterial vorab für den "totalen"
-  // Offline-Fall herunterladen, bevor man tatsächlich offline ist) - derselbe Mock-Ansatz wie oben
-  // (echte Requests gegen tile.openstreetmap.org verbietet deren Nutzungsrichtlinie), hier zusätzlich
-  // ein Dialog-Handler für den window.confirm()-Bestätigungsdialog vor dem eigentlichen Download.
-  test('sichtbarer Kartenausschnitt lässt sich vorab für die Offline-Nutzung herunterladen', async ({
-    browser,
-  }) => {
-    test.setTimeout(60_000);
-    const context = await newContextWithReducedMotion(browser, { storageState: authFile });
-    await context.route('https://*.tile.openstreetmap.org/**/*.png', (route) =>
-      route.fulfill({ status: 200, contentType: 'image/png', body: FAKE_TILE_PNG })
-    );
-    const page = await context.newPage();
-    page.on('dialog', (dialog) => dialog.accept());
-
-    await page.goto(previewUrl + '/excursions');
-    await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true));
-    await page.reload();
-    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
-    await page.waitForSelector('.leaflet-container');
-
-    await page.locator('.offline-download-btn').click();
-    await expect(page.locator('.tile-download-pill')).toContainText('offline gespeichert', {
-      timeout: 45_000,
-    });
-    await expect(page.locator('.tile-download-pill')).not.toContainText('fehlgeschlagen');
-
-    await page
-      .locator('.tile-download-pill', { hasText: 'offline gespeichert' })
-      .locator('button')
-      .evaluate((btn: HTMLElement) => btn.click());
-    await expect(page.locator('.tile-download-pill')).toHaveCount(0);
-
-    await context.close();
-  });
 });

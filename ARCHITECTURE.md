@@ -146,6 +146,10 @@ vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
   (siehe `e2e/tests/offline-app-shell.spec.ts`). `components/NotificationInbox.vue` (gespeist aus
   `stores/pwaUpdate.ts`) zeigt einen Hinweis, wenn eine neue Version bereitsteht bzw. einmalig,
   dass die App jetzt offline nutzbar ist.
+- _Kartenkacheln-Ebene (OSM)_: In `public/sw.js` fängt eine `CacheFirst`-Route Requests gegen
+  `*.tile.openstreetmap.org` ab und cacht einmal angezeigte Kacheln für 30 Tage (bis zu 10.000 Einträge).
+  Zur strikten Einhaltung der OSM Tile Usage Policy (Verbot von Bulk-Downloads und Prefetching)
+  erfolgt das Caching rein passiv beim Betrachten der Karte ohne aktiven Vorab-Massen-Download.
 
 ## Anhänge
 

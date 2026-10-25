@@ -24,7 +24,6 @@ interface Props {
   isMemberOnline?: (id: number) => boolean;
   hasMemberPosition?: (id: number) => boolean;
   mapOrientationMode?: 'north' | 'heading';
-  tileDownloadState?: 'idle' | 'downloading' | 'done';
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -33,7 +32,6 @@ const props = withDefaults(defineProps<Props>(), {
   isMemberOnline: () => false,
   hasMemberPosition: () => false,
   mapOrientationMode: 'north',
-  tileDownloadState: 'idle',
 });
 
 const emit = defineEmits<{
@@ -46,7 +44,6 @@ const emit = defineEmits<{
   (e: 'jump-my-location'): void;
   (e: 'jump-member-location', memberId: number): void;
   (e: 'set-orientation-mode', mode: 'north' | 'heading'): void;
-  (e: 'download-offline-map'): void;
 }>();
 
 const activeMembersWithPosition = computed(() =>
@@ -89,17 +86,6 @@ const {
     aria-label="Kartenausschnitt & Ausrichtung"
     :icon="MAP_TOOL_ICONS.focusGroup"
     @click="toggleFocusMenu($event)"
-  />
-
-  <IconButton
-    variant="floating"
-    shape="circle"
-    class="fit-btn offline-download-btn"
-    title="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
-    aria-label="Sichtbaren Kartenausschnitt für die Offline-Nutzung herunterladen"
-    :disabled="tileDownloadState === 'downloading'"
-    :icon="ACTION_ICONS.download"
-    @click="emit('download-offline-map')"
   />
 
   <!-- Standort-Freigabe (stores/locationSharing.ts) -->
@@ -320,16 +306,12 @@ const {
   cursor: not-allowed;
 }
 
-.offline-download-btn {
+.share-location-btn {
   top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + var(--fit-btn-step));
 }
 
-.share-location-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 2 * var(--fit-btn-step));
-}
-
 .record-btn {
-  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 3 * var(--fit-btn-step));
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 2 * var(--fit-btn-step));
 }
 
 .share-location-btn.active,

@@ -30,10 +30,9 @@ registerRoute(
 // begrenzt das Wachstum, CacheableResponsePlugin lässt auch response type "opaque" (Cross-Origin
 // ohne CORS-Header) zu, ohne die (mit CORS-Headern versehene) Antwort des OSM-Tile-Servers
 // fälschlich als Fehler zu behandeln.
-// maxEntries großzügig bemessen (statt z. B. 500): utils/offlineMapTiles.ts lädt auf Wunsch gezielt
-// den sichtbaren Kartenausschnitt über mehrere Zoomstufen vorab herunter (für den "totalen"
-// Offline-Fall) - das kann leicht in die Tausende Kacheln gehen; ein zu knapper Deckel würde gerade
-// erst heruntergeladene Kacheln durch die eigene Downloadschleife selbst wieder verdrängen.
+// Passives Caching: Beim normalen Betrachten der Karte abgerufene Kacheln bleiben dank CacheFirst
+// offline erhalten (OSM Tile Usage Policy konform: rein passives Caching ohne Bulk-Prefetch).
+// ExpirationPlugin begrenzt den Speicher auf max. 10.000 Einträge über 30 Tage.
 registerRoute(
   ({ url }) =>
     url.hostname.endsWith('.tile.openstreetmap.org') && /\/\d+\/\d+\/\d+\.png$/.test(url.pathname),
