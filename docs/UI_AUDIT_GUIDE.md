@@ -184,6 +184,26 @@ Jeder Prüfdurchlauf analysiert systematisch folgende fünf Kriterien:
 
 ---
 
+### Einstiegs-Phrasen & Verhalten bei allgemeiner Aufforderung
+
+Fällt im Chat eine allgemeine Aufforderung wie:
+
+- _„Mach ein Pre-Release-Audit“_
+- _„Pre-Release Audit starten“_
+- _„Wir bereiten ein Release vor, auditier mal die App“_
+
+**Striktes Protokoll für den Agenten:**
+
+1. **Kein blinder Komplettdurchlauf:** Der Agent darf **niemals unaufgefordert alle 6 Teams auf einmal** in einer Session abfeuern (Gefahr von Kontext-Kollaps und Sycophancy).
+2. **Git-Delta ermitteln:** Er ermittelt per Git, welche Frontend-Bereiche seit dem letzten Release-Tag tatsächlich verändert wurden:
+   `git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`
+3. **Fokussierte Empfehlung & Roadmap:** Er ordnet die Änderungen den betroffenen Teams zu (z. B. _„Seit v1.3.0 wurden vor allem Finanzen (Team 5) und Notizen/Listen (Team 4) verändert“_) und schlägt vor:
+   - **Gezielter Check (Empfohlen):** Nur die veränderten Teams durchlaufen (spart massiv Tokens und Zeit).
+   - **Vollständiger Meilenstein-Check:** Schrittweise von Team 1 bis 6.
+4. **Sofortige Führung:** Der Agent schlägt direkt den ersten konkreten Schritt vor oder startet auf Bestätigung mit Phase 0 (`Release Audit Assess: Team <X>`).
+
+---
+
 ### Kurz-Trigger für das Release-Gate
 
 | Phase       | Kurz-Trigger                            | Beschreibung                                                                                             |

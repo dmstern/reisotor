@@ -48,6 +48,7 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
 - **Prompt-Vorlagen & modulares Refactoring (Phasen 0 bis 4):** `docs/AUDIT_PROMPTS.md` (Triage & Zielbild, Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Stabilitäts-Gate).
   - **Kurz-Trigger für Pre-Release-Stabilitäts-Gate (`docs/UI_AUDIT_GUIDE.md`):**
+    - Allgemeine Einstiegs-Phrasen wie _„Mach ein Pre-Release Audit“_: Agent prüft geänderte Frontend-Dateien seit letztem Tag per `git log`, ordnet sie den Teams 1–6 zu, empfiehlt den fokussierten Pfad und startet strukturiert mit Phase 0 des ersten betroffenen Teams (kein blinder Komplettdurchlauf!).
     - `Release Audit Assess: <Team | Route>` (Phase 0: Reine Inspektion & Triage, Read-Only, kein Codeumbau, Ampel-Befundtabelle 🔴/🟡/🟢)
     - `Release Audit Fix: <Team | Route>` (Phase 2: Chirurgische, minimal-invasive CSS-/Token-Fixes freigegebener Befunde; keine Architektur-Refactorings)
     - `Release Audit Gate` (Phase 3: Finales Zertifikat via Typecheck, Lint, A11y, Release-Notes & E2E)
