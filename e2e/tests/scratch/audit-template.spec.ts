@@ -53,6 +53,30 @@ test.describe(`Adversarial Layout Audit: ${targetRoute}`, () => {
         .first();
       await expect(mainContainer).toBeVisible();
 
+      // 3. Tab-Matrix: Falls Tabs vorhanden sind (z. B. TabBar in ListenView oder SettingsView), jeden Reiter durchschalten
+      const tabs = page.locator('.tab-bar [role="tab"], .tab-bar button.tab');
+      const tabCount = await tabs.count();
+      for (let i = 0; i < tabCount; i++) {
+        const tab = tabs.nth(i);
+        if (await tab.isVisible()) {
+          await tab.click();
+          await page.waitForTimeout(100);
+          await expectNoHorizontalOverflow(page);
+        }
+      }
+
+      // 4. Details / Accordion Matrix: Einklappbare Details öffnen und auf Overflow prüfen
+      const details = page.locator('details:not([open]) summary');
+      const detailsCount = await details.count();
+      for (let i = 0; i < Math.min(detailsCount, 3); i++) {
+        const summary = details.nth(i);
+        if (await summary.isVisible()) {
+          await summary.click();
+          await page.waitForTimeout(50);
+          await expectNoHorizontalOverflow(page);
+        }
+      }
+
       if (process.env.AUDIT_SCREENSHOTS) {
         await page.screenshot({ path: `tests/scratch/audit-${vp.name}.png`, fullPage: false });
       }

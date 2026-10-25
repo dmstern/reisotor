@@ -46,7 +46,11 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
 - `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
 - Bei gezielten UI-Audits: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen. **Nicht** bei normalen Bugfixes oder kleineren UI-Änderungen im Chat ausführen (erzeugt massive Test-Logs; für Standard-Änderungen reichen fokussierte Unit-Tests).
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
-- **Prompt-Vorlagen & modulares Refactoring (Phasen 0 bis 4):** `docs/AUDIT_PROMPTS.md` (Triage & Zielbild, Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Audit via Subagents).
+- **Prompt-Vorlagen & modulares Refactoring (Phasen 0 bis 4):** `docs/AUDIT_PROMPTS.md` (Triage & Zielbild, Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Stabilitäts-Gate).
+  - **Kurz-Trigger für Pre-Release-Stabilitäts-Gate (`docs/UI_AUDIT_GUIDE.md`):**
+    - `Release Audit Assess: <Team | Route>` (Phase 0: Reine Inspektion & Triage, Read-Only, kein Codeumbau, Ampel-Befundtabelle 🔴/🟡/🟢)
+    - `Release Audit Fix: <Team | Route>` (Phase 2: Chirurgische, minimal-invasive CSS-/Token-Fixes freigegebener Befunde; keine Architektur-Refactorings)
+    - `Release Audit Gate` (Phase 3: Finales Zertifikat via Typecheck, Lint, A11y, Release-Notes & E2E)
   - **Kurz-Trigger für Refactoring-Sessions (#446):**
     - `Refactor Assess: <datei>` (Phase 0: Triage & Zielbild vorab – prüft Sinnhaftigkeit, analysiert Orchestrator vs. God-Component, schützt vor Over-Modularization/Prop-Drilling und bestimmt den maßgeschneiderten Phasen-Pfad)
     - `Refactor Phase 1: <datei>` (Logik & Composables)

@@ -187,15 +187,41 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     const body = document.body;
     const scrollWidth = Math.max(doc.scrollWidth, body ? body.scrollWidth : 0);
     const clientWidth = doc.clientWidth;
+    const hasOverflow = scrollWidth > clientWidth + 1; // 1px Toleranz für Subpixel-Rundung
+
+    const culprits: string[] = [];
+    if (hasOverflow) {
+      const all = Array.from(document.querySelectorAll('*'));
+      for (const el of all) {
+        const r = el.getBoundingClientRect();
+        if (r.right > clientWidth + 1.5 && r.width > 0 && r.height > 0) {
+          const id = el.id ? `#${el.id}` : '';
+          const cls =
+            typeof el.className === 'string' && el.className.trim()
+              ? `.${el.className.trim().split(/\s+/).slice(0, 3).join('.')}`
+              : '';
+          culprits.push(
+            `${el.tagName.toLowerCase()}${id}${cls} [right=${Math.round(r.right)}px, w=${Math.round(r.width)}px]`
+          );
+          if (culprits.length >= 5) break;
+        }
+      }
+    }
+
     return {
       scrollWidth,
       clientWidth,
-      hasOverflow: scrollWidth > clientWidth + 1, // 1px Toleranz für Subpixel-Rundung
+      hasOverflow,
+      culprits,
     };
   });
   expect(
     overflow.hasOverflow,
-    `Horizontaler Overflow erkannt: scrollWidth (${overflow.scrollWidth}px) > clientWidth (${overflow.clientWidth}px)`
+    `Horizontaler Overflow erkannt: scrollWidth (${overflow.scrollWidth}px) > clientWidth (${overflow.clientWidth}px)${
+      overflow.culprits.length > 0
+        ? ` — Verursachende Elemente: ${overflow.culprits.join(', ')}`
+        : ''
+    }`
   ).toBe(false);
 }
 
