@@ -33,6 +33,7 @@ const form = ref<{ type: FeedbackType; title: string; description: string }>({
   title: props.initialTitle ?? '',
   description: props.initialDescription ?? '',
 });
+const contactEmail = ref('');
 const screenshot = ref<string | null>(null);
 const screenshotName = ref('');
 const submitting = ref(false);
@@ -40,14 +41,17 @@ const error = ref('');
 const result = ref<FeedbackResult | null>(null);
 
 const gitHubIssueUrl = computed(() => {
-  if (!error.value) return null;
   const baseUrl = buildInfoStore.buildInfo?.repoUrl ?? 'https://github.com/dmstern/reisotor';
   const params = new URLSearchParams();
   if (form.value.title.trim()) {
     params.set('title', form.value.title.trim());
   }
-  if (form.value.description.trim()) {
-    params.set('body', form.value.description.trim());
+  let body = form.value.description.trim();
+  if (contactEmail.value.trim()) {
+    body += `\n\n---\nKontakt: ${contactEmail.value.trim()}`;
+  }
+  if (body) {
+    params.set('body', body);
   }
   return `${baseUrl}/issues/new?${params.toString()}`;
 });
@@ -65,6 +69,7 @@ watch(
       title: props.initialTitle ?? '',
       description: props.initialDescription ?? '',
     };
+    contactEmail.value = '';
     screenshot.value = null;
     screenshotName.value = '';
     error.value = '';
@@ -98,6 +103,7 @@ async function submit() {
       title: form.value.title.trim(),
       description: form.value.description.trim(),
       screenshot: screenshot.value ?? undefined,
+      email: contactEmail.value.trim() || undefined,
     });
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Meldung konnte nicht gesendet werden.';
@@ -167,6 +173,17 @@ function close() {
           />
         </label>
 
+        <label for="feedback-contact-email">
+          <span class="label-text"> E-Mail für Rückfragen (optional) </span>
+          <Input
+            id="feedback-contact-email"
+            v-model="contactEmail"
+            type="email"
+            :maxlength="200"
+            placeholder="deine-adresse@beispiel.de"
+          />
+        </label>
+
         <label for="auto-id-1788301175436-6" v-if="!screenshot" class="upload-label">
           <input
             id="auto-id-1788301175436-6"
@@ -178,17 +195,22 @@ function close() {
           <AppIcon :icon="ACTION_ICONS.photoPlus" :size="14" group="actions" /> Screenshot
           hinzufügen
         </label>
-        <div v-else class="screenshot-preview">
-          <img :src="screenshot" alt="" />
-          <span class="screenshot-name">{{ screenshotName }}</span>
-          <Button variant="secondary" size="sm" @click="removeScreenshot">Entfernen</Button>
+        <div v-else class="screenshot-preview-container">
+          <div class="screenshot-preview">
+            <img :src="screenshot" alt="" />
+            <span class="screenshot-name">{{ screenshotName }}</span>
+            <Button variant="secondary" size="sm" @click="removeScreenshot">Entfernen</Button>
+          </div>
+          <p class="screenshot-github-note">
+            Tipp: Bei „Auf GitHub öffnen“ kannst du Screenshots dort direkt per Copy &amp; Paste
+            einfügen.
+          </p>
         </div>
 
         <div v-if="error" class="error-container">
           <!-- eslint-disable-next-line vue/no-v-html -->
           <p class="hint error" v-html="renderRichText(error)"></p>
           <Button
-            v-if="gitHubIssueUrl"
             :href="gitHubIssueUrl"
             target="_blank"
             rel="noopener"
@@ -202,6 +224,17 @@ function close() {
         </div>
 
         <div class="actions-row">
+          <Button
+            :href="gitHubIssueUrl"
+            target="_blank"
+            rel="noopener"
+            variant="secondary"
+            class="btn-github-direct"
+            title="Meldung vorbereiten und direkt auf GitHub mit deinem Account einreichen"
+          >
+            <AppIcon :icon="ACTION_ICONS.share" :size="14" group="actions" />
+            Auf GitHub öffnen
+          </Button>
           <div class="spacer"></div>
           <Button type="button" variant="secondary" class="btn-cancel" @click="close">
             Abbrechen
@@ -288,6 +321,22 @@ label {
 
 .hidden-input {
   display: none;
+}
+
+.screenshot-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.screenshot-github-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.btn-github-direct {
+  text-decoration: none;
 }
 
 .screenshot-preview {

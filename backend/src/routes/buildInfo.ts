@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 interface ChangelogGroup {
@@ -24,14 +24,24 @@ interface BuildInfo {
 /** Von scripts/generate-build-info.mjs beim Build (npm run build / dev) geschrieben, siehe
  *  package.json — relativ zu process.cwd() statt import.meta.url, da dist/ nicht Teil des
  *  TypeScript-Kompiliervorgangs selbst ist (rootDir ist src/, siehe tsconfig.json). */
-function readBuildInfo(): BuildInfo {
+export function readBuildInfo(): BuildInfo {
   try {
     const raw = readFileSync(path.join(process.cwd(), 'dist', 'build-info.json'), 'utf-8');
     return JSON.parse(raw);
   } catch {
-    // Root-package.json ist die einzige Versionsquelle (siehe generate-build-info.mjs), process.cwd()
-    // ist backend/ - daher eine Ebene hoch.
-    const pkg = JSON.parse(readFileSync(path.join(process.cwd(), '..', 'package.json'), 'utf-8'));
+    // Root-package.json ist die einzige Versionsquelle (siehe generate-build-info.mjs)
+    let pkg: { version?: string } = {};
+    const localPkg = path.join(process.cwd(), 'package.json');
+    const parentPkg = path.join(process.cwd(), '..', 'package.json');
+    try {
+      if (existsSync(localPkg)) {
+        pkg = JSON.parse(readFileSync(localPkg, 'utf-8'));
+      } else if (existsSync(parentPkg)) {
+        pkg = JSON.parse(readFileSync(parentPkg, 'utf-8'));
+      }
+    } catch {
+      pkg = {};
+    }
     const env =
       process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development');
     const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? '' : '-dev';
