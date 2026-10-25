@@ -113,4 +113,32 @@ describe('FeedbackDialog', () => {
 
     cleanUp();
   });
+
+  it('renders "Auf GitHub öffnen" button with prefilled title, description and optional email', async () => {
+    const buildInfoStore = useBuildInfoStore();
+    buildInfoStore.buildInfo = {
+      version: '1.3.0',
+      ref: null,
+      builtAt: null,
+      changelog: null,
+      repoUrl: 'https://github.com/dmstern/reisotor',
+      hostingLocation: 'Berlin',
+      environment: 'production',
+    };
+
+    const { cleanUp } = mountDialog({
+      modelValue: true,
+      initialTitle: 'Mein Feedback',
+      initialDescription: 'Das ist mein Text',
+    });
+    await nextTick();
+
+    const directBtn = document.body.querySelector('.btn-github-direct') as HTMLAnchorElement | null;
+    expect(directBtn).toBeTruthy();
+    expect(directBtn?.href).toContain('https://github.com/dmstern/reisotor/issues/new');
+    expect(directBtn?.href).toContain('Mein+Feedback');
+    expect(directBtn?.href).toContain('Das+ist+mein+Text');
+
+    cleanUp();
+  });
 });

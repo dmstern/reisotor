@@ -220,9 +220,11 @@ describe('feedback routes', () => {
     expect(res.json().error).toBe('GitHub hat die Meldung abgelehnt (Status 422).');
   });
 
-  it('surfaces a 503 with self-hosting hint and repo link when GITHUB_TOKEN is unset', async () => {
+  it('surfaces a 503 with self-hosting hint and repo link when GITHUB_TOKEN is unset and relay forwarding is disabled', async () => {
     const savedToken = process.env.GITHUB_TOKEN;
+    const savedForwarding = process.env.FEEDBACK_RELAY_FORWARDING;
     delete process.env.GITHUB_TOKEN;
+    process.env.FEEDBACK_RELAY_FORWARDING = 'false';
     try {
       const cookie = await register('feedback-user-no-token', 'notoken@example.com');
       const res = await app.inject({
@@ -237,7 +239,235 @@ describe('feedback routes', () => {
       expect(res.json().error).toContain('https://github.com/someone/somerepo/issues');
     } finally {
       process.env.GITHUB_TOKEN = savedToken;
+      if (savedForwarding !== undefined) {
+        process.env.FEEDBACK_RELAY_FORWARDING = savedForwarding;
+      } else {
+        delete process.env.FEEDBACK_RELAY_FORWARDING;
+      }
     }
+  });
+
+  it('forwards feedback to central relay when GITHUB_TOKEN is unset', async () => {
+    const savedToken = process.env.GITHUB_TOKEN;
+    delete process.env.GITHUB_TOKEN;
+    let relayPayload: Record<string, unknown> | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init: RequestInit) => {
+        expect(url).toBe('https://reise.ruebenherz.de/api/feedback/relay');
+        relayPayload = JSON.parse(init.body as string);
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () =>
+            Promise.resolve({
+              issue_number: 42,
+              issue_url: 'https://github.com/dmstern/reisotor/issues/42',
+            }),
+        });
+      })
+    );
+
+    try {
+      const cookie = await register('feedback-user-forward', 'forward@example.com');
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/feedback',
+        headers: { cookie },
+        payload: {
+          type: 'feature',
+          title: 'Tolle Idee',
+          description: 'Mehr Sonne',
+          email: 'custom@example.com',
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      expect(res.json()).toEqual({
+        issue_number: 42,
+        issue_url: 'https://github.com/dmstern/reisotor/issues/42',
+      });
+      expect(relayPayload).toMatchObject({
+        type: 'feature',
+        title: 'Tolle Idee',
+        description: 'Mehr Sonne',
+        email: 'custom@example.com',
+      });
+      expect(relayPayload.version).toBeDefined();
+    } finally {
+      process.env.GITHUB_TOKEN = savedToken;
+    }
+  });
+
+  it('handles relay connection errors and 429 rate limit correctly', async () => {
+    const savedToken = process.env.GITHUB_TOKEN;
+    delete process.env.GITHUB_TOKEN;
+
+    // Netzwerkfehler
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('Network offline')))
+    );
+
+    try {
+      const cookie = await register('feedback-user-err', 'err@example.com');
+      const res502 = await app.inject({
+        method: 'POST',
+        url: '/api/feedback',
+        headers: { cookie },
+        payload: { type: 'bug', title: 'Offline Test', description: 'Etwas ist offline' },
+      });
+      expect(res502.statusCode).toBe(502);
+      expect(res502.json().error).toContain('Feedback-Relay');
+
+      // 429 Rate Limit vom Relay
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: false,
+            status: 429,
+            json: () => Promise.resolve({ error: 'Zu viele Meldungen' }),
+          })
+        )
+      );
+
+      const res429 = await app.inject({
+        method: 'POST',
+        url: '/api/feedback',
+        headers: { cookie },
+        payload: { type: 'bug', title: 'Rate Limit Test', description: 'Zu viele Meldungen' },
+      });
+      expect(res429.statusCode).toBe(429);
+      expect(res429.json().error).toBe('Zu viele Meldungen');
+    } finally {
+      process.env.GITHUB_TOKEN = savedToken;
+    }
+  });
+
+  describe('feedback relay route (POST /api/feedback/relay)', () => {
+    it('returns 404 when FEEDBACK_RELAY_ENABLED is not true', async () => {
+      const saved = process.env.FEEDBACK_RELAY_ENABLED;
+      delete process.env.FEEDBACK_RELAY_ENABLED;
+      try {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/api/feedback/relay',
+          payload: { type: 'bug', title: 'Test', description: 'Test' },
+        });
+        expect(res.statusCode).toBe(404);
+      } finally {
+        if (saved !== undefined) process.env.FEEDBACK_RELAY_ENABLED = saved;
+      }
+    });
+
+    it('enforces rate limiting on relay requests (max 5 per IP)', async () => {
+      const savedRelay = process.env.FEEDBACK_RELAY_ENABLED;
+      process.env.FEEDBACK_RELAY_ENABLED = 'true';
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                number: 1,
+                html_url: 'https://github.com/someone/somerepo/issues/1',
+              }),
+          })
+        )
+      );
+
+      try {
+        const payload = { type: 'bug', title: 'Rate Test', description: 'Test' };
+        for (let i = 0; i < 5; i++) {
+          const res = await app.inject({
+            method: 'POST',
+            url: '/api/feedback/relay',
+            payload,
+            remoteAddress: '10.0.0.99',
+          });
+          expect(res.statusCode).toBe(201);
+        }
+
+        // 6. Aufruf von gleicher IP muss 429 liefern
+        const limitedRes = await app.inject({
+          method: 'POST',
+          url: '/api/feedback/relay',
+          payload,
+          remoteAddress: '10.0.0.99',
+        });
+        expect(limitedRes.statusCode).toBe(429);
+        expect(limitedRes.headers['retry-after']).toBeDefined();
+        expect(limitedRes.json().error).toContain('Zu viele Feedback-Meldungen');
+      } finally {
+        if (savedRelay !== undefined) {
+          process.env.FEEDBACK_RELAY_ENABLED = savedRelay;
+        } else {
+          delete process.env.FEEDBACK_RELAY_ENABLED;
+        }
+      }
+    });
+
+    it('creates an issue with community-instance labels when relay is enabled', async () => {
+      const savedRelay = process.env.FEEDBACK_RELAY_ENABLED;
+      process.env.FEEDBACK_RELAY_ENABLED = 'true';
+
+      let issuePayload: { labels: string[]; body: string } | undefined;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string, init: RequestInit) => {
+          if (url.includes('/issues')) {
+            issuePayload = JSON.parse(init.body as string);
+            return Promise.resolve({
+              ok: true,
+              json: () =>
+                Promise.resolve({
+                  number: 99,
+                  html_url: 'https://github.com/someone/somerepo/issues/99',
+                }),
+            });
+          }
+          return Promise.resolve({ ok: true });
+        })
+      );
+
+      try {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/api/feedback/relay',
+          payload: {
+            type: 'bug',
+            title: 'Bug auf Raspberry Pi',
+            description: 'Fehler beim Laden',
+            version: 'v1.3.0',
+            email: 'raspi@example.com',
+          },
+        });
+
+        expect(res.statusCode).toBe(201);
+        expect(res.json()).toEqual({
+          issue_number: 99,
+          issue_url: 'https://github.com/someone/somerepo/issues/99',
+        });
+        expect(issuePayload.labels).toEqual([
+          'community-instance',
+          'needs-triage',
+          'bug',
+          'from-app',
+        ]);
+        expect(issuePayload.body).toContain('Fehler beim Laden');
+        expect(issuePayload.body).toContain('Externe Community-Instanz');
+        expect(issuePayload.body).toContain('`v1.3.0`');
+        expect(issuePayload.body).toContain('raspi@example.com');
+      } finally {
+        if (savedRelay !== undefined) {
+          process.env.FEEDBACK_RELAY_ENABLED = savedRelay;
+        } else {
+          delete process.env.FEEDBACK_RELAY_ENABLED;
+        }
+      }
+    });
   });
 
   it('requires authentication', async () => {
