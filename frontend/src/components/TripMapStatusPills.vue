@@ -7,14 +7,10 @@ import IconButton from './primitives/IconButton.vue';
 
 const props = defineProps<{
   trackRecordingError?: string | null;
-  tileDownloadState: 'idle' | 'downloading' | 'done';
-  tileDownloadProgress?: { done: number; total: number };
-  tileDownloadResult?: { downloaded: number; failed: number } | null;
 }>();
 
 const emit = defineEmits<{
   (e: 'dismiss-track-error'): void;
-  (e: 'dismiss-download-result'): void;
 }>();
 
 const trackRecordingStore = useTrackRecordingStore();
@@ -32,7 +28,7 @@ function dismissTrackError() {
 </script>
 
 <template>
-  <div v-if="effectiveTrackError" class="tile-download-pill" role="alert">
+  <div v-if="effectiveTrackError" class="tile-download-pill map-status-pill" role="alert">
     <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
     <span>{{ effectiveTrackError }}</span>
     <IconButton
@@ -44,41 +40,11 @@ function dismissTrackError() {
       @click="dismissTrackError"
     />
   </div>
-
-  <div v-else-if="tileDownloadState === 'downloading'" class="tile-download-pill" role="status">
-    <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" />
-    <span>
-      Lädt Kartenkacheln…
-      <template v-if="tileDownloadProgress">
-        {{ tileDownloadProgress.done }}/{{ tileDownloadProgress.total }}
-      </template>
-    </span>
-  </div>
-
-  <div
-    v-else-if="tileDownloadState === 'done' && tileDownloadResult"
-    class="tile-download-pill"
-    role="status"
-  >
-    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-    <span>
-      {{ tileDownloadResult.downloaded }} Kacheln offline gespeichert{{
-        tileDownloadResult.failed ? `, ${tileDownloadResult.failed} fehlgeschlagen` : ''
-      }}
-    </span>
-    <IconButton
-      variant="ghost"
-      size="sm"
-      :icon="ACTION_ICONS.close"
-      aria-label="Meldung schließen"
-      title="Schließen"
-      @click="emit('dismiss-download-result')"
-    />
-  </div>
 </template>
 
 <style scoped>
-.tile-download-pill {
+.tile-download-pill,
+.map-status-pill {
   position: absolute;
   top: calc(var(--fit-btn-top-inset, var(--space-3)) + 52px);
   left: var(--space-3);
@@ -99,7 +65,8 @@ function dismissTrackError() {
 }
 
 @container trip-map (min-width: 720px) {
-  .tile-download-pill {
+  .tile-download-pill,
+  .map-status-pill {
     bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
     right: var(--space-4);
     top: unset;

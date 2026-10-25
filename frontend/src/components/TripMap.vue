@@ -14,7 +14,6 @@ import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { formatDate } from '../utils/dateFormat';
 import { useIsDesktop } from '../composables/useIsDesktop';
-import { useMapOfflineDownload } from '../composables/useMapOfflineDownload';
 import { useMapPhotos } from '../composables/useMapPhotos';
 import { useMapPoints, type MapPoint } from '../composables/useMapPoints';
 import { useMapLiveLocation } from '../composables/useMapLiveLocation';
@@ -153,16 +152,7 @@ const {
   accommodationPoints,
 } = mapPoints;
 
-// 3. Offline Download composable
-const offlineDownload = useMapOfflineDownload();
-const { tileDownloadState, tileDownloadProgress, tileDownloadResult, dismissTileDownloadResult } =
-  offlineDownload;
-
-function downloadOfflineMap() {
-  offlineDownload.downloadOfflineMap(() => leafletTripMap.getBounds());
-}
-
-// 4. Live Location composable
+// 3. Live Location composable
 const liveLocation = useMapLiveLocation({
   users,
   onPositionUpdate: () => leafletTripMap.renderPositions(),
@@ -487,7 +477,6 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
         :is-member-online="isMemberOnline"
         :has-member-position="hasMemberPosition"
         :map-orientation-mode="mapOrientation.mode"
-        :tile-download-state="tileDownloadState"
         @fit-all="fitAll"
         @fit-vacation="fitVacation"
         @fit-home="fitHome"
@@ -497,14 +486,8 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
         @jump-my-location="jumpToMyLocation"
         @jump-member-location="jumpToMemberLocation"
         @set-orientation-mode="setMapOrientationMode"
-        @download-offline-map="downloadOfflineMap"
       />
-      <TripMapStatusPills
-        :tile-download-state="tileDownloadState"
-        :tile-download-progress="tileDownloadProgress"
-        :tile-download-result="tileDownloadResult"
-        @dismiss-download-result="dismissTileDownloadResult"
-      />
+      <TripMapStatusPills />
       <TripMapFocusBanner
         :focused-excursion="focusedExcursion"
         :focused-date="drawers.mapFocusDate"
@@ -589,7 +572,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 .map-wrap {
   /* Eckenabstand/Lücke über --space-3/--space-2, auf Mobil wie auf Desktop einheitlich.
      Touch-Targets halten stets mindestens 44px x 44px gemäß DESIGN.md §7.1 und WCAG 2.5.5 ein.
-     Der Stapel umfasst 4 Buttons (.focus-btn, .offline-download-btn, .share-location-btn, .record-btn). */
+     Der Stapel umfasst 3 Buttons (.focus-btn, .share-location-btn, .record-btn). */
   --fit-btn-size: 44px;
   --fit-btn-gap: var(--space-2);
   --fit-btn-inset: var(--space-3);

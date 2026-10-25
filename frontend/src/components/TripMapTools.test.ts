@@ -39,13 +39,13 @@ describe('TripMapTools', () => {
     };
   }
 
-  it('renders all 4 floating map buttons and merges location button into focus button', async () => {
+  it('renders all 3 floating map buttons and merges location button into focus button', async () => {
     const { container, unmount } = mountComponent();
     await nextTick();
 
     expect(container.querySelector('.focus-btn')).not.toBeNull();
     expect(container.querySelector('.location-btn')).toBeNull();
-    expect(container.querySelector('.offline-download-btn')).not.toBeNull();
+    expect(container.querySelector('.offline-download-btn')).toBeNull();
     expect(container.querySelector('.share-location-btn')).not.toBeNull();
     expect(container.querySelector('.record-btn')).not.toBeNull();
 
@@ -60,20 +60,6 @@ describe('TripMapTools', () => {
 
     const focusBtn = container.querySelector<HTMLButtonElement>('.focus-btn');
     expect(focusBtn?.disabled).toBe(false);
-
-    unmount();
-  });
-
-  it('emits download-offline-map when clicking download button', async () => {
-    const onDownload = vi.fn();
-    const { container, unmount } = mountComponent({}, { onDownloadOfflineMap: onDownload });
-    await nextTick();
-
-    const downloadBtn = container.querySelector<HTMLButtonElement>('.offline-download-btn');
-    downloadBtn?.click();
-    await nextTick();
-
-    expect(onDownload).toHaveBeenCalledTimes(1);
 
     unmount();
   });
