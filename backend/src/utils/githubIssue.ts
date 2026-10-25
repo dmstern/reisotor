@@ -10,7 +10,7 @@ export type CreateIssueResult =
 export type UploadScreenshotResult = { ok: true; url: string } | { ok: false; error: string };
 
 const getGithubToken = () => process.env.GITHUB_TOKEN;
-const getGithubRepo = () => process.env.GITHUB_REPO ?? 'dmstern/reisotor';
+export const getGithubRepo = () => process.env.GITHUB_REPO ?? 'dmstern/reisotor';
 
 // Eigener, ansonsten ungenutzter Branch statt des Default-Branchs: Screenshots landen so nicht in
 // der normalen Commit-Historie/dem normalen Diff von main, sondern nur in diesem Ablage-Branch.
