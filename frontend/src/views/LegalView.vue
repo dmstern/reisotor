@@ -54,7 +54,7 @@ function onTabChange(tab: 'privacy' | 'imprint') {
 }
 
 function goBack() {
-  if (window.history.length > 1) {
+  if (typeof window !== 'undefined' && window.history.state?.back) {
     router.back();
   } else if (auth.user) {
     router.push('/');
@@ -81,6 +81,7 @@ function goBack() {
           :config="config"
           :active-tab="activeTab"
           :is-landing-page="false"
+          :loading="loading"
           @update:active-tab="onTabChange"
         />
       </div>

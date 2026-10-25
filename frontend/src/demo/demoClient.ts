@@ -3,7 +3,7 @@
 // rawRequest() anstelle des echten fetch() aufgerufen, wenn DEMO_MODE aktiv ist - alle
 // aufrufenden Stores/Views bleiben dadurch unverändert.
 import { createDemoData } from './demoData';
-import type { User } from '../api/types';
+import { DEMO_LEGAL_CONFIG, type User } from '../api/types';
 
 const STORAGE_KEY = 'reisotor-demo-store';
 
@@ -129,26 +129,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (path === '/auth/me') return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/config') return { registrationMode: 'off' } as unknown as T;
   if (path === '/legal') {
-    return {
-      operator: {
-        name: 'Daniel Morgenstern',
-        address: null,
-        email: 'reisotor@ruebenherz.de',
-        phone: null,
-      },
-      hasOperatorInfo: true,
-      services: {
-        photonUrl: 'https://photon.komoot.io/api/',
-        isCustomPhoton: false,
-        nominatimEnabled: true,
-        nominatimUrl: 'https://nominatim.openstreetmap.org/search',
-        isCustomNominatim: false,
-        orsConfigured: false,
-        githubFeedbackConfigured: true,
-        pushConfigured: true,
-      },
-      hostingLocation: 'GitHub Pages',
-    } as unknown as T;
+    return structuredClone(DEMO_LEGAL_CONFIG) as unknown as T;
   }
   if (path === '/auth/login' || path === '/auth/register')
     return structuredClone(currentDemoUser) as unknown as T;

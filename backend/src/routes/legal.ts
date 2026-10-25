@@ -41,7 +41,9 @@ export function getLegalConfig(): LegalConfig {
   const isCustomNominatim = Boolean(process.env.NOMINATIM_API_URL?.trim());
   const orsConfigured = Boolean(process.env.ORS_API_KEY?.trim());
   const githubFeedbackConfigured = Boolean(process.env.GITHUB_TOKEN?.trim());
-  const pushConfigured = Boolean(process.env.VAPID_PUBLIC_KEY?.trim());
+  const pushConfigured = Boolean(
+    process.env.VAPID_PUBLIC_KEY?.trim() && process.env.VAPID_PRIVATE_KEY?.trim()
+  );
   const hostingLocation = process.env.HOSTING_LOCATION?.trim() || 'Berlin';
 
   return {

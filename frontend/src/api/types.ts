@@ -105,6 +105,29 @@ export const DEFAULT_LEGAL_CONFIG: LegalConfig = {
   hostingLocation: 'Berlin',
 };
 
+/** Gemeinsame Rechtskonfiguration für die statische GitHub-Pages-Landingpage (LandingView.vue)
+ *  und die GitHub-Pages-Live-Demo (demo/demoClient.ts) – Single Source of Truth. */
+export const DEMO_LEGAL_CONFIG: LegalConfig = {
+  operator: {
+    name: 'Daniel Morgenstern',
+    address: null,
+    email: 'reisotor@ruebenherz.de',
+    phone: null,
+  },
+  hasOperatorInfo: true,
+  services: {
+    photonUrl: 'https://photon.komoot.io/api/',
+    isCustomPhoton: false,
+    nominatimEnabled: true,
+    nominatimUrl: 'https://nominatim.openstreetmap.org/search',
+    isCustomNominatim: false,
+    orsConfigured: false,
+    githubFeedbackConfigured: true,
+    pushConfigured: true,
+  },
+  hostingLocation: 'GitHub Pages',
+};
+
 export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'travel' | 'other';
 
 /** Zeitraum, in dem ein Einkaufs-/ToDo-Eintrag erledigt werden soll: vor oder während des Urlaubs. */

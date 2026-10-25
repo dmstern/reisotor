@@ -58,7 +58,9 @@ useLocationSharingStore();
 // aktuellen View - hier instanziiert, damit resume() nach einem Reload/App-Neustart mit noch
 // laufender Aufzeichnung greift, exakt wie locationSharing oben.
 useTrackRecordingStore();
-const showNav = computed(() => route.name !== 'login');
+const showNav = computed(
+  () => route.name !== 'login' && route.name !== 'privacy' && route.name !== 'imprint'
+);
 // NavBar/Kalender-Schublade gehören zu den Domänen-Ansichten INNERHALB eines AUSGEWÄHLTEN Urlaubs
 // (Dashboard, Listen, Karte, ...) - auf der Urlaubsverwaltung (/trips, siehe TripsView.vue) sowie
 // solange (noch) kein Urlaub ausgewählt ist (z. B. erster Login auf einem neuen Gerät mit mehreren
@@ -88,11 +90,20 @@ watch(
 // leiten statt (wie vorher) direkt hier im Template ein Anlegen-Formular ohne Header zu zeigen.
 // Deckt zwei Fälle einheitlich ab: keine Urlaube vorhanden, ODER ≥2 Urlaube ohne gespeicherte
 // Präferenz auf diesem Gerät (siehe loadTrips() in stores/trip.ts - dort wird bewusst nicht
-// geraten). /settings bleibt ausgenommen, damit Logout während der Weiterleitung erreichbar bleibt.
+// geraten). /settings, /security-check sowie die öffentlichen Seiten (/privacy, /imprint) bleiben
+// ausgenommen, damit sie auch ohne ausgewählten Urlaub erreichbar sind.
 watch(
   () => [tripStore.loaded, tripStore.currentTripId, route.name] as const,
   ([loaded, currentTripId, name]) => {
-    if (loaded && currentTripId == null && name !== 'trips' && name !== 'settings') {
+    if (
+      loaded &&
+      currentTripId == null &&
+      name !== 'trips' &&
+      name !== 'settings' &&
+      name !== 'security-check' &&
+      name !== 'privacy' &&
+      name !== 'imprint'
+    ) {
       router.push({ name: 'trips' });
     }
   },

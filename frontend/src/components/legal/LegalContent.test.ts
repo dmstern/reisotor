@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { createApp, h } from 'vue';
 import LegalContent from './LegalContent.vue';
 import type { LegalConfig } from '../../api/types';
-import { DEFAULT_LEGAL_CONFIG } from '../../api/types';
+import { DEFAULT_LEGAL_CONFIG, DEMO_LEGAL_CONFIG } from '../../api/types';
 
 describe('LegalContent', () => {
   function mountComponent(props: {
@@ -11,6 +11,7 @@ describe('LegalContent', () => {
     activeTab?: 'privacy' | 'imprint';
     isLandingPage?: boolean;
     showTabs?: boolean;
+    loading?: boolean;
   }) {
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -55,9 +56,25 @@ describe('LegalContent', () => {
     expect(container.textContent).toContain('GET /api/weather');
     expect(container.textContent).toContain('zwei Nachkommastellen');
 
+    // Länderinfos & Reisehinweise
+    expect(container.textContent).toContain('travel-advisory.info');
+    expect(container.textContent).toContain('nominatim.openstreetmap.org/reverse');
+
     // Disclaimer
     expect(container.textContent).toContain('Mustervorlage');
     expect(container.textContent).toContain('keine Rechtsberatung');
+
+    cleanUp();
+  });
+
+  it('does not flash unconfigured warning while loading is true', () => {
+    const { container, cleanUp } = mountComponent({
+      config: DEFAULT_LEGAL_CONFIG,
+      loading: true,
+    });
+
+    expect(container.textContent).toContain('Lade Betreiberangaben');
+    expect(container.textContent).not.toContain('Betreiberangaben noch nicht konfiguriert');
 
     cleanUp();
   });
@@ -107,31 +124,10 @@ describe('LegalContent', () => {
     cleanUp();
   });
 
-  it('renders GitHub Pages hosting notice when isLandingPage is true', () => {
-    const landingConfig: LegalConfig = {
-      operator: {
-        name: 'Daniel Morgenstern',
-        address: null,
-        email: 'reisotor@ruebenherz.de',
-        phone: null,
-      },
-      hasOperatorInfo: true,
-      services: {
-        photonUrl: 'https://photon.komoot.io/api/',
-        isCustomPhoton: false,
-        nominatimEnabled: true,
-        nominatimUrl: 'https://nominatim.openstreetmap.org/search',
-        isCustomNominatim: false,
-        orsConfigured: false,
-        githubFeedbackConfigured: true,
-        pushConfigured: true,
-      },
-      hostingLocation: 'GitHub Pages',
-    };
-
+  it('renders GitHub Pages hosting notice when isLandingPage is true or hosted on GitHub Pages', () => {
     const { container, cleanUp } = mountComponent({
-      config: landingConfig,
-      isLandingPage: true,
+      config: DEMO_LEGAL_CONFIG,
+      isLandingPage: false,
     });
 
     expect(container.textContent).toContain('GitHub Pages');

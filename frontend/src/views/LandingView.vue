@@ -8,7 +8,7 @@ import LandingFooter from '../components/landing/LandingFooter.vue';
 import LandingLegalModal from '../components/landing/LandingLegalModal.vue';
 import { useLandingFeatures } from '../composables/useLandingFeatures';
 import { useLandingScrollytelling } from '../composables/useLandingScrollytelling';
-import type { LegalConfig } from '../api/types';
+import { DEMO_LEGAL_CONFIG } from '../api/types';
 
 const { scrollyFeatures, repoUrl, demoUrl, storybookUrl } = useLandingFeatures();
 const { activeStepIndex, activeHighlightIndex, glowOpacities, setActiveHighlight } =
@@ -18,27 +18,6 @@ const { activeStepIndex, activeHighlightIndex, glowOpacities, setActiveHighlight
 
 const showLegalModal = ref(false);
 const legalModalTab = ref<'privacy' | 'imprint'>('privacy');
-
-const landingLegalConfig: LegalConfig = {
-  operator: {
-    name: 'Daniel Morgenstern',
-    address: null,
-    email: 'reisotor@ruebenherz.de',
-    phone: null,
-  },
-  hasOperatorInfo: true,
-  services: {
-    photonUrl: 'https://photon.komoot.io/api/',
-    isCustomPhoton: false,
-    nominatimEnabled: true,
-    nominatimUrl: 'https://nominatim.openstreetmap.org/search',
-    isCustomNominatim: false,
-    orsConfigured: false,
-    githubFeedbackConfigured: true,
-    pushConfigured: true,
-  },
-  hostingLocation: 'GitHub Pages',
-};
 
 function handleOpenLegal(tab: 'privacy' | 'imprint') {
   legalModalTab.value = tab;
@@ -96,7 +75,7 @@ onUnmounted(() => {
     <LandingLegalModal
       v-model="showLegalModal"
       :active-tab="legalModalTab"
-      :config="landingLegalConfig"
+      :config="DEMO_LEGAL_CONFIG"
       @update:active-tab="(tab) => (legalModalTab = tab)"
     />
   </div>

@@ -8,11 +8,13 @@ const props = withDefaults(
     activeTab?: 'privacy' | 'imprint';
     isLandingPage?: boolean;
     showTabs?: boolean;
+    loading?: boolean;
   }>(),
   {
     activeTab: 'privacy',
     isLandingPage: false,
     showTabs: true,
+    loading: false,
   }
 );
 
@@ -23,16 +25,19 @@ const emit = defineEmits<{
 const operator = computed(() => props.config.operator);
 const services = computed(() => props.config.services);
 const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
+const isGitHubPagesHosted = computed(
+  () => props.isLandingPage || props.config.hostingLocation.includes('GitHub Pages')
+);
 </script>
 
 <template>
   <div class="legal-content">
-    <nav v-if="showTabs" class="legal-tabs" aria-label="Rechtliche Navigation">
+    <nav v-if="showTabs" class="legal-tabs" aria-label="Rechtliche Informationen">
       <button
         type="button"
         class="legal-tab-btn"
         :class="{ active: activeTab === 'privacy' }"
-        :aria-selected="activeTab === 'privacy'"
+        :aria-current="activeTab === 'privacy' ? 'page' : undefined"
         @click="emit('update:activeTab', 'privacy')"
       >
         Datenschutzerklärung
@@ -41,7 +46,7 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
         type="button"
         class="legal-tab-btn"
         :class="{ active: activeTab === 'imprint' }"
-        :aria-selected="activeTab === 'imprint'"
+        :aria-current="activeTab === 'imprint' ? 'page' : undefined"
         @click="emit('update:activeTab', 'imprint')"
       >
         Impressum
@@ -61,7 +66,14 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
       <section class="legal-section">
         <h2>Dienstanbieter &amp; Verantwortliche Stelle</h2>
 
-        <div v-if="!hasOperatorInfo && !isLandingPage" class="legal-alert legal-alert-warning">
+        <div v-if="loading" class="legal-card-info">
+          <p class="legal-muted">Lade Betreiberangaben…</p>
+        </div>
+
+        <div
+          v-else-if="!hasOperatorInfo && !isGitHubPagesHosted"
+          class="legal-alert legal-alert-warning"
+        >
           <div class="legal-alert-icon" aria-hidden="true">⚠️</div>
           <div class="legal-alert-body">
             <strong>Betreiberangaben nicht konfiguriert</strong>
@@ -79,7 +91,7 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
           </div>
         </div>
 
-        <div v-else-if="isLandingPage" class="legal-card-info">
+        <div v-else-if="isGitHubPagesHosted" class="legal-card-info">
           <p>
             <strong>Projekt- &amp; Webseiten-Verantwortlicher:</strong><br />
             {{ operator.name || 'Daniel Morgenstern' }}<br />
@@ -89,8 +101,9 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
             </a>
           </p>
           <p class="legal-muted">
-            Reisotor ist ein privates, nicht-kommerzielles Open-Source-Projekt. Die Landing Page
-            dient ausschließlich der allgemeinen Vorstellung und Dokumentation der Software.
+            Reisotor ist ein privates, nicht-kommerzielles Open-Source-Projekt. Die Landing Page und
+            die Live-Demo dienen ausschließlich der allgemeinen Vorstellung und Dokumentation der
+            Software.
           </p>
         </div>
 
@@ -114,9 +127,9 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
       <!-- Hosting-Hinweis -->
       <section class="legal-section">
         <h2>Hosting &amp; Betrieb</h2>
-        <template v-if="isLandingPage">
+        <template v-if="isGitHubPagesHosted">
           <p>
-            Diese Landing Page wird als statische Webpräsenz über <strong>GitHub Pages</strong>
+            Diese Webpräsenz wird als statische Seite über <strong>GitHub Pages</strong>
             bereitgestellt:
           </p>
           <p class="legal-address">
@@ -258,7 +271,14 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
           Datenschutzgesetze ist:
         </p>
 
-        <div v-if="!hasOperatorInfo && !isLandingPage" class="legal-alert legal-alert-warning">
+        <div v-if="loading" class="legal-card-info">
+          <p class="legal-muted">Lade Betreiberangaben…</p>
+        </div>
+
+        <div
+          v-else-if="!hasOperatorInfo && !isGitHubPagesHosted"
+          class="legal-alert legal-alert-warning"
+        >
           <div class="legal-alert-icon" aria-hidden="true">⚠️</div>
           <div class="legal-alert-body">
             <strong>Betreiberangaben noch nicht konfiguriert</strong>
@@ -271,7 +291,7 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
           </div>
         </div>
 
-        <div v-else-if="isLandingPage" class="legal-card-info">
+        <div v-else-if="isGitHubPagesHosted" class="legal-card-info">
           <p>
             <strong>Projekt- &amp; Webseiten-Verantwortlicher:</strong><br />
             {{ operator.name || 'Daniel Morgenstern' }}<br />
@@ -327,14 +347,14 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
           vollständig anonymisiert.
         </p>
 
-        <div v-if="isLandingPage" class="legal-card-info">
-          <strong>Besonderer Hinweis zum Hosting dieser Landing Page (GitHub Pages):</strong>
+        <div v-if="isGitHubPagesHosted" class="legal-card-info">
+          <strong>Besonderer Hinweis zum Hosting über GitHub Pages:</strong>
           <p>
-            Diese Landing Page wird als statische Website über <em>GitHub Pages</em> gehostet
-            (GitHub Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA). Beim Besuch der
-            Seite erfasst GitHub technische Verbindungsdaten in Server-Logs. Die Übermittlung in die
-            USA erfolgt auf Grundlage des EU-US Data Privacy Frameworks bzw.
-            Standardvertragsklauseln der Europäischen Kommission.
+            Diese Webpräsenz wird als statische Website über <em>GitHub Pages</em> gehostet (GitHub
+            Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA). Beim Besuch der Seite
+            erfasst GitHub technische Verbindungsdaten in Server-Logs. Die Übermittlung in die USA
+            erfolgt auf Grundlage des EU-US Data Privacy Frameworks bzw. Standardvertragsklauseln
+            der Europäischen Kommission.
           </p>
         </div>
       </section>
@@ -525,8 +545,15 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
               </template>
               <template v-if="services.nominatimEnabled">
                 Bei unvollständigen Ergebnissen wird ergänzend
-                <em>OpenStreetMap Nominatim</em> (<code>{{ services.nominatimUrl }}</code
-                >) als Fallback abgefragt.
+                <template v-if="services.isCustomNominatim">
+                  eine eigene Nominatim-Instanz (<code>{{ services.nominatimUrl }}</code
+                  >)
+                </template>
+                <template v-else>
+                  <em>OpenStreetMap Nominatim</em> (<code>{{ services.nominatimUrl }}</code
+                  >)
+                </template>
+                als Fallback abgefragt.
               </template>
             </li>
             <li>
@@ -573,9 +600,10 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
           </p>
           <ul>
             <li>
-              <strong>Suchanfrage:</strong> Der Suchbegriff (z. B. Name der Sehenswürdigkeit) wird
-              vom Reisotor-Server an Wikipedia / Wikimedia Commons sowie an Bildindizes (Bing,
-              Yahoo) übermittelt.
+              <strong>Suchanfrage:</strong> Der Suchbegriff (z. B. Name der Sehenswürdigkeit,
+              ergänzt um den Ortsnamen) sowie ggf. auf drei Nachkommastellen gerundete Koordinaten
+              für die Umkreissuche (<code>geosearch</code>) werden vom Reisotor-Server an Wikipedia
+              / Wikimedia Commons sowie an Bildindizes (Bing, Yahoo) übermittelt.
             </li>
             <li>
               <strong>Drittlandtransfer:</strong> Microsoft Corporation (Bing) und Yahoo Inc. haben
@@ -594,14 +622,18 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
           </ul>
         </div>
 
-        <!-- 6.6 Länderinfos & Währungskurse -->
+        <!-- 6.6 Länderinfos, Währungskurse & Reisehinweise -->
         <div class="legal-subsection">
-          <h3>6.6 Länderinformationen &amp; Wechselkurse</h3>
+          <h3>6.6 Länderinformationen, Wechselkurse &amp; Reisehinweise</h3>
           <p>
-            Zur Anzeige von Landeswährung, Landessprachen und aktuellen Wechselkursen ruft der
-            Reisotor-Server tagesaktuelle Kurse von <em>open.er-api.com</em> und
-            <em>REST Countries</em> ab. Diese Abfragen erfolgen rein serverseitig und enthalten
-            keine personenbezogenen Daten.
+            Zur Anzeige von Landeswährung, Landessprachen, aktuellen Wechselkursen und
+            Sicherheits-Scores im Reise-Dashboard bestimmt der Reisotor-Server einmalig das Zielland
+            anhand der Urlaubskoordinaten über
+            <em>OpenStreetMap Nominatim</em> (<code>nominatim.openstreetmap.org/reverse</code>) und
+            ruft anschließend die Eckdaten von
+            <em>REST Countries</em> (<code>restcountries.com</code>), <em>open.er-api.com</em> sowie
+            der <em>Travel Advisory API</em> (<code>travel-advisory.info</code>) ab. Diese Abfragen
+            erfolgen rein serverseitig, werden zwischengespeichert und übermitteln keine Nutzer-IP.
           </p>
         </div>
 
@@ -744,10 +776,12 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
 .legal-tab-btn {
   background: transparent;
   border: none;
+  box-shadow: none;
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--color-text-muted);
   padding: var(--space-2) var(--space-3);
+  min-block-size: 44px;
   cursor: pointer;
   border-radius: var(--radius-sm, 6px);
   position: relative;
@@ -805,7 +839,7 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
 }
 
 .legal-subsection {
-  background: var(--color-surface);
+  background: var(--color-surface-sunken, var(--color-bg));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle, 10px);
   padding: var(--space-3);
@@ -823,6 +857,7 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
 .legal-section p,
 .legal-subsection p {
   margin: 0;
+  color: var(--color-text);
 }
 
 .legal-section ul,
@@ -839,7 +874,7 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
 }
 
 .legal-card-info {
-  background: var(--color-surface);
+  background: var(--color-surface-sunken, var(--color-bg));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle, 10px);
   padding: var(--space-3);
@@ -856,7 +891,9 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
   white-space: pre-line;
 }
 
-.legal-muted {
+.legal-muted,
+.legal-section p.legal-muted,
+.legal-card-info p.legal-muted {
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
@@ -870,8 +907,8 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
 }
 
 .legal-alert-warning {
-  background: rgba(234, 179, 8, 0.12);
-  border: 1px solid rgba(234, 179, 8, 0.4);
+  background: var(--color-warning-tint);
+  border: 1px solid var(--color-warning);
   color: var(--color-text);
 }
 

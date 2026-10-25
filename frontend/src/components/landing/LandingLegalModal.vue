@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { LegalConfig } from '../../api/types';
 import LegalContent from '../legal/LegalContent.vue';
 
@@ -15,14 +15,44 @@ const emit = defineEmits<{
 }>();
 
 const modalRef = ref<HTMLElement | null>(null);
+const closeBtnRef = ref<HTMLButtonElement | null>(null);
+let previouslyFocusedElement: HTMLElement | null = null;
 
 function close() {
   emit('update:modelValue', false);
 }
 
+function getFocusableElements(): HTMLElement[] {
+  if (!modalRef.value) return [];
+  const selector =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  return Array.from(modalRef.value.querySelectorAll<HTMLElement>(selector));
+}
+
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && props.modelValue) {
+  if (!props.modelValue) return;
+  if (e.key === 'Escape') {
     close();
+    return;
+  }
+  if (e.key === 'Tab') {
+    const focusables = getFocusableElements();
+    if (focusables.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+    if (e.shiftKey) {
+      if (active === first || !modalRef.value?.contains(active)) {
+        last.focus();
+        e.preventDefault();
+      }
+    } else if (active === last || !modalRef.value?.contains(active)) {
+      first.focus();
+      e.preventDefault();
+    }
   }
 }
 
@@ -31,9 +61,15 @@ watch(
   (open) => {
     if (typeof document !== 'undefined') {
       if (open) {
+        previouslyFocusedElement = document.activeElement as HTMLElement | null;
         document.body.style.overflow = 'hidden';
+        nextTick(() => {
+          closeBtnRef.value?.focus();
+        });
       } else {
         document.body.style.overflow = '';
+        previouslyFocusedElement?.focus?.();
+        previouslyFocusedElement = null;
       }
     }
   }
@@ -55,21 +91,21 @@ onUnmounted(() => {
   <Teleport to="body">
     <Transition name="legal-modal-fade">
       <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-      <div
-        v-if="modelValue"
-        class="landing-legal-overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Rechtliche Informationen"
-        @click.self="close"
-      >
-        <div ref="modalRef" class="landing-legal-dialog">
+      <div v-if="modelValue" class="landing-legal-overlay" @click.self="close">
+        <div
+          ref="modalRef"
+          class="landing-legal-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Rechtliche Informationen"
+          tabindex="-1"
+        >
           <header class="landing-legal-header">
             <button
+              ref="closeBtnRef"
               type="button"
               class="close-button"
               aria-label="Schließen"
-              title="Schließen"
               @click="close"
             >
               ✕
@@ -128,9 +164,9 @@ onUnmounted(() => {
   background: var(--color-surface-hover, rgba(0, 0, 0, 0.05));
   border: 1px solid var(--color-border);
   color: var(--color-text);
-  border-radius: 9999px;
-  width: 36px;
-  height: 36px;
+  border-radius: var(--radius-pill, 9999px);
+  min-inline-size: 44px;
+  min-block-size: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
