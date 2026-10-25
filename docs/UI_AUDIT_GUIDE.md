@@ -105,15 +105,89 @@ Wird ausgeführt nach Änderungen an einer View, im Rahmen von Phase 3 eines Ref
 
 ---
 
-## 4. Projektweiter Pre-Release-Gesamt-Audit (Meilenstein-Gate)
+## 4. Pre-Release-Stabilitäts-Gate (Ganzheitliches Release-Audit)
 
-Vor großen Releases (z. B. Reisotor 2.0) oder Meilensteinen erfolgt die ganzheitliche Prüfung aller Bereiche der App.
+Vor großen Releases (z. B. neuen Minor- oder Major-Versionen) erfolgt die ganzheitliche Prüfung aller Bereiche der App.
 
-### Grundregel: Keine diffusen monolithischen Mega-Prompts
+### Leitphilosophie: Stabilisierung & Polishing statt blinder Groß-Refactorings!
 
-Ein vollständiger UI-Check darf **niemals als ein einziger, unstrukturierter Durchlauf in einem einzigen Kontextfenster** beauftragt werden. Solche Aufträge führen bei LLMs zu kombinatorischer Überlastung und blinden Falsch-Positiven („Alles geprüft, sieht gut aus“).
+Bis kurz vor einem Release werden oft noch Bugs behoben, neue Funktionen fertiggestellt und UI-Verbesserungen integriert. Dabei entstehen typische Last-Minute-Mängel:
 
-Stattdessen **muss** eine systematische Aufteilung in 6 fokussierte Fachdomänen (Divide & Conquer via Subagents) erfolgen:
+- Abgeschnittene Popovers, Dropdowns oder Tooltips (`overflow: hidden` auf Elternelementen oder falscher Z-Index).
+- Schlechte Umbrüche auf schmalen Viewports (320px/390px): Zahlenwerte, Währungen oder Datum-Badges brechen unleserlich um; es fehlt `min-width: 0` oder `overflow-wrap: break-word`.
+- Fehlende oder inkonsistente `:hover`- und `:focus-visible`-Zustände.
+- Abweichende Paddings und Abstände, die aus der Token-Skala (`--space-*`) herausfallen.
+- Zu kleine, unleserliche Labels oder Icons.
+
+> [!CAUTION]
+> **Strikte Trennung von Inspektion & Behebung – Kein blindes Umbauen!**
+> Ein Pre-Release-Audit darf **niemals als pauschaler „Such-und-Reparier-alles-auf-einmal“-Auftrag** an AI-Agenten gegeben werden!
+> Solche Aufträge führen verlässlich zu drei Fehlern:
+>
+> 1. **Sycophancy („Nach dem Mund reden“):** Der Agent klickt oberflächlich durch und meldet „Alles perfekt“, übersieht aber abgeschnittene Modals oder wackelnde Mobile-Layouts.
+> 2. **Aktionismus (Zerstörer-Refactoring):** Der Agent baut funktionierende Komponenten oder CSS-Grids eigenmächtig um und erzeugt kurz vor Release neue, schwere Regressionen.
+> 3. **Kontext-Kollaps:** Das gleichzeitige Prüfen von 14 Routen und Bearbeiten von Dateien sprengt das Kontextfenster.
+>
+> **Verbindliche Regel:** Vor einem Release finden **KEINE Architektur-Refactorings** statt. Das Pre-Release-Gate dient ausschließlich der **visuellen Härtung, Konsistenz und chirurgischen Fehlerbehebung**.
+
+---
+
+### Das 4-Phasen-Modell des Release-Gates
+
+Analog zum Komponenten-Refactoring wird das Pre-Release-Gate in vier streng getrennte Phasen unterteilt:
+
+```mermaid
+flowchart TD
+    P0["<b>Phase 0: Visuelle Inspektion & Triage (Read-Only!)</b><br/><i>5 Prüf-Dimensionen pro Domäne. Kein Code wird geändert!</i>"]
+    P0 --> P1["<b>Phase 1: Scope-Freeze & Triage-Freigabe</b><br/><i>Mensch/Lead bewertet Befunde: Freigabe vs. Einfrieren</i>"]
+    P1 --> P2["<b>Phase 2: Minimal-Invasive Härtung & Polish</b><br/><i>Chirurgische CSS-/Token-Fixes. Keine Architektur-Umbauten!</i>"]
+    P2 --> P3["<b>Phase 3: Finales Release-Gate</b><br/><i>Re-Verifikation, Axe-A11y, Typecheck, Lint, Release-Notes-Check</i>"]
+```
+
+### Interaktions-Ablauf in der Praxis (Mensch & Agent)
+
+Folgendes Sequenzdiagramm veranschaulicht das Zusammenspiel zwischen Entwickler:in und Agenten über die Phasen hinweg:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Du as Du (Entwickler:in)
+    participant A as Agent (Chat 1: Triage)
+    participant B as Agent (Frischer Chat 2: Fix)
+
+    Du->>A: "Mach ein Pre-Release-Audit" (oder "Release Audit Assess: Team 5")
+    Note over A: Phase 0: Read-Only Check!<br/>320px/390px, Popovers, Hover, Tokens.<br/>0 Zeilen Code geändert.
+    A-->>Du: Ampel-Tabelle (🔴 1 Blocker, 🟡 2 Polish, 🟢 3 OK)<br/>"Bitte freigeben: Was soll in Phase 2 gefixt werden?"
+
+    Du->>A: "Punkt 1 (Betrag bricht um) fixen, Rest lassen."
+    Note over A: Scope-Freeze & Handoff-Hinweis
+    A-->>Du: "Verstanden. Für Phase 2 bitte frischen Chat öffnen:<br/>👉 Release Audit Fix: Team 5"
+
+    Du->>B: "Release Audit Fix: Team 5"
+    Note over B: Phase 2: Chirurgischer CSS-Fix,<br/>sofortiger Test, sauberer Commit.
+    B-->>Du: "Fix verifiziert & committet."
+
+    Du->>B: "Release Audit Gate"
+    Note over B: Phase 3: Typecheck, Lint,<br/>A11y (Axe), Release-Notes-Check.
+    B-->>Du: "Alle Prüfungen grün. Bereit für Release!"
+```
+
+#### Wann du reviewen und wann du einen neuen Chat öffnen solltest:
+
+1. **Nach Phase 0 (Dein Review & Scope-Freeze):**
+   - Der Agent liefert die Ampel-Befundtabelle (🔴 Blocker, 🟡 Polish, 🟢 OK).
+   - Du entscheidest kurz und formlos im Chat: _„Punkt 1 und 2 freigegeben, Punkt 3 lassen wir so.“_
+2. **Neuer Chat für Phase 2 (Token- & Kontext-Schutz):**
+   - Der Triage-Agent beendet Phase 0 mit einem expliziten Handoff-Hinweis und gibt den passenden Trigger für den frischen Chat aus (`Release Audit Fix: Team X`).
+   - Im neuen Chat startet der Fix-Agent ohne den Ballast der vorherigen Test-Logs und konzentriert sich rein auf den minimal-invasiven CSS-Code.
+3. **Abschluss mit Phase 3:**
+   - Direkt im selben Chat nach den Fixes (oder separat) via `Release Audit Gate` alle automatisierten Schranken prüfen lassen.
+
+---
+
+### Die 6 Fachdomänen
+
+Um das Kontextfenster zu schonen, wird die Anwendung in 6 klar abgegrenzte Domänen aufgeteilt:
 
 - **Team 1 (Dashboard, Navigation & Trips):** `/trip/1`, `/trips` (Header, Navbar, Widgets, Reise-Wechsel)
 - **Team 2 (Spots, Touren & Karten):** `/trip/1/spots`, `/trip/1/excursions` (MapLibre-Karte, Split-View, stufenlose Spots-Spalte, Bottom-Sheets)
@@ -122,37 +196,156 @@ Stattdessen **muss** eine systematische Aufteilung in 6 fokussierte Fachdomänen
 - **Team 5 (Finanzen & Budget):** `/trip/1/budget` (Budget-Töpfe, Transaktionslisten, Währungsumrechnung, Ausgleichs-Karten, Modals; Enge-Stresstest auf 320px)
 - **Team 6 (Einstellungen, Auth & Hilfsansichten):** `/settings` (7 Tabs: Account, Users, App/Wetter, Trip, Notifications, Data, About), `/login`, `/security-check`, `/trip/1/trash`
 
-### Pflicht: Die State- & Interaktions-Matrix
+---
 
-Ein reines Aufrufen der URL im initialen Ruhezustand ist visuell unzureichend, da Layout-Brüche und horizontale Overflows häufig erst durch Interaktion entstehen. Jeder Subagent muss folgende Zustände aktiv überprüfen:
+### Die 5 Prüf-Dimensionen pro Domäne
 
-1. **Tab-Matrix:** Alle Reiter einer View durchschalten (z. B. `ListenView`: Packliste, Einkauf, ToDo; `SettingsView`: alle 7 Tabs).
-2. **Akkordeon- & Detail-Matrix:** Einklappbare Sektionen ausklappen (z. B. Tour-Details, Spot-Karten, Budget-Ausgleich, Notiz-Inhalte).
-3. **Modal- & Sheet-Matrix (auf 320px):** Primäre Dialoge und Bottom-Sheets öffnen (z. B. Neuer Eintrag, Filter, Ausgaben-Modal) und mathematisch mit `expectWithinViewport` absichern.
-4. **Schubladen-Matrix (Desktop):** Kalenderschublade und Spots-Spalte geschlossen, normal und maximal breit (500px+) geöffnet testen.
+Jeder Prüfdurchlauf analysiert systematisch folgende fünf Kriterien:
 
-### Orchestrierungs-Prompt (Kopieren bei Release-Vorbereitung)
+1. **Enge- & Overflow-Matrix (320x568px narrowMobile & 390x844px mobile):**
+   - Gibt es horizontalen Scroll-Overflow (`expectNoHorizontalOverflow`)?
+   - Brechen Zahlenwerte, Währungen oder Datum-Badges unschön um?
+   - Fehlt bei Flex-Kindern `min-width: 0` oder `overflow-wrap: break-word`?
+2. **Overlay-, Popover- & Modal-Matrix:**
+   - Öffnen sich alle Dropdowns, Kontext-Menüs, Popovers und Filter-Sheets vollständig?
+   - Werden Menüs durch `overflow: hidden` auf umliegenden Containern abgeschnitten?
+   - Stimmen Z-Indizes gegenüber Sticky-Headern und Kartenelementen?
+3. **Interaktionen, Hover- & Focus-States:**
+   - Besitzen interaktive Kacheln, Buttons und Zeilen sichtbare, ruhige `:hover`- und `:focus-visible`-Zustände?
+   - Werden Touch-Targets von mindestens 44x44px auf Mobile eingehalten (`expectMinTouchTarget`)?
+4. **Visuelle Konsistenz & Design-Tokens:**
+   - Halten alle Abstände die Token-Skala (`--space-xs` bis `--space-2xl`) ein?
+   - Sind Sekundär- und Badge-Labels lesbar (nicht unter 11-12px) und semantisch gefärbt?
+   - Werden für Badges/Pillen niemals `border-radius: 50%`, sondern `--radius-pill` verwendet?
+5. **Desktop-Drawer-Stresstest (1280x800px mit Kalenderschublade auf 500px+):**
+   - Hält der Inhaltsbereich die reduzierte Breite stabil aus?
+   - Springen Elemente oder bricht das Layout unruhig um?
+
+---
+
+### Einstiegs-Phrasen & Verhalten bei allgemeiner Aufforderung
+
+Fällt im Chat eine allgemeine Aufforderung wie:
+
+- _„Mach ein Pre-Release-Audit“_
+- _„Pre-Release Audit starten“_
+- _„Wir bereiten ein Release vor, auditier mal die App“_
+
+**Striktes Protokoll für den Agenten:**
+
+1. **Kein blinder Komplettdurchlauf:** Der Agent darf **niemals unaufgefordert alle 6 Teams auf einmal** in einer Session abfeuern (Gefahr von Kontext-Kollaps und Sycophancy).
+2. **Git-Delta ermitteln:** Er ermittelt per Git, welche Frontend-Bereiche seit dem letzten Release-Tag tatsächlich verändert wurden:
+   `git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`
+3. **Fokussierte Empfehlung & Roadmap:** Er ordnet die Änderungen den betroffenen Teams zu (z. B. _„Seit v1.3.0 wurden vor allem Finanzen (Team 5) und Notizen/Listen (Team 4) verändert“_) und schlägt vor:
+   - **Gezielter Check (Empfohlen):** Nur die veränderten Teams durchlaufen (spart massiv Tokens und Zeit).
+   - **Vollständiger Meilenstein-Check:** Schrittweise von Team 1 bis 6.
+4. **Sofortige Führung:** Der Agent schlägt direkt den ersten konkreten Schritt vor oder startet auf Bestätigung mit Phase 0 (`Release Audit Assess: Team <X>`).
+
+---
+
+### Kurz-Trigger für das Release-Gate
+
+| Phase       | Kurz-Trigger                            | Beschreibung                                                                                             |
+| :---------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| **Phase 0** | `Release Audit Assess: <Team \| Route>` | **Reine Inspektion (Read-Only):** Testet die 5 Dimensionen, ändert keinen Code, gibt Befund-Tabelle aus. |
+| **Phase 1** | _(Menschliche Entscheidung)_            | **Scope-Freeze:** Auswahl der freigegebenen Befunde (Blocker + risikoarmer Polish).                      |
+| **Phase 2** | `Release Audit Fix: <Team \| Route>`    | **Chirurgische Fixes:** Behebt ausschließlich freigegebene Punkte minimal-invasiv via Tokens/CSS.        |
+| **Phase 3** | `Release Audit Gate`                    | **Finales Gate:** Führt `npm run check`, E2E-, A11y- und Release-Notes-Tests aus.                        |
+
+---
+
+### Phase 0: Visuelle Inspektion & Triage (`Release Audit Assess: <Team | Route>`)
+
+Kopiere diesen Prompt oder nutze den Kurz-Trigger, um eine Domäne auditieren zu lassen:
 
 ```text
-/teamwork-preview Wir bereiten das Release vor. Führe ein vollständiges, strukturiertes UI- und Layout-Audit durch.
+Release Audit Assess: [Team 1-6 oder Route, z. B. Team 5 (/trip/1/budget)]
 
-Referenzregelwerk:
-Lies als verbindliche Grundlage docs/UI_AUDIT_GUIDE.md und DESIGN.md. Behebe etwaige Layout-Fehler defensiv ausschließlich mit CSS-Tokens (--space-*, --color-*) und Container Queries (@container app-main). Keine ungefragten Screenshots (Token-Schutz).
+Führe Phase 0 (Visuelle Inspektion & Triage) für den angegebenen Bereich durch.
+
+STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
+- Dies ist eine REINE INSPEKTION (Read-Only). Ändere KEINE einzige Datei im Repository!
+- Nimm KEINE Refactorings vor und schreibe keinen Produktivcode.
+- Sei schonungslos objektiv: Bestätige nicht einfach, dass alles gut aussieht, sondern suche aktiv nach Enge-Problemen, abgeschnittenen Popovers, falschen Z-Indizes und fehlenden Hover-Effekten.
 
 Vorgehensweise:
-1. Teile die Anwendung in 6 parallele Subagents auf:
-   - Team 1: Dashboard, Header, Navbar & Trip-Verwaltung (/trip/1, /trips)
-   - Team 2: Spots, Touren & Kartenansichten (/trip/1/spots, /trip/1/excursions)
-   - Team 3: Kalender & Zeitplan (/trip/1/calendar sowie Desktop-Kalenderschublade Drawer.vue)
-   - Team 4: Listen, Packliste, Einkauf, ToDo, Notizen & Tagebuch (/trip/1/packing, /trip/1/shopping, /trip/1/todo, /trip/1/notes, /trip/1/diary)
-   - Team 5: Finanzen & Budget (/trip/1/budget) - Fokus: Zahlen- & Tabellen-Wrapping auf 320px, Modals & Filter
-   - Team 6: Einstellungen, Auth & Hilfsansichten (/settings mit allen 7 Tabs, /login, /security-check, /trip/1/trash)
+1. Starte den fokussierten E2E-Layout-Check (bei Multi-Routen-Teams komma-separiert):
+   AUDIT_ROUTE=<route1,route2> npm run test:audit
+2. Untersuche den Quellcode der relevanten Vue-Komponenten auf die 5 Prüf-Dimensionen:
+   - Enge-Resilienz (320px / 390px: Zahlen, Badges, Tabellen, nowrap vs. wrap)
+   - Overlays & Popovers (Z-Index, Clipping bei overflow: hidden, Teleport-Nutzung)
+   - Interaktionen (Hover-Effekte, Focus-Visible-Ringe, Touch-Targets >= 44px)
+   - Token-Konsistenz (Abstände via --space-*, Pillen via --radius-pill, Schriftgrößen)
+   - Desktop-Drawer (Inhaltsverhalten bei 500px Kalenderschublade)
 
-2. Jeder Subagent führt für seine Routen das E2E-Layout-Audit aus:
-   - Viewport-Matrix: 320x568 (narrowMobile), 390x844 (mobile), 1080x900 (narrowDesktop) und 1280x800 (desktop)
-   - Desktop-Drawer-Matrix: Kalenderschublade geschlossen, 360px und 500px breit gezogen
-   - State-Matrix: Tabs durchschalten, Details/Akkordeons aufklappen, primäre Modals auf 320px öffnen
-   - Layout-Defensiv-Checks: expectNoHorizontalOverflow(page), expectWithinViewport, Touch-Targets >= 44px
+Ergebnis:
+Erstelle eine strukturierte Befund-Tabelle nach folgendem Format:
 
-3. Führe die Ergebnisse aller Teams in einem konsolidierten Markdown-Audit-Report zusammen und behebe gefundene Layout-Fehler.
+| Status | Route / Komponente | Viewport / Zustand | Befund / Problem | Minimal-invasiver Lösungsvorschlag |
+| :--- | :--- | :--- | :--- | :--- |
+| 🔴 Blocker | `/trip/1/budget` | 320px | Betrag bricht zweizeilig um | `white-space: nowrap` auf Badge |
+| 🟡 Polish | `/trip/1/spots` | Desktop Hover | Kein `:focus-visible` Ring auf Filter | Outline via `--color-focus-ring` ergänzen |
+| 🟢 OK | `/trip/1/calendar` | 1280px (500px Drawer) | Spaltenbreite passt sich harmonisch an | Kein Handlungsbedarf |
+
+Gib am Ende eine kurze Zusammenfassung: Anzahl Blocker (🔴), Anzahl Polish (🟡), Empfehlung für Phase 1.
+```
+
+---
+
+### Phase 1: Scope-Freeze & Triage-Freigabe
+
+Der Mensch oder Lead-Entwickler sichtet die Befund-Tabelle:
+
+1. **Blocker (🔴):** Müssen vor Release behoben werden (echte Layout-Brüche, unbenutzbare UI).
+2. **Polish (🟡):** Werden freigegeben, wenn sie mit 1–3 Zeilen CSS ohne Nebenwirkungen korrigiert werden können.
+3. **Risikobehaftete Wünsche:** Alles, was ein größeres Komponenten-Refactoring erfordern würde, wird **eingefroren** und auf die Zeit nach dem Release verschoben.
+
+---
+
+### Phase 2: Minimal-Invasive Härtung & Polish (`Release Audit Fix: <Team | Route>`)
+
+Kopiere diesen Prompt oder nutze den Kurz-Trigger zur Behebung freigegebener Mängel:
+
+```text
+Release Audit Fix: [Team 1-6 oder Route, z. B. Team 5 (/trip/1/budget)]
+
+Behebe ausschließlich die in Phase 1 freigegebenen Befunde für diesen Bereich.
+
+STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
+- Maximiere Einfachheit (KISS): Keine Umstrukturierung von Komponenten, keine neuen Props/Emits, keine Store-Änderungen!
+- Ausschließlich zielgerichtete CSS-/Template-Korrekturen:
+  * Design-Tokens (--space-*, --color-*, --radius-pill)
+  * Flex-Verhalten (min-width: 0, flex-wrap: wrap, gap)
+  * Text-Handling (overflow-wrap: break-word, text-overflow: ellipsis, white-space: nowrap)
+  * Popover-Fixes (z-index, Positionierung, evtl. Teleport)
+  * Interaktionen (:hover, :focus-visible Übergänge)
+- Teste jeden Fix sofort gegen:
+  AUDIT_ROUTE=<route> npm run test:audit
+- Formatiere geänderte Dateien:
+  npx -y prettier --write <geänderte-dateien>
+- Schließe mit einem sauberen Commit ab:
+  git commit -m "fix(ui): polish <domäne> layout & popover resilience"
+```
+
+---
+
+### Phase 3: Finales Release-Gate (`Release Audit Gate`)
+
+Führt die finale Qualitätssicherung vor dem Tagging/Deployment durch:
+
+```text
+Release Audit Gate
+
+Führe das finale Release-Gate durch, um die Stabilität und Sauberkeit des Releases zu zertifizieren.
+
+Prüfschritte:
+1. Statisches Gesamt-Gate (Lint, Format, Release-Notes, Typecheck Frontend & Backend): npm run check
+2. Barrierefreiheit (Axe): npm run test:a11y
+3. Layout-Regressionen: AUDIT_ROUTE=/trip/1 npm run test:audit
+
+Ergebnis:
+Gib eine klare Bestätigung im Chat aus:
+- Sind alle Prüfungen grün?
+- Gibt es verbleibende Warnungen?
+- Ist das Release freigegeben?
 ```

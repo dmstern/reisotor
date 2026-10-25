@@ -29,7 +29,7 @@ flowchart TD
 ```
 
 > [!NOTE]
-> **Projektweiter Pre-Release-Audit:** Für das ganzheitliche Testen der gesamten App vor Releases via paralleler Subagent-Teams siehe [`docs/UI_AUDIT_GUIDE.md`](UI_AUDIT_GUIDE.md#4-projektweiter-pre-release-gesamt-audit-meilenstein-gate).
+> **Pre-Release-Stabilitäts-Gate:** Für die ganzheitliche visuelle Härtung, Polishing und Stabilitätsprüfung vor einem Release (ohne Architektur-Refactorings) siehe [`docs/UI_AUDIT_GUIDE.md`](UI_AUDIT_GUIDE.md#4-pre-release-stabilitäts-gate-ganzheitliches-release-audit) mit den Kurz-Triggern `Release Audit Assess`, `Release Audit Fix` und `Release Audit Gate`.
 
 ---
 

@@ -187,15 +187,77 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     const body = document.body;
     const scrollWidth = Math.max(doc.scrollWidth, body ? body.scrollWidth : 0);
     const clientWidth = doc.clientWidth;
+    const hasOverflow = scrollWidth > clientWidth + 1; // 1px Toleranz für Subpixel-Rundung
+
+    const culprits: string[] = [];
+    if (hasOverflow) {
+      const isClippedByAncestor = (el: Element): boolean => {
+        let parent = el.parentElement;
+        while (parent && parent !== doc && parent !== body) {
+          const style = window.getComputedStyle(parent);
+          const ox = style.overflowX;
+          if (ox === 'hidden' || ox === 'auto' || ox === 'scroll' || ox === 'clip') {
+            const pr = parent.getBoundingClientRect();
+            if (pr.right <= clientWidth + 1.5) {
+              return true;
+            }
+          }
+          parent = parent.parentElement;
+        }
+        return false;
+      };
+
+      const candidates: Array<{ el: Element; right: number; width: number }> = [];
+      for (const el of Array.from(document.querySelectorAll('*'))) {
+        if (el === doc || el === body) continue;
+        const r = el.getBoundingClientRect();
+        if (
+          r.right > clientWidth + 1.5 &&
+          r.width > 0 &&
+          r.height > 0 &&
+          !isClippedByAncestor(el)
+        ) {
+          candidates.push({ el, right: r.right, width: r.width });
+        }
+      }
+
+      // Bevorzuge das tiefste verursachende Element statt allgemeiner Eltern-Wrapper (.app-main, .page)
+      const specific = candidates.filter(
+        ({ el, right }) =>
+          !Array.from(el.children).some(
+            (child) => child.getBoundingClientRect().right >= right - 0.5
+          )
+      );
+      const finalCandidates = (specific.length > 0 ? specific : candidates)
+        .sort((a, b) => b.right - a.right)
+        .slice(0, 5);
+
+      for (const { el, right, width } of finalCandidates) {
+        const id = el.id ? `#${el.id}` : '';
+        const cls =
+          typeof el.className === 'string' && el.className.trim()
+            ? `.${el.className.trim().split(/\s+/).slice(0, 3).join('.')}`
+            : '';
+        culprits.push(
+          `${el.tagName.toLowerCase()}${id}${cls} [right=${Math.round(right)}px, w=${Math.round(width)}px]`
+        );
+      }
+    }
+
     return {
       scrollWidth,
       clientWidth,
-      hasOverflow: scrollWidth > clientWidth + 1, // 1px Toleranz für Subpixel-Rundung
+      hasOverflow,
+      culprits,
     };
   });
   expect(
     overflow.hasOverflow,
-    `Horizontaler Overflow erkannt: scrollWidth (${overflow.scrollWidth}px) > clientWidth (${overflow.clientWidth}px)`
+    `Horizontaler Overflow erkannt: scrollWidth (${overflow.scrollWidth}px) > clientWidth (${overflow.clientWidth}px)${
+      overflow.culprits.length > 0
+        ? ` — Verursachende Elemente: ${overflow.culprits.join(', ')}`
+        : ''
+    }`
   ).toBe(false);
 }
 
