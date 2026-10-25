@@ -144,6 +144,47 @@ flowchart TD
     P2 --> P3["<b>Phase 3: Finales Release-Gate</b><br/><i>Re-Verifikation, Axe-A11y, Typecheck, Lint, Release-Notes-Check</i>"]
 ```
 
+### Interaktions-Ablauf in der Praxis (Mensch & Agent)
+
+Folgendes Sequenzdiagramm veranschaulicht das Zusammenspiel zwischen Entwickler:in und Agenten über die Phasen hinweg:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Du as Du (Entwickler:in)
+    participant A as Agent (Chat 1: Triage)
+    participant B as Agent (Frischer Chat 2: Fix)
+
+    Du->>A: "Mach ein Pre-Release-Audit" (oder "Release Audit Assess: Team 5")
+    Note over A: Phase 0: Read-Only Check!<br/>320px/390px, Popovers, Hover, Tokens.<br/>0 Zeilen Code geändert.
+    A-->>Du: Ampel-Tabelle (🔴 1 Blocker, 🟡 2 Polish, 🟢 3 OK)<br/>"Bitte freigeben: Was soll in Phase 2 gefixt werden?"
+
+    Du->>A: "Punkt 1 (Betrag bricht um) fixen, Rest lassen."
+    Note over A: Scope-Freeze & Handoff-Hinweis
+    A-->>Du: "Verstanden. Für Phase 2 bitte frischen Chat öffnen:<br/>👉 Release Audit Fix: Team 5"
+
+    Du->>B: "Release Audit Fix: Team 5"
+    Note over B: Phase 2: Chirurgischer CSS-Fix,<br/>sofortiger Test, sauberer Commit.
+    B-->>Du: "Fix verifiziert & committet."
+
+    Du->>B: "Release Audit Gate"
+    Note over B: Phase 3: Typecheck, Lint,<br/>A11y (Axe), Release-Notes-Check.
+    B-->>Du: "Alle Prüfungen grün. Bereit für Release!"
+```
+
+#### Wann du reviewen und wann du einen neuen Chat öffnen solltest:
+
+1. **Nach Phase 0 (Dein Review & Scope-Freeze):**
+   - Der Agent liefert die Ampel-Befundtabelle (🔴 Blocker, 🟡 Polish, 🟢 OK).
+   - Du entscheidest kurz und formlos im Chat: _„Punkt 1 und 2 freigegeben, Punkt 3 lassen wir so.“_
+2. **Neuer Chat für Phase 2 (Token- & Kontext-Schutz):**
+   - Der Triage-Agent beendet Phase 0 mit einem expliziten Handoff-Hinweis und gibt den passenden Trigger für den frischen Chat aus (`Release Audit Fix: Team X`).
+   - Im neuen Chat startet der Fix-Agent ohne den Ballast der vorherigen Test-Logs und konzentriert sich rein auf den minimal-invasiven CSS-Code.
+3. **Abschluss mit Phase 3:**
+   - Direkt im selben Chat nach den Fixes (oder separat) via `Release Audit Gate` alle automatisierten Schranken prüfen lassen.
+
+---
+
 ---
 
 ### Die 6 Fachdomänen
