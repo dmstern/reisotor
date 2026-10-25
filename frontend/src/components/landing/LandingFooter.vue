@@ -5,6 +5,10 @@ defineProps<{
   repoUrl: string;
 }>();
 
+const emit = defineEmits<{
+  (e: 'openLegal', tab: 'privacy' | 'imprint'): void;
+}>();
+
 const currentYear = new Date().getFullYear();
 </script>
 
@@ -16,6 +20,10 @@ const currentYear = new Date().getFullYear();
       <a :href="storybookUrl" target="_blank" rel="noopener">Storybook</a>
       <span class="dot">·</span>
       <a :href="repoUrl" target="_blank" rel="noopener">GitHub</a>
+      <span class="dot">·</span>
+      <a href="#privacy" @click.prevent="emit('openLegal', 'privacy')">Datenschutz</a>
+      <span class="dot">·</span>
+      <a href="#imprint" @click.prevent="emit('openLegal', 'imprint')">Impressum</a>
     </div>
     <p class="hint">
       © {{ currentYear }}

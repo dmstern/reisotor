@@ -59,6 +59,52 @@ export interface BuildInfo {
   environment: string;
 }
 
+export interface LegalOperator {
+  name: string | null;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+export interface LegalServicesConfig {
+  photonUrl: string;
+  isCustomPhoton: boolean;
+  nominatimEnabled: boolean;
+  nominatimUrl: string;
+  isCustomNominatim: boolean;
+  orsConfigured: boolean;
+  githubFeedbackConfigured: boolean;
+  pushConfigured: boolean;
+}
+
+export interface LegalConfig {
+  operator: LegalOperator;
+  hasOperatorInfo: boolean;
+  services: LegalServicesConfig;
+  hostingLocation: string;
+}
+
+export const DEFAULT_LEGAL_CONFIG: LegalConfig = {
+  operator: {
+    name: null,
+    address: null,
+    email: null,
+    phone: null,
+  },
+  hasOperatorInfo: false,
+  services: {
+    photonUrl: 'https://photon.komoot.io/api/',
+    isCustomPhoton: false,
+    nominatimEnabled: true,
+    nominatimUrl: 'https://nominatim.openstreetmap.org/search',
+    isCustomNominatim: false,
+    orsConfigured: false,
+    githubFeedbackConfigured: false,
+    pushConfigured: false,
+  },
+  hostingLocation: 'Berlin',
+};
+
 export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'travel' | 'other';
 
 /** Zeitraum, in dem ein Einkaufs-/ToDo-Eintrag erledigt werden soll: vor oder während des Urlaubs. */

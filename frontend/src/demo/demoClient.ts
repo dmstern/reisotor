@@ -128,6 +128,28 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   // Einzelfall-Endpunkte, die kein einfaches Collection-CRUD sind.
   if (path === '/auth/me') return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/config') return { registrationMode: 'off' } as unknown as T;
+  if (path === '/legal') {
+    return {
+      operator: {
+        name: 'Daniel Morgenstern',
+        address: null,
+        email: 'reisotor@ruebenherz.de',
+        phone: null,
+      },
+      hasOperatorInfo: true,
+      services: {
+        photonUrl: 'https://photon.komoot.io/api/',
+        isCustomPhoton: false,
+        nominatimEnabled: true,
+        nominatimUrl: 'https://nominatim.openstreetmap.org/search',
+        isCustomNominatim: false,
+        orsConfigured: false,
+        githubFeedbackConfigured: true,
+        pushConfigured: true,
+      },
+      hostingLocation: 'GitHub Pages',
+    } as unknown as T;
+  }
   if (path === '/auth/login' || path === '/auth/register')
     return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/logout') return undefined as T;

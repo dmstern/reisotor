@@ -21,6 +21,11 @@ const resolvedRepoUrl = props.repoUrl ?? __REPO_URL__;
       · <a :href="landingUrl" target="_blank" rel="noopener">Mehr über Reisotor</a>
     </template>
   </p>
+  <p class="hint app-footer-legal-links">
+    <router-link to="/privacy">Datenschutz</router-link>
+    ·
+    <router-link to="/imprint">Impressum</router-link>
+  </p>
   <p class="hint app-footer-copyright">
     © {{ copyrightYear }}
     <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> ·
@@ -30,8 +35,18 @@ const resolvedRepoUrl = props.repoUrl ?? __REPO_URL__;
 
 <style scoped>
 .app-footer-repo-link,
+.app-footer-legal-links,
 .app-footer-copyright {
   margin: 0;
   text-align: center;
+}
+
+.app-footer-legal-links a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.app-footer-legal-links a:hover {
+  color: var(--color-primary);
 }
 </style>

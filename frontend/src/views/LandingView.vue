@@ -1,17 +1,68 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
 import LandingHero from '../components/landing/LandingHero.vue';
 import LandingScrollySection from '../components/landing/LandingScrollySection.vue';
 import LandingCtaBand from '../components/landing/LandingCtaBand.vue';
 import LandingSelfHosting from '../components/landing/LandingSelfHosting.vue';
 import LandingFooter from '../components/landing/LandingFooter.vue';
+import LandingLegalModal from '../components/landing/LandingLegalModal.vue';
 import { useLandingFeatures } from '../composables/useLandingFeatures';
 import { useLandingScrollytelling } from '../composables/useLandingScrollytelling';
+import type { LegalConfig } from '../api/types';
 
 const { scrollyFeatures, repoUrl, demoUrl, storybookUrl } = useLandingFeatures();
 const { activeStepIndex, activeHighlightIndex, glowOpacities, setActiveHighlight } =
   useLandingScrollytelling({
     stepCount: scrollyFeatures.length,
   });
+
+const showLegalModal = ref(false);
+const legalModalTab = ref<'privacy' | 'imprint'>('privacy');
+
+const landingLegalConfig: LegalConfig = {
+  operator: {
+    name: 'Daniel Morgenstern',
+    address: null,
+    email: 'reisotor@ruebenherz.de',
+    phone: null,
+  },
+  hasOperatorInfo: true,
+  services: {
+    photonUrl: 'https://photon.komoot.io/api/',
+    isCustomPhoton: false,
+    nominatimEnabled: true,
+    nominatimUrl: 'https://nominatim.openstreetmap.org/search',
+    isCustomNominatim: false,
+    orsConfigured: false,
+    githubFeedbackConfigured: true,
+    pushConfigured: true,
+  },
+  hostingLocation: 'GitHub Pages',
+};
+
+function handleOpenLegal(tab: 'privacy' | 'imprint') {
+  legalModalTab.value = tab;
+  showLegalModal.value = true;
+}
+
+function checkHash() {
+  if (typeof window === 'undefined') return;
+  const hash = window.location.hash.toLowerCase();
+  if (hash === '#privacy' || hash === '#datenschutz') {
+    handleOpenLegal('privacy');
+  } else if (hash === '#imprint' || hash === '#impressum') {
+    handleOpenLegal('imprint');
+  }
+}
+
+onMounted(() => {
+  checkHash();
+  window.addEventListener('hashchange', checkHash);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('hashchange', checkHash);
+});
 </script>
 
 <template>
@@ -35,7 +86,19 @@ const { activeStepIndex, activeHighlightIndex, glowOpacities, setActiveHighlight
 
     <LandingSelfHosting :repo-url="repoUrl" class="scroll-animate" />
 
-    <LandingFooter :demo-url="demoUrl" :storybook-url="storybookUrl" :repo-url="repoUrl" />
+    <LandingFooter
+      :demo-url="demoUrl"
+      :storybook-url="storybookUrl"
+      :repo-url="repoUrl"
+      @open-legal="handleOpenLegal"
+    />
+
+    <LandingLegalModal
+      v-model="showLegalModal"
+      :active-tab="legalModalTab"
+      :config="landingLegalConfig"
+      @update:active-tab="(tab) => (legalModalTab = tab)"
+    />
   </div>
 </template>
 

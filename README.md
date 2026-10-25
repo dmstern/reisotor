@@ -101,6 +101,9 @@ Reisotor ist als persönliches Projekt entstanden – angetrieben von zwei zentr
 
 Reisotor verbindet den Komfort moderner Karten- und Reiseassistenzfunktionen mit kompromissloser **Datensparsamkeit, Unabhängigkeit und Offline-Tauglichkeit**. Soweit möglich, setzt die App auf freie, quelloffene und kostenfreie Schnittstellen ohne Registrierungszwang. Zeit- oder kontingentkritische Daten werden serverseitig in SQLite gepuffert, und externe Anfragen sind fehlertolerant gekapselt, sodass die App selbst bei Netzausfällen oder Störungen einzelner Dienste stets benutzbar bleibt.
 
+> [!NOTE]
+> **Datenschutz & Rechtliches:** Reisotor liefert vorlagenbasierte Seiten für **Datenschutzerklärung** (`/privacy`) und **Impressum** (`/imprint`) mit, die sich dynamisch an die Server- und Dienste-Konfiguration anpassen. **Wichtiger Hinweis:** Diese Vorlagen stellen keine Rechtsberatung dar. Betreiber:innen einer selbst gehosteten Instanz sind eigenverantwortlich verpflichtet, die Angaben auf ihre individuelle Einsatzumgebung abzustimmen (Konfiguration siehe `DEPLOYMENT.md`).
+
 ### Schnelle Übersicht
 
 | Dienst / Anbieter                                                  | Funktion in Reisotor             | Zweck & Warum                                                                                                                                                    | API-Key / Kosten                               | Datenschutz & Caching                                                                                                                                                                                           |
