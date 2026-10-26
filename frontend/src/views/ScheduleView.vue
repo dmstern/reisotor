@@ -272,7 +272,7 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
-@media (max-width: 480px) {
+@container app-main (max-width: 480px) {
   .calendar-drawer-content.standalone {
     padding-inline: var(--space-3);
   }

@@ -3,7 +3,6 @@ import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { getTourRoleIconDef } from '../utils/travelRole';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';

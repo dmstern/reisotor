@@ -370,29 +370,7 @@ function onDrop(event: DragEvent, date: string) {
   }
 }
 
-@media (max-width: 480px) {
-  .day-badge-wrap {
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .day-weather-row {
-    justify-content: center;
-  }
-
-  .day-weather:nth-child(n + 2) {
-    display: none;
-  }
-}
-
 @container (max-width: 360px) {
-  .day {
-    padding: 4px 2px;
-  }
-}
-
-@media (max-width: 360px) {
   .day {
     padding: 4px 2px;
   }
