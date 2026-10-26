@@ -24,7 +24,7 @@
     "generate:icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
-    "@keeratita/heic-converter": "^0.4.1",
+    "@keeratita/heic-converter": "^0.5.2",
     "@tabler/icons": "^3.49.0",
     "@tabler/icons-vue": "^3.49.0",
     "@tiptap/extension-link": "^3.29.2",
@@ -44,7 +44,7 @@
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/vue3": "^8.6.18",
     "@storybook/vue3-vite": "^8.6.18",
-    "@types/dompurify": "^3.0.5",
+    "@types/dompurify": "^3.2.0",
     "@types/leaflet": "^1.9.12",
     "@types/piexifjs": "^1.0.0",
     "@vitejs/plugin-vue": "^5.1.4",
