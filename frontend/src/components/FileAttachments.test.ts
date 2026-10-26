@@ -1,14 +1,25 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { createApp, h, type Component } from 'vue';
-import { createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import FileAttachments from './FileAttachments.vue';
-import type { Attachment } from '../api/types';
+import type { Attachment, User } from '../api/types';
 import { api, ApiError } from '../api/client';
+import { useAuthStore } from '../stores/auth';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
 
-function createTestApp(rootComponent: Component, props: Record<string, unknown> = {}) {
+function createTestApp(
+  rootComponent: Component,
+  props: Record<string, unknown> = {},
+  initialUser?: Partial<User>
+) {
   const pinia = createPinia();
+  setActivePinia(pinia);
+  const authStore = useAuthStore(pinia);
+  if (initialUser) {
+    authStore.user = initialUser as User;
+  }
   const app = createApp({
     render: () => h(rootComponent, props),
   });
@@ -133,5 +144,40 @@ describe('FileAttachments component', () => {
     expect(unhandledRejections).toHaveLength(0);
     app.unmount();
     window.removeEventListener('unhandledrejection', onUnhandled);
+  });
+
+  it('shows file upload button with Premium badge for restricted user and opens modal on click', async () => {
+    const { isOpen, highlightedFeature, closeAccountTierModal } = useAccountTierModal();
+    closeAccountTierModal();
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createTestApp(
+      FileAttachments,
+      {
+        domain: 'spots',
+        entityId: 10,
+        editable: true,
+        initialAttachments: [],
+      },
+      { id: 2, username: 'restricted', restricted: true }
+    );
+    app.mount(container);
+
+    expect(container.textContent).toContain('Datei hinzufügen');
+    expect(container.textContent).toContain('Premium');
+
+    const button = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Datei hinzufügen')
+    );
+    expect(button).toBeDefined();
+    button?.click();
+
+    expect(isOpen.value).toBe(true);
+    expect(highlightedFeature.value).toBe('uploads');
+
+    app.unmount();
+    container.remove();
   });
 });

@@ -9,6 +9,8 @@ import PolaroidStack from './primitives/PolaroidStack.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useAuthStore } from '../stores/auth';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
+import PremiumBadge from './PremiumBadge.vue';
 import AttachmentPreviewModal from './AttachmentPreviewModal.vue';
 import AttachmentThumbnails from './AttachmentThumbnails.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
@@ -215,6 +217,16 @@ async function remove(attachment: Attachment) {
     error.value = 'Fehler beim Löschen des Anhangs.';
   }
 }
+
+const { openAccountTierModal } = useAccountTierModal();
+
+function handleUploadClick() {
+  if (auth.user?.restricted) {
+    openAccountTierModal('uploads');
+    return;
+  }
+  fileInputRef.value?.click();
+}
 </script>
 
 <template>
@@ -257,11 +269,9 @@ async function remove(attachment: Attachment) {
         @remove="(index) => remove(attachments[index])"
       />
 
-      <p v-if="editable && auth.user?.restricted" class="hint">
-        Eingeschränkter Modus - Kein Datei-Upload möglich
-      </p>
-      <div v-else-if="editable" class="upload-control">
+      <div v-if="editable" class="upload-control">
         <input
+          v-if="!auth.user?.restricted"
           ref="fileInputRef"
           type="file"
           class="file-input-hidden"
@@ -285,9 +295,10 @@ async function remove(attachment: Attachment) {
           size="sm"
           :icon="ACTION_ICONS.filePlus"
           type="button"
-          @click="fileInputRef?.click()"
+          @click="handleUploadClick"
         >
           Datei hinzufügen
+          <PremiumBadge v-if="auth.user?.restricted" feature="uploads" />
         </Button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>

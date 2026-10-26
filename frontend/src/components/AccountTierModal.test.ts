@@ -4,10 +4,15 @@ import { createApp, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import AccountTierModal from './AccountTierModal.vue';
 import { useAuthStore } from '../stores/auth';
+import type { TierFeature } from '../composables/useAccountTierModal';
 import type { User } from '../api/types';
 
 function mountComponent(
-  props: { modelValue: boolean; 'onUpdate:modelValue'?: (val: boolean) => void },
+  props: {
+    modelValue: boolean;
+    feature?: TierFeature | null;
+    'onUpdate:modelValue'?: (val: boolean) => void;
+  },
   initialUser?: Partial<User>
 ) {
   const pinia = createPinia();
@@ -58,6 +63,18 @@ describe('AccountTierModal component', () => {
     expect(document.body.textContent).toContain('Vollzugriff');
     expect(document.body.textContent).toContain('uneingeschränkten Zugriff');
     expect(document.body.textContent).not.toContain('Wie erhalte ich Vollzugriff?');
+    cleanUp();
+  });
+
+  it('renders feature notice and highlighted item when a specific feature is requested', () => {
+    const { cleanUp } = mountComponent(
+      { modelValue: true, feature: 'uploads' },
+      { id: 2, username: 'testuser', restricted: true }
+    );
+
+    expect(document.body.textContent).toContain('Vollzugriff erforderlich');
+    expect(document.body.textContent).toContain('Datei- & Foto-Uploads');
+    expect(document.body.querySelector('.feature-item.highlighted')).not.toBeNull();
     cleanUp();
   });
 });

@@ -118,7 +118,11 @@ describe('TripPermissionsSettings', () => {
     await nextTick();
 
     expect(container.textContent).toContain('Eingeschränkter Modus');
-    expect(container.querySelector('input[type="search"]')).toBeNull();
+    expect(container.querySelector('input[type="search"]')).not.toBeNull();
+    expect((container.querySelector('input[type="search"]') as HTMLInputElement).disabled).toBe(
+      true
+    );
+    expect(container.querySelector('.premium-badge')).not.toBeNull();
     cleanUp();
   });
 });

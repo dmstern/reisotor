@@ -25,6 +25,7 @@ import ToastNotification from './components/ToastNotification.vue';
 import ErrorDetailModal from './components/ErrorDetailModal.vue';
 import UpdateAvailableModal from './components/UpdateAvailableModal.vue';
 import ChangelogModal from './components/ChangelogModal.vue';
+import AccountTierModal from './components/AccountTierModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -177,6 +178,7 @@ const firstLoadDone = ref(
   <MustChangePasswordModal v-if="auth.user?.must_change_password" />
   <UpdateAvailableModal />
   <ChangelogModal v-if="auth.user" />
+  <AccountTierModal v-if="auth.user" />
   <template v-if="!showNav">
     <router-view />
   </template>

@@ -3,7 +3,8 @@ import { computed, ref, onUnmounted, useId } from 'vue';
 import { api } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
 import { useAuthStore } from '../stores/auth';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
+import PremiumBadge from './PremiumBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Input from './primitives/Input.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
@@ -41,6 +42,7 @@ const progressPercent = ref(0);
 const currentFileName = ref('');
 const uploadError = ref('');
 let abortController: AbortController | null = null;
+const { openAccountTierModal } = useAccountTierModal();
 let progressTimer: ReturnType<typeof setInterval> | null = null;
 
 function setUploading(value: boolean) {
@@ -144,11 +146,16 @@ defineExpose({
       @cancel="abortUpload"
     />
 
-    <p v-else-if="auth.user?.restricted" class="hint restricted-hint">
-      <AppIcon :icon="ACTION_ICONS.private" :size="13" group="actions" />
-      Datei-Uploads im Basis-Konto deaktiviert. Web-Bildersuche oder URL-Eingabe ist weiterhin
-      möglich.
-    </p>
+    <button
+      v-else-if="auth.user?.restricted"
+      type="button"
+      class="upload-label upload-label--restricted"
+      @click="openAccountTierModal('uploads')"
+    >
+      <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" />
+      <span>Oder Bild hochladen</span>
+      <PremiumBadge feature="uploads" />
+    </button>
 
     <label v-else :for="fileInputId" class="upload-label">
       <input
@@ -173,13 +180,11 @@ defineExpose({
   gap: var(--space-3);
 }
 
-.restricted-hint {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+button.upload-label {
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
 }
 
 .upload-label {

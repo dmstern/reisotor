@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useAuthStore } from '../stores/auth';
+import { useAccountTierModal, type TierFeature } from '../composables/useAccountTierModal';
 
-defineProps<{
-  modelValue: boolean;
+const props = defineProps<{
+  modelValue?: boolean;
+  feature?: TierFeature | null;
 }>();
 
 const emit = defineEmits<{
@@ -15,20 +18,90 @@ const emit = defineEmits<{
 }>();
 
 const auth = useAuthStore();
+const tierModalState = useAccountTierModal();
+
+const isVisible = computed({
+  get() {
+    if (props.modelValue !== undefined) {
+      return props.modelValue;
+    }
+    return tierModalState.isOpen.value;
+  },
+  set(val: boolean) {
+    if (props.modelValue !== undefined) {
+      emit('update:modelValue', val);
+    } else {
+      if (!val) {
+        tierModalState.closeAccountTierModal();
+      } else {
+        tierModalState.openAccountTierModal();
+      }
+    }
+  },
+});
+
+const activeFeature = computed(() => {
+  if (props.feature !== undefined) {
+    return props.feature;
+  }
+  return tierModalState.highlightedFeature.value;
+});
+
+const featureNotice = computed(() => {
+  if (!auth.user?.restricted) return null;
+  switch (activeFeature.value) {
+    case 'trips':
+      return {
+        title: 'Urlaub anlegen',
+        description:
+          'Im Basis-Konto ist maximal 1 eigener Urlaub möglich. Mit Vollzugriff kannst du unbegrenzt viele eigene Urlaube anlegen.',
+      };
+    case 'members':
+      return {
+        title: 'Mitglieder einladen',
+        description:
+          'Im Basis-Konto können bis zu 3 Personen an einem Urlaub teilnehmen. Mit Vollzugriff kannst du unbegrenzt viele Mitreisende einladen.',
+      };
+    case 'uploads':
+      return {
+        title: 'Datei- & Foto-Uploads',
+        description:
+          'Tickets, Buchungsunterlagen und Tagebuch-Fotos erfordern ein Konto mit Vollzugriff.',
+      };
+    case 'general':
+      return {
+        title: 'Vollzugriff erforderlich',
+        description: 'Diese Funktion ist für verifizierte Konten mit Vollzugriff reserviert.',
+      };
+    default:
+      return null;
+  }
+});
 
 function close() {
-  emit('update:modelValue', false);
+  isVisible.value = false;
 }
 </script>
 
 <template>
   <Modal
-    :model-value="modelValue"
+    :model-value="isVisible"
     title="Kontostatus & Berechtigungen"
     size="md"
-    @update:model-value="emit('update:modelValue', $event)"
+    @update:model-value="isVisible = $event"
   >
     <div class="tier-modal-body">
+      <div v-if="featureNotice" class="feature-notice-card">
+        <div class="notice-icon">
+          <AppIcon :icon="ACTION_ICONS.sparkles" :size="18" group="actions" />
+        </div>
+        <div class="notice-text">
+          <span class="notice-badge">Vollzugriff erforderlich</span>
+          <strong>{{ featureNotice.title }}</strong>
+          <p>{{ featureNotice.description }}</p>
+        </div>
+      </div>
+
       <div class="status-header">
         <div class="status-badge-wrap">
           <Badge v-if="auth.user?.is_admin" variant="accent-secondary" size="md"
@@ -67,7 +140,13 @@ function close() {
             </div>
           </li>
 
-          <li class="feature-item" :class="auth.user?.restricted ? 'locked' : 'enabled'">
+          <li
+            class="feature-item"
+            :class="[
+              auth.user?.restricted ? 'locked' : 'enabled',
+              { highlighted: activeFeature === 'trips' && auth.user?.restricted },
+            ]"
+          >
             <span class="icon" :class="auth.user?.restricted ? 'lock' : 'check'">
               <AppIcon
                 :icon="auth.user?.restricted ? ACTION_ICONS.private : ACTION_ICONS.done"
@@ -85,7 +164,13 @@ function close() {
             </div>
           </li>
 
-          <li class="feature-item" :class="auth.user?.restricted ? 'locked' : 'enabled'">
+          <li
+            class="feature-item"
+            :class="[
+              auth.user?.restricted ? 'locked' : 'enabled',
+              { highlighted: activeFeature === 'members' && auth.user?.restricted },
+            ]"
+          >
             <span class="icon" :class="auth.user?.restricted ? 'lock' : 'check'">
               <AppIcon
                 :icon="auth.user?.restricted ? ACTION_ICONS.private : ACTION_ICONS.done"
@@ -103,7 +188,13 @@ function close() {
             </div>
           </li>
 
-          <li class="feature-item" :class="auth.user?.restricted ? 'locked' : 'enabled'">
+          <li
+            class="feature-item"
+            :class="[
+              auth.user?.restricted ? 'locked' : 'enabled',
+              { highlighted: activeFeature === 'uploads' && auth.user?.restricted },
+            ]"
+          >
             <span class="icon" :class="auth.user?.restricted ? 'lock' : 'check'">
               <AppIcon
                 :icon="auth.user?.restricted ? ACTION_ICONS.private : ACTION_ICONS.done"
@@ -151,6 +242,55 @@ function close() {
   gap: var(--space-4);
 }
 
+.feature-notice-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-warning-tint, rgba(245, 158, 11, 0.12));
+  border: 1px solid var(--color-warning-border, rgba(245, 158, 11, 0.35));
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
+.notice-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-warning-tint, rgba(245, 158, 11, 0.2));
+  color: var(--color-warning-dark, #b45309);
+  flex-shrink: 0;
+}
+
+.notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notice-badge {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-warning-dark, #b45309);
+}
+
+.notice-text strong {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.notice-text p {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
 .status-header {
   text-align: center;
   padding: var(--space-2) 0;
@@ -187,6 +327,16 @@ function close() {
   align-items: flex-start;
   gap: var(--space-3);
   font-size: var(--font-size-sm);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.feature-item.highlighted {
+  border: 1.5px solid var(--color-warning-border, rgba(245, 158, 11, 0.5));
+  border-radius: var(--radius-sm-squircle);
+  padding: var(--space-2);
+  background: var(--color-warning-tint, rgba(245, 158, 11, 0.08));
 }
 
 .feature-item .icon {

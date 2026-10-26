@@ -3,6 +3,8 @@ import { computed, watch } from 'vue';
 import type { DiaryEntry, DiaryImage } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useDiaryNewForm } from '../composables/useDiaryNewForm';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
+import PremiumBadge from './PremiumBadge.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
@@ -107,6 +109,16 @@ defineExpose({
   open: openNewForm,
   close: closeForm,
 });
+
+const { openAccountTierModal } = useAccountTierModal();
+
+function handleUploadClick() {
+  if (auth.user?.restricted) {
+    openAccountTierModal('uploads');
+    return;
+  }
+  fileInputRef.value?.click();
+}
 </script>
 
 <template>
@@ -157,11 +169,9 @@ defineExpose({
         />
       </FormField>
 
-      <p v-if="auth.user?.restricted" class="hint">
-        Eingeschränkter Modus - Kein Datei-Upload möglich
-      </p>
-      <div v-else class="upload-control">
+      <div class="upload-control">
         <input
+          v-if="!auth.user?.restricted"
           ref="fileInputRef"
           type="file"
           class="file-input-hidden"
@@ -185,9 +195,10 @@ defineExpose({
           variant="secondary"
           size="sm"
           :icon="FORM_FIELD_ICONS.image"
-          @click="fileInputRef?.click()"
+          @click="handleUploadClick"
         >
           Bilder hinzufügen
+          <PremiumBadge v-if="auth.user?.restricted" feature="uploads" />
         </Button>
       </div>
       <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
