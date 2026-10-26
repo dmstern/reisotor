@@ -567,5 +567,20 @@ describe('instance_settings und remote_image_cache Tabellen-Initialisierung', ()
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='remote_image_cache'")
       .get() as { name: string } | undefined;
     expect(remoteImageCache?.name).toBe('remote_image_cache');
+
+    const resetTokens = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='password_reset_tokens'")
+      .get() as { name: string } | undefined;
+    expect(resetTokens?.name).toBe('password_reset_tokens');
+
+    const verifyTokens = db
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='email_verification_tokens'"
+      )
+      .get() as { name: string } | undefined;
+    expect(verifyTokens?.name).toBe('email_verification_tokens');
+
+    const userCols = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
+    expect(userCols.some((c) => c.name === 'is_email_verified')).toBe(true);
   });
 });

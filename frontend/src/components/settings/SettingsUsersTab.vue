@@ -6,6 +6,7 @@ import Badge from '../primitives/Badge.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import CreateUserDialog from '../CreateUserDialog.vue';
+import AdminResetPasswordModal from '../AdminResetPasswordModal.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useUserManagement } from '../../composables/useUserManagement';
@@ -21,6 +22,10 @@ const {
   showCreateUserDialog,
   registrationMode,
   savingRegistrationMode,
+  resetPasswordTarget,
+  resetPasswordResult,
+  resettingPassword,
+  verifyingEmailId,
   loadRegistrationMode,
   updateRegistrationMode,
   loadUserList,
@@ -28,6 +33,10 @@ const {
   toggleRestrictedRole,
   deleteUserAccount,
   onUserCreated,
+  openResetPasswordDialog,
+  closeResetPasswordDialog,
+  performResetPassword,
+  verifyUserEmail,
 } = useUserManagement();
 
 onMounted(() => {
@@ -167,17 +176,50 @@ onMounted(() => {
                 <Badge v-else variant="success">Vollzugriff</Badge>
               </td>
               <td>
-                <Badge
-                  v-if="u.must_change_password"
-                  variant="warning"
-                  title="Passwortänderung beim ersten Login ausstehend"
-                >
-                  Passwortänderung ausstehend
-                </Badge>
-                <Badge v-else variant="success">Aktiv</Badge>
+                <div class="status-badges">
+                  <Badge
+                    v-if="u.is_email_verified === false"
+                    variant="warning"
+                    title="E-Mail-Adresse noch nicht bestätigt"
+                  >
+                    E-Mail unbestätigt
+                  </Badge>
+                  <Badge
+                    v-if="u.must_change_password"
+                    variant="warning"
+                    title="Passwortänderung beim ersten Login ausstehend"
+                  >
+                    PW-Änderung offen
+                  </Badge>
+                  <Badge
+                    v-if="u.is_email_verified !== false && !u.must_change_password"
+                    variant="success"
+                    >Aktiv</Badge
+                  >
+                </div>
               </td>
               <td class="actions-col">
                 <div class="user-actions">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    title="Passwort für diesen Account zurücksetzen"
+                    @click="openResetPasswordDialog(u)"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.key" :size="14" group="actions" />
+                    PW Reset
+                  </Button>
+                  <Button
+                    v-if="u.is_email_verified === false"
+                    size="sm"
+                    variant="secondary"
+                    title="E-Mail-Adresse manuell freischalten"
+                    :loading="verifyingEmailId === u.id"
+                    @click="verifyUserEmail(u)"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                    Mail bestätigen
+                  </Button>
                   <Button
                     v-if="!u.is_admin"
                     size="sm"
@@ -224,6 +266,14 @@ onMounted(() => {
     </Card>
 
     <CreateUserDialog v-model="showCreateUserDialog" @created="onUserCreated" />
+    <AdminResetPasswordModal
+      :model-value="Boolean(resetPasswordTarget)"
+      :user="resetPasswordTarget"
+      :result="resetPasswordResult"
+      :loading="resettingPassword"
+      @reset="(pw) => resetPasswordTarget && performResetPassword(resetPasswordTarget, pw)"
+      @close="closeResetPasswordDialog"
+    />
   </div>
 </template>
 

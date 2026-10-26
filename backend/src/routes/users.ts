@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
 import { db, hasColumn, hasTable } from '../db/index.js';
 import {
   isUserAdmin,
@@ -8,6 +9,7 @@ import {
   setRegistrationMode,
   type RegistrationMode,
 } from '../registrationConfig.js';
+import { getAppUrl, isEmailConfigured, sendPasswordResetEmail } from '../utils/mailer.js';
 
 interface UserRow {
   id: number;
@@ -18,6 +20,7 @@ interface UserRow {
   is_admin: number;
   is_restricted: number;
   must_change_password: number;
+  is_email_verified?: number;
 }
 
 interface CreateUserBody {
@@ -69,7 +72,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (admin) {
       const rows = db
         .prepare(
-          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users ORDER BY id'
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified FROM users ORDER BY id'
         )
         .all() as UserRow[];
       return rows.map((u) => {
@@ -83,6 +86,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           is_restricted: restricted,
           restricted,
           must_change_password: Boolean(u.must_change_password),
+          is_email_verified: u.is_email_verified !== 0,
         };
       });
     }
@@ -388,6 +392,8 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       safeDelete('drafts', 'user_id');
       safeDelete('location_tracks', 'user_id');
       safeDelete('user_icon_settings', 'user_id');
+      safeDelete('password_reset_tokens', 'user_id');
+      safeDelete('email_verification_tokens', 'user_id');
 
       // 3. Nutzerzeile löschen
       db.prepare('DELETE FROM users WHERE id = ?').run(id);
@@ -395,6 +401,101 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
     deleteUserTx(targetUserId);
     return reply.code(204).send();
+  });
+
+  // Passwort durch Administrator zurücksetzen
+  app.post<{ Params: { id: string }; Body: { temporaryPassword?: string } }>(
+    '/users/:id/reset-password',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Passwörter zurücksetzen' });
+      }
+      const targetUserId = Number(req.params.id);
+      const targetUser = db
+        .prepare('SELECT id, username, email FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; username: string; email: string | null } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      const rawTempPassword =
+        req.body?.temporaryPassword?.trim() || `Reiso-${crypto.randomBytes(4).toString('hex')}`;
+
+      if (rawTempPassword.length < 6) {
+        return reply
+          .code(400)
+          .send({ error: 'Das temporäre Passwort muss mindestens 6 Zeichen haben' });
+      }
+
+      const hash = bcrypt.hashSync(rawTempPassword, 10);
+      db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(
+        hash,
+        targetUserId
+      );
+
+      // Sessions invalidieren
+      if (hasTable('sessions') && hasColumn('sessions', 'user_id')) {
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(targetUserId);
+      }
+
+      // Einmal-Reset-Link generieren (24h gültig)
+      db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(targetUserId);
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      db.prepare(
+        'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
+      ).run(targetUserId, tokenHash, expiresAt, new Date().toISOString());
+
+      const resetUrl = `${getAppUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
+
+      // Falls der Nutzer eine E-Mail-Adresse hat und SMTP konfiguriert ist, Mail senden
+      let emailSent = false;
+      if (targetUser.email && isEmailConfigured()) {
+        const mailResult = await sendPasswordResetEmail({
+          to: targetUser.email,
+          username: targetUser.username,
+          token: rawToken,
+        });
+        emailSent = mailResult.success && !mailResult.simulated;
+      }
+
+      return {
+        temporaryPassword: rawTempPassword,
+        resetUrl,
+        emailSent,
+        username: targetUser.username,
+        message: 'Passwort erfolgreich zurückgesetzt',
+      };
+    }
+  );
+
+  // E-Mail-Adresse manuell durch Administrator bestätigen
+  app.post<{ Params: { id: string } }>('/users/:id/verify-email', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen E-Mail-Adressen bestätigen' });
+    }
+    const targetUserId = Number(req.params.id);
+    const targetUser = db
+      .prepare('SELECT id, username, email FROM users WHERE id = ?')
+      .get(targetUserId) as { id: number; username: string; email: string | null } | undefined;
+    if (!targetUser) {
+      return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+    }
+
+    db.prepare('UPDATE users SET is_email_verified = 1 WHERE id = ?').run(targetUserId);
+    db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(targetUserId);
+
+    return {
+      success: true,
+      is_email_verified: true,
+      message: 'E-Mail-Adresse erfolgreich verifiziert',
+    };
   });
 
   app.put<{ Body: AvatarBody }>('/users/me/avatar', async (req, reply) => {

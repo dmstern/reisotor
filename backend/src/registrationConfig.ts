@@ -78,6 +78,13 @@ export function userMustChangePassword(userId: number | null | undefined): boole
   return Boolean(user?.must_change_password);
 }
 
+export function isUserEmailVerified(userId: number | null | undefined): boolean {
+  if (userId == null) return false;
+  const user = db.prepare('SELECT is_email_verified FROM users WHERE id = ?').get(userId) as
+    { is_email_verified: number } | undefined;
+  return user?.is_email_verified !== 0;
+}
+
 export function isUsernameFullAccess(username: string): boolean {
   return FULL_ACCESS_USERS.has(username);
 }

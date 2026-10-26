@@ -1,19 +1,29 @@
 import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
-import { db } from '../db/index.js';
+import crypto from 'node:crypto';
+import { db, hasTable, hasColumn } from '../db/index.js';
 import {
   getRegistrationMode,
   isUserRestricted,
   isUserAdmin,
   userMustChangePassword,
   isUsernameFullAccess,
+  isUserEmailVerified,
 } from '../registrationConfig.js';
+import {
+  isEmailConfigured,
+  isEmailVerificationRequired,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from '../utils/mailer.js';
 
 interface UserRow {
   id: number;
   username: string;
+  email?: string | null;
   password_hash: string;
   avatar: string;
+  is_email_verified?: number;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,15 +32,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   // Frontend braucht den Modus schon VOR dem Login, um den Registrieren-Umschalter auf der
   // Login-Seite (LoginView.vue) überhaupt anzuzeigen – bewusst ungeschützt wie der Rest von /auth/*.
   app.get('/config', async () => {
-    return { registrationMode: getRegistrationMode() };
+    return {
+      registrationMode: getRegistrationMode(),
+      emailConfigured: isEmailConfigured(),
+      requireEmailVerification: isEmailVerificationRequired(),
+    };
   });
 
-  // Selbstregistrierung auf der Login-Seite (LoginView.vue) – zusätzlich zum bestehenden, aus dem
-  // Profil heraus erreichbaren "Nutzer anlegen" (routes/users.ts, POST /users, braucht bereits
-  // eine eingeloggte Session). Loggt direkt ein (wie /login), damit die Registrierung nicht als
-  // separater zweiter Schritt erscheint. Registrierte Nutzer:innen treten dabei bewusst KEINEM
-  // bestehenden Urlaub bei (siehe db/index.ts's trip_members-Backfill-Kommentar) – ein neuer
-  // Urlaub oder eine Einladung ist der einzige Weg zu einem sichtbaren Urlaub.
+  // Selbstregistrierung auf der Login-Seite (LoginView.vue)
   app.post<{ Body: { username: string; email: string; password: string } }>(
     '/register',
     async (req, reply) => {
@@ -67,16 +76,45 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const isAdmin = userCount === 0 ? 1 : 0;
 
       const trimmedUsername = username.trim();
+      const trimmedEmail = email.trim();
       const restricted =
         isAdmin || isUsernameFullAccess(trimmedUsername) || mode !== 'restricted' ? 0 : 1;
+
+      const requireVerification = isEmailVerificationRequired() && !isAdmin;
+      const isEmailVerified = requireVerification ? 0 : 1;
 
       const hash = bcrypt.hashSync(password, 10);
       const result = db
         .prepare(
-          'INSERT INTO users (username, email, password_hash, avatar, is_restricted, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?, 0)'
+          'INSERT INTO users (username, email, password_hash, avatar, is_restricted, is_admin, must_change_password, is_email_verified) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
         )
-        .run(trimmedUsername, email.trim(), hash, '🙂', restricted, isAdmin);
+        .run(trimmedUsername, trimmedEmail, hash, '🙂', restricted, isAdmin, isEmailVerified);
       const userId = result.lastInsertRowid as number;
+
+      if (requireVerification) {
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+        db.prepare(
+          'INSERT INTO email_verification_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
+        ).run(userId, tokenHash, expiresAt, new Date().toISOString());
+
+        await sendVerificationEmail({
+          to: trimmedEmail,
+          username: trimmedUsername,
+          token: rawToken,
+        });
+
+        reply.code(201);
+        return {
+          id: userId,
+          username: trimmedUsername,
+          requiresVerification: true,
+          message:
+            'Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir per E-Mail gesendet haben.',
+        };
+      }
 
       req.session.userId = userId;
       req.session.username = trimmedUsername;
@@ -88,6 +126,127 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         restricted: isUserRestricted(userId),
         is_admin: Boolean(isAdmin),
         must_change_password: false,
+        is_email_verified: true,
+      };
+    }
+  );
+
+  // E-Mail-Bestätigung (Double-Opt-In)
+  app.post<{ Body: { token: string } }>('/verify-email', async (req, reply) => {
+    const { token } = req.body ?? {};
+    if (!token?.trim()) {
+      return reply.code(400).send({ error: 'Bestätigungs-Token erforderlich' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const record = db
+      .prepare('SELECT id, user_id, expires_at FROM email_verification_tokens WHERE token_hash = ?')
+      .get(tokenHash) as { id: number; user_id: number; expires_at: string } | undefined;
+
+    if (!record) {
+      return reply.code(400).send({ error: 'Ungültiger oder abgelaufener Bestätigungslink' });
+    }
+
+    if (new Date(record.expires_at).getTime() < Date.now()) {
+      db.prepare('DELETE FROM email_verification_tokens WHERE id = ?').run(record.id);
+      return reply
+        .code(400)
+        .send({ error: 'Bestätigungslink ist abgelaufen. Bitte fordere einen neuen an.' });
+    }
+
+    db.prepare('UPDATE users SET is_email_verified = 1 WHERE id = ?').run(record.user_id);
+    db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(record.user_id);
+
+    return {
+      success: true,
+      message: 'E-Mail-Adresse erfolgreich bestätigt! Du kannst dich jetzt anmelden.',
+    };
+  });
+
+  // Passwort-Reset anfordern ("Passwort vergessen?")
+  app.post<{ Body: { email: string } }>('/forgot-password', async (req, reply) => {
+    const { email } = req.body ?? {};
+    if (!email?.trim() || !EMAIL_PATTERN.test(email.trim())) {
+      return reply.code(400).send({ error: 'Gültige E-Mail-Adresse erforderlich' });
+    }
+
+    const user = db
+      .prepare('SELECT id, username, email FROM users WHERE LOWER(email) = LOWER(?)')
+      .get(email.trim()) as { id: number; username: string; email: string } | undefined;
+
+    if (user) {
+      db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(user.id);
+
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+      db.prepare(
+        'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
+      ).run(user.id, tokenHash, expiresAt, new Date().toISOString());
+
+      await sendPasswordResetEmail({
+        to: user.email,
+        username: user.username,
+        token: rawToken,
+      });
+    }
+
+    // Immer gleiche Erfolgsmeldung zurückgeben, um User Enumeration zu verhindern
+    return {
+      message:
+        'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde eine E-Mail mit einem Link zum Zurücksetzen des Passworts versendet.',
+    };
+  });
+
+  // Passwort mit Token zurücksetzen
+  app.post<{ Body: { token: string; newPassword: string } }>(
+    '/reset-password',
+    async (req, reply) => {
+      const { token, newPassword } = req.body ?? {};
+      if (!token?.trim()) {
+        return reply.code(400).send({ error: 'Token erforderlich' });
+      }
+      if (!newPassword || newPassword.length < 6) {
+        return reply.code(400).send({ error: 'Das neue Passwort muss mindestens 6 Zeichen haben' });
+      }
+
+      const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+      const record = db
+        .prepare('SELECT id, user_id, expires_at FROM password_reset_tokens WHERE token_hash = ?')
+        .get(tokenHash) as { id: number; user_id: number; expires_at: string } | undefined;
+
+      if (!record) {
+        return reply
+          .code(400)
+          .send({ error: 'Ungültiger oder abgelaufener Link zum Zurücksetzen' });
+      }
+
+      if (new Date(record.expires_at).getTime() < Date.now()) {
+        db.prepare('DELETE FROM password_reset_tokens WHERE id = ?').run(record.id);
+        return reply
+          .code(400)
+          .send({
+            error: 'Der Link zum Zurücksetzen ist abgelaufen. Bitte fordere einen neuen an.',
+          });
+      }
+
+      const hash = bcrypt.hashSync(newPassword, 10);
+      db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(
+        hash,
+        record.user_id
+      );
+      db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(record.user_id);
+
+      // Bestehende Sessions für den Nutzer invalidieren
+      if (hasTable('sessions') && hasColumn('sessions', 'user_id')) {
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(record.user_id);
+      }
+
+      return {
+        success: true,
+        message:
+          'Passwort erfolgreich geändert! Du kannst dich jetzt mit deinem neuen Passwort anmelden.',
       };
     }
   );
@@ -99,11 +258,20 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const user = db
-      .prepare('SELECT id, username, password_hash, avatar FROM users WHERE username = ?')
-      .get(username) as UserRow | undefined;
+      .prepare(
+        'SELECT id, username, password_hash, avatar, is_email_verified FROM users WHERE username = ?'
+      )
+      .get(username) as (UserRow & { is_email_verified: number }) | undefined;
 
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
       return reply.code(401).send({ error: 'Ungültige Anmeldedaten' });
+    }
+
+    if (isEmailVerificationRequired() && user.is_email_verified === 0) {
+      return reply.code(403).send({
+        error: 'Bitte bestätige zuerst deine E-Mail-Adresse über den Link in der Bestätigungsmail.',
+        unverifiedEmail: true,
+      });
     }
 
     req.session.userId = user.id;
@@ -115,6 +283,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       restricted: isUserRestricted(user.id),
       is_admin: isUserAdmin(user.id),
       must_change_password: userMustChangePassword(user.id),
+      is_email_verified: isUserEmailVerified(user.id),
     };
   });
 
@@ -138,6 +307,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       restricted: isUserRestricted(user.id),
       is_admin: isUserAdmin(user.id),
       must_change_password: userMustChangePassword(user.id),
+      is_email_verified: isUserEmailVerified(user.id),
     };
   });
 };

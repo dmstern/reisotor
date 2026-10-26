@@ -334,4 +334,97 @@ describe('Admin User Management routes (#224)', () => {
     });
     expect(invalidRes.statusCode).toBe(400);
   });
+
+  describe('Admin Password Reset & Email Verification', () => {
+    let testUserId: number;
+    let testUserCookie: string;
+
+    beforeAll(async () => {
+      const { db } = await import('../../src/db/index.js');
+      const res = db
+        .prepare(
+          'INSERT INTO users (username, email, password_hash, avatar, is_admin, is_email_verified, must_change_password) VALUES (?, ?, ?, ?, 0, 0, 0)'
+        )
+        .run('reset_test_user', 'reset_test@example.com', bcrypt.hashSync('oldpass123', 10), '🧑');
+      testUserId = res.lastInsertRowid as number;
+
+      const login = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username: 'reset_test_user', password: 'oldpass123' },
+      });
+      testUserCookie = String(login.headers['set-cookie']);
+    });
+
+    it('rejects password reset for non-admin', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/users/${testUserId}/reset-password`,
+        headers: { cookie: testUserCookie },
+        payload: {},
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('allows admin to reset user password with generated temporary password', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/users/${testUserId}/reset-password`,
+        headers: { cookie: adminCookie },
+        payload: {},
+      });
+      expect(res.statusCode).toBe(200);
+      const data = res.json();
+      expect(data.temporaryPassword).toBeDefined();
+      expect(data.temporaryPassword.length).toBeGreaterThanOrEqual(6);
+      expect(data.resetUrl).toContain('/reset-password?token=');
+
+      // Nutzer kann sich mit dem neuen temporären Passwort anmelden und must_change_password ist true
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username: 'reset_test_user', password: data.temporaryPassword },
+      });
+      expect(loginRes.statusCode).toBe(200);
+      expect(loginRes.json().must_change_password).toBe(true);
+    });
+
+    it('allows admin to reset password with a specified password', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/users/${testUserId}/reset-password`,
+        headers: { cookie: adminCookie },
+        payload: { temporaryPassword: 'NeuPasswort123!' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().temporaryPassword).toBe('NeuPasswort123!');
+
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username: 'reset_test_user', password: 'NeuPasswort123!' },
+      });
+      expect(loginRes.statusCode).toBe(200);
+      expect(loginRes.json().must_change_password).toBe(true);
+    });
+
+    it('rejects email verification for non-admin', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/users/${testUserId}/verify-email`,
+        headers: { cookie: testUserCookie },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('allows admin to manually verify user email', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/users/${testUserId}/verify-email`,
+        headers: { cookie: adminCookie },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().is_email_verified).toBe(true);
+    });
+  });
 });

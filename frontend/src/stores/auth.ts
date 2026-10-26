@@ -25,9 +25,22 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Selbstregistrierung auf der Login-Seite (LoginView.vue) – loggt wie login() direkt ein, statt
-  // einen separaten zweiten Schritt zu verlangen (siehe routes/auth.ts's /register).
-  async function register(username: string, email: string, password: string): Promise<void> {
-    user.value = await api.post<User>('/auth/register', { username, email, password });
+  // einen separaten zweiten Schritt zu verlangen (siehe routes/auth.ts's /register), es sei denn
+  // eine E-Mail-Bestätigung (Double-Opt-In) ist erforderlich.
+  async function register(
+    username: string,
+    email: string,
+    password: string
+  ): Promise<{ requiresVerification?: boolean; message?: string } | void> {
+    const res = await api.post<User & { requiresVerification?: boolean; message?: string }>(
+      '/auth/register',
+      { username, email, password }
+    );
+    if (res.requiresVerification) {
+      user.value = null;
+      return res;
+    }
+    user.value = res;
   }
 
   async function logout(): Promise<void> {

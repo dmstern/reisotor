@@ -14,6 +14,16 @@ export interface User {
    *  Hinweis: `is_restricted` ist ein Alias für `restricted` in der Admin-Nutzerliste. */
   restricted?: boolean;
   is_restricted?: boolean;
+  /** Ob die E-Mail-Adresse des Nutzers bestätigt ist (Double-Opt-In). */
+  is_email_verified?: boolean;
+}
+
+export interface AdminResetPasswordResult {
+  temporaryPassword: string;
+  resetUrl: string;
+  emailSent: boolean;
+  username: string;
+  message: string;
 }
 
 export interface Trip {
