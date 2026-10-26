@@ -73,7 +73,7 @@ jobs:
           cp -r frontend/dist-storybook/. pages-site/storybook/
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: pages-site
 
