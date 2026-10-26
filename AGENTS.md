@@ -49,8 +49,8 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
 - **Prompt-Vorlagen & modulares Refactoring (Phasen 0 bis 4):** `docs/AUDIT_PROMPTS.md` (Triage & Zielbild, Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Stabilitäts-Gate).
   - **Kurz-Trigger für Pre-Release-Stabilitäts-Gate (`docs/UI_AUDIT_GUIDE.md`):**
     - Allgemeine Einstiegs-Phrasen wie _„Mach ein Pre-Release Audit“_: Agent prüft geänderte Frontend-Dateien seit letztem Tag per `git log`, ordnet sie den Teams 1–6 zu, empfiehlt den fokussierten Pfad und startet strukturiert mit Phase 0 des ersten betroffenen Teams (kein blinder Komplettdurchlauf!).
-    - `Release Audit Assess: <Team | Route>` (Phase 0: Reine Inspektion & Triage, Read-Only, kein Codeumbau, Ampel-Befundtabelle 🔴/🟡/🟢)
-    - `Release Audit Fix: <Team | Route>` (Phase 2: Chirurgische, minimal-invasive CSS-/Token-Fixes freigegebener Befunde; keine Architektur-Refactorings)
+    - `Release Audit Assess: <Team | Route>` (Phase 0: Reine Inspektion & Triage, Read-Only, kein Codeumbau, Ampel-Befundtabelle 🔴/🟡/🟢). **Pflicht am Ende von Phase 0:** Der Agent generiert IMMER zwingend einen fertigen, selbsttragenden Prompt-Block (`Release Audit Fix: ...` inkl. aller Befunde & Lösungen) in einem kopierbaren Code-Block. Der Entwickler kann diesen so ohne Nachdenken 1:1 in ein neues Chat-Fenster kopieren.
+    - `Release Audit Fix: <Team | Route>` (Phase 2: Chirurgische, minimal-invasive CSS-/Token-Fixes der im Prompt übergebenen Befunde; keine Architektur-Refactorings).
     - `Release Audit Gate` (Phase 3: Finales Zertifikat via Typecheck, Lint, A11y, Release-Notes & E2E)
   - **Kurz-Trigger für Refactoring-Sessions (#446):**
     - `Refactor Assess: <datei>` (Phase 0: Triage & Zielbild vorab – prüft Sinnhaftigkeit, analysiert Orchestrator vs. God-Component, schützt vor Over-Modularization/Prop-Drilling und bestimmt den maßgeschneiderten Phasen-Pfad)

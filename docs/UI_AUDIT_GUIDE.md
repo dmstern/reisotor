@@ -157,15 +157,11 @@ sequenceDiagram
 
     Du->>A: "Mach ein Pre-Release-Audit" (oder "Release Audit Assess: Team 5")
     Note over A: Phase 0: Read-Only Check!<br/>320px/390px, Popovers, Hover, Tokens.<br/>0 Zeilen Code geändert.
-    A-->>Du: Ampel-Tabelle (🔴 1 Blocker, 🟡 2 Polish, 🟢 3 OK)<br/>"Bitte freigeben: Was soll in Phase 2 gefixt werden?"
+    A-->>Du: Ampel-Tabelle (🔴 1 Blocker, 🟡 2 Polish, 🟢 3 OK)<br/>+ Fertiger Copy-Paste-Prompt für Phase 2 mit allen Befunden!
 
-    Du->>A: "Punkt 1 (Betrag bricht um) fixen, Rest lassen."
-    Note over A: Scope-Freeze & Handoff-Hinweis
-    A-->>Du: "Verstanden. Für Phase 2 bitte frischen Chat öffnen:<br/>👉 Release Audit Fix: Team 5"
-
-    Du->>B: "Release Audit Fix: Team 5"
-    Note over B: Phase 2: Chirurgischer CSS-Fix,<br/>sofortiger Test, sauberer Commit.
-    B-->>Du: "Fix verifiziert & committet."
+    Du->>B: [Kopiert den vorbereiteten Phase-2-Prompt 1:1 in Chat 2]
+    Note over B: Phase 2: Liest Befunde direkt aus Prompt,<br/>chirurgische CSS-Fixes, Test & Commit.
+    B-->>Du: "Fixes verifiziert & committet."
 
     Du->>B: "Release Audit Gate"
     Note over B: Phase 3: Typecheck, Lint,<br/>A11y (Axe), Release-Notes-Check.
@@ -174,12 +170,13 @@ sequenceDiagram
 
 #### Wann du reviewen und wann du einen neuen Chat öffnen solltest:
 
-1. **Nach Phase 0 (Dein Review & Scope-Freeze):**
-   - Der Agent liefert die Ampel-Befundtabelle (🔴 Blocker, 🟡 Polish, 🟢 OK).
-   - Du entscheidest kurz und formlos im Chat: _„Punkt 1 und 2 freigegeben, Punkt 3 lassen wir so.“_
+1. **Nach Phase 0 (Dein Review & Handoff ohne Nachdenken):**
+   - Der Agent liefert die Ampel-Befundtabelle (🔴 Blocker, 🟡 Polish, 🟢 OK) und generiert **automatisch am Ende einen vollständigen, kopierbaren Prompt-Block für Phase 2**.
+   - Du musst nichts extra abfragen oder im Chat formulieren:
+     - **Standardfall (Alles freigeben):** Du kopierst den fertigen Code-Block mit einem Klick in ein frisches Chat-Fenster.
+     - **Auswahl anpassen:** Falls du einzelne Polish-Punkte nicht umsetzen möchtest, löschst du vor dem Absenden im neuen Chat einfach die entsprechenden Zeilen aus dem Prompt (oder sagst in Chat 1 kurz _„nur Punkt 1 und 2“_, woraufhin der Agent den Block aktualisiert ausgibt).
 2. **Neuer Chat für Phase 2 (Token- & Kontext-Schutz):**
-   - Der Triage-Agent beendet Phase 0 mit einem expliziten Handoff-Hinweis und gibt den passenden Trigger für den frischen Chat aus (`Release Audit Fix: Team X`).
-   - Im neuen Chat startet der Fix-Agent ohne den Ballast der vorherigen Test-Logs und konzentriert sich rein auf den minimal-invasiven CSS-Code.
+   - Im neuen Chat startet der Fix-Agent direkt mit den konkreten Befunden aus deinem Prompt – ohne den Ballast alter Test-Logs, aber mit 100% präzisem Arbeitsauftrag.
 3. **Abschluss mit Phase 3:**
    - Direkt im selben Chat nach den Fixes (oder separat) via `Release Audit Gate` alle automatisierten Schranken prüfen lassen.
 
@@ -245,12 +242,12 @@ Fällt im Chat eine allgemeine Aufforderung wie:
 
 ### Kurz-Trigger für das Release-Gate
 
-| Phase       | Kurz-Trigger                            | Beschreibung                                                                                             |
-| :---------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------- |
-| **Phase 0** | `Release Audit Assess: <Team \| Route>` | **Reine Inspektion (Read-Only):** Testet die 5 Dimensionen, ändert keinen Code, gibt Befund-Tabelle aus. |
-| **Phase 1** | _(Menschliche Entscheidung)_            | **Scope-Freeze:** Auswahl der freigegebenen Befunde (Blocker + risikoarmer Polish).                      |
-| **Phase 2** | `Release Audit Fix: <Team \| Route>`    | **Chirurgische Fixes:** Behebt ausschließlich freigegebene Punkte minimal-invasiv via Tokens/CSS.        |
-| **Phase 3** | `Release Audit Gate`                    | **Finales Gate:** Führt `npm run check`, E2E-, A11y- und Release-Notes-Tests aus.                        |
+| Phase       | Kurz-Trigger                            | Beschreibung                                                                                                                                       |
+| :---------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0** | `Release Audit Assess: <Team \| Route>` | **Reine Inspektion (Read-Only):** Testet die 5 Dimensionen, liefert Ampel-Tabelle und generiert direkt den fertigen Copy-Paste-Prompt für Phase 2. |
+| **Phase 1** | _(Menschliche Entscheidung)_            | **Scope-Freeze:** Optionales Bereinigen der Befundliste im kopierten Prompt (Löschen unerwünschter Zeilen).                                        |
+| **Phase 2** | `Release Audit Fix: <Team \| Route>`    | **Chirurgische Fixes:** Behebt die im Prompt übergebenen Punkte minimal-invasiv via Tokens/CSS.                                                    |
+| **Phase 3** | `Release Audit Gate`                    | **Finales Gate:** Führt `npm run check`, E2E-, A11y- und Release-Notes-Tests aus.                                                                  |
 
 ---
 
@@ -258,7 +255,7 @@ Fällt im Chat eine allgemeine Aufforderung wie:
 
 Kopiere diesen Prompt oder nutze den Kurz-Trigger, um eine Domäne auditieren zu lassen:
 
-```text
+````text
 Release Audit Assess: [Team 1-6 oder Route, z. B. Team 5 (/trip/1/budget)]
 
 Führe Phase 0 (Visuelle Inspektion & Triage) für den angegebenen Bereich durch.
@@ -279,7 +276,7 @@ Vorgehensweise:
    - Desktop-Drawer (Inhaltsverhalten bei 500px Kalenderschublade)
 
 Ergebnis:
-Erstelle eine strukturierte Befund-Tabelle nach folgendem Format:
+1. Erstelle eine strukturierte Befund-Tabelle nach folgendem Format:
 
 | Status | Route / Komponente | Viewport / Zustand | Befund / Problem | Minimal-invasiver Lösungsvorschlag |
 | :--- | :--- | :--- | :--- | :--- |
@@ -287,29 +284,52 @@ Erstelle eine strukturierte Befund-Tabelle nach folgendem Format:
 | 🟡 Polish | `/trip/1/spots` | Desktop Hover | Kein `:focus-visible` Ring auf Filter | Outline via `--color-focus-ring` ergänzen |
 | 🟢 OK | `/trip/1/calendar` | 1280px (500px Drawer) | Spaltenbreite passt sich harmonisch an | Kein Handlungsbedarf |
 
-Gib am Ende eine kurze Zusammenfassung: Anzahl Blocker (🔴), Anzahl Polish (🟡), Empfehlung für Phase 1.
-```
+2. Gib eine kurze Zusammenfassung: Anzahl Blocker (🔴), Anzahl Polish (🟡), Triage-Empfehlung.
+
+3. VORBEREITETER ÜBERGABE-PROMPT FÜR PHASE 2 (Pflicht):
+Gib am Ende IMMER direkt einen fertigen, selbsttragenden Prompt-Block für den nächsten Chat aus, der alle empfohlenen Fixes (Blocker + Polish) enthält, sodass der Entwickler ohne Nachdenken den Prompt 1:1 in das neue Chat-Fenster kopieren kann:
+
+👉 Nächster Schritt (In einem frischen Chat für Phase 2 ausführen):
+Kopiere folgenden Prompt 1:1 in ein neues Chat-Fenster:
+
+```text
+Release Audit Fix: [Team X | Route]
+
+Freigegebene Befunde zur Behebung aus Phase 0:
+1. [Route / Komponente] ([Viewport/Zustand]): [Problem] -> Lösung: [Lösungsvorschlag]
+2. [Route / Komponente] ([Viewport/Zustand]): [Problem] -> Lösung: [Lösungsvorschlag]
+````
+
+(Falls du einzelne Punkte ausschließen willst, lösche vor dem Absenden im neuen Chat einfach die betreffende Zeile heraus.)
+
+````
 
 ---
 
 ### Phase 1: Scope-Freeze & Triage-Freigabe
 
-Der Mensch oder Lead-Entwickler sichtet die Befund-Tabelle:
+Der Mensch oder Lead-Entwickler sichtet die Befund-Tabelle und entscheidet:
 
-1. **Blocker (🔴):** Müssen vor Release behoben werden (echte Layout-Brüche, unbenutzbare UI).
-2. **Polish (🟡):** Werden freigegeben, wenn sie mit 1–3 Zeilen CSS ohne Nebenwirkungen korrigiert werden können.
-3. **Risikobehaftete Wünsche:** Alles, was ein größeres Komponenten-Refactoring erfordern würde, wird **eingefroren** und auf die Zeit nach dem Release verschoben.
+1. **Standardfall (Alles freigeben):** Den vorbereiteten Prompt-Block aus Phase 0 einfach 1:1 kopieren und in ein frisches Chat-Fenster für Phase 2 einfügen.
+2. **Auswahl anpassen:** Falls einzelne Polish-Punkte nicht gewünscht sind, vor dem Absenden im neuen Chat einfach die entsprechende Zeile aus dem Prompt löschen (oder im alten Chat kurz rückmelden, z. B. _„nur Punkt 1 und 3 fixen“_, woraufhin der Agent den Block aktualisiert).
+3. **Blocker (🔴):** Müssen vor Release behoben werden (echte Layout-Brüche, unbenutzbare UI).
+4. **Polish (🟡):** Werden freigegeben, wenn sie mit 1–3 Zeilen CSS ohne Nebenwirkungen korrigiert werden können.
+5. **Risikobehaftete Wünsche:** Alles, was ein größeres Komponenten-Refactoring erfordern würde, wird **eingefroren** und auf die Zeit nach dem Release verschoben.
 
 ---
 
 ### Phase 2: Minimal-Invasive Härtung & Polish (`Release Audit Fix: <Team | Route>`)
 
-Kopiere diesen Prompt oder nutze den Kurz-Trigger zur Behebung freigegebener Mängel:
+Kopiere den aus Phase 0 vorbereiteten Prompt (oder nutze die Vorlage) zur Behebung freigegebener Mängel:
 
 ```text
 Release Audit Fix: [Team 1-6 oder Route, z. B. Team 5 (/trip/1/budget)]
 
-Behebe ausschließlich die in Phase 1 freigegebenen Befunde für diesen Bereich.
+Freigegebene Befunde zur Behebung aus Phase 0:
+1. [Route / Komponente] ([Viewport/Zustand]): [Problem] -> Lösung: [Lösungsvorschlag]
+2. [Route / Komponente] ([Viewport/Zustand]): [Problem] -> Lösung: [Lösungsvorschlag]
+
+Behebe ausschließlich die oben aufgeführten freigegebenen Befunde für diesen Bereich.
 
 STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
 - Maximiere Einfachheit (KISS): Keine Umstrukturierung von Komponenten, keine neuen Props/Emits, keine Store-Änderungen!
@@ -325,7 +345,7 @@ STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
   npx -y prettier --write <geänderte-dateien>
 - Schließe mit einem sauberen Commit ab:
   git commit -m "fix(ui): polish <domäne> layout & popover resilience"
-```
+````
 
 ---
 
