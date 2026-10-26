@@ -266,22 +266,6 @@ defineExpose({
   flex: 1;
 }
 
-@container (max-width: 360px) {
-  .actions-row {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .spacer {
-    display: none;
-  }
-
-  .actions-row :deep(button),
-  .actions-row button {
-    width: 100%;
-  }
-}
-
 .diary-editor :deep(.richtext-content) {
   font-family: var(--font-diary);
   font-size-adjust: from-font;
