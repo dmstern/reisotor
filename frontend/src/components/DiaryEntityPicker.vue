@@ -149,7 +149,9 @@ function toggleSpot(spotId: number) {
   background: none;
   border: none;
   box-shadow: none;
-  padding: var(--space-1) 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   width: 100%;
   text-align: left;
   cursor: pointer;
@@ -159,6 +161,11 @@ function toggleSpot(spotId: number) {
 
 .spot-option-btn:hover {
   background: var(--color-hover);
+}
+
+.spot-option-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .spot-option-btn:active {

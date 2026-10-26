@@ -221,6 +221,7 @@ function handleDelete() {
 
 .actions-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-4);
