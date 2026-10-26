@@ -221,13 +221,13 @@ const isFeedbackActive = computed(() =>
             (Open Database License, ODbL).
           </li>
           <li>
-            <strong>Kartenbibliothek:</strong>
-            <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>
+            <strong>Kartenbibliothek:</strong>{{ ' '
+            }}<a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>
             (BSD-2-Clause-Lizenz).
           </li>
           <li>
-            <strong>Symbole &amp; Icons:</strong>
-            <a href="https://tabler.io/icons" target="_blank" rel="noopener noreferrer"
+            <strong>Symbole &amp; Icons:</strong>{{ ' '
+            }}<a href="https://tabler.io/icons" target="_blank" rel="noopener noreferrer"
               >Tabler Icons</a
             >
             (MIT-Lizenz).
@@ -346,8 +346,8 @@ const isFeedbackActive = computed(() =>
               <span class="multiline-text">{{ operator.address }}</span
               ><br />
             </template>
-            <strong>E-Mail:</strong>
-            <a :href="`mailto:${operator.email}`">{{ operator.email }}</a>
+            <strong>E-Mail:</strong>{{ ' '
+            }}<a :href="`mailto:${operator.email}`">{{ operator.email }}</a>
             <template v-if="operator.phone"
               ><br /><strong>Telefon:</strong> {{ operator.phone }}</template
             >

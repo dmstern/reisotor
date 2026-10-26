@@ -104,7 +104,7 @@ describe('LegalContent', () => {
     const { container, cleanUp } = mountComponent({ config: customConfig });
 
     expect(container.textContent).toContain('Max Mustermann');
-    expect(container.textContent).toContain('max@example.com');
+    expect(container.textContent).toContain('E-Mail: max@example.com');
     expect(container.textContent).toContain('my-photon.local');
     expect(container.textContent).not.toContain('Betreiberangaben noch nicht konfiguriert');
 
@@ -121,6 +121,8 @@ describe('LegalContent', () => {
     expect(container.textContent).toContain('§ 5 Digitale-Dienste-Gesetz (DDG)');
     expect(container.textContent).toContain('Betreiberangaben nicht konfiguriert');
     expect(container.textContent).toContain('European Union Public Licence v. 1.2 (EUPL-1.2)');
+    expect(container.textContent).toContain('Kartenbibliothek: Leaflet');
+    expect(container.textContent).toContain('Symbole & Icons: Tabler Icons');
 
     cleanUp();
   });
