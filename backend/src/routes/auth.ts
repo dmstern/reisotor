@@ -2,7 +2,6 @@ import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
 import { db } from '../db/index.js';
 import {
-  REGISTRATION_MODE,
   getRegistrationMode,
   isUserRestricted,
   isUserAdmin,
@@ -61,14 +60,15 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
       }
 
-      const trimmedUsername = username.trim();
-      const restricted = mode === 'restricted' && !isUsernameFullAccess(trimmedUsername) ? 1 : 0;
-
-      // Der allererste Nutzer in der Datenbank wird automatisch Admin.
+      // Der allererste Nutzer in der Datenbank wird automatisch Admin und erhält immer Vollzugriff.
       const userCount = (
         db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }
       ).count;
       const isAdmin = userCount === 0 ? 1 : 0;
+
+      const trimmedUsername = username.trim();
+      const restricted =
+        isAdmin || isUsernameFullAccess(trimmedUsername) || mode !== 'restricted' ? 0 : 1;
 
       const hash = bcrypt.hashSync(password, 10);
       const result = db

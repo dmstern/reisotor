@@ -270,6 +270,11 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
+.tier-badge-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .account-tab :deep(.card) {
   margin-bottom: var(--space-4);
 }

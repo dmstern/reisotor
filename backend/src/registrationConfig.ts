@@ -57,9 +57,10 @@ interface RestrictedUserRow {
  *  wieder auf 'full' zurückgestellt wird), FULL_ACCESS_USERS hebt sie dynamisch wieder auf. */
 export function isUserRestricted(userId: number | null | undefined): boolean {
   if (userId == null) return false;
-  const user = db.prepare('SELECT username, is_restricted FROM users WHERE id = ?').get(userId) as
-    RestrictedUserRow | undefined;
-  if (!user || !user.is_restricted) return false;
+  const user = db
+    .prepare('SELECT username, is_admin, is_restricted FROM users WHERE id = ?')
+    .get(userId) as (RestrictedUserRow & { is_admin: number }) | undefined;
+  if (!user || user.is_admin || !user.is_restricted) return false;
   return !FULL_ACCESS_USERS.has(user.username);
 }
 

@@ -538,3 +538,34 @@ describe('location_track_points.altitude Migration', () => {
     expect(rows[2].default_name).toBeNull(); // Custom, kein Match
   });
 });
+
+describe('instance_settings und remote_image_cache Tabellen-Initialisierung', () => {
+  let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.DB_PATH;
+    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+  });
+
+  it('erstellt instance_settings und remote_image_cache Tabellen additiv', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-settings-cache-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const instanceSettings = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='instance_settings'")
+      .get() as { name: string } | undefined;
+    expect(instanceSettings?.name).toBe('instance_settings');
+
+    const remoteImageCache = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='remote_image_cache'")
+      .get() as { name: string } | undefined;
+    expect(remoteImageCache?.name).toBe('remote_image_cache');
+  });
+});

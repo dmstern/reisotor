@@ -16,6 +16,8 @@ describe('registration mode: restricted', () => {
     process.env.REGISTRATION_FULL_ACCESS_USERS = 'vip';
     const built = await buildTestApp();
     app = built.app;
+    // Legt einen initialen Admin-Nutzer an, damit nachfolgende Selbstregistrierungen reguläre Nicht-Admin-Nutzer sind
+    await register('initial-admin');
   });
 
   async function register(username: string) {

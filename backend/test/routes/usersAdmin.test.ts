@@ -268,6 +268,24 @@ describe('Admin User Management routes (#224)', () => {
       payload: { is_restricted: false },
     });
     expect(nonAdminRes.statusCode).toBe(403);
+
+    // Invalid body rejected
+    const invalidBodyRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/restricted`,
+      headers: { cookie: adminCookie },
+      payload: {},
+    });
+    expect(invalidBodyRes.statusCode).toBe(400);
+
+    // Cannot restrict another admin
+    const restrictAdminRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/restricted`,
+      headers: { cookie: adminCookie },
+      payload: { is_restricted: true },
+    });
+    expect(restrictAdminRes.statusCode).toBe(400);
   });
 
   it('allows admin to read and update registrationMode in instance_settings', async () => {

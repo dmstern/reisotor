@@ -6,7 +6,10 @@ import AccountTierModal from './AccountTierModal.vue';
 import { useAuthStore } from '../stores/auth';
 import type { User } from '../api/types';
 
-function mountComponent(props: Record<string, unknown> = {}, initialUser?: Partial<User>) {
+function mountComponent(
+  props: { modelValue: boolean; 'onUpdate:modelValue'?: (val: boolean) => void },
+  initialUser?: Partial<User>
+) {
   const pinia = createPinia();
   setActivePinia(pinia);
   const authStore = useAuthStore(pinia);
@@ -16,7 +19,7 @@ function mountComponent(props: Record<string, unknown> = {}, initialUser?: Parti
   const container = document.createElement('div');
   document.body.appendChild(container);
   const app = createApp({
-    render: () => h(AccountTierModal, props as any),
+    render: () => h(AccountTierModal, props),
   });
   app.use(pinia);
   app.mount(container);

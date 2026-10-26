@@ -46,7 +46,11 @@ onMounted(() => {
         Steuert, welche Rechte neu registrierte Personen auf der Login-Seite standardmäßig erhalten.
       </p>
 
-      <div class="registration-mode-options">
+      <div
+        class="registration-mode-options"
+        role="radiogroup"
+        aria-label="Selbstregistrierung Standard-Rechte"
+      >
         <label
           for="reg-mode-restricted"
           class="mode-option"
@@ -250,7 +254,7 @@ onMounted(() => {
 }
 
 .mode-option:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-hover);
 }
 
 .mode-option.active {

@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { db, hasColumn, hasTable } from '../db/index.js';
 import {
   isUserAdmin,
+  isUserRestricted,
   getRegistrationMode,
   setRegistrationMode,
   type RegistrationMode,
@@ -71,16 +72,19 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users ORDER BY id'
         )
         .all() as UserRow[];
-      return rows.map((u) => ({
-        id: u.id,
-        username: u.username,
-        email: u.email ?? null,
-        avatar: u.avatar,
-        is_admin: Boolean(u.is_admin),
-        is_restricted: Boolean(u.is_restricted),
-        restricted: Boolean(u.is_restricted),
-        must_change_password: Boolean(u.must_change_password),
-      }));
+      return rows.map((u) => {
+        const restricted = isUserRestricted(u.id);
+        return {
+          id: u.id,
+          username: u.username,
+          email: u.email ?? null,
+          avatar: u.avatar,
+          is_admin: Boolean(u.is_admin),
+          is_restricted: restricted,
+          restricted,
+          must_change_password: Boolean(u.must_change_password),
+        };
+      });
     }
     return db.prepare('SELECT id, username, avatar FROM users ORDER BY id').all();
   });
@@ -158,14 +162,15 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
       )
       .get(userId) as UserRow;
+    const restricted = isUserRestricted(created.id);
     return {
       id: created.id,
       username: created.username,
       email: created.email ?? null,
       avatar: created.avatar,
       is_admin: Boolean(created.is_admin),
-      is_restricted: Boolean(created.is_restricted),
-      restricted: Boolean(created.is_restricted),
+      is_restricted: restricted,
+      restricted,
       must_change_password: Boolean(created.must_change_password),
     };
   });
@@ -203,23 +208,28 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         }
       }
 
-      db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(
-        nextIsAdmin ? 1 : 0,
-        targetUserId
-      );
+      // Wird jemand zum Admin gemacht, verliert er automatisch jegliche Einschränkung
+      if (nextIsAdmin) {
+        db.prepare('UPDATE users SET is_admin = 1, is_restricted = 0 WHERE id = ?').run(
+          targetUserId
+        );
+      } else {
+        db.prepare('UPDATE users SET is_admin = 0 WHERE id = ?').run(targetUserId);
+      }
       const updated = db
         .prepare(
           'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
         )
         .get(targetUserId) as UserRow;
+      const restricted = isUserRestricted(updated.id);
       return {
         id: updated.id,
         username: updated.username,
         email: updated.email ?? null,
         avatar: updated.avatar,
         is_admin: Boolean(updated.is_admin),
-        is_restricted: Boolean(updated.is_restricted),
-        restricted: Boolean(updated.is_restricted),
+        is_restricted: restricted,
+        restricted,
         must_change_password: Boolean(updated.must_change_password),
       };
     }
@@ -237,9 +247,13 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       const targetUserId = Number(req.params.id);
       const { is_restricted: nextIsRestricted } = req.body ?? {};
 
+      if (typeof nextIsRestricted !== 'boolean') {
+        return reply.code(400).send({ error: 'is_restricted als Boolean erforderlich' });
+      }
+
       const targetUser = db
-        .prepare('SELECT id, is_restricted FROM users WHERE id = ?')
-        .get(targetUserId) as { id: number; is_restricted: number } | undefined;
+        .prepare('SELECT id, is_admin, is_restricted FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; is_admin: number; is_restricted: number } | undefined;
       if (!targetUser) {
         return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
       }
@@ -247,6 +261,12 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       if (targetUserId === req.session.userId && nextIsRestricted) {
         return reply.code(400).send({
           error: 'Du kannst deinen eigenen Account nicht einschränken',
+        });
+      }
+
+      if (targetUser.is_admin && nextIsRestricted) {
+        return reply.code(400).send({
+          error: 'Administrator-Accounts können nicht eingeschränkt werden',
         });
       }
 
@@ -259,14 +279,15 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
         )
         .get(targetUserId) as UserRow;
+      const restricted = isUserRestricted(updated.id);
       return {
         id: updated.id,
         username: updated.username,
         email: updated.email ?? null,
         avatar: updated.avatar,
         is_admin: Boolean(updated.is_admin),
-        is_restricted: Boolean(updated.is_restricted),
-        restricted: Boolean(updated.is_restricted),
+        is_restricted: restricted,
+        restricted,
         must_change_password: Boolean(updated.must_change_password),
       };
     }

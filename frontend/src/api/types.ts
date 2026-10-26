@@ -10,7 +10,8 @@ export interface User {
   /** Pflicht zur Passwortänderung (Issue #224): gesetzt bei Erst-Anlegung mit Standard-Passwort. */
   must_change_password?: boolean;
   /** Eingeschränkter Modus (Issue #96, REGISTRATION_MODE=restricted): kein Datei-Upload, max. 1
-   *  selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub. */
+   *  selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub.
+   *  Hinweis: `is_restricted` ist ein Alias für `restricted` in der Admin-Nutzerliste. */
   restricted?: boolean;
   is_restricted?: boolean;
 }

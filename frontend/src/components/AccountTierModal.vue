@@ -226,7 +226,7 @@ function close() {
 
 .upgrade-info-card {
   padding: var(--space-3);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-sunken);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
