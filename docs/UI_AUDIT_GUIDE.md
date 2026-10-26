@@ -375,11 +375,13 @@ Prüfschritte:
 1. Statisches Gesamt-Gate (Lint, Format, Release-Notes, Typecheck Frontend & Backend): npm run check
 2. Barrierefreiheit (Axe): npm run test:a11y
 3. Layout-Regressionen: AUDIT_ROUTE=/trip/1 npm run test:audit
+4. Ganzheitliches PR-Diff-Review: Prüfe git diff origin/main..HEAD auf Design-Token-Reinheit (--space-*, --color-*, keine magischen Pixel), saubere Container-Queries (@container statt @media), keine toten Reste und keine unerwünschten Seiteneffekte.
 
 Ergebnis:
 Gib eine klare Bestätigung im Chat aus:
-- Sind alle Prüfungen grün?
-- Gibt es verbleibende Warnungen?
+- Sind alle automatisierten Prüfungen grün?
+- PR-Review-Zusammenfassung (Design-Tokens, Clean Code, gefundene Auffälligkeiten oder Bestätigung der Sauberkeit)
+- Gibt es verbleibende Warnungen oder offene Punkte?
 - Ist das Release freigegeben?
-- Falls alle Prüfungen erfolgreich sind: Gib explizit die Bestätigung aus, dass das Pre-Release-Audit für alle Bereiche vollständig abgeschlossen ist und der PR freigegeben / gemergt werden kann.
+- Falls alle Prüfungen & das Review erfolgreich sind: Gib explizit die Bestätigung aus, dass das Pre-Release-Audit für alle Bereiche vollständig abgeschlossen ist und der PR freigegeben / gemergt werden kann.
 ```
