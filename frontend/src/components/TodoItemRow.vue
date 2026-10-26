@@ -3,7 +3,6 @@ import type { TodoItem, User } from '../api/types';
 import CheckableListItem from './primitives/CheckableListItem.vue';
 import Checkbox from './primitives/Checkbox.vue';
 import Badge from './primitives/Badge.vue';
-import EditButton from './primitives/IconButton.vue';
 import AppIcon from './AppIcon.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -179,7 +178,8 @@ function userName(id: number | null | undefined) {
   align-items: center;
   gap: var(--space-1);
   color: var(--color-text-muted);
-  max-width: 200px;
+  max-width: min(200px, 100%);
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -223,5 +223,10 @@ function userName(id: number | null | undefined) {
 .edit-btn:hover {
   color: var(--color-text);
   background: var(--color-hover);
+}
+
+.edit-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

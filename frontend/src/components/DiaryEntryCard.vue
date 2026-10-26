@@ -331,6 +331,11 @@ const drawers = useDrawersStore();
   background: var(--color-primary-tint);
 }
 
+.excursion-chip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .excursion-chip-title {
   overflow: hidden;
   text-overflow: ellipsis;

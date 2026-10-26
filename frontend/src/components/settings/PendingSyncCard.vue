@@ -575,8 +575,8 @@ function handleMigrateData() {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  flex: 1;
-  min-width: 200px;
+  flex: 1 1 200px;
+  min-width: 0;
 }
 
 .badges-row {

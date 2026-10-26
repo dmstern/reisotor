@@ -29,7 +29,7 @@ flowchart TD
 ```
 
 > [!NOTE]
-> **Pre-Release-Stabilitäts-Gate:** Für die ganzheitliche visuelle Härtung, Polishing und Stabilitätsprüfung vor einem Release (ohne Architektur-Refactorings) siehe [`docs/UI_AUDIT_GUIDE.md`](UI_AUDIT_GUIDE.md#4-pre-release-stabilitäts-gate-ganzheitliches-release-audit) mit den Kurz-Triggern `Release Audit Assess`, `Release Audit Fix` und `Release Audit Gate`.
+> **Pre-Release-Stabilitäts-Gate:** Für die ganzheitliche visuelle Härtung, Polishing und Stabilitätsprüfung vor einem Release (ohne Architektur-Refactorings) siehe [`docs/UI_AUDIT_GUIDE.md`](UI_AUDIT_GUIDE.md#4-pre-release-stabilitäts-gate-ganzheitliches-release-audit) mit den Kurz-Triggern `Release Audit Assess`, `Release Audit Fix`, `Release Audit Review` und `Release Audit Gate`.
 
 ---
 

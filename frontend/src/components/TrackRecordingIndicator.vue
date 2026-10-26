@@ -123,7 +123,7 @@ const elapsedLabel = computed(() => {
   color: #fff;
   background: var(--color-danger);
   padding: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   line-height: 1;
   white-space: nowrap;
   flex-shrink: 0;
@@ -181,6 +181,11 @@ const elapsedLabel = computed(() => {
 
 .recording-pill-btn:hover {
   background: rgba(255, 255, 255, 0.38);
+}
+
+.recording-pill-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
 }
 
 .recording-pill-btn:active {

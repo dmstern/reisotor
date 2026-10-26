@@ -239,6 +239,10 @@ onMounted(() => {
   box-shadow: 0 0 0 2px var(--color-primary);
 }
 
+.track-row:has(.track-row-main:focus-visible) {
+  outline: 2px solid var(--color-primary);
+}
+
 .track-row-main {
   flex: 1;
   min-width: 0;
@@ -250,6 +254,10 @@ onMounted(() => {
   padding: 0;
   text-align: left;
   cursor: pointer;
+}
+
+.track-row-main:focus-visible {
+  outline: none;
 }
 
 .track-row-title {

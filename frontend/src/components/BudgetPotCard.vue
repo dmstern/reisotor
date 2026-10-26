@@ -405,13 +405,13 @@ function onTotalSectionClick(e: MouseEvent) {
 
 .pot-title h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
   overflow-wrap: anywhere;
 }
 
 .kind-badge {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -477,7 +477,7 @@ function onTotalSectionClick(e: MouseEvent) {
 }
 
 .categories-title {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -539,10 +539,10 @@ function onTotalSectionClick(e: MouseEvent) {
 .add-category-toggle {
   align-self: flex-start;
   color: var(--color-primary-dark);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  padding: 4px 8px;
-  gap: 6px;
+  padding: var(--space-1) var(--space-2);
+  gap: var(--space-1);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }

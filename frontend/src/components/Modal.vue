@@ -192,7 +192,7 @@ function updateScrollState() {
   modalEl.classList.toggle('has-actions-row', hasActions);
 
   topFadeRef.value?.classList.toggle('is-visible', canUp);
-  bottomFadeRef.value?.classList.toggle('is-visible', canDown && !hasActions);
+  bottomFadeRef.value?.classList.toggle('is-visible', canDown);
 }
 
 function onScroll(e: Event) {
@@ -466,6 +466,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 .modal {
   position: relative;
+  container-type: inline-size;
   background: var(--color-surface);
   --scroll-fade-bg: var(--color-surface);
   --tab-bar-fade-bg: var(--color-surface);
@@ -587,50 +588,47 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   min-height: 120px;
 }
 
-/* Fixierte Aktions-Leiste ("Speichern", "Löschen" etc.) am unteren Rand scrollbarer Dialog-Formulare:
-   Bleibt beim Scrollen am unteren Rand stehen, während der Inhalt dahinter scrollt. Bei sichtbarem
-   Überlauf nach unten zeigt ein weiches Fade-Out (::before) oberhalb der Leiste an, dass darunter
-   weiterer Inhalt erreichbar ist. */
+/* Aktions-Leiste ("Speichern", "Löschen" etc.) am unteren Rand scrollbarer Dialog-Formulare:
+   Sitzt im normalen Inhaltsfluss am Ende des Formulars und scrollt mit dem Inhalt mit,
+   sodass bei längeren Formularen die volle Dialoghöhe für Eingaben nutzbar bleibt (#550). */
 .modal-body :slotted(form) .actions-row,
 .modal-body :slotted(.actions-row) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  position: sticky;
-  bottom: -4px;
-  margin-left: -4px;
-  margin-right: -4px;
-  margin-bottom: -4px;
-  margin-top: var(--space-3);
-  padding: var(--space-3) 4px var(--space-1);
-  background: var(--color-surface);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
-  z-index: 10;
-}
-
-.modal-body :slotted(form) .actions-row::before,
-.modal-body :slotted(.actions-row)::before {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  height: 28px;
-  background: linear-gradient(to top, var(--color-surface) 0%, transparent 100%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.modal.can-scroll-down .modal-body :slotted(form) .actions-row::before,
-.modal.can-scroll-down .modal-body :slotted(.actions-row)::before {
-  opacity: 1;
 }
 
 .modal-body :slotted(form) .actions-row .spacer,
 .modal-body :slotted(.actions-row) .spacer {
   flex: 1;
+}
+
+@container (max-width: 440px) {
+  .modal-body :slotted(form) .actions-row,
+  .modal-body :slotted(.actions-row) {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .modal-body :slotted(form) .actions-row .spacer,
+  .modal-body :slotted(.actions-row) .spacer {
+    display: none !important;
+  }
+
+  .modal-body :slotted(form) .actions-row > :not(.spacer),
+  .modal-body :slotted(.actions-row) > :not(.spacer),
+  .modal-body :slotted(form) .actions-row :deep(button),
+  .modal-body :slotted(.actions-row) :deep(button),
+  .modal-body :slotted(form) .actions-row button,
+  .modal-body :slotted(.actions-row) button {
+    width: 100% !important;
+    flex: initial !important;
+    min-width: 0;
+  }
 }
 
 .modal-head {

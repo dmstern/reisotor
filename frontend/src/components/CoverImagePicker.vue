@@ -38,7 +38,6 @@ import type { IconGroup } from '../stores/iconStyle';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
-import ButtonGroup from './primitives/ButtonGroup.vue';
 import Badge from './primitives/Badge.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import ImageUrlInput from './ImageUrlInput.vue';
@@ -564,7 +563,7 @@ function handleModalClose(visible: boolean) {
           @update:model-value="(val) => emit('update:modelValue', val)"
         />
 
-        <ButtonGroup>
+        <div class="actions-row">
           <Button
             v-if="isModified"
             type="button"
@@ -588,7 +587,7 @@ function handleModalClose(visible: boolean) {
           </Button>
           <div class="spacer" />
           <Button type="button" :disabled="isUploading" @click="showModal = false">Fertig</Button>
-        </ButtonGroup>
+        </div>
       </div>
     </Modal>
   </div>

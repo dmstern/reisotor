@@ -144,6 +144,7 @@ async function onSubmit() {
 .login-page {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   gap: var(--space-3);
   flex-direction: column;
@@ -155,8 +156,8 @@ async function onSubmit() {
 
 .theme-toggle.icon {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: max(var(--space-4), env(safe-area-inset-top, var(--space-4)));
+  right: max(var(--space-4), env(safe-area-inset-right, var(--space-4)));
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);

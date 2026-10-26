@@ -215,6 +215,22 @@ h3 {
   word-break: break-word;
 }
 
+@container app-main (max-width: 420px) {
+  .build-info-list {
+    grid-template-columns: 1fr;
+    gap: 2px 0;
+  }
+
+  .build-info-list dt {
+    margin-top: var(--space-2);
+    font-weight: 600;
+  }
+
+  .build-info-list dt:first-child {
+    margin-top: 0;
+  }
+}
+
 .changelog-notes :deep(h4) {
   margin-top: var(--space-3);
   margin-bottom: var(--space-1);

@@ -174,7 +174,7 @@ function startCheck() {
 
 <style scoped>
 .subtitle {
-  margin-top: -8px;
+  margin-top: calc(-1 * var(--space-2));
 }
 
 .robot-card {
@@ -202,7 +202,7 @@ function startCheck() {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1-5, 6px);
 }
 
 .scan-log li {
@@ -245,7 +245,7 @@ function startCheck() {
      eigentliche Grund für das Überlappen/Herausragen auf schmalen Mobile-Breiten. */
   flex-wrap: wrap;
   gap: 2px var(--space-2);
-  padding: 6px var(--space-2);
+  padding: var(--space-1-5, 6px) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);

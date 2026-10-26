@@ -59,6 +59,7 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .title-with-pill {
@@ -73,6 +74,8 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
   font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--color-text);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .progress-pill-group {

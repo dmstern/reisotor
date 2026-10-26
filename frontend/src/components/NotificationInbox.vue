@@ -381,7 +381,7 @@ function dismissPwaInstall() {
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal, 1000);
   background: transparent;
 }
 
@@ -403,7 +403,7 @@ function dismissPwaInstall() {
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
-  z-index: 1001;
+  z-index: var(--z-popover, 1100);
   display: flex;
   flex-direction: column;
 }
@@ -436,7 +436,10 @@ function dismissPwaInstall() {
   color: var(--color-primary-dark);
   font-size: 0.78rem;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 4px 6px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }
@@ -623,7 +626,7 @@ function dismissPwaInstall() {
   background: var(--color-success);
   color: #fff;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px 10px;
   font-size: 0.75rem;
   font-weight: 700;

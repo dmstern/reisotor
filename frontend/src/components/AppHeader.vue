@@ -231,7 +231,7 @@ const profileTitle = computed(() => {
   width: fit-content;
   flex-shrink: 0;
   pointer-events: auto;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
@@ -247,6 +247,11 @@ const profileTitle = computed(() => {
 
 .brand:hover {
   opacity: 0.85;
+}
+
+.brand:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .brand::after {
@@ -277,7 +282,7 @@ const profileTitle = computed(() => {
 .floating-island {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
@@ -363,7 +368,7 @@ const profileTitle = computed(() => {
   gap: 4px;
   flex-shrink: 0;
   pointer-events: auto;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
@@ -449,6 +454,11 @@ const profileTitle = computed(() => {
   border-color: var(--color-border);
 }
 
+.header-calendar-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .header-calendar-btn.active {
   background: var(--color-primary-tint);
   border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
@@ -506,7 +516,7 @@ const profileTitle = computed(() => {
     gap: var(--space-2);
     width: 100%;
     min-width: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--color-surface-glass);
     backdrop-filter: var(--backdrop-blur-md);
     border: 1px solid var(--color-surface-glass-border);
@@ -683,6 +693,11 @@ const profileTitle = computed(() => {
 .profile-link:hover,
 .profile-link.router-link-active {
   background: var(--color-primary);
+}
+
+.profile-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .avatar {

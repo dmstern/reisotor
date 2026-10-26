@@ -186,7 +186,8 @@ function userName(id: number | null | undefined) {
   align-items: center;
   gap: var(--space-1);
   color: var(--color-text-muted);
-  max-width: 200px;
+  max-width: min(200px, 100%);
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -218,6 +219,11 @@ function userName(id: number | null | undefined) {
 .buyer-avatar-picker:hover {
   background: var(--color-surface);
   border-color: var(--color-border-strong);
+}
+
+.buyer-avatar-picker:has(.buyer-native-select:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .avatar-display {
@@ -254,5 +260,10 @@ function userName(id: number | null | undefined) {
 .edit-btn:hover {
   color: var(--color-text);
   background: var(--color-hover);
+}
+
+.edit-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

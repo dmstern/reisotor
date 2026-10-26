@@ -1936,7 +1936,7 @@ onUnmounted(() => {
 .recording-pulse-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background-color: var(--color-danger);
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 70%, transparent);
   animation: recording-pulse 1.5s infinite;
@@ -2200,6 +2200,11 @@ onUnmounted(() => {
 
 .filter-reset-link:hover {
   color: var(--color-primary-dark);
+}
+
+.filter-reset-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>
 

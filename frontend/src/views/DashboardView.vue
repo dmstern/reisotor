@@ -390,5 +390,7 @@ onMounted(async () => {
 
 .mini-list.breakdown li {
   gap: 0;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 </style>

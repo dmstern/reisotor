@@ -80,6 +80,12 @@ defineEmits<{
   transform: translateY(-2px);
 }
 
+.weather-today.clickable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs-squircle);
+}
+
 .weather-today-label {
   display: flex;
   align-items: center;

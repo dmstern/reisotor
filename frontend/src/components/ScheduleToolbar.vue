@@ -190,6 +190,7 @@ defineEmits<{
   color: var(--color-text);
   min-width: 11ch;
   text-align: center;
+  white-space: nowrap;
 }
 
 .toolbar-actions-row {
