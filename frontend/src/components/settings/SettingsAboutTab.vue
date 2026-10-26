@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import AppIcon from '../AppIcon.vue';
@@ -15,6 +15,7 @@ import { ACTION_ICONS } from '../../utils/actionIcons';
 
 const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
 const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
+const defaultRepoUrl = __REPO_URL__;
 
 const pwaInstall = usePwaInstallStore();
 const {
@@ -25,6 +26,11 @@ const {
   frontendCommit,
   frontendBuiltAt,
 } = useAboutInfo();
+
+const licenseUrl = computed(
+  () =>
+    `${(backendBuildInfo.value?.repoUrl ?? defaultRepoUrl).replace(/\/+$/, '')}/blob/main/LICENSE`
+);
 
 const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
@@ -79,6 +85,12 @@ const showPwaInstallDialog = ref(false);
           {{ formatBuildTime(backendBuildInfo.builtAt) }}
         </dd>
         <dd v-else>Lädt…</dd>
+        <dt>Lizenz</dt>
+        <dd>
+          <a :href="licenseUrl" target="_blank" rel="noopener noreferrer"
+            >European Union Public Licence v. 1.2 (EUPL-1.2)</a
+          >
+        </dd>
       </dl>
       <h3>Dienste &amp; Open Source</h3>
       <dl class="build-info-list">

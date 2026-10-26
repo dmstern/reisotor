@@ -55,6 +55,8 @@ describe('Landing auxiliary sections', () => {
 
       const year = new Date().getFullYear().toString();
       expect(html).toContain(year);
+      expect(html).toContain('EUPL-1.2');
+      expect(html).toContain('href="https://github.com/dmstern/reisotor/blob/main/LICENSE"');
     });
   });
 });

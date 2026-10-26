@@ -28,6 +28,10 @@ const currentYear = new Date().getFullYear();
     <p class="hint">
       © {{ currentYear }}
       <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a>
+      ·
+      <a :href="`${repoUrl.replace(/\/+$/, '')}/blob/main/LICENSE`" target="_blank" rel="noopener"
+        >EUPL-1.2</a
+      >
       · agentic-coded
     </p>
   </footer>

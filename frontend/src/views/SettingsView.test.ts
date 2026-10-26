@@ -10,6 +10,7 @@ import { useUiSettingsStore } from '../stores/uiSettings';
 vi.stubGlobal('__APP_VERSION__', '1.3.0');
 vi.stubGlobal('__APP_COMMIT__', 'testcommit');
 vi.stubGlobal('__APP_BUILT_AT__', '2026-09-26T10:00:00.000Z');
+vi.stubGlobal('__REPO_URL__', 'https://github.com/dmstern/reisotor');
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -143,6 +144,8 @@ describe('SettingsView loading state', () => {
     await new Promise((r) => setTimeout(r, 20));
     await nextTick();
 
+    expect(container.textContent).toContain('Lizenz');
+    expect(container.textContent).toContain('European Union Public Licence v. 1.2 (EUPL-1.2)');
     expect(container.textContent).toContain('Dienste & Open Source');
     expect(container.textContent).toContain('Kartendaten');
     expect(container.textContent).toContain('OpenStreetMap');

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 // Gemeinsame Copyright-/GitHub-Link-Zeile für Login-Seite (vor dem Login, daher ohne
 // backendseitige Build-Info) und den Über-Tab (nach dem Login, mit Build-Info vom Backend) -
 // siehe Issue #172. repoUrl/hostingLocation kommen bei Bedarf von GET /build-info (nur
@@ -11,7 +13,8 @@ const props = defineProps<{
 }>();
 
 const copyrightYear = new Date().getFullYear();
-const resolvedRepoUrl = props.repoUrl ?? __REPO_URL__;
+const resolvedRepoUrl = computed(() => (props.repoUrl ?? __REPO_URL__).replace(/\/+$/, ''));
+const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
 </script>
 
 <template>
@@ -29,7 +32,11 @@ const resolvedRepoUrl = props.repoUrl ?? __REPO_URL__;
   <p class="hint app-footer-copyright">
     © {{ copyrightYear }}
     <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> ·
-    agentic-coded<template v-if="hostingLocation"> · gehostet in {{ hostingLocation }}</template>
+    <a :href="licenseUrl" target="_blank" rel="noopener">EUPL-1.2</a> · agentic-coded<template
+      v-if="hostingLocation"
+    >
+      · gehostet in {{ hostingLocation }}</template
+    >
   </p>
 </template>
 
