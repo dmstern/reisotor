@@ -82,6 +82,7 @@ defineEmits<{
         v-for="acc in accommodations"
         :key="acc.id"
         as="button"
+        class="acc-pill"
         variant="accent-secondary"
         size="sm"
         :title="`Unterkunft: ${acc.title} auf Karte anzeigen`"
@@ -163,6 +164,7 @@ defineEmits<{
   border: 1px solid var(--color-border);
   background: var(--color-hover);
   color: var(--color-text);
+  max-width: 100%;
 }
 
 .day-meta-pill.weather-pill {
@@ -179,6 +181,8 @@ defineEmits<{
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .temp-min {
@@ -192,6 +196,25 @@ defineEmits<{
   gap: calc(var(--space-1) / 2);
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.acc-pill {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.acc-pill span,
+.acc-pill :deep(.app-icon) {
+  flex-shrink: 0;
+}
+
+.acc-pill strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .items {

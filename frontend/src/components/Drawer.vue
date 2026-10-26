@@ -306,6 +306,11 @@ onBeforeUnmount(() => {
   color: var(--color-primary-dark);
 }
 
+.drawer-tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .drawer-tab:disabled {
   opacity: 0.35;
   cursor: not-allowed;

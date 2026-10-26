@@ -182,6 +182,20 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  background: var(--color-hover);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.detail-badge.weather-badge {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  color: var(--color-text);
 }
 
 .linked-entity-row {
@@ -201,8 +215,8 @@ const emit = defineEmits<{
 }
 
 .linked-entity-title {
+  flex: 1;
   min-width: 0;
-  max-width: 32ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

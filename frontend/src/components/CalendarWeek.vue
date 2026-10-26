@@ -218,6 +218,11 @@ function onDrop(event: DragEvent, date: string) {
   transform: translateY(-1px);
 }
 
+.day:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .day.in-trip {
   background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
 }
@@ -359,6 +364,10 @@ function onDrop(event: DragEvent, date: string) {
   .day-weather-row {
     justify-content: center;
   }
+
+  .day-weather:nth-child(n + 2) {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -370,6 +379,10 @@ function onDrop(event: DragEvent, date: string) {
 
   .day-weather-row {
     justify-content: center;
+  }
+
+  .day-weather:nth-child(n + 2) {
+    display: none;
   }
 }
 
@@ -527,7 +540,7 @@ function onDrop(event: DragEvent, date: string) {
   text-align: right;
 }
 
-@media (min-width: 700px) {
+@container (min-width: 520px) {
   .day {
     min-height: 84px;
     padding: 7px 6px;
