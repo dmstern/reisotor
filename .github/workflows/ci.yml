@@ -193,7 +193,7 @@ jobs:
       # Erspart bei allen Shards nach dem ersten Lauf (oder bei ungaränderten package-lock.json) das
       # erneute Entpacken & Verlinken der 3 node_modules-Bäume.
       - name: Cache container node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: node-modules-cache
         with:
           path: |
