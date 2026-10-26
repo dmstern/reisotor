@@ -72,7 +72,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }
     let { lat, lng, image_url } = req.body;
-    image_url = await localizeImageUrl(image_url);
+    image_url = await localizeImageUrl(image_url, {
+      skipIfRestricted: isUserRestricted(req.session.userId),
+    });
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
@@ -128,7 +130,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }
     let { lat, lng, image_url } = req.body;
-    image_url = await localizeImageUrl(image_url);
+    image_url = await localizeImageUrl(image_url, {
+      skipIfRestricted: isUserRestricted(req.session.userId),
+    });
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;

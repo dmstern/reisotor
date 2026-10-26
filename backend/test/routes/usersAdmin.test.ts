@@ -220,4 +220,100 @@ describe('Admin User Management routes (#224)', () => {
     });
     expect(userDel.statusCode).toBe(204);
   });
+
+  it('allows admin to toggle is_restricted on a user, but prevents self-restriction', async () => {
+    const { db } = await import('../../src/db/index.js');
+    const res = db
+      .prepare(
+        'INSERT INTO users (username, password_hash, avatar, is_restricted) VALUES (?, ?, ?, 1)'
+      )
+      .run('restricted_test_user', bcrypt.hashSync('pass', 10), '👤');
+    const targetId = res.lastInsertRowid as number;
+
+    // Admin unlocks user (is_restricted = false)
+    const unlockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/restricted`,
+      headers: { cookie: adminCookie },
+      payload: { is_restricted: false },
+    });
+    expect(unlockRes.statusCode).toBe(200);
+    expect(unlockRes.json().is_restricted).toBe(false);
+
+    // Admin restricts user again (is_restricted = true)
+    const restrictRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/restricted`,
+      headers: { cookie: adminCookie },
+      payload: { is_restricted: true },
+    });
+    expect(restrictRes.statusCode).toBe(200);
+    expect(restrictRes.json().is_restricted).toBe(true);
+
+    // Self-restriction attempt
+    const selfRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/restricted`,
+      headers: { cookie: adminCookie },
+      payload: { is_restricted: true },
+    });
+    expect(selfRes.statusCode).toBe(400);
+    expect(selfRes.json().error).toContain('eigenen Account');
+
+    // Non-admin attempt rejected
+    const nonAdminRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/restricted`,
+      headers: { cookie: userCookie },
+      payload: { is_restricted: false },
+    });
+    expect(nonAdminRes.statusCode).toBe(403);
+  });
+
+  it('allows admin to read and update registrationMode in instance_settings', async () => {
+    // Read current mode
+    const getRes = await app.inject({
+      method: 'GET',
+      url: '/api/users/registration-mode',
+      headers: { cookie: adminCookie },
+    });
+    expect(getRes.statusCode).toBe(200);
+    expect(getRes.json()).toHaveProperty('registrationMode');
+
+    // Update mode to restricted
+    const putRes = await app.inject({
+      method: 'PUT',
+      url: '/api/users/registration-mode',
+      headers: { cookie: adminCookie },
+      payload: { registrationMode: 'restricted' },
+    });
+    expect(putRes.statusCode).toBe(200);
+    expect(putRes.json().registrationMode).toBe('restricted');
+
+    // Public /auth/config should reflect the newly updated mode
+    const configRes = await app.inject({
+      method: 'GET',
+      url: '/api/auth/config',
+    });
+    expect(configRes.statusCode).toBe(200);
+    expect(configRes.json().registrationMode).toBe('restricted');
+
+    // Non-admin rejected
+    const nonAdminRes = await app.inject({
+      method: 'PUT',
+      url: '/api/users/registration-mode',
+      headers: { cookie: userCookie },
+      payload: { registrationMode: 'off' },
+    });
+    expect(nonAdminRes.statusCode).toBe(403);
+
+    // Invalid mode rejected
+    const invalidRes = await app.inject({
+      method: 'PUT',
+      url: '/api/users/registration-mode',
+      headers: { cookie: adminCookie },
+      payload: { registrationMode: 'invalid_mode' },
+    });
+    expect(invalidRes.statusCode).toBe(400);
+  });
 });

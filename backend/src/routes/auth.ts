@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { db } from '../db/index.js';
 import {
   REGISTRATION_MODE,
+  getRegistrationMode,
   isUserRestricted,
   isUserAdmin,
   userMustChangePassword,
@@ -22,7 +23,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   // Frontend braucht den Modus schon VOR dem Login, um den Registrieren-Umschalter auf der
   // Login-Seite (LoginView.vue) überhaupt anzuzeigen – bewusst ungeschützt wie der Rest von /auth/*.
   app.get('/config', async () => {
-    return { registrationMode: REGISTRATION_MODE };
+    return { registrationMode: getRegistrationMode() };
   });
 
   // Selbstregistrierung auf der Login-Seite (LoginView.vue) – zusätzlich zum bestehenden, aus dem
@@ -34,7 +35,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: { username: string; email: string; password: string } }>(
     '/register',
     async (req, reply) => {
-      if (REGISTRATION_MODE === 'off') {
+      const mode = getRegistrationMode();
+      if (mode === 'off') {
         return reply.code(403).send({ error: 'Registrierung ist aktuell deaktiviert' });
       }
       const { username, email, password } = req.body ?? {};
@@ -60,8 +62,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const trimmedUsername = username.trim();
-      const restricted =
-        REGISTRATION_MODE === 'restricted' && !isUsernameFullAccess(trimmedUsername) ? 1 : 0;
+      const restricted = mode === 'restricted' && !isUsernameFullAccess(trimmedUsername) ? 1 : 0;
 
       // Der allererste Nutzer in der Datenbank wird automatisch Admin.
       const userCount = (

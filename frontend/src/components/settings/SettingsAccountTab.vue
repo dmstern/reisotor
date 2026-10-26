@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
+import Badge from '../primitives/Badge.vue';
 import IconButton from '../primitives/IconButton.vue';
 import Input from '../primitives/Input.vue';
 import PasswordInput from '../PasswordInput.vue';
 import AppIcon from '../AppIcon.vue';
 import PendingSyncCard from './PendingSyncCard.vue';
+import AccountTierModal from '../AccountTierModal.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useConnectivityStore } from '../../stores/connectivity';
 import { useAccountSettings } from '../../composables/useAccountSettings';
@@ -14,6 +16,7 @@ import { ACTION_ICONS } from '../../utils/actionIcons';
 
 const auth = useAuthStore();
 const connectivity = useConnectivityStore();
+const showTierModal = ref(false);
 
 function scrollToUnsynced() {
   const el = document.getElementById('unsynced-items');
@@ -53,6 +56,22 @@ onMounted(() => {
         <div class="user-info">
           <div class="name-and-status">
             <h2>{{ auth.user?.avatar }} {{ auth.user?.username }}</h2>
+            <button
+              type="button"
+              class="tier-badge-btn"
+              :title="
+                auth.user?.is_admin
+                  ? 'Administrator-Status anzeigen'
+                  : auth.user?.restricted
+                    ? 'Informationen zu deinem Basis-Konto anzeigen'
+                    : 'Informationen zu deinen Kontorechten anzeigen'
+              "
+              @click="showTierModal = true"
+            >
+              <Badge v-if="auth.user?.is_admin" variant="accent-secondary">Admin</Badge>
+              <Badge v-else-if="auth.user?.restricted" variant="warning"> Basis-Konto ℹ️ </Badge>
+              <Badge v-else variant="success">Vollzugriff</Badge>
+            </button>
             <div
               class="status-badge"
               :class="{
@@ -228,10 +247,29 @@ onMounted(() => {
     </Card>
 
     <PendingSyncCard />
+
+    <AccountTierModal v-model="showTierModal" />
   </div>
 </template>
 
 <style scoped>
+.tier-badge-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  border-radius: var(--radius-pill);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.tier-badge-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
 .account-tab :deep(.card) {
   margin-bottom: var(--space-4);
 }

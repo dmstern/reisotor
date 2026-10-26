@@ -2,10 +2,14 @@
 import { computed, ref, onUnmounted, useId } from 'vue';
 import { api } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
+import { useAuthStore } from '../stores/auth';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Input from './primitives/Input.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+
+const auth = useAuthStore();
 
 // Ergänzt das reine Bild-URL-Textfeld (extern gehostetes Bild) um einen direkten Datei-Upload -
 // beide schreiben am Ende in dasselbe image_url-Feld (Trip-/Spot-/Tour-Titelbild), es gibt keinen
@@ -140,6 +144,12 @@ defineExpose({
       @cancel="abortUpload"
     />
 
+    <p v-else-if="auth.user?.restricted" class="hint restricted-hint">
+      <AppIcon :icon="ACTION_ICONS.private" :size="13" group="actions" />
+      Datei-Uploads im Basis-Konto deaktiviert. Web-Bildersuche oder URL-Eingabe ist weiterhin
+      möglich.
+    </p>
+
     <label v-else :for="fileInputId" class="upload-label">
       <input
         :id="fileInputId"
@@ -161,6 +171,15 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.restricted-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .upload-label {

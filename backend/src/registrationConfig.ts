@@ -12,6 +12,28 @@ function parseMode(raw: string | undefined): RegistrationMode {
 
 export const REGISTRATION_MODE: RegistrationMode = parseMode(process.env.REGISTRATION_MODE);
 
+export function getRegistrationMode(): RegistrationMode {
+  try {
+    const row = db
+      .prepare('SELECT value FROM instance_settings WHERE key = ?')
+      .get('registration_mode') as { value: string } | undefined;
+    if (row?.value) {
+      return parseMode(row.value);
+    }
+  } catch {
+    // Falls Tabelle noch nicht existiert (z. B. vor der Initialisierung)
+  }
+  return parseMode(process.env.REGISTRATION_MODE);
+}
+
+export function setRegistrationMode(mode: RegistrationMode): void {
+  const parsed = parseMode(mode);
+  db.prepare(
+    `INSERT INTO instance_settings (key, value, updated_at) VALUES ('registration_mode', ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  ).run(parsed, new Date().toISOString());
+}
+
 // Kommagetrennte Reisotor-Benutzernamen, die von den restricted-Einschränkungen ausgenommen sind –
 // dynamisch geprüft (nicht beim Registrieren einmalig eingefroren), damit jemand nachträglich per
 // Env-Var freigeschaltet werden kann, ohne den DB-Zustand anzufassen.

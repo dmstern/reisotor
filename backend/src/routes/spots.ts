@@ -7,6 +7,7 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 import { ensureTripCategory } from './tripCategories.js';
+import { isUserRestricted } from '../registrationConfig.js';
 
 interface SpotBody {
   trip_id: number;
@@ -259,7 +260,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       ensureTripCategory(trip_id, 'spot', category);
     }
     let { lat, lng, image_url } = body;
-    image_url = await localizeImageUrl(image_url);
+    image_url = await localizeImageUrl(image_url, {
+      skipIfRestricted: isUserRestricted(req.session.userId),
+    });
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
@@ -324,7 +327,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       ensureTripCategory(existing.trip_id, 'spot', category);
     }
     let { lat, lng, image_url } = body;
-    image_url = await localizeImageUrl(image_url);
+    image_url = await localizeImageUrl(image_url, {
+      skipIfRestricted: isUserRestricted(req.session.userId),
+    });
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;

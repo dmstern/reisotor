@@ -9,6 +9,40 @@ export function useUserManagement() {
   const loadingUsers = ref(false);
   const userListError = ref('');
   const showCreateUserDialog = ref(false);
+  const registrationMode = ref<'off' | 'full' | 'restricted'>('restricted');
+  const loadingRegistrationMode = ref(false);
+  const savingRegistrationMode = ref(false);
+
+  async function loadRegistrationMode() {
+    if (!auth.user?.is_admin) return;
+    loadingRegistrationMode.value = true;
+    try {
+      const res = await api.get<{ registrationMode: 'off' | 'full' | 'restricted' }>(
+        '/users/registration-mode'
+      );
+      registrationMode.value = res.registrationMode;
+    } catch {
+      // Ignoriert, Fallback bleibt erhalten
+    } finally {
+      loadingRegistrationMode.value = false;
+    }
+  }
+
+  async function updateRegistrationMode(mode: 'off' | 'full' | 'restricted') {
+    if (!auth.user?.is_admin || savingRegistrationMode.value) return;
+    savingRegistrationMode.value = true;
+    try {
+      const res = await api.put<{ registrationMode: 'off' | 'full' | 'restricted' }>(
+        '/users/registration-mode',
+        { registrationMode: mode }
+      );
+      registrationMode.value = res.registrationMode;
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern des Registrierungsmodus');
+    } finally {
+      savingRegistrationMode.value = false;
+    }
+  }
 
   async function loadUserList() {
     if (!auth.user?.is_admin) return;
@@ -35,6 +69,19 @@ export function useUserManagement() {
     }
   }
 
+  async function toggleRestrictedRole(u: User) {
+    const nextIsRestricted = !u.is_restricted;
+    try {
+      const updated = await api.put<User>(`/users/${u.id}/restricted`, {
+        is_restricted: nextIsRestricted,
+      });
+      const idx = userList.value.findIndex((item) => item.id === u.id);
+      if (idx !== -1) userList.value[idx] = updated;
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern des Kontostatus');
+    }
+  }
+
   async function deleteUserAccount(u: User) {
     if (u.id === auth.user?.id) return;
     if (!confirm(`Möchtest du den Nutzer "${u.username}" wirklich löschen?`)) return;
@@ -55,8 +102,14 @@ export function useUserManagement() {
     loadingUsers,
     userListError,
     showCreateUserDialog,
+    registrationMode,
+    loadingRegistrationMode,
+    savingRegistrationMode,
+    loadRegistrationMode,
+    updateRegistrationMode,
     loadUserList,
     toggleAdminRole,
+    toggleRestrictedRole,
     deleteUserAccount,
     onUserCreated,
   };

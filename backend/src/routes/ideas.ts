@@ -4,6 +4,7 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 import { localizeImageUrl } from '../utils/remoteImage.js';
+import { isUserRestricted } from '../registrationConfig.js';
 
 // role/transport_type/... (#176): eine Tour mit gesetzter role ist die ehemalige Reise-Etappe
 // (Anreise/Abreise/Weiterreise) - dieselbe ideas-Zeile trägt jetzt sowohl die normale Tour- als auch
@@ -585,7 +586,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       ? legs.find((l) => !!l.transport_type)?.transport_type || null
       : transport_type || null;
 
-    const localImageUrl = await localizeImageUrl(image_url);
+    const localImageUrl = await localizeImageUrl(image_url, {
+      skipIfRestricted: isUserRestricted(req.session.userId),
+    });
     const result = insertIdeaStmt.run(
       trip_id,
       title,
@@ -668,7 +671,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       ? legs.find((l) => !!l.transport_type)?.transport_type || null
       : transport_type || null;
 
-    const localImageUrl = await localizeImageUrl(image_url);
+    const localImageUrl = await localizeImageUrl(image_url, {
+      skipIfRestricted: isUserRestricted(req.session.userId),
+    });
     const result = updateIdeaStmt.run(
       title,
       localImageUrl ?? null,

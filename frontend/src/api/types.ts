@@ -12,6 +12,7 @@ export interface User {
   /** Eingeschränkter Modus (Issue #96, REGISTRATION_MODE=restricted): kein Datei-Upload, max. 1
    *  selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub. */
   restricted?: boolean;
+  is_restricted?: boolean;
 }
 
 export interface Trip {

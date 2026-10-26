@@ -1,7 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
 import { db, hasColumn, hasTable } from '../db/index.js';
-import { isUserAdmin } from '../registrationConfig.js';
+import {
+  isUserAdmin,
+  getRegistrationMode,
+  setRegistrationMode,
+  type RegistrationMode,
+} from '../registrationConfig.js';
 
 interface UserRow {
   id: number;
@@ -24,6 +29,14 @@ interface CreateUserBody {
 
 interface ToggleAdminBody {
   is_admin: boolean;
+}
+
+interface ToggleRestrictedBody {
+  is_restricted: boolean;
+}
+
+interface RegistrationModeBody {
+  registrationMode: RegistrationMode;
 }
 
 interface AvatarBody {
@@ -65,6 +78,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         avatar: u.avatar,
         is_admin: Boolean(u.is_admin),
         is_restricted: Boolean(u.is_restricted),
+        restricted: Boolean(u.is_restricted),
         must_change_password: Boolean(u.must_change_password),
       }));
     }
@@ -151,6 +165,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       avatar: created.avatar,
       is_admin: Boolean(created.is_admin),
       is_restricted: Boolean(created.is_restricted),
+      restricted: Boolean(created.is_restricted),
       must_change_password: Boolean(created.must_change_password),
     };
   });
@@ -204,10 +219,87 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         avatar: updated.avatar,
         is_admin: Boolean(updated.is_admin),
         is_restricted: Boolean(updated.is_restricted),
+        restricted: Boolean(updated.is_restricted),
         must_change_password: Boolean(updated.must_change_password),
       };
     }
   );
+
+  // Basis-Account / Vollzugriff Rolle umschalten
+  app.put<{ Params: { id: string }; Body: ToggleRestrictedBody }>(
+    '/users/:id/restricted',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Benutzerrechte verwalten' });
+      }
+      const targetUserId = Number(req.params.id);
+      const { is_restricted: nextIsRestricted } = req.body ?? {};
+
+      const targetUser = db
+        .prepare('SELECT id, is_restricted FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; is_restricted: number } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      if (targetUserId === req.session.userId && nextIsRestricted) {
+        return reply.code(400).send({
+          error: 'Du kannst deinen eigenen Account nicht einschränken',
+        });
+      }
+
+      db.prepare('UPDATE users SET is_restricted = ? WHERE id = ?').run(
+        nextIsRestricted ? 1 : 0,
+        targetUserId
+      );
+      const updated = db
+        .prepare(
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
+        )
+        .get(targetUserId) as UserRow;
+      return {
+        id: updated.id,
+        username: updated.username,
+        email: updated.email ?? null,
+        avatar: updated.avatar,
+        is_admin: Boolean(updated.is_admin),
+        is_restricted: Boolean(updated.is_restricted),
+        restricted: Boolean(updated.is_restricted),
+        must_change_password: Boolean(updated.must_change_password),
+      };
+    }
+  );
+
+  // Registrierungsmodus abfragen (für Admins)
+  app.get('/users/registration-mode', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen den Registrierungsmodus einsehen' });
+    }
+    return { registrationMode: getRegistrationMode() };
+  });
+
+  // Registrierungsmodus ändern (für Admins)
+  app.put<{ Body: RegistrationModeBody }>('/users/registration-mode', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen den Registrierungsmodus ändern' });
+    }
+    const { registrationMode } = req.body ?? {};
+    if (
+      registrationMode !== 'off' &&
+      registrationMode !== 'full' &&
+      registrationMode !== 'restricted'
+    ) {
+      return reply.code(400).send({ error: 'Ungültiger Registrierungsmodus' });
+    }
+    setRegistrationMode(registrationMode);
+    return { registrationMode: getRegistrationMode() };
+  });
 
   // Nutzer löschen (Issue #224)
   app.delete<{ Params: { id: string } }>('/users/:id', async (req, reply) => {

@@ -1935,6 +1935,25 @@ if (
   ).run();
 }
 
+// Instanzeinstellungen (z. B. Registrierungs-Modus 'restricted' | 'full' | 'off')
+db.exec(`
+  CREATE TABLE IF NOT EXISTS instance_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+`);
+
+// Deduplizierung von externen Web-Bildern: Merkt sich heruntergeladene URLs -> lokale Datei,
+// damit dieselbe URL über mehrere Spots/Urlaube hinweg nicht mehrfach gespeichert wird.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS remote_image_cache (
+    url TEXT PRIMARY KEY,
+    filename TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+`);
+
 /**
  * Leert alle Anwendungs-Tabellen in der Datenbank und setzt Auto-Inkrement-Sequenzen zurück.
  * Optional werden auch hochgeladene Dateien bereinigt.

@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { writeFile } from 'node:fs/promises';
+import fs from 'node:fs';
 import path from 'node:path';
+import { db } from '../db/index.js';
 import { uploadsDir } from '../uploads.js';
 import { isPrivateIp, isSafeUrl } from './mapsLink.js';
 
@@ -127,22 +129,49 @@ function isExternalImageUrl(value: string): boolean {
   }
 }
 
-/** Speichert ein externes Bild als Upload und liefert die lokale URL (/api/uploads/…). */
+/** Speichert ein externes Bild als Upload und liefert die lokale URL (/api/uploads/…).
+ *  Dedupliziert anhand der Quell-URL, damit identische Bilder nicht mehrfach abgelegt werden. */
 export async function importRemoteImage(url: string): Promise<string | null> {
+  try {
+    const cached = db.prepare('SELECT filename FROM remote_image_cache WHERE url = ?').get(url) as
+      { filename: string } | undefined;
+    if (cached?.filename && fs.existsSync(path.join(uploadsDir, cached.filename))) {
+      return `${UPLOAD_URL_PREFIX}${cached.filename}`;
+    }
+  } catch {
+    // Falls Tabelle noch nicht da ist oder DB-Zugriff fehlschlägt
+  }
+
   const image = await downloadRemoteImage(url);
   if (!image) return null;
   const filename = `${randomUUID()}.${image.extension}`;
   await writeFile(path.join(uploadsDir, filename), image.buffer);
+
+  try {
+    db.prepare(
+      `INSERT INTO remote_image_cache (url, filename, created_at) VALUES (?, ?, ?)
+       ON CONFLICT(url) DO UPDATE SET filename = excluded.filename, created_at = excluded.created_at`
+    ).run(url, filename, new Date().toISOString());
+  } catch {
+    // Fehler beim Cachen ignoriert – Datei wurde dennoch erfolgreich gespeichert
+  }
+
   return `${UPLOAD_URL_PREFIX}${filename}`;
 }
 
 /** Wandelt eine externe image_url (Hotlinking) in eine lokale Upload-URL um, damit Browser keine
  *  IP-Adresse mehr an Fremdhosts senden. Lokale/leere URLs und die OSM-Kartenvorschau bleiben
  *  unverändert. Schlägt der Download fehl, bleibt die ursprüngliche URL erhalten (kein
- *  Datenverlust bei temporären Fehlern). */
+ *  Datenverlust bei temporären Fehlern). Basis-Accounts (skipIfRestricted) speichern keine
+ *  externen Bilder auf dem Server, die URLs bleiben erhalten und werden über den In-Memory-Proxy
+ *  ausgeliefert. */
 export async function localizeImageUrl<T extends string | null | undefined>(
-  value: T
+  value: T,
+  options?: { skipIfRestricted?: boolean }
 ): Promise<T | string> {
   if (!value || !isExternalImageUrl(value)) return value;
+  if (options?.skipIfRestricted) {
+    return value;
+  }
   return (await importRemoteImage(value)) ?? value;
 }
