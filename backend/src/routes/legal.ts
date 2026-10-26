@@ -15,6 +15,7 @@ export interface LegalServicesConfig {
   isCustomNominatim: boolean;
   orsConfigured: boolean;
   githubFeedbackConfigured: boolean;
+  feedbackRelayEnabled: boolean;
   pushConfigured: boolean;
 }
 
@@ -41,6 +42,10 @@ export function getLegalConfig(): LegalConfig {
   const isCustomNominatim = Boolean(process.env.NOMINATIM_API_URL?.trim());
   const orsConfigured = Boolean(process.env.ORS_API_KEY?.trim());
   const githubFeedbackConfigured = Boolean(process.env.GITHUB_TOKEN?.trim());
+  const feedbackRelayEnabled =
+    process.env.FEEDBACK_RELAY_FORWARDING !== 'false' &&
+    (process.env.FEEDBACK_RELAY_URL === undefined ||
+      Boolean(process.env.FEEDBACK_RELAY_URL.trim()));
   const pushConfigured = Boolean(
     process.env.VAPID_PUBLIC_KEY?.trim() && process.env.VAPID_PRIVATE_KEY?.trim()
   );
@@ -57,6 +62,7 @@ export function getLegalConfig(): LegalConfig {
       isCustomNominatim,
       orsConfigured,
       githubFeedbackConfigured,
+      feedbackRelayEnabled,
       pushConfigured,
     },
     hostingLocation,

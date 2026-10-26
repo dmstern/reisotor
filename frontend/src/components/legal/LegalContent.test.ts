@@ -111,7 +111,7 @@ describe('LegalContent', () => {
     cleanUp();
   });
 
-  it('renders Impressum tab with § 5 DDG when activeTab is imprint', () => {
+  it('renders Impressum tab with § 5 DDG and EUPL-1.2 license when activeTab is imprint', () => {
     const { container, cleanUp } = mountComponent({
       config: DEFAULT_LEGAL_CONFIG,
       activeTab: 'imprint',
@@ -120,6 +120,25 @@ describe('LegalContent', () => {
     expect(container.querySelector('h1')?.textContent).toContain('Impressum');
     expect(container.textContent).toContain('§ 5 Digitale-Dienste-Gesetz (DDG)');
     expect(container.textContent).toContain('Betreiberangaben nicht konfiguriert');
+    expect(container.textContent).toContain('European Union Public Licence v. 1.2 (EUPL-1.2)');
+
+    cleanUp();
+  });
+
+  it('renders contiguous section numbering on landing page without app-only sections', () => {
+    const { container, cleanUp } = mountComponent({
+      config: DEMO_LEGAL_CONFIG,
+      isLandingPage: true,
+    });
+
+    const headings = Array.from(container.querySelectorAll('h2')).map((h) => h.textContent?.trim());
+    expect(headings).toEqual([
+      '1. Überblick und Grundsätze',
+      '2. Verantwortliche Stelle',
+      '3. Server-Betrieb & Protokolldateien (Logfiles)',
+      '4. Cookies & lokaler Speicher im Browser (§ 25 TDDDG)',
+      '5. Deine Rechte als betroffene Person',
+    ]);
 
     cleanUp();
   });

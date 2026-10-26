@@ -12,6 +12,8 @@ const LEGAL_ENV_KEYS = [
   'NOMINATIM_API_URL',
   'ORS_API_KEY',
   'GITHUB_TOKEN',
+  'FEEDBACK_RELAY_FORWARDING',
+  'FEEDBACK_RELAY_URL',
   'VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'HOSTING_LOCATION',
@@ -57,6 +59,7 @@ describe('legal routes', () => {
     expect(body.services.isCustomNominatim).toBe(false);
     expect(body.services.pushConfigured).toBe(false);
     expect(body.services.githubFeedbackConfigured).toBe(false);
+    expect(body.services.feedbackRelayEnabled).toBe(true);
   });
 
   it('returns operator details and hasOperatorInfo=true when configured', async () => {

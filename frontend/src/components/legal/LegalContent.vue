@@ -29,6 +29,9 @@ const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
 const isGitHubPagesHosted = computed(
   () => props.isLandingPage || props.config.hostingLocation.includes('GitHub Pages')
 );
+const isFeedbackActive = computed(() =>
+  Boolean(services.value.githubFeedbackConfigured || services.value.feedbackRelayEnabled)
+);
 </script>
 
 <template>
@@ -104,11 +107,16 @@ const isGitHubPagesHosted = computed(
         <div v-else-if="isGitHubPagesHosted" class="legal-card-info">
           <p>
             <strong>Projekt- &amp; Webseiten-Verantwortlicher:</strong><br />
-            {{ operator.name || 'Daniel Morgenstern' }}<br />
+            {{ operator.name || 'Daniel Morgenstern' }}
+            <template v-if="operator.address">
+              <br /><span class="multiline-text">{{ operator.address }}</span>
+            </template>
+            <br />
             E-Mail:
             <a :href="`mailto:${operator.email || 'reisotor@ruebenherz.de'}`">
               {{ operator.email || 'reisotor@ruebenherz.de' }}
             </a>
+            <template v-if="operator.phone"><br />Telefon: {{ operator.phone }}</template>
           </p>
           <p class="legal-muted">
             Reisotor ist ein privates, nicht-kommerzielles Open-Source-Projekt. Die Landing Page und
@@ -168,9 +176,15 @@ const isGitHubPagesHosted = computed(
           <a href="https://github.com/dmstern/reisotor" target="_blank" rel="noopener noreferrer"
             >GitHub</a
           >
-          unter MIT-Lizenz). Die Entwickler:innen und Urheber:innen des Reisotor-Quellcodes stellen
-          lediglich die Software bereit und sind nicht verantwortlich für den Betrieb von
-          Fremd-Instanzen, deren rechtliche Ausgestaltung oder dort verarbeitete Inhalte.
+          unter der
+          <a
+            href="https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
+            target="_blank"
+            rel="noopener noreferrer"
+            >European Union Public Licence v. 1.2 (EUPL-1.2)</a
+          >). Die Entwickler:innen und Urheber:innen des Reisotor-Quellcodes stellen lediglich die
+          Software bereit und sind nicht verantwortlich für den Betrieb von Fremd-Instanzen, deren
+          rechtliche Ausgestaltung oder dort verarbeitete Inhalte.
         </p>
       </section>
 
@@ -205,6 +219,11 @@ const isGitHubPagesHosted = computed(
               >OpenStreetMap-Mitwirkende</a
             >
             (Open Database License, ODbL).
+          </li>
+          <li>
+            <strong>Kartenbibliothek:</strong>
+            <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>
+            (BSD-2-Clause-Lizenz).
           </li>
           <li>
             <strong>Symbole &amp; Icons:</strong>
@@ -306,11 +325,16 @@ const isGitHubPagesHosted = computed(
         <div v-else-if="isGitHubPagesHosted" class="legal-card-info">
           <p>
             <strong>Projekt- &amp; Webseiten-Verantwortlicher:</strong><br />
-            {{ operator.name || 'Daniel Morgenstern' }}<br />
+            {{ operator.name || 'Daniel Morgenstern' }}
+            <template v-if="operator.address">
+              <br /><span class="multiline-text">{{ operator.address }}</span>
+            </template>
+            <br />
             E-Mail:
             <a :href="`mailto:${operator.email || 'reisotor@ruebenherz.de'}`">
               {{ operator.email || 'reisotor@ruebenherz.de' }}
             </a>
+            <template v-if="operator.phone"><br />Telefon: {{ operator.phone }}</template>
           </p>
         </div>
 
@@ -371,100 +395,159 @@ const isGitHubPagesHosted = computed(
         </div>
       </section>
 
-      <!-- 4. Benutzerkonto & Authentifizierung -->
+      <!-- 4. Benutzerkonto, Registrierung, Reisedaten & Standortfunktionen (nur App) -->
       <section v-if="!isLandingPage" class="legal-section">
-        <h2>4. Benutzerkonto, Registrierung &amp; Reisedaten</h2>
+        <h2>4. Benutzerkonto, Registrierung, Reisedaten &amp; Standortfunktionen</h2>
+
+        <div v-if="isGitHubPagesHosted" class="legal-card-info">
+          <strong>Hinweis zum statischen Demo-Modus:</strong>
+          <p>
+            In der öffentlichen Live-Demo auf GitHub Pages existiert kein Backend-Server und keine
+            Datenbank. Alle angezeigten oder von dir eingegebenen Beispieldaten existieren rein
+            flüchtig im Arbeitsspeicher deines Browsers und werden beim Schließen oder Zurücksetzen
+            der Demo verworfen.
+          </p>
+        </div>
+
         <p>
-          Für die Nutzung von Reisotor ist ein Benutzerkonto erforderlich (sofern die Registrierung
-          oder Kontoeinrichtung durch einen Admin aktiviert ist):
+          Für die Nutzung einer selbst gehosteten Reisotor-Instanz ist ein Benutzerkonto
+          erforderlich (sofern die Registrierung oder Kontoeinrichtung durch Administrator:innen
+          aktiviert ist):
         </p>
         <ul>
           <li>
-            <strong>Verarbeitete Daten:</strong> Benutzername, E-Mail-Adresse, kryptografischer
-            Passwort-Hash (erzeugt mit bcrypt und individueller Salt-Verschlüsselung; dein
-            Klartext-Passwort ist für niemanden lesbar).
+            <strong>Kontodaten:</strong> Benutzername, E-Mail-Adresse, Profil-Avatar sowie ein
+            kryptografischer Passwort-Hash (erzeugt mit <code>bcrypt</code> und individuellem Salt;
+            dein Klartext-Passwort ist für niemanden lesbar).
           </li>
           <li>
-            <strong>Reiseinhalte:</strong> Urlaube, Termine, Notizen, Packlisten, Einkaufslisten,
-            Ausflugsziele (Spots), Reiserouten, Budgeteinträge und Tagebücher, die du und deine
-            Mitreisenden eingeben.
+            <strong>Auffindbarkeit innerhalb der Instanz:</strong> Angemeldete Nutzer:innen
+            derselben Reisotor-Instanz können andere registrierte Konten über Benutzername oder
+            E-Mail-Adresse suchen (<code>GET /api/users/search</code>), um sie als Mitreisende zu
+            einem gemeinsamen Urlaub einzuladen.
           </li>
           <li>
-            <strong>Zweck:</strong> Ermöglichung der gemeinsamen Urlaubs- und Reiseorganisation,
-            Rechteverwaltung und Zugriffsschutz für private Urlaube.
+            <strong>Reiseinhalte &amp; Dateianhänge:</strong> Urlaube, Termine, Notizen, Pack-,
+            Einkaufs- und ToDo-Listen, Ausflugsziele (Spots), Reiserouten, Budgeteinträge,
+            Tagebücher sowie hochgeladene Bilder und Dateianhänge (z. B. Tickets,
+            Buchungsbestätigungen). Diese Inhalte sind strikt auf die eingeladenen Mitglieder
+            (<code>trip_members</code>) des jeweiligen Urlaubs beschränkt.
           </li>
           <li>
-            <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Erfüllung des
-            Nutzungsverhältnisses).
+            <strong>Formular-Entwürfe (Drafts):</strong> Noch nicht gespeicherte Formulareingaben
+            werden zur Vermeidung von Datenverlust sowohl lokal im Browser
+            (<code>localStorage</code>) als auch persönlich zugeordnet auf dem Reisotor-Server
+            (<code>drafts</code>-Tabelle, ausschließlich für dein eigenes Konto einsehbar)
+            zwischengespeichert und beim Speichern oder Verwerfen automatisch gelöscht.
+          </li>
+          <li>
+            <strong>Optionale Standortfunktionen (GPS-Tracks &amp; Live-Standort):</strong> Nur wenn
+            du die Funktion aktiv startest und im Browser die Standortberechtigung erteilst
+            (<code>navigator.geolocation</code>), verarbeitet Reisotor deinen Gerätestandort –
+            entweder zur Aufzeichnung von GPS-Routen (<code>location_tracks</code>, standardmäßig
+            privat, optional für Urlaubsmitglieder freigebbar) oder zur flüchtigen
+            Echtzeit-Standortanzeige auf der Karte (wird nur im Arbeitsspeicher über den
+            Echtzeit-Stream an aktive Urlaubsmitglieder übertragen und nicht in der Datenbank
+            gespeichert).
+          </li>
+          <li>
+            <strong>Zweck &amp; Rechtsgrundlage:</strong> Ermöglichung der gemeinsamen Reiseplanung,
+            Rechteverwaltung und Zugriffsschutz für private Urlaube (Art. 6 Abs. 1 lit. b DSGVO)
+            sowie Einwilligung bei optionaler Browser-Standortfreigabe (Art. 6 Abs. 1 lit. a DSGVO).
           </li>
         </ul>
       </section>
 
-      <!-- 5. Cookies & Lokaler Speicher (§ 25 TDDDG) -->
+      <!-- 4./5. Cookies & Lokaler Speicher (§ 25 TDDDG) -->
       <section class="legal-section">
-        <h2>5. Cookies &amp; lokaler Speicher im Browser (§ 25 TDDDG)</h2>
+        <h2>
+          {{ isLandingPage ? '4.' : '5.' }} Cookies &amp; lokaler Speicher im Browser (§ 25 TDDDG)
+        </h2>
         <p>
           Reisotor nutzt weder Werbe-Cookies noch Tracking-Technologien. Alle im Browser
           gespeicherten Daten dienen ausschließlich der Bereitstellung der gewünschten Funktionen:
         </p>
 
-        <div class="legal-subsection">
-          <h3>5.1 Session-Cookie (<code>sessionId</code>)</h3>
-          <p>Bei der Anmeldung wird ein einziges technisch notwendiges Cookie gesetzt:</p>
+        <template v-if="isLandingPage">
           <ul>
-            <li><strong>Name:</strong> <code>sessionId</code></li>
             <li>
-              <strong>Zweck:</strong> Hält deine sichere Anmeldung aufrecht, damit du bei jedem
-              Seitenwechsel authentifiziert bleibst.
+              <strong>Keine Cookies:</strong> Beim Besuch dieser statischen Vorstellungsseite werden
+              keinerlei Cookies auf deinem Endgerät gesetzt.
             </li>
             <li>
-              <strong>Schutzmerkmale:</strong> <code>HttpOnly</code> (nicht durch Skripte lesbar,
-              Schutz vor XSS), <code>SameSite=Lax</code> (Schutz vor Cross-Site-Request-Forgery),
-              <code>Secure</code> (bei HTTPS-Verbindungen).
-            </li>
-            <li>
-              <strong>Gültigkeit:</strong> 30 Tage („angemeldet bleiben“) oder bis zum manuellen
-              Abmelden.
-            </li>
-            <li>
-              <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
-              erforderlich) und Art. 6 Abs. 1 lit. b DSGVO. Keine Einwilligung erforderlich.
+              <strong>Darstellungseinstellungen (<code>localStorage</code>):</strong> Wenn du das
+              Farbschema (Hell-/Dunkelmodus) umschaltetest, wird diese Auswahl lokal in deinem
+              Browser (<code>reisotor-theme-mode</code>) gespeichert. Rechtsgrundlage: § 25 Abs. 2
+              Nr. 2 TDDDG (technisch erforderlich für die ausdrücklich gewünschte Darstellung).
             </li>
           </ul>
-        </div>
+        </template>
 
-        <div class="legal-subsection">
-          <h3>5.2 Lokaler Browser-Speicher (localStorage, IndexedDB &amp; Service Worker)</h3>
-          <p>
-            Als moderne Progressive Web App (PWA) nutzt Reisotor lokalen Speicher auf deinem
-            Endgerät:
-          </p>
-          <ul>
-            <li>
-              <strong>App-Shell &amp; Offline-Verfügbarkeit:</strong> Der Service Worker speichert
-              die Oberfläche (HTML, CSS, App-Code, lokale Schriften und Icons) lokal zwischen, damit
-              die App auch ohne Internetverbindung blitzschnell startet und bedienbar bleibt.
-            </li>
-            <li>
-              <strong>Persönliche Einstellungen:</strong> Farbschema (Hell/Dunkel), Ansichtsmodi und
-              Sortierungen.
-            </li>
-            <li>
-              <strong>Formular-Entwürfe (Drafts):</strong> Unvollendete Texteingaben werden lokal
-              gespeichert, damit bei versehentlichem Schließen oder Funklöchern keine Eingaben
-              verloren gehen.
-            </li>
-            <li>
-              <strong>Reisedaten- &amp; Kachel-Cache:</strong> Bereits abgerufene Urlaubsdaten und
-              angesehene Kartenkacheln werden lokal gespeichert, um erneuten Datenverbrauch zu
-              verhindern und Offline-Planung zu ermöglichen.
-            </li>
-          </ul>
-          <p>
-            <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
-            erforderlich für den vom Nutzer ausdrücklich angeforderten Offline- und PWA-Betrieb).
-          </p>
-        </div>
+        <template v-else>
+          <div class="legal-subsection">
+            <h3>5.1 Session-Cookie (<code>sessionId</code>)</h3>
+            <p>
+              Bei der Anmeldung an einer Reisotor-Serverinstanz wird ein einziges technisch
+              notwendiges Cookie gesetzt (im statischen Demo-Modus auf GitHub Pages wird kein
+              Session-Cookie gesetzt):
+            </p>
+            <ul>
+              <li><strong>Name:</strong> <code>sessionId</code></li>
+              <li>
+                <strong>Zweck:</strong> Hält deine sichere Anmeldung aufrecht, damit du bei jedem
+                Seitenwechsel authentifiziert bleibst.
+              </li>
+              <li>
+                <strong>Schutzmerkmale:</strong> <code>HttpOnly</code> (nicht durch Skripte lesbar,
+                Schutz vor XSS), <code>SameSite=Lax</code> (Schutz vor Cross-Site-Request-Forgery),
+                <code>Secure</code> (bei HTTPS-Verbindungen).
+              </li>
+              <li>
+                <strong>Gültigkeit:</strong> 30 Tage („angemeldet bleiben“) oder bis zum manuellen
+                Abmelden.
+              </li>
+              <li>
+                <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
+                erforderlich) und Art. 6 Abs. 1 lit. b DSGVO. Keine Einwilligung erforderlich.
+              </li>
+            </ul>
+          </div>
+
+          <div class="legal-subsection">
+            <h3>5.2 Lokaler Browser-Speicher (localStorage, Cache-Storage &amp; Service Worker)</h3>
+            <p>
+              Als moderne Progressive Web App (PWA) nutzt Reisotor lokalen Speicher auf deinem
+              Endgerät:
+            </p>
+            <ul>
+              <li>
+                <strong>App-Shell &amp; Offline-Verfügbarkeit:</strong> Der Service Worker speichert
+                die Oberfläche (HTML, CSS, App-Code, lokale Schriften und Icons) lokal zwischen,
+                damit die App auch ohne Internetverbindung blitzschnell startet und bedienbar
+                bleibt.
+              </li>
+              <li>
+                <strong>Persönliche Einstellungen:</strong> Farbschema (Hell/Dunkel), Ansichtsmodi,
+                Kalender-Wochenanfang und Sortierungen.
+              </li>
+              <li>
+                <strong>Formular-Entwürfe (Drafts):</strong> Unvollendete Texteingaben werden lokal
+                gespeichert, damit bei versehentlichem Schließen oder Funklöchern keine Eingaben
+                verloren gehen.
+              </li>
+              <li>
+                <strong>Reisedaten- &amp; Kachel-Cache:</strong> Bereits abgerufene Urlaubsdaten
+                (inkl. Offline-Warteschlange für Änderungen ohne Netz) und angesehene Kartenkacheln
+                werden lokal gespeichert, um erneuten Datenverbrauch zu verhindern und
+                Offline-Planung zu ermöglichen.
+              </li>
+            </ul>
+            <p>
+              <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
+              erforderlich für den vom Nutzer ausdrücklich angeforderten Offline- und PWA-Betrieb).
+            </p>
+          </div>
+        </template>
       </section>
 
       <!-- 6. Externe Dienste & Schnittstellen (Reisotor APIs) -->
@@ -488,9 +571,11 @@ const isGitHubPagesHosted = computed(
           </p>
           <ul>
             <li>
-              <strong>Datenübermittlung:</strong> Beim Laden einer Karte übermittelt dein Browser
-              technisch bedingt deine IP-Adresse sowie die Koordinaten des angeforderten
-              Kartenausschnitts an die Server der OpenStreetMap Foundation.
+              <strong>Datenübermittlung &amp; Drittlandtransfer (UK):</strong> Beim Laden einer
+              Karte übermittelt dein Browser technisch bedingt deine IP-Adresse sowie die
+              Koordinaten des angeforderten Kartenausschnitts an die Server der OpenStreetMap
+              Foundation. Für das Vereinigte Königreich besteht ein Angemessenheitsbeschluss der
+              Europäischen Kommission gemäß Art. 45 DSGVO.
             </li>
             <li>
               <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (die Kartendarstellung
@@ -524,10 +609,10 @@ const isGitHubPagesHosted = computed(
           <ul>
             <li>
               <strong>Proxy-Schutz für deine IP:</strong> Das Frontend bzw. dein Browser ruft
-              Open-Meteo niemals direkt auf. Sämtliche Wetterabfragen laufen über einen
-              authentifizierten Backend-Proxy auf unserem Reisotor-Server (<code
-                >GET /api/weather</code
-              >). Open-Meteo sieht zu keinem Zeitpunkt deine persönliche IP-Adresse.
+              Open-Meteo niemals direkt auf. Sämtliche Wetterabfragen (sowie die täglichen
+              serverseitigen Wetter-Snapshots zur Trendanalyse) laufen über einen authentifizierten
+              Backend-Proxy auf unserem Reisotor-Server (<code>GET /api/weather</code>). Open-Meteo
+              sieht zu keinem Zeitpunkt deine persönliche IP-Adresse.
             </li>
             <li>
               <strong>Koordinaten-Rundung:</strong> Zur Wahrung der Privatsphäre rundet unser Server
@@ -542,14 +627,15 @@ const isGitHubPagesHosted = computed(
         <div class="legal-subsection">
           <h3>6.3 Ortssuche, Autovervollständigung &amp; Geocoding (Photon &amp; Nominatim)</h3>
           <p>
-            Bei der Suche nach Orten, Gastronomie, Sehenswürdigkeiten oder Adressen unterstützt dich
-            Reisotor mit einer schnellen Autovervollständigung:
+            Bei der Suche nach Orten, Gastronomie, Sehenswürdigkeiten oder Adressen sowie bei der
+            Adressermittlung aus Kartenkoordinaten (Reverse-Geocoding) unterstützt dich Reisotor mit
+            einer schnellen Ortssuche:
           </p>
           <ul>
             <li>
-              <strong>Datenfluss:</strong> Eingegebene Suchbegriffe werden vom Browser an das
-              Reisotor-Backend gesendet. Der Reisotor-Server leitet die Anfrage serverseitig an den
-              Geocoding-Dienst weiter:
+              <strong>Datenfluss:</strong> Eingegebene Suchbegriffe und Koordinaten werden vom
+              Browser an das Reisotor-Backend gesendet. Der Reisotor-Server leitet die Anfrage
+              serverseitig an den Geocoding-Dienst weiter:
               <template v-if="services.isCustomPhoton">
                 auf dieser Instanz an eine eigene, selbst gehostete Photon-Instanz (<code>{{
                   services.photonUrl
@@ -558,10 +644,11 @@ const isGitHubPagesHosted = computed(
               </template>
               <template v-else>
                 an den öffentlichen Geocoding-Dienst
-                <em>Komoot Photon</em> (<code>photon.komoot.io</code>).
+                <em>Komoot Photon</em> (<code>photon.komoot.io</code>, betrieben von der komoot
+                GmbH, Potsdam, Deutschland).
               </template>
               <template v-if="services.nominatimEnabled">
-                Bei unvollständigen Ergebnissen wird ergänzend
+                Bei Phrasen- und Kategoriesuchen oder unvollständigen Ergebnissen wird ergänzend
                 <template v-if="services.isCustomNominatim">
                   eine eigene Nominatim-Instanz (<code>{{ services.nominatimUrl }}</code
                   >)
@@ -595,7 +682,8 @@ const isGitHubPagesHosted = computed(
             </p>
             <p>
               Die Abfrage erfolgt ausschließlich durch unseren Server; deine Browser-IP wird nicht
-              weitergegeben. Berechnete Strecken werden im lokalen Cache dauerhaft gespeichert.
+              weitergegeben. Berechnete Strecken werden im lokalen Server-Cache dauerhaft
+              gespeichert.
             </p>
           </template>
           <template v-else>
@@ -617,23 +705,27 @@ const isGitHubPagesHosted = computed(
           </p>
           <ul>
             <li>
-              <strong>Suchanfrage:</strong> Der Suchbegriff (z. B. Name der Sehenswürdigkeit,
-              ergänzt um den Ortsnamen) sowie ggf. auf drei Nachkommastellen gerundete Koordinaten
-              für die Umkreissuche (<code>geosearch</code>) werden vom Reisotor-Server an Wikipedia
-              / Wikimedia Commons sowie an Bildindizes (Bing, Yahoo) übermittelt.
+              <strong>Suchanfrage:</strong> Der sachliche Suchbegriff (z. B. Name der
+              Sehenswürdigkeit, ergänzt um Ortsnamen und Kategorie) sowie bei der
+              Wikipedia-Umkreissuche (<code>geosearch</code>) die Spot-Koordinaten werden vom
+              Reisotor-Server an <strong>Wikipedia / Wikimedia Commons</strong> (Wikimedia
+              Foundation, Inc., USA) sowie an die Web-Bildindizes von
+              <strong>Bing</strong> (Microsoft Corporation, USA) und als Fallback
+              <strong>DuckDuckGo</strong> (Duck Duck Go, Inc., USA) übermittelt.
             </li>
             <li>
-              <strong>Drittlandtransfer:</strong> Microsoft Corporation (Bing) und Yahoo Inc. haben
-              ihren Hauptsitz in den USA. Die Übermittlung von Suchbegriffen erfolgt serverseitig
-              auf Basis des Angemessenheitsbeschlusses (EU-US Data Privacy Framework). Es werden
-              keine Nutzer-IPs, Nutzerkontodaten oder Cookies an Bing oder Yahoo übertragen.
+              <strong>Kein Personenbezug bei der Suche:</strong> Sämtliche Suchabfragen erfolgen
+              ausschließlich serverseitig durch das Reisotor-Backend. Es werden zu keinem Zeitpunkt
+              Nutzer-IP-Adressen, Kontodaten oder Browser-Cookies an Wikimedia, Bing oder DuckDuckGo
+              übertragen.
             </li>
             <li>
-              <strong>Schutz beim Betrachten von Bildern:</strong> Ausgewählte Titelbilder werden
-              entweder direkt auf dem Reisotor-Server gespeichert oder über einen serverseitigen
-              Bild-Proxy (<code>/api/images/proxy</code>) ausgeliefert. Dadurch baut dein Browser
-              beim Anschauen von Spots <strong>keine Verbindung zu externen Drittservern</strong>
-              auf. Deine IP-Adresse verbleibt geschützt bei deinem Reisotor-Server.
+              <strong>Schutz beim Speichern &amp; Betrachten von Bildern:</strong> Ausgewählte
+              Titelbilder werden beim Speichern durch den Server heruntergeladen und lokal abgelegt
+              bzw. bei der Anzeige und Vorschau über einen serverseitigen Bild-Proxy
+              (<code>/api/images/proxy</code>) ausgeliefert. Dadurch baut dein Browser beim
+              Anschauen von Spots <strong>keine Verbindung zu externen Drittservern</strong> auf.
+              Deine IP-Adresse verbleibt geschützt bei deinem Reisotor-Server.
             </li>
             <li><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO.</li>
           </ul>
@@ -658,9 +750,9 @@ const isGitHubPagesHosted = computed(
         <div class="legal-subsection">
           <h3>6.7 Auflösen geteilter Karten-Links (Unshortener)</h3>
           <p>
-            Fügst du einen geteilten Kurzlink (z. B. von Google Maps oder Apple Maps) ein, löst
-            unser Server die Zielkoordinaten auf. Dein Browser verbindet sich dabei nicht mit Google
-            oder Apple.
+            Fügst du einen geteilten Kurzlink (z. B. von Google Maps, Apple Maps oder OpenStreetMap)
+            ein, löst unser Server die Weiterleitungen und Zielkoordinaten serverseitig auf. Dein
+            Browser verbindet sich dabei nicht mit Google oder Apple.
           </p>
         </div>
 
@@ -669,34 +761,46 @@ const isGitHubPagesHosted = computed(
           <h3>6.8 Web-Push-Benachrichtigungen (Optional)</h3>
           <p>
             Du kannst in den Einstellungen freiwillig Erinnerungen für anstehende Reisen aktivieren.
-            Hierbei wird eine anonyme Empfängeradresse (Push-Subscription) generiert und über den
-            Push-Dienst deines Betriebssystems (Apple, Google, Mozilla) verschlüsselt zugestellt.
+            Hierbei wird eine kryptografische Empfängeradresse (Push-Subscription) generiert und
+            über den Push-Dienst deines Browsers bzw. Betriebssystems (Mozilla, Apple, Google) nach
+            dem W3C-Web-Push-Standard (VAPID) verschlüsselt zugestellt.
           </p>
           <p>
             <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. a DSGVO (Einwilligung). Du kannst
-            die Benachrichtigungen jederzeit in den App-Einstellungen oder den
-            Browser-Berechtigungen widerrufen.
+            die Benachrichtigungen jederzeit mit Wirkung für die Zukunft in den App-Einstellungen
+            oder den Browser-Berechtigungen deaktivieren.
           </p>
         </div>
 
         <!-- 6.9 Feedback -->
-        <div v-if="services.githubFeedbackConfigured" class="legal-subsection">
+        <div v-if="isFeedbackActive" class="legal-subsection">
           <h3>6.9 Feedback &amp; Fehlerberichte (Optional)</h3>
           <p>
-            Wenn du das Feedback-Formular in den Einstellungen nutzt, wird deine Nachricht (zusammen
-            mit einem optionalen Bildschirmfoto) über die GitHub API als Issue im
-            Reisotor-Repository eingereicht.
+            Wenn du das Feedback-Formular in der Anwendung nutzt, werden deine Angaben (Titel,
+            Beschreibung, App-Version, optionaler Screenshot sowie dein Benutzername bzw. eine
+            angegebene oder im Konto hinterlegte Kontakt-E-Mail-Adresse)
+            <template v-if="services.githubFeedbackConfigured">
+              direkt über die <strong>GitHub API</strong>
+            </template>
+            <template v-else>
+              über den konfigurierten <strong>Reisotor-Feedback-Relay</strong> an die
+              <strong>GitHub API</strong>
+            </template>
+            übermittelt und als <strong>öffentliches Issue</strong> im GitHub-Repository des
+            Projekts (GitHub Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA;
+            zertifiziert unter dem EU-US Data Privacy Framework) veröffentlicht.
           </p>
           <p>
-            <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. a DSGVO (Einwilligung). Bitte achte
-            darauf, in Feedbacktexten oder Screenshots keine privaten Adressen oder vertraulichen
-            Notizen mitzusenden.
+            <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch aktives
+            Absenden des Formulars). Bitte achte darauf, in Feedbacktexten oder Screenshots keine
+            privaten Adressen oder vertraulichen Reisedaten mitzusenden, da GitHub-Issues öffentlich
+            einsehbar sind.
           </p>
         </div>
       </section>
 
-      <!-- 7. Speicherdauer & Datenlöschung -->
-      <section class="legal-section">
+      <!-- 7. Speicherdauer & Datenlöschung (nur App) -->
+      <section v-if="!isLandingPage" class="legal-section">
         <h2>7. Speicherdauer &amp; Datenlöschung</h2>
         <p>
           Wir verarbeiten und speichern deine Daten nur so lange, wie es für die Zwecke dieser
@@ -704,24 +808,30 @@ const isGitHubPagesHosted = computed(
         </p>
         <ul>
           <li>
-            <strong>Reisedaten:</strong> Bleiben gespeichert, solange dein Konto und der jeweilige
-            Urlaub bestehen.
+            <strong>Reisedaten:</strong> Bleiben gespeichert, solange der jeweilige Urlaub auf der
+            Instanz besteht.
           </li>
           <li>
             <strong>Papierkorb:</strong> Gelöschte Einträge verbleiben bis zu 30 Tage im
             Urlaubs-Papierkorb, damit sie bei versehentlichem Löschen wiederhergestellt werden
-            können, und werden danach unwiderruflich gelöscht.
+            können (oder jederzeit manuell endgültig geleert werden können), und werden danach
+            automatisch unwiderruflich gelöscht.
           </li>
           <li>
-            <strong>Kontolöschung:</strong> Wird ein Benutzerkonto oder ein Urlaub gelöscht, werden
-            alle zugehörigen Daten unmittelbar und vollständig aus der Datenbank entfernt.
+            <strong>Urlaubs- &amp; Kontolöschung:</strong> Wird ein Urlaub gelöscht, werden alle
+            zugehörigen Reiseeinträge und Dateianhänge vollständig gelöscht. Wird ein Benutzerkonto
+            gelöscht, werden die Kontodaten, Sitzungen, Entwürfe, Push-Abonnements, persönlichen
+            Standort-Tracks, Tagebucheinträge, Kommentare und Likes unmittelbar aus der Datenbank
+            entfernt; in gemeinsam genutzten Urlauben bleiben kollaborative Planungseinträge (z. B.
+            Spots, Ausflüge, Listenpunkte, Ausgaben) für die Mitreisenden erhalten, wobei der
+            Personenbezug zum gelöschten Konto anonymisiert (<code>NULL</code>) wird.
           </li>
         </ul>
       </section>
 
-      <!-- 8. Betroffenenrechte (Art. 15-21 DSGVO) -->
+      <!-- 5./8. Betroffenenrechte (Art. 15-21, 7, 77 DSGVO) -->
       <section class="legal-section">
-        <h2>8. Deine Rechte als betroffene Person</h2>
+        <h2>{{ isLandingPage ? '5.' : '8.' }} Deine Rechte als betroffene Person</h2>
         <p>
           Nach der Datenschutz-Grundverordnung stehen dir folgende gesetzliche Rechte gegenüber dem
           Verantwortlichen zu:
@@ -746,12 +856,19 @@ const isGitHubPagesHosted = computed(
           <li>
             <strong>Recht auf Datenübertragbarkeit (Art. 20 DSGVO):</strong> Du hast das Recht,
             deine Daten in einem strukturierten, gängigen und maschinenlesbaren Format zu erhalten
-            (z. B. über den vollständigen SQLite-Backup-Export).
+            (z. B. durch Bereitstellung über die Administrator:innen bzw. Betreiber:innen der
+            Instanz).
           </li>
           <li>
             <strong>Widerspruchsrecht (Art. 21 DSGVO):</strong> Du kannst der Verarbeitung deiner
             Daten, die auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO erfolgt, jederzeit
             widersprechen.
+          </li>
+          <li>
+            <strong>Recht auf Widerruf einer Einwilligung (Art. 7 Abs. 3 DSGVO):</strong> Soweit
+            eine Verarbeitung auf deiner Einwilligung beruht (z. B. optionale Standortfreigabe,
+            Web-Push-Benachrichtigungen oder Feedback-Übermittlung), kannst du diese Einwilligung
+            jederzeit mit Wirkung für die Zukunft widerrufen.
           </li>
           <li>
             <strong>Beschwerderecht bei einer Aufsichtsbehörde (Art. 77 DSGVO):</strong> Du hast das
@@ -761,7 +878,7 @@ const isGitHubPagesHosted = computed(
         </ul>
       </section>
 
-      <!-- 9. Rechtlicher Hinweis für Betreiber -->
+      <!-- Rechtlicher Hinweis für Betreiber -->
       <footer class="legal-disclaimer-note">
         <p>
           <em>

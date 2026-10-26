@@ -74,6 +74,7 @@ export interface LegalServicesConfig {
   isCustomNominatim: boolean;
   orsConfigured: boolean;
   githubFeedbackConfigured: boolean;
+  feedbackRelayEnabled?: boolean;
   pushConfigured: boolean;
 }
 
@@ -100,6 +101,7 @@ export const DEFAULT_LEGAL_CONFIG: LegalConfig = {
     isCustomNominatim: false,
     orsConfigured: false,
     githubFeedbackConfigured: false,
+    feedbackRelayEnabled: true,
     pushConfigured: false,
   },
   hostingLocation: 'Berlin',
@@ -123,6 +125,7 @@ export const DEMO_LEGAL_CONFIG: LegalConfig = {
     isCustomNominatim: false,
     orsConfigured: false,
     githubFeedbackConfigured: true,
+    feedbackRelayEnabled: false,
     pushConfigured: true,
   },
   hostingLocation: 'GitHub Pages',
