@@ -62,7 +62,8 @@ export function validatePackageJsonPolicies(pkgJson, filePath = 'package.json') 
         spec === '*' ||
         spec.endsWith('@latest') ||
         spec.endsWith('@next') ||
-        spec.endsWith('@*')
+        spec.endsWith('@*') ||
+        (/^>=?\s*\d+(\.\d+)*$/.test(spec) && !spec.includes('<'))
       ) {
         violations.push({
           file: filePath,
@@ -71,7 +72,11 @@ export function validatePackageJsonPolicies(pkgJson, filePath = 'package.json') 
           specifier: rawSpec,
           reason: `Floating or unpinned tag/version specifier "${rawSpec}" is prohibited.`,
         });
-      } else if (spec.startsWith('http://') || spec.startsWith('git://')) {
+      } else if (
+        spec.startsWith('http://') ||
+        spec.startsWith('git://') ||
+        spec.startsWith('git+http://')
+      ) {
         violations.push({
           file: filePath,
           section,
@@ -302,7 +307,11 @@ export function parseArgs(rawArgs) {
     else if (arg === '--update') mode = 'update';
     else if (arg === '--strict-all') strictAll = true;
     else if (arg.startsWith('--cooldown-days=')) {
-      cooldownDays = Number(arg.split('=')[1]);
+      const parsed = Number(arg.split('=')[1]);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        throw new RangeError(`Cooldown days must be a positive finite number, got: ${arg}`);
+      }
+      cooldownDays = parsed;
     } else if (arg.startsWith('--summary-file=')) {
       summaryFile = arg.split('=')[1];
     }
@@ -316,10 +325,18 @@ export function parseArgs(rawArgs) {
 }
 
 // Hauptlogik für CLI-Ausführung
-const isMainModule =
-  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+function isExecutingAsMain() {
+  if (!process.argv[1]) return false;
+  try {
+    const entryPath = fs.realpathSync(path.resolve(process.argv[1]));
+    const currentPath = fs.realpathSync(fileURLToPath(import.meta.url));
+    return entryPath === currentPath;
+  } catch {
+    return fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+  }
+}
 
-if (isMainModule) {
+if (isExecutingAsMain()) {
   const { mode, cooldownDays, summaryFile, strictAll } = parseArgs(process.argv.slice(2));
 
   console.log(`🛡️  Reisotor Security Tooling (Modus: ${mode})`);

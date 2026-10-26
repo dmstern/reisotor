@@ -3,6 +3,7 @@ import {
   classifyAuditReport,
   computeCooldownDate,
   formatSecurityMarkdown,
+  parseArgs,
   validatePackageJsonPolicies,
 } from '../../../scripts/security-check.mjs';
 
@@ -25,12 +26,14 @@ describe('scripts/security-check.mjs unit tests', () => {
   });
 
   describe('validatePackageJsonPolicies', () => {
-    it('detects violations for floating tags, wildcards, and insecure protocols', () => {
+    it('detects violations for floating tags, wildcards, unbounded ranges, and insecure protocols', () => {
       const samplePkg = {
         dependencies: {
           vite: 'npm:rolldown-vite@latest',
           insecure: 'http://example.com/pkg.tar.gz',
           gitInsecure: 'git://github.com/foo/bar.git',
+          gitHttp: 'git+http://github.com/foo/bar.git',
+          unboundedRange: '>=2.0.0',
           valid1: '^1.2.3',
         },
         devDependencies: {
@@ -42,12 +45,14 @@ describe('scripts/security-check.mjs unit tests', () => {
       };
 
       const violations = validatePackageJsonPolicies(samplePkg, 'frontend/package.json');
-      expect(violations).toHaveLength(6);
+      expect(violations).toHaveLength(8);
 
       const deps = violations.map((v) => v.dependency);
       expect(deps).toContain('vite');
       expect(deps).toContain('insecure');
       expect(deps).toContain('gitInsecure');
+      expect(deps).toContain('gitHttp');
+      expect(deps).toContain('unboundedRange');
       expect(deps).toContain('wildcard');
       expect(deps).toContain('nextTag');
       expect(deps).toContain('aliasedNext');
@@ -67,6 +72,30 @@ describe('scripts/security-check.mjs unit tests', () => {
 
       const violations = validatePackageJsonPolicies(validPkg);
       expect(violations).toEqual([]);
+    });
+  });
+
+  describe('parseArgs', () => {
+    it('parses valid args and applies defaults', () => {
+      expect(parseArgs(['--check'])).toEqual({
+        mode: 'check',
+        cooldownDays: 3,
+        summaryFile: null,
+        strictAll: false,
+      });
+
+      expect(parseArgs(['--update', '--cooldown-days=10', '--strict-all'])).toEqual({
+        mode: 'update',
+        cooldownDays: 10,
+        summaryFile: null,
+        strictAll: true,
+      });
+    });
+
+    it('throws RangeError for invalid cooldown-days in parseArgs', () => {
+      expect(() => parseArgs(['--cooldown-days=0'])).toThrow(RangeError);
+      expect(() => parseArgs(['--cooldown-days=-3'])).toThrow(RangeError);
+      expect(() => parseArgs(['--cooldown-days=invalid'])).toThrow(RangeError);
     });
   });
 
