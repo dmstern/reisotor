@@ -291,7 +291,7 @@ function onLinkClick(event: MouseEvent) {
   justify-content: center;
   padding: var(--space-2) var(--space-3);
   gap: 1px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   min-width: 44px;
 }
@@ -314,7 +314,7 @@ function onLinkClick(event: MouseEvent) {
   max-width: calc(100vw - var(--space-4) * 2);
   padding: 6px var(--space-2);
   border: 1px solid var(--color-surface-glass-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-surface-glass);
   backdrop-filter: var(--backdrop-blur-md);
   box-shadow: var(--shadow-floating-island);
@@ -351,7 +351,7 @@ function onLinkClick(event: MouseEvent) {
   left: 0;
   background: var(--color-primary-tint);
   border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   opacity: 0;
   transition:
     transform 0.25s ease,
@@ -386,6 +386,11 @@ function onLinkClick(event: MouseEvent) {
 .link.active,
 .link.router-link-active:not(.custom-inactive) {
   color: var(--color-primary-dark);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* Aktives Icon etwas leuchtender als die (dunklere) Textfarbe daneben - .icon bekommt AppIcon.vue's

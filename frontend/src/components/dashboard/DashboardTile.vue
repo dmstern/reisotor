@@ -70,6 +70,11 @@ const isLink = computed(() => !!props.to);
   box-shadow: 0 8px 24px var(--tile-shadow, var(--shadow-md));
 }
 
+.tile:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .tile-btn {
   width: 100%;
 }
