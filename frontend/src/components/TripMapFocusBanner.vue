@@ -204,6 +204,11 @@ watch(
   background: var(--color-hover);
 }
 
+.focus-banner-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .focus-banner-thumb {
   width: 28px;
   height: 28px;
@@ -299,5 +304,10 @@ watch(
   color: var(--color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.focus-banner .focus-title-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

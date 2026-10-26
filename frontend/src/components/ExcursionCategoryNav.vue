@@ -160,6 +160,11 @@ const emit = defineEmits<{
   color: var(--color-primary-dark);
 }
 
+.category-nav-arrow:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .category-nav-arrow.left {
   left: 0;
   justify-content: flex-start;
@@ -193,6 +198,11 @@ const emit = defineEmits<{
 
 .category-nav-item:hover {
   color: var(--color-primary-dark);
+}
+
+.category-nav-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .category-nav-item.active {

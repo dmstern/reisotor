@@ -388,8 +388,18 @@ function clearFilters() {
   background: transparent;
   color: var(--color-text-muted);
   cursor: pointer;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   z-index: 1;
+}
+
+.search-clear-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .search-clear-btn:hover {
@@ -473,5 +483,9 @@ function clearFilters() {
 .clear-filters-btn:hover {
   color: var(--color-danger);
   background: var(--color-hover);
+}
+
+.clear-filters-btn:focus-visible {
+  outline: 2px solid var(--color-danger);
 }
 </style>
