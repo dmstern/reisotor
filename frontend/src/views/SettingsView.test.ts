@@ -151,10 +151,21 @@ describe('SettingsView loading state', () => {
     expect(container.textContent).toContain('OpenStreetMap');
     expect(container.textContent).toContain('Kartenanzeige');
     expect(container.textContent).toContain('Leaflet');
+    expect(container.textContent).toContain('Ortssuche & Geocoding');
+    expect(container.textContent).toContain('Komoot Photon');
+    expect(container.textContent).toContain('Nominatim');
     expect(container.textContent).toContain('Routen & Fahrzeiten');
     expect(container.textContent).toContain('OpenRouteService');
     expect(container.textContent).toContain('Wettervorhersage');
     expect(container.textContent).toContain('Open-Meteo');
+    expect(container.textContent).toContain('Ortsfotos & Bildersuche');
+    expect(container.textContent).toContain('Wikipedia / Wikimedia Commons');
+    expect(container.textContent).toContain('Bing');
+    expect(container.textContent).toContain('DuckDuckGo');
+    expect(container.textContent).toContain('Länder- & Reiseinfos');
+    expect(container.textContent).toContain('REST Countries');
+    expect(container.textContent).toContain('ExchangeRate-API');
+    expect(container.textContent).toContain('Travel Advisory');
     expect(container.textContent).toContain('Icons');
     expect(container.textContent).toContain('Tabler Icons');
 

@@ -107,6 +107,16 @@ const showPwaInstallDialog = ref(false);
         <dd>
           <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>
         </dd>
+        <dt>Ortssuche &amp; Geocoding</dt>
+        <dd>
+          <a href="https://photon.komoot.io/" target="_blank" rel="noopener noreferrer"
+            >Komoot Photon</a
+          >
+          ·
+          <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener noreferrer"
+            >Nominatim</a
+          >
+        </dd>
         <dt>Routen &amp; Fahrzeiten</dt>
         <dd>
           <a href="https://openrouteservice.org/" target="_blank" rel="noopener noreferrer"
@@ -116,6 +126,30 @@ const showPwaInstallDialog = ref(false);
         <dt>Wettervorhersage</dt>
         <dd>
           <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>
+        </dd>
+        <dt>Ortsfotos &amp; Bildersuche</dt>
+        <dd>
+          <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener noreferrer"
+            >Wikipedia / Wikimedia Commons</a
+          >
+          ·
+          <a href="https://www.bing.com/images" target="_blank" rel="noopener noreferrer">Bing</a>
+          ·
+          <a href="https://duckduckgo.com/" target="_blank" rel="noopener noreferrer">DuckDuckGo</a>
+        </dd>
+        <dt>Länder- &amp; Reiseinfos</dt>
+        <dd>
+          <a href="https://restcountries.com/" target="_blank" rel="noopener noreferrer"
+            >REST Countries</a
+          >
+          ·
+          <a href="https://open.er-api.com/" target="_blank" rel="noopener noreferrer"
+            >ExchangeRate-API</a
+          >
+          ·
+          <a href="https://www.travel-advisory.info/" target="_blank" rel="noopener noreferrer"
+            >Travel Advisory</a
+          >
         </dd>
         <dt>Icons</dt>
         <dd>
