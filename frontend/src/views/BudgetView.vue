@@ -254,7 +254,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 .budget-kpi-pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--radius-xs);
+  gap: var(--space-1);
   font-size: var(--font-size-sm);
   font-weight: 600;
   padding: var(--space-1) var(--space-3);
@@ -278,9 +278,9 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 }
 
 .pill-dot {
-  width: var(--radius-xs);
-  height: var(--radius-xs);
-  border-radius: var(--radius-full);
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
   background: currentColor;
 }
 

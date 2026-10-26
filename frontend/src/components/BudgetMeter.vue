@@ -218,7 +218,7 @@ function fmt(n: number) {
 .meter-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   padding: var(--space-2) 0;
   transition: transform 0.15s ease;
 }
@@ -228,13 +228,13 @@ function fmt(n: number) {
 }
 
 .meter-row.is-prominent .label {
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
 }
 
 .meter-row.is-prominent .values {
-  font-size: 0.92rem;
+  font-size: var(--font-size-sm);
 }
 
 .meter-row.is-prominent .values strong {
@@ -257,7 +257,7 @@ function fmt(n: number) {
   flex-wrap: wrap;
   row-gap: 2px;
   gap: var(--space-2);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .meter-icon {
@@ -275,7 +275,7 @@ function fmt(n: number) {
 .dot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -307,14 +307,14 @@ function fmt(n: number) {
 }
 
 .category-warning-icon:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }
 
 .values {
   color: var(--color-text);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   white-space: nowrap;
   flex-shrink: 0;
   margin-left: auto;
@@ -326,7 +326,7 @@ function fmt(n: number) {
 
 .no-target {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-style: italic;
   color: var(--color-text-muted);
 }
@@ -402,9 +402,9 @@ function fmt(n: number) {
 .over-badge {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-danger);
 }
 

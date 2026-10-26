@@ -89,7 +89,7 @@ const store = useBudgetStore();
   corner-shape: squircle;
   color: var(--color-success);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .settled-icon-wrap {
@@ -98,7 +98,7 @@ const store = useBudgetStore();
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-success) 20%, transparent);
   flex-shrink: 0;
 }
@@ -136,14 +136,14 @@ const store = useBudgetStore();
 }
 
 .suggestion-text {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   min-width: 0;
 }
 
 .suggestion-debt-flow {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--space-1);
   vertical-align: middle;
   margin: 0 2px;
 }
@@ -156,7 +156,7 @@ const store = useBudgetStore();
 
 .settle-btn {
   flex-shrink: 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
 }
 
 .balance-list {
@@ -165,15 +165,15 @@ const store = useBudgetStore();
   margin: var(--space-2) 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .balance-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.9rem;
-  padding: 4px var(--space-2);
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition: background 0.15s ease;
@@ -188,7 +188,7 @@ const store = useBudgetStore();
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: var(--space-2) 0 0;
 }

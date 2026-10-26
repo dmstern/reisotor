@@ -120,7 +120,7 @@ defineProps<{
   right: 6px;
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: linear-gradient(135deg, #fef08a 0%, #eab308 100%);
   border: 1px solid #ca8a04;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
