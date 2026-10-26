@@ -108,6 +108,10 @@ Für alle Änderungen gelten folgende Software-Design-Prinzipien als verbindlich
 - **Neue UI-Bausteine** → `DESIGN.md` konsultieren; Storybook-Stories (`*.stories.ts`) **nur anlegen, wenn explizit im Prompt gefordert**.
 - **Standard-CSS** statt manueller Webkit-Präfixe (LightningCSS macht Autoprefixing)
 - **Border-Radius für Badges/Pillen/Kreise:** Niemals `border-radius: 50%` für Badges oder Rechtecke verwenden (verzieht Elemente zu einem ovalen Ei). Stattdessen immer `--radius-pill` (`9999px`) nutzen. 9999px skaliert bei Rechtecken zur perfekten Pillen-Form und bei 1:1-Quadraten zum perfekten Kreis.
+- **Tabler-Icons statt Emojis in der Benutzeroberfläche (Strikter Standard):**
+  - Für Icons in Buttons, Badges, Tabellen, Menüs, Statusanzeigen oder Dialogen dürfen **NIEMALS rohe Unicode-Emojis** verwendet werden.
+  - Verwende stattdessen immer das standardisierte Tabler-Icon über `<AppIcon :icon="..." />` (definiert in `utils/actionIcons.ts`, `utils/formFieldIcons.ts` etc.).
+  - **Einzige Ausnahme:** Bereiche, in denen die Nutzerin / der Nutzer in den Einstellungen explizit zwischen Symbol und Emoji umschalten kann (wie Wetter- und Kategorie-Icons via `stores/iconStyle.ts`), sowie benutzerdefinierte Nutzer-Avatare (`user.avatar`).
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 

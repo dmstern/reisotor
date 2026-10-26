@@ -69,8 +69,14 @@ onMounted(() => {
               @click="showTierModal = true"
             >
               <Badge v-if="auth.user?.is_admin" variant="accent-secondary">Admin</Badge>
-              <Badge v-else-if="auth.user?.restricted" variant="warning"> Basis-Konto ℹ️ </Badge>
-              <Badge v-else variant="success">Vollzugriff</Badge>
+              <Badge v-else-if="auth.user?.restricted" variant="warning" class="tier-badge">
+                Basis-Konto
+                <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
+              </Badge>
+              <Badge v-else variant="success" class="tier-badge">
+                Vollzugriff
+                <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
+              </Badge>
             </button>
             <div
               class="status-badge"
@@ -273,6 +279,12 @@ onMounted(() => {
 .tier-badge-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .account-tab :deep(.card) {
