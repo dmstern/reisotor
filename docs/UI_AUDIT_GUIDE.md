@@ -132,58 +132,61 @@ Bis kurz vor einem Release werden oft noch Bugs behoben, neue Funktionen fertigg
 
 ---
 
-### Das 4-Phasen-Modell des Release-Gates
+### Das Phasen-Modell des Release-Gates (Pro Team + Finales Gate)
 
 > [!NOTE]
-> **1 Branch & 1 PR für alle Teams (Cross-Team Single Source of Truth):**
-> Genau wie bei den Komponenten-Refactorings gilt: Alle Teams (1 bis 6) arbeiten auf **einem gemeinsamen Feature-Branch** (z. B. `perform_prerelease_audit`) und in **einem einzigen zentralen PR**. Jedes Team committet seine minimal-invasiven Fixes nacheinander isoliert in diesen Branch. Das abschließende Review in Phase 3 („PR-Diff-Review“) reviewt daher am Ende die **Gesamtheit aller Änderungen dieses einen PRs** (`git diff origin/main..HEAD`), bevor der PR in `main` gemergt wird.
-
-Analog zum Komponenten-Refactoring wird das Pre-Release-Gate in vier streng getrennte Phasen unterteilt:
+> **1 Branch & 1 PR für alle Teams, aber Review pro Team!**
+> Alle Teams (1 bis 6) arbeiten nacheinander auf **einem gemeinsamen Feature-Branch** (z. B. `perform_prerelease_audit`) und in **einem einzigen zentralen PR**. Damit das Kontextfenster klein bleibt und Fehler sofort behoben werden, durchläuft **jedes Team einzeln** die Phasen 0 bis 3 (Assess → Triage → Fix → **Team-Review mit 3.8 Flash**). Erst wenn alle 6 Teams komplett durch sind, folgt einmalig **Phase 4 (`Release Audit Gate`)** für den technischen Gesamt-Abschluss (`npm run check`, `test:a11y`).
 
 ```mermaid
 flowchart TD
-    P0["<b>Phase 0: Visuelle Inspektion & Triage (Read-Only!)</b><br/><i>5 Prüf-Dimensionen pro Domäne. Kein Code wird geändert!</i>"]
-    P0 --> P1["<b>Phase 1: Scope-Freeze & Triage-Freigabe</b><br/><i>Mensch/Lead bewertet Befunde: Freigabe vs. Einfrieren</i>"]
-    P1 --> P2["<b>Phase 2: Minimal-Invasive Härtung & Polish</b><br/><i>Chirurgische CSS-/Token-Fixes. Keine Architektur-Umbauten!</i>"]
-    P2 --> P3["<b>Phase 3: Finales Release-Gate</b><br/><i>Re-Verifikation, Axe-A11y, Typecheck, Lint, Release-Notes-Check</i>"]
+    subgraph ProTeam["<b>Zyklus pro Domänen-Team (Team 1 bis 6)</b>"]
+        P0["<b>Phase 0: Assess (Read-Only!)</b><br/><i>5 Prüf-Dimensionen testen. Kein Code-Umbau!</i>"]
+        P0 --> P1["<b>Phase 1: Triage-Freigabe</b><br/><i>Befunde übernehmen oder streichen</i>"]
+        P1 --> P2["<b>Phase 2: Fix (Polish)</b><br/><i>Chirurgische CSS-/Token-Fixes & Commit</i>"]
+        P2 --> P3["<b>Phase 3: Team-Review (3.8 Flash)</b><br/><i>Unabhängiges Diff-Review des Teams & PR-Update</i>"]
+    end
+    P3 -->|Nächstes Team| P0
+    P3 -->|Alle Teams fertig| P4["<b>Phase 4: Finales Release-Gate (1x am Ende)</b><br/><i>npm run check, Axe-A11y, Release-Notes -> Fertig!</i>"]
 ```
 
 ### Interaktions-Ablauf in der Praxis (Mensch & Agent)
 
-Folgendes Sequenzdiagramm veranschaulicht das Zusammenspiel zwischen Entwickler:in und Agenten über die Phasen hinweg:
+Folgendes Sequenzdiagramm veranschaulicht das Zusammenspiel zwischen Entwickler:in und Agenten pro Team:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Du as Du (Entwickler:in)
-    participant A as Agent (Chat 1: Triage)
-    participant B as Agent (Frischer Chat 2: Fix)
+    participant A as Agent (Chat 1: Assess)
+    participant B as Agent (Chat 2: Fix)
+    participant C as Agent (Chat 3: Team-Review)
 
-    Du->>A: "Mach ein Pre-Release-Audit" (oder "Release Audit Assess: Team 5")
-    Note over A: Phase 0: Read-Only Check!<br/>320px/390px, Popovers, Hover, Tokens.<br/>0 Zeilen Code geändert.
-    A-->>Du: Ampel-Tabelle (🔴 1 Blocker, 🟡 2 Polish, 🟢 3 OK)<br/>+ Fertiger Copy-Paste-Prompt für Phase 2 mit allen Befunden!
+    Du->>A: "Release Audit Assess: Team 4"
+    Note over A: Phase 0: Read-Only Check!<br/>0 Zeilen Code geändert.
+    A-->>Du: Ampel-Tabelle + Copy-Paste-Prompt für Phase 2 ("Release Audit Fix: Team 4")
 
-    Du->>B: [Kopiert den vorbereiteten Phase-2-Prompt 1:1 in Chat 2]
-    Note over B: Phase 2: Liest Befunde direkt aus Prompt,<br/>chirurgische CSS-Fixes, Test & Commit.
-    B-->>Du: "Fixes verifiziert & committet."
+    Du->>B: [Kopiert Phase-2-Prompt 1:1 in Chat 2]
+    Note over B: Phase 2: Chirurgische CSS-Fixes,<br/>test:audit & Commit.
+    B-->>Du: "Fixes committet." + Copy-Paste-Prompt für Phase 3 ("Release Audit Review: Team 4")
 
-    Du->>B: "Release Audit Gate"
-    Note over B: Phase 3: Typecheck, Lint,<br/>A11y (Axe), Release-Notes-Check.
-    B-->>Du: "Alle Prüfungen grün. Bereit für Release!"
+    Du->>C: [Kopiert Phase-3-Prompt in Chat 3 (3.8 Flash)]
+    Note over C: Phase 3: Prüft Team-Diff (git show HEAD)<br/>gegen DESIGN.md, bessert ggf. nach, updated PR.
+    C-->>Du: "Team 4 abgenommen!" + Copy-Paste-Prompt ("Release Audit Assess: Team 5" bzw. "Release Audit Gate")
 ```
 
-#### Wann du reviewen und wann du einen neuen Chat öffnen solltest:
+#### Wann du reviewen lässt und wann du einen neuen Chat öffnest:
 
-1. **Nach Phase 0 (Dein Review & Handoff ohne Nachdenken):**
-   - Der Agent liefert die Ampel-Befundtabelle (🔴 Blocker, 🟡 Polish, 🟢 OK) und generiert **automatisch am Ende einen vollständigen, kopierbaren Prompt-Block für Phase 2**.
-   - Du musst nichts extra abfragen oder im Chat formulieren:
-     - **Standardfall (Alles freigeben):** Du kopierst den fertigen Code-Block mit einem Klick in ein frisches Chat-Fenster.
-     - **Auswahl anpassen:** Falls du einzelne Polish-Punkte nicht umsetzen möchtest, löschst du vor dem Absenden im neuen Chat einfach die entsprechenden Zeilen aus dem Prompt (oder sagst in Chat 1 kurz _„nur Punkt 1 und 2“_, woraufhin der Agent den Block aktualisiert ausgibt).
-2. **Neuer Chat für Phase 2 (Token- & Kontext-Schutz):**
-   - Im neuen Chat startet der Fix-Agent direkt mit den konkreten Befunden aus deinem Prompt – ohne den Ballast alter Test-Logs, aber mit 100% präzisem Arbeitsauftrag.
-   - **Pflicht-Handoff am Ende von Phase 2:** Nach erfolgreichem Fix & Commit generiert der Agent IMMER unaufgefordert den vorbereiteten Trigger für den nächsten Schritt in einem kopierbaren Code-Block (z. B. `Release Audit Assess: Team <N+1>` für das nächste Team oder `Release Audit Gate`, falls alle Teams durchlaufen sind).
-3. **Abschluss mit Phase 3 (Finales Gate):**
-   - Im frischen Chat via `Release Audit Gate` alle automatisierten Schranken prüfen lassen. Wenn alle Tests grün sind, bescheinigt der Agent explizit den Gesamtabschluss des Audits („Pre-Release Audit erfolgreich abgeschlossen – Ready for Merge / Release“).
+1. **Nach Phase 0 (`Release Audit Assess: Team X`):**
+   - Der Agent liefert die Ampel-Befundtabelle (🔴 Blocker, 🟡 Polish, 🟢 OK) und generiert **am Ende automatisch den fertigen, kopierbaren Prompt-Block für Phase 2 (`Release Audit Fix: Team X`)**.
+   - **Standardfall (Alles freigeben):** Du kopierst den Code-Block 1:1 in ein frisches Chat-Fenster.
+   - **Auswahl anpassen:** Falls du einzelne Polish-Punkte ausschließen möchtest, löschst du vor dem Absenden einfach die entsprechenden Zeilen.
+2. **Nach Phase 2 (`Release Audit Fix: Team X`):**
+   - Der Fix-Agent setzt die Punkte um, führt `npm run test:audit` aus, committet und gibt **am Ende zwingend den kopierbaren Prompt für Phase 3 (`Release Audit Review: Team X`)** aus.
+3. **In Phase 3 (`Release Audit Review: Team X` – Unabhängiges Team-Review mit 3.8 Flash):**
+   - Ein frischer Agent prüft unvoreingenommen nur das kleine Diff dieses einen Teams (`git show HEAD`), kontrolliert Design-Tokens, `@container`-Queries und mögliche Seiteneffekte, bessert bei Bedarf sofort nach, aktualisiert den PR (`gh pr edit`) und gibt **am Ende zwingend den Prompt für das nächste Team (`Release Audit Assess: Team <X+1>`)** aus (oder nach Team 6 `Release Audit Gate`).
+4. **Einmaliger Abschluss mit Phase 4 (`Release Audit Gate`):**
+   - Wenn alle Teams durch Phase 3 abgenommen sind, prüft `Release Audit Gate` einmalig die projektweiten Schranken (`npm run check`, `npm run test:a11y`) und meldet den Gesamtabschluss des Audits.
 
 ---
 
@@ -247,12 +250,13 @@ Fällt im Chat eine allgemeine Aufforderung wie:
 
 ### Kurz-Trigger für das Release-Gate
 
-| Phase       | Kurz-Trigger                            | Beschreibung                                                                                                                                       |
-| :---------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 0** | `Release Audit Assess: <Team \| Route>` | **Reine Inspektion (Read-Only):** Testet die 5 Dimensionen, liefert Ampel-Tabelle und generiert direkt den fertigen Copy-Paste-Prompt für Phase 2. |
-| **Phase 1** | _(Menschliche Entscheidung)_            | **Scope-Freeze:** Optionales Bereinigen der Befundliste im kopierten Prompt (Löschen unerwünschter Zeilen).                                        |
-| **Phase 2** | `Release Audit Fix: <Team \| Route>`    | **Chirurgische Fixes:** Behebt die im Prompt übergebenen Punkte minimal-invasiv via Tokens/CSS.                                                    |
-| **Phase 3** | `Release Audit Gate`                    | **Finales Gate:** Führt `npm run check`, E2E-, A11y- und Release-Notes-Tests aus.                                                                  |
+| Phase                      | Kurz-Trigger                            | Beschreibung                                                                                                                                                     |
+| :------------------------- | :-------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0** _(pro Team)_   | `Release Audit Assess: <Team \| Route>` | **Reine Inspektion (Read-Only):** Testet die 5 Dimensionen, liefert Ampel-Tabelle und generiert direkt den fertigen Copy-Paste-Prompt für Phase 2.               |
+| **Phase 1** _(pro Team)_   | _(Menschliche Entscheidung)_            | **Scope-Freeze:** Optionales Bereinigen der Befundliste im kopierten Prompt (Löschen unerwünschter Zeilen).                                                      |
+| **Phase 2** _(pro Team)_   | `Release Audit Fix: <Team \| Route>`    | **Chirurgische Fixes:** Behebt die im Prompt übergebenen Punkte minimal-invasiv via Tokens/CSS, committet und generiert den Prompt für Phase 3 (`Review`).       |
+| **Phase 3** _(pro Team)_   | `Release Audit Review: <Team \| Route>` | **Unabhängiges Team-Review (3.8 Flash):** Prüft das Team-Diff (`git show HEAD`) gegen `DESIGN.md`, bessert ggf. nach, updated PR & gibt Prompt für Team N+1 aus. |
+| **Phase 4** _(1x am Ende)_ | `Release Audit Gate`                    | **Finales Gesamt-Gate:** Führt nach Abschluss aller Teams einmalig `npm run check`, A11y- (Axe) und Release-Notes-Prüfungen für die Merge-Freigabe aus.          |
 
 ---
 
@@ -350,42 +354,73 @@ STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
   npx -y prettier --write <geänderte-dateien>
 - Schließe mit einem sauberen Commit ab:
   git commit -m "fix(ui): polish <domäne> layout & popover resilience"
-- VORBEREITETER HANDOFF-PROMPT FÜR DEN NÄCHSTEN SCHRITT (Pflicht):
-  Gib am Ende IMMER zwingend den nächsten Schritt prominent als kopierbaren Prompt-Block für den nächsten frischen Chat aus:
-  * Wenn weitere Teams ausstehen (z. B. nach Team 3 kommt Team 4):
-    👉 Nächster Schritt (In einem frischen Chat für Phase 0 ausführen):
-    ```text
-    Release Audit Assess: Team [N+1]
-    ```
-  * Wenn alle Teams durchlaufen sind (z. B. nach Team 6 oder nach Scope-Abschluss):
-    👉 Nächster Schritt (In einem frischen Chat für das finale Gate ausführen):
-    ```text
-    Release Audit Gate
-    ```
+- VORBEREITETER HANDOFF-PROMPT FÜR PHASE 3 / TEAM-REVIEW (Pflicht):
+  Gib am Ende IMMER zwingend den Prompt für das unabhängige Team-Review in einem frischen Chat (3.8 Flash) als kopierbaren Code-Block aus:
+  👉 Nächster Schritt (In einem frischen Chat mit 3.8 Flash für das Team-Review ausführen):
+  ```text
+  Release Audit Review: Team [X]
+  ```
 ````
 
 ---
 
-### Phase 3: Finales Release-Gate (`Release Audit Gate`)
+### Phase 3: Unabhängiges Team-Review (`Release Audit Review: <Team | Route>`)
 
-Führt die finale Qualitätssicherung vor dem Tagging/Deployment durch:
+Wird nach Phase 2 in einem **frischen Chat (mit 3.8 Flash)** ausgeführt, um die Änderungen des jeweiligen Teams nach dem Vier-Augen-Prinzip unabhängig zu prüfen, bevor das nächste Team startet:
+
+````text
+Release Audit Review: [Team 1-6, z. B. Team 3]
+
+Führe das unabhängige Code- & Diff-Review (Phase 3) für die soeben committeten Änderungen dieses Teams durch.
+
+Prüfschritte:
+1. Diff des Teams inspizieren: Prüfe den Commit des Teams (git show HEAD bzw. die Commits des angegebenen Teams) Datei für Datei.
+2. Kriterien-Check gegen DESIGN.md & UI_AUDIT_GUIDE.md:
+   - Design-Token-Reinheit: Wurden ausschließlich --space-*, --color-*, --radius-pill genutzt (keine magischen Pixel oder harten Hex-Farben)?
+   - Container-Queries: Wurde für Komponenten in .app-main strikt @container statt @media verwendet?
+   - Keine Regressions-Gefahr: Keine kaputten Flex/Grid-Umbrüche, keine abgeschnittenen Elemente, kein toter Code.
+3. Gezielter Check der geänderten Dateien:
+   - npm run typecheck
+   - npx -y eslint <geänderte-dateien>
+4. Sofort-Korrektur (falls nötig): Falls kleine Token-Verstöße oder Unsauberkeiten auffallen, direkt beheben, formatieren (npx -y prettier --write) und committen.
+5. PR-Beschreibung aktualisieren: Aktualisiere den zentralen PR via gh pr edit, sodass das abgenommene Team in der PR-Beschreibung dokumentiert ist.
+
+Ergebnis & Pflicht-Handoff:
+1. Gib eine kurze, klare Review-Bilanz im Chat aus (Geprüfte Dateien, Token-/Container-Check, eventuelle Nachbesserungen, Status: ✅ Team X abgenommen).
+2. VORBEREITETER HANDOFF-PROMPT FÜR DEN NÄCHSTEN SCHRITT (Pflicht):
+   Gib am Ende IMMER zwingend den nächsten Schritt prominent als kopierbaren Prompt-Block für den nächsten frischen Chat aus:
+   * Wenn weitere Teams ausstehen (z. B. nach Team 3 kommt Team 4):
+     👉 Nächster Schritt (In einem frischen Chat für Phase 0 des nächsten Teams ausführen):
+     ```text
+     Release Audit Assess: Team [N+1]
+     ```
+   * Wenn alle Teams (1 bis 6) komplett durchlaufen und abgenommen sind:
+     👉 Nächster Schritt (In einem frischen Chat für das finale Gesamt-Gate ausführen):
+     ```text
+     Release Audit Gate
+     ```
+````
+
+---
+
+### Phase 4: Finales Release-Gate (`Release Audit Gate`)
+
+Führt **einmalig ganz am Ende** (nachdem alle Teams die Phasen 0 bis 3 durchlaufen haben) die finale technische Qualitätssicherung vor dem Merge/Tagging durch:
 
 ```text
 Release Audit Gate
 
-Führe das finale Release-Gate durch, um die Stabilität und Sauberkeit des Releases zu zertifizieren.
+Führe das finale Release-Gate (Phase 4) durch, um die Gesamtstabilität des Branches nach Abschluss aller Teams zu zertifizieren.
 
 Prüfschritte:
 1. Statisches Gesamt-Gate (Lint, Format, Release-Notes, Typecheck Frontend & Backend): npm run check
 2. Barrierefreiheit (Axe): npm run test:a11y
-3. Layout-Regressionen: AUDIT_ROUTE=/trip/1 npm run test:audit
-4. Ganzheitliches PR-Diff-Review: Prüfe git diff origin/main..HEAD auf Design-Token-Reinheit (--space-*, --color-*, keine magischen Pixel), saubere Container-Queries (@container statt @media), keine toten Reste und keine unerwünschten Seiteneffekte.
+3. Layout-Regressionen Stichprobe: AUDIT_ROUTE=/trip/1 npm run test:audit
 
 Ergebnis:
 Gib eine klare Bestätigung im Chat aus:
 - Sind alle automatisierten Prüfungen grün?
-- Gesamt-PR-Review aller Teams (Zusammenfassung über den gesamten PR: Design-Tokens, Clean Code, gefundene Auffälligkeiten oder Bestätigung der Sauberkeit)
 - Gibt es verbleibende Warnungen oder offene Punkte?
 - Ist das Release freigegeben?
-- Falls alle Prüfungen & das Review erfolgreich sind: Gib explizit die Bestätigung aus, dass das Pre-Release-Audit für alle Bereiche vollständig abgeschlossen ist und der PR freigegeben / gemergt werden kann.
+- Falls alle Prüfungen erfolgreich sind: Gib explizit die Bestätigung aus, dass das Pre-Release-Audit für alle Teams vollständig abgeschlossen ist und der PR gemergt werden kann.
 ```
