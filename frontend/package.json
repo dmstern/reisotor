@@ -36,7 +36,7 @@
     "leaflet": "^1.9.4",
     "leaflet-rotate": "^0.2.8",
     "piexifjs": "^1.0.6",
-    "pinia": "^2.2.4",
+    "pinia": "^4.0.3",
     "vue": "^3.5.12",
     "vue-router": "^4.4.5"
   },
