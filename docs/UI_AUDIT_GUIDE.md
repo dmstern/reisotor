@@ -177,8 +177,9 @@ sequenceDiagram
      - **Auswahl anpassen:** Falls du einzelne Polish-Punkte nicht umsetzen möchtest, löschst du vor dem Absenden im neuen Chat einfach die entsprechenden Zeilen aus dem Prompt (oder sagst in Chat 1 kurz _„nur Punkt 1 und 2“_, woraufhin der Agent den Block aktualisiert ausgibt).
 2. **Neuer Chat für Phase 2 (Token- & Kontext-Schutz):**
    - Im neuen Chat startet der Fix-Agent direkt mit den konkreten Befunden aus deinem Prompt – ohne den Ballast alter Test-Logs, aber mit 100% präzisem Arbeitsauftrag.
-3. **Abschluss mit Phase 3:**
-   - Direkt im selben Chat nach den Fixes (oder separat) via `Release Audit Gate` alle automatisierten Schranken prüfen lassen.
+   - **Pflicht-Handoff am Ende von Phase 2:** Nach erfolgreichem Fix & Commit generiert der Agent IMMER unaufgefordert den vorbereiteten Trigger für den nächsten Schritt in einem kopierbaren Code-Block (z. B. `Release Audit Assess: Team <N+1>` für das nächste Team oder `Release Audit Gate`, falls alle Teams durchlaufen sind).
+3. **Abschluss mit Phase 3 (Finales Gate):**
+   - Im frischen Chat via `Release Audit Gate` alle automatisierten Schranken prüfen lassen. Wenn alle Tests grün sind, bescheinigt der Agent explizit den Gesamtabschluss des Audits („Pre-Release Audit erfolgreich abgeschlossen – Ready for Merge / Release“).
 
 ---
 
@@ -345,6 +346,18 @@ STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
   npx -y prettier --write <geänderte-dateien>
 - Schließe mit einem sauberen Commit ab:
   git commit -m "fix(ui): polish <domäne> layout & popover resilience"
+- VORBEREITETER HANDOFF-PROMPT FÜR DEN NÄCHSTEN SCHRITT (Pflicht):
+  Gib am Ende IMMER zwingend den nächsten Schritt prominent als kopierbaren Prompt-Block für den nächsten frischen Chat aus:
+  * Wenn weitere Teams ausstehen (z. B. nach Team 3 kommt Team 4):
+    👉 Nächster Schritt (In einem frischen Chat für Phase 0 ausführen):
+    ```text
+    Release Audit Assess: Team [N+1]
+    ```
+  * Wenn alle Teams durchlaufen sind (z. B. nach Team 6 oder nach Scope-Abschluss):
+    👉 Nächster Schritt (In einem frischen Chat für das finale Gate ausführen):
+    ```text
+    Release Audit Gate
+    ```
 ````
 
 ---
@@ -368,4 +381,5 @@ Gib eine klare Bestätigung im Chat aus:
 - Sind alle Prüfungen grün?
 - Gibt es verbleibende Warnungen?
 - Ist das Release freigegeben?
+- Falls alle Prüfungen erfolgreich sind: Gib explizit die Bestätigung aus, dass das Pre-Release-Audit für alle Bereiche vollständig abgeschlossen ist und der PR freigegeben / gemergt werden kann.
 ```
