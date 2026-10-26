@@ -250,6 +250,7 @@ async function emptyTrash() {
             :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
             @click="permanentlyDelete(entry)"
             title="Endgültig löschen"
+            aria-label="Endgültig löschen"
           >
             <AppIcon :icon="ACTION_ICONS.delete" :size="18" group="actions" />
           </Button>
@@ -258,6 +259,7 @@ async function emptyTrash() {
             :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
             @click="restore(entry)"
             title="Wiederherstellen"
+            aria-label="Wiederherstellen"
           >
             <AppIcon :icon="ACTION_ICONS.restore" :size="14" group="actions" />
             <span class="hide-on-mobile">Wiederherstellen</span>
@@ -348,7 +350,7 @@ async function emptyTrash() {
   color: var(--color-danger);
 }
 
-@media (max-width: 600px) {
+@container app-main (max-width: 600px) {
   .hide-on-mobile {
     display: none;
   }
