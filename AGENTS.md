@@ -48,10 +48,13 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
 - **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
 - **Prompt-Vorlagen & modulares Refactoring (Phasen 0 bis 4):** `docs/AUDIT_PROMPTS.md` (Triage & Zielbild, Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Stabilitäts-Gate).
   - **Kurz-Trigger für Pre-Release-Stabilitäts-Gate (`docs/UI_AUDIT_GUIDE.md`):**
-    - Allgemeine Einstiegs-Phrasen wie _„Mach ein Pre-Release Audit“_: Agent prüft geänderte Frontend-Dateien seit letztem Tag per `git log`, ordnet sie den Teams 1–6 zu, empfiehlt den fokussierten Pfad und gibt den Start-Trigger `Release Audit: Team <1 | erstes betroffenes Team>` aus (kein blinder Komplettdurchlauf aller 6 Teams in einem Chat!).
-    - `Release Audit: <Team | Route>` (**Standard-Workflow: 1 Team = 1 Chat**): Kombiniert Inspektion (5 Prüf-Dimensionen + `test:audit`), chirurgische CSS-/Token-/Container-Fixes (keine Architektur-Refactorings!), Eigen-Review (`typecheck`, `eslint`, `DESIGN.md`-Check), Commit und PR-Update (`gh pr edit`) in einem einzigen Durchlauf pro Team. Riskante Umbauten werden nicht eigenmächtig durchgeführt, sondern in der Befund-/Fix-Tabelle nur vermerkt. **Pflicht am Ende:** Der Agent gibt IMMER zwingend den nächsten Schritt als kopierbaren Code-Block für einen frischen Chat aus: entweder `Release Audit: Team <N+1>` für das nächste Team oder `Release Audit Gate`, falls alle Teams abgeschlossen sind.
-    - _(Optionale Einzel-Trigger bei Bedarf: `Release Audit Assess: <Team>` für reines Read-Only-Assessment, `Release Audit Fix: <Team>` für gezielte Fixes, `Release Audit Review: <Team>` für ein isoliertes Nach-Review)._
-    - `Release Audit Gate` (Finales Gate einmalig am Ende nach allen Teams: Gesamt-Zertifikat via `npm run check`, `npm run test:a11y`, Release-Notes & E2E). Meldet nach Bestehen aller Prüfungen explizit den Gesamtabschluss des Pre-Release-Audits (Ready to merge/tag).
+    - **`Release Audit Auto` / _„Mach ein Pre-Release Audit“_ (Standard: Vollautomatischer Orchestrator mit sequenziellen Subagenten in 1 Chat):**
+      - Der Haupt-Agent im Chat bleibt ein schlanker **Orchestrator** (liest selbst keinen Komponenten-Code, um sein eigenes Kontextfenster minimal zu halten).
+      - Er ermittelt per `git log` / `gh pr view`, welche der Teams 1–6 seit dem letzten Release-Tag betroffen bzw. im aktuellen Audit-PR noch offen sind.
+      - Für jedes zu prüfende Team spawnt er **strikt nacheinander (sequenziell – niemals parallel wegen Playwright-Ports und Git-Locks!)** einen eigenen `self`-Subagenten (`invoke_subagent`, `TypeName: "self"`, `Workspace: "inherit"`).
+      - Jeder Subagent arbeitet in seinem eigenen, frischen Kontextfenster sein Team komplett ab (Inspektion der 5 Prüf-Dimensionen + `test:audit` → chirurgische CSS-/Token-/Container-Fixes ohne Architektur-Umbauten → `typecheck` & `eslint` → eigener semantischer Commit) und liefert nur eine kompakte Befund-/Fix-Tabelle an den Orchestrator zurück.
+      - Nach Abschluss aller Teams führt der Orchestrator einmalig das **Finale Release-Gate** (`npm run check`, `npm run test:a11y`) aus, aktualisiert den PR (`gh pr edit`), pusht den Branch und präsentiert am Ende den konsolidierten Gesamtbericht.
+    - _(Optionale Einzel-Trigger bei Bedarf: `Release Audit: <Team | Route>` für ein einzelnes Team ohne Subagent, `Release Audit Assess/Fix/Review: <Team>` für Einzelschritte, `Release Audit Gate` für das isolierte Abschluss-Gate)._
   - **Kurz-Trigger für Refactoring-Sessions (#446):**
     - `Refactor Assess: <datei>` (Phase 0: Triage & Zielbild vorab – prüft Sinnhaftigkeit, analysiert Orchestrator vs. God-Component, schützt vor Over-Modularization/Prop-Drilling und bestimmt den maßgeschneiderten Phasen-Pfad)
     - `Refactor Phase 1: <datei>` (Logik & Composables)
@@ -151,9 +154,10 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 4. **Gezielte Recherche statt explorativer Endlos-Loops:**
    - Vor blindem Durchsuchen des Codes immer zuerst `ARCHITECTURE.md` und die Code-Map konsultieren statt 10-mal blind per `list_dir` / `grep` das Repo abzusuchen.
    - Wenn ein Problem nach 2–3 Versuchen nicht gelöst ist: Innehalten, Hypothese formulieren oder gezielte Rückfrage an den Nutzer stellen, statt in einer Schleife 20 weitere Werkzeugaufrufe zu probieren.
-5. **Strikte Sparsamkeit bei Subagenten & autonomem Teamwork:**
-   - Keine eigenständigen Multi-Agent-Kaskaden oder unbeschränkten autonomen Schleifen (wie `/teamwork-preview` oder offene `/goal`-Tasks ohne klare Abbruchbedingung) starten.
-   - Bei klar umrissenen Änderungen direkt `grep_search`/`view_file`/`replace_file_content` nutzen statt Subagenten zu spawnen — jeder Spawn re-deriviert den kompletten Kontext neu. Subagenten bleiben die seltene Ausnahme für isolierte, parallele Lese-Recherchen.
+5. **Gezielter Einsatz von Subagenten (Kontext-Isolation statt Overhead):**
+   - Keine unbeschränkten autonomen Endlos-Schleifen ohne klare Abbruchbedingung starten.
+   - Bei einfachen, klar umrissenen Einzel-Änderungen direkt `grep_search`/`read_file`/`edit_file` im Hauptchat nutzen statt Subagenten zu spawnen.
+   - **Ausnahme Multi-Phasen-/Multi-Team-Workflows (z. B. `Release Audit Auto`):** Hier sind sequenzielle `self`-Subagenten ausdrücklich der Best-Practice-Weg, damit jedes Team ein eigenes, frisches Kontextfenster erhält, ohne dass die Nutzerin / der Nutzer manuell neue Chats öffnen und Prompts kopieren muss.
 6. **Keine unaufgeforderten Screenshots (Massiver Token-Treiber):**
    - Screenshots (Scratch-Specs, Baseline-Updates) dürfen **niemals automatisch oder unaufgefordert** angefertigt werden, sondern ausschließlich auf expliziten Nutzer-Wunsch.
    - Bilddateien dürfen vom Agenten **niemals mit `view_file` geöffnet werden** (spült ~4.000 multimodale Tokens pro Bild in den Kontext). Bilder nur erzeugen, ablegen und im Chat/Walkthrough per Markdown verlinken.

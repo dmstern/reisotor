@@ -132,51 +132,49 @@ Bis kurz vor einem Release werden oft noch Bugs behoben, neue Funktionen fertigg
 
 ---
 
-### Das Modell des Release-Gates („1 Team = 1 Chat“ + Finales Gate)
+### Das Modell des Release-Gates (1 Orchestrator-Chat + Sequenzielle Subagenten pro Team)
 
 > [!NOTE]
-> **1 Branch & 1 PR für alle Teams – 1 kompakter Chat pro Team!**
-> Alle Teams (1 bis 6) arbeiten nacheinander auf **einem gemeinsamen Feature-Branch** (z. B. `perform_prerelease_audit`) und in **einem einzigen zentralen PR**. Um Token-Kontingent und Copy-Paste-Aufwand zu sparen, gleichzeitig aber das Kontextfenster pro Domäne frisch zu halten, wird **jedes Team in genau einem Chat (`Release Audit: Team X`)** komplett abgearbeitet (Inspektion → Chirurgische CSS-/Token-Fixes → Verifikation & Eigen-Review → Commit & PR-Update). Erst wenn alle 6 Teams durch sind, folgt einmalig **`Release Audit Gate`** für den technischen Gesamt-Abschluss (`npm run check`, `test:a11y`).
+> **1 Chat für dich – automatische Kontext-Isolation unter der Haube!**
+> Du startest das Audit in **einem einzigen Chat** (z. B. mit `Release Audit Auto` oder _„Mach das Pre-Release-Audit fertig“_). Damit das Kontextfenster trotzdem niemals vollläuft oder unpräzise wird, liest der Haupt-Agent (Orchestrator) die Komponenten **nicht** selbst ein, sondern spawnt **nacheinander (sequenziell) für jedes Team einen eigenen `self`-Subagenten** mit einem 100 % frischen Kontextfenster. Jeder Subagent prüft, poliert und committet sein Team isoliert und gibt nur eine kompakte Befundtabelle an den Orchestrator zurück. Am Ende führt der Orchestrator einmalig das **`Release Audit Gate`** (`npm run check`, `test:a11y`) aus, aktualisiert den PR und präsentiert dir den fertigen Gesamtbericht.
 
 ```mermaid
 flowchart TD
-    subgraph ProTeam["<b>1 Chat pro Domänen-Team (Team 1 bis 6): Release Audit: Team X</b>"]
-        S1["<b>1. Assess</b><br/><i>test:audit & 5 Prüf-Dimensionen</i>"]
-        S1 --> S2["<b>2. Chirurgische Fixes</b><br/><i>Minimal-invasive CSS-/Token-/Container-Korrekturen</i>"]
-        S2 --> S3["<b>3. Verifikation & Commit</b><br/><i>test:audit, typecheck, eslint, Commit & PR-Update</i>"]
+    Start["<b>Du im Haupt-Chat:</b><br/><i>Release Audit Auto</i>"] --> Orch["<b>Orchestrator-Agent</b><br/><i>Prüft offene/betroffene Teams via git log / gh pr view</i>"]
+    subgraph Subagents["<b>Sequenzielle Subagenten (jeweils frisches Kontextfenster!)</b>"]
+        T1["<b>Subagent Team X</b><br/><i>1. test:audit & 5 Dimensionen<br/>2. Chirurgische CSS-/Token-Fixes<br/>3. typecheck, eslint & git commit</i>"]
     end
-    S3 -->|Nächstes Team im frischen Chat| S1
-    S3 -->|Alle Teams fertig| G["<b>Finales Release-Gate (1x am Ende): Release Audit Gate</b><br/><i>npm run check, Axe-A11y, Release-Notes -> Fertig!</i>"]
+    Orch -->|Spawnt nacheinander pro Team| T1
+    T1 -->|Kompakte Befund-/Fix-Tabelle| Orch
+    Orch -->|Alle Teams fertig| Gate["<b>Finales Release-Gate (1x am Ende)</b><br/><i>npm run check, Axe-A11y, PR-Update & Push</i>"]
+    Gate --> Done["<b>Gesamtbericht an dich</b><br/><i>Ready to merge!</i>"]
 ```
 
-### Interaktions-Ablauf in der Praxis (Mensch & Agent)
-
-Folgendes Sequenzdiagramm veranschaulicht den schlanken Ablauf pro Team:
+### Interaktions-Ablauf in der Praxis (Fire & Forget mit sauberen Leitplanken)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Du as Du (Entwickler:in)
-    participant A as Agent (Chat N: Team X)
-    participant G as Agent (Finaler Chat: Gate)
+    participant O as Orchestrator (Haupt-Chat)
+    participant S as Subagent (je Team frisch)
 
-    Du->>A: "Release Audit: Team 4"
-    Note over A: 1. Führt test:audit aus & prüft 5 Dimensionen<br/>2. Behebt klare CSS-/Token-/Container-Mängel direkt<br/>3. Prüft Diff gegen DESIGN.md, typecheck & eslint<br/>4. Committet & aktualisiert PR (gh pr edit)
-    A-->>Du: Befund-/Fix-Tabelle + Copy-Paste-Prompt ("Release Audit: Team 5")
-
-    Du->>G: Nach Team 6: "Release Audit Gate"
-    Note over G: npm run check, npm run test:a11y,<br/>Stichproben-Audit
-    G-->>Du: "Pre-Release-Audit komplett abgeschlossen! Ready to merge."
+    Du->>O: "Release Audit Auto" (bzw. "Mach Team 4 bis 6 fertig")
+    Note over O: Ermittelt offene Teams (z. B. Team 4, 5, 6)<br/>Liest selbst KEINEN Komponenten-Code!
+    loop Für jedes offene Team (sequenziell!)
+        O->>S: invoke_subagent("self") für Team X
+        Note over S: Frischer Kontext!<br/>1. test:audit & 5 Dimensionen<br/>2. Chirurgische CSS-/Token-Fixes<br/>3. typecheck, eslint & git commit
+        S-->>O: Kurze Befund-/Fix-Tabelle + Commit-Hash
+    end
+    Note over O: Führt Finales Gate aus:<br/>npm run check & npm run test:a11y<br/>Aktualisiert PR (gh pr edit) & git push
+    O-->>Du: Konsolidierte Gesamt-Bilanz aller Teams + PR-Link
 ```
 
-#### So läuft ein Team-Durchlauf ab:
+#### Warum die Subagenten strikt nacheinander (sequenziell) laufen müssen:
 
-1. **Ein Trigger pro Team (`Release Audit: Team X`):**
-   - Der Agent prüft die Routen und Komponenten des Teams, behebt alle eindeutigen, risikoarmen CSS-/Token-/Container-Query-Mängel direkt selbst, sichert das Ergebnis mit `test:audit`, `typecheck` und `eslint` ab, committet sauber und aktualisiert die PR-Beschreibung (`gh pr edit`).
-   - **Sicherheitsschranke:** Falls ein Befund einen tieferen Eingriff in die Komponenten-Struktur erfordern würde, baut der Agent ihn **nicht** eigenmächtig um, sondern markiert ihn in der Abschluss-Tabelle als _„Übersprungen (Rückfrage/Nach-Release)“_.
-   - Am Ende gibt der Agent eine kompakte **Befund- & Fix-Tabelle** zur Information aus sowie den **kopierbaren Einzeiler für das nächste Team (`Release Audit: Team <X+1>`)**.
-2. **Einmaliger Abschluss (`Release Audit Gate`):**
-   - Wenn alle Teams durchlaufen sind, prüft `Release Audit Gate` einmalig die projektweiten Schranken (`npm run check`, `npm run test:a11y`) und meldet den Gesamtabschluss des Audits.
+1. **Keine Port- & DB-Kollisionen bei Playwright:** `npm run test:audit` nutzt feste Test-Ports (3100/5273) und eine gemeinsame E2E-SQLite-DB. Parallele Subagenten würden sich gegenseitig abschießen.
+2. **Saubere Git-Historie ohne `.git/index.lock`:** Da alle Teams im selben Worktree und Branch arbeiten, erzeugt die sequenzielle Abarbeitung pro Team genau einen sauberen, atomaren Commit (`fix(ui): polish <team> ...`).
+3. **Sicherheitsschranke gegen Aktionismus:** Jeder Subagent darf ausschließlich risikoarme CSS-/Token-/Container-Fixes durchführen. Sollte ein Befund einen tieferen strukturellen Umbau erfordern, lässt der Subagent ihn unberührt und markiert ihn in seiner Rückmeldung als `⏭️ Übersprungen (Nach-Release)`.
 
 ---
 
@@ -222,40 +220,41 @@ Jeder Prüfdurchlauf analysiert systematisch folgende fünf Kriterien:
 
 Fällt im Chat eine allgemeine Aufforderung wie:
 
+- `Release Audit Auto`
 - _„Mach ein Pre-Release-Audit“_
-- _„Pre-Release Audit starten“_
-- _„Wir bereiten ein Release vor, auditier mal die App“_
+- _„Pre-Release Audit starten / fortsetzen“_
 
-**Striktes Protokoll für den Agenten:**
+**Striktes Orchestrator-Protokoll für den Haupt-Agenten:**
 
-1. **Kein blinder Komplettdurchlauf:** Der Agent darf **niemals unaufgefordert alle 6 Teams auf einmal** in einer Session abfeuern (Gefahr von Kontext-Kollaps und Sycophancy).
-2. **Git-Delta ermitteln:** Er ermittelt per Git, welche Frontend-Bereiche seit dem letzten Release-Tag tatsächlich verändert wurden:
-   `git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`
-3. **Fokussierte Empfehlung & Roadmap:** Er ordnet die Änderungen den betroffenen Teams zu (z. B. _„Seit v1.3.0 wurden vor allem Finanzen (Team 5) und Notizen/Listen (Team 4) verändert“_) und schlägt vor:
-   - **Gezielter Check (Empfohlen):** Nur die veränderten Teams durchlaufen (spart massiv Tokens und Zeit).
-   - **Vollständiger Meilenstein-Check:** Schrittweise von Team 1 bis 6.
-4. **Sofortige Führung:** Der Agent schlägt direkt den ersten konkreten Schritt vor oder startet auf Bestätigung mit dem ersten Team (`Release Audit: Team <X>`).
+1. **Kontext-Disziplin im Haupt-Chat:** Der Haupt-Agent darf **niemals selbst alle 6 Teams im eigenen Kontextfenster** untersuchen und bearbeiten (Gefahr von Kontext-Kollaps und Attention Dilution). Er agiert rein als **Orchestrator**.
+2. **Status & Git-Delta ermitteln:**
+   - Existiert bereits ein laufender Audit-Branch/PR (`gh pr view` / `git log main..HEAD --oneline`), prüft der Orchestrator, welche Teams bereits erledigt sind und welche noch ausstehen.
+   - Bei einem Neustart ermittelt er per Git, welche Frontend-Bereiche seit dem letzten Release-Tag verändert wurden (`git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`), oder nimmt auf Wunsch alle Teams 1–6.
+3. **Sequenzielle Subagenten-Orchestrierung (`invoke_subagent`):**
+   - Für jedes ausstehende Team spawnt der Orchestrator **nacheinander (immer erst warten, bis das vorherige Team fertig ist!)** einen `self`-Subagenten (`TypeName: "self"`, `Workspace: "inherit"`) mit den Aufgaben aus dem Abschnitt _„Arbeitsauftrag pro Team-Subagent“_.
+4. **Finales Gate & Abschlussbericht:**
+   - Sobald das letzte Team abgeschlossen ist, führt der Orchestrator das `Release Audit Gate` (`npm run check`, `npm run test:a11y`) aus, aktualisiert den PR (`gh pr edit`), pusht den Branch (`git push`) und gibt die konsolidierte Gesamt-Übersicht aller Teams an die Nutzerin / den Nutzer aus.
 
 ---
 
 ### Kurz-Trigger für das Release-Gate
 
-| Schritt                   | Kurz-Trigger                             | Beschreibung                                                                                                                                                                                                          |
-| :------------------------ | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pro Team** _(1 Chat)_   | `Release Audit: <Team \| Route>`         | **All-in-One pro Team (Standard):** Prüft die 5 Dimensionen + `test:audit`, behebt klare CSS-/Token-/Container-Mängel direkt, prüft `typecheck` & `eslint`, committet, updated PR & gibt Nächster-Schritt-Prompt aus. |
-| **Abschluss** _(1x Ende)_ | `Release Audit Gate`                     | **Finales Gesamt-Gate:** Führt nach Abschluss aller Teams einmalig `npm run check`, A11y- (Axe) und Release-Notes-Prüfungen für die Merge-Freigabe aus.                                                               |
-| _(Optional einzeln)_      | `Release Audit Assess / Fix / Review: …` | Optionale Einzel-Trigger, falls ausnahmsweise nur eine Read-Only-Inspektion (`Assess`), ein gezielter Fix (`Fix`) oder ein isoliertes Nach-Review (`Review`) gewünscht ist.                                           |
+| Modus                          | Kurz-Trigger                     | Beschreibung                                                                                                                                                                    |
+| :----------------------------- | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Vollautomatisch (Default)**  | `Release Audit Auto`             | **Orchestrator + Subagenten:** Arbeitet alle offenen/betroffenen Teams nacheinander in isolierten Subagenten ab, führt am Ende das `Release Audit Gate` aus und updated den PR. |
+| **Einzel-Team** _(optional)_   | `Release Audit: <Team \| Route>` | Prüft, poliert und committet genau ein einzelnes angegebenes Team direkt.                                                                                                       |
+| **Abschluss-Gate** _(einzeln)_ | `Release Audit Gate`             | Führt isoliert `npm run check`, A11y- (Axe) und Release-Notes-Prüfungen für die Merge-Freigabe aus.                                                                             |
 
 ---
 
-### Standard-Durchlauf pro Team (`Release Audit: <Team | Route>`)
+### Arbeitsauftrag pro Team-Subagent (`Release Audit: <Team | Route>`)
 
-Kopiere diesen Kurz-Trigger in einen frischen Chat, um ein komplettes Team in einem Zug prüfen, polieren und abnehmen zu lassen:
+Diesen Auftrag übergibt der Orchestrator an jeden sequenziellen Team-Subagenten (bzw. führt ihn bei direktem Einzel-Aufruf `Release Audit: Team X` aus):
 
-````text
-Release Audit: [Team 1-6 oder Route, z. B. Team 4]
+```text
+Release Audit: [Team 1-6, z. B. Team 4 (Listen, Notizen & Content: /trip/1/packing, /trip/1/shopping, /trip/1/todo, /trip/1/notes, /trip/1/diary)]
 
-Führe das komplette Release-Audit (Inspektion -> Chirurgische Fixes -> Verifikation & Eigen-Review -> Commit & PR-Update) für den angegebenen Bereich in einem Durchlauf durch.
+Führe das komplette Release-Audit (Inspektion -> Chirurgische Fixes -> Verifikation & Eigen-Review -> Commit) für dieses Team durch.
 
 STRIKTE LEITPLANKEN:
 - Keine Architektur-Refactorings: Keine neuen Props/Emits, keine Store-Umbauten, keine Komponenten-Zerlegung!
@@ -276,30 +275,15 @@ Vorgehensweise:
    - Falls Code geändert wurde: Erneut `AUDIT_ROUTE=<route1,route2> npm run test:audit` ausführen.
    - `npm run typecheck` und `npx -y eslint <geänderte-dateien>` prüfen.
    - Formatieren (`npx -y prettier --write <geänderte-dateien>`) und sauber committen (`git commit -m "fix(ui): polish <domäne> layout & token resilience"`).
-5. PR-Beschreibung aktualisieren:
-   Aktualisiere den zentralen PR via `gh pr edit`, sodass die erledigten Fixes und der Abschluss dieses Teams dokumentiert sind.
 
-Ergebnis & Pflicht-Handoff im Chat:
-1. Gib eine kompakte Übersichtstabelle aus, damit auf einen Blick klar ist, was geprüft und gemacht wurde:
+Ergebnis (Rückmeldung an den Orchestrator bzw. Nutzer):
+Gib eine kompakte Übersichtstabelle und den Commit-Hash zurück:
 
 | Status | Route / Komponente | Viewport / Zustand | Befund | Durchgeführte Maßnahme |
 | :--- | :--- | :--- | :--- | :--- |
 | 🛠️ Behoben (🔴/🟡) | `/trip/1/budget` | 320px | Betrag bricht um | `white-space: nowrap` ergänzt |
 | 🟢 OK | `/trip/1/notes` | 1280px (500px Drawer) | Grid bricht sauber via `@container` um | Kein Handlungsbedarf |
-
-2. VORBEREITETER HANDOFF-PROMPT FÜR DEN NÄCHSTEN SCHRITT (Pflicht):
-   Gib am Ende IMMER zwingend den nächsten Schritt prominent als kopierbaren Code-Block für einen frischen Chat aus:
-   * Wenn weitere Teams ausstehen (z. B. nach Team 4 kommt Team 5):
-     👉 Nächster Schritt (In einem frischen Chat für das nächste Team ausführen):
-     ```text
-     Release Audit: Team [N+1]
-     ```
-   * Wenn alle Teams (1 bis 6) komplett durchlaufen sind:
-     👉 Nächster Schritt (In einem frischen Chat für das finale Gesamt-Gate ausführen):
-     ```text
-     Release Audit Gate
-     ```
-````
+```
 
 ---
 
