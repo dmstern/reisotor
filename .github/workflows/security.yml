@@ -1,0 +1,119 @@
+name: Security Audit & Auto-Fix
+
+on:
+  schedule:
+    - cron: '0 5 * * 1,4'
+  workflow_dispatch:
+    inputs:
+      cooldown_days:
+        description: 'Mindest-Reifezeit in Tagen (Supply-Chain-Cooldown)'
+        required: false
+        default: '3'
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - '.npmrc'
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+      - 'backend/.npmrc'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - 'frontend/.npmrc'
+      - 'e2e/package.json'
+      - 'e2e/package-lock.json'
+      - 'e2e/.npmrc'
+      - 'scripts/security-check.mjs'
+      - '.github/workflows/security.yml'
+      - '.github/dependabot.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  security-audit-pr:
+    name: Security Policy & Vulnerability Audit (PR Gate)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run security check
+        run: node scripts/security-check.mjs --check --summary-file="$GITHUB_STEP_SUMMARY"
+
+  security-auto-fix:
+    name: Security Auto-Fix & Remediation
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm run install:all:ci
+
+      - name: Run security auto-fix with cooldown
+        run: node scripts/security-check.mjs --fix --cooldown-days="${{ inputs.cooldown_days || '3' }}" --summary-file=security-summary.md
+
+      - name: Publish step summary
+        if: always()
+        run: |
+          if [ -f security-summary.md ]; then
+            cat security-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Verify and create pull request if changes detected
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          if [ -n "$(git status --porcelain -- '*package-lock.json' '*package.json')" ]; then
+            echo "Security fixes detected. Running quality gate..."
+            npm run check
+            npm test
+
+            BRANCH="security/auto-cve-fix"
+            git checkout -B "$BRANCH"
+            git add '*package-lock.json' '*package.json'
+            git commit -m "fix(security): automatische CVE-Behebung"
+            git push --force-with-lease origin "$BRANCH"
+
+            PR_URL=$(gh pr list --head "$BRANCH" --base main --json url --jq '.[0].url' 2>/dev/null || true)
+            if [ -n "$PR_URL" ]; then
+              echo "Updating existing PR: $PR_URL"
+              gh pr edit "$PR_URL" --title "fix(security): automatische CVE-Behebung" --body-file security-summary.md
+            else
+              echo "Creating new PR..."
+              gh pr create --base main --head "$BRANCH" --title "fix(security): automatische CVE-Behebung" --body-file security-summary.md
+            fi
+          else
+            echo "No security fixes needed. Lockfiles are clean."
+          fi
