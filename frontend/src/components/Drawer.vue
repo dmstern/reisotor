@@ -397,7 +397,13 @@ onBeforeUnmount(() => {
      bewusst NICHT mehr innerhalb dieser Box (siehe dort), gerade damit overflow-x:hidden es nicht
      mit clippen kann. */
   overflow-x: hidden;
-  transition: transform 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    visibility 0.25s;
+}
+
+.drawer:not(.open) .drawer-panel {
+  visibility: hidden;
 }
 
 .drawer.left .drawer-panel {
@@ -572,6 +578,7 @@ onBeforeUnmount(() => {
       width 0.25s ease,
       margin 0.25s ease,
       opacity 0.2s ease,
+      visibility 0.25s,
       box-shadow 0.25s ease;
   }
   /* Während des Ziehens am Breiten-Anfasser (onResizeMove) darf width nicht animiert sein, sonst
@@ -596,6 +603,7 @@ onBeforeUnmount(() => {
     overflow: hidden;
     pointer-events: none;
     border: none;
+    visibility: hidden;
   }
 
   /* Nur auf Desktop überhaupt vorhanden (mobil bleibt .maximize-btn display:none, siehe oben) – der
