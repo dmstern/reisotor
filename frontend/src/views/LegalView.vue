@@ -67,7 +67,7 @@ function goBack() {
 <template>
   <div class="legal-page">
     <header class="legal-page-header">
-      <Button variant="ghost" class="back-btn" @click="goBack">
+      <Button variant="secondary" class="back-btn" @click="goBack">
         <IconArrowLeft :size="18" aria-hidden="true" />
         {{ auth.user ? 'Zurück zur App' : 'Zurück zur Anmeldung' }}
       </Button>
@@ -94,8 +94,14 @@ function goBack() {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(170deg, var(--color-primary-tint), var(--color-bg) 400px);
-  padding: var(--space-4) var(--space-3) var(--space-8);
+  background: linear-gradient(170deg, var(--color-primary-tint), var(--color-bg) 420px);
+  padding: var(--space-4) var(--space-3) var(--space-6);
+}
+
+@media (min-width: 800px) {
+  .legal-page {
+    padding: var(--space-5) var(--space-4) var(--space-6);
+  }
 }
 
 .legal-page-header {
@@ -112,13 +118,17 @@ function goBack() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 500;
+  font-weight: 600;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .theme-toggle.icon {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle, 8px);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-sm);
 }
 
@@ -131,8 +141,9 @@ function goBack() {
 .legal-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg-squircle, 16px);
+  border-radius: var(--radius-lg-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-sm);
-  padding: clamp(var(--space-4), 5vw, var(--space-7));
+  overflow: hidden;
 }
 </style>

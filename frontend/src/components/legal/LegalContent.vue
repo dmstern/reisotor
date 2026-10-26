@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { IconAlertTriangle, IconScale, IconShieldLock } from '@tabler/icons-vue';
 import type { LegalConfig } from '../../api/types';
 
 const props = withDefaults(
@@ -33,24 +34,31 @@ const isGitHubPagesHosted = computed(
 <template>
   <div class="legal-content">
     <nav v-if="showTabs" class="legal-tabs" aria-label="Rechtliche Informationen">
-      <button
-        type="button"
-        class="legal-tab-btn"
-        :class="{ active: activeTab === 'privacy' }"
-        :aria-current="activeTab === 'privacy' ? 'page' : undefined"
-        @click="emit('update:activeTab', 'privacy')"
-      >
-        Datenschutzerklärung
-      </button>
-      <button
-        type="button"
-        class="legal-tab-btn"
-        :class="{ active: activeTab === 'imprint' }"
-        :aria-current="activeTab === 'imprint' ? 'page' : undefined"
-        @click="emit('update:activeTab', 'imprint')"
-      >
-        Impressum
-      </button>
+      <div class="legal-tabs-list">
+        <button
+          type="button"
+          class="legal-tab-btn"
+          :class="{ active: activeTab === 'privacy' }"
+          :aria-current="activeTab === 'privacy' ? 'page' : undefined"
+          @click="emit('update:activeTab', 'privacy')"
+        >
+          <IconShieldLock :size="18" aria-hidden="true" />
+          <span>Datenschutzerklärung</span>
+        </button>
+        <button
+          type="button"
+          class="legal-tab-btn"
+          :class="{ active: activeTab === 'imprint' }"
+          :aria-current="activeTab === 'imprint' ? 'page' : undefined"
+          @click="emit('update:activeTab', 'imprint')"
+        >
+          <IconScale :size="18" aria-hidden="true" />
+          <span>Impressum</span>
+        </button>
+      </div>
+      <div v-if="$slots['tabs-end']" class="legal-tabs-end">
+        <slot name="tabs-end" />
+      </div>
     </nav>
 
     <!-- ========================================== -->
@@ -74,7 +82,9 @@ const isGitHubPagesHosted = computed(
           v-else-if="!hasOperatorInfo && !isGitHubPagesHosted"
           class="legal-alert legal-alert-warning"
         >
-          <div class="legal-alert-icon" aria-hidden="true">⚠️</div>
+          <div class="legal-alert-icon" aria-hidden="true">
+            <IconAlertTriangle :size="18" />
+          </div>
           <div class="legal-alert-body">
             <strong>Betreiberangaben nicht konfiguriert</strong>
             <p>
@@ -279,7 +289,9 @@ const isGitHubPagesHosted = computed(
           v-else-if="!hasOperatorInfo && !isGitHubPagesHosted"
           class="legal-alert legal-alert-warning"
         >
-          <div class="legal-alert-icon" aria-hidden="true">⚠️</div>
+          <div class="legal-alert-icon" aria-hidden="true">
+            <IconAlertTriangle :size="18" />
+          </div>
           <div class="legal-alert-body">
             <strong>Betreiberangaben noch nicht konfiguriert</strong>
             <p>
@@ -396,58 +408,63 @@ const isGitHubPagesHosted = computed(
           gespeicherten Daten dienen ausschließlich der Bereitstellung der gewünschten Funktionen:
         </p>
 
-        <h3>Session-Cookie (<code>sessionId</code>)</h3>
-        <p>Bei der Anmeldung wird ein einziges technisch notwendiges Cookie gesetzt:</p>
-        <ul>
-          <li><strong>Name:</strong> <code>sessionId</code></li>
-          <li>
-            <strong>Zweck:</strong> Hält deine sichere Anmeldung aufrecht, damit du bei jedem
-            Seitenwechsel authentifiziert bleibst.
-          </li>
-          <li>
-            <strong>Schutzmerkmale:</strong> <code>HttpOnly</code> (nicht durch Skripte lesbar,
-            Schutz vor XSS), <code>SameSite=Lax</code> (Schutz vor Cross-Site-Request-Forgery),
-            <code>Secure</code> (bei HTTPS-Verbindungen).
-          </li>
-          <li>
-            <strong>Gültigkeit:</strong> 30 Tage („angemeldet bleiben“) oder bis zum manuellen
-            Abmelden.
-          </li>
-          <li>
-            <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
-            erforderlich) und Art. 6 Abs. 1 lit. b DSGVO. Keine Einwilligung erforderlich.
-          </li>
-        </ul>
+        <div class="legal-subsection">
+          <h3>5.1 Session-Cookie (<code>sessionId</code>)</h3>
+          <p>Bei der Anmeldung wird ein einziges technisch notwendiges Cookie gesetzt:</p>
+          <ul>
+            <li><strong>Name:</strong> <code>sessionId</code></li>
+            <li>
+              <strong>Zweck:</strong> Hält deine sichere Anmeldung aufrecht, damit du bei jedem
+              Seitenwechsel authentifiziert bleibst.
+            </li>
+            <li>
+              <strong>Schutzmerkmale:</strong> <code>HttpOnly</code> (nicht durch Skripte lesbar,
+              Schutz vor XSS), <code>SameSite=Lax</code> (Schutz vor Cross-Site-Request-Forgery),
+              <code>Secure</code> (bei HTTPS-Verbindungen).
+            </li>
+            <li>
+              <strong>Gültigkeit:</strong> 30 Tage („angemeldet bleiben“) oder bis zum manuellen
+              Abmelden.
+            </li>
+            <li>
+              <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
+              erforderlich) und Art. 6 Abs. 1 lit. b DSGVO. Keine Einwilligung erforderlich.
+            </li>
+          </ul>
+        </div>
 
-        <h3>Lokaler Browser-Speicher (localStorage, IndexedDB &amp; Service Worker)</h3>
-        <p>
-          Als moderne Progressive Web App (PWA) nutzt Reisotor lokalen Speicher auf deinem Endgerät:
-        </p>
-        <ul>
-          <li>
-            <strong>App-Shell &amp; Offline-Verfügbarkeit:</strong> Der Service Worker speichert die
-            Oberfläche (HTML, CSS, App-Code, lokale Schriften und Icons) lokal zwischen, damit die
-            App auch ohne Internetverbindung blitzschnell startet und bedienbar bleibt.
-          </li>
-          <li>
-            <strong>Persönliche Einstellungen:</strong> Farbschema (Hell/Dunkel), Ansichtsmodi und
-            Sortierungen.
-          </li>
-          <li>
-            <strong>Formular-Entwürfe (Drafts):</strong> Unvollendete Texteingaben werden lokal
-            gespeichert, damit bei versehentlichem Schließen oder Funklöchern keine Eingaben
-            verloren gehen.
-          </li>
-          <li>
-            <strong>Reisedaten- &amp; Kachel-Cache:</strong> Bereits abgerufene Urlaubsdaten und
-            angesehene Kartenkacheln werden lokal gespeichert, um erneuten Datenverbrauch zu
-            verhindern und Offline-Planung zu ermöglichen.
-          </li>
-        </ul>
-        <p>
-          <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
-          erforderlich für den vom Nutzer ausdrücklich angeforderten Offline- und PWA-Betrieb).
-        </p>
+        <div class="legal-subsection">
+          <h3>5.2 Lokaler Browser-Speicher (localStorage, IndexedDB &amp; Service Worker)</h3>
+          <p>
+            Als moderne Progressive Web App (PWA) nutzt Reisotor lokalen Speicher auf deinem
+            Endgerät:
+          </p>
+          <ul>
+            <li>
+              <strong>App-Shell &amp; Offline-Verfügbarkeit:</strong> Der Service Worker speichert
+              die Oberfläche (HTML, CSS, App-Code, lokale Schriften und Icons) lokal zwischen, damit
+              die App auch ohne Internetverbindung blitzschnell startet und bedienbar bleibt.
+            </li>
+            <li>
+              <strong>Persönliche Einstellungen:</strong> Farbschema (Hell/Dunkel), Ansichtsmodi und
+              Sortierungen.
+            </li>
+            <li>
+              <strong>Formular-Entwürfe (Drafts):</strong> Unvollendete Texteingaben werden lokal
+              gespeichert, damit bei versehentlichem Schließen oder Funklöchern keine Eingaben
+              verloren gehen.
+            </li>
+            <li>
+              <strong>Reisedaten- &amp; Kachel-Cache:</strong> Bereits abgerufene Urlaubsdaten und
+              angesehene Kartenkacheln werden lokal gespeichert, um erneuten Datenverbrauch zu
+              verhindern und Offline-Planung zu ermöglichen.
+            </li>
+          </ul>
+          <p>
+            <strong>Rechtsgrundlage:</strong> § 25 Abs. 2 Nr. 2 TDDDG (technisch unbedingt
+            erforderlich für den vom Nutzer ausdrücklich angeforderten Offline- und PWA-Betrieb).
+          </p>
+        </div>
       </section>
 
       <!-- 6. Externe Dienste & Schnittstellen (Reisotor APIs) -->
@@ -763,46 +780,81 @@ const isGitHubPagesHosted = computed(
 .legal-content {
   color: var(--color-text);
   line-height: 1.65;
+  overflow-wrap: break-word;
 }
 
 .legal-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: var(--space-1);
+  padding: var(--space-2) var(--space-6) 0;
+  background: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
+  border-bottom: 1px solid var(--color-border);
+}
+
+.legal-tabs-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-left: calc(-1 * var(--space-3));
+}
+
+.legal-tabs-list::-webkit-scrollbar {
+  display: none;
+}
+
+.legal-tabs-end {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-bottom: var(--space-2);
 }
 
 .legal-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   background: transparent;
   border: none;
   box-shadow: none;
-  font-size: 1.05rem;
+  font-size: var(--font-size-md, 1rem);
   font-weight: 600;
   color: var(--color-text-muted);
   padding: var(--space-2) var(--space-3);
   min-block-size: 44px;
   cursor: pointer;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm-squircle) var(--radius-sm-squircle) 0 0;
+  corner-shape: squircle;
   position: relative;
-  transition: color 0.15s ease;
+  white-space: nowrap;
+  transition:
+    color var(--transition-fast, 0.15s ease),
+    background-color var(--transition-fast, 0.15s ease);
 }
 
 .legal-tab-btn:hover {
   color: var(--color-text);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .legal-tab-btn.active {
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
 }
 
 .legal-tab-btn.active::after {
   content: '';
   position: absolute;
-  bottom: calc(-1 * var(--space-1) - 2px);
-  left: 0;
-  right: 0;
-  height: 2px;
+  bottom: 0;
+  left: var(--space-3);
+  right: var(--space-3);
+  height: 3px;
+  border-radius: var(--radius-pill, 9999px);
   background: var(--color-primary);
 }
 
@@ -810,54 +862,125 @@ const isGitHubPagesHosted = computed(
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+}
+
+@media (max-width: 799px) {
+  .legal-tabs {
+    padding: var(--space-2) var(--space-4) 0;
+  }
+
+  .legal-article {
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 600px) {
+  .legal-tabs {
+    padding: var(--space-2) var(--space-3) 0;
+  }
+
+  .legal-tabs-list {
+    margin-left: calc(-1 * var(--space-2));
+  }
+
+  .legal-tab-btn {
+    padding: var(--space-2);
+    font-size: 0.95rem;
+  }
+
+  .legal-tab-btn.active::after {
+    left: var(--space-2);
+    right: var(--space-2);
+  }
+
+  .legal-article {
+    padding: var(--space-4) var(--space-3);
+  }
+}
+
+.legal-header {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .legal-header h1 {
-  margin: 0 0 var(--space-1) 0;
-  font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+  margin: 0 0 var(--space-2) 0;
+  font-size: clamp(1.5rem, 1.1rem + 2vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
   color: var(--color-primary-dark);
+  text-wrap: balance;
 }
 
 .legal-subtitle {
   color: var(--color-text-muted);
   margin: 0;
   font-size: 0.95rem;
+  line-height: 1.5;
+  text-wrap: pretty;
 }
 
 .legal-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
+}
+
+.legal-section + .legal-section {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 
 .legal-section h2 {
-  font-size: 1.25rem;
-  margin: var(--space-2) 0 0 0;
+  font-size: var(--font-size-lg, 1.15rem);
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0;
   color: var(--color-text);
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: var(--space-1);
+  text-wrap: balance;
 }
 
-.legal-subsection {
+.legal-subsection,
+.legal-card-info {
   background: var(--color-surface-sunken, var(--color-bg));
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle, 10px);
-  padding: var(--space-3);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
+  padding: var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
+@media (max-width: 600px) {
+  .legal-subsection,
+  .legal-card-info {
+    padding: var(--space-3);
+  }
+}
+
+.legal-section h3,
 .legal-subsection h3 {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.35;
   margin: 0;
   color: var(--color-primary-dark);
+  text-wrap: balance;
 }
 
 .legal-section p,
-.legal-subsection p {
+.legal-subsection p,
+.legal-card-info p {
   margin: 0;
+  color: color-mix(in srgb, var(--color-text) 88%, var(--color-text-muted));
+  text-wrap: pretty;
+}
+
+.legal-article strong {
   color: var(--color-text);
+  font-weight: 600;
 }
 
 .legal-section ul,
@@ -866,25 +989,20 @@ const isGitHubPagesHosted = computed(
   padding-left: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-}
-
-.legal-section li {
-  line-height: 1.55;
-}
-
-.legal-card-info {
-  background: var(--color-surface-sunken, var(--color-bg));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle, 10px);
-  padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
   gap: var(--space-2);
 }
 
-.legal-card-info p {
-  margin: 0;
+.legal-section li,
+.legal-subsection li {
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-text) 88%, var(--color-text-muted));
+  text-wrap: pretty;
+}
+
+.legal-section li::marker,
+.legal-subsection li::marker,
+.legal-alert-body li::marker {
+  color: var(--color-primary);
 }
 
 .multiline-text {
@@ -894,59 +1012,105 @@ const isGitHubPagesHosted = computed(
 .legal-muted,
 .legal-section p.legal-muted,
 .legal-card-info p.legal-muted {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm, 0.85rem);
   color: var(--color-text-muted);
 }
 
 .legal-alert {
   display: flex;
+  align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md-squircle, 10px);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   font-size: 0.95rem;
+}
+
+@media (max-width: 600px) {
+  .legal-alert {
+    padding: var(--space-3);
+  }
 }
 
 .legal-alert-warning {
   background: var(--color-warning-tint);
-  border: 1px solid var(--color-warning);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
   color: var(--color-text);
 }
 
 .legal-alert-icon {
-  font-size: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  color: var(--color-warning);
   flex-shrink: 0;
-  line-height: 1;
+  margin-top: 2px;
 }
 
 .legal-alert-body {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
+}
+
+.legal-alert-body p {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-text) 90%, var(--color-text-muted));
 }
 
 .legal-alert-body ul {
   margin: var(--space-1) 0 0 0;
   padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.legal-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84em;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  padding: 0.1em 0.42em;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
+  color: var(--color-text);
+  overflow-wrap: break-word;
 }
 
 .legal-disclaimer-note {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px dashed var(--color-border);
-  font-size: 0.85rem;
+  margin-top: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px dashed var(--color-border-strong, var(--color-border));
+  font-size: var(--font-size-sm, 0.85rem);
   color: var(--color-text-muted);
 }
 
 .legal-disclaimer-note p {
   margin: 0;
+  color: var(--color-text-muted);
 }
 
-a {
+.legal-content a {
   color: var(--color-primary);
+  font-weight: 500;
   text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  transition:
+    color var(--transition-fast, 0.15s ease),
+    text-decoration-color var(--transition-fast, 0.15s ease);
 }
 
-a:hover {
-  text-decoration: none;
+.legal-content a:hover {
+  color: var(--color-primary-dark);
+  text-decoration-color: currentColor;
 }
 </style>

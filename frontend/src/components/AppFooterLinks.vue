@@ -39,14 +39,29 @@ const resolvedRepoUrl = props.repoUrl ?? __REPO_URL__;
 .app-footer-copyright {
   margin: 0;
   text-align: center;
-}
-
-.app-footer-legal-links a {
+  font-size: var(--font-size-sm, 0.85rem);
   color: var(--color-text-muted);
-  text-decoration: underline;
+  line-height: 1.5;
 }
 
-.app-footer-legal-links a:hover {
+.app-footer-legal-links,
+.app-footer-copyright {
+  margin-top: var(--space-1);
+}
+
+.app-footer-repo-link a,
+.app-footer-legal-links a,
+.app-footer-copyright a {
   color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast, 0.15s ease);
+}
+
+.app-footer-repo-link a:hover,
+.app-footer-legal-links a:hover,
+.app-footer-copyright a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { IconX } from '@tabler/icons-vue';
 import type { LegalConfig } from '../../api/types';
 import LegalContent from '../legal/LegalContent.vue';
 
@@ -15,11 +16,17 @@ const emit = defineEmits<{
 }>();
 
 const modalRef = ref<HTMLElement | null>(null);
+const bodyRef = ref<HTMLElement | null>(null);
 const closeBtnRef = ref<HTMLButtonElement | null>(null);
 let previouslyFocusedElement: HTMLElement | null = null;
 
 function close() {
   emit('update:modelValue', false);
+}
+
+function handleTabChange(tab: 'privacy' | 'imprint') {
+  emit('update:activeTab', tab);
+  bodyRef.value?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function getFocusableElements(): HTMLElement[] {
@@ -100,25 +107,26 @@ onUnmounted(() => {
           aria-label="Rechtliche Informationen"
           tabindex="-1"
         >
-          <header class="landing-legal-header">
-            <button
-              ref="closeBtnRef"
-              type="button"
-              class="close-button"
-              aria-label="Schließen"
-              @click="close"
-            >
-              ✕
-            </button>
-          </header>
-
-          <div class="landing-legal-body">
+          <div ref="bodyRef" class="landing-legal-body">
             <LegalContent
               :config="config"
               :active-tab="activeTab"
               :is-landing-page="true"
-              @update:active-tab="(tab) => emit('update:activeTab', tab)"
-            />
+              @update:active-tab="handleTabChange"
+            >
+              <template #tabs-end>
+                <button
+                  ref="closeBtnRef"
+                  type="button"
+                  class="close-button"
+                  aria-label="Schließen"
+                  title="Schließen"
+                  @click="close"
+                >
+                  <IconX :size="18" aria-hidden="true" />
+                </button>
+              </template>
+            </LegalContent>
           </div>
         </div>
       </div>
@@ -130,9 +138,9 @@ onUnmounted(() => {
 .landing-legal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
+  z-index: var(--z-modal, 1000);
+  background: rgba(11, 11, 11, 0.55);
+  backdrop-filter: var(--backdrop-blur-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,10 +148,17 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
+@media (max-width: 600px) {
+  .landing-legal-overlay {
+    padding: var(--space-2);
+  }
+}
+
 .landing-legal-dialog {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg-squircle, 16px);
+  border-radius: var(--radius-lg-squircle);
+  corner-shape: squircle;
   box-shadow: var(--shadow-lg);
   max-width: 860px;
   width: 100%;
@@ -154,43 +169,56 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.landing-legal-header {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--space-3) var(--space-4) 0;
-}
-
 .close-button {
-  background: var(--color-surface-hover, rgba(0, 0, 0, 0.05));
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
-  color: var(--color-text);
-  border-radius: var(--radius-pill, 9999px);
-  min-inline-size: 44px;
-  min-block-size: 44px;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  width: 38px;
+  height: 38px;
+  min-inline-size: 38px;
+  min-block-size: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
+  box-shadow: var(--shadow-xs);
+  position: relative;
   transition:
-    background-color 0.15s ease,
-    transform 0.15s ease;
+    background-color var(--transition-fast, 0.15s ease),
+    color var(--transition-fast, 0.15s ease),
+    border-color var(--transition-fast, 0.15s ease),
+    box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.close-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .close-button:hover {
-  background: var(--color-border);
-  transform: scale(1.05);
+  background: var(--color-hover);
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .landing-legal-body {
-  padding: 0 var(--space-5) var(--space-6);
+  padding: 0;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .legal-modal-fade-enter-active,
 .legal-modal-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .legal-modal-fade-enter-from,
@@ -200,11 +228,14 @@ onUnmounted(() => {
 
 .legal-modal-fade-enter-active .landing-legal-dialog,
 .legal-modal-fade-leave-active .landing-legal-dialog {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    transform 0.2s ease-in-out,
+    opacity 0.2s ease-in-out;
 }
 
 .legal-modal-fade-enter-from .landing-legal-dialog,
 .legal-modal-fade-leave-to .landing-legal-dialog {
-  transform: scale(0.96) translateY(10px);
+  transform: scale(0.95) translateY(8px);
+  opacity: 0;
 }
 </style>

@@ -46,9 +46,16 @@ const currentYear = new Date().getFullYear();
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   margin-bottom: var(--space-3);
   padding: 0 var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .hint-links {
+    gap: var(--space-1) var(--space-2);
+    margin-bottom: var(--space-2);
+  }
 }
 
 .hint-links a {
