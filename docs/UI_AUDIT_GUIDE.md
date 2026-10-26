@@ -134,6 +134,10 @@ Bis kurz vor einem Release werden oft noch Bugs behoben, neue Funktionen fertigg
 
 ### Das 4-Phasen-Modell des Release-Gates
 
+> [!NOTE]
+> **1 Branch & 1 PR für alle Teams (Cross-Team Single Source of Truth):**
+> Genau wie bei den Komponenten-Refactorings gilt: Alle Teams (1 bis 6) arbeiten auf **einem gemeinsamen Feature-Branch** (z. B. `perform_prerelease_audit`) und in **einem einzigen zentralen PR**. Jedes Team committet seine minimal-invasiven Fixes nacheinander isoliert in diesen Branch. Das abschließende Review in Phase 3 („PR-Diff-Review“) reviewt daher am Ende die **Gesamtheit aller Änderungen dieses einen PRs** (`git diff origin/main..HEAD`), bevor der PR in `main` gemergt wird.
+
 Analog zum Komponenten-Refactoring wird das Pre-Release-Gate in vier streng getrennte Phasen unterteilt:
 
 ```mermaid
@@ -380,7 +384,7 @@ Prüfschritte:
 Ergebnis:
 Gib eine klare Bestätigung im Chat aus:
 - Sind alle automatisierten Prüfungen grün?
-- PR-Review-Zusammenfassung (Design-Tokens, Clean Code, gefundene Auffälligkeiten oder Bestätigung der Sauberkeit)
+- Gesamt-PR-Review aller Teams (Zusammenfassung über den gesamten PR: Design-Tokens, Clean Code, gefundene Auffälligkeiten oder Bestätigung der Sauberkeit)
 - Gibt es verbleibende Warnungen oder offene Punkte?
 - Ist das Release freigegeben?
 - Falls alle Prüfungen & das Review erfolgreich sind: Gib explizit die Bestätigung aus, dass das Pre-Release-Audit für alle Bereiche vollständig abgeschlossen ist und der PR freigegeben / gemergt werden kann.
