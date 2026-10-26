@@ -319,7 +319,7 @@ jobs:
 
       - name: Publish Staging Release Asset
         if: startsWith(github.ref, 'refs/tags/v') == false
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: staging
           name: 'Staging / Dev Build'
@@ -340,7 +340,7 @@ jobs:
 
       - name: Publish Production Release Asset
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: reisotor-release.tar.gz
           token: ${{ github.token }}
