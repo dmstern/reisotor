@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import AppIcon from '../AppIcon.vue';
@@ -15,6 +15,7 @@ import { ACTION_ICONS } from '../../utils/actionIcons';
 
 const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
 const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
+const defaultRepoUrl = __REPO_URL__;
 
 const pwaInstall = usePwaInstallStore();
 const {
@@ -25,6 +26,11 @@ const {
   frontendCommit,
   frontendBuiltAt,
 } = useAboutInfo();
+
+const licenseUrl = computed(
+  () =>
+    `${(backendBuildInfo.value?.repoUrl ?? defaultRepoUrl).replace(/\/+$/, '')}/blob/main/LICENSE`
+);
 
 const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
@@ -79,6 +85,12 @@ const showPwaInstallDialog = ref(false);
           {{ formatBuildTime(backendBuildInfo.builtAt) }}
         </dd>
         <dd v-else>Lädt…</dd>
+        <dt>Lizenz</dt>
+        <dd>
+          <a :href="licenseUrl" target="_blank" rel="noopener noreferrer"
+            >European Union Public Licence v. 1.2 (EUPL-1.2)</a
+          >
+        </dd>
       </dl>
       <h3>Dienste &amp; Open Source</h3>
       <dl class="build-info-list">
@@ -95,6 +107,16 @@ const showPwaInstallDialog = ref(false);
         <dd>
           <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>
         </dd>
+        <dt>Ortssuche &amp; Geocoding</dt>
+        <dd>
+          <a href="https://photon.komoot.io/" target="_blank" rel="noopener noreferrer"
+            >Komoot Photon</a
+          >
+          ·
+          <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener noreferrer"
+            >Nominatim</a
+          >
+        </dd>
         <dt>Routen &amp; Fahrzeiten</dt>
         <dd>
           <a href="https://openrouteservice.org/" target="_blank" rel="noopener noreferrer"
@@ -104,6 +126,30 @@ const showPwaInstallDialog = ref(false);
         <dt>Wettervorhersage</dt>
         <dd>
           <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>
+        </dd>
+        <dt>Ortsfotos &amp; Bildersuche</dt>
+        <dd>
+          <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener noreferrer"
+            >Wikipedia / Wikimedia Commons</a
+          >
+          ·
+          <a href="https://www.bing.com/images" target="_blank" rel="noopener noreferrer">Bing</a>
+          ·
+          <a href="https://duckduckgo.com/" target="_blank" rel="noopener noreferrer">DuckDuckGo</a>
+        </dd>
+        <dt>Länder- &amp; Reiseinfos</dt>
+        <dd>
+          <a href="https://restcountries.com/" target="_blank" rel="noopener noreferrer"
+            >REST Countries</a
+          >
+          ·
+          <a href="https://open.er-api.com/" target="_blank" rel="noopener noreferrer"
+            >ExchangeRate-API</a
+          >
+          ·
+          <a href="https://www.travel-advisory.info/" target="_blank" rel="noopener noreferrer"
+            >Travel Advisory</a
+          >
         </dd>
         <dt>Icons</dt>
         <dd>

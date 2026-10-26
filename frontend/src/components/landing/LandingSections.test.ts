@@ -48,9 +48,15 @@ describe('Landing auxiliary sections', () => {
       expect(html).toContain('href="/demo"');
       expect(html).toContain('href="/storybook"');
       expect(html).toContain('href="https://github.com/dmstern/reisotor"');
+      expect(html).toContain('href="#privacy"');
+      expect(html).toContain('Datenschutz');
+      expect(html).toContain('href="#imprint"');
+      expect(html).toContain('Impressum');
 
       const year = new Date().getFullYear().toString();
       expect(html).toContain(year);
+      expect(html).toContain('EUPL-1.2');
+      expect(html).toContain('href="https://github.com/dmstern/reisotor/blob/main/LICENSE"');
     });
   });
 });

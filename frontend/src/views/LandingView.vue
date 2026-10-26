@@ -1,17 +1,47 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
 import LandingHero from '../components/landing/LandingHero.vue';
 import LandingScrollySection from '../components/landing/LandingScrollySection.vue';
 import LandingCtaBand from '../components/landing/LandingCtaBand.vue';
 import LandingSelfHosting from '../components/landing/LandingSelfHosting.vue';
 import LandingFooter from '../components/landing/LandingFooter.vue';
+import LandingLegalModal from '../components/landing/LandingLegalModal.vue';
 import { useLandingFeatures } from '../composables/useLandingFeatures';
 import { useLandingScrollytelling } from '../composables/useLandingScrollytelling';
+import { DEMO_LEGAL_CONFIG } from '../api/types';
 
 const { scrollyFeatures, repoUrl, demoUrl, storybookUrl } = useLandingFeatures();
 const { activeStepIndex, activeHighlightIndex, glowOpacities, setActiveHighlight } =
   useLandingScrollytelling({
     stepCount: scrollyFeatures.length,
   });
+
+const showLegalModal = ref(false);
+const legalModalTab = ref<'privacy' | 'imprint'>('privacy');
+
+function handleOpenLegal(tab: 'privacy' | 'imprint') {
+  legalModalTab.value = tab;
+  showLegalModal.value = true;
+}
+
+function checkHash() {
+  if (typeof window === 'undefined') return;
+  const hash = window.location.hash.toLowerCase();
+  if (hash === '#privacy' || hash === '#datenschutz') {
+    handleOpenLegal('privacy');
+  } else if (hash === '#imprint' || hash === '#impressum') {
+    handleOpenLegal('imprint');
+  }
+}
+
+onMounted(() => {
+  checkHash();
+  window.addEventListener('hashchange', checkHash);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('hashchange', checkHash);
+});
 </script>
 
 <template>
@@ -35,7 +65,19 @@ const { activeStepIndex, activeHighlightIndex, glowOpacities, setActiveHighlight
 
     <LandingSelfHosting :repo-url="repoUrl" class="scroll-animate" />
 
-    <LandingFooter :demo-url="demoUrl" :storybook-url="storybookUrl" :repo-url="repoUrl" />
+    <LandingFooter
+      :demo-url="demoUrl"
+      :storybook-url="storybookUrl"
+      :repo-url="repoUrl"
+      @open-legal="handleOpenLegal"
+    />
+
+    <LandingLegalModal
+      v-model="showLegalModal"
+      :active-tab="legalModalTab"
+      :config="DEMO_LEGAL_CONFIG"
+      @update:active-tab="(tab) => (legalModalTab = tab)"
+    />
   </div>
 </template>
 

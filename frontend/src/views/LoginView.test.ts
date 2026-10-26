@@ -37,6 +37,8 @@ describe('LoginView', () => {
       routes: [
         { path: '/login', component: LoginView },
         { path: '/', component: { template: '<div>Home</div>' } },
+        { path: '/privacy', component: { template: '<div>Privacy</div>' } },
+        { path: '/imprint', component: { template: '<div>Imprint</div>' } },
       ],
     });
     await router.push('/login');
@@ -126,6 +128,21 @@ describe('LoginView', () => {
     expect(submitBtn.classList.contains('is-loading')).toBe(false);
     expect(submitBtn.disabled).toBe(false);
     expect(container.querySelector('.error')?.textContent).toContain('Ungültige Anmeldedaten');
+
+    cleanUp();
+  });
+
+  it('renders privacy and imprint links in the footer', async () => {
+    const { container, cleanUp } = mountComponent();
+    await nextTick();
+
+    const privacyLink = container.querySelector('a[href="/privacy"]');
+    const imprintLink = container.querySelector('a[href="/imprint"]');
+
+    expect(privacyLink).not.toBeNull();
+    expect(privacyLink?.textContent).toContain('Datenschutz');
+    expect(imprintLink).not.toBeNull();
+    expect(imprintLink?.textContent).toContain('Impressum');
 
     cleanUp();
   });

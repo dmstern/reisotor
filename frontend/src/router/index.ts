@@ -63,6 +63,10 @@ const router = createRouter({
   },
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
+    { path: '/privacy', name: 'privacy', component: () => import('../views/LegalView.vue') },
+    { path: '/imprint', name: 'imprint', component: () => import('../views/LegalView.vue') },
+    { path: '/datenschutz', redirect: '/privacy' },
+    { path: '/impressum', redirect: '/imprint' },
     { path: '/trips', name: 'trips', component: () => import('../views/TripsView.vue') },
     { path: '/settings', name: 'settings', component: () => import('../views/SettingsView.vue') },
     {
@@ -214,7 +218,9 @@ router.beforeEach(async (to) => {
     useUiSettingsStore().load();
   }
 
-  if (to.name !== 'login' && !auth.user) {
+  const isPublicRoute = to.name === 'login' || to.name === 'privacy' || to.name === 'imprint';
+
+  if (!isPublicRoute && !auth.user) {
     return { name: 'login' };
   }
 
@@ -228,7 +234,13 @@ router.beforeEach(async (to) => {
   }
 
   // Für alle nicht-Login Routen bei eingeloggtem Nutzer: sicherstellen, dass Trips geladen sind
-  if (auth.user && to.name !== 'trips' && to.name !== 'settings' && to.name !== 'security-check') {
+  const isGlobalRoute =
+    to.name === 'trips' ||
+    to.name === 'settings' ||
+    to.name === 'security-check' ||
+    to.name === 'privacy' ||
+    to.name === 'imprint';
+  if (auth.user && !isGlobalRoute) {
     const tripStore = useTripStore();
     await tripStore.ensureLoaded();
 

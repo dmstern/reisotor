@@ -2,9 +2,17 @@ import './loadEnv.js';
 import { buildApp } from './app.js';
 import { startDepartureReminderScheduler } from './departureReminders.js';
 import { startWeatherSnapshotScheduler } from './weatherSnapshots.js';
+import { getLegalConfig } from './routes/legal.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const app = await buildApp();
+
+const legalConfig = getLegalConfig();
+if (!legalConfig.hasOperatorInfo) {
+  app.log.warn(
+    '[Legal] Betreiberangaben unvollständig oder nicht konfiguriert (LEGAL_OPERATOR_NAME, LEGAL_OPERATOR_ADDRESS, LEGAL_CONTACT_EMAIL). Das Impressum wird mit einem Warnhinweis ausgeliefert.'
+  );
+}
 
 app
   // Nur auf localhost lauschen: Caddy läuft auf demselben Host und proxied

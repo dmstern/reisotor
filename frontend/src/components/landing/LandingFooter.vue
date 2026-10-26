@@ -5,6 +5,10 @@ defineProps<{
   repoUrl: string;
 }>();
 
+const emit = defineEmits<{
+  (e: 'openLegal', tab: 'privacy' | 'imprint'): void;
+}>();
+
 const currentYear = new Date().getFullYear();
 </script>
 
@@ -16,10 +20,18 @@ const currentYear = new Date().getFullYear();
       <a :href="storybookUrl" target="_blank" rel="noopener">Storybook</a>
       <span class="dot">·</span>
       <a :href="repoUrl" target="_blank" rel="noopener">GitHub</a>
+      <span class="dot">·</span>
+      <a href="#privacy" @click.prevent="emit('openLegal', 'privacy')">Datenschutz</a>
+      <span class="dot">·</span>
+      <a href="#imprint" @click.prevent="emit('openLegal', 'imprint')">Impressum</a>
     </div>
     <p class="hint">
       © {{ currentYear }}
       <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a>
+      ·
+      <a :href="`${repoUrl.replace(/\/+$/, '')}/blob/main/LICENSE`" target="_blank" rel="noopener"
+        >EUPL-1.2</a
+      >
       · agentic-coded
     </p>
   </footer>
@@ -38,9 +50,16 @@ const currentYear = new Date().getFullYear();
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   margin-bottom: var(--space-3);
   padding: 0 var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .hint-links {
+    gap: var(--space-1) var(--space-2);
+    margin-bottom: var(--space-2);
+  }
 }
 
 .hint-links a {

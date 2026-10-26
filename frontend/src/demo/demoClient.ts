@@ -3,7 +3,7 @@
 // rawRequest() anstelle des echten fetch() aufgerufen, wenn DEMO_MODE aktiv ist - alle
 // aufrufenden Stores/Views bleiben dadurch unverändert.
 import { createDemoData } from './demoData';
-import type { User } from '../api/types';
+import { DEMO_LEGAL_CONFIG, type User } from '../api/types';
 
 const STORAGE_KEY = 'reisotor-demo-store';
 
@@ -128,6 +128,9 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   // Einzelfall-Endpunkte, die kein einfaches Collection-CRUD sind.
   if (path === '/auth/me') return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/config') return { registrationMode: 'off' } as unknown as T;
+  if (path === '/legal') {
+    return structuredClone(DEMO_LEGAL_CONFIG) as unknown as T;
+  }
   if (path === '/auth/login' || path === '/auth/register')
     return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/logout') return undefined as T;

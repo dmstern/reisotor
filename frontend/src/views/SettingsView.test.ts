@@ -10,6 +10,7 @@ import { useUiSettingsStore } from '../stores/uiSettings';
 vi.stubGlobal('__APP_VERSION__', '1.3.0');
 vi.stubGlobal('__APP_COMMIT__', 'testcommit');
 vi.stubGlobal('__APP_BUILT_AT__', '2026-09-26T10:00:00.000Z');
+vi.stubGlobal('__REPO_URL__', 'https://github.com/dmstern/reisotor');
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -143,15 +144,28 @@ describe('SettingsView loading state', () => {
     await new Promise((r) => setTimeout(r, 20));
     await nextTick();
 
+    expect(container.textContent).toContain('Lizenz');
+    expect(container.textContent).toContain('European Union Public Licence v. 1.2 (EUPL-1.2)');
     expect(container.textContent).toContain('Dienste & Open Source');
     expect(container.textContent).toContain('Kartendaten');
     expect(container.textContent).toContain('OpenStreetMap');
     expect(container.textContent).toContain('Kartenanzeige');
     expect(container.textContent).toContain('Leaflet');
+    expect(container.textContent).toContain('Ortssuche & Geocoding');
+    expect(container.textContent).toContain('Komoot Photon');
+    expect(container.textContent).toContain('Nominatim');
     expect(container.textContent).toContain('Routen & Fahrzeiten');
     expect(container.textContent).toContain('OpenRouteService');
     expect(container.textContent).toContain('Wettervorhersage');
     expect(container.textContent).toContain('Open-Meteo');
+    expect(container.textContent).toContain('Ortsfotos & Bildersuche');
+    expect(container.textContent).toContain('Wikipedia / Wikimedia Commons');
+    expect(container.textContent).toContain('Bing');
+    expect(container.textContent).toContain('DuckDuckGo');
+    expect(container.textContent).toContain('Länder- & Reiseinfos');
+    expect(container.textContent).toContain('REST Countries');
+    expect(container.textContent).toContain('ExchangeRate-API');
+    expect(container.textContent).toContain('Travel Advisory');
     expect(container.textContent).toContain('Icons');
     expect(container.textContent).toContain('Tabler Icons');
 
