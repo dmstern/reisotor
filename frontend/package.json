@@ -38,7 +38,7 @@
     "piexifjs": "^1.0.6",
     "pinia": "^4.0.3",
     "vue": "^3.5.12",
-    "vue-router": "^4.4.5"
+    "vue-router": "^5.3.1"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.6.14",
