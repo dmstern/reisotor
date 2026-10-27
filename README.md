@@ -253,7 +253,7 @@ npm run build:demo # statischer Build nach dist-demo/
 
 ## Lizenz
 
-Copyright © 2026 [Daniel Morgenstern](https://github.com/dmstern) und Mitwirkende · agentic-coded.
+Copyright © 2026 [Daniel Morgenstern](https://github.com/dmstern) und Mitwirkende · Made with love, coffee and AI.
 
 Dieses Projekt ist unter der **European Union Public Licence (EUPL-1.2)** lizenziert – siehe die [LICENSE](LICENSE)-Datei für den vollständigen Lizenztext.
 

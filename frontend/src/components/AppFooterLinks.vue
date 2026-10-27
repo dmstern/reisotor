@@ -32,11 +32,8 @@ const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
   <p class="hint app-footer-copyright">
     © {{ copyrightYear }}
     <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> ·
-    <a :href="licenseUrl" target="_blank" rel="noopener">EUPL-1.2</a> · agentic-coded<template
-      v-if="hostingLocation"
-    >
-      · gehostet in {{ hostingLocation }}</template
-    >
+    <a :href="licenseUrl" target="_blank" rel="noopener">EUPL-1.2</a> · Made with love, coffee and
+    AI<template v-if="hostingLocation"> · gehostet in {{ hostingLocation }}</template>
   </p>
 </template>
 
