@@ -32,7 +32,6 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
 
   const ownHeading = ref<number | null>(null);
   let orientationHandler: ((event: DeviceOrientationEvent) => void) | null = null;
-  let orientationEventName: 'deviceorientationabsolute' | 'deviceorientation' = 'deviceorientation';
 
   const currentBearing = ref(0);
 
@@ -48,15 +47,15 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
 
   function startCompass() {
     if (orientationHandler || typeof window === 'undefined') return;
-    orientationEventName =
-      'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
     orientationHandler = handleOrientation;
-    window.addEventListener(orientationEventName, orientationHandler as EventListener);
+    window.addEventListener('deviceorientationabsolute', orientationHandler as EventListener);
+    window.addEventListener('deviceorientation', orientationHandler as EventListener);
   }
 
   function stopCompass() {
     if (!orientationHandler || typeof window === 'undefined') return;
-    window.removeEventListener(orientationEventName, orientationHandler as EventListener);
+    window.removeEventListener('deviceorientationabsolute', orientationHandler as EventListener);
+    window.removeEventListener('deviceorientation', orientationHandler as EventListener);
     orientationHandler = null;
   }
 

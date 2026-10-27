@@ -35,15 +35,18 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     await expect(page.getByRole('button', { name: 'Norden oben' })).toHaveClass(/active/);
     await page.locator('.picker-backdrop').click();
     await page.evaluate(() => {
-      const eventName =
-        'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
-      const event = new Event(eventName) as DeviceOrientationEvent & {
-        alpha: number;
-        absolute: boolean;
-      };
-      Object.defineProperty(event, 'alpha', { value: 270 }); // Heading = 90°
-      Object.defineProperty(event, 'absolute', { value: true });
-      window.dispatchEvent(event);
+      for (const eventName of ['deviceorientationabsolute', 'deviceorientation']) {
+        const event =
+          typeof DeviceOrientationEvent !== 'undefined'
+            ? new DeviceOrientationEvent(eventName, { alpha: 270, absolute: true })
+            : (new Event(eventName) as DeviceOrientationEvent & {
+                alpha: number;
+                absolute: boolean;
+              });
+        Object.defineProperty(event, 'alpha', { value: 270 }); // Heading = 90°
+        Object.defineProperty(event, 'absolute', { value: true });
+        window.dispatchEvent(event);
+      }
     });
     await page.waitForTimeout(300);
     const idleTransform = await page
@@ -59,15 +62,18 @@ test.describe('Karten-Rotation (Norden/Fahrtrichtung-Umschalter)', () => {
     await page.locator('.picker-backdrop').click();
 
     await page.evaluate(() => {
-      const eventName =
-        'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
-      const event = new Event(eventName) as DeviceOrientationEvent & {
-        alpha: number;
-        absolute: boolean;
-      };
-      Object.defineProperty(event, 'alpha', { value: 270 }); // Heading = 90°
-      Object.defineProperty(event, 'absolute', { value: true });
-      window.dispatchEvent(event);
+      for (const eventName of ['deviceorientationabsolute', 'deviceorientation']) {
+        const event =
+          typeof DeviceOrientationEvent !== 'undefined'
+            ? new DeviceOrientationEvent(eventName, { alpha: 270, absolute: true })
+            : (new Event(eventName) as DeviceOrientationEvent & {
+                alpha: number;
+                absolute: boolean;
+              });
+        Object.defineProperty(event, 'alpha', { value: 270 }); // Heading = 90°
+        Object.defineProperty(event, 'absolute', { value: true });
+        window.dispatchEvent(event);
+      }
     });
     await page.waitForTimeout(300);
 
