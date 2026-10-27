@@ -224,11 +224,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
       if (new Date(record.expires_at).getTime() < Date.now()) {
         db.prepare('DELETE FROM password_reset_tokens WHERE id = ?').run(record.id);
-        return reply
-          .code(400)
-          .send({
-            error: 'Der Link zum Zurücksetzen ist abgelaufen. Bitte fordere einen neuen an.',
-          });
+        return reply.code(400).send({
+          error: 'Der Link zum Zurücksetzen ist abgelaufen. Bitte fordere einen neuen an.',
+        });
       }
 
       const hash = bcrypt.hashSync(newPassword, 10);
