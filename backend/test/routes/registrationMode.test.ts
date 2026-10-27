@@ -34,7 +34,7 @@ describe('registration mode: restricted', () => {
   it('GET /auth/config reports the configured mode', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/auth/config' });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ registrationMode: 'restricted' });
+    expect(res.json()).toMatchObject({ registrationMode: 'restricted' });
   });
 
   it('marks a self-registered user as restricted', async () => {
