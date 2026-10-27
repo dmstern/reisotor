@@ -5,6 +5,14 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore } from '../stores/locationSharing';
 
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return (
+    /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1)
+  );
+}
+
 export function headingFromOrientationEvent(event: DeviceOrientationEvent): number | null {
   const webkitHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number })
     .webkitCompassHeading;
@@ -32,7 +40,6 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
 
   const ownHeading = ref<number | null>(null);
   let orientationHandler: ((event: DeviceOrientationEvent) => void) | null = null;
-  let orientationEventName: 'deviceorientationabsolute' | 'deviceorientation' = 'deviceorientation';
 
   const currentBearing = ref(0);
 
@@ -48,15 +55,15 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
 
   function startCompass() {
     if (orientationHandler || typeof window === 'undefined') return;
-    orientationEventName =
-      'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
     orientationHandler = handleOrientation;
-    window.addEventListener(orientationEventName, orientationHandler as EventListener);
+    window.addEventListener('deviceorientationabsolute', orientationHandler as EventListener);
+    window.addEventListener('deviceorientation', orientationHandler as EventListener);
   }
 
   function stopCompass() {
     if (!orientationHandler || typeof window === 'undefined') return;
-    window.removeEventListener(orientationEventName, orientationHandler as EventListener);
+    window.removeEventListener('deviceorientationabsolute', orientationHandler as EventListener);
+    window.removeEventListener('deviceorientation', orientationHandler as EventListener);
     orientationHandler = null;
   }
 
@@ -140,7 +147,12 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
         DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
       }
     ).DeviceOrientationEvent;
-    if (OrientationEventCtor && !OrientationEventCtor.requestPermission) {
+    // iOS 13+ erfordert eine explizite Nutzergeste (DeviceOrientationEvent.requestPermission()),
+    // daher startet der Kompass auf iOS erst bei Klick auf "Zu meinem Standort springen"
+    // (jumpToMyLocation()). Auf allen anderen Plattformen (Android, Desktop) startet der
+    // Kompass direkt. Neuere Chromium-Versionen (135+) exponieren ebenfalls requestPermission(),
+    // feuern deviceorientation aber ohne vorherigen Aufruf.
+    if (!isIOS() || typeof OrientationEventCtor?.requestPermission !== 'function') {
       startCompass();
     }
   }

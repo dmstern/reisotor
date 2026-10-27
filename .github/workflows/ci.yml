@@ -152,10 +152,10 @@ jobs:
     # fertig mit - erspart bei jedem Lauf das (undgecachte, weil auf einer frischen Runner-VM
     # jedes Mal neue) `apt-get install` von ~100 Paketen, das vorher den Löwenanteil der Laufzeit
     # ausmachte (siehe Issue-Diskussion). Image-Tag MUSS exakt zur in e2e/package-lock.json
-    # gepinnten @playwright/test-Version passen (v1.62.1 -> v1.62.1-jammy), sonst driftet die im
+    # gepinnten @playwright/test-Version passen (v1.64.0 -> v1.64.0-jammy), sonst driftet die im
     # Image enthaltene Chromium-Revision von der per npm installierten @playwright/test-Version
     # auseinander. Bei jedem Playwright-Versions-Bump also diesen Tag mitziehen.
-    container: mcr.microsoft.com/playwright:v1.62.1-jammy
+    container: mcr.microsoft.com/playwright:v1.64.0-jammy
     strategy:
       fail-fast: false
       matrix:
@@ -189,7 +189,7 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
-      # Caching von node_modules im selben Playwright-Container (v1.62.1-jammy):
+      # Caching von node_modules im selben Playwright-Container (v1.64.0-jammy):
       # Erspart bei allen Shards nach dem ersten Lauf (oder bei ungaränderten package-lock.json) das
       # erneute Entpacken & Verlinken der 3 node_modules-Bäume.
       - name: Cache container node_modules
@@ -200,7 +200,7 @@ jobs:
             backend/node_modules
             frontend/node_modules
             e2e/node_modules
-          key: node-modules-jammy-node22-v1-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json', 'e2e/package-lock.json') }}
+          key: node-modules-jammy-v1-64-node22-v1-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json', 'e2e/package-lock.json') }}
 
       - name: Install backend dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'

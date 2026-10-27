@@ -19,6 +19,11 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+    ignore:
+      # typescript-eslint unterstützt TypeScript 7.0 noch nicht (Support erst ab TS >= 7.1 geplant, siehe typescript-eslint#10940).
+      # Durch >= 7.0.0, < 7.1.0 meldet sich Dependabot automatisch wieder, sobald TypeScript 7.1 erscheint.
+      - dependency-name: 'typescript'
+        versions: ['>= 7.0.0, < 7.1.0']
 
   # 2. Backend npm (Fastify, SQLite, Vitest)
   - package-ecosystem: 'npm'
@@ -39,6 +44,23 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+    ignore:
+      # Fastify v5 und die zugehörigen @fastify/*-Major-Updates müssen gemeinsam migriert werden (siehe Issue #578),
+      # da isolierte Einzel-PRs an Peer-Dependency-Konflikten (fastify-plugin ^5.x / ^6.x) scheitern.
+      - dependency-name: 'fastify'
+        versions: ['>= 5.0.0']
+      - dependency-name: '@fastify/cookie'
+        versions: ['>= 10.0.0']
+      - dependency-name: '@fastify/cors'
+        versions: ['>= 10.0.0']
+      - dependency-name: '@fastify/session'
+        versions: ['>= 11.0.0']
+      - dependency-name: '@fastify/static'
+        versions: ['>= 8.0.0']
+      # Für better-sqlite3 v13 fehlen im Playwright-CI-Container (Ubuntu Jammy / Node 22) vorkompilierte Binaries (prebuild-install),
+      # wodurch node-gyp mangels installiertem 'make' abbricht. Ab v14.0.0 prüft Dependabot automatisch erneut.
+      - dependency-name: 'better-sqlite3'
+        versions: ['>= 13.0.0, < 14.0.0']
 
   # 3. Frontend npm (Vue 3, Vite, Storybook)
   - package-ecosystem: 'npm'
@@ -79,6 +101,11 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+    ignore:
+      # Für better-sqlite3 v13 fehlen im Playwright-CI-Container (Ubuntu Jammy / Node 22) vorkompilierte Binaries (prebuild-install),
+      # wodurch node-gyp mangels installiertem 'make' abbricht. Ab v14.0.0 prüft Dependabot automatisch erneut.
+      - dependency-name: 'better-sqlite3'
+        versions: ['>= 13.0.0, < 14.0.0']
 
   # 5. GitHub Actions Workflows
   - package-ecosystem: 'github-actions'

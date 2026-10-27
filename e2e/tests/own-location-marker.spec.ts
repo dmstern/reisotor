@@ -29,15 +29,18 @@ test.describe('Eigener Standort-Marker', () => {
     // Simuliert ein 'deviceorientationabsolute'-Event (Android/Chrome) - siehe
     // TripMap.vue's headingFromOrientationEvent()/startCompass().
     await page.evaluate(() => {
-      const eventName =
-        'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
-      const event = new Event(eventName) as DeviceOrientationEvent & {
-        alpha: number;
-        absolute: boolean;
-      };
-      Object.defineProperty(event, 'alpha', { value: 0 });
-      Object.defineProperty(event, 'absolute', { value: true });
-      window.dispatchEvent(event);
+      for (const eventName of ['deviceorientationabsolute', 'deviceorientation']) {
+        const event =
+          typeof DeviceOrientationEvent !== 'undefined'
+            ? new DeviceOrientationEvent(eventName, { alpha: 0, absolute: true })
+            : (new Event(eventName) as DeviceOrientationEvent & {
+                alpha: number;
+                absolute: boolean;
+              });
+        Object.defineProperty(event, 'alpha', { value: 0 });
+        Object.defineProperty(event, 'absolute', { value: true });
+        window.dispatchEvent(event);
+      }
     });
 
     const cone = page.locator('.own-location-cone');
