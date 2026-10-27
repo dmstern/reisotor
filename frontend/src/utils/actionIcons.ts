@@ -1,4 +1,6 @@
 import {
+  IconMail,
+  IconMailFilled,
   IconPencil,
   IconPencilFilled,
   IconPencilPlus,
@@ -243,7 +245,8 @@ export type ActionIconKey =
   | 'clipboardPlus'
   | 'photoPlus'
   | 'copy'
-  | 'check';
+  | 'check'
+  | 'mail';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -492,5 +495,11 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'check',
     emoji: '✓',
     outline: IconCheck,
+  },
+  mail: {
+    id: 'mail',
+    emoji: '✉️',
+    outline: IconMail,
+    filled: IconMailFilled,
   },
 };

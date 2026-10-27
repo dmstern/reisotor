@@ -2,6 +2,6 @@
 
 - 👥 **Nutzerverwaltung**: Administrator:innen können neu registrierte Konten direkt in den Einstellungen zwischen Basis-Konto und Vollzugriff umschalten, den Registrierungsmodus steuern sowie Passwörter temporär vergeben.
 - 🔑 **Passwort-Zurücksetzung**: Administrator:innen können vergessene Passwörter für Nutzer:innen direkt in der Nutzerverwaltung mit einem sicheren Einmal-Passwort oder Reset-Link zurücksetzen.
-- ✉️ **E-Mail-Workflows & Double-Opt-In**: Bei konfiguriertem SMTP-Server können Nutzer:innen ihr Passwort über einen sicheren E-Mail-Link selbst zurücksetzen und optional bei der Registrierung eine E-Mail-Bestätigung erhalten.
+- ✉️ **E-Mail-Workflows & Double-Opt-In**: Bei konfiguriertem SMTP-Server können Nutzer:innen ihr Passwort über einen sicheren E-Mail-Link selbst zurücksetzen, ihre hinterlegte E-Mail-Adresse im Profil anpassen und optional bei der Registrierung sowie bei Adressänderungen eine E-Mail-Bestätigung erhalten.
 - 🛡️ **Kontostatus & Berechtigungen**: Übersicht über den eigenen Kontostatus (Basis-Konto vs. Vollzugriff) im Profil mit transparenter Erklärung aller Berechtigungen.
 - ✨ **Premium-Vorschau für Basis-Konten**: Vollzugriff-Funktionen (wie weitere Urlaube, Datei-Uploads oder zusätzliche Mitreisende) bleiben für Basis-Nutzer:innen sichtbar und sind mit einem Premium-Badge gekennzeichnet. Bei Klick wird transparent erklärt, welche Funktionen enthalten sind und wie man Vollzugriff erhält.

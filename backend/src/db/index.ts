@@ -1971,11 +1971,14 @@ db.exec(`
     id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash TEXT NOT NULL UNIQUE,
+    pending_email TEXT,
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_hash ON email_verification_tokens(token_hash);
 `);
+
+ensureColumn('email_verification_tokens', 'pending_email', 'TEXT');
 
 /**
  * Leert alle Anwendungs-Tabellen in der Datenbank und setzt Auto-Inkrement-Sequenzen zurück.
