@@ -4,17 +4,17 @@ import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
 import Input from '../primitives/Input.vue';
+import Textarea from '../primitives/Textarea.vue';
+import CheckboxCard from '../primitives/CheckboxCard.vue';
+import Radio from '../primitives/Radio.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
-import CreateUserDialog from '../CreateUserDialog.vue';
-import AdminResetPasswordModal from '../AdminResetPasswordModal.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
+import AdminUserManagementCard from './AdminUserManagementCard.vue';
 import { useAuthStore } from '../../stores/auth';
-import { useUserManagement } from '../../composables/useUserManagement';
 import { useAdminSettings } from '../../composables/useAdminSettings';
-import { USERS_ICON, BELL_ICON } from '../../composables/useSettingsTabs';
+import { BELL_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
-import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
 import {
   IconLock,
   IconScale,
@@ -34,27 +34,6 @@ const GEO_ICON: IconDef = { id: 'map-pin', emoji: '📍', outline: IconMapPin };
 const EMAIL_ICON: IconDef = { id: 'mail', emoji: '✉️', outline: IconMail };
 const GITHUB_ICON: IconDef = { id: 'github', emoji: '🐙', outline: IconBrandGithub };
 const KEY_ICON: IconDef = { id: 'key', emoji: '🔑', outline: IconKey };
-
-// User Management composable
-const {
-  userList,
-  loadingUsers,
-  userListError,
-  showCreateUserDialog,
-  resetPasswordTarget,
-  resetPasswordResult,
-  resettingPassword,
-  verifyingEmailId,
-  loadUserList,
-  toggleAdminRole,
-  toggleRestrictedRole,
-  deleteUserAccount,
-  onUserCreated,
-  openResetPasswordDialog,
-  closeResetPasswordDialog,
-  performResetPassword,
-  verifyUserEmail,
-} = useUserManagement();
 
 // System Settings composable
 const {
@@ -173,7 +152,6 @@ watch(
 
 onMounted(() => {
   if (auth.user?.is_admin) {
-    loadUserList();
     loadSettings();
   }
 });
@@ -271,135 +249,7 @@ async function handleGenerateVapid() {
     </div>
 
     <!-- 1. Benutzerverwaltung -->
-    <Card class="admin-card">
-      <SettingsCardHeader title="Benutzerverwaltung" :icon="USERS_ICON">
-        <template #actions>
-          <Button variant="primary" size="sm" @click="showCreateUserDialog = true">
-            <AppIcon :icon="ACTION_ICONS.userPlus" :size="14" group="actions" /> Nutzer anlegen
-          </Button>
-        </template>
-      </SettingsCardHeader>
-      <p class="hint">
-        Verwalte bestehende Benutzerkonten, Rollen, Berechtigungen und setze Passwörter zurück.
-      </p>
-
-      <p v-if="userListError" class="hint error">{{ userListError }}</p>
-      <ViewLoadingState v-if="loadingUsers" message="Lade Nutzerliste…" />
-
-      <div v-else-if="userList.length" class="users-table-wrapper">
-        <table class="users-table">
-          <thead>
-            <tr>
-              <th>Nutzer</th>
-              <th>E-Mail</th>
-              <th>Rolle</th>
-              <th>Status</th>
-              <th class="actions-col">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="u in userList" :key="u.id">
-              <td>
-                <div class="user-cell">
-                  <span class="user-avatar">{{ u.avatar }}</span>
-                  <span class="username">{{ u.username }}</span>
-                </div>
-              </td>
-              <td class="email-cell">{{ u.email || '—' }}</td>
-              <td>
-                <Badge v-if="u.is_admin" variant="accent-secondary">Admin</Badge>
-                <Badge v-else-if="u.is_restricted" variant="warning">Basis-Konto</Badge>
-                <Badge v-else variant="success">Vollzugriff</Badge>
-              </td>
-              <td>
-                <div class="status-badges">
-                  <Badge
-                    v-if="u.is_email_verified === false"
-                    variant="warning"
-                    title="E-Mail-Adresse noch nicht bestätigt"
-                  >
-                    E-Mail unbestätigt
-                  </Badge>
-                  <Badge
-                    v-if="u.must_change_password"
-                    variant="warning"
-                    title="Passwortänderung beim ersten Login ausstehend"
-                  >
-                    PW-Änderung offen
-                  </Badge>
-                  <Badge
-                    v-if="u.is_email_verified !== false && !u.must_change_password"
-                    variant="success"
-                    >Aktiv</Badge
-                  >
-                </div>
-              </td>
-              <td class="actions-col">
-                <div class="user-actions">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    title="Passwort für diesen Account zurücksetzen"
-                    @click="openResetPasswordDialog(u)"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.key" :size="14" group="actions" />
-                    PW Reset
-                  </Button>
-                  <Button
-                    v-if="u.is_email_verified === false"
-                    size="sm"
-                    variant="secondary"
-                    title="E-Mail-Adresse manuell freischalten"
-                    :loading="verifyingEmailId === u.id"
-                    @click="verifyUserEmail(u)"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-                    Mail bestätigen
-                  </Button>
-                  <Button
-                    v-if="!u.is_admin"
-                    size="sm"
-                    :variant="u.is_restricted ? 'primary' : 'secondary'"
-                    :title="
-                      u.is_restricted
-                        ? 'Auf Vollzugriff freischalten'
-                        : 'Auf Basis-Konto einschränken'
-                    "
-                    @click="toggleRestrictedRole(u)"
-                  >
-                    <AppIcon
-                      :icon="u.is_restricted ? ACTION_ICONS.done : ACTION_ICONS.private"
-                      :size="14"
-                      group="actions"
-                    />
-                    {{ u.is_restricted ? 'Freischalten' : 'Einschränken' }}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    :title="u.is_admin ? 'Admin-Rechte entziehen' : 'Zum Admin machen'"
-                    @click="toggleAdminRole(u)"
-                  >
-                    <AppIcon :icon="FORM_FIELD_ICONS.person" :size="14" group="formFields" />
-                    {{ u.is_admin ? 'Admin entziehen' : 'Zum Admin machen' }}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    :disabled="u.id === auth.user?.id"
-                    title="Nutzer löschen"
-                    @click="deleteUserAccount(u)"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" />
-                    Löschen
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </Card>
+    <AdminUserManagementCard />
 
     <ViewLoadingState v-if="loadingSettings && !settings" message="Lade Systemeinstellungen…" />
 
@@ -422,13 +272,11 @@ async function handleGenerateVapid() {
             class="mode-option"
             :class="{ active: regForm.registrationMode === 'restricted' }"
           >
-            <input
+            <Radio
               id="reg-mode-restricted"
-              type="radio"
               name="adminRegistrationMode"
               value="restricted"
-              :checked="regForm.registrationMode === 'restricted'"
-              @change="regForm.registrationMode = 'restricted'"
+              v-model="regForm.registrationMode"
             />
             <div class="mode-content">
               <span class="mode-title">
@@ -447,13 +295,11 @@ async function handleGenerateVapid() {
             class="mode-option"
             :class="{ active: regForm.registrationMode === 'full' }"
           >
-            <input
+            <Radio
               id="reg-mode-full"
-              type="radio"
               name="adminRegistrationMode"
               value="full"
-              :checked="regForm.registrationMode === 'full'"
-              @change="regForm.registrationMode = 'full'"
+              v-model="regForm.registrationMode"
             />
             <div class="mode-content">
               <span class="mode-title">
@@ -471,13 +317,11 @@ async function handleGenerateVapid() {
             class="mode-option"
             :class="{ active: regForm.registrationMode === 'off' }"
           >
-            <input
+            <Radio
               id="reg-mode-off"
-              type="radio"
               name="adminRegistrationMode"
               value="off"
-              :checked="regForm.registrationMode === 'off'"
-              @change="regForm.registrationMode = 'off'"
+              v-model="regForm.registrationMode"
             />
             <div class="mode-content">
               <span class="mode-title">
@@ -492,13 +336,13 @@ async function handleGenerateVapid() {
         </div>
 
         <div class="form-checkbox-row">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="regForm.requireEmailVerification" />
-            <span
-              ><strong>Double-Opt-In:</strong> E-Mail-Bestätigung bei Selbstregistrierungen
-              erzwingen (erfordert konfigurierten SMTP-Mailserver)</span
-            >
-          </label>
+          <CheckboxCard
+            id="reg-require-verification"
+            v-model="regForm.requireEmailVerification"
+            variant="row"
+            label="Double-Opt-In: E-Mail-Bestätigung bei Selbstregistrierungen erzwingen"
+            description="Erfordert einen konfigurierten SMTP-Mailserver."
+          />
         </div>
 
         <div class="section-actions">
@@ -521,8 +365,8 @@ async function handleGenerateVapid() {
         <SettingsCardHeader title="Instanz & Impressum" :icon="LEGAL_ICON" />
         <p class="hint">
           Pflege hier die gesetzlichen Anbieterangaben für Impressum (§ 5 DDG) und Datenschutz (Art.
-          13 DSGVO). Sind alle Pflichtangaben hinterlegt, verschwindet der gelbe Warnhinweis in der
-          Fußzeile.
+          13 DSGVO). Sind alle Pflichtangaben hinterlegt, verschwindet der gelbe Warnhinweis auf der
+          Impressums-Seite.
         </p>
 
         <div class="form-grid">
@@ -547,13 +391,12 @@ async function handleGenerateVapid() {
 
           <div class="form-group full-width">
             <label for="legal-operator-address">Ladungsfähige Postanschrift *</label>
-            <textarea
+            <Textarea
               id="legal-operator-address"
-              class="textarea-field"
               v-model="legalForm.operatorAddress"
-              rows="2"
+              :rows="2"
               placeholder="z. B. Musterstraße 12, 12345 Musterstadt"
-            ></textarea>
+            />
           </div>
 
           <div class="form-group">
@@ -655,10 +498,12 @@ async function handleGenerateVapid() {
 
           <div class="form-group full-width">
             <div class="form-checkbox-row">
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="geoForm.nominatimEnabled" />
-                <span>OSM Nominatim Geocoder als Fallback und Ergänzung aktivieren</span>
-              </label>
+              <CheckboxCard
+                id="geo-nominatim-enabled"
+                v-model="geoForm.nominatimEnabled"
+                variant="row"
+                label="OSM Nominatim Geocoder als Fallback und Ergänzung aktivieren"
+              />
             </div>
           </div>
 
@@ -764,10 +609,13 @@ async function handleGenerateVapid() {
 
           <div class="form-group full-width">
             <div class="form-checkbox-row">
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="emailForm.smtpSecure" />
-                <span>TLS/SSL Verbindung erzwingen (bei Port 465 automatisch aktiv)</span>
-              </label>
+              <CheckboxCard
+                id="email-smtp-secure"
+                v-model="emailForm.smtpSecure"
+                variant="row"
+                label="TLS/SSL Verbindung erzwingen"
+                description="Sichere Transportverschlüsselung (bei Port 465 automatisch aktiv)."
+              />
             </div>
           </div>
 
@@ -866,13 +714,13 @@ async function handleGenerateVapid() {
 
           <div class="form-group full-width">
             <div class="form-checkbox-row">
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="feedbackForm.feedbackRelayForwarding" />
-                <span>
-                  <strong>Feedback-Relay nutzen:</strong> Wenn kein GitHub-Token hinterlegt ist,
-                  werden Meldungen transparent an den zentralen Relay-Dienst weitergeleitet.
-                </span>
-              </label>
+              <CheckboxCard
+                id="fb-relay-forwarding"
+                v-model="feedbackForm.feedbackRelayForwarding"
+                variant="row"
+                label="Feedback-Relay nutzen"
+                description="Wenn kein eigener GitHub-Token hinterlegt ist, werden Meldungen transparent an den zentralen Relay-Dienst weitergeleitet."
+              />
             </div>
           </div>
 
@@ -976,7 +824,7 @@ async function handleGenerateVapid() {
           </div>
 
           <div class="form-group push-gen-col">
-            <label class="invisible-label">Schlüssel-Aktion</label>
+            <span class="invisible-label" aria-hidden="true">Schlüssel-Aktion</span>
             <Button
               variant="secondary"
               size="md"
@@ -999,16 +847,6 @@ async function handleGenerateVapid() {
         </div>
       </Card>
     </template>
-
-    <CreateUserDialog v-model="showCreateUserDialog" @created="onUserCreated" />
-    <AdminResetPasswordModal
-      :model-value="Boolean(resetPasswordTarget)"
-      :user="resetPasswordTarget"
-      :result="resetPasswordResult"
-      :loading="resettingPassword"
-      @reset="(pw) => resetPasswordTarget && performResetPassword(resetPasswordTarget, pw)"
-      @close="closeResetPasswordDialog"
-    />
   </div>
 </template>
 
@@ -1069,11 +907,6 @@ async function handleGenerateVapid() {
   background: var(--color-primary-tint);
 }
 
-.mode-option input[type='radio'] {
-  margin-top: 3px;
-  cursor: pointer;
-}
-
 .mode-content {
   display: flex;
   flex-direction: column;
@@ -1095,14 +928,6 @@ async function handleGenerateVapid() {
 
 .form-checkbox-row {
   margin: var(--space-3) 0;
-}
-
-.checkbox-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
 }
 
 .form-grid {
@@ -1157,31 +982,16 @@ async function handleGenerateVapid() {
   flex: 1;
 }
 
-.textarea-field {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  font-family: inherit;
-  font-size: var(--font-size-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  resize: vertical;
-}
-
-.textarea-field:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
 .push-gen-col {
   display: flex;
+  flex-direction: column;
   justify-content: flex-end;
 }
 
 .invisible-label {
   visibility: hidden;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
 }
 
 .section-actions {
@@ -1199,61 +1009,5 @@ async function handleGenerateVapid() {
   font-size: var(--font-size-sm);
   color: var(--color-success);
   font-weight: 500;
-}
-
-/* User table styles */
-.users-table-wrapper {
-  overflow-x: auto;
-}
-
-.users-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
-}
-
-.users-table th {
-  text-align: left;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 2px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-weight: 600;
-  font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.users-table td {
-  padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-}
-
-.user-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-weight: 500;
-}
-
-.user-avatar {
-  font-size: var(--font-size-xl);
-  flex-shrink: 0;
-}
-
-.email-cell {
-  color: var(--color-text-muted);
-}
-
-.actions-col {
-  text-align: right;
-}
-
-.user-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 </style>

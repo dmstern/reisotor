@@ -132,20 +132,23 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     expect(buildRes.json().hostingLocation).toBe('München');
   });
 
-  it('allows clearing secrets using clear flags', async () => {
+  it('allows clearing secrets using clear flags and resets empty strings to defaults', async () => {
     const clearRes = await app.inject({
       method: 'PUT',
       url: '/api/admin/settings',
       headers: { cookie: adminCookie },
       payload: {
+        legal: { hostingLocation: '' },
         geo: { clearOrsApiKey: true },
-        email: { clearSmtpPass: true },
+        email: { clearSmtpPass: true, appUrl: '' },
       },
     });
     expect(clearRes.statusCode).toBe(200);
     const updated = clearRes.json().settings;
+    expect(updated.legal.hostingLocation).toBe('Berlin'); // Fallback to default
     expect(updated.geo.isOrsApiKeySet).toBe(false);
     expect(updated.email.isSmtpPassSet).toBe(false);
+    expect(updated.email.appUrl).toBe('http://localhost:5173');
   });
 
   it('allows generating VAPID keys on demand', async () => {

@@ -204,7 +204,9 @@ export function getAllAdminSettings(): AdminSettingsDto {
       smtpFrom: getEffectiveSetting('smtp_from', 'SMTP_FROM', ''),
       appUrl:
         getEffectiveSetting('app_url', 'APP_URL') ||
-        process.env.BASE_URL ||
+        (process.env.BASE_URL && process.env.BASE_URL.startsWith('http')
+          ? process.env.BASE_URL
+          : '') ||
         'http://localhost:5173',
     },
     feedback: {
@@ -233,6 +235,13 @@ export function getAllAdminSettings(): AdminSettingsDto {
  * Aktualisiert Einstellungen in instance_settings anhand des empfangenen Payloads.
  */
 export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminSettingsDto {
+  const setOrDelete = (key: string, val: string | undefined) => {
+    if (val !== undefined) {
+      const t = val.trim();
+      setInstanceSetting(key, t === '' ? null : t);
+    }
+  };
+
   if (payload.registration) {
     if (payload.registration.registrationMode !== undefined) {
       const mode = payload.registration.registrationMode;
@@ -249,72 +258,48 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
   }
 
   if (payload.legal) {
-    if (payload.legal.operatorName !== undefined) {
-      setInstanceSetting('legal_operator_name', payload.legal.operatorName.trim());
-    }
-    if (payload.legal.operatorAddress !== undefined) {
-      setInstanceSetting('legal_operator_address', payload.legal.operatorAddress.trim());
-    }
-    if (payload.legal.contactEmail !== undefined) {
-      setInstanceSetting('legal_contact_email', payload.legal.contactEmail.trim());
-    }
-    if (payload.legal.contactPhone !== undefined) {
-      setInstanceSetting('legal_contact_phone', payload.legal.contactPhone.trim());
-    }
-    if (payload.legal.hostingLocation !== undefined) {
-      setInstanceSetting('hosting_location', payload.legal.hostingLocation.trim());
-    }
+    setOrDelete('legal_operator_name', payload.legal.operatorName);
+    setOrDelete('legal_operator_address', payload.legal.operatorAddress);
+    setOrDelete('legal_contact_email', payload.legal.contactEmail);
+    setOrDelete('legal_contact_phone', payload.legal.contactPhone);
+    setOrDelete('hosting_location', payload.legal.hostingLocation);
   }
 
   if (payload.geo) {
     if (payload.geo.clearOrsApiKey) {
-      setInstanceSetting('ors_api_key', '');
+      setInstanceSetting('ors_api_key', null);
     } else if (payload.geo.orsApiKey !== undefined && payload.geo.orsApiKey.trim() !== '') {
       setInstanceSetting('ors_api_key', payload.geo.orsApiKey.trim());
     }
-    if (payload.geo.photonApiUrl !== undefined) {
-      setInstanceSetting('photon_api_url', payload.geo.photonApiUrl.trim());
-    }
-    if (payload.geo.nominatimApiUrl !== undefined) {
-      setInstanceSetting('nominatim_api_url', payload.geo.nominatimApiUrl.trim());
-    }
+    setOrDelete('photon_api_url', payload.geo.photonApiUrl);
+    setOrDelete('nominatim_api_url', payload.geo.nominatimApiUrl);
     if (payload.geo.nominatimEnabled !== undefined) {
       setInstanceSetting('nominatim_enabled', payload.geo.nominatimEnabled ? 'true' : 'false');
     }
   }
 
   if (payload.email) {
-    if (payload.email.smtpHost !== undefined) {
-      setInstanceSetting('smtp_host', payload.email.smtpHost.trim());
-    }
+    setOrDelete('smtp_host', payload.email.smtpHost);
     if (payload.email.smtpPort !== undefined) {
       setInstanceSetting('smtp_port', String(payload.email.smtpPort));
     }
     if (payload.email.smtpSecure !== undefined) {
       setInstanceSetting('smtp_secure', payload.email.smtpSecure ? 'true' : 'false');
     }
-    if (payload.email.smtpUser !== undefined) {
-      setInstanceSetting('smtp_user', payload.email.smtpUser.trim());
-    }
+    setOrDelete('smtp_user', payload.email.smtpUser);
     if (payload.email.clearSmtpPass) {
-      setInstanceSetting('smtp_pass', '');
+      setInstanceSetting('smtp_pass', null);
     } else if (payload.email.smtpPass !== undefined && payload.email.smtpPass.trim() !== '') {
       setInstanceSetting('smtp_pass', payload.email.smtpPass.trim());
     }
-    if (payload.email.smtpFrom !== undefined) {
-      setInstanceSetting('smtp_from', payload.email.smtpFrom.trim());
-    }
-    if (payload.email.appUrl !== undefined) {
-      setInstanceSetting('app_url', payload.email.appUrl.trim());
-    }
+    setOrDelete('smtp_from', payload.email.smtpFrom);
+    setOrDelete('app_url', payload.email.appUrl);
   }
 
   if (payload.feedback) {
-    if (payload.feedback.githubRepo !== undefined) {
-      setInstanceSetting('github_repo', payload.feedback.githubRepo.trim());
-    }
+    setOrDelete('github_repo', payload.feedback.githubRepo);
     if (payload.feedback.clearGithubToken) {
-      setInstanceSetting('github_token', '');
+      setInstanceSetting('github_token', null);
     } else if (
       payload.feedback.githubToken !== undefined &&
       payload.feedback.githubToken.trim() !== ''
@@ -327,15 +312,13 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
         payload.feedback.feedbackRelayForwarding ? 'true' : 'false'
       );
     }
-    if (payload.feedback.feedbackRelayUrl !== undefined) {
-      setInstanceSetting('feedback_relay_url', payload.feedback.feedbackRelayUrl.trim());
-    }
+    setOrDelete('feedback_relay_url', payload.feedback.feedbackRelayUrl);
   }
 
   if (payload.push) {
     if (payload.push.clearVapidKeys) {
-      setInstanceSetting('vapid_public_key', '');
-      setInstanceSetting('vapid_private_key', '');
+      setInstanceSetting('vapid_public_key', null);
+      setInstanceSetting('vapid_private_key', null);
     } else {
       if (payload.push.vapidPublicKey !== undefined && payload.push.vapidPublicKey.trim() !== '') {
         setInstanceSetting('vapid_public_key', payload.push.vapidPublicKey.trim());
@@ -347,9 +330,7 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
         setInstanceSetting('vapid_private_key', payload.push.vapidPrivateKey.trim());
       }
     }
-    if (payload.push.vapidSubject !== undefined) {
-      setInstanceSetting('vapid_subject', payload.push.vapidSubject.trim());
-    }
+    setOrDelete('vapid_subject', payload.push.vapidSubject);
   }
 
   return getAllAdminSettings();

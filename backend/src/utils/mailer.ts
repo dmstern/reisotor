@@ -18,7 +18,9 @@ export function isEmailVerificationRequired(): boolean {
 
 export function getAppUrl(): string {
   const url =
-    getEffectiveSetting('app_url', 'APP_URL') || process.env.BASE_URL || 'http://localhost:5173';
+    getEffectiveSetting('app_url', 'APP_URL') ||
+    (process.env.BASE_URL && process.env.BASE_URL.startsWith('http') ? process.env.BASE_URL : '') ||
+    'http://localhost:5173';
   return url.replace(/\/+$/, '');
 }
 
