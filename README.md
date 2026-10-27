@@ -94,7 +94,7 @@ Web-App zur gemeinsamen Reiseplanung – ein zentraler Ort für alles rund um De
 
 Im Juli 2026 wollte ich vor allem eine coole App haben, mit der ich unseren Italien-Urlaub mit meiner Freundin planen kann. Statt Miro-Boards, Excel-Listen oder vertreuten Zettel sollte alles an einem Ort sein, was wir für Planung brauchten, wo wir Ideen festhalten konnten und auch während des Urlaub immer wieder rein schauen und kleine digitale Souvenirs speichern konnten.
 Aber die meisten Apps, die man so findet, können entweder zu wenig oder zu viel oder eben nicht genau das, was ich brauchte. Außerdem laufen die in irgendeiner Cloud, wo niemand weiß, was mit den eigenen Daten passiert. Ich entwickle seit ca. 20 Jahren Webseiten (also seit dem Teenager-Alter). Und hätte ich keinen Vollzeitjob und jede Menge Freizeit, hätte sie vor ein paar Jahren vermutlich noch komplett selbst programmiert. Aber wir lebel gerade in einer aufregenden (und auch leicht dystopischen) Zeit, wo Nachrichten über sich selbstständig machende KI-Agenten fast schon zum Alltag gehören, aber man sich eben auch mit ein paar Prompts eine App nach eigenem Geschmack von einer KI zusammenzimmern lassen kann.
-Und da ich eh schon lang mal dieses "agentic coding" ausprobieren wollte, hab kurzer Hand mal ein paar Euros in den Claude-Code-Slot geschmissen und drauf los gepromptet, meinen 14-Jahre alten RaspberryPi aus der Schublade geholt und ihm ein zweites Leben als kleinen Mini-Server für das Reisotor-Backend geschenkt. 
+Und da ich eh schon lang mal dieses "agentic coding" ausprobieren wollte, hab kurzer Hand mal ein paar Euros in den Claude-Code-Slot geschmissen und drauf los gepromptet, meinen 14-Jahre alten RaspberryPi aus der Schublade geholt und ihm ein zweites Leben als kleinen Mini-Server für das Reisotor-Backend geschenkt.
 Meine Freundin machte Augen als sie die erste Version sah. Ich bin großer Roboter-Fan seit meiner Kindheit und habe inzwischen auch meine Freundin damit angesteckt. Sie sagt, es muss natürlich "Robotor" heißen (mit Betonung auf der zweiten Silbe). Und so wurde aus dem kleinen Reise-Helfer natürlich der "Reisotor".
 Er wurde also weiter gepflegt und mit inhalten gefüttert und etwa eine Woche vor dem Urlaub hab ich dann schnell noch die mobile Claude App an das GitHub Repo angebunden, sodass ich auch im Urlaub zwischen Strand und Bar schnell noch ein paar Bugfix-Deployments hinterher schieben konnte.
 
@@ -103,7 +103,7 @@ Inzwischen arbeite ich mit Antigravity von Google, weil ich eh schon für Google
 
 So ist nun mit dem Reisotor eine kleine Open-Source-App entstanden, die du frei herunterladen kannst, auf deinem eigenen alten RasperryPi oder einem NAS oder einem Server hosten kannst und musst deine Daten an niemanden weiter geben.
 
-*Transparenzhinweis: Dieser persönliche Abschnitt wurde ohne KI verfasst. Ansonsten ist hier alles an Doku, App-Texten etc. von der KI geschrieben.*
+_Transparenzhinweis: Dieser persönliche Abschnitt wurde ohne KI verfasst. Ansonsten ist hier alles an Doku, App-Texten etc. von der KI geschrieben._
 
 ## 🌐 Angebundene externe Dienste & APIs
 
