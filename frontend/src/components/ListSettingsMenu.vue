@@ -336,4 +336,9 @@ function resetDefaults() {
   color: var(--color-danger);
   background: var(--color-hover);
 }
+
+.reset-settings-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
 </style>

@@ -93,13 +93,13 @@ const store = useBudgetStore();
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
 .note {
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
 }
 
 .row-amount {
@@ -110,7 +110,7 @@ const store = useBudgetStore();
 .row-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   flex-wrap: wrap;
   flex-shrink: 0;
 }

@@ -132,56 +132,49 @@ Bis kurz vor einem Release werden oft noch Bugs behoben, neue Funktionen fertigg
 
 ---
 
-### Das 4-Phasen-Modell des Release-Gates
+### Das Modell des Release-Gates (1 Orchestrator-Chat + Sequenzielle Subagenten pro Team)
 
-Analog zum Komponenten-Refactoring wird das Pre-Release-Gate in vier streng getrennte Phasen unterteilt:
+> [!NOTE]
+> **1 Chat für dich – automatische Kontext-Isolation unter der Haube!**
+> Du startest das Audit in **einem einzigen Chat** (z. B. mit `Release Audit Auto` oder _„Mach das Pre-Release-Audit fertig“_). Damit das Kontextfenster trotzdem niemals vollläuft oder unpräzise wird, liest der Haupt-Agent (Orchestrator) die Komponenten **nicht** selbst ein, sondern spawnt **nacheinander (sequenziell) für jedes Team einen eigenen `self`-Subagenten** mit einem 100 % frischen Kontextfenster. Jeder Subagent prüft, poliert und committet sein Team isoliert und gibt nur eine kompakte Befundtabelle an den Orchestrator zurück. Am Ende führt der Orchestrator einmalig das **`Release Audit Gate`** (`npm run check`, `test:a11y`) aus, aktualisiert den PR und präsentiert dir den fertigen Gesamtbericht.
 
 ```mermaid
 flowchart TD
-    P0["<b>Phase 0: Visuelle Inspektion & Triage (Read-Only!)</b><br/><i>5 Prüf-Dimensionen pro Domäne. Kein Code wird geändert!</i>"]
-    P0 --> P1["<b>Phase 1: Scope-Freeze & Triage-Freigabe</b><br/><i>Mensch/Lead bewertet Befunde: Freigabe vs. Einfrieren</i>"]
-    P1 --> P2["<b>Phase 2: Minimal-Invasive Härtung & Polish</b><br/><i>Chirurgische CSS-/Token-Fixes. Keine Architektur-Umbauten!</i>"]
-    P2 --> P3["<b>Phase 3: Finales Release-Gate</b><br/><i>Re-Verifikation, Axe-A11y, Typecheck, Lint, Release-Notes-Check</i>"]
+    Start["<b>Du im Haupt-Chat:</b><br/><i>Release Audit Auto</i>"] --> Orch["<b>Orchestrator-Agent</b><br/><i>Prüft offene/betroffene Teams via git log / gh pr view</i>"]
+    subgraph Subagents["<b>Sequenzielle Subagenten (jeweils frisches Kontextfenster!)</b>"]
+        T1["<b>Subagent Team X</b><br/><i>1. test:audit & 5 Dimensionen<br/>2. Chirurgische CSS-/Token-Fixes<br/>3. typecheck, eslint & git commit</i>"]
+    end
+    Orch -->|Spawnt nacheinander pro Team| T1
+    T1 -->|Kompakte Befund-/Fix-Tabelle| Orch
+    Orch -->|Alle Teams fertig| Gate["<b>Finales Release-Gate (1x am Ende)</b><br/><i>npm run check, Axe-A11y, PR-Update & Push</i>"]
+    Gate --> Done["<b>Gesamtbericht an dich</b><br/><i>Ready to merge!</i>"]
 ```
 
-### Interaktions-Ablauf in der Praxis (Mensch & Agent)
-
-Folgendes Sequenzdiagramm veranschaulicht das Zusammenspiel zwischen Entwickler:in und Agenten über die Phasen hinweg:
+### Interaktions-Ablauf in der Praxis (Fire & Forget mit sauberen Leitplanken)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Du as Du (Entwickler:in)
-    participant A as Agent (Chat 1: Triage)
-    participant B as Agent (Frischer Chat 2: Fix)
+    participant O as Orchestrator (Haupt-Chat)
+    participant S as Subagent (je Team frisch)
 
-    Du->>A: "Mach ein Pre-Release-Audit" (oder "Release Audit Assess: Team 5")
-    Note over A: Phase 0: Read-Only Check!<br/>320px/390px, Popovers, Hover, Tokens.<br/>0 Zeilen Code geändert.
-    A-->>Du: Ampel-Tabelle (🔴 1 Blocker, 🟡 2 Polish, 🟢 3 OK)<br/>"Bitte freigeben: Was soll in Phase 2 gefixt werden?"
-
-    Du->>A: "Punkt 1 (Betrag bricht um) fixen, Rest lassen."
-    Note over A: Scope-Freeze & Handoff-Hinweis
-    A-->>Du: "Verstanden. Für Phase 2 bitte frischen Chat öffnen:<br/>👉 Release Audit Fix: Team 5"
-
-    Du->>B: "Release Audit Fix: Team 5"
-    Note over B: Phase 2: Chirurgischer CSS-Fix,<br/>sofortiger Test, sauberer Commit.
-    B-->>Du: "Fix verifiziert & committet."
-
-    Du->>B: "Release Audit Gate"
-    Note over B: Phase 3: Typecheck, Lint,<br/>A11y (Axe), Release-Notes-Check.
-    B-->>Du: "Alle Prüfungen grün. Bereit für Release!"
+    Du->>O: "Release Audit Auto" (bzw. "Mach Team 4 bis 6 fertig")
+    Note over O: Ermittelt offene Teams (z. B. Team 4, 5, 6)<br/>Liest selbst KEINEN Komponenten-Code!
+    loop Für jedes offene Team (sequenziell!)
+        O->>S: invoke_subagent("self") für Team X
+        Note over S: Frischer Kontext!<br/>1. test:audit & 5 Dimensionen<br/>2. Chirurgische CSS-/Token-Fixes<br/>3. typecheck, eslint & git commit
+        S-->>O: Kurze Befund-/Fix-Tabelle + Commit-Hash
+    end
+    Note over O: Führt Finales Gate aus:<br/>npm run check & npm run test:a11y<br/>Aktualisiert PR (gh pr edit) & git push
+    O-->>Du: Konsolidierte Gesamt-Bilanz aller Teams + PR-Link
 ```
 
-#### Wann du reviewen und wann du einen neuen Chat öffnen solltest:
+#### Warum die Subagenten strikt nacheinander (sequenziell) laufen müssen:
 
-1. **Nach Phase 0 (Dein Review & Scope-Freeze):**
-   - Der Agent liefert die Ampel-Befundtabelle (🔴 Blocker, 🟡 Polish, 🟢 OK).
-   - Du entscheidest kurz und formlos im Chat: _„Punkt 1 und 2 freigegeben, Punkt 3 lassen wir so.“_
-2. **Neuer Chat für Phase 2 (Token- & Kontext-Schutz):**
-   - Der Triage-Agent beendet Phase 0 mit einem expliziten Handoff-Hinweis und gibt den passenden Trigger für den frischen Chat aus (`Release Audit Fix: Team X`).
-   - Im neuen Chat startet der Fix-Agent ohne den Ballast der vorherigen Test-Logs und konzentriert sich rein auf den minimal-invasiven CSS-Code.
-3. **Abschluss mit Phase 3:**
-   - Direkt im selben Chat nach den Fixes (oder separat) via `Release Audit Gate` alle automatisierten Schranken prüfen lassen.
+1. **Keine Port- & DB-Kollisionen bei Playwright:** `npm run test:audit` nutzt feste Test-Ports (3100/5273) und eine gemeinsame E2E-SQLite-DB. Parallele Subagenten würden sich gegenseitig abschießen.
+2. **Saubere Git-Historie ohne `.git/index.lock`:** Da alle Teams im selben Worktree und Branch arbeiten, erzeugt die sequenzielle Abarbeitung pro Team genau einen sauberen, atomaren Commit (`fix(ui): polish <team> ...`).
+3. **Sicherheitsschranke gegen Aktionismus:** Jeder Subagent darf ausschließlich risikoarme CSS-/Token-/Container-Fixes durchführen. Sollte ein Befund einen tieferen strukturellen Umbau erfordern, lässt der Subagent ihn unberührt und markiert ihn in seiner Rückmeldung als `⏭️ Übersprungen (Nach-Release)`.
 
 ---
 
@@ -227,125 +220,91 @@ Jeder Prüfdurchlauf analysiert systematisch folgende fünf Kriterien:
 
 Fällt im Chat eine allgemeine Aufforderung wie:
 
+- `Release Audit Auto`
 - _„Mach ein Pre-Release-Audit“_
-- _„Pre-Release Audit starten“_
-- _„Wir bereiten ein Release vor, auditier mal die App“_
+- _„Pre-Release Audit starten / fortsetzen“_
 
-**Striktes Protokoll für den Agenten:**
+**Striktes Orchestrator-Protokoll für den Haupt-Agenten:**
 
-1. **Kein blinder Komplettdurchlauf:** Der Agent darf **niemals unaufgefordert alle 6 Teams auf einmal** in einer Session abfeuern (Gefahr von Kontext-Kollaps und Sycophancy).
-2. **Git-Delta ermitteln:** Er ermittelt per Git, welche Frontend-Bereiche seit dem letzten Release-Tag tatsächlich verändert wurden:
-   `git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`
-3. **Fokussierte Empfehlung & Roadmap:** Er ordnet die Änderungen den betroffenen Teams zu (z. B. _„Seit v1.3.0 wurden vor allem Finanzen (Team 5) und Notizen/Listen (Team 4) verändert“_) und schlägt vor:
-   - **Gezielter Check (Empfohlen):** Nur die veränderten Teams durchlaufen (spart massiv Tokens und Zeit).
-   - **Vollständiger Meilenstein-Check:** Schrittweise von Team 1 bis 6.
-4. **Sofortige Führung:** Der Agent schlägt direkt den ersten konkreten Schritt vor oder startet auf Bestätigung mit Phase 0 (`Release Audit Assess: Team <X>`).
+1. **Kontext-Disziplin im Haupt-Chat:** Der Haupt-Agent darf **niemals selbst alle 6 Teams im eigenen Kontextfenster** untersuchen und bearbeiten (Gefahr von Kontext-Kollaps und Attention Dilution). Er agiert rein als **Orchestrator**.
+2. **Status & Git-Delta ermitteln:**
+   - Existiert bereits ein laufender Audit-Branch/PR (`gh pr view` / `git log main..HEAD --oneline`), prüft der Orchestrator, welche Teams bereits erledigt sind und welche noch ausstehen.
+   - Bei einem Neustart ermittelt er per Git, welche Frontend-Bereiche seit dem letzten Release-Tag verändert wurden (`git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`), oder nimmt auf Wunsch alle Teams 1–6.
+3. **Sequenzielle Subagenten-Orchestrierung (`invoke_subagent`):**
+   - Für jedes ausstehende Team spawnt der Orchestrator **nacheinander (immer erst warten, bis das vorherige Team fertig ist!)** einen `self`-Subagenten (`TypeName: "self"`, `Workspace: "inherit"`) mit den Aufgaben aus dem Abschnitt _„Arbeitsauftrag pro Team-Subagent“_.
+4. **Finales Gate & Abschlussbericht:**
+   - Sobald das letzte Team abgeschlossen ist, führt der Orchestrator das `Release Audit Gate` (`npm run check`, `npm run test:a11y`) aus, aktualisiert den PR (`gh pr edit`), pusht den Branch (`git push`) und gibt die konsolidierte Gesamt-Übersicht aller Teams an die Nutzerin / den Nutzer aus.
 
 ---
 
 ### Kurz-Trigger für das Release-Gate
 
-| Phase       | Kurz-Trigger                            | Beschreibung                                                                                             |
-| :---------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------- |
-| **Phase 0** | `Release Audit Assess: <Team \| Route>` | **Reine Inspektion (Read-Only):** Testet die 5 Dimensionen, ändert keinen Code, gibt Befund-Tabelle aus. |
-| **Phase 1** | _(Menschliche Entscheidung)_            | **Scope-Freeze:** Auswahl der freigegebenen Befunde (Blocker + risikoarmer Polish).                      |
-| **Phase 2** | `Release Audit Fix: <Team \| Route>`    | **Chirurgische Fixes:** Behebt ausschließlich freigegebene Punkte minimal-invasiv via Tokens/CSS.        |
-| **Phase 3** | `Release Audit Gate`                    | **Finales Gate:** Führt `npm run check`, E2E-, A11y- und Release-Notes-Tests aus.                        |
+| Modus                          | Kurz-Trigger                     | Beschreibung                                                                                                                                                                    |
+| :----------------------------- | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Vollautomatisch (Default)**  | `Release Audit Auto`             | **Orchestrator + Subagenten:** Arbeitet alle offenen/betroffenen Teams nacheinander in isolierten Subagenten ab, führt am Ende das `Release Audit Gate` aus und updated den PR. |
+| **Einzel-Team** _(optional)_   | `Release Audit: <Team \| Route>` | Prüft, poliert und committet genau ein einzelnes angegebenes Team direkt.                                                                                                       |
+| **Abschluss-Gate** _(einzeln)_ | `Release Audit Gate`             | Führt isoliert `npm run check`, A11y- (Axe) und Release-Notes-Prüfungen für die Merge-Freigabe aus.                                                                             |
 
 ---
 
-### Phase 0: Visuelle Inspektion & Triage (`Release Audit Assess: <Team | Route>`)
+### Arbeitsauftrag pro Team-Subagent (`Release Audit: <Team | Route>`)
 
-Kopiere diesen Prompt oder nutze den Kurz-Trigger, um eine Domäne auditieren zu lassen:
+Diesen Auftrag übergibt der Orchestrator an jeden sequenziellen Team-Subagenten (bzw. führt ihn bei direktem Einzel-Aufruf `Release Audit: Team X` aus):
 
 ```text
-Release Audit Assess: [Team 1-6 oder Route, z. B. Team 5 (/trip/1/budget)]
+Release Audit: [Team 1-6, z. B. Team 4 (Listen, Notizen & Content: /trip/1/packing, /trip/1/shopping, /trip/1/todo, /trip/1/notes, /trip/1/diary)]
 
-Führe Phase 0 (Visuelle Inspektion & Triage) für den angegebenen Bereich durch.
+Führe das komplette Release-Audit (Inspektion -> Chirurgische Fixes -> Verifikation & Eigen-Review -> Commit) für dieses Team durch.
 
-STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
-- Dies ist eine REINE INSPEKTION (Read-Only). Ändere KEINE einzige Datei im Repository!
-- Nimm KEINE Refactorings vor und schreibe keinen Produktivcode.
-- Sei schonungslos objektiv: Bestätige nicht einfach, dass alles gut aussieht, sondern suche aktiv nach Enge-Problemen, abgeschnittenen Popovers, falschen Z-Indizes und fehlenden Hover-Effekten.
+STRIKTE LEITPLANKEN:
+- Keine Architektur-Refactorings: Keine neuen Props/Emits, keine Store-Umbauten, keine Komponenten-Zerlegung!
+- Ausschließlich risikoarme, zielgerichtete CSS-/Template-/Token-Korrekturen:
+  * Design-Tokens (--space-*, --color-*, --radius-pill statt 50% oder magischer Pixel)
+  * Container-Queries (@container app-main statt @media für Komponenten innerhalb von .app-main)
+  * Enge-Resilienz (min-width: 0, flex-wrap: wrap, overflow-wrap: break-word, white-space: nowrap für Badges/Beträge)
+  * Overlays & Popovers (z-index, kein Abschneiden durch overflow: hidden)
+  * Interaktionen (:hover, :focus-visible Ringe via --color-focus-ring, Touch-Targets >= 44px)
+- Sicherheitsschranke: Falls ein Befund einen tieferen strukturellen Umbau erfordern würde, führe ihn NICHT eigenmächtig durch, sondern vermerke ihn in der Tabelle als "⏭️ Übersprungen (Nach-Release)".
 
 Vorgehensweise:
-1. Starte den fokussierten E2E-Layout-Check (bei Multi-Routen-Teams komma-separiert):
+1. E2E-Layout-Audit ausführen (bei Multi-Routen-Teams komma-separiert):
    AUDIT_ROUTE=<route1,route2> npm run test:audit
-2. Untersuche den Quellcode der relevanten Vue-Komponenten auf die 5 Prüf-Dimensionen:
-   - Enge-Resilienz (320px / 390px: Zahlen, Badges, Tabellen, nowrap vs. wrap)
-   - Overlays & Popovers (Z-Index, Clipping bei overflow: hidden, Teleport-Nutzung)
-   - Interaktionen (Hover-Effekte, Focus-Visible-Ringe, Touch-Targets >= 44px)
-   - Token-Konsistenz (Abstände via --space-*, Pillen via --radius-pill, Schriftgrößen)
-   - Desktop-Drawer (Inhaltsverhalten bei 500px Kalenderschublade)
+2. Quellcode der relevanten Vue-Komponenten systematisch auf die 5 Prüf-Dimensionen untersuchen.
+3. Gefundene Blocker (🔴) und klare Polish-Punkte (🟡) direkt minimal-invasiv im Code beheben.
+4. Verifikation & Eigen-Review gegen DESIGN.md:
+   - Falls Code geändert wurde: Erneut `AUDIT_ROUTE=<route1,route2> npm run test:audit` ausführen.
+   - `npm run typecheck` und `npx -y eslint <geänderte-dateien>` prüfen.
+   - Formatieren (`npx -y prettier --write <geänderte-dateien>`) und sauber committen (`git commit -m "fix(ui): polish <domäne> layout & token resilience"`).
 
-Ergebnis:
-Erstelle eine strukturierte Befund-Tabelle nach folgendem Format:
+Ergebnis (Rückmeldung an den Orchestrator bzw. Nutzer):
+Gib eine kompakte Übersichtstabelle und den Commit-Hash zurück:
 
-| Status | Route / Komponente | Viewport / Zustand | Befund / Problem | Minimal-invasiver Lösungsvorschlag |
+| Status | Route / Komponente | Viewport / Zustand | Befund | Durchgeführte Maßnahme |
 | :--- | :--- | :--- | :--- | :--- |
-| 🔴 Blocker | `/trip/1/budget` | 320px | Betrag bricht zweizeilig um | `white-space: nowrap` auf Badge |
-| 🟡 Polish | `/trip/1/spots` | Desktop Hover | Kein `:focus-visible` Ring auf Filter | Outline via `--color-focus-ring` ergänzen |
-| 🟢 OK | `/trip/1/calendar` | 1280px (500px Drawer) | Spaltenbreite passt sich harmonisch an | Kein Handlungsbedarf |
-
-Gib am Ende eine kurze Zusammenfassung: Anzahl Blocker (🔴), Anzahl Polish (🟡), Empfehlung für Phase 1.
+| 🛠️ Behoben (🔴/🟡) | `/trip/1/budget` | 320px | Betrag bricht um | `white-space: nowrap` ergänzt |
+| 🟢 OK | `/trip/1/notes` | 1280px (500px Drawer) | Grid bricht sauber via `@container` um | Kein Handlungsbedarf |
 ```
 
 ---
 
-### Phase 1: Scope-Freeze & Triage-Freigabe
+### Finales Release-Gate (`Release Audit Gate`)
 
-Der Mensch oder Lead-Entwickler sichtet die Befund-Tabelle:
-
-1. **Blocker (🔴):** Müssen vor Release behoben werden (echte Layout-Brüche, unbenutzbare UI).
-2. **Polish (🟡):** Werden freigegeben, wenn sie mit 1–3 Zeilen CSS ohne Nebenwirkungen korrigiert werden können.
-3. **Risikobehaftete Wünsche:** Alles, was ein größeres Komponenten-Refactoring erfordern würde, wird **eingefroren** und auf die Zeit nach dem Release verschoben.
-
----
-
-### Phase 2: Minimal-Invasive Härtung & Polish (`Release Audit Fix: <Team | Route>`)
-
-Kopiere diesen Prompt oder nutze den Kurz-Trigger zur Behebung freigegebener Mängel:
-
-```text
-Release Audit Fix: [Team 1-6 oder Route, z. B. Team 5 (/trip/1/budget)]
-
-Behebe ausschließlich die in Phase 1 freigegebenen Befunde für diesen Bereich.
-
-STRIKTE VERHALTENSREGELN FÜR DIESE PHASE:
-- Maximiere Einfachheit (KISS): Keine Umstrukturierung von Komponenten, keine neuen Props/Emits, keine Store-Änderungen!
-- Ausschließlich zielgerichtete CSS-/Template-Korrekturen:
-  * Design-Tokens (--space-*, --color-*, --radius-pill)
-  * Flex-Verhalten (min-width: 0, flex-wrap: wrap, gap)
-  * Text-Handling (overflow-wrap: break-word, text-overflow: ellipsis, white-space: nowrap)
-  * Popover-Fixes (z-index, Positionierung, evtl. Teleport)
-  * Interaktionen (:hover, :focus-visible Übergänge)
-- Teste jeden Fix sofort gegen:
-  AUDIT_ROUTE=<route> npm run test:audit
-- Formatiere geänderte Dateien:
-  npx -y prettier --write <geänderte-dateien>
-- Schließe mit einem sauberen Commit ab:
-  git commit -m "fix(ui): polish <domäne> layout & popover resilience"
-```
-
----
-
-### Phase 3: Finales Release-Gate (`Release Audit Gate`)
-
-Führt die finale Qualitätssicherung vor dem Tagging/Deployment durch:
+Führt **einmalig ganz am Ende** (nachdem alle Teams abgeschlossen sind) die finale technische Qualitätssicherung vor dem Merge/Tagging durch:
 
 ```text
 Release Audit Gate
 
-Führe das finale Release-Gate durch, um die Stabilität und Sauberkeit des Releases zu zertifizieren.
+Führe das finale Release-Gate durch, um die Gesamtstabilität des Branches nach Abschluss aller Teams zu zertifizieren.
 
 Prüfschritte:
 1. Statisches Gesamt-Gate (Lint, Format, Release-Notes, Typecheck Frontend & Backend): npm run check
 2. Barrierefreiheit (Axe): npm run test:a11y
-3. Layout-Regressionen: AUDIT_ROUTE=/trip/1 npm run test:audit
+3. Layout-Regressionen Stichprobe: AUDIT_ROUTE=/trip/1 npm run test:audit
 
 Ergebnis:
 Gib eine klare Bestätigung im Chat aus:
-- Sind alle Prüfungen grün?
-- Gibt es verbleibende Warnungen?
+- Sind alle automatisierten Prüfungen grün?
+- Gibt es verbleibende Warnungen oder offene Punkte?
 - Ist das Release freigegeben?
+- Falls alle Prüfungen erfolgreich sind: Gib explizit die Bestätigung aus, dass das Pre-Release-Audit für alle Teams vollständig abgeschlossen ist und der PR gemergt werden kann.
 ```

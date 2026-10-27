@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
 import type { CalendarEntry } from '../api/types';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
@@ -39,6 +39,22 @@ const isOpen = ref(false);
 const pickerStyle = ref({ top: '0px', left: '0px' });
 const eventData = computed(() => calendarEventFromEntry(props.entry));
 
+function close() {
+  isOpen.value = false;
+}
+
+watch(isOpen, (open) => {
+  if (open) {
+    window.addEventListener('resize', close, { passive: true });
+  } else {
+    window.removeEventListener('resize', close);
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', close);
+});
+
 async function togglePicker(event: MouseEvent) {
   if (isOpen.value) {
     isOpen.value = false;
@@ -52,7 +68,7 @@ async function togglePicker(event: MouseEvent) {
     align: 'right',
   });
   await nextTick();
-  const menuEl = document.querySelector('.picker-menu') as HTMLElement | null;
+  const menuEl = document.querySelector('.calendar-export-menu') as HTMLElement | null;
   if (menuEl) {
     pickerStyle.value = computePopoverPosition(target, {
       menuWidth: 188,
@@ -83,7 +99,13 @@ function downloadIcs() {
       <span class="calendar-btn-label">{{ label }}</span>
     </Button>
     <Teleport to="body">
-      <PickerMenu v-if="isOpen" :style="pickerStyle" origin="top-right" @close="isOpen = false">
+      <PickerMenu
+        v-if="isOpen"
+        class="calendar-export-menu"
+        :style="pickerStyle"
+        origin="top-right"
+        @close="isOpen = false"
+      >
         <DropdownItem :icon="ACTION_ICONS.apple" label="Apple/iPhone" @click="downloadIcs" />
         <DropdownItem
           :href="googleCalendarHref(eventData)"

@@ -161,16 +161,6 @@ const {
   margin-top: var(--space-2);
 }
 
-.actions-row button[type='submit'] {
-  flex: 1 1 auto;
-}
-
-@media (max-width: 480px) {
-  .actions-row button[type='submit'] {
-    flex: 1 1 100%;
-  }
-}
-
 .spacer {
   flex: 1;
 }

@@ -336,6 +336,12 @@ onMounted(() => {
   color: var(--color-primary-dark);
 }
 
+.weather-source:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs-squircle);
+}
+
 .weather-source.static {
   text-decoration: none;
   cursor: default;

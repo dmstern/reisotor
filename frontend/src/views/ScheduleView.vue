@@ -272,10 +272,20 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
+@container app-main (max-width: 480px) {
+  .calendar-drawer-content.standalone {
+    padding-inline: var(--space-3);
+  }
+}
+
 .calendar-drawer-content h2 {
   margin: 0;
   font-size: var(--font-size-lg);
   color: var(--color-primary-dark);
+}
+
+.calendar-drawer-content:not(.standalone) h2 {
+  padding-right: 76px;
 }
 
 .weeks {

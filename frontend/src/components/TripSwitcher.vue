@@ -272,7 +272,7 @@ function selectAndClose(id: number) {
   gap: 6px;
   background: var(--color-primary-tint);
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 14px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -305,6 +305,11 @@ function selectAndClose(id: number) {
   border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
+.switcher-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .trip-switcher.is-docked {
   margin: 0 var(--space-2);
 }
@@ -329,13 +334,13 @@ function selectAndClose(id: number) {
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal, 1000);
   background: transparent;
 }
 
 .dropdown {
   position: fixed;
-  z-index: 1001;
+  z-index: var(--z-popover, 1100);
   min-width: 240px;
   max-width: min(340px, calc(100vw - 16px));
   max-height: min(70vh, 480px);
@@ -437,5 +442,10 @@ function selectAndClose(id: number) {
 
 .manage-trips-btn:hover {
   background: var(--color-hover);
+}
+
+.manage-trips-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 </style>

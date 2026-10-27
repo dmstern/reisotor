@@ -156,7 +156,7 @@ function openMembers(trip: Trip) {
 
 .restricted-hint {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 
@@ -190,7 +190,7 @@ function openMembers(trip: Trip) {
   margin: -4px -6px;
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
   cursor: pointer;
@@ -227,30 +227,13 @@ function openMembers(trip: Trip) {
   overscroll-behavior: contain;
 }
 
-.empty-state::-webkit-scrollbar {
-  width: 6px;
-}
-
-.empty-state::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.empty-state::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: var(--radius-pill);
-}
-
-.empty-state::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
-}
-
 .empty-state h2 {
   margin: 0;
 }
 
 .invite-hint {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   margin-top: var(--space-2);
 }
 </style>

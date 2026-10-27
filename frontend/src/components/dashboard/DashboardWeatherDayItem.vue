@@ -85,6 +85,11 @@ const itemTitle = computed(() => {
   transform: translateY(-2px);
 }
 
+.weather-day.clickable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* Bereits vergangene Urlaubstage (Rückblick-Modus) optisch abgesetzt */
 .weather-day.past {
   color: var(--color-text-muted);

@@ -117,6 +117,11 @@ const categoryMeta = computed(
   box-shadow: var(--shadow-sm);
 }
 
+.item.clickable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .item-leading {
   display: flex;
   align-items: center;

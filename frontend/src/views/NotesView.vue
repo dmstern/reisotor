@@ -511,9 +511,11 @@ async function remove(id: number) {
 
 .note-head h3 {
   flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: 1rem;
   color: var(--color-primary-dark);
+  overflow-wrap: break-word;
 }
 
 .note-actions {
@@ -541,7 +543,8 @@ async function remove(id: number) {
 
 .syntax-hint code {
   background: var(--color-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
   padding: 1px 5px;
   font-size: 0.78rem;
 }

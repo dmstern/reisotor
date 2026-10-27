@@ -487,19 +487,4 @@ async function handleDelete() {
 .spacer {
   flex: 1;
 }
-
-@container (max-width: 360px) {
-  .actions-row {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .actions-row > * {
-    width: 100%;
-  }
-
-  .spacer {
-    display: none;
-  }
-}
 </style>

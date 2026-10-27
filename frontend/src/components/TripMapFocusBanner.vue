@@ -3,7 +3,6 @@ import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import { computed, ref, watch } from 'vue';
 import type { Excursion, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { getTourRoleIconDef } from '../utils/travelRole';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -204,6 +203,11 @@ watch(
   background: var(--color-hover);
 }
 
+.focus-banner-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .focus-banner-thumb {
   width: 28px;
   height: 28px;
@@ -299,5 +303,10 @@ watch(
   color: var(--color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.focus-banner .focus-title-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>
