@@ -45,13 +45,22 @@ updates:
           - 'minor'
           - 'patch'
     ignore:
-      # @fastify/cookie v11+ setzt Fastify v5 (fastify-plugin ^6.0.0) voraus; Backend läuft aktuell auf Fastify v4.
+      # Fastify v5 und die zugehörigen @fastify/*-Major-Updates müssen gemeinsam migriert werden (siehe Issue #578),
+      # da isolierte Einzel-PRs an Peer-Dependency-Konflikten (fastify-plugin ^5.x / ^6.x) scheitern.
+      - dependency-name: 'fastify'
+        versions: ['>= 5.0.0']
       - dependency-name: '@fastify/cookie'
+        versions: ['>= 10.0.0']
+      - dependency-name: '@fastify/cors'
+        versions: ['>= 10.0.0']
+      - dependency-name: '@fastify/session'
         versions: ['>= 11.0.0']
+      - dependency-name: '@fastify/static'
+        versions: ['>= 8.0.0']
       # Für better-sqlite3 v13 fehlen im Playwright-CI-Container (Ubuntu Jammy / Node 22) vorkompilierte Binaries (prebuild-install),
-      # wodurch node-gyp mangels installiertem 'make' abbricht.
+      # wodurch node-gyp mangels installiertem 'make' abbricht. Ab v14.0.0 prüft Dependabot automatisch erneut.
       - dependency-name: 'better-sqlite3'
-        versions: ['>= 13.0.0']
+        versions: ['>= 13.0.0, < 14.0.0']
 
   # 3. Frontend npm (Vue 3, Vite, Storybook)
   - package-ecosystem: 'npm'
@@ -94,9 +103,9 @@ updates:
           - 'patch'
     ignore:
       # Für better-sqlite3 v13 fehlen im Playwright-CI-Container (Ubuntu Jammy / Node 22) vorkompilierte Binaries (prebuild-install),
-      # wodurch node-gyp mangels installiertem 'make' abbricht.
+      # wodurch node-gyp mangels installiertem 'make' abbricht. Ab v14.0.0 prüft Dependabot automatisch erneut.
       - dependency-name: 'better-sqlite3'
-        versions: ['>= 13.0.0']
+        versions: ['>= 13.0.0, < 14.0.0']
 
   # 5. GitHub Actions Workflows
   - package-ecosystem: 'github-actions'
