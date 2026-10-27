@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcrypt';
 import type { FastifyInstance } from 'fastify';
 import type Database from 'better-sqlite3';
@@ -28,6 +28,32 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
   }
 
   beforeAll(async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              type: 'FeatureCollection',
+              features: [
+                {
+                  type: 'Feature',
+                  geometry: { type: 'Point', coordinates: [16.37, 48.2] },
+                  properties: {
+                    name: 'Stephansdom',
+                    city: 'Wien',
+                    country: 'Österreich',
+                    osm_key: 'tourism',
+                    osm_value: 'attraction',
+                  },
+                },
+              ],
+            }),
+        })
+      )
+    );
+
     const built = await buildTestApp();
     app = built.app;
     db = built.db;
@@ -66,9 +92,11 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     });
   });
 
-  afterAll(() => {
+  afterAll(async () => {
+    vi.unstubAllGlobals();
     delete process.env.VAPID_PUBLIC_KEY;
     delete process.env.VAPID_PRIVATE_KEY;
+    if (app) await app.close();
   });
 
   it('lehnt POST /tracks für Nicht-Mitglieder mit 403 ab', async () => {

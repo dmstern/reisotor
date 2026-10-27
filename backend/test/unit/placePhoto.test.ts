@@ -8,7 +8,6 @@ import {
   isTitleMatch,
   buildPhotoCacheKey,
   buildSearchQueries,
-  buildAirportSearchQueries,
   isAirportQuery,
 } from '../../src/utils/placePhoto.js';
 

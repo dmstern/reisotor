@@ -1,13 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   haversineMeters,
-  calculateTrackMetrics,
   inferMovementType,
   extractPlaceLabel,
   formatPrepositionAndPlace,
   formatTimeBasedTrackTitle,
   generateSmartTrackTitle,
-  type ExtractedPlace,
 } from '../../src/utils/trackTitleGenerator.js';
 import type { ReverseGeocodeResult } from '../../src/utils/places.js';
 
