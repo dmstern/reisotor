@@ -1,5 +1,5 @@
 import { computed, watch, type Ref } from 'vue';
-import type { TodoItem, TodoPriority, User, Period, Trip } from '../api/types';
+import type { TodoItem, TodoPriority, User, Trip } from '../api/types';
 import { usePersistedRef } from './usePersistedRef';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { PERIOD_META, computePeriod } from '../utils/period';

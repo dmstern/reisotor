@@ -11,9 +11,9 @@ describe('Combobox', () => {
     setActivePinia(createPinia());
   });
 
-  function render(props: Record<string, unknown>) {
+  function render(props: any) {
     const app = createApp({
-      render: () => h(Combobox, props as any),
+      render: () => h(Combobox, props),
     });
     app.use(createPinia());
     return renderToString(app);
@@ -79,11 +79,11 @@ describe('Combobox', () => {
   });
 
   describe('Keyboard navigation & selection (DOM)', () => {
-    function mountCombobox(props: Record<string, unknown> = {}, slots: Record<string, any> = {}) {
+    function mountCombobox(props: any = {}, slots: any = {}) {
       const container = document.createElement('div');
       document.body.appendChild(container);
       const app = createApp({
-        render: () => h(Combobox, props as any, slots),
+        render: () => h(Combobox, props, slots),
       });
       app.use(createPinia());
       const vm = app.mount(container);

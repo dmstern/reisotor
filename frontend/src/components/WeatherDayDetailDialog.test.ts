@@ -39,7 +39,6 @@ describe('WeatherDayDetailDialog', () => {
     document.body.innerHTML = '';
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function mountComponent(props: any) {
     const container = document.createElement('div');
     document.body.appendChild(container);

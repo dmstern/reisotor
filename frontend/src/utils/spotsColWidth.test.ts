@@ -50,7 +50,7 @@ describe('spotsColWidth', () => {
     });
 
     it('rejects values above MAX_SPOTS_COL_WIDTH', () => {
-      mockStorage.setItem(SPOTS_COL_WIDTH_KEY, '9999');
+      mockStorage.setItem(SPOTS_COL_WIDTH_KEY, String(MAX_SPOTS_COL_WIDTH + 1));
       expect(loadStoredSpotsColWidth(mockStorage)).toBeNull();
     });
 

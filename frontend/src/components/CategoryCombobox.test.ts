@@ -43,9 +43,9 @@ describe('CategoryCombobox', () => {
     vi.restoreAllMocks();
   });
 
-  function render(props: Record<string, unknown>) {
+  function render(props: any) {
     const app = createApp({
-      render: () => h(CategoryCombobox, props as any),
+      render: () => h(CategoryCombobox, props),
     });
     app.use(pinia);
     return renderToString(app);
@@ -71,11 +71,11 @@ describe('CategoryCombobox', () => {
   });
 
   describe('Manage categories footer action', () => {
-    function mountCategoryCombobox(props: Record<string, unknown> = {}) {
+    function mountCategoryCombobox(props: any = {}) {
       const container = document.createElement('div');
       document.body.appendChild(container);
       const app = createApp({
-        render: () => h(CategoryCombobox, props as any),
+        render: () => h(CategoryCombobox, props),
       });
       app.use(pinia);
       const vm = app.mount(container);

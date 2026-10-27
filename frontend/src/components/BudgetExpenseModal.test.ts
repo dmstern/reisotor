@@ -40,6 +40,7 @@ describe('BudgetExpenseModal', () => {
   function mountModal(props: {
     modelValue: boolean;
     expense?: BudgetExpense | null;
+    initialType?: 'expense' | 'income';
     'onUpdate:modelValue'?: (v: boolean) => void;
     onSaved?: () => void;
     onDeleted?: () => void;
@@ -101,7 +102,7 @@ describe('BudgetExpenseModal', () => {
 
   it('calls removeExpense and emits deleted when clicking delete button', async () => {
     const store = useBudgetStore();
-    const removeSpy = vi.spyOn(store, 'removeExpense').mockResolvedValue(undefined as any);
+    const removeSpy = vi.spyOn(store, 'removeExpense').mockResolvedValue(undefined);
     const onDeleted = vi.fn();
 
     const mockExpense: BudgetExpense = {
@@ -120,7 +121,7 @@ describe('BudgetExpenseModal', () => {
       modelValue: true,
       expense: mockExpense,
       onDeleted,
-    } as any);
+    });
     await nextTick();
 
     const deleteBtn = document.querySelector('button.btn--danger') as HTMLButtonElement;
@@ -164,7 +165,7 @@ describe('BudgetExpenseModal', () => {
       modelValue: true,
       expense: null,
       initialType: 'income',
-    } as any);
+    });
     await nextTick();
 
     const titleEl = document.querySelector('.modal-head h2');
@@ -179,7 +180,9 @@ describe('BudgetExpenseModal', () => {
       { id: 1, username: 'Alice', avatar: '👩' },
       { id: 2, username: 'Bob', avatar: '👨' },
     ];
-    const submitSpy = vi.spyOn(store, 'submitExpense').mockResolvedValue({} as any);
+    const submitSpy = vi
+      .spyOn(store, 'submitExpense')
+      .mockResolvedValue({} as unknown as BudgetExpense);
 
     const { cleanUp } = mountModal({ modelValue: true, expense: null });
     await nextTick();
@@ -225,7 +228,9 @@ describe('BudgetExpenseModal', () => {
     store.budgets = [
       { id: 10, trip_id: 1, name: 'Bobs Taschengeld', owner_id: 2, target_amount: 100 },
     ];
-    const submitSpy = vi.spyOn(store, 'submitExpense').mockResolvedValue({} as any);
+    const submitSpy = vi
+      .spyOn(store, 'submitExpense')
+      .mockResolvedValue({} as unknown as BudgetExpense);
 
     const { cleanUp } = mountModal({ modelValue: true, expense: null });
     await nextTick();

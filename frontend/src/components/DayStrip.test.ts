@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createApp, h, nextTick } from 'vue';

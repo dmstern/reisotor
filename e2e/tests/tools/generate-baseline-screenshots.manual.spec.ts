@@ -503,7 +503,7 @@ async function setupScreenshotMocks(page: Page) {
   });
 
   await page.addInitScript(() => {
-    (window as any).__REISOTOR_EXIF_MAP__ = {
+    (window as unknown as Record<string, unknown>).__REISOTOR_EXIF_MAP__ = {
       '/demo/spot-hotel-alfama.jpg': {
         latitude: 38.7125,
         longitude: -9.1298,
