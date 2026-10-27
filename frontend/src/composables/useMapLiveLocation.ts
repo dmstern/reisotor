@@ -5,6 +5,14 @@ import { useLiveSyncStore } from '../stores/liveSync';
 import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore } from '../stores/locationSharing';
 
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return (
+    /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1)
+  );
+}
+
 export function headingFromOrientationEvent(event: DeviceOrientationEvent): number | null {
   const webkitHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number })
     .webkitCompassHeading;
@@ -139,7 +147,12 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
         DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
       }
     ).DeviceOrientationEvent;
-    if (typeof OrientationEventCtor?.requestPermission !== 'function') {
+    // iOS 13+ erfordert eine explizite Nutzergeste (DeviceOrientationEvent.requestPermission()),
+    // daher startet der Kompass auf iOS erst bei Klick auf "Zu meinem Standort springen"
+    // (jumpToMyLocation()). Auf allen anderen Plattformen (Android, Desktop) startet der
+    // Kompass direkt. Neuere Chromium-Versionen (135+) exponieren ebenfalls requestPermission(),
+    // feuern deviceorientation aber ohne vorherigen Aufruf.
+    if (!isIOS() || typeof OrientationEventCtor?.requestPermission !== 'function') {
       startCompass();
     }
   }

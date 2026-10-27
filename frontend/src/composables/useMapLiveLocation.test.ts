@@ -106,5 +106,31 @@ describe('useMapLiveLocation', () => {
       expect(setMapBearing).toHaveBeenCalledWith(270);
       liveLoc.stopCompass();
     });
+
+    it('starts compass listener in initCompassAuto on Chromium/desktop even when DeviceOrientationEvent.requestPermission is present', () => {
+      const users = ref<User[]>([]);
+      const setMapBearing = vi.fn();
+      const originalCtor = (window as unknown as { DeviceOrientationEvent?: unknown })
+        .DeviceOrientationEvent;
+      (window as unknown as { DeviceOrientationEvent?: unknown }).DeviceOrientationEvent = {
+        requestPermission: vi.fn(),
+      };
+
+      const liveLoc = useMapLiveLocation({ users, setMapBearing });
+      liveLoc.mapOrientation.mode = 'heading';
+
+      liveLoc.initCompassAuto();
+
+      const event = new Event('deviceorientation');
+      Object.defineProperty(event, 'alpha', { value: 90 });
+      window.dispatchEvent(event);
+
+      expect(liveLoc.ownHeading.value).toBe(270);
+      expect(setMapBearing).toHaveBeenCalledWith(270);
+      liveLoc.stopCompass();
+
+      (window as unknown as { DeviceOrientationEvent?: unknown }).DeviceOrientationEvent =
+        originalCtor;
+    });
   });
 });
