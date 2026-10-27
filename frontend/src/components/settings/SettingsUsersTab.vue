@@ -6,6 +6,7 @@ import Badge from '../primitives/Badge.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import CreateUserDialog from '../CreateUserDialog.vue';
+import AdminResetPasswordModal from '../AdminResetPasswordModal.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useUserManagement } from '../../composables/useUserManagement';
@@ -19,21 +20,124 @@ const {
   loadingUsers,
   userListError,
   showCreateUserDialog,
+  registrationMode,
+  savingRegistrationMode,
+  resetPasswordTarget,
+  resetPasswordResult,
+  resettingPassword,
+  verifyingEmailId,
+  loadRegistrationMode,
+  updateRegistrationMode,
   loadUserList,
   toggleAdminRole,
+  toggleRestrictedRole,
   deleteUserAccount,
   onUserCreated,
+  openResetPasswordDialog,
+  closeResetPasswordDialog,
+  performResetPassword,
+  verifyUserEmail,
 } = useUserManagement();
 
 onMounted(() => {
   if (auth.user?.is_admin) {
     loadUserList();
+    loadRegistrationMode();
   }
 });
 </script>
 
 <template>
   <div class="users-tab">
+    <Card class="users-card registration-card">
+      <SettingsCardHeader title="Selbstregistrierung" :icon="ACTION_ICONS.filterSettings" />
+      <p class="hint">
+        Steuert, welche Rechte neu registrierte Personen auf der Login-Seite standardmäßig erhalten.
+      </p>
+
+      <div
+        class="registration-mode-options"
+        role="radiogroup"
+        aria-label="Selbstregistrierung Standard-Rechte"
+      >
+        <label
+          for="reg-mode-restricted"
+          class="mode-option"
+          :class="{ active: registrationMode === 'restricted' }"
+        >
+          <input
+            id="reg-mode-restricted"
+            type="radio"
+            name="registrationMode"
+            value="restricted"
+            :checked="registrationMode === 'restricted'"
+            :disabled="savingRegistrationMode"
+            @change="updateRegistrationMode('restricted')"
+          />
+          <div class="mode-content">
+            <span class="mode-title">
+              <strong>Offen als Basis-Konto</strong>
+              <Badge variant="accent-secondary" size="sm">Empfohlen</Badge>
+            </span>
+            <span class="mode-desc">
+              Freunde können sich selbst registrieren und starten mit Basis-Rechten (kein
+              Datei-Upload, max. 1 eigener Urlaub), bis du sie unten per Klick freischaltest.
+            </span>
+          </div>
+        </label>
+
+        <label
+          for="reg-mode-full"
+          class="mode-option"
+          :class="{ active: registrationMode === 'full' }"
+        >
+          <input
+            id="reg-mode-full"
+            type="radio"
+            name="registrationMode"
+            value="full"
+            :checked="registrationMode === 'full'"
+            :disabled="savingRegistrationMode"
+            @change="updateRegistrationMode('full')"
+          />
+          <div class="mode-content">
+            <span class="mode-title">
+              <strong>Offen mit Vollzugriff</strong>
+            </span>
+            <span class="mode-desc">
+              Jeder neu registrierte Account erhält sofort volle Berechtigungen für Urlaube und
+              Datei-Uploads.
+            </span>
+          </div>
+        </label>
+
+        <label
+          for="reg-mode-off"
+          class="mode-option"
+          :class="{ active: registrationMode === 'off' }"
+        >
+          <input
+            id="reg-mode-off"
+            type="radio"
+            name="registrationMode"
+            value="off"
+            :checked="registrationMode === 'off'"
+            :disabled="savingRegistrationMode"
+            @change="updateRegistrationMode('off')"
+          />
+          <div class="mode-content">
+            <span class="mode-title">
+              <strong>Deaktiviert</strong>
+            </span>
+            <span class="mode-desc">
+              Die Selbstregistrierung ist gesperrt. Neue Konten können nur von Administrator:innen
+              oben über „Nutzer anlegen“ erstellt werden.
+            </span>
+          </div>
+        </label>
+      </div>
+    </Card>
+
     <Card class="users-card">
       <SettingsCardHeader title="Nutzerverwaltung" :icon="USERS_ICON">
         <template #actions>
@@ -67,22 +171,73 @@ onMounted(() => {
               </td>
               <td class="email-cell">{{ u.email || '—' }}</td>
               <td>
-                <Badge :variant="u.is_admin ? 'accent-secondary' : 'default'">
-                  {{ u.is_admin ? 'Admin' : 'Nutzer' }}
-                </Badge>
+                <Badge v-if="u.is_admin" variant="accent-secondary">Admin</Badge>
+                <Badge v-else-if="u.is_restricted" variant="warning">Basis-Konto</Badge>
+                <Badge v-else variant="success">Vollzugriff</Badge>
               </td>
               <td>
-                <Badge
-                  v-if="u.must_change_password"
-                  variant="warning"
-                  title="Passwortänderung beim ersten Login ausstehend"
-                >
-                  Passwortänderung ausstehend
-                </Badge>
-                <Badge v-else variant="success">Aktiv</Badge>
+                <div class="status-badges">
+                  <Badge
+                    v-if="u.is_email_verified === false"
+                    variant="warning"
+                    title="E-Mail-Adresse noch nicht bestätigt"
+                  >
+                    E-Mail unbestätigt
+                  </Badge>
+                  <Badge
+                    v-if="u.must_change_password"
+                    variant="warning"
+                    title="Passwortänderung beim ersten Login ausstehend"
+                  >
+                    PW-Änderung offen
+                  </Badge>
+                  <Badge
+                    v-if="u.is_email_verified !== false && !u.must_change_password"
+                    variant="success"
+                    >Aktiv</Badge
+                  >
+                </div>
               </td>
               <td class="actions-col">
                 <div class="user-actions">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    title="Passwort für diesen Account zurücksetzen"
+                    @click="openResetPasswordDialog(u)"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.key" :size="14" group="actions" />
+                    PW Reset
+                  </Button>
+                  <Button
+                    v-if="u.is_email_verified === false"
+                    size="sm"
+                    variant="secondary"
+                    title="E-Mail-Adresse manuell freischalten"
+                    :loading="verifyingEmailId === u.id"
+                    @click="verifyUserEmail(u)"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+                    Mail bestätigen
+                  </Button>
+                  <Button
+                    v-if="!u.is_admin"
+                    size="sm"
+                    :variant="u.is_restricted ? 'primary' : 'secondary'"
+                    :title="
+                      u.is_restricted
+                        ? 'Auf Vollzugriff freischalten'
+                        : 'Auf Basis-Konto einschränken'
+                    "
+                    @click="toggleRestrictedRole(u)"
+                  >
+                    <AppIcon
+                      :icon="u.is_restricted ? ACTION_ICONS.done : ACTION_ICONS.private"
+                      :size="14"
+                      group="actions"
+                    />
+                    {{ u.is_restricted ? 'Freischalten' : 'Einschränken' }}
+                  </Button>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -111,12 +266,74 @@ onMounted(() => {
     </Card>
 
     <CreateUserDialog v-model="showCreateUserDialog" @created="onUserCreated" />
+    <AdminResetPasswordModal
+      :model-value="Boolean(resetPasswordTarget)"
+      :user="resetPasswordTarget"
+      :result="resetPasswordResult"
+      :loading="resettingPassword"
+      @reset="(pw) => resetPasswordTarget && performResetPassword(resetPasswordTarget, pw)"
+      @close="closeResetPasswordDialog"
+    />
   </div>
 </template>
 
 <style scoped>
 .users-card {
   margin-bottom: var(--space-4);
+}
+
+.registration-mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.mode-option:hover {
+  background: var(--color-hover);
+}
+
+.mode-option.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.mode-option input[type='radio'] {
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.mode-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mode-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.mode-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 .hint {

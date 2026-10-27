@@ -1935,6 +1935,48 @@ if (
   ).run();
 }
 
+// Instanzeinstellungen (z. B. Registrierungs-Modus 'restricted' | 'full' | 'off')
+db.exec(`
+  CREATE TABLE IF NOT EXISTS instance_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+`);
+
+// Deduplizierung von externen Web-Bildern: Merkt sich heruntergeladene URLs -> lokale Datei,
+// damit dieselbe URL über mehrere Spots/Urlaube hinweg nicht mehrfach gespeichert wird.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS remote_image_cache (
+    url TEXT PRIMARY KEY,
+    filename TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+`);
+
+// E-Mail-Verifizierung (Double-Opt-In) & Passwort-Rücksetzung
+ensureColumn('users', 'is_email_verified', 'INTEGER NOT NULL DEFAULT 1');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);
+
+  CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_hash ON email_verification_tokens(token_hash);
+`);
+
 /**
  * Leert alle Anwendungs-Tabellen in der Datenbank und setzt Auto-Inkrement-Sequenzen zurück.
  * Optional werden auch hochgeladene Dateien bereinigt.

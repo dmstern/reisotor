@@ -16,6 +16,8 @@ describe('registration mode: restricted', () => {
     process.env.REGISTRATION_FULL_ACCESS_USERS = 'vip';
     const built = await buildTestApp();
     app = built.app;
+    // Legt einen initialen Admin-Nutzer an, damit nachfolgende Selbstregistrierungen reguläre Nicht-Admin-Nutzer sind
+    await register('initial-admin');
   });
 
   async function register(username: string) {
@@ -32,7 +34,7 @@ describe('registration mode: restricted', () => {
   it('GET /auth/config reports the configured mode', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/auth/config' });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ registrationMode: 'restricted' });
+    expect(res.json()).toMatchObject({ registrationMode: 'restricted' });
   });
 
   it('marks a self-registered user as restricted', async () => {

@@ -2,10 +2,15 @@
 import { computed, ref, onUnmounted, useId } from 'vue';
 import { api } from '../api/client';
 import { compressImage } from '../utils/imageCompression';
+import { useAuthStore } from '../stores/auth';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
+import PremiumBadge from './PremiumBadge.vue';
 import AppIcon from './AppIcon.vue';
 import Input from './primitives/Input.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+
+const auth = useAuthStore();
 
 // Ergänzt das reine Bild-URL-Textfeld (extern gehostetes Bild) um einen direkten Datei-Upload -
 // beide schreiben am Ende in dasselbe image_url-Feld (Trip-/Spot-/Tour-Titelbild), es gibt keinen
@@ -37,6 +42,7 @@ const progressPercent = ref(0);
 const currentFileName = ref('');
 const uploadError = ref('');
 let abortController: AbortController | null = null;
+const { openAccountTierModal } = useAccountTierModal();
 let progressTimer: ReturnType<typeof setInterval> | null = null;
 
 function setUploading(value: boolean) {
@@ -140,6 +146,17 @@ defineExpose({
       @cancel="abortUpload"
     />
 
+    <button
+      v-else-if="auth.user?.restricted"
+      type="button"
+      class="upload-label upload-label--restricted"
+      @click="openAccountTierModal('uploads')"
+    >
+      <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" />
+      <span>Oder Bild hochladen</span>
+      <PremiumBadge feature="uploads" />
+    </button>
+
     <label v-else :for="fileInputId" class="upload-label">
       <input
         :id="fileInputId"
@@ -161,6 +178,13 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+button.upload-label {
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
 }
 
 .upload-label {

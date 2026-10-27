@@ -63,6 +63,16 @@ const router = createRouter({
   },
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('../views/ResetPasswordView.vue'),
+    },
+    {
+      path: '/verify-email',
+      name: 'verify-email',
+      component: () => import('../views/VerifyEmailView.vue'),
+    },
     { path: '/privacy', name: 'privacy', component: () => import('../views/LegalView.vue') },
     { path: '/imprint', name: 'imprint', component: () => import('../views/LegalView.vue') },
     { path: '/datenschutz', redirect: '/privacy' },
@@ -218,7 +228,12 @@ router.beforeEach(async (to) => {
     useUiSettingsStore().load();
   }
 
-  const isPublicRoute = to.name === 'login' || to.name === 'privacy' || to.name === 'imprint';
+  const isPublicRoute =
+    to.name === 'login' ||
+    to.name === 'reset-password' ||
+    to.name === 'verify-email' ||
+    to.name === 'privacy' ||
+    to.name === 'imprint';
 
   if (!isPublicRoute && !auth.user) {
     return { name: 'login' };
@@ -238,6 +253,8 @@ router.beforeEach(async (to) => {
     to.name === 'trips' ||
     to.name === 'settings' ||
     to.name === 'security-check' ||
+    to.name === 'reset-password' ||
+    to.name === 'verify-email' ||
     to.name === 'privacy' ||
     to.name === 'imprint';
   if (auth.user && !isGlobalRoute) {

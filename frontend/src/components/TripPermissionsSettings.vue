@@ -10,6 +10,8 @@ import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import AppIcon from './AppIcon.vue';
+import PremiumBadge from './PremiumBadge.vue';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
@@ -38,6 +40,8 @@ let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 const memberCapReached = computed(
   () => !!trip.value?.owner_restricted && members.value.length >= RESTRICTED_MAX_MEMBERS
 );
+
+const { openAccountTierModal } = useAccountTierModal();
 
 async function loadMembers() {
   if (!props.tripId) return;
@@ -105,6 +109,10 @@ watch(query, (q) => {
 
 async function invite(user: User) {
   if (!props.tripId) return;
+  if (memberCapReached.value) {
+    openAccountTierModal('members');
+    return;
+  }
   error.value = '';
   loading.value = true;
   try {
@@ -159,22 +167,32 @@ async function removeMember(user: User) {
       <li v-if="!members.length" key="empty-members" class="empty">Noch keine Mitglieder.</li>
     </TransitionGroup>
 
-    <p v-if="memberCapReached" class="hint warning-hint">
-      Eingeschränkter Modus – Maximal drei Nutzer:innen pro Urlaub
-    </p>
-    <div v-else class="invite-section">
-      <FormField :icon="FORM_FIELD_ICONS.person" label="Nutzer:in einladen">
-        <Input
-          v-model="query"
-          type="search"
-          inputmode="search"
-          autocomplete="off"
-          autocapitalize="off"
-          autocorrect="off"
-          placeholder="Benutzername oder E-Mail-Adresse…"
-        />
-      </FormField>
-      <p class="hint">
+    <div class="invite-section" :class="{ 'is-capped': memberCapReached }">
+      <div class="invite-header-wrap">
+        <FormField :icon="FORM_FIELD_ICONS.person" label="Nutzer:in einladen">
+          <Input
+            v-model="query"
+            type="search"
+            inputmode="search"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            :placeholder="
+              memberCapReached
+                ? 'Limit erreicht (3 Personen im Basis-Konto)…'
+                : 'Benutzername oder E-Mail-Adresse…'
+            "
+            :disabled="memberCapReached"
+            @click="memberCapReached ? openAccountTierModal('members') : undefined"
+          />
+        </FormField>
+        <PremiumBadge v-if="memberCapReached" feature="members" class="member-cap-badge" />
+      </div>
+
+      <p v-if="memberCapReached" class="hint warning-hint">
+        Eingeschränkter Modus – Maximal drei Nutzer:innen pro Urlaub
+      </p>
+      <p v-else class="hint">
         Es können nur bereits registrierte Nutzer:innen gesucht werden (mindestens 2 Zeichen).
       </p>
     </div>
@@ -280,6 +298,20 @@ async function removeMember(user: User) {
 .warning-hint {
   color: var(--color-danger);
   font-weight: 500;
+}
+
+.invite-header-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.invite-header-wrap :deep(.form-field) {
+  flex: 1;
+}
+
+.member-cap-badge {
+  margin-top: 26px;
 }
 
 .empty-search {

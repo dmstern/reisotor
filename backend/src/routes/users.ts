@@ -1,7 +1,15 @@
 import type { FastifyPluginAsync } from 'fastify';
 import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
 import { db, hasColumn, hasTable } from '../db/index.js';
-import { isUserAdmin } from '../registrationConfig.js';
+import {
+  isUserAdmin,
+  isUserRestricted,
+  getRegistrationMode,
+  setRegistrationMode,
+  type RegistrationMode,
+} from '../registrationConfig.js';
+import { getAppUrl, isEmailConfigured, sendPasswordResetEmail } from '../utils/mailer.js';
 
 interface UserRow {
   id: number;
@@ -12,6 +20,7 @@ interface UserRow {
   is_admin: number;
   is_restricted: number;
   must_change_password: number;
+  is_email_verified?: number;
 }
 
 interface CreateUserBody {
@@ -24,6 +33,14 @@ interface CreateUserBody {
 
 interface ToggleAdminBody {
   is_admin: boolean;
+}
+
+interface ToggleRestrictedBody {
+  is_restricted: boolean;
+}
+
+interface RegistrationModeBody {
+  registrationMode: RegistrationMode;
 }
 
 interface AvatarBody {
@@ -55,18 +72,23 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (admin) {
       const rows = db
         .prepare(
-          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users ORDER BY id'
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified FROM users ORDER BY id'
         )
         .all() as UserRow[];
-      return rows.map((u) => ({
-        id: u.id,
-        username: u.username,
-        email: u.email ?? null,
-        avatar: u.avatar,
-        is_admin: Boolean(u.is_admin),
-        is_restricted: Boolean(u.is_restricted),
-        must_change_password: Boolean(u.must_change_password),
-      }));
+      return rows.map((u) => {
+        const restricted = isUserRestricted(u.id);
+        return {
+          id: u.id,
+          username: u.username,
+          email: u.email ?? null,
+          avatar: u.avatar,
+          is_admin: Boolean(u.is_admin),
+          is_restricted: restricted,
+          restricted,
+          must_change_password: Boolean(u.must_change_password),
+          is_email_verified: u.is_email_verified !== 0,
+        };
+      });
     }
     return db.prepare('SELECT id, username, avatar FROM users ORDER BY id').all();
   });
@@ -144,13 +166,15 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
       )
       .get(userId) as UserRow;
+    const restricted = isUserRestricted(created.id);
     return {
       id: created.id,
       username: created.username,
       email: created.email ?? null,
       avatar: created.avatar,
       is_admin: Boolean(created.is_admin),
-      is_restricted: Boolean(created.is_restricted),
+      is_restricted: restricted,
+      restricted,
       must_change_password: Boolean(created.must_change_password),
     };
   });
@@ -188,8 +212,70 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         }
       }
 
-      db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(
-        nextIsAdmin ? 1 : 0,
+      // Wird jemand zum Admin gemacht, verliert er automatisch jegliche Einschränkung
+      if (nextIsAdmin) {
+        db.prepare('UPDATE users SET is_admin = 1, is_restricted = 0 WHERE id = ?').run(
+          targetUserId
+        );
+      } else {
+        db.prepare('UPDATE users SET is_admin = 0 WHERE id = ?').run(targetUserId);
+      }
+      const updated = db
+        .prepare(
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
+        )
+        .get(targetUserId) as UserRow;
+      const restricted = isUserRestricted(updated.id);
+      return {
+        id: updated.id,
+        username: updated.username,
+        email: updated.email ?? null,
+        avatar: updated.avatar,
+        is_admin: Boolean(updated.is_admin),
+        is_restricted: restricted,
+        restricted,
+        must_change_password: Boolean(updated.must_change_password),
+      };
+    }
+  );
+
+  // Basis-Account / Vollzugriff Rolle umschalten
+  app.put<{ Params: { id: string }; Body: ToggleRestrictedBody }>(
+    '/users/:id/restricted',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Benutzerrechte verwalten' });
+      }
+      const targetUserId = Number(req.params.id);
+      const { is_restricted: nextIsRestricted } = req.body ?? {};
+
+      if (typeof nextIsRestricted !== 'boolean') {
+        return reply.code(400).send({ error: 'is_restricted als Boolean erforderlich' });
+      }
+
+      const targetUser = db
+        .prepare('SELECT id, is_admin, is_restricted FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; is_admin: number; is_restricted: number } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      if (targetUserId === req.session.userId && nextIsRestricted) {
+        return reply.code(400).send({
+          error: 'Du kannst deinen eigenen Account nicht einschränken',
+        });
+      }
+
+      if (targetUser.is_admin && nextIsRestricted) {
+        return reply.code(400).send({
+          error: 'Administrator-Accounts können nicht eingeschränkt werden',
+        });
+      }
+
+      db.prepare('UPDATE users SET is_restricted = ? WHERE id = ?').run(
+        nextIsRestricted ? 1 : 0,
         targetUserId
       );
       const updated = db
@@ -197,17 +283,48 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
         )
         .get(targetUserId) as UserRow;
+      const restricted = isUserRestricted(updated.id);
       return {
         id: updated.id,
         username: updated.username,
         email: updated.email ?? null,
         avatar: updated.avatar,
         is_admin: Boolean(updated.is_admin),
-        is_restricted: Boolean(updated.is_restricted),
+        is_restricted: restricted,
+        restricted,
         must_change_password: Boolean(updated.must_change_password),
       };
     }
   );
+
+  // Registrierungsmodus abfragen (für Admins)
+  app.get('/users/registration-mode', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen den Registrierungsmodus einsehen' });
+    }
+    return { registrationMode: getRegistrationMode() };
+  });
+
+  // Registrierungsmodus ändern (für Admins)
+  app.put<{ Body: RegistrationModeBody }>('/users/registration-mode', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen den Registrierungsmodus ändern' });
+    }
+    const { registrationMode } = req.body ?? {};
+    if (
+      registrationMode !== 'off' &&
+      registrationMode !== 'full' &&
+      registrationMode !== 'restricted'
+    ) {
+      return reply.code(400).send({ error: 'Ungültiger Registrierungsmodus' });
+    }
+    setRegistrationMode(registrationMode);
+    return { registrationMode: getRegistrationMode() };
+  });
 
   // Nutzer löschen (Issue #224)
   app.delete<{ Params: { id: string } }>('/users/:id', async (req, reply) => {
@@ -275,6 +392,8 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       safeDelete('drafts', 'user_id');
       safeDelete('location_tracks', 'user_id');
       safeDelete('user_icon_settings', 'user_id');
+      safeDelete('password_reset_tokens', 'user_id');
+      safeDelete('email_verification_tokens', 'user_id');
 
       // 3. Nutzerzeile löschen
       db.prepare('DELETE FROM users WHERE id = ?').run(id);
@@ -282,6 +401,101 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
     deleteUserTx(targetUserId);
     return reply.code(204).send();
+  });
+
+  // Passwort durch Administrator zurücksetzen
+  app.post<{ Params: { id: string }; Body: { temporaryPassword?: string } }>(
+    '/users/:id/reset-password',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Passwörter zurücksetzen' });
+      }
+      const targetUserId = Number(req.params.id);
+      const targetUser = db
+        .prepare('SELECT id, username, email FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; username: string; email: string | null } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      const rawTempPassword =
+        req.body?.temporaryPassword?.trim() || `Reiso-${crypto.randomBytes(4).toString('hex')}`;
+
+      if (rawTempPassword.length < 6) {
+        return reply
+          .code(400)
+          .send({ error: 'Das temporäre Passwort muss mindestens 6 Zeichen haben' });
+      }
+
+      const hash = bcrypt.hashSync(rawTempPassword, 10);
+      db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(
+        hash,
+        targetUserId
+      );
+
+      // Sessions invalidieren
+      if (hasTable('sessions') && hasColumn('sessions', 'user_id')) {
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(targetUserId);
+      }
+
+      // Einmal-Reset-Link generieren (24h gültig)
+      db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(targetUserId);
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      db.prepare(
+        'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
+      ).run(targetUserId, tokenHash, expiresAt, new Date().toISOString());
+
+      const resetUrl = `${getAppUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
+
+      // Falls der Nutzer eine E-Mail-Adresse hat und SMTP konfiguriert ist, Mail senden
+      let emailSent = false;
+      if (targetUser.email && isEmailConfigured()) {
+        const mailResult = await sendPasswordResetEmail({
+          to: targetUser.email,
+          username: targetUser.username,
+          token: rawToken,
+        });
+        emailSent = mailResult.success && !mailResult.simulated;
+      }
+
+      return {
+        temporaryPassword: rawTempPassword,
+        resetUrl,
+        emailSent,
+        username: targetUser.username,
+        message: 'Passwort erfolgreich zurückgesetzt',
+      };
+    }
+  );
+
+  // E-Mail-Adresse manuell durch Administrator bestätigen
+  app.post<{ Params: { id: string } }>('/users/:id/verify-email', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen E-Mail-Adressen bestätigen' });
+    }
+    const targetUserId = Number(req.params.id);
+    const targetUser = db
+      .prepare('SELECT id, username, email FROM users WHERE id = ?')
+      .get(targetUserId) as { id: number; username: string; email: string | null } | undefined;
+    if (!targetUser) {
+      return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+    }
+
+    db.prepare('UPDATE users SET is_email_verified = 1 WHERE id = ?').run(targetUserId);
+    db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(targetUserId);
+
+    return {
+      success: true,
+      is_email_verified: true,
+      message: 'E-Mail-Adresse erfolgreich verifiziert',
+    };
   });
 
   app.put<{ Body: AvatarBody }>('/users/me/avatar', async (req, reply) => {

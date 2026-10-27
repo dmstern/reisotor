@@ -10,8 +10,20 @@ export interface User {
   /** Pflicht zur Passwortänderung (Issue #224): gesetzt bei Erst-Anlegung mit Standard-Passwort. */
   must_change_password?: boolean;
   /** Eingeschränkter Modus (Issue #96, REGISTRATION_MODE=restricted): kein Datei-Upload, max. 1
-   *  selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub. */
+   *  selbst angelegter Urlaub, max. 3 Mitglieder in einem selbst angelegten Urlaub.
+   *  Hinweis: `is_restricted` ist ein Alias für `restricted` in der Admin-Nutzerliste. */
   restricted?: boolean;
+  is_restricted?: boolean;
+  /** Ob die E-Mail-Adresse des Nutzers bestätigt ist (Double-Opt-In). */
+  is_email_verified?: boolean;
+}
+
+export interface AdminResetPasswordResult {
+  temporaryPassword: string;
+  resetUrl: string;
+  emailSent: boolean;
+  username: string;
+  message: string;
 }
 
 export interface Trip {

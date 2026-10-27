@@ -10,6 +10,8 @@ import EditButton from './EditButton.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
+import PremiumBadge from './PremiumBadge.vue';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = withDefaults(
@@ -40,6 +42,16 @@ const {
 // Issue #96: siehe TripsView.vue's tripCreationBlocked() - dieselbe Regel, hier gedoppelt statt
 // geteilt, weil beide Komponenten bereits unabhängige useTripEditor()-Instanzen halten.
 const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
+const { openAccountTierModal } = useAccountTierModal();
+
+function handleCreateTrip() {
+  close();
+  if (tripCreationBlocked()) {
+    openAccountTierModal('trips');
+    return;
+  }
+  openCreate();
+}
 
 // Sprungziel für Fremdobjekte (z. B. Urlaub-Einträge im Kalender): öffnet das Edit-Modal
 // des aktuellen Urlaubs, ohne dass die einbettende Sicht selbst editieren muss.
@@ -199,21 +211,10 @@ function selectAndClose(id: number) {
             </div>
           </div>
           <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
-          <Button
-            v-if="!tripCreationBlocked()"
-            type="button"
-            variant="ghost"
-            class="new-trip-btn"
-            @click="
-              () => {
-                openCreate();
-                close();
-              }
-            "
-          >
+          <Button type="button" variant="ghost" class="new-trip-btn" @click="handleCreateTrip">
             <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
+            <PremiumBadge v-if="tripCreationBlocked()" feature="trips" />
           </Button>
-          <p v-else class="empty">Eingeschränkter Modus - Nur ein Urlaub pro Nutzer</p>
           <router-link to="/trips" class="manage-trips-btn" @click="close"
             >Alle Urlaube verwalten</router-link
           >

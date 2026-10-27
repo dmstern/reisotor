@@ -12,6 +12,28 @@ function parseMode(raw: string | undefined): RegistrationMode {
 
 export const REGISTRATION_MODE: RegistrationMode = parseMode(process.env.REGISTRATION_MODE);
 
+export function getRegistrationMode(): RegistrationMode {
+  try {
+    const row = db
+      .prepare('SELECT value FROM instance_settings WHERE key = ?')
+      .get('registration_mode') as { value: string } | undefined;
+    if (row?.value) {
+      return parseMode(row.value);
+    }
+  } catch {
+    // Falls Tabelle noch nicht existiert (z. B. vor der Initialisierung)
+  }
+  return parseMode(process.env.REGISTRATION_MODE);
+}
+
+export function setRegistrationMode(mode: RegistrationMode): void {
+  const parsed = parseMode(mode);
+  db.prepare(
+    `INSERT INTO instance_settings (key, value, updated_at) VALUES ('registration_mode', ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  ).run(parsed, new Date().toISOString());
+}
+
 // Kommagetrennte Reisotor-Benutzernamen, die von den restricted-Einschränkungen ausgenommen sind –
 // dynamisch geprüft (nicht beim Registrieren einmalig eingefroren), damit jemand nachträglich per
 // Env-Var freigeschaltet werden kann, ohne den DB-Zustand anzufassen.
@@ -35,9 +57,10 @@ interface RestrictedUserRow {
  *  wieder auf 'full' zurückgestellt wird), FULL_ACCESS_USERS hebt sie dynamisch wieder auf. */
 export function isUserRestricted(userId: number | null | undefined): boolean {
   if (userId == null) return false;
-  const user = db.prepare('SELECT username, is_restricted FROM users WHERE id = ?').get(userId) as
-    RestrictedUserRow | undefined;
-  if (!user || !user.is_restricted) return false;
+  const user = db
+    .prepare('SELECT username, is_admin, is_restricted FROM users WHERE id = ?')
+    .get(userId) as (RestrictedUserRow & { is_admin: number }) | undefined;
+  if (!user || user.is_admin || !user.is_restricted) return false;
   return !FULL_ACCESS_USERS.has(user.username);
 }
 
@@ -53,6 +76,13 @@ export function userMustChangePassword(userId: number | null | undefined): boole
   const user = db.prepare('SELECT must_change_password FROM users WHERE id = ?').get(userId) as
     { must_change_password: number } | undefined;
   return Boolean(user?.must_change_password);
+}
+
+export function isUserEmailVerified(userId: number | null | undefined): boolean {
+  if (userId == null) return false;
+  const user = db.prepare('SELECT is_email_verified FROM users WHERE id = ?').get(userId) as
+    { is_email_verified: number } | undefined;
+  return user?.is_email_verified !== 0;
 }
 
 export function isUsernameFullAccess(username: string): boolean {

@@ -13,6 +13,8 @@ import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
 import IconButton from '../components/primitives/IconButton.vue';
+import PremiumBadge from '../components/PremiumBadge.vue';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -35,6 +37,15 @@ const {
 // eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy), das
 // Frontend kennt diese Unterscheidung aber nicht, deshalb konservativ ab dem ersten Urlaub sperren.
 const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
+const { openAccountTierModal } = useAccountTierModal();
+
+function handleCreateTrip() {
+  if (tripCreationBlocked()) {
+    openAccountTierModal('trips');
+    return;
+  }
+  openCreate();
+}
 
 function selectTrip(id: number) {
   tripStore.selectTrip(id);
@@ -51,12 +62,14 @@ function openMembers(trip: Trip) {
   <div class="page">
     <div class="header">
       <h1>Meine Urlaube</h1>
-      <Button v-if="tripStore.trips.length > 0 && !tripCreationBlocked()" @click="openCreate">
+      <Button
+        v-if="tripStore.trips.length > 0"
+        :variant="tripCreationBlocked() ? 'secondary' : 'primary'"
+        @click="handleCreateTrip"
+      >
         <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
+        <PremiumBadge v-if="tripCreationBlocked()" feature="trips" />
       </Button>
-      <p v-else-if="tripCreationBlocked()" class="restricted-hint">
-        Eingeschränkter Modus - Nur ein Urlaub pro Nutzer
-      </p>
     </div>
 
     <div v-if="tripStore.trips.length > 0" class="trip-list">

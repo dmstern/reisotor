@@ -74,4 +74,24 @@ describe('remoteImage', () => {
     fetchMock.mockRejectedValueOnce(new Error('offline'));
     expect(await localizeImageUrl('https://example.com/a.png')).toBe('https://example.com/a.png');
   });
+
+  it('localizeImageUrl überspringt den Download für eingeschränkte Basis-Accounts', async () => {
+    const extUrl = 'https://example.com/untrusted.png';
+    const result = await localizeImageUrl(extUrl, { skipIfRestricted: true });
+    expect(result).toBe(extUrl);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('dedupliziert Downloads identischer URLs via Cache', async () => {
+    const testUrl = `https://example.com/shared-${Math.random().toString(36).slice(2)}.png`;
+    fetchMock.mockResolvedValueOnce(imageResponse(PNG));
+    const first = await localizeImageUrl(testUrl);
+    expect(first).toMatch(/^\/api\/uploads\/[0-9a-f-]+\.png$/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Zweiter Aufruf mit identischer URL sollte aus dem Cache bedient werden (kein weiterer fetch)
+    const second = await localizeImageUrl(testUrl);
+    expect(second).toBe(first);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

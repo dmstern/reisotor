@@ -25,6 +25,8 @@ import {
   IconCircleCheckFilled,
   IconLock,
   IconLockFilled,
+  IconKey,
+  IconKeyFilled,
   IconUsersGroup,
   IconFolders,
   IconFoldersFilled,
@@ -152,6 +154,7 @@ export type ActionIconKey =
   | 'history'
   | 'duration'
   | 'done'
+  | 'key'
   | 'private'
   | 'shared'
   | 'group'
@@ -282,6 +285,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     outline: IconCircleCheck,
     filled: IconCircleCheckFilled,
   },
+  key: { id: 'key', emoji: '🔑', outline: IconKey, filled: IconKeyFilled },
   private: { id: 'lock', emoji: '🔒', outline: IconLock, filled: IconLockFilled },
   shared: { id: 'users-group', emoji: '🤝', outline: IconUsersGroup },
   group: { id: 'folders', emoji: '🗂️', outline: IconFolders, filled: IconFoldersFilled },

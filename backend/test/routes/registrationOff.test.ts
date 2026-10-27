@@ -15,7 +15,7 @@ describe('registration mode: off', () => {
 
   it('GET /auth/config reports the disabled mode', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/auth/config' });
-    expect(res.json()).toEqual({ registrationMode: 'off' });
+    expect(res.json()).toMatchObject({ registrationMode: 'off' });
   });
 
   it('rejects self-registration', async () => {

@@ -32,8 +32,19 @@ describe('DiaryNewModal', () => {
     document.body.innerHTML = '';
   });
 
-  function mountModal(props: InstanceType<typeof DiaryNewModal>['$props']) {
+  function mountModal(
+    props: InstanceType<typeof DiaryNewModal>['$props'],
+    initialUser?: Partial<User>
+  ) {
     const pinia = createPinia();
+    setActivePinia(pinia);
+    const authStore = useAuthStore(pinia);
+    authStore.user = (initialUser ?? {
+      id: 1,
+      username: 'tester',
+      restricted: false,
+    }) as unknown as User;
+
     const container = document.createElement('div');
     document.body.appendChild(container);
     const app = createApp({
@@ -76,6 +87,22 @@ describe('DiaryNewModal', () => {
 
     const bodyHtml = document.body.innerHTML;
     expect(bodyHtml).toContain('Bilder hinzufügen');
+    cleanUp();
+  });
+
+  it('zeigt Bilder hinzufügen Button mit Premium-Badge auch wenn Nutzer restricted ist', async () => {
+    const { cleanUp } = mountModal(
+      {
+        modelValue: true,
+        tripId: 1,
+      },
+      { id: 2, username: 'basis', restricted: true }
+    );
+    await nextTick();
+
+    const bodyHtml = document.body.innerHTML;
+    expect(bodyHtml).toContain('Bilder hinzufügen');
+    expect(bodyHtml).toContain('Premium');
     cleanUp();
   });
 });

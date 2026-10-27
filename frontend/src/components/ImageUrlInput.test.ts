@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createApp, h, nextTick, type Component } from 'vue';
-import { createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import ImageUrlInput from './ImageUrlInput.vue';
 import { api } from '../api/client';
 import * as imageCompression from '../utils/imageCompression';
+import { useAuthStore } from '../stores/auth';
+import { useAccountTierModal } from '../composables/useAccountTierModal';
+import type { User } from '../api/types';
 
 vi.mock('../api/client', () => ({
   api: {
@@ -16,8 +19,13 @@ vi.mock('../utils/imageCompression', () => ({
   compressImage: vi.fn(),
 }));
 
-function mountComponent(props: Record<string, unknown> = {}) {
+function mountComponent(props: Record<string, unknown> = {}, initialUser?: Partial<User>) {
   const pinia = createPinia();
+  setActivePinia(pinia);
+  const authStore = useAuthStore(pinia);
+  if (initialUser) {
+    authStore.user = initialUser as User;
+  }
   const container = document.createElement('div');
   document.body.appendChild(container);
   let capturedComponent: InstanceType<typeof ImageUrlInput> | null = null;
@@ -201,6 +209,28 @@ describe('ImageUrlInput component', () => {
     const errorEl = container.querySelector('.hint.error');
     expect(errorEl).not.toBeNull();
     expect(errorEl?.textContent).toContain('Bild-Upload fehlgeschlagen');
+
+    cleanUp();
+  });
+
+  it('shows upload button with Premium badge for restricted user and opens modal on click', () => {
+    const { isOpen, highlightedFeature, closeAccountTierModal } = useAccountTierModal();
+    closeAccountTierModal();
+
+    const { container, cleanUp } = mountComponent(
+      { modelValue: '' },
+      { id: 2, username: 'restricted', restricted: true }
+    );
+
+    expect(container.textContent).toContain('Oder Bild hochladen');
+    expect(container.textContent).toContain('Premium');
+
+    const button = container.querySelector('button.upload-label--restricted') as HTMLButtonElement;
+    expect(button).not.toBeNull();
+    button.click();
+
+    expect(isOpen.value).toBe(true);
+    expect(highlightedFeature.value).toBe('uploads');
 
     cleanUp();
   });
