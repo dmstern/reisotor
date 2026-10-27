@@ -20,10 +20,9 @@ updates:
           - 'minor'
           - 'patch'
     ignore:
-      # typescript-eslint unterstützt TypeScript 7.0 noch nicht (Support erst ab TS >= 7.1 geplant, siehe typescript-eslint#10940).
-      # Durch >= 7.0.0, < 7.1.0 meldet sich Dependabot automatisch wieder, sobald TypeScript 7.1 erscheint.
+      # typescript-eslint unterstützt TypeScript 6/7 noch nicht stabil; monorepo-weit auf v5.x synchron halten.
       - dependency-name: 'typescript'
-        versions: ['>= 7.0.0, < 7.1.0']
+        versions: ['>= 6.0.0']
 
   # 2. Backend npm (Fastify, SQLite, Vitest)
   - package-ecosystem: 'npm'
@@ -61,6 +60,12 @@ updates:
       # wodurch node-gyp mangels installiertem 'make' abbricht. Ab v14.0.0 prüft Dependabot automatisch erneut.
       - dependency-name: 'better-sqlite3'
         versions: ['>= 13.0.0, < 14.0.0']
+      # TypeScript monorepo-weit synchron auf v5.x halten.
+      - dependency-name: 'typescript'
+        versions: ['>= 6.0.0']
+      # vitest v5 setzt 'vite' als Dependency voraus; Backend ist eine reine Fastify-App ohne Vite.
+      - dependency-name: 'vitest'
+        versions: ['>= 5.0.0']
 
   # 3. Frontend npm (Vue 3, Vite, Storybook)
   - package-ecosystem: 'npm'
@@ -81,6 +86,15 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+    ignore:
+      # vue-tsc 2.x und Toolchain unterstützen TypeScript 6/7 noch nicht; monorepo-weit auf v5.x halten.
+      - dependency-name: 'typescript'
+        versions: ['>= 6.0.0']
+      # Storybook v10 erfordert ein abgestimmtes manuelles Upgrade aller Addons und Tooling.
+      - dependency-name: 'storybook'
+        versions: ['>= 9.0.0']
+      - dependency-name: '@storybook/*'
+        versions: ['>= 9.0.0']
 
   # 4. E2E npm (Playwright, Axe)
   - package-ecosystem: 'npm'
