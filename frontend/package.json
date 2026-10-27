@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.6.14",
-    "@storybook/vue3": "^8.6.18",
+    "@storybook/vue3": "^10.6.1",
     "@storybook/vue3-vite": "^10.6.1",
     "@types/dompurify": "^3.2.0",
     "@types/leaflet": "^1.9.12",
