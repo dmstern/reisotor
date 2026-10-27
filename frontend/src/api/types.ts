@@ -5,6 +5,8 @@ export interface User {
   username: string;
   avatar: string;
   email?: string | null;
+  /** Eine noch unbestätigte E-Mail-Adresse nach Anforderung einer E-Mail-Änderung */
+  pending_email?: string | null;
   /** Admin-Rechte (Issue #224): Zugriff auf Nutzerverwaltung und Datensicherung. */
   is_admin?: boolean;
   /** Pflicht zur Passwortänderung (Issue #224): gesetzt bei Erst-Anlegung mit Standard-Passwort. */

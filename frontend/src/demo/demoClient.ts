@@ -188,6 +188,33 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     if (meInList) meInList.username = username;
     return structuredClone(currentDemoUser) as unknown as T;
   }
+  if (path === '/users/me/email' && method === 'PUT') {
+    const email = String(body?.email ?? '');
+    currentDemoUser.email = email;
+    currentDemoUser.is_email_verified = true;
+    currentDemoUser.pending_email = null;
+    const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
+    if (meInList) {
+      meInList.email = email;
+      meInList.is_email_verified = true;
+    }
+    return {
+      requiresVerification: false,
+      email,
+      is_email_verified: true,
+      message: 'E-Mail-Adresse erfolgreich gespeichert (Demo-Modus)',
+    } as unknown as T;
+  }
+  if (path === '/users/me/email-pending' && method === 'DELETE') {
+    currentDemoUser.pending_email = null;
+    return undefined as unknown as T;
+  }
+  if (path === '/users/me/resend-verification-email' && method === 'POST') {
+    return {
+      success: true,
+      message: 'Bestätigungslink erneut versendet (Demo-Modus).',
+    } as unknown as T;
+  }
   if (path === '/users/me/icon-settings') {
     if (method === 'GET') return (store['/users/me/icon-settings']?.[0] ?? {}) as unknown as T;
     if (method === 'PUT') {

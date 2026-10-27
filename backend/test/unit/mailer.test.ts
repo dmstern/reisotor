@@ -68,4 +68,17 @@ describe('Mailer utility', () => {
     expect(result.simulated).toBe(true);
     expect(result.actionUrl).toContain('/verify-email?token=tok456');
   });
+
+  it('simulates email change verification gracefully when SMTP is unconfigured', async () => {
+    delete process.env.SMTP_HOST;
+    const result = await sendVerificationEmail({
+      to: 'new@example.com',
+      username: 'testuser',
+      token: 'tok789',
+      isChange: true,
+    });
+    expect(result.success).toBe(true);
+    expect(result.simulated).toBe(true);
+    expect(result.actionUrl).toContain('/verify-email?token=tok789');
+  });
 });

@@ -122,6 +122,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return {
         id: userId,
         username: trimmedUsername,
+        email: trimmedEmail,
         avatar: '🙂',
         restricted: isUserRestricted(userId),
         is_admin: Boolean(isAdmin),
@@ -140,8 +141,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
     const record = db
-      .prepare('SELECT id, user_id, expires_at FROM email_verification_tokens WHERE token_hash = ?')
-      .get(tokenHash) as { id: number; user_id: number; expires_at: string } | undefined;
+      .prepare(
+        'SELECT id, user_id, pending_email, expires_at FROM email_verification_tokens WHERE token_hash = ?'
+      )
+      .get(tokenHash) as
+      | { id: number; user_id: number; pending_email?: string | null; expires_at: string }
+      | undefined;
 
     if (!record) {
       return reply.code(400).send({ error: 'Ungültiger oder abgelaufener Bestätigungslink' });
@@ -154,12 +159,28 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         .send({ error: 'Bestätigungslink ist abgelaufen. Bitte fordere einen neuen an.' });
     }
 
-    db.prepare('UPDATE users SET is_email_verified = 1 WHERE id = ?').run(record.user_id);
+    if (record.pending_email) {
+      const existing = db
+        .prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?')
+        .get(record.pending_email, record.user_id);
+      if (existing) {
+        db.prepare('DELETE FROM email_verification_tokens WHERE id = ?').run(record.id);
+        return reply.code(409).send({
+          error: 'Diese E-Mail-Adresse wird inzwischen von einem anderen Konto verwendet.',
+        });
+      }
+      db.prepare('UPDATE users SET email = ?, is_email_verified = 1 WHERE id = ?').run(
+        record.pending_email,
+        record.user_id
+      );
+    } else {
+      db.prepare('UPDATE users SET is_email_verified = 1 WHERE id = ?').run(record.user_id);
+    }
     db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(record.user_id);
 
     return {
       success: true,
-      message: 'E-Mail-Adresse erfolgreich bestätigt! Du kannst dich jetzt anmelden.',
+      message: 'E-Mail-Adresse erfolgreich bestätigt!',
     };
   });
 
@@ -257,7 +278,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const user = db
       .prepare(
-        'SELECT id, username, password_hash, avatar, is_email_verified FROM users WHERE username = ?'
+        'SELECT id, username, email, password_hash, avatar, is_email_verified FROM users WHERE username = ?'
       )
       .get(username) as (UserRow & { is_email_verified: number }) | undefined;
 
@@ -274,9 +295,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     req.session.userId = user.id;
     req.session.username = user.username;
+
+    const pendingToken = db
+      .prepare(
+        'SELECT pending_email FROM email_verification_tokens WHERE user_id = ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
+      )
+      .get(user.id, new Date().toISOString()) as { pending_email: string | null } | undefined;
+
     return {
       id: user.id,
       username: user.username,
+      email: user.email ?? null,
+      pending_email: pendingToken?.pending_email ?? null,
       avatar: user.avatar,
       restricted: isUserRestricted(user.id),
       is_admin: isUserAdmin(user.id),
@@ -295,13 +325,22 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
     const user = db
-      .prepare('SELECT id, username, avatar FROM users WHERE id = ?')
-      .get(req.session.userId) as Pick<UserRow, 'id' | 'username' | 'avatar'> | undefined;
+      .prepare('SELECT id, username, email, avatar FROM users WHERE id = ?')
+      .get(req.session.userId) as Pick<UserRow, 'id' | 'username' | 'email' | 'avatar'> | undefined;
     if (!user) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
+
+    const pendingToken = db
+      .prepare(
+        'SELECT pending_email FROM email_verification_tokens WHERE user_id = ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
+      )
+      .get(user.id, new Date().toISOString()) as { pending_email: string | null } | undefined;
+
     return {
       ...user,
+      email: user.email ?? null,
+      pending_email: pendingToken?.pending_email ?? null,
       restricted: isUserRestricted(user.id),
       is_admin: isUserAdmin(user.id),
       must_change_password: userMustChangePassword(user.id),
