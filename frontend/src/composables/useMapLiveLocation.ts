@@ -140,7 +140,7 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
         DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
       }
     ).DeviceOrientationEvent;
-    if (OrientationEventCtor && !OrientationEventCtor.requestPermission) {
+    if (typeof OrientationEventCtor?.requestPermission !== 'function') {
       startCompass();
     }
   }

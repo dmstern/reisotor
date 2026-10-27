@@ -87,5 +87,24 @@ describe('useMapLiveLocation', () => {
       expect(onClearFocus).toHaveBeenCalled();
       expect(centerOnPoint).toHaveBeenCalledWith([50.1, 8.6], 16);
     });
+
+    it('starts compass listener in initCompassAuto even when DeviceOrientationEvent constructor is not on window', () => {
+      const users = ref<User[]>([]);
+      const setMapBearing = vi.fn();
+      const liveLoc = useMapLiveLocation({ users, setMapBearing });
+      liveLoc.mapOrientation.mode = 'heading';
+
+      liveLoc.initCompassAuto();
+
+      const eventName =
+        'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+      const event = new Event(eventName);
+      Object.defineProperty(event, 'alpha', { value: 90 });
+      window.dispatchEvent(event);
+
+      expect(liveLoc.ownHeading.value).toBe(270);
+      expect(setMapBearing).toHaveBeenCalledWith(270);
+      liveLoc.stopCompass();
+    });
   });
 });
