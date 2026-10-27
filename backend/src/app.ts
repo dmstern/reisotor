@@ -34,6 +34,7 @@ import { tripCategoriesRoutes } from './routes/tripCategories.js';
 import { routingRoutes } from './routes/routing.js';
 import { placesRoutes } from './routes/places.js';
 import { legalRoutes } from './routes/legal.js';
+import { adminSettingsRoutes } from './routes/adminSettings.js';
 
 // Von server.ts getrennt (das nur noch buildApp() aufruft und .listen()), damit Tests eine fertig
 // konfigurierte App-Instanz per Fastify .inject() ansprechen können, ohne einen echten Port zu
@@ -122,6 +123,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(tripCategoriesRoutes);
         await protectedApi.register(routingRoutes);
         await protectedApi.register(placesRoutes);
+        await protectedApi.register(adminSettingsRoutes);
       });
     },
     { prefix: '/api' }

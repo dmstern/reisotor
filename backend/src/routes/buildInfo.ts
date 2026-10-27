@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { getEffectiveSetting } from '../instanceSettings.js';
 
 interface ChangelogGroup {
   title: string;
@@ -54,10 +55,10 @@ export const buildInfoRoutes: FastifyPluginAsync = async (app) => {
   app.get('/build-info', async () => ({
     ...readBuildInfo(),
     // Gleiches GITHUB_REPO-Env-Var-Muster wie in utils/githubIssue.ts (Feedback-Formular).
-    repoUrl: `https://github.com/${process.env.GITHUB_REPO ?? 'dmstern/reisotor'}`,
+    repoUrl: `https://github.com/${getEffectiveSetting('github_repo', 'GITHUB_REPO', 'dmstern/reisotor')}`,
     // Konfigurierbar, damit andere Betreiber:innen (eigenes Hosting statt Berlin) den Über-Tab-
     // Hinweis anpassen können, siehe Issue #171.
-    hostingLocation: process.env.HOSTING_LOCATION ?? 'Berlin',
+    hostingLocation: getEffectiveSetting('hosting_location', 'HOSTING_LOCATION', 'Berlin'),
     // Pro Instanz (Prod/Staging) im systemd-Service gesetzt - das Frontend wird für beide identisch
     // gebaut (siehe .github/workflows/ci.yml), kann die Umgebung also nicht aus einem
     // Build-Time-Env-Var erkennen und fragt sie stattdessen hier zur Laufzeit ab, siehe Issue #219.

@@ -9,45 +9,11 @@ export function useUserManagement() {
   const loadingUsers = ref(false);
   const userListError = ref('');
   const showCreateUserDialog = ref(false);
-  const registrationMode = ref<'off' | 'full' | 'restricted'>('restricted');
-  const loadingRegistrationMode = ref(false);
-  const savingRegistrationMode = ref(false);
 
   const resetPasswordTarget = ref<User | null>(null);
   const resetPasswordResult = ref<AdminResetPasswordResult | null>(null);
   const resettingPassword = ref(false);
   const verifyingEmailId = ref<number | null>(null);
-
-  async function loadRegistrationMode() {
-    if (!auth.user?.is_admin) return;
-    loadingRegistrationMode.value = true;
-    try {
-      const res = await api.get<{ registrationMode: 'off' | 'full' | 'restricted' }>(
-        '/users/registration-mode'
-      );
-      registrationMode.value = res.registrationMode;
-    } catch {
-      // Ignoriert, Fallback bleibt erhalten
-    } finally {
-      loadingRegistrationMode.value = false;
-    }
-  }
-
-  async function updateRegistrationMode(mode: 'off' | 'full' | 'restricted') {
-    if (!auth.user?.is_admin || savingRegistrationMode.value) return;
-    savingRegistrationMode.value = true;
-    try {
-      const res = await api.put<{ registrationMode: 'off' | 'full' | 'restricted' }>(
-        '/users/registration-mode',
-        { registrationMode: mode }
-      );
-      registrationMode.value = res.registrationMode;
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern des Registrierungsmodus');
-    } finally {
-      savingRegistrationMode.value = false;
-    }
-  }
 
   async function loadUserList() {
     if (!auth.user?.is_admin) return;
@@ -154,15 +120,10 @@ export function useUserManagement() {
     loadingUsers,
     userListError,
     showCreateUserDialog,
-    registrationMode,
-    loadingRegistrationMode,
-    savingRegistrationMode,
     resetPasswordTarget,
     resetPasswordResult,
     resettingPassword,
     verifyingEmailId,
-    loadRegistrationMode,
-    updateRegistrationMode,
     loadUserList,
     toggleAdminRole,
     toggleRestrictedRole,

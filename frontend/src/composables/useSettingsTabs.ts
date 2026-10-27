@@ -4,6 +4,8 @@ import {
   IconUser,
   IconUserFilled,
   IconUsers,
+  IconShieldLock,
+  IconShieldLockFilled,
   IconDeviceDesktop,
   IconDeviceDesktopFilled,
   IconBell,
@@ -23,8 +25,15 @@ export const BELL_ICON: IconDef = {
   filled: IconBellFilled,
 };
 export const USERS_ICON: IconDef = { id: 'users', emoji: '👥', outline: IconUsers };
+export const ADMIN_ICON: IconDef = {
+  id: 'shield-lock',
+  emoji: '🛡️',
+  outline: IconShieldLock,
+  filled: IconShieldLockFilled,
+};
 
-export type SettingsTab = 'account' | 'users' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
+export type SettingsTab =
+  'account' | 'admin' | 'users' | 'app' | 'trip' | 'notifications' | 'data' | 'about';
 
 export interface SettingsTabItem {
   key: SettingsTab;
@@ -39,7 +48,7 @@ export const ALL_SETTINGS_TABS: SettingsTabItem[] = [
     label: 'Account',
     icon: { id: 'user', emoji: '👤', outline: IconUser, filled: IconUserFilled },
   },
-  { key: 'users', label: 'Nutzerverwaltung', icon: USERS_ICON, adminOnly: true },
+  { key: 'admin', label: 'Admin-Oberfläche', icon: ADMIN_ICON, adminOnly: true },
   {
     key: 'app',
     label: 'App-Einstellungen',
@@ -73,8 +82,9 @@ export function useSettingsTabs(isAdmin: MaybeRefOrGetter<boolean | undefined>) 
   const tabKeys = computed(() => tabs.value.map((t) => t.key));
 
   const activeTab = computed<SettingsTab>(() => {
-    const tab = route.query.tab;
-    return (tabKeys.value as string[]).includes(tab as string) ? (tab as SettingsTab) : 'account';
+    let tab = route.query.tab as string;
+    if (tab === 'users') tab = 'admin';
+    return (tabKeys.value as string[]).includes(tab) ? (tab as SettingsTab) : 'account';
   });
 
   function selectTab(tab: string) {

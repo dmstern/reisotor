@@ -1,20 +1,30 @@
 import webpush from 'web-push';
 import { db } from './db/index.js';
+import { getEffectiveSetting } from './instanceSettings.js';
 
-const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidSubject = process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com';
-
-// Push ist optional: ohne gesetzte VAPID_*-Env-Vars (siehe scripts/generate-vapid-keys.mjs)
-// bleibt die App voll funktionsfähig, nur ohne Push-Benachrichtigungen (kein harter Fehler beim
-// Start, z. B. für lokale Entwicklung ohne konfiguriertes Push).
-const pushEnabled = !!(vapidPublicKey && vapidPrivateKey);
-if (pushEnabled) {
-  webpush.setVapidDetails(vapidSubject, vapidPublicKey!, vapidPrivateKey!);
+export function ensureVapidConfigured(): boolean {
+  const pub = getEffectiveSetting('vapid_public_key', 'VAPID_PUBLIC_KEY').trim();
+  const priv = getEffectiveSetting('vapid_private_key', 'VAPID_PRIVATE_KEY').trim();
+  const subject =
+    getEffectiveSetting('vapid_subject', 'VAPID_SUBJECT', 'mailto:admin@example.com').trim() ||
+    'mailto:admin@example.com';
+  if (pub && priv) {
+    try {
+      webpush.setVapidDetails(subject, pub, priv);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
+// Push ist optional: ohne gesetzte VAPID_*-Schlüssel bleibt die App voll funktionsfähig, nur ohne Push
+ensureVapidConfigured();
+
 export function getVapidPublicKey(): string | null {
-  return vapidPublicKey ?? null;
+  const pub = getEffectiveSetting('vapid_public_key', 'VAPID_PUBLIC_KEY').trim();
+  return pub || null;
 }
 
 interface PushSubscriptionInput {
@@ -145,7 +155,7 @@ export async function sendPushToTripMembers(
   domain: PushPreferenceDomain,
   excludeUserId?: number
 ) {
-  if (!pushEnabled) return;
+  if (!ensureVapidConfigured()) return;
   const subs = (
     excludeUserId != null
       ? db
@@ -170,6 +180,7 @@ export async function sendPushToTripMembers(
           .all(domain, tripId)
   ) as PushSubscriptionRow[];
   if (!subs.length) return;
+  if (!ensureVapidConfigured()) return;
 
   const body = JSON.stringify(payload);
   await Promise.all(
