@@ -53,6 +53,46 @@ try {
 
 let store: Store = defaultStore();
 let currentDemoUsers: User[] = createDemoData().users;
+
+const demoAdminSettings = {
+  registration: {
+    registrationMode: 'restricted' as const,
+    requireEmailVerification: false,
+  },
+  legal: {
+    operatorName: 'Reisotor Demo Host',
+    operatorAddress: 'Demoweg 42\n10115 Berlin',
+    contactEmail: 'admin@reisotor.local',
+    contactPhone: '+49 30 1234567',
+    hostingLocation: 'Berlin',
+  },
+  geo: {
+    isOrsApiKeySet: true,
+    photonApiUrl: 'https://photon.komoot.io/api/',
+    nominatimApiUrl: 'https://nominatim.openstreetmap.org/search',
+    nominatimEnabled: true,
+  },
+  email: {
+    smtpHost: 'smtp.example.com',
+    smtpPort: 587,
+    smtpSecure: false,
+    smtpUser: 'demo-mailer',
+    isSmtpPassSet: true,
+    smtpFrom: '"Reisotor" <demo@reisotor.local>',
+    appUrl: 'http://localhost:5173',
+  },
+  feedback: {
+    githubRepo: 'dmstern/reisotor',
+    isGithubTokenSet: false,
+    feedbackRelayForwarding: true,
+    feedbackRelayUrl: 'https://reise.ruebenherz.de/api/feedback/relay',
+  },
+  push: {
+    vapidPublicKey: 'BC_DEMO_KEY_PUBLIC_1234567890abcdef',
+    isVapidPrivateKeySet: true,
+    vapidSubject: 'mailto:admin@example.com',
+  },
+};
 let currentDemoUser: User = currentDemoUsers[0];
 
 function persist() {
@@ -285,6 +325,49 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       } as unknown as T;
     }
   }
+  if (path === '/admin/settings') {
+    if (method === 'GET') {
+      return { settings: structuredClone(demoAdminSettings) } as unknown as T;
+    }
+    if (method === 'PUT') {
+      const p = body as Record<string, Record<string, unknown>>;
+      if (p.registration) Object.assign(demoAdminSettings.registration, p.registration);
+      if (p.legal) Object.assign(demoAdminSettings.legal, p.legal);
+      if (p.geo) {
+        Object.assign(demoAdminSettings.geo, p.geo);
+        if (p.geo.clearOrsApiKey) demoAdminSettings.geo.isOrsApiKeySet = false;
+        else if (p.geo.orsApiKey) demoAdminSettings.geo.isOrsApiKeySet = true;
+      }
+      if (p.email) {
+        Object.assign(demoAdminSettings.email, p.email);
+        if (p.email.clearSmtpPass) demoAdminSettings.email.isSmtpPassSet = false;
+        else if (p.email.smtpPass) demoAdminSettings.email.isSmtpPassSet = true;
+      }
+      if (p.feedback) {
+        Object.assign(demoAdminSettings.feedback, p.feedback);
+        if (p.feedback.clearGithubToken) demoAdminSettings.feedback.isGithubTokenSet = false;
+        else if (p.feedback.githubToken) demoAdminSettings.feedback.isGithubTokenSet = true;
+      }
+      if (p.push) {
+        Object.assign(demoAdminSettings.push, p.push);
+        if (p.push.clearVapidKeys) {
+          demoAdminSettings.push.vapidPublicKey = '';
+          demoAdminSettings.push.isVapidPrivateKeySet = false;
+        }
+      }
+      return { settings: structuredClone(demoAdminSettings) } as unknown as T;
+    }
+  }
+
+  if (path === '/admin/settings/vapid-generate' && method === 'POST') {
+    demoAdminSettings.push.vapidPublicKey = 'BC_NEW_DEMO_KEY_' + Date.now();
+    demoAdminSettings.push.isVapidPrivateKeySet = true;
+    return {
+      publicKey: demoAdminSettings.push.vapidPublicKey,
+      isPrivateKeySet: true,
+    } as unknown as T;
+  }
+
   if (path === '/users') {
     if (method === 'GET') return structuredClone(currentDemoUsers) as unknown as T;
     if (method === 'POST') {

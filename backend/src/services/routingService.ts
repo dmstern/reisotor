@@ -1,4 +1,5 @@
 import { db } from '../db/index.js';
+import { getEffectiveSetting } from '../instanceSettings.js';
 
 export interface RouteCoordinates {
   lat: number;
@@ -145,7 +146,7 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
   }
 
   // 2. ORS API Key prüfen
-  const apiKey = process.env.ORS_API_KEY;
+  const apiKey = getEffectiveSetting('ors_api_key', 'ORS_API_KEY').trim();
   if (!apiKey) {
     return {
       supported: false,

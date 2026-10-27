@@ -26,6 +26,58 @@ export interface AdminResetPasswordResult {
   message: string;
 }
 
+export interface AdminSettings {
+  registration: {
+    registrationMode: 'off' | 'full' | 'restricted';
+    requireEmailVerification: boolean;
+  };
+  legal: {
+    operatorName: string;
+    operatorAddress: string;
+    contactEmail: string;
+    contactPhone: string;
+    hostingLocation: string;
+  };
+  geo: {
+    isOrsApiKeySet: boolean;
+    photonApiUrl: string;
+    nominatimApiUrl: string;
+    nominatimEnabled: boolean;
+  };
+  email: {
+    smtpHost: string;
+    smtpPort: number;
+    smtpSecure: boolean;
+    smtpUser: string;
+    isSmtpPassSet: boolean;
+    smtpFrom: string;
+    appUrl: string;
+  };
+  feedback: {
+    githubRepo: string;
+    isGithubTokenSet: boolean;
+    feedbackRelayForwarding: boolean;
+    feedbackRelayUrl: string;
+  };
+  push: {
+    vapidPublicKey: string;
+    isVapidPrivateKeySet: boolean;
+    vapidSubject: string;
+  };
+}
+
+export interface UpdateAdminSettingsPayload {
+  registration?: Partial<AdminSettings['registration']>;
+  legal?: Partial<AdminSettings['legal']>;
+  geo?: Partial<AdminSettings['geo']> & { orsApiKey?: string; clearOrsApiKey?: boolean };
+  email?: Partial<AdminSettings['email']> & { smtpPass?: string; clearSmtpPass?: boolean };
+  feedback?: Partial<AdminSettings['feedback']> & {
+    githubToken?: string;
+    clearGithubToken?: boolean;
+  };
+  push?: Partial<AdminSettings['push']> & { vapidPrivateKey?: string; clearVapidKeys?: boolean };
+}
+
 export interface Trip {
   id: number;
   name: string;

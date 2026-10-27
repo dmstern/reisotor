@@ -1,4 +1,5 @@
 import { db } from './db/index.js';
+import { getInstanceSetting, setInstanceSetting } from './instanceSettings.js';
 
 // #96: offene Registrierung soll per Backend-Env-Var konfigurierbar sein, ohne dafür eine
 // Self-Service-Route zu brauchen – bewusst nur per Server-Env-Var pflegbar, sonst könnte sich jede
@@ -14,11 +15,9 @@ export const REGISTRATION_MODE: RegistrationMode = parseMode(process.env.REGISTR
 
 export function getRegistrationMode(): RegistrationMode {
   try {
-    const row = db
-      .prepare('SELECT value FROM instance_settings WHERE key = ?')
-      .get('registration_mode') as { value: string } | undefined;
-    if (row?.value) {
-      return parseMode(row.value);
+    const val = getInstanceSetting('registration_mode');
+    if (val) {
+      return parseMode(val);
     }
   } catch {
     // Falls Tabelle noch nicht existiert (z. B. vor der Initialisierung)
@@ -28,10 +27,7 @@ export function getRegistrationMode(): RegistrationMode {
 
 export function setRegistrationMode(mode: RegistrationMode): void {
   const parsed = parseMode(mode);
-  db.prepare(
-    `INSERT INTO instance_settings (key, value, updated_at) VALUES ('registration_mode', ?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-  ).run(parsed, new Date().toISOString());
+  setInstanceSetting('registration_mode', parsed);
 }
 
 // Kommagetrennte Reisotor-Benutzernamen, die von den restricted-Einschränkungen ausgenommen sind –

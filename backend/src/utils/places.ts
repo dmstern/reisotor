@@ -1,3 +1,5 @@
+import { getEffectiveSetting } from '../instanceSettings.js';
+
 export interface PhotonFeatureProperties {
   osm_type?: string;
   osm_id?: number;
@@ -954,11 +956,16 @@ async function fetchNominatimPlaces(
     signal?: AbortSignal;
   } = {}
 ): Promise<PlaceSearchResult[]> {
-  if (process.env.NOMINATIM_ENABLED === 'false') {
+  if (getEffectiveSetting('nominatim_enabled', 'NOMINATIM_ENABLED', 'true') === 'false') {
     return [];
   }
 
-  const baseUrl = process.env.NOMINATIM_API_URL || 'https://nominatim.openstreetmap.org/search';
+  const baseUrl =
+    getEffectiveSetting(
+      'nominatim_api_url',
+      'NOMINATIM_API_URL',
+      'https://nominatim.openstreetmap.org/search'
+    ) || 'https://nominatim.openstreetmap.org/search';
   let url: URL;
   try {
     url = new URL(baseUrl);
@@ -1060,7 +1067,9 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   }
 
   const parsed = parseLocationQuery(rawQ);
-  const baseUrl = process.env.PHOTON_API_URL || 'https://photon.komoot.io/api/';
+  const baseUrl =
+    getEffectiveSetting('photon_api_url', 'PHOTON_API_URL', 'https://photon.komoot.io/api/') ||
+    'https://photon.komoot.io/api/';
   const fetchLimit = Math.min(Math.max(limit + offset, 10), 30);
 
   // 1. Primäre Photon-Abfrage (mit bereinigter Suchanfrage)
@@ -1291,9 +1300,10 @@ export async function reverseGeocode(
   }
 
   let urlStr = 'https://photon.komoot.io/reverse';
-  if (process.env.PHOTON_API_URL) {
+  const customPhoton = getEffectiveSetting('photon_api_url', 'PHOTON_API_URL');
+  if (customPhoton) {
     try {
-      const u = new URL(process.env.PHOTON_API_URL);
+      const u = new URL(customPhoton);
       u.pathname = u.pathname.replace(/\/api\/?$/, '/reverse');
       urlStr = u.toString();
     } catch {

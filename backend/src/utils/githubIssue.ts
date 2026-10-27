@@ -7,10 +7,13 @@ export interface CreateIssueInput {
 export type CreateIssueResult =
   { ok: true; number: number; url: string } | { ok: false; error: string; status?: number };
 
+import { getEffectiveSetting } from '../instanceSettings.js';
+
 export type UploadScreenshotResult = { ok: true; url: string } | { ok: false; error: string };
 
-const getGithubToken = () => process.env.GITHUB_TOKEN;
-export const getGithubRepo = () => process.env.GITHUB_REPO ?? 'dmstern/reisotor';
+const getGithubToken = () => getEffectiveSetting('github_token', 'GITHUB_TOKEN').trim();
+export const getGithubRepo = () =>
+  getEffectiveSetting('github_repo', 'GITHUB_REPO', 'dmstern/reisotor').trim();
 
 // Eigener, ansonsten ungenutzter Branch statt des Default-Branchs: Screenshots landen so nicht in
 // der normalen Commit-Historie/dem normalen Diff von main, sondern nur in diesem Ablage-Branch.

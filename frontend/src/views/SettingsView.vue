@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import TabBar from '../components/TabBar.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import SettingsAccountTab from '../components/settings/SettingsAccountTab.vue';
-import SettingsUsersTab from '../components/settings/SettingsUsersTab.vue';
+import SettingsAdminTab from '../components/settings/SettingsAdminTab.vue';
 import SettingsAppTab from '../components/settings/SettingsAppTab.vue';
 import SettingsTripTab from '../components/settings/SettingsTripTab.vue';
 import SettingsNotificationsTab from '../components/settings/SettingsNotificationsTab.vue';
@@ -40,7 +40,9 @@ onMounted(async () => {
     </div>
 
     <SettingsAccountTab v-if="activeTab === 'account'" />
-    <SettingsUsersTab v-else-if="activeTab === 'users' && auth.user?.is_admin" />
+    <SettingsAdminTab
+      v-else-if="(activeTab === 'admin' || activeTab === 'users') && auth.user?.is_admin"
+    />
     <SettingsAppTab v-else-if="activeTab === 'app'" />
     <SettingsTripTab v-else-if="activeTab === 'trip'" />
     <SettingsNotificationsTab v-else-if="activeTab === 'notifications'" />

@@ -1,19 +1,32 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { getEffectiveSetting } from '../instanceSettings.js';
 
 let transporterInstance: Transporter | null = null;
 
 export function isEmailConfigured(): boolean {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_HOST.trim());
+  const host = getEffectiveSetting('smtp_host', 'SMTP_HOST').trim();
+  return Boolean(host);
 }
 
 export function isEmailVerificationRequired(): boolean {
-  return process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+  return (
+    getEffectiveSetting('require_email_verification', 'REQUIRE_EMAIL_VERIFICATION', 'false') ===
+    'true'
+  );
 }
 
 export function getAppUrl(): string {
-  const url = process.env.APP_URL || process.env.BASE_URL || 'http://localhost:5173';
+  const url =
+    getEffectiveSetting('app_url', 'APP_URL') || process.env.BASE_URL || 'http://localhost:5173';
   return url.replace(/\/+$/, '');
+}
+
+function getFromAddress(): string {
+  const customFrom = getEffectiveSetting('smtp_from', 'SMTP_FROM').trim();
+  if (customFrom) return customFrom;
+  const user = getEffectiveSetting('smtp_user', 'SMTP_USER').trim();
+  return `"Reisotor" <${user || 'noreply@reisotor.local'}>`;
 }
 
 function getTransporter(): Transporter | null {
@@ -21,18 +34,22 @@ function getTransporter(): Transporter | null {
     return null;
   }
   if (!transporterInstance) {
-    const port = Number(process.env.SMTP_PORT) || 587;
-    const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+    const host = getEffectiveSetting('smtp_host', 'SMTP_HOST').trim();
+    const port = Number(getEffectiveSetting('smtp_port', 'SMTP_PORT', '587')) || 587;
+    const secure =
+      getEffectiveSetting('smtp_secure', 'SMTP_SECURE', 'false') === 'true' || port === 465;
+    const user = getEffectiveSetting('smtp_user', 'SMTP_USER').trim();
+    const pass = getEffectiveSetting('smtp_pass', 'SMTP_PASS').trim();
 
     transporterInstance = nodemailer.createTransport({
-      host: process.env.SMTP_HOST?.trim(),
+      host,
       port,
       secure,
       auth:
-        process.env.SMTP_USER && process.env.SMTP_PASS
+        user && pass
           ? {
-              user: process.env.SMTP_USER.trim(),
-              pass: process.env.SMTP_PASS.trim(),
+              user,
+              pass,
             }
           : undefined,
     });
@@ -67,8 +84,7 @@ export async function sendPasswordResetEmail(params: {
     return { success: true, actionUrl: resetUrl, simulated: true };
   }
 
-  const from =
-    process.env.SMTP_FROM || `"Reisotor" <${process.env.SMTP_USER || 'noreply@reisotor.local'}>`;
+  const from = getFromAddress();
   const subject = 'Passwort zurücksetzen – Reisotor';
 
   const text = `Hallo ${params.username},
@@ -145,8 +161,7 @@ export async function sendVerificationEmail(params: {
     return { success: true, actionUrl: verifyUrl, simulated: true };
   }
 
-  const from =
-    process.env.SMTP_FROM || `"Reisotor" <${process.env.SMTP_USER || 'noreply@reisotor.local'}>`;
+  const from = getFromAddress();
   const subject = 'E-Mail-Adresse bestätigen – Reisotor';
 
   const text = `Hallo ${params.username},

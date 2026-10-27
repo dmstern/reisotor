@@ -9,6 +9,7 @@ import {
 } from '../utils/githubIssue.js';
 import { checkFeedbackRateLimit } from '../utils/feedbackRateLimiter.js';
 import { readBuildInfo } from './buildInfo.js';
+import { getEffectiveSetting } from '../instanceSettings.js';
 
 // Bewusst NICHT trip-gebunden (wie routes/users.ts) – ein Bug/eine Idee betrifft die App als
 // Ganzes, nicht einen einzelnen Urlaub. Nutzt deshalb weder requireTripMember noch das bestehende,
@@ -39,11 +40,14 @@ const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const DEFAULT_RELAY_URL = 'https://reise.ruebenherz.de/api/feedback/relay';
 
 function getRelayUrl(): string | null {
-  if (process.env.FEEDBACK_RELAY_FORWARDING === 'false') {
+  if (
+    getEffectiveSetting('feedback_relay_forwarding', 'FEEDBACK_RELAY_FORWARDING', 'true') ===
+    'false'
+  ) {
     return null;
   }
-  const configured = process.env.FEEDBACK_RELAY_URL;
-  if (configured !== undefined) {
+  const configured = getEffectiveSetting('feedback_relay_url', 'FEEDBACK_RELAY_URL');
+  if (configured !== '') {
     return configured.trim() || null;
   }
   return DEFAULT_RELAY_URL;
@@ -206,7 +210,8 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         .get(req.session.userId) as { username: string; email: string | null } | undefined;
 
       // Wenn kein lokales GITHUB_TOKEN konfiguriert ist, transparent an den Relay weiterleiten (#526)
-      if (!process.env.GITHUB_TOKEN) {
+      const githubToken = getEffectiveSetting('github_token', 'GITHUB_TOKEN').trim();
+      if (!githubToken) {
         const relayUrl = getRelayUrl();
         if (!relayUrl) {
           return reply.code(503).send({
