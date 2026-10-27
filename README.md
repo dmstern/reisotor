@@ -134,7 +134,9 @@ Reisotor verbindet den Komfort moderner Karten- und Reiseassistenzfunktionen mit
 
 ### Details zu den Kernbereichen
 
-#### 🌦️ Wettervorhersagen & Modelle (Open-Meteo)
+<details>
+<summary><b>🌦️ Wettervorhersagen & Modelle (Open-Meteo)</b></summary>
+<br />
 
 - **Warum gewählt?** Im Gegensatz zu vielen proprietären Wetter-APIs verlangt Open-Meteo keine Registrierung, keine Kreditkarte und keine API-Tokens und arbeitet ohne Tracking.
 - **Funktionen:** Liefert stündliche und 14-tägige Wetterdaten, Regenwahrscheinlichkeiten, UV-Index, Windspitzen sowie automatisierte Unwetter-Hinweise (Starkregen, Sturm, extreme Hitze).
@@ -142,18 +144,30 @@ Reisotor verbindet den Komfort moderner Karten- und Reiseassistenzfunktionen mit
 - **Datenschutz:** Das Frontend ruft Open-Meteo nie direkt auf. Alle Abfragen laufen über den authentifizierten Backend-Proxy `GET /api/weather` (Forecast und Archiv), der Koordinaten auf 2 Nachkommastellen rundet und Antworten im Speicher cacht (Forecast 30 Min, Archiv 6 Std).
 - **Historie:** Das Backend führt täglich automatische Snapshots (`trip_weather_snapshots`) durch, um die Vorhersage-Historie zu sichern.
 
-#### 🗺️ Kartendarstellung & Offline-Kacheln (OpenStreetMap & Leaflet)
+</details>
+
+<details>
+<summary><b>🗺️ Kartendarstellung & Offline-Kacheln (OpenStreetMap & Leaflet)</b></summary>
+<br />
 
 - **Warum gewählt?** Unabhängigkeit von kommerziellen Kartendiensten; exzellente Detailtiefe für Fuß- und Wanderwege sowie Sehenswürdigkeiten.
 - **Offline-Fähigkeit:** Leaflet lädt Standard-Kacheln von `tile.openstreetmap.org`. Der integrierte Service Worker fängt diese Anfragen ab und cacht einmal betrachtete Kacheln lokal für die Offline-Nutzung. Zur Einhaltung der OSM Tile Usage Policy erfolgt bewusst kein aktiver Massen-Download vorab.
 
-#### 🚗 Reale Fahrstrecken & Reisezeiten (OpenRouteService)
+</details>
+
+<details>
+<summary><b>🚗 Reale Fahrstrecken & Reisezeiten (OpenRouteService)</b></summary>
+<br />
 
 - **Warum gewählt?** Bei der Planung von Tagesausflügen und Mehretappen-Touren sind reine Luftlinien irreführend. OpenRouteService (entwickelt vom Heidelberg Institute for Geoinformation Technology) berechnet reale Straßen- und Wanderrouten inklusive genauer Distanzen und Fahrzeiten.
 - **Profile:** Unterstützt Auto (`driving-car`), Fahrrad (`cycling-regular`) und Fußgänger (`foot-walking`).
 - **Resilienz & Caching:** Einmal berechnete Routengeometrien werden dauerhaft in SQLite (`routing_cache`) abgelegt. Fehlt der optionale `ORS_API_KEY`, arbeitet Reisotor transparent mit geschwungenen Luftlinien weiter.
 
-#### 🔍 Ortssuche, Autovervollständigung & POIs (Komoot Photon & Nominatim)
+</details>
+
+<details>
+<summary><b>🔍 Ortssuche, Autovervollständigung & POIs (Komoot Photon & Nominatim)</b></summary>
+<br />
 
 - **Warum gewählt?** Komoot Photon kombiniert OpenStreetMap-Daten mit Elasticsearch zu einer schnellen, mehrsprachigen Geocoding-API mit Adress- und POI-Erkennung (Sehenswürdigkeiten, Aussichtspunkte, Gastronomie, Nahverkehr).
 - **Intelligente Intent- & Kategorie-Erkennung:** Suchanfragen analysieren Suchbegriffe auf Kategorien (z. B. "club", "bar", "nachtleben", "agentur", "café", "apotheke", "zahnarzt"). Die API filtert gezielt mit OSM-Tags (`osm_tag`), bereinigt Füllwörter ("cafes in ystad" -> Cafés in Ystad) und priorisiert POIs gegenüber gewöhnlichen Wohnstraßen.
@@ -161,20 +175,30 @@ Reisotor verbindet den Komfort moderner Karten- und Reiseassistenzfunktionen mit
 - **Proximity-Bias:** Suchanfragen werden mit den Koordinaten des Urlaubs gewichtet (`lat`/`lon`), sodass lokale Ergebnisse in der Zielregion ganz oben erscheinen.
 - **Self-Hosting-Option:** Betreiber:innen können über `PHOTON_API_URL` und `NOMINATIM_API_URL` eigene Instanzen anbinden oder Nominatim via `NOMINATIM_ENABLED=false` deaktivieren.
 
-#### 📷 Automatische Bildersuche für Spots (Web-Suche & Wikipedia/Wikimedia)
+</details>
+
+<details>
+<summary><b>📷 Automatische Bildersuche für Spots (Web-Suche & Wikipedia/Wikimedia)</b></summary>
+<br />
 
 - **Warum gewählt?** Spots und Ausflugsziele sind mit aussagekräftigen Fotos deutlich übersichtlicher. Um Nutzenden das mühsame manuelle Kopieren von Bild-URLs zu ersparen, sucht Reisotor beim Tippen automatisch passende Fotos:
   1. **Web-Bildindex (Bing & DuckDuckGo):** Findet authentische Fotos für Restaurants, Cafés, Bars und Hotels.
   2. **Wikipedia & Wikimedia Commons API:** Findet hochwertige Bilder für bekannte Sehenswürdigkeiten, Parks, Schlösser und Museen (inkl. koordinatenbasierter Umkreissuche `geosearch` im 300-Meter-Radius).
 - **Filterung:** Vektorgrafiken, Logos, Wappen und Schemakarten werden serverseitig aussortiert. Ergebnisse werden 24 Stunden im RAM gecacht.
 
-#### ℹ️ Länder-, Währungs- & Reiseinfos (REST Countries, Open Exchange Rates & Travel Advisory)
+</details>
+
+<details>
+<summary><b>ℹ️ Länder-, Währungs- & Reiseinfos (REST Countries, Open Exchange Rates & Travel Advisory)</b></summary>
+<br />
 
 - **Warum gewählt?** Bei Auslandsreisen fasst das Dashboard die wichtigsten Eckdaten übersichtlich zusammen:
   - **Land & Sprache:** Automatisch per Nominatim-Reverse-Geocoding und REST Countries bestimmt.
   - **Wechselkurs:** Tagesaktuell via `open.er-api.com` zur in Reisotor eingestellten Heimatwährung.
   - **Reisehinweise:** Kompakter Sicherheits-Score aus der Travel Advisory API.
 - **Fehlertoleranz:** Alle Anfragen laufen isoliert per `Promise.allSettled`. Scheitert eine Teilabfrage, wird der betroffene Wert ausgeblendet, ohne das restliche Dashboard zu beeinträchtigen.
+
+</details>
 
 ---
 
