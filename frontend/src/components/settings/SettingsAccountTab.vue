@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
@@ -32,13 +32,24 @@ const {
   usernameError,
   usernameSaved,
   usernameSaving,
+  emailForm,
+  emailError,
+  emailSuccess,
+  emailSaved,
+  emailSaving,
+  emailCancelling,
+  emailResending,
   passwordForm,
   passwordError,
   passwordSaved,
   passwordSaving,
   EMOJI_CATEGORIES,
   initUsername,
+  initEmail,
   changeUsername,
+  changeEmail,
+  cancelPendingEmail,
+  resendVerificationEmail,
   selectAvatar,
   changePassword,
   logout,
@@ -46,7 +57,16 @@ const {
 
 onMounted(() => {
   initUsername();
+  initEmail();
 });
+
+watch(
+  () => [auth.user?.username, auth.user?.email],
+  () => {
+    initUsername();
+    initEmail();
+  }
+);
 </script>
 
 <template>
@@ -170,6 +190,88 @@ onMounted(() => {
         </p>
         <Button type="submit" :disabled="usernameSaving">
           {{ usernameSaving ? 'Speichern…' : 'Benutzername speichern' }}
+        </Button>
+      </form>
+
+      <form class="form email-form" @submit.prevent="changeEmail">
+        <div class="field">
+          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+          <label for="profile-email">
+            <span class="label-row">
+              <span>
+                E-Mail-Adresse
+                <span class="required-indicator" aria-hidden="true">*</span>
+              </span>
+              <Badge
+                v-if="auth.user?.email && auth.user?.is_email_verified"
+                variant="success"
+                size="sm"
+                class="verified-badge"
+              >
+                Bestätigt
+                <AppIcon :icon="ACTION_ICONS.done" :size="10" group="actions" />
+              </Badge>
+              <Badge
+                v-else-if="auth.user?.email && !auth.user?.is_email_verified"
+                variant="warning"
+                size="sm"
+                class="verified-badge"
+              >
+                Unbestätigt
+              </Badge>
+            </span>
+          </label>
+          <Input
+            id="profile-email"
+            v-model="emailForm.email"
+            type="email"
+            autocomplete="email"
+            placeholder="name@example.com"
+            required
+          />
+        </div>
+
+        <div v-if="auth.user?.pending_email" class="pending-email-box">
+          <div class="pending-email-info">
+            <AppIcon :icon="ACTION_ICONS.mail" :size="16" group="actions" class="pending-icon" />
+            <div class="pending-text">
+              <p class="pending-title">Bestätigung ausstehend</p>
+              <p class="pending-description">
+                Bestätigungslink an <strong>{{ auth.user.pending_email }}</strong> gesendet.
+              </p>
+            </div>
+          </div>
+          <div class="pending-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              :disabled="emailResending"
+              @click="resendVerificationEmail"
+            >
+              {{ emailResending ? 'Wird gesendet…' : 'Link erneut senden' }}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              :disabled="emailCancelling"
+              @click="cancelPendingEmail"
+            >
+              {{ emailCancelling ? 'Wird abgebrochen…' : 'Abbrechen' }}
+            </Button>
+          </div>
+        </div>
+
+        <p v-if="emailError" class="hint error">{{ emailError }}</p>
+        <p v-if="emailSaved" class="hint success">
+          {{ emailSuccess }} <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
+        </p>
+        <p v-else-if="emailSuccess" class="hint success">
+          {{ emailSuccess }}
+        </p>
+        <Button type="submit" :disabled="emailSaving">
+          {{ emailSaving ? 'Speichern…' : 'E-Mail-Adresse speichern' }}
         </Button>
       </form>
 
@@ -424,6 +526,73 @@ onMounted(() => {
   margin-bottom: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--color-border);
+}
+
+.email-form {
+  margin-bottom: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pending-email-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-primary-tint);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md-squircle);
+}
+
+.pending-email-info {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.pending-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pending-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+}
+
+.pending-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pending-description {
+  margin: 0;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+.pending-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .field {

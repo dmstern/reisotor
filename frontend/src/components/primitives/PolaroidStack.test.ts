@@ -226,4 +226,22 @@ describe('PolaroidStack primitive', () => {
     expect(html).toContain('IMG_2026_Rom.jpg');
     expect(html).not.toContain('Bild 1');
   });
+
+  it('handles items containing null or undefined gracefully without throwing (#603)', async () => {
+    const appNullOnly = createTestApp(PolaroidStack, {
+      items: [null, undefined],
+    });
+    const htmlNullOnly = await renderToString(appNullOnly);
+    expect(htmlNullOnly).toMatch(/<!--(?:v-if)?-->/);
+
+    const appMixed = createTestApp(PolaroidStack, {
+      items: [null, 'https://example.com/photo.jpg', undefined],
+    });
+    const htmlMixed = await renderToString(appMixed);
+    expect(htmlMixed).toContain('polaroid-stack');
+    expect(htmlMixed).toContain('polaroid-tile');
+    expect(htmlMixed).toContain(
+      'src="/api/images/proxy?url=https%3A%2F%2Fexample.com%2Fphoto.jpg"'
+    );
+  });
 });

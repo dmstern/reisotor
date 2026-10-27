@@ -9,7 +9,13 @@ import {
   setRegistrationMode,
   type RegistrationMode,
 } from '../registrationConfig.js';
-import { getAppUrl, isEmailConfigured, sendPasswordResetEmail } from '../utils/mailer.js';
+import {
+  getAppUrl,
+  isEmailConfigured,
+  isEmailVerificationRequired,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from '../utils/mailer.js';
 
 interface UserRow {
   id: number;
@@ -49,6 +55,10 @@ interface AvatarBody {
 
 interface UsernameBody {
   username: string;
+}
+
+interface EmailBody {
+  email: string;
 }
 
 interface PasswordBody {
@@ -504,7 +514,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
     db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(avatar, req.session.userId);
     return db
-      .prepare('SELECT id, username, avatar FROM users WHERE id = ?')
+      .prepare('SELECT id, username, email, avatar FROM users WHERE id = ?')
       .get(req.session.userId);
   });
 
@@ -522,8 +532,134 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       req.session.userId
     );
     return db
-      .prepare('SELECT id, username, avatar FROM users WHERE id = ?')
+      .prepare('SELECT id, username, email, avatar FROM users WHERE id = ?')
       .get(req.session.userId);
+  });
+
+  app.put<{ Body: EmailBody }>('/users/me/email', async (req, reply) => {
+    const { email } = req.body ?? {};
+    const trimmedEmail = email?.trim();
+    if (!trimmedEmail) {
+      return reply.code(400).send({ error: 'E-Mail-Adresse erforderlich' });
+    }
+    if (!EMAIL_PATTERN.test(trimmedEmail)) {
+      return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
+    }
+
+    const currentUser = db
+      .prepare('SELECT id, username, email, is_email_verified FROM users WHERE id = ?')
+      .get(req.session.userId) as
+      { id: number; username: string; email: string | null; is_email_verified: number } | undefined;
+
+    if (!currentUser) {
+      return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+    }
+
+    // Prüfen, ob eine andere Person diese E-Mail bereits nutzt
+    const existingOther = db
+      .prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?')
+      .get(trimmedEmail, currentUser.id);
+    if (existingOther) {
+      return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
+    }
+
+    // Wenn die E-Mail identisch zur bereits verifizierten E-Mail ist
+    if (
+      currentUser.email &&
+      currentUser.email.toLowerCase() === trimmedEmail.toLowerCase() &&
+      currentUser.is_email_verified !== 0
+    ) {
+      return reply.code(400).send({ error: 'Dies ist bereits deine hinterlegte E-Mail-Adresse' });
+    }
+
+    if (isEmailVerificationRequired()) {
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(currentUser.id);
+      db.prepare(
+        'INSERT INTO email_verification_tokens (user_id, token_hash, pending_email, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(currentUser.id, tokenHash, trimmedEmail, expiresAt, new Date().toISOString());
+
+      await sendVerificationEmail({
+        to: trimmedEmail,
+        username: currentUser.username,
+        token: rawToken,
+        isChange: true,
+      });
+
+      return {
+        requiresVerification: true,
+        pendingEmail: trimmedEmail,
+        email: currentUser.email ?? null,
+        message:
+          'Bestätigungslink wurde an deine neue E-Mail-Adresse gesendet. Bitte bestätige die Adresse über den Link in der E-Mail.',
+      };
+    }
+
+    // Falls keine Bestätigung erforderlich ist, direkt aktualisieren
+    db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(currentUser.id);
+    db.prepare('UPDATE users SET email = ?, is_email_verified = 1 WHERE id = ?').run(
+      trimmedEmail,
+      currentUser.id
+    );
+
+    return {
+      requiresVerification: false,
+      email: trimmedEmail,
+      is_email_verified: true,
+      message: 'E-Mail-Adresse erfolgreich geändert',
+    };
+  });
+
+  // Ausstehende E-Mail-Änderung abbrechen
+  app.delete('/users/me/email-pending', async (req, reply) => {
+    db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(req.session.userId);
+    return reply.code(204).send();
+  });
+
+  // Bestätigungs-E-Mail erneut senden
+  app.post('/users/me/resend-verification-email', async (req, reply) => {
+    const user = db
+      .prepare('SELECT id, username, email, is_email_verified FROM users WHERE id = ?')
+      .get(req.session.userId) as
+      { id: number; username: string; email: string | null; is_email_verified: number } | undefined;
+    if (!user) {
+      return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+    }
+
+    const pendingToken = db
+      .prepare(
+        'SELECT pending_email FROM email_verification_tokens WHERE user_id = ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
+      )
+      .get(user.id, new Date().toISOString()) as { pending_email: string | null } | undefined;
+
+    const targetEmail = pendingToken?.pending_email || user.email;
+    if (!targetEmail) {
+      return reply.code(400).send({ error: 'Keine E-Mail-Adresse zum Bestätigen hinterlegt' });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(user.id);
+    db.prepare(
+      'INSERT INTO email_verification_tokens (user_id, token_hash, pending_email, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).run(user.id, tokenHash, targetEmail, expiresAt, new Date().toISOString());
+
+    await sendVerificationEmail({
+      to: targetEmail,
+      username: user.username,
+      token: rawToken,
+      isChange: Boolean(pendingToken?.pending_email),
+    });
+
+    return {
+      success: true,
+      message: `Ein neuer Bestätigungslink wurde an ${targetEmail} gesendet.`,
+    };
   });
 
   app.put<{ Body: PasswordBody }>('/users/me/password', async (req, reply) => {

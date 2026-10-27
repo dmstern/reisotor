@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, ApiError } from '../api/client';
+import { useAuthStore } from '../stores/auth';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import AppFooterLinks from '../components/AppFooterLinks.vue';
@@ -11,6 +12,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 
 const loading = ref(true);
 const success = ref(false);
@@ -29,6 +31,7 @@ onMounted(async () => {
   try {
     await api.post('/auth/verify-email', { token });
     success.value = true;
+    await auth.checkSession();
   } catch (err) {
     error.value =
       err instanceof ApiError ? err.message : 'Die E-Mail-Adresse konnte nicht bestätigt werden.';
@@ -55,11 +58,13 @@ onMounted(async () => {
           <AppIcon :icon="ACTION_ICONS.done" :size="32" group="actions" />
         </div>
         <h2>E-Mail-Adresse bestätigt!</h2>
-        <p class="description">
-          Vielen Dank! Dein Konto ist nun verifiziert und du kannst dich anmelden.
-        </p>
-        <Button variant="primary" class="action-btn" @click="router.push('/login')">
-          Jetzt anmelden
+        <p class="description">Vielen Dank! Deine E-Mail-Adresse wurde erfolgreich bestätigt.</p>
+        <Button
+          variant="primary"
+          class="action-btn"
+          @click="router.push(auth.user ? '/settings' : '/login')"
+        >
+          {{ auth.user ? 'Zu den Einstellungen' : 'Jetzt anmelden' }}
         </Button>
       </div>
 

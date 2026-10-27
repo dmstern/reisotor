@@ -580,6 +580,11 @@ describe('instance_settings und remote_image_cache Tabellen-Initialisierung', ()
       .get() as { name: string } | undefined;
     expect(verifyTokens?.name).toBe('email_verification_tokens');
 
+    const verifyTokenCols = db.prepare('PRAGMA table_info(email_verification_tokens)').all() as {
+      name: string;
+    }[];
+    expect(verifyTokenCols.some((c) => c.name === 'pending_email')).toBe(true);
+
     const userCols = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
     expect(userCols.some((c) => c.name === 'is_email_verified')).toBe(true);
   });

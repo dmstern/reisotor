@@ -209,7 +209,10 @@ function serializeEntry(
   let images: DiaryImageInput[] = [];
   if (row.images) {
     try {
-      images = JSON.parse(row.images);
+      const parsed = JSON.parse(row.images);
+      if (Array.isArray(parsed)) {
+        images = parsed.filter(Boolean);
+      }
     } catch {
       images = [];
     }
@@ -310,6 +313,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, trip_id, req.session.userId)) return;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
+    const sanitizedImages = Array.isArray(images) ? images.filter(Boolean) : [];
     const result = db
       .prepare(
         'INSERT INTO diary_entries (trip_id, author_id, title, content, content_format, images, date, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -320,7 +324,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         title ?? null,
         isHtml ? sanitizeHtml(content) : content,
         isHtml ? 'html' : 'legacy',
-        JSON.stringify(images ?? []),
+        JSON.stringify(sanitizedImages),
         // Client schickt immer ein vorausgewähltes Datum (Default: heute, siehe DiaryView.vue) -
         // der Fallback hier greift nur defensiv, falls ein Client das Feld doch mal wegließe.
         date || now.slice(0, 10),
@@ -356,13 +360,14 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const isDraft = req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : entry.is_draft;
+    const sanitizedImages = Array.isArray(images) ? images.filter(Boolean) : [];
     db.prepare(
       'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ?, is_draft = ? WHERE id = ?'
     ).run(
       title ?? null,
       isHtml ? sanitizeHtml(content) : content,
       isHtml ? 'html' : 'legacy',
-      JSON.stringify(images ?? []),
+      JSON.stringify(sanitizedImages),
       date || entry.date || now.slice(0, 10),
       now,
       isDraft,

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import type Database from 'better-sqlite3';
 import { buildTestApp } from '../helpers/buildTestApp.js';
 
 // Regressionsnetz für #93: Tagebucheinträge dürfen seitdem von jedem Trip-Mitglied bearbeitet
@@ -8,10 +9,12 @@ import { buildTestApp } from '../helpers/buildTestApp.js';
 // Löschen bleibt bewusst author-only, siehe routes/diary.ts.
 describe('diary co-editing (#93)', () => {
   let app: FastifyInstance;
+  let db: Database.Database;
 
   beforeAll(async () => {
     const built = await buildTestApp();
     app = built.app;
+    db = built.db;
   });
 
   async function register(username: string, email: string) {
@@ -177,5 +180,52 @@ describe('diary co-editing (#93)', () => {
       { url: uploadBody.url, original_name: 'mein_urlaub_2026.png' },
       '/api/uploads/legacy_string_url.jpg',
     ]);
+  });
+
+  it('filters out null/falsy image values safely on create and read (#603)', async () => {
+    const user = await register('filteruser', 'diary-images-filter@example.com');
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: user.cookie },
+      payload: { name: 'Filter Images Trip', start_date: '2026-03-01', end_date: '2026-03-10' },
+    });
+    const tripId = tripRes.json().id;
+
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/diary',
+      headers: { cookie: user.cookie },
+      payload: {
+        trip_id: tripId,
+        content: '<p>Tagebuch mit null-Bildern</p>',
+        content_format: 'html',
+        date: '2026-04-02',
+        images: [
+          null,
+          { url: '/api/uploads/valid.png', original_name: 'valid.png' },
+          undefined,
+          '',
+        ],
+      },
+    });
+    expect(createRes.statusCode).toBe(201);
+    const created = createRes.json();
+    expect(created.images).toEqual([{ url: '/api/uploads/valid.png', original_name: 'valid.png' }]);
+
+    // Direkt in DB [null] schreiben, um Altdaten/Korruption zu simulieren
+    db.prepare('UPDATE diary_entries SET images = ? WHERE id = ?').run(
+      '[null, "https://example.com/test.jpg"]',
+      created.id
+    );
+
+    const getRes = await app.inject({
+      method: 'GET',
+      url: `/api/diary?trip_id=${tripId}`,
+      headers: { cookie: user.cookie },
+    });
+    expect(getRes.statusCode).toBe(200);
+    const entries = getRes.json();
+    expect(entries[0].images).toEqual(['https://example.com/test.jpg']);
   });
 });
