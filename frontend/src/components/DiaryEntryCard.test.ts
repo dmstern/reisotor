@@ -82,4 +82,26 @@ describe('DiaryEntryCard', () => {
     });
     expect(html).toContain('Entwurf');
   });
+
+  it('rendert Bilder-PolaroidStack sicher bei null-Werten oder fehlenden Bildern (#603)', async () => {
+    const htmlWithNull = await render({
+      entry: {
+        ...dummyEntry,
+        images: [null, undefined] as unknown as DiaryEntry['images'],
+      },
+    });
+    expect(htmlWithNull).not.toContain('diary-polaroid-wrap');
+
+    const htmlWithMixed = await render({
+      entry: {
+        ...dummyEntry,
+        images: [
+          null,
+          { url: 'https://example.com/foto.jpg', original_name: 'foto.jpg' },
+        ] as unknown as DiaryEntry['images'],
+      },
+    });
+    expect(htmlWithMixed).toContain('diary-polaroid-wrap');
+    expect(htmlWithMixed).toContain('foto.jpg');
+  });
 });

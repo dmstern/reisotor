@@ -45,4 +45,18 @@ describe('attachment utils', () => {
     );
     expect(doc.original_name).toBe('Anhang 4');
   });
+
+  it('handles null or undefined gracefully (#603)', () => {
+    const fromNull = normalizeAttachment(null, 0);
+    expect(fromNull).toEqual({
+      url: '',
+      original_name: 'Anhang 1',
+    });
+
+    const fromUndefined = normalizeAttachment(undefined, 1);
+    expect(fromUndefined).toEqual({
+      url: '',
+      original_name: 'Anhang 2',
+    });
+  });
 });

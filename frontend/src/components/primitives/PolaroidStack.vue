@@ -19,7 +19,8 @@ export interface PolaroidStationItem {
   mimeType?: string;
 }
 
-export type PolaroidInputItem = PolaroidStationItem | Attachment | AttachmentPreviewItem | string;
+export type PolaroidInputItem =
+  PolaroidStationItem | Attachment | AttachmentPreviewItem | string | null | undefined;
 
 export interface NormalizedPolaroid {
   key: string | number;
@@ -115,7 +116,7 @@ function normalize(item: PolaroidInputItem, index: number): NormalizedPolaroid {
     };
   }
 
-  const raw = item as unknown as Record<string, unknown>;
+  const raw = item && typeof item === 'object' ? (item as unknown as Record<string, unknown>) : {};
   const key = (raw.key as string | number) ?? (raw.id as string | number) ?? `item-${index}`;
   const url = (raw.url as string) || (raw.imageUrl as string) || (raw.image_url as string) || null;
   const isImg = checkIsImage(raw, url);
@@ -142,7 +143,9 @@ function normalize(item: PolaroidInputItem, index: number): NormalizedPolaroid {
 }
 
 const normalizedItems = computed<NormalizedPolaroid[]>(() =>
-  props.items.map((it, idx) => normalize(it, idx))
+  (props.items || [])
+    .filter((it): it is NonNullable<PolaroidInputItem> => it != null)
+    .map((it, idx) => normalize(it, idx))
 );
 
 const visibleItems = computed<NormalizedPolaroid[]>(() =>
@@ -151,16 +154,17 @@ const visibleItems = computed<NormalizedPolaroid[]>(() =>
 
 const calculatedExtraCount = computed(() => {
   if (props.extraCount !== undefined) return props.extraCount;
-  return Math.max(0, props.items.length - visibleItems.value.length);
+  return Math.max(0, normalizedItems.value.length - visibleItems.value.length);
 });
 
 const stackTooltip = computed(() => {
   if (props.title) return props.title;
-  if (!props.items.length) return '';
-  if (props.items.length === 1) {
-    return visibleItems.value[0].title;
+  const count = normalizedItems.value.length;
+  if (!count) return '';
+  if (count === 1) {
+    return visibleItems.value[0]?.title ?? '';
   }
-  return `${props.items.length} Anhänge (Klicken zum Durchblättern)`;
+  return `${count} Anhänge (Klicken zum Durchblättern)`;
 });
 
 function polaroidTileStyle(idx: number, total: number) {
