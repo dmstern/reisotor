@@ -47,7 +47,7 @@
     "@types/dompurify": "^3.2.0",
     "@types/leaflet": "^1.9.12",
     "@types/piexifjs": "^1.0.0",
-    "@vitejs/plugin-vue": "^5.1.4",
+    "@vitejs/plugin-vue": "^6.0.9",
     "jsdom": "^30.0.1",
     "rolldown-vite": "^7.3.1",
     "sharp": "^0.35.3",
