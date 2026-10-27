@@ -19,14 +19,20 @@ export function isImage(attachment: AttachmentPreviewItem | null | undefined): b
 }
 
 export function normalizeAttachment(
-  item: Attachment | AttachmentPreviewItem | string,
+  item: Attachment | AttachmentPreviewItem | string | null | undefined,
   index: number
 ): AttachmentPreviewItem {
-  if (typeof item === 'string') {
+  if (!item || typeof item !== 'object') {
+    if (typeof item === 'string') {
+      return {
+        url: item,
+        original_name: `Bild ${index + 1}`,
+        mime_type: 'image/jpeg',
+      };
+    }
     return {
-      url: item,
-      original_name: `Bild ${index + 1}`,
-      mime_type: 'image/jpeg',
+      url: '',
+      original_name: `Anhang ${index + 1}`,
     };
   }
   return {

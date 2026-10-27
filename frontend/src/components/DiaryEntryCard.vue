@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import type { DiaryEntry, DiaryImage, Excursion, Spot } from '../api/types';
 import type { DailyWeather } from '../utils/weather';
@@ -26,7 +27,7 @@ export interface CoEditor {
   username: string;
 }
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     entry: DiaryEntry;
     index?: number;
@@ -60,6 +61,12 @@ withDefaults(
     comments: () => [],
     commentsOpen: false,
   }
+);
+
+const validImages = computed<DiaryImage[]>(() =>
+  Array.isArray(props.entry.images)
+    ? props.entry.images.filter((img): img is DiaryImage => Boolean(img))
+    : []
 );
 
 const emit = defineEmits<{
@@ -109,11 +116,11 @@ const drawers = useDrawersStore();
     <DraftBadge v-if="entry.is_draft" />
     <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
 
-    <div class="diary-polaroid-wrap" v-if="entry.images.length">
+    <div class="diary-polaroid-wrap" v-if="validImages.length">
       <PolaroidStack
-        :items="entry.images"
+        :items="validImages"
         clipped
-        @click="(idx) => emit('previewImages', entry.images, idx)"
+        @click="(idx) => emit('previewImages', validImages, idx)"
       />
     </div>
 

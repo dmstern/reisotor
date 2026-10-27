@@ -68,7 +68,10 @@ export function useDiaryData(options: UseDiaryDataOptions) {
         spotsStore.load(),
         scheduleStore.load(),
       ]);
-      entries.value = entriesRes;
+      entries.value = entriesRes.map((e) => ({
+        ...e,
+        images: Array.isArray(e.images) ? e.images.filter(Boolean) : [],
+      }));
       users.value = usersRes;
       if (onSocialLoaded) {
         onSocialLoaded(likesRes, commentsRes);
