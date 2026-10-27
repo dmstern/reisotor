@@ -103,6 +103,8 @@ Inzwischen arbeite ich mit Antigravity von Google, weil ich eh schon für Google
 
 So ist nun mit dem Reisotor eine kleine Open-Source-App entstanden, die du frei herunterladen kannst, auf deinem eigenen alten RasperryPi oder einem NAS oder einem Server hosten kannst und musst deine Daten an niemanden weiter geben.
 
+*Transparenzhinweis: Dieser persönliche Abschnitt wurde ohne KI verfasst. Ansonsten ist hier alles an Doku, App-Texten etc. von der KI geschrieben.*
+
 ## 🌐 Angebundene externe Dienste & APIs
 
 Reisotor verbindet den Komfort moderner Karten- und Reiseassistenzfunktionen mit kompromissloser **Datensparsamkeit, Unabhängigkeit und Offline-Tauglichkeit**. Soweit möglich, setzt die App auf freie, quelloffene und kostenfreie Schnittstellen ohne Registrierungszwang. Zeit- oder kontingentkritische Daten werden serverseitig in SQLite gepuffert, und externe Anfragen sind fehlertolerant gekapselt, sodass die App selbst bei Netzausfällen oder Störungen einzelner Dienste stets benutzbar bleibt.
