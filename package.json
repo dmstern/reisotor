@@ -48,6 +48,9 @@
     "e2e:install": "npm --prefix e2e run install-browsers",
     "e2e:report": "npm --prefix e2e run report"
   },
+  "engines": {
+    "node": ">=24.22.1"
+  },
   "devDependencies": {
     "concurrently": "^10.0.5",
     "eslint": "^10.12.0",

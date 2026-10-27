@@ -19,7 +19,7 @@ Arbeits-/Workflow-Konventionen.
 Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.json`](package.json) (`npm run dev`, `test`, `build`, `typecheck`, `lint`, `format`, `seed` etc.). Bei Bedarf direkt in `package.json` nachschlagen.
 
 - **Einzelne Tests ausführen (strikte Pflicht für Agenten):** Backend: `npx -y vitest run backend/test/<pfad> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1`; Frontend: `npm --prefix frontend test -- <pfad> --bail 1`; E2E: `npx -y playwright test <pfad-zur-spec>`. Niemals gesamte Test-Suiten im Chat ausführen.
-- **Voraussetzungen:** Node.js 20+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md` und `DEPLOYMENT.md`.
+- **Voraussetzungen:** Node.js 24+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md` und `DEPLOYMENT.md`.
 
 ## Parallele Sessions & Worktree-Disziplin (Konfliktvermeidung & Clean Exit)
 

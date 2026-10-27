@@ -18,6 +18,9 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "engines": {
+    "node": ">=24.22.1"
+  },
   "dependencies": {
     "@fastify/cookie": "^9.4.0",
     "@fastify/cors": "^9.0.1",

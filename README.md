@@ -179,7 +179,7 @@ Reisotor verbindet den Komfort moderner Karten- und Reiseassistenzfunktionen mit
 
 ## Lokale Entwicklung
 
-Voraussetzung: Node.js 20+, sowie `make`/`gcc`/`python3` (für die nativen Module `better-sqlite3` und `bcrypt`).
+Voraussetzung: Node.js 24+ (mindestens `v24.22.1` zur Behebung von CVE-2026-111497), sowie `make`/`gcc`/`python3` (für die nativen Module `better-sqlite3` und `bcrypt`).
 
 ```bash
 # Einmalige Installation aller Abhängigkeiten (Root, Backend, Frontend, E2E)
