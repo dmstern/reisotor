@@ -1,5 +1,5 @@
 import { computed, watch, type Ref } from 'vue';
-import type { Period, ShoppingItem, User } from '../api/types';
+import type { ShoppingItem, User } from '../api/types';
 import { usePersistedRef } from './usePersistedRef';
 import { useUiSettingsStore } from '../stores/uiSettings';
 import { PERIOD_META } from '../utils/period';

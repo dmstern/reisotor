@@ -21,7 +21,7 @@ describe('ExcursionFormModal', () => {
       observe() {}
       unobserve() {}
       disconnect() {}
-    } as any;
+    } as unknown as typeof ResizeObserver;
   });
 
   afterEach(() => {

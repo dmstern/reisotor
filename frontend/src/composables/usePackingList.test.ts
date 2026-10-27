@@ -74,7 +74,12 @@ describe('usePackingList', () => {
 
   it('partitioniert Listen in Eigene, Gemeinsame und Andere', () => {
     const auth = useAuthStore();
-    auth.user = { id: 1, username: 'Alice', email: 'alice@example.com', avatar: '👩' } as any;
+    auth.user = {
+      id: 1,
+      username: 'Alice',
+      email: 'alice@example.com',
+      avatar: '👩',
+    } as unknown as User;
 
     const hook = usePackingList(1);
     hook.users.value = mockUsers;

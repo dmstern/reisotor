@@ -21,7 +21,7 @@ describe('SpotFormModal', () => {
       observe() {}
       unobserve() {}
       disconnect() {}
-    } as any;
+    } as unknown as typeof ResizeObserver;
   });
 
   afterEach(() => {

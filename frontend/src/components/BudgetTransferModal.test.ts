@@ -4,6 +4,8 @@ import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import BudgetTransferModal from './BudgetTransferModal.vue';
 import { useBudgetStore } from '../stores/budget';
+import type { BudgetTransfer, User } from '../api/types';
+import type { SettlementSuggestion } from '../utils/budgetBalances';
 
 const mockShowToast = vi.fn();
 vi.mock('../composables/useToast', () => ({
@@ -43,7 +45,7 @@ describe('BudgetTransferModal', () => {
     store.users = [
       { id: 1, username: 'Alice', avatar: '👩' },
       { id: 2, username: 'Bob', avatar: '👨' },
-    ] as any;
+    ] as unknown as User[];
   });
 
   afterEach(() => {
@@ -52,8 +54,8 @@ describe('BudgetTransferModal', () => {
 
   function mountModal(props: {
     modelValue: boolean;
-    transfer?: any;
-    suggestion?: any;
+    transfer?: BudgetTransfer | null;
+    suggestion?: SettlementSuggestion | null;
     'onUpdate:modelValue'?: (v: boolean) => void;
     onSubmitted?: () => void;
     onSaved?: () => void;
@@ -138,7 +140,7 @@ describe('BudgetTransferModal', () => {
       date: '2026-11-01',
       note: 'Teilausgleich für Hotel',
     };
-    const removeSpy = vi.spyOn(store, 'removeTransfer').mockResolvedValue(undefined as any);
+    const removeSpy = vi.spyOn(store, 'removeTransfer').mockResolvedValue(undefined);
     const onDeleted = vi.fn();
 
     const { cleanUp } = mountModal({ modelValue: true, transfer, onDeleted });
@@ -160,7 +162,9 @@ describe('BudgetTransferModal', () => {
   });
 
   it('shows toast "Überweisung eingetragen." when submitting a new transfer', async () => {
-    const submitSpy = vi.spyOn(store, 'submitTransfer').mockResolvedValue({ id: 99 } as any);
+    const submitSpy = vi
+      .spyOn(store, 'submitTransfer')
+      .mockResolvedValue({ id: 99 } as unknown as BudgetTransfer);
     const onSaved = vi.fn();
 
     const { cleanUp } = mountModal({
@@ -198,7 +202,9 @@ describe('BudgetTransferModal', () => {
       date: '2026-11-01',
       note: 'Hotel',
     };
-    const updateSpy = vi.spyOn(store, 'updateTransfer').mockResolvedValue({ id: 12 } as any);
+    const updateSpy = vi
+      .spyOn(store, 'updateTransfer')
+      .mockResolvedValue({ id: 12 } as unknown as BudgetTransfer);
     const onSaved = vi.fn();
 
     const { cleanUp } = mountModal({ modelValue: true, transfer, onSaved });

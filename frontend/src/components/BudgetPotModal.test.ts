@@ -124,7 +124,7 @@ describe('BudgetPotModal', () => {
   it('shows toast "Budget angelegt." when submitting a new budget', async () => {
     const onSaved = vi.fn();
     const { cleanUp, store } = mountModal({ modelValue: true, budget: null, onSaved });
-    const addSpy = vi.spyOn(store, 'addBudget').mockResolvedValue({ id: 10 } as any);
+    const addSpy = vi.spyOn(store, 'addBudget').mockResolvedValue({ id: 10 } as unknown as Budget);
     await nextTick();
 
     const nameInput = document.querySelector('input[type="text"]') as HTMLInputElement;
@@ -156,7 +156,9 @@ describe('BudgetPotModal', () => {
     };
     const onSaved = vi.fn();
     const { cleanUp, store } = mountModal({ modelValue: true, budget: mockBudget, onSaved });
-    const updateSpy = vi.spyOn(store, 'updateBudget').mockResolvedValue({ id: 5 } as any);
+    const updateSpy = vi
+      .spyOn(store, 'updateBudget')
+      .mockResolvedValue({ id: 5 } as unknown as Budget);
     await nextTick();
 
     const form = document.querySelector('form') as HTMLFormElement;
@@ -183,7 +185,7 @@ describe('BudgetPotModal', () => {
     };
     const onDeleted = vi.fn();
     const { cleanUp, store } = mountModal({ modelValue: true, budget: mockBudget, onDeleted });
-    const removeSpy = vi.spyOn(store, 'removeBudget').mockResolvedValue(undefined as any);
+    const removeSpy = vi.spyOn(store, 'removeBudget').mockResolvedValue(undefined);
     await nextTick();
 
     const deleteBtn = document.querySelector('button.btn--danger') as HTMLButtonElement;

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/* eslint-disable vue/one-component-per-file */
+
 import { describe, expect, it } from 'vitest';
 import { createApp, h, nextTick, ref } from 'vue';
 import { createPinia } from 'pinia';

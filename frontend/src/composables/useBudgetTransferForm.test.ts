@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useBudgetTransferForm } from './useBudgetTransferForm';
 import { useBudgetStore } from '../stores/budget';
+import type { BudgetTransfer, User } from '../api/types';
 
 vi.mock('../api/client', () => ({
   api: {
@@ -37,8 +38,8 @@ describe('useBudgetTransferForm', () => {
     setActivePinia(createPinia());
     budgetStore = useBudgetStore();
 
-    vi.spyOn(budgetStore, 'submitTransfer').mockResolvedValue({} as any);
-    vi.spyOn(budgetStore, 'updateTransfer').mockResolvedValue({} as any);
+    vi.spyOn(budgetStore, 'submitTransfer').mockResolvedValue({} as unknown as BudgetTransfer);
+    vi.spyOn(budgetStore, 'updateTransfer').mockResolvedValue({} as unknown as BudgetTransfer);
   });
 
   it('initializes with closed form and empty fields', () => {
@@ -96,8 +97,8 @@ describe('useBudgetTransferForm', () => {
   it('applies settlement suggestion directly into the form and opens it', () => {
     const transferForm = useBudgetTransferForm({ tripId: 123 });
     const suggestion = {
-      from: { id: 1, username: 'Alice', avatar: '👩' } as any,
-      to: { id: 2, username: 'Bob', avatar: '👨' } as any,
+      from: { id: 1, username: 'Alice', avatar: '👩' } as unknown as User,
+      to: { id: 2, username: 'Bob', avatar: '👨' } as unknown as User,
       amount: 42.5,
     };
 
