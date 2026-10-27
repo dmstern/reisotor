@@ -32,7 +32,7 @@ const currentYear = new Date().getFullYear();
       <a :href="`${repoUrl.replace(/\/+$/, '')}/blob/main/LICENSE`" target="_blank" rel="noopener"
         >EUPL-1.2</a
       >
-      · agentic-coded
+      · Made with love, coffee and AI
     </p>
   </footer>
 </template>

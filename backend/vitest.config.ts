@@ -7,5 +7,8 @@ export default defineConfig({
     // jede Testdatei ein frisches Modul-Registry bekommt (frische :memory:-DB pro Datei statt pro
     // Test, siehe dort).
     isolate: true,
+    env: {
+      DB_PATH: ':memory:',
+    },
   },
 });
