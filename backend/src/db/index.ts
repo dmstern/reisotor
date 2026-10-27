@@ -377,7 +377,13 @@ function ensureColumn(table: string, column: string, definition: string) {
 function dropColumnIfExists(table: string, column: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   if (existing.some((c) => c.name === column)) {
-    db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+    try {
+      db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+    } catch (err: unknown) {
+      if (!(err instanceof Error && err.message.includes('no such column'))) {
+        throw err;
+      }
+    }
   }
 }
 
