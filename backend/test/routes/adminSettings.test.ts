@@ -204,7 +204,7 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     expect(res.json().error).toContain('SMTP-Server ist nicht konfiguriert');
   });
 
-  it('falls back to smtp_from when admin profile has no email', async () => {
+  it('returns 400 when admin profile has no email and no recipient specified', async () => {
     await app.inject({
       method: 'PUT',
       url: '/api/admin/settings',
@@ -217,6 +217,18 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     const { db } = await import('../../src/db/index.js');
     db.prepare('UPDATE users SET email = NULL WHERE username = ?').run('settings_admin');
 
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-test-email',
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toContain(
+      'In deinem Benutzerprofil ist keine E-Mail-Adresse hinterlegt'
+    );
+  });
+
+  it('allows sending test email to specified recipient even if profile has no email', async () => {
     const mailer = await import('../../src/utils/mailer.js');
     const spy = vi
       .spyOn(mailer, 'sendTestEmail')
@@ -226,10 +238,22 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
       method: 'POST',
       url: '/api/admin/settings/send-test-email',
       headers: { cookie: adminCookie },
+      payload: { to: 'custom-recipient@example.com' },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().success).toBe(true);
-    expect(spy).toHaveBeenCalledWith({ to: 'admin-fallback@example.com' });
+    expect(spy).toHaveBeenCalledWith({ to: 'custom-recipient@example.com' });
     spy.mockRestore();
+  });
+
+  it('returns 400 when specified recipient email is invalid', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-test-email',
+      headers: { cookie: adminCookie },
+      payload: { to: 'invalid-email' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toContain('ungültig');
   });
 });

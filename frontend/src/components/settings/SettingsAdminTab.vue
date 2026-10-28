@@ -218,6 +218,14 @@ const testEmailFeedback = ref<{ type: 'success' | 'error'; message: string } | n
 
 async function sendTestEmail() {
   testEmailFeedback.value = null;
+  if (!auth.user?.email) {
+    testEmailFeedback.value = {
+      type: 'error',
+      message:
+        'In deinem Benutzerprofil ist keine E-Mail-Adresse hinterlegt. Bitte trage zuerst eine E-Mail-Adresse in deinem Profil ein.',
+    };
+    return;
+  }
   testingEmail.value = true;
   try {
     // Falls Änderungen im Formular vorgenommen wurden (z. B. Passwort/Port), zuerst speichern
