@@ -1,5 +1,6 @@
 import '../helpers/initMemoryDb.js';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import nodemailer from 'nodemailer';
 import {
   isEmailConfigured,
   isEmailVerificationRequired,
@@ -89,5 +90,58 @@ describe('Mailer utility', () => {
     const result = await sendTestEmail({ to: 'admin@example.com' });
     expect(result.success).toBe(false);
     expect(result.error).toContain('SMTP ist nicht konfiguriert');
+  });
+
+  it('renders customized Reisotor branding in verification email HTML', async () => {
+    process.env.SMTP_HOST = 'smtp-relay.brevo.com';
+    process.env.SMTP_USER = 'brevo-user';
+    process.env.SMTP_PASS = 'brevo-pass';
+    const sendMailMock = vi.fn().mockResolvedValue({ messageId: '123' });
+    vi.spyOn(nodemailer, 'createTransport').mockReturnValue({
+      sendMail: sendMailMock,
+    } as unknown as nodemailer.Transporter);
+
+    const result = await sendVerificationEmail({
+      to: 'daniel@example.com',
+      username: 'Daniel <script>',
+      token: 'tok-xyz',
+    });
+
+    expect(result.success).toBe(true);
+    expect(sendMailMock).toHaveBeenCalledTimes(1);
+    const mailOptions = sendMailMock.mock.calls[0][0];
+
+    expect(mailOptions.to).toBe('daniel@example.com');
+    expect(mailOptions.subject).toBe('E-Mail-Adresse bestätigen – Reisotor');
+    // Escapes special characters
+    expect(mailOptions.html).toContain('Daniel &lt;script&gt;');
+    // Reisotor brand identity & tokens
+    expect(mailOptions.html).toContain('Willkommen bei Reisotor!');
+    expect(mailOptions.html).toContain('Reisotor');
+    expect(mailOptions.html).toContain('Gemeinsam reisen und planen');
+    expect(mailOptions.html).toContain('#9141ac');
+    expect(mailOptions.html).toContain('E-Mail-Adresse bestätigen');
+    expect(mailOptions.html).toContain('/verify-email?token=tok-xyz');
+    expect(mailOptions.html).toContain('/icons/icon-192.png');
+  });
+
+  it('renders customized Reisotor branding in test email HTML', async () => {
+    process.env.SMTP_HOST = 'smtp-relay.brevo.com';
+    process.env.SMTP_USER = 'brevo-user';
+    process.env.SMTP_PASS = 'brevo-pass';
+    const sendMailMock = vi.fn().mockResolvedValue({ messageId: 'test-123' });
+    vi.spyOn(nodemailer, 'createTransport').mockReturnValue({
+      sendMail: sendMailMock,
+    } as unknown as nodemailer.Transporter);
+
+    const result = await sendTestEmail({ to: 'admin@example.com' });
+    expect(result.success).toBe(true);
+    expect(sendMailMock).toHaveBeenCalledTimes(1);
+    const mailOptions = sendMailMock.mock.calls[0][0];
+
+    expect(mailOptions.subject).toBe('Test-E-Mail – Reisotor');
+    expect(mailOptions.html).toContain('Reisotor Test-E-Mail');
+    expect(mailOptions.html).toContain('Erfolgreich verbunden');
+    expect(mailOptions.html).toContain('#9141ac');
   });
 });
