@@ -268,6 +268,28 @@ async function handleGenerateVapid() {
           aria-label="Selbstregistrierung Standard-Rechte"
         >
           <label
+            for="reg-mode-off"
+            class="mode-option"
+            :class="{ active: regForm.registrationMode === 'off' }"
+          >
+            <Radio
+              id="reg-mode-off"
+              name="adminRegistrationMode"
+              value="off"
+              v-model="regForm.registrationMode"
+            />
+            <div class="mode-content">
+              <span class="mode-title">
+                <strong>Deaktiviert</strong>
+              </span>
+              <span class="mode-desc">
+                Die Selbstregistrierung ist gesperrt. Neue Konten können nur von Administrator:innen
+                über „Nutzer anlegen“ erstellt werden.
+              </span>
+            </div>
+          </label>
+
+          <label
             for="reg-mode-restricted"
             class="mode-option"
             :class="{ active: regForm.registrationMode === 'restricted' }"
@@ -308,28 +330,6 @@ async function handleGenerateVapid() {
               <span class="mode-desc">
                 Jeder neu registrierte Account erhält sofort volle Berechtigungen für Urlaube und
                 Datei-Uploads.
-              </span>
-            </div>
-          </label>
-
-          <label
-            for="reg-mode-off"
-            class="mode-option"
-            :class="{ active: regForm.registrationMode === 'off' }"
-          >
-            <Radio
-              id="reg-mode-off"
-              name="adminRegistrationMode"
-              value="off"
-              v-model="regForm.registrationMode"
-            />
-            <div class="mode-content">
-              <span class="mode-title">
-                <strong>Deaktiviert</strong>
-              </span>
-              <span class="mode-desc">
-                Die Selbstregistrierung ist gesperrt. Neue Konten können nur von Administrator:innen
-                über „Nutzer anlegen“ erstellt werden.
               </span>
             </div>
           </label>
