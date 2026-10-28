@@ -213,7 +213,7 @@ function selectAndClose(id: number) {
           <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
           <Button type="button" variant="ghost" class="new-trip-btn" @click="handleCreateTrip">
             <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
-            <PremiumBadge v-if="tripCreationBlocked()" feature="trips" />
+            <PremiumBadge v-if="tripCreationBlocked()" feature="trips" as="span" :stop="false" />
           </Button>
           <router-link to="/trips" class="manage-trips-btn" @click="close"
             >Alle Urlaube verwalten</router-link

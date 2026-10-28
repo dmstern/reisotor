@@ -154,7 +154,7 @@ defineExpose({
     >
       <AppIcon :icon="FORM_FIELD_ICONS.image" :size="14" group="formFields" />
       <span>Oder Bild hochladen</span>
-      <PremiumBadge feature="uploads" />
+      <PremiumBadge feature="uploads" as="span" :stop="false" />
     </button>
 
     <label v-else :for="fileInputId" class="upload-label">

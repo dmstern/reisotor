@@ -10,12 +10,14 @@ const props = withDefaults(
     label?: string;
     feature?: TierFeature;
     stop?: boolean;
+    as?: string;
   }>(),
   {
     size: 'sm',
     label: 'Premium',
     feature: 'general',
     stop: true,
+    as: 'button',
   }
 );
 
@@ -37,12 +39,12 @@ function handleClick(ev: MouseEvent) {
 
 <template>
   <Badge
-    as="button"
-    type="button"
+    :as="as"
+    :type="as === 'button' ? 'button' : undefined"
     variant="accent"
     :size="size"
     class="premium-badge"
-    interactive
+    :interactive="as === 'button'"
     title="Vollzugriff erforderlich – Klicken für Details"
     aria-label="Vollzugriff erforderlich"
     @click="handleClick"

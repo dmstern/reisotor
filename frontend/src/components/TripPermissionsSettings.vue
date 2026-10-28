@@ -168,7 +168,12 @@ async function removeMember(user: User) {
     </TransitionGroup>
 
     <div class="invite-section" :class="{ 'is-capped': memberCapReached }">
-      <div class="invite-header-wrap">
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+      <div
+        class="invite-header-wrap"
+        :class="{ 'is-blocked': memberCapReached }"
+        @click="memberCapReached && openAccountTierModal('members')"
+      >
         <FormField :icon="FORM_FIELD_ICONS.person" label="Nutzer:in einladen">
           <Input
             v-model="query"
@@ -183,7 +188,6 @@ async function removeMember(user: User) {
                 : 'Benutzername oder E-Mail-Adresse…'
             "
             :disabled="memberCapReached"
-            @click="memberCapReached ? openAccountTierModal('members') : undefined"
           />
         </FormField>
         <PremiumBadge v-if="memberCapReached" feature="members" class="member-cap-badge" />
@@ -304,6 +308,19 @@ async function removeMember(user: User) {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
+}
+
+.invite-header-wrap.is-blocked {
+  cursor: pointer;
+}
+
+.invite-header-wrap.is-blocked :deep(.form-field) {
+  cursor: pointer;
+}
+
+.invite-header-wrap.is-blocked :deep(input) {
+  cursor: pointer;
+  pointer-events: none;
 }
 
 .invite-header-wrap :deep(.form-field) {

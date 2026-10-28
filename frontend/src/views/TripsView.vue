@@ -68,7 +68,7 @@ function openMembers(trip: Trip) {
         @click="handleCreateTrip"
       >
         <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
-        <PremiumBadge v-if="tripCreationBlocked()" feature="trips" />
+        <PremiumBadge v-if="tripCreationBlocked()" feature="trips" as="span" :stop="false" />
       </Button>
     </div>
 

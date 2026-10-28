@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, getCurrentInstance } from 'vue';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
@@ -19,16 +19,22 @@ const emit = defineEmits<{
 
 const auth = useAuthStore();
 const tierModalState = useAccountTierModal();
+const instance = getCurrentInstance();
+
+const isControlled = computed(() => {
+  const vnodeProps = instance?.vnode.props;
+  return vnodeProps != null && ('modelValue' in vnodeProps || 'model-value' in vnodeProps);
+});
 
 const isVisible = computed({
   get() {
-    if (props.modelValue !== undefined) {
-      return props.modelValue;
+    if (isControlled.value) {
+      return props.modelValue ?? false;
     }
     return tierModalState.isOpen.value;
   },
   set(val: boolean) {
-    if (props.modelValue !== undefined) {
+    if (isControlled.value) {
       emit('update:modelValue', val);
     } else {
       if (!val) {
@@ -41,7 +47,8 @@ const isVisible = computed({
 });
 
 const activeFeature = computed(() => {
-  if (props.feature !== undefined) {
+  const vnodeProps = instance?.vnode.props;
+  if (vnodeProps != null && 'feature' in vnodeProps) {
     return props.feature;
   }
   return tierModalState.highlightedFeature.value;

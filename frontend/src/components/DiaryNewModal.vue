@@ -198,7 +198,7 @@ function handleUploadClick() {
           @click="handleUploadClick"
         >
           Bilder hinzufügen
-          <PremiumBadge v-if="auth.user?.restricted" feature="uploads" />
+          <PremiumBadge v-if="auth.user?.restricted" feature="uploads" as="span" :stop="false" />
         </Button>
       </div>
       <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
