@@ -121,7 +121,25 @@ describe('registration mode: restricted', () => {
       headers: { cookie: ownerCookie },
       payload: { name: 'Gedeckelter Urlaub', start_date: '2026-05-01', end_date: '2026-05-05' },
     });
+    expect(tripRes.statusCode).toBe(201);
+    expect(tripRes.json()).toMatchObject({
+      owner_restricted: true,
+      created_by_me: true,
+    });
     const tripId = tripRes.json().id;
+
+    const putRes = await app.inject({
+      method: 'PUT',
+      url: `/api/trips/${tripId}`,
+      headers: { cookie: ownerCookie },
+      payload: { name: 'Gedeckelter Urlaub (umbenannt)' },
+    });
+    expect(putRes.statusCode).toBe(200);
+    expect(putRes.json()).toMatchObject({
+      name: 'Gedeckelter Urlaub (umbenannt)',
+      owner_restricted: true,
+      created_by_me: true,
+    });
 
     const { userId: memberTwoId } = await register('member-two');
     const { userId: memberThreeId } = await register('member-three');
@@ -144,7 +162,7 @@ describe('registration mode: restricted', () => {
     });
     expect(invite2.statusCode).toBe(201);
 
-    // Ein viertes Mitglied überschreitet den Deckel (max. 3 insgesamt).
+    // Ein viertes Mitglied mit Basis-Konto überschreitet den Deckel (max. 3 insgesamt).
     const invite3 = await app.inject({
       method: 'POST',
       url: `/api/trips/${tripId}/members`,
@@ -155,6 +173,21 @@ describe('registration mode: restricted', () => {
     expect(invite3.json()).toEqual({
       error: 'Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub',
     });
+
+    // Ein Vollzugriff-Nutzer (Sponsor) darf jedoch auch als 4. Person beitreten und entsperrt den Urlaub
+    const vipRes = await app.inject({
+      method: 'GET',
+      url: '/api/users/search?q=vip',
+      headers: { cookie: ownerCookie },
+    });
+    const vipUser = vipRes.json().find((u: { username: string }) => u.username === 'vip');
+    const inviteVip = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/members`,
+      headers: { cookie: ownerCookie },
+      payload: { user_id: vipUser.id },
+    });
+    expect(inviteVip.statusCode).toBe(201);
   });
 
   it('lifts the 3-member cap as soon as a full-access user is member of the trip (sponsor principle)', async () => {

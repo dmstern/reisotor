@@ -94,7 +94,7 @@ export interface Trip {
   weather_model: string;
   country_code?: string | null;
   country_name?: string | null;
-  /** Ob die anlegende Person im eingeschränkten Modus ist (Issue #96) – steuert den
+  /** Ob alle Mitglieder des Urlaubs im eingeschränkten Modus sind (Issue #96, Sponsor-Prinzip) – steuert den
    *  3-Mitglieder-Deckel in TripMembersDialog.vue. */
   owner_restricted?: boolean;
   /** Ob die aktuell eingeloggte Person diesen Urlaub selbst angelegt hat (für das 1-Urlaub-Limit im Basis-Konto). */

@@ -45,8 +45,8 @@ function handleClick(ev: MouseEvent) {
     :size="size"
     class="premium-badge"
     :interactive="as === 'button'"
-    title="Vollzugriff erforderlich – Klicken für Details"
-    aria-label="Vollzugriff erforderlich"
+    :title="as === 'button' ? 'Vollzugriff erforderlich – Klicken für Details' : undefined"
+    :aria-label="as === 'button' ? 'Vollzugriff erforderlich' : undefined"
     @click="handleClick"
   >
     <AppIcon :icon="ACTION_ICONS.sparkles" :size="size === 'md' ? 14 : 11" group="actions" />

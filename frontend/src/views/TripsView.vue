@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
@@ -22,7 +22,12 @@ const router = useRouter();
 const tripStore = useTripStore();
 const auth = useAuthStore();
 const showMembers = ref(false);
-const membersTrip = ref<Trip | null>(null);
+const membersTripId = ref<number | null>(null);
+const membersTrip = computed(() =>
+  membersTripId.value != null
+    ? (tripStore.trips.find((t) => t.id === membersTripId.value) ?? null)
+    : null
+);
 const {
   showForm,
   editingTrip,
@@ -53,7 +58,7 @@ function selectTrip(id: number) {
 }
 
 function openMembers(trip: Trip) {
-  membersTrip.value = trip;
+  membersTripId.value = trip.id;
   showMembers.value = true;
 }
 </script>

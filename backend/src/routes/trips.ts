@@ -32,6 +32,14 @@ interface TripBody {
 }
 
 export const tripsRoutes: FastifyPluginAsync = async (app) => {
+  function enrichTrip<T extends { id: number | string }>(trip: T, userId: number | undefined) {
+    return {
+      ...trip,
+      owner_restricted: isTripOwnerRestricted(trip.id),
+      created_by_me: isTripCreatedBy(trip.id, userId),
+    };
+  }
+
   // Nur Urlaube zeigen, denen die eingeloggte Person als Mitglied angehört (trip_members, siehe
   // tripAccess.ts) – vorher implizit für alle Nutzer:innen sichtbar (siehe CLAUDE.md-Kommentar in
   // db/index.ts zum Backfill).
@@ -46,24 +54,17 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       .all(req.session.userId) as { id: number }[];
     // owner_restricted steuert im Frontend (TripMembersDialog.vue), ob der 3-Mitglieder-Deckel
     // aus Issue #96 für diesen Urlaub greift – am Urlaub selbst hängend statt nur am eigenen
-    // restricted-Status, da der Deckel von der anlegenden Person abhängt, nicht von der
-    // gerade einladenden.
-    return trips.map((trip) => ({
-      ...trip,
-      owner_restricted: isTripOwnerRestricted(trip.id),
-      created_by_me: isTripCreatedBy(trip.id, req.session.userId),
-    }));
+    // restricted-Status: Entfällt, sobald mindestens eine Person mit Vollzugriff Mitglied im
+    // Urlaub ist (Sponsor-Prinzip).
+    return trips.map((trip) => enrichTrip(trip, req.session.userId));
   });
 
   app.get<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
-    const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
+    const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id) as
+      { id: number } | undefined;
     if (!trip) return reply.code(404).send({ error: 'Nicht gefunden' });
-    return {
-      ...trip,
-      owner_restricted: isTripOwnerRestricted(req.params.id),
-      created_by_me: isTripCreatedBy(req.params.id, req.session.userId),
-    };
+    return enrichTrip(trip, req.session.userId);
   });
 
   app.post<{ Body: TripBody }>('/trips', async (req, reply) => {
@@ -120,7 +121,8 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     );
     ensureDefaultSharedBudget(tripId);
     reply.code(201);
-    return db.prepare('SELECT * FROM trips WHERE id = ?').get(tripId);
+    const newTrip = db.prepare('SELECT * FROM trips WHERE id = ?').get(tripId) as { id: number };
+    return enrichTrip(newTrip, req.session.userId);
   });
 
   app.put<{ Params: { id: string }; Body: TripBody }>('/trips/:id', async (req, reply) => {
@@ -212,7 +214,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       );
     }
 
-    return db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
+    const updatedTrip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id) as {
+      id: number;
+    };
+    return enrichTrip(updatedTrip, req.session.userId);
   });
 
   app.delete<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
@@ -389,7 +394,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       const { user_id } = req.body ?? {};
       if (!user_id) return reply.code(400).send({ error: 'user_id erforderlich' });
 
-      if (isTripOwnerRestricted(req.params.id)) {
+      if (isTripOwnerRestricted(req.params.id) && isUserRestricted(user_id)) {
         const memberCount = (
           db
             .prepare('SELECT COUNT(*) as count FROM trip_members WHERE trip_id = ?')

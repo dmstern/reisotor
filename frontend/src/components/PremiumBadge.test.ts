@@ -56,4 +56,13 @@ describe('PremiumBadge', () => {
     expect(highlightedFeature.value).toBe('uploads');
     cleanUp();
   });
+
+  it('omits aria-label and title when rendered as span', () => {
+    const { container, cleanUp } = mountComponent({ as: 'span' });
+    const span = container.querySelector('.premium-badge');
+    expect(span).not.toBeNull();
+    expect(span?.getAttribute('aria-label')).toBeNull();
+    expect(span?.getAttribute('title')).toBeNull();
+    cleanUp();
+  });
 });

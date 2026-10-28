@@ -25,7 +25,7 @@ const props = defineProps<{
 
 const tripStore = useTripStore();
 const authStore = useAuthStore();
-const trip = computed(() => props.trip ?? tripStore.trips.find((t) => t.id === props.tripId));
+const trip = computed(() => tripStore.trips.find((t) => t.id === props.tripId) ?? props.trip);
 
 const members = ref<User[]>([]);
 const query = ref('');
