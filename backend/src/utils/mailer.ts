@@ -276,6 +276,26 @@ dein Reisotor-Server`;
   }
 }
 
+export const DEFAULT_FALLBACK_LOGO_URL =
+  'https://raw.githubusercontent.com/dmstern/reisotor/main/frontend/public/icons/icon-192.png';
+
+export function getLogoUrl(): string {
+  const customLogo = getEffectiveSetting('email_logo_url', 'EMAIL_LOGO_URL').trim();
+  if (customLogo) return customLogo;
+
+  const baseUrl = getAppUrl();
+  const isLocalOrPrivate =
+    !baseUrl.startsWith('https://') ||
+    baseUrl.includes('localhost') ||
+    baseUrl.includes('127.0.0.1') ||
+    baseUrl.includes('.local');
+
+  if (isLocalOrPrivate) {
+    return DEFAULT_FALLBACK_LOGO_URL;
+  }
+  return `${baseUrl}/icons/icon-192.png`;
+}
+
 interface EmailTemplateData {
   title: string;
   greeting?: string;
@@ -288,6 +308,7 @@ interface EmailTemplateData {
 
 function buildEmailHtml(data: EmailTemplateData): string {
   const baseUrl = getAppUrl();
+  const logoUrl = getLogoUrl();
   const domainDisplay = baseUrl.replace(/^https?:\/\//, '');
 
   const badgeHtml = data.badgeText
@@ -355,7 +376,7 @@ function buildEmailHtml(data: EmailTemplateData): string {
           <td style="padding: 28px 32px 16px 32px; text-align: center;">
             <a href="${baseUrl}" target="_blank" rel="noopener" style="text-decoration: none; display: inline-block;">
               <div style="display: inline-block; width: 52px; height: 52px; border-radius: 14px; background-color: #faf8f5; border: 1px solid #e8e2d9; overflow: hidden; margin-bottom: 8px;">
-                <img src="${baseUrl}/icons/icon-192.png" width="52" height="52" alt="Reisotor" style="display: block; width: 52px; height: 52px; border: 0;" />
+                <img src="${logoUrl}" width="52" height="52" alt="Reisotor" style="display: block; width: 52px; height: 52px; max-width: 52px; border: 0; outline: none; text-decoration: none;" />
               </div>
               <span style="font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #2b2a28; letter-spacing: -0.3px; display: block;">Reisotor</span>
             </a>

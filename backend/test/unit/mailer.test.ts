@@ -5,6 +5,8 @@ import {
   isEmailConfigured,
   isEmailVerificationRequired,
   getAppUrl,
+  getLogoUrl,
+  DEFAULT_FALLBACK_LOGO_URL,
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendTestEmail,
@@ -46,6 +48,26 @@ describe('Mailer utility', () => {
     delete process.env.APP_URL;
     process.env.BASE_URL = 'https://custom.example.com///';
     expect(getAppUrl()).toBe('https://custom.example.com');
+  });
+
+  it('determines the best email logo URL with public fallback for local/private instances', () => {
+    // Local / private default falls back to GitHub raw URL so email proxies can load it
+    delete process.env.APP_URL;
+    delete process.env.BASE_URL;
+    delete process.env.EMAIL_LOGO_URL;
+    expect(getLogoUrl()).toBe(DEFAULT_FALLBACK_LOGO_URL);
+
+    // Explicit public https base URL uses self-hosted icon
+    process.env.APP_URL = 'https://reise.ruebenherz.de';
+    expect(getLogoUrl()).toBe('https://reise.ruebenherz.de/icons/icon-192.png');
+
+    // Localhost base URL falls back to public URL
+    process.env.APP_URL = 'http://localhost:5173';
+    expect(getLogoUrl()).toBe(DEFAULT_FALLBACK_LOGO_URL);
+
+    // Custom EMAIL_LOGO_URL override takes highest precedence
+    process.env.EMAIL_LOGO_URL = 'https://cdn.example.com/custom-logo.png';
+    expect(getLogoUrl()).toBe('https://cdn.example.com/custom-logo.png');
   });
 
   it('simulates password reset email gracefully when SMTP is unconfigured', async () => {
