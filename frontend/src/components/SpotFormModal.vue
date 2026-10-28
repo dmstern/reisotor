@@ -394,10 +394,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
         icon-group="formFields"
       >
         <template #count>
-          <span
-            v-if="activeSpotForm.tourTitles.length || scheduledCount"
-            class="picker-count"
-          >
+          <span v-if="activeSpotForm.tourTitles.length || scheduledCount" class="picker-count">
             ({{
               [
                 activeSpotForm.tourTitles.length
@@ -486,10 +483,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
         </div>
 
         <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
-        <div
-          v-if="activeSpotForm.tourTitles.length || scheduledCount"
-          class="assign-chips"
-        >
+        <div v-if="activeSpotForm.tourTitles.length || scheduledCount" class="assign-chips">
           <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
           <span
             v-for="title in activeSpotForm.tourTitles"

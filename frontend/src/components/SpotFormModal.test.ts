@@ -161,7 +161,9 @@ describe('SpotFormModal', () => {
     addScheduleBtn.click();
     await nextTick();
 
-    const dateInput = document.querySelector('.add-schedule-popover input[type="date"]') as HTMLInputElement;
+    const dateInput = document.querySelector(
+      '.add-schedule-popover input[type="date"]'
+    ) as HTMLInputElement;
     expect(dateInput).not.toBeNull();
 
     dateInput.value = '2026-10-22';
