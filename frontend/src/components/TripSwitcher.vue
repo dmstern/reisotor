@@ -306,7 +306,7 @@ function selectAndClose(id: number) {
 }
 
 .switcher-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -420,6 +420,10 @@ function selectAndClose(id: number) {
   font-size: 0.85rem;
   color: var(--color-primary-dark);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .new-trip-btn:hover {
@@ -445,7 +449,7 @@ function selectAndClose(id: number) {
 }
 
 .manage-trips-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 1px;
 }
 </style>

@@ -250,7 +250,7 @@ const profileTitle = computed(() => {
 }
 
 .brand:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -424,7 +424,7 @@ const profileTitle = computed(() => {
   height: 36px;
   min-width: 36px;
   min-height: 36px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text-muted);
   text-decoration: none;
@@ -455,7 +455,7 @@ const profileTitle = computed(() => {
 }
 
 .header-calendar-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -476,7 +476,7 @@ const profileTitle = computed(() => {
   width: 36px;
   height: 36px;
   display: block;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
 
@@ -552,13 +552,23 @@ const profileTitle = computed(() => {
   }
 }
 
+@media (max-width: 360px) {
+  .header-row {
+    padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-1) 0;
+  }
+
+  .header-pill {
+    gap: var(--space-1);
+  }
+}
+
 .profile-link {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--color-primary-tint);
   text-decoration: none;
   flex-shrink: 0;
@@ -602,7 +612,7 @@ const profileTitle = computed(() => {
   bottom: -2px;
   left: -2px;
   z-index: -1;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: conic-gradient(
     var(--color-success) 0deg,
     var(--color-success) 90deg,
@@ -635,7 +645,7 @@ const profileTitle = computed(() => {
   justify-content: center;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: inherit;
 }
 
@@ -656,7 +666,7 @@ const profileTitle = computed(() => {
   right: -2px;
   background: var(--color-surface);
   color: var(--color-text-light);
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   width: 16px;
   height: 16px;
   display: flex;
@@ -671,7 +681,7 @@ const profileTitle = computed(() => {
   right: -2px;
   background: var(--color-accent);
   color: #fff;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   width: 16px;
   height: 16px;
   display: flex;
@@ -696,7 +706,7 @@ const profileTitle = computed(() => {
 }
 
 .profile-link:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 

@@ -269,6 +269,8 @@ function close() {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .notice-badge {
@@ -276,6 +278,7 @@ function close() {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
   color: var(--color-warning-dark, #b45309);
 }
 
@@ -363,6 +366,8 @@ function close() {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .feature-text strong {
@@ -381,6 +386,7 @@ function close() {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   font-size: var(--font-size-sm);
+  overflow-wrap: break-word;
 }
 
 .upgrade-info-card h4 {
@@ -402,5 +408,15 @@ function close() {
   display: flex;
   justify-content: flex-end;
   margin-top: var(--space-2);
+}
+
+@media (max-width: 480px) {
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions :deep(button) {
+    width: 100%;
+  }
 }
 </style>

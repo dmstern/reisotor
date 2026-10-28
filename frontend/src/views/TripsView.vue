@@ -154,6 +154,23 @@ function openMembers(trip: Trip) {
   margin-bottom: var(--space-3);
 }
 
+.header h1 {
+  margin: 0;
+  min-width: 0;
+}
+
+@container app-main (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header :deep(button) {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .restricted-hint {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -205,7 +222,7 @@ function openMembers(trip: Trip) {
 }
 
 .trip-select:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
