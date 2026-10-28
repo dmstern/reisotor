@@ -59,9 +59,16 @@ useLocationSharingStore();
 // aktuellen View - hier instanziiert, damit resume() nach einem Reload/App-Neustart mit noch
 // laufender Aufzeichnung greift, exakt wie locationSharing oben.
 useTrackRecordingStore();
-const showNav = computed(
-  () => route.name !== 'login' && route.name !== 'privacy' && route.name !== 'imprint'
-);
+// Standalone-Seiten ohne globale App-Shell (kein AppHeader, keine NavBar, kein SplashScreen)
+const STANDALONE_ROUTES = new Set([
+  'login',
+  'reset-password',
+  'verify-email',
+  'privacy',
+  'imprint',
+]);
+
+const showNav = computed(() => !STANDALONE_ROUTES.has(String(route.name)));
 // NavBar/Kalender-Schublade gehören zu den Domänen-Ansichten INNERHALB eines AUSGEWÄHLTEN Urlaubs
 // (Dashboard, Listen, Karte, ...) - auf der Urlaubsverwaltung (/trips, siehe TripsView.vue) sowie
 // solange (noch) kein Urlaub ausgewählt ist (z. B. erster Login auf einem neuen Gerät mit mehreren
@@ -91,8 +98,8 @@ watch(
 // leiten statt (wie vorher) direkt hier im Template ein Anlegen-Formular ohne Header zu zeigen.
 // Deckt zwei Fälle einheitlich ab: keine Urlaube vorhanden, ODER ≥2 Urlaube ohne gespeicherte
 // Präferenz auf diesem Gerät (siehe loadTrips() in stores/trip.ts - dort wird bewusst nicht
-// geraten). /settings, /security-check sowie die öffentlichen Seiten (/privacy, /imprint) bleiben
-// ausgenommen, damit sie auch ohne ausgewählten Urlaub erreichbar sind.
+// geraten). /settings, /security-check sowie Standalone-Seiten bleiben ausgenommen, damit sie
+// auch ohne ausgewählten Urlaub erreichbar sind.
 watch(
   () => [tripStore.loaded, tripStore.currentTripId, route.name] as const,
   ([loaded, currentTripId, name]) => {
@@ -102,8 +109,7 @@ watch(
       name !== 'trips' &&
       name !== 'settings' &&
       name !== 'security-check' &&
-      name !== 'privacy' &&
-      name !== 'imprint'
+      !STANDALONE_ROUTES.has(String(name))
     ) {
       router.push({ name: 'trips' });
     }
