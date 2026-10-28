@@ -375,9 +375,7 @@ function buildEmailHtml(data: EmailTemplateData): string {
         <tr>
           <td style="padding: 28px 32px 16px 32px; text-align: center;">
             <a href="${baseUrl}" target="_blank" rel="noopener" style="text-decoration: none; display: inline-block;">
-              <div style="display: inline-block; width: 52px; height: 52px; border-radius: 14px; background-color: #faf8f5; border: 1px solid #e8e2d9; overflow: hidden; margin-bottom: 8px;">
-                <img src="${logoUrl}" width="52" height="52" alt="Reisotor" style="display: block; width: 52px; height: 52px; max-width: 52px; border: 0; outline: none; text-decoration: none;" />
-              </div>
+              <img src="${logoUrl}" width="56" height="56" alt="Reisotor" style="display: block; margin: 0 auto 10px auto; width: 56px; height: 56px; max-width: 56px; border: 0; outline: none; text-decoration: none;" />
               <span style="font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 700; color: #2b2a28; letter-spacing: -0.3px; display: block;">Reisotor</span>
             </a>
             <div style="font-size: 13px; color: #66625b; margin-top: 3px; font-weight: 400;">Gemeinsam reisen und planen</div>
