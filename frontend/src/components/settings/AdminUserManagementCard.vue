@@ -82,7 +82,7 @@ onMounted(() => {
             <td>
               <Badge v-if="u.is_admin" variant="accent-secondary">Admin</Badge>
               <Badge v-else-if="u.is_restricted" variant="warning">Basis-Konto</Badge>
-              <Badge v-else variant="success">Vollzugriff</Badge>
+              <Badge v-else variant="success">Plus</Badge>
             </td>
             <td>
               <div class="status-badges">
@@ -135,7 +135,7 @@ onMounted(() => {
                   :variant="u.is_restricted ? 'primary' : 'secondary'"
                   :title="
                     u.is_restricted
-                      ? 'Auf Vollzugriff freischalten'
+                      ? 'Auf Reisotor Plus freischalten'
                       : 'Auf Basis-Konto einschränken'
                   "
                   @click="toggleRestrictedRole(u)"

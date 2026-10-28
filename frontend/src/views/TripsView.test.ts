@@ -73,7 +73,7 @@ describe('TripsView', () => {
     };
   }
 
-  it('renders "Neuer Urlaub" with Premium badge for restricted user with existing trip and opens modal on click', async () => {
+  it('renders "Neuer Urlaub" with Plus badge for restricted user with existing trip and opens modal on click', async () => {
     const { container, cleanUp } = mountComponent(
       { id: 2, username: 'restricted', restricted: true },
       [mockTrip]
@@ -81,7 +81,7 @@ describe('TripsView', () => {
     await nextTick();
 
     expect(container.textContent).toContain('Neuer Urlaub');
-    expect(container.textContent).toContain('Premium');
+    expect(container.textContent).toContain('Plus');
 
     const button = Array.from(container.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Neuer Urlaub')
@@ -104,7 +104,7 @@ describe('TripsView', () => {
     await nextTick();
 
     expect(container.textContent).toContain('Neuer Urlaub');
-    expect(container.textContent).not.toContain('Premium');
+    expect(container.textContent).not.toContain('Plus');
 
     const button = Array.from(container.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Neuer Urlaub')

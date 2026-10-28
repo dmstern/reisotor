@@ -14,7 +14,7 @@ const props = withDefaults(
   }>(),
   {
     size: 'sm',
-    label: 'Premium',
+    label: 'Plus',
     feature: 'general',
     stop: true,
     as: 'button',
@@ -45,11 +45,11 @@ function handleClick(ev: MouseEvent) {
     :size="size"
     class="premium-badge"
     :interactive="as === 'button'"
-    :title="as === 'button' ? 'Vollzugriff erforderlich – Klicken für Details' : undefined"
-    :aria-label="as === 'button' ? 'Vollzugriff erforderlich' : undefined"
+    :title="as === 'button' ? 'Reisotor Plus erforderlich – Klicken für Details' : undefined"
+    :aria-label="as === 'button' ? 'Reisotor Plus erforderlich' : undefined"
     @click="handleClick"
   >
-    <AppIcon :icon="ACTION_ICONS.sparkles" :size="size === 'md' ? 14 : 11" group="actions" />
+    <AppIcon :icon="ACTION_ICONS.sparkle2" :size="size === 'md' ? 14 : 11" group="actions" />
     <span class="premium-label">{{ label }}</span>
   </Badge>
 </template>

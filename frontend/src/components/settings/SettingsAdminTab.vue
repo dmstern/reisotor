@@ -303,7 +303,7 @@ async function handleGenerateVapid() {
             />
             <div class="mode-content">
               <span class="mode-title">
-                <strong>Offen mit Vollzugriff</strong>
+                <strong>Offen mit Reisotor Plus</strong>
               </span>
               <span class="mode-desc">
                 Jeder neu registrierte Account erhält sofort volle Berechtigungen für Urlaube und

@@ -34,15 +34,15 @@ describe('PremiumBadge', () => {
     };
   }
 
-  it('renders with default label Premium', () => {
+  it('renders with default label Plus', () => {
     const { container, cleanUp } = mountComponent();
-    expect(container.textContent).toContain('Premium');
+    expect(container.textContent).toContain('Plus');
     cleanUp();
   });
 
   it('renders with custom label', () => {
-    const { container, cleanUp } = mountComponent({ label: 'Vollzugriff' });
-    expect(container.textContent).toContain('Vollzugriff');
+    const { container, cleanUp } = mountComponent({ label: 'Freigeschaltet' });
+    expect(container.textContent).toContain('Freigeschaltet');
     cleanUp();
   });
 

@@ -84,7 +84,7 @@ watch(
                   ? 'Administrator-Status anzeigen'
                   : auth.user?.restricted
                     ? 'Informationen zu deinem Basis-Konto anzeigen'
-                    : 'Informationen zu deinen Kontorechten anzeigen'
+                    : 'Informationen zu deinem Reisotor Plus-Status anzeigen'
               "
               @click="openAccountTierModal()"
             >
@@ -94,8 +94,8 @@ watch(
                 <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
               </Badge>
               <Badge v-else variant="success" class="tier-badge">
-                Vollzugriff
-                <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
+                Plus
+                <AppIcon :icon="ACTION_ICONS.sparkle2" :size="12" group="actions" />
               </Badge>
             </button>
             <div

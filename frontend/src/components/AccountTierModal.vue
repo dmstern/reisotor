@@ -61,24 +61,23 @@ const featureNotice = computed(() => {
       return {
         title: 'Urlaub anlegen',
         description:
-          'Im Basis-Konto ist maximal 1 eigener Urlaub möglich. Mit Vollzugriff kannst du unbegrenzt viele eigene Urlaube anlegen.',
+          'Im Basis-Konto ist maximal 1 eigener Urlaub möglich. Mit Reisotor Plus kannst du unbegrenzt viele eigene Urlaube anlegen.',
       };
     case 'members':
       return {
         title: 'Mitglieder einladen',
         description:
-          'Im Basis-Konto können bis zu 3 Personen an einem Urlaub teilnehmen. Mit Vollzugriff kannst du unbegrenzt viele Mitreisende einladen.',
+          'Im Basis-Konto können bis zu 3 Personen an einem Urlaub teilnehmen. Mit Reisotor Plus kannst du unbegrenzt viele Mitreisende einladen.',
       };
     case 'uploads':
       return {
         title: 'Datei- & Foto-Uploads',
-        description:
-          'Tickets, Buchungsunterlagen und Tagebuch-Fotos erfordern ein Konto mit Vollzugriff.',
+        description: 'Tickets, Buchungsunterlagen und Tagebuch-Fotos erfordern Reisotor Plus.',
       };
     case 'general':
       return {
-        title: 'Vollzugriff erforderlich',
-        description: 'Diese Funktion ist für verifizierte Konten mit Vollzugriff reserviert.',
+        title: 'Reisotor Plus erforderlich',
+        description: 'Diese Funktion ist für verifizierte Konten mit Reisotor Plus reserviert.',
       };
     default:
       return null;
@@ -100,10 +99,10 @@ function close() {
     <div class="tier-modal-body">
       <div v-if="featureNotice" class="feature-notice-card">
         <div class="notice-icon">
-          <AppIcon :icon="ACTION_ICONS.sparkles" :size="18" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.sparkle2" :size="18" group="actions" />
         </div>
         <div class="notice-text">
-          <span class="notice-badge">Vollzugriff erforderlich</span>
+          <span class="notice-badge">Reisotor Plus erforderlich</span>
           <strong>{{ featureNotice.title }}</strong>
           <p>{{ featureNotice.description }}</p>
         </div>
@@ -115,7 +114,7 @@ function close() {
             >Administrator</Badge
           >
           <Badge v-else-if="auth.user?.restricted" variant="warning" size="md">Basis-Konto</Badge>
-          <Badge v-else variant="success" size="md">Vollzugriff</Badge>
+          <Badge v-else variant="success" size="md">Plus</Badge>
         </div>
         <p class="status-subtitle">
           <template v-if="auth.user?.is_admin">
@@ -125,8 +124,7 @@ function close() {
             Dein Konto läuft aktuell im eingeschränkten Basis-Modus.
           </template>
           <template v-else>
-            Dein Konto ist verifiziert und verfügt über uneingeschränkten Zugriff auf alle
-            Funktionen.
+            Dein Konto verfügt über Reisotor Plus mit uneingeschränktem Zugriff auf alle Funktionen.
           </template>
         </p>
       </div>
@@ -165,7 +163,7 @@ function close() {
               <strong>Eigene Urlaube anlegen</strong>
               <span>{{
                 auth.user?.restricted
-                  ? 'Maximal 1 eigener Urlaub (Vollzugriff: unbegrenzt)'
+                  ? 'Maximal 1 eigener Urlaub (Plus: unbegrenzt)'
                   : 'Unbegrenzt viele eigene Urlaube'
               }}</span>
             </div>
@@ -189,7 +187,7 @@ function close() {
               <strong>Mitglieder pro Urlaub</strong>
               <span>{{
                 auth.user?.restricted
-                  ? 'Maximal 3 Personen in eigenen Urlauben (Vollzugriff: unbegrenzt)'
+                  ? 'Maximal 3 Personen in eigenen Urlauben (Plus: unbegrenzt)'
                   : 'Unbegrenzt viele Mitreisende einladen'
               }}</span>
             </div>
@@ -222,7 +220,7 @@ function close() {
       </div>
 
       <div v-if="auth.user?.restricted" class="upgrade-info-card">
-        <h4>Wie erhalte ich Vollzugriff?</h4>
+        <h4>Wie erhalte ich Reisotor Plus?</h4>
         <p>
           Um diesen privaten Server vor Überlastung und Speicherengpässen zu schützen, starten neue
           Konten zunächst als Basis-Konto.
@@ -231,7 +229,7 @@ function close() {
           Wenn du mit dem Betreiber befreundet bist oder zur Familie gehörst:
           <strong
             >Melde dich einfach kurz per Chat (WhatsApp, Signal etc.) bei der Administration</strong
-          >. Dein Account kann mit einem einzigen Klick für alle Funktionen freigeschaltet werden!
+          >. Dein Account kann mit einem einzigen Klick für Reisotor Plus freigeschaltet werden!
         </p>
       </div>
 
