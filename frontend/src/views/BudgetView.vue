@@ -257,6 +257,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   gap: var(--space-1);
   font-size: var(--font-size-sm);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));

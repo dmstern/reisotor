@@ -316,6 +316,7 @@ function fmt(n: number) {
   color: var(--color-text);
   font-size: var(--font-size-sm);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -406,6 +407,7 @@ function fmt(n: number) {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-danger);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {

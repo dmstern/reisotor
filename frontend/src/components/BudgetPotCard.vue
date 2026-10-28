@@ -512,11 +512,13 @@ function onTotalSectionClick(e: MouseEvent) {
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .category-amount-input {
   width: 90px;
   max-width: 30vw;
+  font-variant-numeric: tabular-nums;
 }
 
 .remove-category-btn {
