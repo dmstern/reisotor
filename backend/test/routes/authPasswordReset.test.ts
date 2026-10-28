@@ -21,7 +21,7 @@ describe('Auth Password Reset & Email Verification routes', () => {
   });
 
   afterEach(() => {
-    delete process.env.REQUIRE_EMAIL_VERIFICATION;
+    process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
   });
 
   it('reports emailConfigured and requireEmailVerification in /auth/config', async () => {
