@@ -280,7 +280,7 @@ onBeforeUnmount(() => {
   z-index: 13;
   min-height: 72px;
   width: var(--drawer-tab-width);
-  padding: 8px 3px;
+  padding: var(--space-2) 3px;
   border: 1px solid var(--color-border);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -289,7 +289,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-1);
   cursor: pointer;
   color: var(--color-text-muted);
   transition:
@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
 }
 
 .drawer-tab:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -439,8 +439,8 @@ onBeforeUnmount(() => {
 
 .drawer-header-actions {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--space-2);
+  right: var(--space-2);
   display: flex;
   align-items: center;
   gap: var(--space-2);

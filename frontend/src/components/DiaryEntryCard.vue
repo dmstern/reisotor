@@ -65,7 +65,9 @@ const props = withDefaults(
 
 const validImages = computed<DiaryImage[]>(() =>
   Array.isArray(props.entry.images)
-    ? props.entry.images.filter((img): img is DiaryImage => Boolean(img))
+    ? props.entry.images.filter((img): img is DiaryImage =>
+        Boolean(img && (typeof img === 'string' ? img.length > 0 : Boolean(img.url)))
+      )
     : []
 );
 
@@ -293,7 +295,7 @@ const drawers = useDrawersStore();
 
 .diary-polaroid-wrap {
   margin: var(--space-2) 0;
-  padding: var(--space-1) 0 var(--space-2) var(--space-1);
+  padding: var(--space-1) var(--space-3) var(--space-2) var(--space-1);
 }
 
 .card-actions-wrapper {
@@ -339,7 +341,7 @@ const drawers = useDrawersStore();
 }
 
 .excursion-chip:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 

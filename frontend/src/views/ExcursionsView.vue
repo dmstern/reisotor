@@ -1445,7 +1445,7 @@ onUnmounted(() => {
    .sheet-handle-row unten) - kein willkürlicher Wert. */
 .spots-col.collapsed {
   height: min(64px, var(--sheet-max-height));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   corner-shape: round;
 }
 

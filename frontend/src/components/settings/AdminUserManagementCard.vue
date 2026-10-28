@@ -203,10 +203,13 @@ onMounted(() => {
 
 .users-table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 .users-table {
   width: 100%;
+  min-width: 580px;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
@@ -220,6 +223,7 @@ onMounted(() => {
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
 .users-table td {
@@ -233,6 +237,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-2);
   font-weight: 500;
+  min-width: 0;
 }
 
 .user-avatar {
@@ -256,6 +261,7 @@ onMounted(() => {
 
 .actions-col {
   text-align: right;
+  white-space: nowrap;
 }
 
 .user-actions {

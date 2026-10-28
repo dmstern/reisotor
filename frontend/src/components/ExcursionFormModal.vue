@@ -394,7 +394,7 @@ function trackDurationLabel(track: LocationTrack): string | null {
 
 .hint.error {
   color: var(--color-danger);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
   gap: 6px;

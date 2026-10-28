@@ -98,6 +98,7 @@ const totalIncomes = computed(() => grossIncomes.value.reduce((s, e) => s + Math
   align-items: center;
   gap: var(--space-1);
   flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .overview-card :deep(.meter-head) {
@@ -112,6 +113,7 @@ const totalIncomes = computed(() => grossIncomes.value.reduce((s, e) => s + Math
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-success);
+  font-variant-numeric: tabular-nums;
 }
 
 .remaining-line.is-low {

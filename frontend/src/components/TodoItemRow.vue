@@ -4,6 +4,7 @@ import CheckableListItem from './primitives/CheckableListItem.vue';
 import Checkbox from './primitives/Checkbox.vue';
 import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
+import EditButton from './EditButton.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -107,15 +108,7 @@ function userName(id: number | null | undefined) {
       >
         {{ userAvatar(item.assigned_to_user_id) }}
       </span>
-      <button
-        type="button"
-        class="edit-btn"
-        aria-label="Bearbeiten"
-        title="Bearbeiten"
-        @click.stop="emit('edit', item)"
-      >
-        <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
-      </button>
+      <EditButton small @click="emit('edit', item)" />
     </template>
   </CheckableListItem>
 </template>
@@ -148,6 +141,7 @@ function userName(id: number | null | undefined) {
   flex: 1;
   min-width: 0;
   word-break: break-word;
+  overflow-wrap: break-word;
   font-size: var(--font-size-sm);
   color: var(--color-text);
 }
@@ -171,6 +165,15 @@ function userName(id: number | null | undefined) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.due-badge span,
+.period-badge span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .note {
@@ -201,32 +204,5 @@ function userName(id: number | null | undefined) {
   justify-content: center;
   font-size: var(--font-size-xs);
   flex-shrink: 0;
-}
-
-.edit-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition:
-    color 0.15s,
-    background-color 0.15s;
-}
-
-.edit-btn:hover {
-  color: var(--color-text);
-  background: var(--color-hover);
-}
-
-.edit-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 </style>

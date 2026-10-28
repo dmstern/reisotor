@@ -138,6 +138,7 @@ const store = useBudgetStore();
 .suggestion-text {
   font-size: var(--font-size-sm);
   min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .suggestion-debt-flow {
@@ -152,11 +153,24 @@ const store = useBudgetStore();
   color: var(--color-accent);
   font-weight: 700;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .settle-btn {
   flex-shrink: 0;
   font-size: var(--font-size-xs);
+}
+
+@container app-main (max-width: 480px) {
+  .suggestion-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settle-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .balance-list {
@@ -172,6 +186,7 @@ const store = useBudgetStore();
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
   font-size: var(--font-size-sm);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm-squircle);
@@ -183,8 +198,17 @@ const store = useBudgetStore();
   background: var(--color-hover);
 }
 
+.balance-row :deep(.badge) {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 .balance-user {
   font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hint {

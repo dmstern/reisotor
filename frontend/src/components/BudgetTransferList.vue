@@ -105,6 +105,7 @@ const store = useBudgetStore();
 .row-amount {
   flex-shrink: 0;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .row-actions {

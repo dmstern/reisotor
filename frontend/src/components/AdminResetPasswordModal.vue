@@ -123,7 +123,7 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
 
       <p v-if="error" class="error-msg">{{ error }}</p>
 
-      <div class="actions">
+      <div class="actions actions-row">
         <Button variant="secondary" :disabled="loading" @click="close">Abbrechen</Button>
         <Button variant="primary" :loading="loading" :disabled="loading" @click="handleReset">
           <AppIcon :icon="ACTION_ICONS.key" :size="14" group="actions" />
@@ -188,7 +188,7 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
         dem Nutzer das Einmal-Passwort oder den Link persönlich oder per Messenger mit.
       </p>
 
-      <div class="actions">
+      <div class="actions actions-row">
         <Button variant="primary" @click="close">Fertig</Button>
       </div>
     </div>
@@ -263,6 +263,7 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-1) 0;
+  min-width: 0;
 }
 
 .credential-info {
@@ -270,6 +271,8 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
   flex-direction: column;
   gap: 2px;
   overflow: hidden;
+  min-width: 0;
+  flex: 1;
 }
 
 .credential-info .label {
@@ -290,6 +293,23 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.copy-btn {
+  flex-shrink: 0;
+}
+
+@container (max-width: 420px) {
+  .credential-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .copy-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .email-hint {

@@ -35,7 +35,8 @@ export interface SpotFormData {
   amount: string;
   paid_by_user_id: string;
   tourTitles: string[];
-  scheduledDate: string;
+  scheduledDates: string[];
+  scheduledDate?: string;
 }
 
 export const SPOT_SIDE_OPTIONS = [
@@ -70,6 +71,7 @@ export function emptySpotForm(): SpotFormData {
     amount: '',
     paid_by_user_id: '',
     tourTitles: [] as string[],
+    scheduledDates: [] as string[],
     scheduledDate: '',
   };
 }
@@ -269,6 +271,17 @@ export function useSpotForm(options: UseSpotFormOptions) {
   function openSpotForm() {
     spotTitleTouched.value = false;
     showSpotForm.value = true;
+    if (
+      (!Array.isArray(spotForm.value.scheduledDates) ||
+        spotForm.value.scheduledDates.length === 0) &&
+      spotForm.value.scheduledDate
+    ) {
+      spotForm.value.scheduledDates = [spotForm.value.scheduledDate];
+    } else if (!Array.isArray(spotForm.value.scheduledDates)) {
+      spotForm.value.scheduledDates = [];
+    }
+    showSpotScheduleSection.value =
+      spotForm.value.tourTitles.length > 0 || spotForm.value.scheduledDates.length > 0;
   }
 
   const editSpotScheduledItems = computed(() => {
@@ -502,17 +515,33 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   async function submitAddSpotToDate() {
     const date = addScheduleDateVal.value;
-    if (!date || !editingSpot.value || !tripStore.currentTripId) return;
-    await scheduleStore.create({
-      trip_id: tripStore.currentTripId,
-      date,
-      title: editingSpot.value.title,
-      spot_id: editingSpot.value.id,
-      auto_created: 1,
-      user_modified: 0,
-    });
+    if (!date) return;
+    if (editingSpot.value !== null) {
+      if (!tripStore.currentTripId) return;
+      await scheduleStore.create({
+        trip_id: tripStore.currentTripId,
+        date,
+        title: editingSpot.value.title,
+        spot_id: editingSpot.value.id,
+        auto_created: 1,
+        user_modified: 0,
+      });
+    } else {
+      if (!Array.isArray(spotForm.value.scheduledDates)) {
+        spotForm.value.scheduledDates = [];
+      }
+      if (!spotForm.value.scheduledDates.includes(date)) {
+        spotForm.value.scheduledDates.push(date);
+        spotForm.value.scheduledDates.sort();
+      }
+    }
     addScheduleDateVal.value = '';
     addSchedulePopoverOpen.value = false;
+  }
+
+  function removeScheduledDateFromNewSpot(date: string) {
+    if (!Array.isArray(spotForm.value.scheduledDates)) return;
+    spotForm.value.scheduledDates = spotForm.value.scheduledDates.filter((d) => d !== date);
   }
 
   const spotReferencePoints = computed(() =>
@@ -751,12 +780,19 @@ export function useSpotForm(options: UseSpotFormOptions) {
       return;
     }
     await syncSpotTours(result.id, spotForm.value.tourTitles);
-    if (spotForm.value.scheduledDate) {
+    const datesToSchedule = spotForm.value.scheduledDates?.length
+      ? spotForm.value.scheduledDates
+      : spotForm.value.scheduledDate
+        ? [spotForm.value.scheduledDate]
+        : [];
+    for (const d of datesToSchedule) {
       await scheduleStore.create({
         trip_id: tripId,
-        date: spotForm.value.scheduledDate,
+        date: d,
         title: result.title,
         spot_id: result.id,
+        auto_created: 1,
+        user_modified: 0,
       });
     }
     closeSpotForm();
@@ -854,6 +890,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       amount: spot.amount != null ? String(spot.amount) : '',
       paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
       tourTitles: tourTitlesFor(spot.id),
+      scheduledDates: [],
       scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
     };
     const pin = spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
@@ -987,6 +1024,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     addScheduleMenuStyle,
     toggleAddSchedulePopover,
     submitAddSpotToDate,
+    removeScheduledDateFromNewSpot,
     allTourTitles,
     tourTitlesFor,
     removeTourTitle,

@@ -314,6 +314,7 @@ async function emptyTrash() {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .text-danger {
@@ -344,6 +345,7 @@ async function emptyTrash() {
 .trash-meta {
   font-size: 0.78rem;
   color: var(--color-text-muted);
+  word-break: break-word;
 }
 
 .error {

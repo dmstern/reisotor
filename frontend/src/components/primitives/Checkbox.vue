@@ -82,7 +82,8 @@ function onChange(event: Event) {
   margin: 0;
   padding: 0;
   border: 2px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
@@ -113,7 +114,7 @@ function onChange(event: Event) {
 }
 
 .checkbox:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 

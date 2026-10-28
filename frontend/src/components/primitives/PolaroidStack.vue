@@ -3,6 +3,7 @@ import { imageDisplayUrl } from '../../utils/imageDisplayUrl';
 import { computed, ref } from 'vue';
 import AppIcon from '../AppIcon.vue';
 import FileFormatGraphic from './FileFormatGraphic.vue';
+import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
 import type { IconDef } from '../../utils/icon';
 import type { IconGroup } from '../../stores/iconStyle';
 import type { Attachment } from '../../api/types';
@@ -67,7 +68,8 @@ function onImageError(url: string) {
   failedImageUrls.value[url] = true;
 }
 
-function fileExtension(name: string): string {
+function fileExtension(name?: string | null): string {
+  if (!name || typeof name !== 'string') return 'DATEI';
   const dotIdx = name.lastIndexOf('.');
   if (dotIdx === -1) return 'DATEI';
   return name
@@ -249,6 +251,14 @@ function handleClick(e: Event) {
           >
             <AppIcon :icon="tile.tabler" :size="16" :group="tile.iconGroup || 'categories'" />
           </div>
+          <!-- Fallback bei fehlendem oder fehlerhaftem Bild -->
+          <div
+            v-else
+            class="polaroid-placeholder polaroid-placeholder--fallback"
+            :style="{ backgroundColor: 'var(--color-primary-tint)' }"
+          >
+            <AppIcon :icon="FORM_FIELD_ICONS.image" :size="16" group="formFields" />
+          </div>
         </div>
 
         <div class="polaroid-chin">
@@ -388,7 +398,7 @@ function handleClick(e: Event) {
 .polaroid-stack.is-interactive:focus-visible .polaroid-tile:first-child {
   box-shadow:
     0 0 0 2px var(--color-bg, var(--color-surface)),
-    0 0 0 4px var(--color-primary);
+    0 0 0 4px var(--color-focus-ring, var(--color-primary));
 }
 
 .polaroid-tile {
@@ -637,7 +647,7 @@ function handleClick(e: Event) {
   font-size: 0.55rem;
   font-weight: 800;
   padding: 1px 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   border: 1.5px solid #ffffff;
   z-index: 5;

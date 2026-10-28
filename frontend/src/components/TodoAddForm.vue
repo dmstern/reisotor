@@ -223,7 +223,8 @@ function discardDraft() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .quick-input-actions {
@@ -236,6 +237,18 @@ function discardDraft() {
 @container app-main (max-width: 640px) {
   .quick-input-actions {
     margin-left: auto;
+  }
+}
+
+@container app-main (max-width: 480px) {
+  .quick-input-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .details-toggle-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

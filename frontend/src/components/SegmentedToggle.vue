@@ -96,7 +96,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   background-color: var(--color-hover);
   background-image: var(--texture-grain);
   background-blend-mode: overlay;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px;
   gap: 2px;
   box-shadow: var(--shadow-inset);
@@ -111,7 +111,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   inset: 4px;
   width: calc((100% - 8px) / var(--count));
   background: var(--color-surface);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: var(--shadow-pill-raised);
   transform: translateX(calc(var(--active-index) * 100%));
   transition: transform 0.2s ease;
@@ -146,7 +146,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
      aus statt einer bewusst erhobenen Pille. */
   box-shadow: none;
   background: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.85rem;
   font-weight: 600;
   line-height: 1;
@@ -154,6 +154,11 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.15s ease;
+}
+
+.segmented-option:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 1px;
 }
 
 .segmented-option-label {
@@ -172,7 +177,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   right: -2px;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--color-danger);
   border: 1.5px solid var(--color-surface);
 }

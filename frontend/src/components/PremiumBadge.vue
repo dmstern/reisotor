@@ -60,6 +60,8 @@ function handleClick(ev: MouseEvent) {
   cursor: pointer;
   vertical-align: middle;
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
   border-radius: var(--radius-pill);
   background: var(--color-warning-tint, rgba(245, 158, 11, 0.15));
   color: var(--color-warning-dark, #b45309);
@@ -73,6 +75,11 @@ function handleClick(ev: MouseEvent) {
 .premium-badge:hover {
   filter: brightness(1.08);
   transform: translateY(-0.5px);
+}
+
+.premium-badge:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
 }
 
 .premium-badge:active {

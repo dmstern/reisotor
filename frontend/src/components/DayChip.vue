@@ -97,7 +97,7 @@ const dayNum = computed(() => {
 }
 
 .day-chip:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -122,7 +122,7 @@ const dayNum = computed(() => {
   right: 3px;
   width: 5px;
   height: 5px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--color-scheduled-dark, var(--color-scheduled));
 }
 

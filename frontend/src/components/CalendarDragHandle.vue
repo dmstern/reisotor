@@ -101,7 +101,7 @@ const computedAriaLabel = computed(() => {
 }
 
 .calendar-drag-handle:focus-visible {
-  outline: 2px solid var(--color-scheduled);
+  outline: 2px solid var(--color-focus-ring, var(--color-scheduled));
   outline-offset: 2px;
 }
 

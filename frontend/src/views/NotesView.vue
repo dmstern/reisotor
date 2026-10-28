@@ -476,6 +476,18 @@ async function remove(id: number) {
   margin-bottom: var(--space-3);
 }
 
+@container app-main (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header :deep(.btn) {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .add-form {
   display: flex;
   flex-direction: column;
@@ -559,5 +571,7 @@ async function remove(id: number) {
   margin: 0;
   font-size: 0.78rem;
   color: var(--color-text-muted);
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 </style>

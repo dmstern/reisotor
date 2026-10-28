@@ -58,7 +58,7 @@ defineEmits<{
   content: '';
   width: 4px;
   height: var(--input-default-height);
-  border-radius: 3px;
+  border-radius: var(--radius-pill);
   background: var(--color-border);
   transition: background 0.15s ease;
 }

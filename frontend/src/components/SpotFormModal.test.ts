@@ -125,4 +125,70 @@ describe('SpotFormModal', () => {
     expect(tourAssignBtn?.textContent).toContain('Tour zuordnen');
     cleanUp();
   });
+
+  it('renders "Tour zuordnen" and "Datum hinzufügen" buttons in create mode', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const tourAssignBtn = document.querySelector('.tour-assign-btn');
+    expect(tourAssignBtn).not.toBeNull();
+    expect(tourAssignBtn?.textContent).toContain('Tour zuordnen');
+
+    const addScheduleBtn = document.querySelector('.add-schedule-btn');
+    expect(addScheduleBtn).not.toBeNull();
+    expect(addScheduleBtn?.textContent).toContain('Datum hinzufügen');
+    cleanUp();
+  });
+
+  it('allows adding and removing a scheduled date in create mode', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const addScheduleBtn = document.querySelector('.add-schedule-btn') as HTMLButtonElement;
+    expect(addScheduleBtn).not.toBeNull();
+    addScheduleBtn.click();
+    await nextTick();
+
+    const dateInput = document.querySelector(
+      '.add-schedule-popover input[type="date"]'
+    ) as HTMLInputElement;
+    expect(dateInput).not.toBeNull();
+
+    dateInput.value = '2026-10-22';
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await nextTick();
+
+    const submitBtn = Array.from(document.querySelectorAll('.add-schedule-popover button')).find(
+      (b) => b.textContent?.includes('Hinzufügen')
+    ) as HTMLButtonElement;
+    expect(submitBtn).toBeDefined();
+    submitBtn.click();
+    await nextTick();
+
+    // Check that schedule chip appears
+    const chip = document.querySelector('.assign-chip--schedule');
+    expect(chip).not.toBeNull();
+    expect(chip?.textContent).toContain('22.10.2026');
+
+    // Remove the chip
+    const removeBtn = chip?.querySelector('.assign-chip-remove') as HTMLButtonElement;
+    expect(removeBtn).not.toBeNull();
+    removeBtn.click();
+    await nextTick();
+
+    expect(document.querySelector('.assign-chip--schedule')).toBeNull();
+    cleanUp();
+  });
 });

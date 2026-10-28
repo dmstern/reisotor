@@ -187,4 +187,57 @@ describe('TabBar', () => {
     expect(scrollerBg?.style.getPropertyValue('--tab-bar-fade-bg')).toBe('var(--color-bg)');
     cleanUpBg();
   });
+
+  it('beruecksichtigt Pfeil-Offsets beim Scrollen nur wenn links/rechts weitere Tabs liegen', async () => {
+    let currentKey = 'spots';
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(TabBar, {
+          tabs: sampleTabs,
+          activeKey: currentKey,
+          onSelect: (k: string) => {
+            currentKey = k;
+          },
+        }),
+    });
+    app.use(pinia);
+    const vm = app.mount(container);
+
+    await nextTick();
+    mockTabGeometry(container);
+
+    const tabBar = container.querySelector<HTMLElement>('.tab-bar');
+    expect(tabBar).not.toBeNull();
+
+    let scrolledTo: number | null = null;
+    (tabBar as unknown as { scrollTo: (opts: { left: number }) => void }).scrollTo = (opts) => {
+      scrolledTo = opts.left;
+    };
+
+    // Fall 1: Erster Tab (btnLeft === 0): Kein linker arrowOffset (0 statt -36)
+    Object.defineProperty(tabBar, 'scrollLeft', { configurable: true, value: 50 });
+    Object.defineProperty(tabBar, 'clientWidth', { configurable: true, value: 100 });
+    Object.defineProperty(tabBar, 'scrollWidth', { configurable: true, value: 300 });
+
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.tab');
+    buttons[0]?.click();
+    await nextTick();
+    expect(scrolledTo).toBe(0);
+
+    // Fall 2: Mittlerer Tab (btnLeft > 0): 36px Pfeil-Offset wird abgezogen
+    // Tab 1: offsetLeft = 90, offsetWidth = 100
+    // viewLeft = 100 -> btnLeft (90) - 36 = 54 < 100 -> scrollTo(54)
+    Object.defineProperty(tabBar, 'scrollLeft', { configurable: true, value: 100 });
+    buttons[1]?.click();
+    vm.$forceUpdate();
+    await nextTick();
+    expect(scrolledTo).toBe(54);
+
+    app.unmount();
+    container.remove();
+    document.body.innerHTML = '';
+  });
 });

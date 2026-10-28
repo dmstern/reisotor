@@ -222,4 +222,11 @@ defineEmits<{
     justify-content: center;
   }
 }
+
+@container schedule-view (max-width: 300px) {
+  :deep(.segmented-option) {
+    padding: 4px 6px;
+    font-size: var(--font-size-xs);
+  }
+}
 </style>

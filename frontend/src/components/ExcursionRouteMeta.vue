@@ -43,6 +43,7 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .route {
