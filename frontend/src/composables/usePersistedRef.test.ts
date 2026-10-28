@@ -1,3 +1,4 @@
+import { ref, nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePersistedRef } from './usePersistedRef';
 
@@ -47,5 +48,38 @@ describe('usePersistedRef', () => {
     expect(a.value).toBe('a-changed');
     expect(b.value).toBe('b-default');
     expect(localStorage.getItem('key-b')).toBeNull();
+  });
+
+  it('supports reactive keys and switches storage partition when key changes', async () => {
+    const tripId = ref(1);
+    localStorage.setItem('shopping-shop:1', JSON.stringify('dm'));
+
+    const lastShop = usePersistedRef(
+      () => (tripId.value ? `shopping-shop:${tripId.value}` : ''),
+      ''
+    );
+    expect(lastShop.value).toBe('dm');
+
+    // Switch to fresh trip 2
+    tripId.value = 2;
+    await nextTick();
+    expect(lastShop.value).toBe('');
+
+    // Set value in trip 2
+    lastShop.value = 'rewe';
+    expect(localStorage.getItem('shopping-shop:2')).toBe(JSON.stringify('rewe'));
+    expect(localStorage.getItem('shopping-shop:1')).toBe(JSON.stringify('dm'));
+
+    // Switch back to trip 1
+    tripId.value = 1;
+    await nextTick();
+    expect(lastShop.value).toBe('dm');
+  });
+
+  it('handles empty or null key safely without touching storage', () => {
+    const value = usePersistedRef(() => '', 'fallback');
+    expect(value.value).toBe('fallback');
+    value.value = 'updated';
+    expect(localStorage.getItem('')).toBeNull();
   });
 });

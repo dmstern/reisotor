@@ -25,6 +25,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 const uiSettings = useUiSettingsStore();
 
 const {
+  tripId,
   items,
   users,
   loading,
@@ -42,8 +43,11 @@ const { groupBy, defaultGroupBy, groupByOptions, groupedItems, knownShops, hasIt
   useShoppingGrouping(items, users);
 
 const newBuyer = ref('');
-const newShop = usePersistedRef('reisotor-shopping-last-shop', '');
-const newPeriod = usePersistedRef<Period | ''>('reisotor-shopping-last-period', '');
+const newShop = usePersistedRef(() => (tripId ? `reisotor-shopping-last-shop:${tripId}` : ''), '');
+const newPeriod = usePersistedRef<Period | ''>(
+  () => (tripId ? `reisotor-shopping-last-period:${tripId}` : ''),
+  ''
+);
 const editingItem = ref<ShoppingItem | null>(null);
 
 async function handleReassign(item: ShoppingItem, event: Event) {
@@ -84,7 +88,13 @@ async function quickAddToGroup(group: Group, label: string) {
       </template>
     </ListProgressHeader>
 
-    <ShoppingAddForm :users="users" :known-shops="knownShops" @submit="submitNewItem" />
+    <ShoppingAddForm
+      :users="users"
+      :known-shops="knownShops"
+      v-model:last-shop="newShop"
+      v-model:last-period="newPeriod"
+      @submit="submitNewItem"
+    />
 
     <div class="groups-grid" :class="{ 'groups-grid--masonry masonry': groupBy === 'shop' }">
       <section

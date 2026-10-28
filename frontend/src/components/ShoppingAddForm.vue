@@ -16,13 +16,23 @@ import Accordion from './primitives/Accordion.vue';
 import AppIcon from './AppIcon.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 
-defineProps<{
-  users: User[];
-  knownShops: string[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    users: User[];
+    knownShops: string[];
+    lastShop?: string;
+    lastPeriod?: Period | '';
+  }>(),
+  {
+    lastShop: '',
+    lastPeriod: '',
+  }
+);
 
 const emit = defineEmits<{
   (e: 'submit', form: ShoppingFormInput): void;
+  (e: 'update:lastShop', value: string): void;
+  (e: 'update:lastPeriod', value: Period | ''): void;
 }>();
 
 const { showToast } = useToast();
@@ -31,9 +41,31 @@ const newLabel = ref('');
 const newBuyer = ref('');
 const newLink = ref('');
 const newNote = ref('');
-const newShop = usePersistedRef('reisotor-shopping-last-shop', '');
-const newPeriod = usePersistedRef<Period | ''>('reisotor-shopping-last-period', '');
+const newShop = ref(props.lastShop);
+const newPeriod = ref<Period | ''>(props.lastPeriod);
 const showNewDetails = usePersistedRef('reisotor-shopping-show-details', false);
+
+watch(
+  () => props.lastShop,
+  (val) => {
+    if (val !== newShop.value) newShop.value = val;
+  }
+);
+
+watch(
+  () => props.lastPeriod,
+  (val) => {
+    if (val !== newPeriod.value) newPeriod.value = val;
+  }
+);
+
+watch(newShop, (val) => {
+  emit('update:lastShop', val);
+});
+
+watch(newPeriod, (val) => {
+  emit('update:lastPeriod', val);
+});
 
 const newFormBundle = computed<Record<string, unknown>>({
   get: () => ({
