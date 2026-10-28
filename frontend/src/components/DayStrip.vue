@@ -157,7 +157,7 @@ onMounted(() => {
 }
 
 .day-strip-arrow:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: -2px;
 }
 

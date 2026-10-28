@@ -219,7 +219,7 @@ function onDrop(event: DragEvent, date: string) {
 }
 
 .day:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: -2px;
 }
 
@@ -431,7 +431,12 @@ function onDrop(event: DragEvent, date: string) {
   line-height: 1.25;
 }
 
+.acc-bar :deep(.app-icon) {
+  flex-shrink: 0;
+}
+
 .acc-bar-title {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -457,6 +462,10 @@ function onDrop(event: DragEvent, date: string) {
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.25;
+}
+
+.item-line :deep(.app-icon) {
+  flex-shrink: 0;
 }
 
 .item-line-title {

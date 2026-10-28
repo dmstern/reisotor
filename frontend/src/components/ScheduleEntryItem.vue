@@ -118,7 +118,7 @@ const categoryMeta = computed(
 }
 
 .item.clickable:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -174,6 +174,7 @@ const categoryMeta = computed(
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   line-height: 1.25;
+  white-space: nowrap;
 }
 
 .item-category-pill {
@@ -181,6 +182,7 @@ const categoryMeta = computed(
   font-weight: 600;
   color: var(--color-text-muted);
   line-height: 1.25;
+  white-space: nowrap;
 }
 
 .item .title {

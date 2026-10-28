@@ -175,6 +175,10 @@ defineEmits<{
 .meta-label {
   font-weight: 500;
   color: var(--color-text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .temp-range {
