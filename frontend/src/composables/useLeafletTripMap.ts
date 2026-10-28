@@ -23,8 +23,31 @@ import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
 import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
+import { useTripStore } from '../stores/trip';
+import { FALLBACK_CENTER, FALLBACK_ZOOM } from './useLocationPickerMap';
 import type { MapPoint } from './useMapPoints';
 import { TRAVEL_COLOR } from './useMapPoints';
+
+export { FALLBACK_CENTER, FALLBACK_ZOOM };
+export const DEFAULT_TRIP_ZOOM = 11;
+
+export function getDefaultMapCenterAndZoom(
+  trip?: { lat?: number | null; lng?: number | null } | null
+): {
+  center: [number, number];
+  zoom: number;
+} {
+  if (
+    trip &&
+    typeof trip.lat === 'number' &&
+    typeof trip.lng === 'number' &&
+    !Number.isNaN(trip.lat) &&
+    !Number.isNaN(trip.lng)
+  ) {
+    return { center: [trip.lat, trip.lng], zoom: DEFAULT_TRIP_ZOOM };
+  }
+  return { center: [FALLBACK_CENTER.lat, FALLBACK_CENTER.lng], zoom: FALLBACK_ZOOM };
+}
 
 L.Map.mergeOptions({ rotateControl: false });
 
@@ -152,6 +175,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   const excursionsStore = useExcursionsStore();
   const auth = useAuthStore();
   const liveSync = useLiveSyncStore();
+  const tripStore = useTripStore();
 
   let map: L.Map | null = null;
   let markersLayer: L.LayerGroup | null = null;
@@ -331,6 +355,9 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 13);
+    } else {
+      const { center, zoom } = getDefaultMapCenterAndZoom(tripStore.currentTrip);
+      centerOnPoint(center, zoom);
     }
   }
 
@@ -342,6 +369,9 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 13);
+    } else {
+      const { center, zoom } = getDefaultMapCenterAndZoom(tripStore.currentTrip);
+      centerOnPoint(center, zoom);
     }
   }
 
@@ -680,7 +710,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function initMap(mapEl: HTMLElement) {
+    const { center: defaultCenter, zoom: defaultZoom } = getDefaultMapCenterAndZoom(
+      tripStore.currentTrip
+    );
+
     map = L.map(mapEl, {
+      center: defaultCenter,
+      zoom: defaultZoom,
       rotate: true,
       rotateControl: false,
       zoomControl: false,
@@ -735,8 +771,10 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       checkFocusOutOfBounds();
     });
 
-    resizeObserver = new ResizeObserver(() => map?.invalidateSize());
-    resizeObserver.observe(mapEl);
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+      resizeObserver.observe(mapEl);
+    }
   }
 
   function clearTrackLayers() {
