@@ -25,7 +25,6 @@ const tripStore = useTripStore();
 const uiSettings = useUiSettingsStore();
 
 const {
-  tripId,
   items,
   users,
   loading,
@@ -59,7 +58,7 @@ const {
 );
 
 const lastAssignee = usePersistedRef(
-  () => (tripId ? `reisotor-todo-last-assignee:${tripId}` : ''),
+  () => (tripStore.currentTripId ? `reisotor-todo-last-assignee:${tripStore.currentTripId}` : ''),
   ''
 );
 const editingItem = ref<TodoItem | null>(null);

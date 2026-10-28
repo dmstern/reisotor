@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import type { Period, ShoppingItem } from '../api/types';
 import { useUiSettingsStore } from '../stores/uiSettings';
+import { useTripStore } from '../stores/trip';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useShoppingList } from '../composables/useShoppingList';
 import {
@@ -22,10 +23,10 @@ import ShoppingItemRow from '../components/ShoppingItemRow.vue';
 import ShoppingEditModal from '../components/ShoppingEditModal.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
+const tripStore = useTripStore();
 const uiSettings = useUiSettingsStore();
 
 const {
-  tripId,
   items,
   users,
   loading,
@@ -43,9 +44,12 @@ const { groupBy, defaultGroupBy, groupByOptions, groupedItems, knownShops, hasIt
   useShoppingGrouping(items, users);
 
 const newBuyer = ref('');
-const newShop = usePersistedRef(() => (tripId ? `reisotor-shopping-last-shop:${tripId}` : ''), '');
+const newShop = usePersistedRef(
+  () => (tripStore.currentTripId ? `reisotor-shopping-last-shop:${tripStore.currentTripId}` : ''),
+  ''
+);
 const newPeriod = usePersistedRef<Period | ''>(
-  () => (tripId ? `reisotor-shopping-last-period:${tripId}` : ''),
+  () => (tripStore.currentTripId ? `reisotor-shopping-last-period:${tripStore.currentTripId}` : ''),
   ''
 );
 const editingItem = ref<ShoppingItem | null>(null);

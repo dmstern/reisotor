@@ -82,4 +82,16 @@ describe('usePersistedRef', () => {
     value.value = 'updated';
     expect(localStorage.getItem('')).toBeNull();
   });
+
+  it('safely catches QuotaExceededError or storage exceptions on setItem', () => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    const value = usePersistedRef('quota-key', 'initial');
+    expect(() => {
+      value.value = 'new-value';
+    }).not.toThrow();
+    expect(value.value).toBe('new-value');
+  });
 });

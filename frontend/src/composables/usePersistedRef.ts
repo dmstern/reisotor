@@ -30,8 +30,12 @@ export function usePersistedRef<T>(key: MaybeRefOrGetter<string>, defaultValue: 
     (v) => {
       if (isInternalUpdate) return;
       const k = toValue(key);
-      if (k) {
-        localStorage.setItem(k, JSON.stringify(v));
+      if (k && typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(k, JSON.stringify(v));
+        } catch {
+          // QuotaExceededError oder Zugriffsbeschränkungen im Browser defensiv abfangen
+        }
       }
     },
     { flush: 'sync' }
@@ -41,9 +45,10 @@ export function usePersistedRef<T>(key: MaybeRefOrGetter<string>, defaultValue: 
 }
 
 function loadInitial<T>(key: string, defaultValue: T): T {
-  const stored = localStorage.getItem(key);
-  if (stored == null) return defaultValue;
+  if (typeof localStorage === 'undefined') return defaultValue;
   try {
+    const stored = localStorage.getItem(key);
+    if (stored == null) return defaultValue;
     return JSON.parse(stored) as T;
   } catch {
     return defaultValue;
