@@ -22,6 +22,7 @@ const props = defineProps<{
   modelValue: string | undefined;
   placeholder?: string;
   uploading?: boolean;
+  variant?: 'banner' | 'polaroid';
 }>();
 
 const emit = defineEmits<{
@@ -83,7 +84,8 @@ async function onFileSelected(event: Event) {
 
   try {
     progressPercent.value = 20;
-    const compressed = await compressImage(file);
+    const maxDimension = props.variant === 'banner' ? 2560 : 1600;
+    const compressed = await compressImage(file, { maxDimension });
     if (abortController.signal.aborted) return;
 
     progressPercent.value = 50;

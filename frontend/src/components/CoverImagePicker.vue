@@ -226,6 +226,9 @@ async function executeSearch(queryOverride?: string, action: 'query' | 'next' = 
     if (props.searchContext?.lng != null) {
       params.set('lng', String(props.searchContext.lng));
     }
+    if (props.variant) {
+      params.set('variant', props.variant);
+    }
     if (!term || term === (props.searchContext?.name ?? '')) {
       if (props.searchContext?.maps_link) {
         params.set('maps_link', props.searchContext.maps_link);
@@ -282,6 +285,9 @@ async function fetchSuggestionsFromApi(termOverride?: string): Promise<number> {
   }
   if (props.searchContext?.lng != null) {
     params.set('lng', String(props.searchContext.lng));
+  }
+  if (props.variant) {
+    params.set('variant', props.variant);
   }
   if (!term || term === (props.searchContext?.name ?? '')) {
     if (props.searchContext?.maps_link) {
@@ -559,6 +565,7 @@ function handleModalClose(visible: boolean) {
         <ImageUrlInput
           ref="imageUrlInputRef"
           :model-value="modelValue"
+          :variant="variant"
           v-model:uploading="isUploading"
           @update:model-value="(val) => emit('update:modelValue', val)"
         />

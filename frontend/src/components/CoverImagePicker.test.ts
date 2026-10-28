@@ -235,6 +235,7 @@ describe('CoverImagePicker component', () => {
     expect(api.get).toHaveBeenCalledWith(
       expect.stringContaining('/spots/preview?name=Eiffel+Tower')
     );
+    expect(api.get).toHaveBeenCalledWith(expect.stringContaining('variant=banner'));
     expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/eiffel1.jpg');
 
     cleanUp();

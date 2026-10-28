@@ -98,6 +98,28 @@ describe('placePhoto utility', () => {
       const key2 = buildPhotoCacheKey('stephansdom', 48.2085, 16.3738, 'wien');
       expect(key1).toBe(key2);
     });
+
+    it('distinguishes banner queries from spot queries to prevent cache collisions', () => {
+      const spotKey = buildPhotoCacheKey(
+        'Lissabon',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        false
+      );
+      const bannerKey = buildPhotoCacheKey(
+        'Lissabon',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        true
+      );
+      expect(spotKey).not.toBe(bannerKey);
+      expect(bannerKey).toContain('banner');
+      expect(spotKey).toContain('spot');
+    });
   });
 
   describe('buildSearchQueries', () => {
@@ -481,6 +503,36 @@ describe('placePhoto utility', () => {
       expect(calledUrl).toContain('Berlin');
       expect(calledUrl).toContain('Nachtleben');
       expect(photo).toBe('https://ts4.mm.bing.net/th?id=OIP.123&w=1000');
+    });
+
+    it('prioritizes original murl for banner requests while using turl for spots', async () => {
+      const fetchMock = vi.fn((url: string) => {
+        if (url.includes('bing.com')) {
+          return Promise.resolve({
+            ok: true,
+            text: () =>
+              Promise.resolve(
+                `<div class="iusc" style="height:198px;width:264px" m="{&quot;murl&quot;:&quot;https://cdn.example.com/lissabon_original_highres.jpg&quot;,&quot;turl&quot;:&quot;https://ts2.mm.bing.net/th?id=OIP.thumb&quot;,&quot;t&quot;:&quot;Sommerurlaub Lissabon Panorama&quot;,&quot;purl&quot;:&quot;https://travel.example.com/lisbon&quot;}"></div>`
+              ),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      // Banner request: muss murl (Originalbild) bevorzugen
+      const bannerPhoto = await fetchPlacePhoto({
+        name: 'Sommerurlaub Lissabon',
+        isBanner: true,
+      });
+      expect(bannerPhoto).toBe('https://cdn.example.com/lissabon_original_highres.jpg');
+
+      // Spot request: muss turl (kleineres Edge-CDN-Thumbnail) bevorzugen, um Speicherplatz zu sparen
+      const spotPhoto = await fetchPlacePhoto({
+        name: 'Sommerurlaub Lissabon',
+        isBanner: false,
+      });
+      expect(spotPhoto).toBe('https://ts2.mm.bing.net/th?id=OIP.thumb&w=1000');
     });
 
     it('falls back to murl if Bing turl is missing or invalid', async () => {

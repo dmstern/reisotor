@@ -507,12 +507,21 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
   });
 }
 
+export interface CompressImageOptions {
+  maxDimension?: number;
+  quality?: number;
+}
+
 /**
  * Konvertiert eine HEIC/HEIF-Datei clientseitig zu einem komprimierten JPEG.
  */
 export async function convertHeicToJpeg(
-  file: File | Blob
+  file: File | Blob,
+  options?: CompressImageOptions
 ): Promise<{ dataUrl: string; width: number; height: number }> {
+  const maxDim = options?.maxDimension ?? MAX_DIMENSION;
+  const quality = options?.quality ?? JPEG_QUALITY;
+
   const { convertHeic, LibheifDecoder } = await import('@keeratita/heic-converter');
   let decoder;
   try {
@@ -528,9 +537,9 @@ export async function convertHeicToJpeg(
 
   const jpegBlob = await convertHeic(file, {
     to: 'jpeg',
-    quality: JPEG_QUALITY,
-    maxWidth: MAX_DIMENSION,
-    maxHeight: MAX_DIMENSION,
+    quality,
+    maxWidth: maxDim,
+    maxHeight: maxDim,
     decoder,
   });
 
@@ -545,16 +554,20 @@ export async function convertHeicToJpeg(
 }
 
 function convertViaCanvas(
-  file: File | Blob
+  file: File | Blob,
+  options?: CompressImageOptions
 ): Promise<{ dataUrl: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
 
+    const maxDim = options?.maxDimension ?? MAX_DIMENSION;
+    const quality = options?.quality ?? JPEG_QUALITY;
+
     img.onload = () => {
       URL.revokeObjectURL(objectUrl);
 
-      const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(img.width * scale);
       canvas.height = Math.round(img.height * scale);
@@ -566,7 +579,7 @@ function convertViaCanvas(
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       resolve({
-        dataUrl: canvas.toDataURL('image/jpeg', JPEG_QUALITY),
+        dataUrl: canvas.toDataURL('image/jpeg', quality),
         width: canvas.width,
         height: canvas.height,
       });
@@ -583,15 +596,15 @@ function convertViaCanvas(
  *  Raspberry Pi 2 im Backend nicht mit Bildverarbeitung belastet wird). Unterstützt Standard-Bilder
  *  (JPEG, PNG, WebP) sowie Apple-iPhone-HEIC/HEIF-Dateien. Erhält vorhandene EXIF-Metadaten (insb.
  *  Geo- und Datums-Informationen) und gibt eine standardisierte JPEG-Data-URL zurück. */
-export async function compressImage(file: File): Promise<string> {
+export async function compressImage(file: File, options?: CompressImageOptions): Promise<string> {
   const isHeic = isHeicFile(file) || (await isHeicBlob(file));
 
   if (isHeic) {
     // 1. Parallel: EXIF Metadaten extrahieren & HEIC nach JPEG konvertieren
     const metadataPromise = extractMetadataFromHeic(file).catch(() => null);
-    const convertedPromise = convertHeicToJpeg(file).catch(async (err) => {
+    const convertedPromise = convertHeicToJpeg(file, options).catch(async (err) => {
       console.warn('WASM HEIC-Konvertierung fehlgeschlagen, versuche Canvas-Fallback:', err);
-      return convertViaCanvas(file);
+      return convertViaCanvas(file, options);
     });
 
     const [metadata, converted] = await Promise.all([metadataPromise, convertedPromise]);
@@ -617,7 +630,7 @@ export async function compressImage(file: File): Promise<string> {
     ? readAsDataUrl(file).catch(() => null)
     : Promise.resolve(null);
 
-  const canvasPromise = convertViaCanvas(file);
+  const canvasPromise = convertViaCanvas(file, options);
 
   const [originalDataUrl, canvasResult] = await Promise.all([
     originalDataUrlPromise,
