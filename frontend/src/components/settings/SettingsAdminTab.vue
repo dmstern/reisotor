@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, watch, computed } from 'vue';
+import { onMounted, reactive, watch, computed, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
@@ -13,6 +13,7 @@ import SettingsCardHeader from './SettingsCardHeader.vue';
 import AdminUserManagementCard from './AdminUserManagementCard.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useAdminSettings } from '../../composables/useAdminSettings';
+import { api, ApiError } from '../../api/client';
 import { BELL_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import {
@@ -207,6 +208,30 @@ async function saveEmail() {
   });
   emailForm.smtpPass = '';
   emailForm.clearSmtpPass = false;
+}
+
+const testingEmail = ref(false);
+const testEmailFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
+
+async function sendTestEmail() {
+  testEmailFeedback.value = null;
+  testingEmail.value = true;
+  try {
+    const res = await api.post<{ success: boolean; message: string }>(
+      '/admin/settings/send-test-email'
+    );
+    testEmailFeedback.value = {
+      type: 'success',
+      message: res.message || 'Test-E-Mail erfolgreich versendet!',
+    };
+  } catch (err) {
+    testEmailFeedback.value = {
+      type: 'error',
+      message: err instanceof ApiError ? err.message : 'Fehler beim Versenden der Test-E-Mail.',
+    };
+  } finally {
+    testingEmail.value = false;
+  }
 }
 
 async function saveFeedback() {
@@ -614,7 +639,7 @@ async function handleGenerateVapid() {
                 v-model="emailForm.smtpSecure"
                 variant="row"
                 label="TLS/SSL Verbindung erzwingen"
-                description="Sichere Transportverschlüsselung (bei Port 465 automatisch aktiv)."
+                description="Sichere Transportverschlüsselung (bei Port 465 automatisch aktiv, bei Port 587 via STARTTLS)."
               />
             </div>
           </div>
@@ -651,9 +676,26 @@ async function handleGenerateVapid() {
           >
             <AppIcon :icon="ACTION_ICONS.save" :size="14" group="actions" /> Speichern
           </Button>
+          <Button
+            v-if="isSmtpConfigured"
+            variant="secondary"
+            size="sm"
+            :loading="testingEmail"
+            @click="sendTestEmail"
+          >
+            <AppIcon :icon="ACTION_ICONS.send" :size="14" group="actions" /> Test-E-Mail senden
+          </Button>
           <span v-if="saveSuccess['email']" class="save-success-msg">
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gespeichert
           </span>
+        </div>
+        <div
+          v-if="testEmailFeedback"
+          class="test-email-result"
+          :class="testEmailFeedback.type"
+          role="status"
+        >
+          {{ testEmailFeedback.message }}
         </div>
       </Card>
 
@@ -1029,5 +1071,26 @@ async function handleGenerateVapid() {
   font-size: var(--font-size-sm);
   color: var(--color-success);
   font-weight: 500;
+}
+
+.test-email-result {
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.test-email-result.success {
+  background: var(--color-success-subtle, rgba(46, 160, 67, 0.15));
+  border: 1px solid var(--color-success-border, rgba(46, 160, 67, 0.4));
+  color: var(--color-success, #2ea043);
+}
+
+.test-email-result.error {
+  background: var(--color-danger-subtle, rgba(248, 81, 73, 0.15));
+  border: 1px solid var(--color-danger-border, rgba(248, 81, 73, 0.4));
+  color: var(--color-danger, #f85149);
 }
 </style>

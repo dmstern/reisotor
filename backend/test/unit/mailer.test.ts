@@ -5,6 +5,8 @@ import {
   getAppUrl,
   sendPasswordResetEmail,
   sendVerificationEmail,
+  sendTestEmail,
+  resetTransporter,
   resetTransporterForTesting,
 } from '../../src/utils/mailer.js';
 
@@ -80,5 +82,12 @@ describe('Mailer utility', () => {
     expect(result.success).toBe(true);
     expect(result.simulated).toBe(true);
     expect(result.actionUrl).toContain('/verify-email?token=tok789');
+  });
+
+  it('fails sendTestEmail when SMTP is not configured', async () => {
+    delete process.env.SMTP_HOST;
+    const result = await sendTestEmail({ to: 'admin@example.com' });
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('SMTP ist nicht konfiguriert');
   });
 });

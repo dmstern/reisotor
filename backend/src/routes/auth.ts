@@ -100,11 +100,23 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
           'INSERT INTO email_verification_tokens (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)'
         ).run(userId, tokenHash, expiresAt, new Date().toISOString());
 
-        await sendVerificationEmail({
+        const mailResult = await sendVerificationEmail({
           to: trimmedEmail,
           username: trimmedUsername,
           token: rawToken,
         });
+
+        if (!mailResult.success) {
+          // Rollback: Angelegten User und Verifizierungs-Token entfernen,
+          // damit kein blockierter Orphan-Account entsteht
+          db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(userId);
+          db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+
+          return reply.code(503).send({
+            error:
+              'Die Bestätigungs-E-Mail konnte nicht zugestellt werden. Bitte überprüfe deine E-Mail-Adresse oder wende dich an die Administration.',
+          });
+        }
 
         reply.code(201);
         return {

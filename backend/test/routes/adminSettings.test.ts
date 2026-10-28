@@ -175,4 +175,32 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     expect(settings.push.isVapidPrivateKeySet).toBe(true);
     expect(settings.push.vapidSubject).toBe('mailto:admin@domain.tld');
   });
+
+  it('rejects POST /api/admin/settings/send-test-email for non-admin users', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-test-email',
+      headers: { cookie: userCookie },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('returns 400 when sending test email without SMTP configured', async () => {
+    delete process.env.SMTP_HOST;
+    // Clear smtp_host in db
+    await app.inject({
+      method: 'PUT',
+      url: '/api/admin/settings',
+      headers: { cookie: adminCookie },
+      payload: { email: { smtpHost: '' } },
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-test-email',
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toContain('SMTP-Server ist nicht konfiguriert');
+  });
 });
