@@ -85,16 +85,27 @@ export function isUsernameFullAccess(username: string): boolean {
   return FULL_ACCESS_USERS.has(username);
 }
 
-/** true, wenn die anlegende Person des Urlaubs (das älteste trip_members-Mitglied) restricted ist –
- *  bestimmt den Mitglieder-Deckel für den gesamten Urlaub (routes/trips.ts), unabhängig davon, wer
- *  gerade konkret einlädt, damit eine restricted Person die Beschränkung nicht über eine
- *  full-access Person umgehen kann, die sie stattdessen einladen lässt. */
+/** true, wenn ALLE Mitglieder des Urlaubs restricted sind (kein Mitglied hat Vollzugriff).
+ *  Sobald mindestens eine Person mit Vollzugriff Mitglied im Urlaub ist ("Sponsor-Prinzip"),
+ *  entfällt der 3-Mitglieder-Deckel für diesen Urlaub. */
 export function isTripOwnerRestricted(tripId: number | string): boolean {
+  const members = db.prepare('SELECT user_id FROM trip_members WHERE trip_id = ?').all(tripId) as {
+    user_id: number;
+  }[];
+  if (members.length === 0) return false;
+  return members.every((m) => isUserRestricted(m.user_id));
+}
+
+/** true, wenn userId die anlegende Person des Urlaubs (das älteste trip_members-Mitglied) ist. */
+export function isTripCreatedBy(
+  tripId: number | string,
+  userId: number | null | undefined
+): boolean {
+  if (userId == null) return false;
   const creator = db
     .prepare('SELECT user_id FROM trip_members WHERE trip_id = ? ORDER BY id ASC LIMIT 1')
     .get(tripId) as { user_id: number } | undefined;
-  if (!creator) return false;
-  return isUserRestricted(creator.user_id);
+  return creator?.user_id === userId;
 }
 
 /** Anzahl Urlaube, die diese Person selbst angelegt hat (= ältestes trip_members-Mitglied) – zählt

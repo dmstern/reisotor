@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
@@ -22,7 +22,12 @@ const router = useRouter();
 const tripStore = useTripStore();
 const auth = useAuthStore();
 const showMembers = ref(false);
-const membersTrip = ref<Trip | null>(null);
+const membersTripId = ref<number | null>(null);
+const membersTrip = computed(() =>
+  membersTripId.value != null
+    ? (tripStore.trips.find((t) => t.id === membersTripId.value) ?? null)
+    : null
+);
 const {
   showForm,
   editingTrip,
@@ -34,9 +39,9 @@ const {
   onDelete,
 } = useTripEditor();
 // Issue #96: restricted-Nutzer:innen dürfen nur einen selbst angelegten Urlaub haben - bereits
-// eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy), das
-// Frontend kennt diese Unterscheidung aber nicht, deshalb konservativ ab dem ersten Urlaub sperren.
-const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
+// eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy).
+const tripCreationBlocked = () =>
+  !!auth.user?.restricted && tripStore.trips.some((t) => t.created_by_me !== false);
 const { openAccountTierModal } = useAccountTierModal();
 
 function handleCreateTrip() {
@@ -53,7 +58,7 @@ function selectTrip(id: number) {
 }
 
 function openMembers(trip: Trip) {
-  membersTrip.value = trip;
+  membersTripId.value = trip.id;
   showMembers.value = true;
 }
 </script>
@@ -68,7 +73,7 @@ function openMembers(trip: Trip) {
         @click="handleCreateTrip"
       >
         <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
-        <PremiumBadge v-if="tripCreationBlocked()" feature="trips" />
+        <PremiumBadge v-if="tripCreationBlocked()" feature="trips" as="span" :stop="false" />
       </Button>
     </div>
 

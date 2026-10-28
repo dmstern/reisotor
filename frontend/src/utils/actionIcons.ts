@@ -66,6 +66,7 @@ import {
   IconPlayerPlay,
   IconPlayerPlayFilled,
   IconSparkles,
+  IconSparkle2,
   IconAlertTriangle,
   IconAlertTriangleFilled,
   IconArrowsExchange,
@@ -219,6 +220,7 @@ export type ActionIconKey =
   | 'info'
   | 'installApp'
   | 'sparkles'
+  | 'sparkle2'
   | 'share'
   | 'browserMenu'
   | 'send'
@@ -404,6 +406,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   info: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
   installApp: { id: 'device-mobile', emoji: '📲', outline: IconDeviceMobile },
   sparkles: { id: 'sparkles', emoji: '✨', outline: IconSparkles },
+  sparkle2: { id: 'sparkle-2', emoji: '✦', outline: IconSparkle2 },
   share: { id: 'share', emoji: '⬆️', outline: IconShare },
   browserMenu: { id: 'dots-vertical', emoji: '⋮', outline: IconDotsVertical },
   send: { id: 'send', emoji: '✈️', outline: IconSend, filled: IconSendFilled },

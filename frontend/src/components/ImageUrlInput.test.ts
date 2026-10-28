@@ -213,7 +213,7 @@ describe('ImageUrlInput component', () => {
     cleanUp();
   });
 
-  it('shows upload button with Premium badge for restricted user and opens modal on click', () => {
+  it('shows upload button with Plus badge for restricted user and opens modal on click', () => {
     const { isOpen, highlightedFeature, closeAccountTierModal } = useAccountTierModal();
     closeAccountTierModal();
 
@@ -223,7 +223,7 @@ describe('ImageUrlInput component', () => {
     );
 
     expect(container.textContent).toContain('Oder Bild hochladen');
-    expect(container.textContent).toContain('Premium');
+    expect(container.textContent).toContain('Plus');
 
     const button = container.querySelector('button.upload-label--restricted') as HTMLButtonElement;
     expect(button).not.toBeNull();

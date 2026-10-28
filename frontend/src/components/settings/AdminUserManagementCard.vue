@@ -1,18 +1,25 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
+import Select from '../primitives/Select.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import CreateUserDialog from '../CreateUserDialog.vue';
 import AdminResetPasswordModal from '../AdminResetPasswordModal.vue';
+import UserRolesModal from '../UserRolesModal.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import { useAuthStore } from '../../stores/auth';
-import { useUserManagement } from '../../composables/useUserManagement';
+import {
+  useUserManagement,
+  getUserRole,
+  getUserRoleLabel,
+  type UserRole,
+} from '../../composables/useUserManagement';
+import type { User } from '../../api/types';
 import { USERS_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
-import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
 
 const auth = useAuthStore();
 
@@ -25,9 +32,9 @@ const {
   resetPasswordResult,
   resettingPassword,
   verifyingEmailId,
+  changingRoleId,
   loadUserList,
-  toggleAdminRole,
-  toggleRestrictedRole,
+  changeUserRole,
   deleteUserAccount,
   onUserCreated,
   openResetPasswordDialog,
@@ -35,6 +42,19 @@ const {
   performResetPassword,
   verifyUserEmail,
 } = useUserManagement();
+
+const showRolesModal = ref(false);
+const selectedRoleForModal = ref<UserRole | null>(null);
+
+function openRolesModal(role?: UserRole) {
+  selectedRoleForModal.value = role ?? null;
+  showRolesModal.value = true;
+}
+
+async function onRoleSelect(u: User, role: UserRole) {
+  if (role === getUserRole(u)) return;
+  await changeUserRole(u, role);
+}
 
 onMounted(() => {
   if (auth.user?.is_admin) {
@@ -47,6 +67,9 @@ onMounted(() => {
   <Card class="admin-card">
     <SettingsCardHeader title="Benutzerverwaltung" :icon="USERS_ICON">
       <template #actions>
+        <Button variant="secondary" size="sm" @click="openRolesModal()">
+          <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" /> Rollen & Rechte
+        </Button>
         <Button variant="primary" size="sm" @click="showCreateUserDialog = true">
           <AppIcon :icon="ACTION_ICONS.userPlus" :size="14" group="actions" /> Nutzer anlegen
         </Button>
@@ -76,13 +99,21 @@ onMounted(() => {
               <div class="user-cell">
                 <span class="user-avatar">{{ u.avatar }}</span>
                 <span class="username">{{ u.username }}</span>
+                <span v-if="u.id === auth.user?.id" class="self-label">(Du)</span>
               </div>
             </td>
             <td class="email-cell">{{ u.email || '—' }}</td>
             <td>
-              <Badge v-if="u.is_admin" variant="accent-secondary">Admin</Badge>
-              <Badge v-else-if="u.is_restricted" variant="warning">Basis-Konto</Badge>
-              <Badge v-else variant="success">Vollzugriff</Badge>
+              <Badge
+                as="button"
+                interactive
+                :variant="u.is_admin ? 'accent-secondary' : u.is_restricted ? 'warning' : 'success'"
+                :title="`Rolle ${getUserRoleLabel(u)} – Klicken für Details zu Rollen & Berechtigungen`"
+                class="role-badge-btn"
+                @click="openRolesModal(getUserRole(u))"
+              >
+                {{ getUserRoleLabel(u) }}
+              </Badge>
             </td>
             <td>
               <div class="status-badges">
@@ -129,33 +160,19 @@ onMounted(() => {
                   <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
                   Mail bestätigen
                 </Button>
-                <Button
-                  v-if="!u.is_admin"
+                <Select
                   size="sm"
-                  :variant="u.is_restricted ? 'primary' : 'secondary'"
-                  :title="
-                    u.is_restricted
-                      ? 'Auf Vollzugriff freischalten'
-                      : 'Auf Basis-Konto einschränken'
-                  "
-                  @click="toggleRestrictedRole(u)"
+                  :model-value="getUserRole(u)"
+                  :aria-label="`Rolle für ${u.username}`"
+                  title="Rolle für dieses Benutzerkonto zuweisen"
+                  class="role-select"
+                  :disabled="changingRoleId === u.id"
+                  @update:model-value="(val) => onRoleSelect(u, val as UserRole)"
                 >
-                  <AppIcon
-                    :icon="u.is_restricted ? ACTION_ICONS.done : ACTION_ICONS.private"
-                    :size="14"
-                    group="actions"
-                  />
-                  {{ u.is_restricted ? 'Freischalten' : 'Einschränken' }}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  :title="u.is_admin ? 'Admin-Rechte entziehen' : 'Zum Admin machen'"
-                  @click="toggleAdminRole(u)"
-                >
-                  <AppIcon :icon="FORM_FIELD_ICONS.person" :size="14" group="formFields" />
-                  {{ u.is_admin ? 'Admin entziehen' : 'Zum Admin machen' }}
-                </Button>
+                  <option value="restricted" :disabled="u.id === auth.user?.id">Basis-Konto</option>
+                  <option value="plus">Plus</option>
+                  <option value="admin">Admin</option>
+                </Select>
                 <Button
                   size="sm"
                   variant="danger"
@@ -182,10 +199,26 @@ onMounted(() => {
       @reset="(pw) => resetPasswordTarget && performResetPassword(resetPasswordTarget, pw)"
       @close="closeResetPasswordDialog"
     />
+    <UserRolesModal v-model="showRolesModal" :initial-role="selectedRoleForModal" />
   </Card>
 </template>
 
 <style scoped>
+.role-badge-btn {
+  cursor: pointer;
+}
+
+.role-select {
+  width: 135px;
+}
+
+.self-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
 .admin-card {
   margin-bottom: var(--space-4);
 }

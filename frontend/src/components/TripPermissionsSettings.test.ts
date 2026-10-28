@@ -102,10 +102,15 @@ describe('TripPermissionsSettings', () => {
   });
 
   it('shows restricted mode hint when member cap is reached for restricted owner', async () => {
+    const authStore = useAuthStore();
+    authStore.user = { ...authStore.user!, restricted: true };
+
     const restrictedTrip: Trip = {
       ...mockTrip,
       owner_restricted: true,
     };
+    const tripStore = useTripStore();
+    tripStore.trips = [restrictedTrip];
     const threeMembers: User[] = [
       ...mockMembers,
       { id: 3, username: 'charlie', email: 'charlie@example.com', avatar: '🧑' },
@@ -123,6 +128,42 @@ describe('TripPermissionsSettings', () => {
       true
     );
     expect(container.querySelector('.premium-badge')).not.toBeNull();
+    cleanUp();
+  });
+
+  it('reactively uses updated trip from tripStore when props.trip is stale', async () => {
+    const authStore = useAuthStore();
+    authStore.user = { ...authStore.user!, restricted: true };
+
+    const tripStore = useTripStore();
+    const initialTrip: Trip = {
+      ...mockTrip,
+      owner_restricted: true,
+    };
+    tripStore.trips = [initialTrip];
+
+    const threeMembers: User[] = [
+      ...mockMembers,
+      { id: 3, username: 'charlie', email: 'charlie@example.com', avatar: '🧑' },
+    ];
+    vi.spyOn(api, 'get').mockResolvedValueOnce(threeMembers);
+
+    const { container, cleanUp } = mountComponent({ tripId: 10, trip: initialTrip });
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 10));
+    await nextTick();
+
+    expect((container.querySelector('input[type="search"]') as HTMLInputElement).disabled).toBe(
+      true
+    );
+
+    // Trip in tripStore wird aktualisiert (z. B. Sponsor ist beigetreten: owner_restricted = false)
+    tripStore.trips = [{ ...initialTrip, owner_restricted: false }];
+    await nextTick();
+
+    expect((container.querySelector('input[type="search"]') as HTMLInputElement).disabled).toBe(
+      false
+    );
     cleanUp();
   });
 });

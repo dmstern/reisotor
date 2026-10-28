@@ -34,15 +34,15 @@ describe('PremiumBadge', () => {
     };
   }
 
-  it('renders with default label Premium', () => {
+  it('renders with default label Plus', () => {
     const { container, cleanUp } = mountComponent();
-    expect(container.textContent).toContain('Premium');
+    expect(container.textContent).toContain('Plus');
     cleanUp();
   });
 
   it('renders with custom label', () => {
-    const { container, cleanUp } = mountComponent({ label: 'Vollzugriff' });
-    expect(container.textContent).toContain('Vollzugriff');
+    const { container, cleanUp } = mountComponent({ label: 'Freigeschaltet' });
+    expect(container.textContent).toContain('Freigeschaltet');
     cleanUp();
   });
 
@@ -54,6 +54,15 @@ describe('PremiumBadge', () => {
 
     expect(isOpen.value).toBe(true);
     expect(highlightedFeature.value).toBe('uploads');
+    cleanUp();
+  });
+
+  it('omits aria-label and title when rendered as span', () => {
+    const { container, cleanUp } = mountComponent({ as: 'span' });
+    const span = container.querySelector('.premium-badge');
+    expect(span).not.toBeNull();
+    expect(span?.getAttribute('aria-label')).toBeNull();
+    expect(span?.getAttribute('title')).toBeNull();
     cleanUp();
   });
 });

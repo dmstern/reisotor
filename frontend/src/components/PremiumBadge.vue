@@ -10,12 +10,14 @@ const props = withDefaults(
     label?: string;
     feature?: TierFeature;
     stop?: boolean;
+    as?: string;
   }>(),
   {
     size: 'sm',
-    label: 'Premium',
+    label: 'Plus',
     feature: 'general',
     stop: true,
+    as: 'button',
   }
 );
 
@@ -37,17 +39,17 @@ function handleClick(ev: MouseEvent) {
 
 <template>
   <Badge
-    as="button"
-    type="button"
+    :as="as"
+    :type="as === 'button' ? 'button' : undefined"
     variant="accent"
     :size="size"
     class="premium-badge"
-    interactive
-    title="Vollzugriff erforderlich – Klicken für Details"
-    aria-label="Vollzugriff erforderlich"
+    :interactive="as === 'button'"
+    :title="as === 'button' ? 'Reisotor Plus erforderlich – Klicken für Details' : undefined"
+    :aria-label="as === 'button' ? 'Reisotor Plus erforderlich' : undefined"
     @click="handleClick"
   >
-    <AppIcon :icon="ACTION_ICONS.sparkles" :size="size === 'md' ? 14 : 11" group="actions" />
+    <AppIcon :icon="ACTION_ICONS.sparkle2" :size="size === 'md' ? 14 : 11" group="actions" />
     <span class="premium-label">{{ label }}</span>
   </Badge>
 </template>

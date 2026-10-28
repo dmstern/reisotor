@@ -90,7 +90,7 @@ describe('DiaryNewModal', () => {
     cleanUp();
   });
 
-  it('zeigt Bilder hinzufügen Button mit Premium-Badge auch wenn Nutzer restricted ist', async () => {
+  it('zeigt Bilder hinzufügen Button mit Plus-Badge auch wenn Nutzer restricted ist', async () => {
     const { cleanUp } = mountModal(
       {
         modelValue: true,
@@ -102,7 +102,7 @@ describe('DiaryNewModal', () => {
 
     const bodyHtml = document.body.innerHTML;
     expect(bodyHtml).toContain('Bilder hinzufügen');
-    expect(bodyHtml).toContain('Premium');
+    expect(bodyHtml).toContain('Plus');
     cleanUp();
   });
 });

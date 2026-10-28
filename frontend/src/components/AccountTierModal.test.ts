@@ -49,7 +49,7 @@ describe('AccountTierModal component', () => {
 
     expect(document.body.textContent).toContain('Basis-Konto');
     expect(document.body.textContent).toContain('eingeschränkten Basis-Modus');
-    expect(document.body.textContent).toContain('Wie erhalte ich Vollzugriff?');
+    expect(document.body.textContent).toContain('Wie erhalte ich Reisotor Plus?');
     expect(document.body.textContent).toContain('Melde dich einfach kurz per Chat');
     cleanUp();
   });
@@ -60,9 +60,22 @@ describe('AccountTierModal component', () => {
       { id: 1, username: 'vipuser', restricted: false }
     );
 
-    expect(document.body.textContent).toContain('Vollzugriff');
-    expect(document.body.textContent).toContain('uneingeschränkten Zugriff');
-    expect(document.body.textContent).not.toContain('Wie erhalte ich Vollzugriff?');
+    expect(document.body.textContent).toContain('Plus');
+    expect(document.body.textContent).toContain('Reisotor Plus');
+    expect(document.body.textContent).not.toContain('Wie erhalte ich Reisotor Plus?');
+    expect(document.body.textContent).not.toContain('Instanz- & Serververwaltung');
+    cleanUp();
+  });
+
+  it('renders admin details and instance management feature when user is admin', () => {
+    const { cleanUp } = mountComponent(
+      { modelValue: true },
+      { id: 1, username: 'adminuser', is_admin: true, restricted: false }
+    );
+
+    expect(document.body.textContent).toContain('Administrator');
+    expect(document.body.textContent).toContain('Instanz- & Serververwaltung');
+    expect(document.body.textContent).toContain('System-Backups');
     cleanUp();
   });
 
@@ -72,7 +85,7 @@ describe('AccountTierModal component', () => {
       { id: 2, username: 'testuser', restricted: true }
     );
 
-    expect(document.body.textContent).toContain('Vollzugriff erforderlich');
+    expect(document.body.textContent).toContain('Reisotor Plus erforderlich');
     expect(document.body.textContent).toContain('Datei- & Foto-Uploads');
     expect(document.body.querySelector('.feature-item.highlighted')).not.toBeNull();
     cleanUp();

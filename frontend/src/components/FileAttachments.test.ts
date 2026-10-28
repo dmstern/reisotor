@@ -146,7 +146,7 @@ describe('FileAttachments component', () => {
     window.removeEventListener('unhandledrejection', onUnhandled);
   });
 
-  it('shows file upload button with Premium badge for restricted user and opens modal on click', async () => {
+  it('shows file upload button with Plus badge for restricted user and opens modal on click', async () => {
     const { isOpen, highlightedFeature, closeAccountTierModal } = useAccountTierModal();
     closeAccountTierModal();
 
@@ -166,7 +166,7 @@ describe('FileAttachments component', () => {
     app.mount(container);
 
     expect(container.textContent).toContain('Datei hinzufügen');
-    expect(container.textContent).toContain('Premium');
+    expect(container.textContent).toContain('Plus');
 
     const button = Array.from(container.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Datei hinzufügen')

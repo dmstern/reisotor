@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, watch } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
@@ -8,7 +8,7 @@ import Input from '../primitives/Input.vue';
 import PasswordInput from '../PasswordInput.vue';
 import AppIcon from '../AppIcon.vue';
 import PendingSyncCard from './PendingSyncCard.vue';
-import AccountTierModal from '../AccountTierModal.vue';
+import { useAccountTierModal } from '../../composables/useAccountTierModal';
 import { useAuthStore } from '../../stores/auth';
 import { useConnectivityStore } from '../../stores/connectivity';
 import { useAccountSettings } from '../../composables/useAccountSettings';
@@ -16,7 +16,7 @@ import { ACTION_ICONS } from '../../utils/actionIcons';
 
 const auth = useAuthStore();
 const connectivity = useConnectivityStore();
-const showTierModal = ref(false);
+const { openAccountTierModal } = useAccountTierModal();
 
 function scrollToUnsynced() {
   const el = document.getElementById('unsynced-items');
@@ -84,9 +84,9 @@ watch(
                   ? 'Administrator-Status anzeigen'
                   : auth.user?.restricted
                     ? 'Informationen zu deinem Basis-Konto anzeigen'
-                    : 'Informationen zu deinen Kontorechten anzeigen'
+                    : 'Informationen zu deinem Reisotor Plus-Status anzeigen'
               "
-              @click="showTierModal = true"
+              @click="openAccountTierModal()"
             >
               <Badge v-if="auth.user?.is_admin" variant="accent-secondary">Admin</Badge>
               <Badge v-else-if="auth.user?.restricted" variant="warning" class="tier-badge">
@@ -94,8 +94,8 @@ watch(
                 <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
               </Badge>
               <Badge v-else variant="success" class="tier-badge">
-                Vollzugriff
-                <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
+                Plus
+                <AppIcon :icon="ACTION_ICONS.sparkle2" :size="12" group="actions" />
               </Badge>
             </button>
             <div
@@ -355,8 +355,6 @@ watch(
     </Card>
 
     <PendingSyncCard />
-
-    <AccountTierModal v-model="showTierModal" />
   </div>
 </template>
 

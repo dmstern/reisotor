@@ -41,7 +41,8 @@ const {
 } = useTripEditor();
 // Issue #96: siehe TripsView.vue's tripCreationBlocked() - dieselbe Regel, hier gedoppelt statt
 // geteilt, weil beide Komponenten bereits unabhängige useTripEditor()-Instanzen halten.
-const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
+const tripCreationBlocked = () =>
+  !!auth.user?.restricted && tripStore.trips.some((t) => t.created_by_me !== false);
 const { openAccountTierModal } = useAccountTierModal();
 
 function handleCreateTrip() {
@@ -213,7 +214,7 @@ function selectAndClose(id: number) {
           <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
           <Button type="button" variant="ghost" class="new-trip-btn" @click="handleCreateTrip">
             <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
-            <PremiumBadge v-if="tripCreationBlocked()" feature="trips" />
+            <PremiumBadge v-if="tripCreationBlocked()" feature="trips" as="span" :stop="false" />
           </Button>
           <router-link to="/trips" class="manage-trips-btn" @click="close"
             >Alle Urlaube verwalten</router-link

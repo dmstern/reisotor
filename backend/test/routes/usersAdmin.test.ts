@@ -288,6 +288,93 @@ describe('Admin User Management routes (#224)', () => {
     expect(restrictAdminRes.statusCode).toBe(400);
   });
 
+  it('allows admin to change user role via PUT /api/users/:id/role', async () => {
+    const { db } = await import('../../src/db/index.js');
+    const res = db
+      .prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)')
+      .run('role_test_user', bcrypt.hashSync('pass', 10), '👤');
+    const targetId = res.lastInsertRowid as number;
+
+    // Change to restricted (Basis-Konto)
+    const setRestricted = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/role`,
+      headers: { cookie: adminCookie },
+      payload: { role: 'restricted' },
+    });
+    expect(setRestricted.statusCode).toBe(200);
+    expect(setRestricted.json().is_restricted).toBe(true);
+    expect(setRestricted.json().is_admin).toBe(false);
+
+    // Change to plus
+    const setPlus = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/role`,
+      headers: { cookie: adminCookie },
+      payload: { role: 'plus' },
+    });
+    expect(setPlus.statusCode).toBe(200);
+    expect(setPlus.json().is_restricted).toBe(false);
+    expect(setPlus.json().is_admin).toBe(false);
+
+    // Change to admin
+    const setAdmin = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/role`,
+      headers: { cookie: adminCookie },
+      payload: { role: 'admin' },
+    });
+    expect(setAdmin.statusCode).toBe(200);
+    expect(setAdmin.json().is_admin).toBe(true);
+    expect(setAdmin.json().is_restricted).toBe(false);
+
+    // Self-restriction attempt rejected
+    const selfRestrict = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/role`,
+      headers: { cookie: adminCookie },
+      payload: { role: 'restricted' },
+    });
+    expect(selfRestrict.statusCode).toBe(400);
+    expect(selfRestrict.json().error).toContain('eigenen Account');
+
+    // Demoting the target user back to plus so only adminId remains
+    await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/role`,
+      headers: { cookie: adminCookie },
+      payload: { role: 'plus' },
+    });
+
+    // Sole admin self-demotion attempt rejected
+    const selfDemote = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/role`,
+      headers: { cookie: adminCookie },
+      payload: { role: 'plus' },
+    });
+    expect(selfDemote.statusCode).toBe(400);
+    expect(selfDemote.json().error).toContain('letzte Administrator');
+
+    // Invalid role rejected
+    const invalidRole = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/role`,
+      headers: { cookie: adminCookie },
+      payload: { role: 'superadmin' },
+    });
+    expect(invalidRole.statusCode).toBe(400);
+
+    // Non-admin attempt rejected
+    const nonAdmin = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/role`,
+      headers: { cookie: userCookie },
+      payload: { role: 'admin' },
+    });
+    expect(nonAdmin.statusCode).toBe(403);
+  });
+
   it('allows admin to read and update registrationMode in instance_settings', async () => {
     // Read current mode
     const getRes = await app.inject({
