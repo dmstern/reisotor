@@ -45,6 +45,10 @@ interface ToggleRestrictedBody {
   is_restricted: boolean;
 }
 
+interface ChangeRoleBody {
+  role: 'admin' | 'plus' | 'restricted';
+}
+
 interface RegistrationModeBody {
   registrationMode: RegistrationMode;
 }
@@ -288,6 +292,85 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         nextIsRestricted ? 1 : 0,
         targetUserId
       );
+      const updated = db
+        .prepare(
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
+        )
+        .get(targetUserId) as UserRow;
+      const restricted = isUserRestricted(updated.id);
+      return {
+        id: updated.id,
+        username: updated.username,
+        email: updated.email ?? null,
+        avatar: updated.avatar,
+        is_admin: Boolean(updated.is_admin),
+        is_restricted: restricted,
+        restricted,
+        must_change_password: Boolean(updated.must_change_password),
+      };
+    }
+  );
+
+  // Benutzerrolle ändern (Admin, Plus, Basis-Konto)
+  app.put<{ Params: { id: string }; Body: ChangeRoleBody }>(
+    '/users/:id/role',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Benutzerrechte verwalten' });
+      }
+      const targetUserId = Number(req.params.id);
+      const { role } = req.body ?? {};
+
+      if (!role || (role !== 'admin' && role !== 'plus' && role !== 'restricted')) {
+        return reply
+          .code(400)
+          .send({ error: 'Ungültige Rolle. Erlaubt sind: admin, plus, restricted' });
+      }
+
+      const targetUser = db
+        .prepare('SELECT id, is_admin, is_restricted FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; is_admin: number; is_restricted: number } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      // Schutz vor Aussperrung: Wenn man sich selbst Admin-Rechte entzieht, muss mindestens ein weiterer Admin existieren
+      if (targetUserId === req.session.userId && role !== 'admin') {
+        const adminCount = (
+          db.prepare('SELECT COUNT(*) as count FROM users WHERE is_admin = 1').get() as {
+            count: number;
+          }
+        ).count;
+        if (adminCount <= 1) {
+          return reply.code(400).send({
+            error: 'Der letzte Administrator kann sich selbst die Admin-Rechte nicht entziehen',
+          });
+        }
+      }
+
+      // Schutz vor Selbst-Einschränkung
+      if (targetUserId === req.session.userId && role === 'restricted') {
+        return reply.code(400).send({
+          error: 'Du kannst deinen eigenen Account nicht einschränken',
+        });
+      }
+
+      if (role === 'admin') {
+        db.prepare('UPDATE users SET is_admin = 1, is_restricted = 0 WHERE id = ?').run(
+          targetUserId
+        );
+      } else if (role === 'plus') {
+        db.prepare('UPDATE users SET is_admin = 0, is_restricted = 0 WHERE id = ?').run(
+          targetUserId
+        );
+      } else if (role === 'restricted') {
+        db.prepare('UPDATE users SET is_admin = 0, is_restricted = 1 WHERE id = ?').run(
+          targetUserId
+        );
+      }
+
       const updated = db
         .prepare(
           'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
