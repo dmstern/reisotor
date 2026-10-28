@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import type { Period, ShoppingItem } from '../api/types';
 import { useUiSettingsStore } from '../stores/uiSettings';
+import { useTripStore } from '../stores/trip';
 import { usePersistedRef } from '../composables/usePersistedRef';
 import { useShoppingList } from '../composables/useShoppingList';
 import {
@@ -22,6 +23,7 @@ import ShoppingItemRow from '../components/ShoppingItemRow.vue';
 import ShoppingEditModal from '../components/ShoppingEditModal.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
+const tripStore = useTripStore();
 const uiSettings = useUiSettingsStore();
 
 const {
@@ -42,8 +44,14 @@ const { groupBy, defaultGroupBy, groupByOptions, groupedItems, knownShops, hasIt
   useShoppingGrouping(items, users);
 
 const newBuyer = ref('');
-const newShop = usePersistedRef('reisotor-shopping-last-shop', '');
-const newPeriod = usePersistedRef<Period | ''>('reisotor-shopping-last-period', '');
+const newShop = usePersistedRef(
+  () => (tripStore.currentTripId ? `reisotor-shopping-last-shop:${tripStore.currentTripId}` : ''),
+  ''
+);
+const newPeriod = usePersistedRef<Period | ''>(
+  () => (tripStore.currentTripId ? `reisotor-shopping-last-period:${tripStore.currentTripId}` : ''),
+  ''
+);
 const editingItem = ref<ShoppingItem | null>(null);
 
 async function handleReassign(item: ShoppingItem, event: Event) {
@@ -84,7 +92,13 @@ async function quickAddToGroup(group: Group, label: string) {
       </template>
     </ListProgressHeader>
 
-    <ShoppingAddForm :users="users" :known-shops="knownShops" @submit="submitNewItem" />
+    <ShoppingAddForm
+      :users="users"
+      :known-shops="knownShops"
+      v-model:last-shop="newShop"
+      v-model:last-period="newPeriod"
+      @submit="submitNewItem"
+    />
 
     <div class="groups-grid" :class="{ 'groups-grid--masonry masonry': groupBy === 'shop' }">
       <section

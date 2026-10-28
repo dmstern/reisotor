@@ -181,6 +181,13 @@ export function migrateLocalData(): MigrationReport {
     }
   }
 
+  // Veraltete, globale Vorbelegungs-Keys entfernen (werden jetzt pro tripId gespeichert)
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('reisotor-shopping-last-shop');
+    localStorage.removeItem('reisotor-shopping-last-period');
+    localStorage.removeItem('reisotor-todo-last-assignee');
+  }
+
   return {
     versionChanged,
     fromVersion,

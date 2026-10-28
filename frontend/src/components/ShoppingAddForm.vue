@@ -21,6 +21,9 @@ defineProps<{
   knownShops: string[];
 }>();
 
+const lastShop = defineModel<string>('lastShop', { default: '' });
+const lastPeriod = defineModel<Period | ''>('lastPeriod', { default: '' });
+
 const emit = defineEmits<{
   (e: 'submit', form: ShoppingFormInput): void;
 }>();
@@ -31,8 +34,6 @@ const newLabel = ref('');
 const newBuyer = ref('');
 const newLink = ref('');
 const newNote = ref('');
-const newShop = usePersistedRef('reisotor-shopping-last-shop', '');
-const newPeriod = usePersistedRef<Period | ''>('reisotor-shopping-last-period', '');
 const showNewDetails = usePersistedRef('reisotor-shopping-show-details', false);
 
 const newFormBundle = computed<Record<string, unknown>>({
@@ -41,16 +42,16 @@ const newFormBundle = computed<Record<string, unknown>>({
     newBuyer: newBuyer.value,
     newLink: newLink.value,
     newNote: newNote.value,
-    newShop: newShop.value,
-    newPeriod: newPeriod.value,
+    newShop: lastShop.value,
+    newPeriod: lastPeriod.value,
   }),
   set: (v) => {
     newLabel.value = (v.newLabel as string) ?? '';
     newBuyer.value = (v.newBuyer as string) ?? '';
     newLink.value = (v.newLink as string) ?? '';
     newNote.value = (v.newNote as string) ?? '';
-    newShop.value = (v.newShop as string) ?? '';
-    newPeriod.value = (v.newPeriod as Period | '') ?? '';
+    lastShop.value = (v.newShop as string) ?? '';
+    lastPeriod.value = (v.newPeriod as Period | '') ?? '';
   },
 });
 
@@ -72,8 +73,8 @@ function handleSubmit() {
     assigned_to_user_id: newBuyer.value ? Number(newBuyer.value) : undefined,
     link: newLink.value || undefined,
     note: newNote.value || undefined,
-    shop: newShop.value || undefined,
-    period: newPeriod.value || undefined,
+    shop: lastShop.value || undefined,
+    period: lastPeriod.value || undefined,
   });
   newLabel.value = '';
   newLink.value = '';
@@ -134,7 +135,7 @@ function discardDraft() {
     <Accordion :expanded="showNewDetails" :inert-when-closed="false">
       <div class="form-details-grid">
         <FormField icon="shop" label="Shop" v-slot="{ id }">
-          <Combobox :id="id" v-model="newShop" :options="knownShops" placeholder="Shop/Laden" />
+          <Combobox :id="id" v-model="lastShop" :options="knownShops" placeholder="Shop/Laden" />
         </FormField>
         <FormField v-if="users.length > 1" icon="person" label="Einkäufer:in" v-slot="{ id }">
           <Select :id="id" v-model="newBuyer">
@@ -145,7 +146,7 @@ function discardDraft() {
           </Select>
         </FormField>
         <FormField icon="period" label="Zeitraum" v-slot="{ id }">
-          <Select :id="id" v-model="newPeriod">
+          <Select :id="id" v-model="lastPeriod">
             <option value="">Kein Zeitraum</option>
             <option value="before">{{ PERIOD_META.before }}</option>
             <option value="during">{{ PERIOD_META.during }}</option>

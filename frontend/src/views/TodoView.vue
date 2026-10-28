@@ -57,7 +57,10 @@ const {
   computed(() => tripStore.currentTrip)
 );
 
-const lastAssignee = usePersistedRef('reisotor-todo-last-assignee', '');
+const lastAssignee = usePersistedRef(
+  () => (tripStore.currentTripId ? `reisotor-todo-last-assignee:${tripStore.currentTripId}` : ''),
+  ''
+);
 const editingItem = ref<TodoItem | null>(null);
 
 function startEdit(item: TodoItem) {

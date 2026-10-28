@@ -30,7 +30,10 @@ const { showToast } = useToast();
 
 const emptyForm = () => ({
   title: '',
-  assigned_to_user_id: props.lastAssignee,
+  assigned_to_user_id:
+    props.lastAssignee && props.users.some((u) => String(u.id) === props.lastAssignee)
+      ? props.lastAssignee
+      : '',
   due_date: '',
   period: '' as Period | '',
   priority: 'medium' as TodoPriority,

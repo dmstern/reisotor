@@ -152,5 +152,17 @@ describe('localMigrations', () => {
       expect((updated[1].body as { done: boolean }).done).toBe(false);
       expect((updated[1].body as { title: string }).title).toBe('Einkaufen');
     });
+
+    it('cleans up legacy un-scoped prefill keys', () => {
+      localStorage.setItem('reisotor-shopping-last-shop', JSON.stringify('dm'));
+      localStorage.setItem('reisotor-shopping-last-period', JSON.stringify('during'));
+      localStorage.setItem('reisotor-todo-last-assignee', JSON.stringify('1'));
+
+      migrateLocalData();
+
+      expect(localStorage.getItem('reisotor-shopping-last-shop')).toBeNull();
+      expect(localStorage.getItem('reisotor-shopping-last-period')).toBeNull();
+      expect(localStorage.getItem('reisotor-todo-last-assignee')).toBeNull();
+    });
   });
 });
