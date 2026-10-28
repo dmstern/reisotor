@@ -330,6 +330,7 @@ function clearFilters() {
   flex: 1;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .search-icon {
@@ -344,6 +345,7 @@ function clearFilters() {
 
 .search-input {
   width: 100%;
+  min-width: 0;
   height: 38px;
   min-height: 38px;
   padding: 0 32px 0 36px;
@@ -358,6 +360,11 @@ function clearFilters() {
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+.search-input::placeholder {
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .search-input:hover {
@@ -415,6 +422,22 @@ function clearFilters() {
   position: relative;
 }
 
+.bar-icon-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+@media (pointer: fine) {
+  .bar-icon-btn::after {
+    display: none;
+  }
+}
+
 .active-badge {
   position: absolute;
   top: -3px;
@@ -430,9 +453,10 @@ function clearFilters() {
 
 :global(.filter-popover-menu),
 :global(.sort-popover-menu) {
-  min-width: 210px;
-  max-width: 280px;
+  min-width: 200px;
+  max-width: min(280px, calc(100vw - var(--space-4)));
   max-height: calc(100vh - 70px);
+  max-height: calc(100dvh - 70px);
   overflow-y: auto;
 }
 
@@ -487,5 +511,6 @@ function clearFilters() {
 
 .clear-filters-btn:focus-visible {
   outline: 2px solid var(--color-danger);
+  outline-offset: 2px;
 }
 </style>

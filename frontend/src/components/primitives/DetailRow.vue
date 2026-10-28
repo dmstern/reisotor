@@ -28,6 +28,8 @@ withDefaults(
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .detail-row__label {
