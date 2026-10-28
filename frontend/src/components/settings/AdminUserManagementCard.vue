@@ -3,7 +3,6 @@ import { onMounted, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
-import Select from '../primitives/Select.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import CreateUserDialog from '../CreateUserDialog.vue';
@@ -104,16 +103,45 @@ onMounted(() => {
             </td>
             <td class="email-cell">{{ u.email || '—' }}</td>
             <td>
-              <Badge
-                as="button"
-                interactive
-                :variant="u.is_admin ? 'accent-secondary' : u.is_restricted ? 'warning' : 'success'"
-                :title="`Rolle ${getUserRoleLabel(u)} – Klicken für Details zu Rollen & Berechtigungen`"
-                class="role-badge-btn"
-                @click="openRolesModal(getUserRole(u))"
+              <div
+                class="role-badge-select"
+                :class="[
+                  `role-badge-select--${getUserRole(u)}`,
+                  { 'is-loading': changingRoleId === u.id },
+                ]"
               >
-                {{ getUserRoleLabel(u) }}
-              </Badge>
+                <Badge
+                  interactive
+                  :variant="
+                    u.is_admin ? 'accent-secondary' : u.is_restricted ? 'warning' : 'success'
+                  "
+                  class="role-badge"
+                >
+                  <span>{{ getUserRoleLabel(u) }}</span>
+                  <span v-if="changingRoleId === u.id" class="role-spinner" aria-hidden="true" />
+                  <AppIcon
+                    v-else
+                    :icon="ACTION_ICONS.chevronDown"
+                    :size="12"
+                    class="role-chevron"
+                    group="actions"
+                  />
+                </Badge>
+                <select
+                  :value="getUserRole(u)"
+                  :disabled="changingRoleId === u.id"
+                  :aria-label="`Rolle für ${u.username}`"
+                  :title="`Rolle für ${u.username} ändern (aktuell: ${getUserRoleLabel(u)})`"
+                  class="role-native-select"
+                  @change="
+                    (e) => onRoleSelect(u, (e.target as HTMLSelectElement).value as UserRole)
+                  "
+                >
+                  <option value="restricted" :disabled="u.id === auth.user?.id">Basis-Konto</option>
+                  <option value="plus">Plus</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
             </td>
             <td>
               <div class="status-badges">
@@ -160,19 +188,6 @@ onMounted(() => {
                   <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
                   Mail bestätigen
                 </Button>
-                <Select
-                  size="sm"
-                  :model-value="getUserRole(u)"
-                  :aria-label="`Rolle für ${u.username}`"
-                  title="Rolle für dieses Benutzerkonto zuweisen"
-                  class="role-select"
-                  :disabled="changingRoleId === u.id"
-                  @update:model-value="(val) => onRoleSelect(u, val as UserRole)"
-                >
-                  <option value="restricted" :disabled="u.id === auth.user?.id">Basis-Konto</option>
-                  <option value="plus">Plus</option>
-                  <option value="admin">Admin</option>
-                </Select>
                 <Button
                   size="sm"
                   variant="danger"
@@ -204,12 +219,87 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.role-badge-btn {
-  cursor: pointer;
+.role-badge-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
 }
 
-.role-select {
-  width: 135px;
+.role-badge {
+  padding-right: 6px;
+  user-select: none;
+}
+
+.role-chevron {
+  opacity: 0.75;
+  transition:
+    transform var(--transition-fast),
+    opacity var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.role-badge-select:hover .role-chevron {
+  opacity: 1;
+}
+
+.role-native-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.role-native-select option {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.role-native-select:focus-visible {
+  outline: none;
+}
+
+.role-badge-select:focus-within .role-badge {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.role-badge-select:hover .role-badge {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.role-badge-select:active .role-badge {
+  transform: translateY(0);
+}
+
+.role-badge-select.is-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.role-spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-pill);
+  animation: role-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes role-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .self-label {
