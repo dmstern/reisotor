@@ -92,20 +92,6 @@ function onChange(event: Event) {
     border-color 0.15s ease;
 }
 
-@media (pointer: coarse) {
-  .checkbox::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
-
 .checkbox:hover:not(:disabled) {
   border-color: var(--color-primary);
 }

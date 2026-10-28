@@ -299,7 +299,7 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
   flex-shrink: 0;
 }
 
-@media (max-width: 420px) {
+@container (max-width: 420px) {
   .credential-row {
     flex-direction: column;
     align-items: stretch;
@@ -328,29 +328,5 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-2);
-}
-
-@container (max-width: 440px) {
-  .actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .actions :deep(button),
-  .actions button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .actions :deep(button),
-  .actions button {
-    width: 100%;
-  }
 }
 </style>

@@ -280,6 +280,8 @@ export function useSpotForm(options: UseSpotFormOptions) {
     } else if (!Array.isArray(spotForm.value.scheduledDates)) {
       spotForm.value.scheduledDates = [];
     }
+    showSpotScheduleSection.value =
+      spotForm.value.tourTitles.length > 0 || spotForm.value.scheduledDates.length > 0;
   }
 
   const editSpotScheduledItems = computed(() => {

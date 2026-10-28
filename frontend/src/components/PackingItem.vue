@@ -253,20 +253,6 @@ function handleMainClick(e: MouseEvent) {
   justify-content: center;
 }
 
-@media (pointer: coarse) {
-  .state-toggle::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
-
 .state-toggle:hover {
   border-color: var(--color-primary);
 }
@@ -518,10 +504,10 @@ function handleMainClick(e: MouseEvent) {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
   }
 }
 

@@ -409,28 +409,4 @@ function close() {
   justify-content: flex-end;
   margin-top: var(--space-2);
 }
-
-@container (max-width: 440px) {
-  .modal-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .modal-actions :deep(button),
-  .modal-actions button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .modal-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .modal-actions :deep(button),
-  .modal-actions button {
-    width: 100%;
-  }
-}
 </style>

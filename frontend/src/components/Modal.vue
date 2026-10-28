@@ -592,6 +592,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
    Sitzt im normalen Inhaltsfluss am Ende des Formulars und scrollt mit dem Inhalt mit,
    sodass bei längeren Formularen die volle Dialoghöhe für Eingaben nutzbar bleibt (#550). */
 .modal-body :slotted(form) .actions-row,
+.modal-body :slotted(*) .actions-row,
 .modal-body :slotted(.actions-row) {
   display: flex;
   flex-wrap: wrap;
@@ -603,27 +604,33 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 }
 
 .modal-body :slotted(form) .actions-row .spacer,
+.modal-body :slotted(*) .actions-row .spacer,
 .modal-body :slotted(.actions-row) .spacer {
   flex: 1;
 }
 
 @container (max-width: 440px) {
   .modal-body :slotted(form) .actions-row,
+  .modal-body :slotted(*) .actions-row,
   .modal-body :slotted(.actions-row) {
     flex-direction: column-reverse !important;
     align-items: stretch !important;
   }
 
   .modal-body :slotted(form) .actions-row .spacer,
+  .modal-body :slotted(*) .actions-row .spacer,
   .modal-body :slotted(.actions-row) .spacer {
     display: none !important;
   }
 
   .modal-body :slotted(form) .actions-row > :not(.spacer),
+  .modal-body :slotted(*) .actions-row > :not(.spacer),
   .modal-body :slotted(.actions-row) > :not(.spacer),
   .modal-body :slotted(form) .actions-row :deep(button),
+  .modal-body :slotted(*) .actions-row :deep(button),
   .modal-body :slotted(.actions-row) :deep(button),
   .modal-body :slotted(form) .actions-row button,
+  .modal-body :slotted(*) .actions-row button,
   .modal-body :slotted(.actions-row) button {
     width: 100% !important;
     flex: initial !important;

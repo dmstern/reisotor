@@ -182,6 +182,7 @@
   --color-primary: #9141ac;
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
   --color-primary-contrast: #ffffff;
+  --color-focus-ring: var(--color-primary);
   --color-accent: #e08e45;
   --color-accent-dark: #92400e;
   --color-warning: #d97706;
@@ -557,6 +558,7 @@
   --color-primary: #9141ac;
   --color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);
   --color-primary-contrast: #ffffff;
+  --color-focus-ring: var(--color-primary);
   --color-accent: #e08e45;
   --color-accent-dark: #92400e;
   --color-warning: #d97706;

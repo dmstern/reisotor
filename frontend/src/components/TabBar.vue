@@ -88,11 +88,12 @@ function scrollActiveTabIntoView() {
   const btnRight = btnLeft + activeEl.offsetWidth;
   const viewLeft = bar.scrollLeft;
   const viewRight = viewLeft + bar.clientWidth;
-  const arrowOffset = 36;
-  if (btnLeft - arrowOffset < viewLeft) {
-    smoothScrollTo(bar, Math.max(0, btnLeft - arrowOffset));
-  } else if (btnRight + arrowOffset > viewRight) {
-    smoothScrollTo(bar, btnRight + arrowOffset - bar.clientWidth);
+  const leftOffset = btnLeft > 0 ? 36 : 0;
+  const rightOffset = btnRight < bar.scrollWidth - 1 ? 36 : 0;
+  if (btnLeft - leftOffset < viewLeft) {
+    smoothScrollTo(bar, Math.max(0, btnLeft - leftOffset));
+  } else if (btnRight + rightOffset > viewRight) {
+    smoothScrollTo(bar, btnRight + rightOffset - bar.clientWidth);
   }
 }
 
@@ -131,23 +132,11 @@ watch(
 
 // Scrollt einen angeklickten, teils außerhalb der (bei vielen Tabs horizontal scrollenden) Leiste
 // liegenden Tab vollständig in Sicht - gleiches Muster wie NavBar.vue's onLinkClick().
-function onTabClick(key: string, event: MouseEvent) {
+function onTabClick(key: string) {
   emit('select', key);
   nextTick(() => {
     updateUnderline();
-    const btn = event.currentTarget as HTMLElement | null;
-    const bar = tabBarEl.value;
-    if (!btn || !bar) return;
-    const btnLeft = btn.offsetLeft;
-    const btnRight = btnLeft + btn.offsetWidth;
-    const viewLeft = bar.scrollLeft;
-    const viewRight = viewLeft + bar.clientWidth;
-    const arrowOffset = 36;
-    if (btnLeft - arrowOffset < viewLeft) {
-      smoothScrollTo(bar, Math.max(0, btnLeft - arrowOffset));
-    } else if (btnRight + arrowOffset > viewRight) {
-      smoothScrollTo(bar, btnRight + arrowOffset - bar.clientWidth);
-    }
+    scrollActiveTabIntoView();
   });
 }
 </script>
@@ -167,7 +156,7 @@ function onTabClick(key: string, event: MouseEvent) {
           role="tab"
           :class="{ active: activeKey === tab.key }"
           :aria-selected="activeKey === tab.key"
-          @click="onTabClick(tab.key, $event)"
+          @click="onTabClick(tab.key)"
         >
           <span class="icon-wrap">
             <AppIcon

@@ -355,16 +355,12 @@ function clearFilters() {
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   color: var(--color-text);
   font-size: 0.9rem;
+  text-overflow: ellipsis;
   box-shadow: none;
   box-sizing: border-box;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
-}
-
-.search-input::placeholder {
-  text-overflow: ellipsis;
-  overflow: hidden;
 }
 
 .search-input:hover {
