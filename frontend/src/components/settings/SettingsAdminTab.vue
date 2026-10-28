@@ -561,6 +561,66 @@ async function handleGenerateVapid() {
           direkt an Nutzer:innen.
         </p>
 
+        <details class="smtp-guide-details">
+          <summary class="smtp-guide-summary">
+            <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" />
+            <span>Tipps & Anbieter für neue Admins (z. B. Brevo, Resend, eigener Hoster)</span>
+          </summary>
+          <div class="smtp-guide-content">
+            <p>
+              Reisotor benötigt einen SMTP-Server für automatische System-Mails. Wenn du noch keinen
+              Mailserver hast, bieten folgende Dienste erprobte, kostenlose Kontingente:
+            </p>
+            <ul>
+              <li>
+                <strong>Brevo (ehemals Sendinblue):</strong> Bis zu 300 Mails/Tag dauerhaft
+                kostenlos.
+                <br />
+                <em>Host:</em> <code>smtp-relay.brevo.com</code> &middot; <em>Port:</em>
+                <code>587</code> &middot; <em>Benutzer:</em> deine Brevo-Login-Adresse &middot;
+                <em>Passwort:</em> SMTP-Schlüssel (im Brevo-Konto unter
+                <em>SMTP & API</em> generieren).
+                <br />
+                <span class="guide-note"
+                  >Wichtig: Deine Absenderadresse muss bei Brevo unter
+                  <em>Absender:innen, Domains, IPs</em> verifiziert sein.</span
+                >
+              </li>
+              <li>
+                <strong>Resend:</strong> Bis zu 3.000 Mails/Monat (100/Tag) kostenlos, sehr moderne
+                Entwickler-Plattform.
+                <br />
+                <em>Host:</em> <code>smtp.resend.com</code> &middot; <em>Port:</em>
+                <code>465</code> (mit SSL/TLS) oder <code>587</code> &middot; <em>Benutzer:</em>
+                <code>resend</code> &middot; <em>Passwort:</em> API-Key (<code>re_...</code>).
+                <br />
+                <span class="guide-note"
+                  >Wichtig: Erfordert eine eigene Domain mit DNS-Einträgen (DKIM/SPF) im
+                  Resend-Dashboard.</span
+                >
+              </li>
+              <li>
+                <strong
+                  >Eigener Webhoster / Mailbox (z. B. Hetzner, Netcup, Strato, All-Inkl,
+                  mailbox.org):</strong
+                >
+                <br />
+                Verwende einfach die Standard-SMTP-Daten deines E-Mail-Postfachs (z. B.
+                <em>Host:</em> <code>mail.deinedomain.de</code>, <em>Port:</em>
+                <code>587</code> oder <code>465</code>).
+              </li>
+            </ul>
+            <div class="smtp-guide-tip">
+              <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" />
+              <span
+                ><strong>Tipp zur Verschlüsselung:</strong> Auf Port 587 wird STARTTLS automatisch
+                verwendet. Die Option „TLS/SSL Verbindung erzwingen“ ist für Port 465 (SMTPS)
+                vorgesehen.</span
+              >
+            </div>
+          </div>
+        </details>
+
         <div class="form-grid">
           <div class="form-group">
             <div class="label-with-badge">
@@ -1092,5 +1152,83 @@ async function handleGenerateVapid() {
   background: var(--color-danger-subtle, rgba(248, 81, 73, 0.15));
   border: 1px solid var(--color-danger-border, rgba(248, 81, 73, 0.4));
   color: var(--color-danger, #f85149);
+}
+
+.smtp-guide-details {
+  margin-bottom: var(--space-4);
+  background: var(--color-surface-subtle, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.smtp-guide-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.smtp-guide-summary::-webkit-details-marker {
+  display: none;
+}
+
+.smtp-guide-summary:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+.smtp-guide-content {
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.smtp-guide-content p {
+  margin: 0 0 var(--space-2) 0;
+}
+
+.smtp-guide-content ul {
+  margin: 0 0 var(--space-3) 0;
+  padding-left: var(--space-4);
+}
+
+.smtp-guide-content li {
+  margin-bottom: var(--space-2);
+}
+
+.smtp-guide-content code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+  padding: 1px 4px;
+  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
+  border-radius: var(--radius-xs, 4px);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.guide-note {
+  display: inline-block;
+  font-size: 0.9em;
+  color: var(--color-text-muted);
+}
+
+.smtp-guide-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(56, 139, 253, 0.1);
+  border: 1px solid rgba(56, 139, 253, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
 }
 </style>
