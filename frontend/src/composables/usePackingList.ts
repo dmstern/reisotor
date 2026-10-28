@@ -190,12 +190,30 @@ export function usePackingList(tripIdOverride?: number) {
     return updated;
   }
 
-  async function quickAdd(list: PackingListGroup, label: string): Promise<PackingItem | null> {
+  async function quickAdd(
+    list: PackingListGroup,
+    label: string,
+    categoryOverride?: string,
+    subcategoryOverride?: string,
+    quantityOverride?: number
+  ): Promise<PackingItem | null> {
     if (!label.trim()) return null;
-    const category = (quickAddCategories.value[list.key] ?? '').trim();
+    const category = (
+      categoryOverride !== undefined ? categoryOverride : (quickAddCategories.value[list.key] ?? '')
+    ).trim();
     if (categoryRequired.value && !category) return null;
-    const subcategory = (quickAddSubcategories.value[list.key] ?? '').trim();
-    const quantity = Math.max(1, Math.round(quickAddQuantities.value[list.key] || 1));
+    const subcategory = (
+      subcategoryOverride !== undefined
+        ? subcategoryOverride
+        : (quickAddSubcategories.value[list.key] ?? '')
+    ).trim();
+    const quantity = Math.max(
+      1,
+      Math.round(
+        (quantityOverride !== undefined ? quantityOverride : quickAddQuantities.value[list.key]) ||
+          1
+      )
+    );
     const created = await api.post<PackingItem>('/packing', {
       trip_id: tripId,
       label: label.trim(),

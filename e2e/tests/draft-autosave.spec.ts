@@ -97,7 +97,7 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     );
   });
 
-  test('ein ungespeicherter Entwurf in der ToDo- und Einkaufsliste kann verworfen werden', async ({
+  test('ein ungespeicherter Entwurf in der ToDo-, Einkaufs- und Packliste kann verworfen werden', async ({
     page,
   }) => {
     // ToDo-Liste
@@ -135,5 +135,26 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await page.reload();
     await expect(shoppingInput).toHaveValue('');
     await expect(page.locator('.add-form .draft-status')).toHaveCount(0);
+
+    // Packliste
+    await page.goto('/packing');
+    const packingInput = page.locator('.packing-page .add-form input.label-input').first();
+    await packingInput.click();
+    await packingInput.fill('Regenjacke');
+    await expect(page.locator('.packing-page .add-form .draft-status').first()).toContainText(
+      'Entwurf gesichert',
+      {
+        timeout: 4_000,
+      }
+    );
+    await expect(page.locator('.packing-page .add-form .draft-discard-btn').first()).toBeVisible();
+
+    await page.locator('.packing-page .add-form .draft-discard-btn').first().click();
+    await expect(packingInput).toHaveValue('');
+    await expect(page.locator('.packing-page .add-form .draft-status')).toHaveCount(0);
+
+    await page.reload();
+    await expect(packingInput).toHaveValue('');
+    await expect(page.locator('.packing-page .add-form .draft-status')).toHaveCount(0);
   });
 });
