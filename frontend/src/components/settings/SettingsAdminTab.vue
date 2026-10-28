@@ -7,6 +7,8 @@ import Input from '../primitives/Input.vue';
 import Textarea from '../primitives/Textarea.vue';
 import CheckboxCard from '../primitives/CheckboxCard.vue';
 import Radio from '../primitives/Radio.vue';
+import CollapsibleFieldset from '../primitives/CollapsibleFieldset.vue';
+import Alert from '../primitives/Alert.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
@@ -99,6 +101,7 @@ const pushForm = reactive({
 
 const isOrsConfigured = computed(() => Boolean(settings.value?.geo.isOrsApiKeySet));
 const isSmtpConfigured = computed(() => Boolean(settings.value?.email.smtpHost));
+const canTestSmtp = computed(() => Boolean(settings.value?.email.smtpHost || emailForm.smtpHost));
 const isSmtpPassConfigured = computed(() => Boolean(settings.value?.email.isSmtpPassSet));
 const isGithubTokenConfigured = computed(() => Boolean(settings.value?.feedback.isGithubTokenSet));
 const isVapidConfigured = computed(() =>
@@ -217,6 +220,8 @@ async function sendTestEmail() {
   testEmailFeedback.value = null;
   testingEmail.value = true;
   try {
+    // Falls Änderungen im Formular vorgenommen wurden (z. B. Passwort/Port), zuerst speichern
+    await saveEmail();
     const res = await api.post<{ success: boolean; message: string }>(
       '/admin/settings/send-test-email'
     );
@@ -561,11 +566,11 @@ async function handleGenerateVapid() {
           direkt an Nutzer:innen.
         </p>
 
-        <details class="smtp-guide-details">
-          <summary class="smtp-guide-summary">
-            <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" />
-            <span>Tipps & Anbieter für neue Admins (z. B. Brevo, Resend, eigener Hoster)</span>
-          </summary>
+        <CollapsibleFieldset
+          :icon="ACTION_ICONS.info"
+          label="Tipps & Anbieter für neue Admins (z. B. Brevo, Resend, eigener Hoster)"
+          class="smtp-guide-fieldset"
+        >
           <div class="smtp-guide-content">
             <p>
               Reisotor benötigt einen SMTP-Server für automatische System-Mails. Wenn du noch keinen
@@ -610,16 +615,13 @@ async function handleGenerateVapid() {
                 <code>587</code> oder <code>465</code>).
               </li>
             </ul>
-            <div class="smtp-guide-tip">
-              <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" />
-              <span
-                ><strong>Tipp zur Verschlüsselung:</strong> Auf Port 587 wird STARTTLS automatisch
-                verwendet. Die Option „TLS/SSL Verbindung erzwingen“ ist für Port 465 (SMTPS)
-                vorgesehen.</span
-              >
-            </div>
+            <Alert variant="info" size="sm">
+              <strong>Tipp zur Verschlüsselung:</strong> Auf Port 587 wird STARTTLS automatisch
+              verwendet. Die Option „TLS/SSL Verbindung erzwingen“ ist für Port 465 (SMTPS)
+              vorgesehen.
+            </Alert>
           </div>
-        </details>
+        </CollapsibleFieldset>
 
         <div class="form-grid">
           <div class="form-group">
@@ -737,7 +739,7 @@ async function handleGenerateVapid() {
             <AppIcon :icon="ACTION_ICONS.save" :size="14" group="actions" /> Speichern
           </Button>
           <Button
-            v-if="isSmtpConfigured"
+            v-if="canTestSmtp"
             variant="secondary"
             size="sm"
             :loading="testingEmail"
@@ -749,14 +751,13 @@ async function handleGenerateVapid() {
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gespeichert
           </span>
         </div>
-        <div
+        <Alert
           v-if="testEmailFeedback"
-          class="test-email-result"
-          :class="testEmailFeedback.type"
-          role="status"
-        >
-          {{ testEmailFeedback.message }}
-        </div>
+          :variant="testEmailFeedback.type === 'error' ? 'danger' : 'success'"
+          size="sm"
+          class="test-email-alert"
+          :description="testEmailFeedback.message"
+        />
       </Card>
 
       <!-- 6. Feedback & GitHub -->
@@ -1133,71 +1134,29 @@ async function handleGenerateVapid() {
   font-weight: 500;
 }
 
-.test-email-result {
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  line-height: 1.4;
-  word-break: break-word;
+.test-email-alert {
+  margin-top: var(--space-3);
 }
 
-.test-email-result.success {
-  background: var(--color-success-subtle, rgba(46, 160, 67, 0.15));
-  border: 1px solid var(--color-success-border, rgba(46, 160, 67, 0.4));
-  color: var(--color-success, #2ea043);
-}
-
-.test-email-result.error {
-  background: var(--color-danger-subtle, rgba(248, 81, 73, 0.15));
-  border: 1px solid var(--color-danger-border, rgba(248, 81, 73, 0.4));
-  color: var(--color-danger, #f85149);
-}
-
-.smtp-guide-details {
+.smtp-guide-fieldset {
   margin-bottom: var(--space-4);
-  background: var(--color-surface-subtle, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.smtp-guide-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-}
-
-.smtp-guide-summary::-webkit-details-marker {
-  display: none;
-}
-
-.smtp-guide-summary:hover {
-  color: var(--color-text-primary);
-  background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
 }
 
 .smtp-guide-content {
-  padding: var(--space-3);
-  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   font-size: var(--font-size-xs);
   line-height: 1.6;
   color: var(--color-text-secondary);
 }
 
 .smtp-guide-content p {
-  margin: 0 0 var(--space-2) 0;
+  margin: 0;
 }
 
 .smtp-guide-content ul {
-  margin: 0 0 var(--space-3) 0;
+  margin: 0;
   padding-left: var(--space-4);
 }
 
@@ -1218,17 +1177,5 @@ async function handleGenerateVapid() {
   display: inline-block;
   font-size: 0.9em;
   color: var(--color-text-muted);
-}
-
-.smtp-guide-tip {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: rgba(56, 139, 253, 0.1);
-  border: 1px solid rgba(56, 139, 253, 0.3);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
 }
 </style>

@@ -40,11 +40,12 @@ function getTransporter(): Transporter | null {
     const port = Number(getEffectiveSetting('smtp_port', 'SMTP_PORT', '587')) || 587;
     const forceSecureSetting =
       getEffectiveSetting('smtp_secure', 'SMTP_SECURE', 'false') === 'true';
-    // Port 465 nutzt direktes TLS/SSL (SMTPS).
-    // Port 587 und 25 nutzen STARTTLS (secure = false).
-    // Wenn "TLS/SSL erzwingen" auf Port 587 aktiviert ist, verlangen wir requireTLS: true,
+    // Port 465 nutzt direktes TLS/SSL (SMTPS / Implicit TLS).
+    // Port 587, 25 und 2525 nutzen STARTTLS (Explicit TLS).
+    // Wenn "TLS/SSL erzwingen" auf Port 587/25/2525 aktiviert ist, verlangen wir requireTLS: true,
     // erzwingen aber keinen direkten SSL-Handshake vor dem SMTP-Banner (verhindert Hänger).
-    const secure = port === 465 || (forceSecureSetting && port !== 587 && port !== 25);
+    const isExplicitTlsPort = port === 587 || port === 25 || port === 2525;
+    const secure = port === 465 || (forceSecureSetting && !isExplicitTlsPort);
     const requireTLS = forceSecureSetting && !secure;
     const user = getEffectiveSetting('smtp_user', 'SMTP_USER').trim();
     const pass = getEffectiveSetting('smtp_pass', 'SMTP_PASS').trim();

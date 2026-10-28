@@ -5,6 +5,7 @@ import {
   getAllAdminSettings,
   updateAdminSettings,
   generateAndSaveVapidKeys,
+  getEffectiveSetting,
   type UpdateAdminSettingsPayload,
 } from '../instanceSettings.js';
 import { resetTransporter, isEmailConfigured, sendTestEmail } from '../utils/mailer.js';
@@ -74,10 +75,20 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         { email: string | null } | undefined;
       targetEmail = user?.email?.trim();
     }
+    if (!targetEmail) {
+      // Fallback: Absender-Adresse (smtp_from), falls hinterlegt und valide
+      const smtpFrom = getEffectiveSetting('smtp_from', 'SMTP_FROM').trim();
+      const match = smtpFrom.match(/<([^>]+)>/);
+      const extracted = match ? match[1].trim() : smtpFrom;
+      if (extracted && EMAIL_PATTERN.test(extracted)) {
+        targetEmail = extracted;
+      }
+    }
 
     if (!targetEmail || !EMAIL_PATTERN.test(targetEmail)) {
       return reply.code(400).send({
-        error: 'Keine gültige Empfänger-E-Mail-Adresse angegeben oder im Admin-Profil hinterlegt',
+        error:
+          'Keine gültige Empfänger-E-Mail-Adresse angegeben oder im Admin-Profil bzw. in der Absender-Adresse hinterlegt',
       });
     }
 

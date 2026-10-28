@@ -1,3 +1,4 @@
+import '../helpers/initMemoryDb.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   isEmailConfigured,
@@ -6,7 +7,6 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendTestEmail,
-  resetTransporter,
   resetTransporterForTesting,
 } from '../../src/utils/mailer.js';
 

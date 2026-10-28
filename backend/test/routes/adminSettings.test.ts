@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcrypt';
 import type { FastifyInstance } from 'fastify';
 import { buildTestApp } from '../helpers/buildTestApp.js';
@@ -202,5 +202,34 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toContain('SMTP-Server ist nicht konfiguriert');
+  });
+
+  it('falls back to smtp_from when admin profile has no email', async () => {
+    await app.inject({
+      method: 'PUT',
+      url: '/api/admin/settings',
+      headers: { cookie: adminCookie },
+      payload: {
+        email: { smtpHost: 'smtp.example.com', smtpFrom: 'Reisotor <admin-fallback@example.com>' },
+      },
+    });
+
+    const { db } = await import('../../src/db/index.js');
+    db.prepare('UPDATE users SET email = NULL WHERE username = ?').run('settings_admin');
+
+    const mailer = await import('../../src/utils/mailer.js');
+    const spy = vi
+      .spyOn(mailer, 'sendTestEmail')
+      .mockResolvedValueOnce({ success: true, actionUrl: '' });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-test-email',
+      headers: { cookie: adminCookie },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toBe(true);
+    expect(spy).toHaveBeenCalledWith({ to: 'admin-fallback@example.com' });
+    spy.mockRestore();
   });
 });
