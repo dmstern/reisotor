@@ -99,6 +99,7 @@ onMounted(() => {
               <div class="user-cell">
                 <span class="user-avatar">{{ u.avatar }}</span>
                 <span class="username">{{ u.username }}</span>
+                <span v-if="u.id === auth.user?.id" class="self-label">(Du)</span>
               </div>
             </td>
             <td class="email-cell">{{ u.email || '—' }}</td>
@@ -168,9 +169,7 @@ onMounted(() => {
                   :disabled="changingRoleId === u.id"
                   @update:model-value="(val) => onRoleSelect(u, val as UserRole)"
                 >
-                  <option value="restricted" :disabled="u.id === auth.user?.id">
-                    Basis-Konto{{ u.id === auth.user?.id ? ' (Eigenes Konto)' : '' }}
-                  </option>
+                  <option value="restricted" :disabled="u.id === auth.user?.id">Basis-Konto</option>
                   <option value="plus">Plus</option>
                   <option value="admin">Admin</option>
                 </Select>
@@ -210,7 +209,14 @@ onMounted(() => {
 }
 
 .role-select {
-  min-width: 125px;
+  width: 135px;
+}
+
+.self-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 500;
+  margin-left: 2px;
 }
 
 .admin-card {
