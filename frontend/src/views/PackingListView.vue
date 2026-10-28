@@ -5,11 +5,9 @@ import { useUiSettingsStore } from '../stores/uiSettings';
 import { usePackingList, type PackingEditFormInput } from '../composables/usePackingList';
 import PackingItemRow from '../components/PackingItem.vue';
 import PackingEditModal from '../components/PackingEditModal.vue';
+import PackingAddRow from '../components/PackingAddRow.vue';
 import ListProgressHeader from '../components/ListProgressHeader.vue';
-import Combobox from '../components/Combobox.vue';
-import QuickAddRow from '../components/QuickAddRow.vue';
 import ListSettingsMenu from '../components/ListSettingsMenu.vue';
-import Input from '../components/primitives/Input.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 
@@ -24,9 +22,6 @@ const {
   subcategories,
   lists,
   overallProgress,
-  quickAddCategories,
-  quickAddSubcategories,
-  quickAddQuantities,
   updateCounts,
   quickAdd,
   submitEdit: submitEditItem,
@@ -83,42 +78,19 @@ async function handleEditDelete(id: number) {
           >
         </div>
 
-        <QuickAddRow
-          class="card"
+        <PackingAddRow
+          :list="list"
           :placeholder="
             users.length > 1 ? `Neuer Gegenstand für ${list.title}` : 'Neuer Gegenstand'
           "
-          @submit="(label) => quickAdd(list, label)"
-        >
-          <template #extra>
-            <div class="pack-quick-extra">
-              <Combobox
-                v-model="quickAddCategories[list.key]"
-                :options="categories"
-                placeholder="Kategorie"
-                size="sm"
-              />
-              <Combobox
-                v-model="quickAddSubcategories[list.key]"
-                :options="subcategories"
-                placeholder="Unterkategorie"
-                size="sm"
-              />
-              <label :for="`quick-add-qty-${list.key}`" class="qty-field quick-add-qty">
-                <Input
-                  :id="`quick-add-qty-${list.key}`"
-                  v-model.number="quickAddQuantities[list.key]"
-                  type="number"
-                  inputmode="numeric"
-                  min="1"
-                  step="1"
-                  placeholder="1"
-                  size="sm"
-                />
-              </label>
-            </div>
-          </template>
-        </QuickAddRow>
+          :categories="categories"
+          :subcategories="subcategories"
+          :category-required="Boolean(categoryRequired)"
+          @submit="
+            (payload) =>
+              quickAdd(list, payload.label, payload.category, payload.subcategory, payload.quantity)
+          "
+        />
 
         <div
           class="card group"
@@ -169,48 +141,6 @@ async function handleEditDelete(id: number) {
 <style scoped>
 :deep(.quick-add-row) {
   margin-bottom: var(--space-3);
-}
-
-.pack-quick-extra {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  /* Volle Breite statt nur der eigenen Inhaltsbreite - sonst bricht das umschließende
-     .extra-fields (QuickAddRow.vue) diesen einzelnen Kind-Container gar nicht erst um, bevor er
-     intern zu wrappen beginnt, was die Felder unnötig eng zusammenquetscht. */
-  width: 100%;
-}
-
-.pack-quick-extra :deep(.combobox) {
-  flex: 1 1 110px;
-  min-width: 90px;
-}
-
-.quick-add-qty {
-  flex: 0 0 auto;
-  margin: 0;
-}
-
-.quick-add-qty input,
-.quick-add-qty :deep(input) {
-  width: 56px;
-  height: 36px;
-  min-height: 36px;
-  padding: 4px 8px;
-  font-size: 0.85rem;
-  border: var(--ui-border-width, 1px) solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-sizing: border-box;
-}
-
-.quick-add-qty input:focus,
-.quick-add-qty :deep(input:focus) {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 1px;
 }
 
 .lists-grid {

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { PackingItem, User } from '../api/types';
 import type { PackingEditFormInput } from '../composables/usePackingList';
 import { useAuthStore } from '../stores/auth';
+import { useDraftAutosave } from '../composables/useDraftAutosave';
+import { useToast } from '../composables/useToast';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
@@ -10,6 +12,7 @@ import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Combobox from './Combobox.vue';
 import Button from './primitives/Button.vue';
+import DraftStatusBar from './DraftStatusBar.vue';
 
 const props = defineProps<{
   item: PackingItem | null;
@@ -32,6 +35,7 @@ const emit = defineEmits<{
 }>();
 
 const auth = useAuthStore();
+const { showToast } = useToast();
 
 const editForm = ref<PackingEditFormInput>({
   label: '',
@@ -40,6 +44,12 @@ const editForm = ref<PackingEditFormInput>({
   quantity: 1,
   ownerId: 'shared',
 });
+
+const editDraft = useDraftAutosave(
+  () => `packing:edit:${props.item?.id}`,
+  editForm,
+  computed(() => props.item !== null)
+);
 
 watch(
   () => props.item,
@@ -69,13 +79,32 @@ function handleSubmit() {
     props.item.laid_out_count,
     props.item.packed_count
   );
+  editDraft.clear();
   emit('close');
+}
+
+function handleClose() {
+  editDraft.clear();
+  emit('close');
+}
+
+function discardDraft() {
+  if (!props.item) return;
+  editForm.value = {
+    label: props.item.label,
+    category: props.item.category ?? (props.categoryRequired ? 'Sonstiges' : ''),
+    subcategory: props.item.subcategory ?? '',
+    quantity: props.item.quantity,
+    ownerId: props.item.owner_id == null ? 'shared' : String(props.item.owner_id),
+  };
+  editDraft.clear();
+  showToast({ message: 'Änderungen verworfen.', type: 'info' });
 }
 
 function handleDelete() {
   if (!props.item) return;
   const id = props.item.id;
-  emit('close');
+  handleClose();
   emit('delete', id);
 }
 </script>
@@ -85,7 +114,9 @@ function handleDelete() {
     :model-value="item !== null"
     title="Gegenstand bearbeiten"
     full-height
-    @update:model-value="(v) => !v && emit('close')"
+    :confirm-close="editDraft.isDirty.value"
+    confirm-close-entity="Gegenstand"
+    @update:model-value="(v) => !v && handleClose()"
   >
     <form class="edit-form" @submit.prevent="handleSubmit">
       <FormField icon="title" label="Gegenstand" required v-slot="{ id }">
@@ -145,6 +176,14 @@ function handleDelete() {
         </Select>
       </FormField>
 
+      <DraftStatusBar
+        :status="editDraft.status.value"
+        :restored="editDraft.restored.value"
+        :can-discard="true"
+        mode="edit"
+        @discard="discardDraft"
+      />
+
       <div class="actions-row">
         <Button
           type="button"
@@ -156,7 +195,7 @@ function handleDelete() {
           Löschen
         </Button>
         <div class="spacer"></div>
-        <Button type="button" variant="secondary" class="btn-cancel" @click="emit('close')">
+        <Button type="button" variant="secondary" class="btn-cancel" @click="handleClose">
           Abbrechen
         </Button>
         <Button type="submit">Speichern</Button>

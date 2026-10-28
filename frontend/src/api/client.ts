@@ -17,6 +17,7 @@ import { demoRequest } from '../demo/demoClient';
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
   noQueue?: boolean;
+  silent?: boolean;
 }
 
 export class ApiError extends Error {
@@ -173,7 +174,8 @@ function withPending<T>(path: string, data: T): T {
 
 async function get<T>(path: string, options?: RequestOptions): Promise<T> {
   const activity = useRequestActivityStore();
-  activity.start('read');
+  const trackActivity = !options?.silent && !path.startsWith('/drafts');
+  if (trackActivity) activity.start('read');
   try {
     // isConfirmedOffline(): erst NACH einem echten Fehlschlag gesetzt (siehe api/offline.ts) - beim
     // allerersten Request eines Ladens gilt navigator.onLine also noch allein, damit der Normalfall
@@ -200,7 +202,7 @@ async function get<T>(path: string, options?: RequestOptions): Promise<T> {
       { method: 'GET', path }
     );
   } finally {
-    activity.finish('read');
+    if (trackActivity) activity.finish('read');
   }
 }
 
@@ -247,7 +249,8 @@ async function mutate<T>(
   options?: RequestOptions
 ): Promise<T> {
   const activity = useRequestActivityStore();
-  activity.start(MUTATE_KIND[method]);
+  const trackActivity = !options?.silent && !path.startsWith('/drafts');
+  if (trackActivity) activity.start(MUTATE_KIND[method]);
   try {
     const queueable = !options?.noQueue && isQueueablePath(path);
     if (navigator.onLine && !isConfirmedOffline()) {
@@ -274,7 +277,7 @@ async function mutate<T>(
     }
     return queueMutation<T>(method, path, body);
   } finally {
-    activity.finish(MUTATE_KIND[method]);
+    if (trackActivity) activity.finish(MUTATE_KIND[method]);
   }
 }
 

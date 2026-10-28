@@ -13,21 +13,41 @@ import type { IconDef } from '../utils/icon';
 // (Slot "extra", z. B. Shop/Zeitraum bei Einkauf, Zuweisung/Priorität bei ToDo) mit sauber
 // an der linken Fluchtlinie ausgerichteten Dropdowns (siehe DESIGN.md).
 const props = withDefaults(
-  defineProps<{ placeholder?: string; disabled?: boolean; icon?: IconDef }>(),
+  defineProps<{
+    modelValue?: string;
+    placeholder?: string;
+    disabled?: boolean;
+    icon?: IconDef;
+    forceExpanded?: boolean;
+  }>(),
   {
+    modelValue: undefined,
     placeholder: 'Hinzufügen…',
     disabled: false,
     icon: () => ACTION_ICONS.add,
+    forceExpanded: false,
   }
 );
-const emit = defineEmits<{ (e: 'submit', label: string): void }>();
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void;
+  (e: 'submit', label: string): void;
+}>();
 
-const label = ref('');
+const innerLabel = ref('');
+const label = computed({
+  get: () => (props.modelValue !== undefined ? props.modelValue : innerLabel.value),
+  set: (val: string) => {
+    innerLabel.value = val;
+    emit('update:modelValue', val);
+  },
+});
 const focused = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 const formRef = ref<HTMLFormElement | null>(null);
 
-const expanded = computed(() => focused.value || label.value.trim().length > 0);
+const expanded = computed(
+  () => props.forceExpanded || focused.value || label.value.trim().length > 0
+);
 
 function submit() {
   const trimmed = label.value.trim();
@@ -49,7 +69,11 @@ function onBlur(event: FocusEvent) {
   // ein blur auf diesem Eingabefeld aus - ohne Verzögerung würde die Zeile schon einklappen, bevor
   // die Auswahl im Zusatzfeld ankommt.
   window.setTimeout(() => {
-    if (!label.value.trim() && !formRef.value?.contains(document.activeElement))
+    if (
+      !props.forceExpanded &&
+      !label.value.trim() &&
+      !formRef.value?.contains(document.activeElement)
+    )
       focused.value = false;
   }, 150);
 }
@@ -98,6 +122,8 @@ function onBlur(event: FocusEvent) {
         <slot name="extra" />
       </div>
     </Accordion>
+
+    <slot name="footer" :expanded="expanded" />
   </form>
 </template>
 
