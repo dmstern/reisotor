@@ -665,12 +665,20 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         'INSERT INTO email_verification_tokens (user_id, token_hash, pending_email, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
       ).run(currentUser.id, tokenHash, trimmedEmail, expiresAt, new Date().toISOString());
 
-      await sendVerificationEmail({
+      const mailResult = await sendVerificationEmail({
         to: trimmedEmail,
         username: currentUser.username,
         token: rawToken,
         isChange: true,
       });
+
+      if (!mailResult.success) {
+        db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(currentUser.id);
+        return reply.code(503).send({
+          error:
+            'Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut oder wende dich an die Administration.',
+        });
+      }
 
       return {
         requiresVerification: true,
@@ -732,12 +740,19 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       'INSERT INTO email_verification_tokens (user_id, token_hash, pending_email, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
     ).run(user.id, tokenHash, targetEmail, expiresAt, new Date().toISOString());
 
-    await sendVerificationEmail({
+    const mailResult = await sendVerificationEmail({
       to: targetEmail,
       username: user.username,
       token: rawToken,
       isChange: Boolean(pendingToken?.pending_email),
     });
+
+    if (!mailResult.success) {
+      return reply.code(503).send({
+        error:
+          'Die Bestätigungs-E-Mail konnte nicht erneut gesendet werden. Bitte versuche es später erneut.',
+      });
+    }
 
     return {
       success: true,

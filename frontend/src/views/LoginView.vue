@@ -77,14 +77,20 @@ async function onSubmit() {
       await router.push('/');
     }
   } catch (err) {
-    error.value =
-      err instanceof ApiError
-        ? err.message
-        : mode.value === 'register'
+    if (err instanceof ApiError) {
+      error.value = err.message;
+    } else if (err instanceof Error && err.name === 'AbortError') {
+      error.value = 'Zeitüberschreitung bei der Serveranfrage. Bitte versuche es erneut.';
+    } else if (err instanceof TypeError) {
+      error.value = 'Netzwerkfehler: Server nicht erreichbar.';
+    } else {
+      error.value =
+        mode.value === 'register'
           ? 'Registrierung fehlgeschlagen'
           : mode.value === 'forgot-password'
             ? 'Anfrage fehlgeschlagen'
             : 'Login fehlgeschlagen';
+    }
   } finally {
     loading.value = false;
   }

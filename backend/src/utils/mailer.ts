@@ -38,8 +38,15 @@ function getTransporter(): Transporter | null {
   if (!transporterInstance) {
     const host = getEffectiveSetting('smtp_host', 'SMTP_HOST').trim();
     const port = Number(getEffectiveSetting('smtp_port', 'SMTP_PORT', '587')) || 587;
-    const secure =
-      getEffectiveSetting('smtp_secure', 'SMTP_SECURE', 'false') === 'true' || port === 465;
+    const forceSecureSetting =
+      getEffectiveSetting('smtp_secure', 'SMTP_SECURE', 'false') === 'true';
+    // Port 465 nutzt direktes TLS/SSL (SMTPS / Implicit TLS).
+    // Port 587, 25 und 2525 nutzen STARTTLS (Explicit TLS).
+    // Wenn "TLS/SSL erzwingen" auf Port 587/25/2525 aktiviert ist, verlangen wir requireTLS: true,
+    // erzwingen aber keinen direkten SSL-Handshake vor dem SMTP-Banner (verhindert Hänger).
+    const isExplicitTlsPort = port === 587 || port === 25 || port === 2525;
+    const secure = port === 465 || (forceSecureSetting && !isExplicitTlsPort);
+    const requireTLS = forceSecureSetting && !secure;
     const user = getEffectiveSetting('smtp_user', 'SMTP_USER').trim();
     const pass = getEffectiveSetting('smtp_pass', 'SMTP_PASS').trim();
 
@@ -47,6 +54,7 @@ function getTransporter(): Transporter | null {
       host,
       port,
       secure,
+      requireTLS: requireTLS || undefined,
       auth:
         user && pass
           ? {
@@ -54,14 +62,19 @@ function getTransporter(): Transporter | null {
               pass,
             }
           : undefined,
+      connectionTimeout: 7000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
     });
   }
   return transporterInstance;
 }
 
-export function resetTransporterForTesting(): void {
+export function resetTransporter(): void {
   transporterInstance = null;
 }
+
+export const resetTransporterForTesting = resetTransporter;
 
 export interface SendMailResult {
   success: boolean;
@@ -260,6 +273,61 @@ dein Reisotor-Team`;
       errorMsg
     );
     return { success: false, actionUrl: verifyUrl, error: errorMsg };
+  }
+}
+
+export async function sendTestEmail(params: { to: string }): Promise<SendMailResult> {
+  const transporter = getTransporter();
+  if (!transporter) {
+    return { success: false, actionUrl: '', error: 'SMTP ist nicht konfiguriert' };
+  }
+
+  const from = getFromAddress();
+  const subject = 'Test-E-Mail – Reisotor';
+  const text = `Hallo,
+
+dies ist eine Test-E-Mail deiner Reisotor-Instanz.
+Wenn du diese Nachricht liest, ist deine SMTP-Konfiguration (Host, Port, Authentifizierung und Absenderadresse) voll funktionsfähig!
+
+Viele Grüße,
+dein Reisotor-Server`;
+
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f6f8fa; margin: 0; padding: 24px; color: #24292f; }
+    .card { background-color: #ffffff; border-radius: 12px; padding: 32px; max-width: 520px; margin: 0 auto; border: 1px solid #d0d7de; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    h1 { font-size: 20px; margin-top: 0; margin-bottom: 16px; color: #0969da; }
+    p { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+    .badge { display: inline-block; background-color: #dafbe1; color: #1a7f37; padding: 6px 12px; border-radius: 9999px; font-weight: 600; font-size: 13px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Erfolgreich verbunden</span>
+    <h1>Reisotor Test-E-Mail</h1>
+    <p>Hallo,</p>
+    <p>dies ist eine Test-E-Mail deiner Reisotor-Instanz.</p>
+    <p>Wenn du diese Nachricht liest, ist deine SMTP-Konfiguration (Host, Port, Authentifizierung und Absenderadresse) voll funktionsfähig!</p>
+  </div>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: params.to,
+      subject,
+      text,
+      html,
+    });
+    return { success: true, actionUrl: '' };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[Mailer] Fehler beim Versenden der Test-E-Mail an ${params.to}:`, errorMsg);
+    return { success: false, actionUrl: '', error: errorMsg };
   }
 }
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
@@ -240,6 +240,37 @@ describe('Auth Password Reset & Email Verification routes', () => {
       });
       expect(verifiedLoginRes.statusCode).toBe(200);
       expect(verifiedLoginRes.json().is_email_verified).toBe(true);
+    });
+
+    it('rolls back user creation if verification email delivery fails', async () => {
+      process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
+      const mailer = await import('../../src/utils/mailer.js');
+      const spy = vi.spyOn(mailer, 'sendVerificationEmail').mockResolvedValueOnce({
+        success: false,
+        actionUrl: '',
+        error: 'SMTP Connection timeout',
+      });
+
+      const { db } = await import('../../src/db/index.js');
+
+      const regRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/register',
+        payload: {
+          username: 'failed_mail_user',
+          email: 'failed_mail@example.com',
+          password: 'securePassword123',
+        },
+      });
+
+      expect(regRes.statusCode).toBe(503);
+      expect(regRes.json().error).toContain('Bestätigungs-E-Mail konnte nicht zugestellt werden');
+
+      // User must not be saved in database (rollback)
+      const user = db.prepare('SELECT id FROM users WHERE username = ?').get('failed_mail_user');
+      expect(user).toBeUndefined();
+
+      spy.mockRestore();
     });
   });
 });

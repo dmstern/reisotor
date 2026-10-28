@@ -98,6 +98,20 @@ describe('Router Deeplinks & Navigation Guards', () => {
     expect(router.currentRoute.value.name).toBe('login');
   });
 
+  it('erlaubt unauthentifizierten Zugriff auf /verify-email und /reset-password', async () => {
+    const auth = useAuthStore();
+    auth.user = null;
+    auth.checked = true;
+
+    await router.push('/verify-email?token=abc123def');
+    expect(router.currentRoute.value.name).toBe('verify-email');
+    expect(router.currentRoute.value.query.token).toBe('abc123def');
+
+    await router.push('/reset-password?token=xyz789');
+    expect(router.currentRoute.value.name).toBe('reset-password');
+    expect(router.currentRoute.value.query.token).toBe('xyz789');
+  });
+
   it('erlaubt Navigation zu /trip/:tripId/... wenn Trip existiert', async () => {
     const auth = useAuthStore();
     auth.user = { id: 1, username: 'test', avatar: '🦊' };

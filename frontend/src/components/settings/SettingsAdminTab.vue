@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, watch, computed } from 'vue';
+import { onMounted, reactive, watch, computed, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
@@ -7,12 +7,15 @@ import Input from '../primitives/Input.vue';
 import Textarea from '../primitives/Textarea.vue';
 import CheckboxCard from '../primitives/CheckboxCard.vue';
 import Radio from '../primitives/Radio.vue';
+import CollapsibleFieldset from '../primitives/CollapsibleFieldset.vue';
+import Alert from '../primitives/Alert.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import AdminUserManagementCard from './AdminUserManagementCard.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useAdminSettings } from '../../composables/useAdminSettings';
+import { api, ApiError } from '../../api/client';
 import { BELL_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import {
@@ -98,6 +101,7 @@ const pushForm = reactive({
 
 const isOrsConfigured = computed(() => Boolean(settings.value?.geo.isOrsApiKeySet));
 const isSmtpConfigured = computed(() => Boolean(settings.value?.email.smtpHost));
+const canTestSmtp = computed(() => Boolean(settings.value?.email.smtpHost || emailForm.smtpHost));
 const isSmtpPassConfigured = computed(() => Boolean(settings.value?.email.isSmtpPassSet));
 const isGithubTokenConfigured = computed(() => Boolean(settings.value?.feedback.isGithubTokenSet));
 const isVapidConfigured = computed(() =>
@@ -207,6 +211,32 @@ async function saveEmail() {
   });
   emailForm.smtpPass = '';
   emailForm.clearSmtpPass = false;
+}
+
+const testingEmail = ref(false);
+const testEmailFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
+
+async function sendTestEmail() {
+  testEmailFeedback.value = null;
+  testingEmail.value = true;
+  try {
+    // Falls Änderungen im Formular vorgenommen wurden (z. B. Passwort/Port), zuerst speichern
+    await saveEmail();
+    const res = await api.post<{ success: boolean; message: string }>(
+      '/admin/settings/send-test-email'
+    );
+    testEmailFeedback.value = {
+      type: 'success',
+      message: res.message || 'Test-E-Mail erfolgreich versendet!',
+    };
+  } catch (err) {
+    testEmailFeedback.value = {
+      type: 'error',
+      message: err instanceof ApiError ? err.message : 'Fehler beim Versenden der Test-E-Mail.',
+    };
+  } finally {
+    testingEmail.value = false;
+  }
 }
 
 async function saveFeedback() {
@@ -536,6 +566,63 @@ async function handleGenerateVapid() {
           direkt an Nutzer:innen.
         </p>
 
+        <CollapsibleFieldset
+          :icon="ACTION_ICONS.info"
+          label="Tipps & Anbieter für neue Admins (z. B. Brevo, Resend, eigener Hoster)"
+          class="smtp-guide-fieldset"
+        >
+          <div class="smtp-guide-content">
+            <p>
+              Reisotor benötigt einen SMTP-Server für automatische System-Mails. Wenn du noch keinen
+              Mailserver hast, bieten folgende Dienste erprobte, kostenlose Kontingente:
+            </p>
+            <ul>
+              <li>
+                <strong>Brevo (ehemals Sendinblue):</strong> Bis zu 300 Mails/Tag dauerhaft
+                kostenlos.
+                <br />
+                <em>Host:</em> <code>smtp-relay.brevo.com</code> &middot; <em>Port:</em>
+                <code>587</code> &middot; <em>Benutzer:</em> deine Brevo-Login-Adresse &middot;
+                <em>Passwort:</em> SMTP-Schlüssel (im Brevo-Konto unter
+                <em>SMTP & API</em> generieren).
+                <br />
+                <span class="guide-note"
+                  >Wichtig: Deine Absenderadresse muss bei Brevo unter
+                  <em>Absender:innen, Domains, IPs</em> verifiziert sein.</span
+                >
+              </li>
+              <li>
+                <strong>Resend:</strong> Bis zu 3.000 Mails/Monat (100/Tag) kostenlos, sehr moderne
+                Entwickler-Plattform.
+                <br />
+                <em>Host:</em> <code>smtp.resend.com</code> &middot; <em>Port:</em>
+                <code>465</code> (mit SSL/TLS) oder <code>587</code> &middot; <em>Benutzer:</em>
+                <code>resend</code> &middot; <em>Passwort:</em> API-Key (<code>re_...</code>).
+                <br />
+                <span class="guide-note"
+                  >Wichtig: Erfordert eine eigene Domain mit DNS-Einträgen (DKIM/SPF) im
+                  Resend-Dashboard.</span
+                >
+              </li>
+              <li>
+                <strong
+                  >Eigener Webhoster / Mailbox (z. B. Hetzner, Netcup, Strato, All-Inkl,
+                  mailbox.org):</strong
+                >
+                <br />
+                Verwende einfach die Standard-SMTP-Daten deines E-Mail-Postfachs (z. B.
+                <em>Host:</em> <code>mail.deinedomain.de</code>, <em>Port:</em>
+                <code>587</code> oder <code>465</code>).
+              </li>
+            </ul>
+            <Alert variant="info" size="sm">
+              <strong>Tipp zur Verschlüsselung:</strong> Auf Port 587 wird STARTTLS automatisch
+              verwendet. Die Option „TLS/SSL Verbindung erzwingen“ ist für Port 465 (SMTPS)
+              vorgesehen.
+            </Alert>
+          </div>
+        </CollapsibleFieldset>
+
         <div class="form-grid">
           <div class="form-group">
             <div class="label-with-badge">
@@ -614,7 +701,7 @@ async function handleGenerateVapid() {
                 v-model="emailForm.smtpSecure"
                 variant="row"
                 label="TLS/SSL Verbindung erzwingen"
-                description="Sichere Transportverschlüsselung (bei Port 465 automatisch aktiv)."
+                description="Sichere Transportverschlüsselung (bei Port 465 automatisch aktiv, bei Port 587 via STARTTLS)."
               />
             </div>
           </div>
@@ -651,10 +738,26 @@ async function handleGenerateVapid() {
           >
             <AppIcon :icon="ACTION_ICONS.save" :size="14" group="actions" /> Speichern
           </Button>
+          <Button
+            v-if="canTestSmtp"
+            variant="secondary"
+            size="sm"
+            :loading="testingEmail"
+            @click="sendTestEmail"
+          >
+            <AppIcon :icon="ACTION_ICONS.send" :size="14" group="actions" /> Test-E-Mail senden
+          </Button>
           <span v-if="saveSuccess['email']" class="save-success-msg">
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gespeichert
           </span>
         </div>
+        <Alert
+          v-if="testEmailFeedback"
+          :variant="testEmailFeedback.type === 'error' ? 'danger' : 'success'"
+          size="sm"
+          class="test-email-alert"
+          :description="testEmailFeedback.message"
+        />
       </Card>
 
       <!-- 6. Feedback & GitHub -->
@@ -1029,5 +1132,50 @@ async function handleGenerateVapid() {
   font-size: var(--font-size-sm);
   color: var(--color-success);
   font-weight: 500;
+}
+
+.test-email-alert {
+  margin-top: var(--space-3);
+}
+
+.smtp-guide-fieldset {
+  margin-bottom: var(--space-4);
+}
+
+.smtp-guide-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.smtp-guide-content p {
+  margin: 0;
+}
+
+.smtp-guide-content ul {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.smtp-guide-content li {
+  margin-bottom: var(--space-2);
+}
+
+.smtp-guide-content code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+  padding: 1px 4px;
+  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
+  border-radius: var(--radius-xs, 4px);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.guide-note {
+  display: inline-block;
+  font-size: 0.9em;
+  color: var(--color-text-muted);
 }
 </style>
