@@ -902,6 +902,12 @@ async function handleGenerateVapid() {
   background: var(--color-hover);
 }
 
+.mode-option:focus-visible,
+.mode-option:focus-within {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
+}
+
 .mode-option.active {
   border-color: var(--color-primary);
   background: var(--color-primary-tint);
@@ -932,7 +938,7 @@ async function handleGenerateVapid() {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: var(--space-3) var(--space-4);
   margin-top: var(--space-3);
   margin-bottom: var(--space-4);
@@ -942,6 +948,7 @@ async function handleGenerateVapid() {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .form-group.full-width {
@@ -975,17 +982,30 @@ async function handleGenerateVapid() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .secret-input-row :deep(.input-wrapper),
 .secret-input-row input {
   flex: 1;
+  min-width: 0;
+}
+
+.secret-input-row button,
+.secret-input-row :deep(button) {
+  flex-shrink: 0;
 }
 
 .push-gen-col {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  min-width: 0;
+}
+
+.push-gen-col :deep(.btn) {
+  white-space: normal;
+  text-align: center;
 }
 
 .invisible-label {

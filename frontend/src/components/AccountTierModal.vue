@@ -228,7 +228,7 @@ function close() {
         </p>
       </div>
 
-      <div class="modal-actions">
+      <div class="modal-actions actions-row">
         <Button variant="secondary" @click="close">Schließen</Button>
       </div>
     </div>
@@ -410,12 +410,26 @@ function close() {
   margin-top: var(--space-2);
 }
 
-@media (max-width: 480px) {
+@container (max-width: 440px) {
   .modal-actions {
-    flex-direction: column;
+    flex-direction: column-reverse;
+    align-items: stretch;
   }
 
-  .modal-actions :deep(button) {
+  .modal-actions :deep(button),
+  .modal-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .modal-actions :deep(button),
+  .modal-actions button {
     width: 100%;
   }
 }

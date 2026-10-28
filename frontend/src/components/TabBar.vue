@@ -67,10 +67,27 @@ function scrollBy(direction: 1 | -1) {
   el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
 }
 
+function scrollActiveTabIntoView() {
+  const activeEl = tabBarEl.value?.querySelector<HTMLElement>('.tab.active');
+  const bar = tabBarEl.value;
+  if (!activeEl || !bar) return;
+  const btnLeft = activeEl.offsetLeft;
+  const btnRight = btnLeft + activeEl.offsetWidth;
+  const viewLeft = bar.scrollLeft;
+  const viewRight = viewLeft + bar.clientWidth;
+  const arrowOffset = 36;
+  if (btnLeft - arrowOffset < viewLeft) {
+    bar.scrollTo({ left: Math.max(0, btnLeft - arrowOffset), behavior: 'smooth' });
+  } else if (btnRight + arrowOffset > viewRight) {
+    bar.scrollTo({ left: btnRight + arrowOffset - bar.clientWidth, behavior: 'smooth' });
+  }
+}
+
 onMounted(() => {
   nextTick(() => {
     updateUnderline();
     updateScrollArrows();
+    scrollActiveTabIntoView();
   });
   resizeObserver = new ResizeObserver(() => {
     updateUnderline();
@@ -83,7 +100,11 @@ onUnmounted(() => resizeObserver?.disconnect());
 
 watch(
   () => props.activeKey,
-  () => nextTick(updateUnderline)
+  () =>
+    nextTick(() => {
+      updateUnderline();
+      scrollActiveTabIntoView();
+    })
 );
 watch(
   () => props.tabs,
@@ -91,6 +112,7 @@ watch(
     nextTick(() => {
       updateUnderline();
       updateScrollArrows();
+      scrollActiveTabIntoView();
     })
 );
 
@@ -107,10 +129,11 @@ function onTabClick(key: string, event: MouseEvent) {
     const btnRight = btnLeft + btn.offsetWidth;
     const viewLeft = bar.scrollLeft;
     const viewRight = viewLeft + bar.clientWidth;
-    if (btnLeft < viewLeft) {
-      bar.scrollTo({ left: btnLeft, behavior: 'smooth' });
-    } else if (btnRight > viewRight) {
-      bar.scrollTo({ left: btnRight - bar.clientWidth, behavior: 'smooth' });
+    const arrowOffset = 36;
+    if (btnLeft - arrowOffset < viewLeft) {
+      bar.scrollTo({ left: Math.max(0, btnLeft - arrowOffset), behavior: 'smooth' });
+    } else if (btnRight + arrowOffset > viewRight) {
+      bar.scrollTo({ left: btnRight + arrowOffset - bar.clientWidth, behavior: 'smooth' });
     }
   });
 }
@@ -210,6 +233,7 @@ function onTabClick(key: string, event: MouseEvent) {
      die Tabs auf mehrere Zeilen umbrechen zu lassen. */
   overflow-x: auto;
   overflow-y: hidden;
+  scroll-padding: 0 36px;
   /* Nativer Scrollbalken wirkte zusammen mit der gleitenden Unterstreichung (.tab-underline unten)
      unruhig/doppelt gemoppelt (#144) - die beiden Klick-Pfeile (Template) übernehmen die
      Scrollbarkeit stattdessen sichtbar/bedienbar, ohne den permanent sichtbaren Balken.
@@ -259,6 +283,11 @@ function onTabClick(key: string, event: MouseEvent) {
   color: var(--color-primary-dark);
 }
 
+.tab-bar-arrow:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: -2px;
+}
+
 .tab-bar-arrow.left {
   left: 0;
   justify-content: flex-start;
@@ -280,6 +309,7 @@ function onTabClick(key: string, event: MouseEvent) {
   gap: 6px;
   padding: var(--space-2) var(--space-3);
   min-height: 44px;
+  scroll-margin: 0 36px;
   border: none;
   /* Bleibt als reiner Platzhalter (Farbe kommt von .tab-underline) - ohne das würde der Tab beim
      Wechsel 2px in der Höhe springen. */
@@ -295,6 +325,11 @@ function onTabClick(key: string, event: MouseEvent) {
   font-size: 0.9rem;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: -2px;
 }
 
 .tab.active {
