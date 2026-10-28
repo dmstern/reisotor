@@ -1,7 +1,7 @@
 ### Mitreisende & Verwaltung
 
 - ⚙️ **Zentrale Admin-Oberfläche**: Administrator:innen können neben Benutzerkonten und Rollen nun auch sämtliche Server- und Instanzeinstellungen (wie Betreiber- und Impressumsangaben, OpenRouteService-API-Keys, Geodienste, SMTP-Mailserver, Feedback und Web-Push-Schlüssel) direkt im Browser verwalten.
-- 👥 **Nutzerverwaltung**: Benutzerrollen (Basis-Konto, Plus, Admin) sind direkt als interaktive Rollen-Badges in der Tabelle integriert. Administrator:innen können Rollen dort mit einem Klick anpassen, ohne doppelte Auswahlelemente in der Aktionsleiste.
+- 👥 **Nutzerverwaltung**: Benutzerrollen (Basis-Konto, Plus, Admin) sind direkt als interaktive Rollen-Badges in der Tabelle integriert. Administrator:innen können Rollen dort mit einem Klick anpassen.
 - 🔑 **Passwort-Zurücksetzung**: Administrator:innen können vergessene Passwörter für Nutzer:innen direkt in der Nutzerverwaltung mit einem sicheren Einmal-Passwort oder Reset-Link zurücksetzen.
 - ✉️ **E-Mail-Workflows & Double-Opt-In**: Bei konfiguriertem SMTP-Server können Nutzer:innen ihr Passwort über einen sicheren E-Mail-Link selbst zurücksetzen, ihre hinterlegte E-Mail-Adresse im Profil anpassen und optional bei der Registrierung sowie bei Adressänderungen eine E-Mail-Bestätigung erhalten.
 - 📧 **SMTP-Test & Diagnose**: Administrator:innen können die Mailserver-Konfiguration direkt in den Einstellungen über einen „Test-E-Mail senden“-Button überprüfen und erhalten bei Verbindungsproblemen aussagekräftige Rückmeldungen.
