@@ -216,6 +216,19 @@ function close() {
               }}</span>
             </div>
           </li>
+
+          <li v-if="auth.user?.is_admin" class="feature-item enabled">
+            <span class="icon check">
+              <AppIcon :icon="ACTION_ICONS.done" :size="16" group="actions" />
+            </span>
+            <div class="feature-text">
+              <strong>Instanz- & Serververwaltung</strong>
+              <span
+                >Vollzugriff auf Instanz-Einstellungen, Benutzerkonten & Rollen, Registrierungsmodi
+                sowie System-Backups.</span
+              >
+            </div>
+          </li>
         </ul>
       </div>
 

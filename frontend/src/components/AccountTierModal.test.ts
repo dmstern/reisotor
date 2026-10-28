@@ -63,6 +63,19 @@ describe('AccountTierModal component', () => {
     expect(document.body.textContent).toContain('Plus');
     expect(document.body.textContent).toContain('Reisotor Plus');
     expect(document.body.textContent).not.toContain('Wie erhalte ich Reisotor Plus?');
+    expect(document.body.textContent).not.toContain('Instanz- & Serververwaltung');
+    cleanUp();
+  });
+
+  it('renders admin details and instance management feature when user is admin', () => {
+    const { cleanUp } = mountComponent(
+      { modelValue: true },
+      { id: 1, username: 'adminuser', is_admin: true, restricted: false }
+    );
+
+    expect(document.body.textContent).toContain('Administrator');
+    expect(document.body.textContent).toContain('Instanz- & Serververwaltung');
+    expect(document.body.textContent).toContain('System-Backups');
     cleanUp();
   });
 
