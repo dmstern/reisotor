@@ -33,7 +33,7 @@ describe('User Settings Email routes (/api/users/me/email)', () => {
   });
 
   afterEach(() => {
-    delete process.env.REQUIRE_EMAIL_VERIFICATION;
+    process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
   });
 
   describe('Validation & Direct update (without email verification required)', () => {

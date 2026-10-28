@@ -24,6 +24,7 @@ export async function buildTestApp(): Promise<{ app: FastifyInstance; db: Databa
   process.env.SESSION_SECRET = 'test-session-secret-at-least-32-chars';
   process.env.UPLOADS_DIR = mkdtempSync(path.join(tmpdir(), 'reisotor-test-uploads-'));
   process.env.CORS_ORIGIN = 'http://localhost:5173';
+  process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
   delete process.env.NODE_ENV;
 
   const { buildApp } = await import('../../src/app.js');

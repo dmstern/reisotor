@@ -153,7 +153,7 @@ export function getAllAdminSettings(): AdminSettingsDto {
     regModeRaw === 'off' || regModeRaw === 'restricted' ? regModeRaw : 'full';
 
   const requireEmailVerification =
-    getEffectiveSetting('require_email_verification', 'REQUIRE_EMAIL_VERIFICATION', 'false') ===
+    getEffectiveSetting('require_email_verification', 'REQUIRE_EMAIL_VERIFICATION', 'true') ===
     'true';
 
   const nominatimEnabled =
