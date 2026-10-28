@@ -206,15 +206,18 @@ async function handleCopy(event: MouseEvent) {
     pointer-events: none;
   }
 
-  :global(.detail-row:hover) .copy-btn--hover-only,
-  :global(.copy-container:hover) .copy-btn--hover-only,
-  .copy-btn--hover-only:hover {
+  :global(.detail-row:hover .copy-btn--hover-only),
+  :global(.copy-container:hover .copy-btn--hover-only),
+  :global(*:hover > .copy-btn--hover-only) {
     opacity: 0.65;
     pointer-events: auto;
   }
 
+  :global(.detail-row:hover .copy-btn--hover-only:hover),
+  :global(.copy-container:hover .copy-btn--hover-only:hover),
   .copy-btn--hover-only:hover {
     opacity: 1;
+    pointer-events: auto;
   }
 }
 
