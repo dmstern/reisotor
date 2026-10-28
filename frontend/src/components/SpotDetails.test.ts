@@ -81,13 +81,16 @@ describe('SpotDetails', () => {
     expect(html).toContain('Zeitraum');
     expect(html).toContain('01.07.2026');
     expect(html).toContain('05.07.2026');
+    expect(html).toContain('Zeitraum kopieren');
     expect(html).toContain('Check-in/-out');
     expect(html).toContain('15:00 · 11:00');
+    expect(html).toContain('Check-in/-out kopieren');
     expect(html).toContain('Kontakt');
     expect(html).toContain('tel:+4930123456');
     expect(html).toContain('Telefonnummer kopieren');
     expect(html).toContain('Kosten');
     expect(html).toContain('450.00');
     expect(html).toContain('bezahlt von Sarah');
+    expect(html).toContain('Kosten kopieren');
   });
 });

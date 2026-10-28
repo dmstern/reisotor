@@ -23,6 +23,20 @@ function formatAccommodationDate(d: string | null) {
   if (!d) return null;
   return formatDateShared(d);
 }
+
+const periodText = computed(() => {
+  const start = formatAccommodationDate(props.spot.start_date);
+  const end = formatAccommodationDate(props.spot.end_date);
+  if (start && end) return `${start} – ${end}`;
+  return start || end || '';
+});
+
+const checkinCheckoutText = computed(() => {
+  if (props.spot.checkin && props.spot.checkout) {
+    return `${props.spot.checkin} · ${props.spot.checkout}`;
+  }
+  return props.spot.checkin || props.spot.checkout || '';
+});
 </script>
 
 <template>
@@ -32,6 +46,12 @@ function formatAccommodationDate(d: string | null) {
         <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
         {{ formatAccommodationDate(spot.start_date) || '?' }} –
         {{ formatAccommodationDate(spot.end_date) || '?' }}
+        <CopyButton
+          v-if="periodText"
+          :text="periodText"
+          label="Zeitraum kopieren"
+          toast-message="Zeitraum in die Zwischenablage kopiert."
+        />
       </DetailRow>
       <DetailRow v-if="spot.address" label="Adresse">
         <span>{{ spot.address }}</span>
@@ -44,6 +64,12 @@ function formatAccommodationDate(d: string | null) {
       <template v-if="isAccommodation">
         <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out">
           {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
+          <CopyButton
+            v-if="checkinCheckoutText"
+            :text="checkinCheckoutText"
+            label="Check-in/-out kopieren"
+            toast-message="Check-in/-out in die Zwischenablage kopiert."
+          />
         </DetailRow>
         <DetailRow
           v-if="spot.contact && parseContact(spot.contact).kind === 'phone'"
@@ -83,6 +109,11 @@ function formatAccommodationDate(d: string | null) {
           <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
             · bezahlt von {{ payerLabel }}</span
           >
+          <CopyButton
+            :text="`${spot.amount.toFixed(2)} €`"
+            label="Kosten kopieren"
+            toast-message="Kosten in die Zwischenablage kopiert."
+          />
         </DetailRow>
       </template>
     </div>
