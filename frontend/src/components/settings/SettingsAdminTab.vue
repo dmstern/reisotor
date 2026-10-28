@@ -330,7 +330,12 @@ async function savePush() {
 }
 
 async function handleGenerateVapid() {
-  await generateVapidKeys(pushForm.vapidSubject);
+  const ok = await generateVapidKeys(pushForm.vapidSubject);
+  if (ok && settings.value) {
+    pushForm.vapidPublicKey = settings.value.push.vapidPublicKey;
+    pushForm.vapidPrivateKey = '';
+    pushForm.clearVapidKeys = false;
+  }
 }
 </script>
 
@@ -1139,6 +1144,54 @@ async function handleGenerateVapid() {
           Änderungen in Urlauben).
         </p>
 
+        <CollapsibleFieldset
+          :icon="ACTION_ICONS.info"
+          label="Was ist VAPID und wie erstelle ich die Schlüssel?"
+          class="push-guide-fieldset"
+        >
+          <div class="push-guide-content">
+            <p>
+              <strong>Was ist VAPID?</strong><br />
+              VAPID (<em>Voluntary Application Server Identification</em>) ist der offizielle
+              W3C-Standard für Web Push. Er ermöglicht es Reisotor, Push-Benachrichtigungen direkt
+              über die offenen Push-Dienste der Browser (Mozilla Firefox, Google Chrome, Apple
+              Safari etc.) an Smartphones und Desktops zu senden –
+              <strong>ohne externe Plattformkonten</strong> (wie Google Firebase oder Apple
+              Developer Account), ohne Drittanbieter-Tracking und völlig kostenlos.
+            </p>
+            <p>
+              <strong>Wie komme ich an die Schlüssel?</strong>
+            </p>
+            <ul>
+              <li>
+                <strong>1-Klick-Generierung (Empfohlen):</strong>
+                Klicke einfach unten auf den Button <em>„Neue VAPID-Schlüssel generieren“</em>.
+                Reisotor erzeugt das kryptografische Schlüsselpaar (Public Key und Private Key)
+                sofort automatisch auf dem Server. Klicke danach auf <em>„Speichern“</em> – fertig!
+              </li>
+              <li>
+                <strong>Manuell per Terminal / CLI:</strong>
+                Alternativ kannst du Schlüssel auf der Server-Kommandozeile mit
+                <code>npx web-push generate-vapid-keys</code> generieren und entweder hier in die
+                Felder eintragen oder als <code>VAPID_PUBLIC_KEY</code> und
+                <code>VAPID_PRIVATE_KEY</code> in der Server-<code>.env</code> hinterlegen.
+              </li>
+              <li>
+                <strong>VAPID Subject:</strong>
+                Eine administrative Kontaktadresse (z. B.
+                <code>mailto:admin@deine-domain.de</code> oder deine Website-URL). Die Push-Dienste
+                der Browserhersteller nutzen diese Angabe im seltenen Fall technischer Rückfragen.
+              </li>
+            </ul>
+            <Alert variant="info" size="sm">
+              <strong>Hinweis bei Schlüsselwechsel:</strong>
+              Werden neue VAPID-Schlüssel generiert, verlieren bestehende Push-Abonnements im
+              Browser ihre Gültigkeit. Bereits verbundene Geräte müssen Benachrichtigungen im
+              Nutzerprofil einmalig kurz deaktivieren und neu aktivieren.
+            </Alert>
+          </div>
+        </CollapsibleFieldset>
+
         <div class="form-grid">
           <div class="form-group full-width">
             <div class="label-with-badge">
@@ -1153,6 +1206,10 @@ async function handleGenerateVapid() {
               v-model="pushForm.vapidPublicKey"
               placeholder="Noch kein VAPID-Schlüssel hinterlegt"
             />
+            <span class="field-hint">
+              Wird an Browser übertragen, damit diese Push-Mitteilungen für diese Instanz
+              autorisieren.
+            </span>
           </div>
 
           <div class="form-group full-width">
@@ -1193,6 +1250,10 @@ async function handleGenerateVapid() {
                 Rückgängig
               </Button>
             </div>
+            <span class="field-hint">
+              Verbleibt sicher auf dem Server und signiert ausgehende Push-Mitteilungen
+              kryptografisch.
+            </span>
           </div>
 
           <div class="form-group">
@@ -1202,6 +1263,10 @@ async function handleGenerateVapid() {
               v-model="pushForm.vapidSubject"
               placeholder="mailto:admin@example.com"
             />
+            <span class="field-hint">
+              Kontaktadresse für Push-Dienste der Browserhersteller (z. B.
+              <code>mailto:admin@deine-domain.de</code>).
+            </span>
           </div>
 
           <div class="form-group push-gen-col">
@@ -1425,12 +1490,14 @@ async function handleGenerateVapid() {
 }
 
 .smtp-guide-fieldset,
-.feedback-guide-fieldset {
+.feedback-guide-fieldset,
+.push-guide-fieldset {
   margin-bottom: var(--space-4);
 }
 
 .smtp-guide-content,
-.feedback-guide-content {
+.feedback-guide-content,
+.push-guide-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -1440,23 +1507,27 @@ async function handleGenerateVapid() {
 }
 
 .smtp-guide-content p,
-.feedback-guide-content p {
+.feedback-guide-content p,
+.push-guide-content p {
   margin: 0;
 }
 
 .smtp-guide-content ul,
-.feedback-guide-content ul {
+.feedback-guide-content ul,
+.push-guide-content ul {
   margin: 0;
   padding-left: var(--space-4);
 }
 
 .smtp-guide-content li,
-.feedback-guide-content li {
+.feedback-guide-content li,
+.push-guide-content li {
   margin-bottom: var(--space-2);
 }
 
 .smtp-guide-content code,
-.feedback-guide-content code {
+.feedback-guide-content code,
+.push-guide-content code {
   font-family: var(--font-mono, monospace);
   font-size: 0.9em;
   padding: 1px 4px;
