@@ -9,6 +9,7 @@ import CheckboxCard from '../primitives/CheckboxCard.vue';
 import Radio from '../primitives/Radio.vue';
 import CollapsibleFieldset from '../primitives/CollapsibleFieldset.vue';
 import Alert from '../primitives/Alert.vue';
+import InfoPopover from '../primitives/InfoPopover.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
@@ -105,6 +106,59 @@ const isMailConfigured = computed(() => Boolean(emailForm.smtpHost.trim()));
 const canTestSmtp = computed(() => Boolean(settings.value?.email.smtpHost || emailForm.smtpHost));
 const isSmtpPassConfigured = computed(() => Boolean(settings.value?.email.isSmtpPassSet));
 const isGithubTokenConfigured = computed(() => Boolean(settings.value?.feedback.isGithubTokenSet));
+const isEffectiveGithubTokenSet = computed(() =>
+  Boolean(
+    (isGithubTokenConfigured.value && !feedbackForm.clearGithubToken) ||
+    feedbackForm.githubToken.trim()
+  )
+);
+
+const isRelayPointingToCurrentHost = computed(() => {
+  if (!feedbackForm.feedbackRelayForwarding) return false;
+  const rawUrl = feedbackForm.feedbackRelayUrl.trim();
+  if (!rawUrl) return false;
+
+  try {
+    const parsed = new URL(rawUrl);
+    if (typeof window !== 'undefined' && window.location) {
+      if (
+        parsed.origin === window.location.origin ||
+        parsed.hostname === window.location.hostname
+      ) {
+        return true;
+      }
+    }
+    if (emailForm.appUrl?.trim()) {
+      try {
+        const appParsed = new URL(emailForm.appUrl.trim());
+        if (parsed.origin === appParsed.origin || parsed.hostname === appParsed.hostname) {
+          return true;
+        }
+      } catch {
+        // ignore invalid appUrl
+      }
+    }
+  } catch {
+    if (rawUrl.startsWith('/') || rawUrl.startsWith('.')) {
+      return true;
+    }
+  }
+  return false;
+});
+
+const canResetFeedbackDefaults = computed(() => {
+  return (
+    feedbackForm.githubRepo !== 'dmstern/reisotor' ||
+    feedbackForm.feedbackRelayForwarding !== true ||
+    feedbackForm.feedbackRelayUrl !== 'https://reise.ruebenherz.de/api/feedback/relay'
+  );
+});
+
+function resetFeedbackToDefaults() {
+  feedbackForm.githubRepo = 'dmstern/reisotor';
+  feedbackForm.feedbackRelayForwarding = true;
+  feedbackForm.feedbackRelayUrl = 'https://reise.ruebenherz.de/api/feedback/relay';
+}
 const isVapidConfigured = computed(() =>
   Boolean(settings.value?.push.vapidPublicKey && settings.value?.push.isVapidPrivateKeySet)
 );
@@ -794,15 +848,115 @@ async function handleGenerateVapid() {
           verarbeitet werden.
         </p>
 
+        <CollapsibleFieldset
+          :icon="ACTION_ICONS.info"
+          label="Funktionsweise & Empfehlungen (Relay, Token & Repositories)"
+          class="feedback-guide-fieldset"
+        >
+          <div class="feedback-guide-content">
+            <p>
+              Über das In-App-Formular können Nutzer:innen Fehler melden oder Ideen einreichen.
+              Diese werden als GitHub-Issues erfasst. Hier erfährst du, wie das Zusammenspiel aus
+              Relay, Token und Repository funktioniert:
+            </p>
+            <ul>
+              <li>
+                <strong>Feedback-Relay (Standard-Empfehlung):</strong>
+                Für selbstgehostete Instanzen ist kein eigener GitHub-Account oder Token nötig.
+                Meldungen werden standardmäßig über den offiziellen Relay-Dienst
+                (<code>https://reise.ruebenherz.de/api/feedback/relay</code>) transparent an das
+                Haupt-Repository (<code>dmstern/reisotor</code>) weitergeleitet und dort vom
+                Reisotor-Team gesichtet.
+              </li>
+              <li>
+                <strong>GitHub Repository (Standard: <code>dmstern/reisotor</code>):</strong>
+                Das Ziel-Repository für gemeldete Issues. Belasse diesen Wert auf dem Standard, es
+                sei denn, du pflegst einen eigenen Fork von Reisotor und möchtest Issues direkt in
+                deinem eigenen GitHub-Projekt sammeln.
+              </li>
+              <li>
+                <strong>GitHub Personal Access Token (PAT):</strong>
+                Wird im Standardbetrieb <em>nicht benötigt</em> (Feld bleibt leer). Ein Token ist
+                nur erforderlich, wenn du Meldungen direkt in ein eigenes GitHub-Repository leiten
+                oder selbst einen zentralen Relay-Server betreiben möchtest.
+                <br />
+                <span class="guide-note"
+                  >Empfohlener Tokentyp: Fine-grained Personal Access Token mit Berechtigung für
+                  <em>Issues (Read &amp; Write)</em> und optional
+                  <em>Contents (Read &amp; Write)</em> für Screenshots.</span
+                >
+              </li>
+              <li>
+                <strong>Eigene Instanz als Relay-Server:</strong>
+                Trage die URL dieser Instanz <em>nicht</em> als Relay-Ziel-URL ein. Eine Instanz
+                kann nur dann als Relay für andere Instanzen dienen, wenn auf dem Server
+                <code>FEEDBACK_RELAY_ENABLED=true</code> konfiguriert ist und ein GitHub-Token
+                hinterlegt ist.
+              </li>
+            </ul>
+            <Alert variant="info" size="sm">
+              <strong>Empfohlene Standardkonfiguration:</strong>
+              Relay aktiviert lassen, Relay-URL auf dem Standard belassen und kein GitHub-Token
+              eintragen. So funktioniert das Feedback-System ohne jeglichen Konfigurationsaufwand.
+            </Alert>
+          </div>
+        </CollapsibleFieldset>
+
         <div class="form-grid">
           <div class="form-group">
-            <label for="fb-repo">GitHub Repository</label>
+            <div class="label-with-info">
+              <label for="fb-repo">GitHub Repository</label>
+              <InfoPopover
+                title="Informationen zum GitHub-Repository"
+                aria-label="Informationen zum GitHub-Repository"
+                :icon-size="14"
+                :menu-width="320"
+              >
+                <div class="info-popover-text">
+                  <p><strong>Standard:</strong> <code>dmstern/reisotor</code></p>
+                  <p>
+                    Das Ziel-Repository, in dem neue Fehler- und Verbesserungsmeldungen als
+                    GitHub-Issues angelegt werden.
+                  </p>
+                  <p>
+                    <strong>Empfehlung:</strong> Belasse den Standard, es sei denn, du pflegst einen
+                    eigenen Fork. Eigene Repositories erfordern zwingend einen eigenen GitHub
+                    Personal Access Token.
+                  </p>
+                </div>
+              </InfoPopover>
+            </div>
             <Input id="fb-repo" v-model="feedbackForm.githubRepo" placeholder="dmstern/reisotor" />
           </div>
 
           <div class="form-group">
             <div class="label-with-badge">
-              <label for="fb-token">GitHub Personal Access Token (PAT)</label>
+              <div class="label-with-info">
+                <label for="fb-token">GitHub Personal Access Token (PAT)</label>
+                <InfoPopover
+                  title="Informationen zum GitHub Personal Access Token"
+                  aria-label="Informationen zum GitHub Personal Access Token"
+                  :icon-size="14"
+                  :menu-width="320"
+                >
+                  <div class="info-popover-text">
+                    <p><strong>Standard:</strong> Kein Token erforderlich.</p>
+                    <p>
+                      Solange das Feedback-Relay aktiv ist, werden Meldungen ohne eigenen Token
+                      übermittelt.
+                    </p>
+                    <p>
+                      <strong>Wann nötig?</strong> Nur wenn du Meldungen direkt in ein eigenes
+                      Repository leiten oder selbst einen Relay-Server betreiben möchtest.
+                    </p>
+                    <p class="field-hint">
+                      Berechtigungen: Fine-grained PAT mit Rechten für
+                      <em>Issues (Read &amp; Write)</em> und
+                      <em>Contents (Read &amp; Write)</em> für Screenshots.
+                    </p>
+                  </div>
+                </InfoPopover>
+              </div>
               <Badge
                 v-if="isGithubTokenConfigured && !feedbackForm.clearGithubToken"
                 variant="success"
@@ -851,7 +1005,31 @@ async function handleGenerateVapid() {
           </div>
 
           <div v-if="feedbackForm.feedbackRelayForwarding" class="form-group full-width">
-            <label for="fb-relay-url">Relay-Ziel-URL</label>
+            <div class="label-with-info">
+              <label for="fb-relay-url">Relay-Ziel-URL</label>
+              <InfoPopover
+                title="Informationen zur Relay-Ziel-URL"
+                aria-label="Informationen zur Relay-Ziel-URL"
+                :icon-size="14"
+                :menu-width="320"
+              >
+                <div class="info-popover-text">
+                  <p>
+                    <strong>Standard:</strong>
+                    <code>https://reise.ruebenherz.de/api/feedback/relay</code>
+                  </p>
+                  <p>
+                    Der zentrale Relay-Dienst nimmt Feedback von Community-Instanzen entgegen und
+                    erstellt die Issues im offiziellen Reisotor-Repository.
+                  </p>
+                  <p>
+                    <strong>Wichtig:</strong> Trage hier nicht die URL deiner eigenen Instanz ein,
+                    es sei denn, diese fungiert als eigenständiger Relay-Server mit konfiguriertem
+                    GitHub-Token.
+                  </p>
+                </div>
+              </InfoPopover>
+            </div>
             <Input
               id="fb-relay-url"
               type="url"
@@ -861,6 +1039,74 @@ async function handleGenerateVapid() {
           </div>
         </div>
 
+        <Alert
+          v-if="isRelayPointingToCurrentHost && !isEffectiveGithubTokenSet"
+          variant="warning"
+          size="sm"
+          class="feedback-alert"
+          title="Eigene Instanz-URL als Relay ohne GitHub-Token"
+        >
+          Du hast die URL dieser Reisotor-Instanz als Relay-Ziel eingetragen, aber auf diesem Server
+          ist kein GitHub-Token (PAT) hinterlegt. Eine Instanz kann Feedback nur an GitHub
+          weiterleiten, wenn sie selbst über einen konfigurierten GitHub-Token verfügt. Wenn du
+          Feedback direkt auf dieser Instanz verarbeiten möchtest, hinterlege oben deinen
+          GitHub-Token (PAT) und deaktiviere das Relay.
+        </Alert>
+
+        <Alert
+          v-else-if="
+            feedbackForm.githubRepo.trim() !== 'dmstern/reisotor' &&
+            !isEffectiveGithubTokenSet &&
+            feedbackForm.feedbackRelayForwarding
+          "
+          variant="warning"
+          size="sm"
+          class="feedback-alert"
+          title="Eigenes Repository erfordert GitHub-Token"
+        >
+          Du hast als Ziel-Repository „{{ feedbackForm.githubRepo }}“ eingetragen, nutzt aber das
+          zentrale Relay ohne eigenen GitHub-Token. Das zentrale Feedback-Relay
+          (<code>https://reise.ruebenherz.de/api/feedback/relay</code>) besitzt nur Schreibrechte
+          für das offizielle Upstream-Projekt <code>dmstern/reisotor</code>. Für eigene Repositories
+          muss oben ein eigener GitHub Personal Access Token (PAT) hinterlegt werden.
+        </Alert>
+
+        <Alert
+          v-else-if="feedbackForm.feedbackRelayForwarding && !feedbackForm.feedbackRelayUrl.trim()"
+          variant="warning"
+          size="sm"
+          class="feedback-alert"
+          title="Keine Relay-Ziel-URL angegeben"
+        >
+          Das Feedback-Relay ist aktiviert, aber das URL-Feld ist leer. Bitte trage die Standard-URL
+          (<code>https://reise.ruebenherz.de/api/feedback/relay</code>) ein oder deaktiviere das
+          Relay.
+        </Alert>
+
+        <Alert
+          v-else-if="!feedbackForm.feedbackRelayForwarding && !isEffectiveGithubTokenSet"
+          variant="warning"
+          size="sm"
+          class="feedback-alert"
+          title="In-App-Feedback deaktiviert"
+        >
+          Das Feedback-Relay ist deaktiviert und es ist kein GitHub-Token hinterlegt. Nutzer:innen
+          können über das In-App-Formular keine Meldungen einreichen. Aktiviere das Relay
+          (empfohlen) oder trage oben einen GitHub-Token ein.
+        </Alert>
+
+        <Alert
+          v-else-if="isEffectiveGithubTokenSet"
+          variant="info"
+          size="sm"
+          class="feedback-alert"
+          title="Direkte GitHub-Anbindung aktiv"
+        >
+          Es ist ein eigener GitHub-Token hinterlegt. Neue Meldungen werden direkt über die
+          GitHub-API im Repository <code>{{ feedbackForm.githubRepo }}</code> als Issue angelegt.
+          Das Feedback-Relay wird in dieser Betriebsart umgangen.
+        </Alert>
+
         <div class="section-actions">
           <Button
             variant="primary"
@@ -869,6 +1115,15 @@ async function handleGenerateVapid() {
             @click="saveFeedback"
           >
             <AppIcon :icon="ACTION_ICONS.save" :size="14" group="actions" /> Speichern
+          </Button>
+          <Button
+            v-if="canResetFeedbackDefaults"
+            variant="ghost"
+            size="sm"
+            @click="resetFeedbackToDefaults"
+          >
+            <AppIcon :icon="ACTION_ICONS.refresh" :size="14" group="actions" /> Auf Standard
+            zurücksetzen
           </Button>
           <span v-if="saveSuccess['feedback']" class="save-success-msg">
             <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gespeichert
@@ -1169,11 +1424,13 @@ async function handleGenerateVapid() {
   margin-top: var(--space-3);
 }
 
-.smtp-guide-fieldset {
+.smtp-guide-fieldset,
+.feedback-guide-fieldset {
   margin-bottom: var(--space-4);
 }
 
-.smtp-guide-content {
+.smtp-guide-content,
+.feedback-guide-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -1182,26 +1439,63 @@ async function handleGenerateVapid() {
   color: var(--color-text-secondary);
 }
 
-.smtp-guide-content p {
+.smtp-guide-content p,
+.feedback-guide-content p {
   margin: 0;
 }
 
-.smtp-guide-content ul {
+.smtp-guide-content ul,
+.feedback-guide-content ul {
   margin: 0;
   padding-left: var(--space-4);
 }
 
-.smtp-guide-content li {
+.smtp-guide-content li,
+.feedback-guide-content li {
   margin-bottom: var(--space-2);
 }
 
-.smtp-guide-content code {
+.smtp-guide-content code,
+.feedback-guide-content code {
   font-family: var(--font-mono, monospace);
   font-size: 0.9em;
   padding: 1px 4px;
   background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
   border-radius: var(--radius-xs, 4px);
   border: 1px solid var(--color-border-subtle);
+}
+
+.label-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.info-popover-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.info-popover-text p {
+  margin: 0;
+}
+
+.info-popover-text code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+  padding: 1px 4px;
+  background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
+  border-radius: var(--radius-xs, 4px);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.feedback-alert {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .guide-note {
