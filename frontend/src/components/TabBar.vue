@@ -61,10 +61,23 @@ function updateScrollArrows() {
   canScrollLeft.value = el.scrollLeft > 1;
   canScrollRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
 }
+function smoothScrollTo(el: HTMLElement, targetLeft: number) {
+  if (typeof el.scrollTo === 'function') {
+    el.scrollTo({ left: targetLeft, behavior: 'smooth' });
+  } else {
+    el.scrollLeft = targetLeft;
+  }
+}
+
 function scrollBy(direction: 1 | -1) {
   const el = tabBarEl.value;
   if (!el) return;
-  el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
+  const delta = direction * Math.round(el.clientWidth * 0.7);
+  if (typeof el.scrollBy === 'function') {
+    el.scrollBy({ left: delta, behavior: 'smooth' });
+  } else {
+    el.scrollLeft += delta;
+  }
 }
 
 function scrollActiveTabIntoView() {
@@ -77,9 +90,9 @@ function scrollActiveTabIntoView() {
   const viewRight = viewLeft + bar.clientWidth;
   const arrowOffset = 36;
   if (btnLeft - arrowOffset < viewLeft) {
-    bar.scrollTo({ left: Math.max(0, btnLeft - arrowOffset), behavior: 'smooth' });
+    smoothScrollTo(bar, Math.max(0, btnLeft - arrowOffset));
   } else if (btnRight + arrowOffset > viewRight) {
-    bar.scrollTo({ left: btnRight + arrowOffset - bar.clientWidth, behavior: 'smooth' });
+    smoothScrollTo(bar, btnRight + arrowOffset - bar.clientWidth);
   }
 }
 
@@ -131,9 +144,9 @@ function onTabClick(key: string, event: MouseEvent) {
     const viewRight = viewLeft + bar.clientWidth;
     const arrowOffset = 36;
     if (btnLeft - arrowOffset < viewLeft) {
-      bar.scrollTo({ left: Math.max(0, btnLeft - arrowOffset), behavior: 'smooth' });
+      smoothScrollTo(bar, Math.max(0, btnLeft - arrowOffset));
     } else if (btnRight + arrowOffset > viewRight) {
-      bar.scrollTo({ left: btnRight + arrowOffset - bar.clientWidth, behavior: 'smooth' });
+      smoothScrollTo(bar, btnRight + arrowOffset - bar.clientWidth);
     }
   });
 }

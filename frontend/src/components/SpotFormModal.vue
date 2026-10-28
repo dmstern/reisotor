@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRef, watch } from 'vue';
+import { computed, toRef, watch } from 'vue';
 import type { ScheduleItem, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
@@ -94,6 +94,7 @@ const {
   addScheduleMenuStyle,
   toggleAddSchedulePopover,
   submitAddSpotToDate,
+  removeScheduledDateFromNewSpot,
   modalTourAssignments,
   toggleTourAssignment,
   createTourAssignment,
@@ -117,6 +118,12 @@ const {
   isEditSpotAmountModified,
   isEditSpotPaidByModified,
 } = spotFormComposable;
+
+const scheduledCount = computed(() =>
+  editingSpot.value !== null
+    ? editSpotScheduledItems.value.length
+    : (spotForm.value.scheduledDates?.length ?? 0)
+);
 
 watch(
   () => [props.show, props.spot],
@@ -388,7 +395,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
       >
         <template #count>
           <span
-            v-if="activeSpotForm.tourTitles.length || editSpotScheduledItems.length"
+            v-if="activeSpotForm.tourTitles.length || scheduledCount"
             class="picker-count"
           >
             ({{
@@ -396,8 +403,8 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 activeSpotForm.tourTitles.length
                   ? `${activeSpotForm.tourTitles.length} ${activeSpotForm.tourTitles.length === 1 ? 'Tour' : 'Touren'}`
                   : '',
-                editSpotScheduledItems.length && editingSpot !== null
-                  ? `${editSpotScheduledItems.length} ${editSpotScheduledItems.length === 1 ? 'Termin' : 'Termine'}`
+                scheduledCount
+                  ? `${scheduledCount} ${scheduledCount === 1 ? 'Termin' : 'Termine'}`
                   : '',
               ]
                 .filter(Boolean)
@@ -410,9 +417,9 @@ function handleOpenScheduledItem(item: ScheduleItem) {
           Ordne den Spot einer Tour zu oder plane ihn direkt für ein Datum ein (ohne Tour).
         </p>
 
-        <!-- Oben: Tour zuordnen (Pop-over) & Datum-Hinzufügen-Button (nur im Edit-Modus) -->
+        <!-- Oben: Tour zuordnen (Pop-over) & Datum-Hinzufügen-Button -->
         <div class="schedule-controls">
-          <div v-if="editingSpot !== null" class="schedule-actions-row">
+          <div class="schedule-actions-row">
             <TourAssignDropdown
               :tours="modalTourAssignments"
               @toggle-tour="toggleTourAssignment"
@@ -476,28 +483,11 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               </template>
             </Teleport>
           </div>
-          <div v-else class="new-spot-schedule-controls">
-            <div class="new-spot-schedule-row">
-              <FormField icon="date" label="Direkt für Datum einplanen">
-                <Input type="date" v-model="spotForm.scheduledDate" placeholder="Datum auswählen" />
-              </FormField>
-            </div>
-            <div class="new-spot-tour-row">
-              <TourAssignDropdown
-                :tours="modalTourAssignments"
-                @toggle-tour="toggleTourAssignment"
-                @create-tour="createTourAssignment"
-              />
-            </div>
-          </div>
         </div>
 
         <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
         <div
-          v-if="
-            activeSpotForm.tourTitles.length ||
-            (editingSpot !== null && editSpotScheduledItems.length)
-          "
+          v-if="activeSpotForm.tourTitles.length || scheduledCount"
           class="assign-chips"
         >
           <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
@@ -533,7 +523,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
             </button>
           </span>
 
-          <!-- Termin-Chips: grau (--color-calendar-appointment), nur im Edit-Modus -->
+          <!-- Termin-Chips: grau (--color-calendar-appointment) -->
           <template v-if="editingSpot !== null">
             <span
               v-for="item in editSpotScheduledItems"
@@ -568,6 +558,28 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 :aria-label="`Termin am ${formatDate(item.date)} entfernen`"
                 title="Termin entfernen"
                 @click="removeScheduledItemFromSpot(item)"
+              >
+                <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+              </button>
+            </span>
+          </template>
+
+          <template v-else>
+            <span
+              v-for="date in spotForm.scheduledDates"
+              :key="'new-sched-' + date"
+              class="assign-chip assign-chip--schedule"
+            >
+              <span class="assign-chip-action">
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                <span class="assign-chip-label">{{ formatDate(date) }}</span>
+              </span>
+              <button
+                type="button"
+                class="assign-chip-remove"
+                :aria-label="`Termin am ${formatDate(date)} entfernen`"
+                title="Termin entfernen"
+                @click="removeScheduledDateFromNewSpot(date)"
               >
                 <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
               </button>
@@ -707,11 +719,6 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   gap: var(--space-2);
 }
 
-.new-spot-tour-row {
-  display: flex;
-  align-items: center;
-}
-
 .add-schedule-btn {
   display: inline-flex;
   align-items: center;
@@ -818,10 +825,13 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   color: inherit;
   font: inherit;
   font-weight: inherit;
+}
+
+button.assign-chip-action {
   cursor: pointer;
 }
 
-.assign-chip-action:hover {
+button.assign-chip-action:hover {
   text-decoration: underline;
 }
 
