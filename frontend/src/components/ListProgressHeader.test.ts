@@ -9,9 +9,9 @@ describe('ListProgressHeader', () => {
     setActivePinia(createPinia());
   });
 
-  function renderHeader(props: Record<string, unknown>, slots?: Record<string, () => unknown>) {
+  function renderHeader(props: any, slots?: any) {
     const app = createApp({
-      render: () => h(ListProgressHeader, props as any, slots as any),
+      render: () => h(ListProgressHeader, props, slots),
     });
     app.use(createPinia());
     return renderToString(app);

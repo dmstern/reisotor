@@ -16,8 +16,6 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 const uiSettings = useUiSettingsStore();
 
 const {
-  tripId: _tripId,
-  items: _items,
   users,
   loading,
   highlightedIds,

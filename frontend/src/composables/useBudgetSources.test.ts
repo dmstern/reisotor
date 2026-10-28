@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useBudgetSources } from './useBudgetSources';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
+import type { Spot } from '../api/types';
 
 describe('useBudgetSources', () => {
   let spotsStore: ReturnType<typeof useSpotsStore>;
@@ -17,8 +18,18 @@ describe('useBudgetSources', () => {
 
   it('filters accommodation spots', () => {
     spotsStore.spots = [
-      { id: 1, title: 'Hotel Roma', category: 'Unterkunft', budget_expense_id: 101 } as any,
-      { id: 2, title: 'Colosseum', category: 'Sehenswürdigkeit', budget_expense_id: null } as any,
+      {
+        id: 1,
+        title: 'Hotel Roma',
+        category: 'Unterkunft',
+        budget_expense_id: 101,
+      } as unknown as Spot,
+      {
+        id: 2,
+        title: 'Colosseum',
+        category: 'Sehenswürdigkeit',
+        budget_expense_id: null,
+      } as unknown as Spot,
     ];
 
     const { accommodations } = useBudgetSources();
@@ -28,7 +39,12 @@ describe('useBudgetSources', () => {
 
   it('resolves autoSourceFor accommodation expense', () => {
     spotsStore.spots = [
-      { id: 45, title: 'Hotel Roma', category: 'Unterkunft', budget_expense_id: 200 } as any,
+      {
+        id: 45,
+        title: 'Hotel Roma',
+        category: 'Unterkunft',
+        budget_expense_id: 200,
+      } as unknown as Spot,
     ];
 
     const { autoSourceFor } = useBudgetSources();

@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { describe, it, expect } from 'vitest';
 import { createApp, h, type Component } from 'vue';
 import { renderToString } from 'vue/server-renderer';

@@ -112,7 +112,7 @@ export function checkNotes(options = {}) {
         continue;
       }
 
-      const [, emoji, title, desc] = match;
+      const [, , title, desc] = match;
       const fullText = `${title} ${desc}`;
 
       // Prüfe auf Verbesserungs-/Korrektur-Signalwörter

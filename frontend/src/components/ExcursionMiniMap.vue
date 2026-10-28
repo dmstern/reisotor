@@ -4,13 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { ExcursionStation } from '../utils/excursionStations';
 import type { ExcursionLeg } from '../api/types';
-import {
-  arcPoints,
-  arcRoute,
-  cachedEmojiPin,
-  getRouteColor,
-  parseRouteGeometry,
-} from '../utils/mapRoute';
+import { arcPoints, cachedEmojiPin, getRouteColor, parseRouteGeometry } from '../utils/mapRoute';
 
 // Kleine, eigenständige Leaflet-Instanz für den Ausflug-Detail-Dialog – bewusst lazy erzeugt (erst
 // beim Mounten des Dialogs) und beim Schließen wieder mit map.remove() abgebaut (Pi-2-Ressourcen-
