@@ -35,6 +35,9 @@ describe('Mailer utility', () => {
 
   it('detects when email verification is required', () => {
     delete process.env.REQUIRE_EMAIL_VERIFICATION;
+    expect(isEmailVerificationRequired()).toBe(true);
+
+    process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
     expect(isEmailVerificationRequired()).toBe(false);
 
     process.env.REQUIRE_EMAIL_VERIFICATION = 'true';

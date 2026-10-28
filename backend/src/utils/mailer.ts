@@ -11,7 +11,7 @@ export function isEmailConfigured(): boolean {
 
 export function isEmailVerificationRequired(): boolean {
   return (
-    getEffectiveSetting('require_email_verification', 'REQUIRE_EMAIL_VERIFICATION', 'false') ===
+    getEffectiveSetting('require_email_verification', 'REQUIRE_EMAIL_VERIFICATION', 'true') ===
     'true'
   );
 }

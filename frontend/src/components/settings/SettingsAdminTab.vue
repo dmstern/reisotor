@@ -54,7 +54,7 @@ const {
 // Local form states
 const regForm = reactive({
   registrationMode: 'restricted' as 'off' | 'full' | 'restricted',
-  requireEmailVerification: false,
+  requireEmailVerification: true,
 });
 
 const legalForm = reactive({
@@ -101,6 +101,7 @@ const pushForm = reactive({
 
 const isOrsConfigured = computed(() => Boolean(settings.value?.geo.isOrsApiKeySet));
 const isSmtpConfigured = computed(() => Boolean(settings.value?.email.smtpHost));
+const isMailConfigured = computed(() => Boolean(emailForm.smtpHost.trim()));
 const canTestSmtp = computed(() => Boolean(settings.value?.email.smtpHost || emailForm.smtpHost));
 const isSmtpPassConfigured = computed(() => Boolean(settings.value?.email.isSmtpPassSet));
 const isGithubTokenConfigured = computed(() => Boolean(settings.value?.feedback.isGithubTokenSet));
@@ -373,15 +374,38 @@ async function handleGenerateVapid() {
           </label>
         </div>
 
-        <div class="form-checkbox-row">
-          <CheckboxCard
-            id="reg-require-verification"
-            v-model="regForm.requireEmailVerification"
-            variant="row"
-            label="Double-Opt-In: E-Mail-Bestätigung bei Selbstregistrierungen erzwingen"
-            description="Erfordert einen konfigurierten SMTP-Mailserver."
-          />
-        </div>
+        <CheckboxCard
+          id="reg-require-verification"
+          v-model="regForm.requireEmailVerification"
+          label="Double-Opt-In: E-Mail-Bestätigung bei Selbstregistrierungen erzwingen"
+          description="Erfordert einen konfigurierten SMTP-Mailserver."
+        />
+
+        <Alert
+          v-if="regForm.requireEmailVerification && !isMailConfigured"
+          variant="warning"
+          size="sm"
+          class="reg-email-alert"
+          title="Kein Mailserver konfiguriert"
+        >
+          Die E-Mail-Bestätigung ist aktiviert, aber es wurde noch kein SMTP-Mailserver hinterlegt.
+          Neu registrierte Personen erhalten keine Bestätigungs-E-Mail und können sich erst
+          anmelden, wenn weiter unten die
+          <a href="#email-smtp-host" class="reg-email-link">SMTP-Einstellungen</a> ausgefüllt werden
+          oder Accounts manuell durch Administrator:innen freigeschaltet werden.
+        </Alert>
+
+        <Alert
+          v-else-if="!regForm.requireEmailVerification"
+          variant="info"
+          size="sm"
+          class="reg-email-alert"
+          title="Sofortige Anmeldung aktiv"
+        >
+          Neu registrierte Personen können sich sofort nach der Registrierung ohne
+          E-Mail-Bestätigung einloggen. Für öffentlich erreichbare Instanzen wird eine Bestätigung
+          per E-Mail empfohlen, um Schein-Registrierungen und Tippfehler zu vermeiden.
+        </Alert>
 
         <div class="section-actions">
           <Button
@@ -535,14 +559,11 @@ async function handleGenerateVapid() {
           </div>
 
           <div class="form-group full-width">
-            <div class="form-checkbox-row">
-              <CheckboxCard
-                id="geo-nominatim-enabled"
-                v-model="geoForm.nominatimEnabled"
-                variant="row"
-                label="OSM Nominatim Geocoder als Fallback und Ergänzung aktivieren"
-              />
-            </div>
+            <CheckboxCard
+              id="geo-nominatim-enabled"
+              v-model="geoForm.nominatimEnabled"
+              label="OSM Nominatim Geocoder als Fallback und Ergänzung aktivieren"
+            />
           </div>
 
           <div v-if="geoForm.nominatimEnabled" class="form-group full-width">
@@ -703,15 +724,12 @@ async function handleGenerateVapid() {
           </div>
 
           <div class="form-group full-width">
-            <div class="form-checkbox-row">
-              <CheckboxCard
-                id="email-smtp-secure"
-                v-model="emailForm.smtpSecure"
-                variant="row"
-                label="TLS/SSL Verbindung erzwingen"
-                description="Sichere Transportverschlüsselung (bei Port 465 automatisch aktiv, bei Port 587 via STARTTLS)."
-              />
-            </div>
+            <CheckboxCard
+              id="email-smtp-secure"
+              v-model="emailForm.smtpSecure"
+              label="TLS/SSL Verbindung erzwingen"
+              description="Sichere Transportverschlüsselung (bei Port 465 automatisch aktiv, bei Port 587 via STARTTLS)."
+            />
           </div>
 
           <div class="form-group">
@@ -824,15 +842,12 @@ async function handleGenerateVapid() {
           </div>
 
           <div class="form-group full-width">
-            <div class="form-checkbox-row">
-              <CheckboxCard
-                id="fb-relay-forwarding"
-                v-model="feedbackForm.feedbackRelayForwarding"
-                variant="row"
-                label="Feedback-Relay nutzen"
-                description="Wenn kein eigener GitHub-Token hinterlegt ist, werden Meldungen transparent an den zentralen Relay-Dienst weitergeleitet."
-              />
-            </div>
+            <CheckboxCard
+              id="fb-relay-forwarding"
+              v-model="feedbackForm.feedbackRelayForwarding"
+              label="Feedback-Relay nutzen"
+              description="Wenn kein eigener GitHub-Token hinterlegt ist, werden Meldungen transparent an den zentralen Relay-Dienst weitergeleitet."
+            />
           </div>
 
           <div v-if="feedbackForm.feedbackRelayForwarding" class="form-group full-width">
@@ -1043,8 +1058,16 @@ async function handleGenerateVapid() {
   line-height: 1.4;
 }
 
-.form-checkbox-row {
-  margin: var(--space-3) 0;
+.reg-email-alert {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.reg-email-link {
+  color: inherit;
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .form-grid {
