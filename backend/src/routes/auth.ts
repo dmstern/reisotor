@@ -26,7 +26,7 @@ interface UserRow {
   is_email_verified?: number;
 }
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   // Frontend braucht den Modus schon VOR dem Login, um den Registrieren-Umschalter auf der
