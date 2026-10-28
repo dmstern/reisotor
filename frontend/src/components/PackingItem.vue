@@ -253,12 +253,26 @@ function handleMainClick(e: MouseEvent) {
   justify-content: center;
 }
 
+@media (pointer: coarse) {
+  .state-toggle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 .state-toggle:hover {
   border-color: var(--color-primary);
 }
 
 .state-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -298,7 +312,7 @@ function handleMainClick(e: MouseEvent) {
   line-height: 1.4;
   color: var(--color-text);
   overflow-wrap: break-word;
-  word-break: normal;
+  word-break: break-word;
   text-wrap: pretty;
   hyphens: auto;
   cursor: pointer;
@@ -356,7 +370,7 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-pill:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
@@ -469,6 +483,7 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-minus {
+  position: relative;
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
@@ -496,6 +511,20 @@ function handleMainClick(e: MouseEvent) {
     transform 0.1s ease;
 }
 
+@media (pointer: coarse) {
+  .tally-minus::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 .tally-minus:hover {
   border-color: var(--color-danger);
   color: var(--color-danger);
@@ -507,7 +536,7 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-minus:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 </style>

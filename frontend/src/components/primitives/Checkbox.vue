@@ -82,13 +82,28 @@ function onChange(event: Event) {
   margin: 0;
   padding: 0;
   border: 2px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
+}
+
+@media (pointer: coarse) {
+  .checkbox::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .checkbox:hover:not(:disabled) {
@@ -113,7 +128,7 @@ function onChange(event: Event) {
 }
 
 .checkbox:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 

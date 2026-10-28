@@ -148,6 +148,7 @@ function userName(id: number | null | undefined) {
   flex: 1;
   min-width: 0;
   word-break: break-word;
+  overflow-wrap: break-word;
   font-size: var(--font-size-sm);
   color: var(--color-text);
 }
@@ -171,6 +172,15 @@ function userName(id: number | null | undefined) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.due-badge span,
+.period-badge span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .note {
@@ -204,6 +214,7 @@ function userName(id: number | null | undefined) {
 }
 
 .edit-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -213,11 +224,26 @@ function userName(id: number | null | undefined) {
   border: none;
   background: transparent;
   color: var(--color-text-muted);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   cursor: pointer;
   transition:
     color 0.15s,
     background-color 0.15s;
+}
+
+@media (pointer: coarse) {
+  .edit-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .edit-btn:hover {
@@ -226,7 +252,7 @@ function userName(id: number | null | undefined) {
 }
 
 .edit-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 </style>

@@ -16,8 +16,8 @@ import ViewLoadingState from '../components/ViewLoadingState.vue';
 const uiSettings = useUiSettingsStore();
 
 const {
-  tripId,
-  items,
+  tripId: _tripId,
+  items: _items,
   users,
   loading,
   highlightedIds,
@@ -211,7 +211,7 @@ async function handleEditDelete(id: number) {
 
 .quick-add-qty input:focus,
 .quick-add-qty :deep(input:focus) {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 1px;
 }
 
