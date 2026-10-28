@@ -41,7 +41,8 @@ const {
 } = useTripEditor();
 // Issue #96: siehe TripsView.vue's tripCreationBlocked() - dieselbe Regel, hier gedoppelt statt
 // geteilt, weil beide Komponenten bereits unabhängige useTripEditor()-Instanzen halten.
-const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
+const tripCreationBlocked = () =>
+  !!auth.user?.restricted && tripStore.trips.some((t) => t.created_by_me !== false);
 const { openAccountTierModal } = useAccountTierModal();
 
 function handleCreateTrip() {

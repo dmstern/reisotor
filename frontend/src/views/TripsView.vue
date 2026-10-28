@@ -34,9 +34,9 @@ const {
   onDelete,
 } = useTripEditor();
 // Issue #96: restricted-Nutzer:innen dürfen nur einen selbst angelegten Urlaub haben - bereits
-// eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy), das
-// Frontend kennt diese Unterscheidung aber nicht, deshalb konservativ ab dem ersten Urlaub sperren.
-const tripCreationBlocked = () => !!auth.user?.restricted && tripStore.trips.length > 0;
+// eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy).
+const tripCreationBlocked = () =>
+  !!auth.user?.restricted && tripStore.trips.some((t) => t.created_by_me !== false);
 const { openAccountTierModal } = useAccountTierModal();
 
 function handleCreateTrip() {

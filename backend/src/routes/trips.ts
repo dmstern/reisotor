@@ -11,6 +11,7 @@ import { resolveCountry, fetchRegionInfo } from '../utils/regionInfo.js';
 import {
   isUserRestricted,
   isTripOwnerRestricted,
+  isTripCreatedBy,
   countTripsCreatedBy,
   RESTRICTED_MAX_TRIPS,
   RESTRICTED_MAX_MEMBERS,
@@ -47,14 +48,22 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     // aus Issue #96 für diesen Urlaub greift – am Urlaub selbst hängend statt nur am eigenen
     // restricted-Status, da der Deckel von der anlegenden Person abhängt, nicht von der
     // gerade einladenden.
-    return trips.map((trip) => ({ ...trip, owner_restricted: isTripOwnerRestricted(trip.id) }));
+    return trips.map((trip) => ({
+      ...trip,
+      owner_restricted: isTripOwnerRestricted(trip.id),
+      created_by_me: isTripCreatedBy(trip.id, req.session.userId),
+    }));
   });
 
   app.get<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
     if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
     const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id);
     if (!trip) return reply.code(404).send({ error: 'Nicht gefunden' });
-    return { ...trip, owner_restricted: isTripOwnerRestricted(req.params.id) };
+    return {
+      ...trip,
+      owner_restricted: isTripOwnerRestricted(req.params.id),
+      created_by_me: isTripCreatedBy(req.params.id, req.session.userId),
+    };
   });
 
   app.post<{ Body: TripBody }>('/trips', async (req, reply) => {

@@ -38,7 +38,10 @@ const error = ref('');
 let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
 const memberCapReached = computed(
-  () => !!trip.value?.owner_restricted && members.value.length >= RESTRICTED_MAX_MEMBERS
+  () =>
+    !!authStore.user?.restricted &&
+    !!trip.value?.owner_restricted &&
+    members.value.length >= RESTRICTED_MAX_MEMBERS
 );
 
 const { openAccountTierModal } = useAccountTierModal();
@@ -120,6 +123,7 @@ async function invite(user: User) {
     members.value.push(user);
     results.value = results.value.filter((u) => u.id !== user.id);
     query.value = '';
+    await tripStore.loadTrips();
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Einladen fehlgeschlagen';
   } finally {
@@ -138,6 +142,7 @@ async function removeMember(user: User) {
   try {
     await api.delete(`/trips/${props.tripId}/members/${user.id}`);
     members.value = members.value.filter((u) => u.id !== user.id);
+    await tripStore.loadTrips();
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Entfernen fehlgeschlagen';
   }

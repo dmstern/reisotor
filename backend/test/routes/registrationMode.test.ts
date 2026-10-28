@@ -156,4 +156,64 @@ describe('registration mode: restricted', () => {
       error: 'Eingeschränkter Modus - Maximal drei Nutzer pro Urlaub',
     });
   });
+
+  it('lifts the 3-member cap as soon as a full-access user is member of the trip (sponsor principle)', async () => {
+    const { cookie: ownerCookie } = await register('sponsored-owner');
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: ownerCookie },
+      payload: { name: 'Gesponserter Urlaub', start_date: '2026-05-01', end_date: '2026-05-05' },
+    });
+    const tripId = tripRes.json().id;
+
+    // Hole userId von vip (Vollzugriff)
+    const vipRes = await app.inject({
+      method: 'GET',
+      url: '/api/users/search?q=vip',
+      headers: { cookie: ownerCookie },
+    });
+    const vipUser = vipRes.json().find((u: { username: string }) => u.username === 'vip');
+
+    const { userId: memberTwoId } = await register('sponsored-two');
+    const { userId: memberThreeId } = await register('sponsored-three');
+
+    // 1. VIP (Vollzugriff) einladen -> Urlaub wird gesponsert
+    const inviteVip = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/members`,
+      headers: { cookie: ownerCookie },
+      payload: { user_id: vipUser.id },
+    });
+    expect(inviteVip.statusCode).toBe(201);
+
+    // 2. Weiteres Mitglied einladen (jetzt 3 Mitglieder: Owner + VIP + sponsored-two)
+    const invite2 = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/members`,
+      headers: { cookie: ownerCookie },
+      payload: { user_id: memberTwoId },
+    });
+    expect(invite2.statusCode).toBe(201);
+
+    // 3. Viertes Mitglied einladen (Owner + VIP + sponsored-two + sponsored-three = 4 Mitglieder)
+    // Dank Sponsor-Prinzip darf das 4. Mitglied beitreten!
+    const invite3 = await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/members`,
+      headers: { cookie: ownerCookie },
+      payload: { user_id: memberThreeId },
+    });
+    expect(invite3.statusCode).toBe(201);
+
+    const tripCheck = await app.inject({
+      method: 'GET',
+      url: `/api/trips/${tripId}`,
+      headers: { cookie: ownerCookie },
+    });
+    expect(tripCheck.json()).toMatchObject({
+      owner_restricted: false,
+      created_by_me: true,
+    });
+  });
 });

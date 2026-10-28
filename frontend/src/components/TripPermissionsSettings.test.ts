@@ -102,6 +102,9 @@ describe('TripPermissionsSettings', () => {
   });
 
   it('shows restricted mode hint when member cap is reached for restricted owner', async () => {
+    const authStore = useAuthStore();
+    authStore.user = { ...authStore.user!, restricted: true };
+
     const restrictedTrip: Trip = {
       ...mockTrip,
       owner_restricted: true,

@@ -94,4 +94,26 @@ describe('TripsView', () => {
 
     cleanUp();
   });
+
+  it('allows restricted user to create trip if only invited to other trips (created_by_me: false)', async () => {
+    const invitedTrip: Trip = { ...mockTrip, created_by_me: false };
+    const { container, cleanUp } = mountComponent(
+      { id: 2, username: 'restricted', restricted: true },
+      [invitedTrip]
+    );
+    await nextTick();
+
+    expect(container.textContent).toContain('Neuer Urlaub');
+    expect(container.textContent).not.toContain('Premium');
+
+    const button = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Neuer Urlaub')
+    );
+    expect(button).toBeDefined();
+    button?.click();
+
+    expect(isOpen.value).toBe(false);
+
+    cleanUp();
+  });
 });

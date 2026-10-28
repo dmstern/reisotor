@@ -97,6 +97,8 @@ export interface Trip {
   /** Ob die anlegende Person im eingeschränkten Modus ist (Issue #96) – steuert den
    *  3-Mitglieder-Deckel in TripMembersDialog.vue. */
   owner_restricted?: boolean;
+  /** Ob die aktuell eingeloggte Person diesen Urlaub selbst angelegt hat (für das 1-Urlaub-Limit im Basis-Konto). */
+  created_by_me?: boolean;
 }
 
 export interface ChangelogGroup {
