@@ -552,10 +552,6 @@ ensureColumn('budget_items', 'budget_id', 'INTEGER REFERENCES budgets(id) ON DEL
 // Gesamtbudget-KPI und Budget-Meter verwendet).
 ensureColumn('budgets', 'target_amount', 'REAL');
 ensureColumn('shopping_items', 'period', 'TEXT');
-// ToDo-Einträge haben (anders als Einkaufslisten-Einträge) ein Fälligkeitsdatum – der Zeitraum
-// (vor/während des Urlaubs) wird daraus + den Urlaubs-Eckdaten hergeleitet (utils/period.ts im
-// Frontend) statt manuell gepflegt zu werden, daher entfällt die Spalte hier wieder.
-dropColumnIfExists('todo_items', 'period');
 ensureColumn('ideas', 'suggested_by_user_id', 'INTEGER REFERENCES users(id)');
 // Packliste: Unterkategorien (z. B. "Outfit Tag 1" innerhalb "Kleidung"), eine Anzahl pro Gegenstand
 // sowie zwei Packstufen (rausgelegt/eingepackt) statt eines einfachen Ja/Nein-Häkchens – beide Zähler
@@ -1897,6 +1893,7 @@ if (ideasWithTransport.length > 0) {
     }
   }
 }
+// Manueller Reiseabschnitt für ToDos (vor/während/nach der Reise) ergänzend zum Fälligkeitsdatum (#306ecf6)
 ensureColumn('todo_items', 'period', 'TEXT');
 // Kommentar-Bearbeitung: updated_at für alle 4 Kommentar-Tabellen (spot_comments,
 // idea_comments, note_comments, diary_comments), damit erkennbar ist, ob und wann
