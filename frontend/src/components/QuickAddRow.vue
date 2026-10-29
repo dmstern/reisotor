@@ -133,7 +133,7 @@ function onBlur(event: FocusEvent) {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  padding: 8px 12px;
+  padding: 12px;
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   transition:
@@ -145,7 +145,6 @@ function onBlur(event: FocusEvent) {
 .quick-add-row.expanded,
 .quick-add-row:focus-within {
   z-index: 5;
-  padding: 12px 14px;
 }
 
 .input-container {
