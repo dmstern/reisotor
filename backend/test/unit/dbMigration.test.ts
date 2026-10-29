@@ -673,3 +673,95 @@ describe('uploads Tabellen-Initialisierung und Backfill (#629)', () => {
     expect(remainingUploads).toHaveLength(0);
   });
 });
+
+describe('todo_items.period Migration & Persistenz', () => {
+  let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.DB_PATH;
+    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+  });
+
+  it('behält gesetzte period-Werte von todo_items bei Serverstarts und löscht sie nicht versehentlich', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-todo-period-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT, end_date TEXT);
+      CREATE TABLE todo_items (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER,
+        title TEXT NOT NULL,
+        period TEXT
+      );
+      INSERT INTO trips (id, name) VALUES (1, 'Test-Urlaub');
+      INSERT INTO todo_items (id, trip_id, title, period) VALUES (1, 1, 'Reisepass prüfen', 'before');
+      INSERT INTO todo_items (id, trip_id, title, period) VALUES (2, 1, 'Postkarte abschicken', 'during');
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const rows = db.prepare('SELECT id, title, period FROM todo_items ORDER BY id ASC').all() as {
+      id: number;
+      title: string;
+      period: string | null;
+    }[];
+
+    expect(rows).toEqual([
+      { id: 1, title: 'Reisepass prüfen', period: 'before' },
+      { id: 2, title: 'Postkarte abschicken', period: 'during' },
+    ]);
+
+    db.close();
+
+    // Zweiter Start / Server-Neustart simulieren:
+    vi.resetModules();
+    const { db: dbRestart } = await import('../../src/db/index.js');
+    const rowsAfterRestart = dbRestart
+      .prepare('SELECT id, title, period FROM todo_items ORDER BY id ASC')
+      .all() as { id: number; title: string; period: string | null }[];
+
+    expect(rowsAfterRestart).toEqual([
+      { id: 1, title: 'Reisepass prüfen', period: 'before' },
+      { id: 2, title: 'Postkarte abschicken', period: 'during' },
+    ]);
+  });
+
+  it('ergänzt period additiv auf einer legacy DB ohne period Spalte', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-todo-period-legacy-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT, end_date TEXT);
+      CREATE TABLE todo_items (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER,
+        title TEXT NOT NULL
+      );
+      INSERT INTO trips (id, name) VALUES (1, 'Test-Urlaub');
+      INSERT INTO todo_items (id, trip_id, title) VALUES (1, 1, 'Altes ToDo ohne period');
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(todo_items)').all() as { name: string }[];
+    expect(columns.some((c) => c.name === 'period')).toBe(true);
+
+    const row = db.prepare('SELECT id, title, period FROM todo_items WHERE id = 1').get() as {
+      id: number;
+      title: string;
+      period: string | null;
+    };
+    expect(row.period).toBeNull();
+  });
+});
