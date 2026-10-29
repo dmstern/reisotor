@@ -190,16 +190,14 @@ describe('spots route coordinate preservation', () => {
     });
 
     it('accepts variant=banner parameter and handles banner requests', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            text: () => Promise.resolve(''),
-            json: () => Promise.resolve({ query: { pages: [] } }),
-          })
-        )
+      const fetchMock = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve(''),
+          json: () => Promise.resolve({ query: { pages: [] } }),
+        })
       );
+      vi.stubGlobal('fetch', fetchMock);
 
       const res = await app.inject({
         method: 'GET',
@@ -210,6 +208,9 @@ describe('spots route coordinate preservation', () => {
       const data = res.json();
       expect(data.name).toBe('Lissabon');
       expect(Array.isArray(data.images)).toBe(true);
+      expect(
+        fetchMock.mock.calls.some(([callUrl]) => String(callUrl).includes('pithumbsize=2000'))
+      ).toBe(true);
     });
   });
 });
