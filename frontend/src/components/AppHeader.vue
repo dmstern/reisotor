@@ -373,7 +373,7 @@ const profileTitle = computed(() => {
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
-  padding: 4px 3px 3px 6px;
+  padding: 4px 3px 3px 3px;
   height: 44px;
   box-sizing: border-box;
 }
@@ -386,8 +386,8 @@ const profileTitle = computed(() => {
 }
 
 /* Wenn der Kalender-Button auf Mobilgeräten (<1024px) links in der Pill sitzt,
-   wird das linke Padding auf 3px reduziert. Dadurch ist der 36px-Kreis-Button
-   zu allen Seiten (oben 3px, unten 3px, links 3px) exakt gleich weit vom Pill-Rand entfernt
+   wird das linke Padding auf 3px gehalten. Dadurch ist der 36px-Kreis-Button
+   zu allen Seiten (oben 3-4px, unten 3px, links 3px) exakt gleich weit vom Pill-Rand entfernt
    und schmiegt sich perfekt konzentrisch in die Rundung der 44px-Pill ein. */
 .header-actions:has(.header-calendar-btn) {
   padding-left: 3px;

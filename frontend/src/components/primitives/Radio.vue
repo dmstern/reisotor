@@ -89,7 +89,7 @@ function onChange(event: Event) {
   margin: 0;
   padding: 0;
   border: 2px solid var(--color-border);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
@@ -129,15 +129,17 @@ function onChange(event: Event) {
   border-color: var(--color-primary);
 }
 
-/* Innerer Punkt: Animiert per Transform (Scale) und Opacity für weiche, sprungfreie Übergänge */
+/* Innerer Punkt: Zentriert via inset: 0 + margin: auto (verhindert Subpixel-Verschiebungen bei
+   translate(-50%, -50%) auf ungeraden Zoom-Stufen). Animiert rein über Scale und Opacity. */
 .radio::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
+  inset: 0;
+  margin: auto;
+  border-radius: var(--radius-full);
   background: var(--color-primary);
-  transform: translate(-50%, -50%) scale(0);
+  transform: scale(0);
+  transform-origin: center center;
   opacity: 0;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -145,8 +147,8 @@ function onChange(event: Event) {
 }
 
 .radio--sm::after {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 .radio--md::after {
@@ -161,7 +163,7 @@ function onChange(event: Event) {
 
 .radio:checked::after,
 .radio.is-checked::after {
-  transform: translate(-50%, -50%) scale(1);
+  transform: scale(1);
   opacity: 1;
 }
 

@@ -144,8 +144,8 @@ describe('SettingsView loading state', () => {
     await new Promise((r) => setTimeout(r, 20));
     await nextTick();
 
-    expect(container.textContent).toContain('Lizenz');
-    expect(container.textContent).toContain('European Union Public Licence v. 1.2 (EUPL-1.2)');
+    expect(container.textContent).toContain('EUPL-1.2');
+    expect(container.textContent).not.toContain('European Union Public Licence v. 1.2 (EUPL-1.2)');
     expect(container.textContent).toContain('Dienste & Open Source');
     expect(container.textContent).toContain('Kartendaten');
     expect(container.textContent).toContain('OpenStreetMap');

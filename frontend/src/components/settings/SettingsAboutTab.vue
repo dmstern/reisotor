@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import AppIcon from '../AppIcon.vue';
@@ -9,13 +9,17 @@ import FeedbackDialog from '../FeedbackDialog.vue';
 import PwaInstallDialog from '../PwaInstallDialog.vue';
 import { useAboutInfo } from '../../composables/useAboutInfo';
 import { usePwaInstallStore } from '../../stores/pwaInstall';
-import { IconBug, IconInfoSquareRounded } from '@tabler/icons-vue';
+import { IconBug, IconInfoSquareRounded, IconHeartHandshake } from '@tabler/icons-vue';
 import type { IconDef } from '../../utils/icon';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 
 const FEEDBACK_ICON: IconDef = { id: 'bug', emoji: '🐛', outline: IconBug };
 const INFO_ICON: IconDef = { id: 'info', emoji: 'ℹ️', outline: IconInfoSquareRounded };
-const defaultRepoUrl = __REPO_URL__;
+const SERVICES_ICON: IconDef = {
+  id: 'heart-handshake',
+  emoji: '🤝',
+  outline: IconHeartHandshake,
+};
 
 const pwaInstall = usePwaInstallStore();
 const {
@@ -26,11 +30,6 @@ const {
   frontendCommit,
   frontendBuiltAt,
 } = useAboutInfo();
-
-const licenseUrl = computed(
-  () =>
-    `${(backendBuildInfo.value?.repoUrl ?? defaultRepoUrl).replace(/\/+$/, '')}/blob/main/LICENSE`
-);
 
 const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
@@ -68,8 +67,8 @@ const showPwaInstallDialog = ref(false);
     </Card>
 
     <Card class="build-info-card">
+      <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
       <div v-if="backendBuildInfo?.changelog">
-        <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
         <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
         <RichTextDisplay class="changelog-notes" :content="changelogContent" />
       </div>
@@ -85,14 +84,13 @@ const showPwaInstallDialog = ref(false);
           {{ formatBuildTime(backendBuildInfo.builtAt) }}
         </dd>
         <dd v-else>Lädt…</dd>
-        <dt>Lizenz</dt>
-        <dd>
-          <a :href="licenseUrl" target="_blank" rel="noopener noreferrer"
-            >European Union Public Licence v. 1.2 (EUPL-1.2)</a
-          >
-        </dd>
       </dl>
-      <h3>Dienste &amp; Open Source</h3>
+    </Card>
+
+    <Card class="services-info-card">
+      <h2>
+        <AppIcon :icon="SERVICES_ICON" group="navigation" :size="20" /> Dienste &amp; Open Source
+      </h2>
       <dl class="build-info-list">
         <dt>Kartendaten</dt>
         <dd>
@@ -159,9 +157,8 @@ const showPwaInstallDialog = ref(false);
         </dd>
       </dl>
       <AppFooterLinks
-        v-if="backendBuildInfo"
-        :repo-url="backendBuildInfo.repoUrl"
-        :hosting-location="backendBuildInfo.hostingLocation"
+        :repo-url="backendBuildInfo?.repoUrl"
+        :hosting-location="backendBuildInfo?.hostingLocation"
       />
     </Card>
 
@@ -245,7 +242,7 @@ h3 {
   margin-top: var(--space-1);
 }
 
-.build-info-card :deep(.app-footer-repo-link) {
+.services-info-card :deep(.app-footer-repo-link) {
   margin-top: var(--space-4);
 }
 </style>
