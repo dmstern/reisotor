@@ -378,6 +378,13 @@ const profileTitle = computed(() => {
   box-sizing: border-box;
 }
 
+/* Wenn Presence-Avatare (32px) links in der Pill sitzen (kein Kalender oder Recording davor),
+   schmiegen sie sich mit 5px Abstand nach links, oben und unten exakt gleich weit (42px - 32px = 10px / 2 = 5px)
+   vom Pill-Rand konzentrisch in die Rundung der 44px-Pill ein. */
+.header-actions:has(.presence-avatars) {
+  padding-left: 5px;
+}
+
 /* Wenn die Aufnahme-Pill links in der Pill sitzt (kein Kalender-Button davor),
    schmiegt sie sich mit 6px Abstand nach links, oben und unten exakt gleich weit
    vom Pill-Rand konzentrisch in die Rundung der 44px-Pill ein. */
@@ -541,6 +548,7 @@ const profileTitle = computed(() => {
   }
 
   .header-actions,
+  .header-actions:has(.presence-avatars),
   .header-actions:has(.recording-pill),
   .header-actions:has(.header-calendar-btn) {
     background: transparent;

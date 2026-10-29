@@ -74,7 +74,7 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-primary-tint);
   font-size: 1.05rem;
   line-height: 1;
