@@ -455,7 +455,7 @@ async function handleGenerateVapid() {
         </Alert>
 
         <Alert
-          v-else-if="!regForm.requireEmailVerification"
+          v-else-if="regForm.registrationMode !== 'off' && !regForm.requireEmailVerification"
           variant="info"
           size="sm"
           class="reg-email-alert"
@@ -563,6 +563,79 @@ async function handleGenerateVapid() {
           Konfiguriere externe Schnittstellen für Ortssuche, Geocoding und Routenberechnung in
           Etappen.
         </p>
+
+        <CollapsibleFieldset
+          :icon="ACTION_ICONS.info"
+          label="Was bedeuten POIs & Nominatim? (Tipps zu Diensten & API-Keys)"
+          class="geo-guide-fieldset"
+        >
+          <div class="geo-guide-content">
+            <p>
+              Reisotor nutzt spezialisierte Geodienste für Ortssuche, POIs, Routenführung und
+              Adressauflösung. Hier erfährst du, was die Begriffe bedeuten und welche Dienste welche
+              Aufgabe übernehmen:
+            </p>
+            <ul>
+              <li>
+                <strong>OpenRouteService (ORS API-Key):</strong>
+                Ermöglicht echte Straßen- und Wegerouten (Polylines), exakte Distanzen und
+                realistische Fahrzeiten für Auto, Fahrrad und Fußweg zwischen Reise-Etappen.
+                <br />
+                <em>Ohne Key:</em> Reisotor greift auf eine einfache Luftlinie zurück.
+                <br />
+                <span class="guide-note"
+                  >Kostenloser Key: Ein persönlicher API-Key kann dauerhaft kostenlos über
+                  <a href="https://account.heigit.org" target="_blank" rel="noopener noreferrer"
+                    >account.heigit.org</a
+                  >
+                  (Heidelberg Institute for Geoinformation Technology) bezogen werden. Nach der
+                  kurzen Registrierung unter <em>Tokens</em> einfach einen Standard-Token erstellen
+                  (Free Tier: 2.000 Anfragen/Tag) und oben in das Feld einfügen.</span
+                >
+              </li>
+              <li>
+                <strong>Komoot Photon &amp; POI-Suche:</strong>
+                Photon ist ein schneller, auf OpenStreetMap basierender Suchdienst mit
+                Autovervollständigung (Type-Ahead) bei der Ortssuche.
+                <br />
+                <em>Was ist ein POI?</em> <strong>POI</strong> steht für <em>Point of Interest</em>
+                (interessanter Ort). Damit sind namentlich benannte Reiseziele, Sehenswürdigkeiten,
+                Aussichtspunkte, Strände, Restaurants, Bahnhöfe oder Unterkünfte gemeint – also
+                nicht nur reine Straßenadressen.
+                <br />
+                <span class="guide-note"
+                  >Standardmäßig ist der öffentliche Komoot-Dienst
+                  (<code>https://photon.komoot.io/api/</code>) hinterlegt. Es ist keine
+                  Registrierung und kein API-Key erforderlich.</span
+                >
+              </li>
+              <li>
+                <strong>OSM Nominatim Geocoder (Ergänzung &amp; Fallback):</strong>
+                Nominatim ist die offizielle Suchmaschine des OpenStreetMap-Projekts für
+                <em>Geocoding</em>. Geocoding bezeichnet die Umwandlung geschriebener Adressen
+                (Straße, Hausnummer, Postleitzahl) in geografische GPS-Koordinaten (Längen- und
+                Breitengrad).
+                <br />
+                <em>Wozu aktivieren?</em> Während Photon ideal für schnelle Freitext- und POI-Suchen
+                ist, ist Nominatim besonders stark bei exakten postalischen Adressen mit Hausnummern
+                oder kleineren Ortschaften. Ist Nominatim aktiviert, wird es als zuverlässiger
+                Fallback und zur Ergänzung angefragt, wenn Photon keine passenden Treffer liefert.
+                <br />
+                <span class="guide-note"
+                  >Standard-URL: <code>https://nominatim.openstreetmap.org/search</code> (öffentlich
+                  nutzbar ohne Key; beachte die OSM Fair-Use-Richtlinie von max. 1 Anfrage/Sekunde).
+                  Für hohe Lasten kann ein eigener Nominatim-Server betrieben werden.</span
+                >
+              </li>
+            </ul>
+            <Alert variant="info" size="sm">
+              <strong>Empfohlene Standardkonfiguration:</strong> Photon und Nominatim funktionieren
+              direkt ohne Registrierung oder API-Key. Für vollwertige Straßenrouten und genaue
+              Reisezeiten in den Etappen wird die einmalige, kostenlose Einrichtung eines
+              OpenRouteService-Keys empfohlen.
+            </Alert>
+          </div>
+        </CollapsibleFieldset>
 
         <div class="form-grid">
           <div class="form-group full-width">
@@ -1495,13 +1568,15 @@ async function handleGenerateVapid() {
 
 .smtp-guide-fieldset,
 .feedback-guide-fieldset,
-.push-guide-fieldset {
+.push-guide-fieldset,
+.geo-guide-fieldset {
   margin-bottom: var(--space-4);
 }
 
 .smtp-guide-content,
 .feedback-guide-content,
-.push-guide-content {
+.push-guide-content,
+.geo-guide-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -1512,32 +1587,45 @@ async function handleGenerateVapid() {
 
 .smtp-guide-content p,
 .feedback-guide-content p,
-.push-guide-content p {
+.push-guide-content p,
+.geo-guide-content p {
   margin: 0;
 }
 
 .smtp-guide-content ul,
 .feedback-guide-content ul,
-.push-guide-content ul {
+.push-guide-content ul,
+.geo-guide-content ul {
   margin: 0;
   padding-left: var(--space-4);
 }
 
 .smtp-guide-content li,
 .feedback-guide-content li,
-.push-guide-content li {
+.push-guide-content li,
+.geo-guide-content li {
   margin-bottom: var(--space-2);
 }
 
 .smtp-guide-content code,
 .feedback-guide-content code,
-.push-guide-content code {
+.push-guide-content code,
+.geo-guide-content code {
   font-family: var(--font-mono, monospace);
   font-size: 0.9em;
   padding: 1px 4px;
   background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
   border-radius: var(--radius-xs, 4px);
   border: 1px solid var(--color-border-subtle);
+}
+
+.smtp-guide-content a,
+.feedback-guide-content a,
+.push-guide-content a,
+.geo-guide-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .label-with-info {

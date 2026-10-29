@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { api } from '../api/client';
 import type { User } from '../api/types';
 import { useTripStore } from '../stores/trip';
@@ -17,11 +17,50 @@ const auth = useAuthStore();
 const liveSync = useLiveSyncStore();
 const members = ref<User[]>([]);
 
-onMounted(async () => {
-  const tripId = tripStore.currentTripId;
-  if (tripId == null) return;
-  members.value = await api.get<User[]>(`/trips/${tripId}/members`);
-});
+let fetchSeq = 0;
+
+async function loadMembers(tripId: number | null, tripChanged = false) {
+  const seq = ++fetchSeq;
+  if (tripId == null) {
+    members.value = [];
+    return;
+  }
+  if (tripChanged) {
+    members.value = [];
+  }
+  try {
+    const res = await api.get<User[]>(`/trips/${tripId}/members`);
+    if (seq === fetchSeq && tripStore.currentTripId === tripId) {
+      members.value = res;
+    }
+  } catch {
+    if (seq === fetchSeq && tripStore.currentTripId === tripId) {
+      members.value = [];
+    }
+  }
+}
+
+watch(
+  () => tripStore.currentTripId,
+  (newTripId, oldTripId) => {
+    loadMembers(newTripId, newTripId !== oldTripId);
+  },
+  { immediate: true }
+);
+
+watch(
+  () => liveSync.notificationVersion,
+  () => {
+    loadMembers(tripStore.currentTripId, false);
+  }
+);
+
+watch(
+  () => tripStore.trips,
+  () => {
+    loadMembers(tripStore.currentTripId, false);
+  }
+);
 
 const otherMembers = computed(() => members.value.filter((u) => u.id !== auth.user?.id));
 
@@ -74,7 +113,7 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   background: var(--color-primary-tint);
   font-size: 1.05rem;
   line-height: 1;
