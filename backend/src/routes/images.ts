@@ -4,10 +4,13 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { uploadsDir } from '../uploads.js';
 import { isUserRestricted } from '../registrationConfig.js';
+import { requireTripMember } from '../tripAccess.js';
+import { registerUpload } from '../uploadRegistry.js';
 import { downloadRemoteImage } from '../utils/remoteImage.js';
 
 interface ImageUploadBody {
   data: string;
+  trip_id?: number;
 }
 
 // Generischer Bild-Upload für reine image_url-Felder (Trip-/Spot-/Tour-Titelbild, siehe
@@ -31,6 +34,9 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
     if (isUserRestricted(req.session.userId)) {
       return reply.code(403).send({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
     }
+    if (req.body?.trip_id != null) {
+      if (!requireTripMember(reply, req.body.trip_id, req.session.userId)) return;
+    }
     const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(req.body?.data ?? '');
     if (!match) return reply.code(400).send({ error: 'Ungültiges Bildformat' });
 
@@ -45,6 +51,7 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
 
     const filename = `${randomUUID()}.${extension}`;
     await writeFile(path.join(uploadsDir, filename), buffer);
+    registerUpload(filename, req.body?.trip_id ?? null, req.session.userId!);
     reply.code(201);
     return { url: `/api/uploads/${filename}` };
   });

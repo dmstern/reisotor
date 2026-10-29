@@ -9,11 +9,11 @@ lebt, oder wenn die "Code-Map" unten als Startpunkt für die Suche gebraucht wir
 
 Fastify-App, `app.ts` exportiert `buildApp()` getrennt von `server.ts` (das nur `buildApp()` aufruft
 und `.listen()`), damit Tests eine fertig konfigurierte Instanz per `.inject()` ansprechen können,
-ohne einen Port zu binden. Plugin-Reihenfolge in `app.ts`: CORS → statische Uploads
-(`/api/uploads/`) → Cookie+Session (`@fastify/session` mit eigenem `SqliteSessionStore` aus
-`sessionStore.ts`, damit Sessions einen Prozess-Neustart überleben) → `/api`-Präfix mit offenen
-`/auth/*`-Routen und einer zweiten, per `requireAuth` (`auth.ts`) geschützten Gruppe für alle
-übrigen Routen. Jede fachliche Domäne hat eine eigene Datei unter `routes/` (siehe Code-Map unten)
+ohne einen Port zu binden. Plugin-Reihenfolge in `app.ts`: CORS → Cookie+Session
+(`@fastify/session` mit eigenem `SqliteSessionStore` aus `sessionStore.ts`, damit Sessions
+einen Prozess-Neustart überleben) → `/api`-Präfix mit offenen `/auth/*`-Routen und einer
+zweiten, per `requireAuth` (`auth.ts`) geschützten Gruppe für alle übrigen Routen (inkl.
+geschützter Upload-Auslieferung unter `/api/uploads/*`, Issue #629). Jede fachliche Domäne hat eine eigene Datei unter `routes/` (siehe Code-Map unten)
 plus `buildInfo` für den Git-Commit/Build-Zeitstempel; alle werden in `app.ts` registriert. Routen
 greifen direkt per `better-sqlite3` (synchron, kein ORM/Query-Builder) auf `db.prepare(...)` zu.
 `tripAccess.ts`s `requireTripMember()` ist der zentrale Gate für die Mitgliedschaftsprüfung (siehe
@@ -153,10 +153,16 @@ vite.config.ts`) erweitert denselben `public/sw.js` (statt ihn zu ersetzen) um
 
 ## Anhänge
 
-`attachments`-Tabelle + `routes/attachments.ts` (Upload/Auslieferung unter `/api/uploads/`), genutzt
-von 5 Domänen (Reise, Unterkunft, Notizen, Kalender, Budget) über die gemeinsame Komponente
-`components/FileAttachments.vue`. Verwaiste Dateien (z. B. nach gelöschtem verknüpftem Objekt)
-werden per eigener Cleanup-Routine entfernt.
+`attachments`-Tabelle + `routes/attachments.ts`, genutzt von 5 Domänen (Reise, Unterkunft, Notizen,
+Kalender, Budget) über die gemeinsame Komponente `components/FileAttachments.vue`. Verwaiste Dateien
+(z. B. nach gelöschtem verknüpftem Objekt) werden per eigener Cleanup-Routine entfernt.
+
+**Auslieferung & Zugriffsschutz für Uploads (#629):** Hochgeladene Dateien und Bilder unter
+`/api/uploads/*` werden nicht mehr statisch und offen ausgeliefert, sondern autorisiert
+über `routes/uploads.ts`. Ein zentrales Register (`uploads`-Tabelle) prüft vor der Auslieferung
+per `requireTripMember()`, ob die anfragende Session Mitglied des jeweiligen Urlaubs ist (HTTP 401
+für unangemeldete Aufrufe, HTTP 403 für fremde Accounts inkl. Admins). Antworten werden mit
+`Cache-Control: private, max-age=3600` und `X-Content-Type-Options: nosniff` ausgeliefert.
 
 **Titelbilder (`image_url`) & Datenschutz (#539):** Externe Bild-URLs (Web-Bildersuche) werden nicht
 gehotlinkt. Beim Speichern von Trip/Spot/Tour lädt das Backend sie per `localizeImageUrl()`

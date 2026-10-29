@@ -31,7 +31,7 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   const contentTouched = ref(false);
   const dateTouched = ref(false);
 
-  const upload = useDiaryImageUpload();
+  const upload = useDiaryImageUpload({ tripId: () => editingEntry.value?.trip_id });
 
   const isContentEmpty = computed(() => isEmptyRichText(editForm.value.content));
   const showContentError = computed(() => contentTouched.value && isContentEmpty.value);

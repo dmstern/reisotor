@@ -219,6 +219,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
             <CoverImagePicker
               v-model="activeSpotForm.image_url"
               v-model:uploading="isSpotUploadingCoverImage"
+              :trip-id="tripId"
               :loading="isFetchingSpotPreview && !activeSpotForm.image_url.trim()"
               variant="polaroid"
               :preview-image="editingSpot !== null ? editSpotPreviewImage : spotPreviewImage"

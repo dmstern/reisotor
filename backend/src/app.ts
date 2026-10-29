@@ -35,6 +35,7 @@ import { routingRoutes } from './routes/routing.js';
 import { placesRoutes } from './routes/places.js';
 import { legalRoutes } from './routes/legal.js';
 import { adminSettingsRoutes } from './routes/adminSettings.js';
+import { uploadsRoutes } from './routes/uploads.js';
 
 // Von server.ts getrennt (das nur noch buildApp() aufruft und .listen()), damit Tests eine fertig
 // konfigurierte App-Instanz per Fastify .inject() ansprechen können, ohne einen echten Port zu
@@ -68,11 +69,9 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
     credentials: true,
   });
 
-  // Hochgeladene (bereits client-seitig komprimierte) Tagebuch-Bilder werden unter /api/uploads/
-  // ausgeliefert, damit der bestehende Caddy-Proxy (nur /api/* -> Backend) ohne Anpassung reicht.
-  // Bewusst ohne Auth-Check auf Auslieferung: nur Upload erfordert eine Session, das Betrachten
-  // eines Bildlinks (wie bei jedem anderen <img src>) nicht.
-  await app.register(fastifyStatic, { root: uploadsDir, prefix: '/api/uploads/' });
+  // fastifyStatic mit serve: false registrieren, damit reply.sendFile() verfügbar ist,
+  // die eigentliche Auslieferung von /api/uploads/:filename aber geschützt über uploadsRoutes läuft (#629).
+  await app.register(fastifyStatic, { root: uploadsDir, serve: false });
 
   await app.register(cookie);
   await app.register(session, {
@@ -124,6 +123,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(routingRoutes);
         await protectedApi.register(placesRoutes);
         await protectedApi.register(adminSettingsRoutes);
+        await protectedApi.register(uploadsRoutes);
       });
     },
     { prefix: '/api' }

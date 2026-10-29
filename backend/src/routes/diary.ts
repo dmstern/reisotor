@@ -8,6 +8,7 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 import { isUserRestricted } from '../registrationConfig.js';
+import { registerUpload, associateUploadWithTrip } from '../uploadRegistry.js';
 
 interface EntryRow {
   id: number;
@@ -191,6 +192,7 @@ interface CommentBody {
 interface ImageUploadBody {
   data: string;
   filename?: string;
+  trip_id?: number;
 }
 
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
@@ -279,6 +281,9 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     if (isUserRestricted(req.session.userId)) {
       return reply.code(403).send({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
     }
+    if (req.body?.trip_id != null) {
+      if (!requireTripMember(reply, req.body.trip_id, req.session.userId)) return;
+    }
     const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(req.body?.data ?? '');
     if (!match) return reply.code(400).send({ error: 'Ungültiges Bildformat' });
 
@@ -293,6 +298,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
 
     const filename = `${randomUUID()}.${extension}`;
     await writeFile(path.join(uploadsDir, filename), buffer);
+    registerUpload(filename, req.body?.trip_id ?? null, req.session.userId!);
     reply.code(201);
     const rawName = req.body?.filename
       ? req.body.filename
@@ -332,6 +338,15 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         req.body.is_draft ? 1 : 0
       );
     const entryId = result.lastInsertRowid as number;
+    for (const img of sanitizedImages) {
+      const url = typeof img === 'string' ? img : img?.url;
+      if (url && typeof url === 'string' && url.startsWith('/api/uploads/')) {
+        const filename = url.slice('/api/uploads/'.length);
+        if (filename) {
+          associateUploadWithTrip(filename, trip_id, req.session.userId);
+        }
+      }
+    }
     syncDiaryExcursions(entryId, excursion_ids ?? []);
     syncDiarySpots(entryId, spot_ids ?? []);
     recordActivity(trip_id, 'diary', entryId, 'created', req.session.userId!);
@@ -373,6 +388,15 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       isDraft,
       req.params.id
     );
+    for (const img of sanitizedImages) {
+      const url = typeof img === 'string' ? img : img?.url;
+      if (url && typeof url === 'string' && url.startsWith('/api/uploads/')) {
+        const filename = url.slice('/api/uploads/'.length);
+        if (filename) {
+          associateUploadWithTrip(filename, entry.trip_id, req.session.userId);
+        }
+      }
+    }
     syncDiaryExcursions(Number(req.params.id), excursion_ids ?? []);
     syncDiarySpots(Number(req.params.id), spot_ids ?? []);
     if (req.session.userId !== entry.author_id) {

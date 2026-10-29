@@ -17,7 +17,13 @@ export interface UseDiaryImageUploadReturn {
   removeImage: (target: { images: DiaryImage[] }, index: number) => void;
 }
 
-export function useDiaryImageUpload(): UseDiaryImageUploadReturn {
+export interface UseDiaryImageUploadOptions {
+  tripId?: Ref<number | undefined> | number | (() => number | undefined);
+}
+
+export function useDiaryImageUpload(
+  options?: UseDiaryImageUploadOptions
+): UseDiaryImageUploadReturn {
   const uploading = ref(false);
   const uploadError = ref('');
   const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -68,11 +74,18 @@ export function useDiaryImageUpload(): UseDiaryImageUploadReturn {
         const filename = isHeicFile(file)
           ? file.name.replace(/\.(heic|heif)$/i, '.jpg')
           : file.name;
+        const rawTripId =
+          typeof options?.tripId === 'function'
+            ? options.tripId()
+            : options?.tripId && typeof options.tripId === 'object' && 'value' in options.tripId
+              ? (options.tripId as Ref<number | undefined>).value
+              : (options?.tripId as number | undefined);
         const res = await api.post<{ url: string; original_name?: string }>(
           '/diary/images',
           {
             data: compressed,
             filename,
+            ...(rawTripId ? { trip_id: rawTripId } : {}),
           },
           { signal: controller.signal }
         );

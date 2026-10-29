@@ -22,6 +22,7 @@ const props = defineProps<{
   modelValue: string | undefined;
   placeholder?: string;
   uploading?: boolean;
+  tripId?: number;
 }>();
 
 const emit = defineEmits<{
@@ -96,7 +97,7 @@ async function onFileSelected(event: Event) {
 
     const { url } = await api.post<{ url: string }>(
       '/images',
-      { data: compressed },
+      { data: compressed, ...(props.tripId ? { trip_id: props.tripId } : {}) },
       { signal: abortController.signal }
     );
 

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { localizeImageUrl } from '../utils/remoteImage.js';
+import { associateUploadWithTrip } from '../uploadRegistry.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { uploadsDir } from '../uploads.js';
@@ -112,6 +113,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         weatherModel
       );
     const tripId = result.lastInsertRowid as number;
+    if (image_url?.startsWith('/api/uploads/')) {
+      associateUploadWithTrip(image_url.slice('/api/uploads/'.length), tripId, req.session.userId);
+    }
     // Neu angelegter Urlaub ist zunächst nur für die anlegende Person sichtbar – weitere
     // Mitglieder kommen nur per Einladung dazu (routes/trips.ts's POST /trips/:id/members).
     db.prepare('INSERT INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)').run(
@@ -169,6 +173,13 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       roundCoord(lat) !== roundCoord(existing.lat) || roundCoord(lng) !== roundCoord(existing.lng);
 
     const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
+    if (image_url?.startsWith('/api/uploads/')) {
+      associateUploadWithTrip(
+        image_url.slice('/api/uploads/'.length),
+        Number(req.params.id),
+        req.session.userId
+      );
+    }
     const weatherModel = req.body.weather_model?.trim() || existing.weather_model || 'ecmwf_ifs025';
     const weatherModelChanged = Boolean(
       req.body.weather_model && req.body.weather_model.trim() !== existing.weather_model
