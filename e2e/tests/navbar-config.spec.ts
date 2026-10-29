@@ -1,4 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function waitForSettingsSave(page: Page, action: () => Promise<void>) {
+  const savePromise = page.waitForResponse(
+    (r) => r.url().includes('/api/users/me/app-settings') && r.status() === 200
+  );
+  await action();
+  await savePromise;
+}
 
 // Regressionsnetz für die konfigurierbare NavBar (Reihenfolge + Sichtbarkeit, siehe
 // stores/navConfig.ts, SettingsView.vue).
@@ -8,17 +16,19 @@ test('hiding a nav entry in SettingsView removes it from the NavBar', async ({ p
 
   await page.goto('/settings?tab=app');
   const notesRow = page.locator('.nav-config-row', { hasText: 'Notizen' });
-  await notesRow.locator('input[type="checkbox"]').uncheck();
+  await waitForSettingsSave(page, () => notesRow.locator('input[type="checkbox"]').uncheck());
 
   await page.goto('/');
   await expect(page.locator('nav.navbar a', { hasText: 'Notizen' })).toHaveCount(0);
 
   // Aufräumen, damit der Zustand nicht in andere Tests dieser Suite durchsickert.
   await page.goto('/settings?tab=app');
-  await page
-    .locator('.nav-config-row', { hasText: 'Notizen' })
-    .locator('input[type="checkbox"]')
-    .check();
+  await waitForSettingsSave(page, () =>
+    page
+      .locator('.nav-config-row', { hasText: 'Notizen' })
+      .locator('input[type="checkbox"]')
+      .check()
+  );
 });
 
 test('reordering nav entries in SettingsView changes their order in the NavBar', async ({
@@ -28,7 +38,9 @@ test('reordering nav entries in SettingsView changes their order in the NavBar',
   const firstRowLabel = page.locator('.nav-config-row').first().locator('.nav-config-label');
   const initialFirstLabel = await firstRowLabel.textContent();
 
-  await page.locator('.nav-config-row').nth(1).getByLabel('Nach oben verschieben').click();
+  await waitForSettingsSave(page, () =>
+    page.locator('.nav-config-row').nth(1).getByLabel('Nach oben verschieben').click()
+  );
 
   const newFirstLabel = await page
     .locator('.nav-config-row')
@@ -51,7 +63,9 @@ test('reordering nav entries in SettingsView changes their order in the NavBar',
 
   // Aufräumen: wieder zurückverschieben.
   await page.goto('/settings?tab=app');
-  await page.locator('.nav-config-row').first().getByLabel('Nach unten verschieben').click();
+  await waitForSettingsSave(page, () =>
+    page.locator('.nav-config-row').first().getByLabel('Nach unten verschieben').click()
+  );
 });
 
 test('accommodation nav entry in SettingsView and category filter behavior', async ({ page }) => {
@@ -61,7 +75,7 @@ test('accommodation nav entry in SettingsView and category filter behavior', asy
   // Unterkunft in Navigationseinstellungen ausblenden
   await page.goto('/settings?tab=app');
   const accRow = page.locator('.nav-config-row', { hasText: 'Unterkunft' });
-  await accRow.locator('input[type="checkbox"]').uncheck();
+  await waitForSettingsSave(page, () => accRow.locator('input[type="checkbox"]').uncheck());
 
   await page.goto('/');
   await expect(page.locator('nav.navbar a', { hasText: 'Unterkunft' })).toHaveCount(0);
@@ -74,10 +88,12 @@ test('accommodation nav entry in SettingsView and category filter behavior', asy
 
   // Unterkunft in Navigationseinstellungen wieder aktivieren
   await page.goto('/settings?tab=app');
-  await page
-    .locator('.nav-config-row', { hasText: 'Unterkunft' })
-    .locator('input[type="checkbox"]')
-    .check();
+  await waitForSettingsSave(page, () =>
+    page
+      .locator('.nav-config-row', { hasText: 'Unterkunft' })
+      .locator('input[type="checkbox"]')
+      .check()
+  );
 
   await page.goto('/');
   const accNavLink = page.locator('nav.navbar a', { hasText: 'Unterkunft' });

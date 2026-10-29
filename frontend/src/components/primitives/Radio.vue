@@ -88,8 +88,9 @@ function onChange(event: Event) {
   flex-shrink: 0;
   margin: 0;
   padding: 0;
-  border: 2px solid var(--color-border);
-  border-radius: 50%;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--color-border);
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
@@ -99,45 +100,54 @@ function onChange(event: Event) {
   box-sizing: border-box;
   vertical-align: middle;
   transition:
-    border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Größen-Varianten */
+/* Größen-Varianten (Vielfache von 8 für perfekte Subpixel-/DPI-Skalierung bei 100%, 125%, 150%, 200%) */
 .radio--sm {
   width: 16px;
   height: 16px;
 }
 
 .radio--md {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .radio--lg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .radio:hover:not(:disabled):not(.is-disabled) {
-  border-color: var(--color-primary-light, var(--color-primary));
+  box-shadow: inset 0 0 0 2px var(--color-primary-light, var(--color-primary));
 }
 
 .radio:checked,
 .radio.is-checked {
-  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 
-/* Innerer Punkt: Animiert per Transform (Scale) und Opacity für weiche, sprungfreie Übergänge */
+/* Innerer Punkt: Zentriert via inset: 0 + margin: auto.
+   Weil der Außenring als inset-box-shadow statt CSS-Border gerendert wird und die
+   Außenmaße auf 8er-Potenzen basieren (16px für md mit 8px-Punkt, 24px für lg mit 12px-Punkt),
+   skalieren sowohl Container als auch Punkt bei allen gängigen Skalierungsfaktoren (100%,
+   125%, 150%, 200%) exakt zu geraden ganzzahligen physikalischen Pixeln:
+   - 100%: 16px Außen / 8px Punkt -> 4px Margin ringsum (2px Ring + 2px Luft)
+   - 125%: 20px Außen / 10px Punkt -> 5px Margin ringsum (2px Ring + 3px Luft)
+   - 150%: 24px Außen / 12px Punkt -> 6px Margin ringsum (3px Ring + 3px Luft)
+   - 200%: 32px Außen / 16px Punkt -> 8px Margin ringsum (4px Ring + 4px Luft)
+   Dadurch entstehen keinerlei Rundungsasymmetrien (kein 3px vs 4px Versatz). */
 .radio::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
+  inset: 0;
+  margin: auto;
+  border-radius: var(--radius-full);
   background: var(--color-primary);
-  transform: translate(-50%, -50%) scale(0);
+  transform: scale(0);
+  transform-origin: center center;
   opacity: 0;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -145,8 +155,8 @@ function onChange(event: Event) {
 }
 
 .radio--sm::after {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 .radio--md::after {
@@ -155,13 +165,13 @@ function onChange(event: Event) {
 }
 
 .radio--lg::after {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 .radio:checked::after,
 .radio.is-checked::after {
-  transform: translate(-50%, -50%) scale(1);
+  transform: scale(1);
   opacity: 1;
 }
 
@@ -174,6 +184,17 @@ function onChange(event: Event) {
 .radio.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media (forced-colors: active) {
+  .radio {
+    border: 2px solid CanvasText;
+  }
+
+  .radio:checked,
+  .radio.is-checked {
+    border-color: Highlight;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

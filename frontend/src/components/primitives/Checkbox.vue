@@ -103,14 +103,17 @@ function onChange(event: Event) {
 
 .checkbox:checked::after {
   content: '';
-  width: 5px;
-  height: 10px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
   position: absolute;
-  left: 6px;
-  top: 2px;
-  transform: rotate(45deg);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.6 8.2C4.5 9.3 5.7 11 6.8 11.4C7.8 11.4 9.8 9.2 12.4 4.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none;
 }
 
 .checkbox:focus-visible {
