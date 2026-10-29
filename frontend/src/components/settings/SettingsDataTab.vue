@@ -48,12 +48,21 @@ const { exporting, exportError, exportBackup } = useBackupExport();
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin: var(--space-2) 0;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .hint {
   margin: 0 0 var(--space-3);
   font-size: var(--font-size-sm);
+}
+
+.hint:last-child {
+  margin-bottom: 0;
+}
+
+.hint :deep(.app-icon) {
+  vertical-align: -2.5px;
 }
 
 .hint.error {
