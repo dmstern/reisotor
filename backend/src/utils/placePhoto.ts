@@ -6,6 +6,7 @@ export interface PlacePhotoOptions {
   lng?: number;
   city?: string;
   category?: string;
+  isBanner?: boolean;
 }
 
 interface CacheEntry {
@@ -22,13 +23,14 @@ export function buildPhotoCacheKey(
   lat?: number,
   lng?: number,
   city?: string,
-  category?: string
+  category?: string,
+  isBanner = false
 ): string {
   const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(3) : '';
   const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(3) : '';
   const cityStr = city?.trim().toLowerCase() || '';
   const categoryStr = category?.trim().toLowerCase() || '';
-  return `${name.trim().toLowerCase()}|${latStr}|${lngStr}|${cityStr}|${categoryStr}`;
+  return `${name.trim().toLowerCase()}|${latStr}|${lngStr}|${cityStr}|${categoryStr}|${isBanner ? 'banner' : 'spot'}`;
 }
 
 export function clearPhotoCache(): void {
@@ -275,6 +277,11 @@ interface WikiPage {
     width: number;
     height: number;
   };
+  original?: {
+    source: string;
+    width: number;
+    height: number;
+  };
   images?: Array<{ title: string }>;
 }
 
@@ -311,12 +318,16 @@ async function queryWiki(lang: string, params: Record<string, string>): Promise<
   }
 }
 
-async function resolveImageInfo(lang: string, imageTitle: string): Promise<string | null> {
+async function resolveImageInfo(
+  lang: string,
+  imageTitle: string,
+  isBanner = false
+): Promise<string | null> {
   const pages = await queryWiki(lang, {
     titles: imageTitle,
     prop: 'imageinfo',
     iiprop: 'url',
-    iiurlwidth: '1000',
+    iiurlwidth: isBanner ? '2000' : '1000',
   });
   const info = (pages[0] as { imageinfo?: Array<{ thumburl?: string; url?: string }> })
     ?.imageinfo?.[0];
@@ -324,8 +335,16 @@ async function resolveImageInfo(lang: string, imageTitle: string): Promise<strin
   return url && isSafeUrl(url) ? url : null;
 }
 
-async function extractPhotoFromPage(lang: string, page: WikiPage): Promise<string | null> {
+async function extractPhotoFromPage(
+  lang: string,
+  page: WikiPage,
+  isBanner = false
+): Promise<string | null> {
   // 1. Wenn thumbnail existiert und ein echtes Foto ist
+  // Hinweis: thumbnail wird via pithumbsize: isBanner ? '2000' : '1000' in passender Größe angefordert
+  // (bei Wikipedia skaliert der Thumbnail-Dienst das Bild serverseitig sauber auf 2000px).
+  // Dies verhindert das Laden gigantischer Originaldateien (> 50 MB), die das serverseitige Limit
+  // (MAX_REMOTE_IMAGE_BYTES = 5 MB) überschreiten und /images/proxy mit HTTP 502 fehlschlagen lassen.
   if (page.thumbnail?.source) {
     const isPhoto = isGoodPhoto(page.pageimage || page.thumbnail.source);
     if (isPhoto && isSafeUrl(page.thumbnail.source)) {
@@ -333,11 +352,19 @@ async function extractPhotoFromPage(lang: string, page: WikiPage): Promise<strin
     }
   }
 
-  // 2. Falls Thumbnail ein SVG/Logo war: Erstes passendes Foto aus den Seiten-Bildern ermitteln
+  // 2. Fallback: Originalbild, falls thumbnail fehlt
+  if (page.original?.source) {
+    const isPhoto = isGoodPhoto(page.pageimage || page.original.source);
+    if (isPhoto && isSafeUrl(page.original.source)) {
+      return page.original.source;
+    }
+  }
+
+  // 3. Falls Thumbnail ein SVG/Logo war: Erstes passendes Foto aus den Seiten-Bildern ermitteln
   if (Array.isArray(page.images) && page.images.length > 0) {
     const photoImg = page.images.find((img) => isGoodPhoto(img.title));
     if (photoImg) {
-      return resolveImageInfo(lang, photoImg.title);
+      return resolveImageInfo(lang, photoImg.title, isBanner);
     }
   }
 
@@ -413,7 +440,8 @@ function parseBingHtml(
   limit: number,
   seen: Set<string>,
   nameWords: string[],
-  isAirport = false
+  isAirport = false,
+  isBanner = false
 ): string[] {
   const photos: string[] = [];
 
@@ -446,10 +474,17 @@ function parseBingHtml(
 
       if (!isRelevant) continue;
 
-      // Bing Edge CDN (turl mit &w=1000): Hohe Auflösung, 100% Verfügbarkeit, keine 509 Bandbreiten-Limits, keine 403 Hotlinking-Sperren
+      // Bing Edge CDN (turl mit &w=1000): Hohe Verfügbarkeit und klein (~30 KB), ideal zur Schonung
+      // des Serverspeichers bei Spots. Für Trip-Banner hingegen wird das Originalbild (murl) benötigt,
+      // da turl (Bing OIP-Cache) hardwareseitig auf 474px Breite beschränkt ist und im Banner pixelig wirkt.
       const cdnUrl = turl ? (turl.includes('?') ? `${turl}&w=1000` : `${turl}?w=1000`) : null;
-      const candidate =
-        cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
+      const candidate = isBanner
+        ? murl && isSafeUrl(murl) && isGoodPhoto(murl)
+          ? murl
+          : cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
+            ? cdnUrl
+            : null
+        : cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
           ? cdnUrl
           : murl && isSafeUrl(murl) && isGoodPhoto(murl)
             ? murl
@@ -495,7 +530,8 @@ async function queryBingImages(
   limit: number,
   seen: Set<string>,
   city?: string,
-  category?: string
+  category?: string,
+  isBanner = false
 ): Promise<string[]> {
   const { nameWords } = buildNameWords(rawName, city, category);
   const isAirport = isAirportQuery(rawName, category);
@@ -515,7 +551,7 @@ async function queryBingImages(
       });
       if (!res.ok || typeof res.text !== 'function') continue;
       const html = await res.text();
-      const photos = parseBingHtml(html, rawName, limit, seen, nameWords, isAirport);
+      const photos = parseBingHtml(html, rawName, limit, seen, nameWords, isAirport, isBanner);
       if (photos.length > 0) {
         return photos;
       }
@@ -533,7 +569,8 @@ async function queryDuckDuckGoImages(
   limit: number,
   seen: Set<string>,
   city?: string,
-  category?: string
+  category?: string,
+  _isBanner = false
 ): Promise<string[]> {
   try {
     const pageUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
@@ -619,7 +656,8 @@ async function queryCommonsImages(
   query: string,
   limit: number,
   seen: Set<string>,
-  isAirport = false
+  isAirport = false,
+  isBanner = false
 ): Promise<string[]> {
   try {
     const url = new URL('https://commons.wikimedia.org/w/api.php');
@@ -631,7 +669,7 @@ async function queryCommonsImages(
     url.searchParams.set('gsrlimit', String(Math.min(10, limit)));
     url.searchParams.set('prop', 'imageinfo');
     url.searchParams.set('iiprop', 'url');
-    url.searchParams.set('iiurlwidth', '1000');
+    url.searchParams.set('iiurlwidth', isBanner ? '2000' : '1000');
 
     const res = await fetch(url.toString(), {
       headers: WIKI_FETCH_HEADERS,
@@ -793,7 +831,8 @@ export async function searchWebPlacePhotos(
   name: string,
   city?: string,
   category?: string,
-  limit = 10
+  limit = 10,
+  isBanner = false
 ): Promise<string[]> {
   const rawName = name?.trim();
   if (!rawName) return [];
@@ -812,7 +851,8 @@ export async function searchWebPlacePhotos(
       limit - photos.length,
       seen,
       cleanCity,
-      cleanCategory
+      cleanCategory,
+      isBanner
     );
     for (const p of batch) {
       photos.push(p);
@@ -829,7 +869,8 @@ export async function searchWebPlacePhotos(
         limit - photos.length,
         seen,
         cleanCity,
-        cleanCategory
+        cleanCategory,
+        isBanner
       );
       for (const p of batch) {
         photos.push(p);
@@ -843,9 +884,10 @@ export async function searchWebPlacePhotos(
 export async function searchWebPlacePhoto(
   name: string,
   city?: string,
-  category?: string
+  category?: string,
+  isBanner = false
 ): Promise<string | null> {
-  const photos = await searchWebPlacePhotos(name, city, category, 1);
+  const photos = await searchWebPlacePhotos(name, city, category, 1, isBanner);
   return photos[0] ?? null;
 }
 
@@ -862,8 +904,9 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
   const lng = options.lng != null && Number.isFinite(options.lng) ? options.lng : undefined;
   const city = options.city?.trim() || undefined;
   const category = options.category?.trim() || undefined;
+  const isBanner = Boolean(options.isBanner);
 
-  const cacheKey = buildPhotoCacheKey(rawName, lat, lng, city, category);
+  const cacheKey = buildPhotoCacheKey(rawName, lat, lng, city, category, isBanner);
   const cached = photoCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt && cached.urls.length >= limit) {
     return cached.urls.slice(0, limit);
@@ -873,7 +916,7 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
   const seen = new Set<string>();
 
   // 1. Primär: Echte Web-Bildersuche
-  const webPhotos = await searchWebPlacePhotos(rawName, city, category, limit);
+  const webPhotos = await searchWebPlacePhotos(rawName, city, category, limit, isBanner);
   for (const p of webPhotos) {
     if (!seen.has(p)) {
       seen.add(p);
@@ -895,13 +938,14 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
           ggsradius: '300',
           ggslimit: '5',
           prop: 'pageimages|images',
-          pithumbsize: '1000',
+          piprop: 'thumbnail|original',
+          pithumbsize: isBanner ? '2000' : '1000',
         });
 
         for (const p of pages) {
           if (photos.length >= limit) break;
           if (isTitleMatch(p.title, rawName, city)) {
-            const found = await extractPhotoFromPage(lang, p);
+            const found = await extractPhotoFromPage(lang, p, isBanner);
             if (found && !seen.has(found)) {
               seen.add(found);
               photos.push(found);
@@ -924,13 +968,14 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
           gsrsearch: searchQuery,
           gsrlimit: '5',
           prop: 'pageimages|images',
-          pithumbsize: '1000',
+          piprop: 'thumbnail|original',
+          pithumbsize: isBanner ? '2000' : '1000',
         });
 
         for (const p of pages) {
           if (photos.length >= limit) break;
           if (isTitleMatch(p.title, rawName, city)) {
-            const found = await extractPhotoFromPage(lang, p);
+            const found = await extractPhotoFromPage(lang, p, isBanner);
             if (found && !seen.has(found)) {
               seen.add(found);
               photos.push(found);
@@ -948,7 +993,13 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
         : [[rawName, city].filter(Boolean).join(' '), rawName];
       for (const cq of commonsQueries) {
         if (photos.length >= limit) break;
-        const commonsPhotos = await queryCommonsImages(cq, limit - photos.length, seen, isAirport);
+        const commonsPhotos = await queryCommonsImages(
+          cq,
+          limit - photos.length,
+          seen,
+          isAirport,
+          isBanner
+        );
         for (const cp of commonsPhotos) {
           photos.push(cp);
         }

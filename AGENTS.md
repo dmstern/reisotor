@@ -144,10 +144,19 @@ Der Rollout-Mechanismus existiert: Backend führt `db/index.ts` bei jedem Start 
 
 Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte Regeln zur Minimierung von Token-Verbrauch und Context-Größe:
 
-1. **Thread-Hygiene & Abschluss-Erinnerung (Keine Endlos-Chats):**
+1. **Thread-Hygiene & Intelligente Chat-Fortsetzungs-Empfehlung:**
    - Ein Chat sollte sich auf **genau eine fachlich zusammenhängende Aufgabe** (Feature, Bugfix, Refactoring) beschränken (Richtwert: maximal 30–50 Schritte).
-   - **Verbindliche Aufforderung:** Sobald ein PR/Feature/Bugfix fertiggestellt, committet oder dokumentiert ist, MUSS der Agent am Ende seiner Nachricht explizit folgenden Hinweis geben:
-     > 💡 **Tipp zur Token-Ersparnis:** Diese Aufgabe ist abgeschlossen. Bitte starte für das nächste Thema einen neuen Chat, um unnötigen Kontext-Ballast und Token-Kosten zu vermeiden.
+   - **Kontext-Check statt starrer Pauschalhinweis:** Sobald ein Meilenstein (Planung, Feature, Bugfix, PR oder Review) abgeschlossen ist, darf der Agent **keine stumpfe Copy-Paste-Meldung** absetzen. Stattdessen schätzt er kurz den aktuellen Chat-Umfang (Schrittanzahl, Tool-Logs, verbleibendes Kontextfenster) und die geplante Fortsetzung ein und gibt eine **situationsbezogene, ehrliche Empfehlung**:
+     - **Schlanker Chat (< ~20 Schritte, wenig Tool-Output / kleine Diffs):**
+       - _Wenn die direkte Umsetzung / der nächste Schritt folgt_ (z. B. Plan steht, jetzt Code schreiben; oder Bug behoben, kleiner Folgefeinschliff): **Empfehlung: Im Chat bleiben!** Begründung: Der Kontext ist frisch, alle getroffenen Entscheidungen sind präsent und das erneute Einlesen von Architektur/Dateien in einem neuen Chat würde unnötig Start-Tokens und Zeit kosten.
+       - _Wenn ein völlig neues, unabhängiges Thema beginnt:_ Kurzer Hinweis, dass der Chat zwar noch schlank ist, für eine saubere Trennung bei einem neuen Thema aber auch ein neuer Chat/Worktree gestartet werden kann.
+       - _Beispiel:_ `💡 **Kontext-Check:** Der Chat ist mit nur ~X Schritten noch sehr schlank und alle Absprachen liegen frisch im Kontext. Für die direkte Umsetzung empfiehlt es sich, gleich **hier im Chat weiterzumachen**. Erst bei einem komplett neuen Thema lohnt sich ein neuer Chat.`
+     - **Fortgeschrittener Chat (~20–35 Schritte):**
+       - Kurze Abwägung: Für die unmittelbare Fertigstellung/den letzten Feinschliff des Themas kann man im Chat bleiben; vor einem größeren nächsten Arbeitsschritt oder neuem Thema wird ein neuer Chat empfohlen.
+     - **Langer / schwerer Chat (> ~35–50 Schritte oder nach massiven Test-Logs / großen Diffs):**
+       - **Empfehlung: Dringend neuer Chat empfohlen** (oder `/compact`).
+       - Begründung: Das Kontextfenster ist voll; jeder Folge-Turn schickt den riesigen Verlauf mit, was Token-Kosten treibt und die Attention/Präzision des Modells schwächt.
+       - _Beispiel:_ `💡 **Tipp zur Token-Ersparnis:** Dieser Chat ist mit ~X Schritten und umfangreichen Logs bereits stark gefüllt. Da alle Zwischenstände in Commit/PR gesichert sind, empfiehlt sich für die weiteren Arbeiten dringend ein **neuer Chat** (oder `/compact`), um Token-Ballast zu vermeiden und die Antworten präzise zu halten.`
 2. **Keine unfiltrierten Voll-Testsuiten im Chat:**
    - **NIEMALS** im Agenten-Chat `npm test`, `npm run test:all`, `npm run test:frontend` oder `npm run test:backend` ausführen, wenn nur einzelne Dateien oder Komponenten geändert wurden. Das flutet den Gesprächsverlauf mit hunderten Zeilen unnötigem Reporter-Output.
    - **Immer gezielt testen:** Ausschließlich die betroffene Datei mit `--bail 1` aufrufen: Backend: `npx -y vitest run <backend-pfad> --bail 1`, Frontend: `npm --prefix frontend test -- <frontend-pfad> --bail 1`.

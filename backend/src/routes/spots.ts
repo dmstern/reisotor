@@ -203,12 +203,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       lng?: string;
       city?: string;
       category?: string;
+      variant?: string;
     };
   }>('/spots/preview', async (req) => {
-    const { maps_link, name, lat, lng, city, category } = req.query;
+    const { maps_link, name, lat, lng, city, category, variant } = req.query;
 
     const parsedLat = lat != null ? parseFloat(lat) : undefined;
     const parsedLng = lng != null ? parseFloat(lng) : undefined;
+    const isBanner = variant === 'banner';
 
     let previewName: string | null = name?.trim() || null;
     let previewImage: string | null = null;
@@ -233,6 +235,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
           lng: Number.isFinite(parsedLng) ? parsedLng : undefined,
           city: city?.trim() || undefined,
           category: category?.trim() || undefined,
+          isBanner,
         },
         10
       );

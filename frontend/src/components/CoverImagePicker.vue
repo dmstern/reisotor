@@ -199,6 +199,35 @@ const suggestionStatusText = computed(() => {
   return `${suggestions.value.length} Vorschläge`;
 });
 
+function buildPreviewSearchParams(termOverride?: string): URLSearchParams {
+  const term = (termOverride !== undefined ? termOverride : searchQuery.value).trim();
+  const params = new URLSearchParams();
+  if (term) {
+    params.set('name', term);
+  }
+  if (props.searchContext?.city) {
+    params.set('city', props.searchContext.city);
+  }
+  if (props.searchContext?.category) {
+    params.set('category', props.searchContext.category);
+  }
+  if (props.searchContext?.lat != null) {
+    params.set('lat', String(props.searchContext.lat));
+  }
+  if (props.searchContext?.lng != null) {
+    params.set('lng', String(props.searchContext.lng));
+  }
+  if (props.variant) {
+    params.set('variant', props.variant);
+  }
+  if (!term || term === (props.searchContext?.name ?? '')) {
+    if (props.searchContext?.maps_link) {
+      params.set('maps_link', props.searchContext.maps_link);
+    }
+  }
+  return params;
+}
+
 async function executeSearch(queryOverride?: string, action: 'query' | 'next' = 'query') {
   if (isSearching.value || isUploading.value) return;
   const term = (queryOverride !== undefined ? queryOverride : searchQuery.value).trim();
@@ -211,27 +240,7 @@ async function executeSearch(queryOverride?: string, action: 'query' | 'next' = 
   searchMessage.value = null;
 
   try {
-    const params = new URLSearchParams();
-    if (term) {
-      params.set('name', term);
-    }
-    if (props.searchContext?.city) {
-      params.set('city', props.searchContext.city);
-    }
-    if (props.searchContext?.category) {
-      params.set('category', props.searchContext.category);
-    }
-    if (props.searchContext?.lat != null) {
-      params.set('lat', String(props.searchContext.lat));
-    }
-    if (props.searchContext?.lng != null) {
-      params.set('lng', String(props.searchContext.lng));
-    }
-    if (!term || term === (props.searchContext?.name ?? '')) {
-      if (props.searchContext?.maps_link) {
-        params.set('maps_link', props.searchContext.maps_link);
-      }
-    }
+    const params = buildPreviewSearchParams(queryOverride);
 
     const res = await api.get<{
       name: string | null;
@@ -268,27 +277,7 @@ async function fetchSuggestionsFromApi(termOverride?: string): Promise<number> {
   if (!term && (!props.searchContext || !props.searchContext.maps_link)) {
     return 0;
   }
-  const params = new URLSearchParams();
-  if (term) {
-    params.set('name', term);
-  }
-  if (props.searchContext?.city) {
-    params.set('city', props.searchContext.city);
-  }
-  if (props.searchContext?.category) {
-    params.set('category', props.searchContext.category);
-  }
-  if (props.searchContext?.lat != null) {
-    params.set('lat', String(props.searchContext.lat));
-  }
-  if (props.searchContext?.lng != null) {
-    params.set('lng', String(props.searchContext.lng));
-  }
-  if (!term || term === (props.searchContext?.name ?? '')) {
-    if (props.searchContext?.maps_link) {
-      params.set('maps_link', props.searchContext.maps_link);
-    }
-  }
+  const params = buildPreviewSearchParams(termOverride);
 
   const res = await api.get<{ name: string | null; imageUrl: string | null; images?: string[] }>(
     `/spots/preview?${params.toString()}`
@@ -561,6 +550,7 @@ function handleModalClose(visible: boolean) {
           ref="imageUrlInputRef"
           :model-value="modelValue"
           :trip-id="tripId"
+          :variant="variant"
           v-model:uploading="isUploading"
           @update:model-value="(val) => emit('update:modelValue', val)"
         />

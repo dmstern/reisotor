@@ -246,6 +246,7 @@ function onSubmit() {
         v-model="form.image_url"
         v-model:uploading="isUploadingCoverImage"
         :trip-id="props.tripId"
+        variant="banner"
         :placeholder-icon="ACTION_ICONS.vacation"
         modal-title="Dashboard-Banner bearbeiten"
         :modified="isImageModified"

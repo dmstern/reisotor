@@ -299,4 +299,28 @@ describe('imageCompression EXIF metadata preservation', () => {
     expect(parsed.Exif?.[piexif.ExifIFD.PixelXDimension]).toBe(800);
     expect(parsed.Exif?.[piexif.ExifIFD.PixelYDimension]).toBe(600);
   });
+
+  it('passt PixelDimensionen bei Banner-Auflösungen bis 2560px korrekt in den EXIF-Daten an', async () => {
+    const plainOriginal = await createTestJpeg({
+      width: 4000,
+      height: 2250,
+      exif: {
+        zeroth: { [piexif.ImageIFD.Make]: 'Sony' },
+        exif: {
+          [piexif.ExifIFD.PixelXDimension]: 4000,
+          [piexif.ExifIFD.PixelYDimension]: 2250,
+        },
+      },
+    });
+
+    const compressedBanner = await createTestJpeg({ width: 2560, height: 1440 });
+    const result = transferExif(plainOriginal, compressedBanner, {
+      width: 2560,
+      height: 1440,
+    });
+
+    const parsed = piexif.load(result);
+    expect(parsed.Exif?.[piexif.ExifIFD.PixelXDimension]).toBe(2560);
+    expect(parsed.Exif?.[piexif.ExifIFD.PixelYDimension]).toBe(1440);
+  });
 });

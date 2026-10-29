@@ -235,7 +235,36 @@ describe('CoverImagePicker component', () => {
     expect(api.get).toHaveBeenCalledWith(
       expect.stringContaining('/spots/preview?name=Eiffel+Tower')
     );
+    expect(api.get).toHaveBeenCalledWith(expect.stringContaining('variant=banner'));
     expect(onUpdateModelValue).toHaveBeenCalledWith('https://example.com/eiffel1.jpg');
+
+    cleanUp();
+  });
+
+  it('passes variant=polaroid when configured as polaroid variant', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Colosseum',
+      imageUrl: 'https://example.com/colosseum.jpg',
+      images: ['https://example.com/colosseum.jpg'],
+    });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      variant: 'polaroid',
+      searchContext: { name: 'Colosseum' },
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const nextBtn = document.querySelector(
+      '.browse-buttons button[title*="Nächstes Bild"]'
+    ) as HTMLButtonElement;
+    await nextBtn.click();
+    await nextTick();
+
+    expect(api.get).toHaveBeenCalledWith(expect.stringContaining('variant=polaroid'));
 
     cleanUp();
   });
