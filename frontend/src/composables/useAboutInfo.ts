@@ -14,21 +14,6 @@ export function useAboutInfo() {
   const buildInfoStore = useBuildInfoStore();
   const backendBuildInfo = computed(() => buildInfoStore.buildInfo);
 
-  const changelogContent = computed(() => {
-    const cl = backendBuildInfo.value?.changelog;
-    if (!cl) return '';
-    if (cl.groups && cl.groups.length > 0) {
-      return cl.groups
-        .map(
-          (g) =>
-            `#### ${g.title}\n\n` +
-            g.notes.map((note) => (note.startsWith('- ') ? note : `- ${note}`)).join('\n')
-        )
-        .join('\n\n');
-    }
-    return cl.notes.map((note) => (note.startsWith('- ') ? note : `- ${note}`)).join('\n');
-  });
-
   // Lokale Bindings statt der globalen __APP_*__-Konstanten direkt im Template: vue-tsc's
   // Template-Typprüfung löst per `define` gebackene Ambient-Globals dort nicht auf (versucht sie
   // stattdessen als Property der Komponenteninstanz zu finden).
@@ -40,7 +25,6 @@ export function useAboutInfo() {
     buildInfoStore,
     backendBuildInfo,
     formatBuildTime,
-    changelogContent,
     frontendVersion,
     frontendCommit,
     frontendBuiltAt,

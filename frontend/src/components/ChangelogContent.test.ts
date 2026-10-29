@@ -1,21 +1,26 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 import ChangelogContent from './ChangelogContent.vue';
 
 describe('ChangelogContent', () => {
   let container: HTMLDivElement;
+  let pinia: ReturnType<typeof createPinia>;
 
   beforeEach(() => {
     document.body.innerHTML = '';
     container = document.createElement('div');
     document.body.appendChild(container);
+    pinia = createPinia();
+    setActivePinia(pinia);
   });
 
   function mount(props: Record<string, unknown>) {
     const app = createApp({
       render: () => h(ChangelogContent, props),
     });
+    app.use(pinia);
     app.mount(container);
     return {
       cleanUp: () => {
@@ -50,11 +55,11 @@ describe('ChangelogContent', () => {
     expect(highlightGroup?.textContent).toContain('Highlights');
     expect(highlightGroup?.textContent).toContain('Top Feature');
 
-    // Big collapsible for all remaining groups
-    const collapsible = container.querySelector('details.changelog-all-details-collapsible');
+    // Collapsible primitive for all remaining groups
+    const collapsible = container.querySelector('.changelog-collapsible');
     expect(collapsible).not.toBeNull();
     expect(collapsible?.textContent).toContain('Alle weiteren Neuerungen');
-    expect(collapsible?.textContent).toContain('2 Änderungen in 2 Bereichen');
+    expect(collapsible?.textContent).not.toContain('Änderungen in');
 
     // Groups inside collapsible
     const otherGroups = collapsible?.querySelectorAll('.changelog-group');
@@ -81,7 +86,7 @@ describe('ChangelogContent', () => {
     await nextTick();
 
     expect(container.querySelector('.changelog-group--highlights')).toBeNull();
-    expect(container.querySelector('details.changelog-all-details-collapsible')).toBeNull();
+    expect(container.querySelector('.changelog-collapsible')).toBeNull();
     expect(container.querySelectorAll('.changelog-group')).toHaveLength(2);
 
     cleanUp();

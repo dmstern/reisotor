@@ -2,6 +2,9 @@
 import { computed } from 'vue';
 import type { ChangelogGroup } from '../api/types';
 import { formatInline } from '../utils/richText';
+import AppIcon from './AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 
 const props = defineProps<{
   groups?: ChangelogGroup[];
@@ -21,7 +24,7 @@ function parseNote(rawNote: string): { bullet: string; html: string } {
     };
   }
   return {
-    bullet: '✨',
+    bullet: '•',
     html: formatInline(clean),
   };
 }
@@ -51,10 +54,6 @@ const standardGroups = computed(() => {
   return allGroups.value;
 });
 
-const totalOtherNotesCount = computed(() => {
-  return otherGroups.value.reduce((sum, g) => sum + g.notes.length, 0);
-});
-
 const cleanNotes = computed(() => {
   const rawNotes = props.notes ?? [];
   return rawNotes.map((n) => (n.startsWith('- ') ? n.slice(2).trim() : n.trim())).filter(Boolean);
@@ -63,7 +62,7 @@ const cleanNotes = computed(() => {
 
 <template>
   <div class="changelog-content">
-    <!-- 1. Wenn Highlights vorhanden sind: Highlights direkt anzeigen -->
+    <!-- 1. Wenn Highlights vorhanden sind: Highlights prominent anzeigen -->
     <template v-if="highlightGroups.length > 0">
       <section
         v-for="group in highlightGroups"
@@ -71,7 +70,7 @@ const cleanNotes = computed(() => {
         class="changelog-group changelog-group--highlights"
       >
         <h4 class="changelog-group-title">
-          <span class="highlight-star" aria-hidden="true">🌟</span>
+          <AppIcon :icon="ACTION_ICONS.sparkles" :size="16" group="actions" />
           <span>{{ group.title }}</span>
         </h4>
         <ul class="changelog-list">
@@ -87,16 +86,13 @@ const cleanNotes = computed(() => {
         </ul>
       </section>
 
-      <!-- 2. Die restliche Liste aller weiteren Änderungen in einem großen Collapsible -->
-      <details v-if="otherGroups.length > 0" class="changelog-all-details-collapsible">
-        <summary class="changelog-all-details-summary">
-          <span class="summary-title-wrap">
-            <span class="changelog-collapsible-title">Alle weiteren Neuerungen &amp; Details</span>
-          </span>
-          <span class="changelog-collapsible-badge">
-            {{ totalOtherNotesCount }} Änderungen in {{ otherGroups.length }} Bereichen
-          </span>
-        </summary>
+      <!-- 2. Die restliche Liste aller weiteren Änderungen im Design-System-Collapsible -->
+      <CollapsibleFieldset
+        v-if="otherGroups.length > 0"
+        label="Alle weiteren Neuerungen &amp; Details"
+        :open-initial="false"
+        class="changelog-collapsible"
+      >
         <div class="changelog-other-groups">
           <section v-for="group in otherGroups" :key="group.title" class="changelog-group">
             <h4 class="changelog-group-title">{{ group.title }}</h4>
@@ -113,7 +109,7 @@ const cleanNotes = computed(() => {
             </ul>
           </section>
         </div>
-      </details>
+      </CollapsibleFieldset>
     </template>
 
     <!-- 3. Fallback für Gruppen ohne Highlights-Sektion -->
@@ -155,10 +151,11 @@ const cleanNotes = computed(() => {
 }
 
 .changelog-group--highlights {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(236, 72, 153, 0.04));
+  background: var(--color-primary-tint);
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-primary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   padding: var(--space-3);
   gap: var(--space-2);
 }
@@ -166,22 +163,18 @@ const cleanNotes = computed(() => {
 .changelog-group-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-text);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding-bottom: 2px;
-  border-bottom: 1px solid var(--color-border);
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .changelog-group--highlights .changelog-group-title {
   color: var(--color-primary);
-  font-size: 1rem;
-}
-
-.highlight-star {
-  font-size: 1.1rem;
+  border-bottom-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
 }
 
 .changelog-list {
@@ -195,27 +188,19 @@ const cleanNotes = computed(() => {
 
 .changelog-item {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   gap: var(--space-2);
-  font-size: 0.95rem;
-  line-height: 1.45;
+  font-size: 0.925rem;
+  line-height: 1.5;
   color: var(--color-text);
-  background: var(--color-surface-glass);
-  border: 1px solid var(--color-surface-glass-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-}
-
-.changelog-item--highlight {
-  background: var(--color-surface);
-  border-color: rgba(124, 58, 237, 0.25);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 2px 0;
 }
 
 .note-bullet {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   flex-shrink: 0;
   line-height: 1.4;
+  user-select: none;
 }
 
 .note-text {
@@ -227,60 +212,14 @@ const cleanNotes = computed(() => {
   color: var(--color-text);
 }
 
-/* Großes Collapsible für alle weiteren Änderungen */
-.changelog-all-details-collapsible {
+.changelog-collapsible {
   margin-top: var(--space-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-glass);
-  overflow: hidden;
-  transition: border-color var(--transition-fast, 150ms ease);
-}
-
-.changelog-all-details-collapsible[open] {
-  border-color: var(--color-primary);
-}
-
-.changelog-all-details-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-text);
-  user-select: none;
-  background: rgba(255, 255, 255, 0.03);
-  transition: background 150ms ease;
-}
-
-.changelog-all-details-summary:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.summary-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.changelog-collapsible-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  background: rgba(124, 58, 237, 0.15);
-  color: var(--color-primary);
-  white-space: nowrap;
 }
 
 .changelog-other-groups {
-  padding: var(--space-3);
+  padding-top: var(--space-2);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  border-top: 1px solid var(--color-border);
 }
 </style>

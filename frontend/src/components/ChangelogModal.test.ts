@@ -168,11 +168,11 @@ describe('ChangelogModal', () => {
     expect(highlightGroup?.textContent).toContain('Highlights');
     expect(highlightGroup?.textContent).toContain('Großes Feature');
 
-    const detailsEl = document.body.querySelector('details.changelog-all-details-collapsible');
-    expect(detailsEl).not.toBeNull();
-    expect(detailsEl?.textContent).toContain('Alle weiteren Neuerungen');
-    expect(detailsEl?.textContent).toContain('Weitere Verbesserungen & Fehlerbehebungen');
-    expect(detailsEl?.textContent).toContain('Stabilität');
+    const collapsibleEl = document.body.querySelector('.changelog-collapsible');
+    expect(collapsibleEl).not.toBeNull();
+    expect(collapsibleEl?.textContent).toContain('Alle weiteren Neuerungen');
+    expect(collapsibleEl?.textContent).toContain('Weitere Verbesserungen & Fehlerbehebungen');
+    expect(collapsibleEl?.textContent).toContain('Stabilität');
 
     cleanUp();
   });

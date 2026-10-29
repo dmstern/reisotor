@@ -60,7 +60,7 @@ function goToSettings() {
       </div>
 
       <div v-else-if="hasNotes" class="notes-container">
-        <p class="changelog-intro">Das ist neu in dieser Version:</p>
+        <h3 class="changelog-intro">Das ist neu in dieser Version:</h3>
         <div class="changelog-scroll-area">
           <ChangelogContent :groups="groups" :notes="notes" />
         </div>
