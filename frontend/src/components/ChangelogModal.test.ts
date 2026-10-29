@@ -132,6 +132,50 @@ describe('ChangelogModal', () => {
     cleanUp();
   });
 
+  it('renders highlight group prominently and collapsible group in details element', async () => {
+    const pwaUpdate = usePwaUpdateStore();
+    const buildInfoStore = useBuildInfoStore();
+    buildInfoStore.buildInfo = {
+      version: '2.0.0',
+      ref: 'abc',
+      builtAt: '2026-10-30T18:00:00Z',
+      changelog: {
+        version: '2.0.0',
+        date: '2026-10-30',
+        notes: ['🚀 **Großes Feature**: Highlight', '🛡️ **Stabilität**: Kleiner Fix'],
+        groups: [
+          {
+            title: 'Highlights',
+            notes: ['🚀 **Großes Feature**: Highlight'],
+          },
+          {
+            title: 'Weitere Verbesserungen & Fehlerbehebungen',
+            notes: ['🛡️ **Stabilität**: Kleiner Fix'],
+          },
+        ],
+      },
+      repoUrl: '',
+      hostingLocation: '',
+      environment: 'production',
+    };
+    pwaUpdate.showChangelogDialog = true;
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+
+    const highlightGroup = document.body.querySelector('.changelog-group--highlights');
+    expect(highlightGroup).not.toBeNull();
+    expect(highlightGroup?.textContent).toContain('Highlights');
+    expect(highlightGroup?.textContent).toContain('Großes Feature');
+
+    const detailsEl = document.body.querySelector('details.changelog-collapsible');
+    expect(detailsEl).not.toBeNull();
+    expect(detailsEl?.textContent).toContain('Weitere Verbesserungen & Fehlerbehebungen');
+    expect(detailsEl?.textContent).toContain('Stabilität');
+
+    cleanUp();
+  });
+
   it('renders fallback when no changelog notes exist', async () => {
     const pwaUpdate = usePwaUpdateStore();
     const buildInfoStore = useBuildInfoStore();

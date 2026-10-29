@@ -1,5 +1,0 @@
-### Dialoge & Bearbeiten
-
-- 📜 **Sanfte Scroll-Verläufe**: In langen Dialogen sowie in der Kategorienliste und dem Kategorie-Icon-Auswahldialog zeigt nun am oberen und unteren Rand ein dezenter Fade-Out-Verlauf in den Hintergrund an, sobald weiterer Inhalt durch Scrollen erreichbar ist – analog zum Tages-Strip oder der Tab-Leiste. Sobald das Ende erreicht ist oder der Dialog kurz ausfällt, verschwinden die Verläufe nahtlos.
-- 🧭 **Passgenaue Tab-Scroll-Verläufe**: Die seitlichen Scroll-Fades in horizontal scrollbaren Tab-Leisten (wie z. B. im Urlaub-Bearbeiten-Dialog) passen sich nun dynamisch dem jeweiligen Hintergrund an – egal ob auf helleren Dialog-Flächen oder dem normalen Seitenhintergrund.
-- ↩️ **Einheitliche Aktions-Buttons in Dialogen**: Alle Dialoge besitzen nun ein einheitliches, daumenfreundliches Button-Layout. Auf Smartphones sind alle Aktions-Buttons vertikal untereinander mit voller Breite angeordnet – mit dem Haupt-Aktionsbutton oben, gefolgt von „Abbrechen“ und destruktiven Aktionen wie dem Löschen sicher ganz unten. Zudem scrollen die Buttons nun im Dialoginhalt mit und verdecken keine Textfelder mehr dauerhaft.
