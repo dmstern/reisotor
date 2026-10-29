@@ -104,20 +104,20 @@ function onChange(event: Event) {
     background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Größen-Varianten */
+/* Größen-Varianten (Vielfache von 8 für perfekte Subpixel-/DPI-Skalierung bei 100%, 125%, 150%, 200%) */
 .radio--sm {
   width: 16px;
   height: 16px;
 }
 
 .radio--md {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .radio--lg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .radio:hover:not(:disabled):not(.is-disabled) {
@@ -130,10 +130,15 @@ function onChange(event: Event) {
 }
 
 /* Innerer Punkt: Zentriert via inset: 0 + margin: auto.
-   Weil der Außenring als inset-box-shadow statt CSS-Border gerendert wird,
-   bleibt die Content-Box exakt ganzzahlig (18px x 18px statt 14.8px mit 1.6px-Border)
-   und die Margins lösen sich zu sauberen ganzzahligen Pixeln auf (5px auf allen Seiten
-   bei radio--md: 2px Ring + 3px Luft + 8px Punkt + 3px Luft + 2px Ring = 18px). */
+   Weil der Außenring als inset-box-shadow statt CSS-Border gerendert wird und die
+   Außenmaße auf 8er-Potenzen basieren (16px für md mit 8px-Punkt, 24px für lg mit 12px-Punkt),
+   skalieren sowohl Container als auch Punkt bei allen gängigen Skalierungsfaktoren (100%,
+   125%, 150%, 200%) exakt zu geraden ganzzahligen physikalischen Pixeln:
+   - 100%: 16px Außen / 8px Punkt -> 4px Margin ringsum (2px Ring + 2px Luft)
+   - 125%: 20px Außen / 10px Punkt -> 5px Margin ringsum (2px Ring + 3px Luft)
+   - 150%: 24px Außen / 12px Punkt -> 6px Margin ringsum (3px Ring + 3px Luft)
+   - 200%: 32px Außen / 16px Punkt -> 8px Margin ringsum (4px Ring + 4px Luft)
+   Dadurch entstehen keinerlei Rundungsasymmetrien (kein 3px vs 4px Versatz). */
 .radio::after {
   content: '';
   position: absolute;
@@ -160,8 +165,8 @@ function onChange(event: Event) {
 }
 
 .radio--lg::after {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 .radio:checked::after,

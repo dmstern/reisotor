@@ -1344,6 +1344,10 @@ async function handleGenerateVapid() {
     border-color var(--transition-fast);
 }
 
+.mode-option :deep(.radio) {
+  margin-top: 2px;
+}
+
 .mode-option:hover {
   background: var(--color-hover);
 }
