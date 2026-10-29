@@ -643,4 +643,33 @@ describe('uploads Tabellen-Initialisierung und Backfill (#629)', () => {
       { filename: 'trip-cover.jpg', trip_id: 1, uploaded_by: null },
     ]);
   });
+
+  it('entfernt bei purgeAttachmentsForEntities auch die Einträge aus uploads', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-uploads-purge-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+    process.env.DB_PATH = dbPath;
+
+    const { db, purgeAttachmentsForEntities } = await import('../../src/db/index.js');
+    db.prepare("INSERT INTO users (id, username, password_hash) VALUES (1, 'u', 'p')").run();
+    db.prepare(
+      "INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Trip', '2026-06-01', '2026-06-10')"
+    ).run();
+    db.prepare("INSERT INTO spots (id, trip_id, title) VALUES (10, 1, 'Spot')").run();
+    db.prepare(
+      "INSERT INTO attachments (id, trip_id, domain, entity_id, filename, uploaded_by, original_name, mime_type, size_bytes, created_at) VALUES (1, 1, 'spots', 10, 'spot-doc.pdf', 1, 'doc.pdf', 'application/pdf', 100, datetime('now'))"
+    ).run();
+    db.prepare(
+      "INSERT INTO uploads (filename, trip_id, uploaded_by) VALUES ('spot-doc.pdf', 1, 1)"
+    ).run();
+
+    purgeAttachmentsForEntities('spots', [10]);
+
+    const remainingAttachments = db.prepare('SELECT * FROM attachments WHERE id = 1').all();
+    expect(remainingAttachments).toHaveLength(0);
+
+    const remainingUploads = db
+      .prepare("SELECT * FROM uploads WHERE filename = 'spot-doc.pdf'")
+      .all();
+    expect(remainingUploads).toHaveLength(0);
+  });
 });

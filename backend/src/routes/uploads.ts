@@ -14,14 +14,14 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Ungültiger Dateiname' });
     }
 
-    const records = getUploads(filename);
-    if (records.length === 0) {
-      return reply.code(404).send({ error: 'Nicht gefunden' });
-    }
-
     const userId = req.session.userId;
     if (!userId) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
+    }
+
+    const records = getUploads(filename);
+    if (records.length === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
     }
 
     const hasAccess = records.some((r) => {
