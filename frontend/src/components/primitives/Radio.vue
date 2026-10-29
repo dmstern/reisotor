@@ -88,7 +88,8 @@ function onChange(event: Event) {
   flex-shrink: 0;
   margin: 0;
   padding: 0;
-  border: 2px solid var(--color-border);
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
   cursor: pointer;
@@ -99,9 +100,8 @@ function onChange(event: Event) {
   box-sizing: border-box;
   vertical-align: middle;
   transition:
-    border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Größen-Varianten */
@@ -121,16 +121,19 @@ function onChange(event: Event) {
 }
 
 .radio:hover:not(:disabled):not(.is-disabled) {
-  border-color: var(--color-primary-light, var(--color-primary));
+  box-shadow: inset 0 0 0 2px var(--color-primary-light, var(--color-primary));
 }
 
 .radio:checked,
 .radio.is-checked {
-  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 
-/* Innerer Punkt: Zentriert via inset: 0 + margin: auto (verhindert Subpixel-Verschiebungen bei
-   translate(-50%, -50%) auf ungeraden Zoom-Stufen). Animiert rein über Scale und Opacity. */
+/* Innerer Punkt: Zentriert via inset: 0 + margin: auto.
+   Weil der Außenring als inset-box-shadow statt CSS-Border gerendert wird,
+   bleibt die Content-Box exakt ganzzahlig (18px x 18px statt 14.8px mit 1.6px-Border)
+   und die Margins lösen sich zu sauberen ganzzahligen Pixeln auf (5px auf allen Seiten
+   bei radio--md: 2px Ring + 3px Luft + 8px Punkt + 3px Luft + 2px Ring = 18px). */
 .radio::after {
   content: '';
   position: absolute;
@@ -176,6 +179,17 @@ function onChange(event: Event) {
 .radio.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media (forced-colors: active) {
+  .radio {
+    border: 2px solid CanvasText;
+  }
+
+  .radio:checked,
+  .radio.is-checked {
+    border-color: Highlight;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
