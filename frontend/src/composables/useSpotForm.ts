@@ -590,6 +590,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (extra?.lng != null) params.set('lng', String(extra.lng));
       if (extra?.city) params.set('city', extra.city);
       if (extra?.category) params.set('category', extra.category);
+      params.set('variant', 'polaroid');
 
       const preview = await api.get<{
         name: string | null;

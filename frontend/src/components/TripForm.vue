@@ -245,6 +245,7 @@ function onSubmit() {
       <CoverImagePicker
         v-model="form.image_url"
         v-model:uploading="isUploadingCoverImage"
+        variant="banner"
         :placeholder-icon="ACTION_ICONS.vacation"
         modal-title="Dashboard-Banner bearbeiten"
         :modified="isImageModified"

@@ -6,3 +6,4 @@
 - 🃏 **Taktile Reisekarten**: Reisen in der Übersicht besitzen haptische Hover- und Klick-Feedbacks für eine flüssige Bedienung.
 - 🗑️ **Papierkorb pro Reise**: Gelöschte Elemente werden nun direkt über das Reise-Dashboard verwaltet, sodass alle Reiseteilnehmer gelöschte Einträge einsehen und wiederherstellen können.
 - 👥 **Zugriffsberechtigungen im Bearbeiten-Dialog**: Die Verwaltung von Mitreisenden und Zugriffsberechtigungen befindet sich nun übersichtlich als eigener Tab im Bearbeiten-Dialog jedes Urlaubs statt als separates Icon im Urlaub-Wechsler.
+- 🖼️ **Scharfe Urlaubsbanner**: Titelbilder für Reisen werden aus der Bildersuche nun in hochauflösender Originalqualität geladen und dargestellt, sodass der Urlaubsbanner auf dem Dashboard auch auf großen Bildschirmen gestochen scharf erscheint.

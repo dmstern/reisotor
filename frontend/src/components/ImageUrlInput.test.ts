@@ -234,4 +234,32 @@ describe('ImageUrlInput component', () => {
 
     cleanUp();
   });
+
+  it('passes maxDimension 2560 to compressImage when variant is banner', async () => {
+    vi.mocked(imageCompression.compressImage).mockResolvedValueOnce(
+      'data:image/jpeg;base64,bannerdata'
+    );
+    vi.mocked(api.post).mockResolvedValueOnce({ url: '/api/uploads/banner.jpg' });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      variant: 'banner',
+    });
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const testFile = new File(['dummy banner content'], 'banner.jpg', { type: 'image/jpeg' });
+
+    Object.defineProperty(fileInput, 'files', {
+      value: [testFile],
+      configurable: true,
+    });
+    fileInput.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    expect(imageCompression.compressImage).toHaveBeenCalledWith(testFile, {
+      maxDimension: 2560,
+    });
+
+    cleanUp();
+  });
 });
