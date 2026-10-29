@@ -455,7 +455,7 @@ async function handleGenerateVapid() {
         </Alert>
 
         <Alert
-          v-else-if="!regForm.requireEmailVerification"
+          v-else-if="regForm.registrationMode !== 'off' && !regForm.requireEmailVerification"
           variant="info"
           size="sm"
           class="reg-email-alert"
