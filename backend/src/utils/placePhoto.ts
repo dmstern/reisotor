@@ -331,7 +331,7 @@ async function resolveImageInfo(
   });
   const info = (pages[0] as { imageinfo?: Array<{ thumburl?: string; url?: string }> })
     ?.imageinfo?.[0];
-  const url = isBanner ? info?.url || info?.thumburl : info?.thumburl || info?.url;
+  const url = info?.thumburl || info?.url;
   return url && isSafeUrl(url) ? url : null;
 }
 
@@ -340,15 +340,11 @@ async function extractPhotoFromPage(
   page: WikiPage,
   isBanner = false
 ): Promise<string | null> {
-  // Für Banner: Wenn Originalbild vorhanden und ein echtes Foto ist, vor dem verkleinerten Thumbnail bevorzugen
-  if (isBanner && page.original?.source) {
-    const isPhoto = isGoodPhoto(page.pageimage || page.original.source);
-    if (isPhoto && isSafeUrl(page.original.source)) {
-      return page.original.source;
-    }
-  }
-
   // 1. Wenn thumbnail existiert und ein echtes Foto ist
+  // Hinweis: thumbnail wird via pithumbsize: isBanner ? '2000' : '1000' in passender Größe angefordert
+  // (bei Wikipedia skaliert der Thumbnail-Dienst das Bild serverseitig sauber auf 2000px).
+  // Dies verhindert das Laden gigantischer Originaldateien (> 50 MB), die das serverseitige Limit
+  // (MAX_REMOTE_IMAGE_BYTES = 5 MB) überschreiten und /images/proxy mit HTTP 502 fehlschlagen lassen.
   if (page.thumbnail?.source) {
     const isPhoto = isGoodPhoto(page.pageimage || page.thumbnail.source);
     if (isPhoto && isSafeUrl(page.thumbnail.source)) {
@@ -356,7 +352,15 @@ async function extractPhotoFromPage(
     }
   }
 
-  // 2. Falls Thumbnail ein SVG/Logo war: Erstes passendes Foto aus den Seiten-Bildern ermitteln
+  // 2. Fallback: Originalbild, falls thumbnail fehlt
+  if (page.original?.source) {
+    const isPhoto = isGoodPhoto(page.pageimage || page.original.source);
+    if (isPhoto && isSafeUrl(page.original.source)) {
+      return page.original.source;
+    }
+  }
+
+  // 3. Falls Thumbnail ein SVG/Logo war: Erstes passendes Foto aus den Seiten-Bildern ermitteln
   if (Array.isArray(page.images) && page.images.length > 0) {
     const photoImg = page.images.find((img) => isGoodPhoto(img.title));
     if (photoImg) {
@@ -698,7 +702,7 @@ async function queryCommonsImages(
       }
 
       const info = page.imageinfo?.[0];
-      const candidate = isBanner ? info?.url || info?.thumburl : info?.thumburl || info?.url;
+      const candidate = info?.thumburl || info?.url;
       if (candidate && isSafeUrl(candidate) && isGoodPhoto(candidate) && !seen.has(candidate)) {
         seen.add(candidate);
         photos.push(candidate);

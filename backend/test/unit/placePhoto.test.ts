@@ -535,6 +535,47 @@ describe('placePhoto utility', () => {
       expect(spotPhoto).toBe('https://ts2.mm.bing.net/th?id=OIP.thumb&w=1000');
     });
 
+    it('requests 2000px thumbnails for Wikipedia/Commons banners and prefers thumbnails over oversized originals', async () => {
+      let requestedWikiUrl = '';
+      const fetchMock = vi.fn((url: string) => {
+        if (url.includes('bing.com') || url.includes('duckduckgo.com')) {
+          return Promise.resolve({ ok: true, text: () => Promise.resolve('') });
+        }
+        if (url.includes('wikipedia.org') && url.includes('generator=search')) {
+          requestedWikiUrl = url;
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                query: {
+                  pages: {
+                    '1': {
+                      title: 'Neuschwanstein',
+                      thumbnail: {
+                        source: 'https://thumb.wikimedia.org/2000px-neuschwanstein.jpg',
+                      },
+                      original: {
+                        source: 'https://upload.wikimedia.org/huge-raw-camera-file-60mb.jpg',
+                      },
+                    },
+                  },
+                },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const bannerPhoto = await fetchPlacePhoto({
+        name: 'Neuschwanstein',
+        isBanner: true,
+      });
+
+      expect(requestedWikiUrl).toContain('pithumbsize=2000');
+      expect(bannerPhoto).toBe('https://thumb.wikimedia.org/2000px-neuschwanstein.jpg');
+    });
+
     it('falls back to murl if Bing turl is missing or invalid', async () => {
       vi.stubGlobal(
         'fetch',

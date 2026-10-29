@@ -188,5 +188,28 @@ describe('spots route coordinate preservation', () => {
       expect(Array.isArray(data.images)).toBe(true);
       expect(data.images).toEqual([]);
     });
+
+    it('accepts variant=banner parameter and handles banner requests', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve(''),
+            json: () => Promise.resolve({ query: { pages: [] } }),
+          })
+        )
+      );
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/spots/preview?name=Lissabon&variant=banner',
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const data = res.json();
+      expect(data.name).toBe('Lissabon');
+      expect(Array.isArray(data.images)).toBe(true);
+    });
   });
 });
