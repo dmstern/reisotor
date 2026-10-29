@@ -589,3 +589,87 @@ describe('instance_settings und remote_image_cache Tabellen-Initialisierung', ()
     expect(userCols.some((c) => c.name === 'is_email_verified')).toBe(true);
   });
 });
+
+describe('uploads Tabellen-Initialisierung und Backfill (#629)', () => {
+  let dbPath: string | undefined;
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.DB_PATH;
+    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+  });
+
+  it('erstellt uploads-Tabelle und migriert bestehende Attachments, Spots und Tagebuchbilder', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-uploads-migration-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    // Altes Schema simulieren
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password_hash TEXT);
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT, start_date TEXT, end_date TEXT, image_url TEXT);
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT, image_url TEXT, created_by INTEGER);
+      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT, image_url TEXT, created_by INTEGER);
+      CREATE TABLE attachments (id INTEGER PRIMARY KEY, trip_id INTEGER, domain TEXT, entity_id INTEGER, filename TEXT, uploaded_by INTEGER, created_at TEXT);
+      CREATE TABLE diary_entries (id INTEGER PRIMARY KEY, trip_id INTEGER, author_id INTEGER, images TEXT, created_at TEXT);
+
+      INSERT INTO users (id, username, password_hash) VALUES (2, 'u2', 'p');
+      INSERT INTO users (id, username, password_hash) VALUES (3, 'u3', 'p');
+      INSERT INTO users (id, username, password_hash) VALUES (4, 'u4', 'p');
+      INSERT INTO users (id, username, password_hash) VALUES (5, 'u5', 'p');
+      INSERT INTO trips (id, name, image_url) VALUES (1, 'Trip 1', '/api/uploads/trip-cover.jpg');
+      INSERT INTO spots (id, trip_id, title, image_url, created_by) VALUES (10, 1, 'Spot 1', '/api/uploads/spot-cover.jpg', 2);
+      INSERT INTO ideas (id, trip_id, title, image_url, created_by) VALUES (20, 1, 'Idea 1', '/api/uploads/idea-cover.jpg', 3);
+      INSERT INTO attachments (id, trip_id, filename, uploaded_by, created_at) VALUES (30, 1, 'ticket.pdf', 4, '2026-06-01');
+      INSERT INTO diary_entries (id, trip_id, author_id, images) VALUES (40, 1, 5, '[{"url": "/api/uploads/diary-photo.png"}]');
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const uploads = db
+      .prepare('SELECT filename, trip_id, uploaded_by FROM uploads ORDER BY filename ASC')
+      .all() as { filename: string; trip_id: number | null; uploaded_by: number | null }[];
+
+    expect(uploads).toEqual([
+      { filename: 'diary-photo.png', trip_id: 1, uploaded_by: 5 },
+      { filename: 'idea-cover.jpg', trip_id: 1, uploaded_by: 3 },
+      { filename: 'spot-cover.jpg', trip_id: 1, uploaded_by: 2 },
+      { filename: 'ticket.pdf', trip_id: 1, uploaded_by: 4 },
+      { filename: 'trip-cover.jpg', trip_id: 1, uploaded_by: null },
+    ]);
+  });
+
+  it('entfernt bei purgeAttachmentsForEntities auch die Einträge aus uploads', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-uploads-purge-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+    process.env.DB_PATH = dbPath;
+
+    const { db, purgeAttachmentsForEntities } = await import('../../src/db/index.js');
+    db.prepare("INSERT INTO users (id, username, password_hash) VALUES (1, 'u', 'p')").run();
+    db.prepare(
+      "INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Trip', '2026-06-01', '2026-06-10')"
+    ).run();
+    db.prepare("INSERT INTO spots (id, trip_id, title) VALUES (10, 1, 'Spot')").run();
+    db.prepare(
+      "INSERT INTO attachments (id, trip_id, domain, entity_id, filename, uploaded_by, original_name, mime_type, size_bytes, created_at) VALUES (1, 1, 'spots', 10, 'spot-doc.pdf', 1, 'doc.pdf', 'application/pdf', 100, datetime('now'))"
+    ).run();
+    db.prepare(
+      "INSERT INTO uploads (filename, trip_id, uploaded_by) VALUES ('spot-doc.pdf', 1, 1)"
+    ).run();
+
+    purgeAttachmentsForEntities('spots', [10]);
+
+    const remainingAttachments = db.prepare('SELECT * FROM attachments WHERE id = 1').all();
+    expect(remainingAttachments).toHaveLength(0);
+
+    const remainingUploads = db
+      .prepare("SELECT * FROM uploads WHERE filename = 'spot-doc.pdf'")
+      .all();
+    expect(remainingUploads).toHaveLength(0);
+  });
+});

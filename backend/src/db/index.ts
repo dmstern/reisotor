@@ -860,7 +860,13 @@ export function purgeAttachmentsForEntities(domain: string, entityIds: number[])
     domain,
     ...entityIds
   );
+  const deleteUploadStmt = db.prepare('DELETE FROM uploads WHERE filename = ?');
   for (const row of rows) {
+    try {
+      deleteUploadStmt.run(row.filename);
+    } catch {
+      // Ignorieren falls uploads-Tabelle noch nicht existiert
+    }
     try {
       fs.unlinkSync(path.join(uploadsDir, row.filename));
     } catch {
@@ -1985,6 +1991,121 @@ db.exec(`
 `);
 
 ensureColumn('email_verification_tokens', 'pending_email', 'TEXT');
+
+// Zentrales Upload-Register für Bild- und Dateianhänge (Issue #629):
+// Erlaubt performante Autorisierungsprüfungen (Urlaubs-Mitgliedschaft) beim Ausliefern von /api/uploads/*
+db.exec(`
+  CREATE TABLE IF NOT EXISTS uploads (
+    id INTEGER PRIMARY KEY,
+    filename TEXT NOT NULL,
+    trip_id INTEGER REFERENCES trips(id) ON DELETE CASCADE,
+    uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_uploads_filename_trip ON uploads (filename, trip_id);
+  CREATE INDEX IF NOT EXISTS idx_uploads_filename ON uploads (filename);
+  CREATE INDEX IF NOT EXISTS idx_uploads_trip ON uploads (trip_id);
+`);
+
+try {
+  const uploadsCount = (
+    db.prepare('SELECT COUNT(*) as count FROM uploads').get() as { count: number }
+  ).count;
+
+  // Backfill nur ausführen, wenn die uploads-Tabelle noch leer ist (Startup-Performance #629)
+  if (uploadsCount === 0) {
+    // 1. Dateianhänge (attachments)
+    db.exec(`
+    INSERT OR IGNORE INTO uploads (filename, trip_id, uploaded_by, created_at)
+    SELECT
+      a.filename,
+      a.trip_id,
+      CASE WHEN u.id IS NOT NULL THEN a.uploaded_by ELSE NULL END,
+      a.created_at
+    FROM attachments a
+    JOIN trips t ON a.trip_id = t.id
+    LEFT JOIN users u ON a.uploaded_by = u.id
+    WHERE a.filename IS NOT NULL AND a.filename != '';
+  `);
+
+    // 2. Spots (image_url)
+    db.exec(`
+    INSERT OR IGNORE INTO uploads (filename, trip_id, uploaded_by, created_at)
+    SELECT
+      substr(s.image_url, 14),
+      s.trip_id,
+      CASE WHEN u.id IS NOT NULL THEN s.created_by ELSE NULL END,
+      datetime('now')
+    FROM spots s
+    JOIN trips t ON s.trip_id = t.id
+    LEFT JOIN users u ON s.created_by = u.id
+    WHERE s.image_url LIKE '/api/uploads/%';
+  `);
+
+    // 3. Ideas / Touren (image_url)
+    db.exec(`
+    INSERT OR IGNORE INTO uploads (filename, trip_id, uploaded_by, created_at)
+    SELECT
+      substr(i.image_url, 14),
+      i.trip_id,
+      CASE WHEN u.id IS NOT NULL THEN i.created_by ELSE NULL END,
+      datetime('now')
+    FROM ideas i
+    JOIN trips t ON i.trip_id = t.id
+    LEFT JOIN users u ON i.created_by = u.id
+    WHERE i.image_url LIKE '/api/uploads/%';
+  `);
+
+    // 4. Trips (image_url)
+    db.exec(`
+    INSERT OR IGNORE INTO uploads (filename, trip_id, uploaded_by, created_at)
+    SELECT substr(t.image_url, 14), t.id, NULL, datetime('now')
+    FROM trips t
+    WHERE t.image_url LIKE '/api/uploads/%';
+  `);
+
+    // 5. Tagebucheinträge (diary_entries.images als JSON-Array)
+    const diaryEntriesWithImages = db
+      .prepare(
+        `
+      SELECT
+        d.trip_id,
+        CASE WHEN u.id IS NOT NULL THEN d.author_id ELSE NULL END AS author_id,
+        d.images
+      FROM diary_entries d
+      JOIN trips t ON d.trip_id = t.id
+      LEFT JOIN users u ON d.author_id = u.id
+      WHERE d.images IS NOT NULL AND d.images != ''
+    `
+      )
+      .all() as { trip_id: number; author_id: number | null; images: string }[];
+
+    const insertUploadStmt = db.prepare(
+      "INSERT OR IGNORE INTO uploads (filename, trip_id, uploaded_by, created_at) VALUES (?, ?, ?, datetime('now'))"
+    );
+
+    for (const entry of diaryEntriesWithImages) {
+      try {
+        const parsed = JSON.parse(entry.images);
+        if (Array.isArray(parsed)) {
+          for (const img of parsed) {
+            const url = typeof img === 'string' ? img : img?.url;
+            if (typeof url === 'string' && url.startsWith('/api/uploads/')) {
+              const filename = url.slice('/api/uploads/'.length);
+              if (filename) {
+                insertUploadStmt.run(filename, entry.trip_id, entry.author_id);
+              }
+            }
+          }
+        }
+      } catch {
+        // Ungültiges JSON ignorieren
+      }
+    }
+  }
+} catch {
+  // Fehler beim Backfill tolerieren
+}
 
 /**
  * Leert alle Anwendungs-Tabellen in der Datenbank und setzt Auto-Inkrement-Sequenzen zurück.

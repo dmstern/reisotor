@@ -4,6 +4,7 @@ import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 import { localizeImageUrl } from '../utils/remoteImage.js';
+import { associateUploadWithTrip } from '../uploadRegistry.js';
 import { isUserRestricted } from '../registrationConfig.js';
 
 // role/transport_type/... (#176): eine Tour mit gesetzter role ist die ehemalige Reise-Etappe
@@ -589,6 +590,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const localImageUrl = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+    if (localImageUrl?.startsWith('/api/uploads/')) {
+      associateUploadWithTrip(
+        localImageUrl.slice('/api/uploads/'.length),
+        trip_id,
+        req.session.userId
+      );
+    }
     const result = insertIdeaStmt.run(
       trip_id,
       title,
@@ -674,6 +682,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const localImageUrl = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+    if (localImageUrl?.startsWith('/api/uploads/')) {
+      associateUploadWithTrip(
+        localImageUrl.slice('/api/uploads/'.length),
+        existingIdea.trip_id,
+        req.session.userId
+      );
+    }
     const result = updateIdeaStmt.run(
       title,
       localImageUrl ?? null,

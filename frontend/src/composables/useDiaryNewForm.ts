@@ -35,7 +35,7 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
   const contentTouched = ref(false);
   const dateTouched = ref(false);
 
-  const upload = useDiaryImageUpload();
+  const upload = useDiaryImageUpload({ tripId });
 
   const isContentEmpty = computed(() => isEmptyRichText(form.value.content));
   const showContentError = computed(() => contentTouched.value && isContentEmpty.value);

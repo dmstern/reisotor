@@ -7,6 +7,7 @@ import { uploadsDir } from '../uploads.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { isUserRestricted } from '../registrationConfig.js';
+import { registerUpload, deleteUpload } from '../uploadRegistry.js';
 
 export type AttachmentDomain =
   'ideas' | 'spots' | 'notes' | 'schedule' | 'budget' | 'excursion_legs';
@@ -163,6 +164,7 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
         req.session.userId,
         new Date().toISOString()
       );
+    registerUpload(storedFilename, tripId, req.session.userId!);
     recordActivity(tripId, domain, entity_id, 'attachment_added', req.session.userId!);
     reply.code(201);
     const row = db
@@ -194,6 +196,7 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
     if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
 
     db.prepare('DELETE FROM attachments WHERE id = ?').run(req.params.id);
+    deleteUpload(existing.filename);
     await unlink(path.join(uploadsDir, existing.filename)).catch(() => {});
     recordActivity(
       existing.trip_id,

@@ -3,6 +3,7 @@ import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
 import { fetchPlacePhotos } from '../utils/placePhoto.js';
 import { localizeImageUrl } from '../utils/remoteImage.js';
+import { associateUploadWithTrip } from '../uploadRegistry.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
@@ -266,6 +267,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     image_url = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+    if (image_url?.startsWith('/api/uploads/')) {
+      associateUploadWithTrip(image_url.slice('/api/uploads/'.length), trip_id, req.session.userId);
+    }
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
@@ -333,6 +337,13 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     image_url = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+    if (image_url?.startsWith('/api/uploads/')) {
+      associateUploadWithTrip(
+        image_url.slice('/api/uploads/'.length),
+        existing.trip_id,
+        req.session.userId
+      );
+    }
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;

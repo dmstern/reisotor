@@ -61,6 +61,7 @@ const props = withDefaults(
     initialValue?: string;
     searchContext?: ImageSearchContext;
     initialSuggestions?: string[];
+    tripId?: number;
   }>(),
   {
     modelValue: '',
@@ -548,6 +549,7 @@ function handleModalClose(visible: boolean) {
         <ImageUrlInput
           ref="imageUrlInputRef"
           :model-value="modelValue"
+          :trip-id="tripId"
           :variant="variant"
           v-model:uploading="isUploading"
           @update:model-value="(val) => emit('update:modelValue', val)"

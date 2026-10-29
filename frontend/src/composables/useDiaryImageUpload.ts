@@ -1,4 +1,11 @@
-import { getCurrentInstance, onUnmounted, ref, type Ref } from 'vue';
+import {
+  getCurrentInstance,
+  onUnmounted,
+  ref,
+  toValue,
+  type MaybeRefOrGetter,
+  type Ref,
+} from 'vue';
 import { api } from '../api/client';
 import type { DiaryImage } from '../api/types';
 import { compressImage, isHeicFile } from '../utils/imageCompression';
@@ -17,7 +24,13 @@ export interface UseDiaryImageUploadReturn {
   removeImage: (target: { images: DiaryImage[] }, index: number) => void;
 }
 
-export function useDiaryImageUpload(): UseDiaryImageUploadReturn {
+export interface UseDiaryImageUploadOptions {
+  tripId?: MaybeRefOrGetter<number | undefined>;
+}
+
+export function useDiaryImageUpload(
+  options?: UseDiaryImageUploadOptions
+): UseDiaryImageUploadReturn {
   const uploading = ref(false);
   const uploadError = ref('');
   const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -68,11 +81,13 @@ export function useDiaryImageUpload(): UseDiaryImageUploadReturn {
         const filename = isHeicFile(file)
           ? file.name.replace(/\.(heic|heif)$/i, '.jpg')
           : file.name;
+        const rawTripId = toValue(options?.tripId);
         const res = await api.post<{ url: string; original_name?: string }>(
           '/diary/images',
           {
             data: compressed,
             filename,
+            ...(rawTripId ? { trip_id: rawTripId } : {}),
           },
           { signal: controller.signal }
         );
