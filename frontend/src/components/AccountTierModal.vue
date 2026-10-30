@@ -67,7 +67,7 @@ const featureNotice = computed(() => {
       return {
         title: 'Mitglieder einladen',
         description:
-          'Im Basis-Konto können bis zu 3 Personen an einem Urlaub teilnehmen. Mit Reisotor Plus kannst du unbegrenzt viele Mitreisende einladen.',
+          'Im Basis-Konto können bis zu 3 Personen an einem Urlaub teilnehmen. Sobald mindestens eine Person mit Plus-Status teilnimmt, entfällt das Limit für alle (Sponsor-Prinzip).',
       };
     case 'uploads':
       return {
@@ -187,7 +187,7 @@ function close() {
               <strong>Mitglieder pro Urlaub</strong>
               <span>{{
                 auth.user?.restricted
-                  ? 'Maximal 3 Personen in eigenen Urlauben (Plus: unbegrenzt)'
+                  ? 'Maximal 3 Personen ohne Sponsor (Plus: unbegrenzt)'
                   : 'Unbegrenzt viele Mitreisende einladen'
               }}</span>
             </div>
