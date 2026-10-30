@@ -764,4 +764,34 @@ describe('todo_items.period Migration & Persistenz', () => {
     };
     expect(row.period).toBeNull();
   });
+
+  it('ergänzt last_login_at additiv auf der users Tabelle einer legacy DB', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-users-last-login-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL);
+      INSERT INTO users (id, username, password_hash) VALUES (1, 'legacy_user', 'hash');
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
+    expect(columns.some((c) => c.name === 'last_login_at')).toBe(true);
+    expect(columns.some((c) => c.name === 'is_locked')).toBe(true);
+
+    const row = db
+      .prepare('SELECT id, username, last_login_at, is_locked FROM users WHERE id = 1')
+      .get() as {
+      id: number;
+      username: string;
+      last_login_at: string | null;
+      is_locked: number;
+    };
+    expect(row.last_login_at).toBeNull();
+    expect(row.is_locked).toBe(0);
+  });
 });

@@ -40,6 +40,16 @@ watch(
   }
 );
 
+watch(
+  () => props.result,
+  (res) => {
+    if (res?.temporaryPassword) {
+      void copyToClipboard(res.temporaryPassword, 'password');
+    }
+  },
+  { immediate: true }
+);
+
 function close() {
   emit('update:modelValue', false);
   emit('close');
@@ -58,15 +68,16 @@ function handleReset() {
   }
 }
 
-async function copyToClipboard(text: string, type: 'password' | 'link') {
+async function copyToClipboard(text?: string | null, type?: 'password' | 'link') {
+  if (!text) return;
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard?.writeText(text);
     if (type === 'password') {
       copiedPassword.value = true;
       setTimeout(() => {
         copiedPassword.value = false;
       }, 2000);
-    } else {
+    } else if (type === 'link') {
       copiedLink.value = true;
       setTimeout(() => {
         copiedLink.value = false;
@@ -148,6 +159,7 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
             size="sm"
             variant="secondary"
             class="copy-btn"
+            :disabled="!result.temporaryPassword"
             @click="copyToClipboard(result.temporaryPassword, 'password')"
           >
             <AppIcon
@@ -168,6 +180,7 @@ async function copyToClipboard(text: string, type: 'password' | 'link') {
             size="sm"
             variant="secondary"
             class="copy-btn"
+            :disabled="!result.resetUrl"
             @click="copyToClipboard(result.resetUrl, 'link')"
           >
             <AppIcon

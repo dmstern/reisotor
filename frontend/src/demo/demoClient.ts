@@ -419,6 +419,50 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       return structuredClone(user) as unknown as T;
     }
   }
+  const roleMatch = /^\/users\/(\d+)\/role$/.exec(basePath);
+  if (roleMatch && method === 'PUT') {
+    const targetId = Number(roleMatch[1]);
+    const user = currentDemoUsers.find((u) => u.id === targetId);
+    if (user) {
+      const role = (body?.role as string) ?? 'plus';
+      user.is_admin = role === 'admin';
+      user.is_restricted = role === 'restricted';
+      user.restricted = role === 'restricted';
+      return structuredClone(user) as unknown as T;
+    }
+  }
+  const resetPasswordMatch = /^\/users\/(\d+)\/reset-password$/.exec(basePath);
+  if (resetPasswordMatch && method === 'POST') {
+    const targetId = Number(resetPasswordMatch[1]);
+    const user = currentDemoUsers.find((u) => u.id === targetId);
+    const tempPw =
+      (body?.temporaryPassword as string)?.trim() || `Demo-${Math.random().toString(36).slice(-6)}`;
+    return {
+      temporaryPassword: tempPw,
+      resetUrl: `${window.location.origin}/reset-password?token=demo-token-${targetId}`,
+      emailSent: false,
+      username: user?.username ?? 'demo-user',
+      message: 'Passwort erfolgreich zurückgesetzt',
+    } as unknown as T;
+  }
+  const verifyEmailMatch = /^\/users\/(\d+)\/verify-email$/.exec(basePath);
+  if (verifyEmailMatch && method === 'POST') {
+    const targetId = Number(verifyEmailMatch[1]);
+    const user = currentDemoUsers.find((u) => u.id === targetId);
+    if (user) {
+      user.is_email_verified = true;
+      return { success: true, is_email_verified: true } as unknown as T;
+    }
+  }
+  const lockMatch = /^\/users\/(\d+)\/lock$/.exec(basePath);
+  if (lockMatch && method === 'PUT') {
+    const targetId = Number(lockMatch[1]);
+    const user = currentDemoUsers.find((u) => u.id === targetId);
+    if (user) {
+      user.is_locked = Boolean(body?.is_locked);
+      return structuredClone(user) as unknown as T;
+    }
+  }
   const deleteUserMatch = /^\/users\/(\d+)$/.exec(basePath);
   if (deleteUserMatch && method === 'DELETE') {
     const targetId = Number(deleteUserMatch[1]);

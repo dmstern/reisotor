@@ -101,6 +101,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
     email: 'mia@example.com',
     is_admin: true,
     must_change_password: false,
+    last_login_at: nowIso,
   };
   const DEMO_PARTNER: User = {
     id: 2,
@@ -109,6 +110,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
     email: 'jo@example.com',
     is_admin: false,
     must_change_password: false,
+    last_login_at: addDays(-2),
   };
   const DEMO_USER_3: User = {
     id: 3,
@@ -117,6 +119,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
     email: 'alex@example.com',
     is_admin: false,
     must_change_password: false,
+    last_login_at: null,
   };
   const DEMO_USERS: User[] = [DEMO_USER, DEMO_PARTNER, DEMO_USER_3];
 

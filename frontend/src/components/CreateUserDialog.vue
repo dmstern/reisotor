@@ -1,10 +1,15 @@
+<script lang="ts">
+export type UserRole = 'restricted' | 'plus' | 'admin';
+export const STORAGE_KEY_REMEMBER_ROLE = 'reisotor_admin_last_created_user_role';
+</script>
+
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import Input from './primitives/Input.vue';
-
+import Select from './primitives/Select.vue';
 import CheckboxCard from './primitives/CheckboxCard.vue';
 import FormField from './FormField.vue';
 import PasswordInput from './PasswordInput.vue';
@@ -22,10 +27,25 @@ const emit = defineEmits<{
 const username = ref('');
 const email = ref('');
 const password = ref('');
-const isAdmin = ref(false);
+const role = ref<UserRole>('restricted');
+const rememberRole = ref(false);
 const avatar = ref('🙂');
 const submitting = ref(false);
 const error = ref('');
+
+const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
+  { value: 'restricted', label: 'Basis-Konto' },
+  { value: 'plus', label: 'Reisotor Plus' },
+  { value: 'admin', label: 'Administrator:in' },
+];
+
+const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  restricted: 'Eingeschränkte Rechte: kein Datei-Upload, maximal 1 selbst angelegter Urlaub.',
+  plus: 'Voller Zugriff auf alle Urlaubs- und Planungsfunktionen sowie Datei-Uploads.',
+  admin: 'Volle Systemrechte inkl. Instanzeinstellungen und Nutzerverwaltung.',
+};
+
+const currentRoleHint = computed(() => ROLE_DESCRIPTIONS[role.value] ?? '');
 
 const AVATAR_OPTIONS = [
   '🙂',
@@ -44,11 +64,26 @@ const AVATAR_OPTIONS = [
   '🐶',
 ];
 
+function initRoleFromStorage() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_REMEMBER_ROLE) as UserRole | null;
+    if (saved && (saved === 'restricted' || saved === 'plus' || saved === 'admin')) {
+      role.value = saved;
+      rememberRole.value = true;
+      return;
+    }
+  } catch {
+    // localStorage might be unavailable
+  }
+  role.value = 'restricted';
+  rememberRole.value = false;
+}
+
 function resetForm() {
   username.value = '';
   email.value = '';
   password.value = '';
-  isAdmin.value = false;
+  initRoleFromStorage();
   avatar.value = '🙂';
   error.value = '';
 }
@@ -79,6 +114,16 @@ async function submit() {
     return;
   }
 
+  try {
+    if (rememberRole.value) {
+      localStorage.setItem(STORAGE_KEY_REMEMBER_ROLE, role.value);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_REMEMBER_ROLE);
+    }
+  } catch {
+    // ignore storage errors
+  }
+
   submitting.value = true;
   try {
     const newUser = await api.post<User>('/users', {
@@ -86,7 +131,9 @@ async function submit() {
       email: email.value.trim() || undefined,
       password: password.value,
       avatar: avatar.value,
-      is_admin: isAdmin.value,
+      role: role.value,
+      is_admin: role.value === 'admin',
+      is_restricted: role.value === 'restricted',
     });
     emit('created', newUser);
     close();
@@ -147,11 +194,22 @@ async function submit() {
         </div>
       </div>
 
+      <FormField id="create-role" icon="shared" label="Konto-Typ / Rolle" required>
+        <Select
+          id="create-role"
+          v-model="role"
+          :options="ROLE_OPTIONS"
+          aria-label="Konto-Typ / Rolle"
+          required
+        />
+        <p class="hint">{{ currentRoleHint }}</p>
+      </FormField>
+
       <CheckboxCard
-        id="create-is-admin"
-        v-model="isAdmin"
-        label="Als Administrator:in anlegen"
-        description="Ermöglicht das Anlegen und Verwalten von weiteren Nutzerkonten."
+        id="create-remember-role"
+        v-model="rememberRole"
+        label="Gewählte Rolle für nächste Neuanlage merken"
+        variant="row"
       />
 
       <p v-if="error" class="error-msg">{{ error }}</p>

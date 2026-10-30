@@ -19,6 +19,7 @@ import {
 import type { User } from '../../api/types';
 import { USERS_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
+import { formatDateTime, formatLastLogin } from '../../utils/dateFormat';
 
 const auth = useAuthStore();
 
@@ -32,8 +33,10 @@ const {
   resettingPassword,
   verifyingEmailId,
   changingRoleId,
+  lockingUserId,
   loadUserList,
   changeUserRole,
+  toggleLockUser,
   deleteUserAccount,
   onUserCreated,
   openResetPasswordDialog,
@@ -89,6 +92,7 @@ onMounted(() => {
             <th>E-Mail</th>
             <th>Rolle</th>
             <th>Status</th>
+            <th>Letzter Login</th>
             <th class="actions-col">Aktionen</th>
           </tr>
         </thead>
@@ -146,6 +150,13 @@ onMounted(() => {
             <td>
               <div class="status-badges">
                 <Badge
+                  v-if="u.is_locked"
+                  variant="danger"
+                  title="Dieses Benutzerkonto ist von der Administration gesperrt"
+                >
+                  Gesperrt
+                </Badge>
+                <Badge
                   v-if="u.is_email_verified === false"
                   variant="warning"
                   title="E-Mail-Adresse noch nicht bestätigt"
@@ -160,11 +171,23 @@ onMounted(() => {
                   PW-Änderung offen
                 </Badge>
                 <Badge
-                  v-if="u.is_email_verified !== false && !u.must_change_password"
+                  v-if="!u.is_locked && u.is_email_verified !== false && !u.must_change_password"
                   variant="success"
                   >Aktiv</Badge
                 >
               </div>
+            </td>
+            <td
+              class="last-login-cell"
+              :title="
+                u.last_login_at
+                  ? `Zuletzt eingeloggt: ${formatDateTime(u.last_login_at)}`
+                  : 'Noch kein Login verzeichnet'
+              "
+            >
+              <span :class="{ 'last-login-never': !u.last_login_at }">
+                {{ formatLastLogin(u.last_login_at) }}
+              </span>
             </td>
             <td class="actions-col">
               <div class="user-actions">
@@ -176,6 +199,29 @@ onMounted(() => {
                 >
                   <AppIcon :icon="ACTION_ICONS.key" :size="14" group="actions" />
                   PW Reset
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  :disabled="u.id === auth.user?.id || Boolean(u.is_admin)"
+                  :loading="lockingUserId === u.id"
+                  :title="
+                    u.id === auth.user?.id
+                      ? 'Du kannst deinen eigenen Account nicht sperren'
+                      : u.is_admin
+                        ? 'Administrator-Accounts können nicht gesperrt werden'
+                        : u.is_locked
+                          ? 'Konto entsperren'
+                          : 'Konto sperren'
+                  "
+                  @click="toggleLockUser(u)"
+                >
+                  <AppIcon
+                    :icon="u.is_locked ? ACTION_ICONS.unlock : ACTION_ICONS.lock"
+                    :size="14"
+                    group="actions"
+                  />
+                  {{ u.is_locked ? 'Entsperren' : 'Sperren' }}
                 </Button>
                 <Button
                   v-if="u.is_email_verified === false"
@@ -332,7 +378,7 @@ onMounted(() => {
 
 .users-table {
   width: 100%;
-  min-width: 580px;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
@@ -373,6 +419,16 @@ onMounted(() => {
 }
 
 .email-cell {
+  color: var(--color-text-muted);
+}
+
+.last-login-cell {
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+}
+
+.last-login-never {
   color: var(--color-text-muted);
 }
 

@@ -239,10 +239,12 @@ export function isQueueablePath(path: string): boolean {
   const cleanPath = path.split('?')[0];
   if (
     cleanPath.startsWith('/auth') ||
+    cleanPath.startsWith('/users') ||
+    cleanPath.startsWith('/admin') ||
+    cleanPath.startsWith('/backup') ||
     cleanPath.startsWith('/realtime') ||
     cleanPath.startsWith('/push') ||
     cleanPath.startsWith('/trip-activity') ||
-    cleanPath.startsWith('/users/search') ||
     cleanPath.startsWith('/weather') ||
     cleanPath.includes('/routes/directions')
   ) {

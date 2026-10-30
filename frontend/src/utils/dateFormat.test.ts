@@ -4,6 +4,7 @@ import {
   endOfWeek,
   formatDate,
   formatDateTime,
+  formatLastLogin,
   formatTripDateRange,
   formatWeekdayDate,
   fromLocalDatetimeInputValue,
@@ -188,5 +189,51 @@ describe('fromLocalDatetimeInputValue', () => {
     expect(fromLocalDatetimeInputValue(undefined)).toBeNull();
     expect(fromLocalDatetimeInputValue('')).toBeNull();
     expect(fromLocalDatetimeInputValue('invalid')).toBeNull();
+  });
+});
+
+describe('formatLastLogin', () => {
+  const baseTime = new Date('2026-10-30T14:00:00.000Z');
+
+  it('returns "Nie" for null, undefined or empty value', () => {
+    expect(formatLastLogin(null)).toBe('Nie');
+    expect(formatLastLogin(undefined)).toBe('Nie');
+    expect(formatLastLogin('')).toBe('Nie');
+  });
+
+  it('returns "—" for invalid dates', () => {
+    expect(formatLastLogin('invalid-date')).toBe('—');
+  });
+
+  it('handles recent times correctly', () => {
+    // 30 seconds ago
+    expect(formatLastLogin('2026-10-30T13:59:30.000Z', baseTime)).toBe('Gerade eben');
+    // slight future tolerance (clock skew)
+    expect(formatLastLogin('2026-10-30T14:01:00.000Z', baseTime)).toBe('Gerade eben');
+    // 15 minutes ago
+    expect(formatLastLogin('2026-10-30T13:45:00.000Z', baseTime)).toBe('vor 15 Min.');
+    // 1 hour ago
+    expect(formatLastLogin('2026-10-30T13:00:00.000Z', baseTime)).toBe('vor 1 Std.');
+    // 5 hours ago
+    expect(formatLastLogin('2026-10-30T09:00:00.000Z', baseTime)).toBe('vor 5 Std.');
+  });
+
+  it('handles days, weeks, months and years correctly', () => {
+    // 1 day ago
+    expect(formatLastLogin('2026-10-29T14:00:00.000Z', baseTime)).toBe('Gestern');
+    // 4 days ago
+    expect(formatLastLogin('2026-10-26T14:00:00.000Z', baseTime)).toBe('vor 4 Tagen');
+    // 1 week ago (7 days)
+    expect(formatLastLogin('2026-10-23T14:00:00.000Z', baseTime)).toBe('vor 1 Woche');
+    // 3 weeks ago (21 days)
+    expect(formatLastLogin('2026-10-09T14:00:00.000Z', baseTime)).toBe('vor 3 Wochen');
+    // 1 month ago (35 days)
+    expect(formatLastLogin('2026-09-25T14:00:00.000Z', baseTime)).toBe('vor 1 Monat');
+    // 4 months ago (120 days)
+    expect(formatLastLogin('2026-07-01T14:00:00.000Z', baseTime)).toBe('vor 4 Monaten');
+    // 1 year ago (400 days)
+    expect(formatLastLogin('2025-09-25T14:00:00.000Z', baseTime)).toBe('vor 1 Jahr');
+    // 2 years ago (800 days)
+    expect(formatLastLogin('2024-08-20T14:00:00.000Z', baseTime)).toBe('vor 2 Jahren');
   });
 });

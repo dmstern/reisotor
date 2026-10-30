@@ -33,10 +33,11 @@ const permissions: RolePermissionRow[] = [
   },
   {
     title: 'Mitglieder pro Urlaub',
-    description: 'Teilnehmeranzahl in selbst erstellten Urlauben',
-    restricted: { allowed: true, text: 'Max. 3 Personen' },
-    plus: { allowed: true, text: 'Unbegrenzt' },
-    admin: { allowed: true, text: 'Unbegrenzt' },
+    description:
+      'Max. 3 Personen in reinen Basis-Gruppen. Sobald ein Mitglied Vollzugriff hat, unbegrenzt (Sponsor-Prinzip)',
+    restricted: { allowed: true, text: 'Max. 3 (ungesponsert)' },
+    plus: { allowed: true, text: 'Unbegrenzt (Sponsor)' },
+    admin: { allowed: true, text: 'Unbegrenzt (Sponsor)' },
   },
   {
     title: 'Datei- & Foto-Uploads',

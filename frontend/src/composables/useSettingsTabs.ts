@@ -10,8 +10,6 @@ import {
   IconDeviceDesktopFilled,
   IconBell,
   IconBellFilled,
-  IconDatabase,
-  IconDatabaseFilled,
   IconInfoCircle,
   IconInfoCircleFilled,
 } from '@tabler/icons-vue';
@@ -62,12 +60,6 @@ export const ALL_SETTINGS_TABS: SettingsTabItem[] = [
   { key: 'trip', label: 'Reise-Anzeige', icon: FORM_FIELD_ICONS.date },
   { key: 'notifications', label: 'Benachrichtigungen', icon: BELL_ICON },
   {
-    key: 'data',
-    label: 'Daten',
-    icon: { id: 'database', emoji: '🗄️', outline: IconDatabase, filled: IconDatabaseFilled },
-    adminOnly: true,
-  },
-  {
     key: 'about',
     label: 'Über',
     icon: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
@@ -83,7 +75,7 @@ export function useSettingsTabs(isAdmin: MaybeRefOrGetter<boolean | undefined>) 
 
   const activeTab = computed<SettingsTab>(() => {
     let tab = route.query.tab as string;
-    if (tab === 'users') tab = 'admin';
+    if (tab === 'users' || tab === 'data') tab = 'admin';
     return (tabKeys.value as string[]).includes(tab) ? (tab as SettingsTab) : 'account';
   });
 

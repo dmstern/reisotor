@@ -81,6 +81,13 @@ export function isUserEmailVerified(userId: number | null | undefined): boolean 
   return user?.is_email_verified !== 0;
 }
 
+export function isUserLocked(userId: number | null | undefined): boolean {
+  if (userId == null) return false;
+  const user = db.prepare('SELECT is_locked FROM users WHERE id = ?').get(userId) as
+    { is_locked: number } | undefined;
+  return Boolean(user?.is_locked);
+}
+
 export function isUsernameFullAccess(username: string): boolean {
   return FULL_ACCESS_USERS.has(username);
 }

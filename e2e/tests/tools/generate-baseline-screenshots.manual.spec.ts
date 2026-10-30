@@ -575,7 +575,6 @@ const VIEWS = [
   { slug: 'settings-app', path: '/settings?tab=app' },
   { slug: 'settings-trip', path: '/settings?tab=trip' },
   { slug: 'settings-notifications', path: '/settings?tab=notifications' },
-  { slug: 'settings-data', path: '/settings?tab=data' },
   { slug: 'settings-about', path: '/settings?tab=about' },
 ];
 

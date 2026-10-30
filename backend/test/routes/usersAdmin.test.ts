@@ -55,10 +55,12 @@ describe('Admin User Management routes (#224)', () => {
     expect(res.statusCode).toBe(200);
     const users = res.json();
     expect(Array.isArray(users)).toBe(true);
-    expect(users.find((u: { username: string }) => u.username === 'admin_user')).toMatchObject({
+    const adminUser = users.find((u: { username: string }) => u.username === 'admin_user');
+    expect(adminUser).toMatchObject({
       is_admin: true,
       email: 'admin@example.com',
     });
+    expect(adminUser.last_login_at).toBeTypeOf('string');
   });
 
   it('returns basic user list for non-admin without email or admin status', async () => {
@@ -72,6 +74,7 @@ describe('Admin User Management routes (#224)', () => {
     expect(users[0]).toHaveProperty('username');
     expect(users[0]).not.toHaveProperty('email');
     expect(users[0]).not.toHaveProperty('is_admin');
+    expect(users[0]).not.toHaveProperty('last_login_at');
   });
 
   it('rejects POST /users for non-admin users', async () => {
@@ -104,6 +107,61 @@ describe('Admin User Management routes (#224)', () => {
       is_admin: false,
       must_change_password: true,
     });
+  });
+
+  it('allows admin to create user with specific role (restricted, plus, admin)', async () => {
+    // Restricted role
+    const resRestricted = await app.inject({
+      method: 'POST',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        username: 'user_restricted',
+        email: 'user_restricted@example.com',
+        password: 'initialpass123',
+        role: 'restricted',
+      },
+    });
+    expect(resRestricted.statusCode).toBe(201);
+    expect(resRestricted.json()).toMatchObject({
+      username: 'user_restricted',
+      is_restricted: true,
+      restricted: true,
+      is_admin: false,
+    });
+
+    // Plus role
+    const resPlus = await app.inject({
+      method: 'POST',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        username: 'user_plus',
+        email: 'user_plus@example.com',
+        password: 'initialpass123',
+        role: 'plus',
+      },
+    });
+    expect(resPlus.statusCode).toBe(201);
+    expect(resPlus.json()).toMatchObject({
+      username: 'user_plus',
+      is_restricted: false,
+      restricted: false,
+      is_admin: false,
+    });
+
+    // Reject invalid role
+    const resInvalid = await app.inject({
+      method: 'POST',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        username: 'user_invalid',
+        password: 'initialpass123',
+        role: 'invalid_role',
+      },
+    });
+    expect(resInvalid.statusCode).toBe(400);
   });
 
   it('allows admin to promote another user to admin', async () => {
@@ -373,6 +431,72 @@ describe('Admin User Management routes (#224)', () => {
       payload: { role: 'admin' },
     });
     expect(nonAdmin.statusCode).toBe(403);
+  });
+
+  it('allows admin to lock and unlock a user, but prevents self-locking and admin-locking', async () => {
+    const { db } = await import('../../src/db/index.js');
+    const res = db
+      .prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)')
+      .run('lock_test_user', bcrypt.hashSync('pass', 10), '👤');
+    const targetId = res.lastInsertRowid as number;
+
+    // Lock user
+    const lockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: true },
+    });
+    expect(lockRes.statusCode).toBe(200);
+    expect(lockRes.json()).toMatchObject({ is_locked: true });
+
+    // Verify in GET /api/users
+    const listRes = await app.inject({
+      method: 'GET',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+    });
+    const users = listRes.json();
+    const lockedUser = users.find((u: { id: number }) => u.id === targetId);
+    expect(lockedUser.is_locked).toBe(true);
+
+    // Unlock user
+    const unlockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: false },
+    });
+    expect(unlockRes.statusCode).toBe(200);
+    expect(unlockRes.json()).toMatchObject({ is_locked: false });
+
+    // Self-lock attempt rejected
+    const selfLockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: true },
+    });
+    expect(selfLockRes.statusCode).toBe(400);
+    expect(selfLockRes.json().error).toContain('eigenen Account');
+
+    // Admin lock attempt rejected
+    const adminLockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: true },
+    });
+    expect(adminLockRes.statusCode).toBe(400);
+
+    // Non-admin attempt rejected
+    const nonAdminRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/lock`,
+      headers: { cookie: userCookie },
+      payload: { is_locked: true },
+    });
+    expect(nonAdminRes.statusCode).toBe(403);
   });
 
   it('allows admin to read and update registrationMode in instance_settings', async () => {

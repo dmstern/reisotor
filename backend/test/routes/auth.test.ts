@@ -24,7 +24,14 @@ describe('auth routes + requireAuth gating', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ username: 'testuser', avatar: '🧪' });
+    expect(res.json().last_login_at).toBeTypeOf('string');
     expect(res.headers['set-cookie']).toBeDefined();
+
+    const { db } = await import('../../src/db/index.js');
+    const row = db
+      .prepare('SELECT last_login_at FROM users WHERE username = ?')
+      .get('testuser') as { last_login_at: string };
+    expect(row.last_login_at).toBe(res.json().last_login_at);
   });
 
   it('rejects an incorrect password', async () => {
@@ -62,5 +69,20 @@ describe('auth routes + requireAuth gating', () => {
       headers: { cookie: Array.isArray(cookie) ? cookie.join('; ') : String(cookie) },
     });
     expect(res.statusCode).toBe(200);
+  });
+
+  it('rejects login for locked users', async () => {
+    const { db } = await import('../../src/db/index.js');
+    db.prepare(
+      'INSERT INTO users (username, password_hash, avatar, is_locked) VALUES (?, ?, ?, ?)'
+    ).run('lockeduser', bcrypt.hashSync('secretpass', 10), '🔒', 1);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'lockeduser', password: 'secretpass' },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error).toContain('gesperrt');
   });
 });

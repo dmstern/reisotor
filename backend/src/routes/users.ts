@@ -27,6 +27,8 @@ interface UserRow {
   is_restricted: number;
   must_change_password: number;
   is_email_verified?: number;
+  last_login_at?: string | null;
+  is_locked?: number;
 }
 
 interface CreateUserBody {
@@ -35,6 +37,8 @@ interface CreateUserBody {
   password: string;
   avatar?: string;
   is_admin?: boolean;
+  is_restricted?: boolean;
+  role?: 'admin' | 'plus' | 'restricted';
 }
 
 interface ToggleAdminBody {
@@ -47,6 +51,10 @@ interface ToggleRestrictedBody {
 
 interface ChangeRoleBody {
   role: 'admin' | 'plus' | 'restricted';
+}
+
+interface ToggleLockBody {
+  is_locked: boolean;
 }
 
 interface RegistrationModeBody {
@@ -86,7 +94,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (admin) {
       const rows = db
         .prepare(
-          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified FROM users ORDER BY id'
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified, last_login_at, is_locked FROM users ORDER BY id'
         )
         .all() as UserRow[];
       return rows.map((u) => {
@@ -101,6 +109,8 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           restricted,
           must_change_password: Boolean(u.must_change_password),
           is_email_verified: u.is_email_verified !== 0,
+          last_login_at: u.last_login_at ?? null,
+          is_locked: Boolean(u.is_locked),
         };
       });
     }
@@ -136,7 +146,15 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (!isUserAdmin(req.session.userId)) {
       return reply.code(403).send({ error: 'Nur Administrator:innen dürfen neue Nutzer anlegen' });
     }
-    const { username, email, password, avatar, is_admin: isAdminInput } = req.body ?? {};
+    const {
+      username,
+      email,
+      password,
+      avatar,
+      is_admin: isAdminInput,
+      is_restricted: isRestrictedInput,
+      role,
+    } = req.body ?? {};
     if (!username?.trim() || !password) {
       return reply.code(400).send({ error: 'Benutzername und Passwort erforderlich' });
     }
@@ -145,6 +163,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
     if (email?.trim() && !EMAIL_PATTERN.test(email.trim())) {
       return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
+    }
+    if (role && role !== 'admin' && role !== 'plus' && role !== 'restricted') {
+      return reply
+        .code(400)
+        .send({ error: 'Ungültige Rolle. Erlaubt sind: admin, plus, restricted' });
     }
 
     const trimmedUsername = username.trim();
@@ -164,14 +187,31 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    const isAdmin = isAdminInput ? 1 : 0;
+    let isAdmin = 0;
+    let isRestricted = 0;
+
+    if (role) {
+      isAdmin = role === 'admin' ? 1 : 0;
+      isRestricted = role === 'restricted' ? 1 : 0;
+    } else {
+      isAdmin = isAdminInput ? 1 : 0;
+      isRestricted = isRestrictedInput ? 1 : 0;
+    }
     const mustChangePassword = 1;
 
     const result = db
       .prepare(
-        'INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO users (username, email, password_hash, avatar, is_admin, is_restricted, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?)'
       )
-      .run(trimmedUsername, trimmedEmail, hash, avatar ?? '🙂', isAdmin, mustChangePassword);
+      .run(
+        trimmedUsername,
+        trimmedEmail,
+        hash,
+        avatar ?? '🙂',
+        isAdmin,
+        isRestricted,
+        mustChangePassword
+      );
     const userId = result.lastInsertRowid as number;
 
     reply.code(201);
@@ -390,6 +430,68 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
+  // Benutzerkonto sperren / entsperren
+  app.put<{ Params: { id: string }; Body: ToggleLockBody }>(
+    '/users/:id/lock',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Benutzerkonten sperren' });
+      }
+      const targetUserId = Number(req.params.id);
+      const { is_locked: nextIsLocked } = req.body ?? {};
+
+      if (typeof nextIsLocked !== 'boolean') {
+        return reply.code(400).send({ error: 'is_locked als Boolean erforderlich' });
+      }
+
+      const targetUser = db
+        .prepare('SELECT id, is_admin FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; is_admin: number } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      if (targetUserId === req.session.userId && nextIsLocked) {
+        return reply.code(400).send({
+          error: 'Du kannst deinen eigenen Account nicht sperren',
+        });
+      }
+
+      if (targetUser.is_admin && nextIsLocked) {
+        return reply.code(400).send({
+          error: 'Administrator-Accounts können nicht gesperrt werden',
+        });
+      }
+
+      db.prepare('UPDATE users SET is_locked = ? WHERE id = ?').run(
+        nextIsLocked ? 1 : 0,
+        targetUserId
+      );
+
+      const updated = db
+        .prepare(
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified, last_login_at, is_locked FROM users WHERE id = ?'
+        )
+        .get(targetUserId) as UserRow;
+      const restricted = isUserRestricted(updated.id);
+      return {
+        id: updated.id,
+        username: updated.username,
+        email: updated.email ?? null,
+        avatar: updated.avatar,
+        is_admin: Boolean(updated.is_admin),
+        is_restricted: restricted,
+        restricted,
+        must_change_password: Boolean(updated.must_change_password),
+        is_email_verified: updated.is_email_verified !== 0,
+        last_login_at: updated.last_login_at ?? null,
+        is_locked: Boolean(updated.is_locked),
+      };
+    }
+  );
+
   // Registrierungsmodus abfragen (für Admins)
   app.get('/users/registration-mode', async (req, reply) => {
     if (!isUserAdmin(req.session.userId)) {
@@ -545,15 +647,32 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
       const resetUrl = `${getAppUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
-      // Falls der Nutzer eine E-Mail-Adresse hat und SMTP konfiguriert ist, Mail senden
+      // Falls der Nutzer eine E-Mail-Adresse hat und SMTP konfiguriert ist, Mail senden (max. 2.5s Timeout, um UI nicht zu blockieren)
       let emailSent = false;
       if (targetUser.email && isEmailConfigured()) {
-        const mailResult = await sendPasswordResetEmail({
-          to: targetUser.email,
-          username: targetUser.username,
-          token: rawToken,
-        });
-        emailSent = mailResult.success && !mailResult.simulated;
+        try {
+          const mailResult = await Promise.race([
+            sendPasswordResetEmail({
+              to: targetUser.email,
+              username: targetUser.username,
+              token: rawToken,
+            }),
+            new Promise<{
+              success: boolean;
+              simulated?: boolean;
+              actionUrl: string;
+              error?: string;
+            }>((resolve) =>
+              setTimeout(
+                () => resolve({ success: false, actionUrl: resetUrl, error: 'SMTP Timeout' }),
+                2500
+              )
+            ),
+          ]);
+          emailSent = mailResult.success && !mailResult.simulated;
+        } catch {
+          emailSent = false;
+        }
       }
 
       return {
