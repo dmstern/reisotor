@@ -18,6 +18,8 @@ export interface User {
   is_restricted?: boolean;
   /** Ob die E-Mail-Adresse des Nutzers bestätigt ist (Double-Opt-In). */
   is_email_verified?: boolean;
+  /** Zeitpunkt des letzten erfolgreichen Logins (ISO-8601 String) */
+  last_login_at?: string | null;
 }
 
 export interface AdminResetPasswordResult {

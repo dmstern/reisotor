@@ -24,6 +24,7 @@ interface UserRow {
   password_hash: string;
   avatar: string;
   is_email_verified?: number;
+  last_login_at?: string | null;
 }
 
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -128,6 +129,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         };
       }
 
+      const now = new Date().toISOString();
+      db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').run(now, userId);
+
       req.session.userId = userId;
       req.session.username = trimmedUsername;
       reply.code(201);
@@ -140,6 +144,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         is_admin: Boolean(isAdmin),
         must_change_password: false,
         is_email_verified: true,
+        last_login_at: now,
       };
     }
   );
@@ -305,6 +310,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
+    const now = new Date().toISOString();
+    db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').run(now, user.id);
+
     req.session.userId = user.id;
     req.session.username = user.username;
 
@@ -312,7 +320,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         'SELECT pending_email FROM email_verification_tokens WHERE user_id = ? AND expires_at > ? ORDER BY id DESC LIMIT 1'
       )
-      .get(user.id, new Date().toISOString()) as { pending_email: string | null } | undefined;
+      .get(user.id, now) as { pending_email: string | null } | undefined;
 
     return {
       id: user.id,
@@ -324,6 +332,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       is_admin: isUserAdmin(user.id),
       must_change_password: userMustChangePassword(user.id),
       is_email_verified: isUserEmailVerified(user.id),
+      last_login_at: now,
     };
   });
 
@@ -337,8 +346,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
     const user = db
-      .prepare('SELECT id, username, email, avatar FROM users WHERE id = ?')
-      .get(req.session.userId) as Pick<UserRow, 'id' | 'username' | 'email' | 'avatar'> | undefined;
+      .prepare('SELECT id, username, email, avatar, last_login_at FROM users WHERE id = ?')
+      .get(req.session.userId) as
+      Pick<UserRow, 'id' | 'username' | 'email' | 'avatar' | 'last_login_at'> | undefined;
     if (!user) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
@@ -357,6 +367,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       is_admin: isUserAdmin(user.id),
       must_change_password: userMustChangePassword(user.id),
       is_email_verified: isUserEmailVerified(user.id),
+      last_login_at: user.last_login_at ?? null,
     };
   });
 };

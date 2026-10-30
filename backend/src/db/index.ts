@@ -1965,6 +1965,7 @@ db.exec(`
 
 // E-Mail-Verifizierung (Double-Opt-In) & Passwort-Rücksetzung
 ensureColumn('users', 'is_email_verified', 'INTEGER NOT NULL DEFAULT 1');
+ensureColumn('users', 'last_login_at', 'TEXT');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS password_reset_tokens (

@@ -27,6 +27,7 @@ interface UserRow {
   is_restricted: number;
   must_change_password: number;
   is_email_verified?: number;
+  last_login_at?: string | null;
 }
 
 interface CreateUserBody {
@@ -88,7 +89,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (admin) {
       const rows = db
         .prepare(
-          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified FROM users ORDER BY id'
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified, last_login_at FROM users ORDER BY id'
         )
         .all() as UserRow[];
       return rows.map((u) => {
@@ -103,6 +104,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           restricted,
           must_change_password: Boolean(u.must_change_password),
           is_email_verified: u.is_email_verified !== 0,
+          last_login_at: u.last_login_at ?? null,
         };
       });
     }

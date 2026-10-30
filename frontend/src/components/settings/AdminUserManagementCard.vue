@@ -19,6 +19,7 @@ import {
 import type { User } from '../../api/types';
 import { USERS_ICON } from '../../composables/useSettingsTabs';
 import { ACTION_ICONS } from '../../utils/actionIcons';
+import { formatDateTime, formatLastLogin } from '../../utils/dateFormat';
 
 const auth = useAuthStore();
 
@@ -89,6 +90,7 @@ onMounted(() => {
             <th>E-Mail</th>
             <th>Rolle</th>
             <th>Status</th>
+            <th>Letzter Login</th>
             <th class="actions-col">Aktionen</th>
           </tr>
         </thead>
@@ -165,6 +167,18 @@ onMounted(() => {
                   >Aktiv</Badge
                 >
               </div>
+            </td>
+            <td
+              class="last-login-cell"
+              :title="
+                u.last_login_at
+                  ? `Zuletzt eingeloggt: ${formatDateTime(u.last_login_at)}`
+                  : 'Noch kein Login verzeichnet'
+              "
+            >
+              <span :class="{ 'last-login-never': !u.last_login_at }">
+                {{ formatLastLogin(u.last_login_at) }}
+              </span>
             </td>
             <td class="actions-col">
               <div class="user-actions">
@@ -332,7 +346,7 @@ onMounted(() => {
 
 .users-table {
   width: 100%;
-  min-width: 580px;
+  min-width: 680px;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
@@ -373,6 +387,16 @@ onMounted(() => {
 }
 
 .email-cell {
+  color: var(--color-text-muted);
+}
+
+.last-login-cell {
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+}
+
+.last-login-never {
   color: var(--color-text-muted);
 }
 

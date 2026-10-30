@@ -127,3 +127,39 @@ export function fromLocalDatetimeInputValue(val?: string | null): string | null 
   if (isNaN(d.getTime())) return null;
   return d.toISOString();
 }
+
+/**
+ * Formatiert den Zeitpunkt des letzten Logins kompakt und menschenlesbar (z. B. für Admin-Listen).
+ * Gibt "Nie" zurück, wenn kein Datum vorliegt.
+ */
+export function formatLastLogin(dateStr?: string | null, now: Date = new Date()): string {
+  if (!dateStr) return 'Nie';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+
+  const diffMs = now.getTime() - d.getTime();
+  if (diffMs < 0) {
+    return 'Gerade eben';
+  }
+
+  const diffMinutes = Math.floor(diffMs / 60000);
+  if (diffMinutes < 1) return 'Gerade eben';
+  if (diffMinutes < 60) return `vor ${diffMinutes} Min.`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return diffHours === 1 ? 'vor 1 Std.' : `vor ${diffHours} Std.`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'Gestern';
+  if (diffDays < 7) return `vor ${diffDays} Tagen`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return weeks === 1 ? 'vor 1 Woche' : `vor ${weeks} Wochen`;
+  }
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return months === 1 ? 'vor 1 Monat' : `vor ${months} Monaten`;
+  }
+  const years = Math.floor(diffDays / 365);
+  return years === 1 ? 'vor 1 Jahr' : `vor ${years} Jahren`;
+}

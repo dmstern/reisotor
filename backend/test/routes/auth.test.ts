@@ -24,7 +24,14 @@ describe('auth routes + requireAuth gating', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ username: 'testuser', avatar: '🧪' });
+    expect(res.json().last_login_at).toBeTypeOf('string');
     expect(res.headers['set-cookie']).toBeDefined();
+
+    const { db } = await import('../../src/db/index.js');
+    const row = db
+      .prepare('SELECT last_login_at FROM users WHERE username = ?')
+      .get('testuser') as { last_login_at: string };
+    expect(row.last_login_at).toBe(res.json().last_login_at);
   });
 
   it('rejects an incorrect password', async () => {

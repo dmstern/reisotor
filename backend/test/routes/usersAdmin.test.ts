@@ -55,10 +55,12 @@ describe('Admin User Management routes (#224)', () => {
     expect(res.statusCode).toBe(200);
     const users = res.json();
     expect(Array.isArray(users)).toBe(true);
-    expect(users.find((u: { username: string }) => u.username === 'admin_user')).toMatchObject({
+    const adminUser = users.find((u: { username: string }) => u.username === 'admin_user');
+    expect(adminUser).toMatchObject({
       is_admin: true,
       email: 'admin@example.com',
     });
+    expect(adminUser.last_login_at).toBeTypeOf('string');
   });
 
   it('returns basic user list for non-admin without email or admin status', async () => {
@@ -72,6 +74,7 @@ describe('Admin User Management routes (#224)', () => {
     expect(users[0]).toHaveProperty('username');
     expect(users[0]).not.toHaveProperty('email');
     expect(users[0]).not.toHaveProperty('is_admin');
+    expect(users[0]).not.toHaveProperty('last_login_at');
   });
 
   it('rejects POST /users for non-admin users', async () => {
