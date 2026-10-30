@@ -577,15 +577,32 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
       const resetUrl = `${getAppUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
-      // Falls der Nutzer eine E-Mail-Adresse hat und SMTP konfiguriert ist, Mail senden
+      // Falls der Nutzer eine E-Mail-Adresse hat und SMTP konfiguriert ist, Mail senden (max. 2.5s Timeout, um UI nicht zu blockieren)
       let emailSent = false;
       if (targetUser.email && isEmailConfigured()) {
-        const mailResult = await sendPasswordResetEmail({
-          to: targetUser.email,
-          username: targetUser.username,
-          token: rawToken,
-        });
-        emailSent = mailResult.success && !mailResult.simulated;
+        try {
+          const mailResult = await Promise.race([
+            sendPasswordResetEmail({
+              to: targetUser.email,
+              username: targetUser.username,
+              token: rawToken,
+            }),
+            new Promise<{
+              success: boolean;
+              simulated?: boolean;
+              actionUrl: string;
+              error?: string;
+            }>((resolve) =>
+              setTimeout(
+                () => resolve({ success: false, actionUrl: resetUrl, error: 'SMTP Timeout' }),
+                2500
+              )
+            ),
+          ]);
+          emailSent = mailResult.success && !mailResult.simulated;
+        } catch {
+          emailSent = false;
+        }
       }
 
       return {

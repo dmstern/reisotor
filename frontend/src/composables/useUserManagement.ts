@@ -123,7 +123,8 @@ export function useUserManagement() {
     try {
       const res = await api.post<AdminResetPasswordResult>(
         `/users/${u.id}/reset-password`,
-        temporaryPassword ? { temporaryPassword } : {}
+        temporaryPassword ? { temporaryPassword } : {},
+        { noQueue: true }
       );
       resetPasswordResult.value = res;
       // In der Nutzerliste must_change_password aktualisieren
