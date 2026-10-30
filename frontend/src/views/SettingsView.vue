@@ -7,7 +7,6 @@ import SettingsAdminTab from '../components/settings/SettingsAdminTab.vue';
 import SettingsAppTab from '../components/settings/SettingsAppTab.vue';
 import SettingsTripTab from '../components/settings/SettingsTripTab.vue';
 import SettingsNotificationsTab from '../components/settings/SettingsNotificationsTab.vue';
-import SettingsDataTab from '../components/settings/SettingsDataTab.vue';
 import SettingsAboutTab from '../components/settings/SettingsAboutTab.vue';
 import { useAuthStore } from '../stores/auth';
 import { useUiSettingsStore } from '../stores/uiSettings';
@@ -41,12 +40,14 @@ onMounted(async () => {
 
     <SettingsAccountTab v-if="activeTab === 'account'" />
     <SettingsAdminTab
-      v-else-if="(activeTab === 'admin' || activeTab === 'users') && auth.user?.is_admin"
+      v-else-if="
+        (activeTab === 'admin' || activeTab === 'users' || activeTab === 'data') &&
+        auth.user?.is_admin
+      "
     />
     <SettingsAppTab v-else-if="activeTab === 'app'" />
     <SettingsTripTab v-else-if="activeTab === 'trip'" />
     <SettingsNotificationsTab v-else-if="activeTab === 'notifications'" />
-    <SettingsDataTab v-else-if="activeTab === 'data'" />
     <SettingsAboutTab v-else-if="activeTab === 'about'" />
   </div>
   <ViewLoadingState v-else message="Lade Einstellungen…" />

@@ -14,6 +14,7 @@ import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import AdminUserManagementCard from './AdminUserManagementCard.vue';
+import AdminBackupCard from './AdminBackupCard.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useAdminSettings } from '../../composables/useAdminSettings';
 import { api, ApiError } from '../../api/client';
@@ -1374,6 +1375,9 @@ async function handleGenerateVapid() {
           </span>
         </div>
       </Card>
+
+      <!-- 8. Datensicherung -->
+      <AdminBackupCard />
     </template>
   </div>
 </template>

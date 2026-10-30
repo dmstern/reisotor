@@ -21,18 +21,23 @@ describe('useSettingsTabs', () => {
     mockRoute.query = {};
     const { tabs } = useSettingsTabs(false);
     expect(tabs.value.some((t) => t.key === 'admin')).toBe(false);
-    expect(tabs.value.some((t) => t.key === 'data')).toBe(false);
   });
 
-  it('includes admin and data tabs for admin users', () => {
+  it('includes admin tab for admin users and excludes standalone data tab', () => {
     mockRoute.query = {};
     const { tabs } = useSettingsTabs(true);
     expect(tabs.value.some((t) => t.key === 'admin')).toBe(true);
-    expect(tabs.value.some((t) => t.key === 'data')).toBe(true);
+    expect(tabs.value.some((t) => t.key === 'data')).toBe(false);
   });
 
   it('maps legacy ?tab=users to admin tab for backwards compatibility', () => {
     mockRoute.query = { tab: 'users' };
+    const { activeTab } = useSettingsTabs(true);
+    expect(activeTab.value).toBe('admin');
+  });
+
+  it('maps legacy ?tab=data to admin tab for backwards compatibility', () => {
+    mockRoute.query = { tab: 'data' };
     const { activeTab } = useSettingsTabs(true);
     expect(activeTab.value).toBe('admin');
   });
