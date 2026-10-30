@@ -76,4 +76,27 @@ describe('useUserManagement & role helpers', () => {
       expect(getUserRole(userList.value[0])).toBe('plus');
     });
   });
+
+  describe('toggleLockUser', () => {
+    it('calls PUT /users/:id/lock and updates user in list', async () => {
+      vi.stubGlobal('confirm', () => true);
+      const auth = useAuthStore();
+      auth.user = { id: 1, username: 'admin', avatar: '👑', is_admin: true };
+
+      const initialUser: User = { id: 5, username: 'alex', avatar: '🦊', is_locked: false };
+      const updatedUser: User = { ...initialUser, is_locked: true };
+
+      vi.mocked(api.put).mockResolvedValueOnce(updatedUser);
+
+      const { userList, toggleLockUser } = useUserManagement();
+      userList.value = [initialUser];
+
+      const result = await toggleLockUser(initialUser);
+
+      expect(api.put).toHaveBeenCalledWith('/users/5/lock', { is_locked: true });
+      expect(result).toEqual(updatedUser);
+      expect(userList.value[0].is_locked).toBe(true);
+      vi.unstubAllGlobals();
+    });
+  });
 });

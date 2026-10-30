@@ -70,4 +70,19 @@ describe('auth routes + requireAuth gating', () => {
     });
     expect(res.statusCode).toBe(200);
   });
+
+  it('rejects login for locked users', async () => {
+    const { db } = await import('../../src/db/index.js');
+    db.prepare(
+      'INSERT INTO users (username, password_hash, avatar, is_locked) VALUES (?, ?, ?, ?)'
+    ).run('lockeduser', bcrypt.hashSync('secretpass', 10), '🔒', 1);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { username: 'lockeduser', password: 'secretpass' },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error).toContain('gesperrt');
+  });
 });

@@ -20,6 +20,8 @@ export interface User {
   is_email_verified?: boolean;
   /** Zeitpunkt des letzten erfolgreichen Logins (ISO-8601 String) */
   last_login_at?: string | null;
+  /** Ob das Benutzerkonto von einem Admin gesperrt wurde */
+  is_locked?: boolean;
 }
 
 export interface AdminResetPasswordResult {

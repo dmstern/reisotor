@@ -25,6 +25,7 @@ interface UserRow {
   avatar: string;
   is_email_verified?: number;
   last_login_at?: string | null;
+  is_locked?: number;
 }
 
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -209,10 +210,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const user = db
-      .prepare('SELECT id, username, email FROM users WHERE LOWER(email) = LOWER(?)')
-      .get(email.trim()) as { id: number; username: string; email: string } | undefined;
+      .prepare('SELECT id, username, email, is_locked FROM users WHERE LOWER(email) = LOWER(?)')
+      .get(email.trim()) as
+      { id: number; username: string; email: string; is_locked: number } | undefined;
 
-    if (user) {
+    if (user && !user.is_locked) {
       db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(user.id);
 
       const rawToken = crypto.randomBytes(32).toString('hex');
@@ -295,12 +297,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const user = db
       .prepare(
-        'SELECT id, username, email, password_hash, avatar, is_email_verified FROM users WHERE username = ?'
+        'SELECT id, username, email, password_hash, avatar, is_email_verified, is_locked FROM users WHERE username = ?'
       )
-      .get(username) as (UserRow & { is_email_verified: number }) | undefined;
+      .get(username) as (UserRow & { is_email_verified: number; is_locked: number }) | undefined;
 
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
       return reply.code(401).send({ error: 'Ungültige Anmeldedaten' });
+    }
+
+    if (user.is_locked) {
+      return reply.code(403).send({
+        error: 'Dieses Benutzerkonto ist gesperrt. Bitte wende dich an die Administration.',
+      });
     }
 
     if (isEmailVerificationRequired() && user.is_email_verified === 0) {
@@ -346,11 +354,19 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
     const user = db
-      .prepare('SELECT id, username, email, avatar, last_login_at FROM users WHERE id = ?')
+      .prepare(
+        'SELECT id, username, email, avatar, last_login_at, is_locked FROM users WHERE id = ?'
+      )
       .get(req.session.userId) as
-      Pick<UserRow, 'id' | 'username' | 'email' | 'avatar' | 'last_login_at'> | undefined;
+      | Pick<UserRow, 'id' | 'username' | 'email' | 'avatar' | 'last_login_at' | 'is_locked'>
+      | undefined;
     if (!user) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
+    }
+
+    if (user.is_locked) {
+      await req.session.destroy();
+      return reply.code(403).send({ error: 'Dieses Benutzerkonto ist gesperrt.' });
     }
 
     const pendingToken = db

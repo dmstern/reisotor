@@ -454,6 +454,15 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       return { success: true, is_email_verified: true } as unknown as T;
     }
   }
+  const lockMatch = /^\/users\/(\d+)\/lock$/.exec(basePath);
+  if (lockMatch && method === 'PUT') {
+    const targetId = Number(lockMatch[1]);
+    const user = currentDemoUsers.find((u) => u.id === targetId);
+    if (user) {
+      user.is_locked = Boolean(body?.is_locked);
+      return structuredClone(user) as unknown as T;
+    }
+  }
   const deleteUserMatch = /^\/users\/(\d+)$/.exec(basePath);
   if (deleteUserMatch && method === 'DELETE') {
     const targetId = Number(deleteUserMatch[1]);

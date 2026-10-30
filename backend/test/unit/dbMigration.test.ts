@@ -781,12 +781,17 @@ describe('todo_items.period Migration & Persistenz', () => {
 
     const columns = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
     expect(columns.some((c) => c.name === 'last_login_at')).toBe(true);
+    expect(columns.some((c) => c.name === 'is_locked')).toBe(true);
 
-    const row = db.prepare('SELECT id, username, last_login_at FROM users WHERE id = 1').get() as {
+    const row = db
+      .prepare('SELECT id, username, last_login_at, is_locked FROM users WHERE id = 1')
+      .get() as {
       id: number;
       username: string;
       last_login_at: string | null;
+      is_locked: number;
     };
     expect(row.last_login_at).toBeNull();
+    expect(row.is_locked).toBe(0);
   });
 });

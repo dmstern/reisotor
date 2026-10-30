@@ -433,6 +433,72 @@ describe('Admin User Management routes (#224)', () => {
     expect(nonAdmin.statusCode).toBe(403);
   });
 
+  it('allows admin to lock and unlock a user, but prevents self-locking and admin-locking', async () => {
+    const { db } = await import('../../src/db/index.js');
+    const res = db
+      .prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)')
+      .run('lock_test_user', bcrypt.hashSync('pass', 10), '👤');
+    const targetId = res.lastInsertRowid as number;
+
+    // Lock user
+    const lockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: true },
+    });
+    expect(lockRes.statusCode).toBe(200);
+    expect(lockRes.json()).toMatchObject({ is_locked: true });
+
+    // Verify in GET /api/users
+    const listRes = await app.inject({
+      method: 'GET',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+    });
+    const users = listRes.json();
+    const lockedUser = users.find((u: { id: number }) => u.id === targetId);
+    expect(lockedUser.is_locked).toBe(true);
+
+    // Unlock user
+    const unlockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: false },
+    });
+    expect(unlockRes.statusCode).toBe(200);
+    expect(unlockRes.json()).toMatchObject({ is_locked: false });
+
+    // Self-lock attempt rejected
+    const selfLockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: true },
+    });
+    expect(selfLockRes.statusCode).toBe(400);
+    expect(selfLockRes.json().error).toContain('eigenen Account');
+
+    // Admin lock attempt rejected
+    const adminLockRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${adminId}/lock`,
+      headers: { cookie: adminCookie },
+      payload: { is_locked: true },
+    });
+    expect(adminLockRes.statusCode).toBe(400);
+
+    // Non-admin attempt rejected
+    const nonAdminRes = await app.inject({
+      method: 'PUT',
+      url: `/api/users/${targetId}/lock`,
+      headers: { cookie: userCookie },
+      payload: { is_locked: true },
+    });
+    expect(nonAdminRes.statusCode).toBe(403);
+  });
+
   it('allows admin to read and update registrationMode in instance_settings', async () => {
     // Read current mode
     const getRes = await app.inject({

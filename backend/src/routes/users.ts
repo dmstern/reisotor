@@ -28,6 +28,7 @@ interface UserRow {
   must_change_password: number;
   is_email_verified?: number;
   last_login_at?: string | null;
+  is_locked?: number;
 }
 
 interface CreateUserBody {
@@ -50,6 +51,10 @@ interface ToggleRestrictedBody {
 
 interface ChangeRoleBody {
   role: 'admin' | 'plus' | 'restricted';
+}
+
+interface ToggleLockBody {
+  is_locked: boolean;
 }
 
 interface RegistrationModeBody {
@@ -89,7 +94,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (admin) {
       const rows = db
         .prepare(
-          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified, last_login_at FROM users ORDER BY id'
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified, last_login_at, is_locked FROM users ORDER BY id'
         )
         .all() as UserRow[];
       return rows.map((u) => {
@@ -105,6 +110,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           must_change_password: Boolean(u.must_change_password),
           is_email_verified: u.is_email_verified !== 0,
           last_login_at: u.last_login_at ?? null,
+          is_locked: Boolean(u.is_locked),
         };
       });
     }
@@ -420,6 +426,68 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         is_restricted: restricted,
         restricted,
         must_change_password: Boolean(updated.must_change_password),
+      };
+    }
+  );
+
+  // Benutzerkonto sperren / entsperren
+  app.put<{ Params: { id: string }; Body: ToggleLockBody }>(
+    '/users/:id/lock',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Benutzerkonten sperren' });
+      }
+      const targetUserId = Number(req.params.id);
+      const { is_locked: nextIsLocked } = req.body ?? {};
+
+      if (typeof nextIsLocked !== 'boolean') {
+        return reply.code(400).send({ error: 'is_locked als Boolean erforderlich' });
+      }
+
+      const targetUser = db
+        .prepare('SELECT id, is_admin FROM users WHERE id = ?')
+        .get(targetUserId) as { id: number; is_admin: number } | undefined;
+      if (!targetUser) {
+        return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
+      }
+
+      if (targetUserId === req.session.userId && nextIsLocked) {
+        return reply.code(400).send({
+          error: 'Du kannst deinen eigenen Account nicht sperren',
+        });
+      }
+
+      if (targetUser.is_admin && nextIsLocked) {
+        return reply.code(400).send({
+          error: 'Administrator-Accounts können nicht gesperrt werden',
+        });
+      }
+
+      db.prepare('UPDATE users SET is_locked = ? WHERE id = ?').run(
+        nextIsLocked ? 1 : 0,
+        targetUserId
+      );
+
+      const updated = db
+        .prepare(
+          'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified, last_login_at, is_locked FROM users WHERE id = ?'
+        )
+        .get(targetUserId) as UserRow;
+      const restricted = isUserRestricted(updated.id);
+      return {
+        id: updated.id,
+        username: updated.username,
+        email: updated.email ?? null,
+        avatar: updated.avatar,
+        is_admin: Boolean(updated.is_admin),
+        is_restricted: restricted,
+        restricted,
+        must_change_password: Boolean(updated.must_change_password),
+        is_email_verified: updated.is_email_verified !== 0,
+        last_login_at: updated.last_login_at ?? null,
+        is_locked: Boolean(updated.is_locked),
       };
     }
   );

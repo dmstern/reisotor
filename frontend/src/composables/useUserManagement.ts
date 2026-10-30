@@ -35,6 +35,7 @@ export function useUserManagement() {
   const resettingPassword = ref(false);
   const verifyingEmailId = ref<number | null>(null);
   const changingRoleId = ref<number | null>(null);
+  const lockingUserId = ref<number | null>(null);
 
   async function loadUserList() {
     if (!auth.user?.is_admin) return;
@@ -156,6 +157,28 @@ export function useUserManagement() {
     }
   }
 
+  async function toggleLockUser(u: User) {
+    if (u.id === auth.user?.id) return;
+    const nextLocked = !u.is_locked;
+    const actionText = nextLocked ? 'sperren' : 'entsperren';
+    if (!confirm(`Möchtest du das Konto von "${u.username}" wirklich ${actionText}?`)) return;
+    lockingUserId.value = u.id;
+    try {
+      const updated = await api.put<User>(`/users/${u.id}/lock`, { is_locked: nextLocked });
+      const idx = userList.value.findIndex((item) => item.id === u.id);
+      if (idx !== -1) userList.value[idx] = updated;
+      return updated;
+    } catch (err) {
+      alert(
+        err instanceof ApiError
+          ? err.message
+          : `Fehler beim ${nextLocked ? 'Sperren' : 'Entsperren'} des Nutzers`
+      );
+    } finally {
+      lockingUserId.value = null;
+    }
+  }
+
   return {
     userList,
     loadingUsers,
@@ -166,12 +189,14 @@ export function useUserManagement() {
     resettingPassword,
     verifyingEmailId,
     changingRoleId,
+    lockingUserId,
     loadUserList,
     changeUserRole,
     getUserRole,
     getUserRoleLabel,
     toggleAdminRole,
     toggleRestrictedRole,
+    toggleLockUser,
     deleteUserAccount,
     onUserCreated,
     openResetPasswordDialog,
