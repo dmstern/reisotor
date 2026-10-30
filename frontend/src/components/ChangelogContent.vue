@@ -169,7 +169,7 @@ const cleanNotes = computed(() => {
   align-items: center;
   gap: var(--space-2);
   padding-bottom: var(--space-1);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .changelog-group--highlights .changelog-group-title {

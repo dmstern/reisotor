@@ -1550,7 +1550,7 @@ async function handleGenerateVapid() {
   align-items: center;
   gap: var(--space-3);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid var(--color-border);
 }
 
 .save-success-msg {
@@ -1616,7 +1616,7 @@ async function handleGenerateVapid() {
   padding: 1px 4px;
   background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
   border-radius: var(--radius-xs, 4px);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border);
 }
 
 .smtp-guide-content a,
@@ -1653,7 +1653,7 @@ async function handleGenerateVapid() {
   padding: 1px 4px;
   background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
   border-radius: var(--radius-xs, 4px);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border);
 }
 
 .feedback-alert {
