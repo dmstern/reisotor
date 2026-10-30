@@ -163,7 +163,7 @@ const cleanNotes = computed(() => {
 .changelog-group-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-primary);
   margin: 0;
   display: flex;
   align-items: center;
