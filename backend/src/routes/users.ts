@@ -35,6 +35,8 @@ interface CreateUserBody {
   password: string;
   avatar?: string;
   is_admin?: boolean;
+  is_restricted?: boolean;
+  role?: 'admin' | 'plus' | 'restricted';
 }
 
 interface ToggleAdminBody {
@@ -136,7 +138,15 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (!isUserAdmin(req.session.userId)) {
       return reply.code(403).send({ error: 'Nur Administrator:innen dürfen neue Nutzer anlegen' });
     }
-    const { username, email, password, avatar, is_admin: isAdminInput } = req.body ?? {};
+    const {
+      username,
+      email,
+      password,
+      avatar,
+      is_admin: isAdminInput,
+      is_restricted: isRestrictedInput,
+      role,
+    } = req.body ?? {};
     if (!username?.trim() || !password) {
       return reply.code(400).send({ error: 'Benutzername und Passwort erforderlich' });
     }
@@ -145,6 +155,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
     if (email?.trim() && !EMAIL_PATTERN.test(email.trim())) {
       return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
+    }
+    if (role && role !== 'admin' && role !== 'plus' && role !== 'restricted') {
+      return reply
+        .code(400)
+        .send({ error: 'Ungültige Rolle. Erlaubt sind: admin, plus, restricted' });
     }
 
     const trimmedUsername = username.trim();
@@ -164,14 +179,31 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const hash = bcrypt.hashSync(password, 10);
-    const isAdmin = isAdminInput ? 1 : 0;
+    let isAdmin = 0;
+    let isRestricted = 0;
+
+    if (role) {
+      isAdmin = role === 'admin' ? 1 : 0;
+      isRestricted = role === 'restricted' ? 1 : 0;
+    } else {
+      isAdmin = isAdminInput ? 1 : 0;
+      isRestricted = isRestrictedInput ? 1 : 0;
+    }
     const mustChangePassword = 1;
 
     const result = db
       .prepare(
-        'INSERT INTO users (username, email, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO users (username, email, password_hash, avatar, is_admin, is_restricted, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?)'
       )
-      .run(trimmedUsername, trimmedEmail, hash, avatar ?? '🙂', isAdmin, mustChangePassword);
+      .run(
+        trimmedUsername,
+        trimmedEmail,
+        hash,
+        avatar ?? '🙂',
+        isAdmin,
+        isRestricted,
+        mustChangePassword
+      );
     const userId = result.lastInsertRowid as number;
 
     reply.code(201);

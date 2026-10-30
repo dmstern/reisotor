@@ -437,11 +437,20 @@ async function handleGenerateVapid() {
           id="reg-require-verification"
           v-model="regForm.requireEmailVerification"
           label="Double-Opt-In: E-Mail-Bestätigung bei Selbstregistrierungen erzwingen"
-          description="Erfordert einen konfigurierten SMTP-Mailserver."
+          :description="
+            regForm.registrationMode === 'off'
+              ? 'Erfordert einen konfigurierten SMTP-Mailserver. (Nur verfügbar, wenn die Selbstregistrierung aktiv ist.)'
+              : 'Erfordert einen konfigurierten SMTP-Mailserver.'
+          "
+          :disabled="regForm.registrationMode === 'off'"
         />
 
         <Alert
-          v-if="regForm.requireEmailVerification && !isMailConfigured"
+          v-if="
+            regForm.registrationMode !== 'off' &&
+            regForm.requireEmailVerification &&
+            !isMailConfigured
+          "
           variant="warning"
           size="sm"
           class="reg-email-alert"

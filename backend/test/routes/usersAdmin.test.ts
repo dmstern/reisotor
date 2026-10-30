@@ -106,6 +106,61 @@ describe('Admin User Management routes (#224)', () => {
     });
   });
 
+  it('allows admin to create user with specific role (restricted, plus, admin)', async () => {
+    // Restricted role
+    const resRestricted = await app.inject({
+      method: 'POST',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        username: 'user_restricted',
+        email: 'user_restricted@example.com',
+        password: 'initialpass123',
+        role: 'restricted',
+      },
+    });
+    expect(resRestricted.statusCode).toBe(201);
+    expect(resRestricted.json()).toMatchObject({
+      username: 'user_restricted',
+      is_restricted: true,
+      restricted: true,
+      is_admin: false,
+    });
+
+    // Plus role
+    const resPlus = await app.inject({
+      method: 'POST',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        username: 'user_plus',
+        email: 'user_plus@example.com',
+        password: 'initialpass123',
+        role: 'plus',
+      },
+    });
+    expect(resPlus.statusCode).toBe(201);
+    expect(resPlus.json()).toMatchObject({
+      username: 'user_plus',
+      is_restricted: false,
+      restricted: false,
+      is_admin: false,
+    });
+
+    // Reject invalid role
+    const resInvalid = await app.inject({
+      method: 'POST',
+      url: '/api/users',
+      headers: { cookie: adminCookie },
+      payload: {
+        username: 'user_invalid',
+        password: 'initialpass123',
+        role: 'invalid_role',
+      },
+    });
+    expect(resInvalid.statusCode).toBe(400);
+  });
+
   it('allows admin to promote another user to admin', async () => {
     const res = await app.inject({
       method: 'PUT',
