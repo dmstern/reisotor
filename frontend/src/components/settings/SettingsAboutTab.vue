@@ -144,10 +144,6 @@ const showPwaInstallDialog = ref(false);
           <a href="https://open.er-api.com/" target="_blank" rel="noopener noreferrer"
             >ExchangeRate-API</a
           >
-          ·
-          <a href="https://www.travel-advisory.info/" target="_blank" rel="noopener noreferrer"
-            >Travel Advisory</a
-          >
         </dd>
         <dt>Icons</dt>
         <dd>

@@ -731,18 +731,18 @@ const isFeedbackActive = computed(() =>
           </ul>
         </div>
 
-        <!-- 6.6 Länderinfos, Währungskurse & Reisehinweise -->
+        <!-- 6.6 Länderinfos & Währungskurse -->
         <div class="legal-subsection">
-          <h3>6.6 Länderinformationen, Wechselkurse &amp; Reisehinweise</h3>
+          <h3>6.6 Länderinformationen &amp; Wechselkurse</h3>
           <p>
-            Zur Anzeige von Landeswährung, Landessprachen, aktuellen Wechselkursen und
-            Sicherheits-Scores im Reise-Dashboard bestimmt der Reisotor-Server einmalig das Zielland
-            anhand der Urlaubskoordinaten über
+            Zur Anzeige von Landeswährung, Landessprachen und aktuellen Wechselkursen im
+            Reise-Dashboard bestimmt der Reisotor-Server einmalig das Zielland anhand der
+            Urlaubskoordinaten über
             <em>OpenStreetMap Nominatim</em> (<code>nominatim.openstreetmap.org/reverse</code>) und
             ruft anschließend die Eckdaten von
-            <em>REST Countries</em> (<code>restcountries.com</code>), <em>open.er-api.com</em> sowie
-            der <em>Travel Advisory API</em> (<code>travel-advisory.info</code>) ab. Diese Abfragen
-            erfolgen rein serverseitig, werden zwischengespeichert und übermitteln keine Nutzer-IP.
+            <em>REST Countries</em> (<code>restcountries.com</code>) sowie
+            <em>open.er-api.com</em> ab. Diese Abfragen erfolgen rein serverseitig, werden
+            zwischengespeichert und übermitteln keine Nutzer-IP.
           </p>
         </div>
 

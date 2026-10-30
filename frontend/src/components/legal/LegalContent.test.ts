@@ -56,8 +56,8 @@ describe('LegalContent', () => {
     expect(container.textContent).toContain('GET /api/weather');
     expect(container.textContent).toContain('zwei Nachkommastellen');
 
-    // Länderinfos & Reisehinweise
-    expect(container.textContent).toContain('travel-advisory.info');
+    // Länderinfos & Wechselkurse
+    expect(container.textContent).toContain('restcountries.com');
     expect(container.textContent).toContain('nominatim.openstreetmap.org/reverse');
 
     // Disclaimer

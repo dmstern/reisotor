@@ -165,7 +165,6 @@ describe('SettingsView loading state', () => {
     expect(container.textContent).toContain('Länder- & Reiseinfos');
     expect(container.textContent).toContain('REST Countries');
     expect(container.textContent).toContain('ExchangeRate-API');
-    expect(container.textContent).toContain('Travel Advisory');
     expect(container.textContent).toContain('Icons');
     expect(container.textContent).toContain('Tabler Icons');
 

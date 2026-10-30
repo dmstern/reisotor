@@ -57,22 +57,17 @@ interface ExchangeRateResponse {
   rates?: Record<string, number>;
 }
 
-interface TravelAdvisoryResponse {
-  data?: Record<string, { advisory?: { score?: number; message?: string } }>;
-}
-
 // Server-seitiger In-Memory-Cache pro Ländercode – die externen APIs ändern sich selten (Sprache/
-// Währung praktisch nie, Wechselkurs/Reisewarnung höchstens täglich), spart wiederholte Aufrufe bei
+// Währung praktisch nie, Wechselkurs höchstens täglich), spart wiederholte Aufrufe bei
 // jedem Dashboard-Besuch. Analog zu utils/weather.ts's Modul-Cache im Frontend, hier aber mit TTL
 // statt "ein Fetch pro Session", da das Backend dauerhaft läuft.
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const cache = new Map<string, { expiresAt: number; data: RegionInfo }>();
 
-/** Holt Sprache(n)/Währung (REST Countries), Wechselkurs zur Heimatwährung (open.er-api.com) und
- *  eine Sicherheits-Einschätzung (travel-advisory.info) – alle drei unabhängig fehlertolerant
- *  (Promise.allSettled, gleiches Muster wie das Wetter-Widget: ein Teilausfall blendet nur diesen
- *  Teil aus, statt die ganze Anfrage scheitern zu lassen). Alle drei APIs sind kostenlos/keylos,
- *  passend zum bestehenden Open-Meteo-Präzedenzfall dieser App. */
+/** Holt Sprache(n)/Währung (REST Countries) und Wechselkurs zur Heimatwährung (open.er-api.com).
+ *  Sicherheitshinweise/Advisories waren zuvor via travel-advisory.info angebunden, das jedoch
+ *  offline gegangen ist; die Neu-Implementierung mit funktionierendem Anbieter wird in
+ *  Issue #638 nachverfolgt (advisory bleibt vorerst null für Abwärtskompatibilität). */
 export async function fetchRegionInfo(
   countryCode: string,
   homeCurrency: string | null
@@ -81,32 +76,24 @@ export async function fetchRegionInfo(
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
 
-  const [countryResult, advisoryResult] = await Promise.allSettled([
-    fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`, {
-      signal: AbortSignal.timeout(5000),
-    }).then((res) =>
-      res.ok
-        ? (res.json() as Promise<RestCountryResponse[]>)
-        : Promise.reject(new Error(String(res.status)))
-    ),
-    fetch(`https://www.travel-advisory.info/api?countrycode=${countryCode}`, {
-      signal: AbortSignal.timeout(5000),
-    }).then((res) =>
-      res.ok
-        ? (res.json() as Promise<TravelAdvisoryResponse>)
-        : Promise.reject(new Error(String(res.status)))
-    ),
-  ]);
+  let languages: string[] = [];
+  let currency: { code: string; name: string } | null = null;
 
-  const languages =
-    countryResult.status === 'fulfilled'
-      ? Object.values(countryResult.value[0]?.languages ?? {})
-      : [];
-  const currencyEntry =
-    countryResult.status === 'fulfilled'
-      ? Object.entries(countryResult.value[0]?.currencies ?? {})[0]
-      : undefined;
-  const currency = currencyEntry ? { code: currencyEntry[0], name: currencyEntry[1].name } : null;
+  try {
+    const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as RestCountryResponse[];
+      languages = Object.values(data[0]?.languages ?? {});
+      const currencyEntry = Object.entries(data[0]?.currencies ?? {})[0];
+      if (currencyEntry) {
+        currency = { code: currencyEntry[0], name: currencyEntry[1].name };
+      }
+    }
+  } catch {
+    // Fehler bei REST Countries tolerieren
+  }
 
   let exchangeRate: number | null = null;
   if (currency && homeCurrency && currency.code !== homeCurrency) {
@@ -123,15 +110,8 @@ export async function fetchRegionInfo(
     }
   }
 
-  const advisory =
-    advisoryResult.status === 'fulfilled'
-      ? (() => {
-          const entry = Object.values(advisoryResult.value.data ?? {})[0]?.advisory;
-          return entry?.score != null && entry?.message
-            ? { score: entry.score, message: entry.message }
-            : null;
-        })()
-      : null;
+  // travel-advisory.info ist offline (siehe Issue #638 für Neu-Anbindung)
+  const advisory: { score: number; message: string } | null = null;
 
   const info: RegionInfo = { languages, currency, exchangeRate, advisory };
   cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, data: info });
