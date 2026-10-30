@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import AppIcon from '../AppIcon.vue';
-import RichTextDisplay from '../RichTextDisplay.vue';
+import ChangelogContent from '../ChangelogContent.vue';
 import AppFooterLinks from '../AppFooterLinks.vue';
 import FeedbackDialog from '../FeedbackDialog.vue';
 import PwaInstallDialog from '../PwaInstallDialog.vue';
@@ -22,14 +22,8 @@ const SERVICES_ICON: IconDef = {
 };
 
 const pwaInstall = usePwaInstallStore();
-const {
-  backendBuildInfo,
-  formatBuildTime,
-  changelogContent,
-  frontendVersion,
-  frontendCommit,
-  frontendBuiltAt,
-} = useAboutInfo();
+const { backendBuildInfo, formatBuildTime, frontendVersion, frontendCommit, frontendBuiltAt } =
+  useAboutInfo();
 
 const showFeedbackDialog = ref(false);
 const showPwaInstallDialog = ref(false);
@@ -68,9 +62,12 @@ const showPwaInstallDialog = ref(false);
 
     <Card class="build-info-card">
       <h2><AppIcon :icon="INFO_ICON" group="navigation" :size="20" /> Versions-Info</h2>
-      <div v-if="backendBuildInfo?.changelog">
+      <div v-if="backendBuildInfo?.changelog" class="about-changelog-wrap">
         <h3>Was ist neu in v{{ backendBuildInfo.changelog.version }}</h3>
-        <RichTextDisplay class="changelog-notes" :content="changelogContent" />
+        <ChangelogContent
+          :groups="backendBuildInfo.changelog.groups"
+          :notes="backendBuildInfo.changelog.notes"
+        />
       </div>
       <h3>Build-Info</h3>
       <dl class="build-info-list">

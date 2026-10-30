@@ -4,10 +4,10 @@ import { useRouter } from 'vue-router';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
+import ChangelogContent from './ChangelogContent.vue';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { useBuildInfoStore } from '../stores/buildInfo';
 import { useAuthStore } from '../stores/auth';
-import { formatInline } from '../utils/richText';
 
 const pwaUpdate = usePwaUpdateStore();
 const buildInfoStore = useBuildInfoStore();
@@ -41,24 +41,6 @@ const notes = computed(() => {
 
 const hasNotes = computed(() => groups.value.length > 0 || notes.value.length > 0);
 
-const EMOJI_PREFIX_REGEX =
-  /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*/u;
-
-function parseNote(rawNote: string): { bullet: string; html: string } {
-  const clean = rawNote.startsWith('- ') ? rawNote.slice(2).trim() : rawNote.trim();
-  const match = clean.match(EMOJI_PREFIX_REGEX);
-  if (match) {
-    return {
-      bullet: match[1],
-      html: formatInline(clean.slice(match[0].length)),
-    };
-  }
-  return {
-    bullet: '✨',
-    html: formatInline(clean),
-  };
-}
-
 function onClose() {
   pwaUpdate.dismissChangelogDialog();
 }
@@ -78,31 +60,9 @@ function goToSettings() {
       </div>
 
       <div v-else-if="hasNotes" class="notes-container">
-        <p class="changelog-intro">Das ist neu in dieser Version:</p>
+        <h3 class="changelog-intro">Das ist neu in dieser Version:</h3>
         <div class="changelog-scroll-area">
-          <template v-if="groups.length > 0">
-            <section v-for="group in groups" :key="group.title" class="changelog-group">
-              <h4 class="changelog-group-title">{{ group.title }}</h4>
-              <ul class="changelog-list">
-                <li
-                  v-for="(item, idx) in group.notes.map(parseNote)"
-                  :key="idx"
-                  class="changelog-item"
-                >
-                  <span class="note-bullet" aria-hidden="true">{{ item.bullet }}</span>
-                  <!-- eslint-disable-next-line vue/no-v-html -->
-                  <span class="note-text" v-html="item.html"></span>
-                </li>
-              </ul>
-            </section>
-          </template>
-          <ul v-else class="changelog-list">
-            <li v-for="(item, idx) in notes.map(parseNote)" :key="idx" class="changelog-item">
-              <span class="note-bullet" aria-hidden="true">{{ item.bullet }}</span>
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <span class="note-text" v-html="item.html"></span>
-            </li>
-          </ul>
+          <ChangelogContent :groups="groups" :notes="notes" />
         </div>
       </div>
 
@@ -166,61 +126,6 @@ function goToSettings() {
   max-height: 48vh;
   overflow-y: auto;
   padding-right: var(--space-1);
-}
-
-.changelog-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.changelog-group-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding-bottom: 2px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.changelog-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.changelog-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  font-size: 0.95rem;
-  line-height: 1.45;
-  color: var(--color-text);
-  background: var(--color-surface-glass);
-  border: 1px solid var(--color-surface-glass-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-}
-
-.note-bullet {
-  font-size: 1.1rem;
-  flex-shrink: 0;
-  line-height: 1.4;
-}
-
-.note-text {
-  flex: 1;
-}
-
-.note-text :deep(strong) {
-  font-weight: 600;
-  color: var(--color-text);
 }
 
 .empty-state {

@@ -26,29 +26,37 @@ const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? ''
 const computedVersion = `${pkg.version}${versionSuffix}`;
 
 const SLUG_TITLES = {
-  trips: 'Reisen & Urlaube',
-  'spots-tours': 'Spots & Touren',
-  'floating-calendar-drawer': 'Kalender & Layout',
-  'brand-and-navigation': 'Design & Navigation',
-  'list-animations': 'Listen & Interaktion',
+  highlights: 'Highlights',
+  trips: 'Reisen und Urlaube',
+  map: 'Karte und Navigation',
+  'spots-tours': 'Spots und Touren',
+  budget: 'Budget und Kasse',
+  calendar: 'Kalender und Planung',
+  lists: 'Listen und Notizen',
   weather: 'Wetter',
-  'settings-sync': 'Einstellungen & Synchronisation',
-  'members-admin': 'Mitreisende & Verwaltung',
-  'deeplinks-trip-id': 'Verlinkung & Teilen',
-  'demo-feedback': 'Demo & Feedback',
+  admin: 'Verwaltung und Benutzerkonten',
+  design: 'Design und Bedienung',
+  privacy: 'Datenschutz und Sicherheit',
+  'settings-sync': 'Einstellungen und Synchronisation',
+  'demo-feedback': 'Demo und Feedback',
+  improvements: 'Weitere Verbesserungen und Fehlerbehebungen',
 };
 
 const GROUP_PRIORITY = [
+  'highlights',
   'trips',
+  'map',
   'spots-tours',
-  'floating-calendar-drawer',
-  'brand-and-navigation',
-  'list-animations',
+  'budget',
+  'calendar',
+  'lists',
   'weather',
+  'admin',
+  'design',
+  'privacy',
   'settings-sync',
-  'members-admin',
-  'deeplinks-trip-id',
   'demo-feedback',
+  'improvements',
 ];
 
 function slugToTitle(slug) {

@@ -1,9 +1,8 @@
-### Reisen & Urlaube
+### Reisen und Urlaube
 
-- 📅 **Urlaube ohne festes Datum**: Start- und Enddatum beim Anlegen oder Bearbeiten eines Urlaubs sind jetzt optional – ideal für frühe Planungen vorab.
-- 👤 **Solo-Urlaube**: Wenn du alleine reist, passen sich Packlisten und Kasse automatisch an und verbergen Gruppen-Optionen.
-- 📑 **Einfacheres Anlegen & Einstellungen-Tabs**: Das Formular zum Bearbeiten von Reisen ist jetzt in übersichtliche Reiter aufgeteilt; Zusatzfelder lassen sich bequem ein- und ausklappen. Die Aktionsleiste bleibt beim Scrollen fixiert am unteren Dialogrand.
-- 🃏 **Taktile Reisekarten**: Reisen in der Übersicht besitzen haptische Hover- und Klick-Feedbacks für eine flüssige Bedienung.
-- 🗑️ **Papierkorb pro Reise**: Gelöschte Elemente werden nun direkt über das Reise-Dashboard verwaltet, sodass alle Reiseteilnehmer gelöschte Einträge einsehen und wiederherstellen können.
-- 👥 **Zugriffsberechtigungen im Bearbeiten-Dialog**: Die Verwaltung von Mitreisenden und Zugriffsberechtigungen befindet sich nun übersichtlich als eigener Tab im Bearbeiten-Dialog jedes Urlaubs statt als separates Icon im Urlaub-Wechsler.
-- 🖼️ **Scharfe Urlaubsbanner**: Titelbilder für Reisen werden aus der Bildersuche nun in hochauflösender Originalqualität geladen und dargestellt, sodass der Urlaubsbanner auf dem Dashboard auch auf großen Bildschirmen gestochen scharf erscheint.
+- 📅 **Reisen ohne festes Datum**: Start- und Enddatum beim Anlegen oder Bearbeiten eines Urlaubs sind jetzt optional – ideal für frühe Planungen vorab.
+- 👤 **Solo-Reisen**: Wenn du alleine verreist, passen sich Packlisten und Kasse automatisch an und verbergen Gruppen-Optionen.
+- 📑 **Strukturierte Einstellungen**: Das Formular zum Bearbeiten von Reisen ist in übersichtliche Reiter aufgeteilt; Zusatzfelder lassen sich bequem ein- und ausklappen.
+- 🗑️ **Papierkorb pro Reise**: Gelöschte Elemente werden direkt über das Reise-Dashboard verwaltet und können von allen Mitreisenden eingesehen und wiederhergestellt werden.
+- 🏷️ **Eigene Urlaubskategorien**: Kategorien für Ausgaben und Spots lassen sich pro Urlaub individuell anlegen, mit passenden Symbolen versehen oder anpassen.
+- 👥 **Mitreisende direkt im Dialog**: Die Verwaltung von Mitreisenden und Zugriffsberechtigungen befindet sich nun als eigener Reiter direkt in den Reiseeinstellungen.
