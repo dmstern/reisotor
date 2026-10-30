@@ -79,15 +79,23 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
     )
     .catch(() => {});
 
+  await page.evaluate(() => document.fonts?.ready).catch(() => {});
+
   // 1b. In Screenshot-/Test-Umgebungen (insbes. bei eingefrorener Uhr per page.clock.setFixedTime)
   // stellt dieser Style sicher, dass fertig geladene Leaflet-Kacheln nicht in Leaflets JS-Fade-Loop (opacity: 0)
-  // hängenbleiben, sondern sofort mit voller Deckkraft (opacity: 1) dargestellt werden.
+  // hängenbleiben, sondern sofort mit voller Deckkraft (opacity: 1) dargestellt werden und keine Transitionen laufen.
   await page
     .addStyleTag({
       content: `
+        .leaflet-container,
+        .leaflet-container *,
+        .leaflet-container *::before,
+        .leaflet-container *::after {
+          transition: none !important;
+          animation: none !important;
+        }
         .leaflet-tile.leaflet-tile-loaded {
           opacity: 1 !important;
-          transition: none !important;
         }
       `,
     })

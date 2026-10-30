@@ -113,6 +113,7 @@ async function saveScreenshotIfChanged(
 ): Promise<{ status: 'created' | 'updated' | 'unchanged'; diffPixels?: number }> {
   // Immer sicherstellen, dass auf Seiten oder Dialogen mit einer Karte alle Kartenkacheln vollständig geladen sind
   await waitForMapTiles(page);
+  await page.evaluate(() => document.fonts?.ready).catch(() => {});
 
   // Sicherheitsnetz: Falls Leaflet-Karten auf der Seite gerendert werden, darf NIEMALS ein Screenshot
   // mit unvollständigen, noch ladenden oder fehlenden Kacheln gespeichert werden.
@@ -203,10 +204,10 @@ async function saveScreenshotIfChanged(
         const effectiveMaxDiff =
           maxDiffPixels ??
           (img1.width <= 500
-            ? Math.max(300, Math.round(img1.width * img1.height * 0.012))
+            ? Math.max(500, Math.round(img1.width * img1.height * 0.025))
             : Math.round(img1.width * img1.height * 0.012));
 
-        if (numDiffPixels > 0 && (process.env.FORCE_SCREENSHOTS || process.env.SCREENSHOT_MODE)) {
+        if (numDiffPixels > 0 && process.env.FORCE_SCREENSHOTS) {
           fs.writeFileSync(screenshotPath, newBuffer);
           console.log(
             `[Updated: ${numDiffPixels} px diff (forced)] ${path.basename(screenshotPath)}`
@@ -548,9 +549,15 @@ async function applyScreenshotStyles(page: Page) {
         border-bottom: none !important;
         box-shadow: none !important;
       }
+      .leaflet-container,
+      .leaflet-container *,
+      .leaflet-container *::before,
+      .leaflet-container *::after {
+        transition: none !important;
+        animation: none !important;
+      }
       .leaflet-tile.leaflet-tile-loaded {
         opacity: 1 !important;
-        transition: none !important;
       }
     `,
   });
