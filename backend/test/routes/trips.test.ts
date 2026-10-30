@@ -265,9 +265,6 @@ describe('trips routes', () => {
                 ]),
             });
           }
-          if (url.includes('travel-advisory.info')) {
-            return Promise.resolve({ ok: false, status: 503 });
-          }
           return Promise.reject(new Error('unexpected URL in test: ' + url));
         })
       );
