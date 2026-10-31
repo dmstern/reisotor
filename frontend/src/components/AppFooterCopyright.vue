@@ -38,6 +38,7 @@ const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
   font-size: var(--font-size-sm, 0.85rem);
   color: var(--color-text-muted);
   line-height: 1.5;
+  width: 100%;
   container-type: inline-size;
 }
 

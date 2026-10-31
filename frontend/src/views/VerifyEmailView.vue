@@ -178,5 +178,6 @@ button {
   flex-direction: column;
   gap: var(--space-1);
   font-size: 0.8rem;
+  width: 100%;
 }
 </style>
