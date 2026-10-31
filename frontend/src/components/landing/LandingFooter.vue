@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppFooterCopyright from '../AppFooterCopyright.vue';
+
 defineProps<{
   demoUrl: string;
   storybookUrl: string;
@@ -8,8 +10,6 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'openLegal', tab: 'privacy' | 'imprint'): void;
 }>();
-
-const currentYear = new Date().getFullYear();
 </script>
 
 <template>
@@ -25,15 +25,7 @@ const currentYear = new Date().getFullYear();
       <span class="dot">·</span>
       <a href="#imprint" @click.prevent="emit('openLegal', 'imprint')">Impressum</a>
     </div>
-    <p class="hint">
-      © {{ currentYear }}
-      <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a>
-      ·
-      <a :href="`${repoUrl.replace(/\/+$/, '')}/blob/main/LICENSE`" target="_blank" rel="noopener"
-        >EUPL-1.2</a
-      >
-      · Made with love, coffee and AI
-    </p>
+    <AppFooterCopyright :repo-url="repoUrl" />
   </footer>
 </template>
 
@@ -78,17 +70,5 @@ const currentYear = new Date().getFullYear();
 
 .dot {
   color: var(--color-border-strong);
-}
-
-.hint {
-  font-size: 0.95rem;
-  margin: 0;
-  padding: 0 var(--space-3);
-  color: var(--color-text-muted);
-}
-
-.hint a {
-  color: var(--color-text);
-  text-decoration: underline;
 }
 </style>
