@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import AppFooterCopyright from './AppFooterCopyright.vue';
 
 // Gemeinsame Copyright-/GitHub-Link-Zeile für Login-Seite (vor dem Login, daher ohne
 // backendseitige Build-Info) und den Über-Tab (nach dem Login, mit Build-Info vom Backend) -
@@ -12,9 +13,7 @@ const props = defineProps<{
   landingUrl?: string;
 }>();
 
-const copyrightYear = new Date().getFullYear();
 const resolvedRepoUrl = computed(() => (props.repoUrl ?? __REPO_URL__).replace(/\/+$/, ''));
-const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
 </script>
 
 <template>
@@ -29,18 +28,16 @@ const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
     ·
     <router-link to="/imprint">Impressum</router-link>
   </p>
-  <p class="hint app-footer-copyright">
-    © {{ copyrightYear }}
-    <a href="https://github.com/dmstern" target="_blank" rel="noopener">Daniel Morgenstern</a> ·
-    <a :href="licenseUrl" target="_blank" rel="noopener">EUPL-1.2</a> · Made with love, coffee and
-    AI<template v-if="hostingLocation"> · gehostet in {{ hostingLocation }}</template>
-  </p>
+  <AppFooterCopyright
+    class="app-footer-copyright-spacing"
+    :repo-url="resolvedRepoUrl"
+    :hosting-location="hostingLocation"
+  />
 </template>
 
 <style scoped>
 .app-footer-repo-link,
-.app-footer-legal-links,
-.app-footer-copyright {
+.app-footer-legal-links {
   margin: 0;
   text-align: center;
   font-size: var(--font-size-sm, 0.85rem);
@@ -49,13 +46,12 @@ const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
 }
 
 .app-footer-legal-links,
-.app-footer-copyright {
+.app-footer-copyright-spacing {
   margin-top: var(--space-1);
 }
 
 .app-footer-repo-link a,
-.app-footer-legal-links a,
-.app-footer-copyright a {
+.app-footer-legal-links a {
   color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
@@ -63,8 +59,7 @@ const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
 }
 
 .app-footer-repo-link a:hover,
-.app-footer-legal-links a:hover,
-.app-footer-copyright a:hover {
+.app-footer-legal-links a:hover {
   color: var(--color-primary-dark);
   text-decoration: underline;
 }
