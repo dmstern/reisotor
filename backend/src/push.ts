@@ -1,6 +1,7 @@
 import webpush from 'web-push';
 import { db } from './db/index.js';
-import { getEffectiveSetting } from './instanceSettings.js';
+import { getEffectiveSetting, getInstanceSetting, setInstanceSetting } from './instanceSettings.js';
+import { readBuildInfo } from './routes/buildInfo.js';
 
 export function ensureVapidConfigured(): boolean {
   const pub = getEffectiveSetting('vapid_public_key', 'VAPID_PUBLIC_KEY').trim();
@@ -55,9 +56,9 @@ export function removeSubscription(endpoint: string, userId: number) {
   );
 }
 
-// Alle Domänen, für die Push-Präferenzen einstellbar sind: die 11 recordActivity()-Domänen plus
-// die Abreise-Erinnerung (departureReminders.ts, kein recordActivity-Event, aber dieselbe
-// Filterlogik über push_preferences).
+// Alle Domänen und Optionen, für die Push-Präferenzen einstellbar sind: die 11 recordActivity()-
+// Domänen, die Abreise-Erinnerung (departureReminders.ts), Versions-Updates ('version')
+// sowie der Aktivitäts-Umfang ('activity_updates': true = alle Änderungen, false = nur neue Elemente).
 export const PUSH_PREFERENCE_DOMAINS = [
   'schedule',
   'packing',
@@ -70,6 +71,8 @@ export const PUSH_PREFERENCE_DOMAINS = [
   'notes',
   'members',
   'departure',
+  'version',
+  'activity_updates',
 ] as const;
 export type PushPreferenceDomain = (typeof PUSH_PREFERENCE_DOMAINS)[number];
 
@@ -121,6 +124,7 @@ export const DOMAIN_LABEL: Record<string, string> = {
   diary: 'Tagebuch',
   notes: 'Notizen',
   members: 'Mitglieder',
+  version: 'Neue Versionen',
 };
 
 export const ACTION_LABEL: Record<string, string> = {
@@ -141,43 +145,79 @@ interface ActivityPushInfo {
   actorUsername: string;
 }
 
-/** Gemeinsamer Versand-Kern für alle Push-Auslöser dieser Datei (Aktivitäts-Benachrichtigungen
- *  hier UND departureReminders.ts's Abreise-Erinnerungen): lädt die Abos aller Urlaub-Mitglieder
- *  (optional abzüglich einer ausschließenden user_id, z. B. der auslösenden Aktivitäts-Akteurin),
- *  gefiltert per LEFT JOIN auf push_preferences nach der jeweiligen Empfänger:in-Präferenz für
- *  `domain` (fehlende Zeile = aktiviert, siehe getPushPreferences()), und verschickt denselben
- *  JSON-Payload an jedes verbleibende Abo. Tote Abonnements (Browser hat die Berechtigung entzogen
- *  oder das Abo ist abgelaufen) räumt sich hier selbst auf, sonst würde jeder künftige Push an
- *  dasselbe tote Abo erneut fehlschlagen. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
+export const NEW_ELEMENT_ACTIONS = new Set([
+  'created',
+  'member_added',
+  'attachment_added',
+  'create_category',
+]);
+
+/** Gemeinsamer Versand-Kern für alle Urlaub-bezogenen Push-Auslöser dieser Datei
+ *  (Aktivitäts-Benachrichtigungen hier UND departureReminders.ts's Abreise-Erinnerungen):
+ *  lädt die Abos aller Urlaub-Mitglieder (optional abzüglich einer ausschließenden user_id,
+ *  z. B. der auslösenden Aktivitäts-Akteurin), gefiltert per LEFT JOIN auf push_preferences
+ *  nach der jeweiligen Empfänger:in-Präferenz für `domain` sowie bei Updates/Änderungen
+ *  ('isUpdate = true') zusätzlich nach der 'activity_updates'-Präferenz (fehlende Zeile = aktiviert).
+ *  Verschickt denselben JSON-Payload an jedes verbleibende Abo. Tote Abonnements räumt sich hier
+ *  selbst auf. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
 export async function sendPushToTripMembers(
   tripId: number,
   payload: Record<string, unknown>,
   domain: PushPreferenceDomain,
-  excludeUserId?: number
+  excludeUserId?: number,
+  isUpdate = false
 ) {
   if (!ensureVapidConfigured()) return;
   const subs = (
-    excludeUserId != null
-      ? db
-          .prepare(
-            `SELECT push_subscriptions.* FROM push_subscriptions
-             JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-             LEFT JOIN push_preferences ON push_preferences.user_id = push_subscriptions.user_id
-               AND push_preferences.domain = ?
-             WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
-               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`
-          )
-          .all(domain, tripId, excludeUserId)
-      : db
-          .prepare(
-            `SELECT push_subscriptions.* FROM push_subscriptions
-             JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-             LEFT JOIN push_preferences ON push_preferences.user_id = push_subscriptions.user_id
-               AND push_preferences.domain = ?
-             WHERE trip_members.trip_id = ?
-               AND (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`
-          )
-          .all(domain, tripId)
+    isUpdate
+      ? excludeUserId != null
+        ? db
+            .prepare(
+              `SELECT push_subscriptions.* FROM push_subscriptions
+               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+                 AND pref_domain.domain = ?
+               LEFT JOIN push_preferences pref_updates ON pref_updates.user_id = push_subscriptions.user_id
+                 AND pref_updates.domain = 'activity_updates'
+               WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
+                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)
+                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+            )
+            .all(domain, tripId, excludeUserId)
+        : db
+            .prepare(
+              `SELECT push_subscriptions.* FROM push_subscriptions
+               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+                 AND pref_domain.domain = ?
+               LEFT JOIN push_preferences pref_updates ON pref_updates.user_id = push_subscriptions.user_id
+                 AND pref_updates.domain = 'activity_updates'
+               WHERE trip_members.trip_id = ?
+                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)
+                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+            )
+            .all(domain, tripId)
+      : excludeUserId != null
+        ? db
+            .prepare(
+              `SELECT push_subscriptions.* FROM push_subscriptions
+               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+                 AND pref_domain.domain = ?
+               WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
+                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)`
+            )
+            .all(domain, tripId, excludeUserId)
+        : db
+            .prepare(
+              `SELECT push_subscriptions.* FROM push_subscriptions
+               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+                 AND pref_domain.domain = ?
+               WHERE trip_members.trip_id = ?
+                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)`
+            )
+            .all(domain, tripId)
   ) as PushSubscriptionRow[];
   if (!subs.length) return;
   if (!ensureVapidConfigured()) return;
@@ -200,6 +240,70 @@ export async function sendPushToTripMembers(
   );
 }
 
+/** Versendet eine Benachrichtigung an alle Push-Abonnenten, die eine gegebene Domäne (z. B. 'version')
+ *  nicht abgewählt haben. */
+export async function sendPushToAllSubscribers(
+  payload: Record<string, unknown>,
+  domain: PushPreferenceDomain
+) {
+  if (!ensureVapidConfigured()) return;
+  const subs = db
+    .prepare(
+      `SELECT push_subscriptions.* FROM push_subscriptions
+       LEFT JOIN push_preferences ON push_preferences.user_id = push_subscriptions.user_id
+         AND push_preferences.domain = ?
+       WHERE (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`
+    )
+    .all(domain) as PushSubscriptionRow[];
+  if (!subs.length) return;
+  if (!ensureVapidConfigured()) return;
+
+  const body = JSON.stringify(payload);
+  await Promise.all(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          body
+        );
+      } catch (err) {
+        const statusCode = (err as { statusCode?: number }).statusCode;
+        if (statusCode === 404 || statusCode === 410) {
+          db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
+        }
+      }
+    })
+  );
+}
+
+/** Versendet eine Push-Benachrichtigung über ein neues App-Release an alle interessierten Nutzer:innen. */
+export async function sendVersionNotification(version: string, detail?: string) {
+  const payload = {
+    title: `Reisotor · Version v${version}`,
+    body: detail ?? 'Eine neue Version von Reisotor steht bereit!',
+    url: '/settings?tab=about',
+  };
+  await sendPushToAllSubscribers(payload, 'version');
+}
+
+/** Prüft beim Server-Start, ob eine neue Version ausgerollt wurde, und benachrichtigt Abonnenten einmalig. */
+export async function checkVersionNotification() {
+  const info = readBuildInfo();
+  if (!info.version) return;
+  const currentVersion = info.version;
+  const lastNotified = getInstanceSetting('last_notified_version');
+  if (!lastNotified) {
+    // Bei erstem Start keine Spam-Benachrichtigung für die bestehende Version
+    setInstanceSetting('last_notified_version', currentVersion);
+    return;
+  }
+  if (lastNotified !== currentVersion) {
+    const detail = info.changelog?.notes?.[0];
+    await sendVersionNotification(currentVersion, detail);
+    setInstanceSetting('last_notified_version', currentVersion);
+  }
+}
+
 /** Best-effort – wird von activity.ts's recordActivity() nach jeder Mutation angestoßen, blockiert
  *  die auslösende Route nie (siehe dortiger .catch()). */
 export async function notifyTripMembers(
@@ -209,10 +313,12 @@ export async function notifyTripMembers(
 ) {
   const title = `${DOMAIN_LABEL[info.domain] ?? info.domain} · ${info.tripName}`;
   const body = `${info.actorUsername} hat ${ACTION_LABEL[info.action] ?? 'etwas geändert'}`;
+  const isUpdate = !NEW_ELEMENT_ACTIONS.has(info.action);
   await sendPushToTripMembers(
     tripId,
     { title, body, tripId },
     info.domain as PushPreferenceDomain,
-    excludeUserId
+    excludeUserId,
+    isUpdate
   );
 }

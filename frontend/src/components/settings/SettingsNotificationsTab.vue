@@ -4,15 +4,14 @@ import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Checkbox from '../primitives/Checkbox.vue';
 import CheckboxCard from '../primitives/CheckboxCard.vue';
+import CollapsibleFieldset from '../primitives/CollapsibleFieldset.vue';
 import Select from '../primitives/Select.vue';
 import SegmentedToggle from '../SegmentedToggle.vue';
-import AppIcon from '../AppIcon.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import { usePushSettings } from '../../composables/usePushSettings';
 import { useAppSettingsReset } from '../../composables/useAppSettingsReset';
 import { useUiSettingsStore, TOAST_TIMEOUT_OPTIONS } from '../../stores/uiSettings';
 import { BELL_ICON } from '../../composables/useSettingsTabs';
-import { ACTION_ICONS } from '../../utils/actionIcons';
 import {
   NOTIFICATION_DOMAIN_META,
   NOTIFICATION_DOMAINS,
@@ -29,8 +28,11 @@ const {
   notificationPrefs,
   pushLevelValue,
   pushLevelOptions: PUSH_LEVEL_TOGGLE_OPTIONS,
+  pushScopeValue,
+  pushScopeOptions,
   isPushDefault,
   selectPushLevel,
+  setPushScope,
   setDomainPreference,
   resetPush,
   initPushSubscription,
@@ -123,36 +125,49 @@ onMounted(() => {
             :options="PUSH_LEVEL_TOGGLE_OPTIONS"
             @update:model-value="selectPushLevel"
           />
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            class="push-details-toggle"
-            @click="showPushDetails = !showPushDetails"
+          <CollapsibleFieldset
+            v-model="showPushDetails"
+            label="Einzeln anpassen"
+            class="push-details-collapsible"
           >
-            Einzeln anpassen
-            <AppIcon
-              :icon="ACTION_ICONS.chevronDown"
-              :size="12"
-              group="actions"
-              class="push-details-caret"
-              :class="{ open: showPushDetails }"
-            />
-          </Button>
-          <ul v-if="showPushDetails" class="push-domain-list">
-            <li v-for="domain in NOTIFICATION_DOMAINS" :key="domain" class="push-domain-row">
-              <span class="push-domain-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
-              <span class="push-domain-label">{{ NOTIFICATION_DOMAIN_META[domain].label }}</span>
-              <label :for="'push-domain-' + domain" class="push-domain-visible">
-                <Checkbox
-                  :id="'push-domain-' + domain"
-                  :checked="notificationPrefs.preferences?.[domain] ?? true"
-                  :aria-label="`${NOTIFICATION_DOMAIN_META[domain].label}-Push aktiv`"
-                  @change="setDomainPreference(domain, ($event.target as HTMLInputElement).checked)"
-                />
-              </label>
-            </li>
-          </ul>
+            <div class="push-scope-section">
+              <span class="push-scope-heading">Ereignisse</span>
+              <SegmentedToggle
+                :model-value="pushScopeValue"
+                :options="pushScopeOptions"
+                @update:model-value="setPushScope"
+              />
+              <p class="hint push-scope-hint">
+                {{
+                  pushScopeValue === 'created_only'
+                    ? 'Benachrichtigung nur, wenn jemand ein neues Element anlegt.'
+                    : 'Benachrichtigung bei neuen Elementen sowie Änderungen an bestehenden.'
+                }}
+              </p>
+            </div>
+
+            <div class="push-domains-section">
+              <span class="push-domains-heading">Bereiche</span>
+              <ul class="push-domain-list">
+                <li v-for="domain in NOTIFICATION_DOMAINS" :key="domain" class="push-domain-row">
+                  <span class="push-domain-icon">{{ NOTIFICATION_DOMAIN_META[domain].icon }}</span>
+                  <span class="push-domain-label">{{
+                    NOTIFICATION_DOMAIN_META[domain].label
+                  }}</span>
+                  <label :for="'push-domain-' + domain" class="push-domain-visible">
+                    <Checkbox
+                      :id="'push-domain-' + domain"
+                      :checked="notificationPrefs.preferences?.[domain] ?? true"
+                      :aria-label="`${NOTIFICATION_DOMAIN_META[domain].label}-Push aktiv`"
+                      @change="
+                        setDomainPreference(domain, ($event.target as HTMLInputElement).checked)
+                      "
+                    />
+                  </label>
+                </li>
+              </ul>
+            </div>
+          </CollapsibleFieldset>
         </template>
         <p v-if="pushError || notificationPrefs.error" class="hint error">
           {{ pushError || notificationPrefs.error }}
@@ -195,18 +210,36 @@ onMounted(() => {
   color: var(--color-danger);
 }
 
-.push-details-toggle {
+.push-details-collapsible {
+  margin-top: var(--space-3);
+}
+
+.push-scope-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.push-scope-heading,
+.push-domains-heading {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.push-scope-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.push-domains-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin-top: var(--space-2);
-}
-
-.push-details-caret {
-  margin-left: var(--space-1);
-  opacity: 0.6;
-  transition: transform 0.15s ease;
-}
-
-.push-details-caret.open {
-  transform: rotate(180deg);
 }
 
 .push-domain-list {

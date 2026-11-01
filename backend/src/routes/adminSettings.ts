@@ -8,7 +8,8 @@ import {
   type UpdateAdminSettingsPayload,
 } from '../instanceSettings.js';
 import { resetTransporter, isEmailConfigured, sendTestEmail } from '../utils/mailer.js';
-import { ensureVapidConfigured } from '../push.js';
+import { ensureVapidConfigured, sendVersionNotification } from '../push.js';
+import { readBuildInfo } from './buildInfo.js';
 import { EMAIL_PATTERN } from './auth.js';
 
 export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
@@ -54,6 +55,26 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       const result = generateAndSaveVapidKeys(req.body?.subject);
       ensureVapidConfigured();
       return result;
+    }
+  );
+
+  // Push-Benachrichtigung für neue Version manuell auslösen (nur Admins)
+  app.post<{ Body?: { version?: string; detail?: string } }>(
+    '/admin/settings/send-version-push',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Versions-Pushs versenden' });
+      }
+      if (!ensureVapidConfigured()) {
+        return reply.code(400).send({ error: 'Push ist auf diesem Server nicht konfiguriert' });
+      }
+      const info = readBuildInfo();
+      const version = req.body?.version?.trim() || info.version || 'Update';
+      const detail = req.body?.detail?.trim() || info.changelog?.notes?.[0];
+      await sendVersionNotification(version, detail);
+      return { ok: true, version };
     }
   );
 

@@ -256,4 +256,29 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toContain('ungültig');
   });
+
+  it('rejects POST /api/admin/settings/send-version-push for non-admin users', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-version-push',
+      headers: { cookie: userCookie },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('allows admin to trigger version push', async () => {
+    const push = await import('../../src/push.js');
+    const spy = vi.spyOn(push, 'sendVersionNotification').mockResolvedValueOnce();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-version-push',
+      headers: { cookie: adminCookie },
+      payload: { version: '2.5.0', detail: 'Update-Beschreibung' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().ok).toBe(true);
+    expect(spy).toHaveBeenCalledWith('2.5.0', 'Update-Beschreibung');
+    spy.mockRestore();
+  });
 });

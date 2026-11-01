@@ -17,6 +17,11 @@ export const PUSH_LEVEL_TOGGLE_OPTIONS = [
   ...NOTIFICATION_LEVEL_OPTIONS,
 ];
 
+export const PUSH_SCOPE_OPTIONS = [
+  { value: 'all', label: 'Neu & Geändert' },
+  { value: 'created_only', label: 'Nur neue Elemente' },
+];
+
 export function usePushSettings() {
   const pushSupported = isPushSupported();
   // null = wird noch geprüft, sonst tatsächlicher Abo-Status beim Browser (nicht nur ein lokaler
@@ -68,9 +73,21 @@ export function usePushSettings() {
     await notificationPrefs.update({ [domain]: enabled });
   }
 
+  const pushScopeValue = computed(() =>
+    notificationPrefs.preferences?.activity_updates === false ? 'created_only' : 'all'
+  );
+
+  async function setPushScope(scope: string) {
+    const isAll = scope === 'all';
+    await notificationPrefs.update({ activity_updates: isAll });
+  }
+
   const isPushDefault = computed(() => {
     if (!pushEnabled.value) return true;
-    return pushLevelValue.value === 'balanced';
+    return (
+      pushLevelValue.value === 'balanced' &&
+      (notificationPrefs.preferences?.activity_updates ?? true)
+    );
   });
 
   async function resetPush() {
@@ -101,8 +118,11 @@ export function usePushSettings() {
     notificationPrefs,
     pushLevelValue,
     pushLevelOptions: PUSH_LEVEL_TOGGLE_OPTIONS,
+    pushScopeValue,
+    pushScopeOptions: PUSH_SCOPE_OPTIONS,
     isPushDefault,
     selectPushLevel,
+    setPushScope,
     setDomainPreference,
     resetPush,
     initPushSubscription,
