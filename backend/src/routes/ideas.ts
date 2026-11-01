@@ -168,6 +168,9 @@ const updateIdeaStmt = db.prepare(
    WHERE id = ?`
 );
 const deleteBudgetItemStmt = db.prepare('DELETE FROM budget_items WHERE id = ?');
+const checkBudgetInLegsStmt = db.prepare(
+  'SELECT 1 FROM excursion_legs WHERE budget_expense_id = ? LIMIT 1'
+);
 const selectScheduleItemsByIdeaStmt = db.prepare(
   'SELECT id FROM schedule_items WHERE idea_id = ? AND deleted_at IS NULL'
 );
@@ -390,9 +393,10 @@ function syncExcursionLegs(
         );
         budgetExpenseId = plannedId;
         if (budgetExpenseId) preservedBudgetIds.add(budgetExpenseId);
-      } else if (matchingExistingBudgetId) {
-        deleteBudgetItemStmt.run(matchingExistingBudgetId);
       }
+      // Hinweis: Wenn matchingExistingBudgetId nicht erhalten wird, erfolgt das Löschen erst
+      // am Ende von syncExcursionLegs (Zeilen 467-471), nachdem das Leg aktualisiert wurde,
+      // um Foreign-Key-Konflikte zu vermeiden.
 
       const matchingLeg =
         (leg.id ? existingLegs.find((el) => el.id === leg.id) : null) ??
@@ -711,7 +715,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
     // Erst jetzt löschen: die ideas-Zeile verweist nicht mehr auf die alte Ausgabe (gleiches Muster
     // wie zuvor in routes/travel.ts).
-    if (staleIdToDelete) {
+    // Falls die Ausgabe jedoch einer Teilstrecke (excursion_legs) gehört, darf sie hier nicht
+    // gelöscht werden (Foreign-Key-Konflikt; die Teilstrecken-Bereinigung übernimmt syncExcursionLegs).
+    if (staleIdToDelete && !checkBudgetInLegsStmt.get(staleIdToDelete)) {
       deleteBudgetItemStmt.run(staleIdToDelete);
     }
     const ideaId = Number(req.params.id);
