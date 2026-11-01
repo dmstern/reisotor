@@ -10,6 +10,7 @@ describe('fetchRegionInfo', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     _resetRegionInfoCache();
   });
@@ -153,5 +154,60 @@ describe('fetchRegionInfo', () => {
 
     const info = await fetchRegionInfo('ZZ', null);
     expect(info.advisory).toBeNull();
+  });
+
+  it('refreshes advisory independently from cached base country info when AA cache expires', async () => {
+    vi.useFakeTimers();
+    let aaCalls = 0;
+    let restCalls = 0;
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.includes('restcountries.com')) {
+          restCalls++;
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve([
+                { languages: { deu: 'German' }, currencies: { EUR: { name: 'Euro' } } },
+              ]),
+          });
+        }
+        if (url.includes('auswaertiges-amt.de')) {
+          aaCalls++;
+          const warning = aaCalls > 1;
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                response: {
+                  '1': {
+                    countryCode: 'DE',
+                    countryName: 'Deutschland',
+                    warning,
+                    partialWarning: false,
+                  },
+                },
+              }),
+          });
+        }
+        return Promise.resolve({ ok: false, status: 404 });
+      })
+    );
+
+    // 1. Initialer Aufruf
+    const first = await fetchRegionInfo('DE', null);
+    expect(first.advisory).toEqual({ score: 1.0, message: 'Keine Reisewarnung' });
+    expect(restCalls).toBe(1);
+    expect(aaCalls).toBe(1);
+
+    // 2. Zeit um 7 Stunden vorstellen: AA-Cache (6h) abgelaufen, aber Base-Cache (12h) noch gültig
+    vi.setSystemTime(Date.now() + 7 * 60 * 60 * 1000);
+
+    const second = await fetchRegionInfo('DE', null);
+    expect(second.advisory).toEqual({ score: 5.0, message: 'Reisewarnung' });
+    expect(restCalls).toBe(1); // REST Countries wurde NICHT erneut aufgerufen (Base-Cache intakt)
+    expect(aaCalls).toBe(2); // Auswärtiges Amt WURDE erneut aufgerufen und aktualisiert
   });
 });

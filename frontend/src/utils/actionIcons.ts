@@ -25,6 +25,8 @@ import {
   IconClockFilled,
   IconCircleCheck,
   IconCircleCheckFilled,
+  IconShieldCheck,
+  IconShieldCheckFilled,
   IconLock,
   IconLockFilled,
   IconLockOpen,
@@ -252,6 +254,7 @@ export type ActionIconKey =
   | 'photoPlus'
   | 'copy'
   | 'check'
+  | 'shieldCheck'
   | 'mail'
   | 'externalLink';
 
@@ -354,6 +357,12 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     emoji: '⚠️',
     outline: IconAlertTriangle,
     filled: IconAlertTriangleFilled,
+  },
+  shieldCheck: {
+    id: 'shield-check',
+    emoji: '🛡️',
+    outline: IconShieldCheck,
+    filled: IconShieldCheckFilled,
   },
   currency: { id: 'arrows-exchange', emoji: '💱', outline: IconArrowsExchange },
   rain: { id: 'droplet', emoji: '💧', outline: IconDroplet, filled: IconDropletFilled },

@@ -237,7 +237,11 @@ onMounted(() => {
         </span>
       </DetailRow>
       <DetailRow v-if="regionInfo.advisory" label="Sicherheit">
-        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+        <AppIcon
+          :icon="regionInfo.advisory.score > 2.0 ? ACTION_ICONS.warning : ACTION_ICONS.shieldCheck"
+          :size="14"
+          group="actions"
+        />
         {{ regionInfo.advisory.message }}
         <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
       </DetailRow>

@@ -70,14 +70,21 @@ interface AuswaertigesAmtResponse {
   response?: Record<string, AuswaertigesAmtWarningItem>;
 }
 
-// Server-seitiger In-Memory-Cache pro Ländercode – die externen APIs ändern sich selten (Sprache/
-// Währung praktisch nie, Wechselkurs höchstens täglich), spart wiederholte Aufrufe bei
-// jedem Dashboard-Besuch. Analog zu utils/weather.ts's Modul-Cache im Frontend, hier aber mit TTL
-// statt "ein Fetch pro Session", da das Backend dauerhaft läuft.
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
-const cache = new Map<string, { expiresAt: number; data: RegionInfo }>();
+interface CountryBaseInfo {
+  languages: string[];
+  currency: { code: string; name: string } | null;
+  exchangeRate: number | null;
+}
 
-// 6-Stunden-Cache für die weltweite Reise- und Sicherheitshinweise-Liste des Auswärtigen Amts
+// Server-seitiger In-Memory-Cache pro Ländercode & Heimatwährung – die externen Stammdaten ändern sich selten
+// (Sprache/Währung praktisch nie, Wechselkurs höchstens täglich), spart wiederholte Aufrufe bei
+// jedem Dashboard-Besuch.
+const BASE_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const baseCache = new Map<string, { expiresAt: number; data: CountryBaseInfo }>();
+
+// 6-Stunden-Cache für die weltweite Reise- und Sicherheitshinweise-Liste des Auswärtigen Amts.
+// Wird unabhängig von den Länder-Stammdaten gecacht, damit Sicherheits-Updates nach 6h direkt
+// wirksam werden, ohne auf das 12h-Ablaufen der Länderdaten warten zu müssen.
 const AA_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 let aaCache: {
   expiresAt: number;
@@ -87,7 +94,7 @@ let aaFetchPromise: Promise<Map<string, { score: number; message: string }> | nu
 
 /** Test-Hilfe zum Zurücksetzen der internen Caches */
 export function _resetRegionInfoCache(): void {
-  cache.clear();
+  baseCache.clear();
   aaCache = null;
   aaFetchPromise = null;
 }
@@ -155,38 +162,33 @@ async function getAuswaertigesAmtAdvisories(): Promise<Map<
   return aaFetchPromise;
 }
 
-/** Holt Sprache(n)/Währung (REST Countries), Wechselkurs zur Heimatwährung (open.er-api.com)
- *  und amtliche Reisehinweise (Auswärtiges Amt Open Data). Alle drei APIs werden fehlertolerant
- *  behandelt: Ein Fehlschlag einzelner Dienste lässt nur den jeweiligen Teil leer/null. */
-export async function fetchRegionInfo(
-  countryCode: string,
+async function getCountryBaseInfo(
+  normalizedCountryCode: string,
   homeCurrency: string | null
-): Promise<RegionInfo> {
-  const normalizedCountryCode = countryCode.toUpperCase();
+): Promise<CountryBaseInfo> {
   const cacheKey = `${normalizedCountryCode}|${homeCurrency ?? ''}`;
-  const cached = cache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
-
-  const [countryResult, advisoryMapResult] = await Promise.allSettled([
-    fetch(`https://restcountries.com/v3.1/alpha/${normalizedCountryCode}`, {
-      signal: AbortSignal.timeout(5000),
-    }).then((res) =>
-      res.ok
-        ? (res.json() as Promise<RestCountryResponse[]>)
-        : Promise.reject(new Error(String(res.status)))
-    ),
-    getAuswaertigesAmtAdvisories(),
-  ]);
+  const cached = baseCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
 
   let languages: string[] = [];
   let currency: { code: string; name: string } | null = null;
 
-  if (countryResult.status === 'fulfilled') {
-    languages = Object.values(countryResult.value[0]?.languages ?? {});
-    const currencyEntry = Object.entries(countryResult.value[0]?.currencies ?? {})[0];
-    if (currencyEntry) {
-      currency = { code: currencyEntry[0], name: currencyEntry[1].name };
+  try {
+    const res = await fetch(`https://restcountries.com/v3.1/alpha/${normalizedCountryCode}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as RestCountryResponse[];
+      languages = Object.values(data[0]?.languages ?? {});
+      const currencyEntry = Object.entries(data[0]?.currencies ?? {})[0];
+      if (currencyEntry) {
+        currency = { code: currencyEntry[0], name: currencyEntry[1].name };
+      }
     }
+  } catch {
+    // Fehler bei REST Countries tolerieren
   }
 
   let exchangeRate: number | null = null;
@@ -204,10 +206,35 @@ export async function fetchRegionInfo(
     }
   }
 
+  const baseInfo: CountryBaseInfo = { languages, currency, exchangeRate };
+  baseCache.set(cacheKey, { expiresAt: Date.now() + BASE_CACHE_TTL_MS, data: baseInfo });
+  return baseInfo;
+}
+
+/** Holt Sprache(n)/Währung (REST Countries), Wechselkurs zur Heimatwährung (open.er-api.com)
+ *  und amtliche Reisehinweise (Auswärtiges Amt Open Data). Alle APIs werden fehlertolerant
+ *  behandelt: Ein Fehlschlag einzelner Dienste lässt nur den jeweiligen Teil leer/null. */
+export async function fetchRegionInfo(
+  countryCode: string,
+  homeCurrency: string | null
+): Promise<RegionInfo> {
+  const normalizedCountryCode = countryCode.toUpperCase();
+
+  const [baseInfoResult, advisoryMapResult] = await Promise.allSettled([
+    getCountryBaseInfo(normalizedCountryCode, homeCurrency),
+    getAuswaertigesAmtAdvisories(),
+  ]);
+
+  const baseInfo: CountryBaseInfo =
+    baseInfoResult.status === 'fulfilled'
+      ? baseInfoResult.value
+      : { languages: [], currency: null, exchangeRate: null };
+
   const advisoryMap = advisoryMapResult.status === 'fulfilled' ? advisoryMapResult.value : null;
   const advisory = advisoryMap?.get(normalizedCountryCode) ?? null;
 
-  const info: RegionInfo = { languages, currency, exchangeRate, advisory };
-  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, data: info });
-  return info;
+  return {
+    ...baseInfo,
+    advisory,
+  };
 }
