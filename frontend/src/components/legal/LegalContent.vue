@@ -24,6 +24,8 @@ const emit = defineEmits<{
 }>();
 
 const operator = computed(() => props.config.operator);
+const hostingProvider = computed(() => props.config.hostingProvider);
+const hasHostingProvider = computed(() => Boolean(hostingProvider.value?.name));
 const services = computed(() => props.config.services);
 const hasOperatorInfo = computed(() => props.config.hasOperatorInfo);
 const isGitHubPagesHosted = computed(
@@ -164,6 +166,13 @@ const isFeedbackActive = computed(() =>
               Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong
               >.
             </template>
+          </p>
+          <p v-if="hasHostingProvider" class="legal-address">
+            <strong>Hosting-Dienstleister:</strong><br />
+            {{ hostingProvider?.name }}<br />
+            <span v-if="hostingProvider?.address" class="multiline-text">{{
+              hostingProvider.address
+            }}</span>
           </p>
         </template>
       </section>
@@ -392,6 +401,66 @@ const isFeedbackActive = computed(() =>
             erfolgt auf Grundlage des EU-US Data Privacy Frameworks bzw. Standardvertragsklauseln
             der Europäischen Kommission.
           </p>
+        </div>
+
+        <div v-else-if="hasHostingProvider" class="legal-card-info">
+          <strong>Hosting-Dienstleister &amp; Auftragsverarbeitung (AVV):</strong>
+          <p>
+            Diese Reisotor-Instanz wird auf Servern des folgenden Hosting-Dienstleisters
+            bereitgestellt:
+          </p>
+          <p class="legal-address">
+            <strong>{{ hostingProvider?.name }}</strong
+            ><br />
+            <span v-if="hostingProvider?.address" class="multiline-text">{{
+              hostingProvider.address
+            }}</span>
+          </p>
+          <p>
+            Der Hoster verarbeitet die oben genannten Verbindungs- und Protokolldaten sowie die in
+            der Anwendung gespeicherten Daten (z. B. Datenbank, Dateianhänge) in unserem Auftrag, um
+            die technische Infrastruktur, Rechenleistung und Speicherplatz bereitzustellen.
+          </p>
+          <p>
+            <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an
+            einer zuverlässigen, sicheren und performanten Bereitstellung unseres Online-Angebots
+            durch einen professionellen Infrastrukturanbieter).
+          </p>
+          <p>
+            <strong>Auftragsverarbeitung:</strong> Wir haben mit dem genannten Hoster einen Vertrag
+            zur Auftragsverarbeitung (AVV) gemäß Art. 28 DSGVO abgeschlossen. Dieser stellt sicher,
+            dass der Dienstleister die personenbezogenen Daten unserer Nutzer:innen streng
+            weisungsgebunden und unter Einhaltung des europäischen Datenschutzniveaus verarbeitet.
+            <template v-if="config.hostingLocation">
+              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong
+              >.
+            </template>
+          </p>
+        </div>
+
+        <div v-else class="legal-card-info">
+          <strong>Hosting &amp; Auftragsverarbeitung (AVV):</strong>
+          <p>
+            Diese Reisotor-Instanz wird entweder auf eigener Serverinfrastruktur oder über einen
+            externen Hosting-Dienstleister betrieben.
+          </p>
+          <div class="legal-alert legal-alert-warning">
+            <div class="legal-alert-icon" aria-hidden="true">
+              <IconAlertTriangle :size="18" />
+            </div>
+            <div class="legal-alert-body">
+              <strong>Hinweis für Instanzbetreiber:innen:</strong>
+              <p>
+                Falls du einen externen Hosting-Dienstleister (z. B. netcup, Hetzner etc.) nutzt,
+                hinterlege dessen Namen und ladungsfähige Anschrift über die Umgebungsvariablen
+                <code>LEGAL_HOSTING_PROVIDER_NAME</code> und
+                <code>LEGAL_HOSTING_PROVIDER_ADDRESS</code> oder in der Admin-Oberfläche unter
+                <em>Einstellungen → Admin → Impressum &amp; Anbieterangaben</em>. Achte zudem
+                darauf, mit dem Anbieter einen Vertrag zur Auftragsverarbeitung (AVV nach Art. 28
+                DSGVO) abzuschließen.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

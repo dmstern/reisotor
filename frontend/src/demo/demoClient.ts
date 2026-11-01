@@ -65,6 +65,8 @@ const demoAdminSettings = {
     contactEmail: 'admin@reisotor.local',
     contactPhone: '+49 30 1234567',
     hostingLocation: 'Berlin',
+    hostingProviderName: '',
+    hostingProviderAddress: '',
   },
   geo: {
     isOrsApiKeySet: true,

@@ -88,6 +88,10 @@ describe('LegalContent', () => {
         phone: '+49 123 456789',
       },
       hasOperatorInfo: true,
+      hostingProvider: {
+        name: 'netcup GmbH',
+        address: 'Daimlerstraße 25, 76185 Karlsruhe',
+      },
       services: {
         photonUrl: 'https://my-photon.local/api/',
         isCustomPhoton: true,
@@ -107,6 +111,9 @@ describe('LegalContent', () => {
     expect(container.textContent).toContain('E-Mail: max@example.com');
     expect(container.textContent).toContain('my-photon.local');
     expect(container.textContent).not.toContain('Betreiberangaben noch nicht konfiguriert');
+    expect(container.textContent).toContain('netcup GmbH');
+    expect(container.textContent).toContain('Daimlerstraße 25, 76185 Karlsruhe');
+    expect(container.textContent).toContain('Auftragsverarbeitung (AVV)');
 
     cleanUp();
   });
@@ -123,6 +130,27 @@ describe('LegalContent', () => {
     expect(container.textContent).toContain('European Union Public Licence v. 1.2 (EUPL-1.2)');
     expect(container.textContent).toContain('Kartenbibliothek: Leaflet');
     expect(container.textContent).toContain('Symbole & Icons: Tabler Icons');
+
+    cleanUp();
+  });
+
+  it('renders configured hosting provider in Impressum tab when present', () => {
+    const customConfig: LegalConfig = {
+      ...DEFAULT_LEGAL_CONFIG,
+      hostingProvider: {
+        name: 'netcup GmbH',
+        address: 'Daimlerstraße 25, 76185 Karlsruhe',
+      },
+    };
+
+    const { container, cleanUp } = mountComponent({
+      config: customConfig,
+      activeTab: 'imprint',
+    });
+
+    expect(container.textContent).toContain('Hosting-Dienstleister:');
+    expect(container.textContent).toContain('netcup GmbH');
+    expect(container.textContent).toContain('Daimlerstraße 25, 76185 Karlsruhe');
 
     cleanUp();
   });

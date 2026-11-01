@@ -65,6 +65,8 @@ const legalForm = reactive({
   contactEmail: '',
   contactPhone: '',
   hostingLocation: 'Berlin',
+  hostingProviderName: '',
+  hostingProviderAddress: '',
 });
 
 const geoForm = reactive({
@@ -180,6 +182,8 @@ watch(
     legalForm.contactEmail = s.legal.contactEmail;
     legalForm.contactPhone = s.legal.contactPhone;
     legalForm.hostingLocation = s.legal.hostingLocation;
+    legalForm.hostingProviderName = s.legal.hostingProviderName;
+    legalForm.hostingProviderAddress = s.legal.hostingProviderAddress;
 
     geoForm.photonApiUrl = s.geo.photonApiUrl;
     geoForm.nominatimApiUrl = s.geo.nominatimApiUrl;
@@ -234,6 +238,8 @@ async function saveLegal() {
       contactEmail: legalForm.contactEmail,
       contactPhone: legalForm.contactPhone,
       hostingLocation: legalForm.hostingLocation,
+      hostingProviderName: legalForm.hostingProviderName,
+      hostingProviderAddress: legalForm.hostingProviderAddress,
     },
   });
 }
@@ -548,6 +554,33 @@ async function handleGenerateVapid() {
               placeholder="Berlin"
             />
             <span class="field-hint">Wird im Über-Bereich als Server-Standort ausgewiesen.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="legal-hosting-provider-name">Hosting-Dienstleister (Name / Firma)</label>
+            <Input
+              id="legal-hosting-provider-name"
+              v-model="legalForm.hostingProviderName"
+              placeholder="z. B. netcup GmbH"
+            />
+            <span class="field-hint"
+              >Wird im Impressum und in der Datenschutzerklärung für das Server-Hosting
+              ausgewiesen.</span
+            >
+          </div>
+
+          <div class="form-group full-width">
+            <label for="legal-hosting-provider-address">Hosting-Dienstleister (Anschrift)</label>
+            <Textarea
+              id="legal-hosting-provider-address"
+              v-model="legalForm.hostingProviderAddress"
+              :rows="2"
+              placeholder="z. B. Daimlerstraße 25, 76185 Karlsruhe, Deutschland"
+            />
+            <span class="field-hint"
+              >Ladungsfähige Anschrift des Webhosters (Auftragsverarbeiter nach Art. 28
+              DSGVO).</span
+            >
           </div>
         </div>
 
