@@ -64,7 +64,7 @@ jobs:
         id: detect
         if: inputs.bump == 'auto'
         run: |
-          LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          LAST_TAG="$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || true)"
           RANGE="${LAST_TAG:+$LAST_TAG..}HEAD"
           LOG="$(git log "$RANGE" --format='%s%n%b')"
 
@@ -75,6 +75,9 @@ jobs:
           else
             BUMP=patch
           fi
+          echo "Last release tag: ${LAST_TAG:-none}"
+          echo "Analyzed range: $RANGE"
+          echo "Detected bump type: $BUMP"
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
 
       - name: Bump version and update changelog
