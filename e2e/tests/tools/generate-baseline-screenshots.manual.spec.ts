@@ -1,9 +1,14 @@
 import { test, type Page } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import { forceFontDisplayBlock, waitForAppReady, waitForMapTiles } from '../helpers/fonts.js';
+import {
+  recordScreenshotComparison,
+  generateScreenshotHtmlReport,
+} from '../helpers/screenshotReport.js';
 import {
   SCREENSHOT_REFERENCE_DATE,
   SCREENSHOT_TRIP_DATES,
@@ -106,6 +111,36 @@ function syncToLandingIfMapped(screenshotPath: string) {
   }
 }
 
+let cachedGitRepoRoot: string | null = null;
+
+/**
+ * Liest den bestehenden Baseline-Buffer von Disk. Falls die Datei im Dateisystem gelöscht wurde
+ * (z. B. bei manuellem Vorab-Aufräumen), wird die committete Version aus Git HEAD wiederhergestellt,
+ * damit immer ein valider visueller Diff berechnet werden kann.
+ */
+function getBaselineBuffer(
+  screenshotPath: string
+): { buffer: Buffer; source: 'disk' | 'git' } | null {
+  if (fs.existsSync(screenshotPath)) {
+    return { buffer: fs.readFileSync(screenshotPath), source: 'disk' };
+  }
+  try {
+    if (!cachedGitRepoRoot) {
+      cachedGitRepoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+        encoding: 'utf-8',
+      }).trim();
+    }
+    const relPath = path.relative(cachedGitRepoRoot, screenshotPath);
+    const buffer = execFileSync('git', ['show', `HEAD:${relPath}`], {
+      maxBuffer: 30 * 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    return { buffer, source: 'git' };
+  } catch {
+    return null;
+  }
+}
+
 async function saveScreenshotIfChanged(
   page: Page,
   screenshotPath: string,
@@ -173,22 +208,38 @@ async function saveScreenshotIfChanged(
     );
   }
 
-  // Ausbalancierte Toleranz (~12.500 Pixel entspricht ca. 0.6% bei Full HD, ~1.000 Pixel bzw. 0.3% bei Mobile),
-  // um reines Font-Anti-Aliasing-Rauschen zwischen OS-Engines zu ignorieren, aber echte visuelle
-  // Änderungen (wie Zeilenumbrüche, Footer-Separators, Abstände oder Typo-Fixes) zuverlässig zu erfassen.
+  // Differenzierte Toleranzen:
+  // - Karten-Views (Leaflet OSM-Kacheln, Canvas-Routen, Marker): 2.0% (~41.400 px Full HD, ~6.500 px Mobile)
+  //   um unvermeidbares Subpixel- und Kachel-Rendering-Rauschen zu ignorieren.
+  // - Reine UI-Seiten: Ausbalancierte 0.6% (~12.400 px Full HD) bzw. 0.3% (~987 px Mobile),
+  //   damit echte Umbrüche, Text-/Icon-Fixes und Abstände sofort erfasst werden.
   const { fullPage = false, maxDiffPixels } = options;
   const newBuffer = await page.screenshot({ fullPage, animations: 'disabled', caret: 'hide' });
+  const hasMap = Boolean(mapCheck.hasMap);
 
   let result: { status: 'created' | 'updated' | 'unchanged'; diffPixels?: number };
+  const baselineInfo = getBaselineBuffer(screenshotPath);
 
-  if (!fs.existsSync(screenshotPath)) {
+  if (!baselineInfo) {
     fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
     fs.writeFileSync(screenshotPath, newBuffer);
     console.log(`[Created] ${path.basename(screenshotPath)}`);
     result = { status: 'created' };
+    const imgNew = PNG.sync.read(newBuffer);
+    recordScreenshotComparison({
+      baseName: path.basename(screenshotPath),
+      status: 'created',
+      diffPixels: 0,
+      totalPixels: imgNew.width * imgNew.height,
+      effectiveMaxDiff: 0,
+      hasMap,
+      width: imgNew.width,
+      height: imgNew.height,
+      newBuffer,
+    });
   } else {
     try {
-      const existingBuffer = fs.readFileSync(screenshotPath);
+      const existingBuffer = baselineInfo.buffer;
       const img1 = PNG.sync.read(existingBuffer);
       const img2 = PNG.sync.read(newBuffer);
 
@@ -196,16 +247,33 @@ async function saveScreenshotIfChanged(
         fs.writeFileSync(screenshotPath, newBuffer);
         console.log(`[Updated: dimensions changed] ${path.basename(screenshotPath)}`);
         result = { status: 'updated' };
+        recordScreenshotComparison({
+          baseName: path.basename(screenshotPath),
+          status: 'updated',
+          diffPixels: img2.width * img2.height,
+          totalPixels: img2.width * img2.height,
+          effectiveMaxDiff: 0,
+          hasMap,
+          width: img2.width,
+          height: img2.height,
+          existingBuffer,
+          newBuffer,
+        });
       } else {
-        const numDiffPixels = pixelmatch(img1.data, img2.data, undefined, img1.width, img1.height, {
+        const diff = new PNG({ width: img1.width, height: img1.height });
+        const numDiffPixels = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height, {
           threshold: 0.2,
         });
 
         const effectiveMaxDiff =
           maxDiffPixels ??
-          (img1.width <= 500
-            ? Math.max(300, Math.round(img1.width * img1.height * 0.003))
-            : Math.round(img1.width * img1.height * 0.006));
+          (hasMap
+            ? img1.width <= 500
+              ? Math.max(800, Math.round(img1.width * img1.height * 0.02))
+              : Math.round(img1.width * img1.height * 0.02)
+            : img1.width <= 500
+              ? Math.max(300, Math.round(img1.width * img1.height * 0.003))
+              : Math.round(img1.width * img1.height * 0.006));
 
         if (numDiffPixels > 0 && process.env.FORCE_SCREENSHOTS) {
           fs.writeFileSync(screenshotPath, newBuffer);
@@ -218,9 +286,29 @@ async function saveScreenshotIfChanged(
           console.log(`[Updated: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
           result = { status: 'updated', diffPixels: numDiffPixels };
         } else {
+          // Falls die Datei auf Disk vorab gelöscht wurde, stellen wir sie wieder her
+          if (!fs.existsSync(screenshotPath)) {
+            fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+            fs.writeFileSync(screenshotPath, newBuffer);
+          }
           console.log(`[Unchanged: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
           result = { status: 'unchanged', diffPixels: numDiffPixels };
         }
+
+        const diffBuffer = numDiffPixels > 0 ? PNG.sync.write(diff) : undefined;
+        recordScreenshotComparison({
+          baseName: path.basename(screenshotPath),
+          status: result.status,
+          diffPixels: numDiffPixels,
+          totalPixels: img1.width * img1.height,
+          effectiveMaxDiff,
+          hasMap,
+          width: img1.width,
+          height: img1.height,
+          existingBuffer,
+          newBuffer,
+          diffBuffer,
+        });
       }
     } catch {
       fs.writeFileSync(screenshotPath, newBuffer);
@@ -853,6 +941,10 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         },
       },
     });
+  });
+
+  test.afterAll(() => {
+    generateScreenshotHtmlReport();
   });
 
   test('Capture screenshots for view: login', async ({ browser }) => {

@@ -66,6 +66,16 @@ Klassische funktionale E2E-Tests (`expect(btn).toBeVisible()`) sind visuell blin
    - `frontend/src/stories/stressFixtures.ts`: Standardisierte Stresstests (extrem langes deutsches Kompositum `STRESS_STRINGS.longWord`, Fließtext, Sonderzeichen und Begrenzungsrahmen `STRESS_CONTAINERS.narrow` / `ultraNarrow`).
    - Ermöglicht das visuelle Testen einzelner Komponenten im isolierten Zustand (`npm --prefix frontend run storybook`).
 
+4. **Makro-Ebene: Baseline-Screenshot-Generator & Visueller HTML-Diff-Report**:
+   - Skript / Befehl: `npm run generate:screenshots` (bzw. isoliert für einzelne Ansichten: `cd e2e && SCREENSHOT_MODE=1 E2E_PROD_MODE=1 INCLUDE_MANUAL=1 npx playwright test tests/tools/generate-baseline-screenshots.manual.spec.ts -g "<view>"`).
+   - Generiert alle Baseline-Screenshots in `docs/screenshots/` (Desktop & Mobile, Light & Dark) und spiegelt Landingpage-relevante Baselines automatisch nach `frontend/public/landing/`.
+   - **Interaktiver HTML-Diff-Report (`e2e/.tmp/screenshot-diffs/index.html`):** Nach dem Lauf wird automatisch ein lokaler HTML-Diff-Report erzeugt und der `file://`-Pfad im Terminal ausgegeben.
+     - **3-Spalten-Gegenüberstellung:** Zeigt _Vorher (Baseline / Git HEAD)_ | _Diff (Pixelmatch mit roten Markierungen)_ | _Nachher (Neu)_.
+     - **Metriken & Filter:** Zeigt geänderte Pixel und Prozentabweichung pro Screenshot sowie Filter-Tabs (_Aktualisiert_, _Unter Schwelle_, _Identisch_, _Neu angelegt_).
+   - **Differenzierte Schwellwerte:** Normale UI-Ansichten nutzen feine Schwellen (~0.6% Desktop, ~0.3% Mobile für Text- und Layout-Änderungen), während Leaflet-Kartenansichten (`spots`, `tour`, `tracks`, Map-Dialoge) dynamisch erkannt und mit 2.0% Toleranz vor Kachel- und Canvas-Anti-Aliasing-Rauschen geschützt werden.
+   - **Git-HEAD-Fallback:** Selbst wenn Baseline-Dateien lokal vor der Generierung gelöscht wurden, lädt der Generator das bisherige Bild per `git show HEAD:<pfad>` direkt aus Git, sodass der Report stets einen validen Vorher/Nachher-Pixelvergleich ermöglicht.
+   - **Diffs erzwingen:** Mit `FORCE_SCREENSHOTS=1 npm run generate:screenshots` werden alle Abweichungen (> 0 px) bedingungslos als neue Baseline gespeichert.
+
 ---
 
 ## 3. Lokaler Audit-Workflow (Einzelne View / Nach Refactoring)

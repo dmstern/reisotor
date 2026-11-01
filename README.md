@@ -275,10 +275,27 @@ cd frontend
 npm run build:demo # statischer Build nach dist-demo/
 ```
 
+### Visuelle Regression & Screenshot-Reports
+
+Reisotor enthält ein automatisiertes Screenshot-Tool, das alle Ansichten (Desktop & Mobile, Light & Dark) erfasst, die Baseline-Bilder in `docs/screenshots/` pflegt und Landingpage-Grafiken synchronisiert:
+
+```bash
+# Erstellt alle Screenshots neu und generiert einen visuellen Diff-Report
+npm run generate:screenshots
+```
+
+Nach jedem Lauf wird automatisch ein interaktiver HTML-Diff-Report unter `e2e/.tmp/screenshot-diffs/index.html` erzeugt (inkl. klickbarem Pfad im Terminal):
+
+- **3-Spalten-Vergleich:** _Vorher (Baseline)_ | _Pixel-Diff (rote Markierungen via pixelmatch)_ | _Nachher (Neu)_.
+- **Feine UI- vs. robuste Karten-Toleranzen:** Erkennt dynamisch Leaflet-Kartenflächen (~2.0% Toleranz gegen OSM-Kachelrauschen) und prüft reguläre UI-Komponenten pixelgenau (~0.3% – 0.6% Toleranz für Text- und Layout-Änderungen).
+- **Git-HEAD-Fallback:** Funktioniert auch, wenn Screenshots vorab lokal gelöscht wurden (zieht das Referenzbild automatisch direkt aus Git `HEAD`).
+- **Diffs erzwingen:** Mit `FORCE_SCREENSHOTS=1 npm run generate:screenshots` können alle Änderungen bedingungslos als neue Baseline übernommen werden.
+
 ## Dokumentation
 
 - 🚀 **[Deployment & Self-Hosting](DEPLOYMENT.md):** Ausführliche Anleitung für den Betrieb auf einem eigenen Server (systemd, Caddy Reverse Proxy, automatische Release-Updates per Cronjob, `deploy.sh`, Backup & Wiederherstellung sowie die vollständige [Tabelle aller Backend-Umgebungsvariablen](DEPLOYMENT.md#backend-umgebungsvariablen)).
 - 🏗️ **[Architektur & Code-Map](ARCHITECTURE.md):** Technische Übersicht über Backend, SQLite-Datenbank, Auth, Frontend-Stores, SSE-Echtzeitsynchronisation, Offline-Modus und die Domänen-Code-Map.
+- 🔍 **[UI-Audit- & Layout-Guide](docs/UI_AUDIT_GUIDE.md):** Leitfaden für UI- und Container-Query-Audits, Viewport-Stresstests und den visuellen Screenshot-Diff-Report.
 - 🎨 **[Design-System](DESIGN.md):** Design-Prinzipien, Typografie, Farb- und Status-Tokens, Komponenten-Guidelines und Icon-System.
 - 🤖 **[Agenten-Konventionen](AGENTS.md):** Verbindliche Konventionen, Befehle und Worktree-Disziplin für AI Coding Agents.
 
