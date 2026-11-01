@@ -5,6 +5,43 @@ Format lose an [Keep a Changelog](https://keepachangelog.com/) angelehnt, Versio
 [Semantic Versioning](https://semver.org/). Neue Einträge werden beim Erstellen eines Releases
 (`.github/workflows/release.yml`) oben ergänzt.
 
+## [2.0.1] - 2026-11-01
+
+### Versionshinweise
+
+- 📋 **Versionshinweise und Changelog**: In den Release-Notes führt ein direkter Link zum vollständigen Changelog auf GitHub, und bei Patch-Versionen bleiben die Highlights der aktuellen Hauptversion erhalten.
+
+### Demo-Modus
+
+- 🐛 **Stabilität in der Demo**: Beim Erstellen von Tagebucheinträgen und Notizen sowie beim Verwalten von Urlaubs-Kategorien und Push-Einstellungen im Demo-Modus treten keine Laufzeitfehler mehr auf und Metadaten werden vollständig initialisiert.
+
+### Tagebuch
+
+- ⚠️ **Warnung bei Datumsabweichungen**: Beim Zuordnen von Touren und Spots zu Tagebucheinträgen sowie auf den Tagebuch-Karten wird nun übersichtlich gewarnt, wenn das geplante Datum eines Ausflugs oder Spots vom Tagebuch-Datum abweicht.
+
+### Ausflüge & Touren
+
+- 🐛 **Migrierte Touren bearbeiten**: Touren mit Teilstrecken und Budget-Ausgaben aus früheren Versionen lassen sich nun wieder ohne Fehler bearbeiten und umbenennen.
+
+### Rechtliches & Datenschutz
+
+- 📄 **Hosting-Dienstleister im Impressum**: In den Admin-Einstellungen können Name und Anschrift des externen Webhosters hinterlegt werden, die automatisch rechtssicher im Impressum und in der Datenschutzerklärung ausgewiesen werden.
+
+### Benachrichtigungen
+
+- 🚀 **Versions-Updates**: Bei neuen Releases von Reisotor kann nun automatisch eine Push-Benachrichtigung empfangen werden, um direkt über Neuerungen informiert zu werden.
+- 🔔 **Aktivitäts-Umfang**: In den Benachrichtigungs-Einstellungen lässt sich festlegen, ob Push-Mitteilungen bei allen Änderungen oder ausschließlich bei neu angelegten Elementen gesendet werden sollen.
+- ⚙️ **Aufklappbare Detail-Einstellungen**: Die erweiterten Einstellungen für einzelne Push-Kategorien sind jetzt übersichtlich in einem aufklappbaren Bereich zusammengefasst.
+
+### App-Updates & PWA
+
+- 🔄 **Zuverlässiges Aktualisieren**: Der „Neu laden“-Button bei verfügbaren App-Updates lädt die Anwendung jetzt sofort und verlässlich auf die neueste Version.
+- 🏷️ **Versionsanzeige im Update-Hinweis**: Im Hinweis auf eine neue Version wird die Zielversionsnummer nun auch vor dem Login und bei schnellen Zwischen-Updates zuverlässig angezeigt.
+
+### Reise-Dashboard & Länderinfos
+
+- 🛡️ **Reise- und Sicherheitshinweise**: Die Sicherheits-Einschätzungen im Reise-Dashboard wurden nach dem Ausfall des früheren Drittanbieters neu implementiert und beziehen nun amtliche Reise- und Teilreisewarnungen direkt und verlässlich über die Open-Data-Schnittstelle des Auswärtigen Amts.
+
 ## [2.0.0] - 2026-11-01
 
 ### Highlights
