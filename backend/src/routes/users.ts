@@ -792,10 +792,27 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       });
 
       if (!mailResult.success) {
+        const errorDetail = mailResult.error ? ` (${mailResult.error})` : '';
+
+        // Für Administrator:innen: Die Mail trotzdem im Profil als unbestätigt (is_email_verified = 0)
+        // speichern, damit der Admin nicht blockiert wird und z. B. Test-E-Mails senden kann.
+        if (isUserAdmin(currentUser.id)) {
+          db.prepare('UPDATE users SET email = ?, is_email_verified = 0 WHERE id = ?').run(
+            trimmedEmail,
+            currentUser.id
+          );
+          return {
+            requiresVerification: true,
+            pendingEmail: trimmedEmail,
+            email: trimmedEmail,
+            is_email_verified: false,
+            message: `E-Mail-Adresse wurde im Profil hinterlegt. Die Bestätigungs-E-Mail konnte jedoch nicht zugestellt werden${errorDetail}. Als Administrator kannst du dein Konto manuell in der Nutzerverwaltung freischalten oder die SMTP-Einstellungen prüfen.`,
+          };
+        }
+
         db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(currentUser.id);
         return reply.code(503).send({
-          error:
-            'Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut oder wende dich an die Administration.',
+          error: `Die Bestätigungs-E-Mail konnte nicht gesendet werden${errorDetail}. Bitte überprüfe die SMTP-Einstellungen oder wende dich an die Administration.`,
         });
       }
 
@@ -867,9 +884,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     });
 
     if (!mailResult.success) {
+      const errorDetail = mailResult.error ? ` (${mailResult.error})` : '';
       return reply.code(503).send({
-        error:
-          'Die Bestätigungs-E-Mail konnte nicht erneut gesendet werden. Bitte versuche es später erneut.',
+        error: `Die Bestätigungs-E-Mail konnte nicht erneut gesendet werden${errorDetail}. Bitte versuche es später erneut.`,
       });
     }
 
