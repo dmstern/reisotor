@@ -8,6 +8,8 @@ import { formatDate } from '../utils/dateFormat';
 import { weatherCodeMeta } from '../utils/weather';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { useDiaryEntityLinks } from '../composables/useDiaryEntityLinks';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
@@ -83,6 +85,41 @@ const emit = defineEmits<{
 }>();
 
 const drawers = useDrawersStore();
+const links = useDiaryEntityLinks();
+
+function excursionDateMismatch(ex: Excursion): boolean {
+  return links.excursionDateMismatch(ex, props.entry.date);
+}
+
+function spotDateMismatch(spotId: number): boolean {
+  return links.spotDateMismatch(spotId, props.entry.date);
+}
+
+function formatSpotMismatchText(spotId: number): string {
+  const dates = links.getSpotScheduledDates(spotId);
+  if (dates.length === 1) {
+    return formatDate(dates[0], { includeYear: false });
+  }
+  return 'abweichend';
+}
+
+function formatSpotMismatchTooltip(spot: Spot): string {
+  const dates = links.getSpotScheduledDates(spot.id);
+  if (dates.length === 1) {
+    return `${spot.title} (geplant am ${formatDate(dates[0])})`;
+  }
+  if (dates.length > 1) {
+    return `${spot.title} (geplant am ${dates.map((d) => formatDate(d)).join(', ')})`;
+  }
+  return spot.title;
+}
+
+function excursionTooltip(ex: Excursion): string {
+  if (excursionDateMismatch(ex)) {
+    return `${ex.title} (geplant am ${formatDate(ex.date!)})`;
+  }
+  return ex.title;
+}
 </script>
 
 <template>
@@ -162,8 +199,9 @@ const drawers = useDrawersStore();
           type="button"
           variant="ghost"
           class="excursion-chip"
-          :title="ex.title"
-          :aria-label="ex.title"
+          :class="{ 'excursion-chip--mismatch': excursionDateMismatch(ex) }"
+          :title="excursionTooltip(ex)"
+          :aria-label="excursionTooltip(ex)"
           @click="drawers.openMapForExcursion(ex.id)"
         >
           <span
@@ -180,6 +218,16 @@ const drawers = useDrawersStore();
             />
           </span>
           <span class="excursion-chip-title">{{ ex.title }}</span>
+          <span
+            v-if="excursionDateMismatch(ex)"
+            class="chip-mismatch-badge"
+            :title="`Geplant am ${formatDate(ex.date!)}`"
+          >
+            <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+            <span class="chip-mismatch-text">{{
+              formatDate(ex.date!, { includeYear: false })
+            }}</span>
+          </span>
         </Button>
         <Button
           v-for="spot in spots"
@@ -187,8 +235,9 @@ const drawers = useDrawersStore();
           type="button"
           variant="ghost"
           class="excursion-chip"
-          :title="spot.title"
-          :aria-label="spot.title"
+          :class="{ 'excursion-chip--mismatch': spotDateMismatch(spot.id) }"
+          :title="formatSpotMismatchTooltip(spot)"
+          :aria-label="formatSpotMismatchTooltip(spot)"
           @click="drawers.openMapAt(`spot-${spot.id}`)"
         >
           <span
@@ -205,6 +254,14 @@ const drawers = useDrawersStore();
             />
           </span>
           <span class="excursion-chip-title">{{ spot.title }}</span>
+          <span
+            v-if="spotDateMismatch(spot.id)"
+            class="chip-mismatch-badge"
+            :title="formatSpotMismatchTooltip(spot)"
+          >
+            <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+            <span class="chip-mismatch-text">{{ formatSpotMismatchText(spot.id) }}</span>
+          </span>
         </Button>
       </div>
 
@@ -338,6 +395,29 @@ const drawers = useDrawersStore();
 
 .excursion-chip:hover {
   background: var(--color-primary-tint);
+}
+
+.excursion-chip--mismatch {
+  border: 1px solid var(--color-warning);
+}
+
+.chip-mismatch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--color-warning-tint);
+  color: var(--color-warning-dark);
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chip-mismatch-text {
+  font-size: var(--font-size-xs);
 }
 
 .excursion-chip:focus-visible {
