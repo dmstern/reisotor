@@ -626,9 +626,6 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   .modal-body :slotted(form) .actions-row > :not(.spacer),
   .modal-body :slotted(*) .actions-row > :not(.spacer),
   .modal-body :slotted(.actions-row) > :not(.spacer),
-  .modal-body :slotted(form) .actions-row :deep(button),
-  .modal-body :slotted(*) .actions-row :deep(button),
-  .modal-body :slotted(.actions-row) :deep(button),
   .modal-body :slotted(form) .actions-row button,
   .modal-body :slotted(*) .actions-row button,
   .modal-body :slotted(.actions-row) button {

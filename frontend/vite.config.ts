@@ -118,14 +118,24 @@ export default defineConfig({
     ],
     exclude: ['@tabler/icons-vue'],
   },
-  build:
-    buildTarget === 'landing'
-      ? {
-          // Landingpage hat keine eigene PWA/App-Manifest-Notwendigkeit - eigener, schlanker
-          // Entry-Punkt statt index.html/App.vue (siehe landing.html/landing-main.ts).
-          rollupOptions: { input: 'landing.html' },
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      ...(buildTarget === 'landing'
+        ? {
+            // Landingpage hat keine eigene PWA/App-Manifest-Notwendigkeit - eigener, schlanker
+            // Entry-Punkt statt index.html/App.vue (siehe landing.html/landing-main.ts).
+            input: 'landing.html',
+          }
+        : {}),
+      onwarn(warning, defaultHandler) {
+        if (warning.message?.includes('externalized for browser compatibility')) {
+          return;
         }
-      : undefined,
+        defaultHandler(warning);
+      },
+    },
+  },
   plugins: [
     inlineAppleTouchIcon(),
     tablerIconsOptimizer(),
