@@ -104,4 +104,65 @@ describe('ChangelogContent', () => {
 
     cleanUp();
   });
+
+  it('renders a GitHub changelog link with default or custom repository url', async () => {
+    const { cleanUp } = mount({
+      notes: ['Patch fix'],
+      repoUrl: 'https://github.com/my-org/my-reisotor',
+    });
+    await nextTick();
+
+    const link = container.querySelector<HTMLAnchorElement>('.changelog-github-link');
+    expect(link).not.toBeNull();
+    expect(link?.href).toBe('https://github.com/my-org/my-reisotor/blob/main/CHANGELOG.md');
+    expect(link?.textContent).toContain('Vollständiges Changelog auf GitHub ansehen');
+    expect(link?.target).toBe('_blank');
+
+    cleanUp();
+  });
+
+  it('renders base release highlights and details when baseRelease prop is present', async () => {
+    const { cleanUp } = mount({
+      groups: [
+        {
+          title: 'Korrekturen',
+          notes: ['🐛 **Bugfix**: Schnellerer Datumswechsel'],
+        },
+      ],
+      baseRelease: {
+        version: '2.0.0',
+        date: '2026-11-01',
+        notes: ['Highlights der 2.0'],
+        groups: [
+          {
+            title: 'Highlights',
+            notes: ['🎨 **Neues Design**: Modernes Layout'],
+          },
+          {
+            title: 'Reisen und Urlaube',
+            notes: ['📅 **Termine**: Urlaube ohne festes Datum'],
+          },
+        ],
+      },
+    });
+    await nextTick();
+
+    // Patch section (current version)
+    expect(container.textContent).toContain('Korrekturen');
+    expect(container.textContent).toContain('Schnellerer Datumswechsel');
+
+    // Base release highlight box
+    const baseHighlight = container.querySelector('.changelog-group--base-highlights');
+    expect(baseHighlight).not.toBeNull();
+    expect(baseHighlight?.textContent).toContain('Highlights der 2.0-Serie (aus v2.0.0)');
+    expect(baseHighlight?.textContent).toContain('Neues Design');
+
+    // Collapsible for remaining groups from base release
+    const collapsible = container.querySelector('.changelog-collapsible');
+    expect(collapsible).not.toBeNull();
+    expect(collapsible?.textContent).toContain('Alle weiteren Neuerungen aus v2.0.0 anzeigen');
+    expect(collapsible?.textContent).toContain('Reisen und Urlaube');
+
+    cleanUp();
+  });
 });

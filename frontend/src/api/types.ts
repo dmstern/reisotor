@@ -110,11 +110,19 @@ export interface ChangelogGroup {
   notes: string[];
 }
 
+export interface BaseRelease {
+  version: string;
+  date: string;
+  notes: string[];
+  groups?: ChangelogGroup[];
+}
+
 export interface ChangelogEntry {
   version: string;
   date: string;
   notes: string[];
   groups?: ChangelogGroup[];
+  baseRelease?: BaseRelease;
 }
 
 /** GET /build-info (backend/src/routes/buildInfo.ts). `environment` kommt aus der

@@ -73,6 +73,11 @@ describe('buildInfo routes', () => {
           expect(Array.isArray(group.notes)).toBe(true);
         }
       }
+      if (body.changelog.baseRelease) {
+        expect(body.changelog.baseRelease).toHaveProperty('version');
+        expect(body.changelog.baseRelease).toHaveProperty('notes');
+        expect(Array.isArray(body.changelog.baseRelease.notes)).toBe(true);
+      }
     }
   });
 });

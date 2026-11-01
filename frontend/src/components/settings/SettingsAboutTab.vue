@@ -67,6 +67,8 @@ const showPwaInstallDialog = ref(false);
         <ChangelogContent
           :groups="backendBuildInfo.changelog.groups"
           :notes="backendBuildInfo.changelog.notes"
+          :base-release="backendBuildInfo.changelog.baseRelease"
+          :repo-url="backendBuildInfo.repoUrl"
         />
       </div>
       <h3>Build-Info</h3>

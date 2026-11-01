@@ -134,6 +134,7 @@ import {
   IconPhotoPlus,
   IconCopy,
   IconCheck,
+  IconExternalLink,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -251,7 +252,8 @@ export type ActionIconKey =
   | 'photoPlus'
   | 'copy'
   | 'check'
-  | 'mail';
+  | 'mail'
+  | 'externalLink';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -509,5 +511,10 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     emoji: '✉️',
     outline: IconMail,
     filled: IconMailFilled,
+  },
+  externalLink: {
+    id: 'external-link',
+    emoji: '↗',
+    outline: IconExternalLink,
   },
 };
