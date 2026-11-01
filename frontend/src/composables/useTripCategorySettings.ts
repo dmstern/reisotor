@@ -4,6 +4,8 @@ import {
   type TripCategory,
   type CategoryUsageItem,
 } from '../stores/tripCategories';
+import { useSpotsStore } from '../stores/spots';
+import { useBudgetStore } from '../stores/budget';
 import {
   CATEGORY_COLOR_PALETTE,
   findCategoryIcon,
@@ -249,6 +251,22 @@ export function useTripCategorySettings(
     isLoadingUsageItems.value = false;
   }
 
+  async function refreshDependentStores() {
+    if (typeof window === 'undefined') return;
+    try {
+      const spotsStore = useSpotsStore();
+      if (spotsStore.loaded) await spotsStore.load();
+    } catch {
+      // Ignorieren in Tests
+    }
+    try {
+      const budgetStore = useBudgetStore();
+      if (budgetStore.loaded) await budgetStore.load();
+    } catch {
+      // Ignorieren in Tests
+    }
+  }
+
   async function saveEdit() {
     if (!editForm.value.name.trim()) return;
     const tripId = toValue(tripIdGetter);
@@ -280,22 +298,7 @@ export function useTripCategorySettings(
     }
 
     // Spots- / Budget-Stores aktualisieren, falls sie bereits geladen sind
-    if (typeof window !== 'undefined') {
-      try {
-        const { useSpotsStore } = await import('../stores/spots');
-        const spotsStore = useSpotsStore();
-        if (spotsStore.loaded) await spotsStore.load();
-      } catch {
-        // Ignorieren in Tests
-      }
-      try {
-        const { useBudgetStore } = await import('../stores/budget');
-        const budgetStore = useBudgetStore();
-        if (budgetStore.loaded) await budgetStore.load();
-      } catch {
-        // Ignorieren in Tests
-      }
-    }
+    await refreshDependentStores();
 
     editingCategory.value = null;
     usageItems.value = [];
@@ -348,22 +351,7 @@ export function useTripCategorySettings(
     if (!categoryToDelete.value) return;
     const tripId = toValue(tripIdGetter);
     await tripCategoriesStore.deleteCategory(tripId, categoryToDelete.value.id);
-    if (typeof window !== 'undefined') {
-      try {
-        const { useSpotsStore } = await import('../stores/spots');
-        const spotsStore = useSpotsStore();
-        if (spotsStore.loaded) await spotsStore.load();
-      } catch {
-        // Ignorieren in Tests
-      }
-      try {
-        const { useBudgetStore } = await import('../stores/budget');
-        const budgetStore = useBudgetStore();
-        if (budgetStore.loaded) await budgetStore.load();
-      } catch {
-        // Ignorieren in Tests
-      }
-    }
+    await refreshDependentStores();
     categoryToDelete.value = null;
     usageItems.value = [];
     isLoadingUsageItems.value = false;
@@ -403,22 +391,7 @@ export function useTripCategorySettings(
     const tripId = toValue(tripIdGetter);
     await tripCategoriesStore.resetCategory(tripId, categoryToReset.value.id);
 
-    if (typeof window !== 'undefined') {
-      try {
-        const { useSpotsStore } = await import('../stores/spots');
-        const spotsStore = useSpotsStore();
-        if (spotsStore.loaded) await spotsStore.load();
-      } catch {
-        // Ignorieren in Tests
-      }
-      try {
-        const { useBudgetStore } = await import('../stores/budget');
-        const budgetStore = useBudgetStore();
-        if (budgetStore.loaded) await budgetStore.load();
-      } catch {
-        // Ignorieren in Tests
-      }
-    }
+    await refreshDependentStores();
 
     categoryToReset.value = null;
     usageItems.value = [];

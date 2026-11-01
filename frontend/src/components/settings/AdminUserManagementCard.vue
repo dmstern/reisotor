@@ -131,6 +131,7 @@ onMounted(() => {
                     group="actions"
                   />
                 </Badge>
+                <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
                 <select
                   :value="getUserRole(u)"
                   :disabled="changingRoleId === u.id"

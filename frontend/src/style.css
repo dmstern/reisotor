@@ -1044,7 +1044,6 @@ p + .btn {
 
   /* Alle Aktions-Buttons erhalten auf Mobile volle 100% Breite untereinander */
   .actions-row > :not(.spacer),
-  .actions-row :deep(button),
   .actions-row button {
     width: 100% !important;
     flex: initial !important;
