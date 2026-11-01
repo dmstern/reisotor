@@ -43,6 +43,8 @@ export interface AdminSettings {
     contactEmail: string;
     contactPhone: string;
     hostingLocation: string;
+    hostingProviderName: string;
+    hostingProviderAddress: string;
   };
   geo: {
     isOrsApiKeySet: boolean;
@@ -138,6 +140,11 @@ export interface LegalOperator {
   phone: string | null;
 }
 
+export interface LegalHostingProvider {
+  name: string | null;
+  address: string | null;
+}
+
 export interface LegalServicesConfig {
   photonUrl: string;
   isCustomPhoton: boolean;
@@ -153,6 +160,7 @@ export interface LegalServicesConfig {
 export interface LegalConfig {
   operator: LegalOperator;
   hasOperatorInfo: boolean;
+  hostingProvider: LegalHostingProvider;
   services: LegalServicesConfig;
   hostingLocation: string;
 }
@@ -165,6 +173,10 @@ export const DEFAULT_LEGAL_CONFIG: LegalConfig = {
     phone: null,
   },
   hasOperatorInfo: false,
+  hostingProvider: {
+    name: null,
+    address: null,
+  },
   services: {
     photonUrl: 'https://photon.komoot.io/api/',
     isCustomPhoton: false,
@@ -189,6 +201,10 @@ export const DEMO_LEGAL_CONFIG: LegalConfig = {
     phone: null,
   },
   hasOperatorInfo: true,
+  hostingProvider: {
+    name: null,
+    address: null,
+  },
   services: {
     photonUrl: 'https://photon.komoot.io/api/',
     isCustomPhoton: false,

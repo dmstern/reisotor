@@ -12,6 +12,8 @@ export interface AdminSettingsDto {
     contactEmail: string;
     contactPhone: string;
     hostingLocation: string;
+    hostingProviderName: string;
+    hostingProviderAddress: string;
   };
   geo: {
     isOrsApiKeySet: boolean;
@@ -52,6 +54,8 @@ export interface UpdateAdminSettingsPayload {
     contactEmail?: string;
     contactPhone?: string;
     hostingLocation?: string;
+    hostingProviderName?: string;
+    hostingProviderAddress?: string;
   };
   geo?: {
     orsApiKey?: string;
@@ -180,6 +184,16 @@ export function getAllAdminSettings(): AdminSettingsDto {
       contactEmail: getEffectiveSetting('legal_contact_email', 'LEGAL_CONTACT_EMAIL', ''),
       contactPhone: getEffectiveSetting('legal_contact_phone', 'LEGAL_CONTACT_PHONE', ''),
       hostingLocation: getEffectiveSetting('hosting_location', 'HOSTING_LOCATION', 'Berlin'),
+      hostingProviderName: getEffectiveSetting(
+        'legal_hosting_provider_name',
+        'LEGAL_HOSTING_PROVIDER_NAME',
+        ''
+      ),
+      hostingProviderAddress: getEffectiveSetting(
+        'legal_hosting_provider_address',
+        'LEGAL_HOSTING_PROVIDER_ADDRESS',
+        ''
+      ),
     },
     geo: {
       isOrsApiKeySet: isSettingConfigured('ors_api_key', 'ORS_API_KEY'),
@@ -263,6 +277,8 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
     setOrDelete('legal_contact_email', payload.legal.contactEmail);
     setOrDelete('legal_contact_phone', payload.legal.contactPhone);
     setOrDelete('hosting_location', payload.legal.hostingLocation);
+    setOrDelete('legal_hosting_provider_name', payload.legal.hostingProviderName);
+    setOrDelete('legal_hosting_provider_address', payload.legal.hostingProviderAddress);
   }
 
   if (payload.geo) {

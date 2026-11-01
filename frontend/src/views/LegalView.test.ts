@@ -30,6 +30,10 @@ describe('LegalView', () => {
         phone: null,
       },
       hasOperatorInfo: true,
+      hostingProvider: {
+        name: null,
+        address: null,
+      },
       services: {
         photonUrl: 'https://photon.komoot.io/api/',
         isCustomPhoton: false,

@@ -8,6 +8,11 @@ export interface LegalOperator {
   phone: string | null;
 }
 
+export interface LegalHostingProvider {
+  name: string | null;
+  address: string | null;
+}
+
 export interface LegalServicesConfig {
   photonUrl: string;
   isCustomPhoton: boolean;
@@ -23,6 +28,7 @@ export interface LegalServicesConfig {
 export interface LegalConfig {
   operator: LegalOperator;
   hasOperatorInfo: boolean;
+  hostingProvider: LegalHostingProvider;
   services: LegalServicesConfig;
   hostingLocation: string;
 }
@@ -35,6 +41,15 @@ export function getLegalConfig(): LegalConfig {
   const phone = getEffectiveSetting('legal_contact_phone', 'LEGAL_CONTACT_PHONE').trim() || null;
 
   const hasOperatorInfo = Boolean(name && address && email);
+
+  const hostingProviderName =
+    getEffectiveSetting('legal_hosting_provider_name', 'LEGAL_HOSTING_PROVIDER_NAME').trim() ||
+    null;
+  const hostingProviderAddress =
+    getEffectiveSetting(
+      'legal_hosting_provider_address',
+      'LEGAL_HOSTING_PROVIDER_ADDRESS'
+    ).trim() || null;
 
   const photonUrl =
     getEffectiveSetting(
@@ -73,6 +88,10 @@ export function getLegalConfig(): LegalConfig {
   return {
     operator: { name, address, email, phone },
     hasOperatorInfo,
+    hostingProvider: {
+      name: hostingProviderName,
+      address: hostingProviderAddress,
+    },
     services: {
       photonUrl,
       isCustomPhoton,

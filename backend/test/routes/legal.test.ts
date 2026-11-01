@@ -17,6 +17,8 @@ const LEGAL_ENV_KEYS = [
   'VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
   'HOSTING_LOCATION',
+  'LEGAL_HOSTING_PROVIDER_NAME',
+  'LEGAL_HOSTING_PROVIDER_ADDRESS',
 ] as const;
 
 describe('legal routes', () => {
@@ -46,6 +48,7 @@ describe('legal routes', () => {
     const body = res.json();
     expect(body).toHaveProperty('operator');
     expect(body).toHaveProperty('hasOperatorInfo');
+    expect(body).toHaveProperty('hostingProvider');
     expect(body).toHaveProperty('services');
     expect(body).toHaveProperty('hostingLocation');
 
@@ -53,6 +56,8 @@ describe('legal routes', () => {
     expect(body.operator.name).toBeNull();
     expect(body.operator.address).toBeNull();
     expect(body.operator.email).toBeNull();
+    expect(body.hostingProvider.name).toBeNull();
+    expect(body.hostingProvider.address).toBeNull();
     expect(body.services.isCustomPhoton).toBe(false);
     expect(body.services.photonUrl).toBe('https://photon.komoot.io/api/');
     expect(body.services.nominatimEnabled).toBe(true);
@@ -111,5 +116,20 @@ describe('legal routes', () => {
     });
     body = res.json();
     expect(body.services.pushConfigured).toBe(true);
+  });
+
+  it('returns configured hosting provider details when env vars are set', async () => {
+    process.env.LEGAL_HOSTING_PROVIDER_NAME = 'netcup GmbH';
+    process.env.LEGAL_HOSTING_PROVIDER_ADDRESS = 'Daimlerstraße 25\n76185 Karlsruhe';
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/legal',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.hostingProvider.name).toBe('netcup GmbH');
+    expect(body.hostingProvider.address).toBe('Daimlerstraße 25\n76185 Karlsruhe');
   });
 });

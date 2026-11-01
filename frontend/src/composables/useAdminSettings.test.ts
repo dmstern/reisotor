@@ -20,6 +20,8 @@ describe('useAdminSettings', () => {
       contactEmail: 'admin@muster.de',
       contactPhone: '12345',
       hostingLocation: 'München',
+      hostingProviderName: 'netcup GmbH',
+      hostingProviderAddress: 'Daimlerstraße 25, 76185 Karlsruhe',
     },
     geo: {
       isOrsApiKeySet: true,
