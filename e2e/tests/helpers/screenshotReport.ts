@@ -20,15 +20,38 @@ const entries: ScreenshotComparisonEntry[] = [];
 const REPORT_DIR = path.join(process.cwd(), '.tmp', 'screenshot-diffs');
 const IMAGES_DIR = path.join(REPORT_DIR, 'images');
 
+function findDocsScreenshot(baseName: string): string | null {
+  const candidates = [
+    path.join(process.cwd(), '..', 'docs', 'screenshots', baseName),
+    path.join(process.cwd(), 'docs', 'screenshots', baseName),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
 export function recordScreenshotComparison(entry: ScreenshotComparisonEntry): void {
   entries.push(entry);
 
-  // Falls Unterschiede vorliegen oder das Bild aktualisiert wurde, speichern wir die Bilder für den Report
-  if (entry.diffPixels > 0 || entry.status === 'updated' || entry.status === 'created') {
-    if (!fs.existsSync(IMAGES_DIR)) {
-      fs.mkdirSync(IMAGES_DIR, { recursive: true });
-    }
+  if (!fs.existsSync(IMAGES_DIR)) {
+    fs.mkdirSync(IMAGES_DIR, { recursive: true });
+  }
 
+  // Für alle Screenshots (auch identische) speichern wir das aktuelle Bild für den HTML-Report
+  const currentBuffer = entry.newBuffer || entry.existingBuffer;
+  const currentImagePath = path.join(IMAGES_DIR, entry.baseName);
+  if (currentBuffer) {
+    fs.writeFileSync(currentImagePath, currentBuffer);
+  } else {
+    const docsPath = findDocsScreenshot(entry.baseName);
+    if (docsPath) {
+      fs.copyFileSync(docsPath, currentImagePath);
+    }
+  }
+
+  // Falls Unterschiede vorliegen oder das Bild aktualisiert wurde, speichern wir die Diff-Bilder
+  if (entry.diffPixels > 0 || entry.status === 'updated' || entry.status === 'created') {
     if (entry.existingBuffer) {
       fs.writeFileSync(path.join(IMAGES_DIR, `${entry.baseName}.old.png`), entry.existingBuffer);
     }
@@ -208,6 +231,11 @@ export function generateScreenshotHtmlReport(): string | null {
       justify-content: center;
       align-items: flex-start;
     }
+    .img-box a {
+      display: block;
+      width: 100%;
+      line-height: 0;
+    }
     .img-box img {
       width: 100%;
       height: auto;
@@ -311,7 +339,9 @@ export function generateScreenshotHtmlReport(): string | null {
         <div class="preview-col" style="max-width: 640px;">
           <h4>Neu aufgenommene Baseline</h4>
           <div class="img-box">
-            <img src="images/${entry.baseName}.new.png" alt="Neu">
+            <a href="images/${entry.baseName}" target="_blank" title="In Originalgröße öffnen">
+              <img src="images/${entry.baseName}" alt="Neu" loading="lazy">
+            </a>
           </div>
         </div>
         `
@@ -321,26 +351,40 @@ export function generateScreenshotHtmlReport(): string | null {
           <div class="preview-col">
             <h4>1. Vorher (Baseline)</h4>
             <div class="img-box">
-              <img src="images/${entry.baseName}.old.png" alt="Vorher">
+              <a href="images/${entry.baseName}.old.png" target="_blank" title="In Originalgröße öffnen">
+                <img src="images/${entry.baseName}.old.png" alt="Vorher" loading="lazy">
+              </a>
             </div>
           </div>
           <div class="preview-col">
             <h4>2. Diff (Pixelmatch Rot)</h4>
             <div class="img-box">
-              <img src="images/${entry.baseName}.diff.png" alt="Diff">
+              <a href="images/${entry.baseName}.diff.png" target="_blank" title="In Originalgröße öffnen">
+                <img src="images/${entry.baseName}.diff.png" alt="Diff" loading="lazy">
+              </a>
             </div>
           </div>
           <div class="preview-col">
             <h4>3. Neu (Aktuell)</h4>
             <div class="img-box">
-              <img src="images/${entry.baseName}.new.png" alt="Neu">
+              <a href="images/${entry.baseName}.new.png" target="_blank" title="In Originalgröße öffnen">
+                <img src="images/${entry.baseName}.new.png" alt="Neu" loading="lazy">
+              </a>
             </div>
           </div>
         </div>
         `
               : `
-        <div style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">
-          Keine visuellen Abweichungen (0 Pixel Diff).
+        <div class="preview-col" style="max-width: 640px;">
+          <div style="color: var(--text-muted); font-size: 0.85rem; font-style: italic; margin-bottom: 0.5rem;">
+            Keine visuellen Abweichungen (0 Pixel Diff).
+          </div>
+          <h4>Aktueller Baseline-Screenshot</h4>
+          <div class="img-box">
+            <a href="images/${entry.baseName}" target="_blank" title="In Originalgröße öffnen">
+              <img src="images/${entry.baseName}" alt="${entry.baseName}" loading="lazy">
+            </a>
+          </div>
         </div>
         `
         }
