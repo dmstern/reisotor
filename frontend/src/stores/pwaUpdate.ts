@@ -81,9 +81,15 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     updateDialogDismissed.value = true;
   }
 
-  function simulateUpdateAvailable() {
+  function simulateUpdateAvailable(version?: string) {
     needRefresh.value = true;
     updateDialogDismissed.value = false;
+    if (version) {
+      availableVersion.value = version;
+      availableVersionRequested = true;
+    } else {
+      loadAvailableVersion();
+    }
   }
 
   // Version, auf die das Update wechselt. Das Backend wird zusammen mit dem Frontend ausgerollt
@@ -107,7 +113,10 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     window.__triggerUpdateDialog = simulateUpdateAvailable;
     // @ts-expect-error Dev/Debug helper on window
     window.__fakeUpdate = simulateUpdateAvailable;
-    window.addEventListener('reisotor:fake-update', simulateUpdateAvailable);
+    window.addEventListener('reisotor:fake-update', (e) => {
+      const customEvent = e as CustomEvent<{ version?: string }>;
+      simulateUpdateAvailable(customEvent.detail?.version);
+    });
 
     if (
       window.location.search.includes('testUpdate') ||
@@ -125,6 +134,7 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     updateSW = registerSW({
       onNeedRefresh() {
         needRefresh.value = true;
+        loadAvailableVersion();
       },
       onOfflineReady() {
         offlineReady.value = true;
@@ -136,10 +146,39 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   }
 
   function reload() {
+    needRefresh.value = false;
+    let targetUrl = typeof window !== 'undefined' ? window.location.href : '';
+    if (targetUrl.includes('testUpdate') || targetUrl.includes('fakeUpdate')) {
+      try {
+        const u = new URL(targetUrl);
+        u.searchParams.delete('testUpdate');
+        u.searchParams.delete('fakeUpdate');
+        targetUrl = u.toString();
+      } catch {
+        // Fallback falls URL-Parsing fehlschlägt
+      }
+    }
+
     if (updateSW) {
       updateSW(true);
-    } else {
-      window.location.reload();
+      // Fallback-Reload: Falls controllerchange ausbleibt (z. B. Worker bereits aktiv,
+      // kein waiting-Worker bei simuliertem Update oder Browser-Verzögerung),
+      // erzwingen wir nach 500ms einen normalen Reload, damit der Klick verlässlich wirkt.
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          if (targetUrl && targetUrl !== window.location.href) {
+            window.location.href = targetUrl;
+          } else {
+            window.location.reload();
+          }
+        }
+      }, 500);
+    } else if (typeof window !== 'undefined') {
+      if (targetUrl && targetUrl !== window.location.href) {
+        window.location.href = targetUrl;
+      } else {
+        window.location.reload();
+      }
     }
   }
 

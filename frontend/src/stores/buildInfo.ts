@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { api } from '../api/client';
 import type { BuildInfo } from '../api/types';
 
-/** Backend-Build-Info (GET /build-info, nur eingeloggt erreichbar) einmalig laden und cachen –
+/** Backend-Build-Info (GET /build-info) einmalig laden und cachen –
  *  gebraucht u. a. von AppHeader.vue für den environment-Wert (Issue #219: Umgebung zur Laufzeit
  *  vom Backend statt per Domain-Vergleich erkennen). */
 export const useBuildInfoStore = defineStore('buildInfo', () => {

@@ -30,6 +30,12 @@ const router = useRouter();
 const { showToast } = useToast();
 const open = ref(false);
 const showInstallDialog = ref(false);
+const isReloading = ref(false);
+
+function handleReload() {
+  isReloading.value = true;
+  pwaUpdate.reload();
+}
 
 const BELL_ICON = { id: 'bell', emoji: '🔔', outline: IconBell, filled: IconBellFilled };
 
@@ -213,8 +219,13 @@ function dismissPwaInstall() {
                   <span class="notice-title">Neues Update verfügbar</span>
                   <span class="notice-desc">Eine neuere Version von Reisotor steht bereit.</span>
                 </div>
-                <button type="button" class="pwa-pill-btn reload-btn" @click="pwaUpdate.reload">
-                  Neu laden
+                <button
+                  type="button"
+                  class="pwa-pill-btn reload-btn"
+                  :disabled="isReloading"
+                  @click="handleReload"
+                >
+                  {{ isReloading ? 'Wird geladen…' : 'Neu laden' }}
                 </button>
               </div>
 
@@ -637,6 +648,11 @@ function dismissPwaInstall() {
 
 .reload-btn:hover {
   opacity: 0.9;
+}
+
+.reload-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
 }
 
 .reload-btn:focus-visible {

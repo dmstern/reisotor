@@ -54,6 +54,13 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+// Sofortige Kontrolle über alle offenen Clients übernehmen, sobald der Service Worker aktiviert
+// wird (nach skipWaiting()), damit das 'controllerchange'-Event im Browser feuert und
+// vite-plugin-pwa / workbox-window die Seite automatisch neu lädt.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   let payload;

@@ -38,6 +38,20 @@ describe('buildInfo routes', () => {
     expect(body).toHaveProperty('hostingLocation');
   });
 
+  it('returns build info when logged out (public endpoint)', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/build-info',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body).toHaveProperty('version');
+    expect(body).toHaveProperty('environment');
+    expect(body).toHaveProperty('repoUrl');
+    expect(body).toHaveProperty('hostingLocation');
+  });
+
   it('returns changelog with optional groups if available', async () => {
     const res = await app.inject({
       method: 'GET',

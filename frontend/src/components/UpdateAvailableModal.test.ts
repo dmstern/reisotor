@@ -128,6 +128,22 @@ describe('UpdateAvailableModal', () => {
     cleanUp();
   });
 
+  it('shows only new version in the badge when old and new version are identical', async () => {
+    const pwaUpdate = usePwaUpdateStore();
+    vi.spyOn(api, 'get').mockResolvedValue({ version: pwaUpdate.currentVersion });
+    useUiSettingsStore().showUpdateDialogs = true;
+    pwaUpdate.needRefresh = true;
+
+    const { cleanUp } = mountComponent();
+    await vi.waitFor(() => expect(pwaUpdate.availableVersion).toBe(pwaUpdate.currentVersion));
+    await nextTick();
+
+    const text = document.body.querySelector('[data-testid="version-change"]')?.textContent ?? '';
+    expect(text.trim()).toBe(`v${pwaUpdate.currentVersion}`);
+
+    cleanUp();
+  });
+
   it('hides the version line when the new version is unknown', async () => {
     const pwaUpdate = usePwaUpdateStore();
     vi.spyOn(api, 'get').mockRejectedValue(new Error('offline'));
