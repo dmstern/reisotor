@@ -4,7 +4,8 @@ import { createApp, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import DiaryEntryCard from './DiaryEntryCard.vue';
-import type { DiaryEntry } from '../api/types';
+import { useScheduleStore } from '../stores/schedule';
+import type { DiaryEntry, Spot } from '../api/types';
 
 describe('DiaryEntryCard', () => {
   const dummyEntry: DiaryEntry = {
@@ -103,5 +104,61 @@ describe('DiaryEntryCard', () => {
     });
     expect(htmlWithMixed).toContain('diary-polaroid-wrap');
     expect(htmlWithMixed).toContain('foto.jpg');
+  });
+
+  it('rendert Warn-Badge an Ausflugs-Chip, wenn Tour-Datum vom Tagebuch-Datum abweicht', async () => {
+    const html = await render({
+      excursions: [
+        {
+          id: 5,
+          trip_id: 1,
+          title: 'Bootstour',
+          date: '2026-08-15',
+          spot_ids: [],
+        },
+      ],
+    });
+    expect(html).toContain('Bootstour');
+    expect(html).toContain('excursion-chip--mismatch');
+    expect(html).toContain('chip-mismatch-badge');
+    expect(html).toContain('15.08');
+  });
+
+  it('rendert Warn-Badge an Spot-Chip, wenn Spot-Termin vom Tagebuch-Datum abweicht', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const scheduleStore = useScheduleStore();
+    scheduleStore.items = [
+      {
+        id: 200,
+        trip_id: 1,
+        spot_id: 42,
+        date: '2026-08-20',
+      } as any,
+    ];
+
+    const app = createApp({
+      render: () =>
+        h(DiaryEntryCard, {
+          entry: dummyEntry, // date: 2026-08-10
+          authorName: 'Daniel',
+          authorAvatar: '🦊',
+          spots: [
+            {
+              id: 42,
+              trip_id: 1,
+              title: 'Aussichtspunkt',
+              category: 'viewpoint',
+            } as unknown as Spot,
+          ],
+        }),
+    });
+    app.use(pinia);
+    const html = await renderToString(app);
+
+    expect(html).toContain('Aussichtspunkt');
+    expect(html).toContain('excursion-chip--mismatch');
+    expect(html).toContain('chip-mismatch-badge');
+    expect(html).toContain('20.08');
   });
 });
