@@ -69,13 +69,13 @@ self.addEventListener('push', (event) => {
   } catch {
     return;
   }
-  const { title, body, tripId } = payload;
+  const { title, body, tripId, url } = payload;
   event.waitUntil(
     self.registration.showNotification(title ?? 'Reisotor', {
       body,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: { url: tripId ? `/trip/${tripId}` : '/' },
+      data: { url: url ?? (tripId ? `/trip/${tripId}` : '/') },
     })
   );
 });

@@ -163,6 +163,87 @@ describe('Push-Präferenzen filtern den Versand pro Domäne', () => {
     expect(prefs.budget).toBe(false);
     expect(prefs.schedule).toBe(true);
     expect(prefs.departure).toBe(true);
+    expect(prefs.version).toBe(true);
+    expect(prefs.activity_updates).toBe(true);
+  });
+
+  it('filtert Änderungen heraus, wenn activity_updates auf false gesetzt ist, erlaubt aber Neuanlagen', async () => {
+    // Member wählt "Nur neue Elemente" (activity_updates: false)
+    await app.inject({
+      method: 'PUT',
+      url: '/api/push/preferences',
+      headers: { cookie: memberCookie },
+      payload: { activity_updates: false, todos: true },
+    });
+
+    // 1. Neues ToDo anlegen -> Neuanlage ('created') -> Push MUSS versendet werden
+    sendNotification.mockClear();
+    const createTodo = await app.inject({
+      method: 'POST',
+      url: '/api/todos',
+      headers: { cookie: ownerCookie },
+      payload: { trip_id: tripId, title: 'Sonnencreme einpacken' },
+    });
+    const todoId = createTodo.json().id as number;
+
+    await vi.waitFor(() => expect(sendNotification).toHaveBeenCalledTimes(1));
+
+    // 2. Bestehendes ToDo ändern -> Änderung ('updated') -> Push darf NICHT versendet werden
+    sendNotification.mockClear();
+    await app.inject({
+      method: 'PUT',
+      url: `/api/todos/${todoId}`,
+      headers: { cookie: ownerCookie },
+      payload: { title: 'Sonnencreme LSF 50 einpacken' },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(sendNotification).not.toHaveBeenCalled();
+
+    // 3. Member aktiviert Änderungen wieder -> Push MUSS bei Änderung versendet werden
+    await app.inject({
+      method: 'PUT',
+      url: '/api/push/preferences',
+      headers: { cookie: memberCookie },
+      payload: { activity_updates: true },
+    });
+
+    sendNotification.mockClear();
+    await app.inject({
+      method: 'PUT',
+      url: `/api/todos/${todoId}`,
+      headers: { cookie: ownerCookie },
+      payload: { title: 'Sonnencreme LSF 50+ einpacken' },
+    });
+
+    await vi.waitFor(() => expect(sendNotification).toHaveBeenCalledTimes(1));
+  });
+
+  it('sendet Versions-Push-Benachrichtigungen an Abonnenten mit version=true', async () => {
+    const { sendVersionNotification } = await import('../../src/push.js');
+
+    sendNotification.mockClear();
+    await sendVersionNotification('2.1.0', 'Tolles neues Feature');
+
+    await vi.waitFor(() => expect(sendNotification).toHaveBeenCalledTimes(1));
+    const [sub, payloadStr] = sendNotification.mock.calls[0] as [{ endpoint: string }, string];
+    expect(sub.endpoint).toBe('https://push.example/member-endpoint');
+    const parsed = JSON.parse(payloadStr);
+    expect(parsed.title).toContain('2.1.0');
+    expect(parsed.body).toBe('Tolles neues Feature');
+
+    // Wenn der Nutzer Versionen abwählt, darf kein Push mehr ankommen
+    await app.inject({
+      method: 'PUT',
+      url: '/api/push/preferences',
+      headers: { cookie: memberCookie },
+      payload: { version: false },
+    });
+
+    sendNotification.mockClear();
+    await sendVersionNotification('2.2.0');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(sendNotification).not.toHaveBeenCalled();
   });
 
   it('PUT /push/preferences lehnt unbekannte Domain-Keys ab', async () => {

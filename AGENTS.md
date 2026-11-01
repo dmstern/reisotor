@@ -35,7 +35,7 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
   - Sollen mehrere Aufgaben gleichzeitig bearbeitet werden, ist die Nutzung separater Git Worktrees der verbindliche Best-Practice-Weg (in Antigravity direkt per UI-Dropdown **„New Worktree“** / `Ctrl+.` unter dem Chat-Eingabefeld, alternativ per CLI `git worktree add ../reisotor-<task> -b <task-branch>`). Dies verhindert Lock-Konflikte (`.git/index.lock`), Dateikollisionen und Wartezeiten vollständig.
   - **Schneller Worktree-Start:** Nach dem Auschecken eines Worktrees genügt `npm run dev:fresh` (oder `npm run setup:worktree`), um `node_modules` per Symlink aus dem Hauptordner zu teilen, `.env` zu synchronisieren, die Test-DB mit Demo-Daten anzulegen und den Server direkt zu starten.
 - **Clean Exit, Commit- & PR-Pflicht:**
-  - Jede Session MUSS nach erfolgreicher Arbeit, Formatierung (`npx -y prettier --write <dateien>`), Typecheck und fokussierten Tests die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
+  - Jede Session MUSS nach erfolgreicher Arbeit, Prüfung der Release-Notes (siehe Abschnitt unten), Formatierung (`npx -y prettier --write <dateien>`), Typecheck und fokussierten Tests die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
   - Wurde auf einem neuen Feature-Branch gearbeitet und existiert noch kein PR (`gh pr view 2>/dev/null`), MUSS der Branch gepusht (`git push -u origin <branch>`) und **automatisch ein Pull Request angelegt** werden (`gh pr create`).
   - Der Worktree darf am Ende einer Session NIEMALS mit uncommitteten Änderungen, ungetrackten Testdateien oder unformatiertem Code hinterlassen werden, damit nachfolgende Sessions sofort eine saubere Ausgangsbasis vorfinden.
 
@@ -200,17 +200,20 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
   - Vorher- und Nachher-Screenshot anfertigen und **direkt im Chat/Walkthrough verlinken**, damit der Nutzer das Ergebnis prüfen und freigeben kann (ohne dass der Agent sie selbst per `view_file` liest).
   - Diese temporären Scratch-Screenshots gehören _nicht_ in `docs/screenshots/`, sondern können per GitHub-CLI (`gh`) als Attachment an den PR angehängt werden.
 
-**Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für interne Änderungen (Tests, CI, Demo-Daten, Refactoring).
+**Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für rein interne Änderungen (Tests, CI, Demo-Daten, Refactorings ohne sichtbare Verhaltensänderung).
 
-- **Duplikate token-sparend vermeiden:** Zuerst kurz die Dateinamen in `release-notes/pending/` auflisten. Falls eine Datei inhaltlich/thematisch ähnlich klingt (z. B. `*budget*` bei Budget-Änderungen), nur diese eine Datei gezielt lesen und ergänzen, statt ein neues Fragment zu erstellen. Nicht blind alle existierenden Fragmente komplett durchlesen.
+- **Blick in `release-notes/pending/` & Token-Disziplin:**
+  - Zuerst kurz die Dateinamen in `release-notes/pending/` prüfen.
+  - **Sind die pending Release Notes leer** (z. B. nach einem frischen Release): Sobald eine funktionale Neuerung/Änderung (`feat:`) hinzukommt, MUSS zwingend ein neues Fragment angelegt werden.
+  - **Existieren bereits Dateien:** Falls eine Datei thematisch passt (z. B. `*budget*` bei Budget-Änderungen), nur diese eine Datei gezielt lesen und ergänzen, statt ein neues Fragment zu erstellen.
+- **Entscheidungskriterien (Upgrade-Perspektive der Endnutzer:innen gegenüber dem letzten Release `$LAST_TAG`):**
+  Vor dem Anlegen oder Bearbeiten eines Eintrags kurz prüfen, ob die betroffene Funktion im letzten Release (`LAST_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")`) überhaupt schon existierte (z. B. per `git log $LAST_TAG -- <pfad>` oder `git grep <begriff> $LAST_TAG`):
+  1. **Feature gab es im letzten Release noch NICHT:**
+     - **Wird im aktuellen PR neu eingeführt:** -> **Eintrag MUSS angelegt werden** (als einheitliche Neuerung beschrieben: `- ✨ **Neues Feature**: ...`).
+     - **Wurde bereits nach dem letzten Release auf `main` eingeführt und wird jetzt nur nachgebessert/verfeinert:** -> **KEIN neuer Eintrag** (höchstens das existierende Fragment in `pending/` präzisieren; keine fragmentierten Pseudo-Korrekturen für unveröffentlichte Zwischenstände anhäufen).
+  2. **Feature gab es BEREITS im letzten Release:**
+     - **Wurde jetzt verbessert, erweitert oder ein Fehler behoben:** -> **Eintrag MUSS angelegt werden** (als Verbesserung, Erweiterung oder Bugfix: `- 💡 **Verbesserung**: ...` bzw. `- 🐛 **Bugfix**: ...`), da Endnutzer:innen beim Upgrade von der Vorversion genau diesen Unterschied erleben.
 - **Format:** Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
-- **Release-Baseline-Prüfung (Strikte Pflicht gegen Scheinkorrekturen):** Vor dem Anlegen oder Bearbeiten eines Release-Notes-Eintrags MUSS geprüft werden, ob die betroffene Funktion im letzten Release (`LAST_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")`) überhaupt schon existierte (z. B. per `git log $LAST_TAG -- <pfad>` oder `git grep <begriff> $LAST_TAG`).
-  - **Wenn das Feature erst NACH dem letzten Release-Tag neu hinzugekommen ist:**
-    - Es darf **NIEMALS** ein separater Release-Notes-Eintrag für eine „Verbesserung“, „Optimierung“, „Korrektur“, „Vereinfachung“ oder einen „Feinschliff“ dieses neuen Features angelegt werden!
-    - Aus Sicht der Endnutzer:innen (die von der Vorversion upgraden) ist das Feature schlicht **neu**. Zwischenschritte, Design-Polishes, Refactorings oder Bugfixes während der Entstehung auf `main` sind Teil der Implementierung und keine eigenständigen Changelog-Einträge.
-    - Wurde das neue Feature in den Release Notes noch gar nicht erwähnt: Als einheitliche Neuerung beschreiben (`- ✨ **Neues Feature**: ...`).
-    - Existiert bereits ein Eintrag in `release-notes/pending/`: Den bestehenden Haupteintrag bei Bedarf präzisieren, aber keine fragmentierten Mini-Stichpunkte für Korrekturen oder Zwischenschritte anhäufen.
-    - Handelt es sich nur um internen Feinschliff oder Fehlerbehebungen eines neuen, noch unveröffentlichten Features: **Keinen Release-Note-Eintrag anlegen!**
 - **Validierung:** Vor jedem Commit mit Release-Notes `npm run check:release-notes` ausführen.
 
 **Saubere, semantische Commits:** Änderungen dürfen **niemals** am Ende über verschiedene Themen hinweg in einem einzigen riesigen Commit ("alles in einem Rutsch") zusammengefasst werden. Stattdessen immer semantisch zusammenhängend committen: Ein Feature oder Bugfix darf und soll Backend-, Store-, UI- und Test-Änderungen in einem gemeinsamen Commit bündeln, sofern sie direkt zusammengehören. Unabhängige Features, unterschiedliche Domänen (z. B. Budgets, Karte, Listen) oder interne Aufgaben (Agent-Konfigurationen, Tooling, Docs) müssen jedoch in getrennten Commits festgehalten werden, um eine saubere, Feature für Feature nachvollzieh- und revertierbare Git-Historie zu gewährleisten. Jeder Commit muss für sich formatiert (`npm run format`), typgeprüft und lauffähig sein.

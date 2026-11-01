@@ -4,7 +4,6 @@ import { api } from '../api/client';
 import {
   matchingLevel,
   NOTIFICATION_LEVEL_PRESETS,
-  type NotificationDomain,
   type NotificationLevel,
   type NotificationPreferences,
 } from '../utils/notificationPreferences';
@@ -33,7 +32,7 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
     }
   }
 
-  async function update(partial: Partial<Record<NotificationDomain, boolean>>) {
+  async function update(partial: Partial<NotificationPreferences>) {
     error.value = '';
     const previous = preferences.value;
     if (previous) preferences.value = { ...previous, ...partial };

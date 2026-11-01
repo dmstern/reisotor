@@ -2,6 +2,7 @@ import './loadEnv.js';
 import { buildApp } from './app.js';
 import { startDepartureReminderScheduler } from './departureReminders.js';
 import { startWeatherSnapshotScheduler } from './weatherSnapshots.js';
+import { checkVersionNotification } from './push.js';
 import { getLegalConfig } from './routes/legal.js';
 
 const port = Number(process.env.PORT ?? 3000);
@@ -30,3 +31,6 @@ app
 // zugehörigen Trip-Kontext unnötig weiterlaufen und Vitest am sauberen Beenden hindern.
 startDepartureReminderScheduler();
 startWeatherSnapshotScheduler();
+checkVersionNotification().catch((err) =>
+  app.log.error(err, 'Version-Push-Benachrichtigung fehlgeschlagen')
+);

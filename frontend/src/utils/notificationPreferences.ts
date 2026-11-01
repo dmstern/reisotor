@@ -1,13 +1,14 @@
 import { SECTION_ICONS } from './sectionIcons';
 
-// Dieselben 11 Domain-Keys wie backend/src/push.ts's PUSH_PREFERENCE_DOMAINS - 10
+// Dieselben 12 Domain-Keys wie backend/src/push.ts's PUSH_PREFERENCE_DOMAINS - 10
 // Aktivitäts-Domänen (recordActivity()) plus 'departure' für die Abreise-Erinnerung
-// (departureReminders.ts, kein Aktivitäts-Event). 'travel' entfällt seit #176 - Reise-Etappen
-// laufen jetzt als Touren (role gesetzt) über die 'ideas'-Domäne.
+// (departureReminders.ts) und 'version' für neue App-Releases. 'travel' entfällt seit #176 -
+// Reise-Etappen laufen jetzt als Touren (role gesetzt) über die 'ideas'-Domäne.
 export const NOTIFICATION_DOMAINS = [
   'schedule',
   'members',
   'departure',
+  'version',
   'budget',
   'ideas',
   'spots',
@@ -19,7 +20,9 @@ export const NOTIFICATION_DOMAINS = [
 ] as const;
 export type NotificationDomain = (typeof NOTIFICATION_DOMAINS)[number];
 
-export type NotificationPreferences = Record<NotificationDomain, boolean>;
+export type NotificationPreferences = Record<NotificationDomain, boolean> & {
+  activity_updates?: boolean;
+};
 
 interface DomainMeta {
   label: string;
@@ -36,6 +39,7 @@ export const NOTIFICATION_DOMAIN_META: Record<NotificationDomain, DomainMeta> = 
   schedule: { label: 'Kalender', icon: SECTION_ICONS.calendar },
   members: { label: 'Mitglieder', icon: '👥' },
   departure: { label: 'Abreise-Erinnerung', icon: '✈️' },
+  version: { label: 'Neue Versionen', icon: '🚀' },
   budget: { label: 'Budget', icon: SECTION_ICONS.budget },
   ideas: { label: 'Touren', icon: SECTION_ICONS.excursions },
   spots: { label: 'Spots', icon: '📍' },
@@ -50,7 +54,7 @@ export const NOTIFICATION_DOMAIN_META: Record<NotificationDomain, DomainMeta> = 
 // eigener "Level"-Zustand nötig, ein Level ist nur eine bestimmte An/Aus-Kombination dieser
 // Domänen. "chatty" sind die Listen, deren Einträge oft einzeln angehakt werden (Hauptquelle vieler
 // Pushes) - die bleiben bei "Ausgewogen" bewusst aus, aber einzeln zuschaltbar.
-const ESSENTIAL: NotificationDomain[] = ['schedule', 'members', 'departure'];
+const ESSENTIAL: NotificationDomain[] = ['schedule', 'members', 'departure', 'version'];
 const NORMAL: NotificationDomain[] = ['budget', 'ideas', 'spots', 'diary', 'notes'];
 const _CHATTY: NotificationDomain[] = ['packing', 'shopping', 'todos'];
 
@@ -58,9 +62,10 @@ export type NotificationLevel = 'essential' | 'balanced' | 'all';
 
 function presetFor(domains: NotificationDomain[]): NotificationPreferences {
   const enabled = new Set(domains);
-  return Object.fromEntries(
-    NOTIFICATION_DOMAINS.map((d) => [d, enabled.has(d)])
-  ) as NotificationPreferences;
+  return {
+    ...Object.fromEntries(NOTIFICATION_DOMAINS.map((d) => [d, enabled.has(d)])),
+    activity_updates: true,
+  } as NotificationPreferences;
 }
 
 export const NOTIFICATION_LEVEL_PRESETS: Record<NotificationLevel, NotificationPreferences> = {
@@ -81,7 +86,9 @@ export const NOTIFICATION_LEVEL_OPTIONS: { value: NotificationLevel; label: stri
 export function matchingLevel(prefs: NotificationPreferences): NotificationLevel | null {
   for (const level of Object.keys(NOTIFICATION_LEVEL_PRESETS) as NotificationLevel[]) {
     const preset = NOTIFICATION_LEVEL_PRESETS[level];
-    if (NOTIFICATION_DOMAINS.every((d) => prefs[d] === preset[d])) return level;
+    const domainsMatch = NOTIFICATION_DOMAINS.every((d) => prefs[d] === preset[d]);
+    const updatesMatch = (prefs.activity_updates ?? true) === (preset.activity_updates ?? true);
+    if (domainsMatch && updatesMatch) return level;
   }
   return null;
 }
