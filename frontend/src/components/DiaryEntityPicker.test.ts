@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { createApp, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
@@ -64,5 +65,58 @@ describe('DiaryEntityPicker', () => {
   it('zeigt Badge hinzugefügt, wenn Spot in spotIds ist', async () => {
     const html = await render({ spotIds: [10] });
     expect(html).toContain('hinzugefügt');
+  });
+
+  it('hebt Tour an abweichendem Datum mit Warn-Badge hervor', async () => {
+    const html = await render({ date: '2026-06-16' });
+    expect(html).toContain('Geplant am 15.06.2026');
+  });
+
+  it('blendet Alert-Box ein, wenn eine ausgewählte Tour ein abweichendes Datum hat', async () => {
+    const html = await render({ date: '2026-06-16', excursionIds: [20] });
+    expect(html).toContain('data-testid="diary-date-mismatch-alert"');
+    expect(html).toContain('Seine Rundfahrt');
+    expect(html).toContain('Folgende ausgewählte Elemente sind für andere Tage geplant:');
+  });
+
+  it('blendet Alert-Box und Warn-Badge für ausgewählten Spot mit abweichendem Datum ein', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const spotsStore = useSpotsStore();
+    const excursionsStore = useExcursionsStore();
+    const scheduleStore = useScheduleStore();
+
+    spotsStore.spots = [
+      {
+        id: 10,
+        trip_id: 1,
+        title: 'Eiffelturm',
+        category: 'viewpoint',
+      } as unknown as Spot,
+    ];
+    excursionsStore.excursions = [];
+    scheduleStore.items = [
+      {
+        id: 101,
+        trip_id: 1,
+        spot_id: 10,
+        date: '2026-06-20',
+      } as any,
+    ];
+
+    const app = createApp({
+      render: () =>
+        h(DiaryEntityPicker, {
+          date: '2026-06-16',
+          excursionIds: [],
+          spotIds: [10],
+        }),
+    });
+    app.use(pinia);
+    const html = await renderToString(app);
+
+    expect(html).toContain('Geplant am 20.06.2026');
+    expect(html).toContain('data-testid="diary-date-mismatch-alert"');
+    expect(html).toContain('Eiffelturm');
   });
 });

@@ -7,6 +7,7 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { buildDayStations } from '../utils/dayStations';
+import { toLocalDateString } from '../utils/dateFormat';
 
 export function useDiaryEntityLinks() {
   const tripStore = useTripStore();
@@ -30,6 +31,41 @@ export function useDiaryEntityLinks() {
       scheduleStore.items.some((i) => i.spot_id === spotId && i.date === dateStr) ||
       excursionsStore.excursions.some((e) => e.date === dateStr && e.spot_ids.includes(spotId))
     );
+  }
+
+  function getSpotScheduledDates(spotId: number): string[] {
+    const dates = new Set<string>();
+    for (const item of scheduleStore.items) {
+      if (item.spot_id === spotId && item.date) {
+        if (item.end_date && item.end_date > item.date) {
+          const cur = new Date(`${item.date}T00:00:00`);
+          const end = new Date(`${item.end_date}T00:00:00`);
+          while (cur <= end) {
+            dates.add(toLocalDateString(cur));
+            cur.setDate(cur.getDate() + 1);
+          }
+        } else {
+          dates.add(item.date);
+        }
+      }
+    }
+    for (const excursion of excursionsStore.excursions) {
+      if (excursion.date && excursion.spot_ids.includes(spotId)) {
+        dates.add(excursion.date);
+      }
+    }
+    return Array.from(dates).sort();
+  }
+
+  function spotDateMismatch(spotId: number, targetDate?: string): boolean {
+    if (!targetDate) return false;
+    const dates = getSpotScheduledDates(spotId);
+    return dates.length > 0 && !dates.includes(targetDate);
+  }
+
+  function excursionDateMismatch(excursion: Excursion, targetDate?: string): boolean {
+    if (!targetDate || !excursion.date) return false;
+    return excursion.date !== targetDate;
   }
 
   function pickerSpots(dateStr: string): Spot[] {
@@ -106,5 +142,8 @@ export function useDiaryEntityLinks() {
     markLinkedAsDone,
     hasMapContent,
     showEntryDayOnMap,
+    getSpotScheduledDates,
+    spotDateMismatch,
+    excursionDateMismatch,
   };
 }

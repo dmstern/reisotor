@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import type { Excursion, Spot } from '../api/types';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useDiaryEntityLinks } from '../composables/useDiaryEntityLinks';
@@ -7,7 +8,9 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
+import { formatDate } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
+import Alert from './primitives/Alert.vue';
 import Button from './primitives/Button.vue';
 import Checkbox from './primitives/Checkbox.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
@@ -42,6 +45,35 @@ watch(
 
 const excursions = computed(() => links.pickerExcursions(props.date));
 const spots = computed(() => links.pickerSpots(props.date));
+
+function formatSpotScheduled(spotId: number): string {
+  const dates = links.getSpotScheduledDates(spotId);
+  if (dates.length === 1) {
+    return `Geplant am ${formatDate(dates[0])}`;
+  }
+  if (dates.length > 1) {
+    return `Geplant (${dates.map((d) => formatDate(d, { includeYear: false })).join(', ')})`;
+  }
+  return '';
+}
+
+const mismatchedExcursions = computed(() => {
+  if (!props.date) return [];
+  return excursionIds.value
+    .map((id) => excursionsStore.excursions.find((e) => e.id === id))
+    .filter((e): e is Excursion => !!e && links.excursionDateMismatch(e, props.date));
+});
+
+const mismatchedSpots = computed(() => {
+  if (!props.date) return [];
+  return spotIds.value
+    .map((id) => spotsStore.spots.find((s) => s.id === id))
+    .filter((s): s is Spot => !!s && links.spotDateMismatch(s.id, props.date));
+});
+
+const hasDateMismatch = computed(() => {
+  return mismatchedExcursions.value.length > 0 || mismatchedSpots.value.length > 0;
+});
 
 function toggleSpot(spotId: number) {
   const current = [...spotIds.value];
@@ -78,6 +110,13 @@ function toggleSpot(spotId: number) {
           <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
           diesem Tag geplant
         </span>
+        <span
+          v-else-if="links.excursionDateMismatch(ex, date)"
+          class="excursion-option-badge warning"
+        >
+          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" /> Geplant am
+          {{ formatDate(ex.date!) }}
+        </span>
       </label>
     </CollapsibleFieldset>
 
@@ -100,7 +139,14 @@ function toggleSpot(spotId: number) {
           <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" />
           {{ spot.title }}
         </span>
-        <span v-if="spotIds.includes(spot.id)" class="excursion-option-badge">
+        <span
+          v-if="spotIds.includes(spot.id) && links.spotDateMismatch(spot.id, date)"
+          class="excursion-option-badge warning"
+        >
+          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+          {{ formatSpotScheduled(spot.id) }}
+        </span>
+        <span v-else-if="spotIds.includes(spot.id)" class="excursion-option-badge">
           <AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt
         </span>
         <span
@@ -110,8 +156,38 @@ function toggleSpot(spotId: number) {
           <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
           diesem Tag geplant
         </span>
+        <span
+          v-else-if="links.spotDateMismatch(spot.id, date)"
+          class="excursion-option-badge warning"
+        >
+          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+          {{ formatSpotScheduled(spot.id) }}
+        </span>
       </Button>
     </CollapsibleFieldset>
+
+    <Alert
+      v-if="hasDateMismatch"
+      variant="warning"
+      size="sm"
+      :icon="ACTION_ICONS.warning"
+      class="diary-mismatch-alert"
+      data-testid="diary-date-mismatch-alert"
+    >
+      <div class="mismatch-alert-content">
+        <span class="mismatch-alert-header"
+          >Folgende ausgewählte Elemente sind für andere Tage geplant:</span
+        >
+        <ul class="mismatch-list">
+          <li v-for="ex in mismatchedExcursions" :key="`ex-${ex.id}`">
+            <strong>{{ ex.title }}</strong> (geplant am {{ formatDate(ex.date!) }})
+          </li>
+          <li v-for="spot in mismatchedSpots" :key="`spot-${spot.id}`">
+            <strong>{{ spot.title }}</strong> ({{ formatSpotScheduled(spot.id) }})
+          </li>
+        </ul>
+      </div>
+    </Alert>
   </div>
 </template>
 
@@ -188,6 +264,38 @@ function toggleSpot(spotId: number) {
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
+}
+
+.excursion-option-badge.warning {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-dark);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  font-weight: 600;
+}
+
+.diary-mismatch-alert {
+  margin-top: var(--space-1);
+}
+
+.mismatch-alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+.mismatch-alert-header {
+  font-weight: 600;
+}
+
+.mismatch-list {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 @container (max-width: 360px) {

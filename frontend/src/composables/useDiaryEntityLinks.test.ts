@@ -113,4 +113,52 @@ describe('useDiaryEntityLinks', () => {
     links.showEntryDayOnMap(entryWithSpots);
     expect(focusSpy).toHaveBeenCalledWith('2026-07-01');
   });
+
+  it('erkennt Datumsabweichungen bei Touren und Spots', () => {
+    const scheduleStore = useScheduleStore();
+    const excursionsStore = useExcursionsStore();
+    const spotsStore = useSpotsStore();
+
+    const tourWithDate = {
+      id: 1,
+      title: 'Tour 1',
+      date: '2026-07-02',
+      spot_ids: [],
+    } as unknown as Excursion;
+    const tourWithoutDate = {
+      id: 2,
+      title: 'Tour 2',
+      date: null,
+      spot_ids: [],
+    } as unknown as Excursion;
+
+    spotsStore.spots = [
+      { id: 10, title: 'Spot mit Termin' } as Spot,
+      { id: 20, title: 'Spot ohne Termin' } as Spot,
+      { id: 30, title: 'Spot via Tour' } as Spot,
+    ];
+
+    scheduleStore.items = [{ id: 101, spot_id: 10, date: '2026-07-05' } as ScheduleItem];
+    excursionsStore.excursions = [
+      { id: 1, title: 'Tour 1', date: '2026-07-08', spot_ids: [30] } as unknown as Excursion,
+    ];
+
+    const links = useDiaryEntityLinks();
+
+    // Excursion mismatch
+    expect(links.excursionDateMismatch(tourWithDate, '2026-07-01')).toBe(true);
+    expect(links.excursionDateMismatch(tourWithDate, '2026-07-02')).toBe(false);
+    expect(links.excursionDateMismatch(tourWithoutDate, '2026-07-01')).toBe(false);
+    expect(links.excursionDateMismatch(tourWithDate, '')).toBe(false);
+
+    // Spot mismatch
+    expect(links.getSpotScheduledDates(10)).toEqual(['2026-07-05']);
+    expect(links.getSpotScheduledDates(20)).toEqual([]);
+    expect(links.getSpotScheduledDates(30)).toEqual(['2026-07-08']);
+    expect(links.spotDateMismatch(10, '2026-07-01')).toBe(true);
+    expect(links.spotDateMismatch(10, '2026-07-05')).toBe(false);
+    expect(links.spotDateMismatch(20, '2026-07-01')).toBe(false);
+    expect(links.spotDateMismatch(30, '2026-07-01')).toBe(true);
+    expect(links.spotDateMismatch(30, '2026-07-08')).toBe(false);
+  });
 });
