@@ -11,12 +11,21 @@ const pwaUpdate = usePwaUpdateStore();
 const router = useRouter();
 const isUpdating = ref(false);
 
-// Nur anzeigen, wenn beide Versionen bekannt sind und sich unterscheiden.
-const versionChange = computed(() => {
-  const from = pwaUpdate.currentVersion;
+const formatVersion = (v: string) => (v.startsWith('v') ? v : `v${v}`);
+
+// Versionswechsel oder neue Zielversion anzeigen, sobald die Version bekannt ist.
+const versionDisplay = computed(() => {
   const to = pwaUpdate.availableVersion;
-  if (from === 'unknown' || !to || to === from) return null;
-  return { from: `v${from}`, to: `v${to}` };
+  if (!to) return null;
+  const from = pwaUpdate.currentVersion;
+  const formattedTo = formatVersion(to);
+  if (from && from !== 'unknown' && from !== to) {
+    return {
+      from: formatVersion(from),
+      to: formattedTo,
+    };
+  }
+  return { to: formattedTo };
 });
 
 watch(
@@ -74,10 +83,12 @@ function goToSettings() {
         <span class="badge-icon" aria-hidden="true">✨</span>
         <span class="badge-text">Neue Version bereit</span>
         <span class="badge-icon" aria-hidden="true">✨</span>
-        <span v-if="versionChange" class="badge-versions" data-testid="version-change">
-          {{ versionChange.from }}
-          <span aria-label="auf">→</span>
-          {{ versionChange.to }}
+        <span v-if="versionDisplay" class="badge-versions" data-testid="version-change">
+          <template v-if="versionDisplay.from">
+            {{ versionDisplay.from }}
+            <span aria-label="auf">→</span>
+          </template>
+          {{ versionDisplay.to }}
         </span>
       </div>
 

@@ -95,6 +95,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
       await api.register(authRoutes, { prefix: '/auth' });
       await api.register(legalRoutes);
       await api.register(feedbackRoutes);
+      await api.register(buildInfoRoutes);
 
       await api.register(async (protectedApi) => {
         protectedApi.addHook('preHandler', requireAuth);
@@ -110,7 +111,6 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
         await protectedApi.register(notesRoutes);
         await protectedApi.register(diaryRoutes);
         await protectedApi.register(spotsRoutes);
-        await protectedApi.register(buildInfoRoutes);
         await protectedApi.register(trashRoutes);
         await protectedApi.register(realtimeRoutes);
         await protectedApi.register(pushRoutes);

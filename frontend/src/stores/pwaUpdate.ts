@@ -81,9 +81,15 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     updateDialogDismissed.value = true;
   }
 
-  function simulateUpdateAvailable() {
+  function simulateUpdateAvailable(version?: string) {
     needRefresh.value = true;
     updateDialogDismissed.value = false;
+    if (version) {
+      availableVersion.value = version;
+      availableVersionRequested = true;
+    } else {
+      loadAvailableVersion();
+    }
   }
 
   // Version, auf die das Update wechselt. Das Backend wird zusammen mit dem Frontend ausgerollt
@@ -107,7 +113,10 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     window.__triggerUpdateDialog = simulateUpdateAvailable;
     // @ts-expect-error Dev/Debug helper on window
     window.__fakeUpdate = simulateUpdateAvailable;
-    window.addEventListener('reisotor:fake-update', simulateUpdateAvailable);
+    window.addEventListener('reisotor:fake-update', (e) => {
+      const customEvent = e as CustomEvent<{ version?: string }>;
+      simulateUpdateAvailable(customEvent.detail?.version);
+    });
 
     if (
       window.location.search.includes('testUpdate') ||
@@ -125,6 +134,7 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
     updateSW = registerSW({
       onNeedRefresh() {
         needRefresh.value = true;
+        loadAvailableVersion();
       },
       onOfflineReady() {
         offlineReady.value = true;
