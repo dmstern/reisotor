@@ -114,6 +114,28 @@ describe('useDiaryEntityLinks', () => {
     expect(focusSpy).toHaveBeenCalledWith('2026-07-01');
   });
 
+  it('excursionsForEntry and spotsForEntry handle undefined arrays safely', () => {
+    const links = useDiaryEntityLinks();
+    const entryWithoutArrays = {
+      id: 1,
+      trip_id: 1,
+      author_id: 1,
+      date: '2026-07-01',
+      title: 'Tag 1',
+      content: 'Hallo',
+      content_format: 'html',
+      images: [],
+      is_draft: 0,
+      created_at: '2026-07-01T10:00:00Z',
+      updated_at: null,
+    };
+
+    expect(() => links.excursionsForEntry(entryWithoutArrays as never)).not.toThrow();
+    expect(links.excursionsForEntry(entryWithoutArrays as never)).toEqual([]);
+    expect(() => links.spotsForEntry(entryWithoutArrays as never)).not.toThrow();
+    expect(links.spotsForEntry(entryWithoutArrays as never)).toEqual([]);
+  });
+
   it('erkennt Datumsabweichungen bei Touren und Spots', () => {
     const scheduleStore = useScheduleStore();
     const excursionsStore = useExcursionsStore();

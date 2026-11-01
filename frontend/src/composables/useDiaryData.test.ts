@@ -75,4 +75,55 @@ describe('useDiaryData', () => {
     expect(() => sortEntries()).not.toThrow();
     expect(entries.value.map((e) => e.id)).toEqual([2, 3, 1]);
   });
+
+  it('coEditorsFor returns empty array without throwing when editor_ids is undefined (Issue #654)', () => {
+    const { coEditorsFor } = useDiaryData({ tripId: 1 });
+    const entryWithoutEditorIds = {
+      id: 1,
+      trip_id: 1,
+      author_id: 1,
+      date: '2026-07-01',
+      created_at: '2026-07-01T10:00:00Z',
+      title: 'Entry',
+      content: 'Test',
+      content_format: 'html',
+      images: [],
+      excursion_ids: [],
+      spot_ids: [],
+      is_draft: 0,
+      updated_at: null,
+    };
+
+    expect(() => coEditorsFor(entryWithoutEditorIds as never)).not.toThrow();
+    expect(coEditorsFor(entryWithoutEditorIds as never)).toEqual([]);
+  });
+
+  it('coEditorsFor returns co-editors excluding author', () => {
+    const { coEditorsFor, users } = useDiaryData({ tripId: 1 });
+    users.value = [
+      { id: 1, username: 'Alice', avatar: '🐱' },
+      { id: 2, username: 'Bob', avatar: '🐶' },
+      { id: 3, username: 'Charlie', avatar: '🦊' },
+    ] as never[];
+
+    const entry = {
+      id: 1,
+      trip_id: 1,
+      author_id: 1,
+      date: '2026-07-01',
+      created_at: '2026-07-01T10:00:00Z',
+      title: 'Entry',
+      content: 'Test',
+      content_format: 'html',
+      images: [],
+      excursion_ids: [],
+      spot_ids: [],
+      editor_ids: [1, 2, 3],
+      is_draft: 0,
+      updated_at: null,
+    };
+
+    const editors = coEditorsFor(entry as never);
+    expect(editors.map((u) => u.id)).toEqual([2, 3]);
+  });
 });

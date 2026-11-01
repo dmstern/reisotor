@@ -121,6 +121,7 @@ export function useTripCategorySettings(
     const storedByDefault = new Map<string, TripCategory>();
 
     for (const c of storedCategories.value) {
+      if (!c || !c.name) continue;
       storedByName.set(c.name.trim().toLowerCase(), c);
       if (c.default_name) {
         storedByDefault.set(c.default_name.trim().toLowerCase(), c);
@@ -129,6 +130,7 @@ export function useTripCategorySettings(
 
     // 1. Gespeicherte Custom Categories (die weder Standard sind noch von einer Standardkategorie abstammen)
     for (const c of storedCategories.value) {
+      if (!c || !c.name) continue;
       const isDerivedFromStandard = Boolean(c.default_name);
       const matchesStandardName = defaultSuggestions.value.some(
         (s) => s.label.trim().toLowerCase() === c.name.trim().toLowerCase()

@@ -50,7 +50,7 @@ export function useDiaryEntityLinks() {
       }
     }
     for (const excursion of excursionsStore.excursions) {
-      if (excursion.date && excursion.spot_ids.includes(spotId)) {
+      if (excursion.date && (excursion.spot_ids ?? []).includes(spotId)) {
         dates.add(excursion.date);
       }
     }
@@ -75,13 +75,13 @@ export function useDiaryEntityLinks() {
   }
 
   function excursionsForEntry(entry: DiaryEntry): Excursion[] {
-    return entry.excursion_ids
+    return (entry.excursion_ids ?? [])
       .map((id) => excursionsStore.excursions.find((e) => e.id === id))
       .filter((e): e is Excursion => !!e);
   }
 
   function spotsForEntry(entry: DiaryEntry): Spot[] {
-    return entry.spot_ids
+    return (entry.spot_ids ?? [])
       .map((id) => spotsStore.spots.find((s) => s.id === id))
       .filter((s): s is Spot => !!s);
   }

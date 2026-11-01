@@ -50,7 +50,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   }
 
   function coEditorsFor(entry: DiaryEntry): User[] {
-    return entry.editor_ids
+    return (entry.editor_ids ?? [])
       .filter((id) => id !== entry.author_id)
       .map((id) => author(id))
       .filter((u): u is User => !!u);
@@ -71,6 +71,9 @@ export function useDiaryData(options: UseDiaryDataOptions) {
       entries.value = entriesRes.map((e) => ({
         ...e,
         images: Array.isArray(e.images) ? e.images.filter(Boolean) : [],
+        excursion_ids: Array.isArray(e.excursion_ids) ? e.excursion_ids : [],
+        spot_ids: Array.isArray(e.spot_ids) ? e.spot_ids : [],
+        editor_ids: Array.isArray(e.editor_ids) ? e.editor_ids : [],
       }));
       users.value = usersRes;
       if (onSocialLoaded) {
