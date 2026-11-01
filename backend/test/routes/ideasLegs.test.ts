@@ -194,4 +194,80 @@ describe('ideas with intermediate stops and legs (#361)', () => {
     const busExpense = budgetRes.json().find((b: { id: number }) => b.id === initialExpenseId);
     expect(busExpense).toBeUndefined();
   });
+
+  it('updates a tour without HTTP 500 when ideas.budget_expense_id still points to a leg expense (#647)', async () => {
+    // 1. Erstelle eine Tour mit Teilstrecke und Budget-Ausgabe
+    const ideaCreate = await app.inject({
+      method: 'POST',
+      url: '/api/ideas',
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: '1.3 Tour',
+        role: 'arrival',
+        spot_ids: [spotA, spotB],
+        legs: [
+          {
+            position: 0,
+            from_spot_id: spotA,
+            to_spot_id: spotB,
+            transport_type: 'Zug',
+            amount: 80.0,
+            paid_by_user_id: userId,
+          },
+        ],
+      },
+    });
+    expect(ideaCreate.statusCode).toBe(201);
+    const legacyIdeaId = ideaCreate.json().id;
+    const legExpenseId = ideaCreate.json().legs[0].budget_expense_id;
+    expect(legExpenseId).toBeDefined();
+
+    // 2. Simuliere Zustand direkt nach unvollständigem 1.3 -> 2.0 Backfill: ideas.budget_expense_id verweist auf dieselbe Ausgabe
+    const { db } = await import('../../src/db/index.js');
+    db.prepare('UPDATE ideas SET budget_expense_id = ? WHERE id = ?').run(
+      legExpenseId,
+      legacyIdeaId
+    );
+
+    // 3. Umbenennen in 2.0: Frontend sendet PUT ohne Top-Level amount/paid_by_user_id
+    const renameRes = await app.inject({
+      method: 'PUT',
+      url: `/api/ideas/${legacyIdeaId}`,
+      headers: { cookie },
+      payload: {
+        title: '1.3 Tour Umbenannt',
+        spot_ids: [spotA, spotB],
+        legs: [
+          {
+            position: 0,
+            from_spot_id: spotA,
+            to_spot_id: spotB,
+            transport_type: 'Zug',
+            amount: 80.0,
+            paid_by_user_id: userId,
+            budget_expense_id: legExpenseId,
+          },
+        ],
+      },
+    });
+
+    expect(renameRes.statusCode).toBe(200);
+    expect(renameRes.json().title).toBe('1.3 Tour Umbenannt');
+
+    // Ausgabe existiert weiterhin im Budget und gehört dem Leg
+    const budgetCheck = await app.inject({
+      method: 'GET',
+      url: `/api/budget?trip_id=${tripId}`,
+      headers: { cookie },
+    });
+    const found = budgetCheck.json().find((b: { id: number }) => b.id === legExpenseId);
+    expect(found).toBeDefined();
+
+    // ideas.budget_expense_id ist nun bereinigt (NULL)
+    const row = db
+      .prepare('SELECT budget_expense_id FROM ideas WHERE id = ?')
+      .get(legacyIdeaId) as { budget_expense_id: number | null };
+    expect(row.budget_expense_id).toBeNull();
+  });
 });
