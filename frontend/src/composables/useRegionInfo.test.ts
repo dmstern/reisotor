@@ -49,7 +49,7 @@ describe('useRegionInfo', () => {
     expect(composable.regionSourceParts.value).toEqual([
       'REST Countries',
       'open.er-api.com',
-      'travel-advisory.info',
+      'Auswärtiges Amt',
     ]);
   });
 

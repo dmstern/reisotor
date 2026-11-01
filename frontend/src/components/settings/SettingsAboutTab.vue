@@ -143,6 +143,13 @@ const showPwaInstallDialog = ref(false);
           <a href="https://open.er-api.com/" target="_blank" rel="noopener noreferrer"
             >ExchangeRate-API</a
           >
+          ·
+          <a
+            href="https://www.auswaertiges-amt.de/de/open-data-schnittstelle/736118"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Auswärtiges Amt (Open Data)</a
+          >
         </dd>
         <dt>Icons</dt>
         <dd>

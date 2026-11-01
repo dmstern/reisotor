@@ -52,7 +52,7 @@ export function useRegionInfo(
       parts.push('REST Countries');
     if (regionInfo.value.currency && regionInfo.value.exchangeRate != null)
       parts.push('open.er-api.com');
-    if (regionInfo.value.advisory) parts.push('travel-advisory.info');
+    if (regionInfo.value.advisory) parts.push('Auswärtiges Amt');
     return parts;
   });
 
