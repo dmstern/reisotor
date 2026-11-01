@@ -146,10 +146,39 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   }
 
   function reload() {
+    needRefresh.value = false;
+    let targetUrl = typeof window !== 'undefined' ? window.location.href : '';
+    if (targetUrl.includes('testUpdate') || targetUrl.includes('fakeUpdate')) {
+      try {
+        const u = new URL(targetUrl);
+        u.searchParams.delete('testUpdate');
+        u.searchParams.delete('fakeUpdate');
+        targetUrl = u.toString();
+      } catch {
+        // Fallback falls URL-Parsing fehlschlägt
+      }
+    }
+
     if (updateSW) {
       updateSW(true);
-    } else {
-      window.location.reload();
+      // Fallback-Reload: Falls controllerchange ausbleibt (z. B. Worker bereits aktiv,
+      // kein waiting-Worker bei simuliertem Update oder Browser-Verzögerung),
+      // erzwingen wir nach 500ms einen normalen Reload, damit der Klick verlässlich wirkt.
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          if (targetUrl && targetUrl !== window.location.href) {
+            window.location.href = targetUrl;
+          } else {
+            window.location.reload();
+          }
+        }
+      }, 500);
+    } else if (typeof window !== 'undefined') {
+      if (targetUrl && targetUrl !== window.location.href) {
+        window.location.href = targetUrl;
+      } else {
+        window.location.reload();
+      }
     }
   }
 

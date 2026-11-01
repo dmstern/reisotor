@@ -99,4 +99,18 @@ describe('usePwaUpdateStore', () => {
     store.openChangelogDialog();
     expect(store.showChangelogDialog).toBe(true);
   });
+
+  it('reload resets needRefresh and reloads page', () => {
+    const store = usePwaUpdateStore();
+    store.needRefresh = true;
+    const reloadMock = vi.fn();
+    vi.stubGlobal('location', {
+      href: 'http://localhost/',
+      reload: reloadMock,
+    });
+
+    store.reload();
+    expect(store.needRefresh).toBe(false);
+    expect(reloadMock).toHaveBeenCalled();
+  });
 });
