@@ -173,9 +173,9 @@ async function saveScreenshotIfChanged(
     );
   }
 
-  // Erhöhte Toleranz (25.000 Pixel entspricht ca. 1.2% bei Full HD), da Anti-Aliasing
-  // und Font-Rendering zwischen macOS, Fedora und der CI (Ubuntu Jammy) zehntausende
-  // Pixel minimal (Graustufen) abweichen lässt, selbst bei gleicher Fira-Sans-Schriftart.
+  // Ausbalancierte Toleranz (~12.500 Pixel entspricht ca. 0.6% bei Full HD, ~1.000 Pixel bzw. 0.3% bei Mobile),
+  // um reines Font-Anti-Aliasing-Rauschen zwischen OS-Engines zu ignorieren, aber echte visuelle
+  // Änderungen (wie Zeilenumbrüche, Footer-Separators, Abstände oder Typo-Fixes) zuverlässig zu erfassen.
   const { fullPage = false, maxDiffPixels } = options;
   const newBuffer = await page.screenshot({ fullPage, animations: 'disabled', caret: 'hide' });
 
@@ -204,8 +204,8 @@ async function saveScreenshotIfChanged(
         const effectiveMaxDiff =
           maxDiffPixels ??
           (img1.width <= 500
-            ? Math.max(500, Math.round(img1.width * img1.height * 0.025))
-            : Math.round(img1.width * img1.height * 0.012));
+            ? Math.max(300, Math.round(img1.width * img1.height * 0.003))
+            : Math.round(img1.width * img1.height * 0.006));
 
         if (numDiffPixels > 0 && process.env.FORCE_SCREENSHOTS) {
           fs.writeFileSync(screenshotPath, newBuffer);
