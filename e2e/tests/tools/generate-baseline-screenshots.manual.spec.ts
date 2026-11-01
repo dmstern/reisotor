@@ -1,4 +1,5 @@
 import { test, type Page } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
@@ -110,6 +111,36 @@ function syncToLandingIfMapped(screenshotPath: string) {
   }
 }
 
+let cachedGitRepoRoot: string | null = null;
+
+/**
+ * Liest den bestehenden Baseline-Buffer von Disk. Falls die Datei im Dateisystem gelöscht wurde
+ * (z. B. bei manuellem Vorab-Aufräumen), wird die committete Version aus Git HEAD wiederhergestellt,
+ * damit immer ein valider visueller Diff berechnet werden kann.
+ */
+function getBaselineBuffer(
+  screenshotPath: string
+): { buffer: Buffer; source: 'disk' | 'git' } | null {
+  if (fs.existsSync(screenshotPath)) {
+    return { buffer: fs.readFileSync(screenshotPath), source: 'disk' };
+  }
+  try {
+    if (!cachedGitRepoRoot) {
+      cachedGitRepoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+        encoding: 'utf-8',
+      }).trim();
+    }
+    const relPath = path.relative(cachedGitRepoRoot, screenshotPath);
+    const buffer = execFileSync('git', ['show', `HEAD:${relPath}`], {
+      maxBuffer: 30 * 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    return { buffer, source: 'git' };
+  } catch {
+    return null;
+  }
+}
+
 async function saveScreenshotIfChanged(
   page: Page,
   screenshotPath: string,
@@ -187,8 +218,9 @@ async function saveScreenshotIfChanged(
   const hasMap = Boolean(mapCheck.hasMap);
 
   let result: { status: 'created' | 'updated' | 'unchanged'; diffPixels?: number };
+  const baselineInfo = getBaselineBuffer(screenshotPath);
 
-  if (!fs.existsSync(screenshotPath)) {
+  if (!baselineInfo) {
     fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
     fs.writeFileSync(screenshotPath, newBuffer);
     console.log(`[Created] ${path.basename(screenshotPath)}`);
@@ -207,7 +239,7 @@ async function saveScreenshotIfChanged(
     });
   } else {
     try {
-      const existingBuffer = fs.readFileSync(screenshotPath);
+      const existingBuffer = baselineInfo.buffer;
       const img1 = PNG.sync.read(existingBuffer);
       const img2 = PNG.sync.read(newBuffer);
 
@@ -254,6 +286,11 @@ async function saveScreenshotIfChanged(
           console.log(`[Updated: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
           result = { status: 'updated', diffPixels: numDiffPixels };
         } else {
+          // Falls die Datei auf Disk vorab gelöscht wurde, stellen wir sie wieder her
+          if (!fs.existsSync(screenshotPath)) {
+            fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
+            fs.writeFileSync(screenshotPath, newBuffer);
+          }
           console.log(`[Unchanged: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
           result = { status: 'unchanged', diffPixels: numDiffPixels };
         }
