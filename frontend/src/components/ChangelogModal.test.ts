@@ -264,4 +264,52 @@ describe('ChangelogModal', () => {
 
     cleanUp();
   });
+
+  it('renders base release highlights and GitHub changelog link in modal when available', async () => {
+    const pwaUpdate = usePwaUpdateStore();
+    const buildInfoStore = useBuildInfoStore();
+    buildInfoStore.buildInfo = {
+      version: '2.0.1',
+      ref: 'abc',
+      builtAt: '2026-11-03T10:00:00Z',
+      changelog: {
+        version: '2.0.1',
+        date: '2026-11-03',
+        notes: ['Korrektur'],
+        groups: [
+          {
+            title: 'Korrekturen',
+            notes: ['🐛 **Bugfix**: Schnellerer Datumswechsel'],
+          },
+        ],
+        baseRelease: {
+          version: '2.0.0',
+          date: '2026-11-01',
+          notes: ['Highlights'],
+          groups: [
+            {
+              title: 'Highlights',
+              notes: ['🎨 **Neues Design**: Großes Redesign'],
+            },
+          ],
+        },
+      },
+      repoUrl: 'https://github.com/dmstern/reisotor',
+      hostingLocation: '',
+      environment: 'production',
+    };
+    pwaUpdate.showChangelogDialog = true;
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+
+    expect(document.body.innerHTML).toContain('Highlights der 2.0-Serie (aus v2.0.0)');
+    expect(document.body.innerHTML).toContain('Neues Design');
+    expect(document.body.innerHTML).toContain('Vollständiges Changelog auf GitHub ansehen');
+    expect(document.body.innerHTML).toContain(
+      'https://github.com/dmstern/reisotor/blob/main/CHANGELOG.md'
+    );
+
+    cleanUp();
+  });
 });

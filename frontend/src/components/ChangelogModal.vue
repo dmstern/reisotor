@@ -39,7 +39,17 @@ const notes = computed(() => {
   return rawNotes.map((n) => (n.startsWith('- ') ? n.slice(2).trim() : n.trim())).filter(Boolean);
 });
 
-const hasNotes = computed(() => groups.value.length > 0 || notes.value.length > 0);
+const baseRelease = computed(() => {
+  return buildInfoStore.buildInfo?.changelog?.baseRelease ?? null;
+});
+
+const repoUrl = computed(() => {
+  return buildInfoStore.buildInfo?.repoUrl;
+});
+
+const hasNotes = computed(
+  () => groups.value.length > 0 || notes.value.length > 0 || Boolean(baseRelease.value)
+);
 
 function onClose() {
   pwaUpdate.dismissChangelogDialog();
@@ -62,7 +72,12 @@ function goToSettings() {
       <div v-else-if="hasNotes" class="notes-container">
         <h3 class="changelog-intro">Das ist neu in dieser Version:</h3>
         <div class="changelog-scroll-area">
-          <ChangelogContent :groups="groups" :notes="notes" />
+          <ChangelogContent
+            :groups="groups"
+            :notes="notes"
+            :base-release="baseRelease"
+            :repo-url="repoUrl"
+          />
         </div>
       </div>
 

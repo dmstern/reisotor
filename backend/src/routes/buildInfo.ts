@@ -8,11 +8,19 @@ interface ChangelogGroup {
   notes: string[];
 }
 
+interface BaseRelease {
+  version: string;
+  date: string;
+  notes: string[];
+  groups?: ChangelogGroup[];
+}
+
 interface ChangelogEntry {
   version: string;
   date: string;
   notes: string[];
   groups?: ChangelogGroup[];
+  baseRelease?: BaseRelease;
 }
 
 interface BuildInfo {

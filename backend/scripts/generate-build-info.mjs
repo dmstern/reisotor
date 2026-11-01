@@ -118,26 +118,13 @@ function readPendingReleaseNotes() {
   }
 }
 
-// Letzten Eintrag aus der Root-CHANGELOG.md fürs End-Nutzer-"Was ist neu" im About-Tab
-// herausziehen (siehe release.yml, das dort pro Release einen Abschnitt "## [X.Y.Z] - Datum"
-// einfügt) - bei fehlender/leerer Datei bleibt changelog schlicht null statt den Build fehlschlagen
-// zu lassen.
-function readLatestChangelogEntry() {
-  let raw;
-  try {
-    raw = readFileSync(path.join(repoRootDir, 'CHANGELOG.md'), 'utf-8');
-  } catch {
-    return null;
-  }
-  // Datei an jeder "## ["-Überschrift (Zeilenanfang) aufteilen - der erste Treffer ist der
-  // zuletzt eingefügte (release.yml fügt neue Einträge immer oben ein), robuster als ein
-  // Lookahead-Regex-Ende, das an die Restlänge der Datei gebunden wäre.
-  const first = raw.split(/\n(?=## \[)/).find((section) => section.startsWith('## ['));
-  const heading = first?.match(/^## \[(.+?)\] - (\S+)/);
+// Einzelnen Abschnitt aus der CHANGELOG.md (beginnend mit "## [X.Y.Z] - Datum") parsen.
+function parseChangelogSection(section) {
+  const heading = section.match(/^## \[(.+?)\] - (\S+)/);
   if (!heading) return null;
   const [, version, date] = heading;
 
-  const lines = first.split('\n').map((line) => line.trim());
+  const lines = section.split('\n').map((line) => line.trim());
   const groups = [];
   const allNotes = [];
   let currentGroup = null;
@@ -163,34 +150,102 @@ function readLatestChangelogEntry() {
   return result;
 }
 
+// Alle Einträge aus der Root-CHANGELOG.md fürs End-Nutzer-"Was ist neu" herausziehen
+function readAllChangelogEntries() {
+  let raw;
+  try {
+    raw = readFileSync(path.join(repoRootDir, 'CHANGELOG.md'), 'utf-8');
+  } catch {
+    return [];
+  }
+  const sections = raw.split(/\n(?=## \[)/).filter((section) => section.startsWith('## ['));
+  return sections.map(parseChangelogSection).filter(Boolean);
+}
+
+// Findet bei Patch-Releases (z. B. 2.0.1) das zugehörige Basis-Release (z. B. 2.0.0),
+// damit wichtige Highlights der aktuellen Versionen-Serie nicht verloren gehen.
+function findBaseRelease(currentVersion, allEntries) {
+  const cleanMatch = currentVersion.match(/(\d+)\.(\d+)\.(\d+)/);
+  if (!cleanMatch) return null;
+
+  const major = parseInt(cleanMatch[1], 10);
+  const minor = parseInt(cleanMatch[2], 10);
+  const patch = parseInt(cleanMatch[3], 10);
+
+  // Nur wenn es sich um ein Patch-Release handelt (patch > 0)
+  if (patch === 0) {
+    return null;
+  }
+
+  // 1. Suche nach der Basis der aktuellen Minor-Reihe (z. B. 2.0.0 bei 2.0.1)
+  const targetBaseVersion = `${major}.${minor}.0`;
+  const exactBase = allEntries.find((e) => e.version === targetBaseVersion);
+  if (exactBase) {
+    return exactBase;
+  }
+
+  // 2. Fallback: Suche nach dem nächsten älteren Release mit patch === 0
+  const olderBase = allEntries.find((e) => {
+    const m = e.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+    if (!m) return false;
+    const eMajor = parseInt(m[1], 10);
+    const eMinor = parseInt(m[2], 10);
+    const ePatch = parseInt(m[3], 10);
+    return ePatch === 0 && (eMajor < major || (eMajor === major && eMinor <= minor));
+  });
+
+  return olderBase ?? null;
+}
+
 function determineChangelog() {
+  const allEntries = readAllChangelogEntries();
+
+  let entry = null;
   if (env === 'staging' || env === 'development') {
     const pending = readPendingReleaseNotes();
     if (pending.notes.length > 0) {
-      return {
+      entry = {
         version: computedVersion,
         date: new Date().toISOString().slice(0, 10),
         notes: pending.notes,
         groups: pending.groups,
       };
-    }
-    const latest = readLatestChangelogEntry();
-    if (latest) {
-      return {
-        ...latest,
+    } else if (allEntries.length > 0) {
+      entry = {
+        ...allEntries[0],
         version: computedVersion,
       };
     }
+  } else if (allEntries.length > 0) {
+    entry = { ...allEntries[0] };
   }
-  return readLatestChangelogEntry();
+
+  if (!entry) return null;
+
+  const base = findBaseRelease(computedVersion, allEntries);
+  if (base && base.version !== entry.version) {
+    entry.baseRelease = {
+      version: base.version,
+      date: base.date,
+      notes: base.notes,
+      ...(base.groups ? { groups: base.groups } : {}),
+    };
+  }
+
+  return entry;
 }
 
-const buildInfo = {
-  version: computedVersion,
-  ref,
-  builtAt: new Date().toISOString(),
-  changelog: determineChangelog(),
-};
+export { parseChangelogSection, readAllChangelogEntries, findBaseRelease, determineChangelog };
 
-mkdirSync(distDir, { recursive: true });
-writeFileSync(path.join(distDir, 'build-info.json'), JSON.stringify(buildInfo, null, 2));
+// Nur direkt ausführen, wenn die Datei als Skript aufgerufen wird
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const buildInfo = {
+    version: computedVersion,
+    ref,
+    builtAt: new Date().toISOString(),
+    changelog: determineChangelog(),
+  };
+
+  mkdirSync(distDir, { recursive: true });
+  writeFileSync(path.join(distDir, 'build-info.json'), JSON.stringify(buildInfo, null, 2));
+}
