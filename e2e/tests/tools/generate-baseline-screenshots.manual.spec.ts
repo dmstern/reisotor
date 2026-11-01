@@ -193,15 +193,16 @@ async function saveScreenshotIfChanged(
     fs.writeFileSync(screenshotPath, newBuffer);
     console.log(`[Created] ${path.basename(screenshotPath)}`);
     result = { status: 'created' };
+    const imgNew = PNG.sync.read(newBuffer);
     recordScreenshotComparison({
       baseName: path.basename(screenshotPath),
       status: 'created',
       diffPixels: 0,
-      totalPixels: 0,
+      totalPixels: imgNew.width * imgNew.height,
       effectiveMaxDiff: 0,
       hasMap,
-      width: 0,
-      height: 0,
+      width: imgNew.width,
+      height: imgNew.height,
       newBuffer,
     });
   } else {

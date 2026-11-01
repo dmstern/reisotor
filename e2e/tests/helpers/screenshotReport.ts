@@ -51,7 +51,7 @@ export function generateScreenshotHtmlReport(): string | null {
   const updatedEntries = entries.filter((e) => e.status === 'updated');
   const createdEntries = entries.filter((e) => e.status === 'created');
   const belowThresholdEntries = entries.filter((e) => e.status === 'unchanged' && e.diffPixels > 0);
-  const identicalEntries = entries.filter((e) => e.diffPixels === 0);
+  const identicalEntries = entries.filter((e) => e.status === 'unchanged' && e.diffPixels === 0);
 
   const html = `<!DOCTYPE html>
 <html lang="de">
@@ -248,13 +248,20 @@ export function generateScreenshotHtmlReport(): string | null {
       <button class="filter-btn" onclick="filterCards('updated')">Aktualisiert (${updatedEntries.length})</button>
       <button class="filter-btn" onclick="filterCards('ignored')">Unter Schwelle (${belowThresholdEntries.length})</button>
       <button class="filter-btn" onclick="filterCards('identical')">Identisch (${identicalEntries.length})</button>
+      ${createdEntries.length > 0 ? `<button class="filter-btn" onclick="filterCards('created')">Neu angelegt (${createdEntries.length})</button>` : ''}
     </div>
 
     <div class="cards">
       ${entries
         .map((entry) => {
-          const diffPct = ((entry.diffPixels / entry.totalPixels) * 100).toFixed(3);
-          const maxPct = ((entry.effectiveMaxDiff / entry.totalPixels) * 100).toFixed(2);
+          const diffPct =
+            entry.totalPixels > 0
+              ? ((entry.diffPixels / entry.totalPixels) * 100).toFixed(3)
+              : '0.000';
+          const maxPct =
+            entry.totalPixels > 0
+              ? ((entry.effectiveMaxDiff / entry.totalPixels) * 100).toFixed(2)
+              : '0.00';
           const statusClass =
             entry.status === 'updated'
               ? 'updated'
@@ -290,13 +297,26 @@ export function generateScreenshotHtmlReport(): string | null {
 
         <div class="diff-meta">
           <span><strong>Auflösung:</strong> ${entry.width} × ${entry.height} px</span>
-          <span><strong>Diff:</strong> ${entry.diffPixels.toLocaleString('de-DE')} px (${diffPct} %)</span>
-          <span><strong>Toleranz:</strong> ${entry.effectiveMaxDiff.toLocaleString('de-DE')} px (${maxPct} %)</span>
+          ${
+            entry.status === 'created'
+              ? `<span><strong>Status:</strong> Erstaufnahme (Baseline neu angelegt)</span>`
+              : `<span><strong>Diff:</strong> ${entry.diffPixels.toLocaleString('de-DE')} px (${diffPct} %)</span>
+          <span><strong>Toleranz:</strong> ${entry.effectiveMaxDiff.toLocaleString('de-DE')} px (${maxPct} %)</span>`
+          }
         </div>
 
         ${
-          hasDiffFiles
+          entry.status === 'created'
             ? `
+        <div class="preview-col" style="max-width: 640px;">
+          <h4>Neu aufgenommene Baseline</h4>
+          <div class="img-box">
+            <img src="images/${entry.baseName}.new.png" alt="Neu">
+          </div>
+        </div>
+        `
+            : hasDiffFiles
+              ? `
         <div class="diff-preview-grid">
           <div class="preview-col">
             <h4>1. Vorher (Baseline)</h4>
@@ -318,7 +338,7 @@ export function generateScreenshotHtmlReport(): string | null {
           </div>
         </div>
         `
-            : `
+              : `
         <div style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">
           Keine visuellen Abweichungen (0 Pixel Diff).
         </div>
