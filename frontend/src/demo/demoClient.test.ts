@@ -219,4 +219,50 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     expect(trip.start_date).toBe('2027-05-04');
     expect(trip.end_date).toBe('2027-05-11');
   });
+
+  it('erstellt Tagebucheinträge mit allen Pflichtfeldern inklusive editor_ids (Issue #654)', async () => {
+    const created = await demoRequest<{
+      id: number;
+      author_id: number;
+      author_username: string;
+      editor_ids: number[];
+      excursion_ids: number[];
+      spot_ids: number[];
+      images: unknown[];
+      is_draft: number;
+    }>('/diary', {
+      method: 'POST',
+      body: JSON.stringify({
+        trip_id: 1,
+        title: 'Erster Tagebucheintrag',
+        content: '<p>Toller Tag</p>',
+        content_format: 'html',
+        images: [],
+        date: '2026-07-04',
+      }),
+    });
+
+    expect(created.id).toBeDefined();
+    expect(created.author_id).toBe(1);
+    expect(created.author_username).toBeTruthy();
+    expect(created.editor_ids).toEqual([]);
+    expect(created.excursion_ids).toEqual([]);
+    expect(created.spot_ids).toEqual([]);
+    expect(created.images).toEqual([]);
+    expect(created.is_draft).toBe(0);
+
+    const updated = await demoRequest<{
+      id: number;
+      title: string;
+      editor_ids: number[];
+    }>(`/diary/${created.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: 'Aktualisierter Titel',
+      }),
+    });
+
+    expect(updated.title).toBe('Aktualisierter Titel');
+    expect(updated.editor_ids).toEqual([]);
+  });
 });

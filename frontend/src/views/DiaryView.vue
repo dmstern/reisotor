@@ -94,13 +94,26 @@ function openNewEntry() {
 }
 
 function onEntryCreated(created: DiaryEntry) {
-  entries.value.unshift(created);
+  entries.value.unshift({
+    ...created,
+    images: Array.isArray(created.images) ? created.images : [],
+    excursion_ids: Array.isArray(created.excursion_ids) ? created.excursion_ids : [],
+    spot_ids: Array.isArray(created.spot_ids) ? created.spot_ids : [],
+    editor_ids: Array.isArray(created.editor_ids) ? created.editor_ids : [],
+  });
   diaryData.sortEntries();
 }
 
 function onEntryUpdated(updated: DiaryEntry) {
-  const idx = entries.value.findIndex((e) => e.id === updated.id);
-  if (idx !== -1) entries.value[idx] = updated;
+  const sanitized: DiaryEntry = {
+    ...updated,
+    images: Array.isArray(updated.images) ? updated.images : [],
+    excursion_ids: Array.isArray(updated.excursion_ids) ? updated.excursion_ids : [],
+    spot_ids: Array.isArray(updated.spot_ids) ? updated.spot_ids : [],
+    editor_ids: Array.isArray(updated.editor_ids) ? updated.editor_ids : [],
+  };
+  const idx = entries.value.findIndex((e) => e.id === sanitized.id);
+  if (idx !== -1) entries.value[idx] = sanitized;
   diaryData.sortEntries();
 }
 

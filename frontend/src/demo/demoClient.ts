@@ -728,7 +728,25 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (method === 'POST') {
     const id = nextId++;
-    const created = { ...(body ?? {}), id };
+    const created: Record<string, unknown> = { ...(body ?? {}), id };
+
+    if (collection === '/diary') {
+      const now = new Date().toISOString();
+      created.author_id = currentDemoUser.id;
+      created.author_username = currentDemoUser.username;
+      created.author_avatar = currentDemoUser.avatar;
+      created.title = (body?.title as string) ?? null;
+      created.content = (body?.content as string) ?? '';
+      created.content_format = (body?.content_format as string) ?? 'html';
+      created.images = Array.isArray(body?.images) ? body.images : [];
+      created.date = (body?.date as string) || now.slice(0, 10);
+      created.created_at = now;
+      created.updated_at = null;
+      created.excursion_ids = Array.isArray(body?.excursion_ids) ? body.excursion_ids : [];
+      created.spot_ids = Array.isArray(body?.spot_ids) ? body.spot_ids : [];
+      created.editor_ids = [];
+      created.is_draft = body?.is_draft ? 1 : 0;
+    }
 
     if (collection === '/attachments') {
       const dataUrl = String(body?.data ?? '');
@@ -763,6 +781,53 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (method === 'PUT') {
     const id = idFromPath(path);
+    if (collection === '/diary' && id != null) {
+      const existing = store['/diary']?.find((item) => (item as { id: number }).id === id);
+      if (existing) {
+        const now = new Date().toISOString();
+        const existingEditorIds = Array.isArray(existing.editor_ids)
+          ? (existing.editor_ids as number[])
+          : [];
+        const editorIds = [...existingEditorIds];
+        if (currentDemoUser.id !== existing.author_id && !editorIds.includes(currentDemoUser.id)) {
+          editorIds.push(currentDemoUser.id);
+        }
+        const updated = {
+          ...existing,
+          ...(body ?? {}),
+          id,
+          updated_at: now,
+          editor_ids: editorIds,
+          excursion_ids: Array.isArray(body?.excursion_ids)
+            ? body.excursion_ids
+            : Array.isArray(existing.excursion_ids)
+              ? existing.excursion_ids
+              : [],
+          spot_ids: Array.isArray(body?.spot_ids)
+            ? body.spot_ids
+            : Array.isArray(existing.spot_ids)
+              ? existing.spot_ids
+              : [],
+          images: Array.isArray(body?.images)
+            ? body.images
+            : Array.isArray(existing.images)
+              ? existing.images
+              : [],
+          is_draft:
+            body?.is_draft !== undefined
+              ? body.is_draft
+                ? 1
+                : 0
+              : ((existing.is_draft as number) ?? 0),
+        };
+        store['/diary'] = store['/diary'].map((item) =>
+          (item as { id: number }).id === id ? updated : item
+        );
+        persist();
+        return updated as unknown as T;
+      }
+    }
+
     store[collection] = store[collection].map((item) =>
       (item as { id: number }).id === id ? { ...item, ...(body ?? {}) } : item
     );
