@@ -281,4 +281,55 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     expect(spy).toHaveBeenCalledWith('2.5.0', 'Update-Beschreibung');
     spy.mockRestore();
   });
+
+  describe('Admin Messages API (/api/admin/messages)', () => {
+    it('rejects GET /api/admin/messages for non-admin', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/admin/messages',
+        headers: { cookie: userCookie },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('allows admin to list messages, update status and delete', async () => {
+      const { db } = await import('../../src/db/index.js');
+      db.prepare(
+        `INSERT INTO admin_messages (type, name, email, username, message, status, created_at)
+         VALUES ('registration_help', 'Hilfe-Sucher', 'user@example.com', 'settings_user', 'Kann mich nicht anmelden', 'unread', datetime('now'))`
+      ).run();
+
+      const listRes = await app.inject({
+        method: 'GET',
+        url: '/api/admin/messages',
+        headers: { cookie: adminCookie },
+      });
+      expect(listRes.statusCode).toBe(200);
+      const listData = listRes.json();
+      expect(listData.unreadCount).toBeGreaterThanOrEqual(1);
+      const msg = listData.messages.find(
+        (m: { username: string }) => m.username === 'settings_user'
+      );
+      expect(msg).toBeDefined();
+      expect(msg.matchedUser).toBeDefined();
+      expect(msg.matchedUser.username).toBe('settings_user');
+
+      // Update status to read
+      const updateRes = await app.inject({
+        method: 'PUT',
+        url: `/api/admin/messages/${msg.id}/status`,
+        headers: { cookie: adminCookie },
+        payload: { status: 'resolved' },
+      });
+      expect(updateRes.statusCode).toBe(200);
+
+      // Delete message
+      const delRes = await app.inject({
+        method: 'DELETE',
+        url: `/api/admin/messages/${msg.id}`,
+        headers: { cookie: adminCookie },
+      });
+      expect(delRes.statusCode).toBe(204);
+    });
+  });
 });

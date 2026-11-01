@@ -120,4 +120,96 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       message: `Test-E-Mail wurde erfolgreich an ${targetEmail} gesendet!`,
     };
   });
+
+  // Admin-Nachrichten / Kontaktanfragen abrufen
+  app.get('/admin/messages', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen Admin-Nachrichten einsehen' });
+    }
+
+    const rows = db
+      .prepare(
+        `SELECT m.id, m.type, m.name, m.email, m.username, m.message, m.status, m.created_at,
+                u.id AS matched_user_id, u.username AS matched_username, u.is_email_verified AS matched_is_email_verified
+         FROM admin_messages m
+         LEFT JOIN users u ON (m.username IS NOT NULL AND LOWER(u.username) = LOWER(m.username))
+                           OR (m.email IS NOT NULL AND LOWER(u.email) = LOWER(m.email))
+         ORDER BY CASE WHEN m.status = 'unread' THEN 0 ELSE 1 END, m.created_at DESC
+         LIMIT 100`
+      )
+      .all() as Array<{
+      id: number;
+      type: string;
+      name: string | null;
+      email: string | null;
+      username: string | null;
+      message: string;
+      status: string;
+      created_at: string;
+      matched_user_id?: number | null;
+      matched_username?: string | null;
+      matched_is_email_verified?: number | null;
+    }>;
+
+    const unreadCount = (
+      db.prepare("SELECT COUNT(*) as count FROM admin_messages WHERE status = 'unread'").get() as {
+        count: number;
+      }
+    ).count;
+
+    return {
+      messages: rows.map((r) => ({
+        id: r.id,
+        type: r.type,
+        name: r.name,
+        email: r.email,
+        username: r.username,
+        message: r.message,
+        status: r.status,
+        created_at: r.created_at,
+        matchedUser: r.matched_user_id
+          ? {
+              id: r.matched_user_id,
+              username: r.matched_username,
+              is_email_verified: r.matched_is_email_verified === 1,
+            }
+          : null,
+      })),
+      unreadCount,
+    };
+  });
+
+  // Status einer Admin-Nachricht aktualisieren (z. B. 'read' oder 'resolved')
+  app.put<{ Params: { id: string }; Body: { status: 'unread' | 'read' | 'resolved' } }>(
+    '/admin/messages/:id/status',
+    async (req, reply) => {
+      if (!isUserAdmin(req.session.userId)) {
+        return reply
+          .code(403)
+          .send({ error: 'Nur Administrator:innen dürfen Admin-Nachrichten bearbeiten' });
+      }
+      const { status } = req.body ?? {};
+      if (!status || !['unread', 'read', 'resolved'].includes(status)) {
+        return reply.code(400).send({ error: 'Ungültiger Status' });
+      }
+      db.prepare('UPDATE admin_messages SET status = ? WHERE id = ?').run(
+        status,
+        Number(req.params.id)
+      );
+      return { success: true };
+    }
+  );
+
+  // Admin-Nachricht löschen
+  app.delete<{ Params: { id: string } }>('/admin/messages/:id', async (req, reply) => {
+    if (!isUserAdmin(req.session.userId)) {
+      return reply
+        .code(403)
+        .send({ error: 'Nur Administrator:innen dürfen Admin-Nachrichten löschen' });
+    }
+    db.prepare('DELETE FROM admin_messages WHERE id = ?').run(Number(req.params.id));
+    return reply.code(204).send();
+  });
 };

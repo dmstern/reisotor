@@ -16,6 +16,7 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from '../utils/mailer.js';
+import { checkFeedbackRateLimit } from '../utils/feedbackRateLimiter.js';
 
 interface UserRow {
   id: number;
@@ -114,9 +115,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
           db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(userId);
           db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 
+          const errorMessage = !isEmailConfigured()
+            ? 'Die Registrierung kann derzeit nicht abgeschlossen werden, da kein E-Mail-Server konfiguriert ist. Bitte wende dich an die Administration.'
+            : 'Die Bestätigungs-E-Mail konnte nicht zugestellt werden. Bitte überprüfe deine E-Mail-Adresse oder wende dich an die Administration.';
+
           return reply.code(503).send({
-            error:
-              'Die Bestätigungs-E-Mail konnte nicht zugestellt werden. Bitte überprüfe deine E-Mail-Adresse oder wende dich an die Administration.',
+            error: errorMessage,
+            noMailServer: !isEmailConfigured(),
           });
         }
 
@@ -312,9 +317,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (isEmailVerificationRequired() && user.is_email_verified === 0) {
+      const errorMsg = !isEmailConfigured()
+        ? 'Dieses Konto ist noch nicht freigeschaltet. Da kein Mailserver eingerichtet ist, muss dein Konto manuell von der Administration freigeschaltet werden.'
+        : 'Bitte bestätige zuerst deine E-Mail-Adresse über den Link in der Bestätigungsmail.';
       return reply.code(403).send({
-        error: 'Bitte bestätige zuerst deine E-Mail-Adresse über den Link in der Bestätigungsmail.',
+        error: errorMsg,
         unverifiedEmail: true,
+        noMailServer: !isEmailConfigured(),
       });
     }
 
@@ -384,6 +393,54 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       must_change_password: userMustChangePassword(user.id),
       is_email_verified: isUserEmailVerified(user.id),
       last_login_at: user.last_login_at ?? null,
+    };
+  });
+
+  // Kontaktanfrage / Registrierungshilfe an die Administration
+  app.post<{
+    Body: { name?: string; email?: string; username?: string; message: string; type?: string };
+  }>('/contact-admin', async (req, reply) => {
+    const { name, email, username, message, type = 'registration_help' } = req.body ?? {};
+    if (!message || message.trim().length < 5) {
+      return reply
+        .code(400)
+        .send({ error: 'Bitte gib eine aussagekräftige Nachricht ein (mind. 5 Zeichen).' });
+    }
+    if (message.length > 2000) {
+      return reply.code(400).send({ error: 'Die Nachricht darf maximal 2000 Zeichen lang sein.' });
+    }
+    if (email && email.trim() && !EMAIL_PATTERN.test(email.trim())) {
+      return reply.code(400).send({ error: 'Ungültiges E-Mail-Format.' });
+    }
+
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const rateCheck = checkFeedbackRateLimit(`contact_admin:${clientIp}`, 5, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return reply.code(429).send({
+        error:
+          'Zu viele Anfragen. Bitte warte einige Minuten, bevor du eine weitere Nachricht sendest.',
+      });
+    }
+
+    const ipHash = crypto.createHash('sha256').update(clientIp).digest('hex').substring(0, 16);
+    const now = new Date().toISOString();
+
+    db.prepare(
+      `INSERT INTO admin_messages (type, name, email, username, message, status, ip_hash, created_at)
+       VALUES (?, ?, ?, ?, ?, 'unread', ?, ?)`
+    ).run(
+      type.substring(0, 50),
+      name?.trim().substring(0, 100) || null,
+      email?.trim().substring(0, 200) || null,
+      username?.trim().substring(0, 100) || null,
+      message.trim(),
+      ipHash,
+      now
+    );
+
+    return {
+      success: true,
+      message: 'Deine Nachricht wurde an die Administration übermittelt.',
     };
   });
 };

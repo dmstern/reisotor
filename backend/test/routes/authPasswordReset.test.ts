@@ -189,8 +189,36 @@ describe('Auth Password Reset & Email Verification routes', () => {
   });
 
   describe('Double-Opt-In Registration Flow', () => {
+    it('fails registration when email verification is required but SMTP is unconfigured', async () => {
+      delete process.env.SMTP_HOST;
+      process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
+      const { db } = await import('../../src/db/index.js');
+
+      const regRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/register',
+        payload: {
+          username: 'no_smtp_user',
+          email: 'no_smtp@example.com',
+          password: 'securePassword123',
+        },
+      });
+
+      expect(regRes.statusCode).toBe(503);
+      expect(regRes.json().error).toContain('kein E-Mail-Server konfiguriert');
+      expect(regRes.json().noMailServer).toBe(true);
+
+      const user = db.prepare('SELECT id FROM users WHERE username = ?').get('no_smtp_user');
+      expect(user).toBeUndefined();
+    });
+
     it('requires email verification on registration when enabled and blocks unverified login', async () => {
       process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
+      const mailer = await import('../../src/utils/mailer.js');
+      const spy = vi.spyOn(mailer, 'sendVerificationEmail').mockResolvedValueOnce({
+        success: true,
+        actionUrl: 'http://localhost:5173/verify-email?token=fake_tok_123',
+      });
       const { db } = await import('../../src/db/index.js');
 
       const regRes = await app.inject({
@@ -205,6 +233,7 @@ describe('Auth Password Reset & Email Verification routes', () => {
       expect(regRes.statusCode).toBe(201);
       const regData = regRes.json();
       expect(regData.requiresVerification).toBe(true);
+      spy.mockRestore();
 
       // Attempting to log in should be blocked
       const loginRes = await app.inject({
@@ -244,6 +273,7 @@ describe('Auth Password Reset & Email Verification routes', () => {
 
     it('rolls back user creation if verification email delivery fails', async () => {
       process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
+      process.env.SMTP_HOST = 'smtp.example.com';
       const mailer = await import('../../src/utils/mailer.js');
       const spy = vi.spyOn(mailer, 'sendVerificationEmail').mockResolvedValueOnce({
         success: false,
@@ -271,6 +301,48 @@ describe('Auth Password Reset & Email Verification routes', () => {
       expect(user).toBeUndefined();
 
       spy.mockRestore();
+    });
+  });
+
+  describe('POST /api/auth/contact-admin & Admin Messages', () => {
+    it('validates contact-admin input and saves message', async () => {
+      // Rejects empty or too short message
+      const shortRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        payload: { message: 'hi' },
+      });
+      expect(shortRes.statusCode).toBe(400);
+
+      // Rejects invalid email format
+      const invalidEmailRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        payload: { message: 'Hilfe bei der Registrierung', email: 'keine-echte-mail' },
+      });
+      expect(invalidEmailRes.statusCode).toBe(400);
+
+      // Accepts valid message
+      const validRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        payload: {
+          name: 'Max Mustermann',
+          email: 'max@example.com',
+          username: 'maxi',
+          message: 'Ich erhalte keine Bestätigungsmail auf dieser Instanz.',
+          type: 'registration_help',
+        },
+      });
+      expect(validRes.statusCode).toBe(200);
+      expect(validRes.json().success).toBe(true);
+
+      const { db } = await import('../../src/db/index.js');
+      const saved = db.prepare('SELECT * FROM admin_messages WHERE username = ?').get('maxi') as
+        { message: string; status: string } | undefined;
+      expect(saved).toBeDefined();
+      expect(saved?.message).toContain('keine Bestätigungsmail');
+      expect(saved?.status).toBe('unread');
     });
   });
 });

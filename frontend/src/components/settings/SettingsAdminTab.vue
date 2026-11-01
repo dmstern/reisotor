@@ -14,6 +14,7 @@ import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import AdminUserManagementCard from './AdminUserManagementCard.vue';
+import AdminMessagesCard from './AdminMessagesCard.vue';
 import AdminBackupCard from './AdminBackupCard.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useAdminSettings } from '../../composables/useAdminSettings';
@@ -355,6 +356,9 @@ async function handleGenerateVapid() {
 
     <!-- 1. Benutzerverwaltung -->
     <AdminUserManagementCard />
+
+    <!-- 2. Kontaktanfragen & Registrierungshilfe -->
+    <AdminMessagesCard />
 
     <ViewLoadingState v-if="loadingSettings && !settings" message="Lade Systemeinstellungen…" />
 

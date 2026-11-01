@@ -32,6 +32,22 @@ export interface AdminResetPasswordResult {
   message: string;
 }
 
+export interface AdminMessage {
+  id: number;
+  type: string;
+  name: string | null;
+  email: string | null;
+  username: string | null;
+  message: string;
+  status: 'unread' | 'read' | 'resolved';
+  created_at: string;
+  matchedUser?: {
+    id: number;
+    username: string;
+    is_email_verified: boolean;
+  } | null;
+}
+
 export interface AdminSettings {
   registration: {
     registrationMode: 'off' | 'full' | 'restricted';

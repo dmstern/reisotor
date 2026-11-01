@@ -7,8 +7,10 @@ import PasswordInput from '../components/PasswordInput.vue';
 import ReisotorRobot from '../components/ReisotorRobot.vue';
 import ThemeModeSelect from '../components/ThemeModeSelect.vue';
 import AppFooterLinks from '../components/AppFooterLinks.vue';
+import ContactAdminDialog from '../components/ContactAdminDialog.vue';
 import Button from '../components/primitives/Button.vue';
 import Input from '../components/primitives/Input.vue';
+import Alert from '../components/primitives/Alert.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -19,12 +21,16 @@ const email = ref('');
 const password = ref('');
 const passwordVisible = ref(false);
 const error = ref('');
+const isUnverifiedOrNoMailError = ref(false);
 const successMessage = ref('');
 const loading = ref(false);
+
+const showContactDialog = ref(false);
 
 // Backend-Setting REGISTRATION_MODE (Issue #96)
 const registrationMode = ref<'off' | 'full' | 'restricted'>('off');
 const emailConfigured = ref(false);
+const requireEmailVerification = ref(false);
 
 const landingUrl = __LANDING_URL__;
 
@@ -33,9 +39,11 @@ onMounted(async () => {
     const config = await api.get<{
       registrationMode: 'off' | 'full' | 'restricted';
       emailConfigured?: boolean;
+      requireEmailVerification?: boolean;
     }>('/auth/config');
     registrationMode.value = config.registrationMode;
     emailConfigured.value = Boolean(config.emailConfigured);
+    requireEmailVerification.value = Boolean(config.requireEmailVerification);
   } catch {
     // Bleibt bei Defaults
   }
@@ -44,6 +52,7 @@ onMounted(async () => {
 function setMode(newMode: 'login' | 'register' | 'forgot-password') {
   mode.value = newMode;
   error.value = '';
+  isUnverifiedOrNoMailError.value = false;
   successMessage.value = '';
 }
 
@@ -51,8 +60,15 @@ function toggleMode() {
   setMode(mode.value === 'login' ? 'register' : 'login');
 }
 
+function openContactDialog() {
+  showContactDialog.value = true;
+}
+
+const contactInitialMessage = ref('');
+
 async function onSubmit() {
   error.value = '';
+  isUnverifiedOrNoMailError.value = false;
   successMessage.value = '';
   loading.value = true;
   try {
@@ -79,6 +95,13 @@ async function onSubmit() {
   } catch (err) {
     if (err instanceof ApiError) {
       error.value = err.message;
+      const data = err.data as { unverifiedEmail?: boolean; noMailServer?: boolean } | undefined;
+      if (data?.unverifiedEmail || data?.noMailServer) {
+        isUnverifiedOrNoMailError.value = true;
+        contactInitialMessage.value = data?.noMailServer
+          ? `Hallo, ich habe mich als "${username.value}" registriert bzw. wollte mich registrieren. Da kein Mailserver eingerichtet ist, bitte ich um manuelle Freischaltung meines Accounts.`
+          : `Hallo, ich kann mich mit meinem Konto "${username.value}" nicht anmelden, da die E-Mail-Bestätigung aussteht. Bitte helft mir bei der Freischaltung.`;
+      }
     } else if (err instanceof Error && err.name === 'AbortError') {
       error.value = 'Zeitüberschreitung bei der Serveranfrage. Bitte versuche es erneut.';
     } else if (err instanceof TypeError) {
@@ -115,6 +138,16 @@ async function onSubmit() {
         Eingeschränkter Modus - Kein Datei-Upload, nur ein Urlaub, maximal drei Mitglieder pro
         Urlaub möglich.
       </p>
+
+      <Alert
+        v-if="mode === 'register' && requireEmailVerification && !emailConfigured"
+        variant="warning"
+        size="sm"
+        class="reg-email-alert"
+      >
+        Auf diesem Server ist kein Mailserver eingerichtet. Eine Registrierung per E-Mail kann daher
+        erst nach manueller Freischaltung durch eine:n Administrator:in genutzt werden.
+      </Alert>
 
       <p v-if="mode === 'forgot-password'" class="hint">
         Gib deine E-Mail-Adresse ein. Wir senden dir einen Link, mit dem du ein neues Passwort
@@ -182,7 +215,19 @@ async function onSubmit() {
         </label>
       </template>
 
-      <p v-if="error" class="error">{{ error }}</p>
+      <div v-if="error" class="error-container">
+        <p class="error">{{ error }}</p>
+        <Button
+          v-if="isUnverifiedOrNoMailError"
+          type="button"
+          variant="secondary"
+          size="sm"
+          class="contact-admin-action"
+          @click="openContactDialog"
+        >
+          Admin um Freischaltung bitten
+        </Button>
+      </div>
 
       <Button type="submit" :loading="loading" :disabled="loading">
         {{
@@ -219,10 +264,22 @@ async function onSubmit() {
       >
         {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
       </Button>
+
+      <button type="button" class="forgot-link help-contact-link" @click="openContactDialog">
+        Probleme bei Registrierung oder Anmeldung?
+      </button>
     </form>
     <footer class="login-footer">
       <AppFooterLinks :landing-url="landingUrl" />
     </footer>
+
+    <ContactAdminDialog
+      v-model="showContactDialog"
+      :initial-username="username"
+      :initial-email="email"
+      :initial-type="mode === 'register' ? 'registration_help' : 'login_help'"
+      :initial-message="contactInitialMessage"
+    />
   </div>
 </template>
 
@@ -352,5 +409,33 @@ label,
   line-height: 1.4;
   text-align: left;
   width: 100%;
+}
+
+.reg-email-alert {
+  width: 100%;
+  text-align: left;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+}
+
+.contact-admin-action {
+  font-size: var(--font-size-xs, 0.8rem);
+  width: auto !important;
+}
+
+.help-contact-link {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs, 0.8rem);
+}
+
+.help-contact-link:hover {
+  color: var(--color-primary);
 }
 </style>

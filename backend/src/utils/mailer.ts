@@ -158,8 +158,15 @@ export async function sendVerificationEmail(params: {
   const transporter = getTransporter();
   if (!transporter) {
     const actionLabel = params.isChange ? 'E-Mail-Änderungslink' : 'E-Mail-Bestätigungslink';
-    console.info(`[Mailer] SMTP nicht konfiguriert. ${actionLabel} für ${params.to}: ${verifyUrl}`);
-    return { success: true, actionUrl: verifyUrl, simulated: true };
+    console.warn(
+      `[Mailer] SMTP nicht konfiguriert. ${actionLabel} für ${params.to} konnte nicht gesendet werden.`
+    );
+    return {
+      success: false,
+      actionUrl: verifyUrl,
+      simulated: true,
+      error: 'SMTP-Mailserver ist nicht konfiguriert',
+    };
   }
 
   const from = getFromAddress();

@@ -171,6 +171,19 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   // Einzelfall-Endpunkte, die kein einfaches Collection-CRUD sind.
   if (path === '/auth/me') return structuredClone(currentDemoUser) as unknown as T;
   if (path === '/auth/config') return { registrationMode: 'off' } as unknown as T;
+  if (path === '/auth/contact-admin' && method === 'POST') {
+    return {
+      success: true,
+      message: 'Deine Nachricht wurde an die Administration übermittelt.',
+    } as unknown as T;
+  }
+  if (path === '/admin/messages' && method === 'GET') {
+    return { messages: [], unreadCount: 0 } as unknown as T;
+  }
+  if (path.startsWith('/admin/messages/')) {
+    if (method === 'PUT') return { success: true } as unknown as T;
+    if (method === 'DELETE') return undefined as T;
+  }
   if (path === '/legal') {
     return structuredClone(DEMO_LEGAL_CONFIG) as unknown as T;
   }
