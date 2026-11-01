@@ -265,4 +265,94 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     expect(updated.title).toBe('Aktualisierter Titel');
     expect(updated.editor_ids).toEqual([]);
   });
+
+  it('unterstützt Notizen-Erstellung und -Bearbeitung mit vollständigen Metadaten', async () => {
+    const created = await demoRequest<{
+      id: number;
+      created_by: number;
+      author_username: string;
+      created_at: string;
+      updated_at: string | null;
+    }>('/notes', {
+      method: 'POST',
+      body: JSON.stringify({
+        trip_id: 1,
+        title: 'Packtipps',
+        content: '<p>Sonnencreme nicht vergessen</p>',
+      }),
+    });
+
+    expect(created.id).toBeDefined();
+    expect(created.created_by).toBe(1);
+    expect(created.author_username).toBeTruthy();
+    expect(created.created_at).toBeTruthy();
+    expect(created.updated_at).toBeNull();
+
+    const updated = await demoRequest<{
+      id: number;
+      updated_at: string | null;
+    }>(`/notes/${created.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: 'Packtipps aktualisiert',
+      }),
+    });
+
+    expect(updated.updated_at).toBeTruthy();
+  });
+
+  it('unterstützt Trip-Kategorien-CRUD in der Demo', async () => {
+    const initial = await demoRequest<{ categories: unknown[] }>('/trips/1/categories');
+    expect(Array.isArray(initial.categories)).toBe(true);
+
+    const created = await demoRequest<{
+      id: number;
+      trip_id: number;
+      type: string;
+      name: string;
+    }>('/trips/1/categories', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'spot',
+        name: 'Strände',
+        icon: 'beach',
+        emoji: '🏖️',
+      }),
+    });
+
+    expect(created.id).toBeDefined();
+    expect(created.name).toBe('Strände');
+    expect(created.type).toBe('spot');
+
+    const updated = await demoRequest<{
+      id: number;
+      name: string;
+    }>(`/trips/1/categories/${created.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: 'Traumstrände',
+      }),
+    });
+    expect(updated.name).toBe('Traumstrände');
+
+    const list = await demoRequest<{ categories: Array<{ id: number; name: string }> }>(
+      '/trips/1/categories'
+    );
+    expect(list.categories.some((c) => c.id === created.id && c.name === 'Traumstrände')).toBe(
+      true
+    );
+
+    await demoRequest(`/trips/1/categories/${created.id}`, {
+      method: 'DELETE',
+    });
+    const afterDelete = await demoRequest<{ categories: Array<{ id: number }> }>(
+      '/trips/1/categories'
+    );
+    expect(afterDelete.categories.some((c) => c.id === created.id)).toBe(false);
+  });
+
+  it('liefert VAPID-Public-Key für Push-Benachrichtigungen', async () => {
+    const res = await demoRequest<{ publicKey: string }>('/push/vapid-public-key');
+    expect(res.publicKey).toBeTruthy();
+  });
 });

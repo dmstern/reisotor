@@ -39,6 +39,7 @@ export function defaultStore(baseDate?: Date): Store {
     '/attachments': [],
     '/users/me/icon-settings': [],
     '/users/me/app-settings': [],
+    '/trip_categories': [],
   };
 }
 
@@ -290,6 +291,166 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       url: String(body?.data ?? ''),
       original_name: String(body?.filename ?? 'Bild'),
     } as unknown as T;
+  }
+
+  // --- Push public key ---
+  if (basePath === '/push/vapid-public-key' && method === 'GET') {
+    return {
+      publicKey: demoAdminSettings.push.vapidPublicKey || 'BC_DEMO_KEY_PUBLIC_1234567890abcdef',
+    } as unknown as T;
+  }
+
+  // --- Trip categories endpoints (/trips/:id/categories, /trips/:id/categories/:id, etc.) ---
+  const tripCategoriesGetMatch = /^\/trips\/(-?\d+)\/categories$/.exec(basePath);
+  if (tripCategoriesGetMatch && method === 'GET') {
+    const tripId = Number(tripCategoriesGetMatch[1]);
+    const filterType = new URLSearchParams(path.includes('?') ? path.split('?')[1] : '').get(
+      'type'
+    );
+    const all = (store['/trip_categories'] || []) as Array<{
+      id: number;
+      trip_id: number;
+      type: string;
+      name: string;
+      icon: string;
+      emoji: string | null;
+      color: string | null;
+      default_name: string | null;
+      is_hidden: number;
+      usage_count: number;
+      created_at: string;
+    }>;
+    const filtered = all.filter(
+      (c) => c.trip_id === tripId && (!filterType || c.type === filterType)
+    );
+    return { categories: structuredClone(filtered) } as unknown as T;
+  }
+
+  const tripCategoryUsageMatch = /^\/trips\/(-?\d+)\/categories\/[^/]+\/[^/]+\/usage$/.exec(
+    basePath
+  );
+  if (tripCategoryUsageMatch && method === 'GET') {
+    return { usages: [] } as unknown as T;
+  }
+
+  if (tripCategoriesGetMatch && method === 'POST') {
+    const tripId = Number(tripCategoriesGetMatch[1]);
+    const id = nextId++;
+    const created = {
+      id,
+      trip_id: tripId,
+      type: (body?.type as string) || 'spot',
+      name: String(body?.name ?? '').trim(),
+      icon: (body?.icon as string) || 'category',
+      emoji: (body?.emoji as string) || '🏷️',
+      color: (body?.color as string) || null,
+      default_name: (body?.default_name as string) || null,
+      is_hidden: 0,
+      usage_count: 0,
+      created_at: new Date().toISOString(),
+    };
+    if (!store['/trip_categories']) store['/trip_categories'] = [];
+    const idx = (
+      store['/trip_categories'] as Array<{ id: number; type: string; name: string }>
+    ).findIndex(
+      (c) => c.type === created.type && c.name.toLowerCase() === created.name.toLowerCase()
+    );
+    if (idx >= 0) {
+      store['/trip_categories'][idx] = created;
+    } else {
+      store['/trip_categories'].push(created);
+    }
+    persist();
+    return structuredClone(created) as unknown as T;
+  }
+
+  const tripCategoryItemMatch = /^\/trips\/(-?\d+)\/categories\/(\d+)$/.exec(basePath);
+  if (tripCategoryItemMatch && method === 'PUT') {
+    const catId = Number(tripCategoryItemMatch[2]);
+    const list = (store['/trip_categories'] || []) as Array<{ id: number }>;
+    const existing = list.find((c) => c.id === catId);
+    if (existing) {
+      Object.assign(existing, body ?? {});
+      persist();
+      return structuredClone(existing) as unknown as T;
+    }
+    const created = { id: catId, ...(body ?? {}), usage_count: 0 };
+    list.push(created);
+    persist();
+    return structuredClone(created) as unknown as T;
+  }
+
+  if (tripCategoryItemMatch && method === 'DELETE') {
+    const catId = Number(tripCategoryItemMatch[2]);
+    if (store['/trip_categories']) {
+      store['/trip_categories'] = (store['/trip_categories'] as Array<{ id: number }>).filter(
+        (c) => c.id !== catId
+      );
+      persist();
+    }
+    return { success: true } as unknown as T;
+  }
+
+  const tripCategoryResetMatch = /^\/trips\/(-?\d+)\/categories\/(\d+)\/reset$/.exec(basePath);
+  if (tripCategoryResetMatch && method === 'POST') {
+    const catId = Number(tripCategoryResetMatch[2]);
+    if (store['/trip_categories']) {
+      store['/trip_categories'] = (store['/trip_categories'] as Array<{ id: number }>).filter(
+        (c) => c.id !== catId
+      );
+      persist();
+    }
+    return { success: true } as unknown as T;
+  }
+
+  const tripCategoryHideMatch = /^\/trips\/(-?\d+)\/categories\/hide$/.exec(basePath);
+  if (tripCategoryHideMatch && method === 'POST') {
+    const tripId = Number(tripCategoryHideMatch[1]);
+    const { type, name, is_hidden } = (body ?? {}) as {
+      type?: string;
+      name?: string;
+      is_hidden?: boolean | number;
+    };
+    if (type && name) {
+      if (!store['/trip_categories']) store['/trip_categories'] = [];
+      const list = store['/trip_categories'] as Array<{
+        id: number;
+        trip_id: number;
+        type: string;
+        name: string;
+        is_hidden: number;
+        icon?: string;
+        emoji?: string | null;
+        color?: string | null;
+        default_name?: string | null;
+        usage_count?: number;
+        created_at?: string;
+      }>;
+      const found = list.find(
+        (c) =>
+          c.trip_id === tripId && c.type === type && c.name.toLowerCase() === name.toLowerCase()
+      );
+      const hiddenVal = is_hidden ? 1 : 0;
+      if (found) {
+        found.is_hidden = hiddenVal;
+      } else {
+        list.push({
+          id: nextId++,
+          trip_id: tripId,
+          type,
+          name,
+          icon: 'category',
+          emoji: '🏷️',
+          color: null,
+          default_name: name,
+          is_hidden: hiddenVal,
+          usage_count: 0,
+          created_at: new Date().toISOString(),
+        });
+      }
+      persist();
+    }
+    return { success: true } as unknown as T;
   }
 
   // --- Trip members & region info ---
@@ -748,6 +909,20 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       created.is_draft = body?.is_draft ? 1 : 0;
     }
 
+    if (collection === '/notes') {
+      const now = new Date().toISOString();
+      created.created_by = currentDemoUser.id;
+      created.author_id = currentDemoUser.id;
+      created.author_username = currentDemoUser.username;
+      created.author_avatar = currentDemoUser.avatar;
+      created.title = (body?.title as string) ?? '';
+      created.content = (body?.content as string) ?? '';
+      created.content_format = (body?.content_format as string) ?? 'html';
+      created.created_at = now;
+      created.updated_at = null;
+      created.is_draft = body?.is_draft ? 1 : 0;
+    }
+
     if (collection === '/attachments') {
       const dataUrl = String(body?.data ?? '');
       const mimeMatch = /^data:([^;]+);base64,/i.exec(dataUrl);
@@ -821,6 +996,24 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
               : ((existing.is_draft as number) ?? 0),
         };
         store['/diary'] = store['/diary'].map((item) =>
+          (item as { id: number }).id === id ? updated : item
+        );
+        persist();
+        return updated as unknown as T;
+      }
+    }
+
+    if (collection === '/notes' && id != null) {
+      const existing = store['/notes']?.find((item) => (item as { id: number }).id === id);
+      if (existing) {
+        const now = new Date().toISOString();
+        const updated = {
+          ...existing,
+          ...(body ?? {}),
+          id,
+          updated_at: now,
+        };
+        store['/notes'] = store['/notes'].map((item) =>
           (item as { id: number }).id === id ? updated : item
         );
         persist();

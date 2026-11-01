@@ -1,3 +1,3 @@
 ### Demo-Modus
 
-- 🐛 **Tagebuch in der Demo**: Beim Erstellen neuer Tagebucheinträge im Demo-Modus wird kein Laufzeitfehler mehr ausgelöst und Metadaten werden vollständig initialisiert.
+- 🐛 **Stabilität in der Demo**: Beim Erstellen von Tagebucheinträgen und Notizen sowie beim Verwalten von Urlaubs-Kategorien und Push-Einstellungen im Demo-Modus treten keine Laufzeitfehler mehr auf und Metadaten werden vollständig initialisiert.

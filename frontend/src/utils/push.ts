@@ -40,7 +40,11 @@ export async function subscribeToPush(): Promise<void> {
   if (permission !== 'granted')
     throw new Error('Berechtigung für Benachrichtigungen wurde nicht erteilt');
 
-  const { publicKey } = await api.get<{ publicKey: string }>('/push/vapid-public-key');
+  const res = await api.get<{ publicKey?: string }>('/push/vapid-public-key');
+  const publicKey = res?.publicKey;
+  if (!publicKey) {
+    throw new Error('Push-Dienst ist nicht konfiguriert');
+  }
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,

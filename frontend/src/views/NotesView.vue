@@ -216,8 +216,8 @@ function authorLabel(id: number | null) {
   return u ? `${u.avatar} ${u.username}` : '';
 }
 
-function formatDate(iso: string) {
-  return formatDateTime(iso);
+function formatDate(iso?: string | null) {
+  return iso ? formatDateTime(iso) : '';
 }
 
 // "+ Neue Notiz": ein bereits gesicherter eigener Entwurf wird weiterbearbeitet statt einen

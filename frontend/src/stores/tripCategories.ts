@@ -178,13 +178,15 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
   async function createCategory(tripId: number, data: CategoryInput): Promise<TripCategory> {
     const created = await api.post<TripCategory>(`/trips/${tripId}/categories`, data);
     // In lokale Liste einfügen oder ersetzen
-    const idx = categories.value.findIndex(
-      (c) => c.type === created.type && c.name.toLowerCase() === created.name.toLowerCase()
-    );
-    if (idx >= 0) {
-      categories.value[idx] = created;
-    } else {
-      categories.value.push(created);
+    if (created && created.name) {
+      const idx = categories.value.findIndex(
+        (c) => c && c.type === created.type && c.name.toLowerCase() === created.name.toLowerCase()
+      );
+      if (idx >= 0) {
+        categories.value[idx] = created;
+      } else {
+        categories.value.push(created);
+      }
     }
     await load(tripId, true);
     return created;
@@ -196,9 +198,11 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     data: Partial<CategoryInput & { is_hidden: boolean | number }>
   ): Promise<TripCategory> {
     const updated = await api.put<TripCategory>(`/trips/${tripId}/categories/${id}`, data);
-    const idx = categories.value.findIndex((c) => c.id === id);
-    if (idx >= 0) {
-      categories.value[idx] = updated;
+    if (updated) {
+      const idx = categories.value.findIndex((c) => c && c.id === id);
+      if (idx >= 0) {
+        categories.value[idx] = updated;
+      }
     }
     await load(tripId, true);
     return updated;
