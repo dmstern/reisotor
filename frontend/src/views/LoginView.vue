@@ -61,6 +61,15 @@ function toggleMode() {
 }
 
 function openContactDialog() {
+  if (
+    !contactInitialMessage.value &&
+    mode.value === 'register' &&
+    requireEmailVerification.value &&
+    !emailConfigured.value
+  ) {
+    const userDetail = username.value.trim() ? ` als "${username.value.trim()}"` : '';
+    contactInitialMessage.value = `Hallo, ich möchte mich${userDetail} auf dieser Instanz registrieren. Da kein Mailserver eingerichtet ist, bitte ich um Freischaltung bzw. Erstellung meines Accounts.`;
+  }
   showContactDialog.value = true;
 }
 
@@ -145,8 +154,22 @@ async function onSubmit() {
         size="sm"
         class="reg-email-alert"
       >
-        Auf diesem Server ist kein Mailserver eingerichtet. Eine Registrierung per E-Mail kann daher
-        erst nach manueller Freischaltung durch eine:n Administrator:in genutzt werden.
+        <div class="reg-email-alert-content">
+          <span>
+            Auf diesem Server ist kein Mailserver eingerichtet und die E-Mail-Bestätigung ist
+            verpflichtend. Eine Selbstregistrierung ist daher derzeit nicht möglich. Bitte wende
+            dich an die Administration, um einen Zugang zu erhalten.
+          </span>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            class="reg-contact-btn"
+            @click="openContactDialog"
+          >
+            Admin um Freischaltung bitten
+          </Button>
+        </div>
       </Alert>
 
       <p v-if="mode === 'forgot-password'" class="hint">
@@ -414,6 +437,18 @@ label,
 .reg-email-alert {
   width: 100%;
   text-align: left;
+}
+
+.reg-email-alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.reg-contact-btn {
+  font-size: var(--font-size-xs, 0.8rem);
+  width: auto !important;
 }
 
 .error-container {

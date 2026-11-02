@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import AdminMessagesCard from './AdminMessagesCard.vue';
-import { api } from '../../api/client';
+import { api, ApiError } from '../../api/client';
 import type { AdminMessage } from '../../api/types';
 
 const sampleMessages: AdminMessage[] = [
@@ -129,6 +129,35 @@ describe('AdminMessagesCard', () => {
 
     expect(api.post).toHaveBeenCalledWith('/users/10/verify-email');
     expect(api.put).toHaveBeenCalledWith('/admin/messages/1/status', { status: 'resolved' });
+
+    cleanUp();
+  });
+
+  it('displays action error banner when status update or verify fails', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      messages: structuredClone(sampleMessages),
+      unreadCount: 1,
+    });
+    vi.mocked(api.post).mockRejectedValue(new ApiError(500, 'Serverfehler beim Freischalten'));
+
+    const { container, cleanUp } = mountComponent();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 10));
+    await nextTick();
+
+    const verifyBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Account freischalten')
+    );
+    expect(verifyBtn).toBeDefined();
+
+    verifyBtn!.click();
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 10));
+    await nextTick();
+
+    expect(container.querySelector('.error-banner')?.textContent).toContain(
+      'Serverfehler beim Freischalten'
+    );
 
     cleanUp();
   });

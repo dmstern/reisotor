@@ -19,6 +19,7 @@ const messages = ref<AdminMessage[]>([]);
 const unreadCount = ref(0);
 const loading = ref(true);
 const error = ref('');
+const actionError = ref('');
 const verifyingUserId = ref<number | null>(null);
 const updatingId = ref<number | null>(null);
 
@@ -47,12 +48,14 @@ async function loadMessages() {
 
 async function updateStatus(msg: AdminMessage, newStatus: 'unread' | 'read' | 'resolved') {
   updatingId.value = msg.id;
+  actionError.value = '';
   try {
     await api.put(`/admin/messages/${msg.id}/status`, { status: newStatus });
     msg.status = newStatus;
     unreadCount.value = messages.value.filter((m) => m.status === 'unread').length;
   } catch (err) {
-    alert(err instanceof ApiError ? err.message : 'Fehler beim Aktualisieren des Status');
+    actionError.value =
+      err instanceof ApiError ? err.message : 'Fehler beim Aktualisieren des Status';
   } finally {
     updatingId.value = null;
   }
@@ -61,12 +64,13 @@ async function updateStatus(msg: AdminMessage, newStatus: 'unread' | 'read' | 'r
 async function deleteMessage(msg: AdminMessage) {
   if (!confirm('Möchtest du diese Nachricht wirklich löschen?')) return;
   updatingId.value = msg.id;
+  actionError.value = '';
   try {
     await api.delete(`/admin/messages/${msg.id}`);
     messages.value = messages.value.filter((m) => m.id !== msg.id);
     unreadCount.value = messages.value.filter((m) => m.status === 'unread').length;
   } catch (err) {
-    alert(err instanceof ApiError ? err.message : 'Fehler beim Löschen der Nachricht');
+    actionError.value = err instanceof ApiError ? err.message : 'Fehler beim Löschen der Nachricht';
   } finally {
     updatingId.value = null;
   }
@@ -75,12 +79,14 @@ async function deleteMessage(msg: AdminMessage) {
 async function verifyMatchedUser(msg: AdminMessage) {
   if (!msg.matchedUser) return;
   verifyingUserId.value = msg.matchedUser.id;
+  actionError.value = '';
   try {
     await api.post(`/users/${msg.matchedUser.id}/verify-email`);
     msg.matchedUser.is_email_verified = true;
     await updateStatus(msg, 'resolved');
   } catch (err) {
-    alert(err instanceof ApiError ? err.message : 'Fehler beim Freischalten des Accounts');
+    actionError.value =
+      err instanceof ApiError ? err.message : 'Fehler beim Freischalten des Accounts';
   } finally {
     verifyingUserId.value = null;
   }
@@ -114,8 +120,8 @@ onMounted(() => {
       anmelden möchten.
     </p>
 
-    <div v-if="error" class="error-banner">
-      {{ error }}
+    <div v-if="error || actionError" class="error-banner">
+      {{ error || actionError }}
     </div>
 
     <ViewLoadingState v-if="loading" message="Lade Nachrichten…" />
@@ -196,6 +202,12 @@ onMounted(() => {
               <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
               Account freischalten
             </Button>
+          </div>
+          <div v-else-if="msg.username || msg.email" class="unmatched-user-box">
+            <span class="unmatched-hint">
+              Kein zugehöriges Konto in der Datenbank (bei fehlgeschlagener Registrierung verworfen
+              oder noch nicht angelegt).
+            </span>
           </div>
 
           <div class="message-actions">
@@ -346,6 +358,18 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.unmatched-user-box {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm-squircle, 6px);
+  font-size: var(--font-size-xs, 0.8rem);
+}
+
+.unmatched-hint {
+  color: var(--color-text-muted);
 }
 
 .message-actions {

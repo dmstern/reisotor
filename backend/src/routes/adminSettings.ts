@@ -136,6 +136,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
          FROM admin_messages m
          LEFT JOIN users u ON (m.username IS NOT NULL AND LOWER(u.username) = LOWER(m.username))
                            OR (m.email IS NOT NULL AND LOWER(u.email) = LOWER(m.email))
+         GROUP BY m.id
          ORDER BY CASE WHEN m.status = 'unread' THEN 0 ELSE 1 END, m.created_at DESC
          LIMIT 100`
       )

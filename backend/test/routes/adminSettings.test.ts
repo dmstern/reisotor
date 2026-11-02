@@ -331,5 +331,32 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
       });
       expect(delRes.statusCode).toBe(204);
     });
+
+    it('does not produce duplicate rows if username and email match different users', async () => {
+      const { db } = await import('../../src/db/index.js');
+      const insert = db.prepare(
+        'INSERT INTO users (username, email, password_hash, avatar, is_admin, is_email_verified, must_change_password) VALUES (?, ?, ?, ?, 0, 1, 0)'
+      );
+      insert.run('split_user_a', 'split_a@example.com', 'hash', '👤');
+      insert.run('split_user_b', 'split_b@example.com', 'hash', '👤');
+
+      const msgInsert = db
+        .prepare(
+          `INSERT INTO admin_messages (type, name, email, username, message, status, created_at)
+         VALUES ('help', 'Split Match', 'split_b@example.com', 'split_user_a', 'Matching two users', 'unread', datetime('now'))`
+        )
+        .run();
+      const messageId = msgInsert.lastInsertRowid;
+
+      const listRes = await app.inject({
+        method: 'GET',
+        url: '/api/admin/messages',
+        headers: { cookie: adminCookie },
+      });
+      expect(listRes.statusCode).toBe(200);
+      const listData = listRes.json();
+      const occurrences = listData.messages.filter((m: { id: number }) => m.id === messageId);
+      expect(occurrences).toHaveLength(1);
+    });
   });
 });
