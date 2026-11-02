@@ -257,6 +257,24 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     expect(res.json().error).toContain('ungültig');
   });
 
+  it('appends a helpful hint when sending test email fails with a timeout', async () => {
+    const mailer = await import('../../src/utils/mailer.js');
+    const spy = vi
+      .spyOn(mailer, 'sendTestEmail')
+      .mockResolvedValueOnce({ success: false, actionUrl: '', error: 'Connection timeout' });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin/settings/send-test-email',
+      headers: { cookie: adminCookie },
+      payload: { to: 'custom-recipient@example.com' },
+    });
+    expect(res.statusCode).toBe(502);
+    expect(res.json().error).toContain('Connection timeout');
+    expect(res.json().error).toContain('Port 2525');
+    spy.mockRestore();
+  });
+
   it('rejects POST /api/admin/settings/send-version-push for non-admin users', async () => {
     const res = await app.inject({
       method: 'POST',

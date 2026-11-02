@@ -802,7 +802,8 @@ async function handleGenerateVapid() {
                 kostenlos.
                 <br />
                 <em>Host:</em> <code>smtp-relay.brevo.com</code> &middot; <em>Port:</em>
-                <code>587</code> &middot; <em>Benutzer:</em> deine Brevo-Login-Adresse &middot;
+                <code>587</code> (oder <code>2525</code> bei gesperrtem Port 587) &middot;
+                <em>Benutzer:</em> deine Brevo-Login-Adresse &middot;
                 <em>Passwort:</em> SMTP-Schlüssel (im Brevo-Konto unter
                 <em>SMTP & API</em> generieren).
                 <br />
@@ -836,9 +837,14 @@ async function handleGenerateVapid() {
               </li>
             </ul>
             <Alert variant="info" size="sm">
-              <strong>Tipp zur Verschlüsselung:</strong> Auf Port 587 wird STARTTLS automatisch
-              verwendet. Die Option „TLS/SSL Verbindung erzwingen“ ist für Port 465 (SMTPS)
-              vorgesehen.
+              <strong>Tipp zu Ports & Cloud-Hostern:</strong> Auf Port 587 und 2525 wird STARTTLS
+              automatisch verwendet. Port 465 nutzt direktes SSL/TLS („TLS/SSL Verbindung erzwingen“
+              aktivieren).<br />
+              <strong>Wichtig bei Timeouts:</strong> Viele Cloud-/VPS-Hoster (z. B. Netcup, Hetzner)
+              blockieren ausgehenden Traffic auf Port 587 und 25 standardmäßig in ihrer
+              Rechenzentrums-Firewall. Wenn ein <code>Connection timeout</code> auftritt, nutze Port
+              <strong>2525</strong> oder passe die externe Firewall im Kundenpanel deines Hosters
+              an.
             </Alert>
           </div>
         </CollapsibleFieldset>
@@ -865,7 +871,10 @@ async function handleGenerateVapid() {
               v-model="emailForm.smtpPort"
               placeholder="587"
             />
-            <span class="field-hint">Typischerweise 587 (STARTTLS) oder 465 (SSL/TLS).</span>
+            <span class="field-hint"
+              >Typischerweise 587 (STARTTLS), 465 (SSL/TLS) oder 2525 (Alternative bei
+              VPS-/Firewall-Sperren).</span
+            >
           </div>
 
           <div class="form-group">

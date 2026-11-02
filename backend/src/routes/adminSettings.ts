@@ -110,8 +110,13 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
 
     const result = await sendTestEmail({ to: targetEmail });
     if (!result.success) {
+      let errorDetail = result.error || 'Verbindung zum SMTP-Server fehlgeschlagen';
+      if (errorDetail.toLowerCase().includes('timeout')) {
+        errorDetail +=
+          ' (Tipp: Viele Cloud-Hoster wie Netcup oder Hetzner blockieren Port 587/465. Versuche Port 2525 oder prüfe die externe Firewall deines Hosters)';
+      }
       return reply.code(502).send({
-        error: `Fehler beim Versenden der Test-E-Mail: ${result.error || 'Verbindung zum SMTP-Server fehlgeschlagen'}`,
+        error: `Fehler beim Versenden der Test-E-Mail: ${errorDetail}`,
       });
     }
 
