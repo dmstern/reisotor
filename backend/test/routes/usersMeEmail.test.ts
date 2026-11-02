@@ -1,8 +1,9 @@
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcrypt';
 import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { buildTestApp } from '../helpers/buildTestApp.js';
+import * as mailer from '../../src/utils/mailer.js';
 
 describe('User Settings Email routes (/api/users/me/email)', () => {
   let app: FastifyInstance;
@@ -12,6 +13,12 @@ describe('User Settings Email routes (/api/users/me/email)', () => {
   beforeAll(async () => {
     ({ app } = await buildTestApp());
     const { db } = await import('../../src/db/index.js');
+
+    db.prepare('DELETE FROM users WHERE username IN (?, ?, ?)').run(
+      'email_user',
+      'other_user',
+      'admin_email_user'
+    );
 
     const res1 = db
       .prepare(
@@ -105,6 +112,18 @@ describe('User Settings Email routes (/api/users/me/email)', () => {
   });
 
   describe('Workflow with email verification (REQUIRE_EMAIL_VERIFICATION=true)', () => {
+    beforeEach(() => {
+      process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
+      vi.spyOn(mailer, 'sendVerificationEmail').mockResolvedValue({
+        success: true,
+        actionUrl: 'http://localhost:5173/verify-email?token=fake',
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it('creates verification token with pending_email and preserves existing email until verified', async () => {
       process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
       const { db } = await import('../../src/db/index.js');
@@ -254,6 +273,51 @@ describe('User Settings Email routes (/api/users/me/email)', () => {
       });
       expect(verifyRes.statusCode).toBe(409);
       expect(verifyRes.json().error).toContain('inzwischen von einem anderen Konto verwendet');
+    });
+
+    it('allows admin to save email even when verification email delivery fails, storing it unverified with explanatory message', async () => {
+      const { db } = await import('../../src/db/index.js');
+      const adminRes = db
+        .prepare(
+          'INSERT INTO users (username, email, password_hash, avatar, is_admin, is_email_verified, must_change_password) VALUES (?, ?, ?, ?, 1, 1, 0)'
+        )
+        .run('admin_email_user', null, bcrypt.hashSync('adminpass123', 10), '👑');
+      const adminId = adminRes.lastInsertRowid as number;
+
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login',
+        payload: { username: 'admin_email_user', password: 'adminpass123' },
+      });
+      const adminCookie = String(loginRes.headers['set-cookie']);
+
+      // Mock mail delivery failure
+      vi.spyOn(mailer, 'sendVerificationEmail').mockResolvedValueOnce({
+        success: false,
+        actionUrl: '',
+        error: 'Connection timeout',
+      });
+
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/users/me/email',
+        headers: { cookie: adminCookie },
+        payload: { email: 'admin_saved@example.com' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json().email).toBe('admin_saved@example.com');
+      expect(res.json().is_email_verified).toBe(false);
+      expect(res.json().message).toContain('Connection timeout');
+
+      const adminRow = db
+        .prepare('SELECT email, is_email_verified FROM users WHERE id = ?')
+        .get(adminId) as {
+        email: string;
+        is_email_verified: number;
+      };
+      expect(adminRow.email).toBe('admin_saved@example.com');
+      expect(adminRow.is_email_verified).toBe(0);
     });
   });
 });

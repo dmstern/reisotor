@@ -1987,6 +1987,20 @@ db.exec(`
     created_at TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_hash ON email_verification_tokens(token_hash);
+
+  CREATE TABLE IF NOT EXISTS admin_messages (
+    id INTEGER PRIMARY KEY,
+    type TEXT NOT NULL DEFAULT 'registration_help',
+    name TEXT,
+    email TEXT,
+    username TEXT,
+    message TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'unread',
+    ip_hash TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_admin_messages_status ON admin_messages(status);
+  CREATE INDEX IF NOT EXISTS idx_admin_messages_created_at ON admin_messages(created_at);
 `);
 
 ensureColumn('email_verification_tokens', 'pending_email', 'TEXT');

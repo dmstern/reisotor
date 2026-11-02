@@ -24,12 +24,18 @@ export class ApiError extends Error {
   status: number;
   method?: string;
   path?: string;
-  constructor(status: number, message: string, meta?: { method?: string; path?: string }) {
+  data?: unknown;
+  constructor(
+    status: number,
+    message: string,
+    meta?: { method?: string; path?: string; data?: unknown }
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.method = meta?.method;
     this.path = meta?.path;
+    this.data = meta?.data;
   }
 }
 
@@ -121,9 +127,10 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!res.ok) {
     let message = res.statusText;
+    let body: unknown = null;
     try {
-      const body = await res.json();
-      message = body.error ?? message;
+      body = await res.json();
+      message = (body as { error?: string })?.error ?? message;
     } catch {
       // ignore, kein JSON-Body
     }
@@ -136,6 +143,7 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
     throw new ApiError(res.status, message, {
       method: (options.method ?? 'GET').toUpperCase(),
       path,
+      data: body,
     });
   }
 

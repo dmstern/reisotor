@@ -14,6 +14,7 @@ import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import AdminUserManagementCard from './AdminUserManagementCard.vue';
+import AdminMessagesCard from './AdminMessagesCard.vue';
 import AdminBackupCard from './AdminBackupCard.vue';
 import { useAuthStore } from '../../stores/auth';
 import { useAdminSettings } from '../../composables/useAdminSettings';
@@ -277,14 +278,25 @@ async function saveEmail() {
 
 const testingEmail = ref(false);
 const testEmailFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
+const testEmailRecipient = ref('');
+
+watch(
+  () => auth.user?.email,
+  (email) => {
+    if (email && !testEmailRecipient.value) {
+      testEmailRecipient.value = email;
+    }
+  },
+  { immediate: true }
+);
 
 async function sendTestEmail() {
   testEmailFeedback.value = null;
-  if (!auth.user?.email) {
+  const target = testEmailRecipient.value.trim() || auth.user?.email || '';
+  if (!target) {
     testEmailFeedback.value = {
       type: 'error',
-      message:
-        'In deinem Benutzerprofil ist keine E-Mail-Adresse hinterlegt. Bitte trage zuerst eine E-Mail-Adresse in deinem Profil ein.',
+      message: 'Bitte gib eine Empfänger-E-Mail-Adresse für die Test-E-Mail ein.',
     };
     return;
   }
@@ -293,7 +305,8 @@ async function sendTestEmail() {
     // Falls Änderungen im Formular vorgenommen wurden (z. B. Passwort/Port), zuerst speichern
     await saveEmail();
     const res = await api.post<{ success: boolean; message: string }>(
-      '/admin/settings/send-test-email'
+      '/admin/settings/send-test-email',
+      { to: target }
     );
     testEmailFeedback.value = {
       type: 'success',
@@ -355,6 +368,9 @@ async function handleGenerateVapid() {
 
     <!-- 1. Benutzerverwaltung -->
     <AdminUserManagementCard />
+
+    <!-- 2. Kontaktanfragen & Registrierungshilfe -->
+    <AdminMessagesCard />
 
     <ViewLoadingState v-if="loadingSettings && !settings" message="Lade Systemeinstellungen…" />
 
@@ -939,18 +955,29 @@ async function handleGenerateVapid() {
           >
             <AppIcon :icon="ACTION_ICONS.save" :size="14" group="actions" /> Speichern
           </Button>
+          <span v-if="saveSuccess['email']" class="save-success-msg">
+            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gespeichert
+          </span>
+        </div>
+
+        <div v-if="canTestSmtp" class="smtp-test-row">
+          <Input
+            id="smtp-test-recipient"
+            v-model="testEmailRecipient"
+            type="email"
+            placeholder="Empfänger für Test-Mail (z. B. admin@example.com)"
+            class="smtp-test-input"
+            aria-label="Empfänger für Test-E-Mail"
+          />
           <Button
-            v-if="canTestSmtp"
             variant="secondary"
             size="sm"
             :loading="testingEmail"
+            :disabled="testingEmail"
             @click="sendTestEmail"
           >
             <AppIcon :icon="ACTION_ICONS.send" :size="14" group="actions" /> Test-E-Mail senden
           </Button>
-          <span v-if="saveSuccess['email']" class="save-success-msg">
-            <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" /> Gespeichert
-          </span>
         </div>
         <Alert
           v-if="testEmailFeedback"
@@ -1606,6 +1633,21 @@ async function handleGenerateVapid() {
   font-size: var(--font-size-sm);
   color: var(--color-success);
   font-weight: 500;
+}
+
+.smtp-test-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.smtp-test-input {
+  max-width: 320px;
+  flex: 1 1 200px;
 }
 
 .test-email-alert {

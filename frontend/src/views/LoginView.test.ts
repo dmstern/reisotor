@@ -14,10 +14,12 @@ vi.mock('../api/client', () => ({
   },
   ApiError: class ApiError extends Error {
     status: number;
-    constructor(status: number, message: string) {
+    data?: any;
+    constructor(status: number, message: string, meta?: { data?: any }) {
       super(message);
       this.status = status;
       this.name = 'ApiError';
+      this.data = meta?.data;
     }
   },
 }));
@@ -143,6 +145,53 @@ describe('LoginView', () => {
     expect(privacyLink?.textContent).toContain('Datenschutz');
     expect(imprintLink).not.toBeNull();
     expect(imprintLink?.textContent).toContain('Impressum');
+
+    cleanUp();
+  });
+
+  it('displays contact admin action button when unverified email error occurs', async () => {
+    const auth = useAuthStore();
+    const errorWithData = new ApiError(
+      403,
+      'Dieses Konto ist noch nicht freigeschaltet. Da kein Mailserver eingerichtet ist, muss dein Konto manuell von der Administration freigeschaltet werden.',
+      { data: { unverifiedEmail: true, noMailServer: true } }
+    );
+    vi.spyOn(auth, 'login').mockRejectedValue(errorWithData);
+
+    const { container, cleanUp } = mountComponent();
+    await nextTick();
+
+    const usernameInput = container.querySelector('#login-username') as HTMLInputElement;
+    const passwordInput = container.querySelector('#login-password') as HTMLInputElement;
+
+    usernameInput.value = 'unverified_user';
+    usernameInput.dispatchEvent(new Event('input'));
+    passwordInput.value = 'password123';
+    passwordInput.dispatchEvent(new Event('input'));
+
+    const form = container.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+    await new Promise((r) => setTimeout(r, 10));
+    await nextTick();
+
+    expect(container.querySelector('.error')?.textContent).toContain(
+      'Dieses Konto ist noch nicht freigeschaltet'
+    );
+    const contactBtn = container.querySelector('.contact-admin-action') as HTMLButtonElement;
+    expect(contactBtn).not.toBeNull();
+    expect(contactBtn.textContent).toContain('Admin um Freischaltung bitten');
+
+    cleanUp();
+  });
+
+  it('renders contact admin help link on login page', async () => {
+    const { container, cleanUp } = mountComponent();
+    await nextTick();
+
+    const helpLink = container.querySelector('.help-contact-link') as HTMLButtonElement;
+    expect(helpLink).not.toBeNull();
+    expect(helpLink.textContent).toContain('Probleme bei Registrierung oder Anmeldung?');
 
     cleanUp();
   });

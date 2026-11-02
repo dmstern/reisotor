@@ -587,6 +587,18 @@ describe('instance_settings und remote_image_cache Tabellen-Initialisierung', ()
 
     const userCols = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
     expect(userCols.some((c) => c.name === 'is_email_verified')).toBe(true);
+
+    const adminMessages = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='admin_messages'")
+      .get() as { name: string } | undefined;
+    expect(adminMessages?.name).toBe('admin_messages');
+
+    const adminMessageCols = db.prepare('PRAGMA table_info(admin_messages)').all() as {
+      name: string;
+    }[];
+    expect(adminMessageCols.some((c) => c.name === 'type')).toBe(true);
+    expect(adminMessageCols.some((c) => c.name === 'message')).toBe(true);
+    expect(adminMessageCols.some((c) => c.name === 'status')).toBe(true);
   });
 });
 

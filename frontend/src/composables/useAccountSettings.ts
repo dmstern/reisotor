@@ -183,12 +183,17 @@ export function useAccountSettings() {
         requiresVerification?: boolean;
         pendingEmail?: string;
         email?: string | null;
+        is_email_verified?: boolean;
         message?: string;
       }>('/users/me/email', { email: trimmed });
 
       if (auth.user) {
         if (res.requiresVerification) {
           auth.user.pending_email = res.pendingEmail ?? trimmed;
+          if (res.email) auth.user.email = res.email;
+          if (res.is_email_verified !== undefined) {
+            auth.user.is_email_verified = res.is_email_verified;
+          }
           emailSuccess.value =
             res.message ||
             'Bestätigungslink wurde an deine neue Adresse gesendet. Bitte prüfe dein Postfach.';

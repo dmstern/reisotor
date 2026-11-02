@@ -85,19 +85,20 @@ describe('Mailer utility', () => {
     expect(result.actionUrl).toContain('/reset-password?token=tok123');
   });
 
-  it('simulates email verification gracefully when SMTP is unconfigured', async () => {
+  it('fails email verification gracefully when SMTP is unconfigured', async () => {
     delete process.env.SMTP_HOST;
     const result = await sendVerificationEmail({
       to: 'test@example.com',
       username: 'testuser',
       token: 'tok456',
     });
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
     expect(result.simulated).toBe(true);
+    expect(result.error).toContain('SMTP-Mailserver ist nicht konfiguriert');
     expect(result.actionUrl).toContain('/verify-email?token=tok456');
   });
 
-  it('simulates email change verification gracefully when SMTP is unconfigured', async () => {
+  it('fails email change verification gracefully when SMTP is unconfigured', async () => {
     delete process.env.SMTP_HOST;
     const result = await sendVerificationEmail({
       to: 'new@example.com',
@@ -105,8 +106,9 @@ describe('Mailer utility', () => {
       token: 'tok789',
       isChange: true,
     });
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
     expect(result.simulated).toBe(true);
+    expect(result.error).toContain('SMTP-Mailserver ist nicht konfiguriert');
     expect(result.actionUrl).toContain('/verify-email?token=tok789');
   });
 
