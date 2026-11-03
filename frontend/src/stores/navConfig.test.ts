@@ -32,7 +32,7 @@ describe('navConfig', () => {
     expect(travelEntry?.visible).toBe(false);
   });
 
-  it('adds accommodation as visible: true on desktop and false on mobile when missing in stored entries', () => {
+  it('adds accommodation as visible: true on desktop and mobile when missing in stored entries', () => {
     const legacyEntries: NavConfigEntry[] = [
       { key: 'listen', visible: true },
       { key: 'excursions', visible: true },
@@ -45,7 +45,7 @@ describe('navConfig', () => {
     const sanitizedMobile = sanitizeNavEntries(legacyEntries, 'mobile');
     const accMobile = sanitizedMobile.find((e) => e.key === 'accommodation');
     expect(accMobile).toBeDefined();
-    expect(accMobile?.visible).toBe(false);
+    expect(accMobile?.visible).toBe(true);
   });
 
   it('preserves accommodation entry if explicitly set by user', () => {

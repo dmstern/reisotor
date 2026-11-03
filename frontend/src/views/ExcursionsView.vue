@@ -1357,9 +1357,7 @@ onUnmounted(() => {
      Einrasten, nicht für diesen ruhenden Grundzustand. */
   --sheet-max-height: calc(100% - var(--app-header-height, 56px) - 8px);
   position: absolute;
-  /* Links und rechts auf var(--space-4) ausgerichtet, exakt identisch mit der mobilen NavBar-Pille
-     (die ebenfalls max-width: calc(100vw - var(--space-4) * 2) und margin-inline: auto hat), sodass
-     Drawer und NavBar auf denselben Fluchtlinien liegen. */
+  /* Links und rechts auf var(--space-4) ausgerichtet (Fluchtlinie passend zum Standard-Seitenabstand). */
   left: var(--space-4);
   right: var(--space-4);
   /* Wie bei Apple: solange nicht ganz hochgezogen (collapsed/partial, .full überschreibt unten auf

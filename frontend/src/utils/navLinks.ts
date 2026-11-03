@@ -52,7 +52,6 @@ export const NAV_LINKS: NavLinkDef[] = [
     label: 'Unterkunft',
     icon: ACCOMMODATION_ICON,
     domains: ['spots'],
-    defaultVisibleMobile: false,
   },
   {
     key: 'budget',
