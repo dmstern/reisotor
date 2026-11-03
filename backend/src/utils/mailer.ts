@@ -283,6 +283,58 @@ dein Reisotor-Server`;
   }
 }
 
+export async function sendActivityEmail(params: {
+  to: string;
+  username: string;
+  tripId: number;
+  tripName: string;
+  title: string;
+  body: string;
+}): Promise<SendMailResult> {
+  const baseUrl = getAppUrl();
+  const tripUrl = `${baseUrl}/trip/${params.tripId}`;
+  const transporter = getTransporter();
+  if (!transporter) {
+    return { success: true, actionUrl: tripUrl, simulated: true };
+  }
+
+  const from = getFromAddress();
+  const subject = `[Reisotor] ${params.tripName} – ${params.title}`;
+  const text = `Hallo ${params.username},
+
+${params.body} im Urlaub "${params.tripName}".
+
+Hier ansehen: ${tripUrl}
+
+Viele Grüße,
+dein Reisotor-Team`;
+
+  const html = buildEmailHtml({
+    title: params.title,
+    greeting: `Hallo <strong>${escapeHtml(params.username)}</strong>,`,
+    messageHtml: `<p style="margin: 0 0 16px 0; font-size: 15px; color: #2b2a28;">${escapeHtml(params.body)} im Urlaub <strong>${escapeHtml(params.tripName)}</strong>.</p>`,
+    actionUrl: tripUrl,
+    actionLabel: 'Urlaub aufrufen',
+    hintHtml:
+      'Du erhältst diese E-Mail, da du in deinen Reisotor-Einstellungen E-Mail-Benachrichtigungen für diesen Bereich aktiviert hast.',
+  });
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: params.to,
+      subject,
+      text,
+      html,
+    });
+    return { success: true, actionUrl: tripUrl };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[Mailer] Fehler beim Versenden der Aktivitäts-Mail an ${params.to}:`, errorMsg);
+    return { success: false, actionUrl: tripUrl, error: errorMsg };
+  }
+}
+
 export const DEFAULT_FALLBACK_LOGO_URL =
   'https://raw.githubusercontent.com/dmstern/reisotor/main/frontend/public/icons/icon-192.png';
 

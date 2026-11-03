@@ -1,5 +1,5 @@
 import { db } from './db/index.js';
-import { sendPushToTripMembers } from './push.js';
+import { sendEmailToTripMembers, sendPushToTripMembers } from './push.js';
 
 const REMINDER_THRESHOLDS_DAYS = [14, 7, 2, 1];
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -54,6 +54,16 @@ export async function checkDepartureReminders() {
         title: `✈️ ${trip.name}`,
         body: `Nur noch ${label} bis zur Abreise!`,
         tripId: trip.id,
+      },
+      'departure'
+    );
+    await sendEmailToTripMembers(
+      trip.id,
+      {
+        title: `✈️ ${trip.name}`,
+        body: `Nur noch ${label} bis zur Abreise!`,
+        tripId: trip.id,
+        tripName: trip.name,
       },
       'departure'
     );

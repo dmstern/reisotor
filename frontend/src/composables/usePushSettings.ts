@@ -73,6 +73,13 @@ export function usePushSettings() {
     await notificationPrefs.update({ [domain]: enabled });
   }
 
+  async function setEmailDomainPreference(
+    domain: (typeof NOTIFICATION_DOMAINS)[number],
+    enabled: boolean
+  ) {
+    await notificationPrefs.updateEmail({ [domain]: enabled });
+  }
+
   const pushScopeValue = computed(() =>
     notificationPrefs.preferences?.activity_updates === false ? 'created_only' : 'all'
   );
@@ -97,13 +104,14 @@ export function usePushSettings() {
   }
 
   async function initPushSubscription() {
-    if (!pushSupported) return;
     try {
-      const sub = await getExistingSubscription();
-      pushEnabled.value = !!sub;
-      if (pushEnabled.value) {
-        await notificationPrefs.load();
+      if (pushSupported) {
+        const sub = await getExistingSubscription();
+        pushEnabled.value = !!sub;
+      } else {
+        pushEnabled.value = false;
       }
+      await notificationPrefs.load();
     } catch {
       // Ignoriere Fehler bei der initialen Abfrage
     }
@@ -124,6 +132,7 @@ export function usePushSettings() {
     selectPushLevel,
     setPushScope,
     setDomainPreference,
+    setEmailDomainPreference,
     resetPush,
     initPushSubscription,
   };

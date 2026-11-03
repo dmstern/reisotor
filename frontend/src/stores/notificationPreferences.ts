@@ -13,8 +13,11 @@ import {
 // Account statt pro Gerät/Browser.
 export const useNotificationPreferencesStore = defineStore('notificationPreferences', () => {
   const preferences = ref<NotificationPreferences | null>(null);
+  const emailPreferences = ref<Record<string, boolean> | null>(null);
   const loading = ref(false);
+  const emailLoading = ref(false);
   const error = ref('');
+  const emailError = ref('');
 
   const currentLevel = computed<NotificationLevel | null>(() =>
     preferences.value ? matchingLevel(preferences.value) : null
@@ -24,11 +27,31 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
     loading.value = true;
     error.value = '';
     try {
-      preferences.value = await api.get<NotificationPreferences>('/push/preferences');
+      const [pushPrefs, mailPrefs] = await Promise.all([
+        api.get<NotificationPreferences>('/push/preferences'),
+        api.get<Record<string, boolean>>('/notifications/email-preferences').catch(() => null),
+      ]);
+      preferences.value = pushPrefs;
+      if (mailPrefs) emailPreferences.value = mailPrefs;
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Präferenzen konnten nicht geladen werden';
     } finally {
       loading.value = false;
+    }
+  }
+
+  async function loadEmail() {
+    emailLoading.value = true;
+    emailError.value = '';
+    try {
+      emailPreferences.value = await api.get<Record<string, boolean>>(
+        '/notifications/email-preferences'
+      );
+    } catch (err) {
+      emailError.value =
+        err instanceof Error ? err.message : 'E-Mail-Präferenzen konnten nicht geladen werden';
+    } finally {
+      emailLoading.value = false;
     }
   }
 
@@ -45,9 +68,44 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
     }
   }
 
+  async function updateEmail(partial: Partial<Record<string, boolean>>) {
+    emailError.value = '';
+    const previous = emailPreferences.value;
+    if (previous) {
+      const merged = { ...previous };
+      for (const [k, v] of Object.entries(partial)) {
+        if (v !== undefined) merged[k] = v;
+      }
+      emailPreferences.value = merged;
+    }
+    try {
+      emailPreferences.value = await api.put<Record<string, boolean>>(
+        '/notifications/email-preferences',
+        partial
+      );
+    } catch (err) {
+      emailPreferences.value = previous;
+      emailError.value =
+        err instanceof Error ? err.message : 'E-Mail-Präferenzen konnten nicht gespeichert werden';
+    }
+  }
+
   async function applyLevel(level: NotificationLevel) {
     await update(NOTIFICATION_LEVEL_PRESETS[level]);
   }
 
-  return { preferences, loading, error, currentLevel, load, update, applyLevel };
+  return {
+    preferences,
+    emailPreferences,
+    loading,
+    emailLoading,
+    error,
+    emailError,
+    currentLevel,
+    load,
+    loadEmail,
+    update,
+    updateEmail,
+    applyLevel,
+  };
 });
