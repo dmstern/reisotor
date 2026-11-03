@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
 import type { IconGroup, IconStyle, IconVariant } from '../stores/iconStyle';
 import type { IconDef } from '../utils/icon';
 
 // Echter schiebender Segmented-Control (statt zweier unabhängig hervorgehobener Buttons wie
-// bisher, siehe ExcursionsView.vue's Gruppieren/Sortieren-Umschalter): eine per CSS transform
-// animierte Hintergrund-Pille gleitet zwischen den Optionen statt nur die Farbe hart umzuschalten -
-// näher an nativen iOS-Segmented-Controls, ohne eine neue Interaktion (weiterhin ein einzelner
-// Klick pro Option) einzuführen. Generisch für beliebig viele Optionen, aktuell überall mit genau
-// zwei genutzt.
+// bisher, siehe ExcursionsView.vue's Gruppieren/Sortieren-Umschalter): eine animierte Hintergrund-
+// Pille gleitet zwischen den Optionen statt nur die Farbe hart umzuschalten. Die exakte Position
+// und Breite wird wie bei NavBar.vue / TabBar.vue am aktiven Button gemessen, damit die Pille bei
+// beliebigen Textlängen, Gaps und Auflösungen exakt zentriert hinter dem Label sitzt.
 const props = withDefaults(
   defineProps<{
     modelValue: string;
@@ -44,15 +43,80 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 // "individuell angepasst" bei den Push-Leveln in SettingsView.vue) - die Pille wird dann komplett
 // ausgeblendet statt fälschlich unter der ersten Option zu kleben.
 const activeIndex = computed(() => props.options.findIndex((o) => o.value === props.modelValue));
+
+const toggleEl = ref<HTMLElement | null>(null);
+const thumbLeft = ref(0);
+const thumbTop = ref(0);
+const thumbWidth = ref(0);
+const thumbHeight = ref(0);
+const thumbVisible = ref(false);
+let resizeObserver: ResizeObserver | null = null;
+
+function updateThumb() {
+  if (activeIndex.value === -1) {
+    thumbVisible.value = false;
+    return;
+  }
+  const activeEl = toggleEl.value?.querySelector<HTMLElement>('.segmented-option.active');
+  if (!activeEl) {
+    thumbVisible.value = false;
+    return;
+  }
+  thumbLeft.value = activeEl.offsetLeft;
+  thumbTop.value = activeEl.offsetTop;
+  thumbWidth.value = activeEl.offsetWidth;
+  thumbHeight.value = activeEl.offsetHeight;
+  thumbVisible.value = true;
+}
+
+onMounted(() => {
+  updateThumb();
+  if (typeof ResizeObserver !== 'undefined' && toggleEl.value) {
+    resizeObserver = new ResizeObserver(() => {
+      updateThumb();
+    });
+    resizeObserver.observe(toggleEl.value);
+  }
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+});
+
+watch(
+  () => props.modelValue,
+  () => nextTick(updateThumb)
+);
+
+watch(
+  () => props.options,
+  () => nextTick(updateThumb),
+  { deep: true }
+);
 </script>
 
 <template>
   <div
+    ref="toggleEl"
     class="segmented-toggle"
     :class="{ 'is-disabled': disabled }"
     :style="{ '--count': options.length, '--active-index': Math.max(0, activeIndex) }"
   >
-    <span v-if="activeIndex !== -1" class="segmented-thumb" aria-hidden="true"></span>
+    <span
+      v-if="activeIndex !== -1"
+      class="segmented-thumb"
+      :class="{ 'is-visible': thumbVisible }"
+      :style="
+        thumbWidth > 0
+          ? {
+              transform: `translate(${thumbLeft}px, ${thumbTop}px)`,
+              width: `${thumbWidth}px`,
+              height: `${thumbHeight}px`,
+            }
+          : undefined
+      "
+      aria-hidden="true"
+    ></span>
     <button
       v-for="option in options"
       :key="option.value"
@@ -92,7 +156,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
 .segmented-toggle {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(var(--count), 1fr);
+  grid-template-columns: repeat(var(--count), minmax(0, 1fr));
   background-color: var(--color-hover);
   background-image: var(--texture-grain);
   background-blend-mode: overlay;
@@ -102,20 +166,30 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   box-shadow: var(--shadow-inset);
 }
 
-/* Gleitet per transform statt left/width-Änderungen - eine Eigenschaft zu animieren reicht,
-   läuft dadurch auf dem Compositor statt bei jedem Frame Layout neu zu berechnen.
-   --shadow-pill-raised (Glanzrand oben, Gewichts-Schatten unten, sanfte Abhebung vom Track) gibt der
-   Pille ein weiches, aufgepolstertes/gummi-haftiges statt rein flaches Erscheinungsbild. */
+/* Gleitet per transform zum aktiven Button. Durch Messung von offsetLeft/offsetWidth (analog NavBar.vue/
+   TabBar.vue) sitzt die Pille exakt zentriert hinter dem Button. Für CSS-Fallback/SSR wird die
+   Spaltenberechnung unter Berücksichtigung von gap verwendet. */
 .segmented-thumb {
   position: absolute;
-  inset: 4px;
-  width: calc((100% - 8px) / var(--count));
+  top: 4px;
+  left: 4px;
+  bottom: 4px;
+  width: calc((100% - 8px - (var(--count) - 1) * 2px) / var(--count));
   background: var(--color-surface);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-pill-raised);
-  transform: translateX(calc(var(--active-index) * 100%));
-  transition: transform 0.2s ease;
+  transform: translateX(calc(var(--active-index) * (100% + 2px)));
+  transition:
+    transform 0.2s ease,
+    width 0.2s ease,
+    height 0.2s ease,
+    opacity 0.15s ease;
   pointer-events: none;
+  opacity: 0;
+}
+
+.segmented-thumb.is-visible {
+  opacity: 1;
 }
 
 .segmented-toggle.is-disabled {
@@ -154,6 +228,7 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.15s ease;
+  min-width: 0;
 }
 
 .segmented-option:focus-visible {
@@ -165,6 +240,9 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === pr
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .segmented-option.active {
