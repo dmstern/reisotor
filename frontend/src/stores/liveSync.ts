@@ -167,9 +167,16 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
         // ignore
       }
     });
-    source.addEventListener('admin_message', () => {
+    source.addEventListener('admin_message', (e) => {
       try {
         const adminMessages = useAdminMessagesStore();
+        if ((e as MessageEvent).data) {
+          const data = JSON.parse((e as MessageEvent).data);
+          if (typeof data?.unreadCount === 'number') {
+            adminMessages.setUnreadCount(data.unreadCount);
+            return;
+          }
+        }
         adminMessages.loadUnreadCount();
       } catch {
         // ignore

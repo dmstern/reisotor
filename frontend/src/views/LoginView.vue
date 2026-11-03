@@ -158,12 +158,17 @@ async function onSubmit() {
         class="reg-email-alert"
       >
         <div class="reg-email-alert-content">
-          <span>
+          <span v-if="contactAdminEnabled">
             Auf diesem Server ist kein Mailserver eingerichtet und die E-Mail-Bestätigung ist
             verpflichtend. Eine Selbstregistrierung ist daher derzeit nicht möglich. Bitte wende
             dich an die Administration, um einen Zugang zu erhalten.
           </span>
+          <span v-else>
+            Auf diesem Server ist kein Mailserver eingerichtet und die E-Mail-Bestätigung ist
+            verpflichtend. Eine Registrierung ist derzeit nicht möglich.
+          </span>
           <Button
+            v-if="contactAdminEnabled"
             type="button"
             variant="secondary"
             size="sm"

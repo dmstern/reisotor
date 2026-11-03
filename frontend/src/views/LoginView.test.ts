@@ -227,6 +227,17 @@ describe('LoginView', () => {
     await nextTick();
 
     expect(container.querySelector('.contact-admin-action')).toBeNull();
+
+    // Mode 'register' check with no mail server
+    const registerToggleBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Registrieren')
+    );
+    if (registerToggleBtn) {
+      registerToggleBtn.click();
+      await nextTick();
+      expect(container.querySelector('.reg-contact-btn')).toBeNull();
+    }
+
     cleanUp();
   });
 });

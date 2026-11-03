@@ -428,7 +428,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     // Rate-Limiting: Max. 3 Nachrichten innerhalb von 1 Stunde pro IP und/oder Cookie
     let contactToken = req.cookies?.contact_rate_limit;
-    if (!contactToken) {
+    if (
+      !contactToken ||
+      typeof contactToken !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contactToken)
+    ) {
       contactToken = crypto.randomUUID();
     }
     reply.setCookie('contact_rate_limit', contactToken, {

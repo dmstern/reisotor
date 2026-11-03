@@ -311,7 +311,15 @@ export async function sendAdminContactNotificationEmail(params: {
   const from = getFromAddress();
   const subject = '[Reisotor] Neue Kontaktanfrage / Anmeldeproblem';
 
+  const typeLabel =
+    params.type === 'login_help'
+      ? 'Anmeldeproblem'
+      : params.type === 'registration_help'
+        ? 'Registrierungshilfe'
+        : params.type;
+
   const senderDetails: string[] = [];
+  if (typeLabel) senderDetails.push(`Kategorie: ${typeLabel}`);
   if (params.senderName) senderDetails.push(`Name: ${params.senderName}`);
   if (params.senderUsername) senderDetails.push(`Benutzername: ${params.senderUsername}`);
   if (params.senderEmail) senderDetails.push(`E-Mail: ${params.senderEmail}`);
@@ -331,6 +339,11 @@ Viele Grüße,
 dein Reisotor-System`;
 
   const detailsRows: string[] = [];
+  if (typeLabel) {
+    detailsRows.push(
+      `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Kategorie:</td><td style="padding: 4px 0;">${escapeHtml(typeLabel)}</td></tr>`
+    );
+  }
   if (params.senderName) {
     detailsRows.push(
       `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Name:</td><td style="padding: 4px 0;">${escapeHtml(params.senderName)}</td></tr>`
