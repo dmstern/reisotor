@@ -64,8 +64,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
 
     // Umschalten auf Touren-Gruppierung: der neu erstellte Spot muss unter der neu erstellten Tour
     // auftauchen, statt (wie im Kategorie-Modus) unter seiner Kategorie. Die Gruppen-Überschrift ist
-    // dabei eine anklickbare ExcursionCard (.excursion-card) statt einer reinen Text-Überschrift
-    // (die bleibt nur der Sammelgruppe "Ohne Tour" vorbehalten, siehe ExcursionsView.vue).
+    // dabei eine anklickbare ExcursionCard (.excursion-card).
     await page.locator('.segmented-option', { hasText: 'Touren' }).click();
     const tourGroupCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourGroupCard).toBeVisible();

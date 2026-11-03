@@ -46,7 +46,6 @@ const props = withDefaults(
     /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
      *  Migrationskommentar in db/index.ts). */
     payerLabel?: string | null;
-    groupMode?: 'category' | 'tours';
     hasMultipleMembers?: boolean;
     /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
     layoverMinutes?: number | null;

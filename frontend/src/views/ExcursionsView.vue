@@ -1157,7 +1157,6 @@ onUnmounted(() => {
                         :like-count="spotsStore.likeCountFor(item.spot.id)"
                         :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
                         :comments="spotCommentItemsFor(item.spot.id)"
-                        :group-mode="groupMode === 'tours' ? 'tours' : 'category'"
                         :has-multiple-members="users.length > 1"
                         @edit="startEditSpot"
                         @toggle-like="toggleSpotLike(item.spot.id)"

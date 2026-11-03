@@ -20,7 +20,6 @@ const props = defineProps<{
   dayFocusHighlightedIds: Set<number>;
   spotScheduledDates: Map<number, string>;
   users: User[];
-  allTourTitles?: string[];
   spotCommentItemsFor: (spotId: number) => CommentItem[];
   getTourLayover: (
     excursion: Excursion,
@@ -187,8 +186,6 @@ function creatorLabel(userId: number | null | undefined): string | null {
                 :like-count="spotsStore.likeCountFor(cell.spot.id)"
                 :liked="spotsStore.likedByMe(cell.spot.id, auth.user?.id)"
                 :comments="spotCommentItemsFor(cell.spot.id)"
-                group-mode="tours"
-                :tour-options="allTourTitles"
                 :has-multiple-members="users.length > 1"
                 :layover-minutes="
                   cell.globalIndex > 0 && cell.globalIndex < items.length - 1
