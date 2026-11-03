@@ -33,8 +33,6 @@ export const STATUS_FILTER_ICON: Record<'planned' | 'unplanned' | 'done', IconDe
   done: ACTION_ICONS.done,
 };
 
-export const UNASSIGNED_TOUR_GROUP = 'Ohne Tour';
-
 export const CATEGORY_GROUP_ORDER = [...new Set(['Unterkunft', ...SPOT_CATEGORY_SUGGESTIONS])];
 
 export interface UseExcursionsFilterOptions {
@@ -342,9 +340,6 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
       const matchingTitles = new Set(matchingExcursions.map((e) => e.title));
       for (const item of filteredSpotItems.value) {
         const keys = tourTitlesForItem(item).filter((t) => matchingTitles.has(t));
-        if (keys.length === 0 && !tourRoleFilter.value.length) {
-          keys.push(UNASSIGNED_TOUR_GROUP);
-        }
         for (const key of keys) {
           const list = groups.get(key) ?? [];
           list.push(item);
@@ -374,10 +369,7 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
       }
     }
     for (const [key, list] of groups) {
-      const excursion =
-        groupMode.value === 'tours' && key !== UNASSIGNED_TOUR_GROUP
-          ? excursionForGroupTitle(key)
-          : null;
+      const excursion = groupMode.value === 'tours' ? excursionForGroupTitle(key) : null;
       if (excursion) {
         const order = new Map<number, number>();
         excursion.spot_ids.forEach((id, idx) => {
@@ -403,28 +395,21 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
       }
     }
     if (groupMode.value === 'tours') {
-      const known = [...groups.keys()]
-        .filter((k) => k !== UNASSIGNED_TOUR_GROUP)
-        .sort((a, b) => {
-          if (sortMode.value === 'date') {
-            const ea = excursionForGroupTitle(a);
-            const eb = excursionForGroupTitle(b);
-            const da = ea?.date || '\uFFFF';
-            const db = eb?.date || '\uFFFF';
-            return da.localeCompare(db) || a.localeCompare(b);
-          }
-          return a.localeCompare(b);
-        });
-      const keys = groups.has(UNASSIGNED_TOUR_GROUP) ? [...known, UNASSIGNED_TOUR_GROUP] : known;
-      return keys.map((title) => {
-        const excursion = title === UNASSIGNED_TOUR_GROUP ? null : excursionForGroupTitle(title);
-        let iconDef = FORM_FIELD_ICONS.location;
-        if (title !== UNASSIGNED_TOUR_GROUP) {
-          if (excursion?.role && TRAVEL_ROLE_META[excursion.role]) {
-            iconDef = TRAVEL_ROLE_META[excursion.role].tabler;
-          } else {
-            iconDef = SECTION_ICON_DEFS.excursions;
-          }
+      const known = [...groups.keys()].sort((a, b) => {
+        if (sortMode.value === 'date') {
+          const ea = excursionForGroupTitle(a);
+          const eb = excursionForGroupTitle(b);
+          const da = ea?.date || '\uFFFF';
+          const db = eb?.date || '\uFFFF';
+          return da.localeCompare(db) || a.localeCompare(b);
+        }
+        return a.localeCompare(b);
+      });
+      return known.map((title) => {
+        const excursion = excursionForGroupTitle(title);
+        let iconDef = SECTION_ICON_DEFS.excursions;
+        if (excursion?.role && TRAVEL_ROLE_META[excursion.role]) {
+          iconDef = TRAVEL_ROLE_META[excursion.role].tabler;
         }
         return {
           category: title,

@@ -4,12 +4,10 @@ import type { Spot } from '../api/types';
 import { IconFlag, IconFlagFilled } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import { useDrawersStore } from '../stores/drawers';
-import { useSpotTourAssignment } from '../composables/useSpotTourAssignment';
 import CategoryChip from './CategoryChip.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
-import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import SpotLocationBadge from './SpotLocationBadge.vue';
@@ -48,11 +46,7 @@ const props = withDefaults(
     /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
      *  Migrationskommentar in db/index.ts). */
     payerLabel?: string | null;
-    // Ob die Spots-Liste gerade nach Kategorie oder nach Touren gruppiert ist (ExcursionsView.vue) -
-    // steuert (#106), ob zusätzlich zum "Tour zuordnen"-Dropdown auch der native Drag-Anfasser
-    // gezeigt wird: der ergibt nur in der Touren-Gruppierung Sinn, wo echte Tour-Karten als
-    // Ablageziele sichtbar sind (siehe onDragStart unten).
-    groupMode: 'category' | 'tours';
+    groupMode?: 'category' | 'tours';
     hasMultipleMembers?: boolean;
     /** Umsteige-/Aufenthaltszeit in Minuten, wenn die Station Teil einer Tour ist (#396) */
     layoverMinutes?: number | null;
@@ -85,19 +79,11 @@ const emit = defineEmits<{
   (e: 'open', spot: Spot, el?: HTMLElement | null): void;
   (e: 'close'): void;
   (e: 'toggle-destination'): void;
-  (e: 'assign-tour', title: string): void;
   (e: 'show-on-map'): void;
 }>();
 
 const showComments = ref(false);
 const drawers = useDrawersStore();
-
-// Tour-Zuordnungen als Checkliste & natives Drag-and-Drop (#106, #226, #227)
-const { tourAssignments, onToggleTour, onCreateTour, onDragStart, onDragEnd } =
-  useSpotTourAssignment({
-    spot: () => props.spot,
-    groupMode: () => props.groupMode,
-  });
 
 // Klick auf die Karte klappt sie nur auf-/zu, statt einen Modal-Dialog zu öffnen
 const cardRoot = ref<ComponentPublicInstance | HTMLElement | null>(null);
@@ -244,14 +230,6 @@ const cardRotation = computed(() => {
         <div class="actions-accordion" :class="{ 'is-expanded': expanded }">
           <div class="actions-accordion-inner accordion-stagger">
             <div class="card-actions">
-              <TourAssignDropdown
-                :tours="tourAssignments"
-                :can-drag="groupMode === 'tours'"
-                @toggle-tour="onToggleTour"
-                @create-tour="onCreateTour"
-                @dragstart="onDragStart"
-                @dragend="onDragEnd"
-              />
               <Button
                 v-if="
                   expanded &&
@@ -818,13 +796,11 @@ const cardRotation = computed(() => {
   background: var(--color-primary-tint);
 }
 
-.spot-destination-toggle,
-:deep(.tour-assign-btn) {
+.spot-destination-toggle {
   position: relative;
 }
 
-.spot-destination-toggle::after,
-:deep(.tour-assign-btn)::after {
+.spot-destination-toggle::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -835,8 +811,7 @@ const cardRotation = computed(() => {
 }
 
 @media (pointer: fine) {
-  .spot-destination-toggle::after,
-  :deep(.tour-assign-btn)::after {
+  .spot-destination-toggle::after {
     display: none;
   }
 }

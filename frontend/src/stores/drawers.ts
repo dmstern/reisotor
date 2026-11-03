@@ -102,9 +102,6 @@ export const useDrawersStore = defineStore('drawers', () => {
   // angelegt/bearbeitet wird. touchLocations() signalisiert genau das – ein Zähler statt Boolean,
   // damit auch zwei schnell aufeinanderfolgende Änderungen zuverlässig je einen watch()-Trigger
   const locationsVersion = ref(0);
-  // Spot-ID, die gerade per "Tour zuordnen"-Anfasser gezogen wird (#drag). Ermöglicht Tour-Karten,
-  // gezielt als Drop-Ziel zu leuchten, wenn der Spot dort noch nicht enthalten ist.
-  const draggingTourSpotId = ref<number | null>(null);
 
   function touchLocations() {
     locationsVersion.value++;
@@ -285,7 +282,6 @@ export const useDrawersStore = defineStore('drawers', () => {
     calendarWidth,
     maximizedSide,
     locationsVersion,
-    draggingTourSpotId,
     pendingSchedule,
     calendarTargetDate,
     openCalendar,

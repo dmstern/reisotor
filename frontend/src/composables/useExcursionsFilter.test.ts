@@ -234,4 +234,41 @@ describe('useExcursionsFilter', () => {
     expect(filter.filteredSpotItems.value.length).toBe(1);
     expect(filter.filteredSpotItems.value[0].spot.id).toBe(10);
   });
+
+  it('schließt im Touren-Modus (groupMode=tours) Spots ohne Tour nicht als "Ohne Tour" Gruppe ein (#664)', () => {
+    const spotsStore = useSpotsStore();
+    const excursionsStore = useExcursionsStore();
+
+    spotsStore.spots = [
+      createMockSpot({ id: 1, trip_id: 1, title: 'Zugeordneter Spot', category: 'Kultur' }),
+      createMockSpot({ id: 2, trip_id: 1, title: 'Freier Spot', category: 'Natur' }),
+    ];
+
+    excursionsStore.excursions = [
+      createMockExcursion({
+        id: 10,
+        trip_id: 1,
+        title: 'Tagesausflug',
+        spot_ids: [1],
+      }),
+    ];
+
+    const filter = useExcursionsFilter({
+      route: mockRoute,
+      router: mockRouter,
+    });
+
+    filter.groupMode.value = 'tours';
+
+    // In Touren-Ansicht gibt es nur die Gruppe "Tagesausflug" mit Spot 1.
+    // Spot 2 ("Freier Spot") darf nicht in einer "Ohne Tour" Gruppe auftauchen.
+    expect(filter.spotGroups.value.length).toBe(1);
+    expect(filter.spotGroups.value[0].category).toBe('Tagesausflug');
+    expect(filter.spotGroups.value[0].items.length).toBe(1);
+    expect(filter.spotGroups.value[0].items[0].spot.id).toBe(1);
+
+    // Wenn keine Touren vorhanden sind, ist spotGroups leer
+    excursionsStore.excursions = [];
+    expect(filter.spotGroups.value.length).toBe(0);
+  });
 });
