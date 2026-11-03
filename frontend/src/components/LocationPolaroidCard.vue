@@ -698,6 +698,15 @@ defineExpose({
     max-width: 100%;
     max-height: none;
     overflow-y: visible;
+    box-shadow: none;
+  }
+
+  .polaroid-media :deep(.form-image-banner--polaroid) {
+    height: 110px;
+  }
+
+  .status-meta-row {
+    min-height: 32px;
   }
 }
 </style>

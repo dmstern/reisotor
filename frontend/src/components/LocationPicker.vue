@@ -573,8 +573,8 @@ defineExpose({
 
 @container (max-width: 580px) {
   .map-wrap:not(.has-polaroid) .location-picker-map {
-    height: 260px;
-    min-height: 260px;
+    height: 240px;
+    min-height: 240px;
   }
 
   .map-wrap.has-polaroid {
@@ -591,16 +591,21 @@ defineExpose({
     width: 100%;
   }
 
+  .map-wrap.has-polaroid :deep(.location-picker-input) {
+    box-shadow: none;
+    border: 1px solid var(--color-border);
+  }
+
   .has-polaroid .location-picker-map {
-    height: 170px;
-    min-height: 170px;
+    height: 135px;
+    min-height: 135px;
     touch-action: pan-y;
     cursor: pointer;
   }
 
   .has-polaroid.is-map-expanded .location-picker-map {
-    height: 340px;
-    min-height: 340px;
+    height: 320px;
+    min-height: 320px;
     touch-action: auto;
     cursor: default;
   }
