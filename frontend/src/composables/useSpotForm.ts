@@ -525,7 +525,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   async function submitAddSpotToDate() {
     const date = addScheduleDateVal.value;
-    if (!date) return;
+    if (!date || !/^[1-9]\d{3}-\d{2}-\d{2}$/.test(date)) return;
     if (editingSpot.value !== null) {
       if (!tripStore.currentTripId) return;
       await scheduleStore.create({

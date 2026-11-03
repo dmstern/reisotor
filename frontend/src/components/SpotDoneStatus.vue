@@ -101,13 +101,9 @@ function handleItemJump(item: ScheduledSpotItem) {
     :done="isSpotDone"
     :partially-done="isSpotPartiallyDone"
     :planned="!!(scheduledDate || totalItemsCount > 0)"
-    :split="false"
-    :check-aria-label="isSpotDone ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
-    :check-title="isSpotDone ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
     :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     @click="handleDoneClick"
-    @click-check="handleDoneClick"
   >
     <template v-if="totalItemsCount > 1">
       <template v-if="allItemsDone">

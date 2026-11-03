@@ -147,7 +147,6 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
 
   async function onToggleDone(event?: MouseEvent) {
     const spot = toValue(options.spot);
-    const scheduledDate = toValue(options.scheduledDate);
 
     if (totalItemsCount.value >= 1) {
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
@@ -167,8 +166,6 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
           menuHeight: rect.height,
         });
       }
-    } else if (scheduledDate) {
-      await spotsStore.setDone(spot.id, !spot.done);
     } else {
       if (spot.done) {
         await spotsStore.setDone(spot.id, false);

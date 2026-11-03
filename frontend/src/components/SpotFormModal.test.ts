@@ -166,6 +166,13 @@ describe('SpotFormModal', () => {
     ) as HTMLInputElement;
     expect(dateInput).not.toBeNull();
 
+    // Incomplete year from typing should not trigger submission
+    dateInput.value = '0002-10-22';
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    await nextTick();
+    expect(document.querySelector('.assign-chip--schedule')).toBeNull();
+
     dateInput.value = '2026-10-22';
     dateInput.dispatchEvent(new Event('input', { bubbles: true }));
     dateInput.dispatchEvent(new Event('change', { bubbles: true }));
