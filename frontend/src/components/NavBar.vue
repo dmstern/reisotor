@@ -303,6 +303,11 @@ function onLinkClick(event: MouseEvent) {
   letter-spacing: 0.01em;
 }
 
+/* Schwebende Pille am unteren Bildschirmrand: width: fit-content sorgt dafür, dass die Leiste bei
+   wenigen Menüpunkten (z. B. 3 oder 4) kompakt zusammen schrumpft und kein unnötiger Leerraum entsteht.
+   Die Maximalbreite nutzt den Platz zu den Bildschirmrändern bis auf var(--space-2) (8px) aus,
+   sodass auch 6 Menüpunkte bequem ohne horizontales Scrollen hineinpassen (z. B. auf 390px-Viewports).
+   Erst ab 7 Menüpunkten greift overflow-x: auto. */
 .navbar.floating-bottom {
   position: fixed;
   top: auto;
@@ -311,8 +316,11 @@ function onLinkClick(event: MouseEvent) {
   right: 0;
   margin-inline: auto;
   width: fit-content;
-  max-width: calc(100vw - var(--space-4) * 2);
-  padding: 6px var(--space-2);
+  max-width: calc(
+    100vw - max(var(--space-2), env(safe-area-inset-left, 0px)) -
+      max(var(--space-2), env(safe-area-inset-right, 0px))
+  );
+  padding: 6px 6px;
   border: 1px solid var(--color-surface-glass-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface-glass);
@@ -326,6 +334,14 @@ function onLinkClick(event: MouseEvent) {
 
 .navbar.floating-bottom::-webkit-scrollbar {
   display: none;
+}
+
+.navbar.floating-bottom .links {
+  gap: 2px;
+}
+
+.navbar.floating-bottom .link {
+  padding: 4px 8px;
 }
 
 .links {
