@@ -219,7 +219,7 @@ const profileTitle = computed(() => {
 
 @media (max-width: 479px) {
   .header-row {
-    padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-2) 0;
+    padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-2) 0;
   }
 }
 
@@ -562,7 +562,7 @@ const profileTitle = computed(() => {
 
 @media (max-width: 360px) {
   .header-row {
-    padding: calc(var(--space-2) + env(safe-area-inset-top, 0px)) var(--space-1) 0;
+    padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-1) 0;
   }
 
   .header-pill {
