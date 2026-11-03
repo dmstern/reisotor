@@ -34,5 +34,56 @@ describe('useLocationPickerMap', () => {
 
     expect(map.locatingSelf.value).toBe(false);
     expect(map.locateError.value).toBe(false);
+    expect(map.isMobileMapExpanded.value).toBe(false);
+  });
+
+  it('toggles isMobileMapExpanded when toggleMobileMapExpanded is called', () => {
+    const mapEl = ref<HTMLDivElement | null>(null);
+    const polaroidCardEl = ref<HTMLDivElement | null>(null);
+    const modelValue = ref(null);
+    const isDetailsVisible = ref(true);
+    const hasMediaSlot = ref(false);
+    const onManualCoordsSet = vi.fn();
+
+    const map = useLocationPickerMap({
+      mapEl,
+      polaroidCardEl,
+      modelValue,
+      isDetailsVisible,
+      hasMediaSlot,
+      onManualCoordsSet,
+    });
+
+    expect(map.isMobileMapExpanded.value).toBe(false);
+    map.toggleMobileMapExpanded();
+    expect(map.isMobileMapExpanded.value).toBe(true);
+    map.toggleMobileMapExpanded();
+    expect(map.isMobileMapExpanded.value).toBe(false);
+  });
+
+  it('resets isMobileMapExpanded to false when isDetailsVisible becomes false', async () => {
+    const mapEl = ref<HTMLDivElement | null>(null);
+    const polaroidCardEl = ref<HTMLDivElement | null>(null);
+    const modelValue = ref(null);
+    const isDetailsVisible = ref(true);
+    const hasMediaSlot = ref(false);
+    const onManualCoordsSet = vi.fn();
+
+    const map = useLocationPickerMap({
+      mapEl,
+      polaroidCardEl,
+      modelValue,
+      isDetailsVisible,
+      hasMediaSlot,
+      onManualCoordsSet,
+    });
+
+    map.toggleMobileMapExpanded();
+    expect(map.isMobileMapExpanded.value).toBe(true);
+
+    isDetailsVisible.value = false;
+    await vi.waitFor(() => {
+      expect(map.isMobileMapExpanded.value).toBe(false);
+    });
   });
 });

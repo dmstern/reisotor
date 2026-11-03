@@ -315,7 +315,14 @@ const {
   cycleLocationSearch,
 } = suggestions;
 
-const { locatingSelf, locateError, useOwnLocation, centerOnPoint } = map;
+const {
+  locatingSelf,
+  locateError,
+  isMobileMapExpanded,
+  toggleMobileMapExpanded,
+  useOwnLocation,
+  centerOnPoint,
+} = map;
 
 defineExpose({
   clear,
@@ -325,6 +332,8 @@ defineExpose({
   openManualDetails,
   closeManualDetails,
   isDetailsVisible,
+  isMobileMapExpanded,
+  toggleMobileMapExpanded,
   centerOnPoint,
 });
 </script>
@@ -337,10 +346,9 @@ defineExpose({
       :class="{
         'has-polaroid': isDetailsVisible,
         'has-polaroid-media': isDetailsVisible && Boolean($slots.media),
+        'is-map-expanded': isMobileMapExpanded,
       }"
     >
-      <div ref="mapEl" class="location-picker-map"></div>
-
       <!-- 1. Schwebende Suchleiste direkt über der Karte -->
       <LocationSearchBar
         :model-value="inputText"
@@ -361,7 +369,7 @@ defineExpose({
         @open-manual-details="openManualDetails"
       />
 
-      <!-- 2. Polaroid-Card: schwebt links unterhalb des Suchfelds auf der Karte -->
+      <!-- 2. Polaroid-Card: schwebt links unterhalb des Suchfelds auf der Karte (Desktop) bzw. steht im Fluss (Mobile) -->
       <Transition name="polaroid-slide">
         <LocationPolaroidCard
           v-if="isDetailsVisible"
@@ -414,26 +422,49 @@ defineExpose({
         </LocationPolaroidCard>
       </Transition>
 
-      <!-- Floating Map Hint when no location set -->
-      <div v-if="!modelValue" class="map-tap-hint">
-        <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="13" group="formFields" />
-        <span>Tippe auf die Karte, um den Standort zu setzen</span>
-      </div>
+      <!-- 3. Kartenfläche & Steuerelemente -->
+      <div class="map-canvas-wrap">
+        <div ref="mapEl" class="location-picker-map"></div>
 
-      <!-- Locate Button (bottom-right) -->
-      <IconButton
-        variant="floating"
-        shape="circle"
-        size="lg"
-        class="locate-btn"
-        :class="{ locating: locatingSelf }"
-        :disabled="locatingSelf"
-        title="Meinen aktuellen Standort verwenden"
-        aria-label="Meinen aktuellen Standort verwenden"
-        :icon="OWN_LOCATION_ICON"
-        type="button"
-        @click="useOwnLocation"
-      />
+        <!-- Floating Map Hint when no location set -->
+        <div v-if="!modelValue && (!isDetailsVisible || isMobileMapExpanded)" class="map-tap-hint">
+          <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="13" group="formFields" />
+          <span>Tippe auf die Karte, um den Standort zu setzen</span>
+        </div>
+
+        <!-- Mobile Expand / Collapse Button -->
+        <button
+          v-if="isDetailsVisible"
+          type="button"
+          class="mobile-map-expand-btn"
+          :class="{ 'is-expanded': isMobileMapExpanded }"
+          :aria-expanded="isMobileMapExpanded"
+          data-testid="mobile-map-expand-btn"
+          @click.stop="toggleMobileMapExpanded"
+        >
+          <AppIcon
+            :icon="isMobileMapExpanded ? ACTION_ICONS.done : ACTION_ICONS.maximize"
+            :size="13"
+            group="actions"
+          />
+          <span>{{ isMobileMapExpanded ? 'Fertig' : 'Position anpassen' }}</span>
+        </button>
+
+        <!-- Locate Button (bottom-right) -->
+        <IconButton
+          variant="floating"
+          shape="circle"
+          size="lg"
+          class="locate-btn"
+          :class="{ locating: locatingSelf }"
+          :disabled="locatingSelf"
+          title="Meinen aktuellen Standort verwenden"
+          aria-label="Meinen aktuellen Standort verwenden"
+          :icon="OWN_LOCATION_ICON"
+          type="button"
+          @click="useOwnLocation"
+        />
+      </div>
     </div>
 
     <!-- Kurzlink-Hinweis -->
@@ -506,6 +537,11 @@ defineExpose({
   }
 }
 
+.map-canvas-wrap {
+  position: relative;
+  width: 100%;
+}
+
 .location-picker-map {
   position: relative;
   isolation: isolate;
@@ -531,16 +567,80 @@ defineExpose({
   min-height: 440px;
 }
 
+.mobile-map-expand-btn {
+  display: none;
+}
+
 @container (max-width: 580px) {
-  .has-polaroid .location-picker-map {
-    height: 560px;
-    min-height: 560px;
+  .map-wrap:not(.has-polaroid) .location-picker-map {
+    height: 240px;
+    min-height: 240px;
   }
 
-  .has-polaroid.has-polaroid-media .location-picker-map,
-  .has-polaroid:has(:deep(.polaroid-media)) .location-picker-map {
-    height: 680px;
-    min-height: 680px;
+  .map-wrap.has-polaroid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .map-wrap.has-polaroid :deep(.location-search-floating) {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+  }
+
+  .map-wrap.has-polaroid :deep(.location-picker-input) {
+    box-shadow: none;
+    border: 1px solid var(--color-border);
+  }
+
+  .has-polaroid .location-picker-map {
+    height: 135px;
+    min-height: 135px;
+    touch-action: pan-y;
+    cursor: pointer;
+  }
+
+  .has-polaroid.is-map-expanded .location-picker-map {
+    height: 320px;
+    min-height: 320px;
+    touch-action: auto;
+    cursor: default;
+  }
+
+  .mobile-map-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    z-index: var(--z-fab, 120);
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .mobile-map-expand-btn:hover {
+    background: var(--color-hover);
+  }
+
+  .mobile-map-expand-btn.is-expanded {
+    background: var(--color-primary);
+    color: var(--color-on-primary, #ffffff);
+    border-color: var(--color-primary);
   }
 }
 

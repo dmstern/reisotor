@@ -38,40 +38,73 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   let geoWatchId: number | null = null;
   const locatingSelf = ref(false);
   const locateError = ref(false);
+  const isMobileMapExpanded = ref(false);
   let isInternalCoordChange = false;
 
   function markInternalCoordChange() {
     isInternalCoordChange = true;
   }
 
+  function isMobileLayout(): boolean {
+    const wrapWidth = options.mapEl.value?.parentElement?.clientWidth;
+    if (wrapWidth && wrapWidth > 0) return wrapWidth <= 580;
+    return typeof window !== 'undefined' && window.innerWidth <= 580;
+  }
+
+  function syncMapInteractivity() {
+    if (!map) return;
+    const isMobile = isMobileLayout();
+    const isLockedPreview =
+      isMobile && options.isDetailsVisible.value && !isMobileMapExpanded.value;
+
+    if (isLockedPreview) {
+      map.dragging?.disable?.();
+      map.touchZoom?.disable?.();
+      map.doubleClickZoom?.disable?.();
+      map.scrollWheelZoom?.disable?.();
+      marker?.dragging?.disable?.();
+    } else {
+      map.dragging?.enable?.();
+      map.touchZoom?.enable?.();
+      map.doubleClickZoom?.enable?.();
+      map.scrollWheelZoom?.enable?.();
+      marker?.dragging?.enable?.();
+    }
+  }
+
+  function toggleMobileMapExpanded() {
+    isMobileMapExpanded.value = !isMobileMapExpanded.value;
+    syncMapInteractivity();
+    nextTick(() => {
+      map?.invalidateSize();
+      if (options.modelValue.value) {
+        centerOnPoint([options.modelValue.value.lat, options.modelValue.value.lng]);
+      }
+    });
+  }
+
   function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
     if (!options.isDetailsVisible.value) {
       return { coveredTopPx: 0, coveredLeftPx: 0 };
     }
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 580;
+    const isMobile = isMobileLayout();
+    if (isMobile) {
+      // Auf Mobile ist die Polaroid-Card im gestapelten Layout und überdeckt die Karte nicht mehr
+      return { coveredTopPx: 0, coveredLeftPx: 0 };
+    }
     if (options.polaroidCardEl.value && options.mapEl.value) {
       const cardRect = options.polaroidCardEl.value.getBoundingClientRect();
       const mapRect = options.mapEl.value.getBoundingClientRect();
 
       if (cardRect.height > 0 || cardRect.width > 0) {
-        if (isMobile) {
-          // Auf Mobile überdeckt die Card den oberen Bereich der Karte.
-          // Sichtbar ist der Bereich unterhalb der Card bis zum unteren Kartenrand.
-          const coveredTopPx = Math.max(0, cardRect.bottom - mapRect.top);
-          return { coveredTopPx, coveredLeftPx: 0 };
-        } else {
-          // Auf Desktop überdeckt die Card die linke Seite der Karte.
-          // Sichtbar ist der Bereich rechts von der Card.
-          const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
-          return { coveredTopPx: 0, coveredLeftPx };
-        }
+        // Auf Desktop überdeckt die Card die linke Seite der Karte.
+        // Sichtbar ist der Bereich rechts von der Card.
+        const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
+        return { coveredTopPx: 0, coveredLeftPx };
       }
     }
 
-    // Fallbacks falls noch nicht gerendert oder in Testumgebungen ohne Layout-Geometrie:
-    if (isMobile) {
-      return { coveredTopPx: options.hasMediaSlot.value ? 440 : 240, coveredLeftPx: 0 };
-    }
+    // Desktop-Fallback:
     return { coveredTopPx: 0, coveredLeftPx: 272 };
   }
 
@@ -115,6 +148,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
         const latlng = marker.getLatLng();
         options.onManualCoordsSet({ lat: latlng.lat, lng: latlng.lng });
       });
+      syncMapInteractivity();
     }
   }
 
@@ -215,13 +249,22 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
       }
       renderReferencePoints();
       startOwnLocation();
+      syncMapInteractivity();
 
       map.on('click', (e: L.LeafletMouseEvent) => {
+        const isMobile = isMobileLayout();
+        const isLockedPreview =
+          isMobile && options.isDetailsVisible.value && !isMobileMapExpanded.value;
+        if (isLockedPreview) {
+          toggleMobileMapExpanded();
+          return;
+        }
         options.onManualCoordsSet({ lat: e.latlng.lat, lng: e.latlng.lng });
       });
 
       resizeObserver = new ResizeObserver(() => {
         map?.invalidateSize();
+        syncMapInteractivity();
         if (options.modelValue.value) {
           centerOnPoint([options.modelValue.value.lat, options.modelValue.value.lng]);
         }
@@ -261,6 +304,16 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   }
 
   watch(
+    () => [options.isDetailsVisible.value, isMobileMapExpanded.value],
+    ([detailsVisible]) => {
+      if (!detailsVisible) {
+        isMobileMapExpanded.value = false;
+      }
+      syncMapInteractivity();
+    }
+  );
+
+  watch(
     () => options.proximityBias?.value ?? options.center?.value,
     (c) => {
       if (!map || options.modelValue.value || !c) return;
@@ -271,6 +324,8 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   return {
     locatingSelf,
     locateError,
+    isMobileMapExpanded,
+    toggleMobileMapExpanded,
     markInternalCoordChange,
     centerOnPoint,
     placeMarker,
