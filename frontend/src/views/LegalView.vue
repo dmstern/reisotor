@@ -92,15 +92,26 @@ function goBack() {
 <style scoped>
 .legal-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: linear-gradient(170deg, var(--color-primary-tint), var(--color-bg) 420px);
-  padding: var(--space-4) var(--space-3) var(--space-6);
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px))
+    calc(var(--space-3) + env(safe-area-inset-right, 0px))
+    calc(var(--space-6) + env(safe-area-inset-bottom, 0px))
+    calc(var(--space-3) + env(safe-area-inset-left, 0px));
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  box-sizing: border-box;
 }
 
 @media (min-width: 800px) {
   .legal-page {
-    padding: var(--space-5) var(--space-4) var(--space-6);
+    padding-top: calc(var(--space-5) + env(safe-area-inset-top, 0px));
+    padding-right: calc(var(--space-4) + env(safe-area-inset-right, 0px));
+    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(var(--space-4) + env(safe-area-inset-left, 0px));
   }
 }
 
@@ -112,6 +123,7 @@ function goBack() {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .back-btn {
@@ -122,6 +134,7 @@ function goBack() {
   background: var(--color-surface);
   border-color: var(--color-border);
   box-shadow: var(--shadow-sm);
+  max-width: calc(100% - 48px);
 }
 
 .theme-toggle.icon {
@@ -130,12 +143,14 @@ function goBack() {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 
 .legal-page-main {
   max-width: 860px;
   width: 100%;
   margin: 0 auto;
+  min-width: 0;
 }
 
 .legal-card {
@@ -145,5 +160,7 @@ function goBack() {
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 </style>

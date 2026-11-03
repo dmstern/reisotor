@@ -968,6 +968,9 @@ const isFeedbackActive = computed(() =>
   color: var(--color-text);
   line-height: 1.65;
   overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .legal-tabs {
@@ -981,6 +984,8 @@ const isFeedbackActive = computed(() =>
   padding: var(--space-2) var(--space-6) 0;
   background: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
   border-bottom: 1px solid var(--color-border);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .legal-tabs-list {
@@ -989,7 +994,8 @@ const isFeedbackActive = computed(() =>
   gap: var(--space-1);
   overflow-x: auto;
   scrollbar-width: none;
-  margin-left: calc(-1 * var(--space-3));
+  min-width: 0;
+  max-width: 100%;
 }
 
 .legal-tabs-list::-webkit-scrollbar {
@@ -1020,6 +1026,7 @@ const isFeedbackActive = computed(() =>
   corner-shape: squircle;
   position: relative;
   white-space: nowrap;
+  flex-shrink: 0;
   transition:
     color var(--transition-fast, 0.15s ease),
     background-color var(--transition-fast, 0.15s ease);
@@ -1064,11 +1071,7 @@ const isFeedbackActive = computed(() =>
 
 @media (max-width: 600px) {
   .legal-tabs {
-    padding: var(--space-2) var(--space-3) 0;
-  }
-
-  .legal-tabs-list {
-    margin-left: calc(-1 * var(--space-2));
+    padding: var(--space-2) var(--space-2) 0;
   }
 
   .legal-tab-btn {
@@ -1194,6 +1197,8 @@ const isFeedbackActive = computed(() =>
 
 .multiline-text {
   white-space: pre-line;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .legal-muted,
@@ -1268,7 +1273,8 @@ const isFeedbackActive = computed(() =>
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   color: var(--color-text);
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .legal-disclaimer-note {
@@ -1291,6 +1297,8 @@ const isFeedbackActive = computed(() =>
   text-decoration-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
   text-underline-offset: 3px;
   text-decoration-thickness: 1.5px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   transition:
     color var(--transition-fast, 0.15s ease),
     text-decoration-color var(--transition-fast, 0.15s ease);
