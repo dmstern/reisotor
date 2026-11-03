@@ -127,11 +127,33 @@ describe('E-Mail-Präferenzen filtern den Versand pro Domäne', () => {
 
     await vi.waitFor(() => expect(sendActivityEmailSpy).toHaveBeenCalledTimes(1));
     const [call] = sendActivityEmailSpy.mock.calls as [
-      { to: string; username: string; tripName: string }[],
+      { to: string; username: string; tripName: string; title: string }[],
     ];
     expect(call[0].to).toBe(`${memberUsername}@example.com`);
     expect(call[0].username).toBe(memberUsername);
     expect(call[0].tripName).toBe('E-Mail-Test-Trip');
+    expect(call[0].title).toBe('Kalender');
+  });
+
+  it('sendet Versions-Update-Mails an Nutzer mit aktivierter version-Präferenz', async () => {
+    await app.inject({
+      method: 'PUT',
+      url: '/api/notifications/email-preferences',
+      headers: { cookie: memberCookie },
+      payload: { version: true },
+    });
+
+    sendActivityEmailSpy.mockClear();
+    const { sendVersionNotification } = await import('../../src/push.js');
+    await sendVersionNotification('3.0.0', 'Neue E-Mail-Benachrichtigungen');
+
+    expect(sendActivityEmailSpy).toHaveBeenCalledTimes(1);
+    const [call] = sendActivityEmailSpy.mock.calls as [
+      { to: string; title: string; body: string }[],
+    ];
+    expect(call[0].to).toBe(`${memberUsername}@example.com`);
+    expect(call[0].title).toContain('3.0.0');
+    expect(call[0].body).toBe('Neue E-Mail-Benachrichtigungen');
   });
 
   it('lehnt ungültige Domain-Keys mit 400 ab', async () => {

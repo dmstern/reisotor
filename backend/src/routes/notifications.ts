@@ -123,6 +123,4 @@ export const notificationsRoutes: FastifyPluginAsync = async (app) => {
     '/notifications/email-preferences',
     putEmailPrefsHandler
   );
-  app.get('/email/preferences', getEmailPrefsHandler);
-  app.put<{ Body: Record<string, boolean> }>('/email/preferences', putEmailPrefsHandler);
 };

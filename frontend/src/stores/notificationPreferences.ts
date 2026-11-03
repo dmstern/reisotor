@@ -15,7 +15,6 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
   const preferences = ref<NotificationPreferences | null>(null);
   const emailPreferences = ref<Record<string, boolean> | null>(null);
   const loading = ref(false);
-  const emailLoading = ref(false);
   const error = ref('');
   const emailError = ref('');
 
@@ -26,6 +25,7 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
   async function load() {
     loading.value = true;
     error.value = '';
+    emailError.value = '';
     try {
       const [pushPrefs, mailPrefs] = await Promise.all([
         api.get<NotificationPreferences>('/push/preferences'),
@@ -37,21 +37,6 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
       error.value = err instanceof Error ? err.message : 'Präferenzen konnten nicht geladen werden';
     } finally {
       loading.value = false;
-    }
-  }
-
-  async function loadEmail() {
-    emailLoading.value = true;
-    emailError.value = '';
-    try {
-      emailPreferences.value = await api.get<Record<string, boolean>>(
-        '/notifications/email-preferences'
-      );
-    } catch (err) {
-      emailError.value =
-        err instanceof Error ? err.message : 'E-Mail-Präferenzen konnten nicht geladen werden';
-    } finally {
-      emailLoading.value = false;
     }
   }
 
@@ -98,12 +83,10 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
     preferences,
     emailPreferences,
     loading,
-    emailLoading,
     error,
     emailError,
     currentLevel,
     load,
-    loadEmail,
     update,
     updateEmail,
     applyLevel,

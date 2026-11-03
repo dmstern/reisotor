@@ -60,7 +60,7 @@ export async function checkDepartureReminders() {
     await sendEmailToTripMembers(
       trip.id,
       {
-        title: `✈️ ${trip.name}`,
+        title: '✈️ Abreise-Erinnerung',
         body: `Nur noch ${label} bis zur Abreise!`,
         tripId: trip.id,
         tripName: trip.name,

@@ -67,4 +67,72 @@ describe('SegmentedToggle', () => {
     const thumb = container.querySelector('.segmented-thumb');
     expect(thumb).toBeNull();
   });
+
+  it('positioniert die Pille bei gemessener Button-Größe exakt ohne doppelten Padding-Versatz', async () => {
+    const state = { val: 'off' };
+    app = createApp(
+      defineComponent({
+        render: () =>
+          h(SegmentedToggle, {
+            modelValue: state.val,
+            options,
+            'onUpdate:modelValue': (v: string) => {
+              state.val = v;
+            },
+          }),
+      })
+    );
+    app.mount(container);
+    await nextTick();
+
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.segmented-option');
+    Object.defineProperty(buttons[2], 'offsetLeft', { value: 124, configurable: true });
+    Object.defineProperty(buttons[2], 'offsetTop', { value: 4, configurable: true });
+    Object.defineProperty(buttons[2], 'offsetWidth', { value: 96, configurable: true });
+    Object.defineProperty(buttons[2], 'offsetHeight', { value: 28, configurable: true });
+
+    buttons[2].click();
+    app.unmount();
+
+    // Re-mount with mocked HTMLElement prototype metrics to verify initial mount measurement
+    const origOffsetLeft = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetLeft');
+    const origOffsetTop = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetTop');
+    const origOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const origOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+
+    Object.defineProperty(HTMLElement.prototype, 'offsetLeft', {
+      get: () => 124,
+      configurable: true,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', { get: () => 4, configurable: true });
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      get: () => 96,
+      configurable: true,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      get: () => 28,
+      configurable: true,
+    });
+
+    try {
+      mountComponent('balanced');
+      await nextTick();
+
+      const thumb = container.querySelector('.segmented-thumb') as HTMLElement;
+      expect(thumb).not.toBeNull();
+      expect(thumb.style.top).toBe('0px');
+      expect(thumb.style.left).toBe('0px');
+      expect(thumb.style.transform).toBe('translate(124px, 4px)');
+      expect(thumb.style.width).toBe('96px');
+      expect(thumb.style.height).toBe('28px');
+    } finally {
+      if (origOffsetLeft)
+        Object.defineProperty(HTMLElement.prototype, 'offsetLeft', origOffsetLeft);
+      if (origOffsetTop) Object.defineProperty(HTMLElement.prototype, 'offsetTop', origOffsetTop);
+      if (origOffsetWidth)
+        Object.defineProperty(HTMLElement.prototype, 'offsetWidth', origOffsetWidth);
+      if (origOffsetHeight)
+        Object.defineProperty(HTMLElement.prototype, 'offsetHeight', origOffsetHeight);
+    }
+  });
 });

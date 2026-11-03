@@ -89,17 +89,25 @@ export function usePushSettings() {
     await notificationPrefs.update({ activity_updates: isAll });
   }
 
+  const hasAnyEmailPreference = computed(() =>
+    NOTIFICATION_DOMAINS.some((d) => notificationPrefs.emailPreferences?.[d] === true)
+  );
+
   const isPushDefault = computed(() => {
-    if (!pushEnabled.value) return true;
-    return (
-      pushLevelValue.value === 'balanced' &&
-      (notificationPrefs.preferences?.activity_updates ?? true)
-    );
+    const pushDefault =
+      !pushEnabled.value ||
+      (pushLevelValue.value === 'balanced' &&
+        (notificationPrefs.preferences?.activity_updates ?? true));
+    return pushDefault && !hasAnyEmailPreference.value;
   });
 
   async function resetPush() {
     if (pushEnabled.value) {
       await selectPushLevel('balanced');
+    }
+    if (hasAnyEmailPreference.value) {
+      const resetEmail = Object.fromEntries(NOTIFICATION_DOMAINS.map((d) => [d, false]));
+      await notificationPrefs.updateEmail(resetEmail);
     }
   }
 

@@ -109,6 +109,9 @@ watch(
       :style="
         thumbWidth > 0
           ? {
+              top: '0px',
+              left: '0px',
+              bottom: 'auto',
               transform: `translate(${thumbLeft}px, ${thumbTop}px)`,
               width: `${thumbWidth}px`,
               height: `${thumbHeight}px`,

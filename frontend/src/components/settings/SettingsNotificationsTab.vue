@@ -92,10 +92,10 @@ onMounted(() => {
       <SettingsCardHeader
         title="Benachrichtigungen"
         :icon="BELL_ICON"
-        :show-reset="pushSupported"
+        show-reset
         :is-default="isPushDefault"
         :reset-title="
-          isPushDefault ? 'Bereits auf Standard-Push-Stufe' : 'Auf Standard zurücksetzen'
+          isPushDefault ? 'Bereits auf Standard-Benachrichtigungen' : 'Auf Standard zurücksetzen'
         "
         @reset="resetPush"
       />
@@ -206,8 +206,11 @@ onMounted(() => {
         </div>
       </CollapsibleFieldset>
 
-      <p v-if="pushError || notificationPrefs.error" class="hint error">
-        {{ pushError || notificationPrefs.error }}
+      <p
+        v-if="pushError || notificationPrefs.error || notificationPrefs.emailError"
+        class="hint error"
+      >
+        {{ pushError || notificationPrefs.error || notificationPrefs.emailError }}
       </p>
     </Card>
   </div>
