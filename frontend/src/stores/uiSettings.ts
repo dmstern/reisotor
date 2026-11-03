@@ -270,16 +270,28 @@ export function applyGlassStyle(style: GlassStyle, opacity: number, blur: number
 
 export function applyPrimaryColor(colorHex: string) {
   if (typeof document === 'undefined') return;
+  const isValid = /^#[0-9a-fA-F]{6}$/.test(colorHex);
+  const effectiveColor = isValid ? colorHex : DEFAULT_PRIMARY_COLOR;
+
   // Wenn die Standard-Farbe verwendet wird, inline --color-primary entfernen, damit
   // die CSS-Klassen für Light- und Dark-Theme (--color-primary in style.css) greifen
   // und im Dark Mode die aufgehellte, kontrastreiche Brand-Farbe verwendet wird.
-  if (
-    /^#[0-9a-fA-F]{6}$/.test(colorHex) &&
-    colorHex.toLowerCase() !== DEFAULT_PRIMARY_COLOR.toLowerCase()
-  ) {
+  if (isValid && colorHex.toLowerCase() !== DEFAULT_PRIMARY_COLOR.toLowerCase()) {
     document.documentElement.style.setProperty('--color-primary', colorHex);
   } else {
     document.documentElement.style.removeProperty('--color-primary');
+  }
+
+  // <meta name="theme-color"> aktualisieren, damit auf Android in der PWA Status- und
+  // Navigationsleiste die gewählte Akzentfarbe (z. B. Türkis) widerspiegeln (#668).
+  const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
+  if (metaThemeColors.length > 0) {
+    metaThemeColors.forEach((meta) => meta.setAttribute('content', effectiveColor));
+  } else {
+    const meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    meta.setAttribute('content', effectiveColor);
+    (document.head || document.documentElement).appendChild(meta);
   }
 }
 
