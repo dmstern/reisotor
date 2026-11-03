@@ -155,7 +155,6 @@ function selectAndClose(id: number) {
       type="button"
       class="switcher-btn"
       title="Urlaub wechseln"
-      aria-label="Urlaub wechseln"
       :aria-expanded="open"
       aria-haspopup="true"
       @click="toggle"
