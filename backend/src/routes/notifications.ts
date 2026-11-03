@@ -1,7 +1,14 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
-import { DOMAIN_LABEL, ACTION_LABEL } from '../push.js';
+import {
+  DOMAIN_LABEL,
+  ACTION_LABEL,
+  getEmailPreferences,
+  setEmailPreferences,
+  PUSH_PREFERENCE_DOMAINS,
+  type PushPreferenceDomain,
+} from '../push.js';
 
 interface NotificationRow {
   id: number;
@@ -88,4 +95,32 @@ export const notificationsRoutes: FastifyPluginAsync = async (app) => {
     ).run(req.session.userId, now, trip_id, req.session.userId);
     return reply.code(204).send();
   });
+
+  // E-Mail-Benachrichtigungs-Präferenzen (pro Nutzer:in)
+  const getEmailPrefsHandler = async (req: { session: { userId?: number } }) => {
+    return getEmailPreferences(req.session.userId!);
+  };
+
+  const putEmailPrefsHandler = async (
+    req: { session: { userId?: number }; body?: Record<string, boolean> },
+    reply: { code: (c: number) => { send: (o: unknown) => unknown } }
+  ) => {
+    const body = req.body ?? {};
+    const knownDomains = new Set<string>(PUSH_PREFERENCE_DOMAINS);
+    const prefs: Partial<Record<PushPreferenceDomain, boolean>> = {};
+    for (const [domain, enabled] of Object.entries(body)) {
+      if (!knownDomains.has(domain) || typeof enabled !== 'boolean') {
+        return reply.code(400).send({ error: `Ungültige Präferenz: ${domain}` });
+      }
+      prefs[domain as PushPreferenceDomain] = enabled;
+    }
+    setEmailPreferences(req.session.userId!, prefs);
+    return getEmailPreferences(req.session.userId!);
+  };
+
+  app.get('/notifications/email-preferences', getEmailPrefsHandler);
+  app.put<{ Body: Record<string, boolean> }>(
+    '/notifications/email-preferences',
+    putEmailPrefsHandler
+  );
 };

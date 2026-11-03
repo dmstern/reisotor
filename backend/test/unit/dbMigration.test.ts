@@ -806,4 +806,23 @@ describe('todo_items.period Migration & Persistenz', () => {
     expect(row.last_login_at).toBeNull();
     expect(row.is_locked).toBe(0);
   });
+
+  it('erstellt email_preferences Tabelle additiv auf einer legacy DB', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-email-prefs-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL);
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='email_preferences'")
+      .all() as { name: string }[];
+    expect(tables.length).toBe(1);
+  });
 });

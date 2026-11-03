@@ -283,6 +283,82 @@ dein Reisotor-Server`;
   }
 }
 
+export async function sendActivityEmail(params: {
+  to: string;
+  username: string;
+  tripId?: number;
+  tripName?: string;
+  title: string;
+  body: string;
+  actionUrl?: string;
+  actionLabel?: string;
+}): Promise<SendMailResult> {
+  const baseUrl = getAppUrl();
+  const targetUrl =
+    params.actionUrl ?? (params.tripId ? `${baseUrl}/trip/${params.tripId}` : baseUrl);
+  const actionLabel = params.actionLabel ?? (params.tripId ? 'Urlaub aufrufen' : 'Reisotor öffnen');
+  const transporter = getTransporter();
+  if (!transporter) {
+    return { success: true, actionUrl: targetUrl, simulated: true };
+  }
+
+  const from = getFromAddress();
+  const hasTripInTitle = params.tripName ? params.title.includes(params.tripName) : false;
+  const subject =
+    params.tripName && !hasTripInTitle
+      ? `[Reisotor] ${params.tripName} – ${params.title}`
+      : `[Reisotor] ${params.title}`;
+  const endsWithPunctuation = /[.!?]$/.test(params.body.trim());
+  const textSentence = params.tripName
+    ? endsWithPunctuation
+      ? `${params.body} (Urlaub „${params.tripName}“)`
+      : `${params.body} im Urlaub "${params.tripName}".`
+    : endsWithPunctuation
+      ? params.body
+      : `${params.body}.`;
+  const htmlSentence = params.tripName
+    ? endsWithPunctuation
+      ? `${escapeHtml(params.body)} (Urlaub <strong>${escapeHtml(params.tripName)}</strong>)`
+      : `${escapeHtml(params.body)} im Urlaub <strong>${escapeHtml(params.tripName)}</strong>.`
+    : endsWithPunctuation
+      ? escapeHtml(params.body)
+      : `${escapeHtml(params.body)}.`;
+
+  const text = `Hallo ${params.username},
+
+${textSentence}
+
+Hier ansehen: ${targetUrl}
+
+Viele Grüße,
+dein Reisotor-Team`;
+
+  const html = buildEmailHtml({
+    title: params.title,
+    greeting: `Hallo <strong>${escapeHtml(params.username)}</strong>,`,
+    messageHtml: `<p style="margin: 0 0 16px 0; font-size: 15px; color: #2b2a28;">${htmlSentence}</p>`,
+    actionUrl: targetUrl,
+    actionLabel,
+    hintHtml:
+      'Du erhältst diese E-Mail, da du in deinen Reisotor-Einstellungen E-Mail-Benachrichtigungen für diesen Bereich aktiviert hast.',
+  });
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: params.to,
+      subject,
+      text,
+      html,
+    });
+    return { success: true, actionUrl: targetUrl };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[Mailer] Fehler beim Versenden der Aktivitäts-Mail an ${params.to}:`, errorMsg);
+    return { success: false, actionUrl: targetUrl, error: errorMsg };
+  }
+}
+
 export async function sendAdminContactNotificationEmail(params: {
   to: string;
   adminUsername: string;

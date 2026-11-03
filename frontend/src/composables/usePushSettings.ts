@@ -73,6 +73,13 @@ export function usePushSettings() {
     await notificationPrefs.update({ [domain]: enabled });
   }
 
+  async function setEmailDomainPreference(
+    domain: (typeof NOTIFICATION_DOMAINS)[number],
+    enabled: boolean
+  ) {
+    await notificationPrefs.updateEmail({ [domain]: enabled });
+  }
+
   const pushScopeValue = computed(() =>
     notificationPrefs.preferences?.activity_updates === false ? 'created_only' : 'all'
   );
@@ -82,28 +89,37 @@ export function usePushSettings() {
     await notificationPrefs.update({ activity_updates: isAll });
   }
 
+  const hasAnyEmailPreference = computed(() =>
+    NOTIFICATION_DOMAINS.some((d) => notificationPrefs.emailPreferences?.[d] === true)
+  );
+
   const isPushDefault = computed(() => {
-    if (!pushEnabled.value) return true;
-    return (
-      pushLevelValue.value === 'balanced' &&
-      (notificationPrefs.preferences?.activity_updates ?? true)
-    );
+    const pushDefault =
+      !pushEnabled.value ||
+      (pushLevelValue.value === 'balanced' &&
+        (notificationPrefs.preferences?.activity_updates ?? true));
+    return pushDefault && !hasAnyEmailPreference.value;
   });
 
   async function resetPush() {
     if (pushEnabled.value) {
       await selectPushLevel('balanced');
     }
+    if (hasAnyEmailPreference.value) {
+      const resetEmail = Object.fromEntries(NOTIFICATION_DOMAINS.map((d) => [d, false]));
+      await notificationPrefs.updateEmail(resetEmail);
+    }
   }
 
   async function initPushSubscription() {
-    if (!pushSupported) return;
     try {
-      const sub = await getExistingSubscription();
-      pushEnabled.value = !!sub;
-      if (pushEnabled.value) {
-        await notificationPrefs.load();
+      if (pushSupported) {
+        const sub = await getExistingSubscription();
+        pushEnabled.value = !!sub;
+      } else {
+        pushEnabled.value = false;
       }
+      await notificationPrefs.load();
     } catch {
       // Ignoriere Fehler bei der initialen Abfrage
     }
@@ -124,6 +140,7 @@ export function usePushSettings() {
     selectPushLevel,
     setPushScope,
     setDomainPreference,
+    setEmailDomainPreference,
     resetPush,
     initPushSubscription,
   };

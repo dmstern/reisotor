@@ -584,6 +584,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       }
       safeDelete('push_subscriptions', 'user_id');
       safeDelete('push_preferences', 'user_id');
+      safeDelete('email_preferences', 'user_id');
       safeDelete('drafts', 'user_id');
       safeDelete('location_tracks', 'user_id');
       safeDelete('user_icon_settings', 'user_id');

@@ -2,6 +2,7 @@ import webpush from 'web-push';
 import { db } from './db/index.js';
 import { getEffectiveSetting, getInstanceSetting, setInstanceSetting } from './instanceSettings.js';
 import { readBuildInfo } from './routes/buildInfo.js';
+import { getAppUrl, isEmailConfigured, sendActivityEmail } from './utils/mailer.js';
 
 export function ensureVapidConfigured(): boolean {
   const pub = getEffectiveSetting('vapid_public_key', 'VAPID_PUBLIC_KEY').trim();
@@ -101,6 +102,33 @@ export function setPushPreferences(
 ) {
   const stmt = db.prepare(
     `INSERT INTO push_preferences (user_id, domain, enabled) VALUES (?, ?, ?)
+     ON CONFLICT(user_id, domain) DO UPDATE SET enabled = excluded.enabled`
+  );
+  for (const [domain, enabled] of Object.entries(prefs)) {
+    if (enabled === undefined) continue;
+    stmt.run(userId, domain, enabled ? 1 : 0);
+  }
+}
+
+/** Liefert die vollständige E-Mail-Präferenz-Map für alle bekannten Domänen.
+ *  Fehlende Zeilen bedeuten `false` (Opt-in-Prinzip für E-Mails). */
+export function getEmailPreferences(userId: number): Record<PushPreferenceDomain, boolean> {
+  const rows = db
+    .prepare('SELECT domain, enabled FROM email_preferences WHERE user_id = ?')
+    .all(userId) as PushPreferenceRow[];
+  const byDomain = new Map(rows.map((r) => [r.domain, !!r.enabled]));
+  return Object.fromEntries(
+    PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? false])
+  ) as Record<PushPreferenceDomain, boolean>;
+}
+
+/** Upsert je übergebenem Domain-Key für E-Mail-Präferenzen. */
+export function setEmailPreferences(
+  userId: number,
+  prefs: Partial<Record<PushPreferenceDomain, boolean>>
+) {
+  const stmt = db.prepare(
+    `INSERT INTO email_preferences (user_id, domain, enabled) VALUES (?, ?, ?)
      ON CONFLICT(user_id, domain) DO UPDATE SET enabled = excluded.enabled`
   );
   for (const [domain, enabled] of Object.entries(prefs)) {
@@ -276,7 +304,7 @@ export async function sendPushToAllSubscribers(
   );
 }
 
-/** Versendet eine Push-Benachrichtigung über ein neues App-Release an alle interessierten Nutzer:innen. */
+/** Versendet eine Benachrichtigung über ein neues App-Release an alle interessierten Nutzer:innen. */
 export async function sendVersionNotification(version: string, detail?: string) {
   const payload = {
     title: `Reisotor · Version v${version}`,
@@ -284,6 +312,15 @@ export async function sendVersionNotification(version: string, detail?: string) 
     url: '/settings?tab=about',
   };
   await sendPushToAllSubscribers(payload, 'version');
+  await sendEmailToAllSubscribers(
+    {
+      title: payload.title,
+      body: payload.body,
+      actionUrl: `${getAppUrl()}/settings?tab=about`,
+      actionLabel: 'Versionshinweise ansehen',
+    },
+    'version'
+  );
 }
 
 /** Versendet eine Push-Benachrichtigung an alle Administrator:innen (z. B. bei neuen Kontaktanfragen). */
@@ -334,6 +371,126 @@ export async function checkVersionNotification() {
   }
 }
 
+/** Versendet Aktivitäts-E-Mails an Mitglieder des Urlaubs, die E-Mail-Benachrichtigungen für die
+ *  entsprechende Domäne aktiviert haben (Opt-in, gefiltert nach email_preferences). */
+export async function sendEmailToTripMembers(
+  tripId: number,
+  params: { title: string; body: string; tripId: number; tripName: string },
+  domain: PushPreferenceDomain,
+  excludeUserId?: number,
+  isUpdate = false
+) {
+  if (!isEmailConfigured()) return;
+
+  const users = (
+    isUpdate
+      ? excludeUserId != null
+        ? db
+            .prepare(
+              `SELECT users.id, users.email, users.username FROM users
+               JOIN trip_members ON trip_members.user_id = users.id
+               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
+               LEFT JOIN email_preferences pref_updates ON pref_updates.user_id = users.id
+                 AND pref_updates.domain = 'activity_updates'
+               WHERE trip_members.trip_id = ? AND users.id != ?
+                 AND users.email IS NOT NULL AND users.email != ''
+                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+            )
+            .all(domain, tripId, excludeUserId)
+        : db
+            .prepare(
+              `SELECT users.id, users.email, users.username FROM users
+               JOIN trip_members ON trip_members.user_id = users.id
+               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
+               LEFT JOIN email_preferences pref_updates ON pref_updates.user_id = users.id
+                 AND pref_updates.domain = 'activity_updates'
+               WHERE trip_members.trip_id = ?
+                 AND users.email IS NOT NULL AND users.email != ''
+                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+            )
+            .all(domain, tripId)
+      : excludeUserId != null
+        ? db
+            .prepare(
+              `SELECT users.id, users.email, users.username FROM users
+               JOIN trip_members ON trip_members.user_id = users.id
+               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
+               WHERE trip_members.trip_id = ? AND users.id != ?
+                 AND users.email IS NOT NULL AND users.email != ''`
+            )
+            .all(domain, tripId, excludeUserId)
+        : db
+            .prepare(
+              `SELECT users.id, users.email, users.username FROM users
+               JOIN trip_members ON trip_members.user_id = users.id
+               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
+               WHERE trip_members.trip_id = ?
+                 AND users.email IS NOT NULL AND users.email != ''`
+            )
+            .all(domain, tripId)
+  ) as { id: number; email: string; username: string }[];
+
+  if (!users.length) return;
+
+  await Promise.all(
+    users.map(async (u) => {
+      try {
+        await sendActivityEmail({
+          to: u.email,
+          username: u.username,
+          tripId,
+          tripName: params.tripName,
+          title: params.title,
+          body: params.body,
+        });
+      } catch (err) {
+        console.warn(`[Mailer] Activity-Mail an ${u.email} fehlgeschlagen:`, err);
+      }
+    })
+  );
+}
+
+/** Versendet eine E-Mail an alle Nutzer:innen, die eine gegebene Domäne (z. B. 'version')
+ *  in ihren E-Mail-Präferenzen aktiviert haben (Opt-in). */
+export async function sendEmailToAllSubscribers(
+  params: { title: string; body: string; actionUrl?: string; actionLabel?: string },
+  domain: PushPreferenceDomain
+) {
+  if (!isEmailConfigured()) return;
+
+  const users = db
+    .prepare(
+      `SELECT users.id, users.email, users.username FROM users
+       JOIN email_preferences ON email_preferences.user_id = users.id
+         AND email_preferences.domain = ? AND email_preferences.enabled = 1
+       WHERE users.email IS NOT NULL AND users.email != ''`
+    )
+    .all(domain) as { id: number; email: string; username: string }[];
+
+  if (!users.length) return;
+
+  await Promise.all(
+    users.map(async (u) => {
+      try {
+        await sendActivityEmail({
+          to: u.email,
+          username: u.username,
+          title: params.title,
+          body: params.body,
+          actionUrl: params.actionUrl,
+          actionLabel: params.actionLabel,
+        });
+      } catch (err) {
+        console.warn(`[Mailer] Benachrichtigungs-Mail an ${u.email} fehlgeschlagen:`, err);
+      }
+    })
+  );
+}
+
 /** Best-effort – wird von activity.ts's recordActivity() nach jeder Mutation angestoßen, blockiert
  *  die auslösende Route nie (siehe dortiger .catch()). */
 export async function notifyTripMembers(
@@ -341,12 +498,20 @@ export async function notifyTripMembers(
   excludeUserId: number,
   info: ActivityPushInfo
 ) {
-  const title = `${DOMAIN_LABEL[info.domain] ?? info.domain} · ${info.tripName}`;
+  const domainLabel = DOMAIN_LABEL[info.domain] ?? info.domain;
+  const pushTitle = `${domainLabel} · ${info.tripName}`;
   const body = `${info.actorUsername} hat ${ACTION_LABEL[info.action] ?? 'etwas geändert'}`;
   const isUpdate = !NEW_ELEMENT_ACTIONS.has(info.action);
   await sendPushToTripMembers(
     tripId,
-    { title, body, tripId },
+    { title: pushTitle, body, tripId },
+    info.domain as PushPreferenceDomain,
+    excludeUserId,
+    isUpdate
+  );
+  await sendEmailToTripMembers(
+    tripId,
+    { title: domainLabel, body, tripId, tripName: info.tripName },
     info.domain as PushPreferenceDomain,
     excludeUserId,
     isUpdate
