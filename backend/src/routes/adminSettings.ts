@@ -11,6 +11,7 @@ import { resetTransporter, isEmailConfigured, sendTestEmail } from '../utils/mai
 import { ensureVapidConfigured, sendVersionNotification } from '../push.js';
 import { readBuildInfo } from './buildInfo.js';
 import { EMAIL_PATTERN } from './auth.js';
+import { broadcastToAdmins } from '../activity.js';
 
 export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
   // Alle Einstellungen für Admins abrufen
@@ -204,6 +205,16 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         status,
         Number(req.params.id)
       );
+
+      const unreadCount = (
+        db
+          .prepare("SELECT COUNT(*) as count FROM admin_messages WHERE status = 'unread'")
+          .get() as {
+          count: number;
+        }
+      ).count;
+      broadcastToAdmins('admin_message', { unreadCount });
+
       return { success: true };
     }
   );
@@ -216,6 +227,14 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         .send({ error: 'Nur Administrator:innen dürfen Admin-Nachrichten löschen' });
     }
     db.prepare('DELETE FROM admin_messages WHERE id = ?').run(Number(req.params.id));
+
+    const unreadCount = (
+      db.prepare("SELECT COUNT(*) as count FROM admin_messages WHERE status = 'unread'").get() as {
+        count: number;
+      }
+    ).count;
+    broadcastToAdmins('admin_message', { unreadCount });
+
     return reply.code(204).send();
   });
 };

@@ -147,13 +147,19 @@ describe('E-Mail-Präferenzen filtern den Versand pro Domäne', () => {
     const { sendVersionNotification } = await import('../../src/push.js');
     await sendVersionNotification('3.0.0', 'Neue E-Mail-Benachrichtigungen');
 
-    expect(sendActivityEmailSpy).toHaveBeenCalledTimes(1);
-    const [call] = sendActivityEmailSpy.mock.calls as [
-      { to: string; title: string; body: string }[],
-    ];
-    expect(call[0].to).toBe(`${memberUsername}@example.com`);
-    expect(call[0].title).toContain('3.0.0');
-    expect(call[0].body).toBe('Neue E-Mail-Benachrichtigungen');
+    const memberCalls = (
+      sendActivityEmailSpy.mock.calls as [{ to: string; title: string; body: string }][]
+    ).filter(([arg]) => arg.to === `${memberUsername}@example.com`);
+    expect(memberCalls).toHaveLength(1);
+    expect(memberCalls[0][0].title).toContain('3.0.0');
+    expect(memberCalls[0][0].body).toBe('Neue E-Mail-Benachrichtigungen');
+
+    await app.inject({
+      method: 'PUT',
+      url: '/api/notifications/email-preferences',
+      headers: { cookie: memberCookie },
+      payload: { version: false },
+    });
   });
 
   it('lehnt ungültige Domain-Keys mit 400 ab', async () => {

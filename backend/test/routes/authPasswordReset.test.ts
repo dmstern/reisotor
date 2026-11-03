@@ -344,5 +344,69 @@ describe('Auth Password Reset & Email Verification routes', () => {
       expect(saved?.message).toContain('keine Bestätigungsmail');
       expect(saved?.status).toBe('unread');
     });
+
+    it('rejects contact-admin when contactAdminEnabled is set to false', async () => {
+      const { setInstanceSetting } = await import('../../src/instanceSettings.js');
+      setInstanceSetting('contact_admin_enabled', 'false');
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        payload: {
+          message: 'Bitte helft mir beim Login, danke!',
+        },
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error).toContain('deaktiviert');
+
+      // Reset
+      setInstanceSetting('contact_admin_enabled', 'true');
+    });
+
+    it('enforces rate limit of 3 requests per hour across IP and cookies', async () => {
+      const ip = '192.168.100.99';
+      // 1st request
+      const res1 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        remoteAddress: ip,
+        payload: { message: 'Nachricht Nummer eins' },
+      });
+      expect(res1.statusCode).toBe(200);
+      const cookieHeader = res1.cookies.find((c) => c.name === 'contact_rate_limit');
+      expect(cookieHeader).toBeDefined();
+      const cookieVal = cookieHeader!.value;
+
+      // 2nd request
+      const res2 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        remoteAddress: ip,
+        cookies: { contact_rate_limit: cookieVal },
+        payload: { message: 'Nachricht Nummer zwei' },
+      });
+      expect(res2.statusCode).toBe(200);
+
+      // 3rd request
+      const res3 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        remoteAddress: ip,
+        cookies: { contact_rate_limit: cookieVal },
+        payload: { message: 'Nachricht Nummer drei' },
+      });
+      expect(res3.statusCode).toBe(200);
+
+      // 4th request exceeds rate limit even with a different IP if the cookie is reused
+      const res4 = await app.inject({
+        method: 'POST',
+        url: '/api/auth/contact-admin',
+        remoteAddress: '192.168.200.1',
+        cookies: { contact_rate_limit: cookieVal },
+        payload: { message: 'Nachricht Nummer vier' },
+      });
+      expect(res4.statusCode).toBe(429);
+      expect(res4.json().error).toContain('maximal 3 Nachrichten');
+    });
   });
 });

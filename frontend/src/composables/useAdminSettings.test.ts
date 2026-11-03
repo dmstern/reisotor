@@ -13,7 +13,11 @@ vi.mock('../api/client', () => ({
 
 describe('useAdminSettings', () => {
   const mockSettings: AdminSettings = {
-    registration: { registrationMode: 'restricted', requireEmailVerification: true },
+    registration: {
+      registrationMode: 'restricted',
+      requireEmailVerification: true,
+      contactAdminEnabled: true,
+    },
     legal: {
       operatorName: 'Muster Org',
       operatorAddress: 'Musterstr. 1',

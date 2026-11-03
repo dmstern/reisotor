@@ -3,6 +3,7 @@ import { reactive, ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import { useTripStore } from './trip';
 import { useAuthStore } from './auth';
+import { useAdminMessagesStore } from './adminMessages';
 
 // Domänen-Schlüssel folgen den Nav-Items (NavBar.vue) bzw. den zugehörigen Backend-Routen –
 // dieselben Schlüssel wie backend/src/activity.ts's recordActivity()-Aufrufe. 'members' (Einladen/
@@ -162,6 +163,21 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
       try {
         const data = JSON.parse((event as MessageEvent).data) as { online: number[] };
         onlineUserIds.value = data.online.filter((id) => id !== auth.user?.id);
+      } catch {
+        // ignore
+      }
+    });
+    source.addEventListener('admin_message', (e) => {
+      try {
+        const adminMessages = useAdminMessagesStore();
+        if ((e as MessageEvent).data) {
+          const data = JSON.parse((e as MessageEvent).data);
+          if (typeof data?.unreadCount === 'number') {
+            adminMessages.setUnreadCount(data.unreadCount);
+            return;
+          }
+        }
+        adminMessages.loadUnreadCount();
       } catch {
         // ignore
       }

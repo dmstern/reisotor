@@ -5,6 +5,7 @@ export interface AdminSettingsDto {
   registration: {
     registrationMode: 'off' | 'full' | 'restricted';
     requireEmailVerification: boolean;
+    contactAdminEnabled: boolean;
   };
   legal: {
     operatorName: string;
@@ -47,6 +48,7 @@ export interface UpdateAdminSettingsPayload {
   registration?: {
     registrationMode?: 'off' | 'full' | 'restricted';
     requireEmailVerification?: boolean;
+    contactAdminEnabled?: boolean;
   };
   legal?: {
     operatorName?: string;
@@ -146,6 +148,10 @@ export function isSettingConfigured(key: string, envVar?: string): boolean {
   return Boolean(val && val.trim().length > 0);
 }
 
+export function isContactAdminEnabled(): boolean {
+  return getEffectiveSetting('contact_admin_enabled', 'CONTACT_ADMIN_ENABLED', 'true') !== 'false';
+}
+
 /**
  * Gibt alle administrativen Einstellungen mit maskierten Geheimnissen zurück.
  */
@@ -159,6 +165,8 @@ export function getAllAdminSettings(): AdminSettingsDto {
   const requireEmailVerification =
     getEffectiveSetting('require_email_verification', 'REQUIRE_EMAIL_VERIFICATION', 'true') ===
     'true';
+
+  const contactAdminEnabled = isContactAdminEnabled();
 
   const nominatimEnabled =
     getEffectiveSetting('nominatim_enabled', 'NOMINATIM_ENABLED', 'true') !== 'false';
@@ -177,6 +185,7 @@ export function getAllAdminSettings(): AdminSettingsDto {
     registration: {
       registrationMode,
       requireEmailVerification,
+      contactAdminEnabled,
     },
     legal: {
       operatorName: getEffectiveSetting('legal_operator_name', 'LEGAL_OPERATOR_NAME', ''),
@@ -267,6 +276,12 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
       setInstanceSetting(
         'require_email_verification',
         payload.registration.requireEmailVerification ? 'true' : 'false'
+      );
+    }
+    if (payload.registration.contactAdminEnabled !== undefined) {
+      setInstanceSetting(
+        'contact_admin_enabled',
+        payload.registration.contactAdminEnabled ? 'true' : 'false'
       );
     }
   }
