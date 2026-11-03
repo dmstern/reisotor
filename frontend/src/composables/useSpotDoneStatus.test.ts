@@ -107,7 +107,7 @@ describe('useSpotDoneStatus', () => {
     expect(isSpotPartiallyDone.value).toBe(false);
   });
 
-  it('hakt bei 1 Termin diesen direkt ab', async () => {
+  it('öffnet Popover bei 1 Termin und toggelt via toggleScheduledItemDone', async () => {
     const scheduleStore = useScheduleStore();
     scheduleStore.items = [
       createMockScheduleItem({ id: 101, spot_id: 1, date: '2026-07-01', done: 0, trip_id: 10 }),
@@ -117,13 +117,17 @@ describe('useSpotDoneStatus', () => {
     const spot = ref(createMockSpot({ id: 1 }));
     const scheduledDate = ref<string | null>('2026-07-01');
 
-    const { onToggleDone } = useSpotDoneStatus({ spot, scheduledDate });
+    const { onToggleDone, datesPopoverOpen, scheduledItemsForSpot, toggleScheduledItemDone } =
+      useSpotDoneStatus({ spot, scheduledDate });
 
     await onToggleDone();
+    expect(datesPopoverOpen.value).toBe(true);
+
+    await toggleScheduledItemDone(scheduledItemsForSpot.value[0]);
     expect(setDoneSpy).toHaveBeenCalledWith(101, true);
   });
 
-  it('hakt bei 0 Terminen mit scheduledDate den SpotStore direkt ab', async () => {
+  it('öffnet Popover bei Fallback-scheduledDate und hakt über toggleScheduledItemDone ab', async () => {
     const scheduleStore = useScheduleStore();
     scheduleStore.items = [];
     const spotsStore = useSpotsStore();
@@ -132,9 +136,13 @@ describe('useSpotDoneStatus', () => {
     const spot = ref(createMockSpot({ id: 1, done: 0 }));
     const scheduledDate = ref<string | null>('2026-07-01');
 
-    const { onToggleDone } = useSpotDoneStatus({ spot, scheduledDate });
+    const { onToggleDone, datesPopoverOpen, scheduledItemsForSpot, toggleScheduledItemDone } =
+      useSpotDoneStatus({ spot, scheduledDate });
 
     await onToggleDone();
+    expect(datesPopoverOpen.value).toBe(true);
+
+    await toggleScheduledItemDone(scheduledItemsForSpot.value[0]);
     expect(spotDoneSpy).toHaveBeenCalledWith(1, true);
   });
 

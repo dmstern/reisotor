@@ -149,7 +149,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     const spot = toValue(options.spot);
     const scheduledDate = toValue(options.scheduledDate);
 
-    if (totalItemsCount.value > 1) {
+    if (totalItemsCount.value >= 1) {
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
       if (triggerEl) {
         datesPopoverStyle.value = computePopoverPosition(triggerEl, {
@@ -167,18 +167,13 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
           menuHeight: rect.height,
         });
       }
-    } else if (totalItemsCount.value === 1) {
-      const item = scheduledItemsForSpot.value[0];
-      if (item.type === 'tour') {
-        await spotsStore.setDone(spot.id, !isSpotDone.value);
-      } else if (item.type === 'schedule') {
-        await scheduleStore.setDone(item.sourceId, !item.done);
-      } else {
-        await spotsStore.setDone(spot.id, !spot.done);
-      }
     } else if (scheduledDate) {
       await spotsStore.setDone(spot.id, !spot.done);
     } else {
+      if (spot.done) {
+        await spotsStore.setDone(spot.id, false);
+        return;
+      }
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
       if (triggerEl) {
         unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
@@ -201,6 +196,10 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
 
   async function toggleScheduledItemDone(item: ScheduledSpotItem) {
     if (item.type === 'tour') {
+      const spot = toValue(options.spot);
+      if (spot.done) {
+        await spotsStore.setDone(spot.id, false);
+      }
       await excursionsStore.setDone(item.sourceId, !item.done);
     } else if (item.type === 'schedule') {
       await scheduleStore.setDone(item.sourceId, !item.done);

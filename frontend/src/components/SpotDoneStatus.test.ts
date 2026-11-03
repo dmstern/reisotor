@@ -67,20 +67,28 @@ describe('SpotDoneStatus', () => {
     });
 
     expect(html).toContain('done-toggle');
-    expect(html).toContain('done-toggle--split');
-    expect(html).toContain('done-toggle-btn--check');
-    expect(html).toContain('done-toggle-btn--action');
+    expect(html).not.toContain('done-toggle--split');
     expect(html).toContain('Geplant für');
     expect(html).toContain('12.06');
-    expect(html).toContain('Zum 12.06 im Kalender springen');
   });
 
-  it('triggers drawers.openCalendar with scheduled date when calendar action button is clicked', async () => {
+  it('opens dates popover when clicked and triggers drawers.openCalendar via jump button', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const { useDrawersStore } = await import('../stores/drawers');
     const drawers = useDrawersStore();
     const openCalendarSpy = vi.spyOn(drawers, 'openCalendar').mockImplementation(() => {});
+
+    const scheduleStore = useScheduleStore();
+    scheduleStore.items = [
+      {
+        id: 101,
+        trip_id: 1,
+        spot_id: 1,
+        date: '2026-06-12',
+        completed: 0,
+      } as unknown as ScheduleItem,
+    ];
 
     const el = document.createElement('div');
     document.body.appendChild(el);
@@ -95,9 +103,15 @@ describe('SpotDoneStatus', () => {
     app.use(pinia);
     app.mount(el);
 
-    const actionBtn = el.querySelector('.done-toggle-btn--action') as HTMLButtonElement | null;
-    expect(actionBtn).not.toBeNull();
-    actionBtn?.click();
+    const toggleBtn = el.querySelector<HTMLButtonElement>('.done-toggle');
+    expect(toggleBtn).not.toBeNull();
+    toggleBtn?.click();
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    const jumpBtn = document.body.querySelector<HTMLButtonElement>('.date-calendar-jump-btn');
+    expect(jumpBtn).not.toBeNull();
+    jumpBtn?.click();
 
     expect(openCalendarSpy).toHaveBeenCalledWith('2026-06-12');
     app.unmount();
