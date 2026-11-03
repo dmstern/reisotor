@@ -1448,7 +1448,7 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('shifts map center downwards under the card on mobile when details card is visible', async () => {
+    it('centers map directly in visible area without vertical offset on mobile because card is stacked above the map', async () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -1462,18 +1462,20 @@ describe('LocationPicker', () => {
       await nextTick();
       await nextTick();
 
-      // Auf Mobile wird der Zielpunkt nach unten unter die Card verschoben (Y-Wert der Mitte um coveredTopPx / 2 reduziert)
-      expect(mockMapInstance?.project).toHaveBeenCalled();
-      expect(mockMapInstance?.unproject).toHaveBeenCalled();
+      // Auf Mobile ist die Card über der Karte gestapelt (nicht überlagernd), daher kein Versatz
       const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
       expect(lastSetViewCall).toBeTruthy();
-      const centeredLatLng = lastSetViewCall?.[0] as { lat: number; lng: number };
-      expect(centeredLatLng.lat).toBeLessThan(38.68493); // Südlichere Mitte bewirkt Versatz nach unten
+      const centeredLatLng = lastSetViewCall?.[0] as
+        [number, number] | { lat: number; lng: number };
+      const lat = Array.isArray(centeredLatLng) ? centeredLatLng[0] : centeredLatLng.lat;
+      const lng = Array.isArray(centeredLatLng) ? centeredLatLng[1] : centeredLatLng.lng;
+      expect(lat).toBeCloseTo(38.68493);
+      expect(lng).toBeCloseTo(-9.21877);
 
       cleanUp();
     });
 
-    it('centers geolocation in visible area taking mobile card offset into account', async () => {
+    it('centers geolocation directly in visible area on mobile without covered offset', async () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
@@ -1505,9 +1507,92 @@ describe('LocationPicker', () => {
       await nextTick();
 
       expect(getCurrentPositionMock).toHaveBeenCalled();
-      expect(mockMapInstance?.project).toHaveBeenCalled();
       const lastSetViewCall = mockMapInstance?.setView.mock.calls.at(-1);
       expect(lastSetViewCall).toBeTruthy();
+      const centeredLatLng = lastSetViewCall?.[0] as
+        [number, number] | { lat: number; lng: number };
+      const lat = Array.isArray(centeredLatLng) ? centeredLatLng[0] : centeredLatLng.lat;
+      const lng = Array.isArray(centeredLatLng) ? centeredLatLng[1] : centeredLatLng.lng;
+      expect(lat).toBeCloseTo(38.6849);
+      expect(lng).toBeCloseTo(-9.2187);
+
+      cleanUp();
+    });
+
+    it('renders mobile-map-expand-btn when details are visible and toggles expanded state on click', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const { container, cleanUp } = mountPicker({
+        modelValue: { lat: 38.68493, lng: -9.21877 },
+        title: 'Turm von Belém',
+      });
+      await nextTick();
+
+      const expandBtn = container.querySelector(
+        '[data-testid="mobile-map-expand-btn"]'
+      ) as HTMLButtonElement;
+      expect(expandBtn).toBeTruthy();
+      expect(expandBtn.textContent).toContain('Position anpassen');
+      expect(expandBtn.classList.contains('is-expanded')).toBe(false);
+
+      expandBtn.click();
+      await nextTick();
+
+      expect(expandBtn.classList.contains('is-expanded')).toBe(true);
+      expect(expandBtn.textContent).toContain('Fertig');
+
+      expandBtn.click();
+      await nextTick();
+
+      expect(expandBtn.classList.contains('is-expanded')).toBe(false);
+      expect(expandBtn.textContent).toContain('Position anpassen');
+
+      cleanUp();
+    });
+
+    it('clicking on compact mobile preview map unlocks/expands map instead of overwriting coordinates immediately', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const onUpdateModelValue = vi.fn();
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: { lat: 38.68493, lng: -9.21877 },
+          title: 'Turm von Belém',
+        },
+        {
+          'onUpdate:modelValue': onUpdateModelValue,
+        }
+      );
+      await nextTick();
+
+      const expandBtn = container.querySelector(
+        '[data-testid="mobile-map-expand-btn"]'
+      ) as HTMLButtonElement;
+      expect(expandBtn.classList.contains('is-expanded')).toBe(false);
+
+      // Klick auf gesperrte Vorschau-Karte löst den Expand-Modus aus
+      const clickHandler = mapClickHandlers.at(-1);
+      expect(clickHandler).toBeTruthy();
+      clickHandler?.({ latlng: { lat: 38.7, lng: -9.2 } });
+      await nextTick();
+
+      // Wurde noch NICHT als Koordinate gesetzt
+      expect(onUpdateModelValue).not.toHaveBeenCalled();
+      // Aber Karte ist jetzt aufgeklappt
+      expect(expandBtn.classList.contains('is-expanded')).toBe(true);
+
+      // Ein weiterer Klick im aufgeklappten Zustand setzt die Koordinaten
+      clickHandler?.({ latlng: { lat: 38.7, lng: -9.2 } });
+      await nextTick();
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 38.7, lng: -9.2 });
 
       cleanUp();
     });
