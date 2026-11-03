@@ -6,7 +6,6 @@ import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
-import ButtonGroup from './primitives/ButtonGroup.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import LocationPicker from './LocationPicker.vue';
@@ -410,11 +409,6 @@ function handleOpenScheduledItem(item: ScheduleItem) {
             }})
           </span>
         </template>
-        <p class="schedule-hint">
-          <AppIcon :icon="ACTION_ICONS.info" :size="12" group="actions" />
-          Ordne den Spot einer Tour zu oder plane ihn direkt für ein Datum ein (ohne Tour).
-        </p>
-
         <!-- Oben: Tour zuordnen (Pop-over) & Datum-Hinzufügen-Button -->
         <div class="schedule-controls">
           <div class="schedule-actions-row">
@@ -441,42 +435,16 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                   @close="addSchedulePopoverOpen = false"
                 >
                   <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-                  <label
-                    style="
-                      display: block;
-                      font-size: 0.85rem;
-                      font-weight: 500;
-                      margin-bottom: var(--space-2);
-                    "
-                  >
+                  <label class="add-schedule-label">
                     <span>Datum auswählen:</span>
                     <Input
                       type="date"
                       v-model="addScheduleDateVal"
-                      class="field-input"
-                      style="width: 100%; margin-top: var(--space-2); margin-bottom: var(--space-3)"
+                      class="field-input add-schedule-input"
+                      @change="submitAddSpotToDate"
                       @keyup.enter="submitAddSpotToDate"
                     />
                   </label>
-                  <ButtonGroup align="end" no-margin>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      small
-                      @click="addSchedulePopoverOpen = false"
-                    >
-                      Abbrechen
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      small
-                      :disabled="!addScheduleDateVal"
-                      @click="submitAddSpotToDate"
-                    >
-                      Hinzufügen
-                    </Button>
-                  </ButtonGroup>
                 </PickerMenu>
               </template>
             </Teleport>
@@ -692,15 +660,6 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   color: var(--color-accent-dark, var(--color-accent));
 }
 
-.schedule-hint {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  line-height: 1.3;
-}
-
 .schedule-controls {
   display: flex;
   flex-direction: column;
@@ -740,9 +699,22 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 }
 
 .add-schedule-popover {
-  width: 240px;
-  padding: var(--space-3);
+  width: 220px;
+  padding: var(--space-2) var(--space-3);
   z-index: 1100;
+}
+
+.add-schedule-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.add-schedule-input {
+  width: 100%;
 }
 
 .assign-chips {

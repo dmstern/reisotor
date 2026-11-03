@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Excursion, Spot } from '../api/types';
-import { useSpotCalendarDrag } from '../composables/useSpotCalendarDrag';
+import type { Excursion } from '../api/types';
 import { useExcursionCalendarDrag } from '../composables/useExcursionCalendarDrag';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 
 const props = withDefaults(
   defineProps<{
-    spot?: Spot;
-    excursion?: Excursion;
+    excursion: Excursion;
     label?: string;
     ariaLabel?: string;
   }>(),
@@ -18,28 +16,18 @@ const props = withDefaults(
   }
 );
 
-const spotDrag = props.spot ? useSpotCalendarDrag({ spot: () => props.spot! }) : null;
-const excursionDrag = props.excursion
-  ? useExcursionCalendarDrag({ excursion: () => props.excursion! })
-  : null;
+const excursionDrag = useExcursionCalendarDrag({ excursion: () => props.excursion });
 
-const dragging = computed(() => spotDrag?.dragging.value ?? excursionDrag?.dragging.value ?? false);
-const ghostStyle = computed(
-  () => spotDrag?.ghostStyle.value ?? excursionDrag?.ghostStyle.value ?? null
-);
-const itemTitle = computed(() => props.spot?.title ?? props.excursion?.title ?? '');
+const dragging = computed(() => excursionDrag.dragging.value);
+const ghostStyle = computed(() => excursionDrag.ghostStyle.value);
+const itemTitle = computed(() => props.excursion.title ?? '');
 
 function onPointerDown(e: PointerEvent) {
-  if (spotDrag) {
-    spotDrag.onPointerDown(e);
-  } else if (excursionDrag) {
-    excursionDrag.onPointerDown(e);
-  }
+  excursionDrag.onPointerDown(e);
 }
 
 const computedAriaLabel = computed(() => {
   if (props.ariaLabel) return props.ariaLabel;
-  if (props.spot) return 'Auf Kalender ziehen zum spontanen Einplanen';
   return 'Auf Kalender ziehen zum Einplanen';
 });
 </script>

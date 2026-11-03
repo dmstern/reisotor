@@ -27,7 +27,7 @@ const placeNames = computed(() => spotsStore.spots.map((s) => s.title));
     icon-group="formFields"
   >
     <div class="row">
-      <FormField icon="maps" label="Karte" v-slot="{ id }">
+      <FormField icon="location" label="Spot / Tour verknüpfen" v-slot="{ id }">
         <Select :id="id" v-model="linkKey">
           <option value="">Kein Spot/keine Tour verknüpft</option>
           <optgroup label="Spots" v-if="spotsStore.spots.length">

@@ -168,13 +168,7 @@ describe('SpotFormModal', () => {
 
     dateInput.value = '2026-10-22';
     dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-    await nextTick();
-
-    const submitBtn = Array.from(document.querySelectorAll('.add-schedule-popover button')).find(
-      (b) => b.textContent?.includes('Hinzufügen')
-    ) as HTMLButtonElement;
-    expect(submitBtn).toBeDefined();
-    submitBtn.click();
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
     await nextTick();
 
     // Check that schedule chip appears
