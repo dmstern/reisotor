@@ -100,7 +100,7 @@ function discardDraft() {
               class="inline-submit-btn"
               variant="primary"
               size="sm"
-              :icon="ACTION_ICONS.send"
+              :icon="ACTION_ICONS.check"
               :disabled="!newForm.title.trim()"
               aria-label="Hinzufügen"
               title="Hinzufügen"

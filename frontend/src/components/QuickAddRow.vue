@@ -9,7 +9,7 @@ import type { IconDef } from '../utils/icon';
 // Wiederverwendbare Inline-Quick-Add-Zeile für Listen (Einkauf, ToDo, Packliste):
 // Im Ruhezustand eine dezente, einladende Eingabekapsel mit Plus-Icon.
 // Bei Fokus/Eingabe expandiert die Zeile zu einem voll bedienbaren Formularfeld inklusive
-// integriertem Papierflieger-Absenden-Button (ACTION_ICONS.send) und optionalen Zusatzfeldern
+// integriertem Häkchen-Absenden-Button (ACTION_ICONS.check) und optionalen Zusatzfeldern
 // (Slot "extra", z. B. Shop/Zeitraum bei Einkauf, Zuweisung/Priorität bei ToDo) mit sauber
 // an der linken Fluchtlinie ausgerichteten Dropdowns (siehe DESIGN.md).
 const props = withDefaults(
@@ -107,7 +107,7 @@ function onBlur(event: FocusEvent) {
           class="submit-btn"
           variant="primary"
           size="sm"
-          :icon="ACTION_ICONS.send"
+          :icon="ACTION_ICONS.check"
           :disabled="!label.trim()"
           aria-label="Hinzufügen"
           title="Hinzufügen"
