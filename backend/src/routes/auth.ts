@@ -15,7 +15,11 @@ import {
   isEmailVerificationRequired,
   sendPasswordResetEmail,
   sendVerificationEmail,
+  sendAdminContactNotificationEmail,
 } from '../utils/mailer.js';
+import { isContactAdminEnabled } from '../instanceSettings.js';
+import { broadcastToAdmins } from '../activity.js';
+import { sendPushToAdmins } from '../push.js';
 import { checkFeedbackRateLimit } from '../utils/feedbackRateLimiter.js';
 
 interface UserRow {
@@ -39,6 +43,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       registrationMode: getRegistrationMode(),
       emailConfigured: isEmailConfigured(),
       requireEmailVerification: isEmailVerificationRequired(),
+      contactAdminEnabled: isContactAdminEnabled(),
     };
   });
 
@@ -400,6 +405,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   app.post<{
     Body: { name?: string; email?: string; username?: string; message: string; type?: string };
   }>('/contact-admin', async (req, reply) => {
+    if (!isContactAdminEnabled()) {
+      return reply.code(403).send({
+        error: 'Die Kontaktfunktion für Administrator:innen ist aktuell deaktiviert.',
+      });
+    }
+
     const { name, email, username, message, type = 'registration_help' } = req.body ?? {};
     if (!message || message.trim().length < 5) {
       return reply
@@ -414,11 +425,34 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-    const rateCheck = checkFeedbackRateLimit(`contact_admin:${clientIp}`, 5, 60 * 60 * 1000);
-    if (!rateCheck.allowed) {
+
+    // Rate-Limiting: Max. 3 Nachrichten innerhalb von 1 Stunde pro IP und/oder Cookie
+    let contactToken = req.cookies?.contact_rate_limit;
+    if (
+      !contactToken ||
+      typeof contactToken !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contactToken)
+    ) {
+      contactToken = crypto.randomUUID();
+    }
+    reply.setCookie('contact_rate_limit', contactToken, {
+      path: '/',
+      httpOnly: true,
+      maxAge: 3600,
+      sameSite: 'lax',
+    });
+
+    const cookieCheck = checkFeedbackRateLimit(
+      `contact_admin:cookie:${contactToken}`,
+      3,
+      60 * 60 * 1000
+    );
+    const ipCheck = checkFeedbackRateLimit(`contact_admin:ip:${clientIp}`, 3, 60 * 60 * 1000);
+
+    if (!cookieCheck.allowed || !ipCheck.allowed) {
       return reply.code(429).send({
         error:
-          'Zu viele Anfragen. Bitte warte einige Minuten, bevor du eine weitere Nachricht sendest.',
+          'Zu viele Anfragen. Du kannst maximal 3 Nachrichten innerhalb einer Stunde senden. Bitte versuche es später erneut.',
       });
     }
 
@@ -437,6 +471,46 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       ipHash,
       now
     );
+
+    // LiveSync-Ereignis an aktive Admins broadcasten
+    const unreadCount = (
+      db.prepare("SELECT COUNT(*) as count FROM admin_messages WHERE status = 'unread'").get() as {
+        count: number;
+      }
+    ).count;
+    broadcastToAdmins('admin_message', { unreadCount });
+
+    // Web-Push an Admins senden
+    sendPushToAdmins({
+      title: 'Reisotor – Kontaktanfrage',
+      body: `Hilfegesuch von ${name?.trim() || username?.trim() || 'einem Nutzer'}`,
+      url: '/settings?tab=admin#admin-messages',
+    }).catch(() => {});
+
+    // E-Mail-Benachrichtigung an Administrator:innen mit hinterlegter E-Mail-Adresse
+    if (isEmailConfigured()) {
+      const adminUsers = db
+        .prepare(
+          "SELECT id, username, email FROM users WHERE is_admin = 1 AND email IS NOT NULL AND trim(email) != ''"
+        )
+        .all() as Array<{ id: number; username: string; email: string }>;
+
+      for (const admin of adminUsers) {
+        if (admin.email && EMAIL_PATTERN.test(admin.email.trim())) {
+          sendAdminContactNotificationEmail({
+            to: admin.email.trim(),
+            adminUsername: admin.username,
+            senderName: name?.trim() || null,
+            senderEmail: email?.trim() || null,
+            senderUsername: username?.trim() || null,
+            message: message.trim(),
+            type,
+          }).catch((err) => {
+            console.error('[Mailer] Fehler beim Versenden der Admin-Kontakt-E-Mail:', err);
+          });
+        }
+      }
+    }
 
     return {
       success: true,

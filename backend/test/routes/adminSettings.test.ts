@@ -54,6 +54,7 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     const body = res.json();
     expect(body.settings).toBeDefined();
     expect(body.settings.registration).toBeDefined();
+    expect(body.settings.registration.contactAdminEnabled).toBe(true);
     expect(body.settings.legal).toBeDefined();
     expect(body.settings.geo).toBeDefined();
     expect(body.settings.email).toBeDefined();
@@ -81,6 +82,9 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
       url: '/api/admin/settings',
       headers: { cookie: adminCookie },
       payload: {
+        registration: {
+          contactAdminEnabled: false,
+        },
         legal: {
           operatorName: 'Muster-Reisen GmbH',
           operatorAddress: 'Hauptstr. 10\n10115 Berlin',
@@ -102,6 +106,7 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
     });
     expect(updateRes.statusCode).toBe(200);
     const updated = updateRes.json().settings;
+    expect(updated.registration.contactAdminEnabled).toBe(false);
     expect(updated.legal.operatorName).toBe('Muster-Reisen GmbH');
     expect(updated.legal.hostingLocation).toBe('München');
     expect(updated.geo.isOrsApiKeySet).toBe(true);
@@ -138,6 +143,9 @@ describe('Admin Settings routes (/api/admin/settings)', () => {
       url: '/api/admin/settings',
       headers: { cookie: adminCookie },
       payload: {
+        registration: {
+          contactAdminEnabled: false,
+        },
         legal: { hostingLocation: '' },
         geo: { clearOrsApiKey: true },
         email: { clearSmtpPass: true, appUrl: '' },

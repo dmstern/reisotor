@@ -283,6 +283,127 @@ dein Reisotor-Server`;
   }
 }
 
+export async function sendAdminContactNotificationEmail(params: {
+  to: string;
+  adminUsername: string;
+  senderName?: string | null;
+  senderEmail?: string | null;
+  senderUsername?: string | null;
+  message: string;
+  type?: string;
+}): Promise<SendMailResult> {
+  const baseUrl = getAppUrl();
+  const adminUrl = `${baseUrl}/settings?tab=admin#admin-messages`;
+
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.info(
+      `[Mailer] SMTP nicht konfiguriert. Admin-Benachrichtigung für ${params.to} nicht versendet.`
+    );
+    return {
+      success: false,
+      actionUrl: adminUrl,
+      simulated: true,
+      error: 'SMTP-Mailserver ist nicht konfiguriert',
+    };
+  }
+
+  const from = getFromAddress();
+  const subject = '[Reisotor] Neue Kontaktanfrage / Anmeldeproblem';
+
+  const typeLabel =
+    params.type === 'login_help'
+      ? 'Anmeldeproblem'
+      : params.type === 'registration_help'
+        ? 'Registrierungshilfe'
+        : params.type;
+
+  const senderDetails: string[] = [];
+  if (typeLabel) senderDetails.push(`Kategorie: ${typeLabel}`);
+  if (params.senderName) senderDetails.push(`Name: ${params.senderName}`);
+  if (params.senderUsername) senderDetails.push(`Benutzername: ${params.senderUsername}`);
+  if (params.senderEmail) senderDetails.push(`E-Mail: ${params.senderEmail}`);
+
+  const detailsText = senderDetails.length > 0 ? senderDetails.join('\n') + '\n\n' : '';
+  const text = `Hallo ${params.adminUsername},
+
+es ist eine neue Kontaktanfrage bzw. ein Hilfegesuch zu einem Anmeldeproblem auf deiner Reisotor-Instanz eingegangen:
+
+${detailsText}Nachricht:
+${params.message}
+
+Du kannst die Nachricht und zugehörige Aktionen (wie die manuelle Freischaltung des Accounts) im Administrationsbereich einsehen:
+${adminUrl}
+
+Viele Grüße,
+dein Reisotor-System`;
+
+  const detailsRows: string[] = [];
+  if (typeLabel) {
+    detailsRows.push(
+      `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Kategorie:</td><td style="padding: 4px 0;">${escapeHtml(typeLabel)}</td></tr>`
+    );
+  }
+  if (params.senderName) {
+    detailsRows.push(
+      `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Name:</td><td style="padding: 4px 0;">${escapeHtml(params.senderName)}</td></tr>`
+    );
+  }
+  if (params.senderUsername) {
+    detailsRows.push(
+      `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Benutzername:</td><td style="padding: 4px 0;">${escapeHtml(params.senderUsername)}</td></tr>`
+    );
+  }
+  if (params.senderEmail) {
+    detailsRows.push(
+      `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">E-Mail:</td><td style="padding: 4px 0;"><a href="mailto:${escapeHtml(params.senderEmail)}" style="color: #9141ac;">${escapeHtml(params.senderEmail)}</a></td></tr>`
+    );
+  }
+
+  const detailsHtml =
+    detailsRows.length > 0
+      ? `<table style="margin: 0 0 16px 0; font-size: 14px; border-collapse: collapse;">
+          ${detailsRows.join('')}
+        </table>`
+      : '';
+
+  const escapedMessage = escapeHtml(params.message).replace(/\n/g, '<br>');
+
+  const html = buildEmailHtml({
+    title: 'Neue Kontaktanfrage eingegangen',
+    greeting: `Hallo <strong>${escapeHtml(params.adminUsername)}</strong>,`,
+    messageHtml: `
+      <p style="margin: 0 0 16px 0;">es ist eine neue Kontaktanfrage bzw. ein Hilfegesuch auf deiner Reisotor-Instanz eingegangen.</p>
+      ${detailsHtml}
+      <div style="background-color: #faf8f5; border-left: 4px solid #9141ac; padding: 12px 16px; margin: 0 0 20px 0; border-radius: 4px; font-style: italic; color: #2b2a28; line-height: 1.5;">
+        ${escapedMessage}
+      </div>
+    `,
+    actionUrl: adminUrl,
+    actionLabel: 'Im Admin-Bereich ansehen',
+    hintHtml:
+      'Du kannst im Admin-Bereich den Status dieser Anfrage verwalten und verknüpfte Konten mit einem Klick freischalten.',
+  });
+
+  try {
+    await transporter.sendMail({
+      from,
+      to: params.to,
+      subject,
+      text,
+      html,
+    });
+    return { success: true, actionUrl: adminUrl };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[Mailer] Fehler beim Versenden der Admin-Kontakt-E-Mail an ${params.to}:`,
+      errorMsg
+    );
+    return { success: false, actionUrl: adminUrl, error: errorMsg };
+  }
+}
+
 export const DEFAULT_FALLBACK_LOGO_URL =
   'https://raw.githubusercontent.com/dmstern/reisotor/main/frontend/public/icons/icon-192.png';
 

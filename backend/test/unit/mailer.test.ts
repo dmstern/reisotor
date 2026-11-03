@@ -10,6 +10,7 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendTestEmail,
+  sendAdminContactNotificationEmail,
   resetTransporterForTesting,
 } from '../../src/utils/mailer.js';
 
@@ -170,5 +171,51 @@ describe('Mailer utility', () => {
     expect(mailOptions.html).toContain('Reisotor Test-E-Mail');
     expect(mailOptions.html).toContain('Erfolgreich verbunden');
     expect(mailOptions.html).toContain('#9141ac');
+  });
+
+  it('fails sendAdminContactNotificationEmail gracefully when SMTP is unconfigured', async () => {
+    delete process.env.SMTP_HOST;
+    const result = await sendAdminContactNotificationEmail({
+      to: 'admin@example.com',
+      adminUsername: 'Admin',
+      senderName: 'Hilfesuchender',
+      senderEmail: 'help@example.com',
+      message: 'Bitte helft mir, ich kann mich nicht einloggen.',
+    });
+    expect(result.success).toBe(false);
+    expect(result.simulated).toBe(true);
+    expect(result.error).toContain('SMTP-Mailserver ist nicht konfiguriert');
+  });
+
+  it('renders customized Reisotor branding in admin contact notification email HTML', async () => {
+    process.env.SMTP_HOST = 'smtp-relay.brevo.com';
+    process.env.SMTP_USER = 'brevo-user';
+    process.env.SMTP_PASS = 'brevo-pass';
+    const sendMailMock = vi.fn().mockResolvedValue({ messageId: 'admin-contact-123' });
+    vi.spyOn(nodemailer, 'createTransport').mockReturnValue({
+      sendMail: sendMailMock,
+    } as unknown as nodemailer.Transporter);
+
+    const result = await sendAdminContactNotificationEmail({
+      to: 'admin@example.com',
+      adminUsername: 'SuperAdmin',
+      senderName: 'Erika Musterfrau',
+      senderEmail: 'erika@example.com',
+      senderUsername: 'erika_m',
+      message: 'Hallo, ich brauche Hilfe beim Aktivieren meines Kontos.',
+    });
+
+    expect(result.success).toBe(true);
+    expect(sendMailMock).toHaveBeenCalledTimes(1);
+    const mailOptions = sendMailMock.mock.calls[0][0];
+
+    expect(mailOptions.to).toBe('admin@example.com');
+    expect(mailOptions.subject).toBe('[Reisotor] Neue Kontaktanfrage / Anmeldeproblem');
+    expect(mailOptions.html).toContain('SuperAdmin');
+    expect(mailOptions.html).toContain('Erika Musterfrau');
+    expect(mailOptions.html).toContain('erika@example.com');
+    expect(mailOptions.html).toContain('erika_m');
+    expect(mailOptions.html).toContain('Hallo, ich brauche Hilfe beim Aktivieren meines Kontos.');
+    expect(mailOptions.html).toContain('/settings?tab=admin#admin-messages');
   });
 });

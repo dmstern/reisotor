@@ -1,5 +1,6 @@
 interface RateLimitEntry {
   timestamps: number[];
+  windowMs: number;
 }
 
 const rateLimitMap = new Map<string, RateLimitEntry>();
@@ -8,11 +9,11 @@ const rateLimitMap = new Map<string, RateLimitEntry>();
 const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
 let lastCleanup = Date.now();
 
-function cleanupExpired(now: number, windowMs: number) {
-  for (const [ip, entry] of rateLimitMap.entries()) {
-    entry.timestamps = entry.timestamps.filter((ts) => now - ts < windowMs);
+function cleanupExpired(now: number) {
+  for (const [key, entry] of rateLimitMap.entries()) {
+    entry.timestamps = entry.timestamps.filter((ts) => now - ts < entry.windowMs);
     if (entry.timestamps.length === 0) {
-      rateLimitMap.delete(ip);
+      rateLimitMap.delete(key);
     }
   }
   lastCleanup = now;
@@ -24,27 +25,29 @@ export interface RateLimitResult {
 }
 
 /**
- * Prüft und aktualisiert das In-Memory-Rate-Limit für eine Quell-IP.
- * Standard: Maximal 5 Meldungen pro IP innerhalb eines 24-Stunden-Fensters.
+ * Prüft und aktualisiert das In-Memory-Rate-Limit für einen Schlüssel (IP, Cookie etc.).
+ * Standard: Maximal 5 Meldungen pro Schlüssel innerhalb eines 24-Stunden-Fensters.
  */
 export function checkFeedbackRateLimit(
-  ip: string,
+  key: string,
   maxRequests = 5,
   windowMs = 24 * 60 * 60 * 1000
 ): RateLimitResult {
   const now = Date.now();
 
   if (now - lastCleanup > CLEANUP_INTERVAL_MS) {
-    cleanupExpired(now, windowMs);
+    cleanupExpired(now);
   }
 
-  let entry = rateLimitMap.get(ip);
+  let entry = rateLimitMap.get(key);
   if (!entry) {
-    entry = { timestamps: [] };
-    rateLimitMap.set(ip, entry);
+    entry = { timestamps: [], windowMs };
+    rateLimitMap.set(key, entry);
+  } else {
+    entry.windowMs = Math.max(entry.windowMs, windowMs);
   }
 
-  // Abgelaufene Zeitstempel für diese IP entfernen
+  // Abgelaufene Zeitstempel für diesen Eintrag entfernen
   entry.timestamps = entry.timestamps.filter((ts) => now - ts < windowMs);
 
   if (entry.timestamps.length >= maxRequests) {

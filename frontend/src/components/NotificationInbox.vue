@@ -6,6 +6,8 @@ import { useNotificationsStore } from '../stores/notifications';
 import { useDrawersStore } from '../stores/drawers';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { usePwaInstallStore } from '../stores/pwaInstall';
+import { useAuthStore } from '../stores/auth';
+import { useAdminMessagesStore } from '../stores/adminMessages';
 import IconButton from './primitives/IconButton.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
@@ -26,6 +28,8 @@ const notifications = useNotificationsStore();
 const drawers = useDrawersStore();
 const pwaUpdate = usePwaUpdateStore();
 const pwaInstall = usePwaInstallStore();
+const auth = useAuthStore();
+const adminMessages = useAdminMessagesStore();
 const router = useRouter();
 const { showToast } = useToast();
 const open = ref(false);
@@ -44,12 +48,22 @@ function openChangelog() {
   pwaUpdate.openChangelogDialog();
 }
 
+function openAdminMessages() {
+  close();
+  router.push({ path: '/settings', query: { tab: 'admin' }, hash: '#admin-messages' });
+}
+
+const adminUnreadCount = computed(() => (auth.isAdmin ? adminMessages.unreadCount : 0));
+const totalUnreadCount = computed(() => notifications.unreadCount + adminUnreadCount.value);
+const hasAdminNotice = computed(() => adminUnreadCount.value > 0);
+
 const hasSystemNotices = computed(() => {
   return (
     pwaUpdate.needRefresh ||
     pwaUpdate.offlineReady ||
     (!pwaInstall.isStandalone && !pwaInstall.dismissed) ||
-    pwaUpdate.showReleaseNotesNotice
+    pwaUpdate.showReleaseNotesNotice ||
+    hasAdminNotice.value
   );
 });
 
@@ -57,12 +71,12 @@ const hasUpdateNotice = computed(() => {
   return pwaUpdate.needRefresh || pwaUpdate.showReleaseNotesNotice;
 });
 
-// Ungelesene Aktivitäten zeigen einen Zähler-Badge. Liegen stattdessen System-Benachrichtigungen
+// Ungelesene Aktivitäten oder Admin-Nachrichten zeigen einen Zähler-Badge. Liegen stattdessen System-Benachrichtigungen
 // (Update verfügbar, Offline-Bereitschaft, App-Installation) vor, lenkt der rote Punkt (UnseenDot)
 // Nutzer:innen zur Glocke.
 const bellAriaLabel = computed(() => {
-  if (notifications.unreadCount > 0) {
-    return `Benachrichtigungen (${notifications.unreadCount} ungelesen)`;
+  if (totalUnreadCount.value > 0) {
+    return `Benachrichtigungen (${totalUnreadCount.value} ungelesen)`;
   }
   if (hasSystemNotices.value) {
     return 'Benachrichtigungen (Neuigkeiten verfügbar)';
@@ -109,6 +123,9 @@ function onKeydown(event: KeyboardEvent) {
 
 watch(open, (isOpen) => {
   if (isOpen) {
+    if (auth.isAdmin) {
+      adminMessages.loadUnreadCount();
+    }
     window.addEventListener('resize', close, { passive: true });
     window.addEventListener('keydown', onKeydown);
   } else {
@@ -163,13 +180,9 @@ function dismissPwaInstall() {
         class="bell-btn"
         @click="toggle"
       />
-      <Badge
-        v-if="notifications.unreadCount > 0"
-        variant="danger"
-        class="unread-badge"
-        aria-hidden="true"
-        >{{ notifications.unreadCount > 9 ? '9+' : notifications.unreadCount }}</Badge
-      >
+      <Badge v-if="totalUnreadCount > 0" variant="danger" class="unread-badge" aria-hidden="true">{{
+        totalUnreadCount > 9 ? '9+' : totalUnreadCount
+      }}</Badge>
       <UnseenDot
         v-else-if="hasSystemNotices"
         class="bell-dot"
@@ -309,6 +322,33 @@ function dismissPwaInstall() {
                     title="Hinweis schließen"
                     @click="pwaUpdate.dismissReleaseNotesNotice"
                   />
+                </div>
+              </div>
+
+              <!-- 5. Admin: Neue Kontaktanfragen -->
+              <div v-if="hasAdminNotice" class="system-notice admin-notice pwa-pill">
+                <div class="notice-icon admin-icon" aria-hidden="true">
+                  <AppIcon :icon="ACTION_ICONS.mail" :size="16" group="actions" />
+                </div>
+                <div class="notice-body">
+                  <span class="notice-title">
+                    {{
+                      adminUnreadCount === 1
+                        ? '1 neue Kontaktanfrage'
+                        : `${adminUnreadCount} neue Kontaktanfragen`
+                    }}
+                  </span>
+                  <span class="notice-desc">Anmeldeproblem oder Hilfegesuch im Admin-Bereich</span>
+                </div>
+                <div class="notice-actions">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    class="pwa-pill-trigger"
+                    @click="openAdminMessages"
+                  >
+                    Ansehen
+                  </Button>
                 </div>
               </div>
             </div>
@@ -582,6 +622,11 @@ function dismissPwaInstall() {
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
 }
 
+.system-notice.admin-notice {
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-warning) 40%, var(--color-border));
+}
+
 .notice-icon {
   width: 28px;
   height: 28px;
@@ -602,6 +647,11 @@ function dismissPwaInstall() {
 .notice-icon.install-icon {
   background: color-mix(in srgb, var(--color-primary) 20%, var(--color-surface));
   color: var(--color-primary-dark);
+}
+
+.notice-icon.admin-icon {
+  background: color-mix(in srgb, var(--color-warning) 20%, var(--color-surface));
+  color: var(--color-warning-dark, var(--color-warning));
 }
 
 .notice-body {

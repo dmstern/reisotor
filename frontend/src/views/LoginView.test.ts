@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import LoginView from './LoginView.vue';
 import { useAuthStore } from '../stores/auth';
-import { ApiError } from '../api/client';
+import { api, ApiError } from '../api/client';
 
 vi.mock('../api/client', () => ({
   api: {
@@ -192,6 +192,51 @@ describe('LoginView', () => {
     const helpLink = container.querySelector('.help-contact-link') as HTMLButtonElement;
     expect(helpLink).not.toBeNull();
     expect(helpLink.textContent).toContain('Probleme bei Registrierung oder Anmeldung?');
+
+    cleanUp();
+  });
+
+  it('hides contact admin buttons and links when contactAdminEnabled is false', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      registrationMode: 'full',
+      contactAdminEnabled: false,
+    });
+    const auth = useAuthStore();
+    const errorWithData = new ApiError(403, 'Dieses Konto ist noch nicht freigeschaltet.', {
+      data: { unverifiedEmail: true, noMailServer: true },
+    });
+    vi.spyOn(auth, 'login').mockRejectedValue(errorWithData);
+
+    const { container, cleanUp } = mountComponent();
+    await new Promise((r) => setTimeout(r, 10));
+    await nextTick();
+
+    expect(container.querySelector('.help-contact-link')).toBeNull();
+
+    const usernameInput = container.querySelector('#login-username') as HTMLInputElement;
+    const passwordInput = container.querySelector('#login-password') as HTMLInputElement;
+    usernameInput.value = 'user';
+    passwordInput.value = 'pass';
+    usernameInput.dispatchEvent(new Event('input'));
+    passwordInput.dispatchEvent(new Event('input'));
+
+    const form = container.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+    await new Promise((r) => setTimeout(r, 10));
+    await nextTick();
+
+    expect(container.querySelector('.contact-admin-action')).toBeNull();
+
+    // Mode 'register' check with no mail server
+    const registerToggleBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Registrieren')
+    );
+    if (registerToggleBtn) {
+      registerToggleBtn.click();
+      await nextTick();
+      expect(container.querySelector('.reg-contact-btn')).toBeNull();
+    }
 
     cleanUp();
   });

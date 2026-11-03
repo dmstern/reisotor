@@ -286,6 +286,36 @@ export async function sendVersionNotification(version: string, detail?: string) 
   await sendPushToAllSubscribers(payload, 'version');
 }
 
+/** Versendet eine Push-Benachrichtigung an alle Administrator:innen (z. B. bei neuen Kontaktanfragen). */
+export async function sendPushToAdmins(payload: Record<string, unknown>) {
+  if (!ensureVapidConfigured()) return;
+  const subs = db
+    .prepare(
+      `SELECT push_subscriptions.* FROM push_subscriptions
+       JOIN users ON users.id = push_subscriptions.user_id
+       WHERE users.is_admin = 1`
+    )
+    .all() as PushSubscriptionRow[];
+  if (!subs.length) return;
+
+  const body = JSON.stringify(payload);
+  await Promise.all(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          body
+        );
+      } catch (err) {
+        const statusCode = (err as { statusCode?: number }).statusCode;
+        if (statusCode === 404 || statusCode === 410) {
+          db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
+        }
+      }
+    })
+  );
+}
+
 /** Prüft beim Server-Start, ob eine neue Version ausgerollt wurde, und benachrichtigt Abonnenten einmalig. */
 export async function checkVersionNotification() {
   const info = readBuildInfo();

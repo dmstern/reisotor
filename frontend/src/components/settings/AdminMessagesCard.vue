@@ -12,8 +12,14 @@ import { api, ApiError } from '../../api/client';
 import type { AdminMessage } from '../../api/types';
 import type { IconDef } from '../../utils/icon';
 import { IconMail } from '@tabler/icons-vue';
+import { useAdminMessagesStore } from '../../stores/adminMessages';
+
+const props = defineProps<{
+  contactAdminEnabled?: boolean;
+}>();
 
 const MESSAGES_ICON: IconDef = { id: 'mail', emoji: '✉️', outline: IconMail };
+const adminMessagesStore = useAdminMessagesStore();
 
 const messages = ref<AdminMessage[]>([]);
 const unreadCount = ref(0);
@@ -39,6 +45,7 @@ async function loadMessages() {
     const res = await api.get<{ messages: AdminMessage[]; unreadCount: number }>('/admin/messages');
     messages.value = res.messages;
     unreadCount.value = res.unreadCount;
+    adminMessagesStore.setUnreadCount(res.unreadCount);
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Fehler beim Laden der Admin-Nachrichten';
   } finally {
@@ -53,6 +60,7 @@ async function updateStatus(msg: AdminMessage, newStatus: 'unread' | 'read' | 'r
     await api.put(`/admin/messages/${msg.id}/status`, { status: newStatus });
     msg.status = newStatus;
     unreadCount.value = messages.value.filter((m) => m.status === 'unread').length;
+    adminMessagesStore.setUnreadCount(unreadCount.value);
   } catch (err) {
     actionError.value =
       err instanceof ApiError ? err.message : 'Fehler beim Aktualisieren des Status';
@@ -69,6 +77,7 @@ async function deleteMessage(msg: AdminMessage) {
     await api.delete(`/admin/messages/${msg.id}`);
     messages.value = messages.value.filter((m) => m.id !== msg.id);
     unreadCount.value = messages.value.filter((m) => m.status === 'unread').length;
+    adminMessagesStore.setUnreadCount(unreadCount.value);
   } catch (err) {
     actionError.value = err instanceof ApiError ? err.message : 'Fehler beim Löschen der Nachricht';
   } finally {
@@ -98,10 +107,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <Card class="admin-card admin-messages-card">
+  <Card id="admin-messages" class="admin-card admin-messages-card">
     <div class="card-header-wrap">
       <SettingsCardHeader title="Kontaktanfragen & Anmeldeprobleme" :icon="MESSAGES_ICON" />
       <div class="header-badges">
+        <Badge v-if="props.contactAdminEnabled === false" variant="danger" size="sm">
+          Deaktiviert
+        </Badge>
         <Badge v-if="unreadCount > 0" variant="warning" size="sm">
           {{ unreadCount }} ungelesen
         </Badge>

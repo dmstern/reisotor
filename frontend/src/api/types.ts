@@ -52,6 +52,7 @@ export interface AdminSettings {
   registration: {
     registrationMode: 'off' | 'full' | 'restricted';
     requireEmailVerification: boolean;
+    contactAdminEnabled: boolean;
   };
   legal: {
     operatorName: string;
