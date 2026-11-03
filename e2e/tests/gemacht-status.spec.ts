@@ -102,9 +102,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await spotCard.locator('.card-title').click();
     await expect(spotCard.locator('.status.planned')).toContainText('Geplant für');
 
-    // Im Split-Modus (bereits geplanter Spot) schaltet der Klick auf die Checkbox den Status um
+    // Klick auf den Toggle öffnet das Besuche-Abhaken-Popover
     const checkBtn = spotCard.locator('.done-toggle-btn--check, button.done-toggle');
     await checkBtn.click();
+    await page.locator('.spot-dates-popover .date-check-item').click();
 
     // Kein Kalender-Bestätigungs-Flow - das bereits vorhandene geplante Datum wird direkt als
     // Gemacht-/Besucht-Datum übernommen.

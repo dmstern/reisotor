@@ -44,6 +44,7 @@ const {
   onToggleDone,
   toggleScheduledItemDone,
   submitUnplannedDone,
+  openCalendarConfirmDone,
 } = useSpotDoneStatus({
   spot: () => props.spot,
   scheduledDate: () => props.scheduledDate,
@@ -182,6 +183,16 @@ function handleItemJump(item: ScheduledSpotItem) {
             @click="submitUnplannedDone"
           >
             Als besucht markieren
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="calendar-alt-link"
+            @click="openCalendarConfirmDone"
+          >
+            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+            Im Kalender auswählen
           </Button>
         </div>
       </div>
