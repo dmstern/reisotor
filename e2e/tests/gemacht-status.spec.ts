@@ -32,6 +32,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     expect(created.ok()).toBeTruthy();
 
     await page.goto('/excursions');
+    await page.locator('.segmented-option', { hasText: 'Spots' }).click();
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await expect(spotCard).toBeVisible();
     // Karte aufklappen, damit der Umschalt-Button (nur im aufgeklappten Zustand sichtbar) erreichbar
@@ -96,6 +97,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     expect(scheduleRes.ok()).toBeTruthy();
 
     await page.goto('/excursions');
+    await page.locator('.segmented-option', { hasText: 'Spots' }).click();
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await spotCard.locator('.card-title').click();
     await expect(spotCard.locator('.status.planned')).toContainText('Geplant für');
@@ -124,6 +126,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     expect(created.ok()).toBeTruthy();
 
     await page.goto('/excursions');
+    await page.locator('.segmented-option', { hasText: 'Spots' }).click();
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await spotCard.locator('.card-title').click();
     await spotCard.locator('.done-toggle').click();
@@ -154,6 +157,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     expect(created.ok()).toBeTruthy();
 
     await page.goto('/excursions');
+    await page.locator('.segmented-option', { hasText: 'Spots' }).click();
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await spotCard.locator('.card-title').click();
 
@@ -205,6 +209,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     expect(s2.ok()).toBeTruthy();
 
     await page.goto('/excursions');
+    await page.locator('.segmented-option', { hasText: 'Spots' }).click();
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     await spotCard.locator('.card-title').click();
 
@@ -336,6 +341,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await expect(tourCard.locator('.status.status-done')).toBeVisible();
 
     await page.goto('/excursions');
+    await page.locator('.segmented-option', { hasText: 'Spots' }).click();
     const spotCard = page.locator('.spot-card', { hasText: spotTitle });
     // Titel statt ganzer Karte anklicken - siehe Kommentar im ersten Test dieser Datei.
     await spotCard.locator('.card-title').click();
