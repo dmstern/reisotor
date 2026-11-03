@@ -1,4 +1,4 @@
-import { ref, computed, watch, type Ref } from 'vue';
+import { ref, computed, watch, nextTick, type Ref } from 'vue';
 import { api } from '../api/client';
 import type { ScheduleItem, Spot, User } from '../api/types';
 import { useSpotsStore } from '../stores/spots';
@@ -497,7 +497,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   const addScheduleBtnRef = ref<HTMLElement | null>(null);
   const addScheduleMenuStyle = ref({ top: '0px', left: '0px' });
 
-  function toggleAddSchedulePopover(event?: MouseEvent) {
+  async function toggleAddSchedulePopover(event?: MouseEvent) {
     if (!addSchedulePopoverOpen.value) {
       addScheduleDateVal.value = '';
       const target = (event?.currentTarget || addScheduleBtnRef.value) as HTMLElement | null;
@@ -508,6 +508,16 @@ export function useSpotForm(options: UseSpotFormOptions) {
         });
       }
       addSchedulePopoverOpen.value = true;
+      await nextTick();
+      const inputEl = document.querySelector(
+        '.add-schedule-popover input[type="date"]'
+      ) as HTMLInputElement | null;
+      inputEl?.focus();
+      try {
+        inputEl?.showPicker?.();
+      } catch {
+        // showPicker ist optional (z. B. headless oder fehlende Berechtigung)
+      }
     } else {
       addSchedulePopoverOpen.value = false;
     }
@@ -515,7 +525,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   async function submitAddSpotToDate() {
     const date = addScheduleDateVal.value;
-    if (!date) return;
+    if (!date || !/^[1-9]\d{3}-\d{2}-\d{2}$/.test(date)) return;
     if (editingSpot.value !== null) {
       if (!tripStore.currentTripId) return;
       await scheduleStore.create({

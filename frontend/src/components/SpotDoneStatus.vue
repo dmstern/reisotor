@@ -66,22 +66,11 @@ const { scheduledDaysCount, dayWeather, plannedDateLabel } = useSpotWeather({
   expanded: () => props.expanded,
 });
 
-const isSplit = computed(() => {
-  return totalItemsCount.value <= 1 && !!targetCalendarDate.value;
-});
-
 function handleDoneClick(event: MouseEvent) {
   if (props.expanded) {
     onToggleDone(event);
   } else {
     emit('card-click', event);
-  }
-}
-
-function handleCalendarJump(event: MouseEvent) {
-  event.stopPropagation();
-  if (targetCalendarDate.value) {
-    drawers.openCalendar(targetCalendarDate.value);
   }
 }
 
@@ -112,16 +101,9 @@ function handleItemJump(item: ScheduledSpotItem) {
     :done="isSpotDone"
     :partially-done="isSpotPartiallyDone"
     :planned="!!(scheduledDate || totalItemsCount > 0)"
-    :split="isSplit"
-    :check-aria-label="isSpotDone ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
-    :check-title="isSpotDone ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
-    :action-aria-label="targetCalendarDate ? `${plannedDateLabel} im Kalender öffnen` : undefined"
-    :action-title="targetCalendarDate ? `Zum ${plannedDateLabel} im Kalender springen` : undefined"
     :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     @click="handleDoneClick"
-    @click-check="handleDoneClick"
-    @click-action="handleCalendarJump"
   >
     <template v-if="totalItemsCount > 1">
       <template v-if="allItemsDone">
@@ -140,17 +122,9 @@ function handleItemJump(item: ScheduledSpotItem) {
       </template>
     </template>
     <template v-else-if="isSpotDone">
-      <template v-if="scheduledDate">
+      <template v-if="plannedDateLabel">
         <span class="done-toggle-prefix">Besucht am </span>
-        <span class="done-toggle-date">
-          <AppIcon
-            :icon="FORM_FIELD_ICONS.date"
-            :size="12"
-            group="formFields"
-            class="done-toggle-calendar-icon"
-          />
-          {{ plannedDateLabel }}
-        </span>
+        <span class="done-toggle-date">{{ plannedDateLabel }}</span>
       </template>
       <template v-else>Besucht</template>
       <span
@@ -161,17 +135,9 @@ function handleItemJump(item: ScheduledSpotItem) {
         {{ Math.round(dayWeather.tempMax) }}°
       </span>
     </template>
-    <template v-else-if="scheduledDate || totalItemsCount === 1">
+    <template v-else-if="plannedDateLabel">
       <span class="done-toggle-prefix">Geplant für </span>
-      <span class="done-toggle-date">
-        <AppIcon
-          :icon="FORM_FIELD_ICONS.date"
-          :size="12"
-          group="formFields"
-          class="done-toggle-calendar-icon"
-        />
-        {{ plannedDateLabel }}
-      </span>
+      <span class="done-toggle-date">{{ plannedDateLabel }}</span>
       <span
         v-if="dayWeather && dayWeather.tempMax != null && scheduledDaysCount <= 1"
         class="done-toggle-weather"
@@ -240,7 +206,13 @@ function handleItemJump(item: ScheduledSpotItem) {
           <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
           <span class="popover-heading">Besuche abhaken</span>
         </div>
-        <p class="popover-subtext">Wähle die Tage aus, an denen dieser Spot besucht wurde:</p>
+        <p class="popover-subtext">
+          {{
+            totalItemsCount === 1
+              ? 'Markiere diesen Termin als besucht:'
+              : 'Wähle die Tage aus, an denen dieser Spot besucht wurde:'
+          }}
+        </p>
         <div class="dates-checklist">
           <div
             v-for="item in scheduledItemsForSpot"

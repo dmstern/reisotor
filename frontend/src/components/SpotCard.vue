@@ -20,7 +20,6 @@ import Card from './primitives/Card.vue';
 import SpotCoverImage from './SpotCoverImage.vue';
 import SpotDetails from './SpotDetails.vue';
 import SpotDoneStatus from './SpotDoneStatus.vue';
-import CalendarDragHandle from './CalendarDragHandle.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatTravelDuration } from '../utils/travelDuration';
@@ -252,7 +251,6 @@ const cardRotation = computed(() => {
                 />
                 Ziel der Tour
               </Button>
-              <CalendarDragHandle v-if="!isAccommodation" :spot="spot" />
               <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
               <SpotDoneStatus
                 v-if="!isAccommodation"

@@ -166,15 +166,16 @@ describe('SpotFormModal', () => {
     ) as HTMLInputElement;
     expect(dateInput).not.toBeNull();
 
+    // Incomplete year from typing should not trigger submission
+    dateInput.value = '0002-10-22';
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    await nextTick();
+    expect(document.querySelector('.assign-chip--schedule')).toBeNull();
+
     dateInput.value = '2026-10-22';
     dateInput.dispatchEvent(new Event('input', { bubbles: true }));
-    await nextTick();
-
-    const submitBtn = Array.from(document.querySelectorAll('.add-schedule-popover button')).find(
-      (b) => b.textContent?.includes('Hinzufügen')
-    ) as HTMLButtonElement;
-    expect(submitBtn).toBeDefined();
-    submitBtn.click();
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
     await nextTick();
 
     // Check that schedule chip appears
