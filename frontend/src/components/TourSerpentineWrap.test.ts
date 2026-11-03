@@ -74,7 +74,6 @@ describe('TourSerpentineWrap', () => {
       dayFocusHighlightedIds: new Set(),
       spotScheduledDates: new Map(),
       users: [],
-      allTourTitles: ['Küsten-Rundgang'],
       spotCommentItemsFor: () => [],
       getTourLayover: () => null,
     });

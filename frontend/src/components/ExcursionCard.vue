@@ -3,7 +3,6 @@ import { computed, ref } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionStations } from '../composables/useExcursionStations';
-import { useExcursionSpotDrop } from '../composables/useExcursionSpotDrop';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -46,7 +45,6 @@ const emit = defineEmits<{
   (e: 'remove-comment', id: number): void;
   (e: 'update-comment', id: number, content: string): void;
   (e: 'toggle-comment-like', id: number): void;
-  (e: 'drop-spot', spotId: number): void;
   (e: 'show-on-map'): void;
   (e: 'open', excursion: Excursion): void;
   (e: 'close'): void;
@@ -84,27 +82,12 @@ const {
   stations: () => props.stations,
   travelItems: () => props.travelItems,
 });
-
-const {
-  spotDragOverCount,
-  isDropCandidate,
-  isDropDisabled,
-  onSpotDragEnter,
-  onSpotDragLeave,
-  onSpotDrop,
-} = useExcursionSpotDrop({
-  excursion: () => props.excursion,
-  onDropSpot: (spotId) => emit('drop-spot', spotId),
-});
 </script>
 
 <template>
   <Card
     class="excursion-card"
     :class="{
-      'drop-candidate': isDropCandidate,
-      'drop-target': spotDragOverCount > 0 && !isDropDisabled,
-      'drop-disabled': isDropDisabled,
       'new-highlight': highlighted,
       expanded,
       'has-role': !!excursion.role,
@@ -113,10 +96,6 @@ const {
     :highlight="highlighted"
     :map-focused="isMapFocused"
     @click="onCardClick"
-    @dragover.prevent
-    @dragenter.prevent="onSpotDragEnter"
-    @dragleave="onSpotDragLeave"
-    @drop.prevent="onSpotDrop"
   >
     <div class="tour-card-main">
       <!-- Linke visuelle Spalte: Polaroid-Stapel (Stationen) im eingeklappten Zustand (#layout) -->
@@ -306,48 +285,6 @@ const {
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease;
-}
-
-/* Leucht-Effekt, wenn der "Tour zuordnen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
-:global(body.is-dragging-tour .excursion-card:not(.drop-disabled)),
-.excursion-card.drop-candidate {
-  background: color-mix(in srgb, var(--color-tour) 12%, var(--color-surface)) !important;
-  box-shadow:
-    inset 0 0 0 2px var(--color-tour),
-    0 8px 24px -4px color-mix(in srgb, var(--color-tour) 45%, transparent) !important;
-  animation: tour-glow-pulse 2.2s ease-in-out infinite alternate;
-  position: relative;
-  z-index: var(--z-card-elevated, 5);
-}
-
-@keyframes tour-glow-pulse {
-  0% {
-    box-shadow:
-      inset 0 0 0 2px var(--color-tour),
-      0 6px 18px -4px color-mix(in srgb, var(--color-tour) 35%, transparent);
-  }
-  100% {
-    box-shadow:
-      inset 0 0 0 3px var(--color-tour),
-      0 10px 28px -2px color-mix(in srgb, var(--color-tour) 60%, transparent);
-  }
-}
-
-:global(body.is-dragging-tour .excursion-card:not(.drop-disabled):hover),
-:global(body.is-dragging-tour .excursion-card.drop-target),
-.excursion-card.drop-candidate:hover,
-.excursion-card.drop-target {
-  background: color-mix(in srgb, var(--color-tour) 20%, var(--color-surface)) !important;
-  transform: none;
-  box-shadow:
-    inset 0 0 0 3px var(--color-tour),
-    0 12px 32px -2px color-mix(in srgb, var(--color-tour) 65%, transparent) !important;
-  z-index: var(--z-map-focus, 6);
-}
-
-:global(body.is-dragging-tour .excursion-card.drop-disabled),
-.excursion-card.drop-disabled {
-  opacity: 0.5;
 }
 
 .excursion-card.is-travel,

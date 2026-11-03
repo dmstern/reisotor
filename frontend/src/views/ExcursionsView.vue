@@ -243,8 +243,6 @@ function startEditExcursion(excursion: Excursion | number) {
   showExcursionModal.value = true;
 }
 
-const allTourTitles = computed(() => excursionsStore.excursions.map((e) => e.title));
-
 async function toggleExcursionDestination(excursion: Excursion, spotId: number) {
   const newDest = excursion.destination_spot_id === spotId ? null : spotId;
   const payload = {
@@ -260,27 +258,6 @@ async function toggleExcursionDestination(excursion: Excursion, spotId: number) 
     legs: excursion.legs,
   };
   await excursionsStore.update(excursion.id, payload);
-}
-
-async function addSpotToExcursion(excursionId: number, spotId: number) {
-  const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-  if (!excursion || excursion.spot_ids.includes(spotId)) return;
-  await excursionsStore.update(excursionId, {
-    title: excursion.title,
-    image_url: excursion.image_url ?? undefined,
-    note: excursion.note ?? undefined,
-    date: excursion.date ?? undefined,
-    spot_ids: [...excursion.spot_ids, spotId],
-  });
-}
-
-async function assignSpotToTourTitle(spotId: number, title: string) {
-  const excursion = excursionForGroupTitle(title);
-  if (excursion) {
-    if (!excursion.spot_ids.includes(spotId)) await addSpotToExcursion(excursion.id, spotId);
-  } else {
-    await excursionsStore.create({ title, spot_ids: [spotId] });
-  }
 }
 
 // 8. Spot Form Modal State
@@ -1099,7 +1076,6 @@ onUnmounted(() => {
                 @remove-comment="removeExcursionComment"
                 @update-comment="updateExcursionComment"
                 @toggle-comment-like="toggleExcursionCommentLike"
-                @drop-spot="(spotId) => addSpotToExcursion(grp.excursion!.id, spotId)"
                 @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
                 @open="onExcursionCardOpen(grp.excursion)"
                 @close="onExcursionCardClose"
@@ -1137,7 +1113,6 @@ onUnmounted(() => {
                     :day-focus-highlighted-ids="dayFocusHighlightedIds"
                     :spot-scheduled-dates="spotScheduledDates"
                     :users="users"
-                    :all-tour-titles="allTourTitles"
                     :spot-comment-items-for="spotCommentItemsFor"
                     :get-tour-layover="getTourLayover"
                     :set-spot-ref="setSpotRef"
@@ -1161,10 +1136,9 @@ onUnmounted(() => {
                     @open-spot="onSpotCardOpen"
                     @close-spot="onSpotCardClose"
                     @show-spot-on-map="onSpotShowOnMap"
-                    @assign-tour="({ spotId, title }) => assignSpotToTourTitle(spotId, title)"
                   />
 
-                  <!-- Nicht-Touren (z. B. "Ohne Tour"): Standard-Grid -->
+                  <!-- Nicht-Touren (Kategorie-Modus): Standard-Grid -->
                   <TransitionGroup v-else tag="div" name="list" class="grid cards">
                     <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
                       <SpotCard
@@ -1183,8 +1157,6 @@ onUnmounted(() => {
                         :like-count="spotsStore.likeCountFor(item.spot.id)"
                         :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
                         :comments="spotCommentItemsFor(item.spot.id)"
-                        :group-mode="groupMode === 'tours' ? 'tours' : 'category'"
-                        :tour-options="allTourTitles"
                         :has-multiple-members="users.length > 1"
                         @edit="startEditSpot"
                         @toggle-like="toggleSpotLike(item.spot.id)"
@@ -1195,7 +1167,6 @@ onUnmounted(() => {
                         @open="(spot, el) => onSpotCardOpen(spot, el)"
                         @close="onSpotCardClose"
                         @show-on-map="onSpotShowOnMap(item.spot)"
-                        @assign-tour="(title) => assignSpotToTourTitle(item.spot.id, title)"
                       />
                     </template>
                   </TransitionGroup>
@@ -1228,8 +1199,8 @@ onUnmounted(() => {
                 <span>, um sie wieder zu sehen.</span>
               </p>
               <p v-else-if="grp.excursion && !grp.items.length" class="empty">
-                Noch keine Spots zugeordnet – ziehe eine Spot-Karte hierher oder wähle diese Tour
-                beim Bearbeiten eines Spots über "Tour zuordnen".
+                Noch keine Spots zugeordnet – bearbeite diese Tour, um Stationen hinzuzufügen, oder
+                wähle sie beim Bearbeiten eines Spots über „Tour zuordnen“.
               </p>
             </section>
             <div v-if="!spotGroups.length" class="empty-state-wrap">

@@ -20,7 +20,6 @@ const props = defineProps<{
   dayFocusHighlightedIds: Set<number>;
   spotScheduledDates: Map<number, string>;
   users: User[];
-  allTourTitles: string[];
   spotCommentItemsFor: (spotId: number) => CommentItem[];
   getTourLayover: (
     excursion: Excursion,
@@ -47,7 +46,6 @@ const emit = defineEmits<{
   (e: 'openSpot', spot: Spot, el?: HTMLElement | null): void;
   (e: 'closeSpot'): void;
   (e: 'showSpotOnMap', spot: Spot): void;
-  (e: 'assignTour', payload: { spotId: number; title: string }): void;
 }>();
 
 const auth = useAuthStore();
@@ -188,8 +186,6 @@ function creatorLabel(userId: number | null | undefined): string | null {
                 :like-count="spotsStore.likeCountFor(cell.spot.id)"
                 :liked="spotsStore.likedByMe(cell.spot.id, auth.user?.id)"
                 :comments="spotCommentItemsFor(cell.spot.id)"
-                group-mode="tours"
-                :tour-options="allTourTitles"
                 :has-multiple-members="users.length > 1"
                 :layover-minutes="
                   cell.globalIndex > 0 && cell.globalIndex < items.length - 1
@@ -209,7 +205,6 @@ function creatorLabel(userId: number | null | undefined): string | null {
                 @open="(spot, el) => emit('openSpot', spot, el)"
                 @close="emit('closeSpot')"
                 @show-on-map="emit('showSpotOnMap', cell.spot)"
-                @assign-tour="(title) => emit('assignTour', { spotId: cell.spot.id, title })"
               />
             </div>
 

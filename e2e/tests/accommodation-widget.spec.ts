@@ -17,9 +17,7 @@ import { test, expect } from '@playwright/test';
 // eine einzeilige Ergänzung, die exakt das bereits bestehende, getestete Muster der Reise-Kachel
 // direkt daneben wiederverwendet (siehe DashboardView.vue).
 test.describe('Unterkunft-Spot: Aktionen, die für eine Unterkunft keinen Sinn ergeben', () => {
-  test('"Einplanen" und "Als gemacht markieren" fehlen, "Tour zuordnen" bleibt', async ({
-    page,
-  }) => {
+  test('"Einplanen" und "Als gemacht markieren" fehlen', async ({ page }) => {
     const title = `Testunterkunft ${Date.now()}`;
 
     await page.goto('/excursions');
@@ -39,7 +37,6 @@ test.describe('Unterkunft-Spot: Aktionen, die für eine Unterkunft keinen Sinn e
     const spotCard = page.locator('.spot-card', { hasText: title }).first();
     await spotCard.click();
     const actions = spotCard.locator('.card-actions');
-    await expect(actions).toContainText('Tour zuordnen');
     await expect(actions).not.toContainText('Einplanen');
     await expect(actions).not.toContainText('Besucht');
   });
