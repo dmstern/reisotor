@@ -1,6 +1,7 @@
 import type { FastifyReply } from 'fastify';
 import { db } from './db/index.js';
 import { notifyTripMembers } from './push.js';
+import { isUserAdmin } from './registrationConfig.js';
 
 interface SseConnection {
   reply: FastifyReply;
@@ -33,6 +34,20 @@ function broadcastPresence(tripId: number) {
   if (!set) return;
   const online = onlineUserIds(tripId);
   for (const conn of set) writeEvent(conn.reply, 'presence', { online });
+}
+
+export function broadcastToAdmins(event: string, data: unknown) {
+  const adminReplies = new Set<FastifyReply>();
+  for (const set of connectionsByTrip.values()) {
+    for (const conn of set) {
+      if (isUserAdmin(conn.userId)) {
+        adminReplies.add(conn.reply);
+      }
+    }
+  }
+  for (const reply of adminReplies) {
+    writeEvent(reply, event, data);
+  }
 }
 
 /** Registriert eine offene SSE-Verbindung für einen Urlaub/eine Session (routes/realtime.ts ruft das

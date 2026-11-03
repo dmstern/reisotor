@@ -58,6 +58,7 @@ const {
 const regForm = reactive({
   registrationMode: 'restricted' as 'off' | 'full' | 'restricted',
   requireEmailVerification: true,
+  contactAdminEnabled: true,
 });
 
 const legalForm = reactive({
@@ -177,6 +178,7 @@ watch(
     if (!s) return;
     regForm.registrationMode = s.registration.registrationMode;
     regForm.requireEmailVerification = s.registration.requireEmailVerification;
+    regForm.contactAdminEnabled = s.registration.contactAdminEnabled !== false;
 
     legalForm.operatorName = s.legal.operatorName;
     legalForm.operatorAddress = s.legal.operatorAddress;
@@ -227,6 +229,7 @@ async function saveRegistration() {
     registration: {
       registrationMode: regForm.registrationMode,
       requireEmailVerification: regForm.requireEmailVerification,
+      contactAdminEnabled: regForm.contactAdminEnabled,
     },
   });
 }
@@ -370,7 +373,7 @@ async function handleGenerateVapid() {
     <AdminUserManagementCard />
 
     <!-- 2. Kontaktanfragen & Registrierungshilfe -->
-    <AdminMessagesCard />
+    <AdminMessagesCard :contact-admin-enabled="regForm.contactAdminEnabled" />
 
     <ViewLoadingState v-if="loadingSettings && !settings" message="Lade Systemeinstellungen…" />
 
@@ -466,6 +469,13 @@ async function handleGenerateVapid() {
               : 'Erfordert einen konfigurierten SMTP-Mailserver.'
           "
           :disabled="regForm.registrationMode === 'off'"
+        />
+
+        <CheckboxCard
+          id="reg-contact-admin"
+          v-model="regForm.contactAdminEnabled"
+          label="Kontaktformular bei Anmeldeproblemen aktivieren"
+          description="Ermöglicht unregistrierten oder blockierten Personen, eine Hilfsanfrage an Administrator:innen zu senden (z. B. bei fehlendem E-Mail-Server oder ausstehender Bestätigung)."
         />
 
         <Alert

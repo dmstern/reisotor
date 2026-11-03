@@ -31,6 +31,7 @@ const showContactDialog = ref(false);
 const registrationMode = ref<'off' | 'full' | 'restricted'>('off');
 const emailConfigured = ref(false);
 const requireEmailVerification = ref(false);
+const contactAdminEnabled = ref(true);
 
 const landingUrl = __LANDING_URL__;
 
@@ -40,10 +41,12 @@ onMounted(async () => {
       registrationMode: 'off' | 'full' | 'restricted';
       emailConfigured?: boolean;
       requireEmailVerification?: boolean;
+      contactAdminEnabled?: boolean;
     }>('/auth/config');
     registrationMode.value = config.registrationMode;
     emailConfigured.value = Boolean(config.emailConfigured);
     requireEmailVerification.value = Boolean(config.requireEmailVerification);
+    contactAdminEnabled.value = config.contactAdminEnabled !== false;
   } catch {
     // Bleibt bei Defaults
   }
@@ -241,7 +244,7 @@ async function onSubmit() {
       <div v-if="error" class="error-container">
         <p class="error">{{ error }}</p>
         <Button
-          v-if="isUnverifiedOrNoMailError"
+          v-if="isUnverifiedOrNoMailError && contactAdminEnabled"
           type="button"
           variant="secondary"
           size="sm"
@@ -288,7 +291,12 @@ async function onSubmit() {
         {{ mode === 'register' ? 'Schon registriert? Anmelden' : 'Noch kein Konto? Registrieren' }}
       </Button>
 
-      <button type="button" class="forgot-link help-contact-link" @click="openContactDialog">
+      <button
+        v-if="contactAdminEnabled"
+        type="button"
+        class="forgot-link help-contact-link"
+        @click="openContactDialog"
+      >
         Probleme bei Registrierung oder Anmeldung?
       </button>
     </form>

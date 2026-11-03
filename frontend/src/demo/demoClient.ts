@@ -170,7 +170,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // Einzelfall-Endpunkte, die kein einfaches Collection-CRUD sind.
   if (path === '/auth/me') return structuredClone(currentDemoUser) as unknown as T;
-  if (path === '/auth/config') return { registrationMode: 'off' } as unknown as T;
+  if (path === '/auth/config')
+    return { registrationMode: 'off', contactAdminEnabled: true } as unknown as T;
   if (path === '/auth/contact-admin' && method === 'POST') {
     return {
       success: true,

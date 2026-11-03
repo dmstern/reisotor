@@ -9,6 +9,13 @@ vi.mock('virtual:pwa-register', () => ({
   registerSW: vi.fn(() => vi.fn()),
 }));
 
+vi.mock('../api/client', () => ({
+  api: {
+    get: vi.fn().mockResolvedValue([]),
+    post: vi.fn(),
+  },
+}));
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
@@ -27,6 +34,8 @@ import NotificationInbox from './NotificationInbox.vue';
 import { useNotificationsStore } from '../stores/notifications';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
 import { usePwaInstallStore } from '../stores/pwaInstall';
+import { useAuthStore } from '../stores/auth';
+import { useAdminMessagesStore } from '../stores/adminMessages';
 
 describe('NotificationInbox', () => {
   let pinia: ReturnType<typeof createPinia>;
@@ -121,5 +130,25 @@ describe('NotificationInbox', () => {
     const html = await renderInbox();
     expect(html).toContain('bell-dot');
     expect(html).toContain('unseen-dot');
+  });
+
+  it('renders unread-badge with count when admin has unread contact messages', async () => {
+    const pwaInstall = usePwaInstallStore();
+    pwaInstall.isStandalone = true;
+    const auth = useAuthStore();
+    auth.user = {
+      id: 1,
+      username: 'admin',
+      email: 'admin@example.com',
+      is_admin: true,
+      avatar: '🙂',
+    };
+    const adminMessages = useAdminMessagesStore();
+    adminMessages.setUnreadCount(3);
+
+    const html = await renderInbox();
+    expect(html).toContain('unread-badge');
+    expect(html).toContain('>3<');
+    expect(html).toContain('aria-label="Benachrichtigungen (3 ungelesen)"');
   });
 });
