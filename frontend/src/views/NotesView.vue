@@ -466,7 +466,7 @@ async function remove(id: number) {
   <ViewLoadingState v-else />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .header {
   display: flex;
   flex-wrap: wrap;
@@ -476,7 +476,7 @@ async function remove(id: number) {
   margin-bottom: var(--space-3);
 }
 
-@container app-main (max-width: 480px) {
+@include container-app-main-down('mobile') {
   .header {
     flex-direction: column;
     align-items: stretch;

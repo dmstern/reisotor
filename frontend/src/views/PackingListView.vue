@@ -138,7 +138,7 @@ async function handleEditDelete(id: number) {
   <ViewLoadingState v-else />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 :deep(.quick-add-row) {
   margin-bottom: var(--space-3);
 }
@@ -209,7 +209,7 @@ async function handleEditDelete(id: number) {
 /* Desktop: Listen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen
    (Batch-Anfrage) – auto-fit/minmax statt einer festen Spaltenzahl, damit sich die Spaltenzahl der
    tatsächlichen Fensterbreite und Anzahl an Listen (gemeinsam + je Person) anpasst. */
-@container app-main (min-width: 900px) {
+@include container-app-main-up('desktop-md') {
   .lists-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));

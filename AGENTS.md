@@ -115,6 +115,11 @@ Für alle Änderungen gelten folgende Software-Design-Prinzipien als verbindlich
   - Für Icons in Buttons, Badges, Tabellen, Menüs, Statusanzeigen oder Dialogen dürfen **NIEMALS rohe Unicode-Emojis** verwendet werden.
   - Verwende stattdessen immer das standardisierte Tabler-Icon über `<AppIcon :icon="..." />` (definiert in `utils/actionIcons.ts`, `utils/formFieldIcons.ts` etc.).
   - **Einzige Ausnahme:** Bereiche, in denen die Nutzerin / der Nutzer in den Einstellungen explizit zwischen Symbol und Emoji umschalten kann (wie Wetter- und Kategorie-Icons via `stores/iconStyle.ts`), sowie benutzerdefinierte Nutzer-Avatare (`user.avatar`).
+- **Responsive Breakpoints & Container Queries (Issue #575):**
+  - **Niemals willkürliche neue Pixel-Breakpoints ausdenken!**
+  - Für SCSS/CSS immer die zentralen Breakpoint-Mixins aus `src/styles/_breakpoints.scss` (automatisch per Vite verfügbar) nutzen (`@include media-up(...)`, `@include media-down(...)`, `@include container-down(...)`, `@include container-app-main-down(...)` etc.).
+  - Für TS/JS-Laufzeitabfragen (`window.matchMedia` etc.) immer `BREAKPOINTS` aus `src/tokens/breakpoints.ts` importieren.
+  - Standard-Breakpoints: `mobile-compact` (360px), `mobile-sm` (420px), `mobile` (480px), `tablet-sm` (600px), `tablet` (700px), `desktop-sm` (800px), `desktop-md` (900px), `desktop` (1024px), `page-max` (1400px), `wqhd` (2200px), `4k` (3200px). Siehe `DESIGN.md`.
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 

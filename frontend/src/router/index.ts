@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router';
 import { ref } from 'vue';
+import { BREAKPOINTS } from '../tokens/breakpoints';
 import { useAuthStore } from '../stores/auth';
 
 export const isNavigating = ref(false);
@@ -294,7 +295,10 @@ router.beforeEach(async (to) => {
   // Aufruf dieser Mobil-Seiten-Route (z. B. per eingetippter URL, kein Nav-Link dorthin auf
   // Desktop) würde dieselbe Komponente sonst ein zweites Mal unabhängig mounten (doppelte
   // API-Aufrufe, zwei auseinanderlaufende lokale Zustände).
-  if (to.name === 'calendar' && window.matchMedia('(min-width: 1024px)').matches) {
+  if (
+    to.name === 'calendar' &&
+    window.matchMedia(`(min-width: ${BREAKPOINTS.desktop}px)`).matches
+  ) {
     const tripId = to.params.tripId ? String(to.params.tripId) : '';
     return tripId ? { path: `/trip/${tripId}` } : { name: 'trips' };
   }

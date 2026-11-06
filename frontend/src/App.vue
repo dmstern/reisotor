@@ -230,7 +230,7 @@ const firstLoadDone = ref(
   </template>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .app-main {
   min-width: 0;
   /* container-type global hier statt in einzelnen Views: .app-main ist die einzige Stelle, an der
@@ -244,7 +244,7 @@ const firstLoadDone = ref(
   container: app-main / inline-size;
 }
 
-@media (min-width: 1024px) {
+@include media-up('desktop') {
   .app-shell {
     display: flex;
     /* stretch (nicht flex-start!): .drawer muss die volle Höhe von .app-main erreichen, sonst hat

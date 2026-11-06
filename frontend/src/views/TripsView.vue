@@ -149,7 +149,7 @@ function openMembers(trip: Trip) {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .header {
   display: flex;
   flex-wrap: wrap;
@@ -164,7 +164,7 @@ function openMembers(trip: Trip) {
   min-width: 0;
 }
 
-@container app-main (max-width: 480px) {
+@include container-app-main-down('mobile') {
   .header {
     flex-direction: column;
     align-items: stretch;

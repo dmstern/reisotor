@@ -17,6 +17,7 @@ import {
 } from '../utils/spotsColWidth';
 import type TripMap from '../components/TripMap.vue';
 import { useDrawersStore } from '../stores/drawers';
+import { BREAKPOINTS } from '../tokens/breakpoints';
 
 export type SheetState = 'collapsed' | 'partial' | 'full';
 export const SHEET_ORDER: SheetState[] = ['collapsed', 'partial', 'full'];
@@ -272,9 +273,10 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     return sheetHeightPx(targetState);
   });
 
-  const appMainWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const appMainWidth = ref(typeof window !== 'undefined' ? window.innerWidth : BREAKPOINTS.desktop);
   const spotsColRightPx = ref(
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+    typeof window !== 'undefined' &&
+      window.matchMedia(`(min-width: ${BREAKPOINTS.desktop}px)`).matches
       ? spotsColWidth.value + 16
       : 0
   );
