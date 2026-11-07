@@ -2097,6 +2097,14 @@ onUnmounted(() => {
 
 .drawer-search-accordion-inner {
   min-height: 0;
+  padding-top: 6px;
+  margin-top: -6px;
+  padding-bottom: 6px;
+  margin-bottom: -6px;
+  overflow: visible;
+}
+
+.drawer-search-accordion.is-collapsed .drawer-search-accordion-inner {
   overflow: hidden;
 }
 
