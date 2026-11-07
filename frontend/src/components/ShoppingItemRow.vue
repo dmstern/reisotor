@@ -127,6 +127,7 @@ function userName(id: number | null | undefined) {
   gap: var(--space-2);
   cursor: pointer;
   min-width: 0;
+  min-height: 24px;
 }
 
 .check :deep(input[type='checkbox']),

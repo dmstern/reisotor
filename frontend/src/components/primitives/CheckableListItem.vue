@@ -197,6 +197,13 @@ withDefaults(
   color: var(--color-text-muted);
 }
 
+.list-item-sparkle {
+  align-self: flex-start;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .checkable-list-item__actions,
 :deep(.row-actions) {
   display: flex;
@@ -205,5 +212,6 @@ withDefaults(
   flex-shrink: 0;
   margin-left: auto;
   align-self: flex-start;
+  height: 24px;
 }
 </style>

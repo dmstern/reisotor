@@ -222,10 +222,11 @@ function handleMainClick(e: MouseEvent) {
 .main,
 .check {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 24px;
   cursor: pointer;
   user-select: none;
 }
@@ -239,7 +240,6 @@ function handleMainClick(e: MouseEvent) {
   min-width: 24px;
   min-height: 24px;
   margin: 0;
-  margin-top: 1px;
   padding: 0;
   border: 2px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
