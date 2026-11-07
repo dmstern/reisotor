@@ -30,19 +30,20 @@ export const Default: Story = {
     },
     template: `
       <div style="padding: 40px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-weight: 600;">Bereich</span>
-        <InfoPopover v-bind="args">
+        <span style="font-weight: 600;">Teil der Urlaubsregion</span>
+        <InfoPopover v-bind="args" title="Teil der Urlaubsregion?">
           <p>
-            <strong>Urlaubsort:</strong> z. B. Ausflugsziele, Restaurants oder Unterkünfte am Reiseziel.
+            <strong>Aktiviert:</strong> Der Ort liegt am Reiseziel (z. B. Unterkunft, Restaurant, Ausflugsziel oder Zielflughafen).
           </p>
           <p>
-            <strong>Heimat-Seite:</strong> z. B. der heimische Flughafen/Bahnhof/Zuhause für Reise-Etappen.
+            <strong>Deaktiviert:</strong> Heimat-Seite (z. B. der heimische Abflughafen, Bahnhof oder Zuhause für Reise-Etappen).
           </p>
           <p class="popover-tip">
-            🗺️ Wird für das Auswählen des passenden Kartenausschnitts verwendet.
+            🗺️ Wird für das automatische Auswählen des passenden Kartenausschnitts verwendet.
           </p>
         </InfoPopover>
       </div>
+
     `,
   }),
 };

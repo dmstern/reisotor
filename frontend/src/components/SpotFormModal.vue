@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, toRef, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import type { ScheduleItem, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
-import SegmentedToggle from './SegmentedToggle.vue';
+import ToggleSwitch from './primitives/ToggleSwitch.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import LocationPicker from './LocationPicker.vue';
 import CoverImagePicker from './CoverImagePicker.vue';
@@ -21,8 +21,8 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
-import { spotCategoryMeta } from '../utils/spotCategory';
-import { useSpotForm, SPOT_SIDE_OPTIONS } from '../composables/useSpotForm';
+import { spotCategoryMeta, isTransitCategory, isHomeCategory } from '../utils/spotCategory';
+import { useSpotForm } from '../composables/useSpotForm';
 
 const props = defineProps<{
   show: boolean;
@@ -124,9 +124,28 @@ const scheduledCount = computed(() =>
     : (spotForm.value.scheduledDates?.length ?? 0)
 );
 
+const manualRegionVisible = ref(false);
+
+const showSpotRegionSection = computed(() => {
+  const cat = activeSpotForm.value.category;
+  return (
+    manualRegionVisible.value ||
+    Boolean(editingSpot.value?.is_home) ||
+    isTransitCategory(cat) ||
+    isHomeCategory(cat) ||
+    Boolean(activeSpotForm.value.is_home)
+  );
+});
+
+function enableSpotRegionManual() {
+  manualRegionVisible.value = true;
+  activeSpotForm.value.is_home = true;
+}
+
 watch(
   () => [props.show, props.spot],
   ([show, spot]) => {
+    manualRegionVisible.value = false;
     if (show) {
       if (spot) {
         startEditSpot(spot as Spot);
@@ -139,6 +158,7 @@ watch(
 );
 
 function handleClose() {
+  manualRegionVisible.value = false;
   if (editingSpot.value !== null) {
     closeEditSpotForm();
   } else {
@@ -247,47 +267,65 @@ function handleOpenScheduledItem(item: ScheduleItem) {
         </p>
       </div>
 
+      <!-- 2. Urlaubsregion-Schalter (bei Transit-Orten wie Flughafen/Bahnhof, bei Heimatort oder manuellem Aufruf) -->
       <div
-        class="spot-side-field"
+        v-if="showSpotRegionSection"
+        class="spot-region-field"
         :class="{ 'is-modified': isEditSpotSideModified }"
-        role="group"
-        aria-label="Bereich des Standorts"
       >
-        <div class="spot-side-header">
-          <span class="spot-side-label">
-            <span>Bereich</span>
-            <span
-              v-if="isEditSpotSideModified"
-              class="modified-dot"
-              title="Geändert"
-              aria-label="Geändert"
-            />
-          </span>
-          <InfoPopover
-            title="Was bedeutet Bereich?"
-            aria-label="Erklärung zum Standort-Bereich"
-            :menu-width="280"
-          >
-            <p>
-              <strong>Urlaubsort:</strong> z. B. Ausflugsziele, Restaurants oder Unterkünfte am
-              Reiseziel.
-            </p>
-            <p>
-              <strong>Heimat-Seite:</strong> z. B. der heimische Flughafen/Bahnhof/Zuhause für
-              Reise-Etappen.
-            </p>
-            <p class="popover-tip">
-              🗺️ Wird für das Auswählen des passenden Kartenausschnitts verwendet.
-            </p>
-          </InfoPopover>
+        <div class="spot-region-row">
+          <div class="spot-region-label-group">
+            <span class="spot-region-label">
+              <AppIcon
+                :icon="activeSpotForm.is_home ? ACTION_ICONS.home : ACTION_ICONS.vacation"
+                :size="16"
+                group="actions"
+                class="spot-region-icon"
+              />
+              <span>Teil der Urlaubsregion</span>
+              <span
+                v-if="isEditSpotSideModified"
+                class="modified-dot"
+                title="Geändert"
+                aria-label="Geändert"
+              />
+            </span>
+            <InfoPopover
+              title="Teil der Urlaubsregion?"
+              aria-label="Erklärung zur Urlaubsregion"
+              :menu-width="280"
+            >
+              <p>
+                <strong>Aktiviert:</strong> Der Ort liegt am Reiseziel (z. B. Unterkunft,
+                Restaurant, Ausflugsziel oder Zielflughafen).
+              </p>
+              <p>
+                <strong>Deaktiviert:</strong> Heimat-Seite (z. B. der heimische Abflughafen, Bahnhof
+                oder Zuhause für Reise-Etappen).
+              </p>
+              <p class="popover-tip">
+                🗺️ Wird für das automatische Auswählen des passenden Kartenausschnitts verwendet.
+              </p>
+            </InfoPopover>
+          </div>
+          <ToggleSwitch
+            id="spotRegionToggle"
+            aria-label="Teil der Urlaubsregion"
+            :model-value="!activeSpotForm.is_home"
+            @update:model-value="(val: boolean) => (activeSpotForm.is_home = !val)"
+          />
         </div>
-        <SegmentedToggle
-          id="spotFormSideToggle"
-          class="spot-side-toggle"
-          :model-value="activeSpotForm.is_home ? 'home' : 'vacation'"
-          :options="SPOT_SIDE_OPTIONS"
-          @update:model-value="(val) => (activeSpotForm.is_home = val === 'home')"
-        />
+      </div>
+      <div v-else class="spot-region-override-row">
+        <button
+          type="button"
+          class="spot-region-override-btn"
+          title="Diesen Ort als Heimat-Seite außerhalb der Urlaubsregion festlegen"
+          @click="enableSpotRegionManual"
+        >
+          <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" />
+          <span>Als Heimatort festlegen</span>
+        </button>
       </div>
 
       <template v-if="activeSpotForm.category === 'Unterkunft'">
@@ -626,38 +664,83 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   z-index: var(--z-popover, 1100);
 }
 
-.spot-side-field {
+.spot-region-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-4);
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-hover);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
-.spot-side-header {
+.spot-region-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.spot-region-label-group {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
 }
 
-.spot-side-toggle {
-  width: fit-content;
-  min-width: min(280px, 100%);
-  max-width: 340px;
-  align-self: flex-start;
-}
-
-.spot-side-label {
-  display: flex;
+.spot-region-label {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-text);
+  user-select: none;
 }
 
-.spot-side-field.is-modified .spot-side-label {
+.spot-region-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.spot-region-field.is-modified .spot-region-label {
   color: var(--color-accent-dark, var(--color-accent));
+}
+
+.spot-region-override-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: calc(var(--space-1) * -1);
+  margin-bottom: var(--space-2);
+}
+
+.spot-region-override-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.spot-region-override-btn:hover {
+  color: var(--color-primary);
+  background-color: var(--color-hover);
+}
+
+.spot-region-override-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .schedule-controls {

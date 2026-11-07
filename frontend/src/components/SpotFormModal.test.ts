@@ -63,7 +63,7 @@ describe('SpotFormModal', () => {
     };
   }
 
-  it('renders "Neuer Spot" modal when show is true and spot is null', async () => {
+  it('renders "Neuer Spot" modal when show is true and spot is null with clean defaults', async () => {
     const { cleanUp } = mountModal({
       show: true,
       spot: null,
@@ -74,8 +74,11 @@ describe('SpotFormModal', () => {
     await nextTick();
 
     expect(document.body.textContent).toContain('Neuer Spot');
-    expect(document.body.textContent).toContain('Urlaubsort');
     expect(document.body.textContent).toContain('Hinzufügen');
+    // Confusing SegmentedToggle with "Urlaubsort" is replaced by smart logic
+    expect(document.body.textContent).not.toContain('Urlaubsort');
+    // Subtle action to set home location if needed
+    expect(document.body.textContent).toContain('Als Heimatort festlegen');
     cleanUp();
   });
 
@@ -92,6 +95,82 @@ describe('SpotFormModal', () => {
     expect(document.body.textContent).toContain('Spot bearbeiten');
     expect(document.body.textContent).toContain('Speichern');
     expect(document.body.textContent).toContain('Löschen');
+    cleanUp();
+  });
+
+  it('renders "Teil der Urlaubsregion" toggle for transit spots (e.g. Flughafen)', async () => {
+    const transitSpot: Spot = {
+      ...dummySpot,
+      id: 50,
+      title: 'Flughafen Lissabon',
+      category: 'Flughafen',
+      is_home: 0,
+    };
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: transitSpot,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    expect(document.body.textContent).toContain('Teil der Urlaubsregion');
+    const switchEl = document.querySelector('#spotRegionToggle');
+    expect(switchEl).not.toBeNull();
+    expect(switchEl?.getAttribute('aria-checked')).toBe('true');
+    cleanUp();
+  });
+
+  it('renders "Teil der Urlaubsregion" toggle as inactive for home spots (is_home: 1)', async () => {
+    const homeSpot: Spot = {
+      ...dummySpot,
+      id: 51,
+      title: 'Zuhause',
+      category: 'Zuhause',
+      is_home: 1,
+    };
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: homeSpot,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    expect(document.body.textContent).toContain('Teil der Urlaubsregion');
+    const switchEl = document.querySelector('#spotRegionToggle');
+    expect(switchEl).not.toBeNull();
+    expect(switchEl?.getAttribute('aria-checked')).toBe('false');
+    cleanUp();
+  });
+
+  it('allows clicking "Als Heimatort festlegen" to reveal and activate the region toggle', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const overrideBtn = document.querySelector('.spot-region-override-btn') as HTMLButtonElement;
+    expect(overrideBtn).not.toBeNull();
+    overrideBtn.click();
+    await nextTick();
+
+    expect(document.body.textContent).toContain('Teil der Urlaubsregion');
+    const switchEl = document.querySelector('#spotRegionToggle');
+    expect(switchEl).not.toBeNull();
+    // After marking as home, vacation region toggle is false
+    expect(switchEl?.getAttribute('aria-checked')).toBe('false');
+
+    // Clicking switch toggles it back to active (Urlaubsregion)
+    (switchEl as HTMLButtonElement).click();
+    await nextTick();
+    expect(switchEl?.getAttribute('aria-checked')).toBe('true');
     cleanUp();
   });
 

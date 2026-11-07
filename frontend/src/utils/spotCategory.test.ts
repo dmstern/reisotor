@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { spotCategoryMeta, SPOT_CATEGORY_SUGGESTIONS, KNOWN_CATEGORIES } from './spotCategory';
+import {
+  spotCategoryMeta,
+  SPOT_CATEGORY_SUGGESTIONS,
+  KNOWN_CATEGORIES,
+  isHomeCategory,
+  isTransitCategory,
+  isVacationCategory,
+} from './spotCategory';
 
 describe('spotCategory', () => {
   it('has expanded spot category suggestions', () => {
@@ -56,5 +63,42 @@ describe('spotCategory', () => {
     const meta = spotCategoryMeta('Geheimer Fotospot');
     expect(meta.tabler.id).toBe('map-pin');
     expect(meta.icon).toBe('📍');
+  });
+
+  it('correctly classifies home categories', () => {
+    expect(isHomeCategory('Zuhause')).toBe(true);
+    expect(isHomeCategory('zuhause')).toBe(true);
+    expect(isHomeCategory('Heimat')).toBe(true);
+    expect(isHomeCategory('Wohnung')).toBe(true);
+    expect(isHomeCategory('Home')).toBe(true);
+    expect(isHomeCategory('Unterkunft')).toBe(false);
+    expect(isHomeCategory('Flughafen')).toBe(false);
+    expect(isHomeCategory('')).toBe(false);
+    expect(isHomeCategory(undefined)).toBe(false);
+  });
+
+  it('correctly classifies transit categories', () => {
+    expect(isTransitCategory('Flughafen')).toBe(true);
+    expect(isTransitCategory('Airport')).toBe(true);
+    expect(isTransitCategory('Bahnhof')).toBe(true);
+    expect(isTransitCategory('Zug')).toBe(true);
+    expect(isTransitCategory('Hafen')).toBe(true);
+    expect(isTransitCategory('Fähre')).toBe(true);
+    expect(isTransitCategory('Busbahnhof')).toBe(true);
+    expect(isTransitCategory('Raststätte')).toBe(true);
+    expect(isTransitCategory('Zuhause')).toBe(false);
+    expect(isTransitCategory('Unterkunft')).toBe(false);
+    expect(isTransitCategory('Restaurant')).toBe(false);
+  });
+
+  it('correctly classifies vacation categories', () => {
+    expect(isVacationCategory('Unterkunft')).toBe(true);
+    expect(isVacationCategory('Hotel')).toBe(true);
+    expect(isVacationCategory('Restaurant')).toBe(true);
+    expect(isVacationCategory('Strand')).toBe(true);
+    expect(isVacationCategory('Museum')).toBe(true);
+    expect(isVacationCategory('Zuhause')).toBe(false);
+    expect(isVacationCategory('Flughafen')).toBe(false);
+    expect(isVacationCategory('Bahnhof')).toBe(false);
   });
 });

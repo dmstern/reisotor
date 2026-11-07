@@ -505,3 +505,68 @@ export function spotCategoryMeta(category: string | null | undefined): CategoryM
   if (known) return known;
   return { icon: OTHER_META.icon, color: hashCategoryColor(trimmed), tabler: OTHER_META.tabler };
 }
+
+/**
+ * Prüft, ob eine Spot-Kategorie ein eindeutiger Heimat-Ort ist (z. B. 'Zuhause', 'Wohnung', 'Home').
+ * Solche Spots werden standardmäßig als Heimatort (is_home = true) vorbelegt.
+ */
+export function isHomeCategory(category: string | null | undefined): boolean {
+  if (!category) return false;
+  const trimmed = category.trim().toLowerCase();
+  const known = LOOKUP.get(trimmed);
+  if (known?.label === 'Zuhause') return true;
+  return ['zuhause', 'heimat', 'wohnung', 'home', 'haus'].includes(trimmed);
+}
+
+/**
+ * Prüft, ob eine Spot-Kategorie ein Reise- bzw. Transit-Ort ist (z. B. Flughafen, Bahnhof, Hafen, Raststätte),
+ * der sowohl an der Heimat-Seite (z. B. Abflughafen) als auch am Urlaubsort (z. B. Zielflughafen) liegen kann.
+ * Bei diesen Kategorien kann die Zuordnung nicht vollautomatisch erraten werden, weshalb der
+ * "Teil der Urlaubsregion"-Schalter im Spot-Formular prominent angeboten wird.
+ */
+export function isTransitCategory(category: string | null | undefined): boolean {
+  if (!category) return false;
+  const trimmed = category.trim().toLowerCase();
+  const known = LOOKUP.get(trimmed);
+  const transitLabels = ['Flughafen', 'Bahnhof', 'Busbahnhof', 'Hafen', 'Raststätte', 'Tankstelle'];
+  if (known?.label && transitLabels.includes(known.label)) return true;
+  const transitAliases = [
+    'flughafen',
+    'airport',
+    'flug',
+    'flüge',
+    'bahnhof',
+    'station',
+    'zug',
+    'bahn',
+    'metro',
+    'u-bahn',
+    's-bahn',
+    'busbahnhof',
+    'bus',
+    'fernbus',
+    'shuttle',
+    'hafen',
+    'fähre',
+    'ferry',
+    'pier',
+    'marina',
+    'port',
+    'raststätte',
+    'rastplatz',
+    'autobahn',
+    'tankstelle',
+    'tanken',
+    'ladesäule',
+  ];
+  return transitAliases.includes(trimmed);
+}
+
+/**
+ * Prüft, ob eine Kategorie ein eindeutiger Urlaubsort ist (z. B. Unterkunft, Restaurant, Strand, Museum, Ausflugsziel).
+ * Bei Urlaubsplanung zählen Orte standardmäßig zur Urlaubsregion (is_home = false).
+ */
+export function isVacationCategory(category: string | null | undefined): boolean {
+  if (!category) return false;
+  return !isHomeCategory(category) && !isTransitCategory(category);
+}
