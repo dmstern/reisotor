@@ -713,7 +713,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 .spot-region-override-row {
   display: flex;
   justify-content: flex-start;
-  margin-top: calc(var(--space-1) * -1);
+  margin-top: var(--space-2);
   margin-bottom: var(--space-2);
 }
 

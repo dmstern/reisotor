@@ -465,8 +465,8 @@ defineExpose({
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 12px;
-  gap: var(--space-3);
+  padding: 10px 12px;
+  gap: var(--space-2, 8px);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -531,12 +531,16 @@ defineExpose({
   overflow: hidden;
   background: var(--color-hover);
   flex-shrink: 0;
+
+  :deep(.form-image-banner--polaroid) {
+    height: 120px;
+  }
 }
 
 .polaroid-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2, 8px);
   min-width: 0;
   padding: 0;
 }
@@ -544,7 +548,7 @@ defineExpose({
 .status-details {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2, 8px);
   min-width: 0;
   max-width: 100%;
   width: 100%;
@@ -796,6 +800,8 @@ defineExpose({
     right: auto;
     width: 320px;
     max-width: calc(100% - 24px);
+    max-height: calc(100% - 80px);
+    overflow-y: auto;
   }
 }
 

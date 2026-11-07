@@ -71,7 +71,7 @@ const id = computed(() => props.id || autoId);
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: var(--form-field-gap, var(--space-2));
+  gap: var(--form-field-gap, 5px);
   min-width: 0;
 }
 
