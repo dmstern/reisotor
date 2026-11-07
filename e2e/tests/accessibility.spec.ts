@@ -92,7 +92,7 @@ test.describe('Accessibility (a11y)', () => {
       await expect(
         page.getByRole('button', { name: 'Filtern & Sortieren', exact: true })
       ).toBeVisible({ timeout: 15_000 });
-      await expect(page.locator('.day-chip').first()).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator('.spot-card').first()).toBeVisible({ timeout: 15_000 });
 
       const results = await scanPageA11y(page);
       expect(results.violations, formatViolations(results.violations)).toEqual([]);
