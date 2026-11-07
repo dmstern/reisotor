@@ -298,7 +298,7 @@ Nach jedem Lauf wird automatisch ein interaktiver HTML-Diff-Report unter `e2e/.t
 - 🏗️ **[Architektur & Code-Map](ARCHITECTURE.md):** Technische Übersicht über Backend, SQLite-Datenbank, Auth, Frontend-Stores, SSE-Echtzeitsynchronisation, Offline-Modus und die Domänen-Code-Map.
 - 🔍 **[UI-Audit- & Layout-Guide](docs/UI_AUDIT_GUIDE.md):** Leitfaden für UI- und Container-Query-Audits, Viewport-Stresstests und den visuellen Screenshot-Diff-Report.
 - 🎨 **[Design-System](DESIGN.md):** Design-Prinzipien, Typografie, Farb- und Status-Tokens, Komponenten-Guidelines und Icon-System.
-- 🤖 **[Agenten-Konventionen](AGENTS.md):** Verbindliche Konventionen, Befehle und Worktree-Disziplin für AI Coding Agents.
+- 🤖 **[Agenten-Konventionen & Modell-Mapping](AGENTS.md):** Verbindliche Konventionen, Befehle, Worktree-Disziplin sowie [Issue-Komplexität & Modell-/Thinking-Mapping](AGENTS.md#issue-komplexität--modell-thinking-mapping) (`complexity:low/mid/high`) für Mensch und AI Coding Agents.
 
 ## Lizenz
 

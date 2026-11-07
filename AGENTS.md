@@ -175,6 +175,34 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
    - Screenshots (Scratch-Specs, Baseline-Updates) dürfen **niemals automatisch oder unaufgefordert** angefertigt werden, sondern ausschließlich auf expliziten Nutzer-Wunsch.
    - Bilddateien dürfen vom Agenten **niemals mit `view_file` geöffnet werden** (spült ~4.000 multimodale Tokens pro Bild in den Kontext). Bilder nur erzeugen, ablegen und im Chat/Walkthrough per Markdown verlinken.
 
+## Issue-Komplexität & Modell-/Thinking-Mapping
+
+GitHub-Issues werden über ein dreistufiges Ampel-System nach **fachlicher und technischer Komplexität** klassifiziert (`complexity:low`, `complexity:mid`, `complexity:high`). Das Label beschreibt die Eigenschaft der Aufgabe, aus der sich für Mensch und Agent die passende Modell- und Thinking-Stufe je Phase (Planung, Umsetzung, Review) ableitet:
+
+### 1. Einstufung (Triage-Faustregeln)
+
+- 🟢 **`complexity:low`** _(Trivial / Lokal)_: 1–2 Dateien betroffen, klare Ursache/Anforderung, keine Architektur-Entscheidung (z. B. Copy-Änderung, kleiner CSS-/UI-Fix, lokales Refactoring, Dependency-Bump).
+- 🟡 **`complexity:mid`** _(Standard-Feature / Mehrteilig)_: Mehrere Dateien/Schichten (z. B. Backend-Route + Pinia-Store + Vue-View + Tests), Erweiterung bestehender Muster, überschaubare Edge-Cases.
+- 🔴 **`complexity:high`** _(Architektur / Kritisch / Unklar)_: Neues Subsystem, komplexe State-/Concurrency-/Offline-Sync-Logik, DB-Migrationen mit Backfill, Security/Auth-Änderungen, vage Anforderungen oder schwer reproduzierbare Bugs.
+
+### 2. Mapping auf Phase, Modell & Thinking-Aufwand
+
+| Issue-Label                         | 1. Planung (Spec / Design)                   | 2. Umsetzung (Coding)                                     | 3. Review (QA / Bugs)    |
+| :---------------------------------- | :------------------------------------------- | :-------------------------------------------------------- | :----------------------- |
+| 🟢 **`complexity:low`**             | _Optional / Inline_<br>**3.8 Flash** (`low`) | **3.8 Flash** (`low`)                                     | **3.8 Flash** (`medium`) |
+| 🟡 **`complexity:mid`** _(Default)_ | **4 Argon** (`medium`)                       | **3.8 Flash** (`medium`)                                  | **4 Argon** (`medium`)   |
+| 🔴 **`complexity:high`**            | **4 Argon** (`high`)                         | **4 Argon** (`medium`) _oder_<br>**3.8 Flash** (`high`)\* | **4 Argon** (`high`)     |
+
+_\*Hinweis zu `complexity:high` in der Umsetzung:_ Ist der Plan aus Phase 1 bereits bis ins Detail ausformuliert (exakte Dateipfade, Signaturen, Schritt-für-Schritt-Vorgaben), reicht oft **Gemini 3.8 Flash (`high`)**. Müssen während des Codings noch komplexe algorithmische oder architektonische Entscheidungen getroffen werden, wird **Gemini 4 Argon (`medium`)** genutzt.
+
+### 3. Leitprinzipien für den Workflow
+
+1. **Planung als größter Hebel:** Ein präziser Plan mit `4 Argon` löst Edge-Cases vorab auf, sodass `3.8 Flash` in der Umsetzung schnell und kosteneffizient ausführen kann.
+2. **Kein Overkill bei `low`:** Für triviale Aufgaben entfällt ein separater `4 Argon`-Planungsschritt; Planung und Umsetzung erfolgen direkt in einem Schritt mit `3.8 Flash (low)`.
+3. **Review mindestens auf Planungs-Niveau:** Das Review-Modell muss mindestens so stark sein wie das Planungs-Modell (`4 Argon medium/high` ab `mid`), um subtile Fehler (Race Conditions, Reaktivitäts-Fallen, Security, Architektur-Drift) zuverlässig zu erkennen.
+4. **Dynamische Eskalation statt weiterer Labels:** Wenn ein Modell in der Umsetzung nach 2 Versuchen einen Test nicht grün bekommt oder in einer Schleife hängt, wird für den konkreten Schritt dynamisch die Thinking-Stufe (`medium` → `high`) oder das Modell (`Flash` → `Argon`) erhöht – das Issue-Label selbst bleibt unverändert.
+5. **Automatische Berücksichtigung durch Agenten:** Wenn ein Agent ein GitHub-Issue anlegt (`gh issue create`), bearbeitet oder per `gh issue view` analysiert, prüft bzw. setzt er das passende `complexity:*`-Label und gibt bei Phasen-Übergängen (z. B. nach Abschluss der Planung) eine kurze Empfehlung für das Modell der Folgephase aus.
+
 ## PR-Workflow
 
 - **Automatische PR-Erstellung bei neuen Branches / Worktrees:**
