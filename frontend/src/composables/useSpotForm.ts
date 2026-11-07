@@ -11,7 +11,12 @@ import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
 import { parseLatLngFromMapsLink, tilePreviewUrl, buildGoogleMapsLink } from '../utils/googleMaps';
 import { computePopoverPosition } from '../utils/popoverPosition';
-import { spotCategoryMeta } from '../utils/spotCategory';
+import {
+  spotCategoryMeta,
+  isHomeCategory,
+  isTransitCategory,
+  isVacationCategory,
+} from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { isEmptyRichText } from '../utils/richText';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
@@ -186,7 +191,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   const isEditSpotSideModified = computed(() => {
     if (!editingSpot.value) return false;
-    const isZuhause = editingSpot.value.category?.trim().toLowerCase() === 'zuhause';
+    const isZuhause = isHomeCategory(editingSpot.value.category);
     const initialSide = isZuhause ? true : !!editingSpot.value.is_home;
     return Boolean(editSpotForm.value.is_home) !== initialSide;
   });
@@ -383,7 +388,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       showEditSpotLocationSection.value =
         !!val.maps_link ||
         !!val.is_home ||
-        val.category?.trim().toLowerCase() === 'zuhause' ||
+        isHomeCategory(val.category) ||
         !!val.address ||
         (val.lat != null && val.lng != null);
       showSpotScheduleSection.value =
@@ -400,12 +405,13 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
         showSpotLocationSection.value = true;
       }
-      const isNewZuhause = newCat?.trim().toLowerCase() === 'zuhause';
-      const wasZuhause = oldCat?.trim().toLowerCase() === 'zuhause';
-      if (isNewZuhause && !wasZuhause) {
+      if (isHomeCategory(newCat)) {
         spotForm.value.is_home = true;
         showSpotLocationSection.value = true;
-      } else if (!isNewZuhause && wasZuhause) {
+      } else if (isVacationCategory(newCat) && (isHomeCategory(oldCat) || spotForm.value.is_home)) {
+        spotForm.value.is_home = false;
+      } else if (isTransitCategory(newCat) && isHomeCategory(oldCat)) {
+        // Bei Wechsel von Zuhause zu Transit-Hub (z. B. Flughafen) standardmäßig auf Urlaubsregion zurückstellen
         spotForm.value.is_home = false;
       }
     }
@@ -418,12 +424,15 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
         showEditSpotLocationSection.value = true;
       }
-      const isNewZuhause = newCat?.trim().toLowerCase() === 'zuhause';
-      const wasZuhause = oldCat?.trim().toLowerCase() === 'zuhause';
-      if (isNewZuhause && !wasZuhause) {
+      if (isHomeCategory(newCat)) {
         editSpotForm.value.is_home = true;
         showEditSpotLocationSection.value = true;
-      } else if (!isNewZuhause && wasZuhause) {
+      } else if (
+        isVacationCategory(newCat) &&
+        (isHomeCategory(oldCat) || editSpotForm.value.is_home)
+      ) {
+        editSpotForm.value.is_home = false;
+      } else if (isTransitCategory(newCat) && isHomeCategory(oldCat)) {
         editSpotForm.value.is_home = false;
       }
     }
@@ -884,7 +893,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     spotTitleTouched.value = false;
     selectedSpotCity.value = null;
     spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
-    const isZuhause = spot.category?.trim().toLowerCase() === 'zuhause';
+    const isZuhause = isHomeCategory(spot.category);
     editSpotForm.value = {
       title: spot.title,
       image_url: spot.image_url ?? '',
