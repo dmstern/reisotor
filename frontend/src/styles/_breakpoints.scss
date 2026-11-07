@@ -50,14 +50,22 @@ $breakpoints: (
     }
     @error "Unbekannter Breakpoint '#{$name-or-value}'. Erlaubte Werte: #{map.keys($breakpoints)}";
   }
-  @return $name-or-value;
+  @if meta.type-of($name-or-value) == 'number' {
+    @each $k, $v in $breakpoints {
+      @if $v == $name-or-value {
+        @return $name-or-value;
+      }
+    }
+    @error "Ungültiger Pixel-Breakpoint '#{$name-or-value}'. Verwende stattdessen einen der benannten Breakpoints: #{map.keys($breakpoints)}";
+  }
+  @error "Ungültiger Breakpoint '#{$name-or-value}'. Erlaubte benannte Werte: #{map.keys($breakpoints)}";
 }
 
 // -----------------------------------------------------------------------------
 // Viewport (@media) Mixins
 // -----------------------------------------------------------------------------
 
-/// Min-Width Viewport Query: @include media-up('desktop') { ... }
+/// Min-Width Viewport Query (>= $bp): @include media-up('desktop') { ... }
 @mixin media-up($bp) {
   $width: to-bp($bp);
   @media (min-width: #{$width}) {
@@ -65,7 +73,7 @@ $breakpoints: (
   }
 }
 
-/// Max-Width Viewport Query: @include media-down('mobile') { ... }
+/// Max-Width Viewport Query (<= $bp): @include media-down('mobile') { ... }
 @mixin media-down($bp) {
   $width: to-bp($bp);
   @media (max-width: #{$width}) {

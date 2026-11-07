@@ -316,7 +316,7 @@
   /* ==========================================================================
      Breakpoint Tokens (Issue #575)
      Zentrale Definition aller Viewport- und Container-Schwellenwerte.
-     Für SCSS-Mixins & Variablen siehe src/styles/breakpoints.scss,
+     Für SCSS-Mixins & Variablen siehe src/styles/_breakpoints.scss,
      für TypeScript-Tokens siehe src/tokens/breakpoints.ts.
      ========================================================================== */
   --breakpoint-mobile-compact: 360px;

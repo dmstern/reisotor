@@ -27,14 +27,24 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Karten schalten auf Vertikal-Stapel um. Modals & Sheets füllen 100% Breite.',
           };
         }
-        if (w < BREAKPOINTS.tablet) {
+        if (w < BREAKPOINTS.tabletSm) {
           return {
-            label: 'Mobil Standard / Tablet Sm',
+            label: 'Mobil Standard',
             query: `@media (max-width: ${BREAKPOINTS.tabletSm}px)`,
             icon: '📱',
             color: '#e08e45',
             mode: 'mobile',
             desc: 'Untere TabBar + ausziehbare Bottom-Sheets. 1-spaltiger Content.',
+          };
+        }
+        if (w < BREAKPOINTS.tablet) {
+          return {
+            label: 'Kleines Tablet / Dialoge schwebend',
+            query: `@media (min-width: ${BREAKPOINTS.tabletSm}px)`,
+            icon: '📱',
+            color: '#d47328',
+            mode: 'mobile',
+            desc: 'Breites Smartphone / kleines Tablet. Modals & Dialoge schalten auf schwebende Karten um.',
           };
         }
         if (w < BREAKPOINTS.desktopSm) {
@@ -47,12 +57,22 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Kalenderwoche schaltet auf volle 7-Tage Ansicht um. Mobil-Layout bleibt aktiv.',
           };
         }
+        if (w < BREAKPOINTS.desktopMd) {
+          return {
+            label: 'Desktop Sm / Formulare & Modals',
+            query: `@media (min-width: ${BREAKPOINTS.desktopSm}px)`,
+            icon: '📄',
+            color: '#5b6ee1',
+            mode: 'desktop',
+            desc: 'Inhaltsreiche Formulare & Modals schalten auf erweiterte Desktop-Breite um.',
+          };
+        }
         if (w < BREAKPOINTS.desktop) {
           return {
-            label: 'Desktop Sm / Tabellen & Grids',
-            query: `@media (min-width: ${BREAKPOINTS.desktopSm}px)`,
+            label: 'Desktop Md / Tabellen & Grids',
+            query: `@container app-main (min-width: ${BREAKPOINTS.desktopMd}px)`,
             icon: '📊',
-            color: '#5b6ee1',
+            color: '#4870c9',
             mode: 'desktop',
             desc: 'Todo-, Pack- & Einkaufslisten schalten auf mehrspaltige Tabellen-Grids um.',
           };
@@ -80,10 +100,16 @@ export const InteractiveViewportVisualizer: Story = {
       const presets = [
         { label: 'Mobil 390px', width: 390, icon: '📱' },
         { label: `Break ${BREAKPOINTS.mobile}px`, width: BREAKPOINTS.mobile, icon: '📱' },
+        { label: `Tablet Sm ${BREAKPOINTS.tabletSm}px`, width: BREAKPOINTS.tabletSm, icon: '📱' },
         { label: `Medium ${BREAKPOINTS.tablet}px`, width: BREAKPOINTS.tablet, icon: '📅' },
         {
           label: `Desktop Sm ${BREAKPOINTS.desktopSm}px`,
           width: BREAKPOINTS.desktopSm,
+          icon: '📄',
+        },
+        {
+          label: `Desktop Md ${BREAKPOINTS.desktopMd}px`,
+          width: BREAKPOINTS.desktopMd,
           icon: '📊',
         },
         { label: `Desktop ${BREAKPOINTS.desktop}px`, width: BREAKPOINTS.desktop, icon: '🖥️' },
@@ -98,6 +124,12 @@ export const InteractiveViewportVisualizer: Story = {
           color: '#c1503f',
         },
         {
+          label: 'Tablet Sm',
+          width: BREAKPOINTS.tabletSm,
+          query: `≥ ${BREAKPOINTS.tabletSm}px`,
+          color: '#e08e45',
+        },
+        {
           label: 'Medium / Kalender',
           width: BREAKPOINTS.tablet,
           query: `≥ ${BREAKPOINTS.tablet}px`,
@@ -108,6 +140,12 @@ export const InteractiveViewportVisualizer: Story = {
           width: BREAKPOINTS.desktopSm,
           query: `≥ ${BREAKPOINTS.desktopSm}px`,
           color: '#5b6ee1',
+        },
+        {
+          label: 'Desktop Md (Grids)',
+          width: BREAKPOINTS.desktopMd,
+          query: `≥ ${BREAKPOINTS.desktopMd}px`,
+          color: '#4870c9',
         },
         {
           label: 'Desktop Standard',

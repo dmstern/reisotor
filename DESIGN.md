@@ -507,7 +507,7 @@ Zentrale Single Source of Truth für responsive Viewports und Container (Issue #
 | `desktop`        | `1024px` | App-weite Haupt-Desktop-Grenze (Top-Header, feste Docked-Drawers in `Drawer.vue`/`App.vue`) |
 | `page-max`       | `1400px` | Standard-Inhaltsbreite der Seite (`.page` / `--page-max-width`)                             |
 | `wqhd`           | `2200px` | WQHD Ultra-Wide Skalierung (`.page` skaliert auf 1600px)                                    |
-| `4k`             | `3200px` | 4K Ultra-Wide Skalierung (`.page` skaliert auf 1920px)                                      |
+| `4k`             | `3200px` | 4K Ultra-Wide Skalierung (`.page` skaliert auf 1920px; in TS: `ultraWide`)                  |
 
 ### SCSS Mixins für Komponenten
 

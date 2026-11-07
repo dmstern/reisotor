@@ -2,7 +2,7 @@
  * Breakpoint Tokens (Issue #575)
  *
  * Single Source of Truth für responsive Viewport- und Container-Schwellenwerte in TypeScript.
- * Korrespondiert 1:1 mit den SCSS-Mixins & Variablen in `src/styles/breakpoints.scss`
+ * Korrespondiert 1:1 mit den SCSS-Mixins & Variablen in `src/styles/_breakpoints.scss`
  * sowie den CSS Custom Properties in `src/style.css`.
  */
 

@@ -609,7 +609,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex: 1;
 }
 
-@include container-down(440px) {
+@include container-down('mobile') {
   .modal-body :slotted(form) .actions-row,
   .modal-body :slotted(*) .actions-row,
   .modal-body :slotted(.actions-row) {

@@ -3,7 +3,7 @@ import type { Excursion } from '../api/types';
 import { usePointerDrag } from './usePointerDrag';
 import { useExcursionsStore } from '../stores/excursions';
 import { useDrawersStore } from '../stores/drawers';
-import { BREAKPOINTS } from '../tokens/breakpoints';
+import { MEDIA_QUERIES } from '../tokens/breakpoints';
 
 export interface UseExcursionCalendarDragOptions {
   excursion: MaybeRefOrGetter<Excursion>;
@@ -26,7 +26,7 @@ export function useExcursionCalendarDrag(
       if (
         typeof window !== 'undefined' &&
         typeof window.matchMedia === 'function' &&
-        window.matchMedia(`(min-width: ${BREAKPOINTS.desktop}px)`).matches
+        window.matchMedia(MEDIA_QUERIES.desktop).matches
       ) {
         drawers.calendarOpen = true;
       }
