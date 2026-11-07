@@ -490,6 +490,7 @@ nachziehen statt den Browser synthetisieren zu lassen.
 Zentrale Single Source of Truth für responsive Viewports und Container (Issue #575):
 
 - **SCSS Mixins & Variablen:** `frontend/src/styles/_breakpoints.scss` (in allen Vue-Komponenten via Vite automatisch verfügbar, kein manueller Import nötig).
+- **Touch-Target & Hitbox Mixins:** `frontend/src/styles/_touch.scss` (`@include touch-target($size: 44px)` / `@include bigger-touch-area` für Pseudo-Element-Hitboxen sowie `@include min-touch-target`), via `_breakpoints.scss` automatisch verfügbar.
 - **TypeScript Tokens:** `frontend/src/tokens/breakpoints.ts` (`BREAKPOINTS`, `BREAKPOINTS_PX`, `MEDIA_QUERIES`) für `matchMedia`, ResizeObserver, Storybook und JS-Logik.
 - **CSS Custom Properties:** `--breakpoint-*` auf `:root` in `frontend/src/style.css` zur Dokumentation und CSS-Referenzierung.
 

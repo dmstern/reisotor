@@ -5,6 +5,8 @@
 // Korrespondiert mit `src/tokens/breakpoints.ts` und `--breakpoint-*` in `style.css`.
 // =============================================================================
 
+@forward 'touch';
+
 @use 'sass:map';
 @use 'sass:meta';
 
