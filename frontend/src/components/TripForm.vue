@@ -306,6 +306,7 @@ function onSubmit() {
             v-model="manualPin"
             :address="form.destination"
             :maps-link="form.maps_link"
+            context="trip"
             placeholder="Reiseziel, Stadt oder Maps-Link eingeben..."
             :modified="isLocationModified"
             @update:address="form.destination = $event"

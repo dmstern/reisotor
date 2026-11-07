@@ -40,6 +40,13 @@ describe('useLocationDetails', () => {
     const spotTitle = ref<string | undefined>('');
     const spotDetails = useLocationDetails({ modelValue: ref(null), title: spotTitle });
     expect(spotDetails.isDetailsVisible.value).toBe(true);
+
+    // Mode 3: Trip context (context is 'trip') -> immediately visible even without title/location
+    const tripDetails = useLocationDetails({
+      modelValue: ref(null),
+      context: ref('trip'),
+    });
+    expect(tripDetails.isDetailsVisible.value).toBe(true);
   });
 
   it('handles inline title edit lifecycle', () => {

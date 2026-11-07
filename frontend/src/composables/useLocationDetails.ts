@@ -8,6 +8,7 @@ export interface UseLocationDetailsOptions {
   category?: Ref<string | undefined>;
   mapsLink?: Ref<string | undefined>;
   selectedPlace?: Ref<PlaceSearchResult | null>;
+  context?: Ref<'spot' | 'trip' | undefined>;
   onUpdateTitle?: (title: string) => void;
   onUpdateAddress?: (address: string) => void;
   onUpdateCategory?: (category: string) => void;
@@ -33,6 +34,7 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
 
   const isDetailsVisible = computed(() => {
     if (cardClosed.value) return false;
+    if (options.context?.value === 'trip') return true;
     if (options.title?.value !== undefined) return true;
     if (manualDetailsOpen.value) return true;
     if (options.selectedPlace?.value !== null && options.selectedPlace?.value !== undefined) {

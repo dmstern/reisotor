@@ -39,11 +39,13 @@ const props = withDefaults(
     addressSearchActiveIndex?: number;
     isSearchingAddress?: boolean;
     // Optional / Kompatibilität
+    context?: 'spot' | 'trip';
     isEditingTitle?: boolean;
     isEditingCategory?: boolean;
     isEditingAddress?: boolean;
   }>(),
   {
+    context: 'spot',
     modified: false,
     hasLocation: false,
     title: undefined,
@@ -211,14 +213,14 @@ defineExpose({
             <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
             <label class="polaroid-field-label" :for="addressInputId">
               <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
-              <span>Adresse</span>
+              <span>{{ context === 'trip' ? 'Reiseziel' : 'Adresse' }}</span>
             </label>
             <div class="polaroid-location-status">
               <!-- Pin gesetzt Badge -->
               <span
                 v-if="modelValue"
                 class="coords-set-badge"
-                data-testid="spot-coords-set"
+                :data-testid="context === 'trip' ? 'trip-coords-set' : 'spot-coords-set'"
                 :title="`${modelValue.lat.toFixed(5)}, ${modelValue.lng.toFixed(5)}`"
               >
                 <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="12" group="formFields" />
@@ -238,7 +240,17 @@ defineExpose({
               </span>
               <!-- Standort fehlt Badge & Search Sparkle -->
               <div v-else class="coords-missing-wrap">
+                <span
+                  v-if="context === 'trip'"
+                  class="coords-missing-badge"
+                  data-testid="trip-coords-missing"
+                  title="Standort fehlt – bitte Ort im Suchfeld eingeben oder auf die Karte tippen"
+                >
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+                  <span>Standort fehlt</span>
+                </span>
                 <SpotLocationBadge
+                  v-else
                   context="dialog"
                   data-testid="spot-coords-missing"
                   popover-class="coords-info-popover"
@@ -263,9 +275,13 @@ defineExpose({
                 :model-value="editAddressInput"
                 size="sm"
                 class="polaroid-field-input inline-edit-input"
-                name="spot-address"
-                data-testid="spot-address-input"
-                placeholder="Adresse oder Ort eingeben..."
+                :name="context === 'trip' ? 'destination' : 'spot-address'"
+                :data-testid="context === 'trip' ? 'trip-destination-input' : 'spot-address-input'"
+                :placeholder="
+                  context === 'trip'
+                    ? 'Reiseziel oder Stadt eingeben...'
+                    : 'Adresse oder Ort eingeben...'
+                "
                 autocomplete="off"
                 data-protonpass-ignore="true"
                 data-1p-ignore="true"
@@ -519,6 +535,20 @@ defineExpose({
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-text);
+  line-height: 1.2;
+}
+
+.coords-missing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-warning);
   line-height: 1.2;
 }
 

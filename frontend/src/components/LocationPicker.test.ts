@@ -2034,5 +2034,65 @@ describe('LocationPicker', () => {
 
       cleanUp();
     });
+
+    it('adapts PolaroidCard labels, placeholders, badges, and immediate visibility when context="trip"', async () => {
+      const modelValueRef = ref<{ lat: number; lng: number } | null>(null);
+      const addressRef = ref('');
+      const onSelect = vi.fn();
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(LocationPicker as unknown as import('vue').Component, {
+            modelValue: modelValueRef.value,
+            address: addressRef.value,
+            context: 'trip',
+            'onUpdate:modelValue': (val: { lat: number; lng: number } | null) => {
+              modelValueRef.value = val;
+            },
+            'onUpdate:address': (val: string) => {
+              addressRef.value = val;
+            },
+            onSelect,
+          }),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      // Card is immediately visible in trip context
+      const card = container.querySelector('.polaroid-card');
+      expect(card).toBeTruthy();
+
+      // Label is "Reiseziel"
+      const label = container.querySelector('.status-address-row .polaroid-field-label');
+      expect(label?.textContent).toContain('Reiseziel');
+      expect(label?.textContent).not.toContain('Adresse');
+
+      // Missing location badge for trip
+      const missingBadge = container.querySelector('[data-testid="trip-coords-missing"]');
+      expect(missingBadge).toBeTruthy();
+      expect(missingBadge?.textContent).toContain('Standort fehlt');
+
+      // Destination input attributes
+      const destInput = container.querySelector(
+        '[data-testid="trip-destination-input"]'
+      ) as HTMLInputElement;
+      expect(destInput).toBeTruthy();
+      expect(destInput.name).toBe('destination');
+      expect(destInput.placeholder).toBe('Reiseziel oder Stadt eingeben...');
+
+      // Setting coordinates switches to "Pin gesetzt"
+      modelValueRef.value = { lat: 38.7223, lng: -9.1393 };
+      await nextTick();
+
+      const coordsBadge = container.querySelector('[data-testid="trip-coords-set"]');
+      expect(coordsBadge).toBeTruthy();
+      expect(coordsBadge?.textContent).toContain('Pin gesetzt');
+
+      app.unmount();
+      container.remove();
+    });
   });
 });

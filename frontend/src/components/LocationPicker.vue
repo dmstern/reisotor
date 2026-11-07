@@ -47,6 +47,8 @@ const props = withDefaults(
     hideStatusHeader?: boolean;
     /** Ob der Standort gegenüber dem gespeicherten Zustand geändert wurde (orange Hervorhebung). */
     modified?: boolean;
+    /** Verwendungskontext des Pickers: 'spot' (Default) oder 'trip'. */
+    context?: 'spot' | 'trip';
   }>(),
   {
     title: undefined,
@@ -63,6 +65,7 @@ const props = withDefaults(
     referencePoints: () => [],
     hideStatusHeader: false,
     modified: false,
+    context: 'spot',
   }
 );
 
@@ -97,6 +100,7 @@ const proximityBiasRef = toRef(props, 'proximityBias');
 const centerRef = toRef(props, 'center');
 const zoomRef = toRef(props, 'zoom');
 const referencePointsRef = toRef(props, 'referencePoints');
+const contextRef = toRef(props, 'context');
 
 function onManualCoordsSet(coords: { lat: number; lng: number }) {
   details.cardClosed.value = false;
@@ -166,6 +170,7 @@ function onSelectAddressPlace(place: PlaceSearchResult) {
   if (props.category !== undefined && !props.category.trim() && place.category) {
     emit('update:category', place.category);
   }
+  emit('select', place);
 }
 
 const search = usePlaceSearch({
@@ -201,6 +206,7 @@ const details = useLocationDetails({
   category: categoryRef,
   mapsLink: mapsLinkRef,
   selectedPlace: search.selectedPlace,
+  context: contextRef,
   onUpdateTitle: (val) => emit('update:title', val),
   onUpdateAddress: (val) => emit('update:address', val),
   onUpdateCategory: (val) => emit('update:category', val),
@@ -250,6 +256,9 @@ const map = useLocationPickerMap({
 
 const computedPlaceholder = computed(() => {
   if (props.placeholder) return props.placeholder;
+  if (props.context === 'trip') {
+    return 'Reiseziel, Stadt oder Maps-Link eingeben...';
+  }
   return details.hasLocation.value
     ? 'Anderen Ort oder Adresse suchen...'
     : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
@@ -442,6 +451,7 @@ defineExpose({
         <LocationPolaroidCard
           v-if="isDetailsVisible"
           :ref="setPolaroidCardRef"
+          :context="context"
           :model-value="modelValue"
           :modified="modified"
           :has-location="hasLocation"
