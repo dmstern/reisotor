@@ -45,8 +45,8 @@ defineEmits<{
 
 .swatch-btn {
   position: relative;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-full);
   corner-shape: round;
   border: 2px solid transparent;
@@ -65,14 +65,29 @@ defineEmits<{
   inset: -6px;
 }
 
+@media (pointer: coarse) {
+  .swatch-btn::after {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+  }
+}
+
 .swatch-btn:hover {
   transform: scale(1.2);
   box-shadow: var(--shadow-sm);
 }
 
 .swatch-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .swatch-btn.selected {

@@ -59,15 +59,32 @@ defineEmits<{ (e: 'click'): void }>();
 
 <style scoped>
 .edit-btn {
-  padding: 6px 10px;
-  font-size: 0.9rem;
+  width: var(--input-height-sm, 38px);
+  height: var(--input-height-sm, 38px);
+  min-width: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
+  padding: 0;
+  font-size: var(--font-size-sm);
   line-height: 1;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .edit-btn.small {
-  padding: 4px 8px;
-  font-size: 0.8rem;
+  width: var(--input-height-sm, 38px);
+  height: var(--input-height-sm, 38px);
+  min-width: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
+  padding: 0;
+  font-size: var(--font-size-sm);
+}
+
+.edit-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 /* Schwebender runder Button, z. B. über einem Vorschaubild – Positionierung
@@ -79,8 +96,10 @@ defineEmits<{ (e: 'click'): void }>();
   position: absolute;
   top: 8px;
   left: 8px;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
   border-radius: var(--radius-pill);
   /* Setzt das globale corner-shape:squircle (style.css, gilt für <button> generell) für diesen

@@ -164,24 +164,24 @@ async function handleCopy(event: MouseEvent) {
 
 /* Größen */
 .copy-btn--sm {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
-}
-
-.copy-btn--md {
   width: 28px;
   height: 28px;
   min-width: 28px;
   min-height: 28px;
 }
 
-.copy-btn--lg {
+.copy-btn--md {
   width: 32px;
   height: 32px;
   min-width: 32px;
   min-height: 32px;
+}
+
+.copy-btn--lg {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
 }
 
 /* Standard: Auf Touch/Coarse dezent sichtbar (nicht aufdringlich, aber auffindbar) */
@@ -225,8 +225,9 @@ async function handleCopy(event: MouseEvent) {
 .copy-btn:focus-visible {
   opacity: 1 !important;
   pointer-events: auto !important;
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
   background-color: var(--color-surface);
 }
 

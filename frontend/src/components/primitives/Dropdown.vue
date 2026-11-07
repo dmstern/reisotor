@@ -12,12 +12,14 @@ withDefaults(
     icon?: IconDef;
     disabled?: boolean;
     open?: boolean;
+    size?: 'sm' | 'md' | 'lg';
   }>(),
   {
     label: '',
     icon: undefined,
     disabled: false,
     open: false,
+    size: 'md',
   }
 );
 
@@ -27,10 +29,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="dropdown" :class="{ 'dropdown--open': open }">
+  <div
+    class="dropdown"
+    :class="[{ 'dropdown--open': open }, size !== 'md' ? `dropdown--${size}` : undefined]"
+  >
     <slot name="trigger" :open="open" :toggle="() => emit('toggle')">
       <Button
         variant="ghost"
+        :size="size"
         class="dropdown__button dropdown__field"
         :disabled="disabled"
         :aria-expanded="open"
@@ -66,17 +72,17 @@ const emit = defineEmits<{
 
 .dropdown__button.dropdown__field {
   padding: 9px 12px;
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: none;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--font-size-md);
   font-weight: 500;
-  height: var(--input-height, var(--input-default-height));
-  min-height: var(--input-height, var(--input-default-height));
+  height: var(--input-height, 46px);
+  min-height: var(--input-height, 46px);
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
@@ -91,6 +97,22 @@ const emit = defineEmits<{
     box-shadow 0.15s ease;
 }
 
+.dropdown--sm .dropdown__button.dropdown__field,
+.dropdown__button.dropdown__field.btn--sm {
+  padding: 6px 10px;
+  height: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
+  font-size: var(--font-size-sm);
+}
+
+.dropdown--lg .dropdown__button.dropdown__field,
+.dropdown__button.dropdown__field.btn--lg {
+  padding: 12px 16px;
+  height: var(--input-height-lg, 52px);
+  min-height: var(--input-height-lg, 52px);
+  font-size: var(--font-size-md);
+}
+
 .dropdown__button.dropdown__field:hover:not(:disabled) {
   background: var(--color-hover);
   box-shadow: var(--shadow-sm);
@@ -98,15 +120,15 @@ const emit = defineEmits<{
 
 .dropdown__button.dropdown__field:active:not(:disabled),
 .dropdown__button.dropdown__field:focus,
-.dropdown__button.dropdown__field:focus-visible,
 .dropdown--open .dropdown__button.dropdown__field,
 .dropdown__button.dropdown__field[aria-expanded='true'] {
   box-shadow: var(--shadow-sm);
 }
 
 .dropdown__button.dropdown__field:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .dropdown__button.dropdown__field:disabled {

@@ -680,7 +680,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   padding: 3px 10px;
   border-radius: var(--radius-pill);
   corner-shape: round;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   border: 1px dashed var(--color-border-strong);
   background: var(--color-hover);

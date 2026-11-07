@@ -467,6 +467,14 @@ const isNewHighlight = computed(() => {
     background 0.2s ease;
 }
 
+.card:focus-visible,
+.card--expandable:focus-visible,
+.card--interactive:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+}
+
 .card--expandable:not(.card--expanded):hover,
 .card--interactive:not(.card--expanded):hover {
   transform: translateY(-4px) scale(1.015);

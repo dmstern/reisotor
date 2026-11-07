@@ -18,7 +18,7 @@ withDefaults(
     title: undefined,
     ariaLabel: undefined,
     dataTestid: undefined,
-    iconSize: 13,
+    iconSize: 16,
     variant: 'default',
   }
 );
@@ -57,30 +57,28 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: none;
-  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-tint) 55%, var(--color-surface));
   color: var(--color-primary);
   cursor: pointer;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
   transition:
     transform 0.15s ease,
     color 0.15s ease,
+    border-color 0.15s ease,
     background-color 0.15s ease;
   z-index: 2;
 }
 
-/* Unsichtbare Berührungsflächenerweiterung für Touchscreens */
+/* Unsichtbare Berührungsflächenerweiterung für Touchscreens (44x44px bei 30x30px Box) */
 .sparkle-suggest-btn::before {
   content: '';
   position: absolute;
-  top: -8px;
-  bottom: -8px;
-  left: -8px;
-  right: -8px;
+  inset: -7px;
 }
 
 .address-sparkle-btn,
@@ -107,6 +105,7 @@ const emit = defineEmits<{
 
 .sparkle-suggest-btn:hover:not(:disabled) {
   background-color: var(--color-hover);
+  border-color: var(--color-primary);
   color: var(--color-primary-dark);
   transform: translateY(-50%) scale(1.12);
 }
@@ -126,8 +125,9 @@ const emit = defineEmits<{
 }
 
 .sparkle-suggest-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .sparkle-suggest-btn:disabled {

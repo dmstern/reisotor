@@ -120,7 +120,7 @@ function onInput(event: Event) {
 .input {
   /* Basis-Styles für Input-Primitive */
   padding: 9px 12px;
-  border: 1px solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -128,9 +128,10 @@ function onInput(event: Event) {
   box-shadow: none;
   min-width: 0;
   max-width: 100%;
-  min-height: 44px;
+  min-height: var(--input-height, 46px);
+  box-sizing: border-box;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -141,10 +142,11 @@ function onInput(event: Event) {
 }
 
 .input:focus,
+.input:focus-visible,
 .input:active:not(:disabled) {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-  box-shadow: var(--shadow-sm);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .input:disabled {
@@ -158,7 +160,8 @@ function onInput(event: Event) {
   border-color: var(--color-danger);
 }
 
-.input--invalid:focus {
+.input--invalid:focus,
+.input--invalid:focus-visible {
   outline-color: var(--color-danger);
 }
 
@@ -169,23 +172,22 @@ function onInput(event: Event) {
 
 .input--modified:hover:not(:disabled),
 .input--modified:focus,
+.input--modified:focus-visible,
 .input--modified:active:not(:disabled) {
   outline-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-sm);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-sm);
 }
 
 .input--sm {
   padding: 6px 10px;
-  min-height: 36px;
-  font-size: 0.85rem;
+  min-height: var(--input-height-sm, 38px);
+  font-size: var(--font-size-sm);
 }
 
 .input--lg {
   padding: 12px 16px;
-  min-height: 50px;
-  font-size: 1.1rem;
+  min-height: var(--input-height-lg, 52px);
+  font-size: var(--font-size-md);
 }
 
 /* Spezifische Handhabung für Datums-/Zeiteingaben (Chromium-Picker-Höhenausgleich) */
@@ -194,7 +196,23 @@ function onInput(event: Event) {
 .input[type='datetime-local'],
 .input[type='month'],
 .input[type='week'] {
-  height: 44px;
+  height: var(--input-height, 46px);
+}
+
+.input--sm[type='date'],
+.input--sm[type='time'],
+.input--sm[type='datetime-local'],
+.input--sm[type='month'],
+.input--sm[type='week'] {
+  height: var(--input-height-sm, 38px);
+}
+
+.input--lg[type='date'],
+.input--lg[type='time'],
+.input--lg[type='datetime-local'],
+.input--lg[type='month'],
+.input--lg[type='week'] {
+  height: var(--input-height-lg, 52px);
 }
 
 .input[type='date']::-webkit-calendar-picker-indicator,

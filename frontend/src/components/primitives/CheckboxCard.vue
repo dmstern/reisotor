@@ -197,6 +197,12 @@ function onChange(event: Event) {
   padding-top: 1px;
 }
 
+.checkbox-card__control :deep(.checkbox) {
+  width: 24px;
+  height: 24px;
+  border-width: max(2px, var(--ui-border-width, 2px));
+}
+
 .checkbox-card__body {
   flex: 1;
   min-width: 0;
@@ -218,7 +224,7 @@ function onChange(event: Event) {
 }
 
 .checkbox-card__label {
-  font-size: 0.92rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: 1.35;
   color: var(--color-text);
@@ -227,7 +233,7 @@ function onChange(event: Event) {
 
 .checkbox-card__description {
   margin: 2px 0 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   font-weight: normal;
   line-height: 1.4;
   color: var(--color-text-muted);
@@ -241,9 +247,11 @@ function onChange(event: Event) {
 }
 
 /* Focus-Visible über Checkbox hebt die Karte hervor */
+.checkbox-card:focus-visible,
 .checkbox-card:has(:focus-visible) {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 /* Deaktivierter Zustand */

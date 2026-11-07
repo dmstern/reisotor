@@ -88,8 +88,7 @@ function onChange(event: Event) {
   flex-shrink: 0;
   margin: 0;
   padding: 0;
-  border: 0;
-  box-shadow: inset 0 0 0 2px var(--color-border);
+  border: max(2px, var(--ui-border-width, 2px)) solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
   cursor: pointer;
@@ -100,45 +99,50 @@ function onChange(event: Event) {
   box-sizing: border-box;
   vertical-align: middle;
   transition:
+    border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Größen-Varianten (Vielfache von 8 für perfekte Subpixel-/DPI-Skalierung bei 100%, 125%, 150%, 200%) */
+/* 44x44px Touch-Hitbox */
+.radio::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Größen-Varianten */
 .radio--sm {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .radio--md {
-  width: 16px;
-  height: 16px;
-}
-
-.radio--lg {
   width: 24px;
   height: 24px;
 }
 
+.radio--lg {
+  width: 28px;
+  height: 28px;
+}
+
 .radio:hover:not(:disabled):not(.is-disabled) {
-  box-shadow: inset 0 0 0 2px var(--color-primary-light, var(--color-primary));
+  border-color: var(--color-primary-light, var(--color-primary));
 }
 
 .radio:checked,
 .radio.is-checked {
-  box-shadow: inset 0 0 0 2px var(--color-primary);
+  border-color: var(--color-primary);
 }
 
-/* Innerer Punkt: Zentriert via inset: 0 + margin: auto.
-   Weil der Außenring als inset-box-shadow statt CSS-Border gerendert wird und die
-   Außenmaße auf 8er-Potenzen basieren (16px für md mit 8px-Punkt, 24px für lg mit 12px-Punkt),
-   skalieren sowohl Container als auch Punkt bei allen gängigen Skalierungsfaktoren (100%,
-   125%, 150%, 200%) exakt zu geraden ganzzahligen physikalischen Pixeln:
-   - 100%: 16px Außen / 8px Punkt -> 4px Margin ringsum (2px Ring + 2px Luft)
-   - 125%: 20px Außen / 10px Punkt -> 5px Margin ringsum (2px Ring + 3px Luft)
-   - 150%: 24px Außen / 12px Punkt -> 6px Margin ringsum (3px Ring + 3px Luft)
-   - 200%: 32px Außen / 16px Punkt -> 8px Margin ringsum (4px Ring + 4px Luft)
-   Dadurch entstehen keinerlei Rundungsasymmetrien (kein 3px vs 4px Versatz). */
+/* Innerer Punkt: Zentriert via inset: 0 + margin: auto. */
 .radio::after {
   content: '';
   position: absolute;
@@ -155,13 +159,13 @@ function onChange(event: Event) {
 }
 
 .radio--sm::after {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .radio--md::after {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .radio--lg::after {
@@ -176,8 +180,9 @@ function onChange(event: Event) {
 }
 
 .radio:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .radio:disabled,

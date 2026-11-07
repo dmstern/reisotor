@@ -12,7 +12,7 @@ defineProps<{
   variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'floating';
   /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
   secondary?: boolean;
-  /** Größe des Buttons: 'sm' (30px), 'md' (38px), 'lg' (46px). */
+  /** Größe des Buttons: 'sm' (38px), 'md' (46px), 'lg' (52px). */
   size?: 'sm' | 'md' | 'lg';
   /** Form-Variante: 'squircle' (Standard) oder 'circle' (kreisrund). */
   shape?: 'squircle' | 'circle';
@@ -54,6 +54,47 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
+.icon-btn {
+  position: relative;
+  width: var(--input-width, 46px);
+  height: var(--input-height, 46px);
+  min-width: var(--input-width, 46px);
+  min-height: var(--input-height, 46px);
+}
+
+.icon-btn.btn--sm {
+  width: var(--input-width-sm, 38px);
+  height: var(--input-height-sm, 38px);
+  min-width: var(--input-width-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
+}
+
+.icon-btn.btn--lg {
+  width: var(--input-width-lg, 52px);
+  height: var(--input-height-lg, 52px);
+  min-width: var(--input-width-lg, 52px);
+  min-height: var(--input-height-lg, 52px);
+}
+
+.icon-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+}
+
+@media (pointer: coarse) {
+  .icon-btn.btn--sm::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 .btn--ghost:not(.btn--circle),
 :deep(.btn--ghost:not(.btn--circle)) {
   border-radius: var(--radius-sm-squircle);

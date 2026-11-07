@@ -316,7 +316,7 @@ function clearFilters() {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .search-filter-bar {
   display: flex;
   align-items: center;
@@ -346,15 +346,15 @@ function clearFilters() {
 .search-input {
   width: 100%;
   min-width: 0;
-  height: 38px;
-  min-height: 38px;
-  padding: 0 32px 0 36px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 36px 0 38px;
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   color: var(--color-text);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   text-overflow: ellipsis;
   box-shadow: none;
   box-sizing: border-box;
@@ -368,24 +368,23 @@ function clearFilters() {
 }
 
 .search-input:focus,
-.search-input:active {
+.search-input:focus-visible {
   border-color: var(--color-primary);
-  box-shadow:
-    0 0 0 2px var(--color-primary-tint),
-    var(--shadow-sm);
-  outline: none;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .search-clear-btn {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
   background: transparent;
@@ -410,12 +409,22 @@ function clearFilters() {
   background: var(--color-hover);
 }
 
+.search-clear-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+}
+
 .dropdown {
   position: relative;
 }
 
 .bar-icon-btn {
   position: relative;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .bar-icon-btn::after {
@@ -434,16 +443,36 @@ function clearFilters() {
   }
 }
 
+/* Responsiver Fallback auf schmalen Viewports (<= 360px) bis Folge-Ticket #684 */
+@include media-down('mobile-compact') {
+  .search-filter-bar {
+    gap: 6px;
+  }
+
+  .search-input {
+    height: var(--input-height-sm, 38px);
+    min-height: var(--input-height-sm, 38px);
+    padding: 0 32px 0 34px;
+  }
+
+  .bar-icon-btn {
+    width: var(--input-height-sm, 38px);
+    height: var(--input-height-sm, 38px);
+    min-width: var(--input-height-sm, 38px);
+    min-height: var(--input-height-sm, 38px);
+  }
+}
+
 .active-badge {
   position: absolute;
   top: -3px;
   right: -3px;
-  min-width: 16px;
-  height: 16px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 4px;
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
-  line-height: 16px;
+  line-height: 18px;
   text-align: center;
 }
 
@@ -457,7 +486,7 @@ function clearFilters() {
 }
 
 .popover-section-header {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -468,7 +497,7 @@ function clearFilters() {
 }
 
 .popover-group-title {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   padding: var(--space-1) var(--space-2);
@@ -477,7 +506,7 @@ function clearFilters() {
 .popover-options-list {
   display: flex;
   flex-direction: column;
-  max-height: 140px;
+  max-height: 160px;
   overflow-y: auto;
 }
 
@@ -489,11 +518,12 @@ function clearFilters() {
 
 .clear-filters-btn {
   width: 100%;
+  min-height: var(--input-height-sm, 38px);
   padding: var(--space-1) var(--space-2);
   border: none;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   text-align: center;
   border-radius: var(--radius-sm-squircle);
@@ -506,7 +536,7 @@ function clearFilters() {
 }
 
 .clear-filters-btn:focus-visible {
-  outline: 2px solid var(--color-danger);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--color-danger);
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 </style>

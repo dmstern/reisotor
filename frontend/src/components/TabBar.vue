@@ -286,8 +286,8 @@ function onTabClick(key: string) {
 }
 
 .tab-bar-arrow:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
 }
 
 .tab-bar-arrow.left {
@@ -324,14 +324,14 @@ function onTabClick(key: string) {
   box-shadow: none;
   background: none;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   white-space: nowrap;
   cursor: pointer;
 }
 
 .tab:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
 }
 
 .tab.active {

@@ -536,10 +536,10 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex-direction: column;
   overflow-y: auto;
   position: relative;
-  /* padding (NICHT nur padding-block) reserviert Platz für den Fokus-Rahmen (outline-offset 1px +
-     outline-Breite 2px, siehe input:focus in style.css) von Feldern ganz am Rand des Formulars -
-     sonst schneidet das eigene overflow-y:auto des Containers diesen Rahmen ab. */
-  padding: var(--space-1);
+  /* padding (6px) reserviert Platz für den Fokus-Rahmen (outline-offset 2px +
+     outline-Breite 3px = 5px, siehe input:focus-visible in style.css) von Feldern ganz am Rand
+     des Formulars - sonst schneidet das eigene overflow-y:auto des Containers diesen Rahmen ab. */
+  padding: 6px;
 }
 
 /* Sanfte Fade-Out-Verläufe in die Hintergrundfarbe (--color-surface) am oberen und unteren Rand,
@@ -661,6 +661,12 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   position: relative;
 }
 
+.close-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
+}
+
 .close-btn::after {
   content: '';
   position: absolute;
@@ -683,7 +689,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 .confirm-close-message {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   line-height: 1.5;
   color: var(--color-text-secondary);
 }
