@@ -38,7 +38,7 @@
     "@types/archiver": "^8.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.11",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.6",
     "@types/nodemailer": "8.0.2",
     "@types/sanitize-html": "^2.16.2",
     "@types/web-push": "^3.6.4",
