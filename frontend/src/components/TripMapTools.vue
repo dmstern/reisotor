@@ -9,7 +9,6 @@ import IconButton from './primitives/IconButton.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
-import DayStrip from './DayStrip.vue';
 
 interface Props {
   filteredPointsCount: number;
@@ -87,6 +86,50 @@ const {
   toggleRecord,
   startRecordingConfirmed,
 } = useMapTrackRecording();
+
+const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
+
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  return new Date(dateStr.includes('T') ? dateStr : `${dateStr}T12:00:00`);
+}
+
+function formatWeekday(dateStr: string): string {
+  const d = parseDate(dateStr);
+  if (!d) return '';
+  return weekdayFormatter.format(d).replace('.', '');
+}
+
+function formatDayNum(dateStr: string): number | string {
+  const d = parseDate(dateStr);
+  if (!d) return '';
+  return d.getDate();
+}
+
+function getDayTitle(dateStr: string): string {
+  if (props.formatDate) {
+    return props.formatDate(dateStr);
+  }
+  const d = parseDate(dateStr);
+  if (!d) return dateStr;
+  return d.toLocaleDateString('de-DE', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function onSelectDayFromMenu(day: string) {
+  emit('select-day', day);
+  dayMenuOpen.value = false;
+}
+
+function onClearDayFilter() {
+  if (props.activeDate) {
+    emit('select-day', props.activeDate);
+  }
+  dayMenuOpen.value = false;
+}
 </script>
 
 <template>
@@ -295,33 +338,49 @@ const {
       </PickerMenu>
     </template>
     <template v-if="dayMenuOpen && vacationDays && vacationDays.length">
-      <PickerMenu class="day-picker-menu" :style="dayMenuStyle" @close="dayMenuOpen = false">
+      <PickerMenu
+        class="day-picker-menu"
+        :style="dayMenuStyle"
+        origin="top-right"
+        @close="dayMenuOpen = false"
+      >
         <div class="day-picker-header">
           <span class="day-picker-title">Urlaubstag wählen</span>
           <button
-            v-if="activeDate"
             type="button"
             class="day-picker-clear-btn"
-            @click="
-              emit('select-day', activeDate);
-              dayMenuOpen = false;
-            "
+            :class="{ 'is-active': !activeDate }"
+            :title="activeDate ? 'Filter zurücksetzen' : 'Alle Tage aktiv'"
+            @click="onClearDayFilter"
           >
             Alle Tage
           </button>
         </div>
-        <DayStrip
-          :days="vacationDays"
-          :active-date="activeDate"
-          :has-content="dayHasContent"
-          :date-title="formatDate"
-          @select="
-            (d) => {
-              emit('select-day', d);
-              dayMenuOpen = false;
-            }
-          "
-        />
+        <div class="day-picker-grid" role="group" aria-label="Urlaubstage">
+          <button
+            v-for="day in vacationDays"
+            :key="day"
+            type="button"
+            class="day-grid-chip"
+            :class="{
+              'is-active': activeDate === day,
+              'has-content': dayHasContent ? dayHasContent(day) : false,
+            }"
+            :data-date="day"
+            :title="getDayTitle(day)"
+            :aria-label="getDayTitle(day)"
+            :aria-pressed="activeDate === day"
+            @click="onSelectDayFromMenu(day)"
+          >
+            <span class="day-grid-weekday">{{ formatWeekday(day) }}</span>
+            <span class="day-grid-num">{{ formatDayNum(day) }}</span>
+            <span
+              v-if="dayHasContent && dayHasContent(day)"
+              class="day-grid-dot"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </PickerMenu>
     </template>
   </Teleport>
@@ -410,16 +469,19 @@ const {
 }
 
 :global(.day-picker-menu) {
+  width: fit-content;
   max-width: min(340px, calc(100vw - 24px));
   padding: var(--space-2);
+  box-sizing: border-box;
 }
 
 .day-picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px var(--space-1);
-  margin-bottom: var(--space-1);
+  gap: var(--space-2);
+  padding: 2px 4px var(--space-2);
+  margin-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -429,21 +491,132 @@ const {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .day-picker-clear-btn {
-  background: none;
-  border: none;
-  padding: 0;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  padding: 3px 10px;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-text);
   cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .day-picker-clear-btn:hover {
-  color: var(--color-primary-dark);
-  text-decoration: underline;
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-primary);
+}
+
+.day-picker-clear-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-contrast, #ffffff);
+}
+
+.day-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.day-grid-chip {
+  position: relative;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 44px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  background: var(--color-hover);
+  color: var(--color-text);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.day-grid-chip:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+}
+
+.day-grid-chip:active {
+  transform: scale(0.96);
+}
+
+.day-grid-chip:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.day-grid-chip.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-contrast, #ffffff);
+}
+
+.day-grid-weekday {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--color-text-muted);
+}
+
+.day-grid-chip.is-active .day-grid-weekday {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.day-grid-num {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: 1px;
+  color: var(--color-text);
+}
+
+.day-grid-chip.is-active .day-grid-num {
+  color: var(--color-primary-contrast, #ffffff);
+}
+
+.day-grid-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  background: var(--color-primary);
+}
+
+.day-grid-chip.is-active .day-grid-dot {
+  background: var(--color-primary-contrast, #ffffff);
 }
 
 .picker-divider {
@@ -482,10 +655,6 @@ const {
 @container trip-map (min-width: 720px) {
   .fit-btn {
     font-size: var(--font-size-lg);
-  }
-
-  .day-filter-btn {
-    display: none !important;
   }
 }
 </style>

@@ -7,8 +7,9 @@ export const STANDARD_PICKER_MENU_WIDTH = 216;
 export function computeTeleportMenuPosition(
   triggerRef: Ref<HTMLElement | ComponentPublicInstance | null> | null,
   event?: MouseEvent,
-  menuWidth = STANDARD_PICKER_MENU_WIDTH
-): { top: string; left: string } {
+  menuWidth = STANDARD_PICKER_MENU_WIDTH,
+  align: 'left' | 'right' = 'left'
+): { top: string; left?: string; right?: string } {
   const el =
     (event?.currentTarget as HTMLElement) ||
     (triggerRef?.value as ComponentPublicInstance)?.$el ||
@@ -18,11 +19,23 @@ export function computeTeleportMenuPosition(
   }
   const rect = el.getBoundingClientRect();
   const innerWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  if (align === 'right') {
+    return {
+      top: `${rect.bottom + 6}px`,
+      right: `${Math.max(8, innerWidth - rect.right)}px`,
+    };
+  }
   return {
     top: `${rect.bottom + 6}px`,
     left: `${Math.max(8, Math.min(rect.left, innerWidth - menuWidth))}px`,
   };
 }
+
+export type TeleportMenuPosition = {
+  top: string;
+  left?: string;
+  right?: string;
+};
 
 export interface UseMapToolMenusOptions {
   onFocusMenuOpen?: () => void;
@@ -34,7 +47,7 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   // Focus menu
   const focusMenuOpen = ref(false);
   const focusButtonRef = ref<HTMLButtonElement | null>(null);
-  const focusMenuStyle = ref({ top: '0px', left: '0px' });
+  const focusMenuStyle = ref<TeleportMenuPosition>({ top: '0px', left: '0px' });
 
   function toggleFocusMenu(event?: MouseEvent) {
     if (!focusMenuOpen.value) {
@@ -60,7 +73,7 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   // Share menu
   const shareMenuOpen = ref(false);
   const shareButtonRef = ref<HTMLButtonElement | null>(null);
-  const shareMenuStyle = ref({ top: '0px', left: '0px' });
+  const shareMenuStyle = ref<TeleportMenuPosition>({ top: '0px', left: '0px' });
 
   const shareDurationLabel = computed(() => {
     if (locationSharing.activeDuration === 'off' || !locationSharing.shareUntil)
@@ -93,13 +106,18 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   // Day filter menu (#684)
   const dayMenuOpen = ref(false);
   const dayButtonRef = ref<HTMLButtonElement | null>(null);
-  const dayMenuStyle = ref({ top: '0px', left: '0px' });
+  const dayMenuStyle = ref<TeleportMenuPosition>({ top: '0px', right: '0px' });
 
   function toggleDayMenu(event?: MouseEvent) {
     if (!dayMenuOpen.value) {
       focusMenuOpen.value = false;
       shareMenuOpen.value = false;
-      dayMenuStyle.value = computeTeleportMenuPosition(dayButtonRef, event, WIDE_PICKER_MENU_WIDTH);
+      dayMenuStyle.value = computeTeleportMenuPosition(
+        dayButtonRef,
+        event,
+        WIDE_PICKER_MENU_WIDTH,
+        'right'
+      );
       dayMenuOpen.value = true;
     } else {
       dayMenuOpen.value = false;
