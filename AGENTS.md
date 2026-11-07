@@ -175,6 +175,61 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
    - Screenshots (Scratch-Specs, Baseline-Updates) dürfen **niemals automatisch oder unaufgefordert** angefertigt werden, sondern ausschließlich auf expliziten Nutzer-Wunsch.
    - Bilddateien dürfen vom Agenten **niemals mit `view_file` geöffnet werden** (spült ~4.000 multimodale Tokens pro Bild in den Kontext). Bilder nur erzeugen, ablegen und im Chat/Walkthrough per Markdown verlinken.
 
+## Issue-Komplexität & Modell-/Thinking-Mapping
+
+GitHub-Issues werden über ein dreistufiges Ampel-System nach **fachlicher und technischer Komplexität** klassifiziert (`complexity:low`, `complexity:mid`, `complexity:high`). Das Label beschreibt die Eigenschaft der Aufgabe, aus der sich für Mensch und Agent die passende Modell- und Thinking-Stufe je Phase (Planung, Umsetzung, Review) ableitet:
+
+### 1. Einstufung (Triage-Faustregeln)
+
+- 🟢 **`complexity:low`** _(Trivial / Lokal)_: 1–2 Dateien betroffen, klare Ursache/Anforderung, keine Architektur-Entscheidung (z. B. Copy-Änderung, kleiner CSS-/UI-Fix, lokales Refactoring, Dependency-Bump).
+- 🟡 **`complexity:mid`** _(Standard-Feature / Mehrteilig)_: Mehrere Dateien/Schichten (z. B. Backend-Route + Pinia-Store + Vue-View + Tests), Erweiterung bestehender Muster, überschaubare Edge-Cases.
+- 🔴 **`complexity:high`** _(Architektur / Kritisch / Unklar)_: Neues Subsystem, komplexe State-/Concurrency-/Offline-Sync-Logik, DB-Migrationen mit Backfill, Security/Auth-Änderungen, vage Anforderungen oder schwer reproduzierbare Bugs.
+
+### 2. Mapping auf Phase, Modell & Thinking-Aufwand
+
+| Issue-Label                         | 1. Planung (Spec / Design)                   | 2. Umsetzung (Coding)                                     | 3. Review (QA / Bugs)    |
+| :---------------------------------- | :------------------------------------------- | :-------------------------------------------------------- | :----------------------- |
+| 🟢 **`complexity:low`**             | _Optional / Inline_<br>**3.8 Flash** (`low`) | **3.8 Flash** (`low`)                                     | **3.8 Flash** (`medium`) |
+| 🟡 **`complexity:mid`** _(Default)_ | **4 Argon** (`medium`)                       | **3.8 Flash** (`medium`)                                  | **4 Argon** (`medium`)   |
+| 🔴 **`complexity:high`**            | **4 Argon** (`high`)                         | **4 Argon** (`medium`) _oder_<br>**3.8 Flash** (`high`)\* | **4 Argon** (`high`)     |
+
+_\*Hinweis zu `complexity:high` in der Umsetzung:_ Ist der Plan aus Phase 1 bereits bis ins Detail ausformuliert (exakte Dateipfade, Signaturen, Schritt-für-Schritt-Vorgaben), reicht oft **Gemini 3.8 Flash (`high`)**. Müssen während des Codings noch komplexe algorithmische oder architektonische Entscheidungen getroffen werden, wird **Gemini 4 Argon (`medium`)** genutzt.
+
+### 3. Verbindlicher Session-Start-Check bei GitHub-Issues (Pflicht für Agenten)
+
+Sobald es in einer Agent-Session um die Analyse, Planung, Umsetzung oder das Review eines **GitHub-Issues** geht (z. B. Nennung von `#123`, Issue-URL oder Branch mit Issue-Bezug), MUSS der Agent **ganz am Anfang der Session** folgenden Check durchführen:
+
+1. **Issue & Labels abrufen:** Per `gh issue view <nr> --json number,title,body,labels` den aktuellen Stand und die gesetzten Labels prüfen.
+2. **Komplexitäts-Label prüfen oder ad-hoc ergänzen:**
+   - **Label vorhanden (`complexity:low`, `complexity:mid` oder `complexity:high`):** Einstufung übernehmen (falls sich bei der Analyse herausstellt, dass die Komplexität deutlich abweicht, kurz darauf hinweisen).
+   - **Kein `complexity:*`-Label vorhanden:**
+     1. Sofort anhand des Issue-Inhalts und der Faustregeln (Abschnitt 1) eine **Ad-hoc-Komplexitätsprüfung** durchführen.
+     2. Das ermittelte Label **direkt automatisch am GitHub-Ticket setzen**:
+        ```bash
+        gh issue edit <nr> --add-label "complexity:<low|mid|high>"
+        ```
+     3. Den Nutzer transparent informieren, dass das Label fehlte und nun automatisch ergänzt wurde.
+3. **Standardisierten Modell-Kompass ausgeben (Pflicht-Output zu Beginn & bei Phasenwechsel):**
+   Direkt zu Beginn der ersten Antwort (sowie beim Übergang in die nächste Phase, z. B. nach fertigem Plan oder vor dem Review) MUSS der Agent einen kompakten, sofort scannbaren Hinweis-Block ausgeben, damit die Bedienerin / der Bediener ohne Nachschlagen weiß, mit welchem Modell und Thinking-Aufwand jede Phase gefahren werden sollte:
+
+   > **🧭 Issue-Komplexität & Modell-Kompass (`#<nr>`)**
+   >
+   > - **Einstufung:** 🟡 `complexity:mid` _(bereits gelabelt / ⚠️ fehlte am Ticket → nach Ad-hoc-Prüfung automatisch gesetzt)_
+   > - **Begründung (kurz):** _[1 Satz bei Ad-hoc-Einstufung, z. B. „Betrifft Backend-Route, Store und Dialog-Komponente ohne Schema-Neubau"]_
+   > - **Empfohlenes Setup nach Phase:**
+   >   1. **Planung:** `Gemini 4 Argon (medium)`
+   >   2. **Umsetzung:** `Gemini 3.8 Flash (medium)`
+   >   3. **Review:** `Gemini 4 Argon (medium)`
+   > - **👉 Aktueller Schritt:** _[z. B. „Wir sind in Phase 1 (Planung) → ideales Modell: **Gemini 4 Argon (medium)**"]_
+
+### 4. Leitprinzipien für den Workflow
+
+1. **Planung als größter Hebel:** Ein präziser Plan mit `4 Argon` löst Edge-Cases vorab auf, sodass `3.8 Flash` in der Umsetzung schnell und kosteneffizient ausführen kann.
+2. **Kein Overkill bei `low`:** Für triviale Aufgaben entfällt ein separater `4 Argon`-Planungsschritt; Planung und Umsetzung erfolgen direkt in einem Schritt mit `3.8 Flash (low)`.
+3. **Review mindestens auf Planungs-Niveau:** Das Review-Modell muss mindestens so stark sein wie das Planungs-Modell (`4 Argon medium/high` ab `mid`), um subtile Fehler (Race Conditions, Reaktivitäts-Fallen, Security, Architektur-Drift) zuverlässig zu erkennen.
+4. **Dynamische Eskalation statt weiterer Labels:** Wenn ein Modell in der Umsetzung nach 2 Versuchen einen Test nicht grün bekommt oder in einer Schleife hängt, wird für den konkreten Schritt dynamisch die Thinking-Stufe (`medium` → `high`) oder das Modell (`Flash` → `Argon`) erhöht – das Issue-Label selbst bleibt unverändert.
+5. **Neue Issues direkt klassifizieren:** Wenn ein Agent selbst ein neues GitHub-Issue anlegt (`gh issue create`), vergibt er immer direkt das passende `--label "complexity:<low|mid|high>"`.
+
 ## PR-Workflow
 
 - **Automatische PR-Erstellung bei neuen Branches / Worktrees:**
