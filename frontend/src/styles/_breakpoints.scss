@@ -1,0 +1,154 @@
+// =============================================================================
+// Breakpoint Tokens & Mixins (Issue #575)
+//
+// Single Source of Truth für responsive Viewport- und Container-Queries.
+// Korrespondiert mit `src/tokens/breakpoints.ts` und `--breakpoint-*` in `style.css`.
+// =============================================================================
+
+@use 'sass:map';
+@use 'sass:meta';
+
+// -----------------------------------------------------------------------------
+// SCSS Breakpoint Variablen
+// -----------------------------------------------------------------------------
+$bp-mobile-compact: 360px;
+$bp-mobile-sm: 420px;
+$bp-mobile: 480px;
+$bp-tablet-sm: 600px;
+$bp-tablet: 700px;
+$bp-desktop-sm: 800px;
+$bp-desktop-md: 900px;
+$bp-desktop: 1024px;
+$bp-page-max: 1400px;
+$bp-wqhd: 2200px;
+$bp-4k: 3200px;
+
+// -----------------------------------------------------------------------------
+// Breakpoint Map
+// -----------------------------------------------------------------------------
+$breakpoints: (
+  'mobile-compact': $bp-mobile-compact,
+  'mobile-sm': $bp-mobile-sm,
+  'mobile': $bp-mobile,
+  'tablet-sm': $bp-tablet-sm,
+  'tablet': $bp-tablet,
+  'desktop-sm': $bp-desktop-sm,
+  'desktop-md': $bp-desktop-md,
+  'desktop': $bp-desktop,
+  'page-max': $bp-page-max,
+  'wqhd': $bp-wqhd,
+  '4k': $bp-4k,
+);
+
+// -----------------------------------------------------------------------------
+// Helper Function zur Auflösung von Namen oder Pixelwerten
+// -----------------------------------------------------------------------------
+@function to-bp($name-or-value) {
+  @if meta.type-of($name-or-value) == 'string' {
+    @if map.has-key($breakpoints, $name-or-value) {
+      @return map.get($breakpoints, $name-or-value);
+    }
+    @error "Unbekannter Breakpoint '#{$name-or-value}'. Erlaubte Werte: #{map.keys($breakpoints)}";
+  }
+  @if meta.type-of($name-or-value) == 'number' {
+    @each $k, $v in $breakpoints {
+      @if $v == $name-or-value {
+        @return $name-or-value;
+      }
+    }
+    @error "Ungültiger Pixel-Breakpoint '#{$name-or-value}'. Verwende stattdessen einen der benannten Breakpoints: #{map.keys($breakpoints)}";
+  }
+  @error "Ungültiger Breakpoint '#{$name-or-value}'. Erlaubte benannte Werte: #{map.keys($breakpoints)}";
+}
+
+// -----------------------------------------------------------------------------
+// Viewport (@media) Mixins
+// -----------------------------------------------------------------------------
+
+/// Min-Width Viewport Query (>= $bp): @include media-up('desktop') { ... }
+@mixin media-up($bp) {
+  $width: to-bp($bp);
+  @media (min-width: #{$width}) {
+    @content;
+  }
+}
+
+/// Max-Width Viewport Query (<= $bp): @include media-down('mobile') { ... }
+@mixin media-down($bp) {
+  $width: to-bp($bp);
+  @media (max-width: #{$width}) {
+    @content;
+  }
+}
+
+/// Between Viewport Query: @include media-between('tablet', 'desktop') { ... }
+@mixin media-between($min, $max) {
+  $min-width: to-bp($min);
+  $max-width: to-bp($max);
+  @media (min-width: #{$min-width}) and (max-width: #{$max-width}) {
+    @content;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Container (@container) Mixins
+// -----------------------------------------------------------------------------
+
+/// Max-Width Container Query.
+/// Signatur 1: @include container-down('app-main', 'mobile') { ... } (benannter Container)
+/// Signatur 2: @include container-down('mobile') { ... } (anonymer Container)
+@mixin container-down($arg1, $arg2: null) {
+  @if $arg2 != null {
+    $width: to-bp($arg2);
+    @container #{$arg1} (max-width: #{$width}) {
+      @content;
+    }
+  } @else {
+    $width: to-bp($arg1);
+    @container (max-width: #{$width}) {
+      @content;
+    }
+  }
+}
+
+/// Min-Width Container Query.
+/// Signatur 1: @include container-up('app-main', 'desktop') { ... } (benannter Container)
+/// Signatur 2: @include container-up('desktop') { ... } (anonymer Container)
+@mixin container-up($arg1, $arg2: null) {
+  @if $arg2 != null {
+    $width: to-bp($arg2);
+    @container #{$arg1} (min-width: #{$width}) {
+      @content;
+    }
+  } @else {
+    $width: to-bp($arg1);
+    @container (min-width: #{$width}) {
+      @content;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Semantische Shortcuts für häufige Reisotor-Container
+// -----------------------------------------------------------------------------
+
+/// Max-Width auf dem Hauptinhalts-Container (#app-main)
+@mixin container-app-main-down($bp: 'mobile') {
+  @include container-down('app-main', $bp) {
+    @content;
+  }
+}
+
+/// Min-Width auf dem Hauptinhalts-Container (#app-main)
+@mixin container-app-main-up($bp: 'desktop-md') {
+  @include container-up('app-main', $bp) {
+    @content;
+  }
+}
+
+/// Max-Width auf der Spot-Spalte (.spots-col in ExcursionsView)
+@mixin container-spots-col-down($bp: 'mobile') {
+  @include container-down('spots-col', $bp) {
+    @content;
+  }
+}

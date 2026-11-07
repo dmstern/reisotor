@@ -313,6 +313,24 @@
      Hi-Res Displays (WQHD / 4K) wird sie über @media responsiv auf 1600px bzw. 1920px skaliert. */
   --page-max-width: 1400px;
 
+  /* ==========================================================================
+     Breakpoint Tokens (Issue #575)
+     Zentrale Definition aller Viewport- und Container-Schwellenwerte.
+     Für SCSS-Mixins & Variablen siehe src/styles/_breakpoints.scss,
+     für TypeScript-Tokens siehe src/tokens/breakpoints.ts.
+     ========================================================================== */
+  --breakpoint-mobile-compact: 360px;
+  --breakpoint-mobile-sm: 420px;
+  --breakpoint-mobile: 480px;
+  --breakpoint-tablet-sm: 600px;
+  --breakpoint-tablet: 700px;
+  --breakpoint-desktop-sm: 800px;
+  --breakpoint-desktop-md: 900px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-page-max: 1400px;
+  --breakpoint-wqhd: 2200px;
+  --breakpoint-4k: 3200px;
+
   /* Dynamische UI-Größen für positionsabhängige Berechnungen (z.B. in TripMap.vue) */
   --drawer-tab-width: 32px;
 

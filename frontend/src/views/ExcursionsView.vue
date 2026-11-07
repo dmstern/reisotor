@@ -1285,7 +1285,7 @@ onUnmounted(() => {
   <ViewLoadingState v-else />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 /* Mobil (Default): kein eigener Titel-Balken über der (jetzt dahinterliegenden, siehe .map-col
    weiter unten) vollflächigen Karte – anders als bei Google Maps (Vorbild für die vollflächige
    Karte) ist das hier kein Suchfeld, nur eine leere Kopfzeile ohne Funktion. Auf Desktop
@@ -1610,7 +1610,7 @@ onUnmounted(() => {
     (top: var(--space-4), bottom: calc(var(--navbar-bottom-offset) + var(--space-4))).
     Das mobile Bottom-Sheet (inkl. Anfasser und Ein-/Ausklappstufen) greift auf Mobilgeräten (<1024px)
     sowie auf Desktop-Geräten (≥1024px) bei schmalem .app-main Container (<720px, z. B. bei geöffnetem Kalender). */
-@media (min-width: 1024px) {
+@include media-up('desktop') {
   /* .page bleibt wie auf Mobil absolute und vollbild, Karte füllt den Bereich aus */
   .page {
     max-width: none;
@@ -1800,7 +1800,7 @@ onUnmounted(() => {
 
 /* Auf schmalen Schubladen-Breiten (<= 600px): zweizeiliger Header – oben Titel links & SegmentedToggle rechts,
    darunter beide Aktions-Buttons gleichmäßig aufgeteilt über die volle Zeilenbreite mit erhaltenem Label (#312). */
-@container spots-col (max-width: 600px) {
+@include container-spots-col-down('tablet-sm') {
   .header h2 {
     width: 100%;
   }
@@ -1824,7 +1824,7 @@ onUnmounted(() => {
    wird ausgeblendet (per sr-only für Screenreader/Barrierefreiheit erhalten), da der Umschalter
    bereits anzeigt, welcher Modus aktiv ist. Dadurch haben die Labels des SegmentedToggle ("Spots",
    "Touren", "Tracks") voll ausgeschrieben Platz und müssen nicht abgeschnitten oder gekürzt werden. */
-@container spots-col (max-width: 480px) {
+@include container-spots-col-down('mobile') {
   .header h2 {
     gap: var(--space-2);
     min-width: 0;
@@ -2060,7 +2060,7 @@ onUnmounted(() => {
    SpotCard.vue (muss übereinstimmen, sonst driftet die Kompakt-Zeile dort
    von der Ein-Spalten-Entscheidung hier auseinander). Explizit "spots-col" statt unbenannt, damit
    eindeutig gegen diesen (statt versehentlich gegen .app-main) ausgewertet wird. */
-@container spots-col (max-width: 480px) {
+@include container-spots-col-down('mobile') {
   .cards {
     /* minmax(0, 1fr) statt nacktem 1fr (= minmax(auto, 1fr)): eine bloße 1fr-Spalte bleibt trotz
        Ein-Spalten-Rasters implizit mindestens so breit wie ihr Inhalt (z. B. ein langer, per

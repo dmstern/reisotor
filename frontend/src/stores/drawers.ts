@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import router from '../router';
+import { MEDIA_QUERIES } from '../tokens/breakpoints';
 
 const CALENDAR_OPEN_KEY = 'reisotor-drawer-calendar-open';
 const CALENDAR_WIDTH_KEY = 'reisotor-drawer-calendar-width';
@@ -19,7 +20,7 @@ export function getMaxDrawerWidth(): number {
 
 function isDesktop() {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(min-width: 1024px)').matches
+    ? window.matchMedia(MEDIA_QUERIES.desktop).matches
     : false;
 }
 

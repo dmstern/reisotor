@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 // API_PROXY_TARGET erlaubt der e2e-Testsuite (/e2e), das Frontend gegen ein Backend auf einem
 // anderen Port laufen zu lassen (parallel zum normalen lokalen Dev-Server auf Port 3000), ohne
@@ -102,6 +103,24 @@ function inlineAppleTouchIcon() {
 }
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler',
+        additionalData: (source: string, file: string) => {
+          if (file.endsWith('_breakpoints.scss') || file.endsWith('breakpoints.scss')) {
+            return source;
+          }
+          return `@use "@/styles/breakpoints" as *;\n${source}`;
+        },
+      },
+    },
+  },
   // Nur für die statischen Pages-Builds gesetzt (dist-landing/dist-demo unter
   // <owner>.github.io/reisotor/[demo/]) - der normale Build (echtes Backend-Deploy) bleibt bei '/'.
   base: pagesBase ?? '/',

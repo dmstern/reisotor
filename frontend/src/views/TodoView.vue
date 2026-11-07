@@ -190,7 +190,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
   <ViewLoadingState v-else />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .groups-grid {
   display: flex;
   flex-direction: column;
@@ -238,7 +238,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
 }
 
 /* Desktop: Gruppen nebeneinander statt untereinander */
-@container app-main (min-width: 900px) {
+@include container-app-main-up('desktop-md') {
   .groups-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));

@@ -257,7 +257,7 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .drawer {
   /* Fester Zwischenraum zwischen Schublade und Ausklapp-Lasche, in dem der Größen-Anfasser
      (.resize-handle) exklusiv liegt – überlappt dadurch nie mit dem nativen Scrollbalken des
@@ -455,7 +455,7 @@ onBeforeUnmount(() => {
 /* Desktop: Panel wird echtes Flex-Geschwisterelement (schiebt den Arbeitsbereich zur Seite),
    kein Overlay/Backdrop mehr. App.vue setzt display:flex auf den umgebenden .app-shell-Container;
    die Reihenfolge der Flex-Kinder (Tab vs. Panel) steuert `order` statt DOM-Reihenfolge. */
-@media (min-width: 1024px) {
+@include media-up('desktop') {
   .drawer {
     display: flex;
     align-items: stretch;
@@ -561,12 +561,18 @@ onBeforeUnmount(() => {
     bottom: auto;
     margin: var(--space-4);
     height: calc(
-      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
-        var(--navbar-bottom-offset, 0px) - var(--space-4) * 2
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(
+          --navbar-bottom-offset,
+          0px
+        ) - var(--space-4) *
+        2
     );
     max-height: calc(
-      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) -
-        var(--navbar-bottom-offset, 0px) - var(--space-4) * 2
+      100vh - var(--app-header-height, 56px) - var(--navbar-offset, 0px) - var(
+          --navbar-bottom-offset,
+          0px
+        ) - var(--space-4) *
+        2
     );
     transform: none;
     box-shadow: var(--shadow-md);

@@ -275,7 +275,7 @@ async function emptyTrash() {
   <ViewLoadingState v-else />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .header-row {
   display: flex;
   align-items: center;
@@ -352,7 +352,7 @@ async function emptyTrash() {
   color: var(--color-danger);
 }
 
-@container app-main (max-width: 600px) {
+@include container-app-main-down('tablet-sm') {
   .hide-on-mobile {
     display: none;
   }

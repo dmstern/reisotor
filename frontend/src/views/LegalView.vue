@@ -89,7 +89,7 @@ function goBack() {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .legal-page {
   min-height: 100vh;
   min-height: 100dvh;
@@ -106,7 +106,7 @@ function goBack() {
   box-sizing: border-box;
 }
 
-@media (min-width: 800px) {
+@include media-up('desktop-sm') {
   .legal-page {
     padding-top: calc(var(--space-5) + env(safe-area-inset-top, 0px));
     padding-right: calc(var(--space-4) + env(safe-area-inset-right, 0px));

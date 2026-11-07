@@ -251,7 +251,7 @@ onMounted(async () => {
   <ViewLoadingState v-else />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .calendar-drawer-content {
   container: schedule-view / inline-size;
   padding: var(--space-3);
@@ -272,7 +272,7 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
-@container app-main (max-width: 480px) {
+@include container-app-main-down('mobile') {
   .calendar-drawer-content.standalone {
     padding-inline: var(--space-3);
   }

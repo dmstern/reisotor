@@ -487,14 +487,51 @@ nachziehen statt den Browser synthetisieren zu lassen.
 
 ## Breakpoints & Layout-Container
 
-Kein zentrales `--breakpoint-*`-Token, aber ein de-facto Standard: **800px** als Desktop-Schwelle
-(`min-width: 800px` in `NavBar.vue`, `Drawer.vue`, `App.vue`; `max-width: 799px` als Gegenstück in
-`AppHeader.vue`) – deckt sich mit dem in `ARCHITECTURE.md` beschriebenen Desktop/Mobil-Split (feste
-Schubladen vs. eigenständige Mobil-Routen). Ein paar Views weichen bewusst ab, wenn ihr Inhalt bei
-800px noch zu eng wäre (`ShoppingListView.vue`/`TodoView.vue`/`PackingListView.vue`: 900px;
-`CalendarWeek.vue`: 700px). Neue responsive Umbrüche: erst prüfen, ob 800px passt, bevor ein neuer
-Wert eingeführt wird – Layout-Sprünge sollen möglichst an derselben Fensterbreite passieren wie der
-Rest der App.
+Zentrale Single Source of Truth für responsive Viewports und Container (Issue #575):
+
+- **SCSS Mixins & Variablen:** `frontend/src/styles/_breakpoints.scss` (in allen Vue-Komponenten via Vite automatisch verfügbar, kein manueller Import nötig).
+- **TypeScript Tokens:** `frontend/src/tokens/breakpoints.ts` (`BREAKPOINTS`, `BREAKPOINTS_PX`, `MEDIA_QUERIES`) für `matchMedia`, ResizeObserver, Storybook und JS-Logik.
+- **CSS Custom Properties:** `--breakpoint-*` auf `:root` in `frontend/src/style.css` zur Dokumentation und CSS-Referenzierung.
+
+### Breakpoint-Hierarchie
+
+| Name             | Wert     | Verwendung / Kontext                                                                        |
+| ---------------- | -------- | ------------------------------------------------------------------------------------------- |
+| `mobile-compact` | `360px`  | Ultra-schmale Mobilgeräte, kompakte Kartenkacheln, Done-Toggles in schmalen Spalten         |
+| `mobile-sm`      | `420px`  | Schmale Container, Card-Header, Drawer-Kompaktmodus                                         |
+| `mobile`         | `480px`  | Standard Mobil-Grenze: Karten vertikal, Formular-Aktionen untereinander, Modals/Sheets 100% |
+| `tablet-sm`      | `600px`  | Breites Smartphone / kleines Tablet, Dialoge & Modals schalten auf schwebende Karten        |
+| `tablet`         | `700px`  | Tablet & Kalenderwoche (schaltet auf volle 7-Tage-Wochenansicht um)                         |
+| `desktop-sm`     | `800px`  | Frühere Desktop-Grenze, Formular-/Modal-Desktopbreite (`Modal.vue`, `RichTextEditor.vue`)   |
+| `desktop-md`     | `900px`  | Breite Tabellen & Grids (Todo-, Pack- & Einkaufslisten schalten auf Spaltenraster um)       |
+| `desktop`        | `1024px` | App-weite Haupt-Desktop-Grenze (Top-Header, feste Docked-Drawers in `Drawer.vue`/`App.vue`) |
+| `page-max`       | `1400px` | Standard-Inhaltsbreite der Seite (`.page` / `--page-max-width`)                             |
+| `wqhd`           | `2200px` | WQHD Ultra-Wide Skalierung (`.page` skaliert auf 1600px)                                    |
+| `4k`             | `3200px` | 4K Ultra-Wide Skalierung (`.page` skaliert auf 1920px; in TS: `ultraWide`)                  |
+
+### SCSS Mixins für Komponenten
+
+In Vue-SFCs mit `<style lang="scss" scoped>` stehen folgende Mixins direkt zur Verfügung:
+
+```scss
+// Viewport (@media)
+@include media-up('desktop') { ... }           // @media (min-width: 1024px)
+@include media-down('mobile') { ... }          // @media (max-width: 480px)
+@include media-between('tablet', 'desktop') { ... }
+
+// Container Queries (@container)
+@include container-down('app-main', 'mobile') { ... }  // benannter Container
+@include container-down('mobile') { ... }              // anonymer Container
+@include container-up('app-main', 'desktop-md') { ... }
+
+// Bequeme Shortcuts für Reisotor-Hauptcontainer:
+@include container-app-main-down('mobile') { ... }
+@include container-app-main-up('desktop-md') { ... }
+@include container-spots-col-down('mobile') { ... }
+```
+
+> [!IMPORTANT]
+> **Keine willkürlichen Breakpoints erfinden:** Neue Layout-Umbrüche dürfen keine beliebigen Pixelwerte einführen. Immer aus den oben definierten Tokens wählen oder bestehende Mixins nutzen.
 
 ### Page Container-Breiten (`max-width`)
 

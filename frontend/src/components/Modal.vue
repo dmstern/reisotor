@@ -429,7 +429,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   </Teleport>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .overlay {
   position: fixed;
   inset: 0;
@@ -486,7 +486,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
     max-height 0.35s ease;
 }
 
-@media (max-width: 600px) {
+@include media-down('tablet-sm') {
   .overlay {
     padding: 12px;
   }
@@ -497,11 +497,11 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 }
 
 .modal.size-sm {
-  max-width: 360px;
+  max-width: $bp-mobile-compact;
 }
 
 .modal.size-md {
-  max-width: 480px;
+  max-width: $bp-mobile;
 }
 
 .modal.size-lg {
@@ -509,14 +509,14 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 }
 
 .modal.size-xl {
-  max-width: 900px;
+  max-width: $bp-desktop-md;
 }
 
 /* Desktop-Breite für inhaltsreiche Formulare (Notizen/Tagebuch/Touren/Spots/Reise), die diese
    Variante nutzen (#88). */
-@media (min-width: 800px) {
+@include media-up('desktop-sm') {
   .modal.full-height {
-    max-width: 900px;
+    max-width: $bp-desktop-md;
   }
 }
 
@@ -609,7 +609,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex: 1;
 }
 
-@container (max-width: 440px) {
+@include container-down('mobile') {
   .modal-body :slotted(form) .actions-row,
   .modal-body :slotted(*) .actions-row,
   .modal-body :slotted(.actions-row) {
@@ -702,7 +702,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   white-space: nowrap;
 }
 
-@media (max-width: 600px) {
+@include media-down('tablet-sm') {
   .modal.confirm-close-dialog {
     max-width: 100%;
   }
