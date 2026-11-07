@@ -8,6 +8,7 @@ export interface UseLocationDetailsOptions {
   category?: Ref<string | undefined>;
   mapsLink?: Ref<string | undefined>;
   selectedPlace?: Ref<PlaceSearchResult | null>;
+  context?: Ref<'spot' | 'trip' | undefined>;
   onUpdateTitle?: (title: string) => void;
   onUpdateAddress?: (address: string) => void;
   onUpdateCategory?: (category: string) => void;
@@ -17,11 +18,11 @@ export interface UseLocationDetailsOptions {
 
 export function useLocationDetails(options: UseLocationDetailsOptions) {
   // Inline-Edit State für die Status-Details (Titel, Adresse & Kategorie)
-  const isEditingTitle = ref(false);
+  const isEditingTitle = ref(true);
   const editTitleInput = ref('');
-  const isEditingAddress = ref(false);
+  const isEditingAddress = ref(true);
   const editAddressInput = ref('');
-  const isEditingCategory = ref(false);
+  const isEditingCategory = ref(true);
   const editCategoryInput = ref('');
 
   const manualDetailsOpen = ref(false);
@@ -33,18 +34,19 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
 
   const isDetailsVisible = computed(() => {
     if (cardClosed.value) return false;
+    if (options.context?.value === 'trip') return true;
+    if (options.title?.value !== undefined) return true;
     if (manualDetailsOpen.value) return true;
     if (options.selectedPlace?.value !== null && options.selectedPlace?.value !== undefined) {
       return true;
     }
     if (hasLocation.value) return true;
-    if (options.title?.value && options.title.value.trim().length > 0) return true;
     return false;
   });
 
   function focusTitleOrAddressInput() {
     const el = document.querySelector<HTMLInputElement>(
-      '.status-title-row .inline-edit-input input, .status-title-row input, .status-address-row .inline-edit-input input, .status-address-row input'
+      '.status-title-row input, .status-address-row input'
     );
     el?.focus();
   }
@@ -68,9 +70,8 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
     watch(
       options.title,
       (newTitle) => {
-        if (!isEditingTitle.value || !editTitleInput.value) {
+        if (newTitle !== editTitleInput.value) {
           editTitleInput.value = newTitle || '';
-          isEditingTitle.value = !newTitle;
         }
       },
       { immediate: true }
@@ -81,9 +82,8 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
     watch(
       options.address,
       (newAddress) => {
-        if (!isEditingAddress.value || !editAddressInput.value) {
+        if (newAddress !== editAddressInput.value) {
           editAddressInput.value = newAddress || '';
-          isEditingAddress.value = !newAddress;
         }
       },
       { immediate: true }
@@ -94,9 +94,8 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
     watch(
       options.category,
       (newCategory) => {
-        if (!isEditingCategory.value || !editCategoryInput.value) {
+        if (newCategory !== editCategoryInput.value) {
           editCategoryInput.value = newCategory || '';
-          isEditingCategory.value = !newCategory;
         }
       },
       { immediate: true }
@@ -104,12 +103,9 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
   }
 
   function startEditTitle() {
-    editTitleInput.value = options.title?.value || '';
     isEditingTitle.value = true;
     nextTick(() => {
-      const el = document.querySelector<HTMLInputElement>(
-        '.status-title-row .inline-edit-input input, .status-title-row input'
-      );
+      const el = document.querySelector<HTMLInputElement>('.status-title-row input');
       el?.focus();
       el?.select();
     });
@@ -122,25 +118,18 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
   function saveTitle() {
     const trimmed = editTitleInput.value.trim();
     options.onUpdateTitle?.(trimmed);
-    if (trimmed) {
-      isEditingTitle.value = false;
-    }
   }
 
   function cancelTitle() {
-    if (options.title?.value) {
+    if (options.title?.value !== undefined) {
       editTitleInput.value = options.title.value;
-      isEditingTitle.value = false;
     }
   }
 
   function startEditAddress() {
-    editAddressInput.value = options.address?.value || '';
     isEditingAddress.value = true;
     nextTick(() => {
-      const el = document.querySelector<HTMLInputElement>(
-        '.status-address-row .inline-edit-input input, .status-address-row input'
-      );
+      const el = document.querySelector<HTMLInputElement>('.status-address-row input');
       el?.focus();
       el?.select();
     });
@@ -153,25 +142,18 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
   function saveAddress() {
     const trimmed = editAddressInput.value.trim();
     options.onUpdateAddress?.(trimmed);
-    if (trimmed) {
-      isEditingAddress.value = false;
-    }
   }
 
   function cancelAddress() {
-    if (options.address?.value) {
+    if (options.address?.value !== undefined) {
       editAddressInput.value = options.address.value;
-      isEditingAddress.value = false;
     }
   }
 
   function startEditCategory() {
-    editCategoryInput.value = options.category?.value || '';
     isEditingCategory.value = true;
     nextTick(() => {
-      const el = document.querySelector<HTMLInputElement>(
-        '.status-category-row .inline-category-combobox input, .status-category-row input'
-      );
+      const el = document.querySelector<HTMLInputElement>('.status-category-row input');
       el?.focus();
       el?.select();
     });
@@ -180,21 +162,17 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
   function saveCategory(val?: string) {
     const newCat = (typeof val === 'string' ? val : editCategoryInput.value).trim();
     options.onUpdateCategory?.(newCat);
-    if (newCat) {
-      isEditingCategory.value = false;
-    }
   }
 
   function cancelCategory() {
-    if (options.category?.value) {
+    if (options.category?.value !== undefined) {
       editCategoryInput.value = options.category.value;
-      isEditingCategory.value = false;
     }
   }
 
   function handleCategoryBlur() {
     window.setTimeout(() => {
-      if (isEditingCategory.value && options.category?.value) {
+      if (options.category?.value) {
         saveCategory();
       }
     }, 200);
@@ -228,9 +206,9 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
   function resetDetailsState() {
     cardClosed.value = false;
     manualDetailsOpen.value = false;
-    isEditingTitle.value = false;
-    isEditingAddress.value = false;
-    isEditingCategory.value = false;
+    isEditingTitle.value = true;
+    isEditingAddress.value = true;
+    isEditingCategory.value = true;
   }
 
   return {

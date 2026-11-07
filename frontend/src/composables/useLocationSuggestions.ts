@@ -119,7 +119,6 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
 
   const showAddressSparkle = computed(() => {
     if (!currentTitle.value) return false;
-    if (!options.isEditingAddress.value && options.address?.value) return false;
     return (
       !options.address?.value ||
       !options.editAddressInput.value.trim() ||
@@ -157,7 +156,6 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
 
   const showCategorySparkle = computed(() => {
     if (!currentTitle.value || options.category?.value === undefined) return false;
-    if (!options.isEditingCategory.value && options.category.value) return false;
     return (
       !options.category.value ||
       !options.editCategoryInput.value.trim() ||

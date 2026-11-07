@@ -14,8 +14,9 @@ describe('useLocationDetails', () => {
   });
 
   it('determines visibility based on props and state', () => {
+    // Mode 1: TripForm mode (title is undefined) -> initially hidden
     const modelValue = ref<{ lat: number; lng: number } | null>(null);
-    const title = ref<string | undefined>('');
+    const title = ref<string | undefined>(undefined);
     const address = ref<string | undefined>('');
 
     const details = useLocationDetails({ modelValue, title, address });
@@ -34,6 +35,18 @@ describe('useLocationDetails', () => {
     modelValue.value = { lat: 48.2, lng: 16.37 };
     expect(details.hasLocation.value).toBe(true);
     expect(details.isDetailsVisible.value).toBe(true);
+
+    // Mode 2: SpotFormModal mode (title is defined, e.g. empty string) -> immediately visible
+    const spotTitle = ref<string | undefined>('');
+    const spotDetails = useLocationDetails({ modelValue: ref(null), title: spotTitle });
+    expect(spotDetails.isDetailsVisible.value).toBe(true);
+
+    // Mode 3: Trip context (context is 'trip') -> immediately visible even without title/location
+    const tripDetails = useLocationDetails({
+      modelValue: ref(null),
+      context: ref('trip'),
+    });
+    expect(tripDetails.isDetailsVisible.value).toBe(true);
   });
 
   it('handles inline title edit lifecycle', () => {
@@ -43,7 +56,7 @@ describe('useLocationDetails', () => {
 
     const details = useLocationDetails({ modelValue, title, onUpdateTitle });
 
-    expect(details.isEditingTitle.value).toBe(false);
+    expect(details.isEditingTitle.value).toBe(true);
     expect(details.editTitleInput.value).toBe('Initialer Spot');
 
     details.startEditTitle();
@@ -55,7 +68,7 @@ describe('useLocationDetails', () => {
 
     details.saveTitle();
     expect(onUpdateTitle).toHaveBeenCalledWith('Neuer Spot');
-    expect(details.isEditingTitle.value).toBe(false);
+    expect(details.isEditingTitle.value).toBe(true);
   });
 
   it('handles inline address edit lifecycle and cancel', () => {
@@ -65,13 +78,10 @@ describe('useLocationDetails', () => {
 
     const details = useLocationDetails({ modelValue, address, onUpdateAddress });
 
-    details.startEditAddress();
     expect(details.isEditingAddress.value).toBe(true);
-
     details.editAddressInput.value = 'Nebenstraße 2';
     details.cancelAddress();
     expect(details.editAddressInput.value).toBe('Hauptstraße 1');
-    expect(details.isEditingAddress.value).toBe(false);
   });
 
   it('handles reverse geocoding', async () => {
@@ -99,7 +109,7 @@ describe('useLocationDetails', () => {
 
     details.resetDetailsState();
 
-    expect(details.isEditingTitle.value).toBe(false);
+    expect(details.isEditingTitle.value).toBe(true);
     expect(details.manualDetailsOpen.value).toBe(false);
     expect(details.cardClosed.value).toBe(false);
   });

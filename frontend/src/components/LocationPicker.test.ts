@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createApp, h, nextTick, reactive } from 'vue';
+import { createApp, h, nextTick, reactive, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 
 // Polyfills
@@ -601,9 +601,11 @@ describe('LocationPicker', () => {
 
       const statusCard = container.querySelector('[data-testid="location-status"]');
       expect(statusCard).toBeTruthy();
-      expect(statusCard?.textContent).toContain('48.2082');
-      expect(statusCard?.textContent).toContain('16.3738');
-      expect(statusCard?.textContent).toContain('Stephansplatz 3, Wien');
+      expect(statusCard?.textContent).toContain('Pin gesetzt');
+      const addressInput = statusCard?.querySelector(
+        '[data-testid="spot-address-input"]'
+      ) as HTMLInputElement;
+      expect(addressInput?.value).toBe('Stephansplatz 3, Wien');
 
       const clearBtn = container.querySelector('button.coords-clear-btn');
       expect(clearBtn).toBeTruthy();
@@ -622,17 +624,21 @@ describe('LocationPicker', () => {
       });
       await nextTick();
 
-      const titleIcon = container.querySelector('.status-title-row .status-row-icon');
-      expect(titleIcon).toBeTruthy();
+      const titleLabel = container.querySelector('.status-title-row .polaroid-field-label');
+      expect(titleLabel).toBeTruthy();
+      expect(titleLabel?.textContent).toContain('Name');
 
-      const addressIcon = container.querySelector('.status-address-row .status-row-icon');
-      expect(addressIcon).toBeTruthy();
+      const addressLabel = container.querySelector('.status-address-row .polaroid-field-label');
+      expect(addressLabel).toBeTruthy();
+      expect(addressLabel?.textContent).toContain('Adresse');
 
-      const categoryIcon = container.querySelector('.status-category-row .status-row-icon');
-      expect(categoryIcon).toBeTruthy();
+      const categoryLabel = container.querySelector('.status-category-row .polaroid-field-label');
+      expect(categoryLabel).toBeTruthy();
+      expect(categoryLabel?.textContent).toContain('Kategorie');
 
-      const coordsIcon = container.querySelector('.status-coords-row .status-row-icon');
-      expect(coordsIcon).toBeTruthy();
+      const coordsBadge = container.querySelector('[data-testid="spot-coords-set"]');
+      expect(coordsBadge).toBeTruthy();
+      expect(coordsBadge?.textContent).toContain('Pin gesetzt');
 
       cleanUp();
     });
@@ -922,11 +928,6 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
-      expect(manualBtn).toBeTruthy();
-      manualBtn.click();
-      await nextTick();
-
       const titleInput = container.querySelector(
         '.status-title-row [data-testid="spot-title-input"]'
       ) as HTMLInputElement;
@@ -1097,7 +1098,7 @@ describe('LocationPicker', () => {
       document.body.innerHTML = '';
     });
 
-    it('renders address and allows inline edit via pencil button', async () => {
+    it('renders address and allows direct editing of address', async () => {
       const updateAddress = vi.fn();
       const { container, cleanUp } = mountPicker(
         {
@@ -1111,21 +1112,7 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const addressSpan = container.querySelector('.status-address') as HTMLElement;
-      expect(addressSpan).toBeTruthy();
-      expect(addressSpan.textContent?.trim()).toBe('Herrengasse 14');
-
-      // Click edit pencil button in address row
-      const editAddressBtn = container.querySelector(
-        '.status-address-row .inline-edit-btn'
-      ) as HTMLButtonElement;
-      expect(editAddressBtn).toBeTruthy();
-      editAddressBtn.click();
-      await nextTick();
-
-      const editInput = container.querySelector(
-        '.status-address-row .inline-edit-input'
-      ) as HTMLInputElement;
+      const editInput = container.querySelector('.status-address-row input') as HTMLInputElement;
       expect(editInput).toBeTruthy();
       expect(editInput.value).toBe('Herrengasse 14');
 
@@ -1133,18 +1120,11 @@ describe('LocationPicker', () => {
       editInput.dispatchEvent(new Event('input'));
       await nextTick();
 
-      const saveBtn = container.querySelector(
-        '.status-address-row .inline-save-btn'
-      ) as HTMLButtonElement;
-      expect(saveBtn).toBeTruthy();
-      saveBtn.click();
-      await nextTick();
-
       expect(updateAddress).toHaveBeenCalledWith('Herrengasse 14, Wien');
       cleanUp();
     });
 
-    it('allows inline editing of title via pencil button in status card', async () => {
+    it('allows direct editing of title in status card', async () => {
       const updateTitle = vi.fn();
       const { container, cleanUp } = mountPicker(
         {
@@ -1157,25 +1137,12 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const editTitleBtn = container.querySelector(
-        '.status-title-row .inline-edit-btn'
-      ) as HTMLButtonElement;
-      expect(editTitleBtn).toBeTruthy();
-      editTitleBtn.click();
-      await nextTick();
-
-      const editInput = container.querySelector(
-        '.status-title-row .inline-edit-input'
-      ) as HTMLInputElement;
+      const editInput = container.querySelector('.status-title-row input') as HTMLInputElement;
       expect(editInput).toBeTruthy();
       expect(editInput.value).toBe('Alter Titel');
 
       editInput.value = 'Neuer Titel';
       editInput.dispatchEvent(new Event('input'));
-      await nextTick();
-
-      // Press Enter to save
-      editInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       await nextTick();
 
       expect(updateTitle).toHaveBeenCalledWith('Neuer Titel');
@@ -1196,9 +1163,7 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      const editInput = container.querySelector(
-        '.status-address-row .inline-edit-input input, .status-address-row input'
-      ) as HTMLInputElement;
+      const editInput = container.querySelector('.status-address-row input') as HTMLInputElement;
       expect(editInput).toBeTruthy();
       expect(editInput.placeholder).toContain('Adresse');
 
@@ -1206,14 +1171,11 @@ describe('LocationPicker', () => {
       editInput.dispatchEvent(new Event('input'));
       await nextTick();
 
-      editInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-      await nextTick();
-
       expect(updateAddress).toHaveBeenCalledWith('Musterstraße 1, 1010 Wien');
       cleanUp();
     });
 
-    it('renders CategoryChip with edit button when location and category are present, and allows inline edit', async () => {
+    it('renders category combobox input directly and allows selecting category', async () => {
       const updateCategory = vi.fn();
       const { container, cleanUp } = mountPicker(
         {
@@ -1227,20 +1189,6 @@ describe('LocationPicker', () => {
       );
       await nextTick();
 
-      // Check CategoryChip is rendered in status-details
-      const chip = container.querySelector('.status-category-row .category-chip');
-      expect(chip).toBeTruthy();
-      expect(chip?.textContent).toContain('Sehenswürdigkeit');
-
-      // Click pencil icon to edit category
-      const editBtn = container.querySelector(
-        '.status-category-row .inline-edit-btn'
-      ) as HTMLButtonElement;
-      expect(editBtn).toBeTruthy();
-      editBtn.click();
-      await nextTick();
-
-      // Combobox should now be rendered
       const comboboxInput = container.querySelector(
         '.status-category-row .inline-category-combobox input'
       ) as HTMLInputElement;
@@ -1251,7 +1199,6 @@ describe('LocationPicker', () => {
       comboboxInput.dispatchEvent(new Event('input'));
       await nextTick();
 
-      // Save via Enter
       comboboxInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       await nextTick();
 
@@ -1292,10 +1239,9 @@ describe('LocationPicker', () => {
   });
 
   describe('Polaroid Layout & Visibility Toggle', () => {
-    it('initially hides location details when modelValue, title, and address are empty', async () => {
+    it('initially hides location details when modelValue and address are empty and no title is configured', async () => {
       const { container, cleanUp } = mountPicker({
         modelValue: null,
-        title: '',
         address: '',
       });
       await nextTick();
@@ -1304,6 +1250,19 @@ describe('LocationPicker', () => {
       const manualBtn = container.querySelector('.manual-details-btn');
       expect(manualBtn).toBeTruthy();
       expect(manualBtn?.textContent).toContain('Details manuell ausfüllen');
+      cleanUp();
+    });
+
+    it('immediately shows polaroid card in spot mode when title prop is configured', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: '',
+        address: '',
+      });
+      await nextTick();
+
+      expect(container.querySelector('.polaroid-card')).toBeTruthy();
+      expect(container.querySelector('.manual-details-btn')).toBeNull();
       cleanUp();
     });
 
@@ -1319,10 +1278,9 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
-    it('reveals polaroid card when clicking "Details manuell ausfüllen"', async () => {
+    it('reveals polaroid card when clicking "Details manuell ausfüllen" in trip mode', async () => {
       const { container, cleanUp } = mountPicker({
         modelValue: null,
-        title: '',
         address: '',
       });
       await nextTick();
@@ -1857,16 +1815,10 @@ describe('LocationPicker', () => {
       });
       await nextTick();
 
-      const coordsRow = container.querySelector('.status-coords-row.is-missing');
-      expect(coordsRow).toBeTruthy();
-
-      const warningIcon = coordsRow?.querySelector('.status-warning-icon');
-      expect(warningIcon).toBeTruthy();
-
-      const missingText = coordsRow?.querySelector('[data-testid="spot-coords-missing"]');
+      const missingText = container.querySelector('[data-testid="spot-coords-missing"]');
       expect(missingText?.textContent?.trim()).toBe('Standort fehlt');
 
-      const infoPopover = coordsRow?.querySelector('.coords-info-popover');
+      const infoPopover = container.querySelector('.coords-info-popover');
       expect(infoPopover).toBeTruthy();
 
       cleanUp();
@@ -1894,11 +1846,6 @@ describe('LocationPicker', () => {
         category: '',
         address: '',
       });
-      await nextTick();
-
-      // Open manual details so card is visible
-      const manualBtn = container.querySelector('.manual-details-btn') as HTMLButtonElement;
-      if (manualBtn) manualBtn.click();
       await nextTick();
 
       const sparkleBtn = container.querySelector('[data-testid="spot-location-sparkle-btn"]');
@@ -1984,25 +1931,31 @@ describe('LocationPicker', () => {
     });
 
     it('transitions from coordinates set to "Standort fehlt" state when clearing coordinates', async () => {
-      const onUpdateModelValue = vi.fn();
-      const { container, cleanUp } = mountPicker(
-        {
-          modelValue: { lat: 52.3667, lng: 13.5033 },
-          title: 'Flughafen BER',
-          address: 'Willy-Brandt-Platz',
-        },
-        {
-          'onUpdate:modelValue': onUpdateModelValue,
-        }
-      );
+      const modelValueRef = ref<{ lat: number; lng: number } | null>({
+        lat: 52.3667,
+        lng: 13.5033,
+      });
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(LocationPicker as unknown as import('vue').Component, {
+            modelValue: modelValueRef.value,
+            title: 'Flughafen BER',
+            address: 'Willy-Brandt-Platz',
+            'onUpdate:modelValue': (val: { lat: number; lng: number } | null) => {
+              modelValueRef.value = val;
+            },
+          }),
+      });
+      app.use(pinia);
+      app.mount(container);
       await nextTick();
 
       // Initially has coordinates
-      const coordsRow = container.querySelector('.status-coords-row');
-      expect(coordsRow).toBeTruthy();
-      expect(coordsRow?.classList.contains('is-missing')).toBe(false);
-      expect(coordsRow?.textContent).toContain('52.36670');
-      expect(coordsRow?.querySelector('.status-warning-icon')).toBeNull();
+      const coordsBadge = container.querySelector('[data-testid="spot-coords-set"]');
+      expect(coordsBadge).toBeTruthy();
+      expect(coordsBadge?.textContent).toContain('Pin gesetzt');
 
       // Click clear coords button
       const clearBtn = container.querySelector('button.coords-clear-btn') as HTMLButtonElement;
@@ -2010,7 +1963,197 @@ describe('LocationPicker', () => {
       clearBtn.click();
       await nextTick();
 
-      expect(onUpdateModelValue).toHaveBeenCalledWith(null);
+      expect(modelValueRef.value).toBeNull();
+      const missingBadge = container.querySelector('[data-testid="spot-coords-missing"]');
+      expect(missingBadge).toBeTruthy();
+
+      app.unmount();
+      container.remove();
+    });
+
+    it('shows address autocomplete dropdown when typing in address input, and selecting a place sets coordinates and address without overwriting existing title or category', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          {
+            name: 'Kaiser-Wilhelm-Gedächtniskirche',
+            formatted_address: 'Breitscheidplatz, 10789 Berlin',
+            lat: 52.5048,
+            lng: 13.335,
+            category: 'Kirche',
+          },
+        ],
+      });
+      globalThis.fetch = fetchSpy;
+
+      const onUpdateAddress = vi.fn();
+      const onUpdateModelValue = vi.fn();
+      const onUpdateTitle = vi.fn();
+      const onUpdateCategory = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: null,
+          title: 'Mein Lieblingsort',
+          category: 'Kultur',
+          address: '',
+        },
+        {
+          'onUpdate:address': onUpdateAddress,
+          'onUpdate:modelValue': onUpdateModelValue,
+          'onUpdate:title': onUpdateTitle,
+          'onUpdate:category': onUpdateCategory,
+        }
+      );
+      await nextTick();
+
+      const addressInput = container.querySelector(
+        '[data-testid="spot-address-input"]'
+      ) as HTMLInputElement;
+      expect(addressInput).toBeTruthy();
+
+      addressInput.value = 'Breitscheidplatz';
+      addressInput.dispatchEvent(new Event('input'));
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const dropdownItem = container.querySelector(
+        '.address-autocomplete-dropdown .location-result-item'
+      ) as HTMLElement;
+      expect(dropdownItem).toBeTruthy();
+      expect(dropdownItem.textContent).toContain('Breitscheidplatz');
+
+      dropdownItem.click();
+      await nextTick();
+
+      expect(onUpdateAddress).toHaveBeenCalledWith('Breitscheidplatz, 10789 Berlin');
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 52.5048, lng: 13.335 });
+      // Existing title and category must not be overwritten
+      expect(onUpdateTitle).not.toHaveBeenCalledWith('Kaiser-Wilhelm-Gedächtniskirche');
+      expect(onUpdateCategory).not.toHaveBeenCalledWith('Kirche');
+
+      cleanUp();
+    });
+
+    it('adapts PolaroidCard labels, placeholders, badges, and immediate visibility when context="trip"', async () => {
+      const modelValueRef = ref<{ lat: number; lng: number } | null>(null);
+      const addressRef = ref('');
+      const onSelect = vi.fn();
+
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const app = createApp({
+        render: () =>
+          h(LocationPicker as unknown as import('vue').Component, {
+            modelValue: modelValueRef.value,
+            address: addressRef.value,
+            context: 'trip',
+            'onUpdate:modelValue': (val: { lat: number; lng: number } | null) => {
+              modelValueRef.value = val;
+            },
+            'onUpdate:address': (val: string) => {
+              addressRef.value = val;
+            },
+            onSelect,
+          }),
+      });
+      app.use(pinia);
+      app.mount(container);
+      await nextTick();
+
+      // Card is immediately visible in trip context
+      const card = container.querySelector('.polaroid-card');
+      expect(card).toBeTruthy();
+
+      // Label is "Reiseziel"
+      const label = container.querySelector('.status-address-row .polaroid-field-label');
+      expect(label?.textContent).toContain('Reiseziel');
+      expect(label?.textContent).not.toContain('Adresse');
+
+      // Missing location badge for trip
+      const missingBadge = container.querySelector('[data-testid="trip-coords-missing"]');
+      expect(missingBadge).toBeTruthy();
+      expect(missingBadge?.textContent).toContain('Standort fehlt');
+
+      // Destination input attributes
+      const destInput = container.querySelector(
+        '[data-testid="trip-destination-input"]'
+      ) as HTMLInputElement;
+      expect(destInput).toBeTruthy();
+      expect(destInput.name).toBe('destination');
+      expect(destInput.placeholder).toBe('Reiseziel oder Stadt eingeben...');
+
+      // Setting coordinates switches to "Pin gesetzt"
+      modelValueRef.value = { lat: 38.7223, lng: -9.1393 };
+      await nextTick();
+
+      const coordsBadge = container.querySelector('[data-testid="trip-coords-set"]');
+      expect(coordsBadge).toBeTruthy();
+      expect(coordsBadge?.textContent).toContain('Pin gesetzt');
+
+      app.unmount();
+      container.remove();
+    });
+
+    it('shows title autocomplete dropdown when typing in name input, and selecting a place sets title, address, coordinates, and category', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          {
+            name: 'Brandenburger Tor',
+            formatted_address: 'Pariser Platz, 10117 Berlin',
+            lat: 52.5163,
+            lng: 13.3777,
+            category: 'Sehenswürdigkeit',
+          },
+        ],
+      });
+      globalThis.fetch = fetchSpy;
+
+      const onUpdateTitle = vi.fn();
+      const onUpdateAddress = vi.fn();
+      const onUpdateModelValue = vi.fn();
+      const onUpdateCategory = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: null,
+          title: '',
+          category: '',
+          address: '',
+        },
+        {
+          'onUpdate:title': onUpdateTitle,
+          'onUpdate:address': onUpdateAddress,
+          'onUpdate:modelValue': onUpdateModelValue,
+          'onUpdate:category': onUpdateCategory,
+        }
+      );
+      await nextTick();
+
+      const titleInput = container.querySelector(
+        '[data-testid="spot-title-input"]'
+      ) as HTMLInputElement;
+      expect(titleInput).toBeTruthy();
+
+      titleInput.value = 'Brandenburger';
+      titleInput.dispatchEvent(new Event('input'));
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const dropdownItem = container.querySelector(
+        '.title-autocomplete-dropdown .location-result-item'
+      ) as HTMLElement;
+      expect(dropdownItem).toBeTruthy();
+      expect(dropdownItem.textContent).toContain('Brandenburger Tor');
+
+      dropdownItem.click();
+      await nextTick();
+
+      expect(onUpdateTitle).toHaveBeenCalledWith('Brandenburger Tor');
+      expect(onUpdateAddress).toHaveBeenCalledWith('Pariser Platz, 10117 Berlin');
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 52.5163, lng: 13.3777 });
+      expect(onUpdateCategory).toHaveBeenCalledWith('Sehenswürdigkeit');
 
       cleanUp();
     });

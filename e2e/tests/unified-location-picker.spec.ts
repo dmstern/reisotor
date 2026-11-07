@@ -165,7 +165,7 @@ async function openNewSpotModal(page: Page) {
   if (await discardBtn.isVisible()) {
     await discardBtn.click();
     await expect(discardBtn).toBeHidden();
-    await expect(modal.locator('[data-testid="location-status"]')).toBeHidden();
+    await expect(modal.locator('[data-testid="spot-coords-set"]')).toBeHidden();
   }
 
   // If Standort section is collapsed, expand it
@@ -847,9 +847,9 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       await input.fill('https://example.com/not-a-map/page');
 
-      // The input should not throw or cause unhandled exceptions
-      const status = getStatusBadge(picker);
-      await expect(status).not.toBeVisible();
+      // The input should not throw or cause unhandled exceptions and no coordinates should be set
+      await expect(picker.locator('[data-testid="spot-coords-set"]')).not.toBeVisible();
+      await expect(picker.locator('[data-testid="spot-coords-missing"]')).toBeVisible();
     });
 
     test('T2.4: unresolved maps shortlink falls back gracefully without unhandled exception', async ({
