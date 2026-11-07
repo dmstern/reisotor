@@ -157,8 +157,10 @@ onMounted(() => {
 }
 
 .day-strip-arrow:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .day-strip-arrow.left {

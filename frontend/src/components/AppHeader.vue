@@ -333,6 +333,8 @@ const profileTitle = computed(() => {
   display: inline-flex;
   align-items: center;
   max-width: 900px;
+  padding: 6px;
+  margin: -6px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;

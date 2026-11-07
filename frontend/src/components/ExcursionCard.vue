@@ -375,7 +375,7 @@ const {
   padding: 0;
 }
 
-.body > :not(.card-header-row) {
+.body > :not(.card-header-row, .accordion, .tour-note-container) {
   transition:
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.2s ease;
@@ -585,11 +585,13 @@ const {
   overflow: hidden;
   transition:
     max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-    margin 0.25s ease;
+    margin 0.25s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
 }
 
 .tour-note-container:not(.is-expanded) {
-  max-height: 2.8em;
+  max-height: 2.85em;
 }
 
 .tour-note-container.is-expanded {
@@ -611,8 +613,8 @@ const {
   line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--font-size-xs);
-  line-height: 1.35;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
   color: var(--color-text-muted);
 }
 
@@ -680,15 +682,15 @@ const {
   }
 
   .card-title {
-    font-size: var(--font-size-sm);
-  }
-
-  .excursion-card.expanded .card-title {
     font-size: var(--font-size-md);
   }
 
+  .excursion-card.expanded .card-title {
+    font-size: var(--font-size-lg);
+  }
+
   .tour-note-container:not(.is-expanded) {
-    max-height: 1.35em;
+    max-height: 1.45em;
   }
 
   .tour-note-container.is-expanded {
@@ -698,8 +700,8 @@ const {
   .note.is-clamped {
     -webkit-line-clamp: 1;
     line-clamp: 1;
-    font-size: var(--font-size-xs);
-    line-height: 1.3;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
   }
 
   .note.is-clamped.is-expanded {
@@ -724,7 +726,7 @@ const {
   .excursion-card,
   .excursion-card::before,
   .body,
-  .body > :not(.card-header-row),
+  .body > :not(.card-header-row, .accordion, .tour-note-container),
   .card-header-row,
   .card-disclosure-pill,
   .disclosure-chevron,

@@ -496,7 +496,7 @@ const cardRotation = computed(() => {
 
 .spot-note-container {
   overflow: hidden;
-  max-height: 2.8em;
+  max-height: 2.85em;
   margin-top: calc(-1 * var(--space-1));
 }
 
@@ -504,7 +504,7 @@ const cardRotation = computed(() => {
   overflow-wrap: anywhere;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .note.is-clamped {
@@ -846,7 +846,7 @@ const cardRotation = computed(() => {
   }
 
   .spot-card:not(.expanded) .card-title {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-md);
   }
 
   .spot-card:not(.expanded) .card-attachments-wrap {
@@ -867,14 +867,14 @@ const cardRotation = computed(() => {
   }
 
   .spot-note-container {
-    max-height: 1.4em;
+    max-height: 1.45em;
   }
 
   .note.is-clamped {
     -webkit-line-clamp: 1;
     line-clamp: 1;
-    font-size: var(--font-size-xs);
-    line-height: 1.3;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
   }
 
   .note.is-clamped :deep(.richtext) {

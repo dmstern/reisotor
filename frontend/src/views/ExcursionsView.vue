@@ -879,7 +879,7 @@ onUnmounted(() => {
                         ? ACTION_ICONS.mapPlus
                         : ACTION_ICONS.mapPinPlus
                   "
-                  :size="14"
+                  :size="16"
                   group="actions"
                 />
                 <span class="add-button__label">
@@ -1742,6 +1742,7 @@ onUnmounted(() => {
 .subheader {
   margin-bottom: var(--space-3);
   display: flex;
+  flex-direction: column;
   justify-content: flex-end;
 }
 
@@ -1802,11 +1803,6 @@ onUnmounted(() => {
 .header-actions button.recording:hover {
   background: color-mix(in srgb, var(--color-danger) 85%, black);
   border-color: color-mix(in srgb, var(--color-danger) 85%, black);
-}
-
-.subheader {
-  display: flex;
-  flex-direction: column;
 }
 
 .active-recording-banner {

@@ -161,8 +161,10 @@ const emit = defineEmits<{
 }
 
 .category-nav-arrow:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .category-nav-arrow.left {
@@ -187,7 +189,8 @@ const emit = defineEmits<{
   background: none;
   border: none;
   box-shadow: none;
-  border-radius: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -201,8 +204,8 @@ const emit = defineEmits<{
 }
 
 .category-nav-item:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
 }
 
 .category-nav-item.active {

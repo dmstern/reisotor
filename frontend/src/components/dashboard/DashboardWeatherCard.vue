@@ -318,7 +318,8 @@ onMounted(() => {
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
-  padding-bottom: var(--space-1);
+  padding: 8px 6px;
+  margin: -6px -6px calc(-8px + var(--space-1));
 }
 
 .weather-source {
