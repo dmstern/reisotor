@@ -315,11 +315,16 @@ function onAddressBlur(e: FocusEvent) {
 }
 
 function onAddressKeydown(e: KeyboardEvent) {
+  const wasOpen = addressSearch.isOpen.value;
   addressSearch.onKeydown(e);
   if (e.key === 'Enter') {
-    details.saveAddress();
+    if (!wasOpen || addressSearch.activeIndex.value < 0) {
+      details.saveAddress();
+    }
   } else if (e.key === 'Escape') {
-    details.cancelAddress();
+    if (!wasOpen) {
+      details.cancelAddress();
+    }
   }
 }
 

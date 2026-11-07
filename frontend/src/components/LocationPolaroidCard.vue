@@ -103,7 +103,9 @@ const emit = defineEmits<{
 
 const cardEl = ref<HTMLDivElement | null>(null);
 const titleInputId = useId();
+const categoryInputId = useId();
 const addressInputId = useId();
+const addressDropdownId = useId();
 
 defineExpose({
   cardEl,
@@ -171,13 +173,14 @@ defineExpose({
         <!-- 2. Kategorie-Feld -->
         <div v-if="props.category !== undefined" class="polaroid-field status-category-row">
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-          <label class="polaroid-field-label">
+          <label class="polaroid-field-label" :for="categoryInputId">
             <AppIcon :icon="FORM_FIELD_ICONS.category" :size="13" group="formFields" />
             <span>Kategorie</span>
           </label>
           <div class="field-input-wrap">
             <div class="inline-category-combobox" :class="{ 'has-sparkle': showCategorySparkle }">
               <CategoryCombobox
+                :id="categoryInputId"
                 :model-value="editCategoryInput"
                 type="spot"
                 :options="categoryOptions"
@@ -212,9 +215,17 @@ defineExpose({
             </label>
             <div class="polaroid-location-status">
               <!-- Pin gesetzt Badge -->
-              <span v-if="modelValue" class="coords-set-badge" data-testid="spot-coords-set">
+              <span
+                v-if="modelValue"
+                class="coords-set-badge"
+                data-testid="spot-coords-set"
+                :title="`${modelValue.lat.toFixed(5)}, ${modelValue.lng.toFixed(5)}`"
+              >
                 <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="12" group="formFields" />
                 <span>Pin gesetzt</span>
+                <span class="status-coords sr-only">
+                  {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
+                </span>
                 <button
                   type="button"
                   class="clear-btn coords-clear-btn coords-clear-inline-btn"
@@ -258,6 +269,15 @@ defineExpose({
                 autocomplete="off"
                 data-protonpass-ignore="true"
                 data-1p-ignore="true"
+                role="combobox"
+                :aria-expanded="addressSearchOpen && addressSearchResults.length > 0"
+                aria-autocomplete="list"
+                :aria-controls="addressDropdownId"
+                :aria-activedescendant="
+                  addressSearchActiveIndex >= 0
+                    ? `${addressDropdownId}-opt-${addressSearchActiveIndex}`
+                    : undefined
+                "
                 @update:model-value="emit('update:editAddressInput', $event)"
                 @input="emit('addressInput', $event)"
                 @focus="emit('addressFocus', $event)"
@@ -281,12 +301,14 @@ defineExpose({
               <Transition name="dropdown-unfold">
                 <ul
                   v-if="addressSearchOpen && addressSearchResults.length > 0"
+                  :id="addressDropdownId"
                   class="location-dropdown address-autocomplete-dropdown options"
                   role="listbox"
                   aria-label="Adressvorschläge"
                 >
                   <li
                     v-for="(place, index) in addressSearchResults"
+                    :id="`${addressDropdownId}-opt-${index}`"
                     :key="place.id || `${place.lat}-${place.lng}-${index}`"
                     role="option"
                     tabindex="-1"
@@ -677,5 +699,17 @@ defineExpose({
   .polaroid-media :deep(.form-image-banner--polaroid) {
     height: 110px;
   }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 </style>

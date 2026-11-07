@@ -165,7 +165,7 @@ async function openNewSpotModal(page: Page) {
   if (await discardBtn.isVisible()) {
     await discardBtn.click();
     await expect(discardBtn).toBeHidden();
-    await expect(modal.locator('[data-testid="location-status"]')).toBeHidden();
+    await expect(modal.locator('[data-testid="spot-coords-set"]')).toBeHidden();
   }
 
   // If Standort section is collapsed, expand it
