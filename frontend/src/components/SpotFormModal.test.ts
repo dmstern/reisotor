@@ -116,6 +116,7 @@ describe('SpotFormModal', () => {
     await nextTick();
 
     expect(document.body.textContent).toContain('Teil der Urlaubsregion');
+    expect(document.body.textContent).toContain('Liegt am Reiseziel');
     const switchEl = document.querySelector('#spotRegionToggle');
     expect(switchEl).not.toBeNull();
     expect(switchEl?.getAttribute('aria-checked')).toBe('true');
@@ -140,6 +141,7 @@ describe('SpotFormModal', () => {
     await nextTick();
 
     expect(document.body.textContent).toContain('Teil der Urlaubsregion');
+    expect(document.body.textContent).toContain('Liegt an der Heimat-Seite');
     const switchEl = document.querySelector('#spotRegionToggle');
     expect(switchEl).not.toBeNull();
     expect(switchEl?.getAttribute('aria-checked')).toBe('false');
@@ -162,6 +164,7 @@ describe('SpotFormModal', () => {
     await nextTick();
 
     expect(document.body.textContent).toContain('Teil der Urlaubsregion');
+    expect(document.body.textContent).toContain('Liegt an der Heimat-Seite');
     const switchEl = document.querySelector('#spotRegionToggle');
     expect(switchEl).not.toBeNull();
     // After marking as home, vacation region toggle is false
@@ -171,6 +174,7 @@ describe('SpotFormModal', () => {
     (switchEl as HTMLButtonElement).click();
     await nextTick();
     expect(switchEl?.getAttribute('aria-checked')).toBe('true');
+    expect(document.body.textContent).toContain('Liegt am Reiseziel');
     cleanUp();
   });
 

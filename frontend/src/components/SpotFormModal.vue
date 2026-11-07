@@ -15,7 +15,6 @@ import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import InfoPopover from './primitives/InfoPopover.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -290,23 +289,13 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 aria-label="Geändert"
               />
             </span>
-            <InfoPopover
-              title="Teil der Urlaubsregion?"
-              aria-label="Erklärung zur Urlaubsregion"
-              :menu-width="280"
-            >
-              <p>
-                <strong>Aktiviert:</strong> Der Ort liegt am Reiseziel (z. B. Unterkunft,
-                Restaurant, Ausflugsziel oder Zielflughafen).
-              </p>
-              <p>
-                <strong>Deaktiviert:</strong> Heimat-Seite (z. B. der heimische Abflughafen, Bahnhof
-                oder Zuhause für Reise-Etappen).
-              </p>
-              <p class="popover-tip">
-                🗺️ Wird für das automatische Auswählen des passenden Kartenausschnitts verwendet.
-              </p>
-            </InfoPopover>
+            <p class="spot-region-hint">
+              {{
+                activeSpotForm.is_home
+                  ? 'Liegt an der Heimat-Seite (z. B. heimischer Abflughafen, Bahnhof oder Zuhause).'
+                  : 'Liegt am Reiseziel (z. B. Unterkunft, Restaurant, Strand oder Zielflughafen).'
+              }}
+            </p>
           </div>
           <ToggleSwitch
             id="spotRegionToggle"
@@ -680,14 +669,15 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .spot-region-label-group {
   display: flex;
-  align-items: center;
-  gap: var(--space-1);
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .spot-region-label {
@@ -698,6 +688,14 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   font-weight: 600;
   color: var(--color-text);
   user-select: none;
+}
+
+.spot-region-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+  line-height: 1.35;
+  color: var(--color-text-muted);
 }
 
 .spot-region-icon {
