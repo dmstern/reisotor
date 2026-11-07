@@ -758,74 +758,78 @@ onUnmounted(() => {
         :class="[isSheetOverlayMode ? sheetState : null, { dragging: sheetDragging }]"
       >
         <div class="sheet-handle-row">
-          <div
-            class="sheet-handle"
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Spots-Liste ein-/ausklappen"
-            @pointerdown="onSheetDragStart"
-          >
-            <h2 class="sheet-title">
-              <AnimatedText
-                :text="
+          <div class="sheet-title-group">
+            <div
+              class="sheet-handle"
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Spots-Liste ein-/ausklappen"
+              @pointerdown="onSheetDragStart"
+            >
+              <h2 class="sheet-title">
+                <AnimatedText
+                  :text="
+                    groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
+                  "
+                  :options="['Spots', 'Touren', 'Tracks']"
+                  :direction="groupMode === 'tours' ? 'up' : 'down'"
+                />
+                <span class="sr-only">{{
                   groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
-                "
-                :options="['Spots', 'Touren', 'Tracks']"
-                :direction="groupMode === 'tours' ? 'up' : 'down'"
-              />
-              <InfoPopover
-                v-if="sheetState !== 'collapsed'"
-                class="header-info-popover"
-                :title="
-                  groupMode === 'tours'
-                    ? 'Was sind Touren?'
-                    : groupMode === 'tracks'
-                      ? 'Was sind Tracks?'
-                      : 'Was sind Spots?'
-                "
-                :aria-label="
-                  groupMode === 'tours'
-                    ? 'Was sind Touren?'
-                    : groupMode === 'tracks'
-                      ? 'Was sind Tracks?'
-                      : 'Was sind Spots?'
-                "
-                :menu-width="300"
-              >
-                <template v-if="groupMode === 'tours'">
-                  <p>
-                    <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route oder
-                    einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der
-                    Karte zu visualisieren.
-                  </p>
-                  <p class="popover-tip">
-                    💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und Wege
-                    auf der Karte anzuzeigen.
-                  </p>
-                </template>
-                <template v-else-if="groupMode === 'tracks'">
-                  <p>
-                    <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du
-                    kannst sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder Touren
-                    zuordnen.
-                  </p>
-                  <p class="popover-tip">
-                    💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf „Aufzeichnen“
-                    oder direkt über den Button auf der Karte.
-                  </p>
-                </template>
-                <template v-else>
-                  <p>
-                    <strong>Spots</strong> sind einzelne Orte (Restaurants, Sehenswürdigkeiten,
-                    Strände, …) – als Ideensammlung oder zur Reiseplanung.
-                  </p>
-                  <p class="popover-tip">
-                    💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen Kalendertag
-                    oder eine Tour, um sie einzutakten.
-                  </p>
-                </template>
-              </InfoPopover>
-            </h2>
+                }}</span>
+              </h2>
+            </div>
+            <InfoPopover
+              v-if="sheetState !== 'collapsed'"
+              class="header-info-popover"
+              :title="
+                groupMode === 'tours'
+                  ? 'Was sind Touren?'
+                  : groupMode === 'tracks'
+                    ? 'Was sind Tracks?'
+                    : 'Was sind Spots?'
+              "
+              :aria-label="
+                groupMode === 'tours'
+                  ? 'Was sind Touren?'
+                  : groupMode === 'tracks'
+                    ? 'Was sind Tracks?'
+                    : 'Was sind Spots?'
+              "
+              :menu-width="300"
+            >
+              <template v-if="groupMode === 'tours'">
+                <p>
+                  <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route oder einem
+                  Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der Karte
+                  zu visualisieren.
+                </p>
+                <p class="popover-tip">
+                  💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und Wege auf
+                  der Karte anzuzeigen.
+                </p>
+              </template>
+              <template v-else-if="groupMode === 'tracks'">
+                <p>
+                  <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du kannst
+                  sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder Touren zuordnen.
+                </p>
+                <p class="popover-tip">
+                  💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf „Aufzeichnen“
+                  oder direkt über den Button auf der Karte.
+                </p>
+              </template>
+              <template v-else>
+                <p>
+                  <strong>Spots</strong> sind einzelne Orte (Restaurants, Sehenswürdigkeiten,
+                  Strände, …) – als Ideensammlung oder zur Reiseplanung.
+                </p>
+                <p class="popover-tip">
+                  💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen Kalendertag oder
+                  eine Tour, um sie einzutakten.
+                </p>
+              </template>
+            </InfoPopover>
           </div>
           <div class="sheet-handle-actions">
             <Button
@@ -1644,8 +1648,14 @@ onUnmounted(() => {
   padding: 0 13px;
 }
 
+.sheet-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .sheet-handle {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1673,6 +1683,18 @@ onUnmounted(() => {
 
 .sheet-title :deep(.animated-text) {
   flex-shrink: 0;
+}
+
+.sheet-title .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 .sheet-handle-actions {
