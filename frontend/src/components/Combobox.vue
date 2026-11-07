@@ -40,6 +40,7 @@ const comboboxRef = ref<HTMLElement | null>(null);
 const inputRef = ref<InstanceType<typeof Input> | null>(null);
 const listboxRef = ref<HTMLElement | null>(null);
 const highlightedIndex = ref(-1);
+const filterText = ref<string | null>(null);
 
 const generatedId = useId();
 const listboxId = computed(() =>
@@ -68,20 +69,38 @@ function updatePlacement() {
 
 watch(open, (isOpen) => {
   if (isOpen) {
+    filterText.value = null;
     updatePlacement();
-    nextTick(() => updatePlacement());
+    nextTick(() => {
+      updatePlacement();
+      scrollHighlightedIntoView();
+    });
     window.addEventListener('resize', updatePlacement, { passive: true });
     window.addEventListener('scroll', updatePlacement, { passive: true, capture: true });
   } else {
+    filterText.value = null;
     highlightedIndex.value = -1;
     window.removeEventListener('resize', updatePlacement);
     window.removeEventListener('scroll', updatePlacement, { capture: true });
   }
 });
 
+const isExactOptionMatch = computed(() => {
+  const current = (props.modelValue ?? '').trim().toLowerCase();
+  if (!current) return false;
+  return props.options.some((o) => o.toLowerCase() === current);
+});
+
 const filteredOptions = computed(() => {
-  const q = (props.modelValue ?? '').trim().toLowerCase();
+  // Wenn der Nutzer noch keinen eigenen Suchtext getippt hat und der aktuelle Wert einer Option entspricht:
+  // alle Optionen anzeigen, damit bequem eine andere ausgewählt werden kann.
+  if (filterText.value === null && isExactOptionMatch.value) {
+    return props.options;
+  }
+
+  const q = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
   if (!q) return props.options;
+
   return props.options.filter((o) => o.toLowerCase().includes(q));
 });
 
@@ -100,7 +119,8 @@ function initHighlightedIndex() {
   if (filteredOptions.value.length === 1) {
     highlightedIndex.value = 0;
   } else {
-    const idx = filteredOptions.value.indexOf(props.modelValue ?? '');
+    const q = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+    const idx = filteredOptions.value.findIndex((o) => o.toLowerCase() === q);
     highlightedIndex.value = idx >= 0 ? idx : -1;
   }
 }
@@ -109,12 +129,23 @@ watch(filteredOptions, (newOpts) => {
   if (newOpts.length === 1) {
     highlightedIndex.value = 0;
   } else {
-    highlightedIndex.value = -1;
+    const q = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+    const idx = newOpts.findIndex((o) => o.toLowerCase() === q);
+    highlightedIndex.value = idx >= 0 ? idx : -1;
   }
   if (open.value) {
     nextTick(() => updatePlacement());
   }
 });
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal !== filterText.value) {
+      filterText.value = null;
+    }
+  }
+);
 
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
@@ -124,6 +155,7 @@ onBeforeUnmount(() => {
 });
 
 function selectOption(option: string) {
+  filterText.value = null;
   emit('update:modelValue', option);
   emit('select', option);
   open.value = false;
@@ -131,6 +163,7 @@ function selectOption(option: string) {
 }
 
 function onModelValueInput(val: string) {
+  filterText.value = val;
   emit('update:modelValue', val);
   if (!open.value) {
     open.value = true;
@@ -233,9 +266,26 @@ function onBlur(event: FocusEvent) {
 
 function onFocus(event: FocusEvent) {
   updatePlacement();
+  filterText.value = null;
   open.value = true;
   initHighlightedIndex();
+  if (isExactOptionMatch.value) {
+    (event.target as HTMLInputElement)?.select();
+  }
   emit('focus', event);
+}
+
+function onClick(event: MouseEvent) {
+  if (props.disabled) return;
+  if (!open.value) {
+    updatePlacement();
+    filterText.value = null;
+    open.value = true;
+    initHighlightedIndex();
+    if (isExactOptionMatch.value) {
+      (event.target as HTMLInputElement)?.select();
+    }
+  }
 }
 
 defineExpose({
@@ -319,6 +369,7 @@ defineOptions({
       class="combobox-input"
       @update:model-value="onModelValueInput"
       @keydown="onKeydown"
+      @click="onClick"
       @focus="onFocus"
       @blur="onBlur"
     />

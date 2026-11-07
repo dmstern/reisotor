@@ -233,5 +233,79 @@ describe('Combobox', () => {
 
       cleanUp();
     });
+
+    it('zeigt alle Optionen an, wenn der bestehende Wert einer Option entspricht, und filtert erst beim Tippen', async () => {
+      const options = ['Unterkunft', 'Restaurant', 'Café', 'Aktivität'];
+      let currentValue = 'Café';
+
+      const { container, cleanUp } = mountCombobox({
+        modelValue: currentValue,
+        options,
+        'onUpdate:modelValue': (val: string) => {
+          currentValue = val;
+        },
+      });
+
+      const input = container.querySelector<HTMLInputElement>('input')!;
+      input.dispatchEvent(new FocusEvent('focus'));
+      await nextTick();
+
+      // Dropdown ist offen und zeigt ALLE 4 Optionen (trotz "Café" als aktuellem Wert)
+      const listbox = container.querySelector('.options');
+      expect(listbox).not.toBeNull();
+      let optionItems = container.querySelectorAll('.options li');
+      expect(optionItems).toHaveLength(4);
+
+      // "Café" ist vorselektiert / hervorgehoben (Index 2)
+      expect(optionItems[2].textContent).toContain('Café');
+      expect(optionItems[2].classList.contains('is-selected')).toBe(true);
+      expect(optionItems[2].classList.contains('is-highlighted')).toBe(true);
+
+      // Nutzer tippt Teilstring "res" -> nun wird aktiv gefiltert
+      input.value = 'res';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await nextTick();
+
+      optionItems = container.querySelectorAll('.options li');
+      expect(optionItems).toHaveLength(1);
+      expect(optionItems[0].textContent).toContain('Restaurant');
+
+      cleanUp();
+    });
+
+    it('erlaubt das direkte Auswählen einer anderen Option mit Pfeiltasten bei bestehender Auswahl', async () => {
+      const options = ['Unterkunft', 'Restaurant', 'Café', 'Aktivität'];
+      let selected = '';
+
+      const { container, cleanUp } = mountCombobox({
+        modelValue: 'Café',
+        options,
+        onSelect: (val: string) => {
+          selected = val;
+        },
+      });
+
+      const input = container.querySelector<HTMLInputElement>('input')!;
+      input.dispatchEvent(new FocusEvent('focus'));
+      await nextTick();
+
+      // Café ist an Index 2. Einmal ArrowDown bewegt die Hervorhebung auf Index 3 ("Aktivität")
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await nextTick();
+
+      const optionItems = container.querySelectorAll('.options li');
+      expect(optionItems[3].classList.contains('is-highlighted')).toBe(true);
+      expect(optionItems[3].textContent).toContain('Aktivität');
+
+      // Enter drücken -> wählt "Aktivität"
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      );
+      await nextTick();
+
+      expect(selected).toBe('Aktivität');
+
+      cleanUp();
+    });
   });
 });
