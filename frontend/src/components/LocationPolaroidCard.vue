@@ -9,6 +9,7 @@ import SparkleButton from './primitives/SparkleButton.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import SpotLocationBadge from './SpotLocationBadge.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
+import FormField from './FormField.vue';
 import type { PlaceSearchResult } from '../composables/usePlaceSearch';
 
 const props = withDefaults(
@@ -158,13 +159,16 @@ defineExpose({
     <div class="polaroid-body">
       <div class="status-details">
         <!-- 1. Name-Feld -->
-        <div v-if="props.title !== undefined" class="polaroid-field status-title-row">
-          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-          <label class="polaroid-field-label" :for="titleInputId">
-            <AppIcon :icon="FORM_FIELD_ICONS.title" :size="13" group="formFields" />
-            <span>Name</span>
-            <span v-if="titleRequired" class="required-indicator" aria-hidden="true">*</span>
-          </label>
+        <FormField
+          v-if="props.title !== undefined"
+          :id="titleInputId"
+          icon="title"
+          label="Name"
+          label-class="polaroid-field-label"
+          :required="titleRequired"
+          :invalid="titleInvalid"
+          class="polaroid-field status-title-row"
+        >
           <div class="field-input-wrap">
             <div class="inline-title-input-wrap">
               <Input
@@ -245,15 +249,17 @@ defineExpose({
               </Transition>
             </div>
           </div>
-        </div>
+        </FormField>
 
         <!-- 2. Kategorie-Feld -->
-        <div v-if="props.category !== undefined" class="polaroid-field status-category-row">
-          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-          <label class="polaroid-field-label" :for="categoryInputId">
-            <AppIcon :icon="FORM_FIELD_ICONS.category" :size="13" group="formFields" />
-            <span>Kategorie</span>
-          </label>
+        <FormField
+          v-if="props.category !== undefined"
+          :id="categoryInputId"
+          icon="category"
+          label="Kategorie"
+          label-class="polaroid-field-label"
+          class="polaroid-field status-category-row"
+        >
           <div class="field-input-wrap">
             <div class="inline-category-combobox" :class="{ 'has-sparkle': showCategorySparkle }">
               <CategoryCombobox
@@ -280,16 +286,17 @@ defineExpose({
               />
             </div>
           </div>
-        </div>
+        </FormField>
 
         <!-- 3. Adress-Feld & Standort-Status -->
-        <div class="polaroid-field status-address-row">
-          <div class="polaroid-field-header">
-            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-            <label class="polaroid-field-label" :for="addressInputId">
-              <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
-              <span>{{ context === 'trip' ? 'Reiseziel' : 'Adresse' }}</span>
-            </label>
+        <FormField
+          :id="addressInputId"
+          icon="location"
+          :label="context === 'trip' ? 'Reiseziel' : 'Adresse'"
+          label-class="polaroid-field-label"
+          class="polaroid-field status-address-row"
+        >
+          <template #extra>
             <div class="polaroid-location-status">
               <!-- Pin gesetzt Badge -->
               <span
@@ -298,7 +305,7 @@ defineExpose({
                 :data-testid="context === 'trip' ? 'trip-coords-set' : 'spot-coords-set'"
                 :title="`${modelValue.lat.toFixed(5)}, ${modelValue.lng.toFixed(5)}`"
               >
-                <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="12" group="formFields" />
+                <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="13" group="formFields" />
                 <span>Pin gesetzt</span>
                 <span class="status-coords sr-only">
                   {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
@@ -310,7 +317,7 @@ defineExpose({
                   aria-label="Standort-Koordinaten entfernen"
                   @click="emit('clearCoords')"
                 >
-                  <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+                  <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
                 </button>
               </span>
               <!-- Standort fehlt Badge & Search Sparkle -->
@@ -321,7 +328,7 @@ defineExpose({
                   data-testid="trip-coords-missing"
                   title="Standort fehlt – bitte Ort im Suchfeld eingeben oder auf die Karte tippen"
                 >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+                  <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
                   <span>Standort fehlt</span>
                 </span>
                 <SpotLocationBadge
@@ -341,7 +348,7 @@ defineExpose({
                 />
               </div>
             </div>
-          </div>
+          </template>
 
           <div class="field-input-wrap">
             <div class="inline-address-input-wrap" :class="{ 'has-sparkle': showAddressSparkle }">
@@ -436,7 +443,7 @@ defineExpose({
               </Transition>
             </div>
           </div>
-        </div>
+        </FormField>
       </div>
     </div>
   </div>
@@ -448,7 +455,7 @@ defineExpose({
   position: absolute;
   top: 68px;
   left: 12px;
-  width: 304px;
+  width: 320px;
   max-width: calc(100% - 24px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -458,8 +465,8 @@ defineExpose({
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: var(--space-2);
-  gap: var(--space-2);
+  padding: 12px;
+  gap: var(--space-3);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -529,15 +536,15 @@ defineExpose({
 .polaroid-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
   min-width: 0;
-  padding: 2px 2px var(--space-1) 2px;
+  padding: 0;
 }
 
 .status-details {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
   min-width: 0;
   max-width: 100%;
   width: 100%;
@@ -546,37 +553,8 @@ defineExpose({
 
 /* Einzelnes Formularfeld in der Polaroid-Card */
 .polaroid-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  max-width: 100%;
   width: 100%;
-}
-
-.polaroid-field-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1);
   min-width: 0;
-  width: 100%;
-}
-
-.polaroid-field-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs, 0.75rem);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  line-height: 1.2;
-}
-
-.required-indicator {
-  color: var(--color-danger, #ef4444);
-  font-weight: 700;
-  margin-left: 1px;
 }
 
 .field-input-wrap {
@@ -595,42 +573,46 @@ defineExpose({
 .polaroid-location-status {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   flex-shrink: 0;
 }
 
 .coords-set-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 7px;
+  gap: 5px;
+  padding: 3px 6px 3px 9px;
   border-radius: var(--radius-pill);
   background: var(--color-hover);
   border: 1px solid var(--color-border);
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .coords-missing-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 7px;
+  gap: 5px;
+  padding: 3px 9px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-warning) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  color: var(--color-warning);
-  line-height: 1.2;
+  color: var(--color-warning-dark, var(--color-warning));
+  line-height: 1.25;
 }
 
 .coords-clear-inline-btn {
   background: none;
   border: none;
-  padding: 1px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   margin-left: 2px;
   cursor: pointer;
   color: var(--color-text-muted);
@@ -641,12 +623,27 @@ defineExpose({
   line-height: 1;
   transition:
     color 0.15s ease,
-    background-color 0.15s ease;
+    background-color 0.15s ease,
+    outline 0.15s ease;
 }
 
 .coords-clear-inline-btn:hover {
   color: var(--color-danger);
-  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+}
+
+.coords-clear-inline-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+  .coords-clear-inline-btn {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+  }
 }
 
 .coords-missing-wrap {
@@ -796,7 +793,7 @@ defineExpose({
     top: 68px;
     left: 12px;
     right: auto;
-    width: 304px;
+    width: 320px;
     max-width: calc(100% - 24px);
   }
 }

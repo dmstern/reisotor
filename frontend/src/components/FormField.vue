@@ -16,6 +16,7 @@ const props = defineProps<{
   id?: string;
   icon?: FormFieldIconKey | IconDef;
   label: string;
+  labelClass?: string;
   required?: boolean;
   error?: string;
   invalid?: boolean;
@@ -42,19 +43,22 @@ const id = computed(() => props.id || autoId);
     class="form-field"
     :class="{ 'has-error': Boolean(error || invalid), 'is-modified': modified }"
   >
-    <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-    <label :for="id" class="form-field-label">
-      <AppIcon
-        v-if="resolvedIcon"
-        class="form-field-icon"
-        :size="15"
-        :icon="resolvedIcon"
-        group="formFields"
-      />
-      {{ displayLabel
-      }}<span v-if="isRequired" class="required-indicator" aria-hidden="true">*</span>
-      <span v-if="modified" class="modified-dot" title="Geändert" aria-label="Geändert" />
-    </label>
+    <div class="form-field-header">
+      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+      <label :for="id" class="form-field-label" :class="labelClass">
+        <AppIcon
+          v-if="resolvedIcon"
+          class="form-field-icon"
+          :size="15"
+          :icon="resolvedIcon"
+          group="formFields"
+        />
+        {{ displayLabel
+        }}<span v-if="isRequired" class="required-indicator" aria-hidden="true">*</span>
+        <span v-if="modified" class="modified-dot" title="Geändert" aria-label="Geändert" />
+      </label>
+      <slot name="extra" />
+    </div>
     <slot :id="id" :invalid="Boolean(invalid || error)" :modified="modified" />
     <p v-if="error" class="field-error-hint" role="alert">
       <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
@@ -67,13 +71,22 @@ const id = computed(() => props.id || autoId);
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--form-field-gap, var(--space-2));
   min-width: 0;
 }
 
 .form-field:focus-within {
   position: relative;
   z-index: 10;
+}
+
+.form-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  width: 100%;
 }
 
 .form-field-label {
@@ -83,6 +96,7 @@ const id = computed(() => props.id || autoId);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
+  line-height: 1.3;
 }
 
 .form-field-icon {

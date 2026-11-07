@@ -69,7 +69,7 @@ function onEditClick(closePopover?: () => void) {
     >
       <AppIcon
         :icon="ACTION_ICONS.warning"
-        :size="12"
+        :size="13"
         group="actions"
         class="spot-location-warning-icon status-warning-icon"
       />
@@ -78,7 +78,7 @@ function onEditClick(closePopover?: () => void) {
     <span v-else class="spot-location-badge-display">
       <AppIcon
         :icon="ACTION_ICONS.warning"
-        :size="12"
+        :size="13"
         group="actions"
         class="spot-location-warning-icon status-warning-icon"
       />
@@ -98,7 +98,7 @@ function onEditClick(closePopover?: () => void) {
       "
       placement="bottom"
       :align="context === 'dialog' ? 'left' : 'right'"
-      :icon-size="12"
+      :icon-size="13"
       :menu-width="context === 'dialog' ? 260 : 290"
       @click.stop
     >
@@ -160,9 +160,9 @@ function onEditClick(closePopover?: () => void) {
   display: inline-flex;
   align-items: center;
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 650;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: nowrap;
   border-radius: var(--radius-pill);
   background: var(--color-warning-tint);
@@ -187,13 +187,13 @@ function onEditClick(closePopover?: () => void) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 2px 2px 2px 7px;
+  padding: 3px 2px 3px 8px;
   background: none;
   border: none;
   color: inherit;
   font: inherit;
   cursor: pointer;
-  line-height: 1.2;
+  line-height: 1.25;
   border-radius: var(--radius-pill) 0 0 var(--radius-pill);
   transition: opacity 0.15s ease;
 }
@@ -203,7 +203,7 @@ function onEditClick(closePopover?: () => void) {
 }
 
 .spot-location-badge-action-btn:focus-visible {
-  outline: 2px solid var(--color-warning);
+  outline: var(--focus-ring-width, 3px) solid var(--color-warning);
   outline-offset: -1px;
 }
 
@@ -211,8 +211,8 @@ function onEditClick(closePopover?: () => void) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 2px 2px 2px 7px;
-  line-height: 1.2;
+  padding: 3px 4px 3px 8px;
+  line-height: 1.25;
 }
 
 .spot-location-warning-icon {
@@ -228,12 +228,12 @@ function onEditClick(closePopover?: () => void) {
 .spot-location-info-popover {
   display: inline-flex;
   align-items: center;
-  padding-right: 3px;
+  padding-right: 4px;
 }
 
 .spot-location-info-popover :deep(.info-popover-btn) {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: var(--color-warning-dark);
   opacity: 0.85;
 }
