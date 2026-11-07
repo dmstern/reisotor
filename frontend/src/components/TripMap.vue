@@ -146,6 +146,7 @@ const {
   visiblePoints,
   totalAccommodationsCount,
   accommodationPoints,
+  vacationDays,
 } = mapPoints;
 
 // 3. Live Location composable
@@ -491,8 +492,10 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
         :focused-location="drawers.mapFocusLocation"
         :focused-all-photos="drawers.mapFocusAllPhotos"
         :all-trip-photo-points-count="allTripPhotoPoints.length"
+        :vacation-days="vacationDays"
         :format-date="formatDate"
         @clear="clearFocus"
+        @change-date="drawers.focusMapOnDate"
         @open-photo-preview="openPhotoPreview"
       />
     </div>

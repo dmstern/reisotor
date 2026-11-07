@@ -17,12 +17,14 @@ const props = defineProps<{
   focusedLocation?: { imageUrl?: string; title?: string } | null;
   focusedAllPhotos?: boolean;
   allTripPhotoPointsCount?: number;
+  vacationDays?: string[];
   formatDate?: (date: string) => string;
 }>();
 
 const emit = defineEmits<{
   (e: 'clear'): void;
   (e: 'open-photo-preview'): void;
+  (e: 'change-date', date: string): void;
 }>();
 
 const isFocusBannerExpanded = ref(false);
@@ -46,6 +48,52 @@ const formattedDateString = computed(() => {
   return props.formatDate ? props.formatDate(props.focusedDate) : props.focusedDate;
 });
 
+const currentDayIndex = computed(() => {
+  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) return -1;
+  return props.vacationDays.indexOf(props.focusedDate);
+});
+
+const hasMultipleDays = computed(() => {
+  return !!(props.vacationDays && props.vacationDays.length > 1);
+});
+
+const prevDate = computed(() => {
+  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) return null;
+  const idx = currentDayIndex.value;
+  if (idx > 0) return props.vacationDays[idx - 1];
+  if (idx === -1) {
+    const earlierDays = props.vacationDays.filter((d) => d < props.focusedDate!);
+    if (earlierDays.length > 0) return earlierDays[earlierDays.length - 1];
+  }
+  return null;
+});
+
+const nextDate = computed(() => {
+  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) return null;
+  const idx = currentDayIndex.value;
+  if (idx >= 0 && idx < props.vacationDays.length - 1) return props.vacationDays[idx + 1];
+  if (idx === -1) {
+    const laterDays = props.vacationDays.filter((d) => d > props.focusedDate!);
+    if (laterDays.length > 0) return laterDays[0];
+  }
+  return null;
+});
+
+const hasPrevDate = computed(() => prevDate.value !== null);
+const hasNextDate = computed(() => nextDate.value !== null);
+
+function goToPrevDate() {
+  if (prevDate.value) {
+    emit('change-date', prevDate.value);
+  }
+}
+
+function goToNextDate() {
+  if (nextDate.value) {
+    emit('change-date', nextDate.value);
+  }
+}
+
 function handleToggleClick() {
   if (isPhotoFocus.value) {
     emit('open-photo-preview');
@@ -55,15 +103,18 @@ function handleToggleClick() {
 }
 
 watch(
-  () => [
-    props.focusedExcursion,
-    props.focusedDate,
-    props.focusedSpot,
-    props.focusedLocation,
-    props.focusedAllPhotos,
-  ],
+  () => [props.focusedExcursion, props.focusedSpot, props.focusedLocation, props.focusedAllPhotos],
   () => {
     isFocusBannerExpanded.value = false;
+  }
+);
+
+watch(
+  () => Boolean(props.focusedDate),
+  (hasDate, hadDate) => {
+    if (hasDate !== hadDate) {
+      isFocusBannerExpanded.value = false;
+    }
   }
 );
 </script>
@@ -129,14 +180,35 @@ watch(
             : `Alle Fotos mit Standort (${allTripPhotoPointsCount || 0})`
         }}
       </button>
+      <div v-else-if="focusedDate" class="focus-date-nav">
+        <button
+          v-if="hasMultipleDays"
+          type="button"
+          class="focus-nav-btn"
+          :disabled="!hasPrevDate"
+          aria-label="Vorheriger Tag"
+          title="Vorheriger Tag"
+          @click.stop="goToPrevDate"
+        >
+          <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
+        </button>
+        <span class="focus-date-label">{{ formattedDateString }}</span>
+        <button
+          v-if="hasMultipleDays"
+          type="button"
+          class="focus-nav-btn"
+          :disabled="!hasNextDate"
+          aria-label="Nächster Tag"
+          title="Nächster Tag"
+          @click.stop="goToNextDate"
+        >
+          <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
+        </button>
+      </div>
       <span v-else>{{
-        focusedExcursion
-          ? focusedExcursion.title
-          : focusedSpot
-            ? focusedSpot.title
-            : formattedDateString
+        focusedExcursion ? focusedExcursion.title : focusedSpot ? focusedSpot.title : ''
       }}</span>
-      <Button variant="card-action" @click="emit('clear')">
+      <Button variant="card-action" class="focus-close-btn" @click="emit('clear')">
         <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
       </Button>
     </div>
@@ -179,7 +251,7 @@ watch(
   max-width: calc(100% - 60px);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 2px var(--space-3) 2px 2px;
+  padding: 2px 6px 2px 2px;
 }
 
 .focus-banner-toggle-btn {
@@ -254,7 +326,7 @@ watch(
     max-width: calc(100% - 60px);
     border-radius: var(--radius-pill);
     corner-shape: round;
-    padding: 2px var(--space-3) 2px 2px;
+    padding: 2px 6px 2px 2px;
     height: 44px;
   }
 
@@ -308,5 +380,84 @@ watch(
 .focus-banner .focus-title-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.focus-banner :deep(.focus-close-btn),
+.focus-close-btn {
+  border-radius: var(--radius-pill) !important;
+  corner-shape: round;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: var(--font-size-xs, 0.75rem);
+  flex-shrink: 0;
+}
+
+.focus-date-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.focus-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  border: none;
+  background: transparent;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.focus-nav-btn:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.focus-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.focus-nav-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+  .focus-nav-btn {
+    position: relative;
+  }
+
+  .focus-nav-btn::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.focus-date-label {
+  padding: 0 2px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
 }
 </style>
