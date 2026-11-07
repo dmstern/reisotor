@@ -681,11 +681,14 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-size: var(--font-size-xs);
+  line-height: 1.2;
   font-weight: 500;
   border: 1px dashed var(--color-border-strong);
   background: var(--color-hover);
   color: var(--color-text);
   cursor: pointer;
+  box-sizing: border-box;
+  margin: 0;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -696,6 +699,13 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   background: var(--color-surface);
   border-color: var(--color-calendar-appointment);
   color: var(--color-calendar-appointment);
+}
+
+.add-schedule-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid
+    var(--focus-ring-color, var(--color-calendar-appointment));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .add-schedule-popover {

@@ -434,9 +434,13 @@ const {
 
 .card-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   min-width: 0;
+}
+
+.card-title-row :deep(.tour-type-badge) {
+  margin-top: 2px;
 }
 
 .card-title {

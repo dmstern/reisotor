@@ -113,7 +113,7 @@ onUnmounted(() => {
       aria-label="Tour zuordnen"
       @click="toggle($event)"
     >
-      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="14" group="navigation" />
+      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
       <span class="tour-assign-label">Tour zuordnen</span>
     </button>
     <Teleport to="body">
@@ -186,6 +186,8 @@ onUnmounted(() => {
 .tour-assign-dropdown {
   position: relative;
   display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .tour-assign-btn {
@@ -197,12 +199,15 @@ onUnmounted(() => {
   border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 3px 10px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
   user-select: none;
   touch-action: auto;
+  box-sizing: border-box;
+  margin: 0;
   transition:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.18s ease,
@@ -231,8 +236,9 @@ onUnmounted(() => {
 }
 
 .tour-assign-btn:focus-visible {
-  outline: 2px solid var(--color-tour);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-tour));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .tour-assign-btn :deep(.app-icon) {
