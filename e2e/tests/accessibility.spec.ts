@@ -90,7 +90,7 @@ test.describe('Accessibility (a11y)', () => {
     test('excursions (spots) page accessibility scan', async ({ page }) => {
       await page.goto('/trip/1/excursions');
       await expect(
-        page.getByRole('button', { name: 'Nach Kategorie filtern', exact: true })
+        page.getByRole('button', { name: 'Filtern & Sortieren', exact: true })
       ).toBeVisible({ timeout: 15_000 });
       await expect(page.locator('.day-chip').first()).toBeVisible({ timeout: 15_000 });
 
