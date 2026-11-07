@@ -274,7 +274,8 @@ function handleOpenScheduledItem(item: ScheduleItem) {
       >
         <div class="spot-region-row">
           <div class="spot-region-label-group">
-            <span class="spot-region-label">
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+            <label for="spotRegionToggle" class="spot-region-label">
               <AppIcon
                 :icon="activeSpotForm.is_home ? ACTION_ICONS.home : ACTION_ICONS.vacation"
                 :size="16"
@@ -288,8 +289,8 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 title="Geändert"
                 aria-label="Geändert"
               />
-            </span>
-            <p class="spot-region-hint">
+            </label>
+            <p id="spotRegionHint" class="spot-region-hint">
               {{
                 activeSpotForm.is_home
                   ? 'Liegt an der Heimat-Seite (z. B. heimischer Abflughafen, Bahnhof oder Zuhause).'
@@ -300,6 +301,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
           <ToggleSwitch
             id="spotRegionToggle"
             aria-label="Teil der Urlaubsregion"
+            aria-describedby="spotRegionHint"
             :model-value="!activeSpotForm.is_home"
             @update:model-value="(val: boolean) => (activeSpotForm.is_home = !val)"
           />
@@ -687,6 +689,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
+  cursor: pointer;
   user-select: none;
 }
 

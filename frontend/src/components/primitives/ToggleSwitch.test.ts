@@ -47,13 +47,19 @@ describe('ToggleSwitch primitive', () => {
     expect(await renderToString(appLg)).toContain('toggle-switch--lg');
   });
 
-  it('applies aria-label and id correctly', async () => {
+  it('applies aria-label, aria-describedby and id correctly', async () => {
     const app = createApp({
-      render: () => h(ToggleSwitch, { id: 'custom-switch', ariaLabel: 'Urlaubsregion' }),
+      render: () =>
+        h(ToggleSwitch, {
+          id: 'custom-switch',
+          ariaLabel: 'Urlaubsregion',
+          ariaDescribedby: 'custom-hint',
+        }),
     });
     const html = await renderToString(app);
     expect(html).toContain('id="custom-switch"');
     expect(html).toContain('aria-label="Urlaubsregion"');
+    expect(html).toContain('aria-describedby="custom-hint"');
   });
 
   it('toggles value when clicked and emits update:modelValue', async () => {

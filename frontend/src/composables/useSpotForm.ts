@@ -427,7 +427,10 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (isHomeCategory(newCat)) {
         editSpotForm.value.is_home = true;
         showEditSpotLocationSection.value = true;
-      } else if (isVacationCategory(newCat) && isHomeCategory(oldCat)) {
+      } else if (
+        isVacationCategory(newCat) &&
+        (isHomeCategory(oldCat) || editSpotForm.value.is_home)
+      ) {
         editSpotForm.value.is_home = false;
       } else if (isTransitCategory(newCat) && isHomeCategory(oldCat)) {
         editSpotForm.value.is_home = false;

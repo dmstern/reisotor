@@ -515,7 +515,7 @@ export function isHomeCategory(category: string | null | undefined): boolean {
   const trimmed = category.trim().toLowerCase();
   const known = LOOKUP.get(trimmed);
   if (known?.label === 'Zuhause') return true;
-  return ['zuhause', 'heimat', 'wohnung', 'home', 'haus'].includes(trimmed);
+  return ['zuhause', 'heimat', 'wohnung', 'home', 'haus', 'daheim'].includes(trimmed);
 }
 
 /**

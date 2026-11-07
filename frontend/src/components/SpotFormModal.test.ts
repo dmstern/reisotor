@@ -178,6 +178,36 @@ describe('SpotFormModal', () => {
     cleanUp();
   });
 
+  it('allows clicking the label to toggle the region switch', async () => {
+    const transitSpot: Spot = {
+      ...dummySpot,
+      id: 52,
+      title: 'Flughafen Berlin',
+      category: 'Flughafen',
+      is_home: 0,
+    };
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: transitSpot,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const switchEl = document.querySelector('#spotRegionToggle') as HTMLButtonElement;
+    expect(switchEl?.getAttribute('aria-checked')).toBe('true');
+
+    const labelEl = document.querySelector('label[for="spotRegionToggle"]') as HTMLLabelElement;
+    expect(labelEl).not.toBeNull();
+    labelEl.click();
+    await nextTick();
+
+    expect(switchEl?.getAttribute('aria-checked')).toBe('false');
+    expect(document.body.textContent).toContain('Liegt an der Heimat-Seite');
+    cleanUp();
+  });
+
   it('does not render modal content when show is false and spot is null', async () => {
     const { cleanUp } = mountModal({
       show: false,

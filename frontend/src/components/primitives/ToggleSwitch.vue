@@ -12,6 +12,7 @@ const props = withDefaults(
     name?: string;
     ariaLabel?: string;
     ariaLabelledby?: string;
+    ariaDescribedby?: string;
     size?: 'sm' | 'md' | 'lg';
   }>(),
   {
@@ -21,6 +22,7 @@ const props = withDefaults(
     name: undefined,
     ariaLabel: undefined,
     ariaLabelledby: undefined,
+    ariaDescribedby: undefined,
     size: 'md',
   }
 );
@@ -50,6 +52,7 @@ function onToggle() {
     :aria-checked="modelValue"
     :aria-label="ariaLabel"
     :aria-labelledby="ariaLabelledby"
+    :aria-describedby="ariaDescribedby"
     :disabled="disabled"
     class="toggle-switch"
     :class="[
@@ -180,6 +183,24 @@ function onToggle() {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+@media (forced-colors: active) {
+  .toggle-switch {
+    border: 2px solid CanvasText;
+  }
+
+  .toggle-switch.is-active {
+    border-color: Highlight;
+  }
+
+  .toggle-switch__thumb {
+    background-color: CanvasText;
+  }
+
+  .toggle-switch.is-active .toggle-switch__thumb {
+    background-color: Highlight;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

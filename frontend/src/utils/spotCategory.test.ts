@@ -71,6 +71,7 @@ describe('spotCategory', () => {
     expect(isHomeCategory('Heimat')).toBe(true);
     expect(isHomeCategory('Wohnung')).toBe(true);
     expect(isHomeCategory('Home')).toBe(true);
+    expect(isHomeCategory('daheim')).toBe(true);
     expect(isHomeCategory('Unterkunft')).toBe(false);
     expect(isHomeCategory('Flughafen')).toBe(false);
     expect(isHomeCategory('')).toBe(false);
