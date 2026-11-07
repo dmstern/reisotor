@@ -9,6 +9,7 @@ import IconButton from './primitives/IconButton.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import DropdownItem from './primitives/DropdownItem.vue';
 import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
+import DayStrip from './DayStrip.vue';
 
 interface Props {
   filteredPointsCount: number;
@@ -24,6 +25,11 @@ interface Props {
   isMemberOnline?: (id: number) => boolean;
   hasMemberPosition?: (id: number) => boolean;
   mapOrientationMode?: 'north' | 'heading';
+  vacationDays?: string[];
+  activeDate?: string | null;
+  dayHasContent?: (date: string) => boolean;
+  formatDate?: (date: string) => string;
+  showDayFilterButton?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,6 +38,9 @@ const props = withDefaults(defineProps<Props>(), {
   isMemberOnline: () => false,
   hasMemberPosition: () => false,
   mapOrientationMode: 'north',
+  vacationDays: () => [],
+  activeDate: null,
+  showDayFilterButton: false,
 });
 
 const emit = defineEmits<{
@@ -44,6 +53,7 @@ const emit = defineEmits<{
   (e: 'jump-my-location'): void;
   (e: 'jump-member-location', memberId: number): void;
   (e: 'set-orientation-mode', mode: 'north' | 'heading'): void;
+  (e: 'select-day', date: string): void;
 }>();
 
 const activeMembersWithPosition = computed(() =>
@@ -63,6 +73,10 @@ const {
   toggleShareMenu,
   chooseShareDuration,
   locationSharing,
+  dayMenuOpen,
+  dayButtonRef,
+  dayMenuStyle,
+  toggleDayMenu,
 } = useMapToolMenus({
   onFocusMenuOpen: () => emit('open-focus-menu'),
 });
@@ -111,6 +125,28 @@ const {
     :aria-label="isMapRecordingActive ? 'Aufzeichnung beenden' : 'Standort aufzeichnen'"
     :icon="isMapRecordingActive ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart"
     @click="toggleRecord"
+  />
+
+  <!-- Tages-Filter auf schmalen Layouts (#684) -->
+  <IconButton
+    v-if="showDayFilterButton && vacationDays && vacationDays.length"
+    ref="dayButtonRef"
+    variant="floating"
+    shape="circle"
+    class="fit-btn day-filter-btn"
+    :active="!!activeDate"
+    :title="
+      activeDate && formatDate
+        ? `Gefiltert nach ${formatDate(activeDate)}`
+        : 'Nach Urlaubstag filtern'
+    "
+    :aria-label="
+      activeDate && formatDate
+        ? `Gefiltert nach ${formatDate(activeDate)}`
+        : 'Nach Urlaubstag filtern'
+    "
+    :icon="FORM_FIELD_ICONS.date"
+    @click="toggleDayMenu($event)"
   />
 
   <Teleport to="body">
@@ -258,6 +294,36 @@ const {
         />
       </PickerMenu>
     </template>
+    <template v-if="dayMenuOpen && vacationDays && vacationDays.length">
+      <PickerMenu class="day-picker-menu" :style="dayMenuStyle" @close="dayMenuOpen = false">
+        <div class="day-picker-header">
+          <span class="day-picker-title">Urlaubstag wählen</span>
+          <button
+            v-if="activeDate"
+            type="button"
+            class="day-picker-clear-btn"
+            @click="
+              emit('select-day', activeDate);
+              dayMenuOpen = false;
+            "
+          >
+            Alle Tage
+          </button>
+        </div>
+        <DayStrip
+          :days="vacationDays"
+          :active-date="activeDate"
+          :has-content="dayHasContent"
+          :date-title="formatDate"
+          @select="
+            (d) => {
+              emit('select-day', d);
+              dayMenuOpen = false;
+            }
+          "
+        />
+      </PickerMenu>
+    </template>
   </Teleport>
 
   <TrackRecordingWarningModal
@@ -314,21 +380,64 @@ const {
   top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 2 * var(--fit-btn-step));
 }
 
+.day-filter-btn {
+  top: calc(var(--fit-btn-top-inset, var(--fit-btn-inset)) + 3 * var(--fit-btn-step));
+}
+
 .share-location-btn.active,
-.record-btn.active {
+.record-btn.active,
+.day-filter-btn.active {
   background: var(--color-primary);
   border-color: var(--color-primary-dark);
   color: var(--color-primary-contrast, #ffffff);
 }
 
 .share-location-btn.active:hover:not(:disabled),
-.record-btn.active:hover:not(:disabled) {
+.record-btn.active:hover:not(:disabled),
+.day-filter-btn.active:hover:not(:disabled) {
   background: var(--color-primary-dark);
 }
 
 :global(.focus-picker-menu) {
   max-height: calc(100dvh - 80px);
   overflow-y: auto;
+}
+
+:global(.day-picker-menu) {
+  max-width: min(340px, calc(100vw - 24px));
+  padding: var(--space-2);
+}
+
+.day-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px var(--space-1);
+  margin-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.day-picker-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.day-picker-clear-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.day-picker-clear-btn:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
 }
 
 .picker-divider {
@@ -367,6 +476,10 @@ const {
 @container trip-map (min-width: 720px) {
   .fit-btn {
     font-size: var(--font-size-lg);
+  }
+
+  .day-filter-btn {
+    display: none !important;
   }
 }
 </style>

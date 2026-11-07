@@ -156,4 +156,49 @@ describe('TripMapTools', () => {
 
     unmount();
   });
+
+  it('renders day filter button when showDayFilterButton is true and emits select-day on selection', async () => {
+    const onSelectDay = vi.fn();
+    const { container, unmount } = mountComponent(
+      {
+        showDayFilterButton: true,
+        vacationDays: ['2026-06-01', '2026-06-02'],
+        activeDate: '2026-06-01',
+        formatDate: (d: string) => (d === '2026-06-01' ? 'Mo, 1. Jun' : 'Di, 2. Jun'),
+      },
+      {
+        onSelectDay,
+      }
+    );
+    await nextTick();
+
+    const dayBtn = container.querySelector<HTMLButtonElement>('.day-filter-btn');
+    expect(dayBtn).not.toBeNull();
+    expect(dayBtn?.classList.contains('is-active')).toBe(true);
+
+    dayBtn?.click();
+    await nextTick();
+
+    const dayMenu = document.body.querySelector('.day-picker-menu');
+    expect(dayMenu).not.toBeNull();
+
+    const clearBtn = dayMenu?.querySelector<HTMLButtonElement>('.day-picker-clear-btn');
+    clearBtn?.click();
+    await nextTick();
+
+    expect(onSelectDay).toHaveBeenCalledWith('2026-06-01');
+
+    dayBtn?.click();
+    await nextTick();
+
+    const secondDayChip = document.body.querySelector<HTMLButtonElement>(
+      '.day-picker-menu [data-date="2026-06-02"]'
+    );
+    secondDayChip?.click();
+    await nextTick();
+
+    expect(onSelectDay).toHaveBeenCalledWith('2026-06-02');
+
+    unmount();
+  });
 });

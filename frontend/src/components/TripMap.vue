@@ -477,6 +477,11 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
         :is-member-online="isMemberOnline"
         :has-member-position="hasMemberPosition"
         :map-orientation-mode="mapOrientation.mode"
+        :vacation-days="vacationDays"
+        :active-date="drawers.mapFocusDate"
+        :day-has-content="dayHasContent"
+        :format-date="formatDate"
+        :show-day-filter-button="isNarrowLayout && !focusedTrack"
         @fit-all="fitAll"
         @fit-vacation="fitVacation"
         @fit-home="fitHome"
@@ -486,6 +491,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
         @jump-my-location="jumpToMyLocation"
         @jump-member-location="jumpToMemberLocation"
         @set-orientation-mode="setMapOrientationMode"
+        @select-day="toggleDayFocus"
       />
       <TripMapStatusPills />
       <TripMapFocusBanner
@@ -501,19 +507,21 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
       />
     </div>
 
-    <!-- Mobil/schmales Layout landet diese Stationen-Liste UND den Tage-Streifen in der Spots-Schublade
-         (#map-focus-dock) statt als Overlay über der Karte zu schweben. Auf Desktop schwebend über der Karte. -->
+    <!-- Desktop: DayStrip schwebt als zentrierte Pille über der Karte (#684) -->
+    <DayStrip
+      v-if="!isNarrowLayout && vacationDays.length && !focusedTrack"
+      :days="vacationDays"
+      :active-date="drawers.mapFocusDate"
+      :has-content="dayHasContent"
+      :date-title="formatDate"
+      class="desktop-day-strip"
+      @select="toggleDayFocus"
+    />
+
+    <!-- Mobil/schmales Layout: TrackPlayback landet per Teleport im Spots-Drawer (#map-focus-dock) -->
     <TripMapDockTeleport :active="canTeleportToDock">
-      <DayStrip
-        v-if="vacationDays.length && !focusedTrack"
-        :days="vacationDays"
-        :active-date="drawers.mapFocusDate"
-        :has-content="dayHasContent"
-        :date-title="formatDate"
-        @select="toggleDayFocus"
-      />
       <div
-        v-else-if="focusedTrack && focusedTrackPoints.length >= 2"
+        v-if="focusedTrack && focusedTrackPoints.length >= 2"
         class="map-track-playback-container"
       >
         <TrackPlayback

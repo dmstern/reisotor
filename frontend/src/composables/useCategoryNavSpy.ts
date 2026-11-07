@@ -167,7 +167,11 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     const bodyPaddingTop = parseFloat(bodyStyle.paddingTop) || 0;
 
     if (navWrap && navWrap.offsetParent !== null) {
-      const navTop = parseFloat(getComputedStyle(navWrap).top) || 0;
+      const wrapStyle = getComputedStyle(navWrap);
+      if (wrapStyle.opacity === '0' || navWrap.getBoundingClientRect().height < 5) {
+        return bodyPaddingTop;
+      }
+      const navTop = parseFloat(wrapStyle.top) || 0;
       const navHeight = navWrap.getBoundingClientRect().height;
       return Math.max(0, bodyPaddingTop + navTop + navHeight);
     }

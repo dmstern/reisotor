@@ -32,6 +32,7 @@ import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import InfoPopover from '../components/primitives/InfoPopover.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
+import Badge from '../components/primitives/Badge.vue';
 
 // Subkomponenten (Phase 2: UI-Dekomposition & Deduplizierung, #446)
 import ExcursionCategoryNav from '../components/ExcursionCategoryNav.vue';
@@ -129,6 +130,25 @@ const {
   tourFilterReason,
   tourPartialFilteredPrefix,
 } = filter;
+
+const searchFilterBarRef = ref<InstanceType<typeof SearchFilterBar> | null>(null);
+
+const activeSearchAndFilterCount = computed(() => {
+  return (
+    categoryFilter.value.length +
+    statusFilter.value.length +
+    tourRoleFilter.value.length +
+    (sortMode.value !== 'date' ? 1 : 0) +
+    (searchQuery.value.trim() ? 1 : 0)
+  );
+});
+
+function expandAndFocusSearch() {
+  sheetState.value = 'full';
+  setTimeout(() => {
+    searchFilterBarRef.value?.focusInput();
+  }, 320);
+}
 
 // 3. Category Navigation, Sticky Sentinel & Scroll Spy
 const navSpy = useCategoryNavSpy({
@@ -770,7 +790,10 @@ onUnmounted(() => {
           class="spots-col-body"
           ref="spotsColBodyEl"
           :style="{
-            '--category-nav-clearance': groupMode === 'category' ? `${categoryNavHeight}px` : '0px',
+            '--category-nav-clearance':
+              groupMode === 'category' && (!isSheetOverlayMode || sheetState === 'full')
+                ? `${categoryNavHeight}px`
+                : '0px',
           }"
           @pointerdown="onSheetBodyPointerDown"
           @wheel.passive="onCancelProgrammaticScroll"
@@ -847,6 +870,22 @@ onUnmounted(() => {
               </InfoPopover>
             </h2>
             <div class="header-actions">
+              <Button
+                v-if="isSheetOverlayMode && sheetState !== 'full' && groupMode !== 'tracks'"
+                variant="secondary"
+                shape="circle"
+                size="sm"
+                :active="activeSearchAndFilterCount > 0"
+                :icon="ACTION_ICONS.search"
+                title="Suche & Filter öffnen"
+                aria-label="Suche und Filter öffnen"
+                class="partial-search-trigger-btn"
+                @click="expandAndFocusSearch"
+              >
+                <Badge v-if="activeSearchAndFilterCount > 0" variant="primary" class="active-badge">
+                  {{ activeSearchAndFilterCount }}
+                </Badge>
+              </Button>
               <Button
                 size="sm"
                 class="add-button"
@@ -944,61 +983,68 @@ onUnmounted(() => {
           />
 
           <div
-            class="filter-bar"
             v-if="
               groupMode !== 'tracks' &&
               (filterCategoryOptions.length || excursionsStore.excursions.length)
             "
+            class="drawer-search-accordion"
+            :class="{ 'is-collapsed': isSheetOverlayMode && sheetState !== 'full' }"
+            :inert="isSheetOverlayMode && sheetState !== 'full'"
           >
-            <SearchFilterBar
-              v-model:search-query="searchQuery"
-              v-model:sort-mode="sortMode"
-              v-model:category-filter="categoryFilter"
-              v-model:status-filter="statusFilter"
-              v-model:tour-role-filter="tourRoleFilter"
-              :category-options="filterCategoryOptions"
-              search-placeholder="Spots oder Touren suchen..."
-            />
+            <div class="drawer-search-accordion-inner">
+              <div class="filter-bar">
+                <SearchFilterBar
+                  ref="searchFilterBarRef"
+                  v-model:search-query="searchQuery"
+                  v-model:sort-mode="sortMode"
+                  v-model:category-filter="categoryFilter"
+                  v-model:status-filter="statusFilter"
+                  v-model:tour-role-filter="tourRoleFilter"
+                  :category-options="filterCategoryOptions"
+                  search-placeholder="Spots oder Touren suchen..."
+                />
 
-            <div
-              class="filter-chips"
-              v-if="categoryFilter.length || statusFilter.length || tourRoleFilter.length"
-            >
-              <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
-                <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  :icon="ACTION_ICONS.close"
-                  aria-label="Filter entfernen"
-                  title="Filter entfernen"
-                  @click="removeCategoryFilter(cat)"
-                />
-              </span>
-              <span v-for="status in statusFilter" :key="status" class="filter-chip">
-                <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" />
-                {{ STATUS_FILTER_LABEL[status] }}
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  :icon="ACTION_ICONS.close"
-                  aria-label="Filter entfernen"
-                  title="Filter entfernen"
-                  @click="removeStatusFilter(status)"
-                />
-              </span>
-              <span v-for="role in tourRoleFilter" :key="role" class="filter-chip">
-                <AppIcon :icon="tourRoleIconDef(role)" :size="13" group="categories" />
-                {{ tourRoleLabel(role) }}
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  :icon="ACTION_ICONS.close"
-                  aria-label="Filter entfernen"
-                  title="Filter entfernen"
-                  @click="removeTourRoleFilter(role)"
-                />
-              </span>
+                <div
+                  class="filter-chips"
+                  v-if="categoryFilter.length || statusFilter.length || tourRoleFilter.length"
+                >
+                  <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
+                    <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="ACTION_ICONS.close"
+                      aria-label="Filter entfernen"
+                      title="Filter entfernen"
+                      @click="removeCategoryFilter(cat)"
+                    />
+                  </span>
+                  <span v-for="status in statusFilter" :key="status" class="filter-chip">
+                    <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" />
+                    {{ STATUS_FILTER_LABEL[status] }}
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="ACTION_ICONS.close"
+                      aria-label="Filter entfernen"
+                      title="Filter entfernen"
+                      @click="removeStatusFilter(status)"
+                    />
+                  </span>
+                  <span v-for="role in tourRoleFilter" :key="role" class="filter-chip">
+                    <AppIcon :icon="tourRoleIconDef(role)" :size="13" group="categories" />
+                    {{ tourRoleLabel(role) }}
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="ACTION_ICONS.close"
+                      aria-label="Filter entfernen"
+                      title="Filter entfernen"
+                      @click="removeTourRoleFilter(role)"
+                    />
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1017,6 +1063,7 @@ onUnmounted(() => {
             :spot-groups="spotGroups"
             :active-category="activeCategory"
             :is-stuck="isCategoryNavStuck"
+            :is-hidden-in-partial="isSheetOverlayMode && sheetState !== 'full'"
             :underline-left="underlineLeft"
             :underline-width="underlineWidth"
             :can-scroll-left="canScrollNavLeft"
@@ -1765,6 +1812,23 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
+.partial-search-trigger-btn {
+  position: relative;
+  flex-shrink: 0;
+
+  .active-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
+    padding: 0 4px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: var(--radius-pill);
+    pointer-events: none;
+  }
+}
+
 /* #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) sitzt in einer eigenen Zeile
    über die volle Breite des Drawer-Headers, sodass die Segmente auch auf 320px ohne Quetschen sitzen. */
 .header-mode-toggle {
@@ -1955,6 +2019,9 @@ onUnmounted(() => {
     transform: none;
     opacity: 1;
   }
+  .drawer-search-accordion {
+    transition: none;
+  }
 }
 
 .empty-state-wrap {
@@ -1998,6 +2065,28 @@ onUnmounted(() => {
    ein Steuerungs-/Werkzeug-Element (Gruppieren/Sortieren/Filtern), keine Dateninhalt-Fläche - siehe
    DESIGN.md, Abschnitt "Farben" für die Unterscheidung Steuerungselement (leicht eingefärbt) vs.
    Karte mit Dateninhalt (weiß/--color-surface, z. B. SpotCard.vue). */
+/* Im partial-Zustand des mobilen Bottom-Sheets klappt die Such-/Filterleiste weich ein (#684),
+   damit die eigentlichen Spots/Touren direkt sichtbar sind. */
+.drawer-search-accordion {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.25s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease;
+  opacity: 1;
+}
+
+.drawer-search-accordion.is-collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.drawer-search-accordion-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .filter-bar {
   display: flex;
   flex-direction: column;
