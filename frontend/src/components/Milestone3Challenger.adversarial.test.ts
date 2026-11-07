@@ -156,8 +156,11 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
       // 1. Status card must be present immediately with coordinates and address
       const statusCard = container.querySelector('[data-testid="location-status"]');
       expect(statusCard).not.toBeNull();
-      expect(statusCard?.textContent).toContain('48.20820, 16.37380');
-      expect(statusCard?.textContent).toContain(existingSpotAddress);
+      expect(statusCard?.textContent).toContain('Pin gesetzt');
+      const addressInput = statusCard?.querySelector(
+        '[data-testid="spot-address-input"]'
+      ) as HTMLInputElement;
+      expect(addressInput?.value).toBe(existingSpotAddress);
 
       // 2. Map must be centered on the spot's coordinates with zoom 15
       expect(lastSetViewCoords).toEqual([48.2082, 16.3738]);
@@ -230,11 +233,11 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
       await nextTick();
 
       // Check if LocationPicker got coordinates
-      const coordsRow = container.querySelector('.status-coords-row:not(.is-missing)');
+      const coordsSet = container.querySelector('[data-testid="spot-coords-set"]');
 
       // EMPIRICAL FINDING: Because lat/lng are omitted, active coordinates row is NOT rendered (shows 'is-missing')!
-      expect(coordsRow).toBeNull();
-      expect(container.querySelector('.status-coords-row.is-missing')).not.toBeNull();
+      expect(coordsSet).toBeNull();
+      expect(container.querySelector('[data-testid="spot-coords-missing"]')).not.toBeNull();
 
       // If user submits form without manually clicking map, lat and lng are lost:
       const form = container.querySelector('form');
@@ -279,7 +282,7 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
 
       const statusBadge = container.querySelector('[data-testid="location-status"]');
       expect(statusBadge).not.toBeNull();
-      expect(statusBadge?.textContent).toContain('48.85660, 2.35220');
+      expect(statusBadge?.textContent).toContain('Pin gesetzt');
 
       app.unmount();
       container.remove();

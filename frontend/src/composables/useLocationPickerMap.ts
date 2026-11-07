@@ -54,8 +54,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   function syncMapInteractivity() {
     if (!map) return;
     const isMobile = isMobileLayout();
-    const isLockedPreview =
-      isMobile && options.isDetailsVisible.value && !isMobileMapExpanded.value;
+    const isLockedPreview = isMobile && !isMobileMapExpanded.value;
 
     if (isLockedPreview) {
       map.dragging?.disable?.();
@@ -253,8 +252,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
 
       map.on('click', (e: L.LeafletMouseEvent) => {
         const isMobile = isMobileLayout();
-        const isLockedPreview =
-          isMobile && options.isDetailsVisible.value && !isMobileMapExpanded.value;
+        const isLockedPreview = isMobile && !isMobileMapExpanded.value;
         if (isLockedPreview) {
           toggleMobileMapExpanded();
           return;

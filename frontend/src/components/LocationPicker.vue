@@ -146,6 +146,28 @@ function onMapsLinkResolved(coords: { lat: number; lng: number }) {
   });
 }
 
+function onSelectAddressPlace(place: PlaceSearchResult) {
+  const formattedAddr = place.formatted_address || place.address || place.name;
+  details.editAddressInput.value = formattedAddr;
+  emit('update:address', formattedAddr);
+
+  const coords = { lat: place.lat, lng: place.lng };
+  map.placeMarker(coords.lat, coords.lng);
+  nextTick(() => {
+    map.centerOnPoint([coords.lat, coords.lng], 16);
+  });
+
+  emit('update:modelValue', coords);
+  emit('update:mapsLink', buildGoogleMapsLink(coords.lat, coords.lng));
+
+  if (props.title !== undefined && !props.title.trim() && place.name) {
+    emit('update:title', place.name);
+  }
+  if (props.category !== undefined && !props.category.trim() && place.category) {
+    emit('update:category', place.category);
+  }
+}
+
 const search = usePlaceSearch({
   modelValue: modelValueRef,
   title: titleRef,
@@ -155,6 +177,20 @@ const search = usePlaceSearch({
   center: centerRef,
   onSelectPlace,
   onMapsLinkResolved,
+  onMapsLinkInput: (url) => emit('update:mapsLink', url),
+});
+
+const addressSearch = usePlaceSearch({
+  proximityBias: proximityBiasRef,
+  center: centerRef,
+  onSelectPlace: onSelectAddressPlace,
+  onMapsLinkResolved: (coords) => {
+    map.placeMarker(coords.lat, coords.lng);
+    emit('update:modelValue', coords);
+    nextTick(() => {
+      map.centerOnPoint([coords.lat, coords.lng], 16);
+    });
+  },
   onMapsLinkInput: (url) => emit('update:mapsLink', url),
 });
 
@@ -221,6 +257,7 @@ const computedPlaceholder = computed(() => {
 
 function clear() {
   search.clearSearch();
+  addressSearch.clearSearch();
   details.resetDetailsState();
   suggestions.resetSuggestions();
   map.removeMarker();
@@ -234,6 +271,7 @@ function clear() {
 function reset() {
   details.cardClosed.value = false;
   search.resetSearch();
+  addressSearch.resetSearch();
   details.resetDetailsState();
   suggestions.resetSuggestions();
 }
@@ -245,6 +283,7 @@ function onResetClick() {
 
 function clearCoords() {
   search.inputText.value = '';
+  addressSearch.clearSearch();
   map.removeMarker();
   details.cardClosed.value = false;
   details.manualDetailsOpen.value = true;
@@ -257,6 +296,31 @@ function onBlur(e: FocusEvent) {
   search.onBlur(e, (event) => {
     emit('blur', event);
   });
+}
+
+function onAddressInput(e: Event) {
+  const val = (e.target as HTMLInputElement).value;
+  details.editAddressInput.value = val;
+  details.onAddressInput();
+  addressSearch.handleInput(val);
+}
+
+function onAddressFocus() {
+  addressSearch.onFocus();
+}
+
+function onAddressBlur(e: FocusEvent) {
+  addressSearch.onBlur(e);
+  details.saveAddress();
+}
+
+function onAddressKeydown(e: KeyboardEvent) {
+  addressSearch.onKeydown(e);
+  if (e.key === 'Enter') {
+    details.saveAddress();
+  } else if (e.key === 'Escape') {
+    details.cancelAddress();
+  }
 }
 
 // Template-Bindings:
@@ -292,7 +356,6 @@ const {
   saveTitle,
   cancelTitle,
   startEditAddress,
-  onAddressInput,
   saveAddress,
   cancelAddress,
   startEditCategory,
@@ -398,6 +461,10 @@ defineExpose({
           :show-location-sparkle="showLocationSparkle"
           :location-sparkle-title="locationSparkleTitle"
           :is-searching="isSearching"
+          :address-search-results="addressSearch.results.value"
+          :address-search-open="addressSearch.isOpen.value"
+          :address-search-active-index="addressSearch.activeIndex.value"
+          :is-searching-address="addressSearch.isSearching.value"
           @reset="onResetClick"
           @clear-coords="clearCoords"
           @start-edit-title="startEditTitle"
@@ -411,6 +478,10 @@ defineExpose({
           @cycle-category-suggestion="cycleCategorySuggestion"
           @start-edit-address="startEditAddress"
           @address-input="onAddressInput"
+          @address-focus="onAddressFocus"
+          @address-blur="onAddressBlur"
+          @address-keydown="onAddressKeydown"
+          @select-address-place="addressSearch.selectPlace"
           @save-address="saveAddress"
           @cancel-address="cancelAddress"
           @cycle-address-suggestion="cycleAddressSuggestion"
@@ -434,7 +505,6 @@ defineExpose({
 
         <!-- Mobile Expand / Collapse Button -->
         <button
-          v-if="isDetailsVisible"
           type="button"
           class="mobile-map-expand-btn"
           :class="{ 'is-expanded': isMobileMapExpanded }"
@@ -573,8 +643,10 @@ defineExpose({
 
 @container (max-width: 580px) {
   .map-wrap:not(.has-polaroid) .location-picker-map {
-    height: 240px;
-    min-height: 240px;
+    height: 180px;
+    min-height: 180px;
+    touch-action: pan-y;
+    cursor: pointer;
   }
 
   .map-wrap.has-polaroid {
@@ -603,6 +675,7 @@ defineExpose({
     cursor: pointer;
   }
 
+  .is-map-expanded .location-picker-map,
   .has-polaroid.is-map-expanded .location-picker-map {
     height: 320px;
     min-height: 320px;
