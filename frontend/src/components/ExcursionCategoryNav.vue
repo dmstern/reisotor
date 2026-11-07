@@ -23,7 +23,6 @@ defineProps<{
   setSentinelRef?: (el: Element | ComponentPublicInstance | null) => void;
   setNavRef?: (el: Element | ComponentPublicInstance | null) => void;
   setNavItemRef?: (cat: string, el: Element | ComponentPublicInstance | null) => void;
-  isHiddenInPartial?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -35,11 +34,7 @@ const emit = defineEmits<{
 
 <template>
   <div v-if="spotGroups.length > 1" class="category-nav-sentinel" :ref="setSentinelRef"></div>
-  <div
-    v-if="spotGroups.length > 1"
-    class="category-nav-wrap"
-    :class="{ 'is-stuck': isStuck, 'is-hidden-in-partial': isHiddenInPartial }"
-  >
+  <div v-if="spotGroups.length > 1" class="category-nav-wrap" :class="{ 'is-stuck': isStuck }">
     <nav
       class="category-nav"
       aria-label="Zu Kategorie springen"
@@ -116,24 +111,7 @@ const emit = defineEmits<{
   --category-nav-bg: var(--color-surface);
   background: var(--category-nav-bg);
   border-bottom: 1px solid var(--color-border);
-  max-height: 80px;
-  opacity: 1;
-  transition:
-    box-shadow 0.2s ease,
-    max-height 0.25s cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 0.2s ease,
-    margin-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1),
-    padding-top 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.category-nav-wrap.is-hidden-in-partial {
-  max-height: 0;
-  opacity: 0;
-  margin-bottom: 0;
-  padding-top: 0;
-  border-bottom-color: transparent;
-  overflow: hidden;
-  pointer-events: none;
+  transition: box-shadow 0.2s ease;
 }
 
 .category-nav-wrap.is-stuck {

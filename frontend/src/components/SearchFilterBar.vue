@@ -169,7 +169,7 @@ function clearFilters() {
         :active="totalActiveCount > 0"
         :icon="ACTION_ICONS.filter"
         title="Filtern & Sortieren"
-        aria-label="Nach Kategorie filtern"
+        aria-label="Filtern & Sortieren"
         class="bar-icon-btn"
         @click="toggleFilterMenu($event)"
       >
@@ -192,19 +192,25 @@ function clearFilters() {
               <DropdownItem
                 label="Nach Datum"
                 :active="sortMode === 'date'"
-                :icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
+                :trailing-icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
+                trailing-icon-group="actions"
+                :trailing-icon-size="14"
                 @click="selectSort('date')"
               />
               <DropdownItem
                 label="Alphabetisch"
                 :active="sortMode === 'alpha'"
-                :icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
+                :trailing-icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
+                trailing-icon-group="actions"
+                :trailing-icon-size="14"
                 @click="selectSort('alpha')"
               />
               <DropdownItem
                 label="Nach Likes"
                 :active="sortMode === 'likes'"
-                :icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
+                :trailing-icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
+                trailing-icon-group="actions"
+                :trailing-icon-size="14"
                 @click="selectSort('likes')"
               />
             </div>

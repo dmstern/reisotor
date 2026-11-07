@@ -143,9 +143,14 @@ const activeSearchAndFilterCount = computed(() => {
   );
 });
 
+let expandSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+
 function expandAndFocusSearch() {
   sheetState.value = 'full';
-  setTimeout(() => {
+  if (expandSearchTimeout) {
+    clearTimeout(expandSearchTimeout);
+  }
+  expandSearchTimeout = setTimeout(() => {
     searchFilterBarRef.value?.focusInput();
   }, 320);
 }
@@ -724,6 +729,10 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (expandSearchTimeout) {
+    clearTimeout(expandSearchTimeout);
+    expandSearchTimeout = null;
+  }
   drawers.mapFocusKey = null;
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
@@ -871,7 +880,12 @@ onUnmounted(() => {
             </h2>
             <div class="header-actions">
               <Button
-                v-if="isSheetOverlayMode && sheetState !== 'full' && groupMode !== 'tracks'"
+                v-if="
+                  isSheetOverlayMode &&
+                  sheetState !== 'full' &&
+                  groupMode !== 'tracks' &&
+                  (filterCategoryOptions.length || excursionsStore.excursions.length)
+                "
                 variant="secondary"
                 shape="circle"
                 size="sm"
@@ -1063,7 +1077,6 @@ onUnmounted(() => {
             :spot-groups="spotGroups"
             :active-category="activeCategory"
             :is-stuck="isCategoryNavStuck"
-            :is-hidden-in-partial="isSheetOverlayMode && sheetState !== 'full'"
             :underline-left="underlineLeft"
             :underline-width="underlineWidth"
             :can-scroll-left="canScrollNavLeft"
