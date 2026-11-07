@@ -901,28 +901,30 @@ onUnmounted(() => {
                 />
               </span>
             </Button>
-            <IconButton
-              variant="secondary"
-              shape="circle"
-              size="sm"
-              class="sheet-step-btn"
-              :disabled="!canExpandSheet"
-              :icon="ACTION_ICONS.chevronUp"
-              aria-label="Spots-Liste weiter hochschieben"
-              title="Hochschieben"
-              @click="stepSheet(1)"
-            />
-            <IconButton
-              variant="secondary"
-              shape="circle"
-              size="sm"
-              class="sheet-step-btn"
-              :disabled="!canCollapseSheet"
-              :icon="ACTION_ICONS.chevronDown"
-              aria-label="Spots-Liste weiter runterschieben"
-              title="Runterschieben"
-              @click="stepSheet(-1)"
-            />
+            <div class="sheet-stepper">
+              <IconButton
+                variant="secondary"
+                shape="circle"
+                size="sm"
+                class="sheet-step-btn"
+                :disabled="!canCollapseSheet"
+                :icon="ACTION_ICONS.chevronDown"
+                aria-label="Spots-Liste weiter runterschieben"
+                title="Runterschieben"
+                @click="stepSheet(-1)"
+              />
+              <IconButton
+                variant="secondary"
+                shape="circle"
+                size="sm"
+                class="sheet-step-btn"
+                :disabled="!canExpandSheet"
+                :icon="ACTION_ICONS.chevronUp"
+                aria-label="Spots-Liste weiter hochschieben"
+                title="Hochschieben"
+                @click="stepSheet(1)"
+              />
+            </div>
           </div>
         </div>
         <div
@@ -1676,8 +1678,19 @@ onUnmounted(() => {
 .sheet-handle-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   flex-shrink: 0;
+}
+
+.sheet-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-2);
+}
+
+.sheet-stepper:first-child {
+  margin-left: 0;
 }
 
 /* Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen): schaltet jeweils
