@@ -15,12 +15,14 @@ const props = withDefaults(
     id?: string;
     name?: string;
     ariaLabel?: string;
+    size?: 'sm' | 'md' | 'lg';
   }>(),
   {
     trueValue: true,
     falseValue: false,
     disabled: false,
     required: false,
+    size: 'md',
   }
 );
 
@@ -68,6 +70,7 @@ function onChange(event: Event) {
     :required="required"
     :aria-label="ariaLabel"
     class="checkbox"
+    :class="`checkbox--${size}`"
     @change="onChange"
   />
 </template>
@@ -77,19 +80,50 @@ function onChange(event: Event) {
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   margin: 0;
   padding: 0;
-  border: 2px solid var(--color-border);
+  border: max(2px, var(--ui-border-width, 2px)) solid var(--color-border);
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   cursor: pointer;
   position: relative;
+  box-sizing: border-box;
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
+}
+
+.checkbox--sm {
+  width: 20px;
+  height: 20px;
+}
+
+.checkbox--md {
+  width: 24px;
+  height: 24px;
+}
+
+.checkbox--lg {
+  width: 28px;
+  height: 28px;
+}
+
+/* 44x44px Touch-Hitbox auf Touch-Geräten */
+@media (pointer: coarse) {
+  .checkbox::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .checkbox:hover:not(:disabled) {
@@ -116,9 +150,20 @@ function onChange(event: Event) {
   pointer-events: none;
 }
 
+.checkbox--sm:checked::after {
+  width: 14px;
+  height: 14px;
+}
+
+.checkbox--lg:checked::after {
+  width: 18px;
+  height: 18px;
+}
+
 .checkbox:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .checkbox:disabled {

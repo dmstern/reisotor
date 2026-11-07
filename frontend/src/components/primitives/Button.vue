@@ -111,7 +111,7 @@ provide(
       :icon="icon"
       group="actions"
       :active="active"
-      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
     />
     <slot v-if="hasDefaultSlot()" />
   </RouterLink>
@@ -130,7 +130,7 @@ provide(
       :icon="icon"
       group="actions"
       :active="active"
-      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
     />
     <slot v-if="hasDefaultSlot()" />
   </a>
@@ -150,7 +150,7 @@ provide(
       :icon="icon"
       group="actions"
       :active="active"
-      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
     />
     <slot v-if="hasDefaultSlot()" />
   </component>
@@ -171,7 +171,7 @@ provide(
       :icon="icon"
       group="actions"
       :active="active"
-      :size="size === 'sm' ? 16 : size === 'lg' ? 22 : 18"
+      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
     />
     <slot v-if="hasDefaultSlot()" />
   </button>
@@ -179,12 +179,15 @@ provide(
 
 <style scoped>
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   padding: 11px 18px;
-  font-size: 1rem;
+  min-height: var(--input-height, 46px);
+  box-sizing: border-box;
+  font-size: var(--font-size-md);
   font-family: inherit;
   font-weight: 600;
   border-radius: var(--radius-md-squircle);
@@ -200,6 +203,12 @@ provide(
     box-shadow 0.15s ease,
     opacity 0.15s ease;
   user-select: none;
+}
+
+.btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .btn:hover:not(:disabled):not(.is-disabled) {
@@ -246,10 +255,10 @@ a.btn.is-loading {
   corner-shape: round;
   padding: 0;
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
+  width: var(--input-width, 46px);
+  height: var(--input-height, 46px);
+  min-width: var(--input-width, 46px);
+  min-height: var(--input-height, 46px);
   aspect-ratio: 1 / 1;
   box-sizing: border-box;
 }
@@ -269,7 +278,7 @@ a.btn.is-loading {
 .btn--secondary {
   background: var(--color-hover);
   color: var(--color-primary);
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   box-shadow: none;
 }
 
@@ -298,7 +307,7 @@ a.btn.is-loading {
 .btn--danger.btn--secondary {
   background: transparent;
   color: var(--color-danger);
-  border: var(--ui-border-width, 1px) solid var(--color-danger);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-danger);
   box-shadow: none;
 }
 
@@ -312,14 +321,14 @@ a.btn.is-loading {
   align-items: center;
   gap: var(--space-1);
   padding: 6px 12px;
-  min-height: 32px;
+  min-height: var(--input-height-sm, 38px);
   box-sizing: border-box;
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -366,7 +375,7 @@ a.btn.is-loading {
 .btn--secondary.is-active,
 .btn--ghost.is-active {
   background: var(--color-primary-tint);
-  border: var(--ui-border-width, 1.5px) solid var(--color-primary);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-primary);
   color: var(--color-primary-dark);
   box-shadow:
     0 0 0 1px var(--color-primary),
@@ -400,14 +409,16 @@ a.btn.is-loading {
 
 .btn--sm {
   padding: 6px 12px;
-  font-size: 0.85rem;
-  min-height: 32px;
+  font-size: var(--font-size-sm);
+  min-height: var(--input-height-sm, 38px);
   box-sizing: border-box;
 }
 
 .btn--lg {
   padding: 14px 24px;
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
+  min-height: var(--input-height-lg, 52px);
+  box-sizing: border-box;
 }
 
 /* Icon-only Modus */
@@ -416,28 +427,44 @@ a.btn.is-loading {
   padding: 0;
   gap: 0;
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
+  width: var(--input-width, 46px);
+  height: var(--input-height, 46px);
+  min-width: var(--input-width, 46px);
+  min-height: var(--input-height, 46px);
   font-size: 1.3rem;
 }
 
 .btn--icon-only.btn--sm,
-.btn.icon-only.btn--sm {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
+.btn.icon-only.btn--sm,
+.btn--circle.btn--sm {
+  width: var(--input-width-sm, 38px);
+  height: var(--input-height-sm, 38px);
+  min-width: var(--input-width-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
   font-size: 1.1rem;
 }
 
 .btn--icon-only.btn--lg,
-.btn.icon-only.btn--lg {
-  width: 46px;
-  height: 46px;
-  min-width: 46px;
-  min-height: 46px;
+.btn.icon-only.btn--lg,
+.btn--circle.btn--lg {
+  width: var(--input-width-lg, 52px);
+  height: var(--input-height-lg, 52px);
+  min-width: var(--input-width-lg, 52px);
+  min-height: var(--input-height-lg, 52px);
   font-size: 1.5rem;
+}
+
+@media (pointer: coarse) {
+  .btn--sm::after,
+  .btn--card-action::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 </style>

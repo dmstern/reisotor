@@ -138,35 +138,46 @@ defineExpose({
 }
 
 .info-popover-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: none;
-  background: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-hover);
   color: var(--color-text-muted);
   box-shadow: none;
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   line-height: 1;
   cursor: pointer;
-  opacity: 0.7;
   border-radius: var(--radius-full);
+  corner-shape: round;
   transition:
-    opacity 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
     color 0.15s ease;
+}
+
+/* 44x44px Touch-Hitbox */
+.info-popover-btn::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
 }
 
 .info-popover-btn:hover,
 .info-popover-btn:focus-visible {
-  opacity: 1;
+  background: var(--color-surface);
+  border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
 .info-popover-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 :global(.info-popover-menu) {
@@ -183,7 +194,7 @@ defineExpose({
 
 :global(.info-popover-content p) {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
   line-height: 1.4;
   color: var(--color-text-muted);
 }
@@ -193,7 +204,7 @@ defineExpose({
 }
 
 :global(.info-popover-content .popover-tip) {
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text);
   background: var(--color-hover);
   padding: var(--space-1) var(--space-2);

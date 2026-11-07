@@ -127,10 +127,10 @@ test('another member creating a tour lights up the Karte nav badge and the Toure
   // 'ideas' bleibt unbesehen, der äußere Nav-Punkt UND der Touren-Toggle müssen also weiterhin
   // einen Punkt zeigen, der Spots-Toggle dagegen nicht.
   await pageA.goto('/excursions');
-  // #155: der Spots-/Touren-Umschalter sitzt seither direkt neben der Drawer-Überschrift
-  // (ExcursionsView.vue's .header h2), nicht mehr in der einklappbaren Gruppieren-Zeile der
-  // Anzeige & Filter-Box - dadurch immer sichtbar, unabhängig von Viewport-Breite.
-  const groupToggle = pageA.locator('.header h2');
+  // #155 / #515: der Spots-/Touren-Umschalter sitzt im Drawer-Header (.header-mode-toggle),
+  // nicht mehr in der einklappbaren Gruppieren-Zeile der Anzeige & Filter-Box - dadurch immer
+  // sichtbar, unabhängig von Viewport-Breite.
+  const groupToggle = pageA.locator('.header-mode-toggle');
   await expect(groupToggle).toBeVisible();
   await expect(
     groupToggle.getByRole('button', { name: 'Spots' }).locator('.segmented-dot')

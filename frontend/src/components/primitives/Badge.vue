@@ -61,7 +61,7 @@ withDefaults(
 
 .badge--size-md {
   padding: 4px 10px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .badge--primary {
@@ -124,8 +124,10 @@ withDefaults(
   transform: translateY(0);
 }
 
-.badge--interactive:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+.badge--interactive:focus-visible,
+.badge:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 </style>

@@ -133,6 +133,63 @@ withDefaults(
   }
 }
 
+:deep(.checkable-list-item__title),
+:deep(.row__title),
+:deep(.item-title),
+:deep(.title) {
+  font-size: var(--font-size-md);
+  line-height: 1.4;
+}
+
+:deep(.checkable-list-item__meta),
+:deep(.row__meta),
+:deep(.item-meta) {
+  font-size: var(--font-size-xs);
+}
+
+:deep(.checkable-list-item__subtext),
+:deep(.row__subtext),
+:deep(.item-subtext) {
+  font-size: var(--font-size-sm);
+}
+
+:deep(input[type='checkbox']),
+:deep(.ui-checkbox),
+:deep(.state-toggle) {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  border-width: 2px;
+}
+
+@media (pointer: coarse) {
+  :deep(input[type='checkbox'])::before,
+  :deep(.ui-checkbox)::before,
+  :deep(.state-toggle)::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.checkable-list-item:focus-visible,
+.row:focus-visible,
+:deep(input[type='checkbox']:focus-visible),
+:deep(.ui-checkbox:focus-visible),
+:deep(.state-toggle:focus-visible) {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
+}
+
 :deep(.checkable-list-item__text--done),
 :deep(.row__text--done),
 :deep(.text-done) {
@@ -140,13 +197,21 @@ withDefaults(
   color: var(--color-text-muted);
 }
 
+.list-item-sparkle {
+  align-self: flex-start;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .checkable-list-item__actions,
 :deep(.row-actions) {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
   margin-left: auto;
   align-self: flex-start;
+  height: 24px;
 }
 </style>

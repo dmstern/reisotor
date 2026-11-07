@@ -160,6 +160,8 @@ watch(
   position: relative;
   display: grid;
   grid-template-columns: repeat(var(--count), minmax(0, 1fr));
+  min-height: 40px;
+  box-sizing: border-box;
   background-color: var(--color-hover);
   background-image: var(--texture-grain);
   background-blend-mode: overlay;
@@ -214,7 +216,7 @@ watch(
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  padding: 5px 10px;
+  padding: 6px 12px;
   border: none;
   /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
      jedem <button> per Default einen Schatten) - hier trägt bereits .segmented-thumb den einzigen
@@ -224,7 +226,7 @@ watch(
   box-shadow: none;
   background: none;
   border-radius: var(--radius-pill);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: 1;
   color: var(--color-text-muted);
@@ -235,8 +237,9 @@ watch(
 }
 
 .segmented-option:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .segmented-option-label {

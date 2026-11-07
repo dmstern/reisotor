@@ -424,7 +424,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               title="Zu einem Datum einplanen"
               @click="toggleAddSchedulePopover($event)"
             >
-              <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="13" group="actions" />
+              <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="15" group="actions" />
               <span>Datum hinzufügen</span>
             </button>
             <Teleport to="body">
@@ -465,7 +465,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 :icon="
                   isTourTravel(title) ? SECTION_ICON_DEFS.travel : SECTION_ICON_DEFS.excursions
                 "
-                :size="12"
+                :size="14"
                 group="navigation"
               />
               <span class="assign-chip-label">
@@ -482,7 +482,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               title="Entfernen"
               @click="removeTourTitle(title)"
             >
-              <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+              <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
             </button>
           </span>
 
@@ -503,7 +503,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               >
                 <AppIcon
                   :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
-                  :size="13"
+                  :size="14"
                   group="actions"
                 />
               </button>
@@ -522,7 +522,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 title="Termin entfernen"
                 @click="removeScheduledItemFromSpot(item)"
               >
-                <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+                <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
               </button>
             </span>
           </template>
@@ -534,7 +534,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               class="assign-chip assign-chip--schedule"
             >
               <span class="assign-chip-action">
-                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
+                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
                 <span class="assign-chip-label">{{ formatDate(date) }}</span>
               </span>
               <button
@@ -544,7 +544,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 title="Termin entfernen"
                 @click="removeScheduledDateFromNewSpot(date)"
               >
-                <AppIcon :icon="ACTION_ICONS.close" :size="11" group="actions" />
+                <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
               </button>
             </span>
           </template>
@@ -677,15 +677,20 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
+  padding: 0 12px;
+  height: 34px;
+  min-height: 34px;
   border-radius: var(--radius-pill);
   corner-shape: round;
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
+  line-height: 1.2;
   font-weight: 500;
   border: 1px dashed var(--color-border-strong);
   background: var(--color-hover);
   color: var(--color-text);
   cursor: pointer;
+  box-sizing: border-box;
+  margin: 0;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -696,6 +701,13 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   background: var(--color-surface);
   border-color: var(--color-calendar-appointment);
   color: var(--color-calendar-appointment);
+}
+
+.add-schedule-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid
+    var(--focus-ring-color, var(--color-calendar-appointment));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .add-schedule-popover {
@@ -727,12 +739,14 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 .assign-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   border-radius: var(--radius-pill);
-  padding: 3px 6px 3px 10px;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  border: 1px solid;
+  corner-shape: round;
+  min-height: 32px;
+  padding: 4px 8px 4px 12px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border: 1.5px solid;
   line-height: 1.2;
 }
 
@@ -763,7 +777,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 .assign-chip-done-toggle {
   background: none;
   border: none;
-  padding: 1px 2px;
+  padding: 2px;
   color: inherit;
   cursor: pointer;
   display: inline-flex;
@@ -810,7 +824,7 @@ button.assign-chip-action:hover {
 .assign-chip-remove {
   background: none;
   border: none;
-  padding: 2px 3px;
+  padding: 3px;
   margin-left: 2px;
   color: inherit;
   cursor: pointer;
@@ -825,6 +839,14 @@ button.assign-chip-action:hover {
 
 .assign-chip-remove:hover {
   opacity: 1;
+}
+
+.assign-chip-remove:focus-visible,
+.assign-chip-done-toggle:focus-visible,
+button.assign-chip-action:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .actions-row {

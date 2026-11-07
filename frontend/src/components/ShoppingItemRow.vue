@@ -127,6 +127,23 @@ function userName(id: number | null | undefined) {
   gap: var(--space-2);
   cursor: pointer;
   min-width: 0;
+  min-height: 24px;
+}
+
+.check :deep(input[type='checkbox']),
+.check :deep(.ui-checkbox) {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  border-width: 2px;
+}
+
+.check :deep(input[type='checkbox']:focus-visible),
+.check :deep(.ui-checkbox:focus-visible) {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .item-title {
@@ -134,7 +151,8 @@ function userName(id: number | null | undefined) {
   min-width: 0;
   word-break: break-word;
   overflow-wrap: break-word;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
+  line-height: 1.4;
   color: var(--color-text);
 }
 
@@ -148,7 +166,7 @@ function userName(id: number | null | undefined) {
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-  margin-left: calc(var(--space-4) + var(--space-2));
+  margin-left: calc(24px + var(--space-2));
   font-size: var(--font-size-xs);
 }
 
@@ -157,6 +175,9 @@ function userName(id: number | null | undefined) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
   max-width: 100%;
   min-width: 0;
 }
@@ -172,6 +193,9 @@ function userName(id: number | null | undefined) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm-squircle);
   font-size: var(--font-size-xs);
   color: var(--color-primary);
   text-decoration: underline;
@@ -183,10 +207,17 @@ function userName(id: number | null | undefined) {
   color: var(--color-primary-dark);
 }
 
+.link:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
+}
+
 .note {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   max-width: min(200px, 100%);
   min-width: 0;
@@ -206,11 +237,13 @@ function userName(id: number | null | undefined) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
+  min-width: 34px;
+  min-height: 34px;
   border-radius: var(--radius-pill);
   background: var(--color-hover);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   cursor: pointer;
   flex-shrink: 0;
   transition:
@@ -224,12 +257,13 @@ function userName(id: number | null | undefined) {
 }
 
 .buyer-avatar-picker:has(.buyer-native-select:focus-visible) {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .avatar-display {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   pointer-events: none;
 }
 

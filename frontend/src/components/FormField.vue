@@ -80,13 +80,13 @@ const id = computed(() => props.id || autoId);
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 0.78rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .form-field-icon {
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   line-height: 1;
 }
 
@@ -101,7 +101,7 @@ const id = computed(() => props.id || autoId);
   align-items: center;
   gap: var(--space-1);
   margin: 2px 0 0;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--color-danger, #ef4444);
   font-weight: 500;
 }

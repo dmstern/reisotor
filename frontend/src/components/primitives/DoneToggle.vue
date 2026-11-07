@@ -105,12 +105,13 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 36px;
   background: var(--color-hover);
   border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
-  padding: 3px 10px;
-  font-size: 0.75rem;
+  padding: 4px 12px;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -123,6 +124,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     border-color 0.15s ease,
     color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+.done-toggle:not(.done-toggle--split):focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .done-toggle:not(.done-toggle--split):hover {
@@ -173,6 +180,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  min-height: 34px;
   position: relative;
   transition:
     background-color 0.15s ease,
@@ -180,7 +188,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle-btn--check {
-  padding: 3px 6px 3px 9px;
+  padding: 4px 8px 4px 11px;
   justify-content: center;
 }
 
@@ -199,7 +207,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 
 .done-toggle-divider {
   width: 1px;
-  height: 14px;
+  height: 16px;
   background-color: var(--color-border);
   align-self: center;
   flex-shrink: 0;
@@ -212,8 +220,8 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle-btn--action {
-  padding: 3px 10px 3px 6px;
-  font-size: 0.75rem;
+  padding: 4px 12px 4px 8px;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   min-width: 0;
 }
@@ -241,8 +249,8 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
   z-index: 1;
 }
 

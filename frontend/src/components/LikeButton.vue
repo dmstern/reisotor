@@ -20,7 +20,7 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
   >
     <AppIcon
       :icon="liked ? ACTION_ICONS.liked : ACTION_ICONS.unliked"
-      :size="small ? 14 : 15"
+      :size="small ? 16 : 18"
       group="actions"
     />
     <span v-if="count > 0" class="social-count">{{ count }}</span>
@@ -29,13 +29,23 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
 
 <style scoped>
 .like-btn {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .like-btn.small {
-  padding: 4px 6px;
-  font-size: 0.8rem;
+  min-height: 34px;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
   line-height: 1;
+}
+
+.like-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .like-btn.liked {
@@ -47,7 +57,7 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
 }
 
 .social-count {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   margin-left: 2px;
 }

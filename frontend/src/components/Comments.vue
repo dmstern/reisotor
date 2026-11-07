@@ -142,7 +142,7 @@ function formatCommentDate(dateStr?: string): string {
           aria-label="Kommentar senden"
           :disabled="!draft.trim()"
         >
-          <AppIcon :icon="ACTION_ICONS.send" :size="14" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.send" :size="16" group="actions" />
         </Button>
       </div>
     </form>
@@ -175,7 +175,7 @@ function formatCommentDate(dateStr?: string): string {
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   gap: 2px;
 }
 
@@ -192,7 +192,7 @@ function formatCommentDate(dateStr?: string): string {
 }
 
 .comment-date {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -247,19 +247,22 @@ function formatCommentDate(dateStr?: string): string {
 
 .comment-input {
   width: 100%;
-  padding-right: 38px;
+  padding-right: 46px;
   box-sizing: border-box;
 }
 
 .comment-input-wrap .send-btn {
   position: absolute;
-  right: 4px;
+  right: 5px;
   top: 0;
   bottom: 0;
   margin-block: auto;
   translate: none;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  aspect-ratio: 1 / 1;
   padding: 0;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;

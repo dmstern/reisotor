@@ -363,17 +363,27 @@
   --font-sans:
     'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --font-diary: 'Architects Daughter', cursive, sans-serif;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.85rem;
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.9375rem;
   --font-size-md: 1rem;
-  --font-size-lg: 1.15rem;
-  --font-size-xl: 1.3rem;
-  --font-size-2xl: 1.6rem;
+  --font-size-lg: 1.2rem;
+  --font-size-xl: 1.4rem;
+  --font-size-2xl: 1.75rem;
 
-  --input-default-height: 44px;
-  --input-height: 44px;
-  --input-width: 44px;
-  --input-default-width: 44px;
+  --input-default-height: 46px;
+  --input-height: 46px;
+  --input-width: 46px;
+  --input-default-width: 46px;
+  --input-height-sm: 38px;
+  --input-width-sm: 38px;
+  --input-height-lg: 52px;
+  --input-width-lg: 52px;
+
+  /* Globale Fokusrahmen-Architektur („KERN-Prinzip", Issue #515) */
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-focus-ring);
+  --focus-ring-halo: 0 0 0 2px var(--color-surface);
 
   /* Semantische Z-Index-Ebenen (Single Source of Truth für Stacking-Hierarchien) */
   --z-canvas: 0;
@@ -405,6 +415,15 @@
     --radius-md-squircle: calc(var(--radius-md) * 1.75);
     --radius-lg-squircle: calc(var(--radius-lg) * 1.75);
     --radius-xl-squircle: calc(var(--radius-xl) * 1.75);
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --font-size-md: 1.0625rem;
+    --font-size-lg: 1.25rem;
+    --font-size-xl: 1.5rem;
+    --font-size-2xl: 1.875rem;
   }
 }
 
@@ -648,6 +667,7 @@ body.map-view-active {
 
 body {
   font-family: var(--font-sans);
+  font-size: var(--font-size-md);
   font-size-adjust: from-font;
   background: var(--color-bg);
   color: var(--color-text);
@@ -688,18 +708,24 @@ a {
   color: var(--color-primary);
 }
 
+a:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: 2px;
+}
+
 button,
 input,
 select,
 textarea {
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
 }
 
 button {
   cursor: pointer;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
 }
 
 .required-indicator {

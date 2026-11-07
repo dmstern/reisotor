@@ -285,17 +285,22 @@ defineExpose({
   flex-direction: column;
   flex-shrink: 0;
   max-height: min(55vh, 480px);
-  border: 1px solid var(--color-border);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   overflow: hidden;
-  transition: border-color 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .richtext-editor.is-focused,
 .richtext-editor:focus-within {
   border-color: var(--color-primary);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .richtext-editor.is-invalid {
@@ -305,8 +310,9 @@ defineExpose({
 .richtext-editor.is-invalid.is-focused,
 .richtext-editor.is-invalid:focus-within {
   border-color: var(--color-danger, #ef4444);
-  outline: 2px solid var(--color-danger, #ef4444);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--color-danger, #ef4444);
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 /* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort
@@ -345,13 +351,19 @@ defineExpose({
   border-radius: 4px;
   background: transparent;
   color: var(--color-text);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   line-height: 1;
 }
 
 .toolbar-btn:hover {
   background: var(--color-primary-tint);
+}
+
+.toolbar-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .toolbar-btn.active {
@@ -481,14 +493,14 @@ defineExpose({
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  min-height: 38px;
+  min-height: var(--input-height-sm, 38px);
   width: 100%;
-  border: 1px solid var(--color-border);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   box-sizing: border-box;
   transition:
@@ -496,12 +508,19 @@ defineExpose({
     background-color 0.15s;
 }
 
-.collapsed-trigger:hover,
-.collapsed-trigger:focus-visible {
+.collapsed-trigger:hover {
   border-color: var(--color-border-strong);
   background: var(--color-hover);
   color: var(--color-text);
-  outline: none;
+}
+
+.collapsed-trigger:focus-visible {
+  border-color: var(--color-primary);
+  background: var(--color-hover);
+  color: var(--color-text);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .collapsed-placeholder {

@@ -260,10 +260,10 @@ function handleItemJump(item: ScheduledSpotItem) {
               <AppIcon
                 v-if="item.type === 'tour'"
                 :icon="getTourRoleIconDef(item.role)"
-                :size="13"
+                :size="16"
                 group="categories"
               />
-              <AppIcon v-else :icon="FORM_FIELD_ICONS.date" :size="13" group="formFields" />
+              <AppIcon v-else :icon="FORM_FIELD_ICONS.date" :size="16" group="formFields" />
             </Button>
           </div>
         </div>
@@ -399,14 +399,15 @@ function handleItemJump(item: ScheduledSpotItem) {
 }
 
 .date-calendar-jump-btn {
-  flex: 0 0 28px !important;
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  max-width: 28px !important;
-  min-height: 28px !important;
-  max-height: 28px !important;
+  flex: 0 0 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
   padding: 0 !important;
+  border-radius: var(--radius-full);
   color: var(--color-text-muted);
 }
 

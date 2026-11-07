@@ -350,7 +350,7 @@ defineExpose({
   position: absolute;
   top: 68px;
   left: 12px;
-  width: 260px;
+  width: 296px;
   max-width: calc(100% - 24px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -395,10 +395,10 @@ defineExpose({
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  min-height: 26px;
+  width: var(--input-height-sm, 38px);
+  height: var(--input-height-sm, 38px);
+  min-width: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -428,7 +428,7 @@ defineExpose({
 }
 
 .polaroid-card.is-modified:not(:has(.polaroid-media)) .status-title-row {
-  padding-right: var(--space-5);
+  padding-right: var(--space-6);
 }
 
 .polaroid-body {
@@ -468,7 +468,7 @@ defineExpose({
   min-width: 0;
   max-width: 100%;
   width: 100%;
-  min-height: 36px;
+  min-height: 40px;
 }
 
 .status-coords-row {
@@ -499,7 +499,7 @@ defineExpose({
   min-width: 0;
   max-width: 100%;
   flex: 1;
-  min-height: 36px;
+  min-height: 40px;
 }
 
 .status-meta-edit {
@@ -510,7 +510,7 @@ defineExpose({
   flex: 1;
   min-width: 0;
   max-width: 100%;
-  min-height: 36px;
+  min-height: 40px;
 }
 
 .status-meta-row:has(.status-meta-edit) {
@@ -537,11 +537,15 @@ defineExpose({
 }
 
 .inline-address-input-wrap.has-sparkle :deep(input) {
-  padding-right: 28px;
+  padding-right: 40px;
 }
 
 .inline-category-combobox.has-sparkle :deep(input) {
-  padding-right: 46px;
+  padding-right: 62px;
+}
+
+.inline-category-combobox :deep(.category-sparkle-btn) {
+  right: 28px;
 }
 
 .inline-edit-btn {
@@ -665,6 +669,8 @@ defineExpose({
   flex: 1;
   width: 100%;
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .inline-category-combobox:focus-within,
@@ -683,7 +689,7 @@ defineExpose({
     top: 68px;
     left: 12px;
     right: auto;
-    width: 260px;
+    width: 296px;
     max-width: calc(100% - 24px);
   }
 }
@@ -706,7 +712,7 @@ defineExpose({
   }
 
   .status-meta-row {
-    min-height: 32px;
+    min-height: 38px;
   }
 }
 </style>

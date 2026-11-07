@@ -348,6 +348,7 @@ defineOptions({
             :key="option"
             role="option"
             :aria-selected="option === modelValue"
+            class="combobox-option"
             :class="{
               'is-highlighted': highlightedIndex === idx,
               'is-selected': option === modelValue,
@@ -396,25 +397,37 @@ defineOptions({
   z-index: var(--z-popover, 1100);
 }
 
-.combobox:hover :deep(.combobox-input:not(:disabled)),
-.combobox.open :deep(.combobox-input),
-.combobox:focus-within :deep(.combobox-input) {
+.combobox:hover :deep(.combobox-input:not(:disabled):not(:focus):not(:focus-visible)) {
   box-shadow: var(--shadow-sm);
 }
 
 .combobox :deep(.combobox-input),
 .combobox :deep(input) {
   width: 100%;
+  min-height: var(--input-height, 46px);
+  border-width: max(1.5px, var(--ui-border-width, 1.5px));
   padding-right: 36px;
+}
+
+.combobox :deep(.combobox-input:focus),
+.combobox :deep(.combobox-input:focus-visible),
+.combobox:focus-within :deep(.combobox-input) {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .combobox--sm :deep(.combobox-input),
 .combobox--sm :deep(input) {
+  min-height: var(--input-height-sm, 38px);
+  font-size: var(--font-size-sm);
   padding-right: 28px;
 }
 
 .combobox--lg :deep(.combobox-input),
 .combobox--lg :deep(input) {
+  min-height: var(--input-height-lg, 52px);
+  font-size: var(--font-size-md);
   padding-right: 42px;
 }
 
@@ -481,7 +494,7 @@ defineOptions({
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
@@ -524,12 +537,15 @@ defineOptions({
   flex: 1 1 auto;
 }
 
+.combobox-option,
 .options li {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 10px;
-  font-size: 0.9rem;
+  min-height: 44px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  font-size: var(--font-size-sm);
   cursor: pointer;
   transition:
     background 0.15s ease,
@@ -548,23 +564,27 @@ defineOptions({
   flex: 1;
 }
 
+.combobox-option:hover,
+.combobox-option.is-highlighted,
 .options li:hover,
 .options li.is-highlighted {
   background: var(--color-hover);
 }
 
+.combobox-option.is-selected,
 .options li.is-selected {
   font-weight: 600;
   color: var(--color-primary-dark);
 }
 
+.combobox-option.is-highlighted.is-selected,
 .options li.is-highlighted.is-selected {
   background: var(--color-primary-tint);
 }
 
 .combobox-empty {
   padding: 8px 10px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-align: center;
 }

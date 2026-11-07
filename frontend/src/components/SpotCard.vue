@@ -146,35 +146,31 @@ const cardRotation = computed(() => {
       @edit="emit('edit', spot)"
     />
 
-    <!-- Gleitende Badge-Gruppe: Ein einziges Element, das nahtlos zwischen Body und Cover-Ecke gleitet -->
-    <div class="card-badge-group">
-      <SpotLocationBadge
-        v-if="spot.lat == null || spot.lng == null"
-        :spot="spot"
-        :expanded="expanded"
-        @edit="emit('edit', spot)"
-      />
-      <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
-      <PendingSyncBadge v-if="spot._pending" />
-    </div>
-
     <div class="body">
-      <!-- Einheitlicher Card-Titel und Notiz im Body (nur im eingeklappten Zustand) -->
-      <template v-if="!expanded">
-        <div class="card-title-block">
+      <!-- Dynamischer Flex-Header im Body (Titel + Badge-Gruppe ohne Überlappung) -->
+      <div class="card-header-row" :class="{ 'is-expanded': expanded }">
+        <div v-if="!expanded" class="card-title-block">
           <component :is="headingTag" class="card-title" :title="spot.title">
             {{ spot.title }}
           </component>
         </div>
-        <!-- Spot-Notiz: Trunkiert mit Ellipsis im collapsed Zustand (#235) -->
-        <div v-if="spot.note" class="spot-note-container">
-          <RichTextDisplay
-            class="note is-clamped"
-            :content="spot.note"
-            :format="spot.note_format"
+
+        <div class="card-badge-group">
+          <SpotLocationBadge
+            v-if="spot.lat == null || spot.lng == null"
+            :spot="spot"
+            :expanded="expanded"
+            @edit="emit('edit', spot)"
           />
+          <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
+          <PendingSyncBadge v-if="spot._pending" />
         </div>
-      </template>
+      </div>
+
+      <!-- Spot-Notiz: Trunkiert mit Ellipsis im collapsed Zustand (#235) -->
+      <div v-if="!expanded && spot.note" class="spot-note-container">
+        <RichTextDisplay class="note is-clamped" :content="spot.note" :format="spot.note_format" />
+      </div>
 
       <!-- Eigene, explizite Aktionen (#109, #381) – nur im aufgeklappten Zustand sichtbar -->
       <div class="map-actions" v-if="expanded && spot.lat != null && spot.lng != null">
@@ -377,9 +373,21 @@ const cardRotation = computed(() => {
   cursor: default;
 }
 
-/* Card Badge Group: gleitet sanft zwischen Body und Cover-Ecke */
+/* Dynamischer Flex-Header im eingeklappten Zustand (Titel links, Badges rechts ohne Überlappung) */
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.card-header-row.is-expanded {
+  display: contents;
+}
+
 .card-badge-group {
-  position: absolute;
+  flex-shrink: 0;
   z-index: var(--z-card-elevated);
   display: flex;
   align-items: center;
@@ -391,21 +399,11 @@ const cardRotation = computed(() => {
   box-shadow: var(--shadow-xs);
 }
 
-.spot-card:not(.expanded) .card-badge-group {
-  top: calc(var(--spot-card-pad) + var(--spot-cover-height) + var(--space-1));
-  right: calc(var(--spot-card-pad) + var(--space-1));
-  transition:
-    top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-    right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s;
-}
-
 .spot-card.expanded .card-badge-group {
+  position: absolute;
   top: calc(var(--spot-card-pad) + var(--space-2));
   right: calc(var(--spot-card-pad) + var(--space-2));
   cursor: pointer;
-  transition:
-    top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-    right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
 }
 
 .card-badge-group :deep(.category-chip) {
@@ -426,7 +424,6 @@ const cardRotation = computed(() => {
 }
 
 .body {
-  position: relative;
   display: flex;
   flex-direction: column;
   padding: var(--spot-card-pad) var(--space-2) 0 var(--space-2);
@@ -476,46 +473,9 @@ const cardRotation = computed(() => {
 }
 
 .card-title-block {
+  flex: 1;
   min-width: 0;
-  padding-right: 130px;
   box-sizing: border-box;
-  transition:
-    padding-right 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    margin-bottom 0.28s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
-  padding-right: 165px;
-}
-
-.spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
-  padding-right: 235px;
-}
-
-.spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
-  padding-right: 275px;
-}
-
-.spot-card:not(.expanded):has(.category-chip.is-icon-only) .card-title-block {
-  padding-right: 48px;
-}
-
-.spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.spot-location-badge)
-  .card-title-block {
-  padding-right: 155px;
-}
-
-.spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.pending-sync-badge)
-  .card-title-block {
-  padding-right: 84px;
-}
-
-.spot-card:not(.expanded):has(.category-chip.is-icon-only):has(.spot-location-badge):has(
-    .pending-sync-badge
-  )
-  .card-title-block {
-  padding-right: 190px;
 }
 
 .card-title {
@@ -536,7 +496,7 @@ const cardRotation = computed(() => {
 
 .spot-note-container {
   overflow: hidden;
-  max-height: 2.8em;
+  max-height: 2.85em;
   margin-top: calc(-1 * var(--space-1));
 }
 
@@ -544,7 +504,7 @@ const cardRotation = computed(() => {
   overflow-wrap: anywhere;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .note.is-clamped {
@@ -834,8 +794,8 @@ const cardRotation = computed(() => {
 .actions-accordion-inner {
   display: block;
   overflow: hidden;
-  padding: 3px;
-  margin: -3px;
+  padding: 6px;
+  margin: -6px;
 }
 
 .actions-accordion.is-expanded .actions-accordion-inner {
@@ -883,36 +843,15 @@ const cardRotation = computed(() => {
 
   .spot-card:not(.expanded) .card-title-block {
     margin-bottom: 0;
-    padding-right: 125px;
-  }
-
-  .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
-    padding-right: 160px;
-  }
-
-  .spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
-    padding-right: 225px;
-  }
-
-  .spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
-    padding-right: 265px;
   }
 
   .spot-card:not(.expanded) .card-title {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-md);
   }
 
   .spot-card:not(.expanded) .card-attachments-wrap {
     top: calc(var(--spot-card-pad) + var(--space-1));
     left: calc(var(--spot-card-pad) + var(--space-1));
-  }
-
-  .spot-card:not(.expanded) .card-badge-group {
-    top: calc(var(--spot-card-pad) + var(--spot-cover-height) + var(--space-1));
-    right: calc(var(--spot-card-pad) + var(--space-1));
-    transition:
-      top 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s,
-      right 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.08s;
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
@@ -925,20 +864,17 @@ const cardRotation = computed(() => {
   .spot-card.expanded .card-badge-group {
     top: calc(var(--spot-card-pad) + var(--space-2));
     right: calc(var(--spot-card-pad) + var(--space-2));
-    transition:
-      top 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s,
-      right 0.32s cubic-bezier(0.32, 0.72, 0, 1) 0s;
   }
 
   .spot-note-container {
-    max-height: 1.4em;
+    max-height: 1.45em;
   }
 
   .note.is-clamped {
     -webkit-line-clamp: 1;
     line-clamp: 1;
-    font-size: var(--font-size-xs);
-    line-height: 1.3;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
   }
 
   .note.is-clamped :deep(.richtext) {
@@ -963,14 +899,6 @@ const cardRotation = computed(() => {
   .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge) {
     padding: 2px 4px;
     gap: 2px;
-  }
-
-  .spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
-    padding-right: 165px;
-  }
-
-  .spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
-    padding-right: 195px;
   }
 }
 
@@ -1008,22 +936,6 @@ const cardRotation = computed(() => {
   .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge) {
     padding: 3px var(--radius-xs);
     gap: 0;
-  }
-
-  .spot-card:not(.expanded) .card-title-block {
-    padding-right: 44px;
-  }
-
-  .spot-card:not(.expanded):has(.pending-sync-badge) .card-title-block {
-    padding-right: 76px;
-  }
-
-  .spot-card:not(.expanded):has(.spot-location-badge) .card-title-block {
-    padding-right: 76px;
-  }
-
-  .spot-card:not(.expanded):has(.spot-location-badge):has(.pending-sync-badge) .card-title-block {
-    padding-right: 104px;
   }
 
   .spot-expand-pill {

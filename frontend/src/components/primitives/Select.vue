@@ -68,17 +68,17 @@ function onChange(event: Event) {
 <style scoped>
 .select {
   padding: 9px 12px;
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background-color: var(--color-surface);
   color: var(--color-text);
   box-shadow: none;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--font-size-md);
   font-weight: 500;
-  height: var(--input-height, var(--input-default-height));
-  min-height: var(--input-height, var(--input-default-height));
+  height: var(--input-height, 46px);
+  min-height: var(--input-height, 46px);
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
@@ -115,10 +115,10 @@ function onChange(event: Event) {
 
 .select:focus-visible,
 .select:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239141ac' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
@@ -143,7 +143,8 @@ function onChange(event: Event) {
   border-color: var(--color-danger);
 }
 
-.select--invalid:focus {
+.select--invalid:focus,
+.select--invalid:focus-visible {
   outline-color: var(--color-danger);
 }
 
@@ -154,11 +155,10 @@ function onChange(event: Event) {
 
 .select--modified:hover:not(:disabled),
 .select--modified:focus,
+.select--modified:focus-visible,
 .select--modified:active:not(:disabled) {
   outline-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-sm);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-sm);
 }
 
 .select--sm {
@@ -166,16 +166,16 @@ function onChange(event: Event) {
   padding-right: 30px;
   background-position: right 8px center;
   background-size: 14px 14px;
-  height: 36px;
-  min-height: 36px;
-  font-size: 0.85rem;
+  height: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
+  font-size: var(--font-size-sm);
 }
 
 .select--lg {
   padding: 12px 16px;
   padding-right: 42px;
-  height: 50px;
-  min-height: 50px;
-  font-size: 1.1rem;
+  height: var(--input-height-lg, 52px);
+  min-height: var(--input-height-lg, 52px);
+  font-size: var(--font-size-md);
 }
 </style>

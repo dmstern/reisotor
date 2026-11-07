@@ -73,14 +73,14 @@ function onInput(event: Event) {
 <style scoped>
 .textarea {
   padding: 9px 12px;
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: none;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   line-height: 1.5;
   box-sizing: border-box;
   min-width: 0;
@@ -96,10 +96,11 @@ function onInput(event: Event) {
 }
 
 .textarea:focus,
+.textarea:focus-visible,
 .textarea:active:not(:disabled) {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-  box-shadow: var(--shadow-sm);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .textarea:disabled {
@@ -113,7 +114,8 @@ function onInput(event: Event) {
   border-color: var(--color-danger);
 }
 
-.textarea--invalid:focus {
+.textarea--invalid:focus,
+.textarea--invalid:focus-visible {
   outline-color: var(--color-danger);
 }
 
@@ -124,10 +126,9 @@ function onInput(event: Event) {
 
 .textarea--modified:hover:not(:disabled),
 .textarea--modified:focus,
+.textarea--modified:focus-visible,
 .textarea--modified:active:not(:disabled) {
   outline-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-sm);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-sm);
 }
 </style>

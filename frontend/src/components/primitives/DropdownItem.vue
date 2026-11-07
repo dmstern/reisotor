@@ -171,14 +171,15 @@ function handleClick(event: MouseEvent) {
   justify-content: flex-start;
   gap: var(--space-2);
   width: 100%;
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 10px 12px;
   border: none;
   background: transparent;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   color: var(--color-text);
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   line-height: 1.3;
   text-decoration: none;
@@ -193,6 +194,11 @@ function handleClick(event: MouseEvent) {
 
 .dropdown-item:hover:not(.is-disabled) {
   background: var(--color-hover);
+}
+
+.dropdown-item:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: -3px;
 }
 
 .dropdown-item.is-active {

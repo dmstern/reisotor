@@ -152,9 +152,9 @@ function onBlur(event: FocusEvent) {
   display: flex;
   align-items: center;
   width: 100%;
-  min-height: 42px;
+  min-height: var(--input-height, 46px);
   background: var(--color-hover);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-sizing: border-box;
@@ -168,11 +168,18 @@ function onBlur(event: FocusEvent) {
   border-color: var(--color-border-strong);
 }
 
-.quick-add-row.expanded .input-container,
-.input-container:focus-within {
+.quick-add-row.expanded .input-container {
   background: var(--color-surface);
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.input-container:focus-within,
+.input-container:focus-visible {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .leading-icon {
@@ -200,7 +207,7 @@ function onBlur(event: FocusEvent) {
   padding: 9px 8px;
   /* Mindestens 16px (1rem, siehe style.css's globale input-Regel) - iOS Safari zoomt beim
      Fokussieren eines Eingabefelds automatisch rein, sobald dessen font-size darunter liegt. */
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   line-height: 1.4;
   color: var(--color-text);
   outline: none;
@@ -216,7 +223,7 @@ function onBlur(event: FocusEvent) {
 
 .quick-add-row.expanded .label-input {
   /* Raum für den integrierten Absenden-Button auf der rechten Seite */
-  padding-right: 42px;
+  padding-right: 46px;
 }
 
 .submit-btn {
@@ -226,10 +233,10 @@ function onBlur(event: FocusEvent) {
   bottom: 0;
   margin-block: auto;
   translate: none;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
@@ -241,6 +248,12 @@ function onBlur(event: FocusEvent) {
     background 0.15s ease,
     opacity 0.15s ease,
     scale 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.submit-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .submit-btn:disabled {
@@ -318,9 +331,9 @@ function onBlur(event: FocusEvent) {
 
 .extra-fields :deep(select),
 .extra-fields :deep(.select) {
-  font-size: 0.85rem;
-  height: 36px;
-  min-height: 36px;
+  font-size: var(--font-size-sm);
+  height: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
   padding: 6px 30px 6px 10px;
   background-position: right 8px center;
   background-size: 14px 14px;
@@ -338,9 +351,9 @@ function onBlur(event: FocusEvent) {
 .extra-fields :deep(.combobox-input),
 .extra-fields :deep(.combobox input),
 .extra-fields :deep(.combobox .input) {
-  font-size: 0.85rem;
-  height: 36px;
-  min-height: 36px;
+  font-size: var(--font-size-sm);
+  height: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 38px);
   padding: 6px 28px 6px 10px;
   width: 100%;
   border-radius: var(--radius-sm-squircle);

@@ -365,7 +365,7 @@ async function deleteEditingTrack() {
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   margin-bottom: var(--space-3);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .track-status-alert--aborted {
@@ -389,13 +389,13 @@ async function deleteEditingTrack() {
 .track-status-alert__title {
   display: block;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   margin-bottom: 2px;
 }
 
 .track-status-alert__desc {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.35;
 }

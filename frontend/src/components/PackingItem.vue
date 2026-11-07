@@ -222,10 +222,11 @@ function handleMainClick(e: MouseEvent) {
 .main,
 .check {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 24px;
   cursor: pointer;
   user-select: none;
 }
@@ -234,10 +235,11 @@ function handleMainClick(e: MouseEvent) {
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
   margin: 0;
-  margin-top: 1.5px;
   padding: 0;
   border: 2px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
@@ -253,13 +255,28 @@ function handleMainClick(e: MouseEvent) {
   justify-content: center;
 }
 
+@media (pointer: coarse) {
+  .state-toggle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 .state-toggle:hover {
   border-color: var(--color-primary);
 }
 
 .state-toggle:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .state-toggle.laidOut {
@@ -269,8 +286,8 @@ function handleMainClick(e: MouseEvent) {
 
 .laid-out-mark {
   display: block;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: var(--radius-full);
   corner-shape: round;
   background: var(--color-primary);
@@ -283,8 +300,8 @@ function handleMainClick(e: MouseEvent) {
 
 .state-toggle.packed::after {
   content: '';
-  width: 5px;
-  height: 10px;
+  width: 6px;
+  height: 11px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
@@ -294,7 +311,7 @@ function handleMainClick(e: MouseEvent) {
 .item-title {
   flex: 1;
   min-width: 0;
-  font-size: 0.95rem;
+  font-size: var(--font-size-md);
   line-height: 1.4;
   color: var(--color-text);
   overflow-wrap: break-word;
@@ -306,7 +323,7 @@ function handleMainClick(e: MouseEvent) {
 
 .qty {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   margin-left: 2px;
   white-space: nowrap;
 }
@@ -323,16 +340,17 @@ function handleMainClick(e: MouseEvent) {
   -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 10px;
+  gap: 8px;
+  height: 36px;
+  min-height: 34px;
+  padding: 0 12px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-pill);
   corner-shape: round;
   background: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   line-height: 1;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
@@ -356,8 +374,9 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-pill:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .tally-pill.laidOut {
@@ -400,7 +419,7 @@ function handleMainClick(e: MouseEvent) {
    kontrastreicher als der übrige Zeilentext wirken. */
 .tally-stroke {
   width: 2px;
-  height: 13px;
+  height: 14px;
   background: var(--color-text-muted);
   border-radius: 1px;
 }
@@ -428,11 +447,11 @@ function handleMainClick(e: MouseEvent) {
 
 .tally-empty {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
 }
 
 .tally-count {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
@@ -449,21 +468,21 @@ function handleMainClick(e: MouseEvent) {
 
 .tally-check {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
   color: #ffffff;
   line-height: 1;
 }
 
 .tally-ready-icon {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
   color: var(--color-primary);
   line-height: 1;
 }
 
 .tally-plus {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   color: var(--color-primary);
   line-height: 1;
 }
@@ -473,8 +492,10 @@ function handleMainClick(e: MouseEvent) {
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
+  min-width: 34px;
+  min-height: 34px;
   padding: 0;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-full);
@@ -483,7 +504,7 @@ function handleMainClick(e: MouseEvent) {
   color: var(--color-text-muted);
   font-family: inherit;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: var(--font-size-md);
   line-height: 1;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
@@ -504,10 +525,10 @@ function handleMainClick(e: MouseEvent) {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
@@ -522,7 +543,8 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-minus:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 </style>

@@ -288,13 +288,13 @@ function formatAccommodationDate(d: string | null) {
 .overlay-note {
   margin-top: 2px;
   overflow: hidden;
-  max-height: 2.7em;
+  max-height: 2.85em;
 }
 
 .note.is-banner {
   overflow-wrap: anywhere;
-  font-size: var(--font-size-xs);
-  line-height: 1.3;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
   display: -webkit-box;

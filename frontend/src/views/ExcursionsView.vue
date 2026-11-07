@@ -845,33 +845,6 @@ onUnmounted(() => {
                   </p>
                 </template>
               </InfoPopover>
-              <!-- #155: der Spots/Touren/Tracks-Umschalter sitzt direkt neben der
-               Drawer-Überschrift als primäre Weiche dieser Ansicht. -->
-              <SegmentedToggle
-                v-model="groupMode"
-                :options="[
-                  {
-                    value: 'category',
-                    label: 'Spots',
-                    icon: FORM_FIELD_ICONS.category,
-                    iconGroup: 'formFields',
-                    dot: liveSync.hasUnseen('spots'),
-                  },
-                  {
-                    value: 'tours',
-                    label: 'Touren',
-                    icon: SECTION_ICON_DEFS.excursions,
-                    iconGroup: 'navigation',
-                    dot: liveSync.hasUnseen('ideas'),
-                  },
-                  {
-                    value: 'tracks',
-                    label: 'Tracks',
-                    icon: ACTION_ICONS.history,
-                    iconGroup: 'actions',
-                  },
-                ]"
-              />
             </h2>
             <div class="header-actions">
               <Button
@@ -906,7 +879,7 @@ onUnmounted(() => {
                         ? ACTION_ICONS.mapPlus
                         : ACTION_ICONS.mapPinPlus
                   "
-                  :size="14"
+                  :size="16"
                   group="actions"
                 />
                 <span class="add-button__label">
@@ -926,6 +899,34 @@ onUnmounted(() => {
                 </span>
               </Button>
             </div>
+            <!-- #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) bekommt eine eigene Zeile
+             in voller Breite, damit die größeren 40px-Buttons auch auf 320px ohne Quetschen sitzen. -->
+            <SegmentedToggle
+              v-model="groupMode"
+              class="header-mode-toggle"
+              :options="[
+                {
+                  value: 'category',
+                  label: 'Spots',
+                  icon: FORM_FIELD_ICONS.category,
+                  iconGroup: 'formFields',
+                  dot: liveSync.hasUnseen('spots'),
+                },
+                {
+                  value: 'tours',
+                  label: 'Touren',
+                  icon: SECTION_ICON_DEFS.excursions,
+                  iconGroup: 'navigation',
+                  dot: liveSync.hasUnseen('ideas'),
+                },
+                {
+                  value: 'tracks',
+                  label: 'Tracks',
+                  icon: ACTION_ICONS.history,
+                  iconGroup: 'actions',
+                },
+              ]"
+            />
           </div>
           <div class="subheader" v-if="hasActiveRecording">
             <div class="active-recording-banner">
@@ -1292,7 +1293,7 @@ onUnmounted(() => {
    (@container weiter unten) bleibt der bisherige schlichte Titel unverändert sichtbar. */
 .page-title {
   display: none;
-  font-size: 1.3rem;
+  font-size: var(--font-size-xl);
   color: var(--color-primary-dark);
 }
 
@@ -1464,14 +1465,14 @@ onUnmounted(() => {
 
 /* Im collapsed-Zustand ist die Anfasser-Zeile der komplette sichtbare Inhalt der Pille (siehe
    .spots-col.collapsed oben) - volle Höhe (100%), zentriertes Flex-Layout und seitliches Polster
-   (var(--space-3) = 16px), damit die runden 30px-Stufenbuttons (mit 1px Rand) nach oben, unten und
-   zu den Seiten exakt denselben 17px-Abstand zur Außenkante der 64px-Pille (Radius 32px) haben und
-   sich perfekt konzentrisch in die Kappen schmiegen. */
+   von 13px, damit die runden 38x38px-Stufenbuttons nach oben, unten und zu den Seiten exakt
+   denselben 13px-Abstand zur Außenkante der 64px-Pille (Radius 32px) haben und sich perfekt
+   konzentrisch in die Kappen schmiegen (#515). */
 .spots-col.collapsed .sheet-handle-row {
   height: 100%;
   box-sizing: border-box;
   align-items: center;
-  padding: 0 var(--space-3);
+  padding: 0 13px;
 }
 
 .spots-col.collapsed .sheet-handle {
@@ -1523,7 +1524,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -1741,13 +1742,14 @@ onUnmounted(() => {
 .subheader {
   margin-bottom: var(--space-3);
   display: flex;
+  flex-direction: column;
   justify-content: flex-end;
 }
 
 .header h2 {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
   min-width: 0;
 }
@@ -1756,19 +1758,24 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-/* Feste/gleiche Breite für den "Spots"/"Touren"-Titel, damit der Umschalter beim Wechsel
-   nicht hin und her springt, kombiniert mit einer vertikalen Swipe-Animation (#220). */
-
-/* Etwas mehr Abstand als das straffe 4px-gap der Überschrift selbst (dort passend für Text+Info-
-   Icon) - der Umschalter ist ein eigenständiges Steuerungselement, keine Ergänzung des Titels. */
-.header h2 .segmented-toggle {
-  margin-left: var(--space-2);
-}
-
 .header-actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) sitzt in einer eigenen Zeile
+   über die volle Breite des Drawer-Headers, sodass die Segmente auch auf 320px ohne Quetschen sitzen. */
+.header-mode-toggle {
+  width: 100%;
+  flex: 1 1 100%;
+}
+
+.header-mode-toggle :deep(.segmented-option) {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
 }
 
 .add-button {
@@ -1798,95 +1805,6 @@ onUnmounted(() => {
   border-color: color-mix(in srgb, var(--color-danger) 85%, black);
 }
 
-/* Auf schmalen Schubladen-Breiten (<= 600px): zweizeiliger Header – oben Titel links & SegmentedToggle rechts,
-   darunter beide Aktions-Buttons gleichmäßig aufgeteilt über die volle Zeilenbreite mit erhaltenem Label (#312). */
-@include container-spots-col-down('tablet-sm') {
-  .header h2 {
-    width: 100%;
-  }
-
-  .header h2 .segmented-toggle {
-    margin-left: auto;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .add-button {
-    width: 100%;
-    justify-content: center;
-    min-width: 0;
-  }
-}
-
-/* Auf mobilen Viewports / schmalem Drawer (<= 480px): Der visuelle Titel ("Spots"/"Touren"/"Tracks")
-   wird ausgeblendet (per sr-only für Screenreader/Barrierefreiheit erhalten), da der Umschalter
-   bereits anzeigt, welcher Modus aktiv ist. Dadurch haben die Labels des SegmentedToggle ("Spots",
-   "Touren", "Tracks") voll ausgeschrieben Platz und müssen nicht abgeschnitten oder gekürzt werden. */
-@include container-spots-col-down('mobile') {
-  .header h2 {
-    gap: var(--space-2);
-    min-width: 0;
-  }
-
-  .header h2 :deep(.animated-text) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  .header h2 .segmented-toggle {
-    order: 1;
-    flex: 1;
-    min-width: 0;
-    margin-left: 0;
-  }
-
-  .header h2 .header-info-popover {
-    order: 2;
-    flex-shrink: 0;
-  }
-}
-
-/* Auf extrem schmalem Drawer (<= 320px) kompaktere Polsterung & kleinere Schrift, damit
-   Titel, Toggle und Aktionsbutton selbst bei 280px ohne Umbruch oder Abschneiden Platz haben. */
-@container spots-col (max-width: 320px) {
-  .header h2 {
-    font-size: 1.15rem;
-    gap: 2px;
-  }
-
-  .header h2 .segmented-toggle {
-    padding: 2px;
-    gap: 1px;
-  }
-
-  .header h2 .segmented-toggle :deep(.segmented-option) {
-    padding: 4px 6px;
-    font-size: 0.78rem;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  .add-button {
-    padding: 6px 6px;
-    gap: 3px;
-    font-size: 0.8125rem;
-  }
-}
-
-.subheader {
-  display: flex;
-  flex-direction: column;
-}
-
 .active-recording-banner {
   display: flex;
   align-items: center;
@@ -1897,7 +1815,7 @@ onUnmounted(() => {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   color: var(--color-danger);
-  font-size: 0.8125rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   margin-top: var(--space-2);
 }
@@ -1962,7 +1880,7 @@ onUnmounted(() => {
 }
 
 .group h3 {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   margin-bottom: var(--space-3);
 }
@@ -2172,8 +2090,8 @@ onUnmounted(() => {
 }
 
 .filter-reset-link:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 </style>
 

@@ -274,10 +274,11 @@ function onLinkClick(event: MouseEvent) {
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 0;
+  padding: 6px;
+  margin: -6px;
   overflow-x: auto;
   overflow-y: hidden;
-  max-width: 100%;
+  max-width: calc(100% + 12px);
   z-index: 1;
 }
 
@@ -405,8 +406,9 @@ function onLinkClick(event: MouseEvent) {
 }
 
 .link:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 /* Aktives Icon etwas leuchtender als die (dunklere) Textfarbe daneben - .icon bekommt AppIcon.vue's

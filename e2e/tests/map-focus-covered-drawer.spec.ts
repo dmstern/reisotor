@@ -93,7 +93,7 @@ for (const [viewportName, viewport] of Object.entries({
       // selbst sitzt seit #155 direkt neben der Überschrift, ist davon unabhängig immer erreichbar.
       const filterToggle = page.locator('.filter-toggle-row');
       if (await filterToggle.isVisible()) await filterToggle.click();
-      await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
+      await page.locator('.header-mode-toggle').getByRole('button', { name: 'Touren' }).click();
       const card = page.locator('.excursion-card', { hasText: excursion.title });
       await expect(card).toBeVisible();
       await card.locator('.card-title').click();
@@ -164,7 +164,7 @@ for (const [viewportName, viewport] of Object.entries({
       // Touren-Ansicht wählen
       const filterToggle = page.locator('.filter-toggle-row');
       if (await filterToggle.isVisible()) await filterToggle.click();
-      await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
+      await page.locator('.header-mode-toggle').getByRole('button', { name: 'Touren' }).click();
       await page.waitForTimeout(300);
 
       // Schublade auf "voll" vergrößern
@@ -250,7 +250,7 @@ for (const [viewportName, viewport] of Object.entries({
       // Touren-Ansicht wählen
       const filterToggle = page.locator('.filter-toggle-row');
       if (await filterToggle.isVisible()) await filterToggle.click();
-      await page.locator('.header h2').getByRole('button', { name: 'Touren' }).click();
+      await page.locator('.header-mode-toggle').getByRole('button', { name: 'Touren' }).click();
 
       // Erste Tour fokussieren
       const tour1 = page.locator('.excursion-card', { hasText: 'Sightseeing-Tag Belém' });

@@ -286,8 +286,10 @@ function onTabClick(key: string) {
 }
 
 .tab-bar-arrow:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .tab-bar-arrow.left {
@@ -316,7 +318,8 @@ function onTabClick(key: string) {
   /* Bleibt als reiner Platzhalter (Farbe kommt von .tab-underline) - ohne das würde der Tab beim
      Wechsel 2px in der Höhe springen. */
   border-bottom: 2px solid transparent;
-  border-radius: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
      jedem <button> per Default einen Schatten) - ein flaches Tab-Item einer
      Tab-Unterstreichungs-Leiste braucht keinen, sonst wirkt jedes Item wie eine eigene erhobene
@@ -324,14 +327,14 @@ function onTabClick(key: string) {
   box-shadow: none;
   background: none;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   white-space: nowrap;
   cursor: pointer;
 }
 
 .tab:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
 }
 
 .tab.active {
