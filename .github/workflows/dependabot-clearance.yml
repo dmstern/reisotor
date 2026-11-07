@@ -1,0 +1,46 @@
+name: Dependabot Supervisor & Clearance
+
+on:
+  schedule:
+    # Täglich um 05:00 UTC (06:00 Uhr MEZ / Europe/Berlin)
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      auto_merge:
+        description: 'Vollständig grüne PRs automatisch mergen (Standard: true)'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+
+jobs:
+  dependabot-clearance:
+    name: Dependabot PR Clearance & Auto-Merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Run Dependabot Clearance Bot
+        run: |
+          AUTO_MERGE_FLAG=""
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.auto_merge }}" = "true" ]; then
+            AUTO_MERGE_FLAG="--auto-merge"
+          fi
+          node scripts/dependabot-clearance.mjs $AUTO_MERGE_FLAG --summary-file="$GITHUB_STEP_SUMMARY"
