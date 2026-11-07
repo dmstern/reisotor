@@ -424,7 +424,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               title="Zu einem Datum einplanen"
               @click="toggleAddSchedulePopover($event)"
             >
-              <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="13" group="actions" />
+              <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="15" group="actions" />
               <span>Datum hinzufügen</span>
             </button>
             <Teleport to="body">
@@ -677,10 +677,12 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
+  padding: 0 12px;
+  height: 34px;
+  min-height: 34px;
   border-radius: var(--radius-pill);
   corner-shape: round;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   line-height: 1.2;
   font-weight: 500;
   border: 1px dashed var(--color-border-strong);

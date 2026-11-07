@@ -131,7 +131,7 @@ function toggle() {
 }
 
 .collapsible-fieldset legend {
-  padding: 0 var(--space-1);
+  padding: 0;
   margin: 0;
 }
 
@@ -139,14 +139,14 @@ function toggle() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 4px 8px;
-  font-size: 0.85rem;
+  padding: 6px 14px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
   background: var(--color-surface) !important;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
   cursor: pointer;
   box-shadow: none;
   transition:

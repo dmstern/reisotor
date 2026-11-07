@@ -113,7 +113,7 @@ onUnmounted(() => {
       aria-label="Tour zuordnen"
       @click="toggle($event)"
     >
-      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
+      <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="15" group="navigation" />
       <span class="tour-assign-label">Tour zuordnen</span>
     </button>
     <Teleport to="body">
@@ -198,8 +198,10 @@ onUnmounted(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 3px 10px;
-  font-size: var(--font-size-xs);
+  padding: 0 12px;
+  height: 34px;
+  min-height: 34px;
+  font-size: var(--font-size-sm);
   line-height: 1.2;
   font-weight: 500;
   color: var(--color-text-muted);
@@ -217,7 +219,11 @@ onUnmounted(() => {
 }
 
 .tour-assign-btn.is-compact {
-  padding: 6px;
+  padding: 0;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }
