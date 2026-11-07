@@ -2094,5 +2094,68 @@ describe('LocationPicker', () => {
       app.unmount();
       container.remove();
     });
+
+    it('shows title autocomplete dropdown when typing in name input, and selecting a place sets title, address, coordinates, and category', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          {
+            name: 'Brandenburger Tor',
+            formatted_address: 'Pariser Platz, 10117 Berlin',
+            lat: 52.5163,
+            lng: 13.3777,
+            category: 'Sehenswürdigkeit',
+          },
+        ],
+      });
+      globalThis.fetch = fetchSpy;
+
+      const onUpdateTitle = vi.fn();
+      const onUpdateAddress = vi.fn();
+      const onUpdateModelValue = vi.fn();
+      const onUpdateCategory = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        {
+          modelValue: null,
+          title: '',
+          category: '',
+          address: '',
+        },
+        {
+          'onUpdate:title': onUpdateTitle,
+          'onUpdate:address': onUpdateAddress,
+          'onUpdate:modelValue': onUpdateModelValue,
+          'onUpdate:category': onUpdateCategory,
+        }
+      );
+      await nextTick();
+
+      const titleInput = container.querySelector(
+        '[data-testid="spot-title-input"]'
+      ) as HTMLInputElement;
+      expect(titleInput).toBeTruthy();
+
+      titleInput.value = 'Brandenburger';
+      titleInput.dispatchEvent(new Event('input'));
+      await vi.runAllTimersAsync();
+      await nextTick();
+
+      const dropdownItem = container.querySelector(
+        '.title-autocomplete-dropdown .location-result-item'
+      ) as HTMLElement;
+      expect(dropdownItem).toBeTruthy();
+      expect(dropdownItem.textContent).toContain('Brandenburger Tor');
+
+      dropdownItem.click();
+      await nextTick();
+
+      expect(onUpdateTitle).toHaveBeenCalledWith('Brandenburger Tor');
+      expect(onUpdateAddress).toHaveBeenCalledWith('Pariser Platz, 10117 Berlin');
+      expect(onUpdateModelValue).toHaveBeenCalledWith({ lat: 52.5163, lng: 13.3777 });
+      expect(onUpdateCategory).toHaveBeenCalledWith('Sehenswürdigkeit');
+
+      cleanUp();
+    });
   });
 });

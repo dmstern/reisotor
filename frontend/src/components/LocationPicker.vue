@@ -150,6 +150,30 @@ function onMapsLinkResolved(coords: { lat: number; lng: number }) {
   });
 }
 
+function onSelectTitlePlace(place: PlaceSearchResult) {
+  details.editTitleInput.value = place.name;
+  emit('update:title', place.name);
+
+  const formattedAddr = place.formatted_address || place.address || place.name;
+  details.editAddressInput.value = formattedAddr;
+  emit('update:address', formattedAddr);
+
+  if (props.category !== undefined && !props.category.trim() && place.category) {
+    details.editCategoryInput.value = place.category;
+    emit('update:category', place.category);
+  }
+
+  const coords = { lat: place.lat, lng: place.lng };
+  map.placeMarker(coords.lat, coords.lng);
+  nextTick(() => {
+    map.centerOnPoint([coords.lat, coords.lng], 16);
+  });
+
+  emit('update:modelValue', coords);
+  emit('update:mapsLink', buildGoogleMapsLink(coords.lat, coords.lng));
+  emit('select', place);
+}
+
 function onSelectAddressPlace(place: PlaceSearchResult) {
   const formattedAddr = place.formatted_address || place.address || place.name;
   details.editAddressInput.value = formattedAddr;
@@ -182,6 +206,20 @@ const search = usePlaceSearch({
   center: centerRef,
   onSelectPlace,
   onMapsLinkResolved,
+  onMapsLinkInput: (url) => emit('update:mapsLink', url),
+});
+
+const titleSearch = usePlaceSearch({
+  proximityBias: proximityBiasRef,
+  center: centerRef,
+  onSelectPlace: onSelectTitlePlace,
+  onMapsLinkResolved: (coords) => {
+    map.placeMarker(coords.lat, coords.lng);
+    emit('update:modelValue', coords);
+    nextTick(() => {
+      map.centerOnPoint([coords.lat, coords.lng], 16);
+    });
+  },
   onMapsLinkInput: (url) => emit('update:mapsLink', url),
 });
 
@@ -266,6 +304,7 @@ const computedPlaceholder = computed(() => {
 
 function clear() {
   search.clearSearch();
+  titleSearch.clearSearch();
   addressSearch.clearSearch();
   details.resetDetailsState();
   suggestions.resetSuggestions();
@@ -280,6 +319,7 @@ function clear() {
 function reset() {
   details.cardClosed.value = false;
   search.resetSearch();
+  titleSearch.resetSearch();
   addressSearch.resetSearch();
   details.resetDetailsState();
   suggestions.resetSuggestions();
@@ -292,6 +332,7 @@ function onResetClick() {
 
 function clearCoords() {
   search.inputText.value = '';
+  titleSearch.clearSearch();
   addressSearch.clearSearch();
   map.removeMarker();
   details.cardClosed.value = false;
@@ -305,6 +346,36 @@ function onBlur(e: FocusEvent) {
   search.onBlur(e, (event) => {
     emit('blur', event);
   });
+}
+
+function onTitleInput(e: Event) {
+  const val = (e.target as HTMLInputElement).value;
+  details.editTitleInput.value = val;
+  details.onTitleInput();
+  titleSearch.handleInput(val);
+}
+
+function onTitleFocus() {
+  titleSearch.onFocus();
+}
+
+function onTitleBlur(e: FocusEvent) {
+  titleSearch.onBlur(e);
+  details.saveTitle();
+}
+
+function onTitleKeydown(e: KeyboardEvent) {
+  const wasOpen = titleSearch.isOpen.value;
+  titleSearch.onKeydown(e);
+  if (e.key === 'Enter') {
+    if (!wasOpen || titleSearch.activeIndex.value < 0) {
+      details.saveTitle();
+    }
+  } else if (e.key === 'Escape') {
+    if (!wasOpen) {
+      details.cancelTitle();
+    }
+  }
 }
 
 function onAddressInput(e: Event) {
@@ -366,7 +437,6 @@ const {
   openManualDetails,
   closeManualDetails,
   startEditTitle,
-  onTitleInput,
   saveTitle,
   cancelTitle,
   startEditAddress,
@@ -476,6 +546,10 @@ defineExpose({
           :show-location-sparkle="showLocationSparkle"
           :location-sparkle-title="locationSparkleTitle"
           :is-searching="isSearching"
+          :title-search-results="titleSearch.results.value"
+          :title-search-open="titleSearch.isOpen.value"
+          :title-search-active-index="titleSearch.activeIndex.value"
+          :is-searching-title="titleSearch.isSearching.value"
           :address-search-results="addressSearch.results.value"
           :address-search-open="addressSearch.isOpen.value"
           :address-search-active-index="addressSearch.activeIndex.value"
@@ -484,6 +558,10 @@ defineExpose({
           @clear-coords="clearCoords"
           @start-edit-title="startEditTitle"
           @title-input="onTitleInput"
+          @title-focus="onTitleFocus"
+          @title-blur="onTitleBlur"
+          @title-keydown="onTitleKeydown"
+          @select-title-place="titleSearch.selectPlace"
           @save-title="saveTitle"
           @cancel-title="cancelTitle"
           @start-edit-category="startEditCategory"

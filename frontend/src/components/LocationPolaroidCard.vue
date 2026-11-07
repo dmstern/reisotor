@@ -34,6 +34,10 @@ const props = withDefaults(
     showLocationSparkle?: boolean;
     locationSparkleTitle?: string;
     isSearching?: boolean;
+    titleSearchResults?: PlaceSearchResult[];
+    titleSearchOpen?: boolean;
+    titleSearchActiveIndex?: number;
+    isSearchingTitle?: boolean;
     addressSearchResults?: PlaceSearchResult[];
     addressSearchOpen?: boolean;
     addressSearchActiveIndex?: number;
@@ -66,6 +70,10 @@ const props = withDefaults(
     showLocationSparkle: false,
     locationSparkleTitle: '',
     isSearching: false,
+    titleSearchResults: () => [],
+    titleSearchOpen: false,
+    titleSearchActiveIndex: -1,
+    isSearchingTitle: false,
     addressSearchResults: () => [],
     addressSearchOpen: false,
     addressSearchActiveIndex: -1,
@@ -81,6 +89,10 @@ const emit = defineEmits<{
   (e: 'clearCoords'): void;
   (e: 'update:editTitleInput', value: string): void;
   (e: 'titleInput', event: Event): void;
+  (e: 'titleFocus', event: FocusEvent): void;
+  (e: 'titleBlur', event: FocusEvent): void;
+  (e: 'titleKeydown', event: KeyboardEvent): void;
+  (e: 'selectTitlePlace', place: PlaceSearchResult): void;
   (e: 'saveTitle'): void;
   (e: 'cancelTitle'): void;
   (e: 'startEditTitle'): void;
@@ -105,6 +117,7 @@ const emit = defineEmits<{
 
 const cardEl = ref<HTMLDivElement | null>(null);
 const titleInputId = useId();
+const titleDropdownId = useId();
 const categoryInputId = useId();
 const addressInputId = useId();
 const addressDropdownId = useId();
@@ -153,22 +166,84 @@ defineExpose({
             <span v-if="titleRequired" class="required-indicator" aria-hidden="true">*</span>
           </label>
           <div class="field-input-wrap">
-            <Input
-              :id="titleInputId"
-              :model-value="editTitleInput"
-              size="sm"
-              class="polaroid-field-input inline-edit-input"
-              name="title"
-              data-testid="spot-title-input"
-              placeholder="Name des Spots..."
-              :required="titleRequired"
-              :invalid="titleInvalid"
-              @update:model-value="emit('update:editTitleInput', $event)"
-              @input="emit('titleInput', $event)"
-              @blur="emit('saveTitle')"
-              @keydown.enter.prevent="emit('saveTitle')"
-              @keydown.esc.prevent="emit('cancelTitle')"
-            />
+            <div class="inline-title-input-wrap">
+              <Input
+                :id="titleInputId"
+                :model-value="editTitleInput"
+                size="sm"
+                class="polaroid-field-input inline-edit-input"
+                name="title"
+                data-testid="spot-title-input"
+                placeholder="Name des Spots..."
+                autocomplete="off"
+                data-protonpass-ignore="true"
+                data-1p-ignore="true"
+                role="combobox"
+                :aria-expanded="titleSearchOpen && titleSearchResults.length > 0"
+                aria-autocomplete="list"
+                :aria-controls="titleDropdownId"
+                :aria-activedescendant="
+                  titleSearchActiveIndex >= 0
+                    ? `${titleDropdownId}-opt-${titleSearchActiveIndex}`
+                    : undefined
+                "
+                :required="titleRequired"
+                :invalid="titleInvalid"
+                @update:model-value="emit('update:editTitleInput', $event)"
+                @input="emit('titleInput', $event)"
+                @focus="emit('titleFocus', $event)"
+                @blur="emit('titleBlur', $event)"
+                @keydown="emit('titleKeydown', $event)"
+              />
+              <div v-if="isSearchingTitle" class="title-input-spinner-wrap" aria-hidden="true">
+                <LoadingSpinner size="sm" class="title-input-spinner" />
+              </div>
+
+              <!-- Autocomplete-Dropdown für Namensvorschläge / Ortssuche -->
+              <Transition name="dropdown-unfold">
+                <ul
+                  v-if="titleSearchOpen && titleSearchResults.length > 0"
+                  :id="titleDropdownId"
+                  class="location-dropdown title-autocomplete-dropdown options"
+                  role="listbox"
+                  aria-label="Namensvorschläge"
+                >
+                  <li
+                    v-for="(place, index) in titleSearchResults"
+                    :id="`${titleDropdownId}-opt-${index}`"
+                    :key="place.id || `${place.lat}-${place.lng}-${index}`"
+                    role="option"
+                    tabindex="-1"
+                    class="location-result-item"
+                    :class="{ 'is-active': index === titleSearchActiveIndex }"
+                    :aria-selected="index === titleSearchActiveIndex"
+                    @mousedown.prevent="emit('selectTitlePlace', place)"
+                    @click="emit('selectTitlePlace', place)"
+                    @keydown.enter.prevent="emit('selectTitlePlace', place)"
+                  >
+                    <AppIcon
+                      :icon="FORM_FIELD_ICONS.title"
+                      :size="14"
+                      group="formFields"
+                      class="item-icon"
+                    />
+                    <div class="location-item-content">
+                      <span class="location-item-name">{{ place.name }}</span>
+                      <span
+                        v-if="
+                          place.formatted_address &&
+                          place.name &&
+                          place.formatted_address !== place.name
+                        "
+                        class="location-item-address"
+                      >
+                        {{ place.formatted_address }}
+                      </span>
+                    </div>
+                  </li>
+                </ul>
+              </Transition>
+            </div>
           </div>
         </div>
 
@@ -587,7 +662,8 @@ defineExpose({
 }
 
 /* Input Wrappers & Sparkle / Spinner */
-.inline-address-input-wrap {
+.inline-address-input-wrap,
+.inline-title-input-wrap {
   position: relative;
   flex: 1;
   min-width: 0;
@@ -632,12 +708,24 @@ defineExpose({
   pointer-events: none;
 }
 
-.address-input-spinner {
+.address-input-spinner,
+.title-input-spinner {
   pointer-events: none;
 }
 
-/* Adress Autocomplete Dropdown */
-.address-autocomplete-dropdown {
+.title-input-spinner-wrap {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* Autocomplete Dropdown */
+.address-autocomplete-dropdown,
+.title-autocomplete-dropdown {
   position: absolute;
   top: calc(100% + var(--space-1));
   left: 0;
