@@ -85,4 +85,19 @@ describe('auth routes + requireAuth gating', () => {
     expect(res.statusCode).toBe(403);
     expect(res.json().error).toContain('gesperrt');
   });
+
+  it('allows PUT and DELETE methods in CORS preflight responses', async () => {
+    const res = await app.inject({
+      method: 'OPTIONS',
+      url: '/api/trips',
+      headers: {
+        origin: 'http://localhost:5173',
+        'access-control-request-method': 'DELETE',
+      },
+    });
+    expect(res.statusCode).toBe(204);
+    const allowMethods = String(res.headers['access-control-allow-methods'] ?? '');
+    expect(allowMethods).toContain('PUT');
+    expect(allowMethods).toContain('DELETE');
+  });
 });

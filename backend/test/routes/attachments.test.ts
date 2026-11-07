@@ -147,6 +147,8 @@ describe('attachments routes', () => {
     expect(downloadSuccess.statusCode).toBe(200);
     expect(downloadSuccess.headers['content-disposition']).toContain('attachment');
     expect(downloadSuccess.headers['content-disposition']).toContain('ticket.png');
+    expect(downloadSuccess.headers['cache-control']).toBe('private, max-age=3600');
+    expect(downloadSuccess.headers['x-content-type-options']).toBe('nosniff');
 
     const deleteForbidden = await app.inject({
       method: 'DELETE',

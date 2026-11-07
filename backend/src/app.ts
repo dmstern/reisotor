@@ -66,12 +66,13 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   ];
   await app.register(cors, {
     origin: isProd ? false : devOrigins,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
     credentials: true,
   });
 
   // fastifyStatic mit serve: false registrieren, damit reply.sendFile() verfügbar ist,
   // die eigentliche Auslieferung von /api/uploads/:filename aber geschützt über uploadsRoutes läuft (#629).
-  await app.register(fastifyStatic, { root: uploadsDir, serve: false });
+  await app.register(fastifyStatic, { root: uploadsDir, serve: false, cacheControl: false });
 
   await app.register(cookie);
   await app.register(session, {

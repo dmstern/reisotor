@@ -42,6 +42,6 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
 
     reply.header('Cache-Control', 'private, max-age=3600');
     reply.header('X-Content-Type-Options', 'nosniff');
-    return reply.sendFile(filename, uploadsDir);
+    return reply.sendFile(filename, uploadsDir, { cacheControl: false });
   });
 };
