@@ -31,37 +31,37 @@ const emit = defineEmits<{
     <span class="draft-status-message">
       <template v-if="mode === 'edit'">
         <template v-if="restored && status === 'saved'">
-          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="13" group="formFields" />
+          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="14" group="formFields" />
           <span>Stand nach Unterbrechung wiederhergestellt – noch nicht gespeichert</span>
         </template>
         <template v-else-if="status === 'dirty'">
-          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
           <span>Ungespeicherte Änderungen…</span>
         </template>
         <template v-else-if="status === 'saved'">
-          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
           <span>Ungespeicherte Änderungen</span>
         </template>
         <template v-else-if="status === 'offline'">
-          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
           <span>Ungespeicherte Änderungen (nur lokal gesichert)</span>
         </template>
       </template>
       <template v-else>
         <template v-if="restored && status === 'saved'">
-          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="13" group="formFields" />
+          <AppIcon :icon="FORM_FIELD_ICONS.note" :size="14" group="formFields" />
           <span>Entwurf wiederhergestellt – noch nicht gespeichert</span>
         </template>
         <template v-else-if="status === 'dirty'">
-          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
           <span>Noch nicht gespeichert – Entwurf wird gesichert…</span>
         </template>
         <template v-else-if="status === 'saved'">
-          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
           <span>Noch nicht gespeichert – Entwurf gesichert</span>
         </template>
         <template v-else-if="status === 'offline'">
-          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
           <span>Noch nicht gespeichert – Entwurf nur lokal gesichert (offline)</span>
         </template>
       </template>
@@ -74,7 +74,7 @@ const emit = defineEmits<{
       :aria-label="mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen'"
       @click="emit('discard')"
     >
-      <AppIcon :icon="ACTION_ICONS.delete" :size="12" group="actions" />
+      <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" />
       <span>{{ mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen' }}</span>
     </button>
   </div>
@@ -87,8 +87,8 @@ const emit = defineEmits<{
   flex-wrap: wrap;
   gap: var(--space-2, 8px);
   margin: 0;
-  padding: 4px 0 0;
-  font-size: 0.8rem;
+  padding: 6px 0 0;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   /* In Flex-Row-Formularen (z. B. ShoppingListView.vue's .add-form) soll dieser Text nie eine
      Formularfeld-Zeile mitteilen bzw. von deren Höhe gestreckt werden - erzwingt stattdessen immer
@@ -100,30 +100,47 @@ const emit = defineEmits<{
 .draft-status-message {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .draft-discard-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 1px 7px;
-  font-size: 0.75rem;
+  gap: 6px;
+  height: 32px;
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: var(--font-size-xs);
   font-family: inherit;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-danger);
   background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  corner-shape: round;
   cursor: pointer;
-  line-height: 1.3;
+  line-height: 1;
   transition:
     background 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
     transform 0.1s ease;
   user-select: none;
+}
+
+@media (pointer: coarse) {
+  .draft-discard-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .draft-discard-btn:hover {
@@ -136,7 +153,8 @@ const emit = defineEmits<{
 }
 
 .draft-discard-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 </style>
