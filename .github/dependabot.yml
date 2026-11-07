@@ -90,6 +90,9 @@ updates:
       # vue-tsc 2.x und Toolchain unterstützen TypeScript 6/7 noch nicht; monorepo-weit auf v5.x halten.
       - dependency-name: 'typescript'
         versions: ['>= 6.0.0']
+      # vue-tsc v3.3.14 bricht mit Typ-Regression in Template-Closures (TS2339 auf reactive Objekten) ab.
+      - dependency-name: 'vue-tsc'
+        versions: ['>= 3.3.14, < 4.0.0']
       # Storybook v10 erfordert ein abgestimmtes manuelles Upgrade aller Addons und Tooling.
       - dependency-name: 'storybook'
         versions: ['>= 9.0.0']
