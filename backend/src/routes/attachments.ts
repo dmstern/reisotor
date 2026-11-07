@@ -185,8 +185,10 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
       'Content-Disposition',
       `attachment; filename="${safeAsciiName}"; filename*=UTF-8''${encodedName}`
     );
+    reply.header('Cache-Control', 'private, max-age=3600');
+    reply.header('X-Content-Type-Options', 'nosniff');
     reply.type(existing.mime_type);
-    return reply.sendFile(existing.filename, uploadsDir);
+    return reply.sendFile(existing.filename, uploadsDir, { cacheControl: false });
   });
 
   app.delete<{ Params: { id: string } }>('/attachments/:id', async (req, reply) => {

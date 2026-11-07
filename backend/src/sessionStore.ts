@@ -10,6 +10,22 @@ interface SessionRow {
   expires: number | null;
 }
 
+function createSessionMissingError(): Error & { code: string } {
+  const error = new Error('The session does not exist or has changed') as Error & {
+    code: string;
+  };
+  error.code = 'ENOENT';
+  return error;
+}
+
+function upsertSession(sessionId: string, session: Session) {
+  const expires = session.cookie?.expires ? new Date(session.cookie.expires).getTime() : null;
+  db.prepare(
+    `INSERT INTO sessions (sid, sess, expires) VALUES (?, ?, ?)
+     ON CONFLICT(sid) DO UPDATE SET sess = excluded.sess, expires = excluded.expires`
+  ).run(sessionId, JSON.stringify(session), expires);
+}
+
 /** Sessions persistent (in der ohnehin vorhandenen SQLite-DB) statt nur im Arbeitsspeicher halten
  *  (@fastify/session-Default) – sonst verliert jeder Nutzer seinen Login bei jedem
  *  Prozess-Neustart (Crash, Deploy, OOM auf dem Raspberry Pi). Eigener, sehr einfacher Store statt
@@ -18,11 +34,7 @@ interface SessionRow {
 export class SqliteSessionStore implements SessionStore {
   set(sessionId: string, session: Session, callback: Callback) {
     try {
-      const expires = session.cookie?.expires ? new Date(session.cookie.expires).getTime() : null;
-      db.prepare(
-        `INSERT INTO sessions (sid, sess, expires) VALUES (?, ?, ?)
-         ON CONFLICT(sid) DO UPDATE SET sess = excluded.sess, expires = excluded.expires`
-      ).run(sessionId, JSON.stringify(session), expires);
+      upsertSession(sessionId, session);
       callback();
     } catch (err) {
       callback(err);
@@ -37,7 +49,7 @@ export class SqliteSessionStore implements SessionStore {
         callback(null, null);
         return;
       }
-      if (row.expires != null && row.expires < Date.now()) {
+      if (row.expires != null && row.expires <= Date.now()) {
         db.prepare('DELETE FROM sessions WHERE sid = ?').run(sessionId);
         callback(null, null);
         return;
@@ -58,20 +70,7 @@ export class SqliteSessionStore implements SessionStore {
       const row = db.prepare('SELECT sess, expires FROM sessions WHERE sid = ?').get(sessionId) as
         SessionRow | undefined;
       if (!row) {
-        const error = new Error('The session does not exist or has changed') as Error & {
-          code: string;
-        };
-        error.code = 'ENOENT';
-        callback(error);
-        return;
-      }
-      if (row.expires != null && row.expires < Date.now()) {
-        db.prepare('DELETE FROM sessions WHERE sid = ?').run(sessionId);
-        const error = new Error('The session does not exist or has changed') as Error & {
-          code: string;
-        };
-        error.code = 'ENOENT';
-        callback(error);
+        callback(createSessionMissingError());
         return;
       }
       const storedSession = JSON.parse(row.sess) as Session & {
@@ -79,19 +78,11 @@ export class SqliteSessionStore implements SessionStore {
       };
       const actualGeneration = storedSession?.__fastifySessionMetadata?.generation ?? sessionId;
       if (actualGeneration !== expectedGeneration) {
-        const error = new Error('The session does not exist or has changed') as Error & {
-          code: string;
-        };
-        error.code = 'ENOENT';
-        callback(error);
+        callback(createSessionMissingError());
         return;
       }
 
-      const expires = session.cookie?.expires ? new Date(session.cookie.expires).getTime() : null;
-      db.prepare(
-        `INSERT INTO sessions (sid, sess, expires) VALUES (?, ?, ?)
-         ON CONFLICT(sid) DO UPDATE SET sess = excluded.sess, expires = excluded.expires`
-      ).run(sessionId, JSON.stringify(session), expires);
+      upsertSession(sessionId, session);
       callback();
     } catch (err) {
       callback(err);
