@@ -52,7 +52,6 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   function toggleFocusMenu(event?: MouseEvent) {
     if (!focusMenuOpen.value) {
       shareMenuOpen.value = false;
-      dayMenuOpen.value = false;
       focusMenuStyle.value = computeTeleportMenuPosition(
         focusButtonRef,
         event,
@@ -86,7 +85,6 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   function toggleShareMenu(event?: MouseEvent) {
     if (!shareMenuOpen.value) {
       focusMenuOpen.value = false;
-      dayMenuOpen.value = false;
       shareMenuStyle.value = computeTeleportMenuPosition(
         shareButtonRef,
         event,
@@ -101,27 +99,6 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   async function chooseShareDuration(duration: ShareDuration) {
     shareMenuOpen.value = false;
     await locationSharing.setDuration(duration);
-  }
-
-  // Day filter menu (#684)
-  const dayMenuOpen = ref(false);
-  const dayButtonRef = ref<HTMLButtonElement | null>(null);
-  const dayMenuStyle = ref<TeleportMenuPosition>({ top: '0px', right: '0px' });
-
-  function toggleDayMenu(event?: MouseEvent) {
-    if (!dayMenuOpen.value) {
-      focusMenuOpen.value = false;
-      shareMenuOpen.value = false;
-      dayMenuStyle.value = computeTeleportMenuPosition(
-        dayButtonRef,
-        event,
-        WIDE_PICKER_MENU_WIDTH,
-        'right'
-      );
-      dayMenuOpen.value = true;
-    } else {
-      dayMenuOpen.value = false;
-    }
   }
 
   return {
@@ -139,10 +116,5 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
     toggleShareMenu,
     chooseShareDuration,
     locationSharing,
-    // Day filter menu
-    dayMenuOpen,
-    dayButtonRef,
-    dayMenuStyle,
-    toggleDayMenu,
   };
 }

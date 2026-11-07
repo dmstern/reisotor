@@ -543,7 +543,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 }
 
 /* Sanfte Fade-Out-Verläufe in die Hintergrundfarbe (--color-surface) am oberen und unteren Rand,
-   wenn der Inhalt scrollbar ist. Angelehnt an DayStrip.vue und TabBar.vue. pointer-events: none
+   wenn der Inhalt scrollbar ist. Angelehnt an TabBar.vue. pointer-events: none
    sichert uneingeschränkte Klickbarkeit dahinter liegender Felder. */
 .modal-scroll-fade,
 .modal-scroll-shadow {
