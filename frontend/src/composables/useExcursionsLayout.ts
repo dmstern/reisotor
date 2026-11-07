@@ -147,6 +147,12 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
 
   function onSheetDragStart(event: PointerEvent) {
     if (event.pointerType === 'mouse' && !isSheetOverlayMode.value) return;
+    if (
+      (event.target as HTMLElement).closest(
+        'button, a, input, textarea, select, [draggable="true"]'
+      )
+    )
+      return;
     sheetDragging.value = true;
     sheetStartY = event.clientY;
     sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
