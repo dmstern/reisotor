@@ -162,7 +162,10 @@ const cardRotation = computed(() => {
             :expanded="expanded"
             @edit="emit('edit', spot)"
           />
-          <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
+          <CategoryChip
+            :category="spot.category"
+            :icon-only="expanded ? false : iconOnlyCategory"
+          />
           <PendingSyncBadge v-if="spot._pending" />
           <Transition name="fade">
             <EditButton
@@ -926,8 +929,7 @@ const cardRotation = computed(() => {
 }
 
 @container spot-card (max-width: 340px) {
-  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label),
-  .spot-card.expanded .card-badge-group :deep(.category-chip-label) {
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -939,8 +941,7 @@ const cardRotation = computed(() => {
     border-width: 0;
   }
 
-  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip),
-  .spot-card.expanded .card-badge-group :deep(.category-chip) {
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
     padding: 3px var(--radius-xs);
     gap: 0;
     max-width: none;

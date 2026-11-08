@@ -38,6 +38,7 @@ describe('SpotCard', () => {
     scheduledDate: string | null;
     groupMode: 'category' | 'tours';
     layoverMinutes?: number | null;
+    iconOnlyCategory?: boolean;
   }) {
     const app = createApp({
       render: () => h(SpotCard, props),
@@ -96,6 +97,29 @@ describe('SpotCard', () => {
     expect(html).toContain('Maulbeerallee, 14469 Potsdam');
     expect(html).toContain('spot-accordion');
     expect(html).toContain('card-actions');
+    expect(html).toContain('category-chip');
+    expect(html).toContain('category-chip-label');
+    expect(html).toContain('Sehenswürdigkeit');
+    expect(html).not.toContain('is-icon-only');
+  });
+
+  it('renders full category label even when iconOnlyCategory was true if card is expanded', async () => {
+    const html = await mountComponent({
+      spot: mockSpot,
+      creatorLabel: 'Daniel',
+      likeCount: 5,
+      liked: true,
+      comments: [],
+      expanded: true,
+      scheduledDate: null,
+      groupMode: 'category',
+      iconOnlyCategory: true,
+    });
+
+    expect(html).toContain('category-chip');
+    expect(html).toContain('category-chip-label');
+    expect(html).toContain('Sehenswürdigkeit');
+    expect(html).not.toContain('is-icon-only');
   });
 
   it('renders layover badge when layoverMinutes is provided', async () => {
