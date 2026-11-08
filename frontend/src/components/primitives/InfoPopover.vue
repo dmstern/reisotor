@@ -150,31 +150,61 @@ defineExpose({
   height: 30px;
   padding: 0;
   border: 1px solid var(--color-border);
-  background: var(--color-hover);
+  background-color: var(--color-hover);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
   color: var(--color-text-muted);
-  box-shadow: none;
+  box-shadow: var(--shadow-control);
   font-size: var(--font-size-sm);
   line-height: 1;
   cursor: pointer;
   border-radius: var(--radius-full);
   corner-shape: round;
+  user-select: none;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
+    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-.info-popover-btn:hover,
-.info-popover-btn:focus-visible {
-  background: var(--color-surface);
+.info-popover-btn:hover {
+  background-color: var(--color-surface);
   border-color: var(--color-primary);
   color: var(--color-primary);
+  box-shadow: var(--shadow-control-hover);
+  translate: 0 -1px;
+}
+
+.info-popover-btn:active {
+  transform: translateY(1px) scale(0.96);
+  translate: 0 0;
+  box-shadow: var(--shadow-control-active);
+  background-color: var(--color-surface);
+}
+
+.info-popover-btn[aria-expanded='true'] {
+  background-color: var(--color-primary-tint);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  box-shadow: var(--shadow-control-active);
 }
 
 .info-popover-btn:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
+  box-shadow: var(--focus-ring-halo), var(--shadow-control);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .info-popover-btn {
+    transition: none !important;
+    transform: none !important;
+    translate: none !important;
+  }
 }
 
 :global(.info-popover-menu) {
