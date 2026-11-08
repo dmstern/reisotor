@@ -24,7 +24,6 @@ import TripMapFocusBanner from './TripMapFocusBanner.vue';
 import TripMapStatusPills from './TripMapStatusPills.vue';
 import TripMapDockTeleport from './TripMapDockTeleport.vue';
 import TravelDetailDialog from './TravelDetailDialog.vue';
-import DayStrip from './DayStrip.vue';
 import TrackPlayback from './TrackPlayback.vue';
 
 const props = defineProps<{
@@ -145,11 +144,9 @@ const {
   vacationPoints,
   homePoints,
   visiblePoints,
-  vacationDays,
-  dayHasContent,
-  toggleDayFocus,
   totalAccommodationsCount,
   accommodationPoints,
+  vacationDays,
 } = mapPoints;
 
 // 3. Live Location composable
@@ -495,25 +492,18 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
         :focused-location="drawers.mapFocusLocation"
         :focused-all-photos="drawers.mapFocusAllPhotos"
         :all-trip-photo-points-count="allTripPhotoPoints.length"
+        :vacation-days="vacationDays"
         :format-date="formatDate"
         @clear="clearFocus"
+        @change-date="drawers.focusMapOnDate"
         @open-photo-preview="openPhotoPreview"
       />
     </div>
 
-    <!-- Mobil/schmales Layout landet diese Stationen-Liste UND den Tage-Streifen in der Spots-Schublade
-         (#map-focus-dock) statt als Overlay über der Karte zu schweben. Auf Desktop schwebend über der Karte. -->
+    <!-- Mobil/schmales Layout: TrackPlayback landet per Teleport im Spots-Drawer (#map-focus-dock) -->
     <TripMapDockTeleport :active="canTeleportToDock">
-      <DayStrip
-        v-if="vacationDays.length && !focusedTrack"
-        :days="vacationDays"
-        :active-date="drawers.mapFocusDate"
-        :has-content="dayHasContent"
-        :date-title="formatDate"
-        @select="toggleDayFocus"
-      />
       <div
-        v-else-if="focusedTrack && focusedTrackPoints.length >= 2"
+        v-if="focusedTrack && focusedTrackPoints.length >= 2"
         class="map-track-playback-container"
       >
         <TrackPlayback
@@ -591,30 +581,6 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   border: none;
 }
 
-/* Mobil (Default): schwebt als horizontal scrollbare Leiste über dem unteren Kartenrand (analog zu
-   .focus-spot-list oben, nur unten statt oben verankert). Auf Desktop (@container weiter unten)
-   wieder normales Flow-Element unterhalb der Karte. */
-.day-strip {
-  position: absolute;
-  left: var(--space-2);
-  right: var(--space-2);
-  bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-2));
-  z-index: 1000;
-}
-
-/* Innerhalb der teleportierten Spots-Schublade (siehe Teleport-Kommentar oben) ist der Streifen
-   normales Fließ-Element am Anfang der Liste statt eines schwebenden Overlays - ID-Selektor statt nur
-   .day-strip, damit diese Regel unabhängig von Deklarationsreihenfolge/@container zuverlässig
-   gewinnt (gleiches Prinzip wie DESIGN.md, Abschnitt "Abstände"). */
-#map-focus-dock .day-strip {
-  position: relative;
-  left: auto;
-  right: auto;
-  bottom: auto;
-  z-index: auto;
-  margin-bottom: var(--space-2);
-}
-
 .map-track-playback-container {
   position: absolute;
   left: var(--space-2);
@@ -633,17 +599,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 }
 
 /* Im Sheet-Overlay-Modus (z. B. auf Mobil oder bei schmalem .app-main Container)
-   schwebt der Day-Strip bzw. Track-Playback oberhalb des Sheets mit sauberem Abstand */
-.karte.sheet-overlay-mode .day-strip {
-  left: calc(
-    var(--calendar-margin, var(--drawer-tab-width, 32px)) + var(--calendar-offset, 0px) +
-      var(--space-4)
-  );
-  right: var(--space-4);
-  margin: 0 auto;
-  max-width: min(400px, calc(100% - 140px));
-}
-
+   schwebt Track-Playback oberhalb des Sheets mit sauberem Abstand */
 .karte.sheet-overlay-mode .map-track-playback-container {
   left: calc(
     var(--calendar-margin, var(--drawer-tab-width, 32px)) + var(--calendar-offset, 0px) +
@@ -749,18 +705,6 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
   :deep(.leaflet-top .leaflet-control) {
     margin-top: 0 !important;
-  }
-
-  /* Auf Desktop schwebt der day-strip als zentrierte Pille im verfügbaren Kartenbereich (neben dem Drawer) */
-  .day-strip {
-    left: var(--spots-col-right-px, 400px);
-    right: 0;
-    margin: 0 auto;
-    width: fit-content;
-    max-width: min(400px, calc(100% - 140px));
-    border-radius: var(--radius-pill);
-    corner-shape: round;
-    bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
   }
 
   .map-track-playback-container {

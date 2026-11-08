@@ -28,6 +28,11 @@ describe('useMapToolMenus', () => {
     const pos = computeTeleportMenuPosition(triggerRef, undefined, 200);
     expect(pos.top).toBe('146px');
     expect(pos.left).toBe('200px');
+
+    const rightPos = computeTeleportMenuPosition(triggerRef, undefined, 200, 'right');
+    expect(rightPos.top).toBe('146px');
+    expect(rightPos.right).toBeDefined();
+    expect(rightPos.left).toBeUndefined();
   });
 
   it('toggles focus menu and invokes onFocusMenuOpen', () => {

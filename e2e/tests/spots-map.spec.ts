@@ -45,7 +45,7 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     await expect(page.locator('.spot-card', { hasText: openTitle })).toBeVisible();
 
     await page.waitForSelector('.search-filter-bar');
-    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
     const gemachtOption = page.locator('.dropdown-item', { hasText: 'Gemacht' });
     await gemachtOption.evaluate((el: HTMLElement) => el.click());
     await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
@@ -55,7 +55,7 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
     await expect(page.locator('.spot-card', { hasText: openTitle })).toHaveCount(0);
 
     // Aufräumen: Filter zurücksetzen, damit er nicht in andere Tests dieser Suite durchsickert.
-    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
     const gemachtOptionReset = page.locator('.dropdown-item', { hasText: 'Gemacht' });
     await gemachtOptionReset.evaluate((el: HTMLElement) => el.click());
     await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
@@ -81,7 +81,7 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
     expect(beforeCount).toBeGreaterThan(1);
 
     await page.waitForSelector('.search-filter-bar');
-    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
     // Erste Kategorie-Checkbox aus dem Menü wählen - welche das genau ist, ist für diesen Test
     // irrelevant, nur dass danach WENIGER Marker als vorher sichtbar sind.
     const firstCatOption = page.locator('.category-option').first();

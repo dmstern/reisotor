@@ -100,7 +100,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
 
     // Kategorie-Filter setzen, der den zugeordneten Spot (Sehenswürdigkeit) ausschließt - die Tour
     // hat weiterhin einen zugeordneten Spot, er ist nur gerade nicht sichtbar.
-    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
     const restOption = page.locator('.dropdown-item', { hasText: 'Restaurant' }).first();
     await restOption.evaluate((el: HTMLElement) => el.click());
     await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
@@ -113,7 +113,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await expect(group.locator('.empty')).not.toContainText('Noch keine Spots zugeordnet');
 
     // Filter zurücksetzen: der Hinweis verschwindet wieder, der Spot ist erneut sichtbar.
-    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
     const restOptionReset = page.locator('.dropdown-item', { hasText: 'Restaurant' }).first();
     await restOptionReset.evaluate((el: HTMLElement) => el.click());
     await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
@@ -178,7 +178,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await expect(group.locator('.tour-partial-filter-hint')).toHaveCount(0);
 
     // 2. Kategorie-Filter: Restaurant wählen -> spotA wird ausgeblendet
-    await page.getByRole('button', { name: 'Nach Kategorie filtern' }).click();
+    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
     const restOption = page.locator('.dropdown-item', { hasText: 'Restaurant' }).first();
     await restOption.evaluate((el: HTMLElement) => el.click());
     await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });

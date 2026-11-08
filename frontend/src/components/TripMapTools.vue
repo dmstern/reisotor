@@ -315,14 +315,18 @@ const {
 }
 
 .share-location-btn.active,
-.record-btn.active {
+.record-btn.active,
+.share-location-btn.is-active,
+.record-btn.is-active {
   background: var(--color-primary);
   border-color: var(--color-primary-dark);
   color: var(--color-primary-contrast, #ffffff);
 }
 
 .share-location-btn.active:hover:not(:disabled),
-.record-btn.active:hover:not(:disabled) {
+.record-btn.active:hover:not(:disabled),
+.share-location-btn.is-active:hover:not(:disabled),
+.record-btn.is-active:hover:not(:disabled) {
   background: var(--color-primary-dark);
 }
 

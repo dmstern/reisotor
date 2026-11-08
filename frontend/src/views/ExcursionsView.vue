@@ -32,6 +32,7 @@ import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import InfoPopover from '../components/primitives/InfoPopover.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
+import Badge from '../components/primitives/Badge.vue';
 
 // Subkomponenten (Phase 2: UI-Dekomposition & Deduplizierung, #446)
 import ExcursionCategoryNav from '../components/ExcursionCategoryNav.vue';
@@ -120,7 +121,6 @@ const {
   groupIconDef,
   groupIconColor,
   applyRouteQuery,
-  filteredSpotItems,
   spotGroups,
   filterCategoryOptions,
   excursionForGroupTitle,
@@ -129,6 +129,30 @@ const {
   tourFilterReason,
   tourPartialFilteredPrefix,
 } = filter;
+
+const searchFilterBarRef = ref<InstanceType<typeof SearchFilterBar> | null>(null);
+
+const activeSearchAndFilterCount = computed(() => {
+  return (
+    categoryFilter.value.length +
+    statusFilter.value.length +
+    tourRoleFilter.value.length +
+    (sortMode.value !== 'date' ? 1 : 0) +
+    (searchQuery.value.trim() ? 1 : 0)
+  );
+});
+
+let expandSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function expandAndFocusSearch() {
+  sheetState.value = 'full';
+  if (expandSearchTimeout) {
+    clearTimeout(expandSearchTimeout);
+  }
+  expandSearchTimeout = setTimeout(() => {
+    searchFilterBarRef.value?.focusInput();
+  }, 320);
+}
 
 // 3. Category Navigation, Sticky Sentinel & Scroll Spy
 const navSpy = useCategoryNavSpy({
@@ -704,6 +728,10 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (expandSearchTimeout) {
+    clearTimeout(expandSearchTimeout);
+    expandSearchTimeout = null;
+  }
   drawers.mapFocusKey = null;
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;
@@ -730,47 +758,196 @@ onUnmounted(() => {
         :class="[isSheetOverlayMode ? sheetState : null, { dragging: sheetDragging }]"
       >
         <div class="sheet-handle-row">
-          <IconButton
-            variant="secondary"
-            shape="circle"
-            size="sm"
-            class="sheet-step-btn"
-            :disabled="!canExpandSheet"
-            :icon="ACTION_ICONS.chevronUp"
-            aria-label="Spots-Liste weiter hochschieben"
-            title="Hochschieben"
-            @click="stepSheet(1)"
-          />
-          <div
-            class="sheet-handle"
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Spots-Liste ein-/ausklappen"
-            @pointerdown="onSheetDragStart"
-          >
-            <span class="sheet-grip" aria-hidden="true"></span>
-            <span class="sheet-summary">
-              <AppIcon :icon="FORM_FIELD_ICONS.location" :size="13" group="formFields" />
-              {{ filteredSpotItems.length }} {{ filteredSpotItems.length === 1 ? 'Ort' : 'Orte' }}
-            </span>
+          <div class="sheet-title-group">
+            <div
+              class="sheet-handle"
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Spots-Liste ein-/ausklappen"
+              @pointerdown="onSheetDragStart"
+            >
+              <h2 class="sheet-title">
+                <AnimatedText
+                  aria-hidden="true"
+                  :text="
+                    groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
+                  "
+                  :options="['Spots', 'Touren', 'Tracks']"
+                  :direction="groupMode === 'tours' ? 'up' : 'down'"
+                />
+                <span class="sr-only">{{
+                  groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
+                }}</span>
+              </h2>
+            </div>
+            <InfoPopover
+              v-if="sheetState !== 'collapsed'"
+              class="header-info-popover"
+              :title="
+                groupMode === 'tours'
+                  ? 'Was sind Touren?'
+                  : groupMode === 'tracks'
+                    ? 'Was sind Tracks?'
+                    : 'Was sind Spots?'
+              "
+              :aria-label="
+                groupMode === 'tours'
+                  ? 'Was sind Touren?'
+                  : groupMode === 'tracks'
+                    ? 'Was sind Tracks?'
+                    : 'Was sind Spots?'
+              "
+              :menu-width="300"
+            >
+              <template v-if="groupMode === 'tours'">
+                <p>
+                  <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route oder einem
+                  Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der Karte
+                  zu visualisieren.
+                </p>
+                <p class="popover-tip">
+                  💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und Wege auf
+                  der Karte anzuzeigen.
+                </p>
+              </template>
+              <template v-else-if="groupMode === 'tracks'">
+                <p>
+                  <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du kannst
+                  sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder Touren zuordnen.
+                </p>
+                <p class="popover-tip">
+                  💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf „Aufzeichnen“
+                  oder direkt über den Button auf der Karte.
+                </p>
+              </template>
+              <template v-else>
+                <p>
+                  <strong>Spots</strong> sind einzelne Orte (Restaurants, Sehenswürdigkeiten,
+                  Strände, …) – als Ideensammlung oder zur Reiseplanung.
+                </p>
+                <p class="popover-tip">
+                  💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen Kalendertag oder
+                  eine Tour, um sie einzutakten.
+                </p>
+              </template>
+            </InfoPopover>
           </div>
-          <IconButton
-            variant="secondary"
-            shape="circle"
-            size="sm"
-            class="sheet-step-btn"
-            :disabled="!canCollapseSheet"
-            :icon="ACTION_ICONS.chevronDown"
-            aria-label="Spots-Liste weiter runterschieben"
-            title="Runterschieben"
-            @click="stepSheet(-1)"
-          />
+          <div class="sheet-handle-actions">
+            <Button
+              v-if="
+                sheetState !== 'collapsed' &&
+                sheetState !== 'full' &&
+                groupMode !== 'tracks' &&
+                (filterCategoryOptions.length || excursionsStore.excursions.length)
+              "
+              variant="secondary"
+              shape="circle"
+              size="sm"
+              :active="activeSearchAndFilterCount > 0"
+              :icon="ACTION_ICONS.search"
+              :title="
+                activeSearchAndFilterCount > 0
+                  ? `Suche & Filter öffnen (${activeSearchAndFilterCount} aktiv)`
+                  : 'Suche & Filter öffnen'
+              "
+              :aria-label="
+                activeSearchAndFilterCount > 0
+                  ? `Suche und Filter öffnen (${activeSearchAndFilterCount} aktiv)`
+                  : 'Suche und Filter öffnen'
+              "
+              class="partial-search-trigger-btn"
+              @click="expandAndFocusSearch"
+            >
+              <Badge v-if="activeSearchAndFilterCount > 0" variant="primary" class="active-badge">
+                {{ activeSearchAndFilterCount }}
+              </Badge>
+            </Button>
+            <Button
+              v-if="sheetState !== 'collapsed'"
+              size="sm"
+              class="add-button"
+              :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
+              :variant="groupMode === 'tracks' && hasActiveRecording ? 'danger' : 'primary'"
+              :aria-label="
+                groupMode === 'tracks'
+                  ? hasActiveRecording
+                    ? 'Aufzeichnung beenden'
+                    : 'Weg aufzeichnen'
+                  : groupMode === 'tours'
+                    ? 'Neue Tour'
+                    : 'Neuer Spot'
+              "
+              @click="
+                groupMode === 'tracks'
+                  ? onRecordButtonClick()
+                  : groupMode === 'tours'
+                    ? openExcursionForm()
+                    : openSpotForm()
+              "
+            >
+              <AppIcon
+                :icon="
+                  groupMode === 'tracks'
+                    ? hasActiveRecording
+                      ? ACTION_ICONS.recordStop
+                      : ACTION_ICONS.recordStart
+                    : groupMode === 'tours'
+                      ? ACTION_ICONS.mapPlus
+                      : ACTION_ICONS.mapPinPlus
+                "
+                :size="16"
+                group="actions"
+              />
+              <span class="add-button__label">
+                <AnimatedText
+                  :text="
+                    groupMode === 'tracks'
+                      ? hasActiveRecording
+                        ? 'Beenden'
+                        : 'Aufzeichnen'
+                      : groupMode === 'tours'
+                        ? 'Neue Tour'
+                        : 'Neuer Spot'
+                  "
+                  :options="['Neuer Spot', 'Neue Tour', 'Aufzeichnen', 'Beenden']"
+                  :direction="groupMode === 'tours' ? 'up' : 'down'"
+                />
+              </span>
+            </Button>
+            <div class="sheet-stepper">
+              <IconButton
+                variant="secondary"
+                shape="circle"
+                size="sm"
+                class="sheet-step-btn"
+                :disabled="!canCollapseSheet"
+                :icon="ACTION_ICONS.chevronDown"
+                aria-label="Spots-Liste weiter runterschieben"
+                title="Runterschieben"
+                @click="stepSheet(-1)"
+              />
+              <IconButton
+                variant="secondary"
+                shape="circle"
+                size="sm"
+                class="sheet-step-btn"
+                :disabled="!canExpandSheet"
+                :icon="ACTION_ICONS.chevronUp"
+                aria-label="Spots-Liste weiter hochschieben"
+                title="Hochschieben"
+                @click="stepSheet(1)"
+              />
+            </div>
+          </div>
         </div>
         <div
           class="spots-col-body"
           ref="spotsColBodyEl"
           :style="{
-            '--category-nav-clearance': groupMode === 'category' ? `${categoryNavHeight}px` : '0px',
+            '--category-nav-clearance':
+              groupMode === 'category' && (!isSheetOverlayMode || sheetState === 'full')
+                ? `${categoryNavHeight}px`
+                : '0px',
           }"
           @pointerdown="onSheetBodyPointerDown"
           @wheel.passive="onCancelProgrammaticScroll"
@@ -781,7 +958,7 @@ onUnmounted(() => {
            Kartenausschnitt und teils die Zoom-Steuerung). Auf Desktop bleibt sie unverändert Teil
            der Karte-Spalte (Teleport dort deaktiviert), dieser Anker bleibt also leer. -->
           <div id="map-focus-dock" class="map-focus-dock"></div>
-          <div class="header">
+          <div v-if="!isSheetOverlayMode" class="header">
             <h2>
               <AnimatedText
                 :text="
@@ -899,35 +1076,35 @@ onUnmounted(() => {
                 </span>
               </Button>
             </div>
-            <!-- #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) bekommt eine eigene Zeile
-             in voller Breite, damit die größeren 40px-Buttons auch auf 320px ohne Quetschen sitzen. -->
-            <SegmentedToggle
-              v-model="groupMode"
-              class="header-mode-toggle"
-              :options="[
-                {
-                  value: 'category',
-                  label: 'Spots',
-                  icon: FORM_FIELD_ICONS.category,
-                  iconGroup: 'formFields',
-                  dot: liveSync.hasUnseen('spots'),
-                },
-                {
-                  value: 'tours',
-                  label: 'Touren',
-                  icon: SECTION_ICON_DEFS.excursions,
-                  iconGroup: 'navigation',
-                  dot: liveSync.hasUnseen('ideas'),
-                },
-                {
-                  value: 'tracks',
-                  label: 'Tracks',
-                  icon: ACTION_ICONS.history,
-                  iconGroup: 'actions',
-                },
-              ]"
-            />
           </div>
+          <!-- #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) bekommt eine eigene Zeile
+           in voller Breite, damit die größeren 40px-Buttons auch auf 320px ohne Quetschen sitzen. -->
+          <SegmentedToggle
+            v-model="groupMode"
+            class="header-mode-toggle"
+            :options="[
+              {
+                value: 'category',
+                label: 'Spots',
+                icon: FORM_FIELD_ICONS.category,
+                iconGroup: 'formFields',
+                dot: liveSync.hasUnseen('spots'),
+              },
+              {
+                value: 'tours',
+                label: 'Touren',
+                icon: SECTION_ICON_DEFS.excursions,
+                iconGroup: 'navigation',
+                dot: liveSync.hasUnseen('ideas'),
+              },
+              {
+                value: 'tracks',
+                label: 'Tracks',
+                icon: ACTION_ICONS.history,
+                iconGroup: 'actions',
+              },
+            ]"
+          />
           <div class="subheader" v-if="hasActiveRecording">
             <div class="active-recording-banner">
               <span class="recording-pulse-dot" aria-hidden="true"></span>
@@ -944,61 +1121,68 @@ onUnmounted(() => {
           />
 
           <div
-            class="filter-bar"
             v-if="
               groupMode !== 'tracks' &&
               (filterCategoryOptions.length || excursionsStore.excursions.length)
             "
+            class="drawer-search-accordion"
+            :class="{ 'is-collapsed': isSheetOverlayMode && sheetState !== 'full' }"
+            :inert="isSheetOverlayMode && sheetState !== 'full'"
           >
-            <SearchFilterBar
-              v-model:search-query="searchQuery"
-              v-model:sort-mode="sortMode"
-              v-model:category-filter="categoryFilter"
-              v-model:status-filter="statusFilter"
-              v-model:tour-role-filter="tourRoleFilter"
-              :category-options="filterCategoryOptions"
-              search-placeholder="Spots oder Touren suchen..."
-            />
+            <div class="drawer-search-accordion-inner">
+              <div class="filter-bar">
+                <SearchFilterBar
+                  ref="searchFilterBarRef"
+                  v-model:search-query="searchQuery"
+                  v-model:sort-mode="sortMode"
+                  v-model:category-filter="categoryFilter"
+                  v-model:status-filter="statusFilter"
+                  v-model:tour-role-filter="tourRoleFilter"
+                  :category-options="filterCategoryOptions"
+                  search-placeholder="Spots oder Touren suchen..."
+                />
 
-            <div
-              class="filter-chips"
-              v-if="categoryFilter.length || statusFilter.length || tourRoleFilter.length"
-            >
-              <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
-                <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  :icon="ACTION_ICONS.close"
-                  aria-label="Filter entfernen"
-                  title="Filter entfernen"
-                  @click="removeCategoryFilter(cat)"
-                />
-              </span>
-              <span v-for="status in statusFilter" :key="status" class="filter-chip">
-                <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" />
-                {{ STATUS_FILTER_LABEL[status] }}
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  :icon="ACTION_ICONS.close"
-                  aria-label="Filter entfernen"
-                  title="Filter entfernen"
-                  @click="removeStatusFilter(status)"
-                />
-              </span>
-              <span v-for="role in tourRoleFilter" :key="role" class="filter-chip">
-                <AppIcon :icon="tourRoleIconDef(role)" :size="13" group="categories" />
-                {{ tourRoleLabel(role) }}
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  :icon="ACTION_ICONS.close"
-                  aria-label="Filter entfernen"
-                  title="Filter entfernen"
-                  @click="removeTourRoleFilter(role)"
-                />
-              </span>
+                <div
+                  class="filter-chips"
+                  v-if="categoryFilter.length || statusFilter.length || tourRoleFilter.length"
+                >
+                  <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
+                    <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="ACTION_ICONS.close"
+                      aria-label="Filter entfernen"
+                      title="Filter entfernen"
+                      @click="removeCategoryFilter(cat)"
+                    />
+                  </span>
+                  <span v-for="status in statusFilter" :key="status" class="filter-chip">
+                    <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" />
+                    {{ STATUS_FILTER_LABEL[status] }}
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="ACTION_ICONS.close"
+                      aria-label="Filter entfernen"
+                      title="Filter entfernen"
+                      @click="removeStatusFilter(status)"
+                    />
+                  </span>
+                  <span v-for="role in tourRoleFilter" :key="role" class="filter-chip">
+                    <AppIcon :icon="tourRoleIconDef(role)" :size="13" group="categories" />
+                    {{ tourRoleLabel(role) }}
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      :icon="ACTION_ICONS.close"
+                      aria-label="Filter entfernen"
+                      title="Filter entfernen"
+                      @click="removeTourRoleFilter(role)"
+                    />
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1448,15 +1632,13 @@ onUnmounted(() => {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: space-between;
+  gap: var(--space-2);
   /* Seitliches/oberes Polster deutlich großzügiger als die alten 8px/4px - bei der jetzt sichtbar
      gerundeten Sheet-Ecke (--radius-lg-squircle, siehe .spots-col oben) saßen die Stufen-Buttons
      sonst fast in der Rundung selbst statt sichtbar davor (genau der von Apples "X"-Button
-     abweichende Effekt aus dem PR-Review-Screenshot). Oben/seitlich identisch (var(--space-3)
-     statt oben --space-3 und seitlich --space-4) - selbes Card-Innenabstand-Maß wie SpotCard.vue/
-     ExcursionCard.vue u. a. (siehe DESIGN.md, Abschnitt "Abstände") statt
-     eines eigens erfundenen asymmetrischen Werts. */
-  padding: var(--space-3) var(--space-3) 0;
+     abweichende Effekt aus dem PR-Review-Screenshot). */
+  padding: var(--space-3) var(--space-3) var(--space-2);
   /* Gilt für die ganze Zeile (nicht nur .sheet-handle): ein Zug, der knapp neben dem eigentlichen
      Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
      Pull-to-Refresh interpretiert werden. */
@@ -1475,24 +1657,71 @@ onUnmounted(() => {
   padding: 0 13px;
 }
 
-.spots-col.collapsed .sheet-handle {
-  padding: 0;
-  margin: 0;
-  justify-content: center;
+.sheet-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .sheet-handle {
-  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  /* Größerer Anfassbereich für Touch (vorher 4px/6px): der eigentliche Treffer-Bereich reichte auf
-     mobile oft nicht, ein Runterziehen landete leicht knapp daneben. */
-  padding: 10px 0 14px;
-  margin: -6px 0 -8px;
+  gap: 6px;
+  min-width: 0;
   cursor: grab;
   touch-action: none;
+}
+
+.spots-col.collapsed .sheet-handle {
+  padding: 0;
+  margin: 0;
+}
+
+.sheet-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text);
+  user-select: none;
+}
+
+.sheet-title :deep(.animated-text) {
+  flex-shrink: 0;
+}
+
+.sheet-title .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sheet-handle-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.sheet-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-2);
+}
+
+.sheet-stepper:first-child {
+  margin-left: 0;
 }
 
 /* Alternative zum Ziehen am Anfasser (weniger präzise auf kleinen Touch-Zielen): schaltet jeweils
@@ -1511,22 +1740,6 @@ onUnmounted(() => {
   width: 44px;
   height: 44px;
   transform: translate(-50%, -50%);
-}
-
-.sheet-grip {
-  width: 40px;
-  height: 4px;
-  border-radius: 3px;
-  background: var(--color-border);
-}
-
-.sheet-summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
 }
 
 .spots-col-body {
@@ -1765,17 +1978,41 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
+.partial-search-trigger-btn {
+  position: relative;
+  flex-shrink: 0;
+
+  .active-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
+    padding: 0 4px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: var(--radius-pill);
+    pointer-events: none;
+  }
+}
+
 /* #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) sitzt in einer eigenen Zeile
    über die volle Breite des Drawer-Headers, sodass die Segmente auch auf 320px ohne Quetschen sitzen. */
 .header-mode-toggle {
   width: 100%;
   flex: 1 1 100%;
+  margin-bottom: var(--space-2);
 }
 
 .header-mode-toggle :deep(.segmented-option) {
   flex: 1;
   justify-content: center;
   min-width: 0;
+}
+
+@include container-spots-col-down('mobile-sm') {
+  .sheet-handle-actions .add-button__label {
+    display: none;
+  }
 }
 
 .add-button {
@@ -1955,6 +2192,9 @@ onUnmounted(() => {
     transform: none;
     opacity: 1;
   }
+  .drawer-search-accordion {
+    transition: none;
+  }
 }
 
 .empty-state-wrap {
@@ -1998,6 +2238,36 @@ onUnmounted(() => {
    ein Steuerungs-/Werkzeug-Element (Gruppieren/Sortieren/Filtern), keine Dateninhalt-Fläche - siehe
    DESIGN.md, Abschnitt "Farben" für die Unterscheidung Steuerungselement (leicht eingefärbt) vs.
    Karte mit Dateninhalt (weiß/--color-surface, z. B. SpotCard.vue). */
+/* Im partial-Zustand des mobilen Bottom-Sheets klappt die Such-/Filterleiste weich ein (#684),
+   damit die eigentlichen Spots/Touren direkt sichtbar sind. */
+.drawer-search-accordion {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.25s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease;
+  opacity: 1;
+}
+
+.drawer-search-accordion.is-collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.drawer-search-accordion-inner {
+  min-height: 0;
+  padding-top: 6px;
+  margin-top: -6px;
+  padding-bottom: 6px;
+  margin-bottom: -6px;
+  overflow: visible;
+}
+
+.drawer-search-accordion.is-collapsed .drawer-search-accordion-inner {
+  overflow: hidden;
+}
+
 .filter-bar {
   display: flex;
   flex-direction: column;

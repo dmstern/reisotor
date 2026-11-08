@@ -45,44 +45,31 @@ const emit = defineEmits<{
   (e: 'update:tourRoleFilter', value: TourRoleFilterOption[]): void;
 }>();
 
-// Popover states
+const searchInputRef = ref<HTMLInputElement | null>(null);
+
+function focusInput() {
+  searchInputRef.value?.focus();
+}
+
+defineExpose({ focusInput });
+
+// Popover state für den kombinierten Filter- & Sortierungs-Button (#684)
 const filterMenuOpen = ref(false);
 const filterBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
 const filterMenuStyle = ref({ top: '0px', left: '0px' });
 
-const sortMenuOpen = ref(false);
-const sortBtnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
-const sortMenuStyle = ref({ top: '0px', left: '0px' });
-
 function toggleFilterMenu(event?: MouseEvent) {
   if (!filterMenuOpen.value) {
-    sortMenuOpen.value = false;
     const target =
       (event?.currentTarget as HTMLElement) ||
       (filterBtnRef.value as ComponentPublicInstance)?.$el ||
       (filterBtnRef.value as HTMLElement);
     if (target) {
-      filterMenuStyle.value = computePopoverPosition(target, { menuWidth: 230, align: 'right' });
+      filterMenuStyle.value = computePopoverPosition(target, { menuWidth: 240, align: 'right' });
     }
     filterMenuOpen.value = true;
   } else {
     filterMenuOpen.value = false;
-  }
-}
-
-function toggleSortMenu(event?: MouseEvent) {
-  if (!sortMenuOpen.value) {
-    filterMenuOpen.value = false;
-    const target =
-      (event?.currentTarget as HTMLElement) ||
-      (sortBtnRef.value as ComponentPublicInstance)?.$el ||
-      (sortBtnRef.value as HTMLElement);
-    if (target) {
-      sortMenuStyle.value = computePopoverPosition(target, { menuWidth: 180, align: 'right' });
-    }
-    sortMenuOpen.value = true;
-  } else {
-    sortMenuOpen.value = false;
   }
 }
 
@@ -99,6 +86,8 @@ const activeFilterCount = computed(() => {
 });
 
 const isSortActive = computed(() => props.sortMode !== 'date');
+
+const totalActiveCount = computed(() => activeFilterCount.value + (isSortActive.value ? 1 : 0));
 
 function toggleCategory(cat: string) {
   const current = [...(props.categoryFilter || [])];
@@ -135,13 +124,13 @@ function toggleTourRole(role: TourRoleFilterOption) {
 
 function selectSort(mode: 'alpha' | 'likes' | 'date') {
   emit('update:sortMode', mode);
-  sortMenuOpen.value = false;
 }
 
 function clearFilters() {
   emit('update:categoryFilter', []);
   emit('update:statusFilter', []);
   emit('update:tourRoleFilter', []);
+  emit('update:sortMode', 'date');
 }
 </script>
 
@@ -151,6 +140,7 @@ function clearFilters() {
     <div class="search-input-wrapper">
       <AppIcon :icon="ACTION_ICONS.search" :size="15" group="actions" class="search-icon" />
       <input
+        ref="searchInputRef"
         :value="searchQuery"
         type="text"
         class="search-input"
@@ -170,21 +160,29 @@ function clearFilters() {
       </button>
     </div>
 
-    <!-- Filter Button + Popover -->
+    <!-- Kombinierter Filter- & Sortieren-Button + Popover (#684) -->
     <div class="dropdown filter-dropdown">
       <Button
         ref="filterBtnRef"
         variant="secondary"
         shape="circle"
-        :active="activeFilterCount > 0"
+        :active="totalActiveCount > 0"
         :icon="ACTION_ICONS.filter"
-        title="Nach Kategorie filtern"
-        aria-label="Nach Kategorie filtern"
+        :title="
+          totalActiveCount > 0
+            ? `Filtern & Sortieren (${totalActiveCount} aktiv)`
+            : 'Filtern & Sortieren'
+        "
+        :aria-label="
+          totalActiveCount > 0
+            ? `Filtern & Sortieren (${totalActiveCount} aktiv)`
+            : 'Filtern & Sortieren'
+        "
         class="bar-icon-btn"
         @click="toggleFilterMenu($event)"
       >
-        <Badge v-if="activeFilterCount > 0" variant="primary" class="active-badge">{{
-          activeFilterCount
+        <Badge v-if="totalActiveCount > 0" variant="primary" class="active-badge">{{
+          totalActiveCount
         }}</Badge>
       </Button>
 
@@ -196,7 +194,37 @@ function clearFilters() {
             :style="filterMenuStyle"
             @close="filterMenuOpen = false"
           >
-            <div class="popover-section-header">Filtern nach</div>
+            <!-- Sortierung -->
+            <div class="popover-section-header">Sortieren nach</div>
+            <div class="popover-options-list">
+              <DropdownItem
+                label="Nach Datum"
+                :active="sortMode === 'date'"
+                :trailing-icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
+                trailing-icon-group="actions"
+                :trailing-icon-size="14"
+                @click="selectSort('date')"
+              />
+              <DropdownItem
+                label="Alphabetisch"
+                :active="sortMode === 'alpha'"
+                :trailing-icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
+                trailing-icon-group="actions"
+                :trailing-icon-size="14"
+                @click="selectSort('alpha')"
+              />
+              <DropdownItem
+                label="Nach Likes"
+                :active="sortMode === 'likes'"
+                :trailing-icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
+                trailing-icon-group="actions"
+                :trailing-icon-size="14"
+                @click="selectSort('likes')"
+              />
+            </div>
+
+            <!-- Filterung -->
+            <div class="popover-section-header popover-section-header--filters">Filtern nach</div>
 
             <template v-if="categoryOptions.length">
               <div class="popover-group-title">Spots</div>
@@ -258,57 +286,11 @@ function clearFilters() {
               />
             </div>
 
-            <div v-if="activeFilterCount > 0" class="popover-footer">
+            <div v-if="totalActiveCount > 0" class="popover-footer">
               <button type="button" class="clear-filters-btn" @click="clearFilters">
-                Filter zurücksetzen
+                Filter & Sortierung zurücksetzen
               </button>
             </div>
-          </PickerMenu>
-        </template>
-      </Teleport>
-    </div>
-
-    <!-- Sortieren Button + Popover -->
-    <div class="dropdown sort-dropdown">
-      <Button
-        ref="sortBtnRef"
-        variant="secondary"
-        shape="circle"
-        :active="isSortActive"
-        :icon="ACTION_ICONS.sort"
-        title="Sortieren"
-        aria-label="Sortieren"
-        class="bar-icon-btn"
-        @click="toggleSortMenu($event)"
-      />
-
-      <Teleport to="body">
-        <template v-if="sortMenuOpen">
-          <PickerMenu
-            class="sort-popover-menu"
-            origin="top-right"
-            :style="sortMenuStyle"
-            @close="sortMenuOpen = false"
-          >
-            <div class="popover-section-header">Sortieren nach</div>
-            <DropdownItem
-              label="Nach Datum"
-              :active="sortMode === 'date'"
-              :icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
-              @click="selectSort('date')"
-            />
-            <DropdownItem
-              label="Alphabetisch"
-              :active="sortMode === 'alpha'"
-              :icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
-              @click="selectSort('alpha')"
-            />
-            <DropdownItem
-              label="Nach Likes"
-              :active="sortMode === 'likes'"
-              :icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
-              @click="selectSort('likes')"
-            />
           </PickerMenu>
         </template>
       </Teleport>
@@ -321,6 +303,8 @@ function clearFilters() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  padding-top: 6px;
+  margin-top: -6px;
   margin-bottom: var(--space-2);
   width: 100%;
 }
@@ -346,8 +330,8 @@ function clearFilters() {
 .search-input {
   width: 100%;
   min-width: 0;
-  height: 44px;
-  min-height: 44px;
+  height: var(--input-height, 46px);
+  min-height: var(--input-height, 46px);
   padding: 0 36px 0 38px;
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -421,10 +405,10 @@ function clearFilters() {
 
 .bar-icon-btn {
   position: relative;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: var(--input-width, 46px);
+  height: var(--input-height, 46px);
+  min-width: var(--input-width, 46px);
+  min-height: var(--input-height, 46px);
 }
 
 .bar-icon-btn::after {
@@ -443,7 +427,7 @@ function clearFilters() {
   }
 }
 
-/* Responsiver Fallback auf schmalen Viewports (<= 360px) bis Folge-Ticket #684 */
+/* Responsiver Fallback auf schmalen Viewports und Containern (<= 360px) (#684) */
 @include media-down('mobile-compact') {
   .search-filter-bar {
     gap: 6px;
@@ -456,9 +440,28 @@ function clearFilters() {
   }
 
   .bar-icon-btn {
-    width: var(--input-height-sm, 38px);
+    width: var(--input-width-sm, 38px);
     height: var(--input-height-sm, 38px);
-    min-width: var(--input-height-sm, 38px);
+    min-width: var(--input-width-sm, 38px);
+    min-height: var(--input-height-sm, 38px);
+  }
+}
+
+@include container-spots-col-down('mobile-compact') {
+  .search-filter-bar {
+    gap: 6px;
+  }
+
+  .search-input {
+    height: var(--input-height-sm, 38px);
+    min-height: var(--input-height-sm, 38px);
+    padding: 0 32px 0 34px;
+  }
+
+  .bar-icon-btn {
+    width: var(--input-width-sm, 38px);
+    height: var(--input-height-sm, 38px);
+    min-width: var(--input-width-sm, 38px);
     min-height: var(--input-height-sm, 38px);
   }
 }
@@ -476,10 +479,9 @@ function clearFilters() {
   text-align: center;
 }
 
-:global(.filter-popover-menu),
-:global(.sort-popover-menu) {
-  min-width: 200px;
-  max-width: min(280px, calc(100vw - var(--space-4)));
+:global(.filter-popover-menu) {
+  min-width: 210px;
+  max-width: min(290px, calc(100vw - var(--space-4)));
   max-height: calc(100vh - 70px);
   max-height: calc(100dvh - 70px);
   overflow-y: auto;
@@ -494,6 +496,10 @@ function clearFilters() {
   padding: var(--space-1) var(--space-2) var(--space-2);
   border-bottom: 1px solid var(--color-border);
   margin-bottom: var(--space-1);
+}
+
+.popover-section-header--filters {
+  margin-top: var(--space-2);
 }
 
 .popover-group-title {
