@@ -5,6 +5,7 @@ import { IconFlag, IconFlagFilled } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import { useDrawersStore } from '../stores/drawers';
 import CategoryChip from './CategoryChip.vue';
+import EditButton from './EditButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
@@ -143,7 +144,6 @@ const cardRotation = computed(() => {
       :creator-label="creatorLabel"
       :is-accommodation="isAccommodation"
       :heading-tag="headingTag"
-      @edit="emit('edit', spot)"
     />
 
     <div class="body">
@@ -164,6 +164,9 @@ const cardRotation = computed(() => {
           />
           <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
           <PendingSyncBadge v-if="spot._pending" />
+          <Transition name="fade">
+            <EditButton v-if="expanded" small class="spot-edit-btn" @click="emit('edit', spot)" />
+          </Transition>
         </div>
       </div>
 
@@ -437,29 +440,71 @@ const cardRotation = computed(() => {
 }
 
 .spot-card.expanded:has(
-    .image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)),
-    .card-badge-group:hover:not(:has(.spot-location-badge:hover))
+    .image.is-expanded:hover:not(:has(a:hover)),
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
   )
   .body {
   transform: translateY(-2px);
   opacity: 0.84;
 }
 
-.spot-card.expanded:has(.card-badge-group:hover) :deep(.image.is-expanded) {
+.spot-card.expanded:has(
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+  )
+  :deep(.image.is-expanded) {
   box-shadow:
     inset 0 0 0 2px var(--color-primary),
     0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
-.spot-card.expanded:has(.card-badge-group:hover) :deep(.spot-collapse-pill) {
+.spot-card.expanded:has(
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+  )
+  :deep(.spot-collapse-pill) {
   background: var(--color-primary);
   border-color: rgba(255, 255, 255, 0.65);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transform: translateY(-1px);
 }
 
-.spot-card.expanded:has(.card-badge-group:hover) :deep(.spot-collapse-chevron) {
+.spot-card.expanded:has(
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+  )
+  :deep(.spot-collapse-chevron) {
   transform: translateY(-2px);
+}
+
+.spot-edit-btn {
+  flex-shrink: 0;
+}
+
+.spot-card.expanded .card-badge-group :deep(.spot-edit-btn) {
+  width: var(--input-height-sm, 38px);
+  height: var(--input-height-sm, 38px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.spot-card.expanded .card-badge-group :deep(.spot-edit-btn:hover:not(:disabled)) {
+  background: var(--color-hover);
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.spot-card.expanded .card-badge-group :deep(.spot-edit-btn:active:not(:disabled)) {
+  transform: translateY(0);
 }
 
 .spot-card:not(.expanded) .body {
@@ -903,7 +948,8 @@ const cardRotation = computed(() => {
 }
 
 @container spot-card (max-width: 340px) {
-  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label) {
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label),
+  .spot-card.expanded .card-badge-group :deep(.category-chip-label) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -915,7 +961,8 @@ const cardRotation = computed(() => {
     border-width: 0;
   }
 
-  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
+  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip),
+  .spot-card.expanded .card-badge-group :deep(.category-chip) {
     padding: 3px var(--radius-xs);
     gap: 0;
     max-width: none;

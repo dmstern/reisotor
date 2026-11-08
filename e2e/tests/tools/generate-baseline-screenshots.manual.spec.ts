@@ -729,7 +729,9 @@ const DIALOGS: DialogSpec[] = [
       await card.waitFor({ state: 'visible', timeout: 15000 });
       await card.scrollIntoViewIfNeeded();
       await card.click();
-      const btn = card.locator('.overlay-edit-btn');
+      const btn = card
+        .locator('.spot-edit-btn, .edit-btn, button[aria-label*="bearbeiten"]')
+        .first();
       await btn.waitFor({ state: 'visible', timeout: 5000 });
       await btn.click();
     },

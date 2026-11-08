@@ -5,7 +5,6 @@ import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
-import EditButton from './EditButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 
 withDefaults(
@@ -20,10 +19,6 @@ withDefaults(
     headingTag: 'h4',
   }
 );
-
-const emit = defineEmits<{
-  (e: 'edit', spot: Spot): void;
-}>();
 
 function formatAccommodationDate(d: string | null) {
   if (!d) return null;
@@ -46,12 +41,9 @@ function formatAccommodationDate(d: string | null) {
       group="categories"
     />
 
-    <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Edit-Button, Titel, Metadaten, Notiz & Einklapp-Pille -->
+    <!-- Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Metadaten, Notiz & Einklapp-Pille -->
     <Transition name="overlay-fade">
       <div v-if="expanded" class="image-expanded-overlay">
-        <div class="overlay-top-row">
-          <EditButton floating class="overlay-edit-btn" @click="emit('edit', spot)" />
-        </div>
         <div class="overlay-bottom-content">
           <div class="overlay-bottom-row">
             <div class="overlay-bottom-text">
@@ -121,7 +113,7 @@ function formatAccommodationDate(d: string | null) {
   cursor: pointer;
 }
 
-.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) {
+.image.is-expanded:hover:not(:has(a:hover)) {
   box-shadow:
     inset 0 0 0 2px var(--color-primary),
     0 4px 12px rgba(0, 0, 0, 0.18);
@@ -158,7 +150,7 @@ function formatAccommodationDate(d: string | null) {
   inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: var(--space-3);
   background: linear-gradient(
     180deg,
@@ -174,12 +166,6 @@ function formatAccommodationDate(d: string | null) {
 
 .image-expanded-overlay > * {
   pointer-events: auto;
-}
-
-.overlay-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
 }
 
 .overlay-bottom-content {
@@ -209,7 +195,7 @@ function formatAccommodationDate(d: string | null) {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) .overlay-bottom-text {
+.image.is-expanded:hover:not(:has(a:hover)) .overlay-bottom-text {
   transform: translateY(-1px);
 }
 
@@ -242,14 +228,14 @@ function formatAccommodationDate(d: string | null) {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) .spot-collapse-pill {
+.image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-pill {
   background: var(--color-primary);
   border-color: rgba(255, 255, 255, 0.65);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transform: translateY(-1px);
 }
 
-.image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)) .spot-collapse-chevron {
+.image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-chevron {
   transform: translateY(-2px);
 }
 
@@ -335,21 +321,6 @@ function formatAccommodationDate(d: string | null) {
 .note.is-banner :deep(strong),
 .note.is-banner :deep(b) {
   color: #ffffff;
-}
-
-.overlay-edit-btn {
-  animation: editBtnSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
-}
-
-@keyframes editBtnSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .overlay-author {
