@@ -122,7 +122,10 @@ function isPrivateIpv6(hostname: string): boolean {
     if (rest.includes('.')) {
       const parts = rest.split('.').map(Number);
 
-      if (parts.length === 4 && parts.every((p) => Number.isInteger(p) && p >= 0 && p <= 255)) {
+      if (
+        parts.length === 4 &&
+        parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255)
+      ) {
         return isPrivateIpv4(parts[0], parts[1]);
       }
 
@@ -509,8 +512,10 @@ export async function fetchPlacePreview(url: string | null | undefined): Promise
  *  API-Key sofort verfügbar und nutzt dieselbe Kachelquelle wie die interne Karte (MapView.vue). */
 export function tilePreviewUrl(lat: number, lng: number, zoom = 15): string {
   const latRad = (lat * Math.PI) / 180;
-  const n = 2 ** zoom;
-  const x = Math.floor(((lng + 180) / 360) * n);
-  const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
+  const numTiles = 2 ** zoom;
+  const x = Math.floor(((lng + 180) / 360) * numTiles);
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * numTiles
+  );
   return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
 }

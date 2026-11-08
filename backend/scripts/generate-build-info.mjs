@@ -82,7 +82,7 @@ function readPendingReleaseNotes() {
   const pendingDir = path.join(repoRootDir, 'release-notes', 'pending');
 
   try {
-    const fragmentFiles = readdirSync(pendingDir).filter((f) => f.endsWith('.md'));
+    const fragmentFiles = readdirSync(pendingDir).filter((file) => file.endsWith('.md'));
     fragmentFiles.sort((a, b) => {
       const slugA = a.replace(/\.md$/, '');
       const slugB = b.replace(/\.md$/, '');
@@ -107,13 +107,13 @@ function readPendingReleaseNotes() {
     const groups = [];
     const allNotes = [];
 
-    for (const f of fragmentFiles) {
-      const slug = f.replace(/\.md$/, '');
-      const content = readFileSync(path.join(pendingDir, f), 'utf-8');
+    for (const file of fragmentFiles) {
+      const slug = file.replace(/\.md$/, '');
+      const content = readFileSync(path.join(pendingDir, file), 'utf-8');
       const lines = content.split('\n');
 
       let title = '';
-      const headingLine = lines.find((l) => /^#{1,6}\s+/.test(l.trim()));
+      const headingLine = lines.find((line) => /^#{1,6}\s+/.test(line.trim()));
 
       if (headingLine) {
         title = headingLine
@@ -222,16 +222,16 @@ function findBaseRelease(currentVersion, allEntries) {
   }
 
   // 2. Fallback: Suche nach dem nächsten älteren Release mit patch === 0
-  const olderBase = allEntries.find((e) => {
-    const m = e.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  const olderBase = allEntries.find((entry) => {
+    const match = entry.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
 
-    if (!m) {
+    if (!match) {
       return false;
     }
 
-    const eMajor = parseInt(m[1], 10);
-    const eMinor = parseInt(m[2], 10);
-    const ePatch = parseInt(m[3], 10);
+    const eMajor = parseInt(match[1], 10);
+    const eMinor = parseInt(match[2], 10);
+    const ePatch = parseInt(match[3], 10);
     return ePatch === 0 && (eMajor < major || (eMajor === major && eMinor <= minor));
   });
 

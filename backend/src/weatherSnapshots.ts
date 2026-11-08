@@ -29,8 +29,8 @@ function todayUtcDateStr(): string {
 }
 
 function addDays(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
@@ -198,9 +198,9 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
       locationTargets.set(key, target);
     }
 
-    for (const d of dates) {
-      if (d <= yesterday) {
-        target.dates.add(d);
+    for (const dateItem of dates) {
+      if (dateItem <= yesterday) {
+        target.dates.add(dateItem);
       }
     }
   }
@@ -218,10 +218,10 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
     )
     .all(trip.id) as { lat: number; lng: number; start_date: string; end_date: string | null }[];
 
-  for (const s of spots) {
-    const sEnd = s.end_date || s.start_date;
-    const sDates = dateRange(s.start_date, sEnd < yesterday ? sEnd : yesterday);
-    addTarget(s.lat, s.lng, sDates);
+  for (const spot of spots) {
+    const sEnd = spot.end_date || spot.start_date;
+    const sDates = dateRange(spot.start_date, sEnd < yesterday ? sEnd : yesterday);
+    addTarget(spot.lat, spot.lng, sDates);
   }
 
   // 3. Touren-Stationen mit eigenen Koordinaten
@@ -262,8 +262,8 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
         wantedDates[0],
         wantedDates[wantedDates.length - 1]
       ) as { date: string }[];
-    const existingSet = new Set(existing.map((r) => r.date));
-    const missingDates = wantedDates.filter((d) => !existingSet.has(d));
+    const existingSet = new Set(existing.map((row) => row.date));
+    const missingDates = wantedDates.filter((dateStr) => !existingSet.has(dateStr));
 
     if (!missingDates.length) {
       continue;

@@ -42,13 +42,13 @@ export function haversineMeters(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number }
 ): number {
-  const R = 6_371_000;
+  const EARTH_RADIUS_METERS = 6_371_000;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const lat1 = (a.lat * Math.PI) / 180;
   const lat2 = (b.lat * Math.PI) / 180;
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
 }
 
 /**
@@ -284,15 +284,15 @@ export function formatTimeBasedTrackTitle(
   dateInput: Date | string | number,
   movement: MovementType = 'generic'
 ): string {
-  const d = new Date(dateInput);
+  const date = new Date(dateInput);
 
-  if (isNaN(d.getTime())) {
+  if (isNaN(date.getTime())) {
     return 'Aufzeichnung';
   }
 
-  const dayIndex = d.getDay();
+  const dayIndex = date.getDay();
   const dayName = GERMAN_WEEKDAYS[dayIndex];
-  const hour = d.getHours();
+  const hour = date.getHours();
 
   // Tageszeiten
   const isMorning = hour >= 5 && hour < 11;
@@ -561,22 +561,22 @@ export async function generateSmartTrackTitle(options: GenerateTrackTitleOptions
     endPlace &&
     startPlace.label.trim().toLowerCase() !== endPlace.label.trim().toLowerCase()
   ) {
-    const s = startPlace.label.trim();
-    const e = endPlace.label.trim();
+    const startLabel = startPlace.label.trim();
+    const endLabel = endPlace.label.trim();
 
     if (movement === 'drive') {
-      return `Fahrt von ${s} nach ${e}`;
+      return `Fahrt von ${startLabel} nach ${endLabel}`;
     }
 
     if (movement === 'bike') {
-      return `Radtour von ${s} nach ${e}`;
+      return `Radtour von ${startLabel} nach ${endLabel}`;
     }
 
     if (movement === 'hike') {
-      return `Wanderung von ${s} nach ${e}`;
+      return `Wanderung von ${startLabel} nach ${endLabel}`;
     }
 
-    return `Spaziergang von ${s} nach ${e}`;
+    return `Spaziergang von ${startLabel} nach ${endLabel}`;
   }
 
   // Fall B: Einzelner Ort, Rundtour oder Start/Ende im selben Ort

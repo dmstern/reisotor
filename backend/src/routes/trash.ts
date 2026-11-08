@@ -197,7 +197,7 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { type: string; id: string } }>(
     '/trash/:type/:id/restore',
     async (req, reply) => {
-      const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
+      const config = TRASH_CONFIG.find((item) => item.type === req.params.type);
 
       if (!config) {
         return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
@@ -254,7 +254,7 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
   );
 
   app.delete<{ Params: { type: string; id: string } }>('/trash/:type/:id', async (req, reply) => {
-    const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
+    const config = TRASH_CONFIG.find((item) => item.type === req.params.type);
 
     if (!config) {
       return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
@@ -300,7 +300,7 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
             .prepare(`SELECT id FROM ${config.table} WHERE trip_id = ? AND deleted_at IS NOT NULL`)
             .all(tripId) as { id: number }[]);
 
-      const ids = rows.map((r) => (r as { id: number }).id);
+      const ids = rows.map((row) => (row as { id: number }).id);
 
       if (ids.length) {
         hardDeleteTrashItems(config.table as (typeof TRASH_TABLES)[number], ids);

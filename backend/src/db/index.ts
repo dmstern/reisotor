@@ -372,7 +372,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 function ensureColumn(table: string, column: string, definition: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
 
-  if (!existing.some((c) => c.name === column)) {
+  if (!existing.some((col) => col.name === column)) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 }
@@ -380,7 +380,7 @@ function ensureColumn(table: string, column: string, definition: string) {
 function dropColumnIfExists(table: string, column: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
 
-  if (existing.some((c) => c.name === column)) {
+  if (existing.some((col) => col.name === column)) {
     try {
       db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
     } catch (err: unknown) {
@@ -393,7 +393,7 @@ function dropColumnIfExists(table: string, column: string) {
 
 export function hasColumn(table: string, column: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
-  return existing.some((c) => c.name === column);
+  return existing.some((col) => col.name === column);
 }
 
 export function hasTable(name: string) {
@@ -487,7 +487,7 @@ ensureColumn('trip_categories', 'default_name', 'TEXT');
       const standards = STANDARD_CATEGORIES_BY_TYPE[row.type] || [];
       const trimmedLower = row.name.trim().toLowerCase();
       // 1. Exakter Match
-      const exactMatch = standards.find((s) => s.toLowerCase() === trimmedLower);
+      const exactMatch = standards.find((standard) => standard.toLowerCase() === trimmedLower);
 
       if (exactMatch) {
         updateStmt.run(exactMatch, row.id);
@@ -495,7 +495,9 @@ ensureColumn('trip_categories', 'default_name', 'TEXT');
       }
 
       // 2. Präfix-Match (z. B. "Flughafennnnn" beginnt mit "Flughafen", "Aktivitätsbk" beginnt mit "Aktivität")
-      const prefixMatch = standards.find((s) => trimmedLower.startsWith(s.toLowerCase()));
+      const prefixMatch = standards.find((standard) =>
+        trimmedLower.startsWith(standard.toLowerCase())
+      );
 
       if (prefixMatch) {
         updateStmt.run(prefixMatch, row.id);
@@ -778,13 +780,18 @@ if (hasTable('budget_targets')) {
         // damit der Zahlenwert nicht verloren geht.
         const budgetId = insertBudget.run(target.trip_id, 'Gemeinsames Budget', null)
           .lastInsertRowid as number;
-        const tripCategoryTargets = categoryTargets.filter((c) => c.trip_id === target.trip_id);
+        const tripCategoryTargets = categoryTargets.filter(
+          (categoryTarget) => categoryTarget.trip_id === target.trip_id
+        );
 
-        for (const c of tripCategoryTargets) {
-          insertAllocation.run(budgetId, c.category, c.amount);
+        for (const categoryTarget of tripCategoryTargets) {
+          insertAllocation.run(budgetId, categoryTarget.category, categoryTarget.amount);
         }
 
-        const allocatedSum = tripCategoryTargets.reduce((s, c) => s + c.amount, 0);
+        const allocatedSum = tripCategoryTargets.reduce(
+          (sum, categoryTarget) => sum + categoryTarget.amount,
+          0
+        );
         const remainder = target.amount - allocatedSum;
 
         if (remainder > 0) {
@@ -975,9 +982,17 @@ if (hasTable('travel_places')) {
     `INSERT INTO spots (trip_id, title, category, maps_link, lat, lng, is_home) VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
 
-  for (const p of places) {
-    const result = insertSpot.run(p.trip_id, p.name, p.type, p.maps_link, p.lat, p.lng, p.is_home);
-    placeToSpotId.set(p.id, result.lastInsertRowid as number);
+  for (const place of places) {
+    const result = insertSpot.run(
+      place.trip_id,
+      place.name,
+      place.type,
+      place.maps_link,
+      place.lat,
+      place.lng,
+      place.is_home
+    );
+    placeToSpotId.set(place.id, result.lastInsertRowid as number);
   }
 
   // travel_items.from_place_id/to_place_id verweisen per FK fest auf travel_places(id) (foreign_keys
@@ -1327,7 +1342,7 @@ export function hardDeleteTrashItems(table: (typeof TRASH_TABLES)[number], ids: 
       if (legRows.length) {
         purgeAttachmentsForEntities(
           'excursion_legs',
-          legRows.map((r) => r.id)
+          legRows.map((row) => row.id)
         );
       }
     }
@@ -1356,7 +1371,7 @@ export function purgeOldTrash(maxAgeDays = 30) {
     if (staleRows.length) {
       hardDeleteTrashItems(
         table,
-        staleRows.map((r) => r.id)
+        staleRows.map((row) => row.id)
       );
     }
   }
@@ -1531,7 +1546,7 @@ const tripsInfo = db.prepare('PRAGMA table_info(trips)').all() as {
   name: string;
   notnull: number;
 }[];
-const startDateCol = tripsInfo.find((c) => c.name === 'start_date');
+const startDateCol = tripsInfo.find((col) => col.name === 'start_date');
 
 if (startDateCol && startDateCol.notnull === 1) {
   db.exec('PRAGMA foreign_keys = OFF');
@@ -1553,7 +1568,7 @@ if (startDateCol && startDateCol.notnull === 1) {
     )
   `);
   const oldCols = (db.prepare('PRAGMA table_info(trips)').all() as { name: string }[]).map(
-    (c) => c.name
+    (col) => col.name
   );
   const targetCols = [
     'id',

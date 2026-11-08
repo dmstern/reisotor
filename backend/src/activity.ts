@@ -30,7 +30,7 @@ export function onlineUserIds(tripId: number): number[] {
     return [];
   }
 
-  return [...new Set([...set].map((c) => c.userId))];
+  return [...new Set([...set].map((conn) => conn.userId))];
 }
 
 function broadcastPresence(tripId: number) {

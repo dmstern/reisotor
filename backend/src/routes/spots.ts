@@ -337,9 +337,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         10
       );
 
-      for (const p of photos) {
-        if (!previewImages.includes(p)) {
-          previewImages.push(p);
+      for (const photo of photos) {
+        if (!previewImages.includes(photo)) {
+          previewImages.push(photo);
         }
       }
 

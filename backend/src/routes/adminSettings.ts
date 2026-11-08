@@ -179,20 +179,20 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     ).count;
 
     return {
-      messages: rows.map((r) => ({
-        id: r.id,
-        type: r.type,
-        name: r.name,
-        email: r.email,
-        username: r.username,
-        message: r.message,
-        status: r.status,
-        created_at: r.created_at,
-        matchedUser: r.matched_user_id
+      messages: rows.map((row) => ({
+        id: row.id,
+        type: row.type,
+        name: row.name,
+        email: row.email,
+        username: row.username,
+        message: row.message,
+        status: row.status,
+        created_at: row.created_at,
+        matchedUser: row.matched_user_id
           ? {
-              id: r.matched_user_id,
-              username: r.matched_username,
-              is_email_verified: r.matched_is_email_verified === 1,
+              id: row.matched_user_id,
+              username: row.matched_username,
+              is_email_verified: row.matched_is_email_verified === 1,
             }
           : null,
       })),

@@ -143,14 +143,14 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
         'INSERT INTO location_track_points (track_id, lat, lng, recorded_at, accuracy, altitude) VALUES (?, ?, ?, ?, ?, ?)'
       );
       const insertAll = db.transaction((rows: TrackPointInput[]) => {
-        for (const p of rows) {
+        for (const point of rows) {
           insert.run(
             track.id,
-            p.lat,
-            p.lng,
-            p.recorded_at,
-            p.accuracy ?? null,
-            p.altitude !== undefined ? p.altitude : null
+            point.lat,
+            point.lng,
+            point.recorded_at,
+            point.accuracy ?? null,
+            point.altitude !== undefined ? point.altitude : null
           );
         }
       });
@@ -324,10 +324,10 @@ export const tracksRoutes: FastifyPluginAsync = async (app) => {
           );
           const updateAllPoints = db.transaction((pts: typeof points) => {
             for (const pt of pts) {
-              const t = new Date(pt.recorded_at).getTime();
+              const timeMs = new Date(pt.recorded_at).getTime();
 
-              if (!isNaN(t)) {
-                updatePoint.run(new Date(t + deltaMs).toISOString(), pt.id);
+              if (!isNaN(timeMs)) {
+                updatePoint.run(new Date(timeMs + deltaMs).toISOString(), pt.id);
               }
             }
           });

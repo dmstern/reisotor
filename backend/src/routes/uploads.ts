@@ -27,12 +27,12 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ error: 'Nicht gefunden' });
     }
 
-    const hasAccess = records.some((r) => {
-      if (r.trip_id != null) {
-        return isTripMember(r.trip_id, userId);
+    const hasAccess = records.some((record) => {
+      if (record.trip_id != null) {
+        return isTripMember(record.trip_id, userId);
       }
 
-      return r.uploaded_by != null && r.uploaded_by === userId;
+      return record.uploaded_by != null && record.uploaded_by === userId;
     });
 
     if (!hasAccess) {

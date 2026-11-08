@@ -201,9 +201,9 @@ export const AIRPORT_RELEVANCE_TERMS = [
 
 export function isAirportQuery(name: string, category?: string): boolean {
   if (category) {
-    const c = category.trim().toLowerCase();
+    const cat = category.trim().toLowerCase();
 
-    if (c === 'flughafen' || c === 'airport' || c === 'flugplatz') {
+    if (cat === 'flughafen' || cat === 'airport' || cat === 'flugplatz') {
       return true;
     }
   }
@@ -492,7 +492,7 @@ function stripWord(text: string, word: string): string {
 
   const normWord = normalizeText(word);
   const tokens = text.split(/\s+/);
-  const filtered = tokens.filter((t) => normalizeText(t) !== normWord);
+  const filtered = tokens.filter((token) => normalizeText(token) !== normWord);
   return filtered.join(' ').trim();
 }
 
@@ -552,13 +552,13 @@ function parseBingHtml(html: string, rawName: string, options: ParseBingHtmlOpti
   // 1. Bing primäre Struktur: class="iusc" style="..." m="{...}"
   const itemMatches = [...html.matchAll(/class=["']iusc["'][^>]*?m=["']({.*?})["']/gi)];
 
-  for (const m of itemMatches) {
+  for (const match of itemMatches) {
     if (photos.length >= limit) {
       break;
     }
 
     try {
-      const decoded = m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"');
+      const decoded = match[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"');
       const data = JSON.parse(decoded);
       const murl: string | undefined = data.murl;
       const turl: string | undefined = data.turl;
@@ -917,11 +917,14 @@ export function buildAirportSearchQueries(rawName: string, city?: string): strin
   const targetCity = city?.trim() || '';
   const queries: string[] = [];
 
-  const add = (q: string) => {
-    const t = q.trim();
+  const add = (query: string) => {
+    const trimmed = query.trim();
 
-    if (t && !queries.some((x) => x.toLowerCase() === t.toLowerCase())) {
-      queries.push(t);
+    if (
+      trimmed &&
+      !queries.some((existingQuery) => existingQuery.toLowerCase() === trimmed.toLowerCase())
+    ) {
+      queries.push(trimmed);
     }
   };
 
@@ -969,8 +972,8 @@ export function buildSearchQueries(rawName: string, city?: string, category?: st
 
   const queries: string[] = [];
 
-  const add = (q: string) => {
-    const trimmed = q.trim();
+  const add = (query: string) => {
+    const trimmed = query.trim();
 
     if (trimmed && !queries.some((existing) => existing.toLowerCase() === trimmed.toLowerCase())) {
       queries.push(trimmed);
@@ -1062,12 +1065,12 @@ export async function searchWebPlacePhotos(
 
   const queries = buildSearchQueries(rawName, cleanCity, cleanCategory);
 
-  for (const q of queries) {
+  for (const query of queries) {
     if (photos.length >= limit) {
       break;
     }
 
-    const batch = await queryBingImages(q, rawName, {
+    const batch = await queryBingImages(query, rawName, {
       limit: limit - photos.length,
       seen,
       city: cleanCity,
@@ -1075,19 +1078,19 @@ export async function searchWebPlacePhotos(
       isBanner,
     });
 
-    for (const p of batch) {
-      photos.push(p);
+    for (const photo of batch) {
+      photos.push(photo);
     }
   }
 
   // Fallback auf DuckDuckGo, falls Bing keine oder unzureichende Ergebnisse geliefert hat
   if (photos.length < limit) {
-    for (const q of queries) {
+    for (const query of queries) {
       if (photos.length >= limit) {
         break;
       }
 
-      const batch = await queryDuckDuckGoImages(q, rawName, {
+      const batch = await queryDuckDuckGoImages(query, rawName, {
         limit: limit - photos.length,
         seen,
         city: cleanCity,
@@ -1095,8 +1098,8 @@ export async function searchWebPlacePhotos(
         isBanner,
       });
 
-      for (const p of batch) {
-        photos.push(p);
+      for (const photo of batch) {
+        photos.push(photo);
       }
     }
   }
@@ -1145,10 +1148,10 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
   // 1. Primär: Echte Web-Bildersuche
   const webPhotos = await searchWebPlacePhotos(rawName, { city, category, limit, isBanner });
 
-  for (const p of webPhotos) {
-    if (!seen.has(p)) {
-      seen.add(p);
-      photos.push(p);
+  for (const photo of webPhotos) {
+    if (!seen.has(photo)) {
+      seen.add(photo);
+      photos.push(photo);
     }
   }
 

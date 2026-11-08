@@ -35,7 +35,7 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ error: 'Suchbegriff erforderlich' });
       }
 
-      const q = rawQ.trim();
+      const query = rawQ.trim();
       const rawLat = req.query.lat != null ? Number(req.query.lat) : undefined;
       const rawLng = req.query.lng != null ? Number(req.query.lng) : undefined;
       let limit = req.query.limit != null ? Number(req.query.limit) : 10;
@@ -62,7 +62,7 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
       const lng = rawLng != null && Number.isFinite(rawLng) ? rawLng : undefined;
 
       const results = await searchPlaces({
-        q,
+        q: query,
         lat,
         lng,
         limit,

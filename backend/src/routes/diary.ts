@@ -268,7 +268,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         'SELECT e.*, u.username as author_username, u.avatar as author_avatar FROM diary_entries e LEFT JOIN users u ON e.author_id = u.id WHERE e.trip_id = ? AND e.deleted_at IS NULL AND (e.is_draft = 0 OR e.author_id = ?) ORDER BY e.date DESC, e.created_at DESC, e.id DESC'
       )
       .all(req.query.trip_id, req.session.userId) as EntryRow[];
-    const entryIds = rows.map((r) => r.id);
+    const entryIds = rows.map((row) => row.id);
     const excursionIds = excursionIdsFor(entryIds);
     const spotIds = spotIdsFor(entryIds);
     const editorIds = editorIdsFor(entryIds);

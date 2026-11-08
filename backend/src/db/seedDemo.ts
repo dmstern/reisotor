@@ -61,19 +61,26 @@ const insertUser = db.prepare(
 );
 
 for (let i = 0; i < users.length; i++) {
-  const u = users[i];
-  insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 0);
+  const user = users[i];
+  insertUser.run(
+    user.username,
+    bcrypt.hashSync(user.password, 10),
+    user.avatar,
+    i === 0 ? 1 : 0,
+    0
+  );
   db.prepare('UPDATE users SET icon_settings = ? WHERE username = ?').run(
     JSON.stringify({
       groups: { navigation: 'icons', categories: 'emoji', weather: 'icons' },
       variants: { navigation: 'outline', categories: 'outline', weather: 'outline' },
     }),
-    u.username
+    user.username
   );
 }
 
 const [user1, user2, user3] = users.map(
-  (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number }
+  (user) =>
+    db.prepare('SELECT id FROM users WHERE username = ?').get(user.username) as { id: number }
 );
 
 const isScreenshotMode =
@@ -110,8 +117,8 @@ const insertMembership = db.prepare(
 const membershipNow = isScreenshotMode ? '2026-08-01T10:00:00.000Z' : new Date().toISOString();
 const allUsers = db.prepare('SELECT id FROM users').all() as { id: number }[];
 
-for (const u of allUsers) {
-  insertMembership.run(tripId, u.id, membershipNow);
+for (const user of allUsers) {
+  insertMembership.run(tripId, user.id, membershipNow);
 }
 
 if (isScreenshotMode) {
@@ -148,9 +155,9 @@ if (isScreenshotMode) {
       null
     ).lastInsertRowid as number;
 
-  for (const u of allUsers) {
-    insertMembership.run(extraTrip1, u.id, membershipNow);
-    insertMembership.run(extraTrip2, u.id, membershipNow);
+  for (const user of allUsers) {
+    insertMembership.run(extraTrip1, user.id, membershipNow);
+    insertMembership.run(extraTrip2, user.id, membershipNow);
   }
 }
 
@@ -923,10 +930,10 @@ const seedTracks: SeedTrack[] = [
     baseDate: isScreenshotMode
       ? new Date('2026-08-15T18:30:00.000Z')
       : (() => {
-          const d = new Date(today);
-          d.setDate(d.getDate() - 3);
-          d.setHours(18, 30, 0, 0);
-          return d;
+          const targetDate = new Date(today);
+          targetDate.setDate(targetDate.getDate() - 3);
+          targetDate.setHours(18, 30, 0, 0);
+          return targetDate;
         })(),
     points: [
       { lat: 38.7061, lng: -9.145, offsetMin: 0, alt: 12.0 },
@@ -944,10 +951,10 @@ const seedTracks: SeedTrack[] = [
     baseDate: isScreenshotMode
       ? new Date('2026-08-16T10:00:00.000Z')
       : (() => {
-          const d = new Date(today);
-          d.setDate(d.getDate() - 2);
-          d.setHours(10, 0, 0, 0);
-          return d;
+          const targetDate = new Date(today);
+          targetDate.setDate(targetDate.getDate() - 2);
+          targetDate.setHours(10, 0, 0, 0);
+          return targetDate;
         })(),
     points: [
       { lat: 38.7099, lng: -9.133, offsetMin: 0, alt: 18.0 },
@@ -966,10 +973,10 @@ const seedTracks: SeedTrack[] = [
     baseDate: isScreenshotMode
       ? new Date('2026-08-17T09:30:00.000Z')
       : (() => {
-          const d = new Date(today);
-          d.setDate(d.getDate() - 1);
-          d.setHours(15, 30, 0, 0);
-          return d;
+          const targetDate = new Date(today);
+          targetDate.setDate(targetDate.getDate() - 1);
+          targetDate.setHours(15, 30, 0, 0);
+          return targetDate;
         })(),
     points: [
       { lat: 38.696, lng: -9.1935, offsetMin: 0, alt: 4.0 },
@@ -995,9 +1002,9 @@ for (const track of seedTracks) {
   );
   const trackId = trackResult.lastInsertRowid as number;
 
-  for (const p of track.points) {
-    const pointTime = new Date(startMs + p.offsetMin * 60 * 1000).toISOString();
-    insertPoint.run(trackId, p.lat, p.lng, pointTime, 5.0, p.alt);
+  for (const point of track.points) {
+    const pointTime = new Date(startMs + point.offsetMin * 60 * 1000).toISOString();
+    insertPoint.run(trackId, point.lat, point.lng, pointTime, 5.0, point.alt);
   }
 }
 

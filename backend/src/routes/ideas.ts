@@ -389,7 +389,7 @@ function syncExcursionLegs({
 }: SyncExcursionLegsOptions) {
   const existingLegs = selectLegsByIdeaStmt.all(ideaId) as ExcursionLegRow[];
   const existingBudgetIds = new Set(
-    existingLegs.map((l) => l.budget_expense_id).filter((id): id is number => id != null)
+    existingLegs.map((leg) => leg.budget_expense_id).filter((id): id is number => id != null)
   );
   const preservedBudgetIds = new Set<number>();
   const preservedLegIds = new Set<number>();
@@ -590,9 +590,9 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const rows = selectIdeasByTripStmt.all(req.query.trip_id) as IdeaRow[];
-    const spotIds = spotIdsFor(rows.map((r) => r.id));
-    const legs = legsFor(rows.map((r) => r.id));
-    const dates = scheduleDatesForIdeas(rows.map((r) => r.id));
+    const spotIds = spotIdsFor(rows.map((row) => row.id));
+    const legs = legsFor(rows.map((row) => row.id));
+    const dates = scheduleDatesForIdeas(rows.map((row) => row.id));
     return rows.map((row) =>
       serializeIdea(
         row,
@@ -648,13 +648,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
 
     const hasLegs = Array.isArray(legs) && legs.length > 0;
     const effectiveDepTime = hasLegs
-      ? legs.find((l) => !!l.departure_time)?.departure_time || null
+      ? legs.find((leg) => !!leg.departure_time)?.departure_time || null
       : departure_time || null;
     const effectiveArrTime = hasLegs
-      ? [...legs].reverse().find((l) => !!l.arrival_time)?.arrival_time || null
+      ? [...legs].reverse().find((leg) => !!leg.arrival_time)?.arrival_time || null
       : arrival_time || null;
     const effectiveTransportType = hasLegs
-      ? legs.find((l) => !!l.transport_type)?.transport_type || null
+      ? legs.find((leg) => !!leg.transport_type)?.transport_type || null
       : transport_type || null;
 
     const localImageUrl = await localizeImageUrl(image_url, {
@@ -756,13 +756,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
 
     const hasLegs = Array.isArray(legs) && legs.length > 0;
     const effectiveDepTime = hasLegs
-      ? legs.find((l) => !!l.departure_time)?.departure_time || null
+      ? legs.find((leg) => !!leg.departure_time)?.departure_time || null
       : departure_time || null;
     const effectiveArrTime = hasLegs
-      ? [...legs].reverse().find((l) => !!l.arrival_time)?.arrival_time || null
+      ? [...legs].reverse().find((leg) => !!leg.arrival_time)?.arrival_time || null
       : arrival_time || null;
     const effectiveTransportType = hasLegs
-      ? legs.find((l) => !!l.transport_type)?.transport_type || null
+      ? legs.find((leg) => !!leg.transport_type)?.transport_type || null
       : transport_type || null;
 
     const localImageUrl = await localizeImageUrl(image_url, {
@@ -969,7 +969,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
            GROUP BY idea_id
            HAVING COUNT(*) = 1 AND MAX(spot_id) = ?`
         )
-        .get(...candidates.map((c) => c.id), spot_id) as { id: number } | undefined;
+        .get(...candidates.map((candidate) => candidate.id), spot_id) as { id: number } | undefined;
     }
 
     if (existing) {

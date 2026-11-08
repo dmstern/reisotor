@@ -13,8 +13,8 @@ interface TripRow {
 function daysUntil(dateStr: string): number {
   const today = new Date();
   const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const targetUtc = Date.UTC(y, m - 1, d);
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const targetUtc = Date.UTC(year, month - 1, day);
   return Math.round((targetUtc - todayUtc) / DAY_MS);
 }
 

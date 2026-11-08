@@ -21,10 +21,10 @@ export const draftsRoutes: FastifyPluginAsync = async (app) => {
     const rows = db
       .prepare('SELECT draft_key, data, updated_at FROM drafts WHERE user_id = ? AND trip_id = ?')
       .all(req.session.userId, req.query.trip_id) as DraftRow[];
-    return rows.map((r) => ({
-      draft_key: r.draft_key,
-      data: JSON.parse(r.data),
-      updated_at: r.updated_at,
+    return rows.map((row) => ({
+      draft_key: row.draft_key,
+      data: JSON.parse(row.data),
+      updated_at: row.updated_at,
     }));
   });
 

@@ -125,7 +125,7 @@ export function isTripOwnerRestricted(tripId: number | string): boolean {
     return false;
   }
 
-  return members.every((m) => isUserRestricted(m.user_id));
+  return members.every((member) => isUserRestricted(member.user_id));
 }
 
 /** true, wenn userId die anlegende Person des Urlaubs (das älteste trip_members-Mitglied) ist. */

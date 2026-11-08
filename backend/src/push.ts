@@ -91,9 +91,9 @@ export function getPushPreferences(userId: number): Record<PushPreferenceDomain,
   const rows = db
     .prepare('SELECT domain, enabled FROM push_preferences WHERE user_id = ?')
     .all(userId) as PushPreferenceRow[];
-  const byDomain = new Map(rows.map((r) => [r.domain, !!r.enabled]));
+  const byDomain = new Map(rows.map((row) => [row.domain, !!row.enabled]));
   return Object.fromEntries(
-    PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? true])
+    PUSH_PREFERENCE_DOMAINS.map((domain) => [domain, byDomain.get(domain) ?? true])
   ) as Record<PushPreferenceDomain, boolean>;
 }
 
@@ -122,9 +122,9 @@ export function getEmailPreferences(userId: number): Record<PushPreferenceDomain
   const rows = db
     .prepare('SELECT domain, enabled FROM email_preferences WHERE user_id = ?')
     .all(userId) as PushPreferenceRow[];
-  const byDomain = new Map(rows.map((r) => [r.domain, !!r.enabled]));
+  const byDomain = new Map(rows.map((row) => [row.domain, !!row.enabled]));
   return Object.fromEntries(
-    PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? false])
+    PUSH_PREFERENCE_DOMAINS.map((domain) => [domain, byDomain.get(domain) ?? false])
   ) as Record<PushPreferenceDomain, boolean>;
 }
 
@@ -509,18 +509,18 @@ export async function sendEmailToTripMembers(
   }
 
   await Promise.all(
-    users.map(async (u) => {
+    users.map(async (recipient) => {
       try {
         await sendActivityEmail({
-          to: u.email,
-          username: u.username,
+          to: recipient.email,
+          username: recipient.username,
           tripId,
           tripName: params.tripName,
           title: params.title,
           body: params.body,
         });
       } catch (err) {
-        console.warn(`[Mailer] Activity-Mail an ${u.email} fehlgeschlagen:`, err);
+        console.warn(`[Mailer] Activity-Mail an ${recipient.email} fehlgeschlagen:`, err);
       }
     })
   );
@@ -550,18 +550,18 @@ export async function sendEmailToAllSubscribers(
   }
 
   await Promise.all(
-    users.map(async (u) => {
+    users.map(async (recipient) => {
       try {
         await sendActivityEmail({
-          to: u.email,
-          username: u.username,
+          to: recipient.email,
+          username: recipient.username,
           title: params.title,
           body: params.body,
           actionUrl: params.actionUrl,
           actionLabel: params.actionLabel,
         });
       } catch (err) {
-        console.warn(`[Mailer] Benachrichtigungs-Mail an ${u.email} fehlgeschlagen:`, err);
+        console.warn(`[Mailer] Benachrichtigungs-Mail an ${recipient.email} fehlgeschlagen:`, err);
       }
     })
   );
