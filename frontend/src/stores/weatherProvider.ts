@@ -30,7 +30,7 @@ export const useWeatherProviderStore = defineStore('weatherProvider', () => {
 
   const model = computed<WeatherModel>(() => {
     const tripModel = tripStore.currentTrip?.weather_model;
-    return WEATHER_MODEL_OPTIONS.some((o) => o.value === tripModel)
+    return WEATHER_MODEL_OPTIONS.some((option) => option.value === tripModel)
       ? (tripModel as WeatherModel)
       : DEFAULT_WEATHER_MODEL;
   });

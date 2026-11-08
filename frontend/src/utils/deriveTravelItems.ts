@@ -9,7 +9,7 @@ import type { Excursion, Spot, TravelItem } from '../api/types';
 // weiterlaufen. idea.id wird 1:1 als TravelItem.id übernommen, from_place_id/to_place_id zeigen
 // direkt auf die beiden Stationen (spot_ids[0]/[1]).
 export function deriveTravelItems(excursions: Excursion[], spots: Spot[]): TravelItem[] {
-  const spotById = new Map(spots.map((s) => [s.id, s]));
+  const spotById = new Map(spots.map((spot) => [spot.id, spot]));
   return excursions
     .filter((e) => e.role != null)
     .map((e): TravelItem => {

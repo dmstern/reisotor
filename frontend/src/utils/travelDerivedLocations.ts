@@ -34,15 +34,15 @@ export function buildTravelDerivedLocations(travelItems: TravelItem[]): TravelDe
 
   const seenLatLng = new Set<string>();
 
-  function addFallbackSide(t: TravelItem, side: 'from' | 'to') {
-    const placeId = side === 'from' ? t.from_place_id : t.to_place_id;
+  function addFallbackSide(travelItem: TravelItem, side: 'from' | 'to') {
+    const placeId = side === 'from' ? travelItem.from_place_id : travelItem.to_place_id;
 
     if (placeId != null) {
       return;
     } // verknüpfter Ort ist bereits ein normaler Spot
 
-    const lat = side === 'from' ? t.from_lat : t.to_lat;
-    const lng = side === 'from' ? t.from_lng : t.to_lng;
+    const lat = side === 'from' ? travelItem.from_lat : travelItem.to_lat;
+    const lng = side === 'from' ? travelItem.from_lng : travelItem.to_lng;
 
     if (lat == null || lng == null) {
       return;
@@ -56,21 +56,21 @@ export function buildTravelDerivedLocations(travelItems: TravelItem[]): TravelDe
 
     seenLatLng.add(identity);
     result.push({
-      key: `travel-${side}-${t.id}`,
-      title: `${t.title} (${side === 'from' ? 'Abflug/Abfahrt' : 'Ankunft'})`,
-      icon: travelTypeIcon(t.type, '📍'),
-      tabler: travelTypeIconDef(t.type, LOCATION_FALLBACK_ICON),
+      key: `travel-${side}-${travelItem.id}`,
+      title: `${travelItem.title} (${side === 'from' ? 'Abflug/Abfahrt' : 'Ankunft'})`,
+      icon: travelTypeIcon(travelItem.type, '📍'),
+      tabler: travelTypeIconDef(travelItem.type, LOCATION_FALLBACK_ICON),
       category: 'Reise',
-      maps_link: side === 'from' ? t.from_maps_link : t.to_maps_link,
+      maps_link: side === 'from' ? travelItem.from_maps_link : travelItem.to_maps_link,
       lat,
       lng,
-      homeSide: side === 'from' ? t.role === 'arrival' : t.role === 'departure',
+      homeSide: side === 'from' ? travelItem.role === 'arrival' : travelItem.role === 'departure',
     });
   }
 
-  for (const t of travelItems) {
-    addFallbackSide(t, 'from');
-    addFallbackSide(t, 'to');
+  for (const travelItem of travelItems) {
+    addFallbackSide(travelItem, 'from');
+    addFallbackSide(travelItem, 'to');
   }
 
   return result;

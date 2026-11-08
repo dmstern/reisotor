@@ -30,7 +30,7 @@ export function resolveScheduleItemIcons(
   if (item.spot_id != null) {
     const spot = maps?.spotMap
       ? maps.spotMap.get(item.spot_id)
-      : spots.find((s) => s.id === item.spot_id);
+      : spots.find((spot) => spot.id === item.spot_id);
 
     if (spot) {
       const meta = spotCategoryMeta(spot.category);
@@ -239,23 +239,23 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
 // Aufgaben mit Fälligkeitsdatum erscheinen automatisch (nicht editierbar) im Kalender (Batch 9).
 export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
   return todos
-    .filter((t): t is TodoItem & { due_date: string } => !!t.due_date)
-    .map((t) => ({
-      key: `todo-${t.id}`,
+    .filter((todo): todo is TodoItem & { due_date: string } => !!todo.due_date)
+    .map((todo) => ({
+      key: `todo-${todo.id}`,
       kind: 'todo' as const,
-      date: t.due_date,
-      endDate: t.due_date,
+      date: todo.due_date,
+      endDate: todo.due_date,
       time: null,
       endTime: null,
-      title: t.title,
-      note: t.note,
+      title: todo.title,
+      note: todo.note,
       location: null,
       category: 'todo' as const,
       ideaId: null,
       spotId: null,
-      todoId: t.id,
+      todoId: todo.id,
       scheduleItem: null,
-      done: !!t.done,
+      done: !!todo.done,
     }));
 }
 
@@ -309,8 +309,8 @@ export function buildAllEntries(
   // Erstelle Maps für O(1) Lookups bei der Iteration über alle Kalender-Termine
   const spotMap = new Map<number, Spot>();
 
-  for (const s of spots) {
-    spotMap.set(s.id, s);
+  for (const spot of spots) {
+    spotMap.set(spot.id, spot);
   }
 
   const excursionMap = new Map<number, Excursion>();
@@ -321,8 +321,8 @@ export function buildAllEntries(
 
   const travelMap = new Map<number, TravelItem>();
 
-  for (const t of travelItems) {
-    travelMap.set(t.id, t);
+  for (const travelItem of travelItems) {
+    travelMap.set(travelItem.id, travelItem);
   }
 
   const maps: CalendarLookupMaps = { spotMap, excursionMap, travelMap };

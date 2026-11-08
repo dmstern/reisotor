@@ -10,7 +10,7 @@ export interface DashboardConfigEntry {
 }
 
 function defaultEntries(): DashboardConfigEntry[] {
-  return DASHBOARD_TILES.map((t) => ({ key: t.key, visible: true }));
+  return DASHBOARD_TILES.map((tile) => ({ key: tile.key, visible: true }));
 }
 
 function loadEntries(): DashboardConfigEntry[] {
@@ -30,22 +30,22 @@ function loadEntries(): DashboardConfigEntry[] {
   // werden sichtbar ans Ende angehängt - sonst würden neue Kacheln für bestehende Nutzer:innen
   // sofort unsichtbar bleiben, ohne dass sie das je bewusst ausgeblendet hätten. 1:1 dieselbe
   // Reconciliation-Logik wie stores/navConfig.ts.
-  const known = new Set(DASHBOARD_TILES.map((t) => t.key));
+  const known = new Set(DASHBOARD_TILES.map((tile) => tile.key));
   const validExisting = parsed.filter((e) => known.has(e.key));
   const existingKeys = new Set(validExisting.map((e) => e.key));
-  const missing = DASHBOARD_TILES.filter((t) => !existingKeys.has(t.key)).map((t) => ({
-    key: t.key,
+  const missing = DASHBOARD_TILES.filter((tile) => !existingKeys.has(tile.key)).map((tile) => ({
+    key: tile.key,
     visible: true,
   }));
   return [...validExisting, ...missing];
 }
 
 export function sanitizeDashboardEntries(parsed: DashboardConfigEntry[]): DashboardConfigEntry[] {
-  const known = new Set(DASHBOARD_TILES.map((t) => t.key));
+  const known = new Set(DASHBOARD_TILES.map((tile) => tile.key));
   const validExisting = parsed.filter((e) => known.has(e.key) && typeof e.visible === 'boolean');
   const existingKeys = new Set(validExisting.map((e) => e.key));
-  const missing = DASHBOARD_TILES.filter((t) => !existingKeys.has(t.key)).map((t) => ({
-    key: t.key,
+  const missing = DASHBOARD_TILES.filter((tile) => !existingKeys.has(tile.key)).map((tile) => ({
+    key: tile.key,
     visible: true,
   }));
   return [...validExisting, ...missing];
@@ -55,7 +55,9 @@ export function sanitizeDashboardEntries(parsed: DashboardConfigEntry[]): Dashbo
 export const useDashboardConfigStore = defineStore('dashboardConfig', () => {
   const entries = ref<DashboardConfigEntry[]>(loadEntries());
 
-  watch(entries, (v) => localStorage.setItem(STORAGE_KEY, JSON.stringify(v)), { deep: true });
+  watch(entries, (value) => localStorage.setItem(STORAGE_KEY, JSON.stringify(value)), {
+    deep: true,
+  });
 
   function moveUp(key: string) {
     const idx = entries.value.findIndex((e) => e.key === key);

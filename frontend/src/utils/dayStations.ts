@@ -110,40 +110,40 @@ export function buildDayStations(
   // ORDER BY date, id), da die aufeinanderfolgende-Duplikat-Erkennung von der tatsächlichen
   // Reihenfolge der Etappen abhängt.
   // Helper to determine if arrival is on the next day
-  function arrivesNextDay(t: TravelItem) {
-    return !!t.departure_time && !!t.arrival_time && t.arrival_time < t.departure_time;
+  function arrivesNextDay(item: TravelItem) {
+    return !!item.departure_time && !!item.arrival_time && item.arrival_time < item.departure_time;
   }
 
   // Calculate the previous date
-  const d = new Date(date);
-  d.setDate(d.getDate() - 1);
-  const prevDate = d.toISOString().split('T')[0];
+  const prev = new Date(date);
+  prev.setDate(prev.getDate() - 1);
+  const prevDate = prev.toISOString().split('T')[0];
 
   // Etappen, die HEUTE starten
   const startsToday = travelItems
-    .filter((t) => t.date === date)
+    .filter((item) => item.date === date)
     .sort((a, b) => (a.departure_time ?? '').localeCompare(b.departure_time ?? ''));
 
   // Etappen, die GESTERN starteten, aber HEUTE ankommen (Mitternachts-Übergang)
   const arrivesToday = travelItems
-    .filter((t) => t.date === prevDate && arrivesNextDay(t))
+    .filter((item) => item.date === prevDate && arrivesNextDay(item))
     .sort((a, b) => (a.arrival_time ?? '').localeCompare(b.arrival_time ?? ''));
 
   let previousTravelKey: string | null = null;
 
   // 1. Zuerst die Ankünfte von gestern Nacht
-  for (const t of arrivesToday) {
-    const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);
+  for (const item of arrivesToday) {
+    const to = resolveStation(travelEndpointKey(item, 'to'), spots, travelItems);
 
     if (to) {
       timed.push({
-        time: t.arrival_time ?? t.departure_time,
+        time: item.arrival_time ?? item.departure_time,
         station: {
           ...to,
           connector: {
-            icon: travelTypeIcon(t.type, '📍'),
-            tabler: travelTypeIconDef(t.type),
-            label: t.title,
+            icon: travelTypeIcon(item.type, '📍'),
+            tabler: travelTypeIconDef(item.type),
+            label: item.title,
           },
         },
       });
@@ -152,27 +152,27 @@ export function buildDayStations(
   }
 
   // 2. Dann die Abflüge/Reisen von heute
-  for (const t of startsToday) {
-    const from = resolveStation(travelEndpointKey(t, 'from'), spots, travelItems);
+  for (const item of startsToday) {
+    const from = resolveStation(travelEndpointKey(item, 'from'), spots, travelItems);
 
     if (from && from.key !== previousTravelKey) {
-      timed.push({ time: t.departure_time, station: from });
+      timed.push({ time: item.departure_time, station: from });
       previousTravelKey = from.key;
     }
 
-    const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);
+    const to = resolveStation(travelEndpointKey(item, 'to'), spots, travelItems);
 
     if (to) {
       // Wenn die Ankunft erst morgen ist, hier (heute) NICHT die Ankunfts-Station anzeigen
-      if (!arrivesNextDay(t)) {
+      if (!arrivesNextDay(item)) {
         timed.push({
-          time: t.arrival_time ?? t.departure_time,
+          time: item.arrival_time ?? item.departure_time,
           station: {
             ...to,
             connector: {
-              icon: travelTypeIcon(t.type, '📍'),
-              tabler: travelTypeIconDef(t.type),
-              label: t.title,
+              icon: travelTypeIcon(item.type, '📍'),
+              tabler: travelTypeIconDef(item.type),
+              label: item.title,
             },
           },
         });
@@ -184,15 +184,15 @@ export function buildDayStations(
   // Unterkunft-Spots (Kategorie "Unterkunft", siehe Migrationskommentar in db/index.ts) sind an
   // jedem Tag ihres Aufenthaltszeitraums (start_date..end_date) automatisch eine Station, ohne dass
   // sie einem Ausflug zugeordnet sein müssen.
-  for (const s of spots.filter(
-    (s) =>
-      s.category === 'Unterkunft' &&
-      s.start_date &&
-      s.end_date &&
-      s.start_date <= date &&
-      date <= s.end_date
+  for (const accommodationSpot of spots.filter(
+    (spot) =>
+      spot.category === 'Unterkunft' &&
+      spot.start_date &&
+      spot.end_date &&
+      spot.start_date <= date &&
+      date <= spot.end_date
   )) {
-    const station = resolveStation(`spot-${s.id}`, spots, travelItems);
+    const station = resolveStation(`spot-${accommodationSpot.id}`, spots, travelItems);
 
     if (station) {
       timed.push({ time: null, station });
@@ -205,5 +205,7 @@ export function buildDayStations(
     }
   }
 
-  return timed.sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')).map((s) => s.station);
+  return timed
+    .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
+    .map((entry) => entry.station);
 }

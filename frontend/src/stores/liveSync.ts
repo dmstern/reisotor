@@ -46,7 +46,7 @@ function loadSeenAt(tripId: number, domain: LiveDomain): string {
 }
 
 function emptySets(): Record<LiveDomain, Set<number>> {
-  return Object.fromEntries(LIVE_DOMAINS.map((d) => [d, new Set<number>()])) as Record<
+  return Object.fromEntries(LIVE_DOMAINS.map((domain) => [domain, new Set<number>()])) as Record<
     LiveDomain,
     Set<number>
   >;
@@ -65,7 +65,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   const auth = useAuthStore();
 
   const domainVersion = reactive<Record<LiveDomain, number>>(
-    Object.fromEntries(LIVE_DOMAINS.map((d) => [d, 0])) as Record<LiveDomain, number>
+    Object.fromEntries(LIVE_DOMAINS.map((domain) => [domain, 0])) as Record<LiveDomain, number>
   );
   const unseenEntityIds = reactive<Record<LiveDomain, Set<number>>>(emptySets());
   // Zähler statt Domänen-Set: die Notification-Inbox (#97, stores/notifications.ts) will bei JEDER
@@ -152,7 +152,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   // Holt nach, was passiert ist, während kein Stream offen war (frischer Seitenaufruf, Tab war
   // geschlossen, kurzer Verbindungsabbruch) – ohne das wären Nav-Punkte nach einem Reload immer leer.
   async function backfill(tripId: number) {
-    const oldestSeen = LIVE_DOMAINS.map((d) => loadSeenAt(tripId, d)).sort()[0];
+    const oldestSeen = LIVE_DOMAINS.map((domain) => loadSeenAt(tripId, domain)).sort()[0];
     let rows: ActivityRow[] = [];
 
     try {

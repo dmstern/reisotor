@@ -444,9 +444,9 @@ const OTHER_EXPENSE_META: ExpenseCategoryMeta = {
 };
 
 /** Vorschläge für Combobox / Budget: alphabetisch sortierte Standardkategorien */
-export const EXPENSE_CATEGORY_SUGGESTIONS = KNOWN_EXPENSE_CATEGORIES.map((c) => c.label).sort(
-  (a, b) => a.localeCompare(b, 'de')
-);
+export const EXPENSE_CATEGORY_SUGGESTIONS = KNOWN_EXPENSE_CATEGORIES.map(
+  (category) => category.label
+).sort((a, b) => a.localeCompare(b, 'de'));
 
 const LOOKUP = new Map<string, KnownExpenseCategoryDef>();
 

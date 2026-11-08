@@ -13,7 +13,7 @@ export function travelDurationMinutes(
   const [dh, dm] = departureTime.split(':').map(Number);
   const [ah, am] = arrivalTime.split(':').map(Number);
 
-  if ([dh, dm, ah, am].some((n) => Number.isNaN(n))) {
+  if ([dh, dm, ah, am].some((val) => Number.isNaN(val))) {
     return null;
   }
 
@@ -27,33 +27,33 @@ export function travelDurationMinutes(
 }
 
 export function formatTravelDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
 
-  if (h === 0) {
-    return `${m}\u00A0Min.`;
+  if (hours === 0) {
+    return `${remainingMinutes}\u00A0Min.`;
   }
 
-  if (m === 0) {
-    return `${h}\u00A0Std.`;
+  if (remainingMinutes === 0) {
+    return `${hours}\u00A0Std.`;
   }
 
-  return `${h}\u00A0Std. ${m}\u00A0Min.`;
+  return `${hours}\u00A0Std. ${remainingMinutes}\u00A0Min.`;
 }
 
 export function formatTravelDurationParts(minutes: number): string[] {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
 
-  if (h === 0) {
-    return [`${m}\u00A0Min.`];
+  if (hours === 0) {
+    return [`${remainingMinutes}\u00A0Min.`];
   }
 
-  if (m === 0) {
-    return [`${h}\u00A0Std.`];
+  if (remainingMinutes === 0) {
+    return [`${hours}\u00A0Std.`];
   }
 
-  return [`${h}\u00A0Std.`, `${m}\u00A0Min.`];
+  return [`${hours}\u00A0Std.`, `${remainingMinutes}\u00A0Min.`];
 }
 
 export function tourTotalDurationMinutes(excursion: {

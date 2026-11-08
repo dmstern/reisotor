@@ -28,9 +28,9 @@ export const TARGET_DIRS = ['.', 'backend', 'frontend', 'e2e'];
  * Wirft einen RangeError bei days <= 0 oder ungültiger Zahl.
  */
 export function computeCooldownDate(days, now = new Date()) {
-  const d = Number(days);
+  const numDays = Number(days);
 
-  if (!Number.isFinite(d) || d <= 0) {
+  if (!Number.isFinite(numDays) || numDays <= 0) {
     throw new RangeError(`Cooldown days must be a positive finite number, got: ${days}`);
   }
 
@@ -40,7 +40,7 @@ export function computeCooldownDate(days, now = new Date()) {
     throw new TypeError(`Invalid date provided for now: ${now}`);
   }
 
-  const targetTime = baseTime - d * 24 * 60 * 60 * 1000;
+  const targetTime = baseTime - numDays * 24 * 60 * 60 * 1000;
   return new Date(targetTime).toISOString();
 }
 
@@ -195,10 +195,10 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
   let totalAuto = 0;
   let totalManual = 0;
 
-  for (const r of results) {
-    const c = r.counts;
-    const autoCount = r.autoFixable.length;
-    const manualCount = r.manualBreaking.length;
+  for (const result of results) {
+    const counts = result.counts;
+    const autoCount = result.autoFixable.length;
+    const manualCount = result.manualBreaking.length;
     totalAuto += autoCount;
     totalManual += manualCount;
 
@@ -206,7 +206,7 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
     const manualBadge = manualCount > 0 ? `ℹ️ ${manualCount}` : '0';
 
     lines.push(
-      `| \`${r.dir}\` | ${c.total || 0} | ${c.low || 0} | ${c.moderate || 0} | ${c.high || 0} | ${c.critical || 0} | ${autoBadge} | ${manualBadge} |`
+      `| \`${result.dir}\` | ${counts.total || 0} | ${counts.low || 0} | ${counts.moderate || 0} | ${counts.high || 0} | ${counts.critical || 0} | ${autoBadge} | ${manualBadge} |`
     );
   }
 
@@ -219,10 +219,10 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
     lines.push('| Verzeichnis | Paket | Severity | Direkt | Behebung |');
     lines.push('|---|---|---|---|---|');
 
-    for (const r of results) {
-      for (const a of r.autoFixable) {
+    for (const result of results) {
+      for (const item of result.autoFixable) {
         lines.push(
-          `| \`${r.dir}\` | \`${a.name}\` | **${a.severity}** | ${a.isDirect ? 'Ja' : 'Nein'} | Automatisch behebbar (\`npm run security:fix\`) |`
+          `| \`${result.dir}\` | \`${item.name}\` | **${item.severity}** | ${item.isDirect ? 'Ja' : 'Nein'} | Automatisch behebbar (\`npm run security:fix\`) |`
         );
       }
     }
@@ -242,10 +242,10 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
     lines.push('| Verzeichnis | Paket | Severity | Direkt | Erforderliches Upgrade / Grund |');
     lines.push('|---|---|---|---|---|');
 
-    for (const r of results) {
-      for (const m of r.manualBreaking) {
+    for (const result of results) {
+      for (const item of result.manualBreaking) {
         lines.push(
-          `| \`${r.dir}\` | \`${m.name}\` | ${m.severity} | ${m.isDirect ? 'Ja' : 'Nein'} | ${m.reason} |`
+          `| \`${result.dir}\` | \`${item.name}\` | ${item.severity} | ${item.isDirect ? 'Ja' : 'Nein'} | ${item.reason} |`
         );
       }
     }
@@ -467,15 +467,15 @@ if (isExecutingAsMain()) {
   }
 
   if (strictAll) {
-    const hasAnyVuln = results.some((r) => (r.counts.total || 0) > 0);
+    const hasAnyVuln = results.some((result) => (result.counts.total || 0) > 0);
 
     if (hasAnyVuln) {
       console.error('\n❌ FEHLER: Sicherheitslücken gefunden (--strict-all aktiv).');
       process.exit(1);
     }
   } else {
-    const hasHighOrCriticalAuto = results.some((r) =>
-      r.autoFixable.some((v) => v.severity === 'high' || v.severity === 'critical')
+    const hasHighOrCriticalAuto = results.some((result) =>
+      result.autoFixable.some((v) => v.severity === 'high' || v.severity === 'critical')
     );
 
     if (hasHighOrCriticalAuto) {

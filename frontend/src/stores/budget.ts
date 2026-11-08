@@ -73,18 +73,19 @@ export const useBudgetStore = defineStore('budget', () => {
     }
 
     try {
-      const [u, e, b, a, tr] = await Promise.all([
-        api.get<User[]>(`/trips/${tripId}/members`),
-        api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
-        api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
-        api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
-        api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
-      ]);
-      users.value = u;
-      expenses.value = e;
-      budgets.value = b;
-      allocations.value = a;
-      transfers.value = tr;
+      const [fetchedUsers, fetchedExpenses, fetchedBudgets, fetchedAllocations, fetchedTransfers] =
+        await Promise.all([
+          api.get<User[]>(`/trips/${tripId}/members`),
+          api.get<BudgetExpense[]>(`/budget?trip_id=${tripId}`),
+          api.get<Budget[]>(`/budget/budgets?trip_id=${tripId}`),
+          api.get<BudgetAllocation[]>(`/budget/allocations?trip_id=${tripId}`),
+          api.get<BudgetTransfer[]>(`/budget/transfers?trip_id=${tripId}`),
+        ]);
+      users.value = fetchedUsers;
+      expenses.value = fetchedExpenses;
+      budgets.value = fetchedBudgets;
+      allocations.value = fetchedAllocations;
+      transfers.value = fetchedTransfers;
     } catch {
       // Fehlschlag (offline ohne Cache, oder 403 durch einen inzwischen ungültigen Trip-Kontext,
       // siehe stores/trip.ts's reset()) - Arrays leeren statt stillschweigend die Daten des
@@ -116,7 +117,7 @@ export const useBudgetStore = defineStore('budget', () => {
       return 'Gemeinsam';
     }
 
-    return users.value.find((u) => u.id === id)?.username ?? '?';
+    return users.value.find((user) => user.id === id)?.username ?? '?';
   }
 
   function userAvatar(id: number | null) {
@@ -124,7 +125,7 @@ export const useBudgetStore = defineStore('budget', () => {
       return '🤝';
     }
 
-    return users.value.find((u) => u.id === id)?.avatar ?? '❓';
+    return users.value.find((user) => user.id === id)?.avatar ?? '❓';
   }
 
   function budgetLabel(budget: Budget) {
@@ -135,7 +136,7 @@ export const useBudgetStore = defineStore('budget', () => {
 
   // --- Budgets (persönlich oder geteilt) ---
   function allocationsFor(budgetId: number) {
-    return allocations.value.filter((a) => a.budget_id === budgetId);
+    return allocations.value.filter((allocation) => allocation.budget_id === budgetId);
   }
 
   function budgetTarget(budget: Budget) {
@@ -150,8 +151,8 @@ export const useBudgetStore = defineStore('budget', () => {
   // änderung ggü. vorher (dort zählten ausnahmslos alle Ausgaben).
   const totalSpent = computed(() =>
     expenses.value
-      .filter((e) => isSharedExpense(e, budgets.value))
-      .reduce((s, e) => s + e.amount, 0)
+      .filter((expense) => isSharedExpense(expense, budgets.value))
+      .reduce((sum, expense) => sum + expense.amount, 0)
   );
   const remaining = computed(() => grandTotal.value - totalSpent.value);
 
@@ -162,36 +163,36 @@ export const useBudgetStore = defineStore('budget', () => {
   function spentFor(budget: Budget, category: string) {
     const normCategory = category.trim().toLowerCase();
     return expenses.value
-      .filter((e) => {
-        if ((e.category ?? '').trim().toLowerCase() !== normCategory) {
+      .filter((expense) => {
+        if ((expense.category ?? '').trim().toLowerCase() !== normCategory) {
           return false;
         }
 
         if (budget.owner_id == null) {
-          if (!isSharedExpense(e, budgets.value)) {
+          if (!isSharedExpense(expense, budgets.value)) {
             return false;
           }
 
           // Wenn eine Ausgabe explizit einem Budget zugeordnet ist, fließt sie vorrangig
           // in genau diesen Topf. Nur wenn budget_id null ist, greift der automatische Kategorie-Fallback.
-          if (e.budget_id != null) {
-            return e.budget_id === budget.id;
+          if (expense.budget_id != null) {
+            return expense.budget_id === budget.id;
           }
 
           return true;
         }
 
-        if (isSharedExpense(e, budgets.value)) {
+        if (isSharedExpense(expense, budgets.value)) {
           return false;
         }
 
-        if (e.budget_id != null) {
-          return e.budget_id === budget.id;
+        if (expense.budget_id != null) {
+          return expense.budget_id === budget.id;
         }
 
-        return e.paid_by_user_id === budget.owner_id;
+        return expense.paid_by_user_id === budget.owner_id;
       })
-      .reduce((s, e) => s + e.amount, 0);
+      .reduce((sum, expense) => sum + expense.amount, 0);
   }
 
   const expenseCategories = computed(() => {
@@ -366,7 +367,7 @@ export const useBudgetStore = defineStore('budget', () => {
     body: Omit<TransferInput, 'trip_id'> & { trip_id?: number }
   ) {
     const updated = await api.put<BudgetTransfer>(`/budget/transfers/${id}`, body);
-    const idx = transfers.value.findIndex((t) => t.id === updated.id);
+    const idx = transfers.value.findIndex((transfer) => transfer.id === updated.id);
 
     if (idx !== -1) {
       const next = [...transfers.value];
@@ -379,7 +380,7 @@ export const useBudgetStore = defineStore('budget', () => {
 
   async function removeTransfer(id: number) {
     await api.delete(`/budget/transfers/${id}`);
-    transfers.value = transfers.value.filter((t) => t.id !== id);
+    transfers.value = transfers.value.filter((transfer) => transfer.id !== id);
   }
 
   return {

@@ -101,7 +101,11 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       [placeA, placeB, placeC]
     );
 
-    expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Zwischenstopp', 'Zielort']);
+    expect(stations.map((station) => station.title)).toEqual([
+      'Zuhause',
+      'Zwischenstopp',
+      'Zielort',
+    ]);
   });
 
   it('beschriftet die Verbindung zur jeweiligen Ziel-Station mit dem Namen der Etappe', () => {
@@ -163,7 +167,11 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
       [placeA, placeB, placeC]
     );
 
-    expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Zwischenstopp', 'Zielort']);
+    expect(stations.map((station) => station.title)).toEqual([
+      'Zuhause',
+      'Zwischenstopp',
+      'Zielort',
+    ]);
   });
 
   it('zeigt nicht-verknüpfte (Freitext-) Etappen weiterhin mit Reise-Titel + Transportmittel-Icon', () => {
@@ -181,7 +189,7 @@ describe('buildDayStations - Reise-Etappen-Verkettung', () => {
 
     const stations = buildDayStations('2026-08-10', [], [], [leg], []);
 
-    expect(stations.map((s) => s.title)).toEqual([
+    expect(stations.map((station) => station.title)).toEqual([
       'Taxi zum Flughafen (Abflug/Abfahrt)',
       'Taxi zum Flughafen (Ankunft)',
     ]);

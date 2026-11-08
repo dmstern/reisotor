@@ -558,7 +558,7 @@ export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSum
 
   const temps = weathers
     .map((w) => (w.tempMax != null ? Math.round(w.tempMax) : null))
-    .filter((t): t is number => t != null);
+    .filter((temp): temp is number => temp != null);
 
   if (!temps.length) {
     return null;
@@ -568,7 +568,9 @@ export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSum
   const maxTemp = Math.max(...temps);
   const tempLabel = minTemp === maxTemp ? `${minTemp}°` : `${minTemp}°–${maxTemp}°`;
 
-  const validCodes = weathers.map((w) => w.weatherCode).filter((c): c is number => c != null);
+  const validCodes = weathers
+    .map((w) => w.weatherCode)
+    .filter((code): code is number => code != null);
   let bestCode = validCodes[0] ?? 0;
   let bestIdx = WEATHER_CODE_SEVERITY_ORDER.indexOf(bestCode);
 
@@ -708,8 +710,8 @@ function parseHourlyResponse(data: OpenMeteoHourlyResponse): HourlyWeather[] {
   const result: HourlyWeather[] = [];
 
   if (data.hourly?.time && Array.isArray(data.hourly.time)) {
-    data.hourly.time.forEach((t, i) => {
-      const hourStr = t.split('T')[1] ?? '';
+    data.hourly.time.forEach((timeStr, i) => {
+      const hourStr = timeStr.split('T')[1] ?? '';
       const hourNum = parseInt(hourStr.split(':')[0], 10);
 
       if (![6, 9, 12, 15, 18, 21].includes(hourNum)) {

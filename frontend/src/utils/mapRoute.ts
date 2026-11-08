@@ -1,4 +1,4 @@
-import L from 'leaflet';
+import leaflet from 'leaflet';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { tablerMarkerSvg } from './tablerMarkerSvg';
 import type { IconDef } from './icon';
@@ -47,7 +47,7 @@ function markerGlyphHtml(icon: MarkerGlyph, sizePx: number): string {
 export function emojiPin(icon: MarkerGlyph, color: string, large = false) {
   const size = large ? 54 : 32;
   const fontSize = large ? 25 : 15;
-  return L.divIcon({
+  return leaflet.divIcon({
     html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
       transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
       box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid white;">
@@ -59,7 +59,7 @@ export function emojiPin(icon: MarkerGlyph, color: string, large = false) {
   });
 }
 
-const iconCache = new Map<string, L.DivIcon>();
+const iconCache = new Map<string, leaflet.DivIcon>();
 
 export function cachedEmojiPin(icon: MarkerGlyph, color: string, large = false) {
   const iconStyle = useIconStyleStore();
@@ -100,7 +100,7 @@ export function imagePin(
   const badgeHtml = dateBadge
     ? `<span class="photo-pin-date-badge">${escapeHtmlAttr(dateBadge)}</span>`
     : '';
-  return L.divIcon({
+  return leaflet.divIcon({
     html: `<div class="photo-map-pin-container" style="position:relative;width:${size}px;height:${size}px;display:flex;justify-content:center;">
       <div class="photo-map-pin ${large ? 'photo-map-pin--large' : ''}" style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
         transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
@@ -120,7 +120,7 @@ export function imagePin(
   });
 }
 
-const imageIconCache = new Map<string, L.DivIcon>();
+const imageIconCache = new Map<string, leaflet.DivIcon>();
 
 export function cachedImagePin(
   imageUrl: string,
@@ -145,7 +145,7 @@ export function cachedImagePin(
 // Markup bekommt keine Vue-Scoping-Attribute, ein @keyframes-Regelsatz muss daher global gelten).
 export function pulsingEmojiPin(icon: MarkerGlyph, color: string) {
   const size = 32;
-  return L.divIcon({
+  return leaflet.divIcon({
     html: `<div style="position:relative;width:${size}px;height:${size}px;">
       <div class="map-pulse-ring" style="position:absolute;inset:-10px;border-radius:50%;background:${color};"></div>
       <div style="position:relative;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
@@ -189,7 +189,7 @@ export function compassPin(icon: MarkerGlyph, color: string, headingDeg: number 
           border-left:12px solid transparent;border-right:12px solid transparent;
           border-bottom:28px solid ${color};opacity:.6;
           transform-origin:50% 100%;transform:translate(-50%,-100%) rotate(${headingDeg}deg);"></div>`;
-  return L.divIcon({
+  return leaflet.divIcon({
     html: `<div class="own-location-marker" style="position:relative;width:${size}px;height:${size}px;">
       <div class="map-pulse-ring" style="position:absolute;left:50%;top:50%;width:${dotSize + 10}px;height:${dotSize + 10}px;
         margin:${-(dotSize + 10) / 2}px 0 0 ${-(dotSize + 10) / 2}px;border-radius:50%;background:${color};"></div>
@@ -209,10 +209,10 @@ export function compassPin(icon: MarkerGlyph, color: string, headingDeg: number 
 // Kurve, Kontrollpunkt senkrecht zur Verbindungslinie versetzt) – rein optisch, wie man es von
 // schematischen Flugrouten-Darstellungen kennt, keine echte Streckenführung/Großkreisberechnung.
 export function arcPoints(
-  from: L.LatLngExpression,
-  to: L.LatLngExpression,
+  from: leaflet.LatLngExpression,
+  to: leaflet.LatLngExpression,
   segments = 32
-): L.LatLngExpression[] {
+): leaflet.LatLngExpression[] {
   const [lat1, lng1] = from as [number, number];
   const [lat2, lng2] = to as [number, number];
   const dLat = lat2 - lat1;
@@ -221,12 +221,18 @@ export function arcPoints(
   // automatisch einen dezenteren, lange einen deutlicheren Bogen. 0.15 ist ein reiner Optik-Faktor.
   const controlLat = (lat1 + lat2) / 2 - dLng * 0.15;
   const controlLng = (lng1 + lng2) / 2 + dLat * 0.15;
-  const points: L.LatLngExpression[] = [];
+  const points: leaflet.LatLngExpression[] = [];
 
   for (let i = 0; i <= segments; i++) {
-    const t = i / segments;
-    const lat = (1 - t) ** 2 * lat1 + 2 * (1 - t) * t * controlLat + t ** 2 * lat2;
-    const lng = (1 - t) ** 2 * lng1 + 2 * (1 - t) * t * controlLng + t ** 2 * lng2;
+    const progress = i / segments;
+    const lat =
+      (1 - progress) ** 2 * lat1 +
+      2 * (1 - progress) * progress * controlLat +
+      progress ** 2 * lat2;
+    const lng =
+      (1 - progress) ** 2 * lng1 +
+      2 * (1 - progress) * progress * controlLng +
+      progress ** 2 * lng2;
     points.push([lat, lng]);
   }
 
@@ -236,12 +242,15 @@ export function arcPoints(
 // Verkettet arcPoints() über beliebig viele Wegpunkte zu einer durchgehenden Route – Startpunkt
 // jedes Folgesegments wird weggelassen, sonst wäre er doppelt (identisch mit dem Endpunkt des
 // vorigen Segments). Braucht mindestens 2 Punkte, sonst wird ein leeres Array zurückgegeben.
-export function arcRoute(coords: L.LatLngExpression[], segments = 32): L.LatLngExpression[] {
+export function arcRoute(
+  coords: leaflet.LatLngExpression[],
+  segments = 32
+): leaflet.LatLngExpression[] {
   if (coords.length < 2) {
     return [];
   }
 
-  const arced: L.LatLngExpression[] = [];
+  const arced: leaflet.LatLngExpression[] = [];
 
   for (let i = 0; i < coords.length - 1; i++) {
     const segment = arcPoints(coords[i], coords[i + 1], segments);

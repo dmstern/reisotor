@@ -16,7 +16,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   const items = shallowRef<NotificationItem[]>([]);
   const loaded = ref(false);
-  const unreadCount = computed(() => items.value.filter((n) => !n.read).length);
+  const unreadCount = computed(
+    () => items.value.filter((notification) => !notification.read).length
+  );
 
   async function load() {
     const tripId = tripStore.currentTripId;
@@ -43,7 +45,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
   /** Von NotificationInbox.vue beim Klick auf einen Eintrag aufgerufen - optimistisch lokal
    *  markieren (Badge/Highlight verschwinden sofort), Server-Aufruf best effort im Hintergrund. */
   async function markRead(id: number) {
-    const idx = items.value.findIndex((n) => n.id === id);
+    const idx = items.value.findIndex((notification) => notification.id === id);
 
     if (idx === -1 || items.value[idx].read) {
       return;

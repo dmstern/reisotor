@@ -220,9 +220,9 @@ function applySettlements(
 ) {
   const netByUser = new Map(balances.map((b) => [b.user.id, b.net]));
 
-  for (const s of suggestions) {
-    netByUser.set(s.from.id, (netByUser.get(s.from.id) ?? 0) + s.amount);
-    netByUser.set(s.to.id, (netByUser.get(s.to.id) ?? 0) - s.amount);
+  for (const suggestion of suggestions) {
+    netByUser.set(suggestion.from.id, (netByUser.get(suggestion.from.id) ?? 0) + suggestion.amount);
+    netByUser.set(suggestion.to.id, (netByUser.get(suggestion.to.id) ?? 0) - suggestion.amount);
   }
 
   return netByUser;
@@ -257,9 +257,9 @@ describe('computeSettlementSuggestions', () => {
     );
     const suggestions = computeSettlementSuggestions(balances);
 
-    for (const s of suggestions) {
-      expect(s.amount).toBeGreaterThan(0);
-      expect(s.from.id).not.toBe(s.to.id);
+    for (const suggestion of suggestions) {
+      expect(suggestion.amount).toBeGreaterThan(0);
+      expect(suggestion.from.id).not.toBe(suggestion.to.id);
     }
   });
 
@@ -288,8 +288,8 @@ describe('computeSettlementSuggestions', () => {
     );
     const suggestions = computeSettlementSuggestions(balances);
     expect(suggestions.length).toBeLessThanOrEqual(2);
-    const totalMoved = suggestions.reduce((s, x) => s + x.amount, 0);
-    const totalPositive = balances.filter((b) => b.net > 0).reduce((s, b) => s + b.net, 0);
+    const totalMoved = suggestions.reduce((sum, item) => sum + item.amount, 0);
+    const totalPositive = balances.filter((b) => b.net > 0).reduce((sum, b) => sum + b.net, 0);
     expect(totalMoved).toBeLessThanOrEqual(totalPositive + 0.01);
     const resulting = applySettlements(balances, suggestions);
 

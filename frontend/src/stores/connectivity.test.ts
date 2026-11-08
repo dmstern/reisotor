@@ -41,8 +41,10 @@ describe('useConnectivityStore', () => {
 
     eventTarget = new EventTarget();
     vi.stubGlobal('window', {
-      addEventListener: (t: string, l: EventListener) => eventTarget.addEventListener(t, l),
-      removeEventListener: (t: string, l: EventListener) => eventTarget.removeEventListener(t, l),
+      addEventListener: (type: string, listener: EventListener) =>
+        eventTarget.addEventListener(type, listener),
+      removeEventListener: (type: string, listener: EventListener) =>
+        eventTarget.removeEventListener(type, listener),
       dispatchEvent: (e: Event) => eventTarget.dispatchEvent(e),
     });
     vi.stubGlobal('navigator', { onLine: true });

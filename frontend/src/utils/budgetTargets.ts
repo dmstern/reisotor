@@ -9,7 +9,9 @@ export function effectiveBudgetTarget(budget: Budget, allocations: BudgetAllocat
     return budget.target_amount;
   }
 
-  return allocations.filter((a) => a.budget_id === budget.id).reduce((s, a) => s + a.amount, 0);
+  return allocations
+    .filter((allocation) => allocation.budget_id === budget.id)
+    .reduce((sum, allocation) => sum + allocation.amount, 0);
 }
 
 /** Berechnet das Gesamtziel des Urlaubs. Nur gemeinsame Budgets (owner_id == null) fließen in das
@@ -17,6 +19,6 @@ export function effectiveBudgetTarget(budget: Budget, allocations: BudgetAllocat
  *  und zählen nicht zum gemeinsamen Reisebudget. */
 export function grandTotalTarget(budgets: Budget[], allocations: BudgetAllocation[]): number {
   return budgets
-    .filter((b) => b.owner_id == null)
-    .reduce((s, b) => s + effectiveBudgetTarget(b, allocations), 0);
+    .filter((budget) => budget.owner_id == null)
+    .reduce((sum, budget) => sum + effectiveBudgetTarget(budget, allocations), 0);
 }

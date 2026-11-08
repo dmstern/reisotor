@@ -4,13 +4,13 @@ import type { TrackPoint } from '../api/types';
  *  Aufzeichnung (TrackPlayback.vue) reicht diese Näherung, keine echte Routenführung nötig, siehe
  *  auch utils/mapRoute.ts's arcRoute() (rein visuell, keine Distanzberechnung). */
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6_371_000;
+  const EARTH_RADIUS_METERS = 6_371_000;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const lat1 = (a.lat * Math.PI) / 180;
   const lat2 = (b.lat * Math.PI) / 180;
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
 }
 
 /** Summierte Strecke entlang der (bereits zeitlich sortierten) Punkte einer Aufzeichnung. */
@@ -64,10 +64,10 @@ export function interpolateTrackPosition(
     const fractionalIndex = progress * (points.length - 1);
     const lowIndex = Math.floor(fractionalIndex);
     const highIndex = Math.min(points.length - 1, lowIndex + 1);
-    const t = fractionalIndex - lowIndex;
+    const factor = fractionalIndex - lowIndex;
     return {
-      lat: points[lowIndex].lat + (points[highIndex].lat - points[lowIndex].lat) * t,
-      lng: points[lowIndex].lng + (points[highIndex].lng - points[lowIndex].lng) * t,
+      lat: points[lowIndex].lat + (points[highIndex].lat - points[lowIndex].lat) * factor,
+      lng: points[lowIndex].lng + (points[highIndex].lng - points[lowIndex].lng) * factor,
     };
   }
 
@@ -79,10 +79,10 @@ export function interpolateTrackPosition(
 
     if (targetMs <= curMs) {
       const span = curMs - prevMs;
-      const t = span > 0 ? (targetMs - prevMs) / span : 0;
+      const factor = span > 0 ? (targetMs - prevMs) / span : 0;
       return {
-        lat: points[i - 1].lat + (points[i].lat - points[i - 1].lat) * t,
-        lng: points[i - 1].lng + (points[i].lng - points[i - 1].lng) * t,
+        lat: points[i - 1].lat + (points[i].lat - points[i - 1].lat) * factor,
+        lng: points[i - 1].lng + (points[i].lng - points[i - 1].lng) * factor,
       };
     }
   }

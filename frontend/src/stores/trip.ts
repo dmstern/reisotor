@@ -35,7 +35,9 @@ export const useTripStore = defineStore('trip', () => {
   const editTripInitialTab = ref<'general' | 'settings' | 'categories' | 'permissions'>('general');
   const editTripInitialCategoryType = ref<'expense' | 'spot'>('spot');
 
-  const currentTrip = computed(() => trips.value.find((t) => t.id === currentTripId.value) ?? null);
+  const currentTrip = computed(
+    () => trips.value.find((trip) => trip.id === currentTripId.value) ?? null
+  );
 
   // Pro Nutzer-Id (nicht global): sonst würde reset() unten (bei JEDEM Logout, nicht nur bei einem
   // echten Nutzerwechsel) die zuletzt angesehene Auswahl löschen, weil ein einziger geteilter
@@ -66,7 +68,8 @@ export const useTripStore = defineStore('trip', () => {
 
       const key = storageKey();
       const stored = key ? Number(localStorage.getItem(key)) : NaN;
-      const storedIsValid = Number.isFinite(stored) && trips.value.some((t) => t.id === stored);
+      const storedIsValid =
+        Number.isFinite(stored) && trips.value.some((trip) => trip.id === stored);
 
       if (storedIsValid) {
         currentTripId.value = stored;
@@ -101,7 +104,7 @@ export const useTripStore = defineStore('trip', () => {
   }
 
   function hasTrip(id: number): boolean {
-    return trips.value.some((t) => t.id === id);
+    return trips.value.some((trip) => trip.id === id);
   }
 
   function selectTrip(id: number) {
@@ -146,7 +149,7 @@ export const useTripStore = defineStore('trip', () => {
 
   async function updateTrip(id: number, body: TripFormData) {
     const updated = await api.put<Trip>(`/trips/${id}`, body);
-    const idx = trips.value.findIndex((t) => t.id === id);
+    const idx = trips.value.findIndex((trip) => trip.id === id);
 
     if (idx !== -1) {
       const next = [...trips.value];
@@ -159,7 +162,7 @@ export const useTripStore = defineStore('trip', () => {
 
   async function deleteTrip(id: number) {
     await api.delete(`/trips/${id}`);
-    trips.value = trips.value.filter((t) => t.id !== id);
+    trips.value = trips.value.filter((trip) => trip.id !== id);
 
     if (currentTripId.value === id) {
       currentTripId.value = trips.value[0]?.id ?? null;

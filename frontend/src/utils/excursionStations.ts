@@ -69,7 +69,7 @@ export function resolveStation(
 
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
-    const spot = spotMap ? spotMap.get(id) : spots.find((s) => s.id === id);
+    const spot = spotMap ? spotMap.get(id) : spots.find((candidateSpot) => candidateSpot.id === id);
 
     if (!spot) {
       return null;
@@ -95,7 +95,9 @@ export function resolveStation(
   if (key.startsWith('travel-from-') || key.startsWith('travel-to-')) {
     const isFrom = key.startsWith('travel-from-');
     const id = Number(key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
-    const item = travelMap ? travelMap.get(id) : travelItems.find((t) => t.id === id);
+    const item = travelMap
+      ? travelMap.get(id)
+      : travelItems.find((travelItem) => travelItem.id === id);
 
     if (!item) {
       return null;
@@ -129,7 +131,7 @@ export function resolveStations(
   const [spotMap, travelMap] = maps;
   return keys
     .map((key) => resolveStation(key, spots, travelItems, spotMap, travelMap))
-    .filter((s): s is ExcursionStation => !!s);
+    .filter((station): station is ExcursionStation => !!station);
 }
 
 /** Baut aus einer Tour-Spot-Id-Liste (Excursion.spot_ids, siehe api/types.ts) die generischen

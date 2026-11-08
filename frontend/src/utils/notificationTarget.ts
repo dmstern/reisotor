@@ -9,11 +9,11 @@ import type { NotificationItem } from '../api/types';
  *  ruft dafür direkt drawers.openCalendar() statt hier einen Pfad zu erhalten.
  *  Gibt null zurück, wenn es (wie bei 'members') kein sinnvolles Sprungziel gibt - die Inbox
  *  navigiert dann einfach nicht, sondern markiert nur als gelesen. */
-export function notificationTarget(n: NotificationItem): string | null {
-  const id = n.entity_id;
-  const prefix = n.trip_id ? `/trip/${n.trip_id}` : '';
+export function notificationTarget(item: NotificationItem): string | null {
+  const id = item.entity_id;
+  const prefix = item.trip_id ? `/trip/${item.trip_id}` : '';
 
-  switch (n.domain) {
+  switch (item.domain) {
     case 'packing':
       return `${prefix}/listen?tab=packing`;
     case 'shopping':

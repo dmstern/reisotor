@@ -122,7 +122,7 @@ export const useScheduleStore = defineStore('schedule', () => {
     }
 
     const spotsStore = useSpotsStore();
-    const sIdx = spotsStore.spots.findIndex((s) => s.id === spotId);
+    const sIdx = spotsStore.spots.findIndex((spot) => spot.id === spotId);
 
     if (sIdx === -1) {
       return;
@@ -149,7 +149,7 @@ export const useScheduleStore = defineStore('schedule', () => {
 
     if (result.spot_id != null && result.spot_done !== undefined) {
       const spotsStore = useSpotsStore();
-      const sIdx = spotsStore.spots.findIndex((s) => s.id === result.spot_id);
+      const sIdx = spotsStore.spots.findIndex((spot) => spot.id === result.spot_id);
 
       if (sIdx !== -1) {
         const nextSpots = [...spotsStore.spots];

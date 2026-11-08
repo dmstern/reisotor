@@ -224,10 +224,10 @@ export function computeTourLoopPath(
       const cp1Y = startY + dy * 0.45;
       const cp2X = endX;
       const cp2Y = endY - dy * 0.45;
-      const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const pathData = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
-      return { d, dots };
+      return { d: pathData, dots };
     }
   }
 
@@ -270,10 +270,10 @@ export function computeTourLoopPath(
       const cp1Y = startY;
       const cp2X = endX;
       const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
-      const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const pathData = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
-      return { d, dots };
+      return { d: pathData, dots };
     }
   }
 
@@ -312,10 +312,10 @@ export function computeTourLoopPath(
       const cp1Y = startY;
       const cp2X = endX;
       const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
-      const d = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+      const pathData = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
-      return { d, dots };
+      return { d: pathData, dots };
     }
   }
 
@@ -339,10 +339,10 @@ export function computeTourLoopPath(
       dots.push({ x: startX, y: startY });
       const dropY =
         Math.max(a.bottom, b.bottom) + Math.min(60, Math.max(30, Math.abs(a.cx - b.cx) * 0.15));
-      const d = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
+      const pathData = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - dropY, endX - endX) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
-      return { d, dots };
+      return { d: pathData, dots };
     }
   }
 
@@ -367,10 +367,10 @@ export function computeTourLoopPath(
     const rStart = Math.min(16, Math.abs(startX - ctrlX), Math.abs(endY - startY) / 2);
     const rEnd = Math.min(16, Math.abs(endX - ctrlX), Math.abs(endY - startY) / 2);
 
-    const d = ` M ${startX} ${startY} L ${ctrlX + rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX + rEnd} ${endY} L ${endX} ${endY}`;
+    const pathData = ` M ${startX} ${startY} L ${ctrlX + rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX + rEnd} ${endY} L ${endX} ${endY}`;
 
     dots.push({ x: endX, y: endY });
-    return { d, dots };
+    return { d: pathData, dots };
   }
 
   const rightEdge = Math.max(wrapWidth, Math.max(a.right, b.right) + 20);
@@ -388,8 +388,8 @@ export function computeTourLoopPath(
   const rStart = Math.min(16, Math.abs(startX - ctrlX), Math.abs(endY - startY) / 2);
   const rEnd = Math.min(16, Math.abs(endX - ctrlX), Math.abs(endY - startY) / 2);
 
-  const d = ` M ${startX} ${startY} L ${ctrlX - rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX - rEnd} ${endY} L ${endX} ${endY}`;
+  const pathData = ` M ${startX} ${startY} L ${ctrlX - rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX - rEnd} ${endY} L ${endX} ${endY}`;
 
   dots.push({ x: endX, y: endY });
-  return { d, dots };
+  return { d: pathData, dots };
 }
