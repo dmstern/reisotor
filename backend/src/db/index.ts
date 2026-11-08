@@ -1761,44 +1761,46 @@ if (hasTable('travel_items')) {
     'INTEGER REFERENCES ideas(id) ON DELETE SET NULL'
   );
 
-  interface TravelRow {
-    id: number;
-    trip_id: number;
-    title: string;
-    type: string | null;
-    note: string | null;
-    note_format: string;
-    role: string | null;
-    date: string | null;
-    departure_time: string | null;
-    arrival_time: string | null;
-    checkin_info: string | null;
-    amount: number | null;
-    paid_by_user_id: number | null;
-    luggage: string | null;
-    seat: string | null;
-    link: string | null;
-    from_location: string | null;
-    from_maps_link: string | null;
-    from_lat: number | null;
-    from_lng: number | null;
-    from_place_id: number | null;
-    to_location: string | null;
-    to_maps_link: string | null;
-    to_lat: number | null;
-    to_lng: number | null;
-    to_place_id: number | null;
-    budget_expense_id: number | null;
-    deleted_at: string | null;
-    migrated_idea_id: number | null;
-  }
+  function migrateTravelItems() {
+    interface TravelRow {
+      id: number;
+      trip_id: number;
+      title: string;
+      type: string | null;
+      note: string | null;
+      note_format: string;
+      role: string | null;
+      date: string | null;
+      departure_time: string | null;
+      arrival_time: string | null;
+      checkin_info: string | null;
+      amount: number | null;
+      paid_by_user_id: number | null;
+      luggage: string | null;
+      seat: string | null;
+      link: string | null;
+      from_location: string | null;
+      from_maps_link: string | null;
+      from_lat: number | null;
+      from_lng: number | null;
+      from_place_id: number | null;
+      to_location: string | null;
+      to_maps_link: string | null;
+      to_lat: number | null;
+      to_lng: number | null;
+      to_place_id: number | null;
+      budget_expense_id: number | null;
+      deleted_at: string | null;
+      migrated_idea_id: number | null;
+    }
 
-  const allRows = db.prepare('SELECT * FROM travel_items').all() as TravelRow[];
+    const allRows = db.prepare('SELECT * FROM travel_items').all() as TravelRow[];
 
-  // Statements erst vorbereiten, wenn wirklich etwas zu tun ist - vermeidet, dass diese Migration auf
-  // einer (Test-)DB mit stark reduziertem ideas-Schema (kein travel_items-Datensatz, also nichts zu
-  // tun) allein am Vorbereiten von Spalten scheitert, die dieser Testfall gar nicht besitzt.
-  if (allRows.length > 0) {
+    if (allRows.length === 0) {
+      db.exec('DROP TABLE travel_items');
+      return;
+    }
+
     const insertIdea = db.prepare(`
       INSERT INTO ideas (
         title, note, note_format, trip_id, role, transport_type, departure_time, arrival_time,
@@ -1919,9 +1921,11 @@ if (hasTable('travel_items')) {
         }
       }
     }
+
+    db.exec('DROP TABLE travel_items');
   }
 
-  db.exec('DROP TABLE travel_items');
+  migrateTravelItems();
 }
 
 // Issue #361: Backfill für bestehende Touren mit Transport-Infos auf der ideas-Tabelle
@@ -2123,6 +2127,32 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_uploads_trip ON uploads (trip_id);
 `);
 
+function backfillDiaryImageUploads(
+  entries: { trip_id: number; author_id: number | null; images: string }[],
+  insertUploadStmt: { run: (...args: unknown[]) => unknown }
+) {
+  for (const entry of entries) {
+    try {
+      const parsed = JSON.parse(entry.images);
+
+      if (!Array.isArray(parsed)) {
+        continue;
+      }
+
+      for (const img of parsed) {
+        const url = typeof img === 'string' ? img : img?.url;
+
+        if (typeof url === 'string' && url.startsWith('/api/uploads/')) {
+          const filename = url.slice('/api/uploads/'.length);
+          insertUploadStmt.run(filename, entry.trip_id, entry.author_id);
+        }
+      }
+    } catch {
+      // Ungültiges JSON ignorieren
+    }
+  }
+}
+
 try {
   const uploadsCount = (
     db.prepare('SELECT COUNT(*) as count FROM uploads').get() as { count: number }
@@ -2200,27 +2230,7 @@ try {
       "INSERT OR IGNORE INTO uploads (filename, trip_id, uploaded_by, created_at) VALUES (?, ?, ?, datetime('now'))"
     );
 
-    for (const entry of diaryEntriesWithImages) {
-      try {
-        const parsed = JSON.parse(entry.images);
-
-        if (Array.isArray(parsed)) {
-          for (const img of parsed) {
-            const url = typeof img === 'string' ? img : img?.url;
-
-            if (typeof url === 'string' && url.startsWith('/api/uploads/')) {
-              const filename = url.slice('/api/uploads/'.length);
-
-              if (filename) {
-                insertUploadStmt.run(filename, entry.trip_id, entry.author_id);
-              }
-            }
-          }
-        }
-      } catch {
-        // Ungültiges JSON ignorieren
-      }
-    }
+    backfillDiaryImageUploads(diaryEntriesWithImages, insertUploadStmt);
   }
 } catch {
   // Fehler beim Backfill tolerieren

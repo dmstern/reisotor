@@ -29,6 +29,37 @@ interface CategoryBody {
   is_hidden?: boolean | number;
 }
 
+function mergeOrUpdateBudgetAllocation(
+  budgetId: number,
+  sourceCategory: string,
+  targetCategory: string
+) {
+  const currentAlloc = db
+    .prepare('SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE')
+    .get(budgetId, sourceCategory) as { id: number; amount: number } | undefined;
+
+  if (!currentAlloc) {
+    return;
+  }
+
+  const targetAlloc = db
+    .prepare('SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE')
+    .get(budgetId, targetCategory) as { id: number; amount: number } | undefined;
+
+  if (targetAlloc) {
+    db.prepare('UPDATE budget_allocations SET amount = amount + ? WHERE id = ?').run(
+      currentAlloc.amount,
+      targetAlloc.id
+    );
+    db.prepare('DELETE FROM budget_allocations WHERE id = ?').run(currentAlloc.id);
+  } else {
+    db.prepare('UPDATE budget_allocations SET category = ? WHERE id = ?').run(
+      targetCategory,
+      currentAlloc.id
+    );
+  }
+}
+
 export function getCategoryUsageCount(tripId: number, type: string, name: string): number {
   const trimmed = name?.trim();
 
@@ -472,31 +503,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           }[];
 
           for (const b of budgets) {
-            const targetAlloc = db
-              .prepare(
-                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
-              )
-              .get(b.id, trimmed) as { id: number; amount: number } | undefined;
-            const currentAlloc = db
-              .prepare(
-                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
-              )
-              .get(b.id, sourceName) as { id: number; amount: number } | undefined;
-
-            if (currentAlloc) {
-              if (targetAlloc) {
-                db.prepare('UPDATE budget_allocations SET amount = amount + ? WHERE id = ?').run(
-                  currentAlloc.amount,
-                  targetAlloc.id
-                );
-                db.prepare('DELETE FROM budget_allocations WHERE id = ?').run(currentAlloc.id);
-              } else {
-                db.prepare('UPDATE budget_allocations SET category = ? WHERE id = ?').run(
-                  trimmed,
-                  currentAlloc.id
-                );
-              }
-            }
+            mergeOrUpdateBudgetAllocation(b.id, sourceName, trimmed);
           }
         } else if (type === 'spot') {
           db.prepare(
@@ -588,32 +595,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           }[];
 
           for (const b of budgets) {
-            const targetAlloc = db
-              .prepare(
-                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
-              )
-              .get(b.id, newName) as { id: number; amount: number } | undefined;
-            const currentAlloc = db
-              .prepare(
-                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
-              )
-              .get(b.id, existing.name) as { id: number; amount: number } | undefined;
-
-            if (currentAlloc) {
-              if (targetAlloc) {
-                // Verschmelzen
-                db.prepare('UPDATE budget_allocations SET amount = amount + ? WHERE id = ?').run(
-                  currentAlloc.amount,
-                  targetAlloc.id
-                );
-                db.prepare('DELETE FROM budget_allocations WHERE id = ?').run(currentAlloc.id);
-              } else {
-                db.prepare('UPDATE budget_allocations SET category = ? WHERE id = ?').run(
-                  newName,
-                  currentAlloc.id
-                );
-              }
-            }
+            mergeOrUpdateBudgetAllocation(b.id, existing.name, newName);
           }
         } else if (existing.type === 'spot') {
           db.prepare(
@@ -735,31 +717,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           }[];
 
           for (const b of budgets) {
-            const targetAlloc = db
-              .prepare(
-                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
-              )
-              .get(b.id, targetName) as { id: number; amount: number } | undefined;
-            const currentAlloc = db
-              .prepare(
-                'SELECT * FROM budget_allocations WHERE budget_id = ? AND category = ? COLLATE NOCASE'
-              )
-              .get(b.id, existing.name) as { id: number; amount: number } | undefined;
-
-            if (currentAlloc) {
-              if (targetAlloc) {
-                db.prepare('UPDATE budget_allocations SET amount = amount + ? WHERE id = ?').run(
-                  currentAlloc.amount,
-                  targetAlloc.id
-                );
-                db.prepare('DELETE FROM budget_allocations WHERE id = ?').run(currentAlloc.id);
-              } else {
-                db.prepare('UPDATE budget_allocations SET category = ? WHERE id = ?').run(
-                  targetName,
-                  currentAlloc.id
-                );
-              }
-            }
+            mergeOrUpdateBudgetAllocation(b.id, existing.name, targetName);
           }
         } else if (existing.type === 'spot') {
           db.prepare(

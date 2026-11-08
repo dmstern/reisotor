@@ -60,8 +60,48 @@ const IMPROVEMENT_PATTERNS = [
   /\bbisherig/i,
   /\bfrüher/i,
   /\bentfernt redundant/i,
-  /\bnicht mehr/i,
 ];
+
+function isTouchedCodeOnlyNew(commitHash, lastTag) {
+  if (!commitHash) {
+    return false;
+  }
+
+  try {
+    const touchedFiles = execSync(`git diff-tree --no-commit-id --name-only -r ${commitHash}`, {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+    })
+      .split('\n')
+      .filter(Boolean);
+
+    const codeFiles = touchedFiles.filter(
+      (codeFile) =>
+        /\.(ts|vue|js|mjs)$/.test(codeFile) &&
+        !codeFile.includes('.test.') &&
+        !codeFile.includes('.stories.') &&
+        !codeFile.startsWith('release-notes/') &&
+        !codeFile.startsWith('docs/')
+    );
+
+    if (codeFiles.length === 0) {
+      return false;
+    }
+
+    const existingFiles = codeFiles.filter((codeFile) => {
+      try {
+        execSync(`git cat-file -e "${lastTag}:${codeFile}" 2>/dev/null`, { cwd: REPO_ROOT });
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+    return existingFiles.length === 0;
+  } catch {
+    return false;
+  }
+}
 
 export function checkNotes(options = {}) {
   const pendingDir = options.pendingDir || PENDING_DIR;
@@ -135,45 +175,7 @@ export function checkNotes(options = {}) {
           // Uncommitteter oder neuer Eintrag
         }
 
-        let isOnlyNewCode = false;
-
-        if (commitHash) {
-          try {
-            const touchedFiles = execSync(
-              `git diff-tree --no-commit-id --name-only -r ${commitHash}`,
-              { cwd: REPO_ROOT, encoding: 'utf-8' }
-            )
-              .split('\n')
-              .filter(Boolean);
-
-            const codeFiles = touchedFiles.filter(
-              (cf) =>
-                /\.(ts|vue|js|mjs)$/.test(cf) &&
-                !cf.includes('.test.') &&
-                !cf.includes('.stories.') &&
-                !cf.startsWith('release-notes/') &&
-                !cf.startsWith('docs/')
-            );
-
-            if (codeFiles.length > 0) {
-              const existingFiles = codeFiles.filter((cf) => {
-                try {
-                  execSync(`git cat-file -e "${lastTag}:${cf}" 2>/dev/null`, { cwd: REPO_ROOT });
-                  return true;
-                } catch {
-                  return false;
-                }
-              });
-
-              // Wenn keine der betroffenen Code-Dateien im letzten Release existierte
-              if (existingFiles.length === 0) {
-                isOnlyNewCode = true;
-              }
-            }
-          } catch {
-            // Git-Check fehlgeschlagen
-          }
-        }
+        const isOnlyNewCode = isTouchedCodeOnlyNew(commitHash, lastTag);
 
         // Falls ausschließlich Code-Dateien berührt wurden, die erst nach lastTag entstanden sind:
         if (isOnlyNewCode) {
