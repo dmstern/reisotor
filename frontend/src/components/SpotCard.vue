@@ -165,7 +165,14 @@ const cardRotation = computed(() => {
           <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
           <PendingSyncBadge v-if="spot._pending" />
           <Transition name="fade">
-            <EditButton v-if="expanded" small class="spot-edit-btn" @click="emit('edit', spot)" />
+            <EditButton
+              v-if="expanded"
+              small
+              shape="circle"
+              variant="surface"
+              class="spot-edit-btn"
+              @click="emit('edit', spot)"
+            />
           </Transition>
         </div>
       </div>
@@ -476,35 +483,6 @@ const cardRotation = computed(() => {
 
 .spot-edit-btn {
   flex-shrink: 0;
-}
-
-.spot-card.expanded .card-badge-group :deep(.spot-edit-btn) {
-  width: var(--input-height-sm, 38px);
-  height: var(--input-height-sm, 38px);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.15);
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.spot-card.expanded .card-badge-group :deep(.spot-edit-btn:hover:not(:disabled)) {
-  background: var(--color-hover);
-  transform: translateY(-1px);
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.2);
-}
-
-.spot-card.expanded .card-badge-group :deep(.spot-edit-btn:active:not(:disabled)) {
-  transform: translateY(0);
 }
 
 .spot-card:not(.expanded) .body {

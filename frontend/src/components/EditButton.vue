@@ -12,6 +12,8 @@ withDefaults(
     title?: string;
     ariaLabel?: string;
     icon?: IconDef;
+    shape?: 'squircle' | 'circle';
+    variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'floating' | 'surface';
   }>(),
   {
     icon: () => ACTION_ICONS.edit,
@@ -31,13 +33,16 @@ defineEmits<{ (e: 'click'): void }>();
     class="edit-btn floating"
     :icon="icon"
     size="sm"
+    :shape="shape ?? 'circle'"
+    :variant="variant"
     :title="title ?? 'Bearbeiten'"
     :aria-label="ariaLabel ?? title ?? 'Bearbeiten'"
     @click.stop="$emit('click')"
   />
   <IconButton
     v-else-if="small"
-    variant="ghost"
+    :variant="variant ?? 'ghost'"
+    :shape="shape ?? 'squircle'"
     class="edit-btn small"
     :icon="icon"
     size="sm"
@@ -47,7 +52,8 @@ defineEmits<{ (e: 'click'): void }>();
   />
   <Button
     v-else
-    variant="secondary"
+    :variant="variant ?? 'secondary'"
+    :shape="shape ?? 'squircle'"
     class="edit-btn"
     :title="title ?? 'Bearbeiten'"
     :aria-label="ariaLabel ?? title ?? 'Bearbeiten'"

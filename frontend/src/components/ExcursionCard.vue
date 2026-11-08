@@ -126,6 +126,8 @@ const {
                 <EditButton
                   v-if="expanded"
                   small
+                  shape="circle"
+                  variant="surface"
                   class="tour-edit-btn"
                   @click="emit('edit', excursion)"
                 />

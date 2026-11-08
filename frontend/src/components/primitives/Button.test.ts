@@ -68,6 +68,16 @@ describe('Button primitive', () => {
     expect(html).toContain('Auf Karte');
   });
 
+  it('renders btn--surface when variant="surface" is passed', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'surface', shape: 'circle', size: 'sm' }, () => 'Edit'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--surface');
+    expect(html).toContain('btn--circle');
+    expect(html).toContain('btn--sm');
+  });
+
   it('renders filled icon variant when button is active and icon has filled variant', async () => {
     setActivePinia(createPinia());
     const app = createApp({

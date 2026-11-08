@@ -86,6 +86,8 @@ describe('SpotCard', () => {
 
     expect(html).toContain('expanded');
     expect(html).toContain('spot-edit-btn');
+    expect(html).toContain('btn--circle');
+    expect(html).toContain('btn--surface');
     expect(html).toContain('show-on-map-btn');
     expect(html).toContain('image-expanded-overlay');
     expect(html).toContain('spot-collapse-pill');

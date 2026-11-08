@@ -112,6 +112,9 @@ describe('ExcursionCard', () => {
     expect(html).toContain('like-btn');
     expect(html).toContain('card-disclosure-pill is-expanded');
     expect(html).toContain('Einklappen');
+    expect(html).toContain('tour-edit-btn');
+    expect(html).toContain('btn--circle');
+    expect(html).toContain('btn--surface');
   });
 
   it('rendert Travel-Leg mit Route und Transportart-Rolle korrekt', async () => {

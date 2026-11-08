@@ -18,8 +18,9 @@ const _props = withDefaults(
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
      * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
+     * - 'surface': Runder oder Squircle-Button mit Oberflächen-Hintergrund (--color-surface) und dezentem Rahmen
      */
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating' | 'surface';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
@@ -370,10 +371,23 @@ a.btn.is-loading {
   box-shadow: var(--shadow-md);
 }
 
+.btn--surface {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--ui-border-width, 1px) solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--surface:hover:not(:disabled) {
+  background: var(--color-hover);
+  box-shadow: var(--shadow-md);
+}
+
 /* Aktiver Zustand für alle Button-Varianten (#audit) */
 .btn.is-active,
 .btn--secondary.is-active,
-.btn--ghost.is-active {
+.btn--ghost.is-active,
+.btn--surface.is-active {
   background: var(--color-primary-tint);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-primary);
   color: var(--color-primary-dark);
@@ -385,7 +399,8 @@ a.btn.is-loading {
 
 .btn.is-active:hover:not(:disabled),
 .btn--secondary.is-active:hover:not(:disabled),
-.btn--ghost.is-active:hover:not(:disabled) {
+.btn--ghost.is-active:hover:not(:disabled),
+.btn--surface.is-active:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
   border-color: var(--color-primary-dark);
   box-shadow:
