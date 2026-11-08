@@ -278,10 +278,10 @@ export function extractBookingMetadataFromHtml(
 
     // Adresse
     if (lodgingObject.address) {
-      const addr = lodgingObject.address;
+      const addr = lodgingObject.address as Record<string, unknown> | string;
       if (typeof addr === 'string') {
         address = addr.trim();
-      } else if (typeof addr === 'object') {
+      } else if (typeof addr === 'object' && addr !== null) {
         const parts: string[] = [];
         if (addr.streetAddress) parts.push(String(addr.streetAddress).trim());
         const localityParts: string[] = [];
@@ -295,7 +295,7 @@ export function extractBookingMetadataFromHtml(
           const c =
             typeof addr.addressCountry === 'string'
               ? addr.addressCountry
-              : addr.addressCountry.name;
+              : (addr.addressCountry as { name?: string })?.name;
           if (c) parts.push(String(c).trim());
         }
         if (parts.length > 0) {
@@ -305,9 +305,10 @@ export function extractBookingMetadataFromHtml(
     }
 
     // Geo-Koordinaten
-    if (lodgingObject.geo && typeof lodgingObject.geo === 'object') {
-      const gLat = parseFloat(lodgingObject.geo.latitude);
-      const gLng = parseFloat(lodgingObject.geo.longitude);
+    if (lodgingObject.geo && typeof lodgingObject.geo === 'object' && lodgingObject.geo !== null) {
+      const geo = lodgingObject.geo as Record<string, unknown>;
+      const gLat = parseFloat(String(geo.latitude));
+      const gLng = parseFloat(String(geo.longitude));
       if (Number.isFinite(gLat) && Number.isFinite(gLng)) {
         lat = gLat;
         lng = gLng;
@@ -316,9 +317,9 @@ export function extractBookingMetadataFromHtml(
 
     // Angebote / Preis
     if (lodgingObject.offers) {
-      const offers = Array.isArray(lodgingObject.offers)
-        ? lodgingObject.offers[0]
-        : lodgingObject.offers;
+      const rawOffers = lodgingObject.offers;
+      const offers = (Array.isArray(rawOffers) ? rawOffers[0] : rawOffers) as
+        Record<string, unknown> | undefined;
       if (offers) {
         const p = parsePrice(offers.price ?? offers.lowPrice);
         if (p != null) amount = p;
@@ -585,7 +586,7 @@ export async function fetchAccommodationPreview(
   if ((finalLat == null || finalLng == null) && (finalAddress || (meta.name && meta.city))) {
     try {
       const query = finalAddress || `${meta.name}, ${meta.city}`;
-      const searchRes = await searchPlaces({ query, limit: 1 });
+      const searchRes = await searchPlaces({ q: query, limit: 1 });
       if (searchRes.length > 0) {
         finalLat = searchRes[0].lat;
         finalLng = searchRes[0].lng;

@@ -330,8 +330,8 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     if ((lat == null || lng == null) && maps_link) {
       if (isBookingLinkUrl(maps_link)) {
         const accPreview = await fetchAccommodationPreview(maps_link);
-        lat = accPreview?.lat;
-        lng = accPreview?.lng;
+        lat = accPreview?.lat ?? undefined;
+        lng = accPreview?.lng ?? undefined;
       }
       if (lat == null || lng == null) {
         const resolved = await resolveLatLng(maps_link);
@@ -411,8 +411,8 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     if ((lat == null || lng == null) && maps_link) {
       if (isBookingLinkUrl(maps_link)) {
         const accPreview = await fetchAccommodationPreview(maps_link);
-        lat = accPreview?.lat;
-        lng = accPreview?.lng;
+        lat = accPreview?.lat ?? undefined;
+        lng = accPreview?.lng ?? undefined;
       }
       if (lat == null || lng == null) {
         const resolved = await resolveLatLng(maps_link);
