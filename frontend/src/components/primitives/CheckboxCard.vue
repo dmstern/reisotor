@@ -139,21 +139,29 @@ function onChange(event: Event) {
 .checkbox-card--card {
   padding: var(--space-3) var(--space-4);
   margin: var(--space-3) 0;
-  background: var(--color-hover);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 100%),
+    var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
+  box-shadow: var(--shadow-card-interactive);
 }
 
 .checkbox-card--card:hover:not(.is-disabled) {
-  background: var(--color-surface);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 100%),
+    var(--color-surface);
   border-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px) scale(1.008);
 }
 
 .checkbox-card--card:active:not(.is-disabled) {
-  transform: translateY(0);
+  transform: translateY(1px) scale(0.99);
+  box-shadow: var(--shadow-card-active);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0) 100%), var(--color-surface);
 }
 
 .checkbox-card--card.is-checked {

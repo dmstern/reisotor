@@ -259,12 +259,14 @@ const isNewHighlight = computed(() => {
 <style>
 .card {
   position: relative;
-  background: var(--color-surface);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 100%),
+    var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: var(--space-4);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
   transition:
     padding 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     background 0.2s ease,
@@ -334,26 +336,24 @@ const isNewHighlight = computed(() => {
 }
 
 .card--elevated {
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    0 12px 28px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-card-elevated);
 }
 
 .card--polaroid {
-  background: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%), #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow:
-    0 3px 6px rgba(0, 0, 0, 0.08),
-    0 10px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-card-polaroid);
   padding: 8px 8px 14px 8px;
   transform: rotate(var(--card-rotate, -0.75deg));
   transform-origin: center center;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 /* Subtile Fächer-Drehung für Geschwister-Polaroids ohne explizites --card-rotate (z. B. in Storybook/Listen) */
@@ -375,14 +375,16 @@ const isNewHighlight = computed(() => {
 
 .card--polaroid:not(.card--expanded):not(.expanded):hover {
   transform: translateY(-4px) rotate(calc(var(--card-rotate, -0.75deg) * 0.4)) scale(1.02);
-  box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.1),
-    0 20px 42px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-card-polaroid-hover);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%), #ffffff;
   z-index: 5;
 }
 
 .card--polaroid:not(.card--expanded):not(.expanded):active {
-  transform: translateY(0) rotate(var(--card-rotate, -0.75deg)) scale(0.99);
+  transform: translateY(1px) rotate(var(--card-rotate, -0.75deg)) scale(0.985);
+  box-shadow: var(--shadow-card-polaroid-active);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0) 100%), #ffffff;
 }
 
 .card--polaroid.card--expanded,
@@ -391,52 +393,74 @@ const isNewHighlight = computed(() => {
 }
 
 :root[data-theme='dark'] .card--polaroid {
-  background: #2a2825;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%), #2a2825;
   border-color: rgba(255, 255, 255, 0.12);
-  box-shadow:
-    0 4px 10px rgba(0, 0, 0, 0.4),
-    0 14px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card-polaroid);
 }
 
 :root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):hover {
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.5),
-    0 24px 48px rgba(0, 0, 0, 0.65);
+  box-shadow: var(--shadow-card-polaroid-hover);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%), #2e2b28;
+}
+
+:root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):active {
+  box-shadow: var(--shadow-card-polaroid-active);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0) 100%), #252320;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .card--polaroid {
-    background: #2a2825;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%), #2a2825;
     border-color: rgba(255, 255, 255, 0.12);
-    box-shadow:
-      0 4px 10px rgba(0, 0, 0, 0.4),
-      0 14px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-card-polaroid);
   }
 
   :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):hover {
-    box-shadow:
-      0 8px 20px rgba(0, 0, 0, 0.5),
-      0 24px 48px rgba(0, 0, 0, 0.65);
+    box-shadow: var(--shadow-card-polaroid-hover);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%), #2e2b28;
+  }
+
+  :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):active {
+    box-shadow: var(--shadow-card-polaroid-active);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0) 100%), #252320;
   }
 }
 
 .card--tile {
   position: relative;
-  box-shadow: 0 2px 6px var(--tile-shadow, var(--shadow-sm));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 100%),
+    var(--color-surface);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    0 2px 6px var(--tile-shadow, var(--shadow-sm));
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.2s ease;
   margin-top: 18px;
 }
 
 .card--tile:hover {
   transform: translateY(-4px) scale(1.015);
-  box-shadow: 0 8px 24px var(--tile-shadow, var(--shadow-md));
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight-strong),
+    0 10px 28px var(--tile-shadow, var(--shadow-md));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%),
+    var(--color-surface);
   z-index: 5;
 }
 
 .card--tile:active {
-  transform: translateY(0) scale(0.99);
+  transform: translateY(1px) scale(0.985);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
+    0 1px 2px var(--tile-shadow, var(--shadow-xs));
 }
 
 .card-tile-icon {
@@ -455,11 +479,12 @@ const isNewHighlight = computed(() => {
   backdrop-filter: blur(2px);
 }
 
-/* Expandable & Interactive Card (Hover-Lift & Skalierung) */
+/* Expandable & Interactive Card (Hover-Lift & 3D-Kanten) */
 .card--expandable,
 .card--interactive {
   cursor: pointer;
   user-select: none;
+  box-shadow: var(--shadow-card-interactive);
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -477,21 +502,41 @@ const isNewHighlight = computed(() => {
 
 .card--expandable:not(.card--expanded):hover,
 .card--interactive:not(.card--expanded):hover {
-  transform: translateY(-4px) scale(1.015);
+  transform: translateY(-3px) scale(1.012);
   border-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-card-hover);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 100%),
+    var(--color-surface);
   z-index: 5;
 }
 
 .card--expandable:not(.card--expanded):active,
 .card--interactive:not(.card--expanded):active {
-  transform: translateY(0) scale(0.99);
+  transform: translateY(1px) scale(0.988);
+  box-shadow: var(--shadow-card-active);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0) 100%), var(--color-surface);
 }
 
 .card--expandable.card--expanded {
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-card-elevated);
   transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card--expandable,
+  .card--interactive,
+  .card--tile,
+  .card--polaroid {
+    transform: none !important;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease !important;
+  }
 }
 
 /* Condensed (Kompakter Zustand) */

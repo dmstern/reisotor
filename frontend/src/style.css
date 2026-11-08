@@ -375,6 +375,26 @@
   --shadow-dropdown-menu:
     0 12px 32px rgba(43, 42, 40, 0.16), 0 2px 8px rgba(43, 42, 40, 0.08),
     inset 0 1px 0 var(--shadow-control-highlight);
+  --shadow-card:
+    inset 0 1px 0 var(--shadow-control-highlight), 0 1px 3px rgba(43, 42, 40, 0.07),
+    0 3px 8px -1px rgba(43, 42, 40, 0.08);
+  --shadow-card-interactive:
+    inset 0 1px 0 var(--shadow-control-highlight-strong), 0 2px 5px rgba(43, 42, 40, 0.08),
+    0 4px 10px rgba(43, 42, 40, 0.06);
+  --shadow-card-hover:
+    inset 0 1px 0 #ffffff, 0 8px 24px -2px rgba(43, 42, 40, 0.14),
+    0 3px 8px -1px rgba(43, 42, 40, 0.08);
+  --shadow-card-active: inset 0 1.5px 3px rgba(43, 42, 40, 0.14), 0 1px 2px rgba(43, 42, 40, 0.05);
+  --shadow-card-elevated:
+    inset 0 1px 0 var(--shadow-control-highlight-strong), 0 4px 12px rgba(43, 42, 40, 0.08),
+    0 12px 28px rgba(43, 42, 40, 0.12);
+  --shadow-card-polaroid:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 6px rgba(43, 42, 40, 0.08),
+    0 10px 24px rgba(43, 42, 40, 0.12);
+  --shadow-card-polaroid-hover:
+    inset 0 1px 0 #ffffff, 0 8px 18px rgba(43, 42, 40, 0.12), 0 20px 42px rgba(43, 42, 40, 0.18);
+  --shadow-card-polaroid-active:
+    inset 0 1.5px 3px rgba(43, 42, 40, 0.14), 0 2px 6px rgba(43, 42, 40, 0.08);
 
   /* Extrem dezentes Rausch-Muster (SVG feTurbulence als Daten-URI) für einen angenehm griffigen statt
      komplett flachen/plastikigen Flächen-Eindruck auf denselben taktilen Pillen-Elementen -
@@ -553,6 +573,27 @@
     --shadow-dropdown-menu:
       0 14px 36px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 var(--shadow-control-highlight);
+    --shadow-card:
+      inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 1px 3px rgba(0, 0, 0, 0.35),
+      0 4px 12px -2px rgba(0, 0, 0, 0.28);
+    --shadow-card-interactive:
+      inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 2px 6px rgba(0, 0, 0, 0.4),
+      0 6px 16px -2px rgba(0, 0, 0, 0.32);
+    --shadow-card-hover:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 12px 30px -4px rgba(0, 0, 0, 0.65),
+      0 4px 12px -1px rgba(0, 0, 0, 0.4);
+    --shadow-card-active: inset 0 1.5px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.25);
+    --shadow-card-elevated:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 6px 16px -2px rgba(0, 0, 0, 0.45),
+      0 16px 36px -4px rgba(0, 0, 0, 0.55);
+    --shadow-card-polaroid:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 10px rgba(0, 0, 0, 0.45),
+      0 14px 32px rgba(0, 0, 0, 0.55);
+    --shadow-card-polaroid-hover:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 28px rgba(0, 0, 0, 0.6),
+      0 26px 52px rgba(0, 0, 0, 0.7);
+    --shadow-card-polaroid-active:
+      inset 0 1.5px 3px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35);
     --shadow-floating-island:
       0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -642,6 +683,27 @@
   --shadow-dropdown-menu:
     0 14px 36px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 var(--shadow-control-highlight);
+  --shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 1px 3px rgba(0, 0, 0, 0.35),
+    0 4px 12px -2px rgba(0, 0, 0, 0.28);
+  --shadow-card-interactive:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 2px 6px rgba(0, 0, 0, 0.4),
+    0 6px 16px -2px rgba(0, 0, 0, 0.32);
+  --shadow-card-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 12px 30px -4px rgba(0, 0, 0, 0.65),
+    0 4px 12px -1px rgba(0, 0, 0, 0.4);
+  --shadow-card-active: inset 0 1.5px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-card-elevated:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 6px 16px -2px rgba(0, 0, 0, 0.45),
+    0 16px 36px -4px rgba(0, 0, 0, 0.55);
+  --shadow-card-polaroid:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 10px rgba(0, 0, 0, 0.45),
+    0 14px 32px rgba(0, 0, 0, 0.55);
+  --shadow-card-polaroid-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 24px rgba(0, 0, 0, 0.6),
+    0 24px 48px rgba(0, 0, 0, 0.7);
+  --shadow-card-polaroid-active:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-floating-island:
     0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -729,6 +791,26 @@
   --shadow-dropdown-menu:
     0 12px 32px rgba(43, 42, 40, 0.16), 0 2px 8px rgba(43, 42, 40, 0.08),
     inset 0 1px 0 var(--shadow-control-highlight);
+  --shadow-card:
+    inset 0 1px 0 var(--shadow-control-highlight), 0 1px 3px rgba(43, 42, 40, 0.07),
+    0 3px 8px -1px rgba(43, 42, 40, 0.08);
+  --shadow-card-interactive:
+    inset 0 1px 0 var(--shadow-control-highlight-strong), 0 2px 5px rgba(43, 42, 40, 0.08),
+    0 4px 10px rgba(43, 42, 40, 0.06);
+  --shadow-card-hover:
+    inset 0 1px 0 #ffffff, 0 8px 24px -2px rgba(43, 42, 40, 0.14),
+    0 3px 8px -1px rgba(43, 42, 40, 0.08);
+  --shadow-card-active: inset 0 1.5px 3px rgba(43, 42, 40, 0.14), 0 1px 2px rgba(43, 42, 40, 0.05);
+  --shadow-card-elevated:
+    inset 0 1px 0 var(--shadow-control-highlight-strong), 0 4px 12px rgba(43, 42, 40, 0.08),
+    0 12px 28px rgba(43, 42, 40, 0.12);
+  --shadow-card-polaroid:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 6px rgba(43, 42, 40, 0.08),
+    0 10px 24px rgba(43, 42, 40, 0.12);
+  --shadow-card-polaroid-hover:
+    inset 0 1px 0 #ffffff, 0 8px 18px rgba(43, 42, 40, 0.12), 0 20px 42px rgba(43, 42, 40, 0.18);
+  --shadow-card-polaroid-active:
+    inset 0 1.5px 3px rgba(43, 42, 40, 0.14), 0 2px 6px rgba(43, 42, 40, 0.08);
   color-scheme: light;
 }
 
