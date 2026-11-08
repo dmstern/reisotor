@@ -44,6 +44,7 @@ function refreshOutbox() {
 
 onMounted(() => {
   refreshOutbox();
+
   if (typeof window !== 'undefined') {
     window.addEventListener('reisotor:outbox-changed', refreshOutbox);
     window.addEventListener('storage', refreshOutbox);
@@ -100,12 +101,14 @@ function getEntryInfo(entry: OutboxEntry): { category: string; title: string } {
       title: titleStr || 'Aufgabe ohne Titel',
     };
   }
+
   if (path.includes('/spots')) {
     return {
       category: 'Spot / Ort',
       title: titleStr || 'Spot ohne Namen',
     };
   }
+
   if (path.includes('/budget')) {
     const amountStr =
       typeof body.amount === 'number'
@@ -116,6 +119,7 @@ function getEntryInfo(entry: OutboxEntry): { category: string; title: string } {
       title: (titleStr || 'Ausgabe') + amountStr,
     };
   }
+
   if (path.includes('/diary')) {
     return {
       category: 'Tagebuch',
@@ -126,24 +130,28 @@ function getEntryInfo(entry: OutboxEntry): { category: string; title: string } {
           : 'Tagebucheintrag'),
     };
   }
+
   if (path.includes('/notes')) {
     return {
       category: 'Notiz',
       title: titleStr || 'Notiz ohne Titel',
     };
   }
+
   if (path.includes('/packing')) {
     return {
       category: 'Packliste',
       title: titleStr || 'Packlisten-Eintrag',
     };
   }
+
   if (path.includes('/shopping')) {
     return {
       category: 'Einkaufsliste',
       title: titleStr || 'Einkaufs-Artikel',
     };
   }
+
   return {
     category: path.replace(/^\//, '').split('/')[0] || 'Element',
     title: titleStr || path,
@@ -153,7 +161,11 @@ function getEntryInfo(entry: OutboxEntry): { category: string; title: string } {
 function formatDate(iso: string): string {
   try {
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
+
+    if (isNaN(d.getTime())) {
+      return iso;
+    }
+
     return d.toLocaleString('de-DE', {
       day: '2-digit',
       month: '2-digit',
@@ -167,7 +179,10 @@ function formatDate(iso: string): string {
 }
 
 async function syncSingle(entry: OutboxEntry) {
-  if (singleSyncingId.value) return;
+  if (singleSyncingId.value) {
+    return;
+  }
+
   singleSyncingId.value = entry.id;
 
   try {
@@ -222,6 +237,7 @@ async function syncSingle(entry: OutboxEntry) {
 
 function discardSingle(entry: OutboxEntry) {
   const { title } = getEntryInfo(entry);
+
   if (
     confirm(
       `Diesen nicht synchronisierten Eintrag ("${title}") wirklich verwerfen? Lokal vorgenommene Änderungen gehen verloren.`
@@ -260,9 +276,12 @@ function closeEditModal() {
 }
 
 function saveEdit() {
-  if (!editingEntry.value) return;
+  if (!editingEntry.value) {
+    return;
+  }
 
   let parsedBody: unknown = undefined;
+
   if (editBodyJson.value.trim()) {
     try {
       parsedBody = JSON.parse(editBodyJson.value);
@@ -287,9 +306,11 @@ function saveEdit() {
 
 function handleMigrateData() {
   migrating.value = true;
+
   try {
     const report = migrateLocalData();
     refreshOutbox();
+
     if (report.migratedEntriesCount > 0) {
       showToast({
         message: `${report.migratedEntriesCount} ${

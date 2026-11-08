@@ -59,7 +59,11 @@ function dateTimeStamp(dateIso: string, time: string): string {
 // einem anderen Tag als dem Start.
 function endDateTime(date: string, time: string, endTime?: string | null): Date {
   const start = new Date(`${date}T${time}:00`);
-  if (endTime) return new Date(`${date}T${endTime}:00`);
+
+  if (endTime) {
+    return new Date(`${date}T${endTime}:00`);
+  }
+
   return new Date(start.getTime() + DEFAULT_DURATION_MINUTES * 60000);
 }
 
@@ -80,6 +84,7 @@ function icsContent(event: CalendarEventInput): string {
 
   let dtstart: string;
   let dtend: string;
+
   if (event.time) {
     dtstart = `DTSTART:${dateTimeStamp(event.date, event.time)}`;
     const end = endDateTime(event.date, event.time, event.endTime);
@@ -129,6 +134,7 @@ export function triggerIcsDownload(event: CalendarEventInput) {
 
 export function googleCalendarHref(event: CalendarEventInput): string {
   let dates: string;
+
   if (event.time) {
     const start = dateTimeStamp(event.date, event.time);
     const end = endDateTime(event.date, event.time, event.endTime);
@@ -139,9 +145,17 @@ export function googleCalendarHref(event: CalendarEventInput): string {
   } else {
     dates = `${dateStamp(event.date)}/${dateStamp(addDays(event.endDate ?? event.date, 1))}`;
   }
+
   const params = new URLSearchParams({ action: 'TEMPLATE', text: event.title, dates });
-  if (event.description) params.set('details', event.description);
-  if (event.location) params.set('location', event.location);
+
+  if (event.description) {
+    params.set('details', event.description);
+  }
+
+  if (event.location) {
+    params.set('location', event.location);
+  }
+
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
@@ -151,6 +165,7 @@ export function outlookCalendarHref(event: CalendarEventInput): string {
     rru: 'addevent',
     subject: event.title,
   });
+
   if (event.time) {
     const end = endDateTime(event.date, event.time, event.endTime);
     params.set('startdt', `${event.date}T${event.time}:00`);
@@ -165,7 +180,14 @@ export function outlookCalendarHref(event: CalendarEventInput): string {
     params.set('enddt', addDays(event.endDate ?? event.date, 1));
     params.set('allday', 'true');
   }
-  if (event.description) params.set('body', event.description);
-  if (event.location) params.set('location', event.location);
+
+  if (event.description) {
+    params.set('body', event.description);
+  }
+
+  if (event.location) {
+    params.set('location', event.location);
+  }
+
   return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
 }

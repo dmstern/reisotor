@@ -49,7 +49,10 @@ function isToday(date: string) {
 }
 
 function isInTrip(date: string) {
-  if (!props.tripStartDate || !props.tripEndDate) return false;
+  if (!props.tripStartDate || !props.tripEndDate) {
+    return false;
+  }
+
   return date >= props.tripStartDate && date <= props.tripEndDate;
 }
 
@@ -80,7 +83,11 @@ function onDragLeave(date: string) {
 function onDrop(event: DragEvent, date: string) {
   dragOverCounts.value[date] = 0;
   const raw = event.dataTransfer?.getData('text/excursion-id');
-  if (!raw) return;
+
+  if (!raw) {
+    return;
+  }
+
   emit('drop-excursion', date, Number(raw));
 }
 </script>

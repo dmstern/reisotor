@@ -48,7 +48,10 @@ const triggerRef = ref<HTMLElement | null>(null);
 const menuStyle = ref({ top: '0px', left: '0px' });
 
 function updatePosition() {
-  if (!triggerRef.value) return;
+  if (!triggerRef.value) {
+    return;
+  }
+
   menuStyle.value = computePopoverPosition(triggerRef.value, {
     menuWidth: props.menuWidth,
     placement: props.placement,

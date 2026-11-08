@@ -33,14 +33,30 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
   );
 
   const isDetailsVisible = computed(() => {
-    if (cardClosed.value) return false;
-    if (options.context?.value === 'trip') return true;
-    if (options.title?.value !== undefined) return true;
-    if (manualDetailsOpen.value) return true;
+    if (cardClosed.value) {
+      return false;
+    }
+
+    if (options.context?.value === 'trip') {
+      return true;
+    }
+
+    if (options.title?.value !== undefined) {
+      return true;
+    }
+
+    if (manualDetailsOpen.value) {
+      return true;
+    }
+
     if (options.selectedPlace?.value !== null && options.selectedPlace?.value !== undefined) {
       return true;
     }
-    if (hasLocation.value) return true;
+
+    if (hasLocation.value) {
+      return true;
+    }
+
     return false;
   });
 
@@ -183,12 +199,15 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
       const res = await fetch(`/api/places/reverse?lat=${lat}&lng=${lng}`, {
         signal: AbortSignal.timeout(4000),
       });
+
       if (!res.ok) {
         editAddressInput.value = '';
         options.onUpdateAddress?.('');
         return;
       }
+
       const data = (await res.json()) as { formatted_address?: string; address?: string } | null;
+
       if (data && (data.formatted_address || data.address)) {
         const addr = data.formatted_address || data.address || '';
         editAddressInput.value = addr;

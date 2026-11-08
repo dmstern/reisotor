@@ -57,7 +57,10 @@ const options = computed<ItemVisibilityOption[]>(() => [
 ]);
 
 function select(val: TrackVisibility) {
-  if (props.disabled || props.modelValue === val) return;
+  if (props.disabled || props.modelValue === val) {
+    return;
+  }
+
   emit('update:modelValue', val);
   emit('change', val);
 }

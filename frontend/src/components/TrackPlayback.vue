@@ -76,6 +76,7 @@ function stopAnimation() {
     cancelAnimationFrame(rafId);
     rafId = null;
   }
+
   if (playing.value) {
     playing.value = false;
     emit('pause');
@@ -83,7 +84,9 @@ function stopAnimation() {
 }
 
 function tick(now: number) {
-  if (!playing.value) return;
+  if (!playing.value) {
+    return;
+  }
 
   const dt = Math.max(0, now - lastTickTime);
   lastTickTime = now;
@@ -101,7 +104,9 @@ function tick(now: number) {
 }
 
 function togglePlay() {
-  if (props.points.length < 2) return;
+  if (props.points.length < 2) {
+    return;
+  }
 
   if (playing.value) {
     stopAnimation();
@@ -148,9 +153,16 @@ function selectSpeed(s: PlaybackSpeed) {
 }
 
 function onWindowClick(event: MouseEvent) {
-  if (!showSpeedPopover.value) return;
+  if (!showSpeedPopover.value) {
+    return;
+  }
+
   const target = event.target as Node | null;
-  if (!target) return;
+
+  if (!target) {
+    return;
+  }
+
   if (speedWrapperRef.value && !speedWrapperRef.value.contains(target)) {
     showSpeedPopover.value = false;
   }
@@ -186,7 +198,9 @@ watch(() => props.points, stopAnimation);
 watch(
   () => props.active,
   (isActive) => {
-    if (!isActive) stopAnimation();
+    if (!isActive) {
+      stopAnimation();
+    }
   }
 );
 onUnmounted(() => {
@@ -199,30 +213,53 @@ onUnmounted(() => {
 const distance = computed(() => trackDistanceMeters(props.points));
 const duration = computed(() => {
   const pointsDuration = trackDurationMs(props.points);
-  if (pointsDuration > 0) return pointsDuration;
+
+  if (pointsDuration > 0) {
+    return pointsDuration;
+  }
+
   if (props.track?.started_at && props.track?.ended_at) {
     const trackMs =
       new Date(props.track.ended_at).getTime() - new Date(props.track.started_at).getTime();
-    if (trackMs > 0) return trackMs;
+
+    if (trackMs > 0) {
+      return trackMs;
+    }
   }
+
   return 0;
 });
 const avgSpeed = computed(() => trackAverageSpeedKmh(distance.value, duration.value));
 const avgSpeedLabel = computed(() => {
-  if (avgSpeed.value == null || avgSpeed.value <= 0) return '';
-  if (avgSpeed.value > 300) return '';
+  if (avgSpeed.value == null || avgSpeed.value <= 0) {
+    return '';
+  }
+
+  if (avgSpeed.value > 300) {
+    return '';
+  }
+
   return formatSpeedShort(avgSpeed.value);
 });
 const elevation = computed(() => trackElevation(props.points));
 const elevationLabel = computed(() => {
-  if (!elevation.value) return '';
-  if (elevation.value.gain === 0 && elevation.value.loss === 0) return '';
+  if (!elevation.value) {
+    return '';
+  }
+
+  if (elevation.value.gain === 0 && elevation.value.loss === 0) {
+    return '';
+  }
+
   return formatElevationShort(elevation.value);
 });
 
 // --- Zeitformatierung (mm:ss oder hh:mm:ss) ---
 function formatTimeDisplay(ms: number, forceHours = false): string {
-  if (!Number.isFinite(ms) || ms < 0) ms = 0;
+  if (!Number.isFinite(ms) || ms < 0) {
+    ms = 0;
+  }
+
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -232,6 +269,7 @@ function formatTimeDisplay(ms: number, forceHours = false): string {
   if (forceHours || hours > 0) {
     return `${hours}:${pad(minutes)}:${pad(seconds)}`;
   }
+
   return `${pad(minutes)}:${pad(seconds)}`;
 }
 
@@ -244,49 +282,79 @@ const totalDurationLabel = computed(() => formatTimeDisplay(duration.value, hasH
 
 // --- Uhrzeiten der Aufzeichnung (Start/Aktuell/Ende) ---
 const timeOfDayFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
+
 function formatTimeOfDay(iso?: string | null): string {
-  if (!iso) return '';
+  if (!iso) {
+    return '';
+  }
+
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? '' : timeOfDayFormatter.format(d);
 }
 
 const startTimeOfDay = computed(() => {
-  if (props.points.length > 0) return formatTimeOfDay(props.points[0].recorded_at);
-  if (props.track?.started_at) return formatTimeOfDay(props.track.started_at);
+  if (props.points.length > 0) {
+    return formatTimeOfDay(props.points[0].recorded_at);
+  }
+
+  if (props.track?.started_at) {
+    return formatTimeOfDay(props.track.started_at);
+  }
+
   return '';
 });
 
 const endTimeOfDay = computed(() => {
-  if (props.points.length > 0)
+  if (props.points.length > 0) {
     return formatTimeOfDay(props.points[props.points.length - 1].recorded_at);
-  if (props.track?.ended_at) return formatTimeOfDay(props.track.ended_at);
+  }
+
+  if (props.track?.ended_at) {
+    return formatTimeOfDay(props.track.ended_at);
+  }
+
   return '';
 });
 
 const currentTimeOfDay = computed(() => {
-  if (props.points.length < 2) return '';
+  if (props.points.length < 2) {
+    return '';
+  }
+
   const startMs = new Date(props.points[0].recorded_at).getTime();
   const endMs = new Date(props.points[props.points.length - 1].recorded_at).getTime();
+
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
     if (props.track?.started_at && props.track?.ended_at) {
       const tStart = new Date(props.track.started_at).getTime();
       const tEnd = new Date(props.track.ended_at).getTime();
+
       if (Number.isFinite(tStart) && Number.isFinite(tEnd) && tEnd > tStart) {
         const cur = tStart + (props.progress ?? 0) * (tEnd - tStart);
         return timeOfDayFormatter.format(new Date(cur));
       }
     }
+
     return '';
   }
+
   const currentMs = startMs + (props.progress ?? 0) * (endMs - startMs);
   return timeOfDayFormatter.format(new Date(currentMs));
 });
 
 const trackDateLabel = computed(() => {
   const iso = props.points[0]?.recorded_at ?? props.track?.started_at;
-  if (!iso) return '';
+
+  if (!iso) {
+    return '';
+  }
+
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
+
+  if (Number.isNaN(d.getTime())) {
+    return '';
+  }
+
   return new Intl.DateTimeFormat('de-DE', {
     day: '2-digit',
     month: '2-digit',

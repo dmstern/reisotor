@@ -120,7 +120,11 @@ export function useDashboardTileSummaries(
     const current = options.accommodations.value.find(
       (a) => a.start_date && a.end_date && a.start_date <= today && today <= a.end_date
     );
-    if (current) return current;
+
+    if (current) {
+      return current;
+    }
+
     return (
       [...options.accommodations.value]
         .filter((a) => a.start_date && a.start_date >= today)

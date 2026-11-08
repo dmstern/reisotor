@@ -78,6 +78,7 @@ export function getHighlightScreenshot(
   // to avoid jitter when multiple bullet points belong to the same screenshot.
   for (let i = clampedIdx; i >= 0; i--) {
     const hl = feature.highlights[i];
+
     if (hl && typeof hl === 'object' && hl.screenshotLight) {
       return {
         screenshotLight: hl.screenshotLight,
@@ -105,6 +106,7 @@ export function getFeatureDistinctFrames(feature: ScrollyFeature, stepIdx = 0): 
   feature.highlights.forEach((_, hIdx) => {
     const sc = getHighlightScreenshot(feature, hIdx);
     const existing = frames.find((f) => f.screenshotLight === sc.screenshotLight);
+
     if (existing) {
       existing.highlightIndices.push(hIdx);
     } else {

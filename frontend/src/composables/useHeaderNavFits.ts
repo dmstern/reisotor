@@ -6,12 +6,17 @@ import { MEDIA_QUERIES } from '../tokens/breakpoints';
 // Auf schmaleren Bildschirmen (<1024px) schaltet die App automatisch auf die daumenfreundliche
 // schwebende Leiste am unteren Bildschirmrand um.
 export function useHeaderNavFits() {
-  if (typeof window === 'undefined') return ref(true);
+  if (typeof window === 'undefined') {
+    return ref(true);
+  }
+
   const query = window.matchMedia(MEDIA_QUERIES.desktop);
   const fits = ref(query.matches);
+
   function onChange(event: MediaQueryListEvent) {
     fits.value = event.matches;
   }
+
   query.addEventListener('change', onChange);
   onUnmounted(() => query.removeEventListener('change', onChange));
   return fits;

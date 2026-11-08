@@ -69,10 +69,12 @@ const results = ref<{ icon: string; label: string; verdict: string }[]>([]);
 const quote = ref('');
 
 let timers: number[] = [];
+
 function clearTimers() {
   timers.forEach((t) => window.clearTimeout(t));
   timers = [];
 }
+
 onUnmounted(clearTimers);
 
 function pickRandom<T>(pool: T[], count: number): T[] {

@@ -38,6 +38,7 @@ const cssPrefixPlugin = {
             const text = context.sourceCode.getText();
             const regex = /-(?:webkit)-(backdrop-filter|mask)\s*:/g;
             let match;
+
             while ((match = regex.exec(text)) !== null) {
               const loc = context.sourceCode.getLocFromIndex(match.index);
               context.report({
@@ -149,6 +150,27 @@ export default tseslint.config(
           labelComponents: ['FormField'],
         },
       ],
+      'id-length': [
+        'warn',
+        {
+          min: 2,
+          exceptions: ['_', 'i', 'j', 'e', 'x', 'y'],
+          properties: 'never',
+        },
+      ],
+      '@typescript-eslint/no-magic-numbers': [
+        'warn',
+        {
+          ignore: [-1, 0, 1, 2],
+          ignoreArrayIndexes: true,
+          ignoreDefaultValues: true,
+          ignoreClassFieldInitialValues: true,
+          ignoreEnums: true,
+          ignoreNumericLiteralTypes: true,
+          ignoreReadonlyClassProperties: true,
+          ignoreTypeIndexes: true,
+        },
+      ],
     },
   },
   {
@@ -156,7 +178,18 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'vue/one-component-per-file': 'off',
+      '@typescript-eslint/no-magic-numbers': 'off',
     },
   },
-  eslintConfigPrettier
+  eslintConfigPrettier,
+  {
+    rules: {
+      curly: ['error', 'all'],
+      'padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', prev: '*', next: 'block-like' },
+        { blankLine: 'always', prev: 'block-like', next: '*' },
+      ],
+    },
+  }
 );

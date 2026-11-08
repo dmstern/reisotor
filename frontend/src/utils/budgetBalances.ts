@@ -21,7 +21,10 @@ const BALANCE_EPSILON = 0.01;
  *  Schulden-Ausgleich ein. Fällt "offen" auf geteilt zurück, falls das verknüpfte Budget nicht
  *  auflösbar ist (sollte durch die serverseitige Privatsphäre-Filterung ohnehin nicht vorkommen). */
 export function isSharedExpense(expense: BudgetExpense, budgets: Budget[]): boolean {
-  if (expense.budget_id == null) return true;
+  if (expense.budget_id == null) {
+    return true;
+  }
+
   const budget = budgets.find((b) => b.id === expense.budget_id);
   return budget == null || budget.owner_id == null;
 }
@@ -38,7 +41,11 @@ export function computeBalances(
   budgets: Budget[]
 ): Balance[] {
   const n = users.length;
-  if (n === 0) return [];
+
+  if (n === 0) {
+    return [];
+  }
+
   const memberIds = new Set(users.map((u) => u.id));
   const sharedExpenses = expenses.filter(
     (e) =>
@@ -80,17 +87,27 @@ export function computeSettlementSuggestions(balances: Balance[]): SettlementSug
   const suggestions: SettlementSuggestion[] = [];
   let i = 0;
   let j = 0;
+
   while (i < debtors.length && j < creditors.length) {
     const debtor = debtors[i];
     const creditor = creditors[j];
     const amount = Math.round(Math.min(debtor.amount, creditor.amount) * 100) / 100;
+
     if (amount > 0) {
       suggestions.push({ from: debtor.user, to: creditor.user, amount });
     }
+
     debtor.amount -= amount;
     creditor.amount -= amount;
-    if (debtor.amount <= BALANCE_EPSILON) i++;
-    if (creditor.amount <= BALANCE_EPSILON) j++;
+
+    if (debtor.amount <= BALANCE_EPSILON) {
+      i++;
+    }
+
+    if (creditor.amount <= BALANCE_EPSILON) {
+      j++;
+    }
   }
+
   return suggestions;
 }

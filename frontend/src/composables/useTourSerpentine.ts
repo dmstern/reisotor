@@ -45,9 +45,19 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
 
   function getTourCols(excursionId: number): number {
     const w = tourWrapWidths.get(excursionId) ?? 0;
-    if (w >= 1200) return 4;
-    if (w >= 880) return 3;
-    if (w >= 560) return 2;
+
+    if (w >= 1200) {
+      return 4;
+    }
+
+    if (w >= 880) {
+      return 3;
+    }
+
+    if (w >= 560) {
+      return 2;
+    }
+
     return 1;
   }
 
@@ -69,23 +79,33 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     items: Array<{ spot: Spot }>,
     index: number
   ): number | null {
-    if (index <= 0 || index >= items.length - 1) return null;
+    if (index <= 0 || index >= items.length - 1) {
+      return null;
+    }
+
     const prevSpotId = items[index - 1].spot.id;
     const currSpotId = items[index].spot.id;
     const nextSpotId = items[index + 1].spot.id;
     const inLeg = getTourLeg(excursion, prevSpotId, currSpotId);
     const outLeg = getTourLeg(excursion, currSpotId, nextSpotId);
-    if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
+
+    if (!inLeg?.arrival_time || !outLeg?.departure_time) {
+      return null;
+    }
+
     return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
   }
 
   function recomputeTourLine(excursionId: number) {
     const wrapEl = tourWrapRefs.get(excursionId);
+
     if (!wrapEl) {
       tourLines.delete(excursionId);
       return;
     }
+
     const spotEls = Array.from(wrapEl.querySelectorAll<HTMLElement>('.staggered-spot'));
+
     if (!spotEls.length) {
       tourLines.delete(excursionId);
       return;
@@ -115,6 +135,7 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
 
     const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
     let destinationIndex = -1;
+
     if (excursion && excursion.destination_spot_id != null) {
       const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
       destinationIndex = domSpotIds.indexOf(excursion.destination_spot_id);
@@ -143,8 +164,13 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
           y1: startY,
           y2: endY,
         };
-        if (destinationIndex !== -1 && i >= destinationIndex) rueckwegSegments.push(segment);
-        else hinwegSegments.push(segment);
+
+        if (destinationIndex !== -1 && i >= destinationIndex) {
+          rueckwegSegments.push(segment);
+        } else {
+          hinwegSegments.push(segment);
+        }
+
         dots.push({ x: endX, y: endY, isEnd: true });
       } else {
         const hOffset = 32;
@@ -163,8 +189,13 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
           y1: startY,
           y2: endY,
         };
-        if (destinationIndex !== -1 && i >= destinationIndex) rueckwegSegments.push(segment);
-        else hinwegSegments.push(segment);
+
+        if (destinationIndex !== -1 && i >= destinationIndex) {
+          rueckwegSegments.push(segment);
+        } else {
+          hinwegSegments.push(segment);
+        }
+
         dots.push({ x: endX, y: endY, isEnd: true });
       }
     }
@@ -172,25 +203,38 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     if (excursion && spotBoxes.length > 0) {
       const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
       const loops = buildLoopSegments(excursion.spot_ids, domSpotIds);
+
       for (const [fromIdx, toIdx] of loops) {
         const a = spotBoxes[fromIdx];
         const b = spotBoxes[toIdx];
-        if (!a || !b) continue;
+
+        if (!a || !b) {
+          continue;
+        }
+
         const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
         const segment = {
           d: loop.d,
           y1: loop.dots[0].y,
           y2: loop.dots[1].y,
         };
-        if (destinationIndex !== -1 && fromIdx >= destinationIndex) rueckwegSegments.push(segment);
-        else hinwegSegments.push(segment);
+
+        if (destinationIndex !== -1 && fromIdx >= destinationIndex) {
+          rueckwegSegments.push(segment);
+        } else {
+          hinwegSegments.push(segment);
+        }
+
         dots.push({ x: loop.dots[0].x, y: loop.dots[0].y, isEnd: false });
         dots.push({ x: loop.dots[1].x, y: loop.dots[1].y, isEnd: true });
       }
     }
 
     function combineSegments(segs: { d: string; y1: number; y2: number }[]) {
-      if (segs.length === 0) return null;
+      if (segs.length === 0) {
+        return null;
+      }
+
       return {
         d: segs.map((s) => s.d).join(' '),
         y1: segs[0].y1,
@@ -210,17 +254,24 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
   function setTourWrapRef(excursionId: number, el: Element | ComponentPublicInstance | null) {
     const domEl = el && '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement | null);
     const previous = tourWrapRefs.get(excursionId);
-    if (domEl === previous) return;
+
+    if (domEl === previous) {
+      return;
+    }
+
     if (previous) {
       tourLineResizeObserver?.unobserve(previous);
     }
+
     if (domEl instanceof HTMLElement) {
       tourWrapRefs.set(excursionId, domEl);
       tourLineResizeObserver?.observe(domEl);
       const initialWidth = Math.round(domEl.clientWidth);
+
       if (tourWrapWidths.get(excursionId) !== initialWidth) {
         tourWrapWidths.set(excursionId, initialWidth);
       }
+
       nextTick(() => recomputeTourLine(excursionId));
     } else {
       tourWrapRefs.delete(excursionId);
@@ -234,19 +285,24 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
       tourLineResizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const id = [...tourWrapRefs.entries()].find(([, el]) => el === entry.target)?.[0];
+
           if (id != null) {
             const wrapEl = tourWrapRefs.get(id);
+
             if (wrapEl) {
               const newWidth = Math.round(wrapEl.clientWidth);
+
               if (tourWrapWidths.get(id) !== newWidth) {
                 tourWrapWidths.set(id, newWidth);
                 nextTick(() => recomputeTourLine(id));
               }
             }
+
             recomputeTourLine(id);
           }
         }
       });
+
       for (const [_id, el] of tourWrapRefs) {
         tourLineResizeObserver.observe(el);
       }
@@ -277,17 +333,22 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
   }
 
   async function onSaveCardLeg(savedLeg: ExcursionLeg) {
-    if (!editingCardLeg.value) return;
+    if (!editingCardLeg.value) {
+      return;
+    }
+
     const exc = editingCardLeg.value.excursion;
     const nextLegs = [...(exc.legs || [])];
     const idx = nextLegs.findIndex(
       (l) => l.from_spot_id === savedLeg.from_spot_id && l.to_spot_id === savedLeg.to_spot_id
     );
+
     if (idx !== -1) {
       nextLegs[idx] = savedLeg;
     } else {
       nextLegs.push(savedLeg);
     }
+
     await excursionsStore.update(exc.id, {
       title: exc.title,
       image_url: exc.image_url ?? undefined,
@@ -312,7 +373,10 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
   }
 
   async function onDeleteCardLeg() {
-    if (!editingCardLeg.value) return;
+    if (!editingCardLeg.value) {
+      return;
+    }
+
     const exc = editingCardLeg.value.excursion;
     const fromId = editingCardLeg.value.fromSpot.id;
     const toId = editingCardLeg.value.toSpot.id;
@@ -345,7 +409,9 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
   if (options.spotGroups) {
     watch(options.spotGroups, () =>
       nextTick(() => {
-        for (const id of tourWrapRefs.keys()) recomputeTourLine(id);
+        for (const id of tourWrapRefs.keys()) {
+          recomputeTourLine(id);
+        }
       })
     );
   }
@@ -378,23 +444,40 @@ export function getLegDuration(leg: ExcursionLeg): string | null {
 
 export function getLegDurationParts(leg: ExcursionLeg): string[] | null {
   const mins = travelDurationMinutes(leg.departure_time ?? null, leg.arrival_time ?? null);
-  if (mins != null) return formatTravelDurationParts(mins);
+
+  if (mins != null) {
+    return formatTravelDurationParts(mins);
+  }
+
   if (leg.duration_seconds != null) {
     const calcMins = Math.round(leg.duration_seconds / 60);
     return formatTravelDurationParts(calcMins);
   }
+
   return null;
 }
 
 export function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): string {
   const parts: string[] = [];
-  if (leg.transport_type) parts.push(leg.transport_type);
+
+  if (leg.transport_type) {
+    parts.push(leg.transport_type);
+  }
+
   if (leg.departure_time || leg.arrival_time) {
     parts.push(`${leg.departure_time || '?'}–${leg.arrival_time || '?'}\u00A0Uhr`);
   }
+
   const dur = getLegDuration(leg);
-  if (dur) parts.push(`(${dur})`);
-  if (leg.amount != null) parts.push(`${leg.amount.toFixed(2).replace('.', ',')}\u00A0€`);
+
+  if (dur) {
+    parts.push(`(${dur})`);
+  }
+
+  if (leg.amount != null) {
+    parts.push(`${leg.amount.toFixed(2).replace('.', ',')}\u00A0€`);
+  }
+
   parts.push(`• Von: ${fromSpot.title} → Nach: ${toSpot.title}`);
   parts.push('• Klicken zum Bearbeiten');
   return parts.join(' ');

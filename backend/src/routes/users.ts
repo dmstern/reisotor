@@ -91,6 +91,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const usersRoutes: FastifyPluginAsync = async (app) => {
   app.get('/users', async (req) => {
     const admin = isUserAdmin(req.session.userId);
+
     if (admin) {
       const rows = db
         .prepare(
@@ -114,6 +115,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         };
       });
     }
+
     return db.prepare('SELECT id, username, avatar FROM users ORDER BY id').all();
   });
 
@@ -125,7 +127,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
   // zurückzugeben.
   app.get<{ Querystring: { q?: string; trip_id?: string } }>('/users/search', async (req) => {
     const q = (req.query.q ?? '').trim();
-    if (q.length < 2) return [];
+
+    if (q.length < 2) {
+      return [];
+    }
+
     const escaped = q.replace(/[%_\\]/g, '\\$&');
     const like = `%${escaped}%`;
     const excludeTripId = req.query.trip_id ? Number(req.query.trip_id) : null;
@@ -146,6 +152,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (!isUserAdmin(req.session.userId)) {
       return reply.code(403).send({ error: 'Nur Administrator:innen dürfen neue Nutzer anlegen' });
     }
+
     const {
       username,
       email,
@@ -155,15 +162,19 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       is_restricted: isRestrictedInput,
       role,
     } = req.body ?? {};
+
     if (!username?.trim() || !password) {
       return reply.code(400).send({ error: 'Benutzername und Passwort erforderlich' });
     }
+
     if (password.length < 6) {
       return reply.code(400).send({ error: 'Passwort muss mindestens 6 Zeichen haben' });
     }
+
     if (email?.trim() && !EMAIL_PATTERN.test(email.trim())) {
       return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
     }
+
     if (role && role !== 'admin' && role !== 'plus' && role !== 'restricted') {
       return reply
         .code(400)
@@ -176,11 +187,14 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     const existingUsername = db
       .prepare('SELECT id FROM users WHERE username = ?')
       .get(trimmedUsername);
+
     if (existingUsername) {
       return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
     }
+
     if (trimmedEmail) {
       const existingEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(trimmedEmail);
+
       if (existingEmail) {
         return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
       }
@@ -197,6 +211,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       isAdmin = isAdminInput ? 1 : 0;
       isRestricted = isRestrictedInput ? 1 : 0;
     }
+
     const mustChangePassword = 1;
 
     const result = db
@@ -242,12 +257,14 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Admin-Rechte verwalten' });
       }
+
       const targetUserId = Number(req.params.id);
       const { is_admin: nextIsAdmin } = req.body ?? {};
 
       const targetUser = db
         .prepare('SELECT id, is_admin FROM users WHERE id = ?')
         .get(targetUserId) as { id: number; is_admin: number } | undefined;
+
       if (!targetUser) {
         return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
       }
@@ -259,6 +276,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
             count: number;
           }
         ).count;
+
         if (adminCount <= 1) {
           return reply.code(400).send({
             error: 'Der letzte Administrator kann sich selbst die Admin-Rechte nicht entziehen',
@@ -274,6 +292,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       } else {
         db.prepare('UPDATE users SET is_admin = 0 WHERE id = ?').run(targetUserId);
       }
+
       const updated = db
         .prepare(
           'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password FROM users WHERE id = ?'
@@ -302,6 +321,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Benutzerrechte verwalten' });
       }
+
       const targetUserId = Number(req.params.id);
       const { is_restricted: nextIsRestricted } = req.body ?? {};
 
@@ -312,6 +332,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       const targetUser = db
         .prepare('SELECT id, is_admin, is_restricted FROM users WHERE id = ?')
         .get(targetUserId) as { id: number; is_admin: number; is_restricted: number } | undefined;
+
       if (!targetUser) {
         return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
       }
@@ -360,6 +381,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Benutzerrechte verwalten' });
       }
+
       const targetUserId = Number(req.params.id);
       const { role } = req.body ?? {};
 
@@ -372,6 +394,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       const targetUser = db
         .prepare('SELECT id, is_admin, is_restricted FROM users WHERE id = ?')
         .get(targetUserId) as { id: number; is_admin: number; is_restricted: number } | undefined;
+
       if (!targetUser) {
         return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
       }
@@ -383,6 +406,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
             count: number;
           }
         ).count;
+
         if (adminCount <= 1) {
           return reply.code(400).send({
             error: 'Der letzte Administrator kann sich selbst die Admin-Rechte nicht entziehen',
@@ -439,6 +463,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Benutzerkonten sperren' });
       }
+
       const targetUserId = Number(req.params.id);
       const { is_locked: nextIsLocked } = req.body ?? {};
 
@@ -449,6 +474,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       const targetUser = db
         .prepare('SELECT id, is_admin FROM users WHERE id = ?')
         .get(targetUserId) as { id: number; is_admin: number } | undefined;
+
       if (!targetUser) {
         return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
       }
@@ -499,6 +525,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur Administrator:innen dürfen den Registrierungsmodus einsehen' });
     }
+
     return { registrationMode: getRegistrationMode() };
   });
 
@@ -509,7 +536,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur Administrator:innen dürfen den Registrierungsmodus ändern' });
     }
+
     const { registrationMode } = req.body ?? {};
+
     if (
       registrationMode !== 'off' &&
       registrationMode !== 'full' &&
@@ -517,6 +546,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     ) {
       return reply.code(400).send({ error: 'Ungültiger Registrierungsmodus' });
     }
+
     setRegistrationMode(registrationMode);
     return { registrationMode: getRegistrationMode() };
   });
@@ -526,20 +556,26 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     if (!isUserAdmin(req.session.userId)) {
       return reply.code(403).send({ error: 'Nur Administrator:innen dürfen Nutzer löschen' });
     }
+
     const targetUserId = Number(req.params.id);
+
     if (targetUserId === req.session.userId) {
       return reply.code(400).send({ error: 'Du kannst deinen eigenen Account nicht löschen' });
     }
+
     const targetUser = db.prepare('SELECT id FROM users WHERE id = ?').get(targetUserId);
+
     if (!targetUser) {
       return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
     }
+
     const deleteUserTx = db.transaction((id: number) => {
       const safeSetNull = (table: string, column: string) => {
         if (hasTable(table) && hasColumn(table, column)) {
           db.prepare(`UPDATE ${table} SET ${column} = NULL WHERE ${column} = ?`).run(id);
         }
       };
+
       const safeDelete = (table: string, column: string) => {
         if (hasTable(table) && hasColumn(table, column)) {
           db.prepare(`DELETE FROM ${table} WHERE ${column} = ?`).run(id);
@@ -576,12 +612,14 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       safeDelete('note_comments', 'author_id');
       safeDelete('diary_entries', 'author_id');
       safeDelete('diary_entry_editors', 'user_id');
+
       if (hasTable('budget_transfers') && hasColumn('budget_transfers', 'from_user_id')) {
         db.prepare('DELETE FROM budget_transfers WHERE from_user_id = ? OR to_user_id = ?').run(
           id,
           id
         );
       }
+
       safeDelete('push_subscriptions', 'user_id');
       safeDelete('push_preferences', 'user_id');
       safeDelete('email_preferences', 'user_id');
@@ -608,10 +646,12 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Passwörter zurücksetzen' });
       }
+
       const targetUserId = Number(req.params.id);
       const targetUser = db
         .prepare('SELECT id, username, email FROM users WHERE id = ?')
         .get(targetUserId) as { id: number; username: string; email: string | null } | undefined;
+
       if (!targetUser) {
         return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
       }
@@ -650,6 +690,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
       // Falls der Nutzer eine E-Mail-Adresse hat und SMTP konfiguriert ist, Mail senden (max. 2.5s Timeout, um UI nicht zu blockieren)
       let emailSent = false;
+
       if (targetUser.email && isEmailConfigured()) {
         try {
           const mailResult = await Promise.race([
@@ -693,10 +734,12 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur Administrator:innen dürfen E-Mail-Adressen bestätigen' });
     }
+
     const targetUserId = Number(req.params.id);
     const targetUser = db
       .prepare('SELECT id, username, email FROM users WHERE id = ?')
       .get(targetUserId) as { id: number; username: string; email: string | null } | undefined;
+
     if (!targetUser) {
       return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
     }
@@ -713,7 +756,10 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Body: AvatarBody }>('/users/me/avatar', async (req, reply) => {
     const { avatar } = req.body ?? {};
-    if (!avatar) return reply.code(400).send({ error: 'Avatar erforderlich' });
+
+    if (!avatar) {
+      return reply.code(400).send({ error: 'Avatar erforderlich' });
+    }
 
     db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(avatar, req.session.userId);
     return db
@@ -723,12 +769,18 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Body: UsernameBody }>('/users/me/username', async (req, reply) => {
     const { username } = req.body ?? {};
-    if (!username?.trim()) return reply.code(400).send({ error: 'Benutzername erforderlich' });
+
+    if (!username?.trim()) {
+      return reply.code(400).send({ error: 'Benutzername erforderlich' });
+    }
 
     const existing = db
       .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
       .get(username.trim(), req.session.userId);
-    if (existing) return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
+
+    if (existing) {
+      return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
+    }
 
     db.prepare('UPDATE users SET username = ? WHERE id = ?').run(
       username.trim(),
@@ -742,9 +794,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Body: EmailBody }>('/users/me/email', async (req, reply) => {
     const { email } = req.body ?? {};
     const trimmedEmail = email?.trim();
+
     if (!trimmedEmail) {
       return reply.code(400).send({ error: 'E-Mail-Adresse erforderlich' });
     }
+
     if (!EMAIL_PATTERN.test(trimmedEmail)) {
       return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
     }
@@ -762,6 +816,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     const existingOther = db
       .prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?')
       .get(trimmedEmail, currentUser.id);
+
     if (existingOther) {
       return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
     }
@@ -853,6 +908,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       .prepare('SELECT id, username, email, is_email_verified FROM users WHERE id = ?')
       .get(req.session.userId) as
       { id: number; username: string; email: string | null; is_email_verified: number } | undefined;
+
     if (!user) {
       return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
     }
@@ -864,6 +920,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       .get(user.id, new Date().toISOString()) as { pending_email: string | null } | undefined;
 
     const targetEmail = pendingToken?.pending_email || user.email;
+
     if (!targetEmail) {
       return reply.code(400).send({ error: 'Keine E-Mail-Adresse zum Bestätigen hinterlegt' });
     }
@@ -899,9 +956,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Body: PasswordBody }>('/users/me/password', async (req, reply) => {
     const { currentPassword, newPassword } = req.body ?? {};
+
     if (!currentPassword || !newPassword) {
       return reply.code(400).send({ error: 'Aktuelles und neues Passwort erforderlich' });
     }
+
     if (newPassword.length < 6) {
       return reply.code(400).send({ error: 'Neues Passwort muss mindestens 6 Zeichen haben' });
     }
@@ -930,7 +989,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     const row = db
       .prepare('SELECT icon_settings FROM users WHERE id = ?')
       .get(req.session.userId) as { icon_settings: string | null } | undefined;
-    if (!row?.icon_settings) return {};
+
+    if (!row?.icon_settings) {
+      return {};
+    }
+
     try {
       return JSON.parse(row.icon_settings);
     } catch {
@@ -940,9 +1003,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Body: IconSettingsBody }>('/users/me/icon-settings', async (req, reply) => {
     const { settings } = req.body ?? {};
+
     if (!settings || typeof settings !== 'object') {
       return reply.code(400).send({ error: 'Einstellungen erforderlich' });
     }
+
     db.prepare('UPDATE users SET icon_settings = ? WHERE id = ?').run(
       JSON.stringify(settings),
       req.session.userId
@@ -955,7 +1020,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     const row = db
       .prepare('SELECT app_settings FROM users WHERE id = ?')
       .get(req.session.userId) as { app_settings: string | null } | undefined;
-    if (!row?.app_settings) return {};
+
+    if (!row?.app_settings) {
+      return {};
+    }
+
     try {
       return JSON.parse(row.app_settings);
     } catch {
@@ -965,9 +1034,11 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Body: AppSettingsBody }>('/users/me/app-settings', async (req, reply) => {
     const { settings } = req.body ?? {};
+
     if (!settings || typeof settings !== 'object') {
       return reply.code(400).send({ error: 'Einstellungen erforderlich' });
     }
+
     db.prepare('UPDATE users SET app_settings = ? WHERE id = ?').run(
       JSON.stringify(settings),
       req.session.userId

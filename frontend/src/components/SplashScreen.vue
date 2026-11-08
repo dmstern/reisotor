@@ -26,8 +26,12 @@ const props = withDefaults(
 const emit = defineEmits<{ ready: [] }>();
 
 let settled = false;
+
 function finish() {
-  if (settled) return;
+  if (settled) {
+    return;
+  }
+
   settled = true;
   emit('ready');
 }
@@ -47,6 +51,7 @@ onMounted(() => {
   // sofort beendet, damit Screenshots nicht auf dem Splash hängen bleiben.
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isWebdriver = Boolean(navigator.webdriver);
+
   if (props.playIntro && !reducedMotion && !isWebdriver) {
     fallbackTimer = setTimeout(finish, 4000);
   } else {
@@ -54,7 +59,9 @@ onMounted(() => {
   }
 });
 onUnmounted(() => {
-  if (fallbackTimer) clearTimeout(fallbackTimer);
+  if (fallbackTimer) {
+    clearTimeout(fallbackTimer);
+  }
 });
 </script>
 

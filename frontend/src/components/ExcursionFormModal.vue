@@ -111,12 +111,14 @@ function handleClose() {
   } else {
     closeExcursionForm();
   }
+
   emit('update:show', false);
   emit('update:excursion', null);
 }
 
 async function handleAddExcursion() {
   await addExcursion();
+
   if (!showExcursionForm.value) {
     emit('update:show', false);
     emit('update:excursion', null);
@@ -125,6 +127,7 @@ async function handleAddExcursion() {
 
 async function handleSubmitEditExcursion() {
   await submitEditExcursion();
+
   if (editingExcursion.value === null) {
     emit('update:show', false);
     emit('update:excursion', null);
@@ -133,6 +136,7 @@ async function handleSubmitEditExcursion() {
 
 async function handleDeleteExcursion() {
   await deleteEditingExcursion();
+
   if (editingExcursion.value === null) {
     emit('update:show', false);
     emit('update:excursion', null);
@@ -145,8 +149,10 @@ function onConfirmShareModal() {
       activeExcursionForm.value.track_ids.push(pendingShareTrack.value.id);
       tracksToShareOnSave.value.add(pendingShareTrack.value.id);
     }
+
     pendingShareTrack.value = null;
   }
+
   showTrackShareWarningModal.value = false;
 }
 
@@ -155,7 +161,10 @@ function trackTitle(track: LocationTrack): string {
 }
 
 function trackDurationLabel(track: LocationTrack): string | null {
-  if (!track.started_at || !track.ended_at) return null;
+  if (!track.started_at || !track.ended_at) {
+    return null;
+  }
+
   const ms = Math.max(0, new Date(track.ended_at).getTime() - new Date(track.started_at).getTime());
   return formatDurationShort(ms);
 }

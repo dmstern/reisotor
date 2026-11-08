@@ -46,6 +46,7 @@ export function getDefaultMapCenterAndZoom(
   ) {
     return { center: [trip.lat, trip.lng], zoom: DEFAULT_TRIP_ZOOM };
   }
+
   return { center: [FALLBACK_CENTER.lat, FALLBACK_CENTER.lng], zoom: FALLBACK_ZOOM };
 }
 
@@ -149,15 +150,18 @@ export function calcFitBoundsPadding(params: {
     if (params.mapSize.y > 0) {
       const totalV = paddingTop + paddingBottom;
       const maxV = Math.floor(params.mapSize.y * 0.75);
+
       if (totalV > maxV && totalV > 0) {
         const scale = maxV / totalV;
         paddingTop = Math.max(16, Math.floor(paddingTop * scale));
         paddingBottom = Math.max(16, Math.floor(paddingBottom * scale));
       }
     }
+
     if (params.mapSize.x > 0) {
       const totalH = paddingLeft + paddingRight;
       const maxH = Math.floor(params.mapSize.x * 0.75);
+
       if (totalH > maxH && totalH > 0) {
         const scale = maxH / totalH;
         paddingLeft = Math.max(16, Math.floor(paddingLeft * scale));
@@ -191,17 +195,23 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     const isLarge =
       point.key === drawers.mapFocusKey ||
       (point.origin === 'location' && point.key === 'photo-location');
+
     if (point.imageUrl) {
       return cachedImagePin(point.imageUrl, point.color, isLarge, point.dateBadge);
     }
+
     return cachedEmojiPin(point.icon, point.color, isLarge);
   }
 
   function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     isProgrammaticMove = true;
     const coveredBottomPx = options.coveredBottomPx?.value ?? 0;
     const coveredLeftPx = options.coveredLeftPx?.value ?? 0;
+
     if (!coveredBottomPx && !coveredLeftPx) {
       map.setView(latlng, zoom, { animate: false });
       setTimeout(() => {
@@ -209,6 +219,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       }, 100);
       return;
     }
+
     const targetPoint = map.project(latlng, zoom);
     const shiftedCenter = map.unproject(
       targetPoint.add([-coveredLeftPx / 2, coveredBottomPx / 2]),
@@ -242,7 +253,10 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     bounds: L.LatLngBoundsExpression,
     customPadding?: FitBoundsPaddingOptions
   ) {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     isProgrammaticMove = true;
     const { paddingTop, paddingBottom, paddingLeft, paddingRight } =
       getCameraPadding(customPadding);
@@ -258,7 +272,9 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function checkFocusOutOfBounds() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
 
     const hasFocus =
       drawers.mapFocusExcursionId != null ||
@@ -268,7 +284,9 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       drawers.mapFocusLocation != null ||
       drawers.mapFocusAllPhotos;
 
-    if (!hasFocus) return;
+    if (!hasFocus) {
+      return;
+    }
 
     let focusedLatLngs: [number, number][] = [];
 
@@ -283,6 +301,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       focusedLatLngs = excursionStations
         .filter((s) => s.lat != null && s.lng != null)
         .map((s) => [s.lat as number, s.lng as number]);
+
       if (options.excursionPhotoPoints.value.length) {
         for (const p of options.excursionPhotoPoints.value) {
           focusedLatLngs.push([p.lat, p.lng]);
@@ -296,12 +315,17 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       focusedLatLngs = [[drawers.mapFocusLocation.lat, drawers.mapFocusLocation.lng]];
     } else if (drawers.mapFocusKey) {
       const p = options.points.value.find((pt) => pt.key === drawers.mapFocusKey);
-      if (p) focusedLatLngs = [[p.lat, p.lng]];
+
+      if (p) {
+        focusedLatLngs = [[p.lat, p.lng]];
+      }
     } else if (options.focusedTrack.value) {
       focusedLatLngs = options.focusedTrackPoints.value.map((pt) => [pt.lat, pt.lng]);
     }
 
-    if (!focusedLatLngs.length) return;
+    if (!focusedLatLngs.length) {
+      return;
+    }
 
     const coveredLeftPx = options.coveredLeftPx?.value ?? 0;
     const coveredBottomPx = options.coveredBottomPx?.value ?? 0;
@@ -336,10 +360,14 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function focusCategory(category: string) {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     clearFocusState();
     const catPoints = options.filteredPoints.value.filter((p) => p.category === category);
     const latLngs = catPoints.map((p): L.LatLngExpression => [p.lat, p.lng]);
+
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
@@ -348,9 +376,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function fitAll() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     clearFocusState();
     const latLngs = options.filteredPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
@@ -362,9 +394,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function fitVacation() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     clearFocusState();
     const latLngs = options.vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
@@ -376,12 +412,16 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function fitAccommodations() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     clearFocusState();
     const latLngs = options.accommodationPoints.value.map((p): L.LatLngExpression => [
       p.lat,
       p.lng,
     ]);
+
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
@@ -390,9 +430,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function fitHome() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     clearFocusState();
     const latLngs = options.homePoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
@@ -401,8 +445,12 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function fitAllPhotos() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     const latLngs = options.allTripPhotoPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(L.latLngBounds(latLngs), {
         paddingTop: 190,
@@ -416,10 +464,14 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function renderMarkers() {
-    if (!map || !markersLayer) return;
+    if (!map || !markersLayer) {
+      return;
+    }
+
     markersLayer.clearLayers();
 
     const latLngs: L.LatLngExpression[] = [];
+
     for (const point of options.visiblePoints.value) {
       const latlng: L.LatLngExpression = [point.lat, point.lng];
       latLngs.push(latlng);
@@ -468,6 +520,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         p.lat,
         p.lng,
       ]);
+
       if (photoLatLngs.length > 1) {
         fitBoundsWithCoveredBottom(L.latLngBounds(photoLatLngs));
       } else if (photoLatLngs.length === 1) {
@@ -493,20 +546,32 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function renderRoutes() {
-    if (!map || !routesLayer) return;
+    if (!map || !routesLayer) {
+      return;
+    }
+
     routesLayer.clearLayers();
 
     const tourRoleFilterActive =
       options.tourRoleFilter?.value && options.tourRoleFilter.value.length > 0;
+
     for (const t of options.travelItems.value) {
-      if (drawers.mapFocusDate && t.date !== drawers.mapFocusDate) continue;
+      if (drawers.mapFocusDate && t.date !== drawers.mapFocusDate) {
+        continue;
+      }
+
       if (tourRoleFilterActive) {
         const tRole = t.role ?? 'arrival';
-        if (!options.tourRoleFilter!.value!.includes(tRole)) continue;
+
+        if (!options.tourRoleFilter!.value!.includes(tRole)) {
+          continue;
+        }
       }
+
       if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
         const leg = t.legs?.[0];
         const geometryCoords = parseRouteGeometry(leg?.route_geometry);
+
         if (geometryCoords) {
           L.polyline(geometryCoords, {
             color: getRouteColor(t.type, leg?.routing_profile),
@@ -534,6 +599,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       const coords: L.LatLngExpression[] = options.focusedDateStations.value
         .filter((s) => s.lat != null && s.lng != null)
         .map((s): L.LatLngExpression => [s.lat as number, s.lng as number]);
+
       if (coords.length >= 2) {
         L.polyline(arcRoute(coords), {
           color: '#e08e45',
@@ -542,6 +608,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
           dashArray: '6 6',
         }).addTo(routesLayer);
       }
+
       return;
     }
 
@@ -550,9 +617,14 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         ? []
         : [options.focusedExcursion.value]
       : excursionsStore.excursions.filter((e) => {
-          if (e.role) return false;
-          if (tourRoleFilterActive && !options.tourRoleFilter!.value!.includes('excursion'))
+          if (e.role) {
             return false;
+          }
+
+          if (tourRoleFilterActive && !options.tourRoleFilter!.value!.includes('excursion')) {
+            return false;
+          }
+
           return true;
         });
 
@@ -562,10 +634,14 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         spotsStore.spots,
         options.travelItems.value
       );
+
       for (let i = 0; i < stations.length - 1; i++) {
         const s1 = stations[i];
         const s2 = stations[i + 1];
-        if (s1.lat == null || s1.lng == null || s2.lat == null || s2.lng == null) continue;
+
+        if (s1.lat == null || s1.lng == null || s2.lat == null || s2.lng == null) {
+          continue;
+        }
 
         const leg = excursion.legs?.find(
           (l) => l.position === i || (l.from_spot_id === s1.id && l.to_spot_id === s2.id)
@@ -591,16 +667,22 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function renderTracks() {
-    if (!map || !tracksLayer) return;
+    if (!map || !tracksLayer) {
+      return;
+    }
+
     tracksLayer.clearLayers();
     const trackPts = options.focusedTrackPoints.value;
+
     if (trackPts.length < 2) {
       if (trackPlaybackLayer) {
         trackPlaybackLayer.clearLayers();
         playbackMarker = null;
       }
+
       return;
     }
+
     const coords: L.LatLngExpression[] = trackPts.map((p) => [p.lat, p.lng]);
     L.polyline(coords, { color: '#2f6fed', weight: 4, opacity: 0.85 }).addTo(tracksLayer);
 
@@ -643,19 +725,26 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function updateTrackPlaybackMarker() {
-    if (!map || !trackPlaybackLayer) return;
+    if (!map || !trackPlaybackLayer) {
+      return;
+    }
+
     const trackPts = options.focusedTrackPoints.value;
+
     if (trackPts.length < 2) {
       trackPlaybackLayer.clearLayers();
       playbackMarker = null;
       return;
     }
+
     const pos = interpolateTrackPosition(trackPts, options.trackPlaybackProgress.value);
+
     if (!pos) {
       trackPlaybackLayer.clearLayers();
       playbackMarker = null;
       return;
     }
+
     if (!playbackMarker) {
       trackPlaybackLayer.clearLayers();
       playbackMarker = L.marker([pos.lat, pos.lng], {
@@ -669,7 +758,10 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function renderPositions() {
-    if (!map || !positionsLayer) return;
+    if (!map || !positionsLayer) {
+      return;
+    }
+
     positionsLayer.clearLayers();
 
     if (!map.getPane('live-positions')) {
@@ -691,7 +783,11 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
 
     for (const [userId, position] of Object.entries(liveSync.memberPositions)) {
       const user = options.users.value.find((u) => u.id === Number(userId));
-      if (!user) continue;
+
+      if (!user) {
+        continue;
+      }
+
       L.marker([position.lat, position.lng], {
         icon: cachedEmojiPin(user.avatar, '#2f6fed'),
         pane: 'live-positions',
@@ -767,7 +863,10 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     });
 
     map.on('moveend', () => {
-      if (isProgrammaticMove) return;
+      if (isProgrammaticMove) {
+        return;
+      }
+
       checkFocusOutOfBounds();
     });
 
@@ -778,7 +877,10 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function clearTrackLayers() {
-    if (tracksLayer) tracksLayer.clearLayers();
+    if (tracksLayer) {
+      tracksLayer.clearLayers();
+    }
+
     if (trackPlaybackLayer) {
       trackPlaybackLayer.clearLayers();
       playbackMarker = null;

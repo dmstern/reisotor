@@ -49,6 +49,7 @@ watch(
   () => props.item,
   (newItem) => {
     editTitleTouched.value = false;
+
     if (newItem) {
       editForm.value = {
         title: newItem.title,
@@ -79,7 +80,11 @@ function handleSubmit() {
     editTitleTouched.value = true;
     return;
   }
-  if (!props.item) return;
+
+  if (!props.item) {
+    return;
+  }
+
   emit('submit', props.item.id, { ...editForm.value }, !!props.item.done);
   editDraft.clear();
   emit('close');
@@ -92,7 +97,10 @@ function handleClose() {
 }
 
 function discardDraft() {
-  if (!props.item) return;
+  if (!props.item) {
+    return;
+  }
+
   editForm.value = {
     title: props.item.title,
     assigned_to_user_id:
@@ -107,7 +115,10 @@ function discardDraft() {
 }
 
 function handleDelete() {
-  if (!props.item) return;
+  if (!props.item) {
+    return;
+  }
+
   const id = props.item.id;
   handleClose();
   emit('delete', id);

@@ -75,13 +75,16 @@ describe('PresenceAvatars', () => {
       if (path === '/trips/10/members') {
         return [userAlice, userBob, userCharlie];
       }
+
       if (path === '/trips/20/members') {
         return [userAlice]; // Nur Alice allein auf Trip 20
       }
+
       if (path === '/trips/30/members') {
         // Viele Mitglieder für Overflow-Test
         return [userAlice, userBob, userCharlie, userDave, userEve, userFrank];
       }
+
       return [];
     });
   });
@@ -206,6 +209,7 @@ describe('PresenceAvatars', () => {
       if (path === '/trips/10/members') {
         return [userAlice, userBob, userCharlie, userDave];
       }
+
       return [];
     });
 

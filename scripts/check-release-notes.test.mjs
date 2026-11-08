@@ -8,6 +8,7 @@ import { checkNotes } from './check-release-notes.mjs';
 describe('check-release-notes script', () => {
   test('validates correct formatting', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rn-test-'));
+
     try {
       fs.writeFileSync(
         path.join(tempDir, 'feature.md'),
@@ -24,6 +25,7 @@ describe('check-release-notes script', () => {
 
   test('flags invalid formatting without emoji or bold keyword', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rn-test-'));
+
     try {
       fs.writeFileSync(
         path.join(tempDir, 'feature.md'),

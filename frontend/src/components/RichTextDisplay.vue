@@ -21,6 +21,7 @@ const html = computed(() => {
   if (props.format === 'html' || props.content.trimStart().startsWith('<')) {
     return DOMPurify.sanitize(props.content);
   }
+
   return renderRichText(props.content);
 });
 </script>

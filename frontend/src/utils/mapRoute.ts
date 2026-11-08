@@ -24,10 +24,13 @@ function markerGlyphHtml(icon: MarkerGlyph, sizePx: number): string {
   if (typeof icon === 'string') {
     return `<span style="font-size:${sizePx}px;line-height:1;">${icon}</span>`;
   }
+
   const iconStyle = useIconStyleStore();
+
   if (iconStyle.styleForGroup('categories') === 'emoji') {
     return `<span style="font-size:${sizePx}px;line-height:1;">${icon.emoji}</span>`;
   }
+
   const svg = tablerMarkerSvg(icon.id, 'outline', sizePx);
   return svg
     ? `<span style="color:#fff;display:inline-flex;width:${sizePx}px;height:${sizePx}px;">${svg}</span>`
@@ -57,15 +60,18 @@ export function emojiPin(icon: MarkerGlyph, color: string, large = false) {
 }
 
 const iconCache = new Map<string, L.DivIcon>();
+
 export function cachedEmojiPin(icon: MarkerGlyph, color: string, large = false) {
   const iconStyle = useIconStyleStore();
   const identity = typeof icon === 'string' ? `emoji:${icon}` : `def:${icon.id}`;
   const key = `${identity}|${iconStyle.styleForGroup('categories')}|${color}|${large}`;
   let cached = iconCache.get(key);
+
   if (!cached) {
     cached = emojiPin(icon, color, large);
     iconCache.set(key, cached);
   }
+
   return cached;
 }
 
@@ -115,6 +121,7 @@ export function imagePin(
 }
 
 const imageIconCache = new Map<string, L.DivIcon>();
+
 export function cachedImagePin(
   imageUrl: string,
   color: string,
@@ -123,10 +130,12 @@ export function cachedImagePin(
 ) {
   const key = `${imageUrl}|${color}|${large}|${dateBadge ?? ''}`;
   let cached = imageIconCache.get(key);
+
   if (!cached) {
     cached = imagePin(imageUrl, color, large, dateBadge);
     imageIconCache.set(key, cached);
   }
+
   return cached;
 }
 
@@ -213,12 +222,14 @@ export function arcPoints(
   const controlLat = (lat1 + lat2) / 2 - dLng * 0.15;
   const controlLng = (lng1 + lng2) / 2 + dLat * 0.15;
   const points: L.LatLngExpression[] = [];
+
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
     const lat = (1 - t) ** 2 * lat1 + 2 * (1 - t) * t * controlLat + t ** 2 * lat2;
     const lng = (1 - t) ** 2 * lng1 + 2 * (1 - t) * t * controlLng + t ** 2 * lng2;
     points.push([lat, lng]);
   }
+
   return points;
 }
 
@@ -226,12 +237,17 @@ export function arcPoints(
 // jedes Folgesegments wird weggelassen, sonst wäre er doppelt (identisch mit dem Endpunkt des
 // vorigen Segments). Braucht mindestens 2 Punkte, sonst wird ein leeres Array zurückgegeben.
 export function arcRoute(coords: L.LatLngExpression[], segments = 32): L.LatLngExpression[] {
-  if (coords.length < 2) return [];
+  if (coords.length < 2) {
+    return [];
+  }
+
   const arced: L.LatLngExpression[] = [];
+
   for (let i = 0; i < coords.length - 1; i++) {
     const segment = arcPoints(coords[i], coords[i + 1], segments);
     arced.push(...(i === 0 ? segment : segment.slice(1)));
   }
+
   return arced;
 }
 
@@ -242,9 +258,18 @@ export function getRouteColor(
   transportType?: string | null,
   routingProfile?: string | null
 ): string {
-  if (routingProfile === 'cycling-regular' || transportType === 'Fahrrad') return '#059669';
-  if (routingProfile === 'foot-walking' || transportType === 'zu Fuß') return '#d97706';
-  if (routingProfile === 'driving-car' || transportType === 'Auto') return '#2563eb';
+  if (routingProfile === 'cycling-regular' || transportType === 'Fahrrad') {
+    return '#059669';
+  }
+
+  if (routingProfile === 'foot-walking' || transportType === 'zu Fuß') {
+    return '#d97706';
+  }
+
+  if (routingProfile === 'driving-car' || transportType === 'Auto') {
+    return '#2563eb';
+  }
+
   return '#e08e45';
 }
 
@@ -252,14 +277,19 @@ export function getRouteColor(
  * Parst die gespeicherte Route-Geometrie (JSON-Array aus [lat, lng]) sicher.
  */
 export function parseRouteGeometry(geometryStr?: string | null): [number, number][] | null {
-  if (!geometryStr) return null;
+  if (!geometryStr) {
+    return null;
+  }
+
   try {
     const parsed = JSON.parse(geometryStr);
+
     if (Array.isArray(parsed) && parsed.length >= 2 && Array.isArray(parsed[0])) {
       return parsed as [number, number][];
     }
   } catch {
     // Ignoriere Parsing-Fehler
   }
+
   return null;
 }

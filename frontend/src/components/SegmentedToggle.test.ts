@@ -126,13 +126,21 @@ describe('SegmentedToggle', () => {
       expect(thumb.style.width).toBe('96px');
       expect(thumb.style.height).toBe('28px');
     } finally {
-      if (origOffsetLeft)
+      if (origOffsetLeft) {
         Object.defineProperty(HTMLElement.prototype, 'offsetLeft', origOffsetLeft);
-      if (origOffsetTop) Object.defineProperty(HTMLElement.prototype, 'offsetTop', origOffsetTop);
-      if (origOffsetWidth)
+      }
+
+      if (origOffsetTop) {
+        Object.defineProperty(HTMLElement.prototype, 'offsetTop', origOffsetTop);
+      }
+
+      if (origOffsetWidth) {
         Object.defineProperty(HTMLElement.prototype, 'offsetWidth', origOffsetWidth);
-      if (origOffsetHeight)
+      }
+
+      if (origOffsetHeight) {
         Object.defineProperty(HTMLElement.prototype, 'offsetHeight', origOffsetHeight);
+      }
     }
   });
 });

@@ -23,7 +23,11 @@ test.describe('Mobile Spots-Sheet: knackiger Flick schaltet einen Zustand weiter
 
     const handle = page.locator('.sheet-handle');
     const handleBox = await handle.boundingBox();
-    if (!handleBox) throw new Error('sheet-handle nicht sichtbar');
+
+    if (!handleBox) {
+      throw new Error('sheet-handle nicht sichtbar');
+    }
+
     const startX = handleBox.x + handleBox.width / 2;
     const startY = handleBox.y + handleBox.height / 2;
 
@@ -58,7 +62,11 @@ test.describe('Mobile Spots-Sheet: knackiger Flick schaltet einen Zustand weiter
 
     const handle = page.locator('.sheet-handle');
     const handleBox = await handle.boundingBox();
-    if (!handleBox) throw new Error('sheet-handle nicht sichtbar');
+
+    if (!handleBox) {
+      throw new Error('sheet-handle nicht sichtbar');
+    }
+
     const startX = handleBox.x + handleBox.width / 2;
     const startY = handleBox.y + handleBox.height / 2;
 

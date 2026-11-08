@@ -14,7 +14,10 @@ describe('richtext content_format/note_format Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('backfills existing notes rows (created before this column existed) to "legacy"', async () => {

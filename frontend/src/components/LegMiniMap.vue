@@ -54,6 +54,7 @@ function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
 
   if (mapEl.value && container) {
     const cardEl = container.querySelector<HTMLElement>('.route-floating-card');
+
     if (cardEl) {
       const cardRect = cardEl.getBoundingClientRect();
       const mapRect = mapEl.value.getBoundingClientRect();
@@ -78,12 +79,17 @@ function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
   if (isNarrow) {
     return { coveredTopPx: 170, coveredLeftPx: 0 };
   }
+
   return { coveredTopPx: 0, coveredLeftPx: 272 };
 }
 
 async function render() {
   await nextTick();
-  if (!map || !markersLayer || !routesLayer) return;
+
+  if (!map || !markersLayer || !routesLayer) {
+    return;
+  }
+
   markersLayer.clearLayers();
   routesLayer.clearLayers();
 
@@ -97,6 +103,7 @@ async function render() {
     const m = L.marker(latlng, {
       icon: cachedEmojiPin(cat.tabler, cat.color),
     }).addTo(markersLayer);
+
     if (props.fromSpot.title) {
       m.bindTooltip(`Start: ${props.fromSpot.title}`, { direction: 'top', offset: [0, -28] });
     }
@@ -110,6 +117,7 @@ async function render() {
     const m = L.marker(latlng, {
       icon: cachedEmojiPin(cat.tabler, cat.color),
     }).addTo(markersLayer);
+
     if (props.toSpot.title) {
       m.bindTooltip(`Ziel: ${props.toSpot.title}`, { direction: 'top', offset: [0, -28] });
     }
@@ -122,7 +130,10 @@ async function render() {
   if (isExactMode && props.routes && props.routes.length > 0) {
     // 1. Zuerst alternative (nicht ausgewählte) Routen dezent im Hintergrund zeichnen
     props.routes.forEach((r, idx) => {
-      if (idx === props.selectedRouteIndex) return;
+      if (idx === props.selectedRouteIndex) {
+        return;
+      }
+
       const poly = L.polyline(r.coordinates, {
         color: '#94a3b8',
         weight: 4,
@@ -139,6 +150,7 @@ async function render() {
 
     // 2. Aktive/Ausgewählte Route im Vordergrund mit kräftiger Farbe zeichnen
     const selected = props.routes[props.selectedRouteIndex];
+
     if (selected) {
       const activePoly = L.polyline(selected.coordinates, {
         color: getRouteColor(props.transportType, selected.profile),
@@ -174,9 +186,11 @@ async function render() {
 
   // Gesamte Bounding Box ermitteln
   let fullBounds: L.LatLngBounds | null = null;
+
   if (boundsPoints.length > 0) {
     fullBounds = L.latLngBounds(boundsPoints);
   }
+
   if (selectedRouteCoords.length > 0) {
     const routeBounds = L.latLngBounds(selectedRouteCoords);
     fullBounds = fullBounds ? fullBounds.extend(routeBounds) : routeBounds;
@@ -184,6 +198,7 @@ async function render() {
 
   const { coveredTopPx, coveredLeftPx } = getCoveredOffsets();
   let adjustedCoveredLeftPx = coveredLeftPx;
+
   if (map?.getSize && map.getSize().x > 0) {
     adjustedCoveredLeftPx = Math.min(adjustedCoveredLeftPx, Math.max(0, map.getSize().x - 80));
   }
@@ -224,7 +239,10 @@ async function render() {
 
 onMounted(async () => {
   await nextTick();
-  if (!mapEl.value) return;
+
+  if (!mapEl.value) {
+    return;
+  }
 
   map = L.map(mapEl.value, {
     zoomControl: false,
@@ -246,6 +264,7 @@ onMounted(async () => {
 
     const container = mapEl.value.closest('.route-calc-map-wrap');
     const cardEl = container?.querySelector('.route-floating-card');
+
     if (cardEl) {
       resizeObserver.observe(cardEl);
     }

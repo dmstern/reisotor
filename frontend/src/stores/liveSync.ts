@@ -95,14 +95,21 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     source?.close();
     source = null;
     onlineUserIds.value = [];
-    for (const key of Object.keys(memberPositions)) delete memberPositions[Number(key)];
+
+    for (const key of Object.keys(memberPositions)) {
+      delete memberPositions[Number(key)];
+    }
   }
 
   /** Von TripMap.vue in onMounted/watchPosition aufgerufen, solange die Kartenansicht sichtbar ist –
    *  kein dauerhaftes Hintergrund-Tracking (siehe Kommentar in activity.ts). */
   function sendPosition(lat: number, lng: number) {
     const tripId = tripStore.currentTripId;
-    if (tripId == null) return;
+
+    if (tripId == null) {
+      return;
+    }
+
     api.post('/realtime/position', { trip_id: tripId, lat, lng }).catch(() => {});
   }
 
@@ -110,7 +117,11 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
    *  statt nur auf die (hier absichtlich nicht getrennte) SSE-Verbindung zu warten. */
   function stopSharingPosition() {
     const tripId = tripStore.currentTripId;
-    if (tripId == null) return;
+
+    if (tripId == null) {
+      return;
+    }
+
     api.delete(`/realtime/position?trip_id=${tripId}`).catch(() => {});
   }
 
@@ -121,11 +132,21 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     // lokalem UI-Zustand in die Quere (z. B. dem 60s-Undo-Platzhalter direkt nach dem eigenen
     // Löschen, siehe useUndoableDelete.ts – ein sofortiger Refetch überschreibt dessen lokale Liste,
     // bevor der Platzhalter je sichtbar wird). Gilt genauso für die Notification-Inbox unten.
-    if (row.actor_user_id === auth.user?.id) return;
+    if (row.actor_user_id === auth.user?.id) {
+      return;
+    }
+
     notificationVersion.value++;
-    if (!isLiveDomain(row.domain)) return;
+
+    if (!isLiveDomain(row.domain)) {
+      return;
+    }
+
     domainVersion[row.domain]++;
-    if (row.entity_id != null) unseenEntityIds[row.domain].add(row.entity_id);
+
+    if (row.entity_id != null) {
+      unseenEntityIds[row.domain].add(row.entity_id);
+    }
   }
 
   // Holt nach, was passiert ist, während kein Stream offen war (frischer Seitenaufruf, Tab war
@@ -133,6 +154,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   async function backfill(tripId: number) {
     const oldestSeen = LIVE_DOMAINS.map((d) => loadSeenAt(tripId, d)).sort()[0];
     let rows: ActivityRow[] = [];
+
     try {
       rows = await api.get<ActivityRow[]>(
         `/trip-activity?trip_id=${tripId}&since=${encodeURIComponent(oldestSeen)}`
@@ -140,11 +162,24 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     } catch {
       return;
     }
+
     for (const row of rows) {
-      if (!isLiveDomain(row.domain)) continue;
-      if (row.actor_user_id === auth.user?.id) continue;
-      if (row.entity_id == null) continue;
-      if (row.created_at <= loadSeenAt(tripId, row.domain)) continue;
+      if (!isLiveDomain(row.domain)) {
+        continue;
+      }
+
+      if (row.actor_user_id === auth.user?.id) {
+        continue;
+      }
+
+      if (row.entity_id == null) {
+        continue;
+      }
+
+      if (row.created_at <= loadSeenAt(tripId, row.domain)) {
+        continue;
+      }
+
       unseenEntityIds[row.domain].add(row.entity_id);
     }
   }
@@ -170,13 +205,16 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     source.addEventListener('admin_message', (e) => {
       try {
         const adminMessages = useAdminMessagesStore();
+
         if ((e as MessageEvent).data) {
           const data = JSON.parse((e as MessageEvent).data);
+
           if (typeof data?.unreadCount === 'number') {
             adminMessages.setUnreadCount(data.unreadCount);
             return;
           }
         }
+
         adminMessages.loadUnreadCount();
       } catch {
         // ignore
@@ -193,9 +231,15 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
           string,
           { lat: number; lng: number; updatedAt: string }
         >;
-        for (const key of Object.keys(memberPositions)) delete memberPositions[Number(key)];
+
+        for (const key of Object.keys(memberPositions)) {
+          delete memberPositions[Number(key)];
+        }
+
         for (const [userId, position] of Object.entries(data)) {
-          if (Number(userId) !== auth.user?.id) memberPositions[Number(userId)] = position;
+          if (Number(userId) !== auth.user?.id) {
+            memberPositions[Number(userId)] = position;
+          }
         }
       } catch {
         // ignore
@@ -209,7 +253,11 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
           userId: number;
           position: { lat: number; lng: number; updatedAt: string } | null;
         };
-        if (data.userId === auth.user?.id) return;
+
+        if (data.userId === auth.user?.id) {
+          return;
+        }
+
         if (data.position) {
           memberPositions[data.userId] = data.position;
         } else {
@@ -224,14 +272,19 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   watch(
     () => tripStore.currentTripId,
     async (tripId) => {
-      for (const domain of LIVE_DOMAINS) unseenEntityIds[domain].clear();
+      for (const domain of LIVE_DOMAINS) {
+        unseenEntityIds[domain].clear();
+      }
+
       if (tripId == null) {
         closeStream();
         ready.value = true;
         return;
       }
+
       ready.value = false;
       openStream(tripId);
+
       try {
         await backfill(tripId);
       } finally {
@@ -250,7 +303,9 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
    *  geänderte Objekte durch den echten, autoritativen Serverstand ersetzt werden – auch relevant,
    *  falls andere Mitglieder währenddessen ebenfalls etwas geändert haben. */
   function refreshAll() {
-    for (const domain of LIVE_DOMAINS) domainVersion[domain]++;
+    for (const domain of LIVE_DOMAINS) {
+      domainVersion[domain]++;
+    }
   }
 
   /** Von jeder Domänen-Ansicht beim Mounten (bzw. beim Öffnen der Kalender-Schublade auf Desktop,
@@ -261,9 +316,11 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     const changedIds = new Set(unseenEntityIds[domain]);
     unseenEntityIds[domain].clear();
     const tripId = tripStore.currentTripId;
+
     if (tripId != null) {
       localStorage.setItem(seenKey(tripId, domain), new Date().toISOString());
     }
+
     return changedIds;
   }
 

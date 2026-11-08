@@ -63,9 +63,15 @@ export function useLandingScrollytelling(
   let scrollObserver: IntersectionObserver | null = null;
 
   function updateGlow() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     const steps = document.querySelectorAll(stepSelector);
-    if (!steps.length) return;
+
+    if (!steps.length) {
+      return;
+    }
 
     const viewportCenter = window.innerHeight * viewportCenterRatio;
     const maxDist = window.innerHeight * maxDistRatio;
@@ -81,20 +87,30 @@ export function useLandingScrollytelling(
   }
 
   function updateScrollState() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
     updateGlow();
 
     const triggers = document.querySelectorAll(triggerSelector);
+
     if (triggers.length) {
       const triggerLine = window.innerHeight * 0.45;
       let foundStep = -1;
       let foundHighlight = -1;
+
       for (const trigger of triggers) {
-        if ((trigger as HTMLElement).offsetParent === null) continue;
+        if ((trigger as HTMLElement).offsetParent === null) {
+          continue;
+        }
+
         const rect = trigger.getBoundingClientRect();
+
         if (rect.top <= triggerLine) {
           const s = trigger.getAttribute('data-step');
           const h = trigger.getAttribute('data-highlight');
+
           if (s !== null && h !== null) {
             foundStep = parseInt(s, 10);
             foundHighlight = parseInt(h, 10);
@@ -103,6 +119,7 @@ export function useLandingScrollytelling(
           break;
         }
       }
+
       if (foundStep !== -1) {
         activeStepIndex.value = foundStep;
         activeHighlightIndex.value = foundHighlight;
@@ -111,7 +128,9 @@ export function useLandingScrollytelling(
   }
 
   function initObservers() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
 
     // 1. Scrollytelling Step Observer (IntersectionObserver)
     if (typeof IntersectionObserver !== 'undefined') {
@@ -120,10 +139,12 @@ export function useLandingScrollytelling(
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const indexAttr = entry.target.getAttribute('data-index');
+
             if (indexAttr !== null) {
               const parsed = parseInt(indexAttr, 10);
               activeStepIndex.value = parsed;
               const triggers = document.querySelectorAll(triggerSelector);
+
               if (!triggers.length) {
                 activeHighlightIndex.value = 0;
               }
@@ -168,6 +189,7 @@ export function useLandingScrollytelling(
       window.removeEventListener('scroll', updateScrollState);
       window.removeEventListener('scroll', updateGlow);
     }
+
     stepObserver?.disconnect();
     stepObserver = null;
     scrollObserver?.disconnect();

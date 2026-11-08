@@ -30,27 +30,37 @@ function handleTabChange(tab: 'privacy' | 'imprint') {
 }
 
 function getFocusableElements(): HTMLElement[] {
-  if (!modalRef.value) return [];
+  if (!modalRef.value) {
+    return [];
+  }
+
   const selector =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   return Array.from(modalRef.value.querySelectorAll<HTMLElement>(selector));
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (!props.modelValue) return;
+  if (!props.modelValue) {
+    return;
+  }
+
   if (e.key === 'Escape') {
     close();
     return;
   }
+
   if (e.key === 'Tab') {
     const focusables = getFocusableElements();
+
     if (focusables.length === 0) {
       e.preventDefault();
       return;
     }
+
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
     const active = document.activeElement as HTMLElement | null;
+
     if (e.shiftKey) {
       if (active === first || !modalRef.value?.contains(active)) {
         last.focus();
@@ -88,6 +98,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
+
   if (typeof document !== 'undefined') {
     document.body.style.overflow = '';
   }

@@ -69,9 +69,16 @@ function onImageError(url: string) {
 }
 
 function fileExtension(name?: string | null): string {
-  if (!name || typeof name !== 'string') return 'DATEI';
+  if (!name || typeof name !== 'string') {
+    return 'DATEI';
+  }
+
   const dotIdx = name.lastIndexOf('.');
-  if (dotIdx === -1) return 'DATEI';
+
+  if (dotIdx === -1) {
+    return 'DATEI';
+  }
+
   return name
     .slice(dotIdx + 1)
     .toUpperCase()
@@ -79,29 +86,51 @@ function fileExtension(name?: string | null): string {
 }
 
 function checkIsImage(item: Record<string, unknown>, url: string | null): boolean {
-  if (!url) return false;
+  if (!url) {
+    return false;
+  }
+
   // Explizit als Bild-URL übergeben (z. B. Station mit Spot-Cover-Image oder direktes imageUrl-Feld)
-  if (Boolean(item.imageUrl || item.image_url)) return true;
+  if (Boolean(item.imageUrl || item.image_url)) {
+    return true;
+  }
+
   const mime = item.mime_type || item.mimeType;
+
   if (typeof mime === 'string') {
-    if (mime.startsWith('image/')) return true;
+    if (mime.startsWith('image/')) {
+      return true;
+    }
+
     if (mime !== 'application/octet-stream' && mime !== 'binary/octet-stream') {
       return false;
     }
   }
-  if (url.startsWith('data:image/')) return true;
-  if (/\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(url)) return true;
+
+  if (url.startsWith('data:image/')) {
+    return true;
+  }
+
+  if (/\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(url)) {
+    return true;
+  }
+
   const name =
     (typeof item.original_name === 'string' && item.original_name) ||
     (typeof item.filename === 'string' && item.filename) ||
     '';
-  if (/\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(name)) return true;
+
+  if (/\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(name)) {
+    return true;
+  }
+
   if (
     typeof item.title === 'string' &&
     /\.(jpe?g|png|webp|gif|svg|avif|heic|heif)(\?.*)?$/i.test(item.title)
   ) {
     return true;
   }
+
   return false;
 }
 
@@ -155,17 +184,28 @@ const visibleItems = computed<NormalizedPolaroid[]>(() =>
 );
 
 const calculatedExtraCount = computed(() => {
-  if (props.extraCount !== undefined) return props.extraCount;
+  if (props.extraCount !== undefined) {
+    return props.extraCount;
+  }
+
   return Math.max(0, normalizedItems.value.length - visibleItems.value.length);
 });
 
 const stackTooltip = computed(() => {
-  if (props.title) return props.title;
+  if (props.title) {
+    return props.title;
+  }
+
   const count = normalizedItems.value.length;
-  if (!count) return '';
+
+  if (!count) {
+    return '';
+  }
+
   if (count === 1) {
     return visibleItems.value[0]?.title ?? '';
   }
+
   return `${count} Anhänge (Klicken zum Durchblättern)`;
 });
 
@@ -177,6 +217,7 @@ function polaroidTileStyle(idx: number, total: number) {
       zIndex: 1,
     };
   }
+
   const angles = [-2, 6, -7, 8];
   const xOffsets = [0, 4, -5, 6];
   const yOffsets = [0, -1, 2, 1];
@@ -194,7 +235,10 @@ function polaroidTileStyle(idx: number, total: number) {
 }
 
 function handleClick(e: Event) {
-  if (!props.interactive) return;
+  if (!props.interactive) {
+    return;
+  }
+
   e.stopPropagation();
   emit('click', 0);
 }

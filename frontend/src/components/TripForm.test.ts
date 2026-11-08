@@ -225,10 +225,12 @@ describe('TripForm', () => {
 
     const input = container.querySelector('.location-picker input') as HTMLInputElement | null;
     expect(input).not.toBeNull();
+
     if (input) {
       input.value = 'https://www.google.com/maps/place/48.2082,16.3738/@48.2082,16.3738,15z';
       input.dispatchEvent(new Event('input'));
     }
+
     await nextTick();
 
     const formEl = container.querySelector('form');

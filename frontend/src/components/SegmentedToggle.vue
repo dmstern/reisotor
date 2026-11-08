@@ -57,11 +57,14 @@ function updateThumb() {
     thumbVisible.value = false;
     return;
   }
+
   const activeEl = toggleEl.value?.querySelector<HTMLElement>('.segmented-option.active');
+
   if (!activeEl) {
     thumbVisible.value = false;
     return;
   }
+
   thumbLeft.value = activeEl.offsetLeft;
   thumbTop.value = activeEl.offsetTop;
   thumbWidth.value = activeEl.offsetWidth;
@@ -71,6 +74,7 @@ function updateThumb() {
 
 onMounted(() => {
   updateThumb();
+
   if (typeof ResizeObserver !== 'undefined' && toggleEl.value) {
     resizeObserver = new ResizeObserver(() => {
       updateThumb();

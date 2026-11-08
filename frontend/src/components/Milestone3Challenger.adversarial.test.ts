@@ -341,6 +341,7 @@ describe('Milestone 3 Empirical Challenger: Edit Flow & Draft Autosave', () => {
         form.value.maps_link = `https://maps.google.com/?q=48.${i},16.${i}`;
         vi.advanceTimersByTime(10); // less than 600ms debounce
       }
+
       await nextTick();
 
       // Debounce timer should still prevent execution until full 600ms after last change

@@ -85,20 +85,34 @@ export function areCoordsEqual(
   a: { lat: number; lng: number } | null | undefined,
   b: { lat: number; lng: number } | null | undefined
 ): boolean {
-  if (!a && !b) return true;
-  if (!a || !b) return false;
+  if (!a && !b) {
+    return true;
+  }
+
+  if (!a || !b) {
+    return false;
+  }
+
   return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
 }
 
 export function extractCityFromAddress(address?: string): string | undefined {
-  if (!address) return undefined;
+  if (!address) {
+    return undefined;
+  }
+
   const parts = address
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
-  if (parts.length === 0) return undefined;
+
+  if (parts.length === 0) {
+    return undefined;
+  }
+
   for (let i = parts.length - 1; i >= 0; i--) {
     const part = parts[i];
+
     if (
       [
         'deutschland',
@@ -120,11 +134,14 @@ export function extractCityFromAddress(address?: string): string | undefined {
     ) {
       continue;
     }
+
     const cleaned = part.replace(/^[a-z]{0,3}[-\s]?\d{3,5}(-\d{3,4})?\s+/i, '').trim();
+
     if (cleaned && !/^\d+$/.test(cleaned) && cleaned.length >= 2) {
       return cleaned;
     }
   }
+
   return undefined;
 }
 
@@ -171,7 +188,10 @@ export function useSpotForm(options: UseSpotFormOptions) {
   const editSpotLocationError = ref(false);
 
   const isEditSpotLocationModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     const initialPin =
       editingSpot.value.lat != null && editingSpot.value.lng != null
         ? { lat: editingSpot.value.lat, lng: editingSpot.value.lng }
@@ -190,57 +210,87 @@ export function useSpotForm(options: UseSpotFormOptions) {
   });
 
   const isEditSpotSideModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     const isZuhause = isHomeCategory(editingSpot.value.category);
     const initialSide = isZuhause ? true : !!editingSpot.value.is_home;
     return Boolean(editSpotForm.value.is_home) !== initialSide;
   });
 
   const isEditSpotImageModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     return (
       (editSpotForm.value.image_url || '').trim() !== (editingSpot.value.image_url || '').trim()
     );
   });
 
   const isEditSpotNoteModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     return (editSpotForm.value.note || '').trim() !== (editingSpot.value.note || '').trim();
   });
 
   const isEditSpotStartDateModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     return (editSpotForm.value.start_date || '') !== (editingSpot.value.start_date || '');
   });
 
   const isEditSpotEndDateModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     return (editSpotForm.value.end_date || '') !== (editingSpot.value.end_date || '');
   });
 
   const isEditSpotCheckinModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     return (editSpotForm.value.checkin || '').trim() !== (editingSpot.value.checkin || '').trim();
   });
 
   const isEditSpotCheckoutModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     return (editSpotForm.value.checkout || '').trim() !== (editingSpot.value.checkout || '').trim();
   });
 
   const isEditSpotContactModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     return (editSpotForm.value.contact || '').trim() !== (editingSpot.value.contact || '').trim();
   });
 
   const isEditSpotAmountModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     const initialAmount = editingSpot.value.amount != null ? String(editingSpot.value.amount) : '';
     return (editSpotForm.value.amount || '').trim() !== initialAmount.trim();
   });
 
   const isEditSpotPaidByModified = computed(() => {
-    if (!editingSpot.value) return false;
+    if (!editingSpot.value) {
+      return false;
+    }
+
     const initialPaid =
       editingSpot.value.paid_by_user_id != null ? String(editingSpot.value.paid_by_user_id) : '';
     return (editSpotForm.value.paid_by_user_id || '').trim() !== initialPaid.trim();
@@ -267,15 +317,25 @@ export function useSpotForm(options: UseSpotFormOptions) {
   );
 
   const spotSaveTooltip = computed(() => {
-    if (isSpotUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
-    if (isSpotUploadingCoverImage.value) return 'Spot-Bild wird noch hochgeladen…';
-    if (!activeSpotForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Spot ein';
+    if (isSpotUploadingAttachments.value) {
+      return 'Dateianhänge werden noch hochgeladen…';
+    }
+
+    if (isSpotUploadingCoverImage.value) {
+      return 'Spot-Bild wird noch hochgeladen…';
+    }
+
+    if (!activeSpotForm.value.title.trim()) {
+      return 'Bitte gib zuerst einen Titel für den Spot ein';
+    }
+
     return undefined;
   });
 
   function openSpotForm() {
     spotTitleTouched.value = false;
     showSpotForm.value = true;
+
     if (
       (!Array.isArray(spotForm.value.scheduledDates) ||
         spotForm.value.scheduledDates.length === 0) &&
@@ -285,12 +345,16 @@ export function useSpotForm(options: UseSpotFormOptions) {
     } else if (!Array.isArray(spotForm.value.scheduledDates)) {
       spotForm.value.scheduledDates = [];
     }
+
     showSpotScheduleSection.value =
       spotForm.value.tourTitles.length > 0 || spotForm.value.scheduledDates.length > 0;
   }
 
   const editSpotScheduledItems = computed(() => {
-    if (!editingSpot.value) return [];
+    if (!editingSpot.value) {
+      return [];
+    }
+
     return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
   });
 
@@ -299,7 +363,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   async function removeScheduledItemFromSpot(item: ScheduleItem) {
-    if (!editingSpot.value) return;
+    if (!editingSpot.value) {
+      return;
+    }
 
     const isAutoUnmodified = isAutoCreatedUnmodifiedScheduleItem(item, editingSpot.value.title);
 
@@ -344,14 +410,20 @@ export function useSpotForm(options: UseSpotFormOptions) {
   });
 
   const spotPreviewImage = computed(() => {
-    if (spotForm.value.image_url) return spotForm.value.image_url;
+    if (spotForm.value.image_url) {
+      return spotForm.value.image_url;
+    }
+
     const parsed = parseLatLngFromMapsLink(spotForm.value.maps_link);
     const coords = spotManualPin.value ?? parsed;
     return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
   });
 
   const editSpotPreviewImage = computed(() => {
-    if (editSpotForm.value.image_url) return editSpotForm.value.image_url;
+    if (editSpotForm.value.image_url) {
+      return editSpotForm.value.image_url;
+    }
+
     const parsed = parseLatLngFromMapsLink(editSpotForm.value.maps_link);
     const coords = editSpotManualPin.value ?? parsed;
     return coords ? tilePreviewUrl(coords.lat, coords.lng) : null;
@@ -405,6 +477,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
         showSpotLocationSection.value = true;
       }
+
       if (isHomeCategory(newCat)) {
         spotForm.value.is_home = true;
         showSpotLocationSection.value = true;
@@ -420,10 +493,14 @@ export function useSpotForm(options: UseSpotFormOptions) {
   watch(
     () => editSpotForm.value.category,
     (newCat, oldCat) => {
-      if (!editingSpot.value) return;
+      if (!editingSpot.value) {
+        return;
+      }
+
       if (newCat === 'Unterkunft' && oldCat !== 'Unterkunft') {
         showEditSpotLocationSection.value = true;
       }
+
       if (isHomeCategory(newCat)) {
         editSpotForm.value.is_home = true;
         showEditSpotLocationSection.value = true;
@@ -472,10 +549,15 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   function toggleTourAssignment(tourId: number) {
     const tour = excursionsStore.excursions.find((e) => e.id === tourId);
-    if (!tour) return;
+
+    if (!tour) {
+      return;
+    }
+
     const titles =
       editingSpot.value !== null ? editSpotForm.value.tourTitles : spotForm.value.tourTitles;
     const index = titles.findIndex((t) => t.toLowerCase() === tour.title.toLowerCase());
+
     if (index >= 0) {
       titles.splice(index, 1);
     } else {
@@ -485,12 +567,17 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   async function createTourAssignment(title: string) {
     const trimmed = title.trim();
-    if (!trimmed) return;
+
+    if (!trimmed) {
+      return;
+    }
+
     const existing = excursionsStore.excursions.find(
       (e) => e.title.toLowerCase() === trimmed.toLowerCase()
     );
     const titles =
       editingSpot.value !== null ? editSpotForm.value.tourTitles : spotForm.value.tourTitles;
+
     if (existing) {
       if (!titles.some((t) => t.toLowerCase() === existing.title.toLowerCase())) {
         titles.push(existing.title);
@@ -510,18 +597,21 @@ export function useSpotForm(options: UseSpotFormOptions) {
     if (!addSchedulePopoverOpen.value) {
       addScheduleDateVal.value = '';
       const target = (event?.currentTarget || addScheduleBtnRef.value) as HTMLElement | null;
+
       if (target) {
         addScheduleMenuStyle.value = computePopoverPosition(target, {
           menuWidth: 220,
           align: 'left',
         });
       }
+
       addSchedulePopoverOpen.value = true;
       await nextTick();
       const inputEl = document.querySelector(
         '.add-schedule-popover input[type="date"]'
       ) as HTMLInputElement | null;
       inputEl?.focus();
+
       try {
         inputEl?.showPicker?.();
       } catch {
@@ -534,9 +624,16 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   async function submitAddSpotToDate() {
     const date = addScheduleDateVal.value;
-    if (!date || !/^[1-9]\d{3}-\d{2}-\d{2}$/.test(date)) return;
+
+    if (!date || !/^[1-9]\d{3}-\d{2}-\d{2}$/.test(date)) {
+      return;
+    }
+
     if (editingSpot.value !== null) {
-      if (!tripStore.currentTripId) return;
+      if (!tripStore.currentTripId) {
+        return;
+      }
+
       await scheduleStore.create({
         trip_id: tripStore.currentTripId,
         date,
@@ -549,17 +646,22 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (!Array.isArray(spotForm.value.scheduledDates)) {
         spotForm.value.scheduledDates = [];
       }
+
       if (!spotForm.value.scheduledDates.includes(date)) {
         spotForm.value.scheduledDates.push(date);
         spotForm.value.scheduledDates.sort();
       }
     }
+
     addScheduleDateVal.value = '';
     addSchedulePopoverOpen.value = false;
   }
 
   function removeScheduledDateFromNewSpot(date: string) {
-    if (!Array.isArray(spotForm.value.scheduledDates)) return;
+    if (!Array.isArray(spotForm.value.scheduledDates)) {
+      return;
+    }
+
     spotForm.value.scheduledDates = spotForm.value.scheduledDates.filter((d) => d !== date);
   }
 
@@ -594,21 +696,47 @@ export function useSpotForm(options: UseSpotFormOptions) {
     form: Ref<SpotFormData>,
     extra?: { name?: string; lat?: number; lng?: number; city?: string; category?: string }
   ) {
-    if (!mapsLink && !extra?.name) return;
+    if (!mapsLink && !extra?.name) {
+      return;
+    }
+
     const key = `${mapsLink}|${extra?.name || ''}|${extra?.lat || ''}|${extra?.lng || ''}|${extra?.city || ''}|${extra?.category || ''}`;
-    if (lastPreviewFetchKey === key) return;
+
+    if (lastPreviewFetchKey === key) {
+      return;
+    }
+
     lastPreviewFetchKey = key;
     const reqId = ++previewRequestId;
     isFetchingSpotPreview.value = true;
 
     try {
       const params = new URLSearchParams();
-      if (mapsLink) params.set('maps_link', mapsLink);
-      if (extra?.name) params.set('name', extra.name);
-      if (extra?.lat != null) params.set('lat', String(extra.lat));
-      if (extra?.lng != null) params.set('lng', String(extra.lng));
-      if (extra?.city) params.set('city', extra.city);
-      if (extra?.category) params.set('category', extra.category);
+
+      if (mapsLink) {
+        params.set('maps_link', mapsLink);
+      }
+
+      if (extra?.name) {
+        params.set('name', extra.name);
+      }
+
+      if (extra?.lat != null) {
+        params.set('lat', String(extra.lat));
+      }
+
+      if (extra?.lng != null) {
+        params.set('lng', String(extra.lng));
+      }
+
+      if (extra?.city) {
+        params.set('city', extra.city);
+      }
+
+      if (extra?.category) {
+        params.set('category', extra.category);
+      }
+
       params.set('variant', 'polaroid');
 
       const preview = await api.get<{
@@ -616,14 +744,24 @@ export function useSpotForm(options: UseSpotFormOptions) {
         imageUrl: string | null;
         images?: string[];
       }>(`/spots/preview?${params.toString()}`);
-      if (reqId !== previewRequestId) return;
+
+      if (reqId !== previewRequestId) {
+        return;
+      }
+
       if (preview.images && preview.images.length > 0) {
         spotPreviewImages.value = preview.images;
       } else if (preview.imageUrl) {
         spotPreviewImages.value = [preview.imageUrl];
       }
-      if (preview.name && !form.value.title.trim()) form.value.title = preview.name;
-      if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
+
+      if (preview.name && !form.value.title.trim()) {
+        form.value.title = preview.name;
+      }
+
+      if (preview.imageUrl && !form.value.image_url.trim()) {
+        form.value.image_url = preview.imageUrl;
+      }
     } catch {
       // Vorschau fehlgeschlagen
     } finally {
@@ -635,6 +773,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   function onSpotMapsLinkUpdate(val: string) {
     activeSpotForm.value.maps_link = val;
+
     if (val) {
       const pin = editingSpot.value !== null ? editSpotManualPin.value : spotManualPin.value;
       fetchSpotPreview(val, editingSpot.value !== null ? editSpotForm : spotForm, {
@@ -658,6 +797,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     const parsed = parseLatLngFromMapsLink(f.maps_link);
     let lat: number | null | undefined;
     let lng: number | null | undefined;
+
     if (manual !== undefined) {
       if (manual !== null) {
         lat = manual.lat;
@@ -673,6 +813,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       lat = parsed?.lat ?? fallback?.lat ?? undefined;
       lng = parsed?.lng ?? fallback?.lng ?? undefined;
     }
+
     return {
       trip_id: tripId,
       title: f.title.trim(),
@@ -751,6 +892,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   async function syncSpotTours(spotId: number, desiredTitles: string[]) {
     const desiredLower = desiredTitles.map((t) => t.toLowerCase());
+
     for (const tour of excursionsStore.excursions.filter((e) => e.spot_ids.includes(spotId))) {
       if (!desiredLower.includes(tour.title.toLowerCase())) {
         await excursionsStore.update(tour.id, {
@@ -762,10 +904,12 @@ export function useSpotForm(options: UseSpotFormOptions) {
         });
       }
     }
+
     for (const title of desiredTitles) {
       const existing = excursionsStore.excursions.find(
         (e) => e.title.toLowerCase() === title.toLowerCase()
       );
+
       if (!existing) {
         await excursionsStore.create({ title, spot_ids: [spotId] });
       } else if (!existing.spot_ids.includes(spotId)) {
@@ -785,7 +929,11 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotTitleTouched.value = true;
       return;
     }
-    if (isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value) return;
+
+    if (isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value) {
+      return;
+    }
+
     const body = spotToBody(spotForm.value, spotManualPin.value);
     const result =
       spotPendingFixId.value != null
@@ -799,12 +947,14 @@ export function useSpotForm(options: UseSpotFormOptions) {
       showSpotLocationSection.value = true;
       return;
     }
+
     await syncSpotTours(result.id, spotForm.value.tourTitles);
     const datesToSchedule = spotForm.value.scheduledDates?.length
       ? spotForm.value.scheduledDates
       : spotForm.value.scheduledDate
         ? [spotForm.value.scheduledDate]
         : [];
+
     for (const d of datesToSchedule) {
       await scheduleStore.create({
         trip_id: tripId,
@@ -815,6 +965,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
         user_modified: 0,
       });
     }
+
     closeSpotForm();
   }
 
@@ -827,9 +978,11 @@ export function useSpotForm(options: UseSpotFormOptions) {
     spotManualPin.value = coords;
     editSpotManualPin.value = coords;
     activeSpotForm.value.maps_link = buildGoogleMapsLink(place.lat, place.lng);
+
     if (place.category) {
       activeSpotForm.value.category = place.category;
     }
+
     lastPreviewFetchKey = '';
     fetchSpotPreview(
       activeSpotForm.value.maps_link,
@@ -867,10 +1020,12 @@ export function useSpotForm(options: UseSpotFormOptions) {
     previewRequestId++;
     lastPreviewFetchKey = '';
     isFetchingSpotPreview.value = false;
+
     if (!editingSpot.value) {
       triggerSpotLocationClear();
       return;
     }
+
     const original = editingSpot.value;
     const pin =
       original.lat != null && original.lng != null
@@ -925,16 +1080,21 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotTitleTouched.value = true;
       return;
     }
-    if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value)
+
+    if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value) {
       return;
+    }
+
     const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
     const updated = await spotsStore.update(editingSpot.value.id, body);
     drawers.touchLocations();
+
     if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {
       editSpotLocationError.value = true;
       showEditSpotLocationSection.value = true;
       return;
     }
+
     await syncSpotTours(editingSpot.value.id, editSpotForm.value.tourTitles);
     editSpotLocationError.value = false;
     editSpotDraft.clear();
@@ -956,15 +1116,20 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function discardEditSpotDraft() {
-    if (!editingSpot.value) return;
+    if (!editingSpot.value) {
+      return;
+    }
+
     startEditSpot(editingSpot.value);
     editSpotDraft.clear();
     showToast({ message: 'Änderungen verworfen.', type: 'info' });
   }
 
   async function deleteEditingSpot() {
-    if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value)
+    if (!editingSpot.value || isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value) {
       return;
+    }
+
     const id = editingSpot.value.id;
     await spotsStore.remove(id);
     drawers.touchLocations();
@@ -975,6 +1140,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     if (editingSpot.value !== null) {
       editSpotManualPin.value = pin;
     }
+
     if (
       pin &&
       (editingSpot.value !== null ? editSpotLocationError.value : spotLocationError.value)
@@ -988,7 +1154,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
   });
 
   watch(editSpotManualPin, (pin) => {
-    if (pin && editSpotLocationError.value) submitEditSpot();
+    if (pin && editSpotLocationError.value) {
+      submitEditSpot();
+    }
   });
 
   return {

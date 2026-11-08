@@ -213,6 +213,7 @@ describe('TabBar', () => {
     expect(tabBar).not.toBeNull();
 
     let scrolledTo: number | null = null;
+
     (tabBar as unknown as { scrollTo: (opts: { left: number }) => void }).scrollTo = (opts) => {
       scrolledTo = opts.left;
     };

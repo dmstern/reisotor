@@ -16,7 +16,10 @@ describe('attachments.trip_id Backfill-Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('überträgt die trip_id aus verknüpften Entitäten auf bestehende attachments-Zeilen mit trip_id IS NULL', async () => {

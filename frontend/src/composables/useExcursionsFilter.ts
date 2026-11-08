@@ -69,27 +69,48 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   const searchQuery = ref('');
 
   function markSeenForGroupMode(mode: 'category' | 'tours' | 'tracks') {
-    if (mode === 'tracks' || !highlightedIds) return;
+    if (mode === 'tracks' || !highlightedIds) {
+      return;
+    }
+
     const domain = mode === 'category' ? 'spots' : 'ideas';
-    for (const id of liveSync.markSeen(domain)) highlightedIds.value.add(id);
+
+    for (const id of liveSync.markSeen(domain)) {
+      highlightedIds.value.add(id);
+    }
   }
 
   watch(groupMode, (mode) => markSeenForGroupMode(mode));
 
   const spotScheduledDates = computed(() => {
     const map = new Map<number, string>();
+
     for (const item of scheduleStore.items) {
-      if (item.spot_id == null) continue;
+      if (item.spot_id == null) {
+        continue;
+      }
+
       const existing = map.get(item.spot_id);
-      if (!existing || item.date < existing) map.set(item.spot_id, item.date);
-    }
-    for (const excursion of excursionsStore.excursions) {
-      if (!excursion.date) continue;
-      for (const spotId of excursion.spot_ids) {
-        const existing = map.get(spotId);
-        if (!existing || excursion.date < existing) map.set(spotId, excursion.date);
+
+      if (!existing || item.date < existing) {
+        map.set(item.spot_id, item.date);
       }
     }
+
+    for (const excursion of excursionsStore.excursions) {
+      if (!excursion.date) {
+        continue;
+      }
+
+      for (const spotId of excursion.spot_ids) {
+        const existing = map.get(spotId);
+
+        if (!existing || excursion.date < existing) {
+          map.set(spotId, excursion.date);
+        }
+      }
+    }
+
     return map;
   });
 
@@ -114,7 +135,10 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   }
 
   function groupIconDef(category: string): IconDef {
-    if (category === 'Unterkunft') return spotCategoryMeta('Unterkunft').tabler;
+    if (category === 'Unterkunft') {
+      return spotCategoryMeta('Unterkunft').tabler;
+    }
+
     return spotCategoryMeta(category).tabler;
   }
 
@@ -122,7 +146,10 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
     category: string;
     excursion: Excursion | null;
   }): string | undefined {
-    if (groupMode.value === 'tours') return undefined;
+    if (groupMode.value === 'tours') {
+      return undefined;
+    }
+
     return iconStyle.colorizeCategories ? spotCategoryMeta(grp.category).color : undefined;
   }
 
@@ -177,12 +204,14 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
 
     if (q.category) {
       categoryFilter.value = String(q.category).split(',').filter(Boolean);
+
       if (q.group !== 'tours') {
         groupMode.value = 'category';
       }
     } else {
       categoryFilter.value = [];
     }
+
     if (q.status) {
       statusFilter.value = String(q.status)
         .split(',')
@@ -199,10 +228,16 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   }
 
   function updateRouteQuery() {
-    if (isSyncingQuery) return;
+    if (isSyncingQuery) {
+      return;
+    }
+
     const newQuery: Record<string, string> = {};
+
     for (const [k, v] of Object.entries(route.query)) {
-      if (v != null) newQuery[k] = Array.isArray(v) ? v.join(',') : String(v);
+      if (v != null) {
+        newQuery[k] = Array.isArray(v) ? v.join(',') : String(v);
+      }
     }
 
     if (groupMode.value === 'tours') {
@@ -281,14 +316,21 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
 
   const filteredSpotItems = computed(() =>
     allSpotItems.value.filter((item) => {
-      if (categoryFilter.value.length && !categoryFilter.value.includes(itemCategory(item)))
+      if (categoryFilter.value.length && !categoryFilter.value.includes(itemCategory(item))) {
         return false;
+      }
+
       const status = itemStatus(item);
+
       if (statusFilter.value.length) {
         const matchesStatus = statusFilter.value.includes(status);
         const matchesDone = statusFilter.value.includes('done') && itemDone(item);
-        if (!matchesStatus && !matchesDone) return false;
+
+        if (!matchesStatus && !matchesDone) {
+          return false;
+        }
       }
+
       if (tourRoleFilter.value.length) {
         const spotTours = excursionsStore.excursions.filter((e) =>
           e.spot_ids.includes(item.spot.id)
@@ -298,15 +340,23 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
             ? tourRoleFilter.value.includes(t.role)
             : tourRoleFilter.value.includes('excursion')
         );
-        if (!matchesTourRole) return false;
+
+        if (!matchesTourRole) {
+          return false;
+        }
       }
+
       if (searchQuery.value.trim()) {
         const q = searchQuery.value.trim().toLowerCase();
         const title = itemTitle(item).toLowerCase();
         const category = itemCategory(item).toLowerCase();
         const note = (item.spot.note ?? '').toLowerCase();
-        if (!title.includes(q) && !category.includes(q) && !note.includes(q)) return false;
+
+        if (!title.includes(q) && !category.includes(q) && !note.includes(q)) {
+          return false;
+        }
       }
+
       return true;
     })
   );
@@ -325,28 +375,40 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   }
 
   const spotGroups = computed(() => {
-    if (groupMode.value === 'tracks') return [];
+    if (groupMode.value === 'tracks') {
+      return [];
+    }
+
     const groups = new Map<string, SpotsGroupItem[]>();
+
     if (groupMode.value === 'tours') {
       const isTourRoleMatch = (role: IdeaRole | null | undefined) => {
-        if (!tourRoleFilter.value.length) return true;
+        if (!tourRoleFilter.value.length) {
+          return true;
+        }
+
         return role
           ? tourRoleFilter.value.includes(role)
           : tourRoleFilter.value.includes('excursion');
       };
+
       const matchingExcursions = excursionsStore.excursions.filter((ex) =>
         isTourRoleMatch(ex.role)
       );
       const matchingTitles = new Set(matchingExcursions.map((e) => e.title));
+
       for (const item of filteredSpotItems.value) {
         const keys = tourTitlesForItem(item).filter((t) => matchingTitles.has(t));
+
         for (const key of keys) {
           const list = groups.get(key) ?? [];
           list.push(item);
           groups.set(key, list);
         }
       }
+
       const q = searchQuery.value.trim().toLowerCase();
+
       for (const ex of matchingExcursions) {
         if (!groups.has(ex.title)) {
           if (
@@ -361,6 +423,7 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
     } else {
       for (const item of filteredSpotItems.value) {
         const keys = [itemCategory(item)];
+
         for (const key of keys) {
           const list = groups.get(key) ?? [];
           list.push(item);
@@ -368,12 +431,16 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
         }
       }
     }
+
     for (const [key, list] of groups) {
       const excursion = groupMode.value === 'tours' ? excursionForGroupTitle(key) : null;
+
       if (excursion) {
         const order = new Map<number, number>();
         excursion.spot_ids.forEach((id, idx) => {
-          if (!order.has(id)) order.set(id, idx);
+          if (!order.has(id)) {
+            order.set(id, idx);
+          }
         });
         list.sort((a, b) => {
           const ai = a.kind === 'spot' ? (order.get(a.spot.id) ?? Infinity) : Infinity;
@@ -387,13 +454,16 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
             const dateB = spotScheduledDates.value.get(b.spot.id) || '\uFFFF';
             return dateA.localeCompare(dateB) || itemTitle(a).localeCompare(itemTitle(b));
           }
+
           if (sortMode.value === 'likes') {
             return itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b));
           }
+
           return itemTitle(a).localeCompare(itemTitle(b));
         });
       }
     }
+
     if (groupMode.value === 'tours') {
       const known = [...groups.keys()].sort((a, b) => {
         if (sortMode.value === 'date') {
@@ -403,14 +473,17 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
           const db = eb?.date || '\uFFFF';
           return da.localeCompare(db) || a.localeCompare(b);
         }
+
         return a.localeCompare(b);
       });
       return known.map((title) => {
         const excursion = excursionForGroupTitle(title);
         let iconDef = SECTION_ICON_DEFS.excursions;
+
         if (excursion?.role && TRAVEL_ROLE_META[excursion.role]) {
           iconDef = TRAVEL_ROLE_META[excursion.role].tabler;
         }
+
         return {
           category: title,
           iconDef,
@@ -419,6 +492,7 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
         };
       });
     }
+
     return sortedCategoryKeys(groups.keys()).map((category) => ({
       category,
       iconDef: groupIconDef(category),
@@ -432,7 +506,10 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   );
 
   function getTourTotalSpotsCount(excursion: Excursion): number {
-    if (!excursion.spot_ids.length) return 0;
+    if (!excursion.spot_ids.length) {
+      return 0;
+    }
+
     const count = spotsStore.spots.filter((s) => excursion.spot_ids.includes(s.id)).length;
     return count > 0 ? count : excursion.spot_ids.length;
   }
@@ -453,9 +530,11 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
     if (hasCategoryOrStatus && !hasSearch) {
       return 'den Kategorie-/Status-Filter';
     }
+
     if (hasSearch && !hasCategoryOrStatus) {
       return 'den Suchfilter';
     }
+
     return 'aktive Filter';
   }
 

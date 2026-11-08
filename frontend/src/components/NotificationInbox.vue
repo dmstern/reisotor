@@ -78,9 +78,11 @@ const bellAriaLabel = computed(() => {
   if (totalUnreadCount.value > 0) {
     return `Benachrichtigungen (${totalUnreadCount.value} ungelesen)`;
   }
+
   if (hasSystemNotices.value) {
     return 'Benachrichtigungen (Neuigkeiten verfügbar)';
   }
+
   return 'Benachrichtigungen';
 });
 
@@ -126,6 +128,7 @@ watch(open, (isOpen) => {
     if (auth.isAdmin) {
       adminMessages.loadUnreadCount();
     }
+
     window.addEventListener('resize', close, { passive: true });
     window.addEventListener('keydown', onKeydown);
   } else {
@@ -142,12 +145,17 @@ onUnmounted(() => {
 async function selectNotification(n: NotificationItem) {
   notifications.markRead(n.id);
   close();
+
   if (n.domain === 'schedule') {
     drawers.openCalendar();
     return;
   }
+
   const target = notificationTarget(n);
-  if (target) router.push(target);
+
+  if (target) {
+    router.push(target);
+  }
 }
 
 function markAllRead() {

@@ -16,7 +16,10 @@ describe('accommodation -> spots Verschmelzungs-Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('überführt Unterkunft, Ausflug-Stationen und Datei-Anhänge verlustfrei nach spots', async () => {

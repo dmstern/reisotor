@@ -21,6 +21,7 @@ const itemTitle = computed(() => {
   if (isWeatherUnknown(props.day)) {
     return `${props.dateLabel}: ${getWeatherUnknownReason(props.day.date)}`;
   }
+
   return `${props.dateLabel}: ${weatherCodeMeta(props.day.weatherCode).label}`;
 });
 </script>

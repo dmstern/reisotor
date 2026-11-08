@@ -69,6 +69,7 @@ function abortUpload() {
     abortController.abort();
     abortController = null;
   }
+
   setUploading(false);
   currentFile.value = 1;
   totalFiles.value = 0;
@@ -78,7 +79,11 @@ function abortUpload() {
 
 const badgeTooltip = computed(() => {
   const count = attachments.value.length;
-  if (!count) return '';
+
+  if (!count) {
+    return '';
+  }
+
   return `${count} ${count === 1 ? 'Anhang' : 'Anhänge'} (Klicken für Vorschau)`;
 });
 
@@ -88,8 +93,14 @@ function openPreview(index?: number) {
 }
 
 async function load() {
-  if (props.initialAttachments) return;
-  if (!props.entityId || props.entityId <= 0 || Number.isNaN(props.entityId)) return;
+  if (props.initialAttachments) {
+    return;
+  }
+
+  if (!props.entityId || props.entityId <= 0 || Number.isNaN(props.entityId)) {
+    return;
+  }
+
   try {
     attachments.value = await api.get<Attachment[]>(
       `/attachments?domain=${props.domain}&entity_id=${props.entityId}`
@@ -105,8 +116,12 @@ async function load() {
 }
 
 function onAttachmentsChanged(e: Event) {
-  if (props.initialAttachments) return;
+  if (props.initialAttachments) {
+    return;
+  }
+
   const custom = e as CustomEvent<{ domain: string; entityId: number }>;
+
   if (
     custom.detail &&
     custom.detail.domain === props.domain &&
@@ -118,6 +133,7 @@ function onAttachmentsChanged(e: Event) {
 
 onMounted(() => {
   load();
+
   if (typeof window !== 'undefined') {
     window.addEventListener('attachments-changed', onAttachmentsChanged);
   }
@@ -125,6 +141,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   abortUpload();
+
   if (typeof window !== 'undefined') {
     window.removeEventListener('attachments-changed', onAttachmentsChanged);
   }
@@ -141,7 +158,10 @@ async function onFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   const files = input.files ? Array.from(input.files) : [];
   input.value = '';
-  if (!files.length) return;
+
+  if (!files.length) {
+    return;
+  }
 
   abortController = new AbortController();
   totalFiles.value = files.length;
@@ -153,14 +173,20 @@ async function onFilesSelected(event: Event) {
 
   try {
     for (let i = 0; i < files.length; i++) {
-      if (abortController.signal.aborted) break;
+      if (abortController.signal.aborted) {
+        break;
+      }
+
       const file = files[i];
       currentFile.value = i + 1;
       currentFileName.value = file.name;
       progressPercent.value = Math.round((i / files.length) * 100);
 
       const data = isImageFile(file) ? await compressImage(file) : await readAsDataUrl(file);
-      if (abortController.signal.aborted) break;
+
+      if (abortController.signal.aborted) {
+        break;
+      }
 
       progressPercent.value = Math.round(((i + 0.5) / files.length) * 100);
 
@@ -175,7 +201,10 @@ async function onFilesSelected(event: Event) {
         },
         { signal: abortController.signal }
       );
-      if (abortController.signal.aborted) break;
+
+      if (abortController.signal.aborted) {
+        break;
+      }
 
       attachments.value.push(created);
       progressPercent.value = Math.round(((i + 1) / files.length) * 100);
@@ -192,6 +221,7 @@ async function onFilesSelected(event: Event) {
     if (abortController?.signal.aborted) {
       return;
     }
+
     error.value = 'Datei-Upload fehlgeschlagen. Bitte erneut versuchen.';
   } finally {
     setUploading(false);
@@ -200,11 +230,16 @@ async function onFilesSelected(event: Event) {
 }
 
 async function remove(attachment: Attachment) {
-  if (!attachment) return;
+  if (!attachment) {
+    return;
+  }
+
   const previous = [...attachments.value];
   attachments.value = attachments.value.filter((a) => a.id !== attachment.id);
+
   try {
     await api.delete(`/attachments/${attachment.id}`);
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('attachments-changed', {
@@ -225,6 +260,7 @@ function handleUploadClick() {
     openAccountTierModal('uploads');
     return;
   }
+
   fileInputRef.value?.click();
 }
 </script>

@@ -24,8 +24,14 @@ const props = withDefaults(
 );
 
 const resolvedIcon = computed<IconDef | null>(() => {
-  if (props.icon === false) return null;
-  if (typeof props.icon === 'object') return props.icon;
+  if (props.icon === false) {
+    return null;
+  }
+
+  if (typeof props.icon === 'object') {
+    return props.icon;
+  }
+
   switch (props.variant) {
     case 'warning':
       return ACTION_ICONS.warning;

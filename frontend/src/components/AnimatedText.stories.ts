@@ -38,9 +38,11 @@ export const ToggleDrawerHeading: Story = {
     components: { AnimatedText, Button },
     setup() {
       const mode = ref<'spots' | 'tours'>('spots');
+
       const toggle = () => {
         mode.value = mode.value === 'spots' ? 'tours' : 'spots';
       };
+
       return { mode, toggle };
     },
     template: `

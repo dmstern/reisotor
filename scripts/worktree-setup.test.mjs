@@ -22,6 +22,7 @@ describe('worktree-setup script', () => {
 
   test('ensureSymlinks creates symlinks for node_modules directories', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-test-'));
+
     try {
       const mainRepo = path.join(tempDir, 'main');
       const worktree = path.join(tempDir, 'worktree');
@@ -67,6 +68,7 @@ describe('worktree-setup script', () => {
 
   test('ensureSymlinks handles missing folders in main repository gracefully', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-test-'));
+
     try {
       const mainRepo = path.join(tempDir, 'main');
       const worktree = path.join(tempDir, 'worktree');
@@ -91,6 +93,7 @@ describe('worktree-setup script', () => {
 
   test('ensureEnv copies .env if present in main and absent in worktree', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-test-'));
+
     try {
       const mainRepo = path.join(tempDir, 'main');
       const worktree = path.join(tempDir, 'worktree');
@@ -125,6 +128,7 @@ describe('worktree-setup script', () => {
 
   test('ensureDatabase triggers seed when database does not exist', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-test-'));
+
     try {
       fs.mkdirSync(path.join(tempDir, 'backend'), { recursive: true });
 

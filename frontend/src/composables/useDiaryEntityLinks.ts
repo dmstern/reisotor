@@ -35,11 +35,13 @@ export function useDiaryEntityLinks() {
 
   function getSpotScheduledDates(spotId: number): string[] {
     const dates = new Set<string>();
+
     for (const item of scheduleStore.items) {
       if (item.spot_id === spotId && item.date) {
         if (item.end_date && item.end_date > item.date) {
           const cur = new Date(`${item.date}T00:00:00`);
           const end = new Date(`${item.end_date}T00:00:00`);
+
           while (cur <= end) {
             dates.add(toLocalDateString(cur));
             cur.setDate(cur.getDate() + 1);
@@ -49,22 +51,30 @@ export function useDiaryEntityLinks() {
         }
       }
     }
+
     for (const excursion of excursionsStore.excursions) {
       if (excursion.date && (excursion.spot_ids ?? []).includes(spotId)) {
         dates.add(excursion.date);
       }
     }
+
     return Array.from(dates).sort();
   }
 
   function spotDateMismatch(spotId: number, targetDate?: string): boolean {
-    if (!targetDate) return false;
+    if (!targetDate) {
+      return false;
+    }
+
     const dates = getSpotScheduledDates(spotId);
     return dates.length > 0 && !dates.includes(targetDate);
   }
 
   function excursionDateMismatch(excursion: Excursion, targetDate?: string): boolean {
-    if (!targetDate || !excursion.date) return false;
+    if (!targetDate || !excursion.date) {
+      return false;
+    }
+
     return excursion.date !== targetDate;
   }
 
@@ -88,24 +98,37 @@ export function useDiaryEntityLinks() {
 
   function toggleSpot(spotId: number, target: { spot_ids: number[] }) {
     const idx = target.spot_ids.indexOf(spotId);
-    if (idx === -1) target.spot_ids.push(spotId);
-    else target.spot_ids.splice(idx, 1);
+
+    if (idx === -1) {
+      target.spot_ids.push(spotId);
+    } else {
+      target.spot_ids.splice(idx, 1);
+    }
   }
 
   async function markLinkedAsDone(excursionIds: number[], spotIds: number[], date: string) {
     const tripId = tripStore.currentTripId;
+
     try {
       await Promise.all([
         ...excursionIds.map(async (id) => {
           const excursion = excursionsStore.excursions.find((e) => e.id === id);
-          if (excursion && !excursion.date) await excursionsStore.setDate(id, date);
+
+          if (excursion && !excursion.date) {
+            await excursionsStore.setDate(id, date);
+          }
+
           await excursionsStore.setDone(id, true);
         }),
         ...spotIds.map(async (id) => {
           if (tripId != null && !spotAlreadyPlanned(id, date)) {
             const spot = spotsStore.spots.find((s) => s.id === id);
-            if (spot) await scheduleStore.setSpotDate(id, tripId, spot.title, date);
+
+            if (spot) {
+              await scheduleStore.setSpotDate(id, tripId, spot.title, date);
+            }
           }
+
           await spotsStore.setDone(id, true);
         }),
       ]);
@@ -115,8 +138,14 @@ export function useDiaryEntityLinks() {
   }
 
   function hasMapContent(entry: DiaryEntry): boolean {
-    if (entry.spot_ids && entry.spot_ids.length > 0) return true;
-    if (entry.excursion_ids && entry.excursion_ids.length > 0) return true;
+    if (entry.spot_ids && entry.spot_ids.length > 0) {
+      return true;
+    }
+
+    if (entry.excursion_ids && entry.excursion_ids.length > 0) {
+      return true;
+    }
+
     const stations = buildDayStations(
       entry.date,
       scheduleStore.items,

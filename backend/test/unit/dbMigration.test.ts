@@ -18,7 +18,10 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('überträgt ein gesetztes ideas.date in einen schedule_items-Termin statt es beim Spalten-Drop zu verlieren', async () => {
@@ -100,7 +103,10 @@ describe('ideas -> excursion_legs Transport-Backfill', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('überträgt Transport-Felder einer Tour auf einen neuen excursion_legs-Eintrag (Issue #361)', async () => {
@@ -199,7 +205,10 @@ describe('trip_categories Schema-Initialisierung', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('erstellt die Tabelle trip_categories mit Indizes', async () => {
@@ -239,7 +248,10 @@ describe('location_tracks.end_reason Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('ergänzt die Spalte end_reason in einer bestehenden location_tracks Tabelle', async () => {
@@ -349,7 +361,10 @@ describe('location_track_points.altitude Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('ergänzt die Spalte altitude in einer bestehenden location_track_points Tabelle, behält Altpunkte mit NULL und speichert neue Höhendaten', async () => {
@@ -548,7 +563,10 @@ describe('instance_settings und remote_image_cache Tabellen-Initialisierung', ()
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('erstellt instance_settings und remote_image_cache Tabellen additiv', async () => {
@@ -611,7 +629,10 @@ describe('uploads Tabellen-Initialisierung und Backfill (#629)', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('erstellt uploads-Tabelle und migriert bestehende Attachments, Spots und Tagebuchbilder', async () => {
@@ -695,7 +716,10 @@ describe('todo_items.period Migration & Persistenz', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('behält gesetzte period-Werte von todo_items bei Serverstarts und löscht sie nicht versehentlich', async () => {

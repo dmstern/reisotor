@@ -46,6 +46,7 @@ export function useTodoGrouping(
   const groupByOptions = computed<Array<{ value: TodoGroupBy; label: string; icon: IconDef }>>(
     () => {
       const opts = [];
+
       if (users.value.length > 1) {
         opts.push({
           value: 'assignee' as const,
@@ -53,6 +54,7 @@ export function useTodoGrouping(
           icon: FORM_FIELD_ICONS.person,
         });
       }
+
       opts.push({
         value: 'period' as const,
         label: 'nach Zeitraum',
@@ -67,9 +69,11 @@ export function useTodoGrouping(
       { value: 'priority', label: 'nach Priorität', icon: FORM_FIELD_ICONS.priority },
       { value: 'due_date', label: 'nach Datum', icon: FORM_FIELD_ICONS.date },
     ];
+
     if (users.value.length > 1) {
       opts.push({ value: 'assignee', label: 'nach Bearbeiter:in', icon: FORM_FIELD_ICONS.person });
     }
+
     return opts;
   });
 
@@ -77,8 +81,13 @@ export function useTodoGrouping(
     () => users.value.length,
     (len) => {
       if (len <= 1) {
-        if (groupBy.value === 'assignee') groupBy.value = 'period';
-        if (sortBy.value === 'assignee') sortBy.value = 'priority';
+        if (groupBy.value === 'assignee') {
+          groupBy.value = 'period';
+        }
+
+        if (sortBy.value === 'assignee') {
+          sortBy.value = 'priority';
+        }
       }
     },
     { immediate: true }
@@ -88,23 +97,33 @@ export function useTodoGrouping(
     if (item.due_date) {
       return computePeriod(item.due_date, currentTrip.value ?? null);
     }
+
     return item.period || null;
   }
 
   function userLabel(id: number | null) {
-    if (id == null) return null;
+    if (id == null) {
+      return null;
+    }
+
     const u = users.value.find((u) => u.id === id);
     return u ? `${u.avatar} ${u.username}` : '👤 Ehemaliges Mitglied';
   }
 
   function userAvatar(id: number | null | undefined) {
-    if (id == null) return null;
+    if (id == null) {
+      return null;
+    }
+
     const u = users.value.find((u) => u.id === id);
     return u ? u.avatar : '👤';
   }
 
   function userName(id: number | null | undefined) {
-    if (id == null) return null;
+    if (id == null) {
+      return null;
+    }
+
     const u = users.value.find((u) => u.id === id);
     return u ? u.username : 'Ehemaliges Mitglied';
   }
@@ -116,17 +135,28 @@ export function useTodoGrouping(
       (i) => !!i.done,
       (a, b) => {
         if (sortBy.value === 'due_date') {
-          if (!a.due_date && !b.due_date) return 0;
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
+          if (!a.due_date && !b.due_date) {
+            return 0;
+          }
+
+          if (!a.due_date) {
+            return 1;
+          }
+
+          if (!b.due_date) {
+            return -1;
+          }
+
           return a.due_date.localeCompare(b.due_date);
         }
+
         if (sortBy.value === 'assignee') {
           return (userLabel(a.assigned_to_user_id) ?? '').localeCompare(
             userLabel(b.assigned_to_user_id) ?? '',
             'de'
           );
         }
+
         return TODO_PRIORITY_ORDER[a.priority] - TODO_PRIORITY_ORDER[b.priority];
       }
     );
@@ -152,6 +182,7 @@ export function useTodoGrouping(
         },
       ];
     }
+
     const memberIds = new Set(users.value.map((u) => u.id));
     const perUser: TodoGroup[] = users.value.map((u) => ({
       key: `user-${u.id}`,
@@ -171,12 +202,18 @@ export function useTodoGrouping(
   });
 
   function formatDate(d: string | null) {
-    if (!d) return null;
+    if (!d) {
+      return null;
+    }
+
     return formatDateShared(d);
   }
 
   function isOverdue(item: TodoItem) {
-    if (!item.due_date || item.done) return false;
+    if (!item.due_date || item.done) {
+      return false;
+    }
+
     return item.due_date < toLocalDateString(new Date());
   }
 

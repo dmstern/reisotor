@@ -7,7 +7,10 @@ const props = defineProps<{
 }>();
 
 const percent = computed(() => {
-  if (props.total <= 0) return 0;
+  if (props.total <= 0) {
+    return 0;
+  }
+
   return Math.min(100, Math.round((props.packed / props.total) * 100));
 });
 
@@ -18,10 +21,22 @@ const percent = computed(() => {
 // 3: 66-99% (fast voll: Hemden, Kulturbeutel)
 // 4: 100% (komplett gepackt, grüner Gepäckanhänger "Ready!")
 const fillTier = computed(() => {
-  if (percent.value === 0) return 0;
-  if (percent.value <= 30) return 1;
-  if (percent.value <= 65) return 2;
-  if (percent.value < 100) return 3;
+  if (percent.value === 0) {
+    return 0;
+  }
+
+  if (percent.value <= 30) {
+    return 1;
+  }
+
+  if (percent.value <= 65) {
+    return 2;
+  }
+
+  if (percent.value < 100) {
+    return 3;
+  }
+
   return 4;
 });
 </script>

@@ -91,6 +91,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
 
     if (result.length === 0) {
       const fallbackDate = toValue(options.scheduledDate);
+
       if (fallbackDate) {
         result.push({
           id: `prop-${fallbackDate}`,
@@ -104,6 +105,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     }
 
     const isSingleTour = result.length === 1 && result[0].type === 'tour';
+
     if (isSingleTour && spot.done) {
       result[0].done = true;
     }
@@ -117,7 +119,10 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     () => totalItemsCount.value > 0 && doneItemsCount.value === totalItemsCount.value
   );
   const isSpotDone = computed(() => {
-    if (totalItemsCount.value > 0) return allItemsDone.value;
+    if (totalItemsCount.value > 0) {
+      return allItemsDone.value;
+    }
+
     const spot = toValue(options.spot);
     return !!spot.done;
   });
@@ -134,10 +139,15 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
   const defaultDate = computed(() => {
     const trip = tripStore.currentTrip;
     const today = toLocalDateString(new Date());
+
     if (trip && trip.start_date && trip.end_date) {
-      if (today >= trip.start_date && today <= trip.end_date) return today;
+      if (today >= trip.start_date && today <= trip.end_date) {
+        return today;
+      }
+
       return trip.start_date;
     }
+
     return today;
   });
   const unplannedDoneDate = ref(defaultDate.value);
@@ -150,15 +160,18 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
 
     if (totalItemsCount.value >= 1) {
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+
       if (triggerEl) {
         datesPopoverStyle.value = computePopoverPosition(triggerEl, {
           menuWidth: 290,
           menuHeight: 240,
         });
       }
+
       datesPopoverOpen.value = true;
       await nextTick();
       const menuEl = document.querySelector('.spot-dates-popover') as HTMLElement | null;
+
       if (menuEl && triggerEl) {
         const rect = menuEl.getBoundingClientRect();
         datesPopoverStyle.value = computePopoverPosition(triggerEl, {
@@ -171,16 +184,20 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
         await spotsStore.setDone(spot.id, false);
         return;
       }
+
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+
       if (triggerEl) {
         unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
           menuWidth: 260,
           menuHeight: 180,
         });
       }
+
       unplannedPopoverOpen.value = true;
       await nextTick();
       const menuEl = document.querySelector('.spot-unplanned-popover') as HTMLElement | null;
+
       if (menuEl && triggerEl) {
         const rect = menuEl.getBoundingClientRect();
         unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
@@ -194,9 +211,11 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
   async function toggleScheduledItemDone(item: ScheduledSpotItem) {
     if (item.type === 'tour') {
       const spot = toValue(options.spot);
+
       if (spot.done) {
         await spotsStore.setDone(spot.id, false);
       }
+
       await excursionsStore.setDone(item.sourceId, !item.done);
     } else if (item.type === 'schedule') {
       await scheduleStore.setDone(item.sourceId, !item.done);
@@ -207,8 +226,12 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
   }
 
   async function submitUnplannedDone() {
-    if (!unplannedDoneDate.value) return;
+    if (!unplannedDoneDate.value) {
+      return;
+    }
+
     const spot = toValue(options.spot);
+
     if (tripStore.currentTripId != null) {
       await scheduleStore.setSpotDate(
         spot.id,
@@ -218,6 +241,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
         true
       );
     }
+
     unplannedPopoverOpen.value = false;
   }
 

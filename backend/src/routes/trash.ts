@@ -45,7 +45,11 @@ interface TrashConfig {
 function isTrackVisible(id: string, userId: number | undefined): boolean {
   const row = db.prepare('SELECT user_id, visibility FROM location_tracks WHERE id = ?').get(id) as
     { user_id: number; visibility: string } | undefined;
-  if (!row) return true; // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
+
+  if (!row) {
+    return true;
+  } // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
+
   return row.user_id === userId || row.visibility === 'shared';
 }
 
@@ -57,7 +61,11 @@ function isBudgetItemVisible(id: string, userId: number | undefined): boolean {
        WHERE bi.id = ?`
     )
     .get(id) as { budget_id: number | null; owner_id: number | null } | undefined;
-  if (!row) return true; // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
+
+  if (!row) {
+    return true;
+  } // nicht gefunden - lässt den 404-Pfad des Aufrufers greifen
+
   return row.budget_id == null || row.owner_id == null || row.owner_id === userId;
 }
 
@@ -80,6 +88,7 @@ const TRASH_CONFIG: TrashConfig[] = [
       const legs = db
         .prepare('SELECT budget_expense_id FROM excursion_legs WHERE idea_id = ?')
         .all(id) as { budget_expense_id: number | null }[];
+
       for (const leg of legs) {
         if (leg.budget_expense_id) {
           db.prepare(
@@ -145,6 +154,7 @@ const TRASH_CONFIG: TrashConfig[] = [
 function restoreLinkedBudgetExpense(table: string, id: string) {
   const row = db.prepare(`SELECT budget_expense_id FROM ${table} WHERE id = ?`).get(id) as
     { budget_expense_id: number | null } | undefined;
+
   if (row?.budget_expense_id) {
     db.prepare(
       'UPDATE budget_items SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL'
@@ -158,8 +168,14 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
   // Papierkorb-Ansicht im Frontend kennt pro Typ bereits die passenden Icons/Formatierungen
   // (spotCategoryMeta, scheduleCategory, …) und formatiert damit selbst.
   app.get<{ Querystring: { trip_id?: string } }>('/trash', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     const entries = TRASH_CONFIG.flatMap((config) => {
       const rows = config.listQuery
         ? config.listQuery(req.query.trip_id as string, req.session.userId)
@@ -182,14 +198,23 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
     '/trash/:type/:id/restore',
     async (req, reply) => {
       const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
-      if (!config) return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+
+      if (!config) {
+        return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+      }
 
       const existingRow = db
         .prepare(`SELECT trip_id FROM ${config.table} WHERE id = ?`)
         .get(req.params.id) as { trip_id: number } | undefined;
-      if (!existingRow)
+
+      if (!existingRow) {
         return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
-      if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
+      }
+
+      if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) {
+        return;
+      }
+
       if (config.checkVisible && !config.checkVisible(req.params.id, req.session.userId)) {
         return reply.code(403).send({ error: 'Kein Zugriff auf dieses Objekt' });
       }
@@ -198,6 +223,7 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
         const cat = db
           .prepare('SELECT trip_id, type, name FROM trip_categories WHERE id = ?')
           .get(req.params.id) as { trip_id: number; type: string; name: string } | undefined;
+
         if (cat) {
           db.prepare(
             'DELETE FROM trip_categories WHERE trip_id = ? AND type = ? AND name = ? AND id != ? AND deleted_at IS NULL'
@@ -210,8 +236,10 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
           `UPDATE ${config.table} SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL`
         )
         .run(req.params.id);
-      if (result.changes === 0)
+
+      if (result.changes === 0) {
         return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+      }
 
       config.onRestore?.(req.params.id);
       recordActivity(
@@ -227,14 +255,23 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
 
   app.delete<{ Params: { type: string; id: string } }>('/trash/:type/:id', async (req, reply) => {
     const config = TRASH_CONFIG.find((c) => c.type === req.params.type);
-    if (!config) return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+
+    if (!config) {
+      return reply.code(400).send({ error: 'Unbekannter Objekttyp' });
+    }
 
     const existingRow = db
       .prepare(`SELECT trip_id FROM ${config.table} WHERE id = ? AND deleted_at IS NOT NULL`)
       .get(req.params.id) as { trip_id: number } | undefined;
 
-    if (!existingRow) return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
-    if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) return;
+    if (!existingRow) {
+      return reply.code(404).send({ error: 'Nicht gefunden oder nicht gelöscht' });
+    }
+
+    if (!requireTripMember(reply, existingRow.trip_id, req.session.userId)) {
+      return;
+    }
+
     if (config.checkVisible && !config.checkVisible(req.params.id, req.session.userId)) {
       return reply.code(403).send({ error: 'Kein Zugriff auf dieses Objekt' });
     }
@@ -245,8 +282,14 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Querystring: { trip_id?: string } }>('/trash', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     const tripId = req.query.trip_id;
 
     for (const config of TRASH_CONFIG) {
@@ -258,6 +301,7 @@ export const trashRoutes: FastifyPluginAsync = async (app) => {
             .all(tripId) as { id: number }[]);
 
       const ids = rows.map((r) => (r as { id: number }).id);
+
       if (ids.length) {
         hardDeleteTrashItems(config.table as (typeof TRASH_TABLES)[number], ids);
       }

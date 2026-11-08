@@ -76,9 +76,11 @@ const draftKey = computed(() => {
   if (props.list.ownerId != null && props.list.ownerId === auth.user?.id) {
     return 'packing:new';
   }
+
   if (props.list.key === 'shared') {
     return 'packing:new:shared';
   }
+
   return `packing:new:${props.list.key}`;
 });
 
@@ -86,9 +88,16 @@ const draft = useDraftAutosave(draftKey, formBundle, ref(true));
 
 function handleSubmit(submittedLabel: string) {
   const trimmed = submittedLabel.trim();
-  if (!trimmed) return;
+
+  if (!trimmed) {
+    return;
+  }
+
   const cat = category.value.trim();
-  if (props.categoryRequired && !cat) return;
+
+  if (props.categoryRequired && !cat) {
+    return;
+  }
 
   emit('submit', {
     label: trimmed,

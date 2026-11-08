@@ -132,9 +132,11 @@ function onSelectPlace(place: PlaceSearchResult) {
   if (props.title !== undefined) {
     emit('update:title', place.name);
   }
+
   if (place.category && props.category !== undefined) {
     emit('update:category', place.category);
   }
+
   emit('update:modelValue', coords);
   emit('update:address', place.formatted_address || place.address || place.name);
   emit('update:mapsLink', buildGoogleMapsLink(coords.lat, coords.lng));
@@ -191,9 +193,11 @@ function onSelectAddressPlace(place: PlaceSearchResult) {
   if (props.title !== undefined && !props.title.trim() && place.name) {
     emit('update:title', place.name);
   }
+
   if (props.category !== undefined && !props.category.trim() && place.category) {
     emit('update:category', place.category);
   }
+
   emit('select', place);
 }
 
@@ -293,10 +297,14 @@ const map = useLocationPickerMap({
 });
 
 const computedPlaceholder = computed(() => {
-  if (props.placeholder) return props.placeholder;
+  if (props.placeholder) {
+    return props.placeholder;
+  }
+
   if (props.context === 'trip') {
     return 'Reiseziel, Stadt oder Maps-Link eingeben...';
   }
+
   return details.hasLocation.value
     ? 'Anderen Ort oder Adresse suchen...'
     : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
@@ -367,6 +375,7 @@ function onTitleBlur(e: FocusEvent) {
 function onTitleKeydown(e: KeyboardEvent) {
   const wasOpen = titleSearch.isOpen.value;
   titleSearch.onKeydown(e);
+
   if (e.key === 'Enter') {
     if (!wasOpen || titleSearch.activeIndex.value < 0) {
       details.saveTitle();
@@ -397,6 +406,7 @@ function onAddressBlur(e: FocusEvent) {
 function onAddressKeydown(e: KeyboardEvent) {
   const wasOpen = addressSearch.isOpen.value;
   addressSearch.onKeydown(e);
+
   if (e.key === 'Enter') {
     if (!wasOpen || addressSearch.activeIndex.value < 0) {
       details.saveAddress();

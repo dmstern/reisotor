@@ -46,7 +46,11 @@ export const useTripStore = defineStore('trip', () => {
 
   function persist() {
     const key = storageKey();
-    if (!key) return;
+
+    if (!key) {
+      return;
+    }
+
     if (currentTripId.value == null) {
       localStorage.removeItem(key);
     } else {
@@ -84,11 +88,15 @@ export const useTripStore = defineStore('trip', () => {
   }
 
   async function ensureLoaded() {
-    if (loaded.value) return;
+    if (loaded.value) {
+      return;
+    }
+
     if (loadingPromise) {
       await loadingPromise;
       return;
     }
+
     await loadTrips();
   }
 
@@ -121,9 +129,11 @@ export const useTripStore = defineStore('trip', () => {
     categoryType?: 'expense' | 'spot'
   ) {
     editTripInitialTab.value = tab;
+
     if (categoryType) {
       editTripInitialCategoryType.value = categoryType;
     }
+
     editTripRequestId.value++;
   }
 
@@ -137,17 +147,20 @@ export const useTripStore = defineStore('trip', () => {
   async function updateTrip(id: number, body: TripFormData) {
     const updated = await api.put<Trip>(`/trips/${id}`, body);
     const idx = trips.value.findIndex((t) => t.id === id);
+
     if (idx !== -1) {
       const next = [...trips.value];
       next[idx] = updated;
       trips.value = next;
     }
+
     return updated;
   }
 
   async function deleteTrip(id: number) {
     await api.delete(`/trips/${id}`);
     trips.value = trips.value.filter((t) => t.id !== id);
+
     if (currentTripId.value === id) {
       currentTripId.value = trips.value[0]?.id ?? null;
       persist();

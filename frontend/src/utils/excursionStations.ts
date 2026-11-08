@@ -69,7 +69,11 @@ export function resolveStation(
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
     const spot = spotMap ? spotMap.get(id) : spots.find((s) => s.id === id);
-    if (!spot) return null;
+
+    if (!spot) {
+      return null;
+    }
+
     const meta = spotCategoryMeta(spot.category);
     return {
       key,
@@ -86,11 +90,16 @@ export function resolveStation(
       mapsLink: spot.maps_link,
     };
   }
+
   if (key.startsWith('travel-from-') || key.startsWith('travel-to-')) {
     const isFrom = key.startsWith('travel-from-');
     const id = Number(key.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
     const item = travelMap ? travelMap.get(id) : travelItems.find((t) => t.id === id);
-    if (!item) return null;
+
+    if (!item) {
+      return null;
+    }
+
     return {
       key,
       kind: isFrom ? 'travel-from' : 'travel-to',
@@ -106,6 +115,7 @@ export function resolveStation(
       mapsLink: isFrom ? item.from_maps_link : item.to_maps_link,
     };
   }
+
   return null;
 }
 

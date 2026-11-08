@@ -16,14 +16,19 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
 /** Summierte Strecke entlang der (bereits zeitlich sortierten) Punkte einer Aufzeichnung. */
 export function trackDistanceMeters(points: TrackPoint[]): number {
   let total = 0;
+
   for (let i = 1; i < points.length; i++) {
     total += haversineMeters(points[i - 1], points[i]);
   }
+
   return total;
 }
 
 export function trackDurationMs(points: TrackPoint[]): number {
-  if (points.length < 2) return 0;
+  if (points.length < 2) {
+    return 0;
+  }
+
   return (
     new Date(points[points.length - 1].recorded_at).getTime() -
     new Date(points[0].recorded_at).getTime()
@@ -38,15 +43,23 @@ export function interpolateTrackPosition(
   points: TrackPoint[],
   progress: number
 ): { lat: number; lng: number } | null {
-  if (!points.length) return null;
-  if (points.length === 1 || progress <= 0) return { lat: points[0].lat, lng: points[0].lng };
+  if (!points.length) {
+    return null;
+  }
+
+  if (points.length === 1 || progress <= 0) {
+    return { lat: points[0].lat, lng: points[0].lng };
+  }
+
   if (progress >= 1) {
     const last = points[points.length - 1];
     return { lat: last.lat, lng: last.lng };
   }
+
   const startMs = new Date(points[0].recorded_at).getTime();
   const endMs = new Date(points[points.length - 1].recorded_at).getTime();
   const spanTotal = endMs - startMs;
+
   if (!Number.isFinite(spanTotal) || spanTotal <= 0) {
     const fractionalIndex = progress * (points.length - 1);
     const lowIndex = Math.floor(fractionalIndex);
@@ -57,10 +70,13 @@ export function interpolateTrackPosition(
       lng: points[lowIndex].lng + (points[highIndex].lng - points[lowIndex].lng) * t,
     };
   }
+
   const targetMs = startMs + progress * spanTotal;
+
   for (let i = 1; i < points.length; i++) {
     const prevMs = new Date(points[i - 1].recorded_at).getTime();
     const curMs = new Date(points[i].recorded_at).getTime();
+
     if (targetMs <= curMs) {
       const span = curMs - prevMs;
       const t = span > 0 ? (targetMs - prevMs) / span : 0;
@@ -70,6 +86,7 @@ export function interpolateTrackPosition(
       };
     }
   }
+
   const last = points[points.length - 1];
   return { lat: last.lat, lng: last.lng };
 }
@@ -78,12 +95,19 @@ export function formatDurationShort(ms: number): string {
   const totalMinutes = Math.round(ms / 60_000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  if (hours > 0) return `${hours}\u00A0Std. ${minutes}\u00A0Min.`;
+
+  if (hours > 0) {
+    return `${hours}\u00A0Std. ${minutes}\u00A0Min.`;
+  }
+
   return `${minutes}\u00A0Min.`;
 }
 
 export function formatDistanceShort(meters: number): string {
-  if (meters >= 1000) return `${(meters / 1000).toFixed(1)}\u00A0km`;
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(1)}\u00A0km`;
+  }
+
   return `${Math.round(meters)}\u00A0m`;
 }
 
@@ -103,6 +127,7 @@ export function trackAverageSpeedKmh(distanceMeters: number, durationMs: number)
   ) {
     return null;
   }
+
   const speed = distanceMeters / 1000 / (durationMs / 3_600_000);
   return Number.isFinite(speed) && speed > 0 ? speed : null;
 }
@@ -113,7 +138,10 @@ export function trackAverageSpeedKmh(distanceMeters: number, durationMs: number)
  * (oder den optional übergebenen Platzhalter).
  */
 export function formatSpeedShort(kmh: number | null, placeholder = ''): string {
-  if (kmh == null || !Number.isFinite(kmh) || kmh <= 0) return placeholder;
+  if (kmh == null || !Number.isFinite(kmh) || kmh <= 0) {
+    return placeholder;
+  }
+
   return `${kmh.toFixed(1)}\u00A0km/h`;
 }
 
@@ -133,24 +161,32 @@ export function trackElevation(
   points: TrackPoint[],
   thresholdMeters = 3
 ): TrackElevationResult | null {
-  if (!points || points.length < 2) return null;
+  if (!points || points.length < 2) {
+    return null;
+  }
 
   const validAlts: number[] = [];
+
   for (let i = 0; i < points.length; i++) {
     const alt = points[i].altitude;
+
     if (typeof alt === 'number' && Number.isFinite(alt)) {
       validAlts.push(alt);
     }
   }
 
-  if (validAlts.length < 2) return null;
+  if (validAlts.length < 2) {
+    return null;
+  }
 
   const count = validAlts.length;
   const smoothed: number[] = new Array(count);
   smoothed[0] = validAlts[0];
+
   for (let i = 1; i < count - 1; i++) {
     smoothed[i] = (validAlts[i - 1] + validAlts[i] + validAlts[i + 1]) / 3;
   }
+
   smoothed[count - 1] = validAlts[count - 1];
 
   let gain = 0;
@@ -182,7 +218,10 @@ export function trackElevation(
  * Gibt einen leeren String zurück, falls keine Höhendaten vorhanden sind.
  */
 export function formatElevationShort(elevation: TrackElevationResult | null | undefined): string {
-  if (!elevation) return '';
+  if (!elevation) {
+    return '';
+  }
+
   const gain = Math.round(elevation.gain) || 0;
   const loss = Math.round(elevation.loss) || 0;
   return `↗\u00A0${gain}\u00A0m · ↘\u00A0${loss}\u00A0m`;

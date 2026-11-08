@@ -22,13 +22,17 @@ export function useBudgetSources() {
 
   function autoSourceFor(expenseId: number): BudgetAutoSource | null {
     const accommodation = accommodations.value.find((a) => a.budget_expense_id === expenseId);
+
     if (accommodation) {
       return { label: 'Zur Unterkunft', path: `/excursions#spot-${accommodation.id}` };
     }
+
     const travelItem = travelItems.value.find((t) => t.budget_expense_id === expenseId);
+
     if (travelItem) {
       return { label: 'Zur Reise', path: `/excursions#excursion-${travelItem.id}` };
     }
+
     return null;
   }
 

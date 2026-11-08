@@ -113,7 +113,11 @@ function onEntryUpdated(updated: DiaryEntry) {
     editor_ids: Array.isArray(updated.editor_ids) ? updated.editor_ids : [],
   };
   const idx = entries.value.findIndex((e) => e.id === sanitized.id);
-  if (idx !== -1) entries.value[idx] = sanitized;
+
+  if (idx !== -1) {
+    entries.value[idx] = sanitized;
+  }
+
   diaryData.sortEntries();
 }
 

@@ -17,7 +17,11 @@ function storageKey(tripId: number, draftKey: string) {
 
 function readLocal<T>(key: string): DraftEntry<T> | null {
   const raw = localStorage.getItem(key);
-  if (!raw) return null;
+
+  if (!raw) {
+    return null;
+  }
+
   try {
     return JSON.parse(raw) as DraftEntry<T>;
   } catch {
@@ -67,7 +71,11 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
   // false->true-Transition feuert. Gibt nach 5s ohne gültige trip_id auf (z. B. nicht eingeloggt).
   function waitForTripId(): Promise<number | null> {
     const tripStore = useTripStore();
-    if (tripStore.currentTripId != null) return Promise.resolve(tripStore.currentTripId);
+
+    if (tripStore.currentTripId != null) {
+      return Promise.resolve(tripStore.currentTripId);
+    }
+
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
         stop();
@@ -88,15 +96,20 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
 
   async function restoreIfPresent(tripId: number, key: string) {
     let best = readLocal<T>(storageKey(tripId, key));
+
     try {
       const remote = await api.get<{ draft_key: string; data: T; updated_at: string }[]>(
         `/drafts?trip_id=${tripId}`
       );
       const match = remote.find((d) => d.draft_key === key);
-      if (match && (!best || match.updated_at > best.updated_at)) best = match;
+
+      if (match && (!best || match.updated_at > best.updated_at)) {
+        best = match;
+      }
     } catch {
       // offline/Fehler - lokaler Stand (falls vorhanden) reicht als Fallback.
     }
+
     if (best) {
       formRef.value = { ...formRef.value, ...best.data };
       restored.value = true;
@@ -125,13 +138,18 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
 
   function clear() {
     const tripId = currentTripId();
+
     if (tripId != null && currentKey) {
       localStorage.removeItem(storageKey(tripId, currentKey));
       api
         .delete(`/drafts?trip_id=${tripId}&draft_key=${encodeURIComponent(currentKey)}`)
         .catch(() => {});
     }
-    if (timer) clearTimeout(timer);
+
+    if (timer) {
+      clearTimeout(timer);
+    }
+
     baseline = JSON.stringify(formRef.value);
     status.value = 'idle';
     restored.value = false;
@@ -142,7 +160,10 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
     async (isActive) => {
       stopFormWatch?.();
       stopFormWatch = null;
-      if (timer) clearTimeout(timer);
+
+      if (timer) {
+        clearTimeout(timer);
+      }
 
       if (!isActive) {
         status.value = 'idle';
@@ -155,27 +176,44 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
       baseline = JSON.stringify(formRef.value);
 
       const tripId = await waitForTripId();
+
       // Formular kann inzwischen wieder geschlossen worden sein, während auf die trip_id gewartet
       // wurde - nicht mehr wiederherstellen/beobachten, sonst überschreibt restoreIfPresent() ein
       // längst wieder leeres/anders belegtes Formular.
-      if (!toValue(active)) return;
+      if (!toValue(active)) {
+        return;
+      }
+
       if (tripId != null && currentKey) {
         await restoreIfPresent(tripId, currentKey);
       }
+
       status.value = JSON.stringify(formRef.value) !== baseline ? 'saved' : 'idle';
 
       stopFormWatch = watch(
         formRef,
         () => {
           if (JSON.stringify(formRef.value) === baseline) {
-            if (timer) clearTimeout(timer);
+            if (timer) {
+              clearTimeout(timer);
+            }
+
             status.value = 'idle';
             return;
           }
+
           status.value = 'dirty';
-          if (timer) clearTimeout(timer);
+
+          if (timer) {
+            clearTimeout(timer);
+          }
+
           const tripId2 = currentTripId();
-          if (tripId2 == null || !currentKey) return;
+
+          if (tripId2 == null || !currentKey) {
+            return;
+          }
+
           const key = currentKey;
           timer = setTimeout(() => persist(tripId2, key), DEBOUNCE_MS);
         },

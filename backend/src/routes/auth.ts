@@ -52,16 +52,21 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     '/register',
     async (req, reply) => {
       const mode = getRegistrationMode();
+
       if (mode === 'off') {
         return reply.code(403).send({ error: 'Registrierung ist aktuell deaktiviert' });
       }
+
       const { username, email, password } = req.body ?? {};
+
       if (!username?.trim() || !email?.trim() || !password) {
         return reply.code(400).send({ error: 'Benutzername, E-Mail und Passwort erforderlich' });
       }
+
       if (!EMAIL_PATTERN.test(email.trim())) {
         return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
       }
+
       if (password.length < 6) {
         return reply.code(400).send({ error: 'Passwort muss mindestens 6 Zeichen haben' });
       }
@@ -69,10 +74,13 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const existingUsername = db
         .prepare('SELECT id FROM users WHERE username = ?')
         .get(username.trim());
+
       if (existingUsername) {
         return reply.code(409).send({ error: 'Benutzername bereits vergeben' });
       }
+
       const existingEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim());
+
       if (existingEmail) {
         return reply.code(409).send({ error: 'E-Mail-Adresse wird bereits verwendet' });
       }
@@ -163,6 +171,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   // E-Mail-Bestätigung (Double-Opt-In)
   app.post<{ Body: { token: string } }>('/verify-email', async (req, reply) => {
     const { token } = req.body ?? {};
+
     if (!token?.trim()) {
       return reply.code(400).send({ error: 'Bestätigungs-Token erforderlich' });
     }
@@ -191,12 +200,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const existing = db
         .prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?')
         .get(record.pending_email, record.user_id);
+
       if (existing) {
         db.prepare('DELETE FROM email_verification_tokens WHERE id = ?').run(record.id);
         return reply.code(409).send({
           error: 'Diese E-Mail-Adresse wird inzwischen von einem anderen Konto verwendet.',
         });
       }
+
       db.prepare('UPDATE users SET email = ?, is_email_verified = 1 WHERE id = ?').run(
         record.pending_email,
         record.user_id
@@ -204,6 +215,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     } else {
       db.prepare('UPDATE users SET is_email_verified = 1 WHERE id = ?').run(record.user_id);
     }
+
     db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(record.user_id);
 
     return {
@@ -215,6 +227,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   // Passwort-Reset anfordern ("Passwort vergessen?")
   app.post<{ Body: { email: string } }>('/forgot-password', async (req, reply) => {
     const { email } = req.body ?? {};
+
     if (!email?.trim() || !EMAIL_PATTERN.test(email.trim())) {
       return reply.code(400).send({ error: 'Gültige E-Mail-Adresse erforderlich' });
     }
@@ -254,9 +267,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     '/reset-password',
     async (req, reply) => {
       const { token, newPassword } = req.body ?? {};
+
       if (!token?.trim()) {
         return reply.code(400).send({ error: 'Token erforderlich' });
       }
+
       if (!newPassword || newPassword.length < 6) {
         return reply.code(400).send({ error: 'Das neue Passwort muss mindestens 6 Zeichen haben' });
       }
@@ -301,6 +316,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: { username: string; password: string } }>('/login', async (req, reply) => {
     const { username, password } = req.body ?? {};
+
     if (!username || !password) {
       return reply.code(400).send({ error: 'Benutzername und Passwort erforderlich' });
     }
@@ -367,6 +383,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     if (!req.session.userId) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
+
     const user = db
       .prepare(
         'SELECT id, username, email, avatar, last_login_at, is_locked FROM users WHERE id = ?'
@@ -374,6 +391,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       .get(req.session.userId) as
       | Pick<UserRow, 'id' | 'username' | 'email' | 'avatar' | 'last_login_at' | 'is_locked'>
       | undefined;
+
     if (!user) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
@@ -412,14 +430,17 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const { name, email, username, message, type = 'registration_help' } = req.body ?? {};
+
     if (!message || message.trim().length < 5) {
       return reply
         .code(400)
         .send({ error: 'Bitte gib eine aussagekräftige Nachricht ein (mind. 5 Zeichen).' });
     }
+
     if (message.length > 2000) {
       return reply.code(400).send({ error: 'Die Nachricht darf maximal 2000 Zeichen lang sein.' });
     }
+
     if (email && email.trim() && !EMAIL_PATTERN.test(email.trim())) {
       return reply.code(400).send({ error: 'Ungültiges E-Mail-Format.' });
     }
@@ -428,6 +449,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     // Rate-Limiting: Max. 3 Nachrichten innerhalb von 1 Stunde pro IP und/oder Cookie
     let contactToken = req.cookies?.contact_rate_limit;
+
     if (
       !contactToken ||
       typeof contactToken !== 'string' ||
@@ -435,6 +457,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     ) {
       contactToken = crypto.randomUUID();
     }
+
     reply.setCookie('contact_rate_limit', contactToken, {
       path: '/',
       httpOnly: true,

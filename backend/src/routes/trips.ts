@@ -61,10 +61,17 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
-    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+      return;
+    }
+
     const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id) as
       { id: number } | undefined;
-    if (!trip) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (!trip) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     return enrichTrip(trip, req.session.userId);
   });
 
@@ -75,25 +82,32 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     ) {
       return reply.code(403).send({ error: 'Eingeschränkter Modus - Nur ein Urlaub pro Nutzer' });
     }
+
     const { name, destination, start_date, end_date, maps_link } = req.body;
+
     if (!name?.trim()) {
       return reply.code(400).send({ error: 'Name ist erforderlich' });
     }
+
     if (start_date && end_date && start_date > end_date) {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }
+
     let { lat, lng, image_url } = req.body;
     image_url = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
       lng = resolved?.lng;
     }
+
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+
     const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
     const weatherModel = req.body.weather_model?.trim() || 'ecmwf_ifs025';
     const result = db
@@ -113,9 +127,11 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         weatherModel
       );
     const tripId = result.lastInsertRowid as number;
+
     if (image_url?.startsWith('/api/uploads/')) {
       associateUploadWithTrip(image_url.slice('/api/uploads/'.length), tripId, req.session.userId);
     }
+
     // Neu angelegter Urlaub ist zunächst nur für die anlegende Person sichtbar – weitere
     // Mitglieder kommen nur per Einladung dazu (routes/trips.ts's POST /trips/:id/members).
     db.prepare('INSERT INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)').run(
@@ -130,29 +146,40 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.put<{ Params: { id: string }; Body: TripBody }>('/trips/:id', async (req, reply) => {
-    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+      return;
+    }
+
     const existing = db
       .prepare('SELECT lat, lng, weather_model FROM trips WHERE id = ?')
       .get(req.params.id) as
       { lat: number | null; lng: number | null; weather_model: string | null } | undefined;
-    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
 
     const { name, destination, start_date, end_date, maps_link } = req.body;
+
     if (!name?.trim()) {
       return reply.code(400).send({ error: 'Name ist erforderlich' });
     }
+
     if (start_date && end_date && start_date > end_date) {
       return reply.code(400).send({ error: 'Das Enddatum darf nicht vor dem Startdatum liegen' });
     }
+
     let { lat, lng, image_url } = req.body;
     image_url = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+
     if ((lat == null || lng == null) && maps_link) {
       const resolved = await resolveLatLng(maps_link);
       lat = resolved?.lat;
       lng = resolved?.lng;
     }
+
     // Schlägt die (erneute) Auflösung fehl, obwohl weiterhin ein Maps-Link hinterlegt ist (z. B.
     // transienter Netzwerkfehler beim Bearbeiten eines unabhängigen Felds), bisherige Koordinaten
     // behalten statt sie zu löschen. Wird der Maps-Link dagegen bewusst geleert, bleibt lat/lng wie
@@ -161,9 +188,11 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       lat = lat ?? existing.lat ?? undefined;
       lng = lng ?? existing.lng ?? undefined;
     }
+
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+
     // Rundung statt exaktem Vergleich, damit ein unveränderter Ort (z.B. maps_link bleibt gleich,
     // resolveLatLng liefert aber minimal abweichende Nachkommastellen) nicht fälschlich als
     // Orts-Änderung gilt und unnötig einen Weather-Refresh auslöst.
@@ -173,6 +202,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       roundCoord(lat) !== roundCoord(existing.lat) || roundCoord(lng) !== roundCoord(existing.lng);
 
     const packingCategoryRequired = req.body.packing_category_required !== false ? 1 : 0;
+
     if (image_url?.startsWith('/api/uploads/')) {
       associateUploadWithTrip(
         image_url.slice('/api/uploads/'.length),
@@ -180,6 +210,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         req.session.userId
       );
     }
+
     const weatherModel = req.body.weather_model?.trim() || existing.weather_model || 'ecmwf_ifs025';
     const weatherModelChanged = Boolean(
       req.body.weather_model && req.body.weather_model.trim() !== existing.weather_model
@@ -202,7 +233,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         weatherModel,
         req.params.id
       );
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
 
     // Ändert sich der Ort oder das Wettermodell, sind zuvor gespeicherte Wetter-Ist-Werte vergangener Tage
     // (trip_weather_snapshots, siehe weatherSnapshots.ts) noch zum alten Stand gehörig und damit
@@ -232,7 +266,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.delete<{ Params: { id: string } }>('/trips/:id', async (req, reply) => {
-    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+      return;
+    }
+
     // Datei-Anhänge (attachments.trip_id) werden per ON DELETE CASCADE zwar automatisch als
     // DB-Zeile mitgelöscht, die eigentlichen Dateien auf der Platte bleiben davon aber unberührt –
     // hier vorab einsammeln und danach entfernen, sonst blieben sie dauerhaft verwaist liegen.
@@ -242,10 +279,15 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       filename: string;
     }[];
     const result = db.prepare('DELETE FROM trips WHERE id = ?').run(req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     for (const { filename } of attachmentFiles) {
       await unlink(path.join(uploadsDir, filename)).catch(() => {});
     }
+
     return reply.code(204).send();
   });
 
@@ -256,7 +298,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { id: string }; Querystring: { home_currency?: string } }>(
     '/trips/:id/region-info',
     async (req, reply) => {
-      if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+      if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+        return;
+      }
+
       const trip = db.prepare('SELECT * FROM trips WHERE id = ?').get(req.params.id) as
         | {
             lat: number | null;
@@ -265,12 +310,17 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
             country_name: string | null;
           }
         | undefined;
-      if (!trip) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+      if (!trip) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
 
       let countryCode = trip.country_code;
       let countryName = trip.country_name;
+
       if (!countryCode && trip.lat != null && trip.lng != null) {
         const resolved = await resolveCountry(trip.lat, trip.lng);
+
         if (resolved) {
           countryCode = resolved.code;
           countryName = resolved.name;
@@ -281,6 +331,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
           );
         }
       }
+
       if (!countryCode) {
         return {
           countryName: null,
@@ -302,7 +353,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   // zurückliegende Tage, damit das Wetter eines Urlaubs auch lange nach dessen Ende noch anzeigbar
   // bleibt (Dashboard-Rückblick, Tagebuch).
   app.get<{ Params: { id: string } }>('/trips/:id/weather-history', async (req, reply) => {
-    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+      return;
+    }
+
     return db
       .prepare(
         'SELECT date, lat, lng, weathercode, temp_max, temp_min, precipitation_probability FROM trip_weather_snapshots WHERE trip_id = ? ORDER BY date'
@@ -351,9 +405,11 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
         .code(400)
         .send({ error: 'Ungültige Wetter-Quelle (nur forecast oder archive erlaubt)' });
     }
+
     const source = req.query.source === 'archive' ? 'archive' : 'forecast';
 
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
     if (
       (req.query.start_date && !dateRegex.test(req.query.start_date)) ||
       (req.query.end_date && !dateRegex.test(req.query.end_date))
@@ -383,7 +439,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   // --- Mitgliedschaft/Einladung (Batch: Registrierung + Einladung) ---
 
   app.get<{ Params: { id: string } }>('/trips/:id/members', async (req, reply) => {
-    if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+      return;
+    }
+
     return db
       .prepare(
         `SELECT users.id, users.username, users.avatar FROM users
@@ -401,9 +460,15 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string }; Body: { user_id: number } }>(
     '/trips/:id/members',
     async (req, reply) => {
-      if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+      if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+        return;
+      }
+
       const { user_id } = req.body ?? {};
-      if (!user_id) return reply.code(400).send({ error: 'user_id erforderlich' });
+
+      if (!user_id) {
+        return reply.code(400).send({ error: 'user_id erforderlich' });
+      }
 
       if (isTripOwnerRestricted(req.params.id) && isUserRestricted(user_id)) {
         const memberCount = (
@@ -413,6 +478,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
             count: number;
           }
         ).count;
+
         if (memberCount >= RESTRICTED_MAX_MEMBERS) {
           return reply
             .code(403)
@@ -421,7 +487,10 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const user = db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(user_id);
-      if (!user) return reply.code(404).send({ error: 'Nutzer:in nicht gefunden' });
+
+      if (!user) {
+        return reply.code(404).send({ error: 'Nutzer:in nicht gefunden' });
+      }
 
       db.prepare(
         'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)'
@@ -445,12 +514,16 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string; userId: string } }>(
     '/trips/:id/members/:userId',
     async (req, reply) => {
-      if (!requireTripMember(reply, req.params.id, req.session.userId)) return;
+      if (!requireTripMember(reply, req.params.id, req.session.userId)) {
+        return;
+      }
+
       if (Number(req.params.userId) === req.session.userId) {
         return reply
           .code(400)
           .send({ error: 'Du kannst dich nicht selbst aus dem Urlaub entfernen' });
       }
+
       const tripId = Number(req.params.id);
       const targetUserId = Number(req.params.userId);
       db.transaction(() => {

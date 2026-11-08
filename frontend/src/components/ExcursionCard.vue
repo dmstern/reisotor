@@ -55,8 +55,13 @@ const drawers = useDrawersStore();
 function onCardClick(event?: MouseEvent) {
   if (props.expanded) {
     const target = event?.target as HTMLElement | null;
-    if (target && !target.closest('.card-header-row')) return;
+
+    if (target && !target.closest('.card-header-row')) {
+      return;
+    }
+
     emit('close');
+
     if (drawers.mapFocusExcursionId === props.excursion.id) {
       drawers.mapFocusExcursionId = null;
     }

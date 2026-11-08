@@ -49,6 +49,7 @@ function handleCreateTrip() {
     openAccountTierModal('trips');
     return;
   }
+
   openCreate();
 }
 

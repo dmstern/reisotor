@@ -30,10 +30,12 @@ const effectiveHighlightIndex = computed(() => props.activeHighlightIndex ?? 0);
 
 function onSelectHighlight(stepIdx: number, hIdx: number) {
   emit('selectHighlight', stepIdx, hIdx);
+
   if (typeof document !== 'undefined' && typeof window !== 'undefined') {
     const trigger = document.querySelector(
       `.highlight-trigger[data-step="${stepIdx}"][data-highlight="${hIdx}"]`
     );
+
     if (trigger && (trigger as HTMLElement).offsetParent !== null) {
       const rect = trigger.getBoundingClientRect();
       const targetY = window.scrollY + rect.top - window.innerHeight * 0.45 + 5;

@@ -75,7 +75,11 @@ export function useSettingsTabs(isAdmin: MaybeRefOrGetter<boolean | undefined>) 
 
   const activeTab = computed<SettingsTab>(() => {
     let tab = route.query.tab as string;
-    if (tab === 'users' || tab === 'data') tab = 'admin';
+
+    if (tab === 'users' || tab === 'data') {
+      tab = 'admin';
+    }
+
     return (tabKeys.value as string[]).includes(tab) ? (tab as SettingsTab) : 'account';
   });
 

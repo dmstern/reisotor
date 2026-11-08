@@ -39,9 +39,16 @@ function isCacheable(path: string): boolean {
 }
 
 export function readCache<T>(path: string): T | undefined {
-  if (!isCacheable(path)) return undefined;
+  if (!isCacheable(path)) {
+    return undefined;
+  }
+
   const raw = localStorage.getItem(CACHE_PREFIX + path);
-  if (!raw) return undefined;
+
+  if (!raw) {
+    return undefined;
+  }
+
   try {
     return JSON.parse(raw) as T;
   } catch {
@@ -50,7 +57,10 @@ export function readCache<T>(path: string): T | undefined {
 }
 
 export function writeCache(path: string, data: unknown) {
-  if (!isCacheable(path)) return;
+  if (!isCacheable(path)) {
+    return;
+  }
+
   try {
     localStorage.setItem(CACHE_PREFIX + path, JSON.stringify(data));
   } catch {
@@ -68,9 +78,11 @@ export function writeCache(path: string, data: unknown) {
 // dadurch für Sekunden). stores/connectivity.ts setzt dieses Flag zurück, sobald ein periodischer
 // Health-Check (oder ein manueller Retry) wieder erfolgreich war.
 let confirmedOffline = false;
+
 export function isConfirmedOffline(): boolean {
   return confirmedOffline;
 }
+
 export function setConfirmedOffline(value: boolean) {
   confirmedOffline = value;
 }
@@ -104,9 +116,14 @@ interface Pendable {
 export function mergePendingIntoList<T extends Pendable>(path: string, list: T[]): T[] {
   const collection = collectionOf(path);
   let result = list;
+
   for (const entry of readOutbox()) {
     const entryCollection = collectionOf(entry.path);
-    if (entryCollection !== collection) continue;
+
+    if (entryCollection !== collection) {
+      continue;
+    }
+
     if (entry.method === 'POST' && entry.tempId != null) {
       result = [
         ...result,
@@ -114,9 +131,15 @@ export function mergePendingIntoList<T extends Pendable>(path: string, list: T[]
       ];
       continue;
     }
+
     const idMatch = /\/(-?\d+)$/.exec(entry.path.split('?')[0]);
-    if (!idMatch) continue;
+
+    if (!idMatch) {
+      continue;
+    }
+
     const id = Number(idMatch[1]);
+
     if (entry.method === 'PUT') {
       result = result.map((item) =>
         item.id === id
@@ -127,6 +150,7 @@ export function mergePendingIntoList<T extends Pendable>(path: string, list: T[]
       result = result.filter((item) => item.id !== id);
     }
   }
+
   return result;
 }
 
@@ -144,31 +168,53 @@ export function findCachedItemInCollection(
 ): Record<string, unknown> | undefined {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key || !key.startsWith(CACHE_PREFIX)) continue;
+
+    if (!key || !key.startsWith(CACHE_PREFIX)) {
+      continue;
+    }
+
     const path = key.slice(CACHE_PREFIX.length);
-    if (path !== collection && !path.startsWith(`${collection}?`)) continue;
+
+    if (path !== collection && !path.startsWith(`${collection}?`)) {
+      continue;
+    }
+
     const raw = localStorage.getItem(key);
-    if (!raw) continue;
+
+    if (!raw) {
+      continue;
+    }
+
     try {
       const list = JSON.parse(raw);
-      if (!Array.isArray(list)) continue;
+
+      if (!Array.isArray(list)) {
+        continue;
+      }
+
       const found = (list as Array<Record<string, unknown>>).find((item) => item && item.id === id);
-      if (found) return found;
+
+      if (found) {
+        return found;
+      }
     } catch {
       // korrupter Cache-Eintrag - einfach überspringen, andere Cache-Keys können noch passen.
     }
   }
+
   return undefined;
 }
 
 function writeOutboxList(list: OutboxEntry[]) {
   localStorage.setItem(OUTBOX_KEY, JSON.stringify(list));
+
   if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new CustomEvent('reisotor:outbox-changed'));
   }
 }
 
 let tempIdSeq = 0;
+
 /** Garantiert negative, pro Tab eindeutige Platzhalter-id für offline angelegte Objekte – echte
  *  Server-ids sind immer positiv (SQLite AUTOINCREMENT), Verwechslung damit ausgeschlossen. */
 export function nextTempId(): number {
@@ -187,10 +233,12 @@ export function getOutbox(): OutboxEntry[] {
 export function removeOutboxEntry(id: string): boolean {
   const list = readOutbox();
   const next = list.filter((e) => e.id !== id);
+
   if (next.length !== list.length) {
     writeOutboxList(next);
     return true;
   }
+
   return false;
 }
 
@@ -204,7 +252,11 @@ export function updateOutboxEntry(
 ): boolean {
   const list = readOutbox();
   const index = list.findIndex((e) => e.id === id);
-  if (index === -1) return false;
+
+  if (index === -1) {
+    return false;
+  }
+
   list[index] = {
     ...list[index],
     ...updates,
@@ -237,6 +289,7 @@ export function enqueue(
  *  niemals in der Outbox landen. */
 export function isQueueablePath(path: string): boolean {
   const cleanPath = path.split('?')[0];
+
   if (
     cleanPath.startsWith('/auth') ||
     cleanPath.startsWith('/users') ||
@@ -250,16 +303,27 @@ export function isQueueablePath(path: string): boolean {
   ) {
     return false;
   }
+
   return true;
 }
 
 function bodyContainsId(body: unknown, id: number): boolean {
-  if (body == null) return false;
-  if (body === id || body === String(id)) return true;
-  if (Array.isArray(body)) return body.some((item) => bodyContainsId(item, id));
+  if (body == null) {
+    return false;
+  }
+
+  if (body === id || body === String(id)) {
+    return true;
+  }
+
+  if (Array.isArray(body)) {
+    return body.some((item) => bodyContainsId(item, id));
+  }
+
   if (typeof body === 'object') {
     return Object.values(body as Record<string, unknown>).some((val) => bodyContainsId(val, id));
   }
+
   return false;
 }
 
@@ -268,8 +332,13 @@ function bodyContainsId(body: unknown, id: number): boolean {
  *  wenn beide denselben spezifischen Endpunkt/dieselbe Entität mutieren. */
 export function entryDependsOn(child: OutboxEntry, parent: OutboxEntry): boolean {
   if (parent.tempId != null) {
-    if (child.path.includes(`/${parent.tempId}`)) return true;
-    if (bodyContainsId(child.body, parent.tempId)) return true;
+    if (child.path.includes(`/${parent.tempId}`)) {
+      return true;
+    }
+
+    if (bodyContainsId(child.body, parent.tempId)) {
+      return true;
+    }
   }
 
   // Zwei unabhängige Neuerstellungen per POST auf denselben Collection-Endpunkt
@@ -281,6 +350,7 @@ export function entryDependsOn(child: OutboxEntry, parent: OutboxEntry): boolean
       !child.path.endsWith('/like') &&
       !child.path.endsWith('/done') &&
       !child.path.endsWith('/read');
+
     if (!isIndependentCollectionPost) {
       return true;
     }
@@ -288,9 +358,11 @@ export function entryDependsOn(child: OutboxEntry, parent: OutboxEntry): boolean
 
   const childCol = collectionOf(child.path);
   const parentCol = collectionOf(parent.path);
+
   if (childCol === parentCol) {
     const childIdMatch = /\/(-?\d+)$/.exec(child.path.split('?')[0]);
     const parentIdMatch = /\/(-?\d+)$/.exec(parent.path.split('?')[0]);
+
     if (childIdMatch && parentIdMatch && childIdMatch[1] === parentIdMatch[1]) {
       return true;
     }
@@ -300,24 +372,35 @@ export function entryDependsOn(child: OutboxEntry, parent: OutboxEntry): boolean
 }
 
 function remapTempIdInValue(val: unknown, tempId: number, realId: number): unknown {
-  if (val === tempId) return realId;
-  if (val === String(tempId)) return String(realId);
+  if (val === tempId) {
+    return realId;
+  }
+
+  if (val === String(tempId)) {
+    return String(realId);
+  }
+
   if (Array.isArray(val)) {
     return val.map((v) => remapTempIdInValue(v, tempId, realId));
   }
+
   if (val !== null && typeof val === 'object') {
     const res: Record<string, unknown> = {};
+
     for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
       res[k] = remapTempIdInValue(v, tempId, realId);
     }
+
     return res;
   }
+
   return val;
 }
 
 function remapTempId(list: OutboxEntry[], tempId: number, realId: number) {
   for (const entry of list) {
     entry.path = entry.path.replace(`/${tempId}`, `/${realId}`);
+
     if (entry.body && typeof entry.body === 'object') {
       entry.body = remapTempIdInValue(entry.body, tempId, realId);
     }
@@ -342,7 +425,10 @@ let isFlushing = false;
 export async function flushOutbox(
   sendRaw: (method: string, path: string, body: unknown) => Promise<unknown>
 ): Promise<boolean> {
-  if (isFlushing) return false;
+  if (isFlushing) {
+    return false;
+  }
+
   isFlushing = true;
 
   try {
@@ -350,6 +436,7 @@ export async function flushOutbox(
     // Routenberechnungen oder Realtime-Positionen aus früheren Versionen) sofort bereinigen.
     let initialList = readOutbox();
     const invalidEntries = initialList.filter((e) => !isQueueablePath(e.path));
+
     if (invalidEntries.length > 0) {
       console.warn(
         `Ungültige/nicht-synchronisierbare Einträge aus Outbox entfernt:`,
@@ -359,30 +446,39 @@ export async function flushOutbox(
       writeOutboxList(initialList);
     }
 
-    if (initialList.length === 0) return true;
+    if (initialList.length === 0) {
+      return true;
+    }
 
     const inFlight = new Map<string, Promise<void>>();
     const failedIds = new Set<string>();
 
     function findNextReady(): OutboxEntry | undefined {
       const currentList = readOutbox();
+
       for (let i = 0; i < currentList.length; i++) {
         const entry = currentList[i];
+
         if (inFlight.has(entry.id) || failedIds.has(entry.id)) {
           continue;
         }
+
         let hasUnresolvedDep = false;
+
         for (let j = 0; j < i; j++) {
           const prev = currentList[j];
+
           if (entryDependsOn(entry, prev)) {
             hasUnresolvedDep = true;
             break;
           }
         }
+
         if (!hasUnresolvedDep) {
           return entry;
         }
       }
+
       return undefined;
     }
 
@@ -390,11 +486,15 @@ export async function flushOutbox(
       // Starte so viele bereite Einträge parallel wie möglich (bis MAX_CONCURRENCY)
       while (inFlight.size < MAX_CONCURRENCY) {
         const entry = findNextReady();
-        if (!entry) break;
+
+        if (!entry) {
+          break;
+        }
 
         const promise = (async () => {
           try {
             const response = await sendRaw(entry.method, entry.path, entry.body);
+
             if (
               entry.tempId != null &&
               response &&
@@ -403,6 +503,7 @@ export async function flushOutbox(
             ) {
               remapOutboxTempId(entry.tempId, (response as { id: number }).id);
             }
+
             removeOutboxEntry(entry.id);
           } catch (err: unknown) {
             const status =
@@ -432,11 +533,13 @@ export async function flushOutbox(
                 `Outbox-Eintrag vom Server dauerhaft abgelehnt (HTTP ${status}), wird übersprungen:`,
                 entry
               );
+
               if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
                 window.dispatchEvent(
                   new CustomEvent('reisotor:outbox-rejected', { detail: { entry, error: err } })
                 );
               }
+
               removeOutboxEntry(entry.id);
               return;
             }

@@ -45,9 +45,11 @@ function daysBetween(fromStr: string, toStr: string): number {
 
 function dateRange(startStr: string, endStr: string): string[] {
   const dates: string[] = [];
+
   for (let cur = startStr; cur <= endStr; cur = addDays(cur, 1)) {
     dates.push(cur);
   }
+
   return dates;
 }
 
@@ -90,6 +92,7 @@ export async function fetchWeatherProxy(query: WeatherProxyQuery): Promise<unkno
     latitude: String(roundedLat),
     longitude: String(roundedLng),
   });
+
   if (query.hourly) {
     params.set('hourly', query.hourly);
   } else {
@@ -99,25 +102,32 @@ export async function fetchWeatherProxy(query: WeatherProxyQuery): Promise<unkno
         'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
     );
   }
+
   params.set('timezone', query.timezone || 'auto');
+
   if (query.past_days != null && query.past_days !== '') {
     params.set('past_days', String(query.past_days));
   }
+
   if (query.forecast_days != null && query.forecast_days !== '') {
     params.set('forecast_days', String(query.forecast_days));
   }
+
   if (query.start_date) {
     params.set('start_date', query.start_date);
   }
+
   if (query.end_date) {
     params.set('end_date', query.end_date);
   }
+
   if (query.models && query.models.trim()) {
     params.set('models', query.models.trim());
   }
 
   const cacheKey = `${source}:${roundedLat.toFixed(2)},${roundedLng.toFixed(2)}:${params.toString()}`;
   const cached = weatherProxyCache.get(cacheKey);
+
   if (cached && cached.expiresAt > Date.now()) {
     return cached.data;
   }
@@ -130,9 +140,11 @@ export async function fetchWeatherProxy(query: WeatherProxyQuery): Promise<unkno
   const res = await fetch(`${baseUrl}?${params}`, {
     signal: AbortSignal.timeout(8000),
   });
+
   if (!res.ok) {
     throw new Error(`Open-Meteo request failed (${res.status})`);
   }
+
   const data = await res.json();
   const ttl = source === 'archive' ? ARCHIVE_CACHE_TTL_MS : FORECAST_CACHE_TTL_MS;
   weatherProxyCache.set(cacheKey, {
@@ -157,9 +169,15 @@ const upsertSnapshot = db.prepare(`
  *  per Open-Meteo und speichert sie dauerhaft in trip_weather_snapshots. Der heutige Tag wird bewusst NIE
  *  gespeichert - Open-Meteo liefert dafür noch keinen finalen Ist-Wert. */
 async function snapshotTripWeather(trip: TripRow, today: string) {
-  if (!trip.start_date || !trip.end_date) return;
+  if (!trip.start_date || !trip.end_date) {
+    return;
+  }
+
   const yesterday = addDays(today, -1);
-  if (trip.start_date > yesterday) return;
+
+  if (trip.start_date > yesterday) {
+    return;
+  }
 
   const rangeEnd = trip.end_date < yesterday ? trip.end_date : yesterday;
   const tripDates = dateRange(trip.start_date, rangeEnd);
@@ -168,15 +186,22 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
   const locationTargets = new Map<string, { lat: number; lng: number; dates: Set<string> }>();
 
   function addTarget(lat: number, lng: number, dates: string[]) {
-    if (lat == null || lng == null || !dates.length) return;
+    if (lat == null || lng == null || !dates.length) {
+      return;
+    }
+
     const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
     let target = locationTargets.get(key);
+
     if (!target) {
       target = { lat, lng, dates: new Set() };
       locationTargets.set(key, target);
     }
+
     for (const d of dates) {
-      if (d <= yesterday) target.dates.add(d);
+      if (d <= yesterday) {
+        target.dates.add(d);
+      }
     }
   }
 
@@ -220,7 +245,10 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
   // Pro Ort fehlende Snapshots ermitteln und von Open-Meteo laden
   for (const target of locationTargets.values()) {
     const wantedDates = [...target.dates].sort();
-    if (!wantedDates.length) continue;
+
+    if (!wantedDates.length) {
+      continue;
+    }
 
     const existing = db
       .prepare(
@@ -236,7 +264,10 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
       ) as { date: string }[];
     const existingSet = new Set(existing.map((r) => r.date));
     const missingDates = wantedDates.filter((d) => !existingSet.has(d));
-    if (!missingDates.length) continue;
+
+    if (!missingDates.length) {
+      continue;
+    }
 
     const pastDays = Math.min(MAX_PAST_DAYS, daysBetween(missingDates[0], today));
     const params = new URLSearchParams({
@@ -247,16 +278,25 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
       past_days: String(pastDays),
       forecast_days: '1',
     });
+
     if (trip.weather_model) {
       params.set('models', trip.weather_model);
     }
+
     const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-    if (!res.ok) throw new Error(`Open-Meteo request failed (${res.status})`);
+
+    if (!res.ok) {
+      throw new Error(`Open-Meteo request failed (${res.status})`);
+    }
+
     const data = (await res.json()) as OpenMeteoResponse;
 
     const missingSet = new Set(missingDates);
     data.daily.time.forEach((date, i) => {
-      if (!missingSet.has(date)) return;
+      if (!missingSet.has(date)) {
+        return;
+      }
+
       if (
         data.daily.weathercode[i] == null &&
         data.daily.temperature_2m_max[i] == null &&
@@ -264,6 +304,7 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
       ) {
         return;
       }
+
       upsertSnapshot.run(
         trip.id,
         target.lat,
@@ -287,7 +328,11 @@ export async function refreshTripWeatherSnapshots(tripId: number) {
   const trip = db
     .prepare('SELECT id, lat, lng, start_date, end_date, weather_model FROM trips WHERE id = ?')
     .get(tripId) as TripRow | undefined;
-  if (!trip || trip.lat == null || trip.lng == null || !trip.start_date || !trip.end_date) return;
+
+  if (!trip || trip.lat == null || trip.lng == null || !trip.start_date || !trip.end_date) {
+    return;
+  }
+
   await snapshotTripWeather(trip, todayUtcDateStr());
 }
 

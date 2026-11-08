@@ -24,18 +24,26 @@ export function buildDayStations(
   const timed: { time: string | null; station: ExcursionStation }[] = [];
 
   for (const item of scheduleItems) {
-    if (item.date > date || date > (item.end_date ?? item.date)) continue;
+    if (item.date > date || date > (item.end_date ?? item.date)) {
+      continue;
+    }
+
     // Mit einem Spot verknüpfte Termine zeigen dessen echtes Kategorie-Icon/-Farbe statt des
     // generischen Termin-Pins (übernimmt außerdem automatisch dessen Koordinaten, unabhängig
     // davon, ob der Termin selbst welche gespeichert hat).
     if (item.spot_id != null) {
       const station = resolveStation(`spot-${item.spot_id}`, spots, travelItems);
+
       if (station) {
         timed.push({ time: item.time, station });
         continue;
       }
     }
-    if (item.lat == null || item.lng == null) continue;
+
+    if (item.lat == null || item.lng == null) {
+      continue;
+    }
+
     const meta = SCHEDULE_CATEGORY_META[item.category];
     timed.push({
       time: item.time,
@@ -90,6 +98,7 @@ export function buildDayStations(
   // 1. Zuerst die Ankünfte von gestern Nacht
   for (const t of arrivesToday) {
     const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);
+
     if (to) {
       timed.push({
         time: t.arrival_time ?? t.departure_time,
@@ -109,11 +118,14 @@ export function buildDayStations(
   // 2. Dann die Abflüge/Reisen von heute
   for (const t of startsToday) {
     const from = resolveStation(travelEndpointKey(t, 'from'), spots, travelItems);
+
     if (from && from.key !== previousTravelKey) {
       timed.push({ time: t.departure_time, station: from });
       previousTravelKey = from.key;
     }
+
     const to = resolveStation(travelEndpointKey(t, 'to'), spots, travelItems);
+
     if (to) {
       // Wenn die Ankunft erst morgen ist, hier (heute) NICHT die Ankunfts-Station anzeigen
       if (!arrivesNextDay(t)) {
@@ -145,7 +157,10 @@ export function buildDayStations(
       date <= s.end_date
   )) {
     const station = resolveStation(`spot-${s.id}`, spots, travelItems);
-    if (station) timed.push({ time: null, station });
+
+    if (station) {
+      timed.push({ time: null, station });
+    }
   }
 
   for (const e of excursions.filter((e) => e.date === date)) {

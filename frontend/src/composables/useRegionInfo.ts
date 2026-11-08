@@ -23,9 +23,13 @@ export function useRegionInfo(
 
   // Eigenständig geladen: ein externer Dienst soll das Laden des restlichen Dashboards nicht blockieren
   async function loadRegionInfo() {
-    if (!trip.value) return;
+    if (!trip.value) {
+      return;
+    }
+
     regionLoading.value = true;
     regionError.value = null;
+
     try {
       regionInfo.value = await fetchRegionInfo(trip.value.id);
     } catch {
@@ -46,13 +50,24 @@ export function useRegionInfo(
 
   // Sprache/Währung/Sicherheitshinweis sind je nach Land oft nur teilweise oder gar nicht verfügbar
   const regionSourceParts = computed(() => {
-    if (!regionInfo.value) return [];
+    if (!regionInfo.value) {
+      return [];
+    }
+
     const parts: string[] = [];
-    if (regionInfo.value.languages.length || regionInfo.value.currency)
+
+    if (regionInfo.value.languages.length || regionInfo.value.currency) {
       parts.push('REST Countries');
-    if (regionInfo.value.currency && regionInfo.value.exchangeRate != null)
+    }
+
+    if (regionInfo.value.currency && regionInfo.value.exchangeRate != null) {
       parts.push('open.er-api.com');
-    if (regionInfo.value.advisory) parts.push('Auswärtiges Amt');
+    }
+
+    if (regionInfo.value.advisory) {
+      parts.push('Auswärtiges Amt');
+    }
+
     return parts;
   });
 

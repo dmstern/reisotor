@@ -9,7 +9,10 @@ describe('trip_weather_snapshots lat/lng Backfill-Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('migriert trip_weather_snapshots auf das neue Schema mit lat/lng und erhält bestehende Einträge', async () => {

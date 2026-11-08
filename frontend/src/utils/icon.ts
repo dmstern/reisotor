@@ -25,6 +25,9 @@ export function resolveIconComponent(
   style: IconStyle,
   variant: IconVariant
 ): Component | null {
-  if (style === 'emoji') return null;
+  if (style === 'emoji') {
+    return null;
+  }
+
   return variant === 'filled' && def.filled ? def.filled : def.outline;
 }

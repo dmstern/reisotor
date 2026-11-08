@@ -17,7 +17,10 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
   const excursionComments = ref<ExcursionComment[]>([]);
 
   function creatorLabel(userId: number | null) {
-    if (userId == null) return null;
+    if (userId == null) {
+      return null;
+    }
+
     const u = users.value.find((u) => u.id === userId);
     return u ? `${u.avatar} ${u.username}` : null;
   }
@@ -42,7 +45,10 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
   }
 
   async function toggleSpotLike(spotId: number) {
-    if (!auth.user) return;
+    if (!auth.user) {
+      return;
+    }
+
     await spotsStore.toggleLike(spotId, auth.user.id);
   }
 
@@ -92,8 +98,12 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
   }
 
   async function toggleExcursionLike(ideaId: number) {
-    if (!auth.user) return;
+    if (!auth.user) {
+      return;
+    }
+
     const result = await api.post<{ liked: boolean }>(`/ideas/${ideaId}/like`);
+
     if (result.liked) {
       excursionLikes.value.push({ id: Date.now(), idea_id: ideaId, user_id: auth.user.id });
     } else {
@@ -105,15 +115,18 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
 
   async function toggleExcursionCommentLike(commentId: number) {
     const c = excursionComments.value.find((item) => item.id === commentId);
+
     if (c) {
       const wasLiked = Boolean(c.liked);
       c.liked = !wasLiked;
       c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
     }
+
     try {
       const result = await api.post<{ liked: boolean; like_count: number }>(
         `/ideas/comments/${commentId}/like`
       );
+
       if (c) {
         c.liked = result.liked;
         c.like_count = result.like_count;
@@ -124,6 +137,7 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
         c.liked = !wasLiked;
         c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
       }
+
       throw err;
     }
   }
@@ -141,6 +155,7 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
   async function updateExcursionComment(id: number, content: string) {
     const updated = await api.put<ExcursionComment>(`/ideas/comments/${id}`, { content });
     const idx = excursionComments.value.findIndex((c) => c.id === id);
+
     if (idx !== -1) {
       excursionComments.value[idx] = updated;
     }

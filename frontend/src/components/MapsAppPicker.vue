@@ -46,10 +46,14 @@ async function toggle(event?: MouseEvent) {
     open.value = false;
     return;
   }
+
   const triggerEl =
     (event?.currentTarget as HTMLElement) ||
     ((buttonRef.value?.$el as HTMLElement | undefined) ?? null);
-  if (!triggerEl) return;
+
+  if (!triggerEl) {
+    return;
+  }
 
   // Erste synchrone Berechnung mit geschätzter Menühöhe
   menuStyle.value = computePopoverPosition(triggerEl, { menuWidth: 216, menuHeight: 190 });
@@ -58,6 +62,7 @@ async function toggle(event?: MouseEvent) {
   // Nach dem Rendern mit den tatsächlichen DOM-Dimensionen nachjustieren
   await nextTick();
   const menuEl = document.querySelector('.maps-picker-menu') as HTMLElement | null;
+
   if (menuEl && triggerEl) {
     const rect = menuEl.getBoundingClientRect();
     menuStyle.value = computePopoverPosition(triggerEl, {

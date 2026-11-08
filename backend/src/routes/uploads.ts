@@ -10,16 +10,19 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
     const rawFilename = req.params.filename;
     // Defensiver Path-Traversal-Schutz: Dateiname darf keine Verzeichnistrenner oder führende Punkte enthalten
     const filename = path.basename(rawFilename);
+
     if (!filename || filename !== rawFilename || filename.startsWith('.')) {
       return reply.code(400).send({ error: 'Ungültiger Dateiname' });
     }
 
     const userId = req.session.userId;
+
     if (!userId) {
       return reply.code(401).send({ error: 'Nicht eingeloggt' });
     }
 
     const records = getUploads(filename);
+
     if (records.length === 0) {
       return reply.code(404).send({ error: 'Nicht gefunden' });
     }
@@ -28,6 +31,7 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       if (r.trip_id != null) {
         return isTripMember(r.trip_id, userId);
       }
+
       return r.uploaded_by != null && r.uploaded_by === userId;
     });
 
@@ -36,6 +40,7 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const filePath = path.join(uploadsDir, filename);
+
     if (!fs.existsSync(filePath)) {
       return reply.code(404).send({ error: 'Nicht gefunden' });
     }

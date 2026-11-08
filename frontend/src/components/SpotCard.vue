@@ -91,21 +91,37 @@ function getCardDomElement(event?: MouseEvent): HTMLElement | null {
   if (event?.currentTarget instanceof HTMLElement) {
     return event.currentTarget;
   }
+
   const root = cardRoot.value;
-  if (!root) return null;
-  if (root instanceof HTMLElement) return root;
-  if ('$el' in root && root.$el instanceof HTMLElement) return root.$el;
+
+  if (!root) {
+    return null;
+  }
+
+  if (root instanceof HTMLElement) {
+    return root;
+  }
+
+  if ('$el' in root && root.$el instanceof HTMLElement) {
+    return root.$el;
+  }
+
   return null;
 }
 
 function onCardClick(event?: MouseEvent) {
   if (props.expanded) {
     const target = event?.target as HTMLElement | null;
+
     if (target && (!target.closest('.image, .card-badge-group') || target.closest('a, button'))) {
       return;
     }
+
     emit('close');
-    if (drawers.mapFocusKey === `spot-${props.spot.id}`) drawers.mapFocusKey = null;
+
+    if (drawers.mapFocusKey === `spot-${props.spot.id}`) {
+      drawers.mapFocusKey = null;
+    }
   } else {
     emit('open', props.spot, getCardDomElement(event));
   }
@@ -121,7 +137,10 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 // Bleibt stabil pro Spot-ID, damit die Kärtchen beim Sortieren/Filtern nicht hin- und herwackeln.
 const ROTATION_ANGLES = [-0.85, 0.75, -0.6, 0.95, -1.1, 0.65];
 const cardRotation = computed(() => {
-  if (props.expanded) return '0deg';
+  if (props.expanded) {
+    return '0deg';
+  }
+
   const angle = ROTATION_ANGLES[Math.abs(props.spot.id) % ROTATION_ANGLES.length];
   return `${angle}deg`;
 });

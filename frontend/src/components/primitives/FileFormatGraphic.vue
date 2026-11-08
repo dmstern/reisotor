@@ -25,52 +25,125 @@ const normalizedExt = computed<string>(() => {
   if (props.extension) {
     return props.extension.replace(/^\./, '').trim().toLowerCase();
   }
+
   if (props.filename) {
     const dot = props.filename.lastIndexOf('.');
+
     if (dot !== -1) {
       return props.filename.slice(dot + 1).toLowerCase();
     }
   }
+
   if (props.mimeType) {
-    if (props.mimeType === 'application/pdf') return 'pdf';
-    if (props.mimeType.includes('word') || props.mimeType.includes('document')) return 'docx';
-    if (props.mimeType.includes('excel') || props.mimeType.includes('sheet')) return 'xlsx';
-    if (props.mimeType.includes('powerpoint') || props.mimeType.includes('presentation'))
+    if (props.mimeType === 'application/pdf') {
+      return 'pdf';
+    }
+
+    if (props.mimeType.includes('word') || props.mimeType.includes('document')) {
+      return 'docx';
+    }
+
+    if (props.mimeType.includes('excel') || props.mimeType.includes('sheet')) {
+      return 'xlsx';
+    }
+
+    if (props.mimeType.includes('powerpoint') || props.mimeType.includes('presentation')) {
       return 'pptx';
-    if (props.mimeType.includes('zip') || props.mimeType.includes('compressed')) return 'zip';
-    if (props.mimeType.startsWith('text/')) return 'txt';
-    if (props.mimeType.startsWith('audio/')) return 'mp3';
+    }
+
+    if (props.mimeType.includes('zip') || props.mimeType.includes('compressed')) {
+      return 'zip';
+    }
+
+    if (props.mimeType.startsWith('text/')) {
+      return 'txt';
+    }
+
+    if (props.mimeType.startsWith('audio/')) {
+      return 'mp3';
+    }
   }
+
   return 'file';
 });
 
 const category = computed<FileCategory>(() => {
   const ext = normalizedExt.value;
-  if (ext === 'pdf') return 'pdf';
-  if (['doc', 'docx', 'odt', 'rtf', 'pages'].includes(ext)) return 'word';
-  if (['xls', 'xlsx', 'csv', 'ods', 'numbers'].includes(ext)) return 'excel';
-  if (['ppt', 'pptx', 'odp', 'key'].includes(ext)) return 'powerpoint';
-  if (['txt', 'md', 'markdown', 'log', 'json', 'yaml', 'yml', 'xml'].includes(ext)) return 'text';
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return 'archive';
-  if (['mp3', 'm4a', 'wav', 'ogg', 'aac', 'flac'].includes(ext)) return 'audio';
+
+  if (ext === 'pdf') {
+    return 'pdf';
+  }
+
+  if (['doc', 'docx', 'odt', 'rtf', 'pages'].includes(ext)) {
+    return 'word';
+  }
+
+  if (['xls', 'xlsx', 'csv', 'ods', 'numbers'].includes(ext)) {
+    return 'excel';
+  }
+
+  if (['ppt', 'pptx', 'odp', 'key'].includes(ext)) {
+    return 'powerpoint';
+  }
+
+  if (['txt', 'md', 'markdown', 'log', 'json', 'yaml', 'yml', 'xml'].includes(ext)) {
+    return 'text';
+  }
+
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) {
+    return 'archive';
+  }
+
+  if (['mp3', 'm4a', 'wav', 'ogg', 'aac', 'flac'].includes(ext)) {
+    return 'audio';
+  }
+
   return 'generic';
 });
 
 const displayLabel = computed<string>(() => {
   const ext = normalizedExt.value.toUpperCase();
-  if (ext === 'PDF') return 'PDF';
-  if (['DOC', 'DOCX', 'ODT', 'RTF'].includes(ext)) return ext.slice(0, 4);
-  if (['XLS', 'XLSX', 'CSV'].includes(ext)) return ext.slice(0, 4);
-  if (['PPT', 'PPTX'].includes(ext)) return ext.slice(0, 4);
-  if (['TXT', 'MD'].includes(ext)) return ext;
-  if (['ZIP', 'RAR', '7Z'].includes(ext)) return ext;
-  if (category.value === 'audio') return 'AUDIO';
-  if (ext.length > 0 && ext.length <= 4 && ext !== 'FILE') return ext;
+
+  if (ext === 'PDF') {
+    return 'PDF';
+  }
+
+  if (['DOC', 'DOCX', 'ODT', 'RTF'].includes(ext)) {
+    return ext.slice(0, 4);
+  }
+
+  if (['XLS', 'XLSX', 'CSV'].includes(ext)) {
+    return ext.slice(0, 4);
+  }
+
+  if (['PPT', 'PPTX'].includes(ext)) {
+    return ext.slice(0, 4);
+  }
+
+  if (['TXT', 'MD'].includes(ext)) {
+    return ext;
+  }
+
+  if (['ZIP', 'RAR', '7Z'].includes(ext)) {
+    return ext;
+  }
+
+  if (category.value === 'audio') {
+    return 'AUDIO';
+  }
+
+  if (ext.length > 0 && ext.length <= 4 && ext !== 'FILE') {
+    return ext;
+  }
+
   return 'DOC';
 });
 
 const pixelSize = computed<number>(() => {
-  if (typeof props.size === 'number') return props.size;
+  if (typeof props.size === 'number') {
+    return props.size;
+  }
+
   switch (props.size) {
     case 'sm':
       return 20;

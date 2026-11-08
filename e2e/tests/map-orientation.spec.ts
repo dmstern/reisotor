@@ -13,7 +13,11 @@ function rotationAngleFromMatrix(matrix: string): number {
     .match(/matrix\(([^)]+)\)/)?.[1]
     .split(',')
     .map(Number);
-  if (!values) return NaN;
+
+  if (!values) {
+    return NaN;
+  }
+
   const [a, b] = values;
   return (Math.atan2(b, a) * 180) / Math.PI;
 }

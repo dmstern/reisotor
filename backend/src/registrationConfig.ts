@@ -16,12 +16,14 @@ export const REGISTRATION_MODE: RegistrationMode = parseMode(process.env.REGISTR
 export function getRegistrationMode(): RegistrationMode {
   try {
     const val = getInstanceSetting('registration_mode');
+
     if (val) {
       return parseMode(val);
     }
   } catch {
     // Falls Tabelle noch nicht existiert (z. B. vor der Initialisierung)
   }
+
   return parseMode(process.env.REGISTRATION_MODE);
 }
 
@@ -52,37 +54,56 @@ interface RestrictedUserRow {
  *  beim Registrieren gesetzt (routes/auth.ts, gilt weiter fort, auch falls REGISTRATION_MODE später
  *  wieder auf 'full' zurückgestellt wird), FULL_ACCESS_USERS hebt sie dynamisch wieder auf. */
 export function isUserRestricted(userId: number | null | undefined): boolean {
-  if (userId == null) return false;
+  if (userId == null) {
+    return false;
+  }
+
   const user = db
     .prepare('SELECT username, is_admin, is_restricted FROM users WHERE id = ?')
     .get(userId) as (RestrictedUserRow & { is_admin: number }) | undefined;
-  if (!user || user.is_admin || !user.is_restricted) return false;
+
+  if (!user || user.is_admin || !user.is_restricted) {
+    return false;
+  }
+
   return !FULL_ACCESS_USERS.has(user.username);
 }
 
 export function isUserAdmin(userId: number | null | undefined): boolean {
-  if (userId == null) return false;
+  if (userId == null) {
+    return false;
+  }
+
   const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId) as
     { is_admin: number } | undefined;
   return Boolean(user?.is_admin);
 }
 
 export function userMustChangePassword(userId: number | null | undefined): boolean {
-  if (userId == null) return false;
+  if (userId == null) {
+    return false;
+  }
+
   const user = db.prepare('SELECT must_change_password FROM users WHERE id = ?').get(userId) as
     { must_change_password: number } | undefined;
   return Boolean(user?.must_change_password);
 }
 
 export function isUserEmailVerified(userId: number | null | undefined): boolean {
-  if (userId == null) return false;
+  if (userId == null) {
+    return false;
+  }
+
   const user = db.prepare('SELECT is_email_verified FROM users WHERE id = ?').get(userId) as
     { is_email_verified: number } | undefined;
   return user?.is_email_verified !== 0;
 }
 
 export function isUserLocked(userId: number | null | undefined): boolean {
-  if (userId == null) return false;
+  if (userId == null) {
+    return false;
+  }
+
   const user = db.prepare('SELECT is_locked FROM users WHERE id = ?').get(userId) as
     { is_locked: number } | undefined;
   return Boolean(user?.is_locked);
@@ -99,7 +120,11 @@ export function isTripOwnerRestricted(tripId: number | string): boolean {
   const members = db.prepare('SELECT user_id FROM trip_members WHERE trip_id = ?').all(tripId) as {
     user_id: number;
   }[];
-  if (members.length === 0) return false;
+
+  if (members.length === 0) {
+    return false;
+  }
+
   return members.every((m) => isUserRestricted(m.user_id));
 }
 
@@ -108,7 +133,10 @@ export function isTripCreatedBy(
   tripId: number | string,
   userId: number | null | undefined
 ): boolean {
-  if (userId == null) return false;
+  if (userId == null) {
+    return false;
+  }
+
   const creator = db
     .prepare('SELECT user_id FROM trip_members WHERE trip_id = ? ORDER BY id ASC LIMIT 1')
     .get(tripId) as { user_id: number } | undefined;

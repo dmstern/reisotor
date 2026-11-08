@@ -67,7 +67,10 @@ watch(
 );
 
 function handleSubmit() {
-  if (!newLabel.value.trim()) return;
+  if (!newLabel.value.trim()) {
+    return;
+  }
+
   emit('submit', {
     label: newLabel.value.trim(),
     assigned_to_user_id: newBuyer.value ? Number(newBuyer.value) : undefined,

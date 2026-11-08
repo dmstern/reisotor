@@ -77,9 +77,11 @@ export function calculateTrackMetrics(
 
   let totalDistanceMeters = 0;
   let elevationGain = 0;
+
   for (let i = 1; i < points.length; i++) {
     totalDistanceMeters += haversineMeters(points[i - 1], points[i]);
     const altDiff = (points[i].altitude ?? 0) - (points[i - 1].altitude ?? 0);
+
     if (altDiff > 0 && points[i].altitude != null && points[i - 1].altitude != null) {
       elevationGain += altDiff;
     }
@@ -90,6 +92,7 @@ export function calculateTrackMetrics(
   const straightLineMeters = haversineMeters(startPt, endPt);
 
   let durationMs = 0;
+
   if (endedAt) {
     durationMs = Math.max(0, new Date(endedAt).getTime() - new Date(startedAt).getTime());
   } else if (points.length >= 2) {
@@ -100,6 +103,7 @@ export function calculateTrackMetrics(
   }
 
   let speedKmh: number | null = null;
+
   if (totalDistanceMeters > 0 && durationMs > 0) {
     speedKmh = totalDistanceMeters / 1000 / (durationMs / 3_600_000);
   }
@@ -135,6 +139,7 @@ export function inferMovementType(
     ) {
       return 'hike';
     }
+
     return 'walk';
   }
 
@@ -150,7 +155,9 @@ export function inferMovementType(
  * und extrahiert den passendsten geographischen Begriff (POI/Park/Natur, Stadtteil, Ort, Stadt).
  */
 export function extractPlaceLabel(geo: ReverseGeocodeResult | null): ExtractedPlace | null {
-  if (!geo) return null;
+  if (!geo) {
+    return null;
+  }
 
   const osmKey = geo.osmKey || '';
   const osmValue = geo.osmValue || '';
@@ -278,6 +285,7 @@ export function formatTimeBasedTrackTitle(
   movement: MovementType = 'generic'
 ): string {
   const d = new Date(dateInput);
+
   if (isNaN(d.getTime())) {
     return 'Aufzeichnung';
   }
@@ -295,42 +303,105 @@ export function formatTimeBasedTrackTitle(
 
   // Sonntag
   if (dayIndex === 0) {
-    if (movement === 'hike') return 'Sonntagswanderung';
-    if (movement === 'bike')
+    if (movement === 'hike') {
+      return 'Sonntagswanderung';
+    }
+
+    if (movement === 'bike') {
       return isMorning ? 'Morgendliche Sonntags-Radtour' : 'Sonntags-Radtour';
-    if (movement === 'drive') return 'Sonntagsfahrt';
-    if (movement === 'stationary') return 'Sonntags-Stopp';
+    }
+
+    if (movement === 'drive') {
+      return 'Sonntagsfahrt';
+    }
+
+    if (movement === 'stationary') {
+      return 'Sonntags-Stopp';
+    }
+
     if (movement === 'walk') {
-      if (isMorning) return 'Sonntagsspaziergang';
-      if (isMidday) return 'Sonntagsrunde';
-      if (isEvening) return 'Abendlicher Sonntagsspaziergang';
-      if (isNight) return 'Nächtlicher Sonntagsspaziergang';
+      if (isMorning) {
+        return 'Sonntagsspaziergang';
+      }
+
+      if (isMidday) {
+        return 'Sonntagsrunde';
+      }
+
+      if (isEvening) {
+        return 'Abendlicher Sonntagsspaziergang';
+      }
+
+      if (isNight) {
+        return 'Nächtlicher Sonntagsspaziergang';
+      }
+
       return 'Sonntagsspaziergang';
     }
+
     // Generic
-    if (isMorning) return 'Morgendliche Sonntagsrunde';
-    if (isMidday) return 'Sonntagsrunde';
-    if (isAfternoon) return 'Sonntagstour';
-    if (isEvening) return 'Sonntagabend-Runde';
+    if (isMorning) {
+      return 'Morgendliche Sonntagsrunde';
+    }
+
+    if (isMidday) {
+      return 'Sonntagsrunde';
+    }
+
+    if (isAfternoon) {
+      return 'Sonntagstour';
+    }
+
+    if (isEvening) {
+      return 'Sonntagabend-Runde';
+    }
+
     return 'Nächtliche Sonntagsrunde';
   }
 
   // Samstag
   if (dayIndex === 6) {
-    if (movement === 'hike') return 'Samstagswanderung';
-    if (movement === 'bike')
+    if (movement === 'hike') {
+      return 'Samstagswanderung';
+    }
+
+    if (movement === 'bike') {
       return isMorning ? 'Morgendliche Samstags-Radtour' : 'Samstags-Radtour';
-    if (movement === 'drive') return 'Samstagsfahrt';
-    if (movement === 'stationary') return 'Samstags-Stopp';
+    }
+
+    if (movement === 'drive') {
+      return 'Samstagsfahrt';
+    }
+
+    if (movement === 'stationary') {
+      return 'Samstags-Stopp';
+    }
+
     if (movement === 'walk') {
-      if (isMorning) return 'Samstagsspaziergang';
-      if (isEvening) return 'Abendlicher Samstagsspaziergang';
+      if (isMorning) {
+        return 'Samstagsspaziergang';
+      }
+
+      if (isEvening) {
+        return 'Abendlicher Samstagsspaziergang';
+      }
+
       return 'Samstagsspaziergang';
     }
+
     // Generic
-    if (isMorning) return 'Morgendliche Samstagsrunde';
-    if (isAfternoon) return 'Wochenend-Ausflug';
-    if (isEvening) return 'Samstagabend-Runde';
+    if (isMorning) {
+      return 'Morgendliche Samstagsrunde';
+    }
+
+    if (isAfternoon) {
+      return 'Wochenend-Ausflug';
+    }
+
+    if (isEvening) {
+      return 'Samstagabend-Runde';
+    }
+
     return 'Samstagsrunde';
   }
 
@@ -340,17 +411,38 @@ export function formatTimeBasedTrackTitle(
   }
 
   if (movement === 'bike') {
-    if (isMorning) return `Morgendliche Radtour am ${dayName}`;
-    if (isMidday) return `Mittags-Radtour am ${dayName}`;
-    if (isAfternoon) return `Nachmittags-Radtour am ${dayName}`;
-    if (isEvening) return `Feierabend-Radtour am ${dayName}`;
-    if (isNight) return `Nächtliche Radtour am ${dayName}`;
+    if (isMorning) {
+      return `Morgendliche Radtour am ${dayName}`;
+    }
+
+    if (isMidday) {
+      return `Mittags-Radtour am ${dayName}`;
+    }
+
+    if (isAfternoon) {
+      return `Nachmittags-Radtour am ${dayName}`;
+    }
+
+    if (isEvening) {
+      return `Feierabend-Radtour am ${dayName}`;
+    }
+
+    if (isNight) {
+      return `Nächtliche Radtour am ${dayName}`;
+    }
+
     return `Radtour am ${dayName}`;
   }
 
   if (movement === 'drive') {
-    if (isMorning) return `Morgendliche Fahrt am ${dayName}`;
-    if (isEvening) return `Abendfahrt am ${dayName}`;
+    if (isMorning) {
+      return `Morgendliche Fahrt am ${dayName}`;
+    }
+
+    if (isEvening) {
+      return `Abendfahrt am ${dayName}`;
+    }
+
     return `Fahrt am ${dayName}`;
   }
 
@@ -359,19 +451,46 @@ export function formatTimeBasedTrackTitle(
   }
 
   if (movement === 'walk') {
-    if (isMorning) return `Morgenspaziergang am ${dayName}`;
-    if (isMidday) return `Mittagsspaziergang am ${dayName}`;
-    if (isAfternoon) return `Nachmittagsspaziergang am ${dayName}`;
-    if (isEvening) return `Abendspaziergang am ${dayName}`;
-    if (isNight) return `Nächtlicher Spaziergang am ${dayName}`;
+    if (isMorning) {
+      return `Morgenspaziergang am ${dayName}`;
+    }
+
+    if (isMidday) {
+      return `Mittagsspaziergang am ${dayName}`;
+    }
+
+    if (isAfternoon) {
+      return `Nachmittagsspaziergang am ${dayName}`;
+    }
+
+    if (isEvening) {
+      return `Abendspaziergang am ${dayName}`;
+    }
+
+    if (isNight) {
+      return `Nächtlicher Spaziergang am ${dayName}`;
+    }
+
     return `Spaziergang am ${dayName}`;
   }
 
   // Generic
-  if (isMorning) return `Morgendliche Tour am ${dayName}`;
-  if (isMidday) return `Mittagsrunde am ${dayName}`;
-  if (isAfternoon) return `Nachmittagstour am ${dayName}`;
-  if (isEvening) return `Feierabendrunde am ${dayName}`;
+  if (isMorning) {
+    return `Morgendliche Tour am ${dayName}`;
+  }
+
+  if (isMidday) {
+    return `Mittagsrunde am ${dayName}`;
+  }
+
+  if (isAfternoon) {
+    return `Nachmittagstour am ${dayName}`;
+  }
+
+  if (isEvening) {
+    return `Feierabendrunde am ${dayName}`;
+  }
+
   return `Nachttour am ${dayName}`;
 }
 
@@ -392,12 +511,15 @@ export async function generateSmartTrackTitle(options: GenerateTrackTitleOptions
     const pt = points[0];
     const geo = await reverseFn({ lat: pt.lat, lng: pt.lng }).catch(() => null);
     const place = extractPlaceLabel(geo);
+
     if (place) {
       if (place.kind === 'poi' || place.kind === 'nature') {
         return `Stopp bei ${place.label}`;
       }
+
       return `Stopp in ${place.label}`;
     }
+
     return formatTimeBasedTrackTitle(startedAt, 'stationary');
   }
 
@@ -425,6 +547,7 @@ export async function generateSmartTrackTitle(options: GenerateTrackTitleOptions
 
   // Falls es keine Rundtour ist und nennenswerte Luftlinie vorliegt, auch Endpunkt geokodieren
   let endPlace: ExtractedPlace | null = null;
+
   if (!isLoop && metrics.straightLineMeters >= 350) {
     const endGeo = await reverseFn({ lat: endPt.lat, lng: endPt.lng }).catch(() => null);
     endPlace = extractPlaceLabel(endGeo);
@@ -440,38 +563,56 @@ export async function generateSmartTrackTitle(options: GenerateTrackTitleOptions
   ) {
     const s = startPlace.label.trim();
     const e = endPlace.label.trim();
-    if (movement === 'drive') return `Fahrt von ${s} nach ${e}`;
-    if (movement === 'bike') return `Radtour von ${s} nach ${e}`;
-    if (movement === 'hike') return `Wanderung von ${s} nach ${e}`;
+
+    if (movement === 'drive') {
+      return `Fahrt von ${s} nach ${e}`;
+    }
+
+    if (movement === 'bike') {
+      return `Radtour von ${s} nach ${e}`;
+    }
+
+    if (movement === 'hike') {
+      return `Wanderung von ${s} nach ${e}`;
+    }
+
     return `Spaziergang von ${s} nach ${e}`;
   }
 
   // Fall B: Einzelner Ort, Rundtour oder Start/Ende im selben Ort
   const activePlace = startPlace || endPlace;
+
   if (activePlace) {
     if (movement === 'stationary') {
       if (activePlace.kind === 'poi' || activePlace.kind === 'nature') {
         return `Stopp bei ${activePlace.label}`;
       }
+
       return `Stopp in ${activePlace.label}`;
     }
 
     const prep = formatPrepositionAndPlace(activePlace);
+
     if (movement === 'drive') {
       return `Fahrt ${prep}`;
     }
+
     if (movement === 'bike') {
       return `Radtour ${prep}`;
     }
+
     if (movement === 'hike') {
       return `Wanderung ${prep}`;
     }
+
     if (movement === 'walk') {
       if (isLoop && (activePlace.kind === 'district' || activePlace.kind === 'city')) {
         return `Runde ${prep}`;
       }
+
       return `Spaziergang ${prep}`;
     }
+
     return `Tour ${prep}`;
   }
 

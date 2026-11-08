@@ -35,6 +35,7 @@ export function useBudgetTransferForm(options?: { tripId?: number | Ref<number> 
         ? options.tripId.value
         : options.tripId;
     }
+
     return (tripStore.currentTripId as number) || 0;
   };
 
@@ -48,8 +49,10 @@ export function useBudgetTransferForm(options?: { tripId?: number | Ref<number> 
       !transferForm.value.from_user_id ||
       !transferForm.value.to_user_id ||
       !transferForm.value.amount
-    )
+    ) {
       return false;
+    }
+
     if (transferForm.value.from_user_id === transferForm.value.to_user_id) {
       showToast({
         message: 'Sender und Empfänger dürfen nicht identisch sein.',

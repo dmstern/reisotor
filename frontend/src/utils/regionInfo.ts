@@ -17,7 +17,11 @@ export interface RegionInfo {
 export function fetchRegionInfo(tripId: number): Promise<RegionInfo> {
   const homeCurrency = useHomeCurrencyStore();
   const params = new URLSearchParams();
-  if (homeCurrency.currency !== 'none') params.set('home_currency', homeCurrency.currency);
+
+  if (homeCurrency.currency !== 'none') {
+    params.set('home_currency', homeCurrency.currency);
+  }
+
   const qs = params.toString();
   return api.get<RegionInfo>(`/trips/${tripId}/region-info${qs ? `?${qs}` : ''}`);
 }

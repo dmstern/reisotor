@@ -47,9 +47,18 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
   );
 
   const saveTooltip = computed(() => {
-    if (upload.uploading.value) return 'Bilder werden noch hochgeladen…';
-    if (isDateEmpty.value) return 'Bitte wähle ein Datum aus';
-    if (isContentEmpty.value) return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
+    if (upload.uploading.value) {
+      return 'Bilder werden noch hochgeladen…';
+    }
+
+    if (isDateEmpty.value) {
+      return 'Bitte wähle ein Datum aus';
+    }
+
+    if (isContentEmpty.value) {
+      return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
+    }
+
     return undefined;
   });
 
@@ -69,14 +78,22 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
 
   async function submitEntry() {
     if (isDateEmpty.value || isContentEmpty.value) {
-      if (isDateEmpty.value) dateTouched.value = true;
+      if (isDateEmpty.value) {
+        dateTouched.value = true;
+      }
+
       if (isContentEmpty.value) {
         contentTouched.value = true;
         editorRef.value?.focus();
       }
+
       return;
     }
-    if (upload.uploading.value) return;
+
+    if (upload.uploading.value) {
+      return;
+    }
+
     const currentTripId = unref(tripId);
     const body = {
       trip_id: currentTripId,
@@ -99,6 +116,7 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
   async function closeForm() {
     upload.abortUpload();
     showForm.value = false;
+
     if (hasDiaryEntryContent(form.value)) {
       const currentTripId = unref(tripId);
       const body = {
@@ -115,6 +133,7 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
       const created = await api.post<DiaryEntry>('/diary', body);
       onEntryCreated(created);
     }
+
     form.value = createEmptyDiaryForm();
     newDraft.clear();
   }

@@ -34,6 +34,7 @@ vi.mock('../../api/client', () => ({
           activity_updates: true,
         };
       }
+
       if (url === '/notifications/email-preferences') {
         return {
           schedule: false,
@@ -50,6 +51,7 @@ vi.mock('../../api/client', () => ({
           todos: false,
         };
       }
+
       return {};
     }),
     put: vi.fn(async (_url: string, data: unknown) => data),

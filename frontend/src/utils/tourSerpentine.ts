@@ -55,7 +55,10 @@ export function buildTourSerpentineRows(
     toSpotId: number
   ) => ExcursionLeg | undefined
 ): TourSerpentineRow[] {
-  if (!items.length) return [];
+  if (!items.length) {
+    return [];
+  }
+
   const safeCols = Math.max(1, cols);
 
   const rows: TourSerpentineRow[] = [];
@@ -69,11 +72,13 @@ export function buildTourSerpentineRows(
     const rowSpots: Array<{ spot: Spot; globalIndex: number }> = [];
 
     const end = Math.min(currentIndex + safeCols, total);
+
     for (let i = currentIndex; i < end; i++) {
       rowSpots.push({ spot: items[i].spot, globalIndex: i });
     }
 
     const cells: TourCell[] = [];
+
     for (let i = 0; i < rowSpots.length; i++) {
       const current = rowSpots[i];
       cells.push({
@@ -102,6 +107,7 @@ export function buildTourSerpentineRows(
     }
 
     let rowBreak: TourRowBreak | undefined;
+
     // Wenn es noch weitere Spots in einer folgenden Zeile gibt: Zeilenumbruch-Verbinder
     if (end < total) {
       const lastSpot = rowSpots[rowSpots.length - 1].spot;
@@ -155,17 +161,22 @@ export interface TourSpotBox {
 export function buildLoopSegments(spotIds: number[], domSpotIds: number[]): [number, number][] {
   const domIndex = new Map<number, number>();
   domSpotIds.forEach((id, i) => {
-    if (!domIndex.has(id)) domIndex.set(id, i);
+    if (!domIndex.has(id)) {
+      domIndex.set(id, i);
+    }
   });
   const routeIndices = spotIds.map((id) => domIndex.get(id) ?? -1).filter((i) => i >= 0);
   const segments: [number, number][] = [];
+
   for (let i = 0; i < routeIndices.length - 1; i++) {
     const from = routeIndices[i];
     const to = routeIndices[i + 1];
+
     if (to < from || to !== from + 1) {
       segments.push([from, to]);
     }
   }
+
   return segments;
 }
 
@@ -339,6 +350,7 @@ export function computeTourLoopPath(
   // Wenn b auf der linken Bildschirmhälfte oder mittig liegt (z.B. Start-Spot bei col 0 oder einspaltiges Layout),
   // stets über die linke Seite führen! Einspaltig = exakt mittig (0.5), daher kleiner-gleich mit leichtem Puffer.
   const isCloserToLeft = b.cx <= wrapWidth * 0.5 + 20;
+
   if (isCloserToLeft) {
     const startX = a.x;
     const startY = a.cy;

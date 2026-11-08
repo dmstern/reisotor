@@ -41,6 +41,7 @@ export function migrateOutboxEntry(entry: OutboxEntry): { changed: boolean; reas
     changed = true;
     reasons.push('Überflüssiges /api-Präfix im Pfad entfernt');
   }
+
   if (entry.path.includes('//')) {
     entry.path = entry.path.replace(/\/+/g, '/');
     changed = true;
@@ -62,19 +63,23 @@ export function migrateOutboxEntry(entry: OutboxEntry): { changed: boolean; reas
     if (entry.path.startsWith('/budget')) {
       if (typeof body.amount === 'string') {
         const num = Number(body.amount);
+
         if (!isNaN(num)) {
           body.amount = num;
           changed = true;
           reasons.push('Budget-Betrag von String zu Zahl konvertiert');
         }
       }
+
       if (typeof body.category === 'string' && body.category !== body.category.trim()) {
         body.category = body.category.trim();
         changed = true;
         reasons.push('Budget-Kategorie getrimmt');
       }
+
       if (typeof body.paid_by_user_id === 'string') {
         const uid = Number(body.paid_by_user_id);
+
         if (!isNaN(uid)) {
           body.paid_by_user_id = uid;
           changed = true;
@@ -90,6 +95,7 @@ export function migrateOutboxEntry(entry: OutboxEntry): { changed: boolean; reas
         changed = true;
         reasons.push('Todo done von Zahl zu Boolean konvertiert');
       }
+
       if (!body.title && typeof body.name === 'string') {
         body.title = body.name;
         changed = true;
@@ -124,19 +130,26 @@ export function migrateOutboxEntry(entry: OutboxEntry): { changed: boolean; reas
  * Die Outbox (reisotor-outbox) bleibt dabei unberührt!
  */
 export function purgeStaleCache(): number {
-  if (typeof localStorage === 'undefined') return 0;
+  if (typeof localStorage === 'undefined') {
+    return 0;
+  }
+
   let count = 0;
   const keysToRemove: string[] = [];
+
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
+
     if (key && key.startsWith(CACHE_PREFIX)) {
       keysToRemove.push(key);
     }
   }
+
   for (const key of keysToRemove) {
     localStorage.removeItem(key);
     count++;
   }
+
   return count;
 }
 
@@ -148,8 +161,10 @@ export function purgeStaleCache(): number {
  */
 export function migrateLocalData(): MigrationReport {
   let fromVersion = 1;
+
   if (typeof localStorage !== 'undefined') {
     const stored = localStorage.getItem(LOCAL_DATA_VERSION_KEY);
+
     if (stored) {
       fromVersion = parseInt(stored, 10) || 1;
     }
@@ -161,6 +176,7 @@ export function migrateLocalData(): MigrationReport {
 
   for (const entry of entries) {
     const res = migrateOutboxEntry(entry);
+
     if (res.changed) {
       migratedCount++;
       details.push(`${entry.method} ${entry.path}: ${res.reason}`);
@@ -174,8 +190,10 @@ export function migrateLocalData(): MigrationReport {
 
   let cachePurgedCount = 0;
   const versionChanged = fromVersion < CURRENT_LOCAL_DATA_VERSION;
+
   if (versionChanged) {
     cachePurgedCount = purgeStaleCache();
+
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(LOCAL_DATA_VERSION_KEY, String(CURRENT_LOCAL_DATA_VERSION));
     }

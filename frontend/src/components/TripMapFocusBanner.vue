@@ -44,12 +44,18 @@ const isPhotoFocus = computed(() => {
 });
 
 const formattedDateString = computed(() => {
-  if (!props.focusedDate) return '';
+  if (!props.focusedDate) {
+    return '';
+  }
+
   return props.formatDate ? props.formatDate(props.focusedDate) : props.focusedDate;
 });
 
 const currentDayIndex = computed(() => {
-  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) return -1;
+  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) {
+    return -1;
+  }
+
   return props.vacationDays.indexOf(props.focusedDate);
 });
 
@@ -58,24 +64,46 @@ const hasMultipleDays = computed(() => {
 });
 
 const prevDate = computed(() => {
-  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) return null;
+  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) {
+    return null;
+  }
+
   const idx = currentDayIndex.value;
-  if (idx > 0) return props.vacationDays[idx - 1];
+
+  if (idx > 0) {
+    return props.vacationDays[idx - 1];
+  }
+
   if (idx === -1) {
     const earlierDays = props.vacationDays.filter((d) => d < props.focusedDate!);
-    if (earlierDays.length > 0) return earlierDays[earlierDays.length - 1];
+
+    if (earlierDays.length > 0) {
+      return earlierDays[earlierDays.length - 1];
+    }
   }
+
   return null;
 });
 
 const nextDate = computed(() => {
-  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) return null;
+  if (!props.focusedDate || !props.vacationDays || props.vacationDays.length === 0) {
+    return null;
+  }
+
   const idx = currentDayIndex.value;
-  if (idx >= 0 && idx < props.vacationDays.length - 1) return props.vacationDays[idx + 1];
+
+  if (idx >= 0 && idx < props.vacationDays.length - 1) {
+    return props.vacationDays[idx + 1];
+  }
+
   if (idx === -1) {
     const laterDays = props.vacationDays.filter((d) => d > props.focusedDate!);
-    if (laterDays.length > 0) return laterDays[0];
+
+    if (laterDays.length > 0) {
+      return laterDays[0];
+    }
   }
+
   return null;
 });
 

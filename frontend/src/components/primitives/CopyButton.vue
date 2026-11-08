@@ -38,16 +38,26 @@ const copied = ref(false);
 let resetTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const iconSize = computed(() => {
-  if (props.size === 'lg') return 18;
-  if (props.size === 'md') return 16;
+  if (props.size === 'lg') {
+    return 18;
+  }
+
+  if (props.size === 'md') {
+    return 16;
+  }
+
   return 14;
 });
 
 async function handleCopy(event: MouseEvent) {
   event.stopPropagation();
-  if (!props.text) return;
+
+  if (!props.text) {
+    return;
+  }
 
   let success = false;
+
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(props.text);
@@ -84,7 +94,10 @@ async function handleCopy(event: MouseEvent) {
     showToast({ message: props.toastMessage, type: 'success' });
     emit('copy', props.text);
 
-    if (resetTimeout) clearTimeout(resetTimeout);
+    if (resetTimeout) {
+      clearTimeout(resetTimeout);
+    }
+
     resetTimeout = setTimeout(() => {
       copied.value = false;
     }, 2000);

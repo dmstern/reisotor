@@ -63,7 +63,9 @@ function handleClose() {
 }
 
 async function handleSubmit() {
-  if (!form.value.name.trim()) return;
+  if (!form.value.name.trim()) {
+    return;
+  }
 
   if (isEdit.value && props.budget) {
     await budgetStore.updateBudget(props.budget.id, {
@@ -94,6 +96,7 @@ async function handleDelete() {
       type: 'info',
     });
   }
+
   emit('update:modelValue', false);
   emit('deleted');
 }

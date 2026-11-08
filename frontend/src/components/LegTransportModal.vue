@@ -123,6 +123,7 @@ const activeDurationSeconds = computed<number | null>(() => {
   ) {
     return calculatedDurationSeconds.value;
   }
+
   return null;
 });
 
@@ -184,16 +185,24 @@ function onTransitSelect(val: string) {
 watch(
   () => props.modelValue,
   (open) => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
+
     routeCalculationError.value = null;
+
     if (props.leg) {
       populateFromLeg(props.leg);
       const cat = initTransportMode(props.leg.transport_type);
+
       if (cat === 'ÖPNV') {
         closeRouting();
       } else {
-        if (isRoutable.value) openRouting();
+        if (isRoutable.value) {
+          openRouting();
+        }
       }
+
       initTimeState(props.leg.departure_time, props.leg.arrival_time, props.leg.duration_seconds);
       setInitialRoute(
         props.leg.route_geometry,
@@ -205,7 +214,11 @@ watch(
       resetForm();
       initTransportMode('zu Fuß');
       initTimeState(null, null, null);
-      if (isRoutable.value) openRouting();
+
+      if (isRoutable.value) {
+        openRouting();
+      }
+
       setInitialRoute(null, null, null, null);
     }
   },
@@ -219,7 +232,10 @@ const modalTitle = computed(() => {
 });
 
 function onSave() {
-  if (!props.fromSpot || !props.toSpot || isLegUploadingAttachments.value) return;
+  if (!props.fromSpot || !props.toSpot || isLegUploadingAttachments.value) {
+    return;
+  }
+
   const isExact = isRoutable.value && routeDisplayMode.value === 'exact' && !!routeGeometry.value;
   const legData = buildLegPayload(form.value, {
     fromSpot: props.fromSpot,
@@ -236,7 +252,10 @@ function onSave() {
 }
 
 function onDelete() {
-  if (isLegUploadingAttachments.value) return;
+  if (isLegUploadingAttachments.value) {
+    return;
+  }
+
   emit('delete');
   emit('update:modelValue', false);
 }

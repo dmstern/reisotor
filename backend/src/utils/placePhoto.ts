@@ -38,11 +38,16 @@ export function clearPhotoCache(): void {
 }
 
 export function isGoodPhoto(filenameOrUrl: string): boolean {
-  if (!filenameOrUrl) return false;
+  if (!filenameOrUrl) {
+    return false;
+  }
+
   const lower = filenameOrUrl.toLowerCase();
 
   // SVGs und Vektorgrafiken ausschließen (in Wikipedia fast immer Logos, Wappen oder Karten)
-  if (lower.endsWith('.svg') || lower.includes('.svg.')) return false;
+  if (lower.endsWith('.svg') || lower.includes('.svg.')) {
+    return false;
+  }
 
   // Ungeeignete Bildtypen ausschließen
   const badKeywords = [
@@ -64,8 +69,11 @@ export function isGoodPhoto(filenameOrUrl: string): boolean {
     'pfeil',
     'arrow',
   ];
+
   for (const kw of badKeywords) {
-    if (lower.includes(kw)) return false;
+    if (lower.includes(kw)) {
+      return false;
+    }
   }
 
   // Akzeptierte Bildformate oder verifizierte Bild-CDNs (z. B. Bing CDN)
@@ -161,17 +169,24 @@ export const AIRPORT_RELEVANCE_TERMS = [
 export function isAirportQuery(name: string, category?: string): boolean {
   if (category) {
     const c = category.trim().toLowerCase();
+
     if (c === 'flughafen' || c === 'airport' || c === 'flugplatz') {
       return true;
     }
   }
+
   const lower = (name || '').toLowerCase();
+
   for (const kw of AIRPORT_KEYWORDS) {
-    if (lower.includes(kw)) return true;
+    if (lower.includes(kw)) {
+      return true;
+    }
   }
+
   if (/\([A-Za-z]{3}\)/.test(name)) {
     return true;
   }
+
   return false;
 }
 
@@ -203,7 +218,9 @@ export function isTitleMatch(
   placeName: string,
   targetCity?: string
 ): boolean {
-  if (!articleTitle || !placeName) return false;
+  if (!articleTitle || !placeName) {
+    return false;
+  }
 
   const a = articleTitle.toLowerCase();
   const b = placeName.toLowerCase();
@@ -211,9 +228,11 @@ export function isTitleMatch(
   // Stadt-Konfliktprüfung: falls im Wikipedia-Titel ein Klammerzusatz mit einer anderen Stadt steht
   // (z. B. "Blumental (Solingen)" bei gesuchter Stadt "Berlin"), diesen ausschließen.
   const parenMatch = a.match(/\(([^)]+)\)/);
+
   if (parenMatch && targetCity) {
     const parenText = parenMatch[1].trim();
     const cityLower = targetCity.trim().toLowerCase();
+
     if (parenText.length > 3 && !parenText.includes(cityLower) && !cityLower.includes(parenText)) {
       return false;
     }
@@ -223,7 +242,9 @@ export function isTitleMatch(
   const aClean = a.replace(/\([^)]*\)/g, '').trim();
   const bClean = b.replace(/\([^)]*\)/g, '').trim();
 
-  if (aClean === bClean) return true;
+  if (aClean === bClean) {
+    return true;
+  }
 
   const aWords = aClean.split(/\s+/).filter(Boolean);
   const bWords = bClean.split(/\s+/).filter(Boolean);
@@ -251,15 +272,21 @@ export function isTitleMatch(
 
     // Alle abweichenden Wörter müssen Ortsdeskriptoren oder die Stadt sein
     const isPlaceDiff = diffWords.every((w) => PLACE_WORDS.has(w) || cityWords.includes(w));
-    if (isPlaceDiff) return true;
+
+    if (isPlaceDiff) {
+      return true;
+    }
 
     // Wenn der kürzere Begriff mindestens 2 Wörter hat und komplett im längeren vorkommt
-    if (shorterWords.length >= 2) return true;
+    if (shorterWords.length >= 2) {
+      return true;
+    }
   }
 
   // Wenn alle Wörter des kürzeren im längeren enthalten sind (ab 2 Wörtern)
   const shorterList = aWords.length <= bWords.length ? aWords : bWords;
   const longerSet = aWords.length <= bWords.length ? bSet : aSet;
+
   if (shorterList.length >= 2 && shorterList.every((w) => longerSet.has(w))) {
     return true;
   }
@@ -300,6 +327,7 @@ async function queryWiki(lang: string, params: Record<string, string>): Promise<
   const url = new URL(`https://${lang}.wikipedia.org/w/api.php`);
   url.searchParams.set('action', 'query');
   url.searchParams.set('format', 'json');
+
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, v);
   }
@@ -309,9 +337,17 @@ async function queryWiki(lang: string, params: Record<string, string>): Promise<
       headers: WIKI_FETCH_HEADERS,
       signal: AbortSignal.timeout(4000),
     });
-    if (!res.ok) return [];
+
+    if (!res.ok) {
+      return [];
+    }
+
     const data = (await res.json()) as WikiQueryResponse;
-    if (!data?.query?.pages) return [];
+
+    if (!data?.query?.pages) {
+      return [];
+    }
+
     return Object.values(data.query.pages).sort((x, y) => (x.index || 0) - (y.index || 0));
   } catch {
     return [];
@@ -347,6 +383,7 @@ async function extractPhotoFromPage(
   // (MAX_REMOTE_IMAGE_BYTES = 5 MB) überschreiten und /images/proxy mit HTTP 502 fehlschlagen lassen.
   if (page.thumbnail?.source) {
     const isPhoto = isGoodPhoto(page.pageimage || page.thumbnail.source);
+
     if (isPhoto && isSafeUrl(page.thumbnail.source)) {
       return page.thumbnail.source;
     }
@@ -355,6 +392,7 @@ async function extractPhotoFromPage(
   // 2. Fallback: Originalbild, falls thumbnail fehlt
   if (page.original?.source) {
     const isPhoto = isGoodPhoto(page.pageimage || page.original.source);
+
     if (isPhoto && isSafeUrl(page.original.source)) {
       return page.original.source;
     }
@@ -363,6 +401,7 @@ async function extractPhotoFromPage(
   // 3. Falls Thumbnail ein SVG/Logo war: Erstes passendes Foto aus den Seiten-Bildern ermitteln
   if (Array.isArray(page.images) && page.images.length > 0) {
     const photoImg = page.images.find((img) => isGoodPhoto(img.title));
+
     if (photoImg) {
       return resolveImageInfo(lang, photoImg.title, isBanner);
     }
@@ -386,7 +425,10 @@ function normalizeText(text: string): string {
 }
 
 function stripWord(text: string, word: string): string {
-  if (!word) return text;
+  if (!word) {
+    return text;
+  }
+
   const normWord = normalizeText(word);
   const tokens = text.split(/\s+/);
   const filtered = tokens.filter((t) => normalizeText(t) !== normWord);
@@ -447,8 +489,12 @@ function parseBingHtml(
 
   // 1. Bing primäre Struktur: class="iusc" style="..." m="{...}"
   const itemMatches = [...html.matchAll(/class=["']iusc["'][^>]*?m=["']({.*?})["']/gi)];
+
   for (const m of itemMatches) {
-    if (photos.length >= limit) break;
+    if (photos.length >= limit) {
+      break;
+    }
+
     try {
       const decoded = m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"');
       const data = JSON.parse(decoded);
@@ -464,7 +510,10 @@ function parseBingHtml(
         const iataMatch = rawName.match(/\(([A-Za-z]{3})\)/) || rawName.match(/\b([A-Z]{3})\b/);
         const iata = iataMatch ? iataMatch[1].toLowerCase() : null;
         const hasIata = iata ? new RegExp(`\\b${iata}\\b`).test(searchable) : false;
-        if (!hasAirportTerm && !hasIata) continue;
+
+        if (!hasAirportTerm && !hasIata) {
+          continue;
+        }
       }
 
       const isRelevant =
@@ -472,7 +521,9 @@ function parseBingHtml(
           ? searchable.includes(rawName.toLowerCase().trim())
           : nameWords.some((w) => searchable.includes(w));
 
-      if (!isRelevant) continue;
+      if (!isRelevant) {
+        continue;
+      }
 
       // Bing Edge CDN (turl mit &w=1000): Hohe Verfügbarkeit und klein (~30 KB), ideal zur Schonung
       // des Serverspeichers bei Spots. Für Trip-Banner hingegen wird das Originalbild (murl) benötigt,
@@ -504,8 +555,12 @@ function parseBingHtml(
     // Legacy Mock Format (id="resitem-..." mit data-origurl) für Unit-Tests
     const origMatches = [...html.matchAll(/data-origurl=["'](https?:\/\/[^"'\s]+)["']/gi)];
     const thumbMatches = [...html.matchAll(/<img[^>]+src=["'](https?:\/\/[^"'\s]+)["']/gi)];
+
     for (let i = 0; i < origMatches.length; i++) {
-      if (photos.length >= limit) break;
+      if (photos.length >= limit) {
+        break;
+      }
+
       const orig = origMatches[i][1]?.replace(/&amp;/g, '&');
       const thumb = thumbMatches[i]?.[1]?.replace(/&amp;/g, '&');
       const cand =
@@ -514,6 +569,7 @@ function parseBingHtml(
           : thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)
             ? thumb
             : null;
+
       if (cand && !seen.has(cand)) {
         seen.add(cand);
         photos.push(cand);
@@ -549,9 +605,14 @@ async function queryBingImages(
         headers: BING_FETCH_HEADERS,
         signal: AbortSignal.timeout(5000),
       });
-      if (!res.ok || typeof res.text !== 'function') continue;
+
+      if (!res.ok || typeof res.text !== 'function') {
+        continue;
+      }
+
       const html = await res.text();
       const photos = parseBingHtml(html, rawName, limit, seen, nameWords, isAirport, isBanner);
+
       if (photos.length > 0) {
         return photos;
       }
@@ -583,10 +644,18 @@ async function queryDuckDuckGoImages(
       },
       signal: AbortSignal.timeout(4000),
     });
-    if (!pageRes.ok) return [];
+
+    if (!pageRes.ok) {
+      return [];
+    }
+
     const html = await pageRes.text();
     const vqdMatch = html.match(/vqd=["']?([^&"'\s>]+)/i) || html.match(/vqd:\s*["']([^"']+)["']/i);
-    if (!vqdMatch) return [];
+
+    if (!vqdMatch) {
+      return [];
+    }
+
     const vqd = vqdMatch[1];
 
     const apiUrl = `https://duckduckgo.com/i.js?l=de-de&o=json&q=${encodeURIComponent(query)}&vqd=${vqd}`;
@@ -599,18 +668,28 @@ async function queryDuckDuckGoImages(
       },
       signal: AbortSignal.timeout(4000),
     });
-    if (!apiRes.ok) return [];
+
+    if (!apiRes.ok) {
+      return [];
+    }
+
     const data = (await apiRes.json()) as {
       results?: Array<{ title?: string; image?: string; thumbnail?: string; url?: string }>;
     };
-    if (!Array.isArray(data?.results)) return [];
+
+    if (!Array.isArray(data?.results)) {
+      return [];
+    }
 
     const { nameWords } = buildNameWords(rawName, city, category);
     const isAirport = isAirportQuery(rawName, category);
     const photos: string[] = [];
 
     for (const item of data.results) {
-      if (photos.length >= limit) break;
+      if (photos.length >= limit) {
+        break;
+      }
+
       const title = (item.title || '').toLowerCase();
       const purl = (item.url || '').toLowerCase();
       const murl = (item.image || '').toLowerCase();
@@ -621,7 +700,10 @@ async function queryDuckDuckGoImages(
         const iataMatch = rawName.match(/\(([A-Za-z]{3})\)/) || rawName.match(/\b([A-Z]{3})\b/);
         const iata = iataMatch ? iataMatch[1].toLowerCase() : null;
         const hasIata = iata ? new RegExp(`\\b${iata}\\b`).test(searchable) : false;
-        if (!hasAirportTerm && !hasIata) continue;
+
+        if (!hasAirportTerm && !hasIata) {
+          continue;
+        }
       }
 
       const isRelevant =
@@ -629,7 +711,9 @@ async function queryDuckDuckGoImages(
           ? searchable.includes(rawName.toLowerCase().trim())
           : nameWords.some((w) => searchable.includes(w));
 
-      if (!isRelevant) continue;
+      if (!isRelevant) {
+        continue;
+      }
 
       const img = item.image;
       const thumb = item.thumbnail;
@@ -675,7 +759,11 @@ async function queryCommonsImages(
       headers: WIKI_FETCH_HEADERS,
       signal: AbortSignal.timeout(4000),
     });
-    if (!res.ok) return [];
+
+    if (!res.ok) {
+      return [];
+    }
+
     const data = (await res.json()) as {
       query?: {
         pages?: Record<
@@ -687,27 +775,42 @@ async function queryCommonsImages(
         >;
       };
     };
-    if (!data?.query?.pages) return [];
+
+    if (!data?.query?.pages) {
+      return [];
+    }
 
     const photos: string[] = [];
+
     for (const page of Object.values(data.query.pages)) {
-      if (photos.length >= limit) break;
+      if (photos.length >= limit) {
+        break;
+      }
+
       const title = page.title || '';
-      if (!isGoodPhoto(title)) continue;
+
+      if (!isGoodPhoto(title)) {
+        continue;
+      }
 
       if (isAirport) {
         const titleLower = title.toLowerCase();
         const hasAirportTerm = AIRPORT_RELEVANCE_TERMS.some((term) => titleLower.includes(term));
-        if (!hasAirportTerm) continue;
+
+        if (!hasAirportTerm) {
+          continue;
+        }
       }
 
       const info = page.imageinfo?.[0];
       const candidate = info?.thumburl || info?.url;
+
       if (candidate && isSafeUrl(candidate) && isGoodPhoto(candidate) && !seen.has(candidate)) {
         seen.add(candidate);
         photos.push(candidate);
       }
     }
+
     return photos;
   } catch {
     return [];
@@ -719,16 +822,22 @@ export function buildAirportSearchQueries(rawName: string, city?: string): strin
   const iata = iataMatch ? iataMatch[1].toUpperCase() : null;
 
   let baseName = rawName.replace(/\([^)]*\)/g, ' ').trim();
+
   for (const kw of AIRPORT_KEYWORDS) {
     baseName = baseName.replace(new RegExp(`\\b${kw}\\b`, 'gi'), ' ').trim();
   }
+
   baseName = baseName.replace(/\s+/g, ' ').trim();
 
   const targetCity = city?.trim() || '';
   const queries: string[] = [];
+
   const add = (q: string) => {
     const t = q.trim();
-    if (t && !queries.some((x) => x.toLowerCase() === t.toLowerCase())) queries.push(t);
+
+    if (t && !queries.some((x) => x.toLowerCase() === t.toLowerCase())) {
+      queries.push(t);
+    }
   };
 
   const nameHasAirport = Array.from(AIRPORT_KEYWORDS).some((kw) =>
@@ -777,6 +886,7 @@ export function buildSearchQueries(rawName: string, city?: string, category?: st
 
   const add = (q: string) => {
     const trimmed = q.trim();
+
     if (trimmed && !queries.some((existing) => existing.toLowerCase() === trimmed.toLowerCase())) {
       queries.push(trimmed);
     }
@@ -788,32 +898,47 @@ export function buildSearchQueries(rawName: string, city?: string, category?: st
 
   // 1. Spezifische Suche: Name + Stadt + Kategorie (falls nicht ohnehin enthalten)
   const fullParts = [rawName];
+
   if (city && !normRaw.includes(normCity)) {
     fullParts.push(city);
   }
+
   if (category && !normRaw.includes(normCat)) {
     fullParts.push(category);
   }
+
   add(fullParts.join(' '));
 
   // 2. Suche ohne Kategorie: Name + Stadt
   let nameWithoutCat = rawName;
+
   if (category) {
     const stripped = stripWord(rawName, category);
-    if (stripped) nameWithoutCat = stripped;
+
+    if (stripped) {
+      nameWithoutCat = stripped;
+    }
   }
+
   const cityParts = [nameWithoutCat];
+
   if (city && !normalizeText(nameWithoutCat).includes(normCity)) {
     cityParts.push(city);
   }
+
   add(cityParts.join(' '));
 
   // 3. Suche nur mit dem Kern-Namen (ohne Kategorie und ohne Stadt)
   let baseName = nameWithoutCat;
+
   if (city) {
     const stripped = stripWord(nameWithoutCat, city);
-    if (stripped) baseName = stripped;
+
+    if (stripped) {
+      baseName = stripped;
+    }
   }
+
   add(baseName);
 
   // 4. Fallback auf den ursprünglichen rawName
@@ -835,7 +960,10 @@ export async function searchWebPlacePhotos(
   isBanner = false
 ): Promise<string[]> {
   const rawName = name?.trim();
-  if (!rawName) return [];
+
+  if (!rawName) {
+    return [];
+  }
 
   const cleanCity = city?.trim();
   const cleanCategory = category?.trim();
@@ -843,8 +971,12 @@ export async function searchWebPlacePhotos(
   const photos: string[] = [];
 
   const queries = buildSearchQueries(rawName, cleanCity, cleanCategory);
+
   for (const q of queries) {
-    if (photos.length >= limit) break;
+    if (photos.length >= limit) {
+      break;
+    }
+
     const batch = await queryBingImages(
       q,
       rawName,
@@ -854,6 +986,7 @@ export async function searchWebPlacePhotos(
       cleanCategory,
       isBanner
     );
+
     for (const p of batch) {
       photos.push(p);
     }
@@ -862,7 +995,10 @@ export async function searchWebPlacePhotos(
   // Fallback auf DuckDuckGo, falls Bing keine oder unzureichende Ergebnisse geliefert hat
   if (photos.length < limit) {
     for (const q of queries) {
-      if (photos.length >= limit) break;
+      if (photos.length >= limit) {
+        break;
+      }
+
       const batch = await queryDuckDuckGoImages(
         q,
         rawName,
@@ -872,6 +1008,7 @@ export async function searchWebPlacePhotos(
         cleanCategory,
         isBanner
       );
+
       for (const p of batch) {
         photos.push(p);
       }
@@ -898,7 +1035,10 @@ export async function searchWebPlacePhoto(
  */
 export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): Promise<string[]> {
   const rawName = options.name?.trim();
-  if (!rawName) return [];
+
+  if (!rawName) {
+    return [];
+  }
 
   const lat = options.lat != null && Number.isFinite(options.lat) ? options.lat : undefined;
   const lng = options.lng != null && Number.isFinite(options.lng) ? options.lng : undefined;
@@ -908,6 +1048,7 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
 
   const cacheKey = buildPhotoCacheKey(rawName, lat, lng, city, category, isBanner);
   const cached = photoCache.get(cacheKey);
+
   if (cached && Date.now() < cached.expiresAt && cached.urls.length >= limit) {
     return cached.urls.slice(0, limit);
   }
@@ -917,6 +1058,7 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
 
   // 1. Primär: Echte Web-Bildersuche
   const webPhotos = await searchWebPlacePhotos(rawName, city, category, limit, isBanner);
+
   for (const p of webPhotos) {
     if (!seen.has(p)) {
       seen.add(p);
@@ -931,7 +1073,10 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
     // 2a. Wenn Koordinaten vorhanden: GeoSearch um die Koordinate (Radius 300m)
     if (lat != null && lng != null) {
       for (const lang of languages) {
-        if (photos.length >= limit) break;
+        if (photos.length >= limit) {
+          break;
+        }
+
         const pages = await queryWiki(lang, {
           generator: 'geosearch',
           ggscoord: `${lat}|${lng}`,
@@ -943,9 +1088,13 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
         });
 
         for (const p of pages) {
-          if (photos.length >= limit) break;
+          if (photos.length >= limit) {
+            break;
+          }
+
           if (isTitleMatch(p.title, rawName, city)) {
             const found = await extractPhotoFromPage(lang, p, isBanner);
+
             if (found && !seen.has(found)) {
               seen.add(found);
               photos.push(found);
@@ -961,8 +1110,12 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
       const searchQuery = isAirport
         ? buildAirportSearchQueries(rawName, city)[0] || [rawName, city].filter(Boolean).join(' ')
         : [rawName, city].filter(Boolean).join(' ');
+
       for (const lang of languages) {
-        if (photos.length >= limit) break;
+        if (photos.length >= limit) {
+          break;
+        }
+
         const pages = await queryWiki(lang, {
           generator: 'search',
           gsrsearch: searchQuery,
@@ -973,9 +1126,13 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
         });
 
         for (const p of pages) {
-          if (photos.length >= limit) break;
+          if (photos.length >= limit) {
+            break;
+          }
+
           if (isTitleMatch(p.title, rawName, city)) {
             const found = await extractPhotoFromPage(lang, p, isBanner);
+
             if (found && !seen.has(found)) {
               seen.add(found);
               photos.push(found);
@@ -991,8 +1148,12 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
       const commonsQueries = isAirport
         ? buildAirportSearchQueries(rawName, city)
         : [[rawName, city].filter(Boolean).join(' '), rawName];
+
       for (const cq of commonsQueries) {
-        if (photos.length >= limit) break;
+        if (photos.length >= limit) {
+          break;
+        }
+
         const commonsPhotos = await queryCommonsImages(
           cq,
           limit - photos.length,
@@ -1000,6 +1161,7 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
           isAirport,
           isBanner
         );
+
         for (const cp of commonsPhotos) {
           photos.push(cp);
         }
@@ -1011,8 +1173,12 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
   if (photos.length > 0) {
     if (photoCache.size >= MAX_CACHE_ENTRIES) {
       const oldestKey = photoCache.keys().next().value;
-      if (oldestKey !== undefined) photoCache.delete(oldestKey);
+
+      if (oldestKey !== undefined) {
+        photoCache.delete(oldestKey);
+      }
     }
+
     photoCache.set(cacheKey, {
       expiresAt: Date.now() + CACHE_TTL_MS,
       urls: photos,

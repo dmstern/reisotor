@@ -16,6 +16,7 @@ function defaultEntries(): DashboardConfigEntry[] {
 function loadEntries(): DashboardConfigEntry[] {
   const stored = localStorage.getItem(STORAGE_KEY);
   let parsed: DashboardConfigEntry[] = [];
+
   if (stored) {
     try {
       parsed = JSON.parse(stored);
@@ -23,6 +24,7 @@ function loadEntries(): DashboardConfigEntry[] {
       parsed = [];
     }
   }
+
   // Nur bekannte Keys aus dem gespeicherten Zustand übernehmen (Reihenfolge + Sichtbarkeit); Keys,
   // die es beim letzten Speichern noch nicht gab (z. B. eine künftig neu hinzugekommene Kachel),
   // werden sichtbar ans Ende angehängt - sonst würden neue Kacheln für bestehende Nutzer:innen
@@ -57,7 +59,11 @@ export const useDashboardConfigStore = defineStore('dashboardConfig', () => {
 
   function moveUp(key: string) {
     const idx = entries.value.findIndex((e) => e.key === key);
-    if (idx <= 0) return;
+
+    if (idx <= 0) {
+      return;
+    }
+
     const copy = [...entries.value];
     [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
     entries.value = copy;
@@ -65,7 +71,11 @@ export const useDashboardConfigStore = defineStore('dashboardConfig', () => {
 
   function moveDown(key: string) {
     const idx = entries.value.findIndex((e) => e.key === key);
-    if (idx === -1 || idx >= entries.value.length - 1) return;
+
+    if (idx === -1 || idx >= entries.value.length - 1) {
+      return;
+    }
+
     const copy = [...entries.value];
     [copy[idx], copy[idx + 1]] = [copy[idx + 1], copy[idx]];
     entries.value = copy;
@@ -73,7 +83,10 @@ export const useDashboardConfigStore = defineStore('dashboardConfig', () => {
 
   function setVisible(key: string, visible: boolean) {
     const entry = entries.value.find((e) => e.key === key);
-    if (entry) entry.visible = visible;
+
+    if (entry) {
+      entry.visible = visible;
+    }
   }
 
   function reset() {

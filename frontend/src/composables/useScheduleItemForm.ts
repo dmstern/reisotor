@@ -14,14 +14,26 @@ export interface UseScheduleItemFormOptions {
 }
 
 export function parseLinkKey(key: string): { spot_id: number | null; idea_id: number | null } {
-  if (key.startsWith('spot:')) return { spot_id: Number(key.slice('spot:'.length)), idea_id: null };
-  if (key.startsWith('idea:')) return { spot_id: null, idea_id: Number(key.slice('idea:'.length)) };
+  if (key.startsWith('spot:')) {
+    return { spot_id: Number(key.slice('spot:'.length)), idea_id: null };
+  }
+
+  if (key.startsWith('idea:')) {
+    return { spot_id: null, idea_id: Number(key.slice('idea:'.length)) };
+  }
+
   return { spot_id: null, idea_id: null };
 }
 
 export function linkKeyFor(item: Pick<ScheduleItem, 'spot_id' | 'idea_id'>): string {
-  if (item.spot_id != null) return `spot:${item.spot_id}`;
-  if (item.idea_id != null) return `idea:${item.idea_id}`;
+  if (item.spot_id != null) {
+    return `spot:${item.spot_id}`;
+  }
+
+  if (item.idea_id != null) {
+    return `idea:${item.idea_id}`;
+  }
+
   return '';
 }
 
@@ -58,8 +70,14 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
 
   const canAddScheduleItem = computed(() => !!newTitle.value.trim() && !!newStartDate.value);
   const addScheduleItemTooltip = computed(() => {
-    if (!newTitle.value.trim()) return 'Bitte gib zuerst einen Titel für den Termin ein';
-    if (!newStartDate.value) return 'Bitte wähle ein Startdatum aus';
+    if (!newTitle.value.trim()) {
+      return 'Bitte gib zuerst einen Titel für den Termin ein';
+    }
+
+    if (!newStartDate.value) {
+      return 'Bitte wähle ein Startdatum aus';
+    }
+
     return undefined;
   });
 
@@ -112,8 +130,14 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
     () => !!editForm.value.title.trim() && !isItemUploadingAttachments.value
   );
   const editScheduleItemTooltip = computed(() => {
-    if (isItemUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
-    if (!editForm.value.title.trim()) return 'Bitte gib zuerst einen Titel für den Termin ein';
+    if (isItemUploadingAttachments.value) {
+      return 'Dateianhänge werden noch hochgeladen…';
+    }
+
+    if (!editForm.value.title.trim()) {
+      return 'Bitte gib zuerst einen Titel für den Termin ein';
+    }
+
     return undefined;
   });
 
@@ -126,22 +150,34 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
   // --- Link Key & Location resolution ---
   function titleForLinkKey(key: string): string | null {
     const { spot_id, idea_id } = parseLinkKey(key);
-    if (spot_id != null) return spotsStore.spots.find((s) => s.id === spot_id)?.title ?? null;
-    if (idea_id != null)
+
+    if (spot_id != null) {
+      return spotsStore.spots.find((s) => s.id === spot_id)?.title ?? null;
+    }
+
+    if (idea_id != null) {
       return excursionsStore.excursions.find((e) => e.id === idea_id)?.title ?? null;
+    }
+
     return null;
   }
 
   watch(newLinkKey, (key) => {
     const t = key && titleForLinkKey(key);
-    if (t && !newTitle.value.trim()) newTitle.value = t;
+
+    if (t && !newTitle.value.trim()) {
+      newTitle.value = t;
+    }
   });
 
   watch(
     () => editForm.value.linkKey,
     (key) => {
       const t = key && titleForLinkKey(key);
-      if (t && !editForm.value.title.trim()) editForm.value.title = t;
+
+      if (t && !editForm.value.title.trim()) {
+        editForm.value.title = t;
+      }
     }
   );
 
@@ -151,19 +187,27 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
 
   watch(newLocation, (name) => {
     const mapsLink = placeMapsLinkFor(name);
-    if (mapsLink) newMapsLink.value = mapsLink;
+
+    if (mapsLink) {
+      newMapsLink.value = mapsLink;
+    }
   });
 
   watch(
     () => editForm.value.location,
     (name) => {
       const mapsLink = placeMapsLinkFor(name);
-      if (mapsLink) editForm.value.mapsLink = mapsLink;
+
+      if (mapsLink) {
+        editForm.value.mapsLink = mapsLink;
+      }
     }
   );
 
   async function syncExcursionsIfLinked(...ideaIds: (number | null | undefined)[]) {
-    if (ideaIds.some((id) => id != null)) await excursionsStore.load();
+    if (ideaIds.some((id) => id != null)) {
+      await excursionsStore.load();
+    }
   }
 
   // --- Add Form Actions ---
@@ -212,10 +256,17 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
 
   async function addItem() {
     if (!newStartDate.value || !newTitle.value.trim() || tripStore.currentTripId == null) {
-      if (!newTitle.value.trim()) newTitleTouched.value = true;
-      if (!newStartDate.value) newStartDateTouched.value = true;
+      if (!newTitle.value.trim()) {
+        newTitleTouched.value = true;
+      }
+
+      if (!newStartDate.value) {
+        newStartDateTouched.value = true;
+      }
+
       return;
     }
+
     const parsed = parseLatLngFromMapsLink(newMapsLink.value);
     const { spot_id, idea_id } = parseLinkKey(newLinkKey.value);
     const linked = spot_id != null || idea_id != null;
@@ -264,8 +315,11 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
       editTitleTouched.value = true;
       return;
     }
-    if (!editingItem.value || isItemUploadingAttachments.value || tripStore.currentTripId == null)
+
+    if (!editingItem.value || isItemUploadingAttachments.value || tripStore.currentTripId == null) {
       return;
+    }
+
     const parsed = parseLatLngFromMapsLink(editForm.value.mapsLink);
     const { spot_id, idea_id } = parseLinkKey(editForm.value.linkKey);
     const linked = spot_id != null || idea_id != null;
@@ -299,14 +353,20 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
   }
 
   function discardEditDraft() {
-    if (!editingItem.value) return;
+    if (!editingItem.value) {
+      return;
+    }
+
     startEdit(editingItem.value);
     editDraft.clear();
     showToast({ message: 'Änderungen verworfen.', type: 'info' });
   }
 
   async function deleteEditingItem() {
-    if (!editingItem.value || isItemUploadingAttachments.value) return;
+    if (!editingItem.value || isItemUploadingAttachments.value) {
+      return;
+    }
+
     const ideaId = editingItem.value.idea_id;
     const id = editingItem.value.id;
     await scheduleStore.remove(id);

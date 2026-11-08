@@ -23,9 +23,11 @@ function mountComponent(props: Record<string, unknown> = {}, initialUser?: Parti
   const pinia = createPinia();
   setActivePinia(pinia);
   const authStore = useAuthStore(pinia);
+
   if (initialUser) {
     authStore.user = initialUser as User;
   }
+
   const container = document.createElement('div');
   document.body.appendChild(container);
   let capturedComponent: InstanceType<typeof ImageUrlInput> | null = null;

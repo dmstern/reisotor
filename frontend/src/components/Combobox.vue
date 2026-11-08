@@ -48,7 +48,10 @@ const listboxId = computed(() =>
 );
 
 function updatePlacement() {
-  if (!comboboxRef.value) return;
+  if (!comboboxRef.value) {
+    return;
+  }
+
   const rect = comboboxRef.value.getBoundingClientRect();
   const viewportHeight =
     typeof window !== 'undefined'
@@ -87,7 +90,11 @@ watch(open, (isOpen) => {
 
 const isExactOptionMatch = computed(() => {
   const current = (props.modelValue ?? '').trim().toLowerCase();
-  if (!current) return false;
+
+  if (!current) {
+    return false;
+  }
+
   return props.options.some((o) => o.toLowerCase() === current);
 });
 
@@ -99,16 +106,23 @@ const filteredOptions = computed(() => {
   }
 
   const q = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
-  if (!q) return props.options;
+
+  if (!q) {
+    return props.options;
+  }
 
   return props.options.filter((o) => o.toLowerCase().includes(q));
 });
 
 function scrollHighlightedIntoView() {
   nextTick(() => {
-    if (!listboxRef.value || highlightedIndex.value < 0) return;
+    if (!listboxRef.value || highlightedIndex.value < 0) {
+      return;
+    }
+
     const items = listboxRef.value.querySelectorAll('li');
     const target = items[highlightedIndex.value];
+
     if (target && typeof target.scrollIntoView === 'function') {
       target.scrollIntoView({ block: 'nearest' });
     }
@@ -133,6 +147,7 @@ watch(filteredOptions, (newOpts) => {
     const idx = newOpts.findIndex((o) => o.toLowerCase() === q);
     highlightedIndex.value = idx >= 0 ? idx : -1;
   }
+
   if (open.value) {
     nextTick(() => updatePlacement());
   }
@@ -165,6 +180,7 @@ function selectOption(option: string) {
 function onModelValueInput(val: string) {
   filterText.value = val;
   emit('update:modelValue', val);
+
   if (!open.value) {
     open.value = true;
     updatePlacement();
@@ -172,10 +188,13 @@ function onModelValueInput(val: string) {
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if (props.disabled) return;
+  if (props.disabled) {
+    return;
+  }
 
   if (event.key === 'ArrowDown') {
     event.preventDefault();
+
     if (!open.value) {
       open.value = true;
       updatePlacement();
@@ -186,10 +205,12 @@ function onKeydown(event: KeyboardEvent) {
       } else {
         highlightedIndex.value = (highlightedIndex.value + 1) % filteredOptions.value.length;
       }
+
       scrollHighlightedIntoView();
     }
   } else if (event.key === 'ArrowUp') {
     event.preventDefault();
+
     if (!open.value) {
       open.value = true;
       updatePlacement();
@@ -201,6 +222,7 @@ function onKeydown(event: KeyboardEvent) {
       } else {
         highlightedIndex.value = highlightedIndex.value - 1;
       }
+
       scrollHighlightedIntoView();
     }
   } else if (event.key === 'Enter') {
@@ -225,6 +247,7 @@ function onKeydown(event: KeyboardEvent) {
 
       // 3. Exakter Treffer (case-insensitive) unter den Optionen
       const exactMatch = filteredOptions.value.find((o) => o.toLowerCase() === q);
+
       if (exactMatch) {
         event.preventDefault();
         event.stopPropagation();
@@ -258,6 +281,7 @@ function onBlur(event: FocusEvent) {
     ) {
       return;
     }
+
     open.value = false;
     highlightedIndex.value = -1;
   }, 150);
@@ -269,19 +293,25 @@ function onFocus(event: FocusEvent) {
   filterText.value = null;
   open.value = true;
   initHighlightedIndex();
+
   if (isExactOptionMatch.value) {
     (event.target as HTMLInputElement)?.select();
   }
+
   emit('focus', event);
 }
 
 function onClick(event: MouseEvent) {
-  if (props.disabled) return;
+  if (props.disabled) {
+    return;
+  }
+
   if (!open.value) {
     updatePlacement();
     filterText.value = null;
     open.value = true;
     initHighlightedIndex();
+
     if (isExactOptionMatch.value) {
       (event.target as HTMLInputElement)?.select();
     }
@@ -300,19 +330,31 @@ defineExpose({
 
 const selectedIconDef = computed(() => {
   const val = (props.modelValue ?? '').trim();
-  if (!val) return undefined;
+
+  if (!val) {
+    return undefined;
+  }
+
   return props.iconDefFor?.(val);
 });
 
 const selectedIcon = computed(() => {
   const val = (props.modelValue ?? '').trim();
-  if (!val) return undefined;
+
+  if (!val) {
+    return undefined;
+  }
+
   return props.iconFor?.(val);
 });
 
 const selectedColor = computed(() => {
   const val = (props.modelValue ?? '').trim();
-  if (!val) return undefined;
+
+  if (!val) {
+    return undefined;
+  }
+
   return props.colorFor?.(val);
 });
 

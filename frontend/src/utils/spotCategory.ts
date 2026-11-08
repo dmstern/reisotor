@@ -461,10 +461,12 @@ const OTHER_META: CategoryMeta = {
 export const SPOT_CATEGORY_SUGGESTIONS = KNOWN_CATEGORIES.map((c) => c.label!).filter(Boolean);
 
 const LOOKUP = new Map<string, CategoryMeta>();
+
 for (const cat of KNOWN_CATEGORIES) {
   if (cat.label) {
     LOOKUP.set(cat.label.toLowerCase(), cat);
   }
+
   if (cat.aliases) {
     for (const alias of cat.aliases) {
       LOOKUP.set(alias.toLowerCase(), cat);
@@ -492,17 +494,26 @@ const CUSTOM_CATEGORY_PALETTE = [
 
 function hashCategoryColor(category: string): string {
   let hash = 0;
+
   for (let i = 0; i < category.length; i++) {
     hash = (hash * 31 + category.charCodeAt(i)) | 0;
   }
+
   return CUSTOM_CATEGORY_PALETTE[Math.abs(hash) % CUSTOM_CATEGORY_PALETTE.length];
 }
 
 export function spotCategoryMeta(category: string | null | undefined): CategoryMeta {
-  if (!category) return OTHER_META;
+  if (!category) {
+    return OTHER_META;
+  }
+
   const trimmed = category.trim().toLowerCase();
   const known = LOOKUP.get(trimmed);
-  if (known) return known;
+
+  if (known) {
+    return known;
+  }
+
   return { icon: OTHER_META.icon, color: hashCategoryColor(trimmed), tabler: OTHER_META.tabler };
 }
 
@@ -511,10 +522,17 @@ export function spotCategoryMeta(category: string | null | undefined): CategoryM
  * Solche Spots werden standardmäßig als Heimatort (is_home = true) vorbelegt.
  */
 export function isHomeCategory(category: string | null | undefined): boolean {
-  if (!category) return false;
+  if (!category) {
+    return false;
+  }
+
   const trimmed = category.trim().toLowerCase();
   const known = LOOKUP.get(trimmed);
-  if (known?.label === 'Zuhause') return true;
+
+  if (known?.label === 'Zuhause') {
+    return true;
+  }
+
   return ['zuhause', 'heimat', 'wohnung', 'home', 'haus', 'daheim'].includes(trimmed);
 }
 
@@ -525,11 +543,18 @@ export function isHomeCategory(category: string | null | undefined): boolean {
  * "Teil der Urlaubsregion"-Schalter im Spot-Formular prominent angeboten wird.
  */
 export function isTransitCategory(category: string | null | undefined): boolean {
-  if (!category) return false;
+  if (!category) {
+    return false;
+  }
+
   const trimmed = category.trim().toLowerCase();
   const known = LOOKUP.get(trimmed);
   const transitLabels = ['Flughafen', 'Bahnhof', 'Busbahnhof', 'Hafen', 'Raststätte', 'Tankstelle'];
-  if (known?.label && transitLabels.includes(known.label)) return true;
+
+  if (known?.label && transitLabels.includes(known.label)) {
+    return true;
+  }
+
   const transitAliases = [
     'flughafen',
     'airport',
@@ -567,6 +592,9 @@ export function isTransitCategory(category: string | null | undefined): boolean 
  * Bei Urlaubsplanung zählen Orte standardmäßig zur Urlaubsregion (is_home = false).
  */
 export function isVacationCategory(category: string | null | undefined): boolean {
-  if (!category) return false;
+  if (!category) {
+    return false;
+  }
+
   return !isHomeCategory(category) && !isTransitCategory(category);
 }

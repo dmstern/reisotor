@@ -32,8 +32,14 @@ const emit = defineEmits<{
 }>();
 
 const isMissing = computed(() => {
-  if (props.hasCoords !== undefined) return !props.hasCoords;
-  if (props.spot) return props.spot.lat == null || props.spot.lng == null;
+  if (props.hasCoords !== undefined) {
+    return !props.hasCoords;
+  }
+
+  if (props.spot) {
+    return props.spot.lat == null || props.spot.lng == null;
+  }
+
   return true;
 });
 

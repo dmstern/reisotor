@@ -14,7 +14,10 @@ export interface AttachmentPreviewItem {
 }
 
 export function isImage(attachment: AttachmentPreviewItem | null | undefined): boolean {
-  if (!attachment) return false;
+  if (!attachment) {
+    return false;
+  }
+
   return isImageAttachment(attachment);
 }
 
@@ -30,11 +33,13 @@ export function normalizeAttachment(
         mime_type: 'image/jpeg',
       };
     }
+
     return {
       url: '',
       original_name: `Anhang ${index + 1}`,
     };
   }
+
   return {
     ...item,
     original_name:

@@ -11,7 +11,11 @@ export function sortWithDoneLast<T>(
   return [...list].sort((a, b) => {
     const doneA = isDone(a);
     const doneB = isDone(b);
-    if (doneA !== doneB) return doneA ? 1 : -1;
+
+    if (doneA !== doneB) {
+      return doneA ? 1 : -1;
+    }
+
     return compare ? compare(a, b) : 0;
   });
 }

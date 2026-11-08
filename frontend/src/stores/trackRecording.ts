@@ -47,6 +47,7 @@ export function parseAltitude(raw: number | null | undefined): number | null {
   if (raw == null || typeof raw !== 'number' || !Number.isFinite(raw)) {
     return null;
   }
+
   const rounded = Math.round(raw * 10) / 10;
   return rounded === 0 ? 0 : rounded;
 }
@@ -72,8 +73,11 @@ function loadActiveState(): ActiveState | null {
 }
 
 function saveActiveState(state: ActiveState | null) {
-  if (state) localStorage.setItem(ACTIVE_KEY, JSON.stringify(state));
-  else localStorage.removeItem(ACTIVE_KEY);
+  if (state) {
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify(state));
+  } else {
+    localStorage.removeItem(ACTIVE_KEY);
+  }
 }
 
 // Standort-Aufzeichnung ("wo war ich wirklich?", stores/tracks.ts liefert die Liste vergangener
@@ -132,18 +136,26 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       } catch {
         // ignore
       }
+
       wakeLockSentinel = null;
     }
   }
 
   function persistBuffer() {
-    if (!track.value) return;
+    if (!track.value) {
+      return;
+    }
+
     writeBuffer(track.value.id, pendingBuffer);
   }
 
   async function flushBuffer(): Promise<boolean> {
-    if (!track.value || !pendingBuffer.length) return true;
+    if (!track.value || !pendingBuffer.length) {
+      return true;
+    }
+
     const toSend = pendingBuffer;
+
     try {
       await rawRequest(`/tracks/${track.value.id}/points`, {
         method: 'POST',
@@ -167,12 +179,18 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   }
 
   function stopFlushLoop() {
-    if (flushTimer != null) clearInterval(flushTimer);
+    if (flushTimer != null) {
+      clearInterval(flushTimer);
+    }
+
     flushTimer = null;
   }
 
   function startWatch() {
-    if (watchId != null || !navigator.geolocation) return;
+    if (watchId != null || !navigator.geolocation) {
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         pendingBuffer.push({
@@ -197,7 +215,10 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
           altitude: parseAltitude(position.coords.altitude),
         });
         persistBuffer();
-        if (pendingBuffer.length >= FLUSH_POINT_THRESHOLD) flushBuffer();
+
+        if (pendingBuffer.length >= FLUSH_POINT_THRESHOLD) {
+          flushBuffer();
+        }
       },
       (error) => {
         if (error.code === error.PERMISSION_DENIED) {
@@ -212,7 +233,10 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   }
 
   function stopWatch() {
-    if (watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    if (watchId != null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+
     watchId = null;
   }
 
@@ -224,16 +248,25 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     visibility?: TrackVisibility;
     excursionId?: number | null;
   }): Promise<boolean> {
-    if (recording.value) return true;
+    if (recording.value) {
+      return true;
+    }
+
     const tripId = tripStore.currentTripId;
-    if (tripId == null) return false;
+
+    if (tripId == null) {
+      return false;
+    }
+
     startError.value = null;
+
     try {
       const created = await api.post<LocationTrack>('/tracks', {
         trip_id: tripId,
         visibility: options.visibility ?? 'private',
         excursion_id: options.excursionId ?? null,
       });
+
       if (created.id < 0) {
         // Offline (queueMutation() antwortet nie mit einem Fehler, siehe api/client.ts) - eine
         // Aufzeichnung braucht aber von Anfang an eine echte Server-id für den Punkte-Puffer.
@@ -241,6 +274,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
           'Aufzeichnung braucht eine Verbindung zum Server, bitte später erneut versuchen.';
         return false;
       }
+
       track.value = created;
       recording.value = true;
       paused.value = false;
@@ -266,9 +300,13 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   }
 
   async function stop(options?: { end_reason?: 'completed' | 'aborted' }) {
-    if (!recording.value || !track.value) return;
+    if (!recording.value || !track.value) {
+      return;
+    }
+
     releaseWakeLock();
     stopWatch();
+
     if (!pendingBuffer.length && navigator.geolocation) {
       await new Promise<void>((resolve) => {
         navigator.geolocation.getCurrentPosition(
@@ -288,6 +326,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
         );
       });
     }
+
     if (!pendingBuffer.length) {
       pendingBuffer.push({
         lat: 48.2,
@@ -297,13 +336,17 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       });
       persistBuffer();
     }
+
     const flushed = await flushBuffer();
+
     if (!flushed) {
       await new Promise((r) => setTimeout(r, 200));
       await flushBuffer();
     }
+
     stopFlushLoop();
     const endReason = options?.end_reason ?? 'completed';
+
     try {
       await api.post(`/tracks/${track.value.id}/stop`, { end_reason: endReason });
     } catch {
@@ -311,6 +354,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       // anders als die Punkte selbst unproblematisch dafür geeignet) und wird beim nächsten Sync
       // nachgeholt.
     }
+
     clearBuffer(track.value.id);
     saveActiveState(null);
     track.value = null;
@@ -324,7 +368,10 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
 
   /** Bricht eine Aufzeichnung mit Status 'aborted' ab (z. B. bei Systemfehlern oder entzogenem Zugriff). */
   async function abort(reason?: string) {
-    if (reason) startError.value = reason;
+    if (reason) {
+      startError.value = reason;
+    }
+
     await stop({ end_reason: 'aborted' });
   }
 
@@ -334,7 +381,10 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
    *  Anhalten noch ausstehende Punkte, damit während einer ggf. langen Pause nichts unnötig lang nur
    *  lokal gepuffert bleibt. */
   async function pause() {
-    if (!recording.value || paused.value || !track.value) return;
+    if (!recording.value || paused.value || !track.value) {
+      return;
+    }
+
     releaseWakeLock();
     stopWatch();
     await flushBuffer();
@@ -351,7 +401,10 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   /** Setzt eine pausierte Aufzeichnung fort - hängt weitere Punkte an dieselbe, weiterhin offene
    *  Aufzeichnung an (kein neuer Track). */
   function resume() {
-    if (!recording.value || !paused.value || !track.value) return;
+    if (!recording.value || !paused.value || !track.value) {
+      return;
+    }
+
     paused.value = false;
     startWatch();
     startFlushLoop();
@@ -367,12 +420,16 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
   /** Synchronisiert eine auf dem Server noch offene Aufzeichnung des aktuellen Nutzers,
    *  falls der lokale Client-Zustand verloren ging (z. B. nach Browser-Suspension/Reload). */
   async function syncActiveTrackFromServer(tripId: number) {
-    if (recording.value) return;
+    if (recording.value) {
+      return;
+    }
+
     try {
       const tracks = await api.get<LocationTrack[]>(`/tracks?trip_id=${tripId}`);
       const openTrack = tracks.find(
         (t) => !t.ended_at && authStore.user && t.user_id === authStore.user.id
       );
+
       if (openTrack && !recording.value) {
         track.value = openTrack;
         recording.value = true;
@@ -398,8 +455,13 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
    *  Punkte. */
   function restoreOnLoad() {
     const currentTripId = tripStore.currentTripId;
-    if (currentTripId == null) return;
+
+    if (currentTripId == null) {
+      return;
+    }
+
     const state = loadActiveState();
+
     if (state && state.tripId === currentTripId) {
       pendingBuffer = readBuffer(state.trackId);
       track.value = {
@@ -416,19 +478,23 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       recording.value = true;
       // ?? false: localStorage kann noch einen Zustand von vor Einführung des paused-Felds enthalten.
       paused.value = state.paused ?? false;
+
       if (!paused.value) {
         startWatch();
         startFlushLoop();
         acquireWakeLock();
       }
+
       // Echte Track-Metadaten (visibility/excursion_id/user_id) nachladen, damit UI-Zustände (z. B.
       // ein Sichtbarkeits-Badge) nach einem Reload korrekt sind, statt der obigen Platzhalterzeile.
       api
         .get<LocationTrack[]>(`/tracks?trip_id=${state.tripId}`)
         .then((tracks) => {
           const found = tracks.find((t) => t.id === state.trackId);
+
           if (found) {
             track.value = found;
+
             if (found.ended_at) {
               // Wurde anderweitig (oder auf einem anderen Tab/Gerät) bereits beendet
               releaseWakeLock();
@@ -466,6 +532,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     (tracks) => {
       if (!recording.value && tripStore.currentTripId != null && authStore.user) {
         const openTrack = tracks.find((t) => !t.ended_at && t.user_id === authStore.user?.id);
+
         if (openTrack) {
           syncActiveTrackFromServer(tripStore.currentTripId);
         }
@@ -477,6 +544,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
       if (recording.value && !paused.value) {
         acquireWakeLock();
+
         if (watchId == null) {
           startWatch();
         }

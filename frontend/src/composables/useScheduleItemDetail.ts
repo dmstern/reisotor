@@ -40,6 +40,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     ([id]) => {
       if (id != null) {
         const item = scheduleStore.items.find((i: ScheduleItem) => i.id === id);
+
         if (item) {
           viewingItem.value = item;
         }
@@ -62,13 +63,21 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
 
   const viewingLinkedSpot = computed<Spot | null>(() => {
     const spotId = viewingEntry.value?.spotId ?? viewingItem.value?.spot_id;
-    if (spotId == null) return null;
+
+    if (spotId == null) {
+      return null;
+    }
+
     return spotsStore.spots.find((s) => s.id === spotId) ?? null;
   });
 
   const viewingLinkedExcursion = computed<Excursion | null>(() => {
     const ideaId = viewingEntry.value?.ideaId ?? viewingItem.value?.idea_id;
-    if (ideaId == null) return null;
+
+    if (ideaId == null) {
+      return null;
+    }
+
     return excursionsStore.excursions.find((e) => e.id === ideaId) ?? null;
   });
 
@@ -76,24 +85,33 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     if (viewingLinkedSpot.value?.image_url) {
       return viewingLinkedSpot.value.image_url;
     }
+
     if (viewingLinkedExcursion.value?.image_url) {
       return viewingLinkedExcursion.value.image_url;
     }
+
     return null;
   });
 
   const viewingCollageImages = computed<string[]>(() => {
-    if (viewingImageUrl.value) return [];
+    if (viewingImageUrl.value) {
+      return [];
+    }
+
     if (viewingLinkedExcursion.value?.spot_ids?.length) {
       const urls: string[] = [];
+
       for (const spotId of viewingLinkedExcursion.value.spot_ids) {
         const spot = spotsStore.spots.find((s) => s.id === spotId);
+
         if (spot?.image_url && !urls.includes(spot.image_url)) {
           urls.push(spot.image_url);
         }
       }
+
       return urls;
     }
+
     return [];
   });
 
@@ -107,6 +125,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         themeTint: undefined as string | undefined,
       };
     }
+
     if (viewingLinkedExcursion.value) {
       if (viewingLinkedExcursion.value.role) {
         return {
@@ -116,6 +135,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
           themeTint: 'var(--color-travel-tint)',
         };
       }
+
       return {
         label: 'Tour',
         icon: viewingEntry.value?.iconDef ?? SCHEDULE_CATEGORY_META.excursion.tabler,
@@ -123,6 +143,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         themeTint: 'var(--color-tour-tint)',
       };
     }
+
     if (viewingEntry.value) {
       const meta =
         SCHEDULE_CATEGORY_META[viewingEntry.value.category] ?? SCHEDULE_CATEGORY_META.other;
@@ -133,6 +154,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         themeTint: undefined as string | undefined,
       };
     }
+
     return {
       label: 'Termin',
       icon: SCHEDULE_CATEGORY_META.other.tabler,
@@ -142,7 +164,10 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
   });
 
   const viewingWeatherEntry = computed(() => {
-    if (!viewingItem.value?.date) return null;
+    if (!viewingItem.value?.date) {
+      return null;
+    }
+
     const entries = weatherEntriesFor(viewingItem.value.date);
     return entries.length > 0 ? entries[0] : null;
   });
@@ -156,6 +181,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         title: viewingItem.value.title,
       };
     }
+
     if (viewingLinkedSpot.value?.lat != null && viewingLinkedSpot.value?.lng != null) {
       return {
         lat: viewingLinkedSpot.value.lat,
@@ -164,6 +190,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         title: viewingLinkedSpot.value.title,
       };
     }
+
     return null;
   });
 
@@ -173,21 +200,33 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
   }
 
   function linkedTitleFor(entry: CalendarEntry | null): string | null {
-    if (!entry) return null;
-    if (entry.spotId != null)
+    if (!entry) {
+      return null;
+    }
+
+    if (entry.spotId != null) {
       return spotsStore.spots.find((s) => s.id === entry.spotId)?.title ?? null;
-    if (entry.ideaId != null)
+    }
+
+    if (entry.ideaId != null) {
       return excursionsStore.excursions.find((e) => e.id === entry.ideaId)?.title ?? null;
+    }
+
     return null;
   }
 
   function navigateToLinkedEntity() {
     const entry = viewingEntry.value;
-    if (!entry) return;
+
+    if (!entry) {
+      return;
+    }
+
     viewingItem.value = null;
     const path = tripStore.currentTripId
       ? `/trip/${tripStore.currentTripId}/excursions`
       : '/excursions';
+
     if (entry.spotId != null) {
       const spot = spotsStore.spots.find((s) => s.id === entry.spotId);
       const isAccommodation = spot?.category === 'Unterkunft';
@@ -240,7 +279,10 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
   }
 
   function editViewingItem() {
-    if (!viewingItem.value) return;
+    if (!viewingItem.value) {
+      return;
+    }
+
     const item = viewingItem.value;
     viewingItem.value = null;
     onStartEdit?.(item);

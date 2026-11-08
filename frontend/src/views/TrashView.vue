@@ -71,6 +71,7 @@ function truncate(text: string, max = 80) {
 
 function titleFor(entry: TrashEntry): string {
   const d = entry.data;
+
   switch (entry.type) {
     case 'schedule_item':
     case 'excursion':
@@ -89,17 +90,20 @@ function titleFor(entry: TrashEntry): string {
     case 'budget_transfer':
       return `${(d.amount as number).toFixed(2)}\u00A0€ · ${userLabel(d.from_user_id)} → ${userLabel(d.to_user_id)}`;
     case 'note':
+
     case 'diary_entry': {
       const title = (d.title as string | null)?.trim();
       const plain = stripHtml(d.content as string | null | undefined);
       return title || (plain ? truncate(plain) : '(ohne Titel)');
     }
+
     default:
       return '(ohne Titel)';
   }
 }
 
 const dateFormatter = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+
 function formatDeletedAt(iso: string) {
   return dateFormatter.format(new Date(iso));
 }
@@ -112,7 +116,10 @@ function daysRemaining(iso: string): number {
 }
 
 async function load() {
-  if (tripId.value == null) return;
+  if (tripId.value == null) {
+    return;
+  }
+
   try {
     const [entriesRes, usersRes] = await Promise.all([
       api.get<TrashEntry[]>(`/trash?trip_id=${tripId.value}`),
@@ -143,6 +150,7 @@ async function restore(entry: TrashEntry) {
   error.value = '';
   const key = keyOf(entry);
   restoringKey.value = key;
+
   try {
     await restoreTrashItem(entry.type, entry.id);
     entries.value = entries.value.filter((e) => keyOf(e) !== key);
@@ -158,12 +166,14 @@ async function permanentlyDelete(entry: TrashEntry) {
     !confirm(
       'Dieses Element wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
     )
-  )
+  ) {
     return;
+  }
 
   error.value = '';
   const key = keyOf(entry);
   deletingKey.value = key;
+
   try {
     await api.delete(`/trash/${entry.type}/${entry.id}`);
     entries.value = entries.value.filter((e) => keyOf(e) !== key);
@@ -179,11 +189,13 @@ async function emptyTrash() {
     !confirm(
       'Möchtest du den gesamten Papierkorb für diesen Urlaub endgültig leeren? Diese Aktion kann nicht rückgängig gemacht werden.'
     )
-  )
+  ) {
     return;
+  }
 
   error.value = '';
   emptyingTrash.value = true;
+
   try {
     await api.delete(`/trash?trip_id=${tripId.value}`);
     entries.value = [];

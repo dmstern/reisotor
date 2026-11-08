@@ -89,8 +89,14 @@ const countNoteCommentLikesStmt = db.prepare(
 
 export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notes', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     // Entwürfe (is_draft) sind rein persönlich (#89) - nur für die eigene created_by sichtbar, damit
     // sie nicht schon vor dem Veröffentlichen für andere Trip-Mitglieder in der Liste auftauchen.
     return selectNotesByTripStmt.all(req.query.trip_id, req.session.userId);
@@ -98,7 +104,11 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: NoteBody }>('/notes', async (req, reply) => {
     const { trip_id, title, content } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const result = insertNoteStmt.run(
@@ -124,8 +134,15 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Params: { id: string }; Body: NoteBody }>('/notes/:id', async (req, reply) => {
     const existingNote = selectNoteForAuthStmt.get(req.params.id) as
       { trip_id: number; created_by: number | null; is_draft: number } | undefined;
-    if (!existingNote) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) return;
+
+    if (!existingNote) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) {
+      return;
+    }
+
     // Ein Entwurf bleibt auch beim Bearbeiten rein persönlich - anders als veröffentlichte Notizen
     // (dort darf jedes Trip-Mitglied mitschreiben) darf ihn nur die anlegende Person anfassen.
     if (existingNote.is_draft && existingNote.created_by !== req.session.userId) {
@@ -147,7 +164,11 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
       isDraft,
       req.params.id
     );
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     recordActivity(
       existingNote.trip_id,
       'notes',
@@ -163,8 +184,15 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/notes/:id', async (req, reply) => {
     const existingNote = selectNoteForAuthStmt.get(req.params.id) as
       { trip_id: number; created_by: number | null; is_draft: number } | undefined;
-    if (!existingNote) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) return;
+
+    if (!existingNote) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingNote.trip_id, req.session.userId)) {
+      return;
+    }
+
     if (existingNote.is_draft && existingNote.created_by !== req.session.userId) {
       return reply
         .code(403)
@@ -172,7 +200,11 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const result = softDeleteNoteStmt.run(new Date().toISOString(), req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     recordActivity(
       existingNote.trip_id,
       'notes',
@@ -184,22 +216,40 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/notes/likes', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectNoteLikesByTripStmt.all(req.query.trip_id);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/notes/comments', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectNoteCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/notes/:id/like', async (req, reply) => {
     const note = selectNoteTripIdStmt.get(req.params.id) as
       { id: number; trip_id: number } | undefined;
-    if (!note) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, note.trip_id, req.session.userId)) return;
+
+    if (!note) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, note.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectNoteLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
@@ -221,8 +271,14 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const note = selectNoteTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
-      if (!note) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, note.trip_id, req.session.userId)) return;
+
+      if (!note) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, note.trip_id, req.session.userId)) {
+        return;
+      }
 
       const result = insertNoteCommentStmt.run(
         req.params.id,
@@ -239,13 +295,21 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/notes/comments/:id', async (req, reply) => {
     const comment = selectNoteCommentAuthStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
+
     if (comment.author_id !== req.session.userId) {
       return reply
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
+
     deleteNoteCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
@@ -254,16 +318,28 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     '/notes/comments/:id',
     async (req, reply) => {
       const content = req.body?.content?.trim();
-      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+
+      if (!content) {
+        return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      }
+
       const comment = selectNoteCommentAuthStmt.get(req.params.id) as
         { id: number; author_id: number; trip_id: number } | undefined;
-      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+      if (!comment) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+        return;
+      }
+
       if (comment.author_id !== req.session.userId) {
         return reply
           .code(403)
           .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
       }
+
       updateNoteCommentStmt.run(content, new Date().toISOString(), req.params.id);
       return selectNoteCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
     }
@@ -272,13 +348,20 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string } }>('/notes/comments/:id/like', async (req, reply) => {
     const comment = selectNoteCommentAuthStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectNoteCommentLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
 
     let liked: boolean;
+
     if (existing) {
       deleteNoteCommentLikeStmt.run(existing.id);
       liked = false;

@@ -10,6 +10,7 @@ const trashRoute = computed(() => {
   if (getActivePinia()) {
     try {
       const tripStore = useTripStore();
+
       if (tripStore.currentTripId != null) {
         return `/trip/${tripStore.currentTripId}/trash`;
       }
@@ -17,6 +18,7 @@ const trashRoute = computed(() => {
       // Fallback
     }
   }
+
   return '/trash';
 });
 
@@ -29,6 +31,7 @@ function parseMessageSegments(message: string): MessageSegment[] {
   if (!message.includes('Papierkorb')) {
     return [{ text: message, isTrashLink: false }];
   }
+
   const parts = message.split(/(Papierkorb)/g);
   return parts
     .filter((part) => part.length > 0)

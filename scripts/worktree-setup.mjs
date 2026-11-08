@@ -89,6 +89,7 @@ export function ensureSymlinks({ currentDir, mainRepoDir, logger = console }) {
           existingCount++;
           continue;
         }
+
         // Toter Symlink: entfernen und neu verlinken
         fs.unlinkSync(targetInWorktree);
       } else {
@@ -106,6 +107,7 @@ export function ensureSymlinks({ currentDir, mainRepoDir, logger = console }) {
 
     // Elternverzeichnis sicherstellen (z.B. backend/ für backend/node_modules)
     const parentDir = path.dirname(targetInWorktree);
+
     if (!fs.existsSync(parentDir)) {
       fs.mkdirSync(parentDir, { recursive: true });
     }
@@ -130,6 +132,7 @@ export function ensureEnv({ currentDir, mainRepoDir, logger = console }) {
     logger.log('📄 .env-Datei aus dem Haupt-Repository kopiert.');
     return true;
   }
+
   return false;
 }
 
@@ -153,6 +156,7 @@ export function ensureDatabase({ currentDir, force = false, seedFn = null, logge
       const cmd = force ? 'npm run seed:demo:force' : 'npm run seed:demo';
       execSync(cmd, { cwd: currentDir, stdio: 'inherit' });
     }
+
     return true;
   }
 

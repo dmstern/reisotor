@@ -22,6 +22,7 @@ export function parseContact(raw: string): ParsedContact {
   }
 
   const digitCount = (trimmed.match(/\d/g) ?? []).length;
+
   if (digitCount >= 6 && PHONE_CHARS_PATTERN.test(trimmed)) {
     return { kind: 'phone', href: `tel:${trimmed.replace(/[\s()\-/]/g, '')}` };
   }

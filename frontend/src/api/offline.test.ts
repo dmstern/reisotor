@@ -148,9 +148,11 @@ describe('flushOutbox and outbox events', () => {
     const sent: { method: string; path: string; body: unknown }[] = [];
     const sendRaw = vi.fn().mockImplementation(async (method, path, body) => {
       sent.push({ method, path, body });
+
       if (method === 'POST') {
         return { id: 777, title: 'Neuer Spot' };
       }
+
       return { id: 10, title: 'Tour' };
     });
 
@@ -173,6 +175,7 @@ describe('flushOutbox and outbox events', () => {
         err.status = 404;
         throw err;
       }
+
       return { id: 1, title: 'Gültiges Todo' };
     });
 
@@ -191,6 +194,7 @@ describe('flushOutbox and outbox events', () => {
         const err = Object.assign(new Error('Fetch is aborted'), { name: 'AbortError' });
         throw err;
       }
+
       return { id: 101, title: 'Erfolgreiches Todo' };
     });
 

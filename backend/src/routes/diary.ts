@@ -118,6 +118,7 @@ const countDiaryCommentLikesStmt = db.prepare(
 // jedem Anlegen/Bearbeiten komplett neu geschrieben statt gedifft – kleine Anzahl Zeilen pro Eintrag.
 function syncDiaryExcursions(entryId: number, excursionIds: number[]) {
   deleteDiaryExcursionsStmt.run(entryId);
+
   for (const excursionId of excursionIds) {
     insertDiaryExcursionStmt.run(entryId, excursionId);
   }
@@ -125,16 +126,22 @@ function syncDiaryExcursions(entryId: number, excursionIds: number[]) {
 
 function excursionIdsFor(entryIds: number[]): Map<number, number[]> {
   const map = new Map<number, number[]>();
-  if (!entryIds.length) return map;
+
+  if (!entryIds.length) {
+    return map;
+  }
+
   const placeholders = entryIds.map(() => '?').join(',');
   const rows = db
     .prepare(`SELECT entry_id, idea_id FROM diary_excursions WHERE entry_id IN (${placeholders})`)
     .all(...entryIds) as { entry_id: number; idea_id: number }[];
+
   for (const row of rows) {
     const list = map.get(row.entry_id) ?? [];
     list.push(row.idea_id);
     map.set(row.entry_id, list);
   }
+
   return map;
 }
 
@@ -142,6 +149,7 @@ function excursionIdsFor(entryIds: number[]): Map<number, number[]> {
 // Verknüpfung OHNE (wie früher, #216) im Hintergrund einen Ein-Spot-Ausflug anzulegen.
 function syncDiarySpots(entryId: number, spotIds: number[]) {
   deleteDiarySpotsStmt.run(entryId);
+
   for (const spotId of spotIds) {
     insertDiarySpotStmt.run(entryId, spotId);
   }
@@ -149,16 +157,22 @@ function syncDiarySpots(entryId: number, spotIds: number[]) {
 
 function spotIdsFor(entryIds: number[]): Map<number, number[]> {
   const map = new Map<number, number[]>();
-  if (!entryIds.length) return map;
+
+  if (!entryIds.length) {
+    return map;
+  }
+
   const placeholders = entryIds.map(() => '?').join(',');
   const rows = db
     .prepare(`SELECT entry_id, spot_id FROM diary_spots WHERE entry_id IN (${placeholders})`)
     .all(...entryIds) as { entry_id: number; spot_id: number }[];
+
   for (const row of rows) {
     const list = map.get(row.entry_id) ?? [];
     list.push(row.spot_id);
     map.set(row.entry_id, list);
   }
+
   return map;
 }
 
@@ -166,18 +180,24 @@ function spotIdsFor(entryIds: number[]): Map<number, number[]> {
 // zusätzlich hier, geordnet nach erster Bearbeitung.
 function editorIdsFor(entryIds: number[]): Map<number, number[]> {
   const map = new Map<number, number[]>();
-  if (!entryIds.length) return map;
+
+  if (!entryIds.length) {
+    return map;
+  }
+
   const placeholders = entryIds.map(() => '?').join(',');
   const rows = db
     .prepare(
       `SELECT entry_id, user_id FROM diary_entry_editors WHERE entry_id IN (${placeholders}) ORDER BY edited_at ASC`
     )
     .all(...entryIds) as { entry_id: number; user_id: number }[];
+
   for (const row of rows) {
     const list = map.get(row.entry_id) ?? [];
     list.push(row.user_id);
     map.set(row.entry_id, list);
   }
+
   return map;
 }
 
@@ -209,9 +229,11 @@ function serializeEntry(
   editorIds: number[] = []
 ) {
   let images: DiaryImageInput[] = [];
+
   if (row.images) {
     try {
       const parsed = JSON.parse(row.images);
+
       if (Array.isArray(parsed)) {
         images = parsed.filter(Boolean);
       }
@@ -219,6 +241,7 @@ function serializeEntry(
       images = [];
     }
   }
+
   return {
     ...row,
     date: row.date || row.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
@@ -231,8 +254,14 @@ function serializeEntry(
 
 export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/diary', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     // Entwürfe (is_draft) sind rein persönlich (#89) - nur für die eigene author_id sichtbar.
     const rows = db
       .prepare(
@@ -257,8 +286,14 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   // aller Urlaube zurück – seit Einführung des Mitgliedschaftskonzepts wäre das ein Datenleck über
   // Urlaubsgrenzen hinweg, siehe tripAccess.ts).
   app.get<{ Querystring: { trip_id?: string } }>('/diary/likes', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return db
       .prepare(
         `SELECT diary_likes.* FROM diary_likes
@@ -269,8 +304,14 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/diary/comments', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectDiaryCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
@@ -281,17 +322,28 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     if (isUserRestricted(req.session.userId)) {
       return reply.code(403).send({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
     }
+
     if (req.body?.trip_id != null) {
-      if (!requireTripMember(reply, req.body.trip_id, req.session.userId)) return;
+      if (!requireTripMember(reply, req.body.trip_id, req.session.userId)) {
+        return;
+      }
     }
+
     const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(req.body?.data ?? '');
-    if (!match) return reply.code(400).send({ error: 'Ungültiges Bildformat' });
+
+    if (!match) {
+      return reply.code(400).send({ error: 'Ungültiges Bildformat' });
+    }
 
     const [, mimeType, base64] = match;
     const extension = ALLOWED_IMAGE_TYPES[mimeType];
-    if (!extension) return reply.code(400).send({ error: 'Nicht unterstützter Bildtyp' });
+
+    if (!extension) {
+      return reply.code(400).send({ error: 'Nicht unterstützter Bildtyp' });
+    }
 
     const buffer = Buffer.from(base64, 'base64');
+
     if (buffer.byteLength > MAX_IMAGE_BYTES) {
       return reply.code(413).send({ error: 'Bild ist zu groß (max. 5 MB nach Komprimierung)' });
     }
@@ -316,7 +368,11 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: EntryBody }>('/diary', async (req, reply) => {
     const { trip_id, title, content, images, excursion_ids, spot_ids, date } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
     const sanitizedImages = Array.isArray(images) ? images.filter(Boolean) : [];
@@ -338,15 +394,19 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         req.body.is_draft ? 1 : 0
       );
     const entryId = result.lastInsertRowid as number;
+
     for (const img of sanitizedImages) {
       const url = typeof img === 'string' ? img : img?.url;
+
       if (url && typeof url === 'string' && url.startsWith('/api/uploads/')) {
         const filename = url.slice('/api/uploads/'.length);
+
         if (filename) {
           associateUploadWithTrip(filename, trip_id, req.session.userId);
         }
       }
     }
+
     syncDiaryExcursions(entryId, excursion_ids ?? []);
     syncDiarySpots(entryId, spot_ids ?? []);
     recordActivity(trip_id, 'diary', entryId, 'created', req.session.userId!);
@@ -361,8 +421,15 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   // author-only (siehe DELETE-Route unten), das ist eine deutlich folgenreichere Aktion.
   app.put<{ Params: { id: string }; Body: EntryBody }>('/diary/:id', async (req, reply) => {
     const entry = selectEntryByIdStmt.get(req.params.id) as EntryRow | undefined;
-    if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
+
+    if (!entry) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) {
+      return;
+    }
+
     // Ein Entwurf bleibt rein persönlich (#89) - anders als veröffentlichte Einträge (dort darf seit
     // #93 jedes Trip-Mitglied mitbearbeiten) darf ihn nur die anlegende Person anfassen.
     if (entry.is_draft && entry.author_id !== req.session.userId) {
@@ -388,20 +455,26 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
       isDraft,
       req.params.id
     );
+
     for (const img of sanitizedImages) {
       const url = typeof img === 'string' ? img : img?.url;
+
       if (url && typeof url === 'string' && url.startsWith('/api/uploads/')) {
         const filename = url.slice('/api/uploads/'.length);
+
         if (filename) {
           associateUploadWithTrip(filename, entry.trip_id, req.session.userId);
         }
       }
     }
+
     syncDiaryExcursions(Number(req.params.id), excursion_ids ?? []);
     syncDiarySpots(Number(req.params.id), spot_ids ?? []);
+
     if (req.session.userId !== entry.author_id) {
       recordEditor(Number(req.params.id), req.session.userId!);
     }
+
     recordActivity(entry.trip_id, 'diary', Number(req.params.id), 'updated', req.session.userId!);
     const row = selectEntryByIdStmt.get(req.params.id) as EntryRow;
     const editorIds = editorIdsFor([Number(req.params.id)]).get(Number(req.params.id)) ?? [];
@@ -410,13 +483,21 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
 
   app.delete<{ Params: { id: string } }>('/diary/:id', async (req, reply) => {
     const entry = selectEntryByIdStmt.get(req.params.id) as EntryRow | undefined;
-    if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
+
+    if (!entry) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) {
+      return;
+    }
+
     if (entry.author_id !== req.session.userId) {
       return reply
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Beitrag löschen' });
     }
+
     // Weicher Löschvorgang (Papierkorb, routes/trash.ts): setzt nur deleted_at statt die Zeile
     // wirklich zu entfernen.
     deleteDiaryEntryStmt.run(new Date().toISOString(), req.params.id);
@@ -427,8 +508,14 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string } }>('/diary/:id/like', async (req, reply) => {
     const entry = selectEntryTripIdByIdStmt.get(req.params.id) as
       { id: number; trip_id: number } | undefined;
-    if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
+
+    if (!entry) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, entry.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectDiaryLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
@@ -450,8 +537,14 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const entry = selectEntryTripIdByIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
-      if (!entry) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, entry.trip_id, req.session.userId)) return;
+
+      if (!entry) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, entry.trip_id, req.session.userId)) {
+        return;
+      }
 
       const result = insertDiaryCommentStmt.run(
         req.params.id,
@@ -468,13 +561,21 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/diary/comments/:id', async (req, reply) => {
     const comment = selectDiaryCommentWithTripStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
+
     if (comment.author_id !== req.session.userId) {
       return reply
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
+
     deleteDiaryCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
@@ -483,16 +584,28 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     '/diary/comments/:id',
     async (req, reply) => {
       const content = req.body?.content?.trim();
-      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+
+      if (!content) {
+        return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      }
+
       const comment = selectDiaryCommentWithTripStmt.get(req.params.id) as
         { id: number; author_id: number; trip_id: number } | undefined;
-      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+      if (!comment) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+        return;
+      }
+
       if (comment.author_id !== req.session.userId) {
         return reply
           .code(403)
           .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
       }
+
       updateDiaryCommentStmt.run(content, new Date().toISOString(), req.params.id);
       return selectDiaryCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
     }
@@ -501,13 +614,20 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string } }>('/diary/comments/:id/like', async (req, reply) => {
     const comment = selectDiaryCommentWithTripStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectDiaryCommentLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
 
     let liked: boolean;
+
     if (existing) {
       deleteDiaryCommentLikeStmt.run(existing.id);
       liked = false;

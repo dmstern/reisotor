@@ -28,7 +28,10 @@ describe('travel_items -> ideas Vollmigration (#176)', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('spiegelt eine Reise-Etappe als Tour, zieht Kalender-Termin/Budget-Ausgabe/Anhang nach und droppt travel_items', async () => {

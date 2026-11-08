@@ -12,6 +12,7 @@ import type { NotificationItem } from '../api/types';
 export function notificationTarget(n: NotificationItem): string | null {
   const id = n.entity_id;
   const prefix = n.trip_id ? `/trip/${n.trip_id}` : '';
+
   switch (n.domain) {
     case 'packing':
       return `${prefix}/listen?tab=packing`;

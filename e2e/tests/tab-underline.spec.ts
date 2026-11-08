@@ -62,8 +62,11 @@ test.describe('Tab and Category Navigation Underline', () => {
     await waitForAppReady(page);
 
     const catNav = page.locator('.category-nav');
+
     // If only one category exists in seed, test passes gracefully
-    if ((await catNav.count()) === 0) return;
+    if ((await catNav.count()) === 0) {
+      return;
+    }
 
     await catNav.waitFor({ state: 'visible' });
 
@@ -108,6 +111,7 @@ test.describe('Tab and Category Navigation Underline', () => {
     const heading = page
       .locator('.category-heading, .tour-group-card', { hasText: targetCategory })
       .first();
+
     if ((await heading.count()) > 0) {
       const navWrap = page.locator('.category-nav-wrap');
       const navBottom = await navWrap.evaluate((el) => el.getBoundingClientRect().bottom);
@@ -128,11 +132,17 @@ test.describe('Tab and Category Navigation Underline', () => {
     await waitForAppReady(page);
 
     const catNav = page.locator('.category-nav');
-    if ((await catNav.count()) === 0) return;
+
+    if ((await catNav.count()) === 0) {
+      return;
+    }
 
     const items = catNav.locator('.category-nav-item');
     const count = await items.count();
-    if (count < 2) return;
+
+    if (count < 2) {
+      return;
+    }
 
     const lastItem = items.nth(count - 1);
     await lastItem.click();

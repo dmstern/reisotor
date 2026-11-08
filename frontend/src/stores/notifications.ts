@@ -20,11 +20,13 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   async function load() {
     const tripId = tripStore.currentTripId;
+
     if (tripId == null) {
       items.value = [];
       loaded.value = true;
       return;
     }
+
     try {
       items.value = await api.get<NotificationItem[]>(`/notifications?trip_id=${tripId}`);
     } catch {
@@ -42,10 +44,15 @@ export const useNotificationsStore = defineStore('notifications', () => {
    *  markieren (Badge/Highlight verschwinden sofort), Server-Aufruf best effort im Hintergrund. */
   async function markRead(id: number) {
     const idx = items.value.findIndex((n) => n.id === id);
-    if (idx === -1 || items.value[idx].read) return;
+
+    if (idx === -1 || items.value[idx].read) {
+      return;
+    }
+
     const next = [...items.value];
     next[idx] = { ...next[idx], read: true };
     items.value = next;
+
     try {
       await api.post(`/notifications/${id}/read`);
     } catch {
@@ -55,8 +62,13 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   async function markAllRead() {
     const tripId = tripStore.currentTripId;
-    if (tripId == null) return;
+
+    if (tripId == null) {
+      return;
+    }
+
     items.value = items.value.map((item) => (item.read ? item : { ...item, read: true }));
+
     try {
       await api.post('/notifications/read-all', { trip_id: tripId });
     } catch {

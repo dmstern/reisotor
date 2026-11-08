@@ -15,6 +15,7 @@ describe('CSS vendor prefix hygiene', () => {
 
     for (const [file, content] of Object.entries(modules)) {
       const matches = content.match(prefixRegex);
+
       if (matches) {
         for (const match of matches) {
           violations.push({ file, match: match.trim() });
@@ -36,6 +37,7 @@ describe('CSS vendor prefix hygiene', () => {
       for (const prop of criticalProperties) {
         const regex = new RegExp(`(?<!-)${prop}\\s*:[^;]+;\\s*-webkit-${prop}\\s*:[^;]+;`, 'g');
         const matches = content.match(regex);
+
         if (matches) {
           for (const match of matches) {
             violations.push({ file, match: match.trim() });

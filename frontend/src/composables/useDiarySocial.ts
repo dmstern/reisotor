@@ -49,8 +49,12 @@ export function useDiarySocial(options: UseDiarySocialOptions) {
   }
 
   async function toggleLike(entryId: number) {
-    if (!auth.user) return;
+    if (!auth.user) {
+      return;
+    }
+
     const result = await api.post<{ liked: boolean }>(`/diary/${entryId}/like`);
+
     if (result.liked) {
       likes.value.push({ id: Date.now(), entry_id: entryId, user_id: auth.user.id });
     } else {
@@ -61,8 +65,11 @@ export function useDiarySocial(options: UseDiarySocialOptions) {
   }
 
   function toggleComments(entryId: number) {
-    if (openComments.value.has(entryId)) openComments.value.delete(entryId);
-    else openComments.value.add(entryId);
+    if (openComments.value.has(entryId)) {
+      openComments.value.delete(entryId);
+    } else {
+      openComments.value.add(entryId);
+    }
   }
 
   async function submitComment(entryId: number, content: string) {
@@ -78,6 +85,7 @@ export function useDiarySocial(options: UseDiarySocialOptions) {
   async function updateComment(id: number, content: string) {
     const updated = await api.put<DiaryComment>(`/diary/comments/${id}`, { content });
     const idx = comments.value.findIndex((c) => c.id === id);
+
     if (idx !== -1) {
       comments.value[idx] = updated;
     }
@@ -85,15 +93,18 @@ export function useDiarySocial(options: UseDiarySocialOptions) {
 
   async function toggleCommentLike(commentId: number) {
     const c = comments.value.find((item) => item.id === commentId);
+
     if (c) {
       const wasLiked = Boolean(c.liked);
       c.liked = !wasLiked;
       c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
     }
+
     try {
       const result = await api.post<{ liked: boolean; like_count: number }>(
         `/diary/comments/${commentId}/like`
       );
+
       if (c) {
         c.liked = result.liked;
         c.like_count = result.like_count;
@@ -104,6 +115,7 @@ export function useDiarySocial(options: UseDiarySocialOptions) {
         c.liked = !wasLiked;
         c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
       }
+
       throw err;
     }
   }

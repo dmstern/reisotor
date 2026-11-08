@@ -38,14 +38,20 @@ export async function checkDepartureReminders() {
 
   for (const trip of trips) {
     const days = daysUntil(trip.start_date);
-    if (!REMINDER_THRESHOLDS_DAYS.includes(days)) continue;
+
+    if (!REMINDER_THRESHOLDS_DAYS.includes(days)) {
+      continue;
+    }
 
     const alreadySent = db
       .prepare(
         'SELECT 1 FROM trip_departure_reminders_sent WHERE trip_id = ? AND threshold_days = ?'
       )
       .get(trip.id, days);
-    if (alreadySent) continue;
+
+    if (alreadySent) {
+      continue;
+    }
 
     const label = days === 1 ? '1 Tag' : `${days} Tage`;
     await sendPushToTripMembers(

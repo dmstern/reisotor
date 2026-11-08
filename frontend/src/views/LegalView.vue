@@ -25,6 +25,7 @@ const initialTab = computed<'privacy' | 'imprint'>(() => {
   ) {
     return 'imprint';
   }
+
   return 'privacy';
 });
 

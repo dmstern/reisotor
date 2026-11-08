@@ -20,12 +20,20 @@ export interface UseCategoryNavSpyOptions {
 export function resolveDomElement(
   el: Element | ComponentPublicInstance | null
 ): HTMLElement | null {
-  if (!el) return null;
-  if (el instanceof HTMLElement) return el;
+  if (!el) {
+    return null;
+  }
+
+  if (el instanceof HTMLElement) {
+    return el;
+  }
+
   let dom: Node | null = '$el' in el ? (el.$el as Node | null) : null;
+
   while (dom && !(dom instanceof HTMLElement)) {
     dom = dom.nextSibling;
   }
+
   return dom instanceof HTMLElement ? dom : null;
 }
 
@@ -39,6 +47,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   function setPageTitleRef(el: Element | ComponentPublicInstance | null) {
     pageTitleObserver?.disconnect();
     pageTitleObserver = null;
+
     if (el instanceof HTMLElement) {
       pageTitleObserver = new ResizeObserver(() => {
         const marginBottom = parseFloat(getComputedStyle(el).marginBottom) || 0;
@@ -54,6 +63,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   function setCategoryNavSentinelRef(el: Element | ComponentPublicInstance | null) {
     categoryNavObserver?.disconnect();
     categoryNavObserver = null;
+
     if (el instanceof HTMLElement) {
       categoryNavObserver = new IntersectionObserver(
         ([entry]) => {
@@ -68,17 +78,27 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   }
 
   const categoryRefs = new Map<string, HTMLElement>();
+
   function setCategoryRef(category: string, el: Element | ComponentPublicInstance | null) {
     const domEl = resolveDomElement(el);
-    if (domEl) categoryRefs.set(category, domEl);
-    else categoryRefs.delete(category);
+
+    if (domEl) {
+      categoryRefs.set(category, domEl);
+    } else {
+      categoryRefs.delete(category);
+    }
   }
 
   const excursionRefs = new Map<number, HTMLElement>();
+
   function setExcursionRef(id: number, el: Element | ComponentPublicInstance | null) {
     const domEl = resolveDomElement(el);
-    if (domEl) excursionRefs.set(id, domEl);
-    else excursionRefs.delete(id);
+
+    if (domEl) {
+      excursionRefs.set(id, domEl);
+    } else {
+      excursionRefs.delete(id);
+    }
   }
 
   function setTourCardRef(
@@ -100,40 +120,56 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   ) {
     const domEl = resolveDomElement(el);
     let tourMap = spotInstances.get(id);
+
     if (!tourMap) {
       tourMap = new Map();
       spotInstances.set(id, tourMap);
     }
+
     if (domEl) {
       tourMap.set(excursionId, domEl);
+
       if (!spotRefs.has(id) || !spotRefs.get(id)?.isConnected) {
         spotRefs.set(id, domEl);
       }
     } else {
       tourMap.delete(excursionId);
+
       if (tourMap.size === 0) {
         spotInstances.delete(id);
         spotRefs.delete(id);
       } else {
         const remaining = Array.from(tourMap.values()).find((e) => e.isConnected);
-        if (remaining) spotRefs.set(id, remaining);
-        else spotRefs.delete(id);
+
+        if (remaining) {
+          spotRefs.set(id, remaining);
+        } else {
+          spotRefs.delete(id);
+        }
       }
     }
   }
 
   function getSpotElement(id: number, preferredExcursionId?: number | null): HTMLElement | null {
     const tourMap = spotInstances.get(id);
+
     if (tourMap && tourMap.size > 0) {
       if (preferredExcursionId !== undefined && preferredExcursionId !== null) {
         const preferred = tourMap.get(preferredExcursionId);
-        if (preferred && preferred.isConnected) return preferred;
+
+        if (preferred && preferred.isConnected) {
+          return preferred;
+        }
       }
+
       const connectedElements = Array.from(tourMap.values()).filter((e) => e.isConnected);
       const visible = connectedElements.find(
         (e) => !e.closest('[inert]') && e.offsetParent !== null
       );
-      if (visible) return visible;
+
+      if (visible) {
+        return visible;
+      }
 
       if (connectedElements.length > 0) {
         connectedElements.sort((a, b) =>
@@ -142,6 +178,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
         return connectedElements[0];
       }
     }
+
     const legacy = spotRefs.get(id);
     return legacy && legacy.isConnected ? legacy : null;
   }
@@ -155,6 +192,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   function cancelProgrammaticScroll() {
     activeScrollToken++;
     programmaticScrollTarget = null;
+
     if (programmaticScrollTimeout) {
       clearTimeout(programmaticScrollTimeout);
       programmaticScrollTimeout = null;
@@ -168,19 +206,24 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
 
     if (navWrap && navWrap.offsetParent !== null) {
       const wrapStyle = getComputedStyle(navWrap);
+
       if (wrapStyle.opacity === '0' || navWrap.getBoundingClientRect().height < 5) {
         return bodyPaddingTop;
       }
+
       const navTop = parseFloat(wrapStyle.top) || 0;
       const navHeight = navWrap.getBoundingClientRect().height;
       return Math.max(0, bodyPaddingTop + navTop + navHeight);
     }
+
     if (categoryNavEl.value && categoryNavEl.value.offsetParent !== null) {
       return bodyPaddingTop + categoryNavEl.value.getBoundingClientRect().height;
     }
+
     if (categoryNavEl.value && categoryNavHeight.value) {
       return bodyPaddingTop + categoryNavHeight.value;
     }
+
     return bodyPaddingTop;
   }
 
@@ -191,11 +234,14 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     const accordions = el.querySelectorAll<HTMLElement>(
       '.spot-accordion.is-expanded, .actions-accordion.is-expanded'
     );
+
     for (const acc of accordions) {
       const inner = acc.firstElementChild as HTMLElement | null;
+
       if (inner) {
         const currentAccHeight = acc.getBoundingClientRect().height;
         const fullInnerHeight = inner.scrollHeight;
+
         if (fullInnerHeight > currentAccHeight) {
           height += fullInnerHeight - currentAccHeight;
         }
@@ -204,9 +250,11 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
 
     // Tour note container max-height animation
     const tourNote = el.querySelector<HTMLElement>('.tour-note-container.is-expanded');
+
     if (tourNote) {
       const currentNoteHeight = tourNote.getBoundingClientRect().height;
       const fullNoteHeight = tourNote.scrollHeight;
+
       if (fullNoteHeight > currentNoteHeight) {
         height += fullNoteHeight - currentNoteHeight;
       }
@@ -214,9 +262,11 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
 
     // Spot cover image expanding on narrow containers (100px -> 145px)
     const img = el.querySelector<HTMLElement>('.image.is-expanded');
+
     if (img) {
       const imgHeight = img.getBoundingClientRect().height;
       const spotsColEl = el.closest('.spots-col');
+
       if (imgHeight < 145 && spotsColEl && spotsColEl.clientWidth <= 480) {
         height += 145 - imgHeight;
       }
@@ -226,9 +276,15 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   }
 
   function isCardWellVisibleInBody(el: HTMLElement | null, offsetAdjustment = 0): boolean {
-    if (!el || !el.isConnected) return false;
+    if (!el || !el.isConnected) {
+      return false;
+    }
+
     const body = spotsColBodyEl.value;
-    if (!body) return false;
+
+    if (!body) {
+      return false;
+    }
 
     const bodyRect = body.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
@@ -273,19 +329,26 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
 
     if (isSheetOverlayMode.value) {
       const sheet = sheetEl.value;
+
       if (sheet && !prefersReduced) {
         const expectedHeight = sheetHeightPx(sheetState.value);
         const currentHeight = sheet.getBoundingClientRect().height;
+
         if (Math.abs(currentHeight - expectedHeight) > 2) {
           await new Promise<void>((resolve) => {
             let done = false;
+
             const finish = () => {
-              if (done) return;
+              if (done) {
+                return;
+              }
+
               done = true;
               sheet.removeEventListener('transitionend', onEnd);
               clearTimeout(timer);
               resolve();
             };
+
             const onEnd = (e: TransitionEvent) => {
               if (
                 e.target === sheet &&
@@ -294,26 +357,42 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
                 finish();
               }
             };
+
             sheet.addEventListener('transitionend', onEnd);
             const timer = setTimeout(finish, 350);
           });
         }
       }
-      if (token !== activeScrollToken) return;
+
+      if (token !== activeScrollToken) {
+        return;
+      }
 
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      if (token !== activeScrollToken) return;
+
+      if (token !== activeScrollToken) {
+        return;
+      }
     }
 
     let el = elGetter();
+
     if (!el) {
       await nextTick();
-      if (token !== activeScrollToken) return;
+
+      if (token !== activeScrollToken) {
+        return;
+      }
+
       el = elGetter();
     }
-    if (!el) return;
+
+    if (!el) {
+      return;
+    }
 
     const body = spotsColBodyEl.value;
+
     if (!body) {
       el.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
       return;
@@ -345,9 +424,17 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     return scrollToElementInBody(
       () => {
         const el = excursionRefs.get(id);
-        if (el) return el;
+
+        if (el) {
+          return el;
+        }
+
         const grp = spotGroups.value.find((g) => g.excursion?.id === id);
-        if (grp) return categoryRefs.get(grp.category) ?? null;
+
+        if (grp) {
+          return categoryRefs.get(grp.category) ?? null;
+        }
+
         return null;
       },
       offsetAdjustment,
@@ -394,27 +481,45 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     categoryByEl.clear();
     const firstEl = categoryRefs.values().next().value as HTMLElement | undefined;
     const root = firstEl?.closest('.spots-col') ?? null;
-    if (!root) return;
+
+    if (!root) {
+      return;
+    }
+
     categorySectionObserver = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           const category = categoryByEl.get(entry.target as HTMLElement);
-          if (!category) continue;
-          if (entry.isIntersecting) intersectingCategories.add(category);
-          else intersectingCategories.delete(category);
+
+          if (!category) {
+            continue;
+          }
+
+          if (entry.isIntersecting) {
+            intersectingCategories.add(category);
+          } else {
+            intersectingCategories.delete(category);
+          }
         }
+
         if (programmaticScrollTarget) {
           if (intersectingCategories.has(programmaticScrollTarget)) {
             activeCategory.value = programmaticScrollTarget;
             programmaticScrollTarget = null;
           }
+
           return;
         }
+
         const active = spotGroups.value.find((g) => intersectingCategories.has(g.category));
-        if (active) activeCategory.value = active.category;
+
+        if (active) {
+          activeCategory.value = active.category;
+        }
       },
       { root, rootMargin: `-${categoryNavHeight.value}px 0px -65% 0px`, threshold: 0 }
     );
+
     for (const [category, el] of categoryRefs) {
       categoryByEl.set(el, category);
       categorySectionObserver.observe(el);
@@ -424,20 +529,30 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   watch(spotGroups, () => nextTick(rebuildCategorySectionObserver));
 
   const navItemRefs = new Map<string, HTMLElement>();
+
   function setNavItemRef(category: string, el: Element | ComponentPublicInstance | null) {
-    if (el instanceof HTMLElement) navItemRefs.set(category, el);
-    else navItemRefs.delete(category);
+    if (el instanceof HTMLElement) {
+      navItemRefs.set(category, el);
+    } else {
+      navItemRefs.delete(category);
+    }
   }
 
   const underlineLeft = ref(0);
   const underlineWidth = ref(0);
+
   function updateCategoryNavUnderline() {
     let activeEl = activeCategory.value ? navItemRefs.get(activeCategory.value) : null;
+
     if (!activeEl) {
       activeEl =
         categoryNavEl.value?.querySelector<HTMLElement>('.category-nav-item.active') ?? null;
     }
-    if (!activeEl) return;
+
+    if (!activeEl) {
+      return;
+    }
+
     underlineLeft.value = activeEl.offsetLeft;
     underlineWidth.value = activeEl.offsetWidth;
   }
@@ -450,7 +565,11 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
 
   function updateNavArrows() {
     const el = categoryNavEl.value;
-    if (!el) return;
+
+    if (!el) {
+      return;
+    }
+
     canScrollNavLeft.value = el.scrollLeft > 1;
     canScrollNavRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
   }
@@ -459,6 +578,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     categoryNavResizeObserver?.disconnect();
     categoryNavResizeObserver = null;
     categoryNavEl.value = el instanceof HTMLElement ? el : null;
+
     if (el instanceof HTMLElement) {
       if (typeof ResizeObserver !== 'undefined') {
         categoryNavResizeObserver = new ResizeObserver(() => {
@@ -468,6 +588,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
         });
         categoryNavResizeObserver.observe(el);
       }
+
       updateNavArrows();
       nextTick(updateCategoryNavUnderline);
     }
@@ -475,14 +596,22 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
 
   function scrollNavBy(direction: 1 | -1) {
     const el = categoryNavEl.value;
-    if (!el) return;
+
+    if (!el) {
+      return;
+    }
+
     el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
   }
 
   function setProgrammaticActiveCategory(category: string, timeoutMs = 1500) {
     activeCategory.value = category;
     programmaticScrollTarget = category;
-    if (programmaticScrollTimeout) clearTimeout(programmaticScrollTimeout);
+
+    if (programmaticScrollTimeout) {
+      clearTimeout(programmaticScrollTimeout);
+    }
+
     programmaticScrollTimeout = setTimeout(() => {
       programmaticScrollTarget = null;
     }, timeoutMs);
@@ -511,14 +640,21 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
       updateCategoryNavUnderline();
       const activeEl = activeCategory.value ? navItemRefs.get(activeCategory.value) : null;
       const navEl = activeEl?.closest('.category-nav') as HTMLElement | null;
-      if (!activeEl || !navEl) return;
+
+      if (!activeEl || !navEl) {
+        return;
+      }
+
       const elLeft = activeEl.offsetLeft;
       const elRight = elLeft + activeEl.offsetWidth;
       const viewLeft = navEl.scrollLeft;
       const viewRight = viewLeft + navEl.clientWidth;
-      if (elLeft < viewLeft) navEl.scrollTo({ left: elLeft, behavior: 'smooth' });
-      else if (elRight > viewRight)
+
+      if (elLeft < viewLeft) {
+        navEl.scrollTo({ left: elLeft, behavior: 'smooth' });
+      } else if (elRight > viewRight) {
         navEl.scrollTo({ left: elRight - navEl.clientWidth, behavior: 'smooth' });
+      }
     });
   });
 

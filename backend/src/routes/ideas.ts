@@ -256,35 +256,47 @@ function syncExcursionSpots(ideaId: number, spotIds: number[]) {
 
 function spotIdsFor(ideaIds: number[]): Map<number, number[]> {
   const map = new Map<number, number[]>();
-  if (!ideaIds.length) return map;
+
+  if (!ideaIds.length) {
+    return map;
+  }
+
   const placeholders = ideaIds.map(() => '?').join(',');
   const rows = db
     .prepare(
       `SELECT idea_id, spot_id FROM excursion_spots WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position`
     )
     .all(...ideaIds) as { idea_id: number; spot_id: number }[];
+
   for (const row of rows) {
     const list = map.get(row.idea_id) ?? [];
     list.push(row.spot_id);
     map.set(row.idea_id, list);
   }
+
   return map;
 }
 
 function legsFor(ideaIds: number[]): Map<number, ExcursionLegRow[]> {
   const map = new Map<number, ExcursionLegRow[]>();
-  if (!ideaIds.length) return map;
+
+  if (!ideaIds.length) {
+    return map;
+  }
+
   const placeholders = ideaIds.map(() => '?').join(',');
   const rows = db
     .prepare(
       `SELECT * FROM excursion_legs WHERE idea_id IN (${placeholders}) ORDER BY idea_id, position ASC`
     )
     .all(...ideaIds) as ExcursionLegRow[];
+
   for (const row of rows) {
     const list = map.get(row.idea_id) ?? [];
     list.push(row);
     map.set(row.idea_id, list);
   }
+
   return map;
 }
 
@@ -293,14 +305,22 @@ function legsFor(ideaIds: number[]): Map<number, ExcursionLegRow[]> {
 // Bündelt dieselbe Batch-Abfrage-Optik wie spotIdsFor oben.
 function scheduleDatesForIdeas(ideaIds: number[]): Map<number, string> {
   const map = new Map<number, string>();
-  if (!ideaIds.length) return map;
+
+  if (!ideaIds.length) {
+    return map;
+  }
+
   const placeholders = ideaIds.map(() => '?').join(',');
   const rows = db
     .prepare(
       `SELECT idea_id, date FROM schedule_items WHERE idea_id IN (${placeholders}) AND deleted_at IS NULL`
     )
     .all(...ideaIds) as { idea_id: number; date: string }[];
-  for (const row of rows) map.set(row.idea_id, row.date);
+
+  for (const row of rows) {
+    map.set(row.idea_id, row.date);
+  }
+
   return map;
 }
 
@@ -317,18 +337,27 @@ function setIdeaScheduleDate(
   userId?: number
 ) {
   const existing = selectScheduleByIdeaStmt.get(ideaId) as { id: number } | undefined;
+
   if (date) {
     if (existing) {
       updateScheduleDateTitleStmt.run(date, title, existing.id);
-      if (userId) recordActivity(tripId, 'schedule', existing.id, 'updated', userId);
+
+      if (userId) {
+        recordActivity(tripId, 'schedule', existing.id, 'updated', userId);
+      }
     } else {
       const result = insertScheduleIdeaStmt.run(tripId, date, title, ideaId);
-      if (userId)
+
+      if (userId) {
         recordActivity(tripId, 'schedule', result.lastInsertRowid as number, 'created', userId);
+      }
     }
   } else if (existing) {
     deleteScheduleItemStmt.run(existing.id);
-    if (userId) recordActivity(tripId, 'schedule', existing.id, 'deleted', userId);
+
+    if (userId) {
+      recordActivity(tripId, 'schedule', existing.id, 'deleted', userId);
+    }
   }
 }
 
@@ -362,10 +391,12 @@ function syncExcursionLegs(
       const hasAmount = leg.amount != null && leg.amount > 0 && leg.paid_by_user_id != null;
 
       let matchingExistingBudgetId: number | null = null;
+
       if (leg.budget_expense_id && existingBudgetIds.has(leg.budget_expense_id)) {
         matchingExistingBudgetId = leg.budget_expense_id;
       } else if (leg.id) {
         const found = existingLegs.find((el) => el.id === leg.id);
+
         if (found?.budget_expense_id && existingBudgetIds.has(found.budget_expense_id)) {
           matchingExistingBudgetId = found.budget_expense_id;
         }
@@ -392,7 +423,10 @@ function syncExcursionLegs(
           leg.paid_by_user_id
         );
         budgetExpenseId = plannedId;
-        if (budgetExpenseId) preservedBudgetIds.add(budgetExpenseId);
+
+        if (budgetExpenseId) {
+          preservedBudgetIds.add(budgetExpenseId);
+        }
       }
       // Hinweis: Wenn matchingExistingBudgetId nicht erhalten wird, erfolgt das Löschen erst
       // am Ende von syncExcursionLegs (Zeilen 467-471), nachdem das Leg aktualisiert wurde,
@@ -458,10 +492,12 @@ function syncExcursionLegs(
   }
 
   const removedLegs = existingLegs.filter((el) => !preservedLegIds.has(el.id));
+
   if (removedLegs.length > 0) {
     for (const rl of removedLegs) {
       deleteExcursionLegByIdStmt.run(rl.id);
     }
+
     purgeAttachmentsForEntities(
       'excursion_legs',
       removedLegs.map((rl) => rl.id)
@@ -526,8 +562,14 @@ function planIdeaBudgetExpense(
 
 export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/ideas', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     const rows = selectIdeasByTripStmt.all(req.query.trip_id) as IdeaRow[];
     const spotIds = spotIdsFor(rows.map((r) => r.id));
     const legs = legsFor(rows.map((r) => r.id));
@@ -562,7 +604,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       seat,
       ticket_link,
     } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     // Rolle (Anreise/Abreise/Weiterreise) mit mindestens zwei Stationen (Von/Nach)
     if (role && (spot_ids?.length ?? 0) < 2) {
       return reply.code(400).send({
@@ -570,6 +616,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
           'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht mindestens zwei Stationen (Von/Nach).',
       });
     }
+
     const isHtml = req.body.note_format === 'html';
     const { budgetExpenseId } = planIdeaBudgetExpense(
       trip_id,
@@ -594,6 +641,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const localImageUrl = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+
     if (localImageUrl?.startsWith('/api/uploads/')) {
       associateUploadWithTrip(
         localImageUrl.slice('/api/uploads/'.length),
@@ -601,6 +649,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
         req.session.userId
       );
     }
+
     const result = insertIdeaStmt.run(
       trip_id,
       title,
@@ -635,8 +684,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Params: { id: string }; Body: IdeaBody }>('/ideas/:id', async (req, reply) => {
     const existingIdea = selectIdeaAuthStmt.get(req.params.id) as
       { trip_id: number; budget_expense_id: number | null } | undefined;
-    if (!existingIdea) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
+
+    if (!existingIdea) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) {
+      return;
+    }
 
     const {
       title,
@@ -656,12 +711,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       seat,
       ticket_link,
     } = req.body;
+
     if (role && (spot_ids?.length ?? 0) < 2) {
       return reply.code(400).send({
         error:
           'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht mindestens zwei Stationen (Von/Nach).',
       });
     }
+
     const isHtml = req.body.note_format === 'html';
     const { budgetExpenseId, staleIdToDelete } = planIdeaBudgetExpense(
       existingIdea.trip_id,
@@ -686,6 +743,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const localImageUrl = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+
     if (localImageUrl?.startsWith('/api/uploads/')) {
       associateUploadWithTrip(
         localImageUrl.slice('/api/uploads/'.length),
@@ -693,6 +751,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
         req.session.userId
       );
     }
+
     const result = updateIdeaStmt.run(
       title,
       localImageUrl ?? null,
@@ -712,7 +771,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       budgetExpenseId,
       req.params.id
     );
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     // Erst jetzt löschen: die ideas-Zeile verweist nicht mehr auf die alte Ausgabe (gleiches Muster
     // wie zuvor in routes/travel.ts).
     // Falls die Ausgabe jedoch einer Teilstrecke (excursion_legs) gehört, darf sie hier nicht
@@ -720,6 +783,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     if (staleIdToDelete && !checkBudgetInLegsStmt.get(staleIdToDelete)) {
       deleteBudgetItemStmt.run(staleIdToDelete);
     }
+
     const ideaId = Number(req.params.id);
     syncExcursionSpots(ideaId, spot_ids ?? []);
     syncExcursionLegs(ideaId, existingIdea.trip_id, legs, title, date);
@@ -738,30 +802,45 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/ideas/:id', async (req, reply) => {
     const existingIdea = selectIdeaAuthStmt.get(req.params.id) as
       { trip_id: number; budget_expense_id: number | null } | undefined;
-    if (!existingIdea) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) return;
+
+    if (!existingIdea) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingIdea.trip_id, req.session.userId)) {
+      return;
+    }
 
     let linkedScheduleItems: { id: number }[] = [];
     const deleteWithSchedule = db.transaction((id: string) => {
       const now = new Date().toISOString();
       linkedScheduleItems = selectScheduleItemsByIdeaStmt.all(id) as { id: number }[];
       softDeleteScheduleByIdeaStmt.run(now, id);
+
       if (existingIdea.budget_expense_id) {
         softDeleteBudgetItemStmt.run(now, existingIdea.budget_expense_id);
       }
+
       const legBudgets = selectLegBudgetExpensesByIdeaStmt.all(id) as {
         budget_expense_id: number;
       }[];
+
       for (const b of legBudgets) {
         softDeleteBudgetItemStmt.run(now, b.budget_expense_id);
       }
+
       return softDeleteIdeaStmt.run(now, id);
     });
     const result = deleteWithSchedule(req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     for (const item of linkedScheduleItems) {
       recordActivity(existingIdea.trip_id, 'schedule', item.id, 'deleted', req.session.userId!);
     }
+
     recordActivity(
       existingIdea.trip_id,
       'ideas',
@@ -784,18 +863,27 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const idea = selectIdeaTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
-      if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
+
+      if (!idea) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, idea.trip_id, req.session.userId)) {
+        return;
+      }
 
       const done = req.body.done ? 1 : 0;
+
       if (done) {
         const hasDate = selectScheduleForDoneStmt.get(req.params.id);
+
         if (!hasDate) {
           return reply
             .code(400)
             .send({ error: 'Für den Status "gemacht" muss zuerst ein Datum gesetzt werden.' });
         }
       }
+
       updateIdeaDoneStmt.run(done, req.params.id);
       recordActivity(idea.trip_id, 'ideas', idea.id, 'updated', req.session.userId!);
       return { done: done === 1 };
@@ -813,7 +901,10 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   // eigenen Ausflug (kein Zusammenlegen).
   app.post<{ Body: PlanSpotBody }>('/ideas/plan-spot', async (req, reply) => {
     const { trip_id, spot_id, date } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
 
     const candidates = db
       .prepare(
@@ -825,6 +916,7 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       .all(trip_id, date) as { id: number }[];
 
     let existing: { id: number } | undefined;
+
     if (candidates.length) {
       const placeholders = candidates.map(() => '?').join(',');
       existing = db
@@ -843,7 +935,10 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const spot = selectSpotTitleByIdStmt.get(spot_id) as { title: string } | undefined;
-    if (!spot) return reply.code(404).send({ error: 'Spot nicht gefunden' });
+
+    if (!spot) {
+      return reply.code(404).send({ error: 'Spot nicht gefunden' });
+    }
 
     const result = insertIdeaForSpotStmt.run(trip_id, spot.title, req.session.userId);
     const ideaId = result.lastInsertRowid as number;
@@ -856,22 +951,40 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/likes', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectIdeaLikesByTripStmt.all(req.query.trip_id);
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/ideas/comments', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectIdeaCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/ideas/:id/like', async (req, reply) => {
     const idea = selectIdeaTripIdStmt.get(req.params.id) as
       { id: number; trip_id: number } | undefined;
-    if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
+
+    if (!idea) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, idea.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectIdeaLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
@@ -893,8 +1006,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const idea = selectIdeaTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
-      if (!idea) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, idea.trip_id, req.session.userId)) return;
+
+      if (!idea) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, idea.trip_id, req.session.userId)) {
+        return;
+      }
 
       const result = insertIdeaCommentStmt.run(
         req.params.id,
@@ -911,13 +1030,21 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/ideas/comments/:id', async (req, reply) => {
     const comment = selectIdeaCommentAuthStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
+
     if (comment.author_id !== req.session.userId) {
       return reply
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
+
     deleteIdeaCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
@@ -926,16 +1053,28 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     '/ideas/comments/:id',
     async (req, reply) => {
       const content = req.body?.content?.trim();
-      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+
+      if (!content) {
+        return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      }
+
       const comment = selectIdeaCommentAuthStmt.get(req.params.id) as
         { id: number; author_id: number; trip_id: number } | undefined;
-      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+      if (!comment) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+        return;
+      }
+
       if (comment.author_id !== req.session.userId) {
         return reply
           .code(403)
           .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
       }
+
       updateIdeaCommentStmt.run(content, new Date().toISOString(), req.params.id);
       return selectIdeaCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
     }
@@ -944,13 +1083,20 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string } }>('/ideas/comments/:id/like', async (req, reply) => {
     const comment = selectIdeaCommentAuthStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectIdeaCommentLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
 
     let liked: boolean;
+
     if (existing) {
       deleteIdeaCommentLikeStmt.run(existing.id);
       liked = false;

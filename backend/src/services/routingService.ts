@@ -51,10 +51,14 @@ export function mapTransportToProfile(
       'foot-walking',
       'foot-hiking',
     ];
-    if (valid.includes(explicitProfile)) return explicitProfile;
+
+    if (valid.includes(explicitProfile)) {
+      return explicitProfile;
+    }
   }
 
   const normalized = (transportType ?? '').trim().toLowerCase();
+
   switch (normalized) {
     case 'auto':
     case 'car':
@@ -110,6 +114,7 @@ export function haversineDistanceKm(from: RouteCoordinates, to: RouteCoordinates
  */
 export async function getDirections(params: DirectionsParams): Promise<DirectionsResponse> {
   const profile = mapTransportToProfile(params.transportType, params.profile);
+
   if (!profile) {
     return {
       supported: false,
@@ -147,6 +152,7 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
 
   // 2. ORS API Key prüfen
   const apiKey = getEffectiveSetting('ors_api_key', 'ORS_API_KEY').trim();
+
   if (!apiKey) {
     return {
       supported: false,

@@ -27,7 +27,10 @@ function onPointerDown(e: PointerEvent) {
 }
 
 const computedAriaLabel = computed(() => {
-  if (props.ariaLabel) return props.ariaLabel;
+  if (props.ariaLabel) {
+    return props.ariaLabel;
+  }
+
   return 'Auf Kalender ziehen zum Einplanen';
 });
 </script>

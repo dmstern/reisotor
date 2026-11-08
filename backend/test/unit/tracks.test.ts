@@ -69,6 +69,7 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
         avatar
       );
     }
+
     ownerCookie = await login('track-owner', 'correct-horse');
     memberCookie = await login('track-member', 'correct-horse');
     outsiderCookie = await login('track-outsider', 'correct-horse');
@@ -96,7 +97,10 @@ describe('Standort-Aufzeichnung (/tracks)', () => {
     vi.unstubAllGlobals();
     delete process.env.VAPID_PUBLIC_KEY;
     delete process.env.VAPID_PRIVATE_KEY;
-    if (app) await app.close();
+
+    if (app) {
+      await app.close();
+    }
   });
 
   it('lehnt POST /tracks für Nicht-Mitglieder mit 403 ab', async () => {

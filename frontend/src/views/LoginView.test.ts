@@ -69,7 +69,9 @@ describe('LoginView', () => {
 
   it('shows loading spinner on submit button while login is in progress', async () => {
     const auth = useAuthStore();
+
     let resolveLogin: () => void = () => {};
+
     const loginPromise = new Promise<void>((resolve) => {
       resolveLogin = resolve;
     });
@@ -232,6 +234,7 @@ describe('LoginView', () => {
     const registerToggleBtn = Array.from(container.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Registrieren')
     );
+
     if (registerToggleBtn) {
       registerToggleBtn.click();
       await nextTick();

@@ -25,8 +25,12 @@ function handleOpenLegal(tab: 'privacy' | 'imprint') {
 }
 
 function checkHash() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
+
   const hash = window.location.hash.toLowerCase();
+
   if (hash === '#privacy' || hash === '#datenschutz') {
     handleOpenLegal('privacy');
   } else if (hash === '#imprint' || hash === '#impressum') {

@@ -119,12 +119,19 @@ const isEffectiveGithubTokenSet = computed(() =>
 );
 
 const isRelayPointingToCurrentHost = computed(() => {
-  if (!feedbackForm.feedbackRelayForwarding) return false;
+  if (!feedbackForm.feedbackRelayForwarding) {
+    return false;
+  }
+
   const rawUrl = feedbackForm.feedbackRelayUrl.trim();
-  if (!rawUrl) return false;
+
+  if (!rawUrl) {
+    return false;
+  }
 
   try {
     const parsed = new URL(rawUrl);
+
     if (typeof window !== 'undefined' && window.location) {
       if (
         parsed.origin === window.location.origin ||
@@ -133,9 +140,11 @@ const isRelayPointingToCurrentHost = computed(() => {
         return true;
       }
     }
+
     if (emailForm.appUrl?.trim()) {
       try {
         const appParsed = new URL(emailForm.appUrl.trim());
+
         if (parsed.origin === appParsed.origin || parsed.hostname === appParsed.hostname) {
           return true;
         }
@@ -148,6 +157,7 @@ const isRelayPointingToCurrentHost = computed(() => {
       return true;
     }
   }
+
   return false;
 });
 
@@ -164,6 +174,7 @@ function resetFeedbackToDefaults() {
   feedbackForm.feedbackRelayForwarding = true;
   feedbackForm.feedbackRelayUrl = 'https://reise.ruebenherz.de/api/feedback/relay';
 }
+
 const isVapidConfigured = computed(() =>
   Boolean(settings.value?.push.vapidPublicKey && settings.value?.push.isVapidPrivateKeySet)
 );
@@ -175,7 +186,10 @@ const isVapidPrivateKeyConfigured = computed(() =>
 watch(
   settings,
   (s) => {
-    if (!s) return;
+    if (!s) {
+      return;
+    }
+
     regForm.registrationMode = s.registration.registrationMode;
     regForm.requireEmailVerification = s.registration.requireEmailVerification;
     regForm.contactAdminEnabled = s.registration.contactAdminEnabled !== false;
@@ -296,6 +310,7 @@ watch(
 async function sendTestEmail() {
   testEmailFeedback.value = null;
   const target = testEmailRecipient.value.trim() || auth.user?.email || '';
+
   if (!target) {
     testEmailFeedback.value = {
       type: 'error',
@@ -303,7 +318,9 @@ async function sendTestEmail() {
     };
     return;
   }
+
   testingEmail.value = true;
+
   try {
     // Falls Änderungen im Formular vorgenommen wurden (z. B. Passwort/Port), zuerst speichern
     await saveEmail();
@@ -354,6 +371,7 @@ async function savePush() {
 
 async function handleGenerateVapid() {
   const ok = await generateVapidKeys(pushForm.vapidSubject);
+
   if (ok && settings.value) {
     pushForm.vapidPublicKey = settings.value.push.vapidPublicKey;
     pushForm.vapidPrivateKey = '';

@@ -34,9 +34,11 @@ export function useLegRoutingAccordion(options: UseLegRoutingAccordionOptions) {
     if (transportCategory.value === 'ÖPNV') {
       return 'Für ÖPNV ist aktuell noch keine Routenberechnung möglich – bitte trage die Routendetails daher selbst ein.';
     }
+
     if (!hasCoordinates.value) {
       return 'Für diese Teilstrecke liegen keine Koordinaten für Start oder Ziel vor.';
     }
+
     return undefined;
   });
 

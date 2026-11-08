@@ -188,6 +188,7 @@ describe('Challenger 2 Adversarial Stress: Upstream Failures & Timeouts', () => 
       'fetch',
       vi.fn(() => {
         callCount++;
+
         if (callCount === 1) {
           return Promise.resolve({
             ok: false,
@@ -195,6 +196,7 @@ describe('Challenger 2 Adversarial Stress: Upstream Failures & Timeouts', () => 
             statusText: 'Internal Server Error',
           });
         }
+
         return Promise.resolve({
           ok: true,
           json: () =>

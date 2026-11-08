@@ -27,8 +27,14 @@ const allLaidOut = computed(
 // da input[type=checkbox] selbst nur zwei Zustände kennt.
 type SingleState = 'none' | 'laidOut' | 'packed';
 const singleState = computed<SingleState>(() => {
-  if (props.item.packed_count >= 1) return 'packed';
-  if (props.item.laid_out_count >= 1) return 'laidOut';
+  if (props.item.packed_count >= 1) {
+    return 'packed';
+  }
+
+  if (props.item.laid_out_count >= 1) {
+    return 'laidOut';
+  }
+
   return 'none';
 });
 
@@ -84,16 +90,21 @@ function decrementMulti() {
 const tallyGroups = computed<number[]>(() => {
   const groups: number[] = [];
   let remaining = props.item.laid_out_count;
+
   while (remaining > 0) {
     const size = Math.min(5, remaining);
     groups.push(size);
     remaining -= size;
   }
+
   return groups;
 });
 
 function handleMainClick(e: MouseEvent) {
-  if ((e.target as HTMLElement).closest('button, a, input, select')) return;
+  if ((e.target as HTMLElement).closest('button, a, input, select')) {
+    return;
+  }
+
   if (props.item.quantity <= 1) {
     cycleSingleState();
   } else {

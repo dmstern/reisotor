@@ -18,6 +18,7 @@ const emit = defineEmits<{
 }>();
 
 let router: ReturnType<typeof useRouter> | null = null;
+
 if (hasInjectionContext()) {
   try {
     router = useRouter();
@@ -33,6 +34,7 @@ const targetRoute = computed(() => {
       params: { tripId: String(props.tripId) },
     };
   }
+
   return {
     name: 'excursions',
     params: { tripId: String(props.tripId) },
@@ -44,6 +46,7 @@ const targetHref = computed(() => {
   if (props.activeType === 'expense') {
     return `/trip/${props.tripId}/budget`;
   }
+
   return `/trip/${props.tripId}/excursions?category=${encodeURIComponent(props.categoryName)}`;
 });
 
@@ -51,6 +54,7 @@ const linkText = computed(() => {
   if (props.activeType === 'expense') {
     return 'Im Budget anzeigen';
   }
+
   return 'In Spot-Übersicht anzeigen';
 });
 
@@ -58,11 +62,15 @@ const linkTitle = computed(() => {
   if (props.activeType === 'expense') {
     return 'Ausgaben im Budget aufrufen';
   }
+
   return `Spots mit Kategorie „${props.categoryName}“ in der Übersicht anzeigen`;
 });
 
 function handleNavigate(e: MouseEvent) {
-  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) {
+    return;
+  }
+
   e.preventDefault();
   emit('navigate');
   router?.push(targetRoute.value);

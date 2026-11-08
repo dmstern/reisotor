@@ -45,6 +45,7 @@ export function usePushSettings() {
   async function selectPushLevel(level: string) {
     pushError.value = '';
     pushLoading.value = true;
+
     try {
       if (level === 'off') {
         await unsubscribeFromPush();
@@ -54,6 +55,7 @@ export function usePushSettings() {
           await subscribeToPush();
           pushEnabled.value = true;
         }
+
         await notificationPrefs.applyLevel(level as NotificationLevel);
       }
     } catch (err) {
@@ -105,6 +107,7 @@ export function usePushSettings() {
     if (pushEnabled.value) {
       await selectPushLevel('balanced');
     }
+
     if (hasAnyEmailPreference.value) {
       const resetEmail = Object.fromEntries(NOTIFICATION_DOMAINS.map((d) => [d, false]));
       await notificationPrefs.updateEmail(resetEmail);
@@ -119,6 +122,7 @@ export function usePushSettings() {
       } else {
         pushEnabled.value = false;
       }
+
       await notificationPrefs.load();
     } catch {
       // Ignoriere Fehler bei der initialen Abfrage

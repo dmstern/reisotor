@@ -33,7 +33,10 @@ function formatViolations(
     nodes: Array<{ target: unknown; failureSummary?: string }>;
   }>
 ) {
-  if (!violations || violations.length === 0) return '';
+  if (!violations || violations.length === 0) {
+    return '';
+  }
+
   return violations
     .map(
       (v) =>
@@ -76,9 +79,11 @@ test.describe('Accessibility (a11y)', () => {
     test('calendar page accessibility scan', async ({ page }) => {
       await page.goto('/calendar');
       const tab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+
       if ((await tab.count()) > 0 && (await tab.getAttribute('aria-expanded')) === 'false') {
         await tab.click();
       }
+
       await expect(
         page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })
       ).toBeVisible();

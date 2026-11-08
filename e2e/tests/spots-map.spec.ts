@@ -143,6 +143,7 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
     const viewport = page.viewportSize();
     expect(menuBox).not.toBeNull();
     expect(viewport).not.toBeNull();
+
     if (menuBox && viewport) {
       expect(menuBox.x).toBeGreaterThanOrEqual(0);
       expect(menuBox.y).toBeGreaterThanOrEqual(0);

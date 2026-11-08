@@ -54,9 +54,11 @@ const targetCalendarDate = computed<string | null>(() => {
   if (totalItemsCount.value === 1 && scheduledItemsForSpot.value[0]?.date) {
     return scheduledItemsForSpot.value[0].date;
   }
+
   if (totalItemsCount.value <= 1 && props.scheduledDate) {
     return props.scheduledDate;
   }
+
   return null;
 });
 
@@ -81,7 +83,10 @@ function openCalendarAtDate(date: string) {
 
 /** Herkunft eines Termins: Kalender, Ausflug (Tour-Farbe) oder Reise-Etappe (Reise-Farbe). */
 function dateSourceClass(item: ScheduledSpotItem): string {
-  if (item.type !== 'tour') return 'is-calendar';
+  if (item.type !== 'tour') {
+    return 'is-calendar';
+  }
+
   return item.role ? 'is-travel' : 'is-tour';
 }
 
@@ -91,6 +96,7 @@ function handleItemJump(item: ScheduledSpotItem) {
     router.push(`/excursions#excursion-${item.sourceId}`);
     return;
   }
+
   openCalendarAtDate(item.date);
 }
 </script>
