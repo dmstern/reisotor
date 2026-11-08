@@ -1,3 +1,3 @@
 ### Touren & Spots
 
-- ✏️ **Einheitliche Position für Bearbeiten-Buttons (#696)**: Der Bearbeiten-Button auf Spot-Karten sitzt nun im aufgeklappten Zustand einheitlich oben rechts in der Badge-Gruppe neben der Kategorie – analog zu Touren, Terminen, Tagebucheinträgen und Listen –, mit optimalem Kontrast und ohne das Vorschaubild zu verdecken.
+- ✏️ **Einheitliche Position für Bearbeiten-Buttons & Header-Layout (#696)**: Der Bearbeiten-Button und die Badges sitzen nun auf Spot- und Tour-Karten einheitlich oben rechts in der Badge-Gruppe – analog zu Terminen, Tagebucheinträgen und Listen –, während die Einklappen-Pille im aufgeklappten Zustand einheitlich unten rechts sitzt.

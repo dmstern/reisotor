@@ -108,66 +108,78 @@ const {
       <div class="body">
         <div
           class="card-header-row"
+          :class="{ 'is-expanded': expanded }"
           :title="expanded ? 'Klicken zum Einklappen' : 'Klicken zum Aufklappen'"
         >
-          <div class="card-title-block">
-            <div class="card-title-row">
+          <!-- Obere Zeile: Titel links, Badges (Rolle + Sync + Edit-Button) rechts -->
+          <div class="card-header-top">
+            <div class="card-title-block card-title-row">
               <component :is="headingTag" class="card-title" :title="excursion.title">
                 {{ excursion.title }}
               </component>
-              <TourRoleBadge :role="excursion.role" />
             </div>
-            <Transition name="fade">
-              <div
-                v-if="
-                  expanded &&
-                  (creatorLabel ||
+
+            <div class="card-badge-group">
+              <TourRoleBadge :role="excursion.role" />
+              <PendingSyncBadge v-if="excursion._pending" />
+              <Transition name="fade">
+                <EditButton
+                  v-if="expanded"
+                  small
+                  class="tour-edit-btn"
+                  @click="emit('edit', excursion)"
+                />
+              </Transition>
+              <span v-if="!expanded" class="card-disclosure-pill" aria-hidden="true">
+                <AppIcon
+                  :icon="ACTION_ICONS.chevronDown"
+                  :size="14"
+                  group="actions"
+                  class="disclosure-chevron"
+                />
+              </span>
+            </div>
+          </div>
+
+          <!-- Untere Zeile (nur im aufgeklappten Zustand): Metadaten links, Collapse-Pille rechts -->
+          <div v-if="expanded" class="card-header-bottom">
+            <div class="card-title-meta-wrap">
+              <Transition name="fade">
+                <div
+                  v-if="
+                    creatorLabel ||
                     routeLabel ||
                     resolvedStations.length ||
                     travelDuration ||
-                    linkedTracks.length)
-                "
-                class="card-title-meta"
-              >
-                <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-                <span v-if="routeLabel" class="overlay-submeta">
-                  <template v-if="creatorLabel">· </template>{{ routeLabel }}
-                </span>
-                <span v-else-if="resolvedStations.length" class="overlay-submeta">
-                  <template v-if="creatorLabel">· </template>{{ resolvedStations.length }}
-                  {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
-                </span>
-                <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
-                <span v-if="linkedTracks.length" class="overlay-submeta">
-                  <template
-                    v-if="creatorLabel || routeLabel || resolvedStations.length || travelDuration"
-                    >·
-                  </template>
-                  {{ linkedTracks.length }}
-                  {{ linkedTracks.length === 1 ? 'Aufzeichnung' : 'Aufzeichnungen' }}
-                </span>
-              </div>
-            </Transition>
-          </div>
+                    linkedTracks.length
+                  "
+                  class="card-title-meta"
+                >
+                  <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
+                  <span v-if="routeLabel" class="overlay-submeta">
+                    <template v-if="creatorLabel">· </template>{{ routeLabel }}
+                  </span>
+                  <span v-else-if="resolvedStations.length" class="overlay-submeta">
+                    <template v-if="creatorLabel">· </template>{{ resolvedStations.length }}
+                    {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
+                  </span>
+                  <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
+                  <span v-if="linkedTracks.length" class="overlay-submeta">
+                    <template
+                      v-if="creatorLabel || routeLabel || resolvedStations.length || travelDuration"
+                      >·
+                    </template>
+                    {{ linkedTracks.length }}
+                    {{ linkedTracks.length === 1 ? 'Aufzeichnung' : 'Aufzeichnungen' }}
+                  </span>
+                </div>
+              </Transition>
+            </div>
 
-          <div class="card-badge-group">
-            <PendingSyncBadge v-if="excursion._pending" />
-            <Transition name="fade">
-              <EditButton
-                v-if="expanded"
-                small
-                class="tour-edit-btn"
-                @click="emit('edit', excursion)"
-              />
-            </Transition>
-            <span
-              class="card-disclosure-pill"
-              :class="{ 'is-expanded': expanded }"
-              aria-hidden="true"
-            >
-              <span v-if="expanded" class="disclosure-label">Einklappen</span>
+            <span class="card-disclosure-pill is-expanded" aria-hidden="true">
+              <span class="disclosure-label">Einklappen</span>
               <AppIcon
-                :icon="expanded ? ACTION_ICONS.chevronUp : ACTION_ICONS.chevronDown"
+                :icon="ACTION_ICONS.chevronUp"
                 :size="14"
                 group="actions"
                 class="disclosure-chevron"
@@ -383,11 +395,33 @@ const {
 
 .card-header-row {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-header-top {
+  display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  box-sizing: border-box;
+  min-width: 0;
+}
+
+.card-header-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.card-title-meta-wrap {
+  flex: 1;
+  min-width: 0;
 }
 
 .excursion-card.expanded .card-header-row {
@@ -437,10 +471,6 @@ const {
   align-items: flex-start;
   gap: var(--space-2);
   min-width: 0;
-}
-
-.card-title-row :deep(.tour-type-badge) {
-  margin-top: 2px;
 }
 
 .card-title {
@@ -676,6 +706,26 @@ const {
 
   .disclosure-label {
     display: none;
+  }
+}
+
+@container excursion-card (max-width: 360px) {
+  .card-badge-group :deep(.category-chip-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .card-badge-group :deep(.category-chip) {
+    padding: 3px var(--radius-xs);
+    gap: 0;
+    max-width: none;
   }
 }
 
