@@ -264,7 +264,7 @@ defineOptions({
   font-size: 0.85rem;
 }
 
-.track-visibility-trigger:hover:not(:disabled) {
+.track-visibility-trigger:hover:not(:disabled):not(:focus-visible):not(.is-open) {
   background-color: var(--color-hover);
   border-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -273,10 +273,9 @@ defineOptions({
 .track-visibility-trigger:active:not(:disabled),
 .track-visibility-trigger:focus-visible,
 .track-visibility-trigger.is-open {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .track-visibility-trigger.is-disabled {

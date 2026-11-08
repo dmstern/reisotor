@@ -297,7 +297,6 @@ defineExpose({
 
 .richtext-editor.is-focused,
 .richtext-editor:focus-within {
-  border-color: var(--color-primary);
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
@@ -515,7 +514,7 @@ defineExpose({
 }
 
 .collapsed-trigger:focus-visible {
-  border-color: var(--color-primary);
+  border-color: var(--color-border-strong);
   background: var(--color-hover);
   color: var(--color-text);
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
