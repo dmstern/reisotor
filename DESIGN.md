@@ -322,7 +322,7 @@ Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Swit
   - Anklickbare/interaktive Karten (`.card--interactive`, `.card--expandable`, `CheckboxCard`) sind im Ruhezustand bereits leicht erhaben (`--shadow-card-interactive`).
   - Beim Hovern heben sie sich mit dynamischem Schwebeschatten und verstärktem Kantenlicht an (`transform: translateY(-3px) scale(1.012)`, `--shadow-card-hover`).
   - Beim Klick (`:active`) federn sie spürbar ein (`transform: translateY(1px) scale(0.988)`, `--shadow-card-active`), was Klicks und Touch-Interaktionen ein befriedigendes physisches Feedback gibt.
-  - Muted- & Popover-Kacheln (`CheckboxCard` mit `variant="muted"` oder `variant="popover"`) nutzen `--shadow-control` und federn beim Klick ebenfalls haptisch ein (`transform: translateY(1px) scale(0.99)`).
+  - Muted- & Popover-Kacheln (`CheckboxCard` mit `variant="muted"` oder `variant="popover"`, sowie `.date-check-item` im Besuche-abhaken-Popover) nutzen `--shadow-control`, Kantenlicht und Glanzverlauf und federn beim Klick haptisch ein (`transform: translateY(1px) scale(0.985..0.99)`).
   - Polaroid-Fotokarten (`variant="polaroid"`, z. B. in `SpotCard.vue`) besitzen maßgeschneiderte Kantenreflexionen und tiefe Vintage-Schlagschatten (`--shadow-card-polaroid`, `--shadow-card-polaroid-hover`, `--shadow-card-polaroid-active`).
 
 ## Animationen

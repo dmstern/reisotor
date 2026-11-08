@@ -707,6 +707,14 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.16) !important;
 }
 
+:deep(.leaflet-bar a:first-child) {
+  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
+}
+
+:deep(.leaflet-bar a:first-child:hover) {
+  box-shadow: inset 0 1px 0 var(--shadow-control-highlight-strong);
+}
+
 :deep(.leaflet-bar a:last-child) {
   border-bottom: none !important;
 }
