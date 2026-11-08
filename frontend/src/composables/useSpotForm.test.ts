@@ -131,4 +131,101 @@ describe('useSpotForm - openSpotForm', () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(editSpotForm.value.is_home).toBe(false);
   });
+
+  it('automatically populates title, category, image, address, amount, dates, checkin/checkout and pin from booking link (issue #607)', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Grand Hotel Wien',
+      imageUrl: 'https://images.example.com/hotel.jpg',
+      images: ['https://images.example.com/hotel.jpg', 'https://images.example.com/room.jpg'],
+      category: 'Unterkunft',
+      address: 'Kärntner Ring 9, 1010 Wien',
+      amount: 280,
+      checkin: '15:00',
+      checkout: '11:00',
+      startDate: '2026-09-10',
+      endDate: '2026-09-15',
+      contact: '+43 1 515800',
+      sourceUrl: 'https://www.booking.com/hotel/at/grand-hotel-wien.html',
+      lat: 48.2014,
+      lng: 16.3712,
+    });
+
+    const { spotForm, spotManualPin, onSpotMapsLinkUpdate } = useSpotForm({
+      tripId: 1,
+      users: ref([]),
+      spotScheduledDates: ref(new Map()),
+    });
+
+    onSpotMapsLinkUpdate('https://www.booking.com/hotel/at/grand-hotel-wien.html');
+
+    // Warten auf api.get Auflösung
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(spotForm.value.title).toBe('Grand Hotel Wien');
+    expect(spotForm.value.category).toBe('Unterkunft');
+    expect(spotForm.value.image_url).toBe('https://images.example.com/hotel.jpg');
+    expect(spotForm.value.address).toBe('Kärntner Ring 9, 1010 Wien');
+    expect(spotForm.value.amount).toBe('280');
+    expect(spotForm.value.checkin).toBe('15:00');
+    expect(spotForm.value.checkout).toBe('11:00');
+    expect(spotForm.value.start_date).toBe('2026-09-10');
+    expect(spotForm.value.end_date).toBe('2026-09-15');
+    expect(spotForm.value.contact).toBe('+43 1 515800');
+    expect(spotForm.value.link).toBe('https://www.booking.com/hotel/at/grand-hotel-wien.html');
+    expect(spotManualPin.value).toEqual({ lat: 48.2014, lng: 16.3712 });
+  });
+
+  it('updates both spotManualPin and editSpotManualPin when editing an existing spot (issue #607)', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Adlon Berlin',
+      imageUrl: 'https://images.example.com/adlon.jpg',
+      category: 'Unterkunft',
+      address: 'Unter den Linden 77, 10117 Berlin',
+      amount: 450,
+      lat: 52.516,
+      lng: 13.38,
+    });
+
+    const { startEditSpot, editSpotForm, spotManualPin, editSpotManualPin, onSpotMapsLinkUpdate } =
+      useSpotForm({
+        tripId: 1,
+        users: ref([]),
+        spotScheduledDates: ref(new Map()),
+      });
+
+    startEditSpot({
+      id: 5,
+      trip_id: 1,
+      title: 'Alte Unterkunft',
+      category: 'Unterkunft',
+      is_home: 0,
+      image_url: null,
+      note: null,
+      note_format: 'text',
+      maps_link: null,
+      lat: null,
+      lng: null,
+      created_by: 1,
+      address: null,
+      start_date: null,
+      end_date: null,
+      checkin: null,
+      checkout: null,
+      contact: null,
+      amount: null,
+      paid_by_user_id: null,
+      budget_expense_id: null,
+      done: 0,
+    });
+
+    onSpotMapsLinkUpdate('https://www.trivago.de/de/srl/hotel-adlon-berlin');
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(editSpotForm.value.title).toBe('Adlon Berlin');
+    expect(spotManualPin.value).toEqual({ lat: 52.516, lng: 13.38 });
+    expect(editSpotManualPin.value).toEqual({ lat: 52.516, lng: 13.38 });
+  });
 });

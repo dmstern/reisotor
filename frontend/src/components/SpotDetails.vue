@@ -4,6 +4,8 @@ import type { Spot } from '../api/types';
 import { parseContact } from '../utils/contact';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { linkLabel } from '../utils/linkLabel';
 import AppIcon from './AppIcon.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import CopyButton from './primitives/CopyButton.vue';
@@ -17,7 +19,9 @@ const props = defineProps<{
   hasMultipleMembers?: boolean;
 }>();
 
-const hasDetails = computed(() => props.isAccommodation || !!props.spot.address);
+const hasDetails = computed(
+  () => props.isAccommodation || !!props.spot.address || !!props.spot.link
+);
 
 function formatAccommodationDate(d: string | null) {
   if (!d) {
@@ -124,6 +128,28 @@ const checkinCheckoutText = computed(() => {
           />
         </DetailRow>
       </template>
+      <DetailRow v-if="spot.link" :label="isAccommodation ? 'Buchung' : 'Website'">
+        <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" />
+        <a
+          :href="spot.link"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="spot-external-link"
+          @click.stop
+        >
+          <span>{{ linkLabel(spot.link) }}</span>
+          <AppIcon :icon="ACTION_ICONS.externalLink" :size="12" group="actions" />
+        </a>
+        <CopyButton
+          :text="spot.link"
+          :label="isAccommodation ? 'Buchungs-Link kopieren' : 'Link kopieren'"
+          :toast-message="
+            isAccommodation
+              ? 'Buchungs-Link in die Zwischenablage kopiert.'
+              : 'Link in die Zwischenablage kopiert.'
+          "
+        />
+      </DetailRow>
     </div>
   </div>
 </template>
@@ -180,6 +206,20 @@ const checkinCheckoutText = computed(() => {
 
 .nobr {
   white-space: nowrap;
+}
+
+.spot-external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.spot-external-link:hover {
+  color: var(--color-primary-hover, var(--color-primary));
 }
 
 @media (prefers-reduced-motion: reduce) {

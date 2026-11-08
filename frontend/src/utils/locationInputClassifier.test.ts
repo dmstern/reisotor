@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyLocationInput, isMapsLink } from './locationInputClassifier';
+import { classifyLocationInput, isMapsLink, isBookingLink } from './locationInputClassifier';
 
 describe('locationInputClassifier', () => {
   describe('empty inputs', () => {
@@ -196,6 +196,60 @@ describe('locationInputClassifier', () => {
       expect(isMapsLink('https://example.com/something')).toBe(false);
       expect(isMapsLink('')).toBe(false);
       expect(isMapsLink(null)).toBe(false);
+    });
+  });
+
+  describe('booking links (issue #607)', () => {
+    it('classifies Booking.com links as booking_link', () => {
+      const url = 'https://www.booking.com/hotel/at/hotel-sacher-wien.html';
+      expect(classifyLocationInput(url)).toEqual({
+        type: 'booking_link',
+        url,
+      });
+    });
+
+    it('classifies Airbnb links as booking_link', () => {
+      const url = 'https://www.airbnb.com/rooms/12345678';
+      expect(classifyLocationInput(url)).toEqual({
+        type: 'booking_link',
+        url,
+      });
+    });
+
+    it('classifies Trivago links as booking_link', () => {
+      const url = 'https://www.trivago.de/de/srl/hotel-adlon-berlin';
+      expect(classifyLocationInput(url)).toEqual({
+        type: 'booking_link',
+        url,
+      });
+    });
+
+    it('normalizes booking links without scheme', () => {
+      expect(classifyLocationInput('booking.com/hotel/de/berlin.html')).toEqual({
+        type: 'booking_link',
+        url: 'https://booking.com/hotel/de/berlin.html',
+      });
+      expect(classifyLocationInput('airbnb.de/rooms/99999')).toEqual({
+        type: 'booking_link',
+        url: 'https://airbnb.de/rooms/99999',
+      });
+      expect(classifyLocationInput('pension-tirol.at/unterkunft/zimmer-1')).toEqual({
+        type: 'booking_link',
+        url: 'https://pension-tirol.at/unterkunft/zimmer-1',
+      });
+    });
+
+    it('isBookingLink helper correctly identifies booking domains and paths', () => {
+      expect(isBookingLink('https://www.booking.com/hotel/xyz')).toBe(true);
+      expect(isBookingLink('https://airbnb.de/rooms/123')).toBe(true);
+      expect(isBookingLink('https://trivago.com/hotel/abc')).toBe(true);
+      expect(isBookingLink('https://hotels.com/ho123/')).toBe(true);
+      expect(isBookingLink('https://fewo-direkt.de/ferienwohnung/1')).toBe(true);
+      expect(isBookingLink('https://alpen.at/ferienwohnung/bergblick')).toBe(true);
+      expect(isBookingLink('pension-tirol.at/unterkunft/zimmer-1')).toBe(true);
+      expect(isBookingLink('https://example.com/not-a-hotel')).toBe(false);
+      expect(isBookingLink('Wien')).toBe(false);
+      expect(isBookingLink(null)).toBe(false);
     });
   });
 });

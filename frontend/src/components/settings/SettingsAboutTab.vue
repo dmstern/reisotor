@@ -90,6 +90,13 @@ const showPwaInstallDialog = ref(false);
       <h2>
         <AppIcon :icon="SERVICES_ICON" group="navigation" :size="20" /> Dienste &amp; Open Source
       </h2>
+      <p class="hint intro-hint">
+        Reisotor setzt auf freie Schnittstellen, offene Daten (OpenStreetMap, Open-Meteo, Wikipedia)
+        und kompromisslosen Datenschutz. Kommerzielle Plattformen (wie Google, Apple oder
+        Buchungsportale) sind <strong>nicht</strong> als Tracking-Dienste eingebunden und erhalten
+        niemals Daten im Hintergrund: Sie werden ausschließlich dann kontaktiert, wenn du ganz
+        gezielt einen Link einfügst, um öffentliche Orts- oder Unterkunftsdaten für dich abzurufen.
+      </p>
       <dl class="build-info-list">
         <dt>Kartendaten</dt>
         <dd>
@@ -133,6 +140,36 @@ const showPwaInstallDialog = ref(false);
           <a href="https://www.bing.com/images" target="_blank" rel="noopener noreferrer">Bing</a>
           ·
           <a href="https://duckduckgo.com/" target="_blank" rel="noopener noreferrer">DuckDuckGo</a>
+        </dd>
+        <dt>Link-Import (nur auf Abruf)</dt>
+        <dd>
+          <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer"
+            >OpenStreetMap</a
+          >
+          ·
+          <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer"
+            >Google Maps</a
+          >
+          ·
+          <a href="https://www.apple.com/maps/" target="_blank" rel="noopener noreferrer"
+            >Apple Maps</a
+          >
+          ·
+          <a href="https://www.booking.com/" target="_blank" rel="noopener noreferrer"
+            >Booking.com</a
+          >
+          ·
+          <a href="https://www.airbnb.com/" target="_blank" rel="noopener noreferrer">Airbnb</a>
+          ·
+          <a href="https://www.trivago.com/" target="_blank" rel="noopener noreferrer">Trivago</a>
+          ·
+          <a href="https://www.fewo-direkt.de/" target="_blank" rel="noopener noreferrer"
+            >FeWo-direkt</a
+          >
+          <span class="service-note"
+            >(Kein Datenabfluss: Server fragt öffentliche Seiten nur bei manueller Link-Eingabe ab,
+            werbliche Tracking-Parameter werden entfernt)</span
+          >
         </dd>
         <dt>Länder- &amp; Reiseinfos</dt>
         <dd>
@@ -246,5 +283,12 @@ h3 {
 
 .services-info-card :deep(.app-footer-repo-link) {
   margin-top: var(--space-4);
+}
+
+.service-note {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
 }
 </style>

@@ -12,6 +12,10 @@ import { usePlaceSearch, type PlaceSearchResult } from '../composables/usePlaceS
 import { useLocationDetails } from '../composables/useLocationDetails';
 import { useLocationSuggestions } from '../composables/useLocationSuggestions';
 import { useLocationPickerMap, OWN_LOCATION_ICON } from '../composables/useLocationPickerMap';
+import {
+  DEFAULT_SPOT_PLACEHOLDER_PHRASES,
+  DEFAULT_TRIP_PLACEHOLDER_PHRASES,
+} from '../composables/useAnimatedPlaceholder';
 
 export type { PlaceSearchResult } from '../composables/usePlaceSearch';
 
@@ -310,6 +314,26 @@ const computedPlaceholder = computed(() => {
     : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
 });
 
+const computedPlaceholderPhrases = computed(() => {
+  if (props.placeholder) {
+    return [props.placeholder];
+  }
+
+  if (props.context === 'trip') {
+    return DEFAULT_TRIP_PLACEHOLDER_PHRASES;
+  }
+
+  if (details.hasLocation.value) {
+    return [
+      'Anderen Ort oder Adresse suchen...',
+      'Anderen Maps-Link einfügen...',
+      'Anderen Booking- oder Airbnb-Link einfügen...',
+    ];
+  }
+
+  return DEFAULT_SPOT_PLACEHOLDER_PHRASES;
+});
+
 function clear() {
   search.clearSearch();
   titleSearch.clearSearch();
@@ -428,6 +452,7 @@ const {
   results,
   activeIndex,
   shortlinkDetected,
+  bookingLinkDetected,
   handleInput,
   loadMore,
   selectPlace,
@@ -516,6 +541,7 @@ defineExpose({
         :results="results"
         :active-index="activeIndex"
         :placeholder="computedPlaceholder"
+        :placeholder-phrases="computedPlaceholderPhrases"
         :is-details-visible="isDetailsVisible"
         @update:model-value="handleInput"
         @select="selectPlace"
@@ -644,6 +670,12 @@ defineExpose({
     <p v-if="shortlinkDetected" class="hint info">
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
       Maps-Kurzlink erkannt. Die genauen Koordinaten werden serverseitig aufgelöst.
+    </p>
+
+    <!-- Buchungs-Link-Hinweis -->
+    <p v-if="bookingLinkDetected" class="hint info">
+      <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" />
+      Buchungs-Link erkannt. Die Unterkunft-Details werden automatisch abgerufen.
     </p>
 
     <!-- Standort-Ermittlungsfehler -->

@@ -21,6 +21,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
 import { spotCategoryMeta, isTransitCategory, isHomeCategory } from '../utils/spotCategory';
+import { normalizeWebUrl } from '../utils/linkLabel';
 import { useSpotForm } from '../composables/useSpotForm';
 
 const props = defineProps<{
@@ -115,7 +116,16 @@ const {
   isEditSpotContactModified,
   isEditSpotAmountModified,
   isEditSpotPaidByModified,
+  isEditSpotLinkModified,
 } = spotFormComposable;
+
+const isAccommodation = computed(() => activeSpotForm.value.category === 'Unterkunft');
+
+function onLinkBlur() {
+  if (activeSpotForm.value.link?.trim()) {
+    activeSpotForm.value.link = normalizeWebUrl(activeSpotForm.value.link);
+  }
+}
 
 const scheduledCount = computed(() =>
   editingSpot.value !== null
@@ -416,6 +426,25 @@ function handleOpenScheduledItem(item: ScheduleItem) {
           </FormField>
         </div>
       </template>
+
+      <FormField
+        icon="link"
+        :label="isAccommodation ? 'Buchungs-Link' : 'Website / Link'"
+        :modified="isEditSpotLinkModified"
+        v-slot="{ modified }"
+      >
+        <Input
+          v-model="activeSpotForm.link"
+          type="url"
+          :placeholder="
+            isAccommodation
+              ? 'Buchungs-Link (z. B. Airbnb, Booking, Trivago)'
+              : 'Website / Link (z. B. Tickets, Speisekarte)'
+          "
+          :modified="modified"
+          @blur="onLinkBlur"
+        />
+      </FormField>
 
       <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified">
         <RichTextEditor v-model="activeSpotForm.note" placeholder="Notiz" compact expandable />

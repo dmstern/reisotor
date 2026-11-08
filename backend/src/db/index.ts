@@ -276,7 +276,8 @@ CREATE TABLE IF NOT EXISTS spots (
   maps_link TEXT,
   lat REAL,
   lng REAL,
-  created_by INTEGER REFERENCES users(id)
+  created_by INTEGER REFERENCES users(id),
+  link TEXT
 );
 
 -- Verknüpfung Tour<->Spot: welche Spots gehören zu welcher Tour, in welcher Reihenfolge (Batch 13:
@@ -2224,6 +2225,11 @@ try {
 } catch {
   // Fehler beim Backfill tolerieren
 }
+
+// Optionaler externer Link / Buchungs-Link für Spots (Issue #607):
+// Ermöglicht das Hinterlegen und Aufrufen von Buchungs-Links (Booking, Airbnb, Trivago etc.)
+// sowie allgemeinen Ticket- und Webseiten-Links für alle Spot-Kategorien.
+ensureColumn('spots', 'link', 'TEXT');
 
 /**
  * Leert alle Anwendungs-Tabellen in der Datenbank und setzt Auto-Inkrement-Sequenzen zurück.

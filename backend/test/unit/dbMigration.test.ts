@@ -849,4 +849,36 @@ describe('todo_items.period Migration & Persistenz', () => {
       .all() as { name: string }[];
     expect(tables.length).toBe(1);
   });
+
+  it('ergänzt spots.link additiv auf einer legacy DB (Issue #607)', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-spots-link-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL);
+      INSERT INTO trips (id, name) VALUES (1, 'Urlaub');
+      INSERT INTO spots (id, trip_id, title) VALUES (1, 1, 'Hotel Sonne');
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(spots)').all() as { name: string }[];
+    expect(columns.some((c) => c.name === 'link')).toBe(true);
+
+    // Kann aktualisiert werden
+    db.prepare('UPDATE spots SET link = ? WHERE id = ?').run(
+      'https://www.booking.com/hotel/de/sonne.html',
+      1
+    );
+    const row = db.prepare('SELECT id, title, link FROM spots WHERE id = 1').get() as {
+      id: number;
+      title: string;
+      link: string | null;
+    };
+    expect(row.link).toBe('https://www.booking.com/hotel/de/sonne.html');
+  });
 });

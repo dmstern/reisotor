@@ -1,6 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
+import {
+  isBookingLinkUrl,
+  fetchAccommodationPreview,
+  cleanBookingUrl,
+} from '../utils/bookingLink.js';
 import { fetchPlacePhotos } from '../utils/placePhoto.js';
 import { localizeImageUrl } from '../utils/remoteImage.js';
 import { associateUploadWithTrip } from '../uploadRegistry.js';
@@ -35,6 +40,7 @@ interface SpotBody {
   contact?: string;
   amount?: number;
   paid_by_user_id?: number | null;
+  link?: string | null;
 }
 
 interface SpotRow {
@@ -44,6 +50,7 @@ interface SpotRow {
   lng: number | null;
   category: string | null;
   budget_expense_id: number | null;
+  link?: string | null;
 }
 
 interface CommentBody {
@@ -107,7 +114,7 @@ const selectSpotsByTripStmt = db.prepare(
 );
 const selectSpotByIdStmt = db.prepare('SELECT * FROM spots WHERE id = ?');
 const selectSpotForUpdateStmt = db.prepare(
-  'SELECT id, trip_id, lat, lng, budget_expense_id FROM spots WHERE id = ?'
+  'SELECT id, trip_id, lat, lng, budget_expense_id, link FROM spots WHERE id = ?'
 );
 const selectSpotTripIdStmt = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?');
 const selectSpotForDeleteStmt = db.prepare(
@@ -221,17 +228,103 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     let previewName: string | null = name?.trim() || null;
     let previewImage: string | null = null;
     const previewImages: string[] = [];
+    let previewCategory: string | null = category?.trim() || null;
+    let previewAddress: string | null = null;
+    let previewCity: string | null = city?.trim() || null;
+    let previewAmount: number | null = null;
+    let previewCurrency: string | null = null;
+    let previewLat: number | null = Number.isFinite(parsedLat) ? parsedLat! : null;
+    let previewLng: number | null = Number.isFinite(parsedLng) ? parsedLng! : null;
+    let previewCheckin: string | null = null;
+    let previewCheckout: string | null = null;
+    let previewStartDate: string | null = null;
+    let previewEndDate: string | null = null;
+    let previewContact: string | null = null;
+    let previewSourceUrl: string | null = null;
 
     if (maps_link) {
-      const linkPreview = await fetchPlacePreview(maps_link);
+      if (isBookingLinkUrl(maps_link)) {
+        const bookingPreview = await fetchAccommodationPreview(maps_link);
 
-      if (linkPreview.name && !previewName) {
-        previewName = linkPreview.name;
-      }
+        if (bookingPreview) {
+          if (bookingPreview.name && !previewName) {
+            previewName = bookingPreview.name;
+          }
 
-      if (linkPreview.imageUrl) {
-        previewImage = linkPreview.imageUrl;
-        previewImages.push(linkPreview.imageUrl);
+          if (bookingPreview.imageUrl) {
+            previewImage = bookingPreview.imageUrl;
+            previewImages.push(bookingPreview.imageUrl);
+          }
+
+          if (bookingPreview.images?.length) {
+            for (const img of bookingPreview.images) {
+              if (!previewImages.includes(img)) {
+                previewImages.push(img);
+              }
+            }
+          }
+
+          previewCategory = 'Unterkunft';
+
+          if (bookingPreview.address) {
+            previewAddress = bookingPreview.address;
+          }
+
+          if (bookingPreview.city && !previewCity) {
+            previewCity = bookingPreview.city;
+          }
+
+          if (bookingPreview.amount != null) {
+            previewAmount = bookingPreview.amount;
+          }
+
+          if (bookingPreview.currency) {
+            previewCurrency = bookingPreview.currency;
+          }
+
+          if (bookingPreview.lat != null && previewLat == null) {
+            previewLat = bookingPreview.lat;
+          }
+
+          if (bookingPreview.lng != null && previewLng == null) {
+            previewLng = bookingPreview.lng;
+          }
+
+          if (bookingPreview.checkin) {
+            previewCheckin = bookingPreview.checkin;
+          }
+
+          if (bookingPreview.checkout) {
+            previewCheckout = bookingPreview.checkout;
+          }
+
+          if (bookingPreview.startDate) {
+            previewStartDate = bookingPreview.startDate;
+          }
+
+          if (bookingPreview.endDate) {
+            previewEndDate = bookingPreview.endDate;
+          }
+
+          if (bookingPreview.contact) {
+            previewContact = bookingPreview.contact;
+          }
+
+          if (bookingPreview.sourceUrl) {
+            previewSourceUrl = bookingPreview.sourceUrl;
+          }
+        }
+      } else {
+        const linkPreview = await fetchPlacePreview(maps_link);
+
+        if (linkPreview.name && !previewName) {
+          previewName = linkPreview.name;
+        }
+
+        if (linkPreview.imageUrl) {
+          previewImage = linkPreview.imageUrl;
+          previewImages.push(linkPreview.imageUrl);
+        }
       }
     }
 
@@ -239,10 +332,10 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       const photos = await fetchPlacePhotos(
         {
           name: previewName,
-          lat: Number.isFinite(parsedLat) ? parsedLat : undefined,
-          lng: Number.isFinite(parsedLng) ? parsedLng : undefined,
-          city: city?.trim() || undefined,
-          category: category?.trim() || undefined,
+          lat: Number.isFinite(previewLat) ? previewLat! : undefined,
+          lng: Number.isFinite(previewLng) ? previewLng! : undefined,
+          city: previewCity || undefined,
+          category: previewCategory || undefined,
           isBanner,
         },
         10
@@ -263,6 +356,19 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       name: previewName,
       imageUrl: previewImage,
       images: previewImages,
+      category: previewCategory,
+      address: previewAddress,
+      city: previewCity,
+      amount: previewAmount,
+      currency: previewCurrency,
+      lat: previewLat,
+      lng: previewLng,
+      checkin: previewCheckin,
+      checkout: previewCheckout,
+      startDate: previewStartDate,
+      endDate: previewEndDate,
+      contact: previewContact,
+      sourceUrl: previewSourceUrl,
     };
   });
 
@@ -288,9 +394,17 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if ((lat == null || lng == null) && maps_link) {
-      const resolved = await resolveLatLng(maps_link);
-      lat = resolved?.lat;
-      lng = resolved?.lng;
+      if (isBookingLinkUrl(maps_link)) {
+        const accPreview = await fetchAccommodationPreview(maps_link);
+        lat = accPreview?.lat ?? undefined;
+        lng = accPreview?.lng ?? undefined;
+      }
+
+      if (lat == null || lng == null) {
+        const resolved = await resolveLatLng(maps_link);
+        lat = resolved?.lat;
+        lng = resolved?.lng;
+      }
     }
 
     // Kein eigenes Bild hinterlegt, aber ein Standort bekannt: automatisches Vorschaubild
@@ -301,13 +415,16 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
     const { budgetExpenseId } = planBudgetExpense(trip_id, null, body);
     const isHtml = body.note_format === 'html';
+    const rawLink = body.link?.trim() || (isBookingLinkUrl(maps_link) ? maps_link?.trim() : null);
+    const spotLink = rawLink ? cleanBookingUrl(rawLink) : null;
     const result = db
       .prepare(
         `INSERT INTO spots (
            trip_id, title, image_url, category, note, note_format, maps_link, lat, lng, created_by, is_home,
-           address, start_date, end_date, checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id
+           address, start_date, end_date, checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id,
+           link
          )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         trip_id,
@@ -329,7 +446,8 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         body.contact ?? null,
         body.amount ?? null,
         body.paid_by_user_id ?? null,
-        budgetExpenseId
+        budgetExpenseId,
+        spotLink
       );
     recordActivity(
       trip_id,
@@ -374,9 +492,17 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if ((lat == null || lng == null) && maps_link) {
-      const resolved = await resolveLatLng(maps_link);
-      lat = resolved?.lat;
-      lng = resolved?.lng;
+      if (isBookingLinkUrl(maps_link)) {
+        const accPreview = await fetchAccommodationPreview(maps_link);
+        lat = accPreview?.lat ?? undefined;
+        lng = accPreview?.lng ?? undefined;
+      }
+
+      if (lat == null || lng == null) {
+        const resolved = await resolveLatLng(maps_link);
+        lat = resolved?.lat;
+        lng = resolved?.lng;
+      }
     }
 
     // Schlägt die (erneute) Auflösung fehl, obwohl weiterhin ein Maps-Link hinterlegt ist,
@@ -405,11 +531,16 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       body
     );
     const isHtml = body.note_format === 'html';
+    let spotLink: string | null = existing.link ?? null;
+
+    if (body.link !== undefined) {
+      spotLink = body.link?.trim() ? cleanBookingUrl(body.link.trim()) : null;
+    }
 
     db.prepare(
       `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, note_format = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?,
          address = ?, start_date = ?, end_date = ?, checkin = ?, checkout = ?, contact = ?, amount = ?,
-         paid_by_user_id = ?, budget_expense_id = ?
+         paid_by_user_id = ?, budget_expense_id = ?, link = ?
        WHERE id = ?`
     ).run(
       title,
@@ -430,6 +561,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       body.amount ?? null,
       body.paid_by_user_id ?? null,
       budgetExpenseId,
+      spotLink,
       req.params.id
     );
 

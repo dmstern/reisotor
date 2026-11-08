@@ -816,14 +816,36 @@ const isFeedbackActive = computed(() =>
           </p>
         </div>
 
-        <!-- 6.7 Geteilte Karten-Links -->
+        <!-- 6.7 Geteilte Karten- & Buchungs-Links -->
         <div class="legal-subsection">
-          <h3>6.7 Auflösen geteilter Karten-Links (Unshortener)</h3>
+          <h3>6.7 Auflösen von Karten- und Buchungs-Links (Link-Vorschau &amp; Unshortener)</h3>
           <p>
-            Fügst du einen geteilten Kurzlink (z. B. von Google Maps, Apple Maps oder OpenStreetMap)
-            ein, löst unser Server die Weiterleitungen und Zielkoordinaten serverseitig auf. Dein
-            Browser verbindet sich dabei nicht mit Google oder Apple.
+            Reisotor sendet im regulären Betrieb <strong>keinerlei Daten</strong> an kommerzielle
+            Karten- oder Buchungsdienste. Ausschließlich dann, wenn du selbst gezielt einen Link
+            eingibst oder einfügst (z. B. Google Maps, Apple Maps, OpenStreetMap, Booking.com,
+            Airbnb, Trivago, Fewo-direkt, Hotels.com etc.), ruft unser Server die entsprechende
+            öffentliche Webseite ab, um Koordinaten, Unterkunftsnamen, Reisedaten, Preise und
+            Vorschaubilder für dich auszulesen:
           </p>
+          <ul>
+            <li>
+              <strong>Nur auf expliziten Nutzerabruf (kein Tracking):</strong> Es finden keine
+              automatischen Hintergrundabfragen statt. Es werden zu keinem Zeitpunkt Nutzerdaten,
+              Benutzerkonten oder Reisepläne an die Drittanbieter übertragen.
+            </li>
+            <li>
+              <strong>Server-Schutzschild für deine IP:</strong> Dein Browser verbindet sich beim
+              Einfügen und Auslesen nicht direkt mit Google, Apple, Booking oder Airbnb. Die Anfrage
+              erfolgt anonymisiert über das Reisotor-Backend (mit SSRF-Filterung).
+            </li>
+            <li>
+              <strong>Tracking-Schutz:</strong> Werbliche Tracking- und Kampagnen-Parameter (wie
+              <code>utm_*</code>, Booking-Session-IDs <code>aid</code>/<code>sid</code>,
+              Airbnb-Tracking) werden vor dem Speichern in der Datenbank automatisch aus den
+              Web-Links entfernt.
+            </li>
+            <li><strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO.</li>
+          </ul>
         </div>
 
         <!-- 6.8 Push-Nachrichten -->
