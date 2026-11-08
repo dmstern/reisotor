@@ -197,10 +197,8 @@ watch(
 
       if (cat === 'ÖPNV') {
         closeRouting();
-      } else {
-        if (isRoutable.value) {
-          openRouting();
-        }
+      } else if (isRoutable.value) {
+        openRouting();
       }
 
       initTimeState(props.leg.departure_time, props.leg.arrival_time, props.leg.duration_seconds);

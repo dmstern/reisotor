@@ -806,11 +806,11 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       store[likesKey].splice(existingIdx, 1);
       persist();
       return { liked: false } as unknown as T;
-    } else {
-      store[likesKey].push({ id: nextId++, [fkKey]: targetId, user_id: currentDemoUser.id });
-      persist();
-      return { liked: true } as unknown as T;
     }
+
+    store[likesKey].push({ id: nextId++, [fkKey]: targetId, user_id: currentDemoUser.id });
+    persist();
+    return { liked: true } as unknown as T;
   }
 
   // --- Comments posting (/spots/:id/comments, /ideas/:id/comments, /notes/:id/comments, /diary/:id/comments) ---
@@ -971,12 +971,12 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       existing.amount = amount;
       persist();
       return existing as unknown as T;
-    } else {
-      const created = { id: nextId++, budget_id: budgetId, category, amount };
-      store['/budget/allocations'].push(created);
-      persist();
-      return created as unknown as T;
     }
+
+    const created = { id: nextId++, budget_id: budgetId, category, amount };
+    store['/budget/allocations'].push(created);
+    persist();
+    return created as unknown as T;
   }
 
   const collection = collectionOf(path);

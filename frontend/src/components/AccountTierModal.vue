@@ -37,12 +37,10 @@ const isVisible = computed({
   set(val: boolean) {
     if (isControlled.value) {
       emit('update:modelValue', val);
+    } else if (!val) {
+      tierModalState.closeAccountTierModal();
     } else {
-      if (!val) {
-        tierModalState.closeAccountTierModal();
-      } else {
-        tierModalState.openAccountTierModal();
-      }
+      tierModalState.openAccountTierModal();
     }
   },
 });

@@ -34,7 +34,7 @@ describe('drawers store', () => {
   describe('Mobile behavior (<1024px)', () => {
     beforeEach(() => {
       matchMediaMock.mockImplementation((query: string) => ({
-        matches: query.includes('min-width: 1024px') ? false : true,
+        matches: !query.includes('min-width: 1024px'),
         media: query,
         onchange: null,
         addListener: vi.fn(),
@@ -92,7 +92,7 @@ describe('drawers store', () => {
   describe('Desktop behavior (>=1024px)', () => {
     beforeEach(() => {
       matchMediaMock.mockImplementation((query: string) => ({
-        matches: query.includes('min-width: 1024px') ? true : false,
+        matches: !!query.includes('min-width: 1024px'),
         media: query,
         onchange: null,
         addListener: vi.fn(),

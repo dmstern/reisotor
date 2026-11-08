@@ -1246,14 +1246,12 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
               await calendarTab.click();
               await page.waitForTimeout(300);
             }
-          } else {
-            if (
-              (await calendarTab.count()) > 0 &&
-              (await calendarTab.getAttribute('aria-expanded')) === 'true'
-            ) {
-              await calendarTab.click();
-              await page.waitForTimeout(300);
-            }
+          } else if (
+            (await calendarTab.count()) > 0 &&
+            (await calendarTab.getAttribute('aria-expanded')) === 'true'
+          ) {
+            await calendarTab.click();
+            await page.waitForTimeout(300);
           }
         }
 

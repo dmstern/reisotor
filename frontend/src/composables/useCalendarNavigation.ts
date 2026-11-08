@@ -150,23 +150,23 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
       }
 
       return 'fade';
-    } else {
-      const currentIso = toIso(weekAnchor.value);
-      const count = granularity.value === 'twoWeeks' ? 14 : 7;
-      const end = new Date(weekAnchor.value);
-      end.setDate(end.getDate() + count - 1);
-      const endIso = toIso(end);
-
-      if (targetIso > endIso) {
-        return 'next';
-      }
-
-      if (targetIso < currentIso) {
-        return 'prev';
-      }
-
-      return 'fade';
     }
+
+    const currentIso = toIso(weekAnchor.value);
+    const count = granularity.value === 'twoWeeks' ? 14 : 7;
+    const end = new Date(weekAnchor.value);
+    end.setDate(end.getDate() + count - 1);
+    const endIso = toIso(end);
+
+    if (targetIso > endIso) {
+      return 'next';
+    }
+
+    if (targetIso < currentIso) {
+      return 'prev';
+    }
+
+    return 'fade';
   }
 
   const prevPageLabel = computed(() => {

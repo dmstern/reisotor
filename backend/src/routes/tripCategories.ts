@@ -54,7 +54,9 @@ export function getCategoryUsageCount(tripId: number, type: string, name: string
           .get(tripId, trimmed) as { cnt: number }
       )?.cnt ?? 0;
     return expenseCount + allocCount;
-  } else if (type === 'spot') {
+  }
+
+  if (type === 'spot') {
     return (
       (
         db
@@ -64,7 +66,9 @@ export function getCategoryUsageCount(tripId: number, type: string, name: string
           .get(tripId, trimmed) as { cnt: number }
       )?.cnt ?? 0
     );
-  } else if (type === 'packing') {
+  }
+
+  if (type === 'packing') {
     return (
       (
         db
@@ -387,7 +391,9 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           subtitle: 'Budget-Planung',
         })),
       };
-    } else if (type === 'spot') {
+    }
+
+    if (type === 'spot') {
       const items = db
         .prepare(
           `SELECT id, title
@@ -404,7 +410,9 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           title: i.title,
         })),
       };
-    } else if (type === 'packing') {
+    }
+
+    if (type === 'packing') {
       const items = db
         .prepare(
           `SELECT id, label as title

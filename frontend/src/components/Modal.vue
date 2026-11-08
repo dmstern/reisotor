@@ -177,11 +177,9 @@ function handleKeydown(e: KeyboardEvent) {
         last.focus();
         e.preventDefault();
       }
-    } else {
-      if (active === last || !modalRef.value?.contains(active)) {
-        first.focus();
-        e.preventDefault();
-      }
+    } else if (active === last || !modalRef.value?.contains(active)) {
+      first.focus();
+      e.preventDefault();
     }
   }
 }

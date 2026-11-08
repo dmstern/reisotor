@@ -179,17 +179,17 @@ export const useBudgetStore = defineStore('budget', () => {
           }
 
           return true;
-        } else {
-          if (isSharedExpense(e, budgets.value)) {
-            return false;
-          }
-
-          if (e.budget_id != null) {
-            return e.budget_id === budget.id;
-          }
-
-          return e.paid_by_user_id === budget.owner_id;
         }
+
+        if (isSharedExpense(e, budgets.value)) {
+          return false;
+        }
+
+        if (e.budget_id != null) {
+          return e.budget_id === budget.id;
+        }
+
+        return e.paid_by_user_id === budget.owner_id;
       })
       .reduce((s, e) => s + e.amount, 0);
   }

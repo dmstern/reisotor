@@ -65,12 +65,12 @@ function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
           // Sichtbar ist der Bereich unterhalb der Card bis zum unteren Kartenrand.
           const coveredTopPx = Math.max(0, cardRect.bottom - mapRect.top);
           return { coveredTopPx, coveredLeftPx: 0 };
-        } else {
-          // Auf Desktop / breiten Containern überdeckt die Card die linke Seite der Karte.
-          // Sichtbar ist der Bereich rechts von der Card.
-          const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
-          return { coveredTopPx: 0, coveredLeftPx };
         }
+
+        // Auf Desktop / breiten Containern überdeckt die Card die linke Seite der Karte.
+        // Sichtbar ist der Bereich rechts von der Card.
+        const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
+        return { coveredTopPx: 0, coveredLeftPx };
       }
     }
   }

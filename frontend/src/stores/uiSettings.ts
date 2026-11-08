@@ -135,9 +135,13 @@ export const TOAST_TIMEOUT_OPTIONS = [
 export function getPresetGlassValues(style: GlassStyle) {
   if (style === 'glass') {
     return { opacity: 42, blur: 6 };
-  } else if (style === 'frosted') {
+  }
+
+  if (style === 'frosted') {
     return { opacity: 80, blur: 24 };
-  } else if (style === 'opaque') {
+  }
+
+  if (style === 'opaque') {
     return { opacity: 100, blur: 0 };
   }
 

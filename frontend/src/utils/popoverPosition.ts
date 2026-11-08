@@ -63,13 +63,11 @@ export function computePopoverPosition(
     top = rect.top - offset - menuHeight;
   } else if (placement === 'bottom') {
     top = rect.bottom + offset;
+  } else if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+    // 'auto': oben, wenn unten der Platz nicht reicht und oben mehr Raum frei ist
+    top = rect.top - offset - menuHeight;
   } else {
-    // 'auto': unten bevorzugen, außer unten reicht der Platz nicht und oben ist mehr Raum frei
-    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
-      top = rect.top - offset - menuHeight;
-    } else {
-      top = rect.bottom + offset;
-    }
+    top = rect.bottom + offset;
   }
 
   // Sicherheits-Klemmen an Viewport-Grenzen (oben und unten)

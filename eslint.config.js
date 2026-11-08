@@ -60,6 +60,79 @@ const cssPrefixPlugin = {
   },
 };
 
+const readabilityPlugin = {
+  rules: {
+    'prefer-early-return': {
+      meta: {
+        type: 'suggestion',
+        docs: {
+          description:
+            'Prefer early returns/guard clauses over wrapping the remainder of a function in a large if block.',
+        },
+        schema: [
+          {
+            type: 'object',
+            properties: {
+              minStatements: {
+                type: 'integer',
+                minimum: 1,
+              },
+            },
+            additionalProperties: false,
+          },
+        ],
+        messages: {
+          preferEarlyReturn:
+            'Prefer an early return/guard clause instead of wrapping {{statementCount}} statements in an "if" block at the end of the function.',
+        },
+      },
+      create(context) {
+        const minStatements = context.options[0]?.minStatements ?? 3;
+
+        function checkFunctionBody(node) {
+          const body = node.body;
+
+          if (
+            !body ||
+            body.type !== 'BlockStatement' ||
+            !Array.isArray(body.body) ||
+            body.body.length === 0
+          ) {
+            return;
+          }
+
+          const lastStatement = body.body[body.body.length - 1];
+
+          if (
+            lastStatement.type === 'IfStatement' &&
+            !lastStatement.alternate &&
+            lastStatement.consequent &&
+            lastStatement.consequent.type === 'BlockStatement'
+          ) {
+            const innerStatements = lastStatement.consequent.body;
+
+            if (innerStatements.length >= minStatements) {
+              context.report({
+                node: lastStatement,
+                messageId: 'preferEarlyReturn',
+                data: {
+                  statementCount: innerStatements.length,
+                },
+              });
+            }
+          }
+        }
+
+        return {
+          FunctionDeclaration: checkFunctionBody,
+          FunctionExpression: checkFunctionBody,
+          ArrowFunctionExpression: checkFunctionBody,
+        };
+      },
+    },
+  },
+};
+
 export default tseslint.config(
   {
     ignores: [
@@ -94,6 +167,9 @@ export default tseslint.config(
     },
   },
   {
+    plugins: {
+      readability: readabilityPlugin,
+    },
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -101,6 +177,11 @@ export default tseslint.config(
       },
     },
     rules: {
+      'max-depth': ['warn', 4],
+      complexity: ['warn', 15],
+      'max-params': ['warn', 4],
+      'no-nested-ternary': 'warn',
+      'readability/prefer-early-return': ['warn', { minStatements: 3 }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'warn',
@@ -174,11 +255,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.test.ts', '**/*.spec.ts'],
+    files: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.mjs', '**/*.spec.mjs'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'vue/one-component-per-file': 'off',
       '@typescript-eslint/no-magic-numbers': 'off',
+      complexity: 'off',
+      'max-depth': 'off',
+      'max-params': 'off',
+      'readability/prefer-early-return': 'off',
     },
   },
   eslintConfigPrettier,
@@ -190,6 +275,12 @@ export default tseslint.config(
         { blankLine: 'always', prev: '*', next: 'block-like' },
         { blankLine: 'always', prev: 'block-like', next: '*' },
       ],
+      'no-else-return': ['error', { allowElseIf: false }],
+      'no-lonely-if': 'error',
+      'no-unneeded-ternary': 'error',
+      'no-useless-return': 'error',
     },
   }
 );
+
+export { readabilityPlugin };
