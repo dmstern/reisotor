@@ -168,8 +168,16 @@ function clearFilters() {
         shape="circle"
         :active="totalActiveCount > 0"
         :icon="ACTION_ICONS.filter"
-        title="Filtern & Sortieren"
-        aria-label="Filtern & Sortieren"
+        :title="
+          totalActiveCount > 0
+            ? `Filtern & Sortieren (${totalActiveCount} aktiv)`
+            : 'Filtern & Sortieren'
+        "
+        :aria-label="
+          totalActiveCount > 0
+            ? `Filtern & Sortieren (${totalActiveCount} aktiv)`
+            : 'Filtern & Sortieren'
+        "
         class="bar-icon-btn"
         @click="toggleFilterMenu($event)"
       >

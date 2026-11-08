@@ -83,6 +83,9 @@ describe('SearchFilterBar', () => {
     const badge = container.querySelector('.active-badge');
     expect(badge).not.toBeNull();
     expect(badge?.textContent).toBe('2'); // 1 Filter + 1 Sortierung
+
+    const filterBtn = container.querySelector('.bar-icon-btn');
+    expect(filterBtn?.getAttribute('aria-label')).toBe('Filtern & Sortieren (2 aktiv)');
     cleanUp();
   });
 

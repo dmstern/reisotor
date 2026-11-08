@@ -768,6 +768,7 @@ onUnmounted(() => {
             >
               <h2 class="sheet-title">
                 <AnimatedText
+                  aria-hidden="true"
                   :text="
                     groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
                   "
@@ -844,8 +845,16 @@ onUnmounted(() => {
               size="sm"
               :active="activeSearchAndFilterCount > 0"
               :icon="ACTION_ICONS.search"
-              title="Suche & Filter öffnen"
-              aria-label="Suche und Filter öffnen"
+              :title="
+                activeSearchAndFilterCount > 0
+                  ? `Suche & Filter öffnen (${activeSearchAndFilterCount} aktiv)`
+                  : 'Suche & Filter öffnen'
+              "
+              :aria-label="
+                activeSearchAndFilterCount > 0
+                  ? `Suche und Filter öffnen (${activeSearchAndFilterCount} aktiv)`
+                  : 'Suche und Filter öffnen'
+              "
               class="partial-search-trigger-btn"
               @click="expandAndFocusSearch"
             >
