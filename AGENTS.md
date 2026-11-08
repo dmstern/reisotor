@@ -35,7 +35,7 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
   - Sollen mehrere Aufgaben gleichzeitig bearbeitet werden, ist die Nutzung separater Git Worktrees der verbindliche Best-Practice-Weg (in Antigravity direkt per UI-Dropdown **„New Worktree“** / `Ctrl+.` unter dem Chat-Eingabefeld, alternativ per CLI `git worktree add ../reisotor-<task> -b <task-branch>`). Dies verhindert Lock-Konflikte (`.git/index.lock`), Dateikollisionen und Wartezeiten vollständig.
   - **Schneller Worktree-Start:** Nach dem Auschecken eines Worktrees genügt `npm run dev:fresh` (oder `npm run setup:worktree`), um `node_modules` per Symlink aus dem Hauptordner zu teilen, `.env` zu synchronisieren, die Test-DB mit Demo-Daten anzulegen und den Server direkt zu starten.
 - **Clean Exit, Commit- & PR-Pflicht:**
-  - Jede Session MUSS nach erfolgreicher Arbeit, Prüfung der Release-Notes (siehe Abschnitt unten), Formatierung (`npx -y prettier --write <dateien>`), Typecheck und fokussierten Tests die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
+  - Jede Session MUSS nach erfolgreicher Arbeit, Prüfung der Release-Notes (siehe Abschnitt unten), Formatierung (`npx -y prettier --write <dateien>`), Typecheck, fokussierten Tests sowie dem **automatischen Review-Gate per Subagent** (ab `complexity:mid`, siehe Abschnitt unten) die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
   - Wurde auf einem neuen Feature-Branch gearbeitet und existiert noch kein PR (`gh pr view 2>/dev/null`), MUSS der Branch gepusht (`git push -u origin <branch>`) und **automatisch ein Pull Request angelegt** werden (`gh pr create`).
   - Der Worktree darf am Ende einer Session NIEMALS mit uncommitteten Änderungen, ungetrackten Testdateien oder unformatiertem Code hinterlassen werden, damit nachfolgende Sessions sofort eine saubere Ausgangsbasis vorfinden.
 
@@ -175,7 +175,7 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 5. **Gezielter Einsatz von Subagenten (Kontext-Isolation statt Overhead):**
    - Keine unbeschränkten autonomen Endlos-Schleifen ohne klare Abbruchbedingung starten.
    - Bei einfachen, klar umrissenen Einzel-Änderungen direkt `grep_search`/`read_file`/`edit_file` im Hauptchat nutzen statt Subagenten zu spawnen.
-   - **Ausnahme Multi-Phasen-/Multi-Team-Workflows (z. B. `Release Audit Auto`):** Hier sind sequenzielle `self`-Subagenten ausdrücklich der Best-Practice-Weg, damit jedes Team ein eigenes, frisches Kontextfenster erhält, ohne dass die Nutzerin / der Nutzer manuell neue Chats öffnen und Prompts kopieren muss.
+   - **Ausnahme Multi-Phasen-/Multi-Team-Workflows (z. B. `Release Audit Auto` sowie das automatisierte Review-Gate per Fresh-Eyes Subagent):** Hier sind sequenzielle `self`-Subagenten ausdrücklich der Best-Practice-Weg, damit jedes Team bzw. das Code-Review ein eigenes, frisches Kontextfenster erhält, ohne dass die Nutzerin / der Nutzer manuell neue Chats öffnen und Prompts kopieren muss.
 6. **Keine unaufgeforderten Screenshots (Massiver Token-Treiber):**
    - Screenshots (Scratch-Specs, Baseline-Updates) dürfen **niemals automatisch oder unaufgefordert** angefertigt werden, sondern ausschließlich auf expliziten Nutzer-Wunsch.
    - Bilddateien dürfen vom Agenten **niemals mit `view_file` geöffnet werden** (spült ~4.000 multimodale Tokens pro Bild in den Kontext). Bilder nur erzeugen, ablegen und im Chat/Walkthrough per Markdown verlinken.
@@ -234,6 +234,52 @@ Sobald es in einer Agent-Session um die Analyse, Planung, Umsetzung oder das Rev
 3. **Review mindestens auf Planungs-Niveau:** Das Review-Modell muss mindestens so stark sein wie das Planungs-Modell (`4 Argon medium/high` ab `mid`), um subtile Fehler (Race Conditions, Reaktivitäts-Fallen, Security, Architektur-Drift) zuverlässig zu erkennen.
 4. **Dynamische Eskalation statt weiterer Labels:** Wenn ein Modell in der Umsetzung nach 2 Versuchen einen Test nicht grün bekommt oder in einer Schleife hängt, wird für den konkreten Schritt dynamisch die Thinking-Stufe (`medium` → `high`) oder das Modell (`Flash` → `Argon`) erhöht – das Issue-Label selbst bleibt unverändert.
 5. **Neue Issues direkt klassifizieren:** Wenn ein Agent selbst ein neues GitHub-Issue anlegt (`gh issue create`), vergibt er immer direkt das passende `--label "complexity:<low|mid|high>"`.
+
+## Automatisierter Entwicklungs- & Review-Workflow (Fresh-Eyes Subagent)
+
+Um den Zyklus aus Anforderungs-Refinement, Implementierung und Review maximal zu automatisieren und menschliche Review-Aufwände zu minimieren, gilt für alle Aufgaben ab 🟡 `complexity:mid` (sowie auf Anforderung bei `complexity:low`) das **Subagent-Review-Gate mit frischem Kontext**:
+
+### 1. Rollenverteilung & Ablauf
+
+1. **Haupt-Agent (Orchestrator & Implementierer):**
+   - Klärt Anforderungen (Refinement), plant die Lösung und setzt den Code um.
+   - Führt lokale Formatierung (`prettier`), Typechecks und fokussierte Tests aus.
+   - Committet die Implementierung semantisch (`git commit -m "feat/fix: ..."`).
+2. **Review-Subagent (Unvoreingenommener Code-Reviewer mit frischem Blick):**
+   - Sobald die Implementierung steht und committet ist, spawnt der Hauptagent **automatisch und unaufgefordert** einen Subagenten (`invoke_subagent`).
+   - **Kontext-Isolation:** Der Subagent startet in einer komplett frischen Konversation ohne Vorwissen/Vorurteile über vorherige Implementierungs-Diskussionen.
+   - **Prüf-Scope:**
+     - Analysiert den gesamten Diff gegen den Basis-Branch (`git diff origin/main...HEAD`).
+     - Prüft auf:
+       - **Bugs & Edge-Cases:** Null/Undefined-Sicherheit, Race Conditions, reaktive Vue-Fallen, asynchrone Fehler, Off-by-one.
+       - **Architektur & Design:** Einhaltung von Clean Code, SoC, SRP, DRY, KISS und den `AGENTS.md`-Konventionen (z. B. Breakpoints, Tabler-Icons statt Emojis, Primitives statt dupliziertem CSS).
+       - **Test-Adequanz:** Wurden relevante Pfade getestet? Fehlen Regressionstests?
+     - Führt bei Bedarf die betroffenen Unit-Tests mit `--bail 1` isoliert aus.
+   - **Urteil:** Liefert eine prägnante Tabelle mit Findings (priorisiert nach _Kritisch / Wichtig / Suggestion_) oder erteilt die Freigabe (`LGTM`).
+3. **Abschluss & Auto-Fixing:**
+   - **Bei Findings:** Der Hauptagent behebt berechtigte Mängel direkt, committet den Fix (`fix: address review findings`) und dokumentiert die Nachbesserung transparent.
+   - **Bei Freigabe:** Der Hauptagent legt den PR an (`gh pr create`) oder aktualisiert ihn und vermerkt das erfolgreiche Review in der PR-Beschreibung (`## 🔍 Automatisches Code-Review: ✅ Bestanden (Fresh-Eyes Subagent)`).
+
+### 2. Standard-Prompt für den Review-Subagenten
+
+Wenn der Haupt-Agent `invoke_subagent` aufruft, nutzt er folgendes standardisiertes Muster:
+
+- **`TypeName`:** `"self"`
+- **`Role`:** `"Independent Code Reviewer"`
+- **`Model`:** `"inherit"` (oder `"pro"` bei 🔴 `complexity:high`)
+- **`Prompt`:**
+  > „Du bist ein unabhängiger Senior-Code-Reviewer mit frischem Blick. Analysiere den Branch im Vergleich zu \`origin/main\` (\`git diff origin/main...HEAD\`).
+  > Prüfe kritisch:
+  >
+  > 1. Logikfehler, Race Conditions, Null/Undefined-Edge-Cases oder Reaktivitäts-Lecks in Vue/Pinia/Fastify.
+  > 2. Konventionen aus AGENTS.md (SoC/SRP, Tabler-Icons statt Emojis, Design-Tokens/Breakpoints, keine Magic Numbers).
+  > 3. Ausreichende Testabdeckung für die geänderten Codepfade. Führe die betroffenen Tests fokussiert aus (\`--bail 1\`).
+  >    Gib dein Feedback als strukturierte Liste (Kritisch / Wichtig / Hinweis) oder gib ein klares 'LGTM' mit kurzer Begründung.“
+
+### 3. Kurz-Trigger
+
+- **Standard (implizit):** Läuft nach Abschluss jeder Implementierung ab `complexity:mid` automatisch als letzter Schritt vor dem PR.
+- **`Auto-Review` / `Review Gate`:** Expliziter Kurz-Trigger, um das Review auf dem aktuellen Branch jederzeit ad-hoc auszuführen (z. B. vor einem Rebase, nach manuellem Eingriff oder bei `complexity:low`).
 
 ## PR-Workflow
 
