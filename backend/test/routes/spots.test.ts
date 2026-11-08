@@ -212,5 +212,84 @@ describe('spots route coordinate preservation', () => {
         fetchMock.mock.calls.some(([callUrl]) => String(callUrl).includes('pithumbsize=2000'))
       ).toBe(true);
     });
+
+    it('resolves booking link preview with accommodation fields (issue #607)', async () => {
+      const mockBookingHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <script type="application/ld+json">
+              {
+                "@context": "https://schema.org",
+                "@type": "Hotel",
+                "name": "Grand Hotel Wien – Aktualisierte Preise für 2026",
+                "image": "https://images.example.com/grand-hotel.jpg",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "Kärntner Ring 9",
+                  "postalCode": "1010",
+                  "addressLocality": "Wien",
+                  "addressCountry": "Österreich"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 48.2014,
+                  "longitude": 16.3712
+                },
+                "offers": {
+                  "@type": "Offer",
+                  "price": 280,
+                  "priceCurrency": "EUR"
+                },
+                "checkinTime": "15:00",
+                "checkoutTime": "11:00",
+                "telephone": "+43 1 515800"
+              }
+            </script>
+          </head>
+        </html>
+      `;
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) => {
+          if (String(url).includes('booking.com')) {
+            return Promise.resolve({
+              status: 200,
+              url: 'https://www.booking.com/hotel/at/grand-hotel-wien.html?checkin=2026-09-10&checkout=2026-09-15',
+              text: () => Promise.resolve(mockBookingHtml),
+            });
+          }
+          return Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve(''),
+            json: () => Promise.resolve({ query: { pages: [] } }),
+          });
+        })
+      );
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/spots/preview?maps_link=https://www.booking.com/hotel/at/grand-hotel-wien.html?checkin=2026-09-10&checkout=2026-09-15',
+        headers: { cookie },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const data = res.json();
+      expect(data.name).toBe('Grand Hotel Wien');
+      expect(data.category).toBe('Unterkunft');
+      expect(data.imageUrl).toBe('https://images.example.com/grand-hotel.jpg');
+      expect(data.address).toBe('Kärntner Ring 9, 1010 Wien, Österreich');
+      expect(data.city).toBe('Wien');
+      expect(data.amount).toBe(280);
+      expect(data.currency).toBe('EUR');
+      expect(data.lat).toBe(48.2014);
+      expect(data.lng).toBe(16.3712);
+      expect(data.checkin).toBe('15:00');
+      expect(data.checkout).toBe('11:00');
+      expect(data.startDate).toBe('2026-09-10');
+      expect(data.endDate).toBe('2026-09-15');
+      expect(data.contact).toBe('+43 1 515800');
+    });
   });
 });

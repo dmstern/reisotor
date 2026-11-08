@@ -25,6 +25,7 @@ export interface UsePlaceSearchOptions {
   onSelectPlace?: (place: PlaceSearchResult) => void;
   onMapsLinkResolved?: (coords: { lat: number; lng: number }, url: string) => void;
   onMapsLinkInput?: (url: string) => void;
+  onBookingLinkInput?: (url: string) => void;
 }
 
 export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
@@ -37,6 +38,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
   const activeIndex = ref(-1);
   const selectedPlace = ref<PlaceSearchResult | null>(null);
   const shortlinkDetected = ref(false);
+  const bookingLinkDetected = ref(false);
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let activeAbortController: AbortController | null = null;
@@ -91,6 +93,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
   function handleInput(val: string, immediate = false) {
     inputText.value = val;
     shortlinkDetected.value = false;
+    bookingLinkDetected.value = false;
 
     cancelDebounceAndInFlight();
 
@@ -121,6 +124,20 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
       } else if (classification.isShortlink) {
         shortlinkDetected.value = true;
       }
+      return;
+    }
+
+    if (classification.type === 'booking_link') {
+      isSearching.value = false;
+      isLoadingMore.value = false;
+      hasMore.value = false;
+      isOpen.value = false;
+      results.value = [];
+      activeIndex.value = -1;
+      bookingLinkDetected.value = true;
+
+      options.onBookingLinkInput?.(classification.url);
+      options.onMapsLinkInput?.(classification.url);
       return;
     }
 
@@ -261,6 +278,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
     results.value = [];
     activeIndex.value = -1;
     shortlinkDetected.value = false;
+    bookingLinkDetected.value = false;
     cancelDebounceAndInFlight();
     inputText.value = '';
   }
@@ -328,6 +346,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
     activeIndex,
     selectedPlace,
     shortlinkDetected,
+    bookingLinkDetected,
     handleInput,
     loadMore,
     selectPlace,

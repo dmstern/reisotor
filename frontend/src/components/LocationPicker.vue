@@ -418,6 +418,7 @@ const {
   results,
   activeIndex,
   shortlinkDetected,
+  bookingLinkDetected,
   handleInput,
   loadMore,
   selectPlace,
@@ -634,6 +635,12 @@ defineExpose({
     <p v-if="shortlinkDetected" class="hint info">
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
       Maps-Kurzlink erkannt. Die genauen Koordinaten werden serverseitig aufgelöst.
+    </p>
+
+    <!-- Buchungs-Link-Hinweis -->
+    <p v-if="bookingLinkDetected" class="hint info">
+      <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" />
+      Buchungs-Link erkannt. Die Unterkunft-Details werden automatisch abgerufen.
     </p>
 
     <!-- Standort-Ermittlungsfehler -->

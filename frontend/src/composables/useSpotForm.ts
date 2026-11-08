@@ -20,6 +20,7 @@ import {
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { isEmptyRichText } from '../utils/richText';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
+import { isBookingLink } from '../utils/locationInputClassifier';
 import type LocationPicker from '../components/LocationPicker.vue';
 import type { PlaceSearchResult } from '../components/LocationPicker.vue';
 import type { TourItem } from '../components/TourAssignDropdown.vue';
@@ -615,6 +616,18 @@ export function useSpotForm(options: UseSpotFormOptions) {
         name: string | null;
         imageUrl: string | null;
         images?: string[];
+        category?: string | null;
+        address?: string | null;
+        city?: string | null;
+        amount?: number | null;
+        currency?: string | null;
+        lat?: number | null;
+        lng?: number | null;
+        checkin?: string | null;
+        checkout?: string | null;
+        startDate?: string | null;
+        endDate?: string | null;
+        contact?: string | null;
       }>(`/spots/preview?${params.toString()}`);
       if (reqId !== previewRequestId) return;
       if (preview.images && preview.images.length > 0) {
@@ -622,8 +635,48 @@ export function useSpotForm(options: UseSpotFormOptions) {
       } else if (preview.imageUrl) {
         spotPreviewImages.value = [preview.imageUrl];
       }
-      if (preview.name && !form.value.title.trim()) form.value.title = preview.name;
-      if (preview.imageUrl && !form.value.image_url.trim()) form.value.image_url = preview.imageUrl;
+      const isBooking = isBookingLink(mapsLink);
+      if (preview.name && (!form.value.title.trim() || isBooking)) {
+        form.value.title = preview.name;
+      }
+      if (preview.imageUrl && (!form.value.image_url.trim() || isBooking)) {
+        form.value.image_url = preview.imageUrl;
+      }
+      if (preview.category && (!form.value.category?.trim() || isBooking)) {
+        form.value.category = preview.category;
+      }
+      if (preview.address && (!form.value.address?.trim() || isBooking)) {
+        form.value.address = preview.address;
+      }
+      if (
+        preview.amount != null &&
+        (form.value.amount === '' || Number(form.value.amount) === 0 || isBooking)
+      ) {
+        form.value.amount = String(preview.amount);
+      }
+      if (preview.checkin && !form.value.checkin?.trim()) {
+        form.value.checkin = preview.checkin;
+      }
+      if (preview.checkout && !form.value.checkout?.trim()) {
+        form.value.checkout = preview.checkout;
+      }
+      if (preview.startDate && !form.value.start_date?.trim()) {
+        form.value.start_date = preview.startDate;
+      }
+      if (preview.endDate && !form.value.end_date?.trim()) {
+        form.value.end_date = preview.endDate;
+      }
+      if (preview.contact && !form.value.contact?.trim()) {
+        form.value.contact = preview.contact;
+      }
+      if (preview.lat != null && preview.lng != null) {
+        const pin = { lat: preview.lat, lng: preview.lng };
+        if (editingSpot.value !== null) {
+          editSpotManualPin.value = pin;
+        } else {
+          spotManualPin.value = pin;
+        }
+      }
     } catch {
       // Vorschau fehlgeschlagen
     } finally {

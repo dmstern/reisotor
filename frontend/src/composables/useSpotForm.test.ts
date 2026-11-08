@@ -131,4 +131,46 @@ describe('useSpotForm - openSpotForm', () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(editSpotForm.value.is_home).toBe(false);
   });
+
+  it('automatically populates title, category, image, address, amount, dates, checkin/checkout and pin from booking link (issue #607)', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Grand Hotel Wien',
+      imageUrl: 'https://images.example.com/hotel.jpg',
+      images: ['https://images.example.com/hotel.jpg', 'https://images.example.com/room.jpg'],
+      category: 'Unterkunft',
+      address: 'Kärntner Ring 9, 1010 Wien',
+      amount: 280,
+      checkin: '15:00',
+      checkout: '11:00',
+      startDate: '2026-09-10',
+      endDate: '2026-09-15',
+      contact: '+43 1 515800',
+      lat: 48.2014,
+      lng: 16.3712,
+    });
+
+    const { spotForm, spotManualPin, onSpotMapsLinkUpdate } = useSpotForm({
+      tripId: 1,
+      users: ref([]),
+      spotScheduledDates: ref(new Map()),
+    });
+
+    onSpotMapsLinkUpdate('https://www.booking.com/hotel/at/grand-hotel-wien.html');
+
+    // Warten auf api.get Auflösung
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(spotForm.value.title).toBe('Grand Hotel Wien');
+    expect(spotForm.value.category).toBe('Unterkunft');
+    expect(spotForm.value.image_url).toBe('https://images.example.com/hotel.jpg');
+    expect(spotForm.value.address).toBe('Kärntner Ring 9, 1010 Wien');
+    expect(spotForm.value.amount).toBe('280');
+    expect(spotForm.value.checkin).toBe('15:00');
+    expect(spotForm.value.checkout).toBe('11:00');
+    expect(spotForm.value.start_date).toBe('2026-09-10');
+    expect(spotForm.value.end_date).toBe('2026-09-15');
+    expect(spotForm.value.contact).toBe('+43 1 515800');
+    expect(spotManualPin.value).toEqual({ lat: 48.2014, lng: 16.3712 });
+  });
 });

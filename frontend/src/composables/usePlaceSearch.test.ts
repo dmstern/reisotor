@@ -47,6 +47,21 @@ describe('usePlaceSearch', () => {
     expect(search.isSearching.value).toBe(false);
   });
 
+  it('detects booking links, sets bookingLinkDetected and notifies callbacks (issue #607)', () => {
+    const onMapsLinkInput = vi.fn();
+    const onBookingLinkInput = vi.fn();
+    const search = usePlaceSearch({ onMapsLinkInput, onBookingLinkInput });
+    const bookingUrl = 'https://www.booking.com/hotel/at/hotel-sacher-wien.html';
+
+    search.handleInput(bookingUrl);
+
+    expect(search.bookingLinkDetected.value).toBe(true);
+    expect(search.shortlinkDetected.value).toBe(false);
+    expect(search.isSearching.value).toBe(false);
+    expect(onBookingLinkInput).toHaveBeenCalledWith(bookingUrl);
+    expect(onMapsLinkInput).toHaveBeenCalledWith(bookingUrl);
+  });
+
   it('does not trigger search for inputs under 2 chars', () => {
     const search = usePlaceSearch();
     search.handleInput('a');

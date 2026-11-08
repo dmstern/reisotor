@@ -320,6 +320,36 @@ describe('LocationPicker', () => {
       cleanUp();
     });
 
+    it('recognizes booking link, shows notice and emits update:mapsLink without calling places search API (issue #607)', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy;
+      const updateMapsLink = vi.fn();
+
+      const { container, cleanUp } = mountPicker(
+        { modelValue: null },
+        { 'onUpdate:mapsLink': updateMapsLink }
+      );
+      await nextTick();
+
+      const input = container.querySelector('input.location-picker-input') as HTMLInputElement;
+      input.value = 'https://www.booking.com/hotel/at/hotel-sacher-wien.html';
+      input.dispatchEvent(new Event('input'));
+      await nextTick();
+
+      vi.advanceTimersByTime(500);
+
+      expect(updateMapsLink).toHaveBeenCalledWith(
+        'https://www.booking.com/hotel/at/hotel-sacher-wien.html'
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      const notice = container.querySelector('.hint.info');
+      expect(notice).toBeTruthy();
+      expect(notice?.textContent).toContain('Buchungs-Link');
+
+      cleanUp();
+    });
+
     it('does not trigger search for whitespace or single-character input', async () => {
       const fetchSpy = vi.fn();
       globalThis.fetch = fetchSpy;
