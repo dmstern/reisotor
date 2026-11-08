@@ -170,13 +170,13 @@ function onBlur(event: FocusEvent) {
 
 .quick-add-row.expanded .input-container {
   background: var(--color-surface);
-  border-color: var(--color-primary);
+  border-color: var(--color-border-strong);
 }
 
 .input-container:focus-within,
 .input-container:focus-visible {
   background: var(--color-surface);
-  border-color: var(--color-primary);
+  border-color: var(--color-border-strong);
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo);

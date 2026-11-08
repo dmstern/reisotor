@@ -181,7 +181,7 @@ function discardDraft() {
   min-height: 36px;
   padding: 4px 8px;
   font-size: 0.85rem;
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -190,8 +190,11 @@ function discardDraft() {
 }
 
 .quick-add-qty input:focus,
-.quick-add-qty :deep(input:focus) {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 1px;
+.quick-add-qty :deep(input:focus),
+.quick-add-qty input:focus-visible,
+.quick-add-qty :deep(input:focus-visible) {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 </style>

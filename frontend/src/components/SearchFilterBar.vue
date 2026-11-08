@@ -346,10 +346,10 @@ function clearFilters() {
 .search-input {
   width: 100%;
   min-width: 0;
-  height: 44px;
-  min-height: 44px;
+  height: var(--input-height, 46px);
+  min-height: var(--input-height, 46px);
   padding: 0 36px 0 38px;
-  border-radius: var(--radius-md-squircle);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
@@ -369,7 +369,6 @@ function clearFilters() {
 
 .search-input:focus,
 .search-input:focus-visible {
-  border-color: var(--color-primary);
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));

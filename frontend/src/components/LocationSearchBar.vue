@@ -263,8 +263,8 @@ function onDropdownScroll(e: Event) {
   padding-right: 42px;
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
 }
 
 .location-search-wrap.is-loading :deep(.location-picker-input) {

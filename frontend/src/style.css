@@ -714,6 +714,13 @@ a:focus-visible {
   border-radius: 2px;
 }
 
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 button,
 input,
 select,
