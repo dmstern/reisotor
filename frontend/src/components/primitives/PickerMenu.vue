@@ -131,7 +131,7 @@ onUnmounted(() => {
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-dropdown-menu);
   padding: var(--space-2);
   display: flex;
   flex-direction: column;

@@ -32,10 +32,9 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     );
     await expect(page.locator('.draft-status')).toContainText('Entwurf wiederhergestellt');
 
-    // Aufräumen: explizites Schließen verwirft den Entwurf wieder (siehe closeForm()/newDraft.clear()
-    // in NotesView.vue) - sonst bliebe er serverseitig (geteilte Test-DB über die ganze e2e-Suite
-    // hinweg) für nachfolgende Tests bestehen.
-    await page.locator('.modal .close-btn').click();
+    // Aufräumen: Entwurf löschen, damit er in der DB für nachfolgende Tests nicht verbleibt
+    await page.locator('.modal').getByRole('button', { name: 'Löschen' }).click();
+    await expect(page.locator('.modal')).toBeHidden();
   });
 
   test('nach erfolgreichem Speichern bleibt kein Entwurf zurück', async ({ page }) => {
@@ -56,6 +55,8 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await page.getByRole('button', { name: 'Neue Notiz' }).click();
     await expect(page.locator('.modal .richtext-content[contenteditable="true"]')).toHaveText('');
     await expect(page.locator('.draft-status')).toHaveCount(0);
+    await page.locator('.modal .close-btn').click();
+    await expect(page.locator('.modal')).toBeHidden();
   });
 
   test('eine ungespeicherte Änderung im Bearbeiten-Formular übersteht einen Reload', async ({
@@ -95,6 +96,8 @@ test.describe('Entwurfs-Zwischenspeicherung für Formulare', () => {
     await expect(modal.locator('.draft-status')).toContainText(
       'Stand nach Unterbrechung wiederhergestellt'
     );
+    await modal.locator('.btn-cancel').click();
+    await expect(modal).toBeHidden();
   });
 
   test('ein ungespeicherter Entwurf in der ToDo-, Einkaufs- und Packliste kann verworfen werden', async ({

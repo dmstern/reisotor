@@ -106,7 +106,8 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   align-items: center;
   gap: 6px;
   min-height: 36px;
-  background: var(--color-hover);
+  background-color: var(--color-surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
   border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;
@@ -119,11 +120,14 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   max-width: 100%;
   flex-shrink: 0;
   box-sizing: border-box;
+  box-shadow: var(--shadow-control);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
 .done-toggle:not(.done-toggle--split):focus-visible {
@@ -133,33 +137,45 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle:not(.done-toggle--split):hover {
-  background: var(--color-surface);
+  background-color: var(--color-hover);
   border-color: var(--toggle-hover-border, var(--color-primary));
   color: var(--color-text);
+  box-shadow: var(--shadow-control-hover);
+  translate: 0 -1px;
+}
+
+.done-toggle:not(.done-toggle--split):active {
+  transform: scale(0.98);
+  translate: 0 0;
+  box-shadow: var(--shadow-control-active);
 }
 
 .done-toggle.planned {
   color: var(--color-text);
   border-color: var(--color-border);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-control);
 }
 
 .done-toggle:not(.done-toggle--split).planned:hover {
   border-color: var(--color-success);
   color: var(--color-success);
+  box-shadow: var(--shadow-control-hover);
 }
 
 .done-toggle.active,
 .done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  background-color: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
   border-color: var(--color-success);
+  box-shadow: var(--shadow-control);
 }
 
 .done-toggle:not(.done-toggle--split).active:hover,
 .done-toggle:not(.done-toggle--split).status-done:hover {
-  background: color-mix(in srgb, var(--color-success) 22%, transparent);
+  background-color: color-mix(in srgb, var(--color-success) 22%, var(--color-surface));
+  box-shadow: var(--shadow-control-hover);
 }
 
 /* Split-Pill Layout & Sub-Buttons */

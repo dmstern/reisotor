@@ -548,7 +548,7 @@ defineOptions({
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-dropdown-menu);
   transform-origin: top center;
   max-height: 240px;
   overflow: hidden;

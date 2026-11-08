@@ -92,6 +92,7 @@ function onChange(event: Event) {
   border: max(2px, var(--ui-border-width, 2px)) solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
+  box-shadow: var(--shadow-control-choice);
   cursor: pointer;
   position: relative;
   display: inline-flex;
@@ -137,7 +138,14 @@ function onChange(event: Event) {
   inset: 0;
   margin: auto;
   border-radius: var(--radius-full);
-  background: var(--color-primary);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 15%, var(--color-primary)) 0%,
+    var(--color-primary) 100%
+  );
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transform: scale(0);
   transform-origin: center center;
   opacity: 0;

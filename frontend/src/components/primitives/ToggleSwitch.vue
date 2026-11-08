@@ -82,10 +82,14 @@ function onToggle() {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background-color: color-mix(in srgb, var(--color-text-muted) 28%, var(--color-surface));
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.22),
+    inset 0 0 1px rgba(0, 0, 0, 0.16),
+    0 1px 0 var(--shadow-control-highlight);
   cursor: pointer;
   user-select: none;
   transition:
-    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.15s ease;
 }
@@ -107,25 +111,36 @@ function onToggle() {
 
 .toggle-switch:hover:not(:disabled) {
   background-color: color-mix(in srgb, var(--color-text-muted) 38%, var(--color-surface));
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.26),
+    0 1px 0 var(--shadow-control-highlight-strong);
 }
 
 .toggle-switch.is-active {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border-color: var(--color-button-edge);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.24),
+    0 1px 0 var(--shadow-control-highlight);
 }
 
 .toggle-switch.is-active:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 6%, var(--color-primary-dark)) 0%,
+    var(--color-primary-dark) 100%
+  );
+  border-color: var(--color-button-edge);
 }
 
 .toggle-switch__thumb {
   display: block;
   border-radius: var(--radius-pill);
-  background-color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #ebebeb 100%);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.28),
-    0 1px 1px rgba(0, 0, 0, 0.1);
+    inset 0 1px 0 #ffffff,
+    0 2px 5px rgba(0, 0, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.18);
   transform: translateX(0);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;

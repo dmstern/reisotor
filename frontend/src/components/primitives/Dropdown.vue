@@ -75,9 +75,13 @@ const emit = defineEmits<{
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: var(--color-surface);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 5%, var(--color-surface)) 0%,
+    var(--color-surface) 100%
+  );
   color: var(--color-text);
-  box-shadow: none;
+  box-shadow: var(--shadow-control);
   font-family: inherit;
   font-size: var(--font-size-md);
   font-weight: 500;
@@ -94,7 +98,9 @@ const emit = defineEmits<{
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
+    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
 .dropdown--sm .dropdown__button.dropdown__field,
@@ -114,15 +120,23 @@ const emit = defineEmits<{
 }
 
 .dropdown__button.dropdown__field:hover:not(:disabled) {
-  background: var(--color-hover);
-  box-shadow: var(--shadow-sm);
+  translate: 0 -1px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 8%, var(--color-surface)) 0%,
+    var(--color-surface) 100%
+  );
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-control-hover);
 }
 
 .dropdown__button.dropdown__field:active:not(:disabled),
-.dropdown__button.dropdown__field:focus,
 .dropdown--open .dropdown__button.dropdown__field,
 .dropdown__button.dropdown__field[aria-expanded='true'] {
-  box-shadow: var(--shadow-sm);
+  transform: translateY(1px);
+  translate: 0 0;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-control-active);
 }
 
 .dropdown__button.dropdown__field:focus-visible {

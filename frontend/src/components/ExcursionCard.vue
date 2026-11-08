@@ -434,7 +434,9 @@ const {
   corner-shape: squircle;
   background: color-mix(in srgb, var(--excursion-theme-color) 8%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
-  box-shadow: var(--shadow-xs);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-xs);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -445,12 +447,15 @@ const {
 .excursion-card.expanded .card-header-row:hover:not(:has(.tour-edit-btn:hover)) {
   background: color-mix(in srgb, var(--excursion-theme-color) 16%, var(--color-surface));
   border-color: var(--excursion-theme-color);
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight-strong),
+    var(--shadow-sm);
   transform: translateY(-1px);
 }
 
 .excursion-card.expanded .card-header-row:active:not(:has(.tour-edit-btn:hover)) {
-  transform: translateY(0) scale(0.995);
+  transform: translateY(1px) scale(0.995);
+  box-shadow: var(--shadow-control-active);
 }
 
 .excursion-card.expanded:has(.card-header-row:hover:not(:has(.tour-edit-btn:hover)))
@@ -539,6 +544,7 @@ const {
   background: color-mix(in srgb, var(--excursion-theme-color) 10%, var(--color-hover));
   border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
   color: var(--excursion-theme-dark);
+  box-shadow: var(--shadow-control);
   font-size: var(--font-size-xs);
   font-weight: 600;
   line-height: 1;
@@ -567,7 +573,8 @@ const {
   background: var(--excursion-theme-color);
   border-color: var(--excursion-theme-color);
   color: #ffffff;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1px);
 }
 
 .excursion-card:not(.expanded):hover .disclosure-chevron {
@@ -580,7 +587,8 @@ const {
   background: var(--excursion-theme-color);
   border-color: var(--excursion-theme-color);
   color: #ffffff;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1px);
 }
 
 .excursion-card.expanded

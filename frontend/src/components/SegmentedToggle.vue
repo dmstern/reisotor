@@ -168,7 +168,9 @@ watch(
   border-radius: var(--radius-pill);
   padding: 4px;
   gap: 2px;
-  box-shadow: var(--shadow-inset);
+  box-shadow:
+    var(--shadow-inset),
+    0 1px 0 var(--shadow-control-highlight);
 }
 
 /* Gleitet per transform zum aktiven Button. Durch Messung von offsetLeft/offsetWidth (analog NavBar.vue/
@@ -180,9 +182,15 @@ watch(
   left: 4px;
   bottom: 4px;
   width: calc((100% - 8px - (var(--count) - 1) * 2px) / var(--count));
-  background: var(--color-surface);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 7%, var(--color-surface)) 0%,
+    var(--color-surface) 100%
+  );
   border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-pill-raised);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-pill-raised);
   transform: translateX(calc(var(--active-index) * (100% + 2px)));
   transition:
     transform 0.2s ease,

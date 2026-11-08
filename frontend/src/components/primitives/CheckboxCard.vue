@@ -139,30 +139,43 @@ function onChange(event: Event) {
 .checkbox-card--card {
   padding: var(--space-3) var(--space-4);
   margin: var(--space-3) 0;
-  background: var(--color-hover);
+  background-color: var(--color-surface);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
+  box-shadow: var(--shadow-card-interactive);
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .checkbox-card--card:hover:not(.is-disabled) {
-  background: var(--color-surface);
+  background-color: color-mix(in srgb, white 2.5%, var(--color-surface));
   border-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px) scale(1.008);
 }
 
 .checkbox-card--card:active:not(.is-disabled) {
-  transform: translateY(0);
+  transform: translateY(1px) scale(0.99);
+  box-shadow: var(--shadow-card-active);
+  background-color: color-mix(in srgb, black 2%, var(--color-surface));
 }
 
 .checkbox-card--card.is-checked {
-  background: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
+  background-color: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
 }
 
 .checkbox-card--card.is-checked:hover:not(.is-disabled) {
-  background: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
+  background-color: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
   border-color: var(--color-primary);
 }
 

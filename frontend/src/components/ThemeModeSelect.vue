@@ -193,9 +193,13 @@ function selectMode(val: ThemeMode) {
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background-color: var(--color-surface);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 5%, var(--color-surface)) 0%,
+    var(--color-surface) 100%
+  );
   color: var(--color-text);
-  box-shadow: none;
+  box-shadow: var(--shadow-control);
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 500;
@@ -206,25 +210,33 @@ function selectMode(val: ThemeMode) {
     border-color 0.15s ease,
     background-color 0.15s ease,
     box-shadow 0.15s ease,
-    transform 0.1s ease;
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
+    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
 .theme-dropdown-trigger:hover:not(:focus-visible):not(.is-open) {
-  background-color: var(--color-hover);
+  translate: 0 -1px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 8%, var(--color-surface)) 0%,
+    var(--color-surface) 100%
+  );
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-control-hover);
 }
 
 .theme-dropdown-trigger:focus-visible,
 .theme-dropdown-trigger.is-open {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
+  border-color: var(--color-primary);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .theme-dropdown-trigger:active {
-  transform: scale(0.99);
-  box-shadow: var(--shadow-sm);
+  transform: translateY(1px) scale(0.99);
+  translate: 0 0;
+  box-shadow: var(--shadow-control-active);
 }
 
 .theme-trigger-content {

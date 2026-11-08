@@ -89,12 +89,14 @@ function onChange(event: Event) {
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
+  box-shadow: var(--shadow-control-choice);
   cursor: pointer;
   position: relative;
   box-sizing: border-box;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .checkbox--sm {
@@ -117,8 +119,15 @@ function onChange(event: Event) {
 }
 
 .checkbox:checked {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 10%, var(--color-primary)) 0%,
+    var(--color-primary) 100%
+  );
+  border-color: var(--color-button-edge, var(--color-primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .checkbox:checked::after {

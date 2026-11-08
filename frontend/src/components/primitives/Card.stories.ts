@@ -47,7 +47,7 @@ export const Default: Story = {
     template: `
       <Card v-bind="args" style="max-width: 400px;">
         <h3 style="margin: 0 0 8px;">Standard Karte</h3>
-        <p style="margin: 0;">Standard-Oberfläche mit weißem Hintergrund, weichem Schatten (--shadow-sm) und Squircle-Ecken.</p>
+        <p style="margin: 0;">Standard-Oberfläche mit weißem Hintergrund, dezentem 3D-Kantenlicht und Squircle-Ecken.</p>
       </Card>
     `,
   }),
@@ -95,7 +95,7 @@ export const Elevated: Story = {
     template: `
       <Card v-bind="args" style="max-width: 400px;">
         <h3 style="margin: 0 0 8px;">Erhöhte Karte (Elevated)</h3>
-        <p style="margin: 0;">Prägnanterer Schatten (--shadow-md) für schwebende Panels oder hervorgehobene Auswahlen.</p>
+        <p style="margin: 0;">Prägnanterer 3D-Schwebeschatten (--shadow-card-elevated) für schwebende Panels oder hervorgehobene Auswahlen.</p>
       </Card>
     `,
   }),
@@ -219,7 +219,7 @@ export const Interactive: Story = {
     template: `
       <Card v-bind="args" style="max-width: 400px;">
         <h3 style="margin: 0 0 8px;">Anklickbare Karte (Hover-Lift)</h3>
-        <p style="margin: 0;">Beim Drüberfahren hebt sich die Karte leicht an (translateY, Skalierung auf 1.015 und verstärkter Schatten).</p>
+        <p style="margin: 0;">Beim Drüberfahren hebt sich die Karte taktil an (3D-Lichtkante, Schwebeschatten und Einfedern bei Klick).</p>
       </Card>
     `,
   }),

@@ -78,7 +78,7 @@ function onInput(event: Event) {
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: none;
+  box-shadow: var(--shadow-control-inset);
   font-family: inherit;
   font-size: var(--font-size-md);
   line-height: 1.5;
@@ -88,11 +88,13 @@ function onInput(event: Event) {
   resize: vertical;
   transition:
     border-color 0.15s ease,
+    background-color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
 .textarea:hover:not(:disabled) {
-  box-shadow: var(--shadow-sm);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+  box-shadow: var(--shadow-control-inset-hover);
 }
 
 .textarea:focus,
@@ -100,7 +102,8 @@ function onInput(event: Event) {
 .textarea:active:not(:disabled) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
 .textarea:disabled {

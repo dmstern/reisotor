@@ -292,7 +292,32 @@ Desktop-Panel hatte `box-shadow: none` (Rest eines älteren Layouts) und wirkte 
 sichtbarem Öffnen/Schließen wie eine flache Nachbarspalte statt einer darüberliegenden Schublade.
 Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
 
-**Formularfelder & Dropdowns (Input, Select, Dropdown, Combobox, Textarea)**: Eingabefelder, Selects, Dropdowns und Comboboxen besitzen im Initialzustand **keinen** Schlagschatten (`box-shadow: none`). Erst bei Hover (`:hover`) und im Active-/Fokus-Zustand (`:focus`, `:active`, geöffnetes Dropdown-Menü) erhalten sie einen sanften Schlagschatten (`box-shadow: var(--shadow-sm)`). Der Schatten wird per Transition (`box-shadow 0.15s ease`) sowohl beim Hovern als auch beim Verlassen/Blur weich animiert.
+**Moderne 3D-Effekte für Interaktionselemente (Issue #701)**:
+Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Switches und Tasten besitzen app-weit einen soliden, haptischen 3D-Look mit Kantenlicht- und Tiefeneffekten:
+
+- **Erhobene Steuerelemente (`Button.vue`, `Select.vue`, `Dropdown.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`, `DoneToggle.vue`)**:
+  - Besitzen ein feines Kantenlicht oben (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit dezentem Umgebungs- und Kontaktschatten (`--shadow-control`).
+  - Ein subtiler vertikaler Farbverlauf (`linear-gradient(180deg, color-mix(in srgb, white 5%..10%, ...) 0%, ... 100%)`) simuliert einfallendes Licht von oben und verleiht den Steuerelementen physisches Volumen.
+  - Sekundäre Destruktiv-Buttons (`variant="danger" secondary`, z. B. Löschen-Buttons in Dialog-Footern) teilen dasselbe taktile 3D-Volumen mit roter Kontur und `--shadow-control`, um auf gleicher physischer Ebene wie Abbrechen und Speichern zu stehen.
+  - In-Card Toggles und Chevron-Pills (`DoneToggle`, `.spot-expand-pill`) besitzen dieselbe taktile Basishöhe (`--shadow-control`) und heben sich beim Hover sanft ab.
+  - **Transition-Architektur**: Um ruckartige Farbsprünge beim Hovern zu vermeiden (CSS kann `linear-gradient` nicht interpolieren), liegt der Glanzverlauf als konstanter Layer (`background-image`), während Hover- und Aktivzustände `background-color`, `box-shadow`, `border-color` und `transform` stufenlos interpolieren.
+  - Beim Hovern heben sie sich sanft an (`translate: 0 -1px`, `--shadow-control-hover`).
+  - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985)`, `--shadow-control-active`), sodass sich Interaktionen greifbar und solide anfühlen.
+- **Versenkte Eingabefelder (`Input.vue`, `Textarea.vue`)**:
+  - Wirken wie eingelassene Schächte durch eine sanfte innere Kante (`--shadow-control-inset`: oberer Inset-Schatten plus feiner unterer Lichtsaum), statt flach auf der Oberfläche zu kleben.
+  - Bei Fokus verbindet sich der Inset-Effekt nahtlos mit dem Reisotor-Fokusring (`--focus-ring-halo`).
+- **Umschalter & Toggles (`ToggleSwitch.vue`, `SegmentedToggle.vue`)**:
+  - Die Führungsrinne/der Track ist eingelassen (`--shadow-inset` / oberer Inset-Schatten mit Kantenlichtsaum).
+  - Der Thumb/Schieber ist als haptischer 3D-Körper mit Lichtkante oben (`inset 0 1px 0 #fff`) und weichem Kontaktschatten (`--shadow-pill-raised`) gestaltet.
+- **Dropdown-Menüs & Popovers (`PickerMenu.vue`, `Combobox.vue`)**:
+  - Nutzen `--shadow-dropdown-menu` mit tieferem Schwebeschatten und Lichtkante oben für eine schwebende, solide Menü-Platte.
+- **Karten & Surfaces (`Card.vue`, `CheckboxCard.vue`, `SpotCard.vue`, `ExcursionCard.vue`)**:
+  - Besitzen als solide Oberflächen ein feines Kantenlicht oben und mehrstufige Kontaktschatten (`--shadow-card`).
+  - Ein extrem subtiler Oberflächen-Verlauf (`linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 100%)`) verleiht der Fläche Plastizität ohne die Hintergrundfarbe zu verfälschen.
+  - Anklickbare/interaktive Karten (`.card--interactive`, `.card--expandable`, `CheckboxCard`) sind im Ruhezustand bereits leicht erhaben (`--shadow-card-interactive`).
+  - Beim Hovern heben sie sich mit dynamischem Schwebeschatten und verstärktem Kantenlicht an (`transform: translateY(-3px) scale(1.012)`, `--shadow-card-hover`).
+  - Beim Klick (`:active`) federn sie spürbar ein (`transform: translateY(1px) scale(0.988)`, `--shadow-card-active`), was Klicks und Touch-Interaktionen ein befriedigendes physisches Feedback gibt.
+  - Polaroid-Fotokarten (`variant="polaroid"`, z. B. in `SpotCard.vue`) besitzen maßgeschneiderte Kantenreflexionen und tiefe Vintage-Schlagschatten (`--shadow-card-polaroid`, `--shadow-card-polaroid-hover`, `--shadow-card-polaroid-active`).
 
 ## Animationen
 
