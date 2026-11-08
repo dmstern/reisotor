@@ -275,6 +275,7 @@
      Chips/Badges, …). */
   --radius-xs: 6px;
   --radius-sm: 10px;
+  --radius-btn: 12px;
   --radius-md: 16px;
   --radius-lg: 26px;
   --radius-xl: 32px;
@@ -294,6 +295,7 @@
      und bleiben dadurch unangetastet. */
   --radius-xs-squircle: var(--radius-xs);
   --radius-sm-squircle: var(--radius-sm);
+  --radius-btn-squircle: var(--radius-btn);
   --radius-md-squircle: var(--radius-md);
   --radius-lg-squircle: var(--radius-lg);
   --radius-xl-squircle: var(--radius-xl);
@@ -457,6 +459,7 @@
   :root {
     --radius-xs-squircle: calc(var(--radius-xs) * 1.75);
     --radius-sm-squircle: calc(var(--radius-sm) * 1.75);
+    --radius-btn-squircle: calc(var(--radius-btn) * 1.75);
     --radius-md-squircle: calc(var(--radius-md) * 1.75);
     --radius-lg-squircle: calc(var(--radius-lg) * 1.75);
     --radius-xl-squircle: calc(var(--radius-xl) * 1.75);
@@ -890,11 +893,6 @@ textarea:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
-}
-
-input[type='search'] {
-  border-radius: var(--radius-pill);
-  corner-shape: round;
 }
 
 input[type='search']::-webkit-search-decoration,
