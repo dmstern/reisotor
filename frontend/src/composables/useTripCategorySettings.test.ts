@@ -159,6 +159,7 @@ describe('useTripCategorySettings', () => {
   it('steuert den Reset-Dialog und führt executeReset aus', async () => {
     const store = useTripCategoriesStore();
     let resetCalledWith: { tripId: number; id: number } | null = null;
+
     store.resetCategory = async (tripId: number, id: number) => {
       resetCalledWith = { tripId, id };
     };

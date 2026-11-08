@@ -305,28 +305,42 @@ const UNKNOWN_META: WeatherCodeMeta = {
 };
 
 export function weatherCodeMeta(code?: number | null): WeatherCodeMeta {
-  if (code == null) return UNKNOWN_META;
+  if (code == null) {
+    return UNKNOWN_META;
+  }
+
   return WEATHER_CODE_META[code] ?? UNKNOWN_META;
 }
 
 export function formatWeatherTemp(temp?: number | null): string {
-  if (temp == null || Number.isNaN(temp)) return '–';
+  if (temp == null || Number.isNaN(temp)) {
+    return '–';
+  }
+
   return `${Math.round(temp)}°`;
 }
 
 export function formatWeatherTempRange(tempMax?: number | null, tempMin?: number | null): string {
-  if (tempMax == null && tempMin == null) return '–';
+  if (tempMax == null && tempMin == null) {
+    return '–';
+  }
+
   if (tempMax != null && tempMin != null) {
     return `${Math.round(tempMax)}° / ${Math.round(tempMin)}°`;
   }
+
   if (tempMax != null) {
     return `${Math.round(tempMax)}°`;
   }
+
   return `${Math.round(tempMin!)}°`;
 }
 
 export function isWeatherUnknown(weather?: DailyWeather | null): boolean {
-  if (!weather) return true;
+  if (!weather) {
+    return true;
+  }
+
   const isUnknownCode =
     weather.weatherCode == null || weatherCodeMeta(weather.weatherCode).label === 'Unbekannt';
   const noTemps = weather.tempMax == null && weather.tempMin == null;
@@ -334,26 +348,38 @@ export function isWeatherUnknown(weather?: DailyWeather | null): boolean {
 }
 
 export function getWeatherUnknownReason(date?: string | null): string {
-  if (!date) return 'Keine Wetterdaten verfügbar.';
+  if (!date) {
+    return 'Keine Wetterdaten verfügbar.';
+  }
+
   const today = toLocalDateString(new Date());
+
   if (date > today) {
     return 'Vorhersage noch nicht verfügbar (liegt zu weit in der Zukunft)';
   }
+
   if (date < today) {
     return 'Keine historischen Wetteraufzeichnungen verfügbar';
   }
+
   return 'Wetterdaten konnten nicht abgerufen werden';
 }
 
 export function getWeatherUnknownExplanation(date?: string | null): string {
-  if (!date) return 'Wetterdaten für diesen Tag konnten nicht geladen werden.';
+  if (!date) {
+    return 'Wetterdaten für diesen Tag konnten nicht geladen werden.';
+  }
+
   const today = toLocalDateString(new Date());
+
   if (date > today) {
     return 'Dieser Tag liegt noch zu weit in der Zukunft. Wetterdienste liefern verlässliche Vorhersagen meist nur für die kommenden 7 bis 14 Tage.';
   }
+
   if (date < today) {
     return 'Für diesen vergangenen Tag liegen keine gespeicherten Wetteraufzeichnungen vor.';
   }
+
   return 'Wetterdaten konnten vom Wetterdienst zurzeit nicht abgerufen werden.';
 }
 
@@ -410,7 +436,10 @@ export function fetchWeatherForecast(
   const roundedLat = roundWeatherCoord(lat);
   const roundedLng = roundWeatherCoord(lng);
   const key = `${roundedLat.toFixed(2)},${roundedLng.toFixed(2)},${model}`;
-  if (cache?.key === key) return cache.promise;
+
+  if (cache?.key === key) {
+    return cache.promise;
+  }
 
   if (DEMO_MODE) {
     const promise = Promise.resolve(demoWeatherForecast());
@@ -440,7 +469,9 @@ export function fetchWeatherForecast(
   // Bei einem Fehlschlag darf der Cache nicht "vergiftet" bleiben – sonst würde ein erneuter
   // Versuch (z. B. nächster Dashboard-Besuch) nie wieder einen neuen Fetch auslösen.
   promise.catch(() => {
-    if (cache?.key === key) cache = null;
+    if (cache?.key === key) {
+      cache = null;
+    }
   });
   return promise;
 }
@@ -475,16 +506,25 @@ export async function fetchMergedWeather(
 
   const today = toLocalDateString(new Date());
   const byDate = new Map<string, DailyWeather>();
-  for (const day of live) byDate.set(day.date, day);
+
+  for (const day of live) {
+    byDate.set(day.date, day);
+  }
 
   // Filtere nach passende Standort-Snapshots, falls Ortskoordinaten in der Historie vorliegen
   const matchingHistory = history.filter((row) => {
-    if (row.lat == null || row.lng == null) return true;
+    if (row.lat == null || row.lng == null) {
+      return true;
+    }
+
     return Math.abs(row.lat - lat) < 0.05 && Math.abs(row.lng - lng) < 0.05;
   });
 
   for (const row of matchingHistory) {
-    if (row.date >= today) continue; // Live-Vorhersage bleibt für heute/Zukunft maßgeblich
+    if (row.date >= today) {
+      continue;
+    } // Live-Vorhersage bleibt für heute/Zukunft maßgeblich
+
     byDate.set(row.date, {
       date: row.date,
       weatherCode: row.weathercode,
@@ -493,6 +533,7 @@ export async function fetchMergedWeather(
       precipitationProbability: row.precipitation_probability,
     });
   }
+
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -511,11 +552,18 @@ const WEATHER_CODE_SEVERITY_ORDER = [
 /** Bildet aus mehreren Tageswetter-Messungen (z. B. für eine Tour mit mehreren Stationen) eine
  *  zusammenfassende Temperatur-Range und bestimmt das prägnanteste Wetter-Icon (Issue #152). */
 export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSummary | null {
-  if (!weathers.length) return null;
+  if (!weathers.length) {
+    return null;
+  }
+
   const temps = weathers
     .map((w) => (w.tempMax != null ? Math.round(w.tempMax) : null))
     .filter((t): t is number => t != null);
-  if (!temps.length) return null;
+
+  if (!temps.length) {
+    return null;
+  }
+
   const minTemp = Math.min(...temps);
   const maxTemp = Math.max(...temps);
   const tempLabel = minTemp === maxTemp ? `${minTemp}°` : `${minTemp}°–${maxTemp}°`;
@@ -523,12 +571,19 @@ export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSum
   const validCodes = weathers.map((w) => w.weatherCode).filter((c): c is number => c != null);
   let bestCode = validCodes[0] ?? 0;
   let bestIdx = WEATHER_CODE_SEVERITY_ORDER.indexOf(bestCode);
-  if (bestIdx === -1) bestIdx = 999;
+
+  if (bestIdx === -1) {
+    bestIdx = 999;
+  }
 
   for (let i = 1; i < validCodes.length; i++) {
     const code = validCodes[i];
     let idx = WEATHER_CODE_SEVERITY_ORDER.indexOf(code);
-    if (idx === -1) idx = 999;
+
+    if (idx === -1) {
+      idx = 999;
+    }
+
     if (idx < bestIdx) {
       bestCode = code;
       bestIdx = idx;
@@ -559,7 +614,10 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
   const today = toLocalDateString(new Date());
 
   for (const day of forecast) {
-    if (day.date < today) continue;
+    if (day.date < today) {
+      continue;
+    }
+
     const formattedDate = formatDateShared(day.date, { includeYear: false });
 
     // Hitze
@@ -648,13 +706,16 @@ interface OpenMeteoHourlyResponse {
 
 function parseHourlyResponse(data: OpenMeteoHourlyResponse): HourlyWeather[] {
   const result: HourlyWeather[] = [];
+
   if (data.hourly?.time && Array.isArray(data.hourly.time)) {
     data.hourly.time.forEach((t, i) => {
       const hourStr = t.split('T')[1] ?? '';
       const hourNum = parseInt(hourStr.split(':')[0], 10);
+
       if ([6, 9, 12, 15, 18, 21].includes(hourNum)) {
         const rawTemp = data.hourly.temperature_2m?.[i];
         const rawCode = data.hourly.weathercode?.[i];
+
         // Strikte Validierung: null oder undefined darf niemals durch Math.round() zu 0° verfälscht werden!
         if (
           rawTemp != null &&
@@ -674,6 +735,7 @@ function parseHourlyResponse(data: OpenMeteoHourlyResponse): HourlyWeather[] {
       }
     });
   }
+
   return result;
 }
 
@@ -717,9 +779,11 @@ export async function fetchHourlyForecast(
       start_date: date,
       end_date: date,
     });
+
     if (useModel && model) {
       params.set('models', model);
     }
+
     const data = await api.get<OpenMeteoHourlyResponse>(`/weather?${params}`);
     return parseHourlyResponse(data);
   }
@@ -729,7 +793,10 @@ export async function fetchHourlyForecast(
     // für frühere Termine keine stündlichen Vorhersagedaten mehr vorhält bzw. null zurückgibt.
     try {
       const fromArchive = await tryFetch('archive', true);
-      if (fromArchive.length > 0) return fromArchive;
+
+      if (fromArchive.length > 0) {
+        return fromArchive;
+      }
     } catch {
       // Weiter zum nächsten Fallback
     }
@@ -738,7 +805,10 @@ export async function fetchHourlyForecast(
       // Falls das spezifische Wettermodell für diesen vergangenen Zeitraum keine Daten hat,
       // liefert das globale ERA5-Reanalysis-Archiv verlässliche Verlaufsdaten.
       const fromArchiveDefault = await tryFetch('archive', false);
-      if (fromArchiveDefault.length > 0) return fromArchiveDefault;
+
+      if (fromArchiveDefault.length > 0) {
+        return fromArchiveDefault;
+      }
     } catch {
       // Weiter zum nächsten Fallback
     }
@@ -746,7 +816,10 @@ export async function fetchHourlyForecast(
     try {
       // Zusätzlicher Fallback auf Forecast-Quelle für ganz junge vergangene Tage (z. B. gestern)
       const fromForecast = await tryFetch('forecast', true);
-      if (fromForecast.length > 0) return fromForecast;
+
+      if (fromForecast.length > 0) {
+        return fromForecast;
+      }
     } catch {
       // Keine Daten verfügbar
     }
@@ -757,14 +830,20 @@ export async function fetchHourlyForecast(
   // Für heute oder die Zukunft: reguläre Forecast-Quelle
   try {
     const fromForecast = await tryFetch('forecast', true);
-    if (fromForecast.length > 0) return fromForecast;
+
+    if (fromForecast.length > 0) {
+      return fromForecast;
+    }
   } catch {
     // Weiter zum Fallback
   }
 
   try {
     const fromForecastDefault = await tryFetch('forecast', false);
-    if (fromForecastDefault.length > 0) return fromForecastDefault;
+
+    if (fromForecastDefault.length > 0) {
+      return fromForecastDefault;
+    }
   } catch {
     // Weiter zum Fallback
   }
@@ -772,7 +851,10 @@ export async function fetchHourlyForecast(
   // Falls für den heutigen Tag im Grenzfall die Forecast-Quelle versagt, liefert das Archiv ggf. bereits Werte
   try {
     const fromArchive = await tryFetch('archive', false);
-    if (fromArchive.length > 0) return fromArchive;
+
+    if (fromArchive.length > 0) {
+      return fromArchive;
+    }
   } catch {
     // Keine Daten verfügbar
   }

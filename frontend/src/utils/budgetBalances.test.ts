@@ -219,10 +219,12 @@ function applySettlements(
   suggestions: ReturnType<typeof computeSettlementSuggestions>
 ) {
   const netByUser = new Map(balances.map((b) => [b.user.id, b.net]));
+
   for (const s of suggestions) {
     netByUser.set(s.from.id, (netByUser.get(s.from.id) ?? 0) + s.amount);
     netByUser.set(s.to.id, (netByUser.get(s.to.id) ?? 0) - s.amount);
   }
+
   return netByUser;
 }
 
@@ -254,6 +256,7 @@ describe('computeSettlementSuggestions', () => {
       []
     );
     const suggestions = computeSettlementSuggestions(balances);
+
     for (const s of suggestions) {
       expect(s.amount).toBeGreaterThan(0);
       expect(s.from.id).not.toBe(s.to.id);
@@ -269,6 +272,7 @@ describe('computeSettlementSuggestions', () => {
     );
     const suggestions = computeSettlementSuggestions(balances);
     const resulting = applySettlements(balances, suggestions);
+
     for (const net of resulting.values()) {
       expect(Math.abs(net)).toBeLessThan(0.01);
     }
@@ -288,6 +292,7 @@ describe('computeSettlementSuggestions', () => {
     const totalPositive = balances.filter((b) => b.net > 0).reduce((s, b) => s + b.net, 0);
     expect(totalMoved).toBeLessThanOrEqual(totalPositive + 0.01);
     const resulting = applySettlements(balances, suggestions);
+
     for (const net of resulting.values()) {
       expect(Math.abs(net)).toBeLessThan(0.01);
     }
@@ -297,6 +302,7 @@ describe('computeSettlementSuggestions', () => {
     const balances = computeBalances([userA, userB, userC], [expense(userA.id, 100)], [], []);
     const suggestions = computeSettlementSuggestions(balances);
     const resulting = applySettlements(balances, suggestions);
+
     for (const net of resulting.values()) {
       expect(Math.abs(net)).toBeLessThan(0.01);
     }

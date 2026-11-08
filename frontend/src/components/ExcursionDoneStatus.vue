@@ -36,6 +36,7 @@ const isSplit = computed(() => !!props.excursion.date);
 
 function handleCalendarJump(event: MouseEvent) {
   event.stopPropagation();
+
   if (props.excursion.date) {
     drawers.openCalendar(props.excursion.date);
   }

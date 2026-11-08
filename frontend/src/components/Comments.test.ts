@@ -112,6 +112,7 @@ describe('Comments', () => {
       input.value = 'Neuer Text';
       input.dispatchEvent(new Event('input'));
     }
+
     await nextTick();
 
     // Submit edit form

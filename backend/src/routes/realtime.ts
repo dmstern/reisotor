@@ -17,9 +17,15 @@ const HEARTBEAT_MS = 25_000;
 // Auth-Mechanismus nötig – derselbe requireTripMember()-Gate wie bei jeder anderen Urlaub-Route.
 export const realtimeRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/realtime/stream', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
     const tripId = Number(req.query.trip_id);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     // Fastify soll nach dieser Route nichts mehr selbst an die Antwort schreiben/sie beenden – die
     // Verbindung bleibt bewusst offen, bis der Client trennt (req.raw 'close' unten).
@@ -66,10 +72,15 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
     '/realtime/position',
     async (req, reply) => {
       const { trip_id, lat, lng } = req.body ?? {};
-      if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+      if (!requireTripMember(reply, trip_id, req.session.userId)) {
+        return;
+      }
+
       if (typeof lat !== 'number' || typeof lng !== 'number') {
         return reply.code(400).send({ error: 'lat und lng erforderlich' });
       }
+
       updatePosition(trip_id!, req.session.userId!, lat, lng);
       return reply.code(204).send();
     }
@@ -78,7 +89,11 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
   // Querystring statt Body: api/client.ts's api.delete() sendet grundsätzlich keinen Body mit.
   app.delete<{ Querystring: { trip_id?: string } }>('/realtime/position', async (req, reply) => {
     const tripId = req.query.trip_id;
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
+
     clearPosition(Number(tripId), req.session.userId!);
     return reply.code(204).send();
   });
@@ -102,10 +117,15 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
     '/realtime/location-share',
     async (req, reply) => {
       const { trip_id, duration } = req.body ?? {};
-      if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+      if (!requireTripMember(reply, trip_id, req.session.userId)) {
+        return;
+      }
+
       if (duration !== 'off' && !(duration! in SHARE_DURATION_MS)) {
         return reply.code(400).send({ error: 'Ungültige duration' });
       }
+
       const shareUntil =
         duration === 'off'
           ? null
@@ -115,13 +135,20 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
       db.prepare(
         'UPDATE trip_members SET location_share_until = ? WHERE trip_id = ? AND user_id = ?'
       ).run(shareUntil, trip_id, req.session.userId);
-      if (shareUntil == null) clearPosition(Number(trip_id), req.session.userId!);
+
+      if (shareUntil == null) {
+        clearPosition(Number(trip_id), req.session.userId!);
+      }
+
       return reply.send({ location_share_until: shareUntil });
     }
   );
 
   app.get<{ Querystring: { trip_id?: string } }>('/realtime/location-share', async (req, reply) => {
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     const row = db
       .prepare('SELECT location_share_until FROM trip_members WHERE trip_id = ? AND user_id = ?')
       .get(req.query.trip_id, req.session.userId) as
@@ -135,8 +162,14 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string; since?: string } }>(
     '/trip-activity',
     async (req, reply) => {
-      if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-      if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+      if (!req.query.trip_id) {
+        return reply.code(400).send({ error: 'trip_id erforderlich' });
+      }
+
+      if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+        return;
+      }
+
       const since = req.query.since ?? new Date(0).toISOString();
       return db
         .prepare(

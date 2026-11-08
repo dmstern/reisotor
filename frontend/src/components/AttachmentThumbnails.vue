@@ -57,7 +57,10 @@ const { isCollapsing, expandToFanned, collapseToStacked, clearActiveAnimation } 
 watch(
   () => props.fanned,
   (newVal) => {
-    if (newVal === undefined) return;
+    if (newVal === undefined) {
+      return;
+    }
+
     if (newVal && !isFanned.value) {
       expandToFanned();
     } else if (!newVal && isFanned.value) {
@@ -81,13 +84,18 @@ watch(
 );
 
 const ROTATIONS = [-2.5, 2, -1.5, 2.5, -2, 1.8];
+
 function itemRotation(index: number): number {
   return ROTATIONS[index % ROTATIONS.length];
 }
 
 const stackTooltip = computed(() => {
   const count = props.items.length;
-  if (!count) return '';
+
+  if (!count) {
+    return '';
+  }
+
   return `${count} ${count === 1 ? 'Anhang' : 'Anhänge'} (Klicken zum Auffächern)`;
 });
 </script>

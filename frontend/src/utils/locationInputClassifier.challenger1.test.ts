@@ -82,9 +82,11 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         'https://www.openstreetmap.org',
         'https://osm.org',
       ];
+
       for (const input of inputs) {
         const result = classifyLocationInput(input);
         expect(result.type, `Failed for input: ${input}`).toBe('maps_link');
+
         if (result.type === 'maps_link') {
           expect(result.coords).toBeNull();
           expect(result.isShortlink).toBe(false);
@@ -99,6 +101,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         'https://maps.apple.com/?coordinate=48.2082%2',
         'https://maps.apple.com/?coordinate=48.2082%',
       ];
+
       for (const url of malformedUrls) {
         expect(() => classifyLocationInput(url)).not.toThrow();
         const result = classifyLocationInput(url);
@@ -110,6 +113,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const url = 'https://maps.google.com/@999999.9999,999999.9999,15z';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 999999.9999, lng: 999999.9999 });
       }
@@ -133,6 +137,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         '\r\n\t  https://www.google.com/maps/place/Cafe/@48.2104,16.3653,17z/data=!3m1!4b1!4m6!3m5!1s0x0!8m2!3d48.21040!4d16.36530  \t\r\n';
       const result = classifyLocationInput(raw);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.url).toBe(raw.trim());
         expect(result.coords).toEqual({ lat: 48.2104, lng: 16.3653 });
@@ -146,9 +151,11 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         'https://maps.apple.com/?address=Wien&ll=48.2082,16.3738&t=m',
         'https://www.openstreetmap.org/?box=yes&mlat=48.2082&mlon=16.3738&zoom=15',
       ];
+
       for (const url of urls) {
         const result = classifyLocationInput(url);
         expect(result.type, `Failed on: ${url}`).toBe('maps_link');
+
         if (result.type === 'maps_link') {
           expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
         }
@@ -173,9 +180,11 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
           lng: 55.2744,
         },
       ];
+
       for (const { url, lat, lng } of utf8Urls) {
         const result = classifyLocationInput(url);
         expect(result.type, `Failed on utf8 URL: ${url}`).toBe('maps_link');
+
         if (result.type === 'maps_link') {
           expect(result.coords).toEqual({ lat, lng });
         }
@@ -188,9 +197,11 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         '"https://www.google.com/maps/@48.2082,16.3738,15z"',
         '(https://www.google.com/maps/@48.2082,16.3738,15z)',
       ];
+
       for (const input of wrapped) {
         const result = classifyLocationInput(input);
         expect(result.type).toBe('maps_link');
+
         if (result.type === 'maps_link') {
           expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
         }
@@ -208,12 +219,15 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         'Maps & Books Store',
         'Geologische Bundesanstalt',
       ];
+
       for (const query of falsePositiveTriggers) {
         const result = classifyLocationInput(query);
         expect(result.type, `False positive for text: ${query}`).toBe('query');
+
         if (result.type === 'query') {
           expect(result.query).toBe(query);
         }
+
         expect(isMapsLink(query)).toBe(false);
       }
     });
@@ -224,6 +238,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const sydney = 'geo:-33.8688,151.2093';
       const r1 = classifyLocationInput(sydney);
       expect(r1.type).toBe('maps_link');
+
       if (r1.type === 'maps_link') {
         expect(r1.coords).toEqual({ lat: -33.8688, lng: 151.2093 });
       }
@@ -231,6 +246,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const santiago = 'geo:-33.4489,-70.6693';
       const r2 = classifyLocationInput(santiago);
       expect(r2.type).toBe('maps_link');
+
       if (r2.type === 'maps_link') {
         expect(r2.coords).toEqual({ lat: -33.4489, lng: -70.6693 });
       }
@@ -240,6 +256,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const uri = 'geo:48.2082,16.3738;u=35';
       const result = classifyLocationInput(uri);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -249,6 +266,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const uri = 'geo:48.2082,16.3738?z=17';
       const result = classifyLocationInput(uri);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -258,6 +276,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const uri = 'geo:0,0?q=48.2104,16.3653(Cafe+Central)';
       const result = classifyLocationInput(uri);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2104, lng: 16.3653 });
       }
@@ -267,6 +286,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const uri = 'geo:0,0?q=Stephansplatz+Wien';
       const result = classifyLocationInput(uri);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toBeNull();
         expect(result.isShortlink).toBe(false);
@@ -279,6 +299,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const url = 'https://maps.apple.com/?coordinate=48.2082,%2016.3738';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -288,6 +309,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const url = 'https://maps.apple.com/?ll=48.2082,16.3738&q=Marker+Title';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -297,6 +319,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const url = 'maps://?q=48.2082,16.3738';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -306,6 +329,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const url = 'https://maps.apple.com/p/3M5L7P9';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toBeNull();
         expect(result.isShortlink).toBe(true);
@@ -322,9 +346,11 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         'https://google.ch/maps/@47.3769,8.5417,15z',
         'https://www.google.com.au/maps/@-33.8688,151.2093,13z',
       ];
+
       for (const url of regionalUrls) {
         const result = classifyLocationInput(url);
         expect(result.type, `Failed for regional domain: ${url}`).toBe('maps_link');
+
         if (result.type === 'maps_link') {
           expect(result.coords).not.toBeNull();
         }
@@ -335,6 +361,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
       const url = 'https://www.google.com/maps/search/?api=1&query=48.2082,16.3738';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -346,6 +373,7 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
         'goo.gl/maps/short456',
         'maps.google.com/@48.2082,16.3738,15z',
       ];
+
       for (const url of schemeless) {
         const result = classifyLocationInput(url);
         expect(result.type, `Failed for schemeless URL: ${url}`).toBe('maps_link');
@@ -354,9 +382,11 @@ describe('Challenger 1 Adversarial Suite: Link Classification & Isolation', () =
 
     it('classifies known generic shorteners (bit.ly, tinyurl) as shortlinks', () => {
       const shorteners = ['https://bit.ly/3XYZ123', 'https://tinyurl.com/spot-link'];
+
       for (const url of shorteners) {
         const result = classifyLocationInput(url);
         expect(result.type).toBe('maps_link');
+
         if (result.type === 'maps_link') {
           expect(result.isShortlink).toBe(true);
         }

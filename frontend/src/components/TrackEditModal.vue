@@ -53,10 +53,15 @@ const editTrackExcursionId = ref<number | null>(null);
 const isSuggestingTitle = ref(false);
 
 async function suggestTitle() {
-  if (!props.track || isSuggestingTitle.value) return;
+  if (!props.track || isSuggestingTitle.value) {
+    return;
+  }
+
   isSuggestingTitle.value = true;
+
   try {
     const res = await api.post<{ title: string }>(`/tracks/${props.track.id}/suggest-title`);
+
     if (res?.title?.trim()) {
       editTrackTitle.value = res.title.trim();
     } else {
@@ -89,22 +94,34 @@ watch(
 );
 
 const isEditTrackTitleModified = computed(() => {
-  if (!props.track) return false;
+  if (!props.track) {
+    return false;
+  }
+
   return editTrackTitle.value.trim() !== (props.track.title ?? '').trim();
 });
 
 const isEditTrackStartedAtModified = computed(() => {
-  if (!props.track) return false;
+  if (!props.track) {
+    return false;
+  }
+
   return editTrackStartedAt.value !== toLocalDatetimeInputValue(props.track.started_at);
 });
 
 const isEditTrackVisibilityModified = computed(() => {
-  if (!props.track) return false;
+  if (!props.track) {
+    return false;
+  }
+
   return editTrackVisibility.value !== props.track.visibility;
 });
 
 const isEditTrackTourModified = computed(() => {
-  if (!props.track) return false;
+  if (!props.track) {
+    return false;
+  }
+
   return editTrackExcursionId.value !== (props.track.excursion_id ?? null);
 });
 
@@ -117,7 +134,10 @@ const trackTourAssignments = computed(() => {
 });
 
 const editTrackExcursionTitle = computed(() => {
-  if (editTrackExcursionId.value == null) return null;
+  if (editTrackExcursionId.value == null) {
+    return null;
+  }
+
   const exc = excursionsStore.excursions.find((e) => e.id === editTrackExcursionId.value);
   return exc?.title ?? null;
 });
@@ -132,9 +152,11 @@ function onToggleTrackTour(tourId: number) {
     editTrackExcursionId.value = null;
     return;
   }
+
   const tour = excursionsStore.excursions.find((e) => e.id === tourId);
   const isPrivate =
     editTrackVisibility.value === 'private' || props.track?.visibility === 'private';
+
   if (isPrivate && props.users.length > 1) {
     pendingTrackTourId.value = tourId;
     shareWarningTrackTitle.value =
@@ -148,7 +170,11 @@ function onToggleTrackTour(tourId: number) {
 
 async function onCreateTourFromTrack(title: string) {
   const trimmed = title.trim();
-  if (!trimmed) return;
+
+  if (!trimmed) {
+    return;
+  }
+
   const newExcursion = await excursionsStore.create({
     title: trimmed,
   });
@@ -161,11 +187,15 @@ function onConfirmShareModal() {
     editTrackVisibility.value = 'shared';
     pendingTrackTourId.value = null;
   }
+
   showTrackShareWarningModal.value = false;
 }
 
 async function submitEditTrack() {
-  if (!props.track) return;
+  if (!props.track) {
+    return;
+  }
+
   const rawTitle = editTrackTitle.value.trim();
   const title = rawTitle ? rawTitle : null;
   const startedAt = fromLocalDatetimeInputValue(editTrackStartedAt.value) ?? props.track.started_at;
@@ -179,21 +209,30 @@ async function submitEditTrack() {
 }
 
 async function stopEditingTrack() {
-  if (!props.track) return;
+  if (!props.track) {
+    return;
+  }
+
   const id = props.track.id;
+
   if (trackRecording.recording && trackRecording.track?.id === id) {
     await trackRecording.stop();
   } else {
     await tracksStore.stopTrack(id);
   }
+
   const updated = tracksStore.tracks.find((t) => t.id === id);
+
   if (updated) {
     emit('update:track', updated);
   }
 }
 
 async function deleteEditingTrack() {
-  if (!props.track) return;
+  if (!props.track) {
+    return;
+  }
+
   await tracksStore.remove(props.track.id);
   handleClose();
 }

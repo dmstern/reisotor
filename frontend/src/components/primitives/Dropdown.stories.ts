@@ -30,10 +30,12 @@ export const Default: Story = {
     setup() {
       const open = ref(false);
       const selected = ref('Option A');
+
       const select = (val: string) => {
         selected.value = val;
         open.value = false;
       };
+
       return { args, open, selected, select, ACTION_ICONS };
     },
     template: `

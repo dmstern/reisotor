@@ -34,17 +34,28 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
     if (isUserRestricted(req.session.userId)) {
       return reply.code(403).send({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
     }
+
     if (req.body?.trip_id != null) {
-      if (!requireTripMember(reply, req.body.trip_id, req.session.userId)) return;
+      if (!requireTripMember(reply, req.body.trip_id, req.session.userId)) {
+        return;
+      }
     }
+
     const match = /^data:(image\/[a-z]+);base64,(.+)$/.exec(req.body?.data ?? '');
-    if (!match) return reply.code(400).send({ error: 'Ungültiges Bildformat' });
+
+    if (!match) {
+      return reply.code(400).send({ error: 'Ungültiges Bildformat' });
+    }
 
     const [, mimeType, base64] = match;
     const extension = ALLOWED_IMAGE_TYPES[mimeType];
-    if (!extension) return reply.code(400).send({ error: 'Nicht unterstützter Bildtyp' });
+
+    if (!extension) {
+      return reply.code(400).send({ error: 'Nicht unterstützter Bildtyp' });
+    }
 
     const buffer = Buffer.from(base64, 'base64');
+
     if (buffer.byteLength > MAX_IMAGE_BYTES) {
       return reply.code(413).send({ error: 'Bild ist zu groß (max. 5 MB nach Komprimierung)' });
     }
@@ -62,9 +73,17 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
   // Cache, nur Browser-Cache (private, 1 Tag) – spart Speicher auf dem Raspberry Pi.
   app.get<{ Querystring: { url?: string } }>('/images/proxy', async (req, reply) => {
     const url = req.query.url;
-    if (!url) return reply.code(400).send({ error: 'url erforderlich' });
+
+    if (!url) {
+      return reply.code(400).send({ error: 'url erforderlich' });
+    }
+
     const image = await downloadRemoteImage(url);
-    if (!image) return reply.code(502).send({ error: 'Bild nicht abrufbar' });
+
+    if (!image) {
+      return reply.code(502).send({ error: 'Bild nicht abrufbar' });
+    }
+
     return reply
       .header('Cache-Control', 'private, max-age=86400')
       .header('X-Content-Type-Options', 'nosniff')

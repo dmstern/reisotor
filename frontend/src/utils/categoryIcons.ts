@@ -1209,21 +1209,32 @@ export function findCategoryIcon(
 ): CategoryIconOption | undefined {
   if (iconId) {
     const byId = CATEGORY_ICON_PALETTE.find((opt) => opt.id === iconId || opt.tabler.id === iconId);
-    if (byId) return byId;
+
+    if (byId) {
+      return byId;
+    }
   }
+
   if (fallbackEmoji) {
     const byEmoji = CATEGORY_ICON_PALETTE.find(
       (opt) =>
         opt.defaultEmoji === fallbackEmoji || (opt.keywords && opt.keywords.includes(fallbackEmoji))
     );
-    if (byEmoji) return byEmoji;
+
+    if (byEmoji) {
+      return byEmoji;
+    }
   }
+
   return undefined;
 }
 
 /** Findet eine IconOption anhand ihres Emojis */
 export function findCategoryIconByEmoji(emoji?: string | null): CategoryIconOption | undefined {
-  if (!emoji) return undefined;
+  if (!emoji) {
+    return undefined;
+  }
+
   return CATEGORY_ICON_PALETTE.find(
     (opt) => opt.defaultEmoji === emoji || (opt.keywords && opt.keywords.includes(emoji))
   );
@@ -1232,20 +1243,25 @@ export function findCategoryIconByEmoji(emoji?: string | null): CategoryIconOpti
 /** Löst ein IconDef anhand einer Icon-ID auf */
 export function getCategoryIconDef(iconId?: string | null, customEmoji?: string | null): IconDef {
   const opt = findCategoryIcon(iconId, customEmoji);
+
   if (opt) {
     if (customEmoji) {
       return { ...opt.tabler, emoji: customEmoji };
     }
+
     return opt.tabler;
   }
 
   // Fallback: Suche in Standard-Kategorien (falls z. B. Tabler-ID oder Kategoriename übergeben wurde)
   if (iconId) {
     const spotCat = spotCategoryMeta(iconId);
+
     if (spotCat.tabler.id !== 'map-pin') {
       return customEmoji ? { ...spotCat.tabler, emoji: customEmoji } : spotCat.tabler;
     }
+
     const expCat = expenseCategoryMeta(iconId);
+
     if (expCat.tabler.id !== 'category') {
       return customEmoji ? { ...expCat.tabler, emoji: customEmoji } : expCat.tabler;
     }

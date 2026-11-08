@@ -84,6 +84,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
       clearTimeout(debounceTimer);
       debounceTimer = null;
     }
+
     if (activeAbortController) {
       activeAbortController.abort();
       activeAbortController = null;
@@ -124,6 +125,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
       } else if (classification.isShortlink) {
         shortlinkDetected.value = true;
       }
+
       return;
     }
 
@@ -143,6 +145,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
 
     // Free-text search query
     const trimmed = classification.query.trim();
+
     if (trimmed.length < 2) {
       isSearching.value = false;
       isLoadingMore.value = false;
@@ -162,17 +165,20 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
         activeAbortController = new AbortController();
         const bias = options.proximityBias?.value ?? options.center?.value;
         let url = `/api/places/search?q=${encodeURIComponent(trimmed)}&limit=10`;
+
         if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
           url += `&lat=${bias.lat}&lng=${bias.lng}`;
         }
 
         const res = await fetch(url, { signal: activeAbortController.signal });
+
         if (!res.ok) {
           results.value = [];
           hasMore.value = false;
           isOpen.value = true;
           return;
         }
+
         const data = (await res.json()) as PlaceSearchResult[];
         const list = Array.isArray(data) ? data : [];
         results.value = list;
@@ -182,6 +188,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           return;
         }
+
         results.value = [];
         hasMore.value = false;
       } finally {
@@ -202,31 +209,37 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
     }
 
     const classification = classifyLocationInput(inputText.value);
+
     if (classification.type !== 'query') {
       return;
     }
 
     const trimmed = classification.query.trim();
+
     if (trimmed.length < 2) {
       return;
     }
 
     isLoadingMore.value = true;
+
     try {
       const bias = options.proximityBias?.value ?? options.center?.value;
       const offset = results.value.length;
       let url = `/api/places/search?q=${encodeURIComponent(trimmed)}&limit=10&offset=${offset}`;
+
       if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
         url += `&lat=${bias.lat}&lng=${bias.lng}`;
       }
 
       const res = await fetch(url);
+
       if (!res.ok) {
         hasMore.value = false;
         return;
       }
 
       const data = (await res.json()) as PlaceSearchResult[];
+
       if (!Array.isArray(data) || data.length === 0) {
         hasMore.value = false;
         return;
@@ -234,19 +247,25 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
 
       const existingIds = new Set(results.value.map((r) => r.id).filter(Boolean));
       const newItems: PlaceSearchResult[] = [];
+
       for (const item of data) {
         if (item.id && existingIds.has(item.id)) {
           continue;
         }
+
         const isDup = results.value.some(
           (r) =>
             Math.abs(r.lat - item.lat) < 0.0005 &&
             Math.abs(r.lng - item.lng) < 0.0005 &&
             r.name.toLowerCase() === item.name.toLowerCase()
         );
+
         if (!isDup) {
           newItems.push(item);
-          if (item.id) existingIds.add(item.id);
+
+          if (item.id) {
+            existingIds.add(item.id);
+          }
         }
       }
 

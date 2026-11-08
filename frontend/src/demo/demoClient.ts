@@ -111,6 +111,7 @@ export function resetDemoStore(baseDate?: Date) {
   } catch {
     // no-op
   }
+
   store = defaultStore(baseDate);
   const data = createDemoData(baseDate);
   currentDemoUsers = data.users;
@@ -136,6 +137,7 @@ function syncDemoIdeaSchedule(
 ) {
   const schedule = store['/schedule'] as Record<string, unknown>[];
   const existingIdx = schedule.findIndex((s) => s.idea_id === ideaId);
+
   if (date) {
     if (existingIdx !== -1) {
       schedule[existingIdx] = { ...schedule[existingIdx], date, title };
@@ -169,28 +171,47 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   const basePath = path.split('?')[0];
 
   // Einzelfall-Endpunkte, die kein einfaches Collection-CRUD sind.
-  if (path === '/auth/me') return structuredClone(currentDemoUser) as unknown as T;
-  if (path === '/auth/config')
+  if (path === '/auth/me') {
+    return structuredClone(currentDemoUser) as unknown as T;
+  }
+
+  if (path === '/auth/config') {
     return { registrationMode: 'off', contactAdminEnabled: true } as unknown as T;
+  }
+
   if (path === '/auth/contact-admin' && method === 'POST') {
     return {
       success: true,
       message: 'Deine Nachricht wurde an die Administration übermittelt.',
     } as unknown as T;
   }
+
   if (path === '/admin/messages' && method === 'GET') {
     return { messages: [], unreadCount: 0 } as unknown as T;
   }
+
   if (path.startsWith('/admin/messages/')) {
-    if (method === 'PUT') return { success: true } as unknown as T;
-    if (method === 'DELETE') return undefined as T;
+    if (method === 'PUT') {
+      return { success: true } as unknown as T;
+    }
+
+    if (method === 'DELETE') {
+      return undefined as T;
+    }
   }
+
   if (path === '/legal') {
     return structuredClone(DEMO_LEGAL_CONFIG) as unknown as T;
   }
-  if (path === '/auth/login' || path === '/auth/register')
+
+  if (path === '/auth/login' || path === '/auth/register') {
     return structuredClone(currentDemoUser) as unknown as T;
-  if (path === '/auth/logout') return undefined as T;
+  }
+
+  if (path === '/auth/logout') {
+    return undefined as T;
+  }
+
   if (path === '/build-info') {
     const demoVersion = __APP_VERSION__.includes('(Demo)')
       ? __APP_VERSION__
@@ -235,26 +256,38 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const avatar = String(body?.avatar ?? '👤');
     currentDemoUser.avatar = avatar;
     const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
-    if (meInList) meInList.avatar = avatar;
+
+    if (meInList) {
+      meInList.avatar = avatar;
+    }
+
     return structuredClone(currentDemoUser) as unknown as T;
   }
+
   if (path === '/users/me/username' && method === 'PUT') {
     const username = String(body?.username ?? currentDemoUser.username);
     currentDemoUser.username = username;
     const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
-    if (meInList) meInList.username = username;
+
+    if (meInList) {
+      meInList.username = username;
+    }
+
     return structuredClone(currentDemoUser) as unknown as T;
   }
+
   if (path === '/users/me/email' && method === 'PUT') {
     const email = String(body?.email ?? '');
     currentDemoUser.email = email;
     currentDemoUser.is_email_verified = true;
     currentDemoUser.pending_email = null;
     const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
+
     if (meInList) {
       meInList.email = email;
       meInList.is_email_verified = true;
     }
+
     return {
       requiresVerification: false,
       email,
@@ -262,26 +295,36 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       message: 'E-Mail-Adresse erfolgreich gespeichert (Demo-Modus)',
     } as unknown as T;
   }
+
   if (path === '/users/me/email-pending' && method === 'DELETE') {
     currentDemoUser.pending_email = null;
     return undefined as unknown as T;
   }
+
   if (path === '/users/me/resend-verification-email' && method === 'POST') {
     return {
       success: true,
       message: 'Bestätigungslink erneut versendet (Demo-Modus).',
     } as unknown as T;
   }
+
   if (path === '/users/me/icon-settings') {
-    if (method === 'GET') return (store['/users/me/icon-settings']?.[0] ?? {}) as unknown as T;
+    if (method === 'GET') {
+      return (store['/users/me/icon-settings']?.[0] ?? {}) as unknown as T;
+    }
+
     if (method === 'PUT') {
       store['/users/me/icon-settings'] = [(body ?? {}) as Record<string, unknown>];
       persist();
       return (body ?? {}) as unknown as T;
     }
   }
+
   if (path === '/users/me/app-settings') {
-    if (method === 'GET') return (store['/users/me/app-settings']?.[0] ?? {}) as unknown as T;
+    if (method === 'GET') {
+      return (store['/users/me/app-settings']?.[0] ?? {}) as unknown as T;
+    }
+
     if (method === 'PUT') {
       const settings =
         (body as { settings?: Record<string, unknown> })?.settings ??
@@ -300,6 +343,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       issueNumber: 999,
     } as unknown as T;
   }
+
   if ((path === '/images' || path === '/diary/images') && method === 'POST') {
     return {
       url: String(body?.data ?? ''),
@@ -316,6 +360,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // --- Trip categories endpoints (/trips/:id/categories, /trips/:id/categories/:id, etc.) ---
   const tripCategoriesGetMatch = /^\/trips\/(-?\d+)\/categories$/.exec(basePath);
+
   if (tripCategoriesGetMatch && method === 'GET') {
     const tripId = Number(tripCategoriesGetMatch[1]);
     const filterType = new URLSearchParams(path.includes('?') ? path.split('?')[1] : '').get(
@@ -343,6 +388,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   const tripCategoryUsageMatch = /^\/trips\/(-?\d+)\/categories\/[^/]+\/[^/]+\/usage$/.exec(
     basePath
   );
+
   if (tripCategoryUsageMatch && method === 'GET') {
     return { usages: [] } as unknown as T;
   }
@@ -363,31 +409,40 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       usage_count: 0,
       created_at: new Date().toISOString(),
     };
-    if (!store['/trip_categories']) store['/trip_categories'] = [];
+
+    if (!store['/trip_categories']) {
+      store['/trip_categories'] = [];
+    }
+
     const idx = (
       store['/trip_categories'] as Array<{ id: number; type: string; name: string }>
     ).findIndex(
       (c) => c.type === created.type && c.name.toLowerCase() === created.name.toLowerCase()
     );
+
     if (idx >= 0) {
       store['/trip_categories'][idx] = created;
     } else {
       store['/trip_categories'].push(created);
     }
+
     persist();
     return structuredClone(created) as unknown as T;
   }
 
   const tripCategoryItemMatch = /^\/trips\/(-?\d+)\/categories\/(\d+)$/.exec(basePath);
+
   if (tripCategoryItemMatch && method === 'PUT') {
     const catId = Number(tripCategoryItemMatch[2]);
     const list = (store['/trip_categories'] || []) as Array<{ id: number }>;
     const existing = list.find((c) => c.id === catId);
+
     if (existing) {
       Object.assign(existing, body ?? {});
       persist();
       return structuredClone(existing) as unknown as T;
     }
+
     const created = { id: catId, ...(body ?? {}), usage_count: 0 };
     list.push(created);
     persist();
@@ -396,28 +451,34 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (tripCategoryItemMatch && method === 'DELETE') {
     const catId = Number(tripCategoryItemMatch[2]);
+
     if (store['/trip_categories']) {
       store['/trip_categories'] = (store['/trip_categories'] as Array<{ id: number }>).filter(
         (c) => c.id !== catId
       );
       persist();
     }
+
     return { success: true } as unknown as T;
   }
 
   const tripCategoryResetMatch = /^\/trips\/(-?\d+)\/categories\/(\d+)\/reset$/.exec(basePath);
+
   if (tripCategoryResetMatch && method === 'POST') {
     const catId = Number(tripCategoryResetMatch[2]);
+
     if (store['/trip_categories']) {
       store['/trip_categories'] = (store['/trip_categories'] as Array<{ id: number }>).filter(
         (c) => c.id !== catId
       );
       persist();
     }
+
     return { success: true } as unknown as T;
   }
 
   const tripCategoryHideMatch = /^\/trips\/(-?\d+)\/categories\/hide$/.exec(basePath);
+
   if (tripCategoryHideMatch && method === 'POST') {
     const tripId = Number(tripCategoryHideMatch[1]);
     const { type, name, is_hidden } = (body ?? {}) as {
@@ -425,8 +486,12 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       name?: string;
       is_hidden?: boolean | number;
     };
+
     if (type && name) {
-      if (!store['/trip_categories']) store['/trip_categories'] = [];
+      if (!store['/trip_categories']) {
+        store['/trip_categories'] = [];
+      }
+
       const list = store['/trip_categories'] as Array<{
         id: number;
         trip_id: number;
@@ -445,6 +510,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           c.trip_id === tripId && c.type === type && c.name.toLowerCase() === name.toLowerCase()
       );
       const hiddenVal = is_hidden ? 1 : 0;
+
       if (found) {
         found.is_hidden = hiddenVal;
       } else {
@@ -462,8 +528,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           created_at: new Date().toISOString(),
         });
       }
+
       persist();
     }
+
     return { success: true } as unknown as T;
   }
 
@@ -471,6 +539,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (/^\/trips\/-?\d+\/members$/.test(basePath)) {
     return structuredClone(currentDemoUsers) as unknown as T;
   }
+
   if (/^\/trips\/-?\d+\/region-info$/.test(basePath)) {
     return {
       countryName: 'Portugal',
@@ -480,6 +549,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       advisory: null,
     } as unknown as T;
   }
+
   if (/^\/trips\/-?\d+\/routes\/directions$/.test(basePath) && method === 'POST') {
     const { from_lat, from_lng, to_lat, to_lng, transport_type } = (body ?? {}) as {
       from_lat?: number;
@@ -488,6 +558,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       to_lng?: number;
       transport_type?: string;
     };
+
     if (from_lat != null && from_lng != null && to_lat != null && to_lng != null) {
       const dLat = ((to_lat - from_lat) * Math.PI) / 180;
       const dLng = ((to_lng - from_lng) * Math.PI) / 180;
@@ -501,8 +572,13 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       const distKm = 6371 * c;
       const distance_meters = Math.round(distKm * 1000 * 1.2);
       let speedKmh = 60;
-      if (transport_type === 'Fahrrad') speedKmh = 18;
-      else if (transport_type === 'zu Fuß') speedKmh = 4.5;
+
+      if (transport_type === 'Fahrrad') {
+        speedKmh = 18;
+      } else if (transport_type === 'zu Fuß') {
+        speedKmh = 4.5;
+      }
+
       const duration_seconds = Math.round((distance_meters / (speedKmh * 1000)) * 3600);
       return {
         supported: true,
@@ -529,36 +605,62 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       } as unknown as T;
     }
   }
+
   if (path === '/admin/settings') {
     if (method === 'GET') {
       return { settings: structuredClone(demoAdminSettings) } as unknown as T;
     }
+
     if (method === 'PUT') {
       const p = body as Record<string, Record<string, unknown>>;
-      if (p.registration) Object.assign(demoAdminSettings.registration, p.registration);
-      if (p.legal) Object.assign(demoAdminSettings.legal, p.legal);
+
+      if (p.registration) {
+        Object.assign(demoAdminSettings.registration, p.registration);
+      }
+
+      if (p.legal) {
+        Object.assign(demoAdminSettings.legal, p.legal);
+      }
+
       if (p.geo) {
         Object.assign(demoAdminSettings.geo, p.geo);
-        if (p.geo.clearOrsApiKey) demoAdminSettings.geo.isOrsApiKeySet = false;
-        else if (p.geo.orsApiKey) demoAdminSettings.geo.isOrsApiKeySet = true;
+
+        if (p.geo.clearOrsApiKey) {
+          demoAdminSettings.geo.isOrsApiKeySet = false;
+        } else if (p.geo.orsApiKey) {
+          demoAdminSettings.geo.isOrsApiKeySet = true;
+        }
       }
+
       if (p.email) {
         Object.assign(demoAdminSettings.email, p.email);
-        if (p.email.clearSmtpPass) demoAdminSettings.email.isSmtpPassSet = false;
-        else if (p.email.smtpPass) demoAdminSettings.email.isSmtpPassSet = true;
+
+        if (p.email.clearSmtpPass) {
+          demoAdminSettings.email.isSmtpPassSet = false;
+        } else if (p.email.smtpPass) {
+          demoAdminSettings.email.isSmtpPassSet = true;
+        }
       }
+
       if (p.feedback) {
         Object.assign(demoAdminSettings.feedback, p.feedback);
-        if (p.feedback.clearGithubToken) demoAdminSettings.feedback.isGithubTokenSet = false;
-        else if (p.feedback.githubToken) demoAdminSettings.feedback.isGithubTokenSet = true;
+
+        if (p.feedback.clearGithubToken) {
+          demoAdminSettings.feedback.isGithubTokenSet = false;
+        } else if (p.feedback.githubToken) {
+          demoAdminSettings.feedback.isGithubTokenSet = true;
+        }
       }
+
       if (p.push) {
         Object.assign(demoAdminSettings.push, p.push);
+
         if (p.push.clearVapidKeys) {
           demoAdminSettings.push.vapidPublicKey = '';
           demoAdminSettings.push.isVapidPrivateKeySet = false;
         }
       }
+
       return { settings: structuredClone(demoAdminSettings) } as unknown as T;
     }
   }
@@ -573,7 +675,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   }
 
   if (path === '/users') {
-    if (method === 'GET') return structuredClone(currentDemoUsers) as unknown as T;
+    if (method === 'GET') {
+      return structuredClone(currentDemoUsers) as unknown as T;
+    }
+
     if (method === 'POST') {
       const newUser = {
         id: Date.now(),
@@ -587,19 +692,25 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       return structuredClone(newUser) as unknown as T;
     }
   }
+
   const adminMatch = /^\/users\/(\d+)\/admin$/.exec(basePath);
+
   if (adminMatch && method === 'PUT') {
     const targetId = Number(adminMatch[1]);
     const user = currentDemoUsers.find((u) => u.id === targetId);
+
     if (user) {
       user.is_admin = Boolean(body?.is_admin);
       return structuredClone(user) as unknown as T;
     }
   }
+
   const roleMatch = /^\/users\/(\d+)\/role$/.exec(basePath);
+
   if (roleMatch && method === 'PUT') {
     const targetId = Number(roleMatch[1]);
     const user = currentDemoUsers.find((u) => u.id === targetId);
+
     if (user) {
       const role = (body?.role as string) ?? 'plus';
       user.is_admin = role === 'admin';
@@ -608,7 +719,9 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       return structuredClone(user) as unknown as T;
     }
   }
+
   const resetPasswordMatch = /^\/users\/(\d+)\/reset-password$/.exec(basePath);
+
   if (resetPasswordMatch && method === 'POST') {
     const targetId = Number(resetPasswordMatch[1]);
     const user = currentDemoUsers.find((u) => u.id === targetId);
@@ -622,29 +735,41 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       message: 'Passwort erfolgreich zurückgesetzt',
     } as unknown as T;
   }
+
   const verifyEmailMatch = /^\/users\/(\d+)\/verify-email$/.exec(basePath);
+
   if (verifyEmailMatch && method === 'POST') {
     const targetId = Number(verifyEmailMatch[1]);
     const user = currentDemoUsers.find((u) => u.id === targetId);
+
     if (user) {
       user.is_email_verified = true;
       return { success: true, is_email_verified: true } as unknown as T;
     }
   }
+
   const lockMatch = /^\/users\/(\d+)\/lock$/.exec(basePath);
+
   if (lockMatch && method === 'PUT') {
     const targetId = Number(lockMatch[1]);
     const user = currentDemoUsers.find((u) => u.id === targetId);
+
     if (user) {
       user.is_locked = Boolean(body?.is_locked);
       return structuredClone(user) as unknown as T;
     }
   }
+
   const deleteUserMatch = /^\/users\/(\d+)$/.exec(basePath);
+
   if (deleteUserMatch && method === 'DELETE') {
     const targetId = Number(deleteUserMatch[1]);
     const idx = currentDemoUsers.findIndex((u) => u.id === targetId);
-    if (idx !== -1) currentDemoUsers.splice(idx, 1);
+
+    if (idx !== -1) {
+      currentDemoUsers.splice(idx, 1);
+    }
+
     return {} as T;
   }
 
@@ -655,6 +780,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // --- Likes toggling (/spots/:id/like, /ideas/:id/like, /notes/:id/like, /diary/:id/like) ---
   const likeMatch = /^\/(spots|ideas|notes|diary)\/(-?\d+)\/like$/.exec(basePath);
+
   if (likeMatch && method === 'POST') {
     const domain = likeMatch[1];
     const targetId = Number(likeMatch[2]);
@@ -668,7 +794,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
             ? 'note_id'
             : 'spot_id';
 
-    if (!(likesKey in store)) store[likesKey] = [];
+    if (!(likesKey in store)) {
+      store[likesKey] = [];
+    }
+
     const existingIdx = store[likesKey].findIndex(
       (item) => item[fkKey] === targetId && item.user_id === currentDemoUser.id
     );
@@ -686,6 +815,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // --- Comments posting (/spots/:id/comments, /ideas/:id/comments, /notes/:id/comments, /diary/:id/comments) ---
   const commentMatch = /^\/(spots|ideas|notes|diary)\/(-?\d+)\/comments$/.exec(basePath);
+
   if (commentMatch && method === 'POST') {
     const domain = commentMatch[1];
     const targetId = Number(commentMatch[2]);
@@ -699,7 +829,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
             ? 'note_id'
             : 'spot_id';
 
-    if (!(commentsKey in store)) store[commentsKey] = [];
+    if (!(commentsKey in store)) {
+      store[commentsKey] = [];
+    }
+
     const created = {
       id: nextId++,
       [fkKey]: targetId,
@@ -714,15 +847,18 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // --- Comment Likes toggling (/spots/comments/:id/like, /ideas/comments/:id/like, /notes/comments/:id/like, /diary/comments/:id/like) ---
   const commentLikeMatch = /^\/(spots|ideas|notes|diary)\/comments\/(-?\d+)\/like$/.exec(basePath);
+
   if (commentLikeMatch && method === 'POST') {
     const domain = commentLikeMatch[1];
     const commentId = Number(commentLikeMatch[2]);
     const commentsKey = `/${domain}/comments`;
     const comment = store[commentsKey]?.find((c) => (c as { id: number }).id === commentId) as
       { id: number; liked?: boolean; like_count?: number } | undefined;
+
     if (!comment) {
       throw new Error('Not found');
     }
+
     const wasLiked = Boolean(comment.liked);
     comment.liked = !wasLiked;
     comment.like_count = Math.max(0, ((comment.like_count as number) ?? 0) + (wasLiked ? -1 : 1));
@@ -732,13 +868,18 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   // --- Done toggles (/spots/:id/done, /ideas/:id/done) ---
   const doneMatch = /^\/(spots|ideas)\/(-?\d+)\/done$/.exec(basePath);
+
   if (doneMatch && method === 'POST') {
     const domain = doneMatch[1];
     const targetId = Number(doneMatch[2]);
     const coll = `/${domain}`;
     const doneVal = body?.done ? 1 : 0;
     const existing = store[coll]?.find((item) => (item as { id: number }).id === targetId);
-    if (existing) existing.done = doneVal;
+
+    if (existing) {
+      existing.done = doneVal;
+    }
+
     persist();
     return { done: !!doneVal } as unknown as T;
   }
@@ -757,28 +898,45 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       started_at: new Date().toISOString(),
       ended_at: null,
     };
-    if (!store['/tracks']) store['/tracks'] = [];
+
+    if (!store['/tracks']) {
+      store['/tracks'] = [];
+    }
+
     store['/tracks'].push(created);
     persist();
     return created as unknown as T;
   }
+
   const trackStopMatch = /^\/tracks\/(-?\d+)\/stop$/.exec(basePath);
+
   if (trackStopMatch && method === 'POST') {
     const trackId = Number(trackStopMatch[1]);
     const found = store['/tracks']?.find((t) => (t as { id: number }).id === trackId);
-    if (found) found.ended_at = new Date().toISOString();
+
+    if (found) {
+      found.ended_at = new Date().toISOString();
+    }
+
     persist();
     return found as unknown as T;
   }
+
   const trackPointsMatch = /^\/tracks\/(-?\d+)\/points$/.exec(basePath);
+
   if (trackPointsMatch) {
     const trackId = Number(trackPointsMatch[1]);
-    if (!store['/tracks/points']) store['/tracks/points'] = [];
+
+    if (!store['/tracks/points']) {
+      store['/tracks/points'] = [];
+    }
+
     if (method === 'GET') {
       return store['/tracks/points'].filter(
         (p) => (p as { track_id: number }).track_id === trackId
       ) as unknown as T;
     }
+
     if (method === 'POST') {
       const rawPoints = Array.isArray(body?.points) ? body.points : [];
       const createdPoints = rawPoints.map((p) => ({
@@ -808,6 +966,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
         (a as { budget_id: number; category: string }).budget_id === budgetId &&
         (a as { category: string }).category === category
     );
+
     if (existing) {
       existing.amount = amount;
       persist();
@@ -821,6 +980,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   }
 
   const collection = collectionOf(path);
+
   if (!(collection in store)) {
     // Unbekannter Pfad (z. B. Push-Abo, Standortfreigabe, Entwürfe) - im Demo-Modus bewusst
     // erfolgreich no-open statt einen Fehler zu werfen, damit die jeweilige View nicht hängen bleibt.
@@ -844,6 +1004,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           rawList.filter((item) => tripSpotIds.has(item.spot_id as number))
         ) as unknown as T;
       }
+
       if (collection === '/ideas/likes' || collection === '/ideas/comments') {
         const tripIdeaIds = new Set(
           store['/ideas']?.filter((e) => e.trip_id === queryTripId).map((e) => e.id)
@@ -852,6 +1013,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           rawList.filter((item) => tripIdeaIds.has(item.idea_id as number))
         ) as unknown as T;
       }
+
       if (collection === '/diary/likes' || collection === '/diary/comments') {
         const tripEntryIds = new Set(
           store['/diary']?.filter((d) => d.trip_id === queryTripId).map((d) => d.id)
@@ -860,6 +1022,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           rawList.filter((item) => tripEntryIds.has(item.entry_id as number))
         ) as unknown as T;
       }
+
       if (collection === '/notes/comments') {
         const tripNoteIds = new Set(
           store['/notes']?.filter((n) => n.trip_id === queryTripId).map((n) => n.id)
@@ -868,6 +1031,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           rawList.filter((item) => tripNoteIds.has(item.note_id as number))
         ) as unknown as T;
       }
+
       if (collection === '/budget/allocations') {
         const tripBudgetIds = new Set(
           store['/budget/budgets']?.filter((b) => b.trip_id === queryTripId).map((b) => b.id)
@@ -876,6 +1040,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           rawList.filter((item) => tripBudgetIds.has(item.budget_id as number))
         ) as unknown as T;
       }
+
       // Standard-Filterung für alle Sammlungen mit `trip_id`
       return structuredClone(
         rawList.filter((item) => item.trip_id === queryTripId)
@@ -961,7 +1126,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     } else if (collection === '/schedule' && body?.idea_id) {
       const ideaId = Number(body.idea_id);
       const existingIdea = store['/ideas']?.find((e) => e.id === ideaId);
-      if (existingIdea) existingIdea.date = body.date ?? null;
+
+      if (existingIdea) {
+        existingIdea.date = body.date ?? null;
+      }
     }
 
     persist();
@@ -970,17 +1138,21 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (method === 'PUT') {
     const id = idFromPath(path);
+
     if (collection === '/diary' && id != null) {
       const existing = store['/diary']?.find((item) => (item as { id: number }).id === id);
+
       if (existing) {
         const now = new Date().toISOString();
         const existingEditorIds = Array.isArray(existing.editor_ids)
           ? (existing.editor_ids as number[])
           : [];
         const editorIds = [...existingEditorIds];
+
         if (currentDemoUser.id !== existing.author_id && !editorIds.includes(currentDemoUser.id)) {
           editorIds.push(currentDemoUser.id);
         }
+
         const updated = {
           ...existing,
           ...(body ?? {}),
@@ -1019,6 +1191,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
     if (collection === '/notes' && id != null) {
       const existing = store['/notes']?.find((item) => (item as { id: number }).id === id);
+
       if (existing) {
         const now = new Date().toISOString();
         const updated = {
@@ -1043,6 +1216,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     if (collection === '/ideas' && id != null) {
       const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as
         Record<string, unknown> | undefined;
+
       if (updatedIdea) {
         syncDemoIdeaSchedule(
           id,
@@ -1053,9 +1227,13 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       }
     } else if (collection === '/schedule' && id != null) {
       const schedItem = updated as { idea_id?: number | null; date?: string } | undefined;
+
       if (schedItem?.idea_id != null) {
         const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
-        if (idea) idea.date = schedItem.date ?? null;
+
+        if (idea) {
+          idea.date = schedItem.date ?? null;
+        }
       }
     }
 
@@ -1065,19 +1243,26 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (method === 'DELETE') {
     const id = idFromPath(path);
+
     if (collection === '/schedule' && id != null) {
       const schedItem = store['/schedule']?.find((s) => s.id === id) as
         { idea_id?: number | null } | undefined;
+
       if (schedItem?.idea_id != null) {
         const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
-        if (idea) idea.date = null;
+
+        if (idea) {
+          idea.date = null;
+        }
       }
     }
 
     store[collection] = store[collection].filter((item) => (item as { id: number }).id !== id);
+
     if (collection === '/ideas' && id != null) {
       syncDemoIdeaSchedule(id, '', null);
     }
+
     persist();
     return undefined as T;
   }

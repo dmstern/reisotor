@@ -64,6 +64,7 @@ function handleClick(event: MouseEvent) {
     event.preventDefault();
     return;
   }
+
   emit('click', event);
 }
 </script>

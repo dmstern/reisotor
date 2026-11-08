@@ -15,6 +15,7 @@ export function useCalendarExportPicker() {
       calendarPickerKey.value = null;
       return;
     }
+
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     calendarPickerKey.value = key;
     calendarPickerStyle.value = {
@@ -23,6 +24,7 @@ export function useCalendarExportPicker() {
     };
     await nextTick();
     const menuRect = document.querySelector('.picker-menu')?.getBoundingClientRect();
+
     if (menuRect && menuRect.bottom > window.innerHeight - 8) {
       calendarPickerStyle.value = {
         ...calendarPickerStyle.value,

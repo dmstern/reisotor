@@ -113,9 +113,11 @@ test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
   await page.getByPlaceholder('Titel').fill('MapsAppPicker Regressionstest');
 
   const locationToggle = page.locator('.collapsible-toggle', { hasText: 'Ortsangaben' });
+
   if (await locationToggle.isVisible()) {
     await locationToggle.click();
   }
+
   await page.getByPlaceholder('Ort').fill('Torre de Belém');
 
   const mapsInput = page.getByPlaceholder('Maps-Link (Google/Apple)');
@@ -136,6 +138,7 @@ test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
   const viewport = page.viewportSize();
   expect(menuBox).not.toBeNull();
   expect(viewport).not.toBeNull();
+
   if (menuBox && viewport) {
     expect(menuBox.x).toBeGreaterThanOrEqual(0);
     expect(menuBox.y).toBeGreaterThanOrEqual(0);

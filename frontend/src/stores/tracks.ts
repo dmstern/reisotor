@@ -27,11 +27,13 @@ export const useTracksStore = defineStore('tracks', () => {
 
   async function load() {
     const tripId = tripStore.currentTripId;
+
     if (tripId == null) {
       tracks.value = [];
       loaded.value = false;
       return;
     }
+
     tracks.value = await api.get<LocationTrack[]>(`/tracks?trip_id=${tripId}`);
     loaded.value = true;
   }
@@ -55,12 +57,14 @@ export const useTracksStore = defineStore('tracks', () => {
   async function update(id: number, body: TrackUpdateData) {
     const updated = await api.put<LocationTrack>(`/tracks/${id}`, body);
     const idx = tracks.value.findIndex((t) => t.id === id);
+
     if (idx !== -1) {
       const next = [...tracks.value];
       next[idx] = updated;
       next.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
       tracks.value = next;
     }
+
     return updated;
   }
 
@@ -81,11 +85,13 @@ export const useTracksStore = defineStore('tracks', () => {
       end_reason: options?.end_reason ?? 'completed',
     });
     const idx = tracks.value.findIndex((t) => t.id === id);
+
     if (idx !== -1) {
       const next = [...tracks.value];
       next[idx] = updated;
       tracks.value = next;
     }
+
     return updated;
   }
 

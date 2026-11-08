@@ -93,7 +93,10 @@ describe('createGithubIssue', () => {
 
     const result = await createGithubIssue({ title: 'x', body: 'y', labels: [] });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain('422');
+
+    if (!result.ok) {
+      expect(result.error).toContain('422');
+    }
   });
 
   it('returns ok:false instead of throwing on a network failure', async () => {
@@ -145,6 +148,7 @@ describe('uploadFeedbackScreenshot', () => {
       ) {
         return Promise.resolve({ ok: true, status: 200 });
       }
+
       if (
         url ===
         'https://api.github.com/repos/someone/somerepo/contents/feedback-screenshots/shot.png'
@@ -155,6 +159,7 @@ describe('uploadFeedbackScreenshot', () => {
         expect(body.content).toBe(Buffer.from('hello').toString('base64'));
         return Promise.resolve({ ok: true, status: 201 });
       }
+
       throw new Error(`unexpected fetch: ${url}`);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -174,34 +179,40 @@ describe('uploadFeedbackScreenshot', () => {
     const calledUrls: string[] = [];
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       calledUrls.push(url);
+
       if (
         url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/feedback-screenshots'
       ) {
         return Promise.resolve({ ok: false, status: 404 });
       }
+
       if (url === 'https://api.github.com/repos/someone/somerepo') {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ default_branch: 'main' }),
         });
       }
+
       if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/main') {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ object: { sha: 'abc123' } }),
         });
       }
+
       if (url === 'https://api.github.com/repos/someone/somerepo/git/refs') {
         const body = JSON.parse(init!.body as string);
         expect(body).toEqual({ ref: 'refs/heads/feedback-screenshots', sha: 'abc123' });
         return Promise.resolve({ ok: true, status: 201 });
       }
+
       if (
         url ===
         'https://api.github.com/repos/someone/somerepo/contents/feedback-screenshots/shot.png'
       ) {
         return Promise.resolve({ ok: true, status: 201 });
       }
+
       throw new Error(`unexpected fetch: ${url}`);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -224,21 +235,25 @@ describe('uploadFeedbackScreenshot', () => {
         ) {
           return Promise.resolve({ ok: false, status: 404 });
         }
+
         if (url === 'https://api.github.com/repos/someone/somerepo') {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ default_branch: 'main' }),
           });
         }
+
         if (url === 'https://api.github.com/repos/someone/somerepo/git/ref/heads/main') {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ object: { sha: 'abc123' } }),
           });
         }
+
         if (url === 'https://api.github.com/repos/someone/somerepo/git/refs') {
           return Promise.resolve({ ok: false, status: 422 });
         }
+
         return Promise.resolve({ ok: true, status: 201 });
       })
     );
@@ -260,6 +275,7 @@ describe('uploadFeedbackScreenshot', () => {
         ) {
           return Promise.resolve({ ok: true, status: 200 });
         }
+
         return Promise.resolve({ ok: false, status: 422 });
       })
     );
@@ -268,6 +284,9 @@ describe('uploadFeedbackScreenshot', () => {
 
     const result = await uploadFeedbackScreenshot(Buffer.from('hello'), 'png', 'shot.png');
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain('422');
+
+    if (!result.ok) {
+      expect(result.error).toContain('422');
+    }
   });
 });

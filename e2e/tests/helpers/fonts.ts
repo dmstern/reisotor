@@ -124,15 +124,23 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
           style.display !== 'none'
         );
       });
-      if (visibleContainers.length === 0) return true; // Keine sichtbare Karte vorhanden
+
+      if (visibleContainers.length === 0) {
+        return true;
+      } // Keine sichtbare Karte vorhanden
 
       for (const container of visibleContainers) {
-        if (container.hasAttribute('data-tiles-loading')) return false;
+        if (container.hasAttribute('data-tiles-loading')) {
+          return false;
+        }
 
         const tiles = Array.from(
           container.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
         );
-        if (tiles.length === 0) return false;
+
+        if (tiles.length === 0) {
+          return false;
+        }
 
         const allLoaded = tiles.every(
           (img) =>
@@ -141,7 +149,10 @@ export async function waitForMapTiles(page: Page, timeoutMs = 20_000): Promise<v
             img.classList.contains('leaflet-tile-loaded') &&
             parseFloat(window.getComputedStyle(img).opacity || '0') >= 0.9
         );
-        if (!allLoaded) return false;
+
+        if (!allLoaded) {
+          return false;
+        }
       }
 
       return true;

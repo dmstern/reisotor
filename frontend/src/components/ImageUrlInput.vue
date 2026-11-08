@@ -61,10 +61,12 @@ function clearProgressTimer() {
 
 function abortUpload() {
   clearProgressTimer();
+
   if (abortController) {
     abortController.abort();
     abortController = null;
   }
+
   setUploading(false);
   progressPercent.value = 0;
   currentFileName.value = '';
@@ -74,7 +76,10 @@ async function onFileSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0] ?? null;
   input.value = '';
-  if (!file) return;
+
+  if (!file) {
+    return;
+  }
 
   clearProgressTimer();
   abortController = new AbortController();
@@ -87,7 +92,10 @@ async function onFileSelected(event: Event) {
     progressPercent.value = 20;
     const maxDimension = props.variant === 'banner' ? 2560 : 1600;
     const compressed = await compressImage(file, { maxDimension });
-    if (abortController.signal.aborted) return;
+
+    if (abortController.signal.aborted) {
+      return;
+    }
 
     progressPercent.value = 50;
 
@@ -103,13 +111,18 @@ async function onFileSelected(event: Event) {
       { signal: abortController.signal }
     );
 
-    if (abortController.signal.aborted) return;
+    if (abortController.signal.aborted) {
+      return;
+    }
 
     clearProgressTimer();
     progressPercent.value = 100;
     emit('update:modelValue', url);
   } catch {
-    if (abortController?.signal.aborted) return;
+    if (abortController?.signal.aborted) {
+      return;
+    }
+
     uploadError.value = 'Bild-Upload fehlgeschlagen. Bitte erneut versuchen.';
   } finally {
     clearProgressTimer();

@@ -58,6 +58,7 @@ export function computePopoverPosition(
   const spaceAbove = rect.top - offset - padding;
 
   let top: number;
+
   if (placement === 'top') {
     top = rect.top - offset - menuHeight;
   } else if (placement === 'bottom') {

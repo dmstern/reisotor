@@ -28,12 +28,16 @@ export function computeDepartureCountdown(startDateStr: string, now: Date): Depa
   const startOfDeparture = new Date(year, month - 1, day);
   const endOfDeparture = new Date(year, month - 1, day + 1);
 
-  if (now >= endOfDeparture) return { phase: 'departed' };
+  if (now >= endOfDeparture) {
+    return { phase: 'departed' };
+  }
 
   const msUntilEnd = endOfDeparture.getTime() - now.getTime();
+
   if (msUntilEnd < 48 * HOUR_MS) {
     return { phase: 'hours', hours: Math.max(1, Math.floor(msUntilEnd / HOUR_MS)) };
   }
+
   return { phase: 'days', days: daysBetweenLocalDates(now, startOfDeparture) };
 }
 
@@ -56,20 +60,35 @@ export function computeVacationPhase(
   trip: { start_date?: string | null; end_date?: string | null },
   now: Date
 ): VacationPhase | null {
-  if (!trip.start_date || !trip.end_date) return null;
+  if (!trip.start_date || !trip.end_date) {
+    return null;
+  }
+
   const [sy, sm, sd] = trip.start_date.split('-').map(Number);
   const [ey, em, ed] = trip.end_date.split('-').map(Number);
   const dayAfterDeparture = new Date(sy, sm - 1, sd + 1);
   const endOfTrip = new Date(ey, em - 1, ed);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  if (today < dayAfterDeparture) return null;
+  if (today < dayAfterDeparture) {
+    return null;
+  }
 
   const daysUntilEnd = daysBetweenLocalDates(today, endOfTrip);
-  if (daysUntilEnd < 0) return { phase: 'over' };
+
+  if (daysUntilEnd < 0) {
+    return { phase: 'over' };
+  }
+
   // Prüfung VOR 'arrived': bei sehr kurzen Reisen (z. B. 2 Tage) ist der Tag nach der Abreise
   // gleichzeitig der letzte Urlaubstag - die "Ende"-Einordnung ist dann die nützlichere Information.
-  if (daysUntilEnd === 0) return { phase: 'lastDay' };
-  if (daysBetweenLocalDates(today, dayAfterDeparture) === 0) return { phase: 'arrived' };
+  if (daysUntilEnd === 0) {
+    return { phase: 'lastDay' };
+  }
+
+  if (daysBetweenLocalDates(today, dayAfterDeparture) === 0) {
+    return { phase: 'arrived' };
+  }
+
   return { phase: 'ongoing', daysLeft: daysUntilEnd };
 }

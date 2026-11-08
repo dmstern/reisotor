@@ -264,6 +264,7 @@ describe('spots route coordinate preservation', () => {
               text: () => Promise.resolve(mockBookingHtml),
             });
           }
+
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve(''),

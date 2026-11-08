@@ -98,10 +98,14 @@ export function checkNotes(options = {}) {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (!line.startsWith('- ')) continue;
+
+      if (!line.startsWith('- ')) {
+        continue;
+      }
 
       totalEntries++;
       const match = line.match(/^-\s+([^\s*]+)\s+\*\*([^*]+)\*\*:\s*(.+)$/);
+
       if (!match) {
         errors.push({
           file: filename,
@@ -121,6 +125,7 @@ export function checkNotes(options = {}) {
       if (hasImprovementKw) {
         // Prüfe Git-Historie: Wann wurde dieser Eintrag hinzugefügt?
         let commitHash = '';
+
         try {
           commitHash = execSync(
             `git log -S ${JSON.stringify(title)} -n 1 --format="%H" -- ${JSON.stringify(path.relative(REPO_ROOT, filePath))}`,
@@ -131,6 +136,7 @@ export function checkNotes(options = {}) {
         }
 
         let isOnlyNewCode = false;
+
         if (commitHash) {
           try {
             const touchedFiles = execSync(
@@ -187,6 +193,7 @@ export function checkNotes(options = {}) {
 
   if (warnings.length > 0) {
     console.log(`\n⚠️  Hinweise (${warnings.length}):`);
+
     for (const w of warnings) {
       console.log(`  - [${w.file}:${w.line}] ${w.message}`);
     }
@@ -194,12 +201,15 @@ export function checkNotes(options = {}) {
 
   if (errors.length > 0) {
     console.error(`\n❌ Fehlerhafte Release-Notes-Einträge gefunden (${errors.length}):`);
+
     for (const err of errors) {
       console.error(`  - [${err.file}:${err.line}] (${err.type}): ${err.message}`);
     }
+
     console.error(
       `\n💡 Tipp: Features, die in ${lastTag} noch nicht existierten, dürfen keine separaten 'Verbesserungs-' oder 'Korrektur'-Einträge haben.`
     );
+
     if (exitOnError) {
       process.exit(1);
     }

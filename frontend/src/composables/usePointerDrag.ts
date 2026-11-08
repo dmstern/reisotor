@@ -31,15 +31,23 @@ export function usePointerDrag(options: PointerDragOptions) {
   let moved = false;
 
   function onPointerMove(event: PointerEvent) {
-    if (pointerId === null || event.pointerId !== pointerId) return;
+    if (pointerId === null || event.pointerId !== pointerId) {
+      return;
+    }
+
     if (!moved) {
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
-      if (Math.hypot(dx, dy) < threshold) return;
+
+      if (Math.hypot(dx, dy) < threshold) {
+        return;
+      }
+
       moved = true;
       dragging.value = true;
       options.onStart?.();
     }
+
     ghostStyle.value = { left: `${event.clientX}px`, top: `${event.clientY}px` };
   }
 
@@ -50,7 +58,10 @@ export function usePointerDrag(options: PointerDragOptions) {
   }
 
   function reset() {
-    if (moved) options.onEnd?.();
+    if (moved) {
+      options.onEnd?.();
+    }
+
     dragging.value = false;
     ghostStyle.value = null;
     moved = false;
@@ -59,25 +70,35 @@ export function usePointerDrag(options: PointerDragOptions) {
   }
 
   function onPointerUp(event: PointerEvent) {
-    if (pointerId === null || event.pointerId !== pointerId) return;
+    if (pointerId === null || event.pointerId !== pointerId) {
+      return;
+    }
+
     if (moved) {
       const target = document.elementFromPoint(event.clientX, event.clientY);
       options.onDrop(target, event);
     } else {
       options.onTap?.(event);
     }
+
     reset();
   }
 
   function onPointerCancel(event: PointerEvent) {
-    if (pointerId === null || event.pointerId !== pointerId) return;
+    if (pointerId === null || event.pointerId !== pointerId) {
+      return;
+    }
+
     reset();
   }
 
   function onPointerDown(event: PointerEvent) {
     // Nur den primären Zeiger behandeln (kein Rechtsklick etc.) – bei Touch/Stift ist button bei
     // der ersten Berührung ebenfalls 0, der Check schließt also nur z. B. Rechtsklick mit der Maus aus.
-    if (event.button !== 0) return;
+    if (event.button !== 0) {
+      return;
+    }
+
     startX = event.clientX;
     startY = event.clientY;
     pointerId = event.pointerId;

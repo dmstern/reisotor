@@ -45,6 +45,7 @@ export function useDiaryImageUpload(
       abortController.abort();
       abortController = null;
     }
+
     uploading.value = false;
     uploadCurrent.value = 1;
     uploadTotal.value = 0;
@@ -54,7 +55,10 @@ export function useDiaryImageUpload(
 
   async function uploadFiles(fileList: FileList | null, target: { images: DiaryImage[] }) {
     const files = fileList ? Array.from(fileList) : [];
-    if (!files.length) return;
+
+    if (!files.length) {
+      return;
+    }
 
     const controller = new AbortController();
     abortController = controller;
@@ -65,16 +69,23 @@ export function useDiaryImageUpload(
 
     uploading.value = true;
     uploadError.value = '';
+
     try {
       for (let i = 0; i < files.length; i++) {
-        if (controller.signal.aborted) break;
+        if (controller.signal.aborted) {
+          break;
+        }
+
         const file = files[i];
         uploadCurrent.value = i + 1;
         uploadFileName.value = file.name;
         uploadPercent.value = Math.round((i / files.length) * 100);
 
         const compressed = await compressImage(file);
-        if (controller.signal.aborted) break;
+
+        if (controller.signal.aborted) {
+          break;
+        }
 
         uploadPercent.value = Math.round(((i + 0.5) / files.length) * 100);
 
@@ -91,7 +102,10 @@ export function useDiaryImageUpload(
           },
           { signal: controller.signal }
         );
-        if (controller.signal.aborted) break;
+
+        if (controller.signal.aborted) {
+          break;
+        }
 
         target.images.push({
           url: res.url,
@@ -100,7 +114,10 @@ export function useDiaryImageUpload(
         uploadPercent.value = Math.round(((i + 1) / files.length) * 100);
       }
     } catch {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        return;
+      }
+
       uploadError.value = 'Bild-Upload fehlgeschlagen. Bitte erneut versuchen.';
     } finally {
       uploading.value = false;

@@ -16,6 +16,7 @@ describe('breakpoints token constants', () => {
     expect(BREAKPOINTS.ultraWide).toBe(3200);
 
     const values = Object.values(BREAKPOINTS);
+
     for (let i = 1; i < values.length; i++) {
       expect(values[i]).toBeGreaterThan(values[i - 1]);
     }

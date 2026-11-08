@@ -52,7 +52,10 @@ const auth = useAuthStore();
 const spotsStore = useSpotsStore();
 
 function creatorLabel(userId: number | null | undefined): string | null {
-  if (userId == null) return null;
+  if (userId == null) {
+    return null;
+  }
+
   const u = props.users.find((user) => user.id === userId);
   return u?.username ?? null;
 }

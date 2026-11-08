@@ -23,16 +23,25 @@ export async function resolveCountry(lat: number, lng: number): Promise<CountryL
     zoom: '3',
     addressdetails: '1',
   });
+
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
       signal: AbortSignal.timeout(5000),
       headers: { 'User-Agent': 'Reisotor/1.0 (Reiseplanungs-App, privater Nutzer)' },
     });
-    if (!res.ok) return null;
+
+    if (!res.ok) {
+      return null;
+    }
+
     const data = (await res.json()) as NominatimReverseResponse;
     const code = data.address?.country_code?.toUpperCase();
     const name = data.address?.country;
-    if (!code || !name) return null;
+
+    if (!code || !name) {
+      return null;
+    }
+
     return { code, name };
   } catch {
     return null;
@@ -109,6 +118,7 @@ async function getAuswaertigesAmtAdvisories(): Promise<Map<
   if (aaCache && aaCache.expiresAt > Date.now()) {
     return aaCache.data;
   }
+
   if (aaFetchPromise) {
     return aaFetchPromise;
   }
@@ -122,15 +132,20 @@ async function getAuswaertigesAmtAdvisories(): Promise<Map<
           'User-Agent': 'Reisotor/1.0 (Reiseplanungs-App, privater Nutzer)',
         },
       });
+
       if (!res.ok) {
         return aaCache ? aaCache.data : null;
       }
+
       const data = (await res.json()) as AuswaertigesAmtResponse;
       const map = new Map<string, { score: number; message: string }>();
 
       if (data.response) {
         for (const val of Object.values(data.response)) {
-          if (!val || typeof val !== 'object' || !val.countryCode) continue;
+          if (!val || typeof val !== 'object' || !val.countryCode) {
+            continue;
+          }
+
           const code = val.countryCode.toUpperCase();
           let score = 1.0;
           let message = 'Keine Reisewarnung';
@@ -168,6 +183,7 @@ async function getCountryBaseInfo(
 ): Promise<CountryBaseInfo> {
   const cacheKey = `${normalizedCountryCode}|${homeCurrency ?? ''}`;
   const cached = baseCache.get(cacheKey);
+
   if (cached && cached.expiresAt > Date.now()) {
     return cached.data;
   }
@@ -179,10 +195,12 @@ async function getCountryBaseInfo(
     const res = await fetch(`https://restcountries.com/v3.1/alpha/${normalizedCountryCode}`, {
       signal: AbortSignal.timeout(5000),
     });
+
     if (res.ok) {
       const data = (await res.json()) as RestCountryResponse[];
       languages = Object.values(data[0]?.languages ?? {});
       const currencyEntry = Object.entries(data[0]?.currencies ?? {})[0];
+
       if (currencyEntry) {
         currency = { code: currencyEntry[0], name: currencyEntry[1].name };
       }
@@ -192,11 +210,13 @@ async function getCountryBaseInfo(
   }
 
   let exchangeRate: number | null = null;
+
   if (currency && homeCurrency && currency.code !== homeCurrency) {
     try {
       const res = await fetch(`https://open.er-api.com/v6/latest/${currency.code}`, {
         signal: AbortSignal.timeout(5000),
       });
+
       if (res.ok) {
         const data = (await res.json()) as ExchangeRateResponse;
         exchangeRate = data.rates?.[homeCurrency] ?? null;

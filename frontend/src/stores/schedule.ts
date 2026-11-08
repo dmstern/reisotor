@@ -36,11 +36,13 @@ export const useScheduleStore = defineStore('schedule', () => {
 
   async function load() {
     const tripId = tripStore.currentTripId;
+
     if (tripId == null) {
       items.value = [];
       loaded.value = false;
       return;
     }
+
     items.value = await api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`);
     loaded.value = true;
   }
@@ -60,11 +62,13 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function update(id: number, body: ScheduleFormData) {
     const updated = await api.put<ScheduleItem>(`/schedule/${id}`, body);
     const idx = items.value.findIndex((i) => i.id === id);
+
     if (idx !== -1) {
       const next = [...items.value];
       next[idx] = updated;
       items.value = next;
     }
+
     return updated;
   }
 
@@ -80,6 +84,7 @@ export const useScheduleStore = defineStore('schedule', () => {
     done: boolean = false
   ) {
     const existing = items.value.find((i) => i.spot_id === spotId);
+
     if (existing) {
       await update(existing.id, {
         trip_id: existing.trip_id,
@@ -108,9 +113,11 @@ export const useScheduleStore = defineStore('schedule', () => {
         done: done ? 1 : 0,
       });
     }
+
     if (done) {
       const spotsStore = useSpotsStore();
       const sIdx = spotsStore.spots.findIndex((s) => s.id === spotId);
+
       if (sIdx !== -1) {
         const nextSpots = [...spotsStore.spots];
         nextSpots[sIdx] = { ...nextSpots[sIdx], done: 1 };
@@ -126,20 +133,24 @@ export const useScheduleStore = defineStore('schedule', () => {
       spot_done?: boolean;
     }>(`/schedule/${id}/done`, { done });
     const idx = items.value.findIndex((i) => i.id === id);
+
     if (idx !== -1) {
       const next = [...items.value];
       next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
       items.value = next;
     }
+
     if (result.spot_id != null && result.spot_done !== undefined) {
       const spotsStore = useSpotsStore();
       const sIdx = spotsStore.spots.findIndex((s) => s.id === result.spot_id);
+
       if (sIdx !== -1) {
         const nextSpots = [...spotsStore.spots];
         nextSpots[sIdx] = { ...nextSpots[sIdx], done: result.spot_done ? 1 : 0 };
         spotsStore.spots = nextSpots;
       }
     }
+
     return result;
   }
 

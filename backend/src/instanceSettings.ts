@@ -99,12 +99,14 @@ export function getInstanceSetting(key: string): string | null {
   try {
     const row = db.prepare('SELECT value FROM instance_settings WHERE key = ?').get(key) as
       { value: string } | undefined;
+
     if (row && typeof row.value === 'string') {
       return row.value;
     }
   } catch {
     // Falls Tabelle noch nicht existiert (z. B. vor der Initialisierung)
   }
+
   return null;
 }
 
@@ -131,12 +133,15 @@ export function setInstanceSetting(key: string, value: string | null): void {
  */
 export function getEffectiveSetting(key: string, envVar?: string, fallbackDefault = ''): string {
   const dbVal = getInstanceSetting(key);
+
   if (dbVal !== null) {
     return dbVal;
   }
+
   if (envVar && process.env[envVar] !== undefined) {
     return process.env[envVar]!;
   }
+
   return fallbackDefault;
 }
 
@@ -268,16 +273,19 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
   if (payload.registration) {
     if (payload.registration.registrationMode !== undefined) {
       const mode = payload.registration.registrationMode;
+
       if (mode === 'off' || mode === 'full' || mode === 'restricted') {
         setInstanceSetting('registration_mode', mode);
       }
     }
+
     if (payload.registration.requireEmailVerification !== undefined) {
       setInstanceSetting(
         'require_email_verification',
         payload.registration.requireEmailVerification ? 'true' : 'false'
       );
     }
+
     if (payload.registration.contactAdminEnabled !== undefined) {
       setInstanceSetting(
         'contact_admin_enabled',
@@ -302,8 +310,10 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
     } else if (payload.geo.orsApiKey !== undefined && payload.geo.orsApiKey.trim() !== '') {
       setInstanceSetting('ors_api_key', payload.geo.orsApiKey.trim());
     }
+
     setOrDelete('photon_api_url', payload.geo.photonApiUrl);
     setOrDelete('nominatim_api_url', payload.geo.nominatimApiUrl);
+
     if (payload.geo.nominatimEnabled !== undefined) {
       setInstanceSetting('nominatim_enabled', payload.geo.nominatimEnabled ? 'true' : 'false');
     }
@@ -311,24 +321,30 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
 
   if (payload.email) {
     setOrDelete('smtp_host', payload.email.smtpHost);
+
     if (payload.email.smtpPort !== undefined) {
       setInstanceSetting('smtp_port', String(payload.email.smtpPort));
     }
+
     if (payload.email.smtpSecure !== undefined) {
       setInstanceSetting('smtp_secure', payload.email.smtpSecure ? 'true' : 'false');
     }
+
     setOrDelete('smtp_user', payload.email.smtpUser);
+
     if (payload.email.clearSmtpPass) {
       setInstanceSetting('smtp_pass', null);
     } else if (payload.email.smtpPass !== undefined && payload.email.smtpPass.trim() !== '') {
       setInstanceSetting('smtp_pass', payload.email.smtpPass.trim());
     }
+
     setOrDelete('smtp_from', payload.email.smtpFrom);
     setOrDelete('app_url', payload.email.appUrl);
   }
 
   if (payload.feedback) {
     setOrDelete('github_repo', payload.feedback.githubRepo);
+
     if (payload.feedback.clearGithubToken) {
       setInstanceSetting('github_token', null);
     } else if (
@@ -337,12 +353,14 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
     ) {
       setInstanceSetting('github_token', payload.feedback.githubToken.trim());
     }
+
     if (payload.feedback.feedbackRelayForwarding !== undefined) {
       setInstanceSetting(
         'feedback_relay_forwarding',
         payload.feedback.feedbackRelayForwarding ? 'true' : 'false'
       );
     }
+
     setOrDelete('feedback_relay_url', payload.feedback.feedbackRelayUrl);
   }
 
@@ -354,6 +372,7 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
       if (payload.push.vapidPublicKey !== undefined && payload.push.vapidPublicKey.trim() !== '') {
         setInstanceSetting('vapid_public_key', payload.push.vapidPublicKey.trim());
       }
+
       if (
         payload.push.vapidPrivateKey !== undefined &&
         payload.push.vapidPrivateKey.trim() !== ''
@@ -361,6 +380,7 @@ export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminS
         setInstanceSetting('vapid_private_key', payload.push.vapidPrivateKey.trim());
       }
     }
+
     setOrDelete('vapid_subject', payload.push.vapidSubject);
   }
 
@@ -377,9 +397,11 @@ export function generateAndSaveVapidKeys(subject?: string): {
   const keys = webpush.generateVAPIDKeys();
   setInstanceSetting('vapid_public_key', keys.publicKey);
   setInstanceSetting('vapid_private_key', keys.privateKey);
+
   if (subject && subject.trim()) {
     setInstanceSetting('vapid_subject', subject.trim());
   }
+
   return {
     publicKey: keys.publicKey,
     isPrivateKeySet: true,

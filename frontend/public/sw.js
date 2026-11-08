@@ -51,7 +51,9 @@ registerRoute(
 // vite-plugin-pwa diesen Listener automatisch ein - bei injectManifest (dieser Datei, siehe
 // vite.config.ts) ist das unsere eigene Aufgabe. Ohne ihn tut der Button-Klick buchstäblich nichts.
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Sofortige Kontrolle über alle offenen Clients übernehmen, sobald der Service Worker aktiviert
@@ -62,13 +64,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  if (!event.data) return;
+  if (!event.data) {
+    return;
+  }
+
   let payload;
+
   try {
     payload = event.data.json();
   } catch {
     return;
   }
+
   const { title, body, tripId, url } = payload;
   event.waitUntil(
     self.registration.showNotification(title ?? 'Reisotor', {
@@ -88,8 +95,11 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
-        if ('focus' in client) return client.focus();
+        if ('focus' in client) {
+          return client.focus();
+        }
       }
+
       return self.clients.openWindow(targetUrl);
     })
   );

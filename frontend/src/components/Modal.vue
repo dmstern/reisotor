@@ -61,24 +61,36 @@ const confirmModalRef = ref<HTMLDivElement | null>(null);
 const showConfirmClose = ref(false);
 
 const resolvedConfirmTitle = computed(() => {
-  if (props.confirmCloseTitle) return props.confirmCloseTitle;
+  if (props.confirmCloseTitle) {
+    return props.confirmCloseTitle;
+  }
+
   return props.confirmCloseMode === 'draft'
     ? 'Entwurf verwerfen?'
     : 'Ungespeicherte Änderungen verwerfen?';
 });
 
 const resolvedConfirmMessage = computed(() => {
-  if (props.confirmCloseMessage) return props.confirmCloseMessage;
+  if (props.confirmCloseMessage) {
+    return props.confirmCloseMessage;
+  }
+
   const entity = props.confirmCloseEntity?.trim();
+
   if (props.confirmCloseMode === 'draft') {
-    if (!entity) return 'Du hast bereits Eingaben gemacht. Möchtest du den Entwurf verwerfen?';
+    if (!entity) {
+      return 'Du hast bereits Eingaben gemacht. Möchtest du den Entwurf verwerfen?';
+    }
+
     const phrased =
       ENTITY_ARTICLES[entity]?.acc ?? (entity.startsWith('diese') ? entity : `diese(n) ${entity}`);
     return `Du hast bereits Eingaben für ${phrased} gemacht. Möchtest du den Entwurf verwerfen?`;
   }
+
   if (!entity) {
     return 'Du hast ungespeicherte Änderungen vorgenommen. Möchtest du sie verwerfen oder weiter bearbeiten?';
   }
+
   const phrased =
     ENTITY_ARTICLES[entity]?.dat ??
     (entity.startsWith('diese') ? entity : `dieser/diesem ${entity}`);
@@ -86,7 +98,10 @@ const resolvedConfirmMessage = computed(() => {
 });
 
 const resolvedConfirmConfirmLabel = computed(() => {
-  if (props.confirmCloseConfirmLabel) return props.confirmCloseConfirmLabel;
+  if (props.confirmCloseConfirmLabel) {
+    return props.confirmCloseConfirmLabel;
+  }
+
   return props.confirmCloseMode === 'draft' ? 'Entwurf verwerfen' : 'Änderungen verwerfen';
 });
 
@@ -95,6 +110,7 @@ function close() {
     showConfirmClose.value = true;
     return;
   }
+
   emit('update:modelValue', false);
 }
 
@@ -109,7 +125,10 @@ function acceptConfirmClose() {
 }
 
 function getFocusableElements(container: HTMLElement | null = modalRef.value): HTMLElement[] {
-  if (!container) return [];
+  if (!container) {
+    return [];
+  }
+
   const selector =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const elements = Array.from(container.querySelectorAll<HTMLElement>(selector));
@@ -119,23 +138,31 @@ function getFocusableElements(container: HTMLElement | null = modalRef.value): H
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (!props.modelValue) return;
+  if (!props.modelValue) {
+    return;
+  }
 
   if (e.key === 'Escape') {
     if (showConfirmClose.value) {
       cancelConfirmClose();
       return;
     }
+
     if (modalStore.isTop(modalId)) {
       close();
     }
+
     return;
   }
 
   if (e.key === 'Tab') {
-    if (!modalStore.isTop(modalId)) return;
+    if (!modalStore.isTop(modalId)) {
+      return;
+    }
+
     const container = showConfirmClose.value ? confirmModalRef.value : modalRef.value;
     const focusables = getFocusableElements(container);
+
     if (focusables.length === 0) {
       e.preventDefault();
       return;
@@ -169,20 +196,29 @@ let resizeObserver: ResizeObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
 
 function getScrollElement(): HTMLElement | null {
-  if (!modalRef.value) return null;
+  if (!modalRef.value) {
+    return null;
+  }
+
   return modalBodyRef.value || modalRef.value.querySelector<HTMLElement>('.modal-body');
 }
 
 function updateScrollState() {
   const modalEl = modalRef.value;
-  if (!modalEl) return;
+
+  if (!modalEl) {
+    return;
+  }
+
   const el = getScrollElement();
+
   if (!el) {
     modalEl.classList.remove('can-scroll-up', 'can-scroll-down', 'has-actions-row');
     topFadeRef.value?.classList.remove('is-visible');
     bottomFadeRef.value?.classList.remove('is-visible');
     return;
   }
+
   const canUp = el.scrollTop > 2;
   const canDown = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
   const hasActions = Boolean(modalEl.querySelector('.actions-row'));
@@ -198,6 +234,7 @@ function updateScrollState() {
 function onScroll(e: Event) {
   const target = e.target as HTMLElement | null;
   const scrollEl = getScrollElement();
+
   if (
     target === scrollEl ||
     target === modalBodyRef.value ||
@@ -210,25 +247,33 @@ function onScroll(e: Event) {
 
 function setupScrollObservers() {
   cleanupScrollObservers();
-  if (!modalRef.value) return;
+
+  if (!modalRef.value) {
+    return;
+  }
 
   modalRef.value.addEventListener('scroll', onScroll, { capture: true, passive: true });
   window.addEventListener('resize', updateScrollState, { passive: true });
 
   const scrollEl = getScrollElement();
+
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(() => {
       updateScrollState();
     });
+
     if (scrollEl) {
       resizeObserver.observe(scrollEl);
+
       for (const child of scrollEl.children) {
         resizeObserver.observe(child);
       }
     }
+
     if (modalBodyRef.value && modalBodyRef.value !== scrollEl) {
       resizeObserver.observe(modalBodyRef.value);
     }
+
     if (modalRef.value && modalRef.value !== scrollEl) {
       resizeObserver.observe(modalRef.value);
     }
@@ -236,9 +281,11 @@ function setupScrollObservers() {
 
   if (typeof MutationObserver !== 'undefined') {
     const observeTarget = scrollEl || modalBodyRef.value || modalRef.value;
+
     if (observeTarget) {
       mutationObserver = new MutationObserver(() => {
         updateScrollState();
+
         if (resizeObserver && scrollEl) {
           for (const child of scrollEl.children) {
             resizeObserver.observe(child);
@@ -257,6 +304,7 @@ function cleanupScrollObservers() {
     modalRef.value.removeEventListener('scroll', onScroll, { capture: true });
     modalRef.value.classList.remove('can-scroll-up', 'can-scroll-down', 'has-actions-row');
   }
+
   window.removeEventListener('resize', updateScrollState);
   resizeObserver?.disconnect();
   resizeObserver = null;
@@ -276,15 +324,18 @@ watch(
         window.addEventListener('keydown', handleKeydown);
         nextTick(() => {
           const focusables = getFocusableElements();
+
           if (focusables.length > 0) {
             focusables[0].focus();
           }
+
           setupScrollObservers();
           requestAnimationFrame(updateScrollState);
         });
       }
     } else {
       showConfirmClose.value = false;
+
       if (isRegistered) {
         isRegistered = false;
         window.removeEventListener('keydown', handleKeydown);
@@ -300,6 +351,7 @@ watch(showConfirmClose, (isOpen) => {
   if (isOpen) {
     nextTick(() => {
       const focusables = getFocusableElements(confirmModalRef.value);
+
       if (focusables.length > 0) {
         focusables[0].focus();
       }
@@ -307,6 +359,7 @@ watch(showConfirmClose, (isOpen) => {
   } else if (props.modelValue) {
     nextTick(() => {
       const focusables = getFocusableElements(modalRef.value);
+
       if (focusables.length > 0) {
         focusables[0].focus();
       }
@@ -331,6 +384,7 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleKeydown);
     modalStore.unregister(modalId);
   }
+
   cleanupScrollObservers();
 });
 

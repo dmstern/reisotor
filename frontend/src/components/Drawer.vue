@@ -64,14 +64,20 @@ async function toggleMaximize() {
     drawers.maximize(props.side);
   }
 
-  if (!el || !first) return;
+  if (!el || !first) {
+    return;
+  }
+
   await nextTick();
   const last = el.getBoundingClientRect();
   const dx = first.left - last.left;
   const dy = first.top - last.top;
   const scaleX = last.width ? first.width / last.width : 1;
   const scaleY = last.height ? first.height / last.height : 1;
-  if (!dx && !dy && scaleX === 1 && scaleY === 1) return;
+
+  if (!dx && !dy && scaleX === 1 && scaleY === 1) {
+    return;
+  }
 
   el.style.transition = 'none';
   el.style.transformOrigin = 'top left';
@@ -86,6 +92,7 @@ async function toggleMaximize() {
     el.style.transformOrigin = '';
     el.removeEventListener('transitionend', cleanup);
   };
+
   el.addEventListener('transitionend', cleanup);
 }
 
@@ -94,15 +101,19 @@ async function toggleMaximize() {
 watch(
   () => props.open,
   (open) => {
-    if (!open && maximized.value) drawers.restoreMaximized();
+    if (!open && maximized.value) {
+      drawers.restoreMaximized();
+    }
   }
 );
 
 // Fensterbreite zur Deckelung auf Zwischengrößen (<1280px max 320px, ab 1280px max 860px)
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+
 function onWindowResize() {
   windowWidth.value = window.innerWidth;
 }
+
 onMounted(() => {
   window.addEventListener('resize', onWindowResize);
 });
@@ -122,12 +133,16 @@ let activeTarget: HTMLElement | null = null;
 let activePointerId: number | null = null;
 
 function onResizeStart(event: PointerEvent) {
-  if (event.button !== 0) return;
+  if (event.button !== 0) {
+    return;
+  }
+
   resizing.value = true;
   startX = event.clientX;
   startWidth = effectiveWidth.value;
   activePointerId = event.pointerId;
   activeTarget = (event.currentTarget as HTMLElement) ?? (event.target as HTMLElement);
+
   if (activeTarget?.setPointerCapture && activePointerId !== null) {
     try {
       activeTarget.setPointerCapture(activePointerId);
@@ -135,6 +150,7 @@ function onResizeStart(event: PointerEvent) {
       // Ignorieren falls vom Browser nicht unterstützt
     }
   }
+
   document.body.classList.add('resizing-col');
   window.addEventListener('pointermove', onResizeMove);
   window.addEventListener('pointerup', onResizeEnd);
@@ -143,7 +159,10 @@ function onResizeStart(event: PointerEvent) {
 }
 
 function onResizeMove(event: PointerEvent) {
-  if (!resizing.value) return;
+  if (!resizing.value) {
+    return;
+  }
+
   const delta = event.clientX - startX;
   // Linke Schublade: nach rechts ziehen vergrößert. Rechte Schublade: nach links ziehen vergrößert.
   const signedDelta = props.side === 'left' ? delta : -delta;
@@ -152,17 +171,23 @@ function onResizeMove(event: PointerEvent) {
 }
 
 function onResizeEnd() {
-  if (!resizing.value) return;
+  if (!resizing.value) {
+    return;
+  }
+
   resizing.value = false;
+
   if (activeTarget && activePointerId !== null) {
     try {
       activeTarget.releasePointerCapture(activePointerId);
     } catch {
       // Ignorieren falls nicht mehr gekoppelt
     }
+
     activePointerId = null;
     activeTarget = null;
   }
+
   document.body.classList.remove('resizing-col');
   window.removeEventListener('pointermove', onResizeMove);
   window.removeEventListener('pointerup', onResizeEnd);

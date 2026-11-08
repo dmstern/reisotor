@@ -45,6 +45,7 @@ describe('useErrorNotifier', () => {
     if (toasts.value[0].action && 'onClick' in toasts.value[0].action) {
       toasts.value[0].action.onClick?.();
     }
+
     expect(isErrorModalOpen.value).toBe(true);
     expect(activeError.value?.id).toBe(captured?.id);
   });
@@ -80,6 +81,7 @@ describe('useErrorNotifier', () => {
 
   it('deduplicates identical errors within 2000ms flood window', () => {
     vi.useFakeTimers();
+
     try {
       const { notifyError, recentErrors } = useErrorNotifier();
       const { toasts } = useToast();

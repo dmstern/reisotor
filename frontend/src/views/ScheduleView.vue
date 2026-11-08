@@ -81,7 +81,11 @@ const {
 function handleDaySelect(date: string) {
   selectDay(date);
   const pending = drawers.pendingSchedule;
-  if (!pending) return;
+
+  if (!pending) {
+    return;
+  }
+
   void finishPendingSchedule(pending, date);
 }
 
@@ -107,7 +111,10 @@ const selectedDateWeatherEntries = computed(() =>
 );
 
 function showDayOnMap() {
-  if (!selectedDate.value) return;
+  if (!selectedDate.value) {
+    return;
+  }
+
   drawers.focusMapOnDate(selectedDate.value);
   drawers.calendarOpen = false;
 }
@@ -117,8 +124,9 @@ function jumpToTrip() {
 }
 
 function openEntry(entry: CalendarEntry) {
-  if (entry.kind === 'trip') jumpToTrip();
-  else if (entry.kind === 'todo') {
+  if (entry.kind === 'trip') {
+    jumpToTrip();
+  } else if (entry.kind === 'todo') {
     drawers.calendarOpen = false;
     router.push(`/listen?tab=todo#todo-${entry.todoId}`);
   } else if (entry.category === 'travel' && entry.ideaId != null) {
@@ -165,12 +173,14 @@ onMounted(async () => {
       ? route.query.date
       : null;
   const targetDate = drawers.calendarTargetDate || queryDate;
+
   if (targetDate) {
     jumpToDate(targetDate);
     drawers.calendarTargetDate = null;
   } else {
     initNavigation();
   }
+
   loading.value = false;
 });
 </script>

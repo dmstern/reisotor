@@ -31,6 +31,7 @@ const isVisible = computed({
     if (isControlled.value) {
       return props.modelValue ?? false;
     }
+
     return tierModalState.isOpen.value;
   },
   set(val: boolean) {
@@ -48,14 +49,19 @@ const isVisible = computed({
 
 const activeFeature = computed(() => {
   const vnodeProps = instance?.vnode.props;
+
   if (vnodeProps != null && 'feature' in vnodeProps) {
     return props.feature;
   }
+
   return tierModalState.highlightedFeature.value;
 });
 
 const featureNotice = computed(() => {
-  if (!auth.user?.restricted) return null;
+  if (!auth.user?.restricted) {
+    return null;
+  }
+
   switch (activeFeature.value) {
     case 'trips':
       return {

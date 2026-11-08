@@ -41,12 +41,18 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
   }
 
   function isReducedMotion(): boolean {
-    if (typeof window === 'undefined') return true;
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
     return !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   async function expandToFanned() {
-    if (isFanned.value && !isCollapsing.value) return;
+    if (isFanned.value && !isCollapsing.value) {
+      return;
+    }
+
     clearActiveAnimation();
 
     if (isReducedMotion() || !rootRef.value) {
@@ -69,9 +75,11 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
       };
     });
     const initialHeight = rootRectBefore.height;
+
     if (tileOffsets.length > 0) {
       cachedTileOffsets = tileOffsets;
     }
+
     if (initialHeight > 0) {
       cachedStackedHeight = initialHeight;
     }
@@ -81,13 +89,18 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
     isFanned.value = true;
 
     await nextTick();
-    if (!rootRef.value) return;
+
+    if (!rootRef.value) {
+      return;
+    }
 
     const fannedWraps = rootRef.value.querySelectorAll<HTMLElement>('.fanned-item-wrap');
     const removeThumbs = rootRef.value.querySelectorAll<HTMLElement>('.remove-thumb');
     const headerBar = rootRef.value.querySelector<HTMLElement>('.fanned-header-bar');
 
-    if (!fannedWraps.length || !tileOffsets.length) return;
+    if (!fannedWraps.length || !tileOffsets.length) {
+      return;
+    }
 
     const rootRectAfter = rootRef.value.getBoundingClientRect();
     const targetHeight = rootRectAfter.height;
@@ -109,6 +122,7 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
       wrap.style.transition = 'none';
       wrap.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${stackRot}deg) scale(${scale})`;
       wrap.style.zIndex = String(fannedWraps.length - i);
+
       if (i >= tileOffsets.length) {
         wrap.style.opacity = '0';
       }
@@ -132,7 +146,9 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
     // 4. In den nächsten Frames die Animation flüssig starten (FLIP Play)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (!rootRef.value) return;
+        if (!rootRef.value) {
+          return;
+        }
 
         rootRef.value.style.transition = 'height 0.44s cubic-bezier(0.32, 0.72, 0, 1)';
         rootRef.value.style.height = `${targetHeight}px`;
@@ -165,11 +181,13 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
             rootRef.value.style.overflow = '';
             rootRef.value.style.transition = '';
           }
+
           if (headerBar) {
             headerBar.style.transition = '';
             headerBar.style.transform = '';
             headerBar.style.opacity = '';
           }
+
           fannedWraps.forEach((wrap) => {
             wrap.style.transition = '';
             wrap.style.transform = '';
@@ -189,7 +207,10 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
   }
 
   function collapseToStacked() {
-    if (!isFanned.value || isCollapsing.value) return;
+    if (!isFanned.value || isCollapsing.value) {
+      return;
+    }
+
     clearActiveAnimation();
 
     if (isReducedMotion() || !rootRef.value) {
@@ -257,6 +278,7 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
       wrap.style.zIndex = String(fannedWraps.length - i);
       wrap.style.transition = `transform 0.32s cubic-bezier(0.25, 1, 0.5, 1) ${delay}ms, opacity 0.26s ease ${delay}ms`;
       wrap.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${targetRot}deg) scale(${targetScale})`;
+
       if (i >= 4) {
         wrap.style.opacity = '0';
       }
@@ -275,7 +297,10 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
       isCollapsing.value = false;
 
       requestAnimationFrame(() => {
-        if (!rootRef.value) return;
+        if (!rootRef.value) {
+          return;
+        }
+
         rootRef.value.style.transition = 'height 0.26s cubic-bezier(0.32, 0.72, 0, 1)';
         rootRef.value.style.height = `${stackedHeight}px`;
 
@@ -285,11 +310,13 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
             rootRef.value.style.overflow = '';
             rootRef.value.style.transition = '';
           }
+
           if (headerBar) {
             headerBar.style.transition = '';
             headerBar.style.transform = '';
             headerBar.style.opacity = '';
           }
+
           fannedWraps.forEach((wrap) => {
             wrap.style.transition = '';
             wrap.style.transform = '';

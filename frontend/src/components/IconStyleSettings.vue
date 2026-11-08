@@ -69,16 +69,27 @@ const allGroupsValue = computed(() => {
 });
 
 function isColorized(group: ConfigurableIconGroup): boolean {
-  if (group === 'navigation') return iconStyle.navColored;
-  if (group === 'weather') return iconStyle.colorizeWeather;
+  if (group === 'navigation') {
+    return iconStyle.navColored;
+  }
+
+  if (group === 'weather') {
+    return iconStyle.colorizeWeather;
+  }
+
   return iconStyle.colorizeCategories;
 }
 
 function setColorized(group: ConfigurableIconGroup, value: string) {
   const colored = value === 'colored';
-  if (group === 'navigation') iconStyle.navColored = colored;
-  else if (group === 'weather') iconStyle.colorizeWeather = colored;
-  else iconStyle.colorizeCategories = colored;
+
+  if (group === 'navigation') {
+    iconStyle.navColored = colored;
+  } else if (group === 'weather') {
+    iconStyle.colorizeWeather = colored;
+  } else {
+    iconStyle.colorizeCategories = colored;
+  }
 }
 
 const isDefault = computed(() => {

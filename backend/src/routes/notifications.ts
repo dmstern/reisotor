@@ -47,7 +47,10 @@ function toNotification(row: NotificationRow) {
 // Mitgliedschaften - konsistent mit dem sonst durchgängig trip-zentrierten Header.
 export const notificationsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/notifications', async (req, reply) => {
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     const rows = db
       .prepare(
         `SELECT trip_activity.*, users.username AS actor_username, users.avatar AS actor_avatar,
@@ -73,8 +76,15 @@ export const notificationsRoutes: FastifyPluginAsync = async (app) => {
     const activity = db
       .prepare('SELECT trip_id FROM trip_activity WHERE id = ?')
       .get(req.params.id) as { trip_id: number } | undefined;
-    if (!activity) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, activity.trip_id, req.session.userId)) return;
+
+    if (!activity) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, activity.trip_id, req.session.userId)) {
+      return;
+    }
+
     db.prepare(
       `INSERT INTO notification_reads (user_id, activity_id, read_at) VALUES (?, ?, ?)
        ON CONFLICT(user_id, activity_id) DO NOTHING`
@@ -84,7 +94,11 @@ export const notificationsRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: { trip_id?: number } }>('/notifications/read-all', async (req, reply) => {
     const { trip_id } = req.body ?? {};
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     const now = new Date().toISOString();
     db.prepare(
       `INSERT INTO notification_reads (user_id, activity_id, read_at)
@@ -108,12 +122,15 @@ export const notificationsRoutes: FastifyPluginAsync = async (app) => {
     const body = req.body ?? {};
     const knownDomains = new Set<string>(PUSH_PREFERENCE_DOMAINS);
     const prefs: Partial<Record<PushPreferenceDomain, boolean>> = {};
+
     for (const [domain, enabled] of Object.entries(body)) {
       if (!knownDomains.has(domain) || typeof enabled !== 'boolean') {
         return reply.code(400).send({ error: `Ungültige Präferenz: ${domain}` });
       }
+
       prefs[domain as PushPreferenceDomain] = enabled;
     }
+
     setEmailPreferences(req.session.userId!, prefs);
     return getEmailPreferences(req.session.userId!);
   };

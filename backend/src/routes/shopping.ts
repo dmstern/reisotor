@@ -16,8 +16,14 @@ interface ShoppingBody {
 
 export const shoppingRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/shopping', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return db
       .prepare(
         'SELECT * FROM shopping_items WHERE trip_id = ? AND deleted_at IS NULL ORDER BY checked, id DESC'
@@ -27,7 +33,11 @@ export const shoppingRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: ShoppingBody }>('/shopping', async (req, reply) => {
     const { trip_id, label, assigned_to_user_id, checked, link, note, shop, period } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     const result = db
       .prepare(
         'INSERT INTO shopping_items (trip_id, label, assigned_to_user_id, checked, link, note, shop, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
@@ -57,8 +67,14 @@ export const shoppingRoutes: FastifyPluginAsync = async (app) => {
     const existingItem = db
       .prepare('SELECT trip_id FROM shopping_items WHERE id = ?')
       .get(req.params.id) as { trip_id: number } | undefined;
-    if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
+
+    if (!existingItem) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) {
+      return;
+    }
 
     const { label, assigned_to_user_id, checked, link, note, shop, period } = req.body;
     const result = db
@@ -75,7 +91,11 @@ export const shoppingRoutes: FastifyPluginAsync = async (app) => {
         period ?? null,
         req.params.id
       );
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     recordActivity(
       existingItem.trip_id,
       'shopping',
@@ -92,13 +112,23 @@ export const shoppingRoutes: FastifyPluginAsync = async (app) => {
     const existingItem = db
       .prepare('SELECT trip_id FROM shopping_items WHERE id = ?')
       .get(req.params.id) as { trip_id: number } | undefined;
-    if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
+
+    if (!existingItem) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) {
+      return;
+    }
 
     const result = db
       .prepare('UPDATE shopping_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     recordActivity(
       existingItem.trip_id,
       'shopping',

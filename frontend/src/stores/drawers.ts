@@ -15,6 +15,7 @@ export function getMaxDrawerWidth(): number {
   if (typeof window !== 'undefined' && window.innerWidth < 1280) {
     return MAX_DRAWER_WIDTH_COMPACT;
   }
+
   return MAX_DRAWER_WIDTH;
 }
 
@@ -25,18 +26,31 @@ function isDesktop() {
 }
 
 function loadOpen(key: string): boolean {
-  if (typeof localStorage === 'undefined') return false;
+  if (typeof localStorage === 'undefined') {
+    return false;
+  }
+
   // Mobil gibt es keine Kalender-Schublade (Kalender ist eine eigenständige Seite unter /calendar)
-  if (!isDesktop()) return false;
+  if (!isDesktop()) {
+    return false;
+  }
+
   const stored = localStorage.getItem(key);
-  if (stored !== null) return stored === 'true';
+
+  if (stored !== null) {
+    return stored === 'true';
+  }
+
   // Noch keine explizite Präferenz gespeichert: auf Desktop standardmäßig ausgeklappt (genug
   // Platz), mobil zu (Platz ist dort knapp, Schublade würde sonst direkt den Inhalt verdecken).
   return isDesktop();
 }
 
 function loadWidth(key: string): number {
-  if (typeof localStorage === 'undefined') return DEFAULT_DRAWER_WIDTH;
+  if (typeof localStorage === 'undefined') {
+    return DEFAULT_DRAWER_WIDTH;
+  }
+
   const stored = Number(localStorage.getItem(key));
   const maxAllowed = getMaxDrawerWidth();
   return Number.isFinite(stored) && stored >= MIN_DRAWER_WIDTH && stored <= MAX_DRAWER_WIDTH
@@ -120,6 +134,7 @@ export const useDrawersStore = defineStore('drawers', () => {
     if (date) {
       calendarTargetDate.value = date;
     }
+
     if (isDesktop()) {
       calendarOpen.value = true;
     } else {
@@ -161,14 +176,18 @@ export const useDrawersStore = defineStore('drawers', () => {
     }
   });
   watch(calendarWidth, (v) => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(CALENDAR_WIDTH_KEY, String(v));
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CALENDAR_WIDTH_KEY, String(v));
+    }
   });
 
   // Springt zur Karte-Hauptsicht, falls man gerade woanders ist (z. B. "Auf Karte anzeigen" aus
   // TravelSection.vue/ExcursionsView.vue) – ein Push auf die bereits aktive Route würde
   // vue-router sonst unnötig (harmlos, aber unsauber) erneut auflösen lassen.
   function ensureMapRoute() {
-    if (router.currentRoute.value.name !== 'excursions') router.push('/excursions');
+    if (router.currentRoute.value.name !== 'excursions') {
+      router.push('/excursions');
+    }
   }
 
   const focusVersion = ref(0);

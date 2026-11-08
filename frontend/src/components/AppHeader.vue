@@ -56,6 +56,7 @@ const isCalendarActive = computed(() => {
 function onCalendarClick(event: MouseEvent) {
   if (isCalendarActive.value) {
     event.preventDefault();
+
     if (window.history.length > 1) {
       router.back();
     } else {
@@ -78,7 +79,11 @@ function updateHeaderHeight() {
 
 onMounted(() => {
   resizeObserver = new ResizeObserver(updateHeaderHeight);
-  if (headerEl.value) resizeObserver.observe(headerEl.value);
+
+  if (headerEl.value) {
+    resizeObserver.observe(headerEl.value);
+  }
+
   updateHeaderHeight();
 });
 
@@ -91,11 +96,14 @@ const profileTitle = computed(() => {
     if (connectivity.syncing || connectivity.checking) {
       return 'Verbinde… – Einstellungen';
     }
+
     return 'Offline – Einstellungen';
   }
+
   if (connectivity.pendingCount > 0) {
     return `${connectivity.pendingCount} ausstehende Synchronisation(en) – Einstellungen`;
   }
+
   return 'Einstellungen';
 });
 </script>

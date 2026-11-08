@@ -17,9 +17,11 @@ function createTestApp(
   const pinia = createPinia();
   setActivePinia(pinia);
   const authStore = useAuthStore(pinia);
+
   if (initialUser) {
     authStore.user = initialUser as User;
   }
+
   const app = createApp({
     render: () => h(rootComponent, props),
   });
@@ -122,9 +124,11 @@ describe('FileAttachments component', () => {
 
   it('handles api.get failure during load() gracefully without unhandled rejection (#527)', async () => {
     const unhandledRejections: unknown[] = [];
+
     const onUnhandled = (e: PromiseRejectionEvent) => {
       unhandledRejections.push(e.reason);
     };
+
     window.addEventListener('unhandledrejection', onUnhandled);
 
     vi.spyOn(api, 'get').mockRejectedValue(

@@ -45,12 +45,16 @@ const ACCOMMODATION_PATH_REGEX =
  * (e.g. Booking.com, Airbnb, Trivago, Expedia, VRBO, or accommodation paths).
  */
 export function isBookingLink(input: string | null | undefined): boolean {
-  if (!input) return false;
-  const trimmed = input.trim();
-  if (!trimmed) return false;
+  if (!input) {return false;}
 
-  if (BOOKING_DOMAINS_REGEX.test(trimmed)) return true;
-  if (ACCOMMODATION_PATH_REGEX.test(trimmed)) return true;
+  const trimmed = input.trim();
+
+  if (!trimmed) {return false;}
+
+  if (BOOKING_DOMAINS_REGEX.test(trimmed)) {return true;}
+
+  if (ACCOMMODATION_PATH_REGEX.test(trimmed)) {return true;}
+
   return false;
 }
 
@@ -59,13 +63,27 @@ export function isBookingLink(input: string | null | undefined): boolean {
  * OpenStreetMap, geo: URI, or known shortlink).
  */
 export function isMapsLink(input: string | null | undefined): boolean {
-  if (!input) return false;
-  const trimmed = input.trim();
-  if (!trimmed) return false;
+  if (!input) {
+    return false;
+  }
 
-  if (GEO_OR_MAPS_SCHEME_REGEX.test(trimmed)) return true;
-  if (MAPS_DOMAIN_OR_SCHEME_REGEX.test(trimmed)) return true;
-  if (MAPS_SHORTLINK_REGEX.test(trimmed)) return true;
+  const trimmed = input.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  if (GEO_OR_MAPS_SCHEME_REGEX.test(trimmed)) {
+    return true;
+  }
+
+  if (MAPS_DOMAIN_OR_SCHEME_REGEX.test(trimmed)) {
+    return true;
+  }
+
+  if (MAPS_SHORTLINK_REGEX.test(trimmed)) {
+    return true;
+  }
 
   // Also verify if coordinates can be extracted directly (e.g. embed links, custom formats)
   return parseLatLngFromMapsLink(trimmed) !== null;
@@ -85,12 +103,14 @@ export function classifyLocationInput(
   }
 
   const trimmed = input.trim();
+
   if (!trimmed) {
     return { type: 'empty' };
   }
 
   // 1. Try extracting coordinates directly via parseLatLngFromMapsLink
   const coords = parseLatLngFromMapsLink(trimmed);
+
   if (coords) {
     return {
       type: 'maps_link',
@@ -114,9 +134,11 @@ export function classifyLocationInput(
   // 3. Check if it's a booking / accommodation link (Booking.com, Airbnb, Trivago, etc.)
   if (isBookingLink(trimmed)) {
     let normalized = trimmed;
+
     if (!/^[a-z]+:\/\//i.test(normalized)) {
       normalized = 'https://' + normalized;
     }
+
     return {
       type: 'booking_link',
       url: normalized,

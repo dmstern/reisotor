@@ -70,7 +70,11 @@ function handleClose() {
 async function handleSubmit() {
   const wasEdit = isEdit.value;
   const success = await submitTransfer();
-  if (!success) return;
+
+  if (!success) {
+    return;
+  }
+
   showToast({
     message: wasEdit ? 'Überweisung aktualisiert.' : 'Überweisung eingetragen.',
     type: 'success',
@@ -93,6 +97,7 @@ async function handleDelete() {
       },
     });
   }
+
   handleClose();
   emit('deleted');
 }

@@ -33,13 +33,17 @@ const showSpotPicker = ref(spotIds.value.length > 0);
 watch(
   () => excursionIds.value.length,
   (len) => {
-    if (len > 0) showExcursionPicker.value = true;
+    if (len > 0) {
+      showExcursionPicker.value = true;
+    }
   }
 );
 watch(
   () => spotIds.value.length,
   (len) => {
-    if (len > 0) showSpotPicker.value = true;
+    if (len > 0) {
+      showSpotPicker.value = true;
+    }
   }
 );
 
@@ -48,24 +52,33 @@ const spots = computed(() => links.pickerSpots(props.date));
 
 function formatSpotScheduled(spotId: number): string {
   const dates = links.getSpotScheduledDates(spotId);
+
   if (dates.length === 1) {
     return `Geplant am ${formatDate(dates[0])}`;
   }
+
   if (dates.length > 1) {
     return `Geplant (${dates.map((d) => formatDate(d, { includeYear: false })).join(', ')})`;
   }
+
   return '';
 }
 
 const mismatchedExcursions = computed(() => {
-  if (!props.date) return [];
+  if (!props.date) {
+    return [];
+  }
+
   return excursionIds.value
     .map((id) => excursionsStore.excursions.find((e) => e.id === id))
     .filter((e): e is Excursion => !!e && links.excursionDateMismatch(e, props.date));
 });
 
 const mismatchedSpots = computed(() => {
-  if (!props.date) return [];
+  if (!props.date) {
+    return [];
+  }
+
   return spotIds.value
     .map((id) => spotsStore.spots.find((s) => s.id === id))
     .filter((s): s is Spot => !!s && links.spotDateMismatch(s.id, props.date));
@@ -78,11 +91,13 @@ const hasDateMismatch = computed(() => {
 function toggleSpot(spotId: number) {
   const current = [...spotIds.value];
   const idx = current.indexOf(spotId);
+
   if (idx === -1) {
     current.push(spotId);
   } else {
     current.splice(idx, 1);
   }
+
   spotIds.value = current;
 }
 </script>

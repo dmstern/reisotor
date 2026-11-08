@@ -452,6 +452,7 @@ describe('bookingLink', () => {
             text: async () => mockHtmlWithoutCoords,
           });
         }
+
         if (
           String(url).includes('nominatim') ||
           String(url).includes('photon') ||
@@ -480,6 +481,7 @@ describe('bookingLink', () => {
             }),
           });
         }
+
         return Promise.resolve({ ok: true, text: async () => '' });
       }) as unknown as typeof fetch;
 
@@ -565,6 +567,7 @@ describe('bookingLink', () => {
     it('retries with fallback user agent when AWS WAF bot challenge is returned', async () => {
       global.fetch = vi.fn((_url: string, init?: RequestInit) => {
         const ua = (init?.headers as Record<string, string>)?.['User-Agent'];
+
         if (ua?.includes('Chrome')) {
           // Simulator: Browser UA wird mit WAF-Challenge blockiert
           return Promise.resolve({
@@ -573,6 +576,7 @@ describe('bookingLink', () => {
               '<html><script>window.awsWafCookieDomainList=["booking.com"];</script></html>',
           } as unknown as Response);
         }
+
         // Preview Bot UA erhält volles HTML
         return Promise.resolve({
           status: 200,

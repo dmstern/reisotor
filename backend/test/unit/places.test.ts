@@ -285,6 +285,7 @@ describe('places utility (unit)', () => {
           { name: `Place ${i}`, formatted_address: 'Addr', address: 'Addr', lat: 0, lng: 0 },
         ]);
       }
+
       expect(getPlacesCacheSize()).toBeLessThanOrEqual(500);
       // First 5 entries should have been evicted
       expect(getCachedPlaces('key-0')).toBeNull();

@@ -37,10 +37,12 @@ export const useAuthStore = defineStore('auth', () => {
       '/auth/register',
       { username, email, password }
     );
+
     if (res.requiresVerification) {
       user.value = null;
       return res;
     }
+
     user.value = res;
   }
 
@@ -48,8 +50,11 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await api.post('/auth/logout');
     } catch (err) {
-      if (!(err instanceof ApiError)) throw err;
+      if (!(err instanceof ApiError)) {
+        throw err;
+      }
     }
+
     user.value = null;
     // Gemeinsam genutztes Gerät (App ist ursprünglich für zwei Personen pro Haushalt gebaut):
     // Icon-Einstellungen der abgemeldeten Person dürfen nicht bis zum nächsten Login stehen bleiben.

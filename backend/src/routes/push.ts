@@ -15,8 +15,11 @@ import {
 export const pushRoutes: FastifyPluginAsync = async (app) => {
   app.get('/push/vapid-public-key', async (_req, reply) => {
     const key = getVapidPublicKey();
-    if (!key)
+
+    if (!key) {
       return reply.code(404).send({ error: 'Push ist auf diesem Server nicht konfiguriert' });
+    }
+
     return { publicKey: key };
   });
 
@@ -24,9 +27,11 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
     '/push/subscribe',
     async (req, reply) => {
       const { endpoint, keys } = req.body ?? {};
+
       if (!endpoint || !keys?.p256dh || !keys?.auth) {
         return reply.code(400).send({ error: 'Ungültiges Abonnement' });
       }
+
       saveSubscription(req.session.userId!, { endpoint, keys });
       reply.code(201);
       return { ok: true };
@@ -38,7 +43,11 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
   // in die URL.
   app.delete<{ Querystring: { endpoint?: string } }>('/push/subscribe', async (req, reply) => {
     const { endpoint } = req.query;
-    if (!endpoint) return reply.code(400).send({ error: 'endpoint erforderlich' });
+
+    if (!endpoint) {
+      return reply.code(400).send({ error: 'endpoint erforderlich' });
+    }
+
     removeSubscription(endpoint, req.session.userId!);
     return reply.code(204).send();
   });
@@ -53,12 +62,15 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
     const body = req.body ?? {};
     const knownDomains = new Set<string>(PUSH_PREFERENCE_DOMAINS);
     const prefs: Partial<Record<PushPreferenceDomain, boolean>> = {};
+
     for (const [domain, enabled] of Object.entries(body)) {
       if (!knownDomains.has(domain) || typeof enabled !== 'boolean') {
         return reply.code(400).send({ error: `Ungültige Präferenz: ${domain}` });
       }
+
       prefs[domain as PushPreferenceDomain] = enabled;
     }
+
     setPushPreferences(req.session.userId!, prefs);
     return getPushPreferences(req.session.userId!);
   });

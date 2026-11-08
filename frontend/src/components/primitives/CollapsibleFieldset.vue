@@ -43,8 +43,14 @@ const internalOpen = ref(props.openInitial ?? false);
 
 const isOpen = computed({
   get: () => {
-    if (props.modelValue !== undefined) return props.modelValue;
-    if (props.open !== undefined) return props.open;
+    if (props.modelValue !== undefined) {
+      return props.modelValue;
+    }
+
+    if (props.open !== undefined) {
+      return props.open;
+    }
+
     return internalOpen.value;
   },
   set: (val: boolean) => {
@@ -56,7 +62,10 @@ const isOpen = computed({
 });
 
 function toggle() {
-  if (props.disabled) return;
+  if (props.disabled) {
+    return;
+  }
+
   isOpen.value = !isOpen.value;
 }
 </script>

@@ -21,7 +21,10 @@ defineEmits<{
 }>();
 
 const heroStyle = computed(() => {
-  if (!props.trip?.image_url) return {};
+  if (!props.trip?.image_url) {
+    return {};
+  }
+
   return {
     backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${imageDisplayUrl(props.trip.image_url)})`,
   };

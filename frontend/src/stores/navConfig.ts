@@ -23,37 +23,47 @@ export function defaultEntries(target: 'desktop' | 'mobile' = 'desktop'): NavCon
 
 function loadEntries(): NavConfigEntry[] {
   const stored = localStorage.getItem(STORAGE_KEY);
+
   if (!stored) {
     return defaultEntries('desktop');
   }
+
   let parsed: NavConfigEntry[] = [];
+
   try {
     parsed = JSON.parse(stored);
   } catch {
     return defaultEntries('desktop');
   }
+
   return sanitizeNavEntries(parsed, 'desktop');
 }
 
 function loadCustomMobile(): boolean {
   const stored = localStorage.getItem(CUSTOM_MOBILE_STORAGE_KEY);
+
   if (stored === null) {
     return true;
   }
+
   return stored === 'true';
 }
 
 function loadMobileEntries(): NavConfigEntry[] {
   const stored = localStorage.getItem(MOBILE_STORAGE_KEY);
+
   if (!stored) {
     return defaultEntries('mobile');
   }
+
   let parsed: NavConfigEntry[] = [];
+
   try {
     parsed = JSON.parse(stored);
   } catch {
     return defaultEntries('mobile');
   }
+
   return sanitizeNavEntries(parsed, 'mobile');
 }
 
@@ -90,6 +100,7 @@ export const useNavConfigStore = defineStore('navConfig', () => {
 
   function setCustomMobile(enabled: boolean | unknown) {
     const val = Boolean(enabled);
+
     if (
       val &&
       !customMobile.value &&
@@ -98,13 +109,18 @@ export const useNavConfigStore = defineStore('navConfig', () => {
     ) {
       mobileEntries.value = defaultEntries('mobile');
     }
+
     customMobile.value = val;
   }
 
   function moveUp(key: string, target: 'desktop' | 'mobile' = 'desktop') {
     const list = target === 'mobile' ? mobileEntries : entries;
     const idx = list.value.findIndex((e) => e.key === key);
-    if (idx <= 0) return;
+
+    if (idx <= 0) {
+      return;
+    }
+
     const copy = [...list.value];
     [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
     list.value = copy;
@@ -113,7 +129,11 @@ export const useNavConfigStore = defineStore('navConfig', () => {
   function moveDown(key: string, target: 'desktop' | 'mobile' = 'desktop') {
     const list = target === 'mobile' ? mobileEntries : entries;
     const idx = list.value.findIndex((e) => e.key === key);
-    if (idx === -1 || idx >= list.value.length - 1) return;
+
+    if (idx === -1 || idx >= list.value.length - 1) {
+      return;
+    }
+
     const copy = [...list.value];
     [copy[idx], copy[idx + 1]] = [copy[idx + 1], copy[idx]];
     list.value = copy;
@@ -122,7 +142,10 @@ export const useNavConfigStore = defineStore('navConfig', () => {
   function setVisible(key: string, visible: boolean, target: 'desktop' | 'mobile' = 'desktop') {
     const list = target === 'mobile' ? mobileEntries : entries;
     const entry = list.value.find((e) => e.key === key);
-    if (entry) entry.visible = visible;
+
+    if (entry) {
+      entry.visible = visible;
+    }
   }
 
   function reset() {
@@ -137,6 +160,7 @@ export const useNavConfigStore = defineStore('navConfig', () => {
     if (!isDesktop && customMobile.value) {
       return mobileEntries.value;
     }
+
     return entries.value;
   }
 

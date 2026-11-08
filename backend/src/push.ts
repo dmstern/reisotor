@@ -10,6 +10,7 @@ export function ensureVapidConfigured(): boolean {
   const subject =
     getEffectiveSetting('vapid_subject', 'VAPID_SUBJECT', 'mailto:admin@example.com').trim() ||
     'mailto:admin@example.com';
+
   if (pub && priv) {
     try {
       webpush.setVapidDetails(subject, pub, priv);
@@ -18,6 +19,7 @@ export function ensureVapidConfigured(): boolean {
       return false;
     }
   }
+
   return false;
 }
 
@@ -104,8 +106,12 @@ export function setPushPreferences(
     `INSERT INTO push_preferences (user_id, domain, enabled) VALUES (?, ?, ?)
      ON CONFLICT(user_id, domain) DO UPDATE SET enabled = excluded.enabled`
   );
+
   for (const [domain, enabled] of Object.entries(prefs)) {
-    if (enabled === undefined) continue;
+    if (enabled === undefined) {
+      continue;
+    }
+
     stmt.run(userId, domain, enabled ? 1 : 0);
   }
 }
@@ -131,8 +137,12 @@ export function setEmailPreferences(
     `INSERT INTO email_preferences (user_id, domain, enabled) VALUES (?, ?, ?)
      ON CONFLICT(user_id, domain) DO UPDATE SET enabled = excluded.enabled`
   );
+
   for (const [domain, enabled] of Object.entries(prefs)) {
-    if (enabled === undefined) continue;
+    if (enabled === undefined) {
+      continue;
+    }
+
     stmt.run(userId, domain, enabled ? 1 : 0);
   }
 }
@@ -195,7 +205,10 @@ export async function sendPushToTripMembers(
   excludeUserId?: number,
   isUpdate = false
 ) {
-  if (!ensureVapidConfigured()) return;
+  if (!ensureVapidConfigured()) {
+    return;
+  }
+
   const subs = (
     isUpdate
       ? excludeUserId != null
@@ -247,8 +260,14 @@ export async function sendPushToTripMembers(
             )
             .all(domain, tripId)
   ) as PushSubscriptionRow[];
-  if (!subs.length) return;
-  if (!ensureVapidConfigured()) return;
+
+  if (!subs.length) {
+    return;
+  }
+
+  if (!ensureVapidConfigured()) {
+    return;
+  }
 
   const body = JSON.stringify(payload);
   await Promise.all(
@@ -260,6 +279,7 @@ export async function sendPushToTripMembers(
         );
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
+
         if (statusCode === 404 || statusCode === 410) {
           db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
         }
@@ -274,7 +294,10 @@ export async function sendPushToAllSubscribers(
   payload: Record<string, unknown>,
   domain: PushPreferenceDomain
 ) {
-  if (!ensureVapidConfigured()) return;
+  if (!ensureVapidConfigured()) {
+    return;
+  }
+
   const subs = db
     .prepare(
       `SELECT push_subscriptions.* FROM push_subscriptions
@@ -283,8 +306,14 @@ export async function sendPushToAllSubscribers(
        WHERE (push_preferences.enabled IS NULL OR push_preferences.enabled = 1)`
     )
     .all(domain) as PushSubscriptionRow[];
-  if (!subs.length) return;
-  if (!ensureVapidConfigured()) return;
+
+  if (!subs.length) {
+    return;
+  }
+
+  if (!ensureVapidConfigured()) {
+    return;
+  }
 
   const body = JSON.stringify(payload);
   await Promise.all(
@@ -296,6 +325,7 @@ export async function sendPushToAllSubscribers(
         );
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
+
         if (statusCode === 404 || statusCode === 410) {
           db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
         }
@@ -325,7 +355,10 @@ export async function sendVersionNotification(version: string, detail?: string) 
 
 /** Versendet eine Push-Benachrichtigung an alle Administrator:innen (z. B. bei neuen Kontaktanfragen). */
 export async function sendPushToAdmins(payload: Record<string, unknown>) {
-  if (!ensureVapidConfigured()) return;
+  if (!ensureVapidConfigured()) {
+    return;
+  }
+
   const subs = db
     .prepare(
       `SELECT push_subscriptions.* FROM push_subscriptions
@@ -333,7 +366,10 @@ export async function sendPushToAdmins(payload: Record<string, unknown>) {
        WHERE users.is_admin = 1`
     )
     .all() as PushSubscriptionRow[];
-  if (!subs.length) return;
+
+  if (!subs.length) {
+    return;
+  }
 
   const body = JSON.stringify(payload);
   await Promise.all(
@@ -345,6 +381,7 @@ export async function sendPushToAdmins(payload: Record<string, unknown>) {
         );
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
+
         if (statusCode === 404 || statusCode === 410) {
           db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
         }
@@ -356,14 +393,20 @@ export async function sendPushToAdmins(payload: Record<string, unknown>) {
 /** Prüft beim Server-Start, ob eine neue Version ausgerollt wurde, und benachrichtigt Abonnenten einmalig. */
 export async function checkVersionNotification() {
   const info = readBuildInfo();
-  if (!info.version) return;
+
+  if (!info.version) {
+    return;
+  }
+
   const currentVersion = info.version;
   const lastNotified = getInstanceSetting('last_notified_version');
+
   if (!lastNotified) {
     // Bei erstem Start keine Spam-Benachrichtigung für die bestehende Version
     setInstanceSetting('last_notified_version', currentVersion);
     return;
   }
+
   if (lastNotified !== currentVersion) {
     const detail = info.changelog?.notes?.[0];
     await sendVersionNotification(currentVersion, detail);
@@ -380,7 +423,9 @@ export async function sendEmailToTripMembers(
   excludeUserId?: number,
   isUpdate = false
 ) {
-  if (!isEmailConfigured()) return;
+  if (!isEmailConfigured()) {
+    return;
+  }
 
   const users = (
     isUpdate
@@ -434,7 +479,9 @@ export async function sendEmailToTripMembers(
             .all(domain, tripId)
   ) as { id: number; email: string; username: string }[];
 
-  if (!users.length) return;
+  if (!users.length) {
+    return;
+  }
 
   await Promise.all(
     users.map(async (u) => {
@@ -460,7 +507,9 @@ export async function sendEmailToAllSubscribers(
   params: { title: string; body: string; actionUrl?: string; actionLabel?: string },
   domain: PushPreferenceDomain
 ) {
-  if (!isEmailConfigured()) return;
+  if (!isEmailConfigured()) {
+    return;
+  }
 
   const users = db
     .prepare(
@@ -471,7 +520,9 @@ export async function sendEmailToAllSubscribers(
     )
     .all(domain) as { id: number; email: string; username: string }[];
 
-  if (!users.length) return;
+  if (!users.length) {
+    return;
+  }
 
   await Promise.all(
     users.map(async (u) => {

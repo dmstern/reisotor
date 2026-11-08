@@ -45,6 +45,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
 
   function handleOutboxChanged() {
     pendingCount.value = getOutboxLength();
+
     if (isOnline.value && !isConfirmedOffline() && !syncing.value && pendingCount.value > 0) {
       trySync();
     }
@@ -58,22 +59,30 @@ export const useConnectivityStore = defineStore('connectivity', () => {
 
   async function trySync() {
     pendingCount.value = getOutboxLength();
-    if (syncing.value || pendingCount.value === 0) return;
+
+    if (syncing.value || pendingCount.value === 0) {
+      return;
+    }
+
     syncing.value = true;
     const initialCount = pendingCount.value;
     const startTime = Date.now();
+
     try {
       const drained = await flushOutbox(sendRaw);
       pendingCount.value = getOutboxLength();
+
       if (drained || pendingCount.value < initialCount) {
         useLiveSyncStore().refreshAll();
       }
     } finally {
       const elapsed = Date.now() - startTime;
       const minDuration = 800; // Mindestdauer, um UI-Flackern ("Zappeln") zu verhindern
+
       if (elapsed < minDuration) {
         await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
       }
+
       syncing.value = false;
     }
   }
@@ -93,14 +102,20 @@ export const useConnectivityStore = defineStore('connectivity', () => {
    *  Kommentar oben) und einem manuellen Retry-Klick (OfflineIndicator.vue). Schaltet erst bei
    *  tatsächlichem Erfolg zurück auf online, nie nur optimistisch. */
   async function checkNow() {
-    if (checking.value) return;
+    if (checking.value) {
+      return;
+    }
+
     checking.value = true;
     const startTime = Date.now();
+
     try {
       const res = await fetchWithTimeout('/api/auth/me', { credentials: 'include' });
+
       if (!res.ok && res.status >= 500) {
         throw new Error(`Server nicht erreichbar: ${res.status}`);
       }
+
       setOnline(true);
       await trySync();
     } catch {
@@ -108,9 +123,11 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     } finally {
       const elapsed = Date.now() - startTime;
       const minDuration = 800; // Mindestdauer, um UI-Flackern ("Zappeln") zu verhindern
+
       if (elapsed < minDuration) {
         await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
       }
+
       checking.value = false;
     }
   }
@@ -121,6 +138,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
     // Nutzer gemeldete Fall). checkNow() bestätigt das erst wirklich.
     checkNow();
   }
+
   function handleOffline() {
     // Das 'offline'-Event ist im Unterschied zu 'online' zuverlässig (der Browser weiß hier
     // tatsächlich, dass kein Netzinterface mehr aktiv ist) - hier reicht sofortiges Umschalten ohne
@@ -131,7 +149,10 @@ export const useConnectivityStore = defineStore('connectivity', () => {
   let healthCheck: ReturnType<typeof setInterval> | null = null;
 
   function initListeners() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('reisotor:outbox-changed', handleOutboxChanged);
@@ -143,11 +164,15 @@ export const useConnectivityStore = defineStore('connectivity', () => {
   }
 
   function destroyListeners() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     window.removeEventListener('online', handleOnline);
     window.removeEventListener('offline', handleOffline);
     window.removeEventListener('reisotor:outbox-changed', handleOutboxChanged);
     window.removeEventListener('storage', handleStorage);
+
     if (healthCheck != null) {
       clearInterval(healthCheck);
       healthCheck = null;

@@ -56,9 +56,11 @@ const isChecked = computed(() => {
   if (props.checked !== undefined) {
     return Boolean(props.checked);
   }
+
   if (Array.isArray(props.modelValue)) {
     return props.modelValue.includes(props.value);
   }
+
   return props.modelValue === props.trueValue;
 });
 

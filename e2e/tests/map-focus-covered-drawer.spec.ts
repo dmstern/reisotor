@@ -20,8 +20,12 @@ async function focusDayViaCalendar(page: Page, viewportName: string) {
   } else {
     await page.goto('/excursions');
     const tab = page.locator('.drawer-tab[aria-label*="Kalender"]');
-    if ((await tab.getAttribute('aria-expanded')) === 'false') await tab.click();
+
+    if ((await tab.getAttribute('aria-expanded')) === 'false') {
+      await tab.click();
+    }
   }
+
   // "🏖️ Urlaub" springt zum Start des Urlaubszeitraums - stellt sicher, dass excursion.date (irgendwo
   // im Urlaubszeitraum) in der sichtbaren Wochenauswahl liegt, unabhängig vom heutigen Datum.
   // exact: true - sonst matcht das nicht-exakte Substring-Matching auch AppHeader.vue's
@@ -76,6 +80,7 @@ for (const [viewportName, viewport] of Object.entries({
       const markers = page.locator('.leaflet-marker-icon');
       const count = await markers.count();
       expect(count).toBeGreaterThan(1); // sonst testet dieser Fall nicht wirklich den fitBounds()-Pfad
+
       for (let i = 0; i < count; i++) {
         await expectNoOverlap(markers.nth(i), sheet);
       }
@@ -92,7 +97,11 @@ for (const [viewportName, viewport] of Object.entries({
       // Filter" (siehe ExcursionsView.vue). Der Spots-/Touren-Umschalter
       // selbst sitzt seit #155 direkt neben der Überschrift, ist davon unabhängig immer erreichbar.
       const filterToggle = page.locator('.filter-toggle-row');
-      if (await filterToggle.isVisible()) await filterToggle.click();
+
+      if (await filterToggle.isVisible()) {
+        await filterToggle.click();
+      }
+
       await page.locator('.header-mode-toggle').getByRole('button', { name: 'Touren' }).click();
       const card = page.locator('.excursion-card', { hasText: excursion.title });
       await expect(card).toBeVisible();
@@ -107,6 +116,7 @@ for (const [viewportName, viewport] of Object.entries({
       const markers = page.locator('.leaflet-marker-icon');
       const count = await markers.count();
       expect(count).toBeGreaterThan(0);
+
       for (let i = 0; i < count; i++) {
         await expectNoOverlap(markers.nth(i), sheet);
       }
@@ -121,6 +131,7 @@ for (const [viewportName, viewport] of Object.entries({
       const markers = page.locator('.leaflet-marker-icon');
       const count = await markers.count();
       expect(count).toBeGreaterThan(0);
+
       for (let i = 0; i < count; i++) {
         await expectNoOverlap(markers.nth(i), sheet);
       }
@@ -163,7 +174,11 @@ for (const [viewportName, viewport] of Object.entries({
 
       // Touren-Ansicht wählen
       const filterToggle = page.locator('.filter-toggle-row');
-      if (await filterToggle.isVisible()) await filterToggle.click();
+
+      if (await filterToggle.isVisible()) {
+        await filterToggle.click();
+      }
+
       await page.locator('.header-mode-toggle').getByRole('button', { name: 'Touren' }).click();
       await page.waitForTimeout(300);
 
@@ -249,7 +264,11 @@ for (const [viewportName, viewport] of Object.entries({
 
       // Touren-Ansicht wählen
       const filterToggle = page.locator('.filter-toggle-row');
-      if (await filterToggle.isVisible()) await filterToggle.click();
+
+      if (await filterToggle.isVisible()) {
+        await filterToggle.click();
+      }
+
       await page.locator('.header-mode-toggle').getByRole('button', { name: 'Touren' }).click();
 
       // Erste Tour fokussieren

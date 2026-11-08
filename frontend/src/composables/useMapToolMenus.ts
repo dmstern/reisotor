@@ -14,17 +14,21 @@ export function computeTeleportMenuPosition(
     (event?.currentTarget as HTMLElement) ||
     (triggerRef?.value as ComponentPublicInstance)?.$el ||
     (triggerRef?.value as HTMLElement);
+
   if (!el || typeof el.getBoundingClientRect !== 'function') {
     return { top: '0px', left: '0px' };
   }
+
   const rect = el.getBoundingClientRect();
   const innerWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+
   if (align === 'right') {
     return {
       top: `${rect.bottom + 6}px`,
       right: `${Math.max(8, innerWidth - rect.right)}px`,
     };
   }
+
   return {
     top: `${rect.bottom + 6}px`,
     left: `${Math.max(8, Math.min(rect.left, innerWidth - menuWidth))}px`,
@@ -75,9 +79,14 @@ export function useMapToolMenus(options: UseMapToolMenusOptions = {}) {
   const shareMenuStyle = ref<TeleportMenuPosition>({ top: '0px', left: '0px' });
 
   const shareDurationLabel = computed(() => {
-    if (locationSharing.activeDuration === 'off' || !locationSharing.shareUntil)
+    if (locationSharing.activeDuration === 'off' || !locationSharing.shareUntil) {
       return 'Standort teilen';
-    if (locationSharing.activeDuration === 'forever') return 'Standort wird dauerhaft geteilt';
+    }
+
+    if (locationSharing.activeDuration === 'forever') {
+      return 'Standort wird dauerhaft geteilt';
+    }
+
     const until = new Date(locationSharing.shareUntil);
     return `Standort geteilt bis ${until.toLocaleDateString('de-DE')}`;
   });

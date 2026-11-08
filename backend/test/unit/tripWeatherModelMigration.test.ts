@@ -13,7 +13,10 @@ describe('trips.weather_model Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it("backfills existing trips to weather_model = 'ecmwf_ifs025'", async () => {

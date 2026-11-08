@@ -30,6 +30,7 @@ export function useExcursionCalendarDrag(
       ) {
         drawers.calendarOpen = true;
       }
+
       if (typeof document !== 'undefined') {
         document.body.classList.add('is-dragging-calendar');
       }
@@ -42,7 +43,11 @@ export function useExcursionCalendarDrag(
     onDrop: (targetEl) => {
       const excursion = toValue(options.excursion);
       const dayEl = targetEl?.closest<HTMLElement>('[data-date]');
-      if (!dayEl?.dataset.date) return;
+
+      if (!dayEl?.dataset.date) {
+        return;
+      }
+
       excursionsStore.setDate(excursion.id, dayEl.dataset.date);
     },
     onTap: () => {

@@ -35,12 +35,14 @@ const filteredMessages = computed(() => {
   if (filter.value === 'unread') {
     return messages.value.filter((m) => m.status === 'unread');
   }
+
   return messages.value;
 });
 
 async function loadMessages() {
   loading.value = true;
   error.value = '';
+
   try {
     const res = await api.get<{ messages: AdminMessage[]; unreadCount: number }>('/admin/messages');
     messages.value = res.messages;
@@ -56,6 +58,7 @@ async function loadMessages() {
 async function updateStatus(msg: AdminMessage, newStatus: 'unread' | 'read' | 'resolved') {
   updatingId.value = msg.id;
   actionError.value = '';
+
   try {
     await api.put(`/admin/messages/${msg.id}/status`, { status: newStatus });
     msg.status = newStatus;
@@ -70,9 +73,13 @@ async function updateStatus(msg: AdminMessage, newStatus: 'unread' | 'read' | 'r
 }
 
 async function deleteMessage(msg: AdminMessage) {
-  if (!confirm('Möchtest du diese Nachricht wirklich löschen?')) return;
+  if (!confirm('Möchtest du diese Nachricht wirklich löschen?')) {
+    return;
+  }
+
   updatingId.value = msg.id;
   actionError.value = '';
+
   try {
     await api.delete(`/admin/messages/${msg.id}`);
     messages.value = messages.value.filter((m) => m.id !== msg.id);
@@ -86,9 +93,13 @@ async function deleteMessage(msg: AdminMessage) {
 }
 
 async function verifyMatchedUser(msg: AdminMessage) {
-  if (!msg.matchedUser) return;
+  if (!msg.matchedUser) {
+    return;
+  }
+
   verifyingUserId.value = msg.matchedUser.id;
   actionError.value = '';
+
   try {
     await api.post(`/users/${msg.matchedUser.id}/verify-email`);
     msg.matchedUser.is_email_verified = true;

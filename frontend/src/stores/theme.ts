@@ -85,7 +85,9 @@ export const useThemeStore = defineStore('theme', () => {
     // bei Systemwechsel (z. B. Gerät wechselt abends automatisch in den Dark Mode) synchron halten.
     // Die Farben selbst übernimmt bereits die @media-Regel in style.css unabhängig davon.
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (mode.value === 'system') apply();
+      if (mode.value === 'system') {
+        apply();
+      }
     });
   }
 

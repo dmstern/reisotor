@@ -14,6 +14,7 @@ export const useAdminMessagesStore = defineStore('adminMessages', () => {
       loaded.value = true;
       return;
     }
+
     try {
       const res = await api.get<{ unreadCount: number }>('/admin/messages');
       unreadCount.value = typeof res.unreadCount === 'number' ? res.unreadCount : 0;

@@ -16,22 +16,30 @@ const formatVersion = (v: string) => (v.startsWith('v') ? v : `v${v}`);
 // Versionswechsel oder neue Zielversion anzeigen, sobald die Version bekannt ist.
 const versionDisplay = computed(() => {
   const to = pwaUpdate.availableVersion;
-  if (!to) return null;
+
+  if (!to) {
+    return null;
+  }
+
   const from = pwaUpdate.currentVersion;
   const formattedTo = formatVersion(to);
+
   if (from && from !== 'unknown' && from !== to) {
     return {
       from: formatVersion(from),
       to: formattedTo,
     };
   }
+
   return { to: formattedTo };
 });
 
 watch(
   () => pwaUpdate.showUpdateDialog,
   (visible) => {
-    if (visible) pwaUpdate.loadAvailableVersion();
+    if (visible) {
+      pwaUpdate.loadAvailableVersion();
+    }
   },
   { immediate: true }
 );

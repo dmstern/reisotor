@@ -25,6 +25,7 @@ describe('locationInputClassifier', () => {
       const url = 'https://www.google.com/maps/@48.20820,16.37380,15z';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.url).toBe(url);
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
@@ -37,6 +38,7 @@ describe('locationInputClassifier', () => {
         'https://www.google.com/maps/place/Cafe+Central/@48.2000,16.3000,12z/data=!3m1!4b1!4m6!3m5!1s0x476d07987!8m2!3d48.21040!4d16.36530';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2104, lng: 16.3653 });
         expect(result.isShortlink).toBe(false);
@@ -47,6 +49,7 @@ describe('locationInputClassifier', () => {
       const url = 'https://maps.apple.com/?coordinate=48.2082%2C16.3738';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
         expect(result.isShortlink).toBe(false);
@@ -57,6 +60,7 @@ describe('locationInputClassifier', () => {
       const url = 'maps://?ll=48.2082,16.3738';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -67,6 +71,7 @@ describe('locationInputClassifier', () => {
         'https://www.openstreetmap.org/?mlat=48.20820&mlon=16.37380#map=16/48.2082/16.3738';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
         expect(result.isShortlink).toBe(false);
@@ -77,6 +82,7 @@ describe('locationInputClassifier', () => {
       const url = 'https://www.openstreetmap.org/#map=16/48.2082/16.3738';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
       }
@@ -86,6 +92,7 @@ describe('locationInputClassifier', () => {
       const uri = 'geo:48.21040,16.36530';
       const result = classifyLocationInput(uri);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toEqual({ lat: 48.2104, lng: 16.3653 });
         expect(result.isShortlink).toBe(false);
@@ -96,6 +103,7 @@ describe('locationInputClassifier', () => {
       const url = '  https://www.google.com/maps/@48.20820,16.37380,15z \n ';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.url).toBe('https://www.google.com/maps/@48.20820,16.37380,15z');
         expect(result.coords).toEqual({ lat: 48.2082, lng: 16.3738 });
@@ -108,6 +116,7 @@ describe('locationInputClassifier', () => {
       const url = 'https://maps.app.goo.gl/shortlink123';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.url).toBe(url);
         expect(result.coords).toBeNull();
@@ -119,6 +128,7 @@ describe('locationInputClassifier', () => {
       const url = 'https://goo.gl/maps/abc12345';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toBeNull();
         expect(result.isShortlink).toBe(true);
@@ -129,6 +139,7 @@ describe('locationInputClassifier', () => {
       const url = 'https://www.google.com/maps/search/Cafe+Central';
       const result = classifyLocationInput(url);
       expect(result.type).toBe('maps_link');
+
       if (result.type === 'maps_link') {
         expect(result.coords).toBeNull();
         expect(result.isShortlink).toBe(false);

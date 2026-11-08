@@ -16,22 +16,38 @@ const ONE_YEAR_MS = 365 * ONE_DAY_MS;
 function getStoredDuration(tripId: number, until: string): ShareDuration | null {
   try {
     const raw = localStorage.getItem(`reisotor-location-share-${tripId}`);
-    if (!raw) return null;
+
+    if (!raw) {
+      return null;
+    }
+
     const parsed = JSON.parse(raw);
+
     if (parsed.shareUntil === until && ['day', 'week', 'forever'].includes(parsed.duration)) {
       return parsed.duration;
     }
   } catch {
     // ignore
   }
+
   return null;
 }
 
 function inferDuration(untilStr: string): ShareDuration {
   const remainingMs = new Date(untilStr).getTime() - Date.now();
-  if (remainingMs <= 0) return 'off';
-  if (remainingMs > ONE_YEAR_MS) return 'forever';
-  if (remainingMs > ONE_DAY_MS) return 'week';
+
+  if (remainingMs <= 0) {
+    return 'off';
+  }
+
+  if (remainingMs > ONE_YEAR_MS) {
+    return 'forever';
+  }
+
+  if (remainingMs > ONE_DAY_MS) {
+    return 'week';
+  }
+
   return 'day';
 }
 
@@ -56,18 +72,27 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
   let expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clearExpiryTimer() {
-    if (expiryTimer != null) clearTimeout(expiryTimer);
+    if (expiryTimer != null) {
+      clearTimeout(expiryTimer);
+    }
+
     expiryTimer = null;
   }
 
   function stopWatch() {
-    if (watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    if (watchId != null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+
     watchId = null;
     active.value = false;
   }
 
   function startWatch() {
-    if (watchId != null || !navigator.geolocation) return;
+    if (watchId != null || !navigator.geolocation) {
+      return;
+    }
+
     active.value = true;
     watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -84,17 +109,21 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
 
   function scheduleExpiry() {
     clearExpiryTimer();
+
     if (!shareUntil.value) {
       selectedDuration.value = 'off';
       return;
     }
+
     const remainingMs = new Date(shareUntil.value).getTime() - Date.now();
+
     if (remainingMs <= 0) {
       shareUntil.value = null;
       selectedDuration.value = 'off';
       stopWatch();
       return;
     }
+
     expiryTimer = setTimeout(scheduleExpiry, Math.min(remainingMs, MAX_TIMEOUT_MS));
   }
 
@@ -103,7 +132,11 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
     clearExpiryTimer();
     shareUntil.value = null;
     selectedDuration.value = null;
-    if (tripId == null) return;
+
+    if (tripId == null) {
+      return;
+    }
+
     try {
       const res = await api.get<{ location_share_until: string | null }>(
         `/realtime/location-share?trip_id=${tripId}`
@@ -112,6 +145,7 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
     } catch {
       return;
     }
+
     if (shareUntil.value) {
       if (new Date(shareUntil.value).getTime() > Date.now()) {
         selectedDuration.value =
@@ -129,15 +163,21 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
 
   async function setDuration(duration: ShareDuration) {
     const tripId = tripStore.currentTripId;
-    if (tripId == null) return;
+
+    if (tripId == null) {
+      return;
+    }
+
     const res = await api.put<{ location_share_until: string | null }>('/realtime/location-share', {
       trip_id: tripId,
       duration,
     });
     shareUntil.value = res.location_share_until;
     clearExpiryTimer();
+
     if (shareUntil.value && duration !== 'off') {
       selectedDuration.value = duration;
+
       try {
         localStorage.setItem(
           `reisotor-location-share-${tripId}`,
@@ -146,24 +186,33 @@ export const useLocationSharingStore = defineStore('locationSharing', () => {
       } catch {
         // ignore
       }
+
       startWatch();
       scheduleExpiry();
     } else {
       shareUntil.value = null;
       selectedDuration.value = 'off';
+
       try {
         localStorage.removeItem(`reisotor-location-share-${tripId}`);
       } catch {
         // ignore
       }
+
       stopWatch();
       liveSync.stopSharingPosition();
     }
   }
 
   const activeDuration = computed<ShareDuration>(() => {
-    if (!shareUntil.value) return 'off';
-    if (new Date(shareUntil.value).getTime() <= Date.now()) return 'off';
+    if (!shareUntil.value) {
+      return 'off';
+    }
+
+    if (new Date(shareUntil.value).getTime() <= Date.now()) {
+      return 'off';
+    }
+
     return selectedDuration.value ?? inferDuration(shareUntil.value);
   });
 

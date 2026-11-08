@@ -28,11 +28,14 @@ const ACCOMMODATION_PATH_REGEX =
 
 /** Prüft, ob ein URL-String zu einer bekannten Buchungsplattform oder Unterkunftsseite gehört. */
 export function isBookingLinkUrl(urlString: string | null | undefined): boolean {
-  if (!urlString) return false;
+  if (!urlString) {return false;}
+
   const trimmed = urlString.trim();
-  if (!trimmed) return false;
+
+  if (!trimmed) {return false;}
 
   let urlToTest = trimmed;
+
   if (!/^[a-z]+:\/\//i.test(urlToTest)) {
     urlToTest = 'https://' + urlToTest;
   }
@@ -40,18 +43,22 @@ export function isBookingLinkUrl(urlString: string | null | undefined): boolean 
   try {
     const parsed = new URL(urlToTest);
     const host = parsed.hostname.toLowerCase();
-    if (BOOKING_DOMAINS_REGEX.test(host)) return true;
-    if (ACCOMMODATION_PATH_REGEX.test(parsed.pathname)) return true;
+
+    if (BOOKING_DOMAINS_REGEX.test(host)) {return true;}
+
+    if (ACCOMMODATION_PATH_REGEX.test(parsed.pathname)) {return true;}
   } catch {
     return false;
   }
+
   return false;
 }
 
 /** Bereinigt typische Marketing- und Plattform-Zusätze aus Hotel-/Unterkunftstiteln. */
 export function cleanAccommodationTitle(raw: string): string {
   let title = raw.trim();
-  if (!title) return '';
+
+  if (!title) {return '';}
 
   // Typische Booking.com-Zusätze: "Hotel Sacher Wien, Wien – Aktualisierte Preise für 2026"
   title = title.replace(/\s*[-–—]\s*Aktualisierte Preise.*$/i, '');
@@ -134,24 +141,30 @@ const TRACKING_QUERY_PARAMS = new Set([
  * behält jedoch Reisedaten, Zimmer-IDs und Orts-IDs bei.
  */
 export function cleanBookingUrl(rawUrl: string): string {
-  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  if (!rawUrl || typeof rawUrl !== 'string') {return '';}
+
   const trimmed = rawUrl.trim();
   let normalized = trimmed;
+
   if (!/^[a-z]+:\/\//i.test(normalized)) {
     normalized = 'https://' + normalized;
   }
+
   try {
     const url = new URL(normalized);
     const keysToDelete: string[] = [];
     url.searchParams.forEach((_, key) => {
       const lower = key.toLowerCase();
+
       if (TRACKING_QUERY_PARAMS.has(lower) || lower.startsWith('utm_')) {
         keysToDelete.push(key);
       }
     });
+
     for (const k of keysToDelete) {
       url.searchParams.delete(k);
     }
+
     return url.toString();
   } catch {
     return trimmed;
@@ -160,32 +173,41 @@ export function cleanBookingUrl(rawUrl: string): string {
 
 /** Extrahiert Datumsangaben im Format YYYY-MM-DD oder YYYYMMDD aus Query-Parametern. */
 export function parseDateParam(val: string | null | undefined): string | null {
-  if (!val) return null;
+  if (!val) {return null;}
+
   const trimmed = val.trim();
+
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
     return trimmed;
   }
+
   const matchCompact = /^(\d{4})(\d{2})(\d{2})$/.exec(trimmed);
+
   if (matchCompact) {
     return `${matchCompact[1]}-${matchCompact[2]}-${matchCompact[3]}`;
   }
+
   return null;
 }
 
 /** Extrahiert einen numerischen Betrag aus einem Preiswert (String oder Zahl). */
 export function parsePrice(val: unknown): number | null {
-  if (val == null) return null;
+  if (val == null) {return null;}
+
   if (typeof val === 'number') {
     return Number.isFinite(val) && val > 0 ? val : null;
   }
-  if (typeof val !== 'string') return null;
+
+  if (typeof val !== 'string') {return null;}
 
   let str = val.trim();
-  if (!str) return null;
+
+  if (!str) {return null;}
 
   // Währungssymbole und Buchstaben entfernen
   str = str.replace(/[^0-9.,]/g, '');
-  if (!str) return null;
+
+  if (!str) {return null;}
 
   // Format 1.250,50 vs 1,250.50
   if (str.includes('.') && str.includes(',')) {
@@ -204,7 +226,8 @@ export function parsePrice(val: unknown): number | null {
 
 /** Formatiert eine Zeitangabe (z. B. "15:00:00" -> "15:00"). */
 function formatTime(val: unknown): string | null {
-  if (!val || typeof val !== 'string') return null;
+  if (!val || typeof val !== 'string') {return null;}
+
   const match = /(\d{1,2}:\d{2})/.exec(val);
   return match ? match[1] : val.trim().slice(0, 10);
 }
@@ -217,7 +240,9 @@ export function extractJsonLdBlocks(html: string): Record<string, unknown>[] {
 
   while ((match = scriptRegex.exec(html)) !== null) {
     const rawJson = match[1]?.trim();
-    if (!rawJson) continue;
+
+    if (!rawJson) {continue;}
+
     try {
       const parsed: unknown = JSON.parse(rawJson);
       collectJsonLdObjects(parsed, results);
@@ -230,14 +255,18 @@ export function extractJsonLdBlocks(html: string): Record<string, unknown>[] {
 }
 
 function collectJsonLdObjects(obj: unknown, target: Record<string, unknown>[]) {
-  if (!obj) return;
+  if (!obj) {return;}
+
   if (Array.isArray(obj)) {
-    for (const item of obj) collectJsonLdObjects(item, target);
+    for (const item of obj) {collectJsonLdObjects(item, target);}
+
     return;
   }
+
   if (typeof obj === 'object') {
     const rec = obj as Record<string, unknown>;
     target.push(rec);
+
     if (rec['@graph']) {
       collectJsonLdObjects(rec['@graph'], target);
     }
@@ -268,13 +297,16 @@ function normalizeTypeString(val: string): string {
 }
 
 function isLodgingType(typeVal: unknown): boolean {
-  if (!typeVal) return false;
+  if (!typeVal) {return false;}
+
   if (typeof typeVal === 'string') {
     return LODGING_TYPES.has(normalizeTypeString(typeVal));
   }
+
   if (Array.isArray(typeVal)) {
     return typeVal.some((t) => typeof t === 'string' && LODGING_TYPES.has(normalizeTypeString(t)));
   }
+
   return false;
 }
 
@@ -284,12 +316,15 @@ function extractMetaTag(html: string, nameOrProperty: string): string | null {
     new RegExp(`<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["']`, 'i'),
     new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escaped}["']`, 'i'),
   ];
+
   for (const reg of regexes) {
     const m = reg.exec(html);
+
     if (m?.[1]) {
       return m[1].trim();
     }
   }
+
   return null;
 }
 
@@ -300,12 +335,15 @@ function extractMetaTagsAll(html: string, nameOrProperty: string): string[] {
     new RegExp(`<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["']`, 'gi'),
     new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escaped}["']`, 'gi'),
   ];
+
   for (const reg of regexes) {
     let m: RegExpExecArray | null;
+
     while ((m = reg.exec(html)) !== null) {
-      if (m[1]) results.push(m[1].trim());
+      if (m[1]) {results.push(m[1].trim());}
     }
   }
+
   return results;
 }
 
@@ -341,15 +379,19 @@ export function extractBookingMetadataFromHtml(
       const rawImgs = Array.isArray(lodgingObject.image)
         ? lodgingObject.image
         : [lodgingObject.image];
+
       for (const img of rawImgs) {
         let u = typeof img === 'string' ? img : img?.url || img?.contentUrl;
+
         if (u && typeof u === 'string') {
-          if (u.startsWith('//')) u = 'https:' + u;
+          if (u.startsWith('//')) {u = 'https:' + u;}
+
           if (isSafeUrl(u) && !isGenericPlaceholderImage(u)) {
-            if (!images.includes(u)) images.push(u);
+            if (!images.includes(u)) {images.push(u);}
           }
         }
       }
+
       if (images.length > 0 && !imageUrl) {
         imageUrl = images[0];
       }
@@ -358,6 +400,7 @@ export function extractBookingMetadataFromHtml(
     // Adresse
     if (lodgingObject.address) {
       const addr = lodgingObject.address as Record<string, unknown> | string;
+
       if (typeof addr === 'string') {
         address = addr.trim();
       } else if (typeof addr === 'object' && addr !== null) {
@@ -378,6 +421,7 @@ export function extractBookingMetadataFromHtml(
         // versuchen wir den tatsächlichen Ortsnamen zu extrahieren, da Booking oft die Straße in addressLocality packt
         if (street) {
           const zipCityMatch = /\b\d{4,5}\s+([A-Za-zäöüÄÖÜß\s-]+?)(?:,|$)/.exec(street);
+
           if (zipCityMatch && zipCityMatch[1].trim()) {
             city = zipCityMatch[1].trim();
           }
@@ -391,12 +435,19 @@ export function extractBookingMetadataFromHtml(
           address = street;
         } else {
           const parts: string[] = [];
-          if (street) parts.push(street);
+
+          if (street) {parts.push(street);}
+
           const locParts: string[] = [];
-          if (postal) locParts.push(postal);
-          if (locality && (!street || !street.includes(locality))) locParts.push(locality);
-          if (locParts.length > 0) parts.push(locParts.join(' '));
-          if (country && (!street || !street.includes(country))) parts.push(country);
+
+          if (postal) {locParts.push(postal);}
+
+          if (locality && (!street || !street.includes(locality))) {locParts.push(locality);}
+
+          if (locParts.length > 0) {parts.push(locParts.join(' '));}
+
+          if (country && (!street || !street.includes(country))) {parts.push(country);}
+
           if (parts.length > 0) {
             address = parts.join(', ');
           }
@@ -409,6 +460,7 @@ export function extractBookingMetadataFromHtml(
       const geo = lodgingObject.geo as Record<string, unknown>;
       const gLat = parseFloat(String(geo.latitude));
       const gLng = parseFloat(String(geo.longitude));
+
       if (Number.isFinite(gLat) && Number.isFinite(gLng)) {
         lat = gLat;
         lng = gLng;
@@ -420,9 +472,12 @@ export function extractBookingMetadataFromHtml(
       const rawOffers = lodgingObject.offers;
       const offers = (Array.isArray(rawOffers) ? rawOffers[0] : rawOffers) as
         Record<string, unknown> | undefined;
+
       if (offers) {
         const p = parsePrice(offers.price ?? offers.lowPrice);
-        if (p != null) amount = p;
+
+        if (p != null) {amount = p;}
+
         if (offers.priceCurrency && typeof offers.priceCurrency === 'string') {
           currency = offers.priceCurrency.trim();
         }
@@ -433,6 +488,7 @@ export function extractBookingMetadataFromHtml(
     if (lodgingObject.checkinTime) {
       checkin = formatTime(lodgingObject.checkinTime);
     }
+
     if (lodgingObject.checkoutTime) {
       checkout = formatTime(lodgingObject.checkoutTime);
     }
@@ -449,6 +505,7 @@ export function extractBookingMetadataFromHtml(
       extractMetaTag(html, 'og:title') ||
       extractMetaTag(html, 'twitter:title') ||
       /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1];
+
     if (ogTitle) {
       name = cleanAccommodationTitle(ogTitle);
     }
@@ -459,12 +516,16 @@ export function extractBookingMetadataFromHtml(
     ...extractMetaTagsAll(html, 'og:image'),
     ...extractMetaTagsAll(html, 'twitter:image'),
   ];
+
   for (const img of ogImages) {
     let cleanImg = img;
-    if (cleanImg.startsWith('//')) cleanImg = 'https:' + cleanImg;
+
+    if (cleanImg.startsWith('//')) {cleanImg = 'https:' + cleanImg;}
+
     if (isSafeUrl(cleanImg) && !isGenericPlaceholderImage(cleanImg)) {
-      if (!images.includes(cleanImg)) images.push(cleanImg);
-      if (!imageUrl) imageUrl = cleanImg;
+      if (!images.includes(cleanImg)) {images.push(cleanImg);}
+
+      if (!imageUrl) {imageUrl = cleanImg;}
     }
   }
 
@@ -476,11 +537,13 @@ export function extractBookingMetadataFromHtml(
         normalizeTypeString(String(obj['@type'])) === 'postaladdress' ||
         (obj.address && typeof obj.address === 'object')
     );
+
     if (postalObj) {
       const addrData =
         normalizeTypeString(String(postalObj['@type'])) === 'postaladdress'
           ? postalObj
           : (postalObj.address as Record<string, unknown>);
+
       if (addrData && typeof addrData === 'object') {
         const street = addrData.streetAddress ? String(addrData.streetAddress).trim() : '';
         const postal = addrData.postalCode ? String(addrData.postalCode).trim() : '';
@@ -502,12 +565,19 @@ export function extractBookingMetadataFromHtml(
           address = street;
         } else {
           const parts: string[] = [];
-          if (street) parts.push(street);
+
+          if (street) {parts.push(street);}
+
           const locParts: string[] = [];
-          if (postal) locParts.push(postal);
-          if (locality && (!street || !street.includes(locality))) locParts.push(locality);
-          if (locParts.length > 0) parts.push(locParts.join(' '));
-          if (country && (!street || !street.includes(country))) parts.push(country);
+
+          if (postal) {locParts.push(postal);}
+
+          if (locality && (!street || !street.includes(locality))) {locParts.push(locality);}
+
+          if (locParts.length > 0) {parts.push(locParts.join(' '));}
+
+          if (country && (!street || !street.includes(country))) {parts.push(country);}
+
           if (parts.length > 0) {
             address = parts.join(', ');
           }
@@ -533,15 +603,22 @@ export function extractBookingMetadataFromHtml(
       extractMetaTag(html, 'og:country-name');
 
     const parts: string[] = [];
-    if (street) parts.push(street);
+
+    if (street) {parts.push(street);}
+
     const locParts: string[] = [];
-    if (postal) locParts.push(postal);
+
+    if (postal) {locParts.push(postal);}
+
     if (locality) {
       locParts.push(locality);
-      if (!city) city = locality;
+
+      if (!city) {city = locality;}
     }
-    if (locParts.length > 0) parts.push(locParts.join(' '));
-    if (country) parts.push(country);
+
+    if (locParts.length > 0) {parts.push(locParts.join(' '));}
+
+    if (country) {parts.push(country);}
 
     if (parts.length > 0) {
       address = parts.join(', ');
@@ -552,9 +629,11 @@ export function extractBookingMetadataFromHtml(
   if (lat == null || lng == null) {
     const pLat = extractMetaTag(html, 'place:location:latitude');
     const pLng = extractMetaTag(html, 'place:location:longitude');
+
     if (pLat && pLng) {
       const parsedLat = parseFloat(pLat);
       const parsedLng = parseFloat(pLng);
+
       if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
         lat = parsedLat;
         lng = parsedLng;
@@ -564,8 +643,10 @@ export function extractBookingMetadataFromHtml(
 
   if (lat == null || lng == null) {
     const geoPos = extractMetaTag(html, 'geo.position') || extractMetaTag(html, 'ICBM');
+
     if (geoPos) {
       const parts = geoPos.split(/[;,]/).map((s) => parseFloat(s.trim()));
+
       if (parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
         lat = parts[0];
         lng = parts[1];
@@ -597,6 +678,7 @@ export function extractBookingMetadataFromHtml(
     if (bookingCoordsMatch) {
       const parsedLat = parseFloat(bookingCoordsMatch[1]);
       const parsedLng = parseFloat(bookingCoordsMatch[2]);
+
       if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
         lat = parsedLat;
         lng = parsedLng;
@@ -608,11 +690,13 @@ export function extractBookingMetadataFromHtml(
   if (lat == null || lng == null) {
     const bboxMatch =
       /data-atlas-bbox=["'](-?\d+\.\d+),(-?\d+\.\d+),(-?\d+\.\d+),(-?\d+\.\d+)["']/i.exec(html);
+
     if (bboxMatch) {
       const lat1 = parseFloat(bboxMatch[1]);
       const lng1 = parseFloat(bboxMatch[2]);
       const lat2 = parseFloat(bboxMatch[3]);
       const lng2 = parseFloat(bboxMatch[4]);
+
       if (
         Number.isFinite(lat1) &&
         Number.isFinite(lat2) &&
@@ -628,22 +712,28 @@ export function extractBookingMetadataFromHtml(
   // Checkin / Checkout Zeiten aus HTML-Text / FAQ extrahieren falls noch nicht gesetzt
   if (!checkin) {
     const ciMatch = /Check-in[^<>\n]{0,60}?(?:ab|von)\s*(\d{1,2}:\d{2})/i.exec(html);
-    if (ciMatch) checkin = formatTime(ciMatch[1]);
+
+    if (ciMatch) {checkin = formatTime(ciMatch[1]);}
   }
+
   if (!checkout) {
     const coMatch = /Check-out[^<>\n]{0,60}?(?:bis)\s*(\d{1,2}:\d{2})/i.exec(html);
-    if (coMatch) checkout = formatTime(coMatch[1]);
+
+    if (coMatch) {checkout = formatTime(coMatch[1]);}
   }
 
   // Meta-Preise
   if (amount == null) {
     const priceMeta =
       extractMetaTag(html, 'product:price:amount') || extractMetaTag(html, 'og:price:amount');
+
     if (priceMeta) {
       amount = parsePrice(priceMeta);
     }
+
     const currMeta =
       extractMetaTag(html, 'product:price:currency') || extractMetaTag(html, 'og:price:currency');
+
     if (currMeta) {
       currency = currMeta.trim();
     }
@@ -655,11 +745,14 @@ export function extractBookingMetadataFromHtml(
       const parsedUrl = new URL(url);
       // Booking.com: /hotel/at/hotel-sacher-wien.html
       const hotelMatch = /\/hotel\/[a-z]{2}\/([^/.]+)/i.exec(parsedUrl.pathname);
+
       if (hotelMatch) {
         name = cleanAccommodationTitle(hotelMatch[1].replace(/-/g, ' '));
       }
+
       // Trivago: /de/srl/hotel-adlon-kempinski-berlin
       const trivagoMatch = /\/(?:srl|hotel)\/([^/?]+)/i.exec(parsedUrl.pathname);
+
       if (!name && trivagoMatch) {
         name = cleanAccommodationTitle(trivagoMatch[1].replace(/-/g, ' '));
       }
@@ -693,7 +786,8 @@ const PREVIEW_UA = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhi
 const MAX_REDIRECT_HOPS = 5;
 
 function isBotChallenge(html: string): boolean {
-  if (!html || html.length > 80000) return false;
+  if (!html || html.length > 80000) {return false;}
+
   return (
     html.includes('awsWafCookieDomainList') ||
     html.includes('challenge.js') ||
@@ -718,8 +812,10 @@ async function fetchWithFollowRedirects(
   };
 
   for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
-    if (!isSafeUrl(current)) return null;
+    if (!isSafeUrl(current)) {return null;}
+
     let res: Response;
+
     try {
       res = await fetch(current, {
         redirect: 'manual',
@@ -731,12 +827,14 @@ async function fetchWithFollowRedirects(
     }
 
     const location = res.headers?.get?.('location');
+
     if (location && (res.status == null || (res.status >= 300 && res.status < 400))) {
       try {
         current = new URL(location, current).toString();
       } catch {
         break;
       }
+
       continue;
     }
 
@@ -756,16 +854,19 @@ async function fetchWithFollowRedirects(
 export async function fetchAccommodationPreview(
   url: string | null | undefined
 ): Promise<AccommodationPreview | null> {
-  if (!url) return null;
+  if (!url) {return null;}
+
   const trimmed = url.trim();
   let normalizedUrl = trimmed;
+
   if (!/^[a-z]+:\/\//i.test(normalizedUrl)) {
     normalizedUrl = 'https://' + normalizedUrl;
   }
 
-  if (!isSafeUrl(normalizedUrl)) return null;
+  if (!isSafeUrl(normalizedUrl)) {return null;}
 
   let isBookingDomain = false;
+
   try {
     const host = new URL(normalizedUrl).hostname.toLowerCase();
     isBookingDomain = host.includes('booking.com') || host.includes('bstatic.com');
@@ -784,6 +885,7 @@ export async function fetchAccommodationPreview(
   // Wenn der primäre Abruf durch eine WAF / Bot-Challenge abgefangen wurde oder leer war:
   if (!finalHtml || isBotChallenge(finalHtml)) {
     const retryResult = await fetchWithFollowRedirects(normalizedUrl, secondaryUa);
+
     if (retryResult?.html && !isBotChallenge(retryResult.html)) {
       finalHtml = retryResult.html;
       finalUrl = retryResult.finalUrl;
@@ -796,6 +898,7 @@ export async function fetchAccommodationPreview(
   // Checkin-/Checkout-Daten & Preise aus URL-Query-Parametern extrahieren (sowohl aus Original- als auch Ziel-URL)
   let startDate: string | null = null;
   let endDate: string | null = null;
+
   try {
     const origUrl = new URL(normalizedUrl);
     const finalParsed = finalUrl !== normalizedUrl ? new URL(finalUrl) : null;
@@ -821,22 +924,28 @@ export async function fetchAccommodationPreview(
     if (!startDate || !endDate) {
       const searchParam = getParam('search') || '';
       const drMatch = /;?dr-(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})/i.exec(searchParam);
+
       if (drMatch) {
-        if (!startDate) startDate = `${drMatch[1]}-${drMatch[2]}-${drMatch[3]}`;
-        if (!endDate) endDate = `${drMatch[4]}-${drMatch[5]}-${drMatch[6]}`;
+        if (!startDate) {startDate = `${drMatch[1]}-${drMatch[2]}-${drMatch[3]}`;}
+
+        if (!endDate) {endDate = `${drMatch[4]}-${drMatch[5]}-${drMatch[6]}`;}
       }
     }
 
     // Preis aus Booking sr_pri_blocks extrahieren falls vorhanden (z. B. sr_pri_blocks=...__23409 -> 234.09)
     if (meta.amount == null) {
       const priParam = getParam('sr_pri_blocks');
+
       if (priParam) {
         const priMatch = /__(\d+)(?:$|&)/.exec(priParam);
+
         if (priMatch && priMatch[1].length >= 3) {
           const cents = parseInt(priMatch[1], 10);
+
           if (!Number.isNaN(cents) && cents > 0) {
             meta.amount = Math.round((cents / 100) * 100) / 100;
-            if (!meta.currency) meta.currency = 'EUR';
+
+            if (!meta.currency) {meta.currency = 'EUR';}
           }
         }
       }
@@ -854,9 +963,11 @@ export async function fetchAccommodationPreview(
     try {
       const query = finalAddress || `${meta.name}, ${meta.city}`;
       const searchRes = await searchPlaces({ q: query, limit: 1 });
+
       if (searchRes.length > 0) {
         finalLat = searchRes[0].lat;
         finalLng = searchRes[0].lng;
+
         if (!finalAddress && searchRes[0].formatted_address) {
           finalAddress = searchRes[0].formatted_address;
         }

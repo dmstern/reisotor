@@ -17,8 +17,11 @@ export const useRequestActivityStore = defineStore('requestActivity', () => {
   function start(kind: RequestKind) {
     counts[kind]++;
   }
+
   function finish(kind: RequestKind) {
-    if (counts[kind] > 0) counts[kind]--;
+    if (counts[kind] > 0) {
+      counts[kind]--;
+    }
   }
 
   // Priorität bei mehreren gleichzeitig laufenden Arten: eine von der Nutzerin gerade ausgelöste
@@ -26,10 +29,22 @@ export const useRequestActivityStore = defineStore('requestActivity', () => {
   // laufender Lese-Request (z. B. der Offline-Prefetch), sonst würde die Lade-Animation ständig
   // zwischen Arten hin- und herspringen, ohne dass die Nutzerin eine Aktion ausgelöst hat.
   const activeKind = computed<RequestKind | null>(() => {
-    if (counts.delete > 0) return 'delete';
-    if (counts.update > 0) return 'update';
-    if (counts.create > 0) return 'create';
-    if (counts.read > 0) return 'read';
+    if (counts.delete > 0) {
+      return 'delete';
+    }
+
+    if (counts.update > 0) {
+      return 'update';
+    }
+
+    if (counts.create > 0) {
+      return 'create';
+    }
+
+    if (counts.read > 0) {
+      return 'read';
+    }
+
     return null;
   });
 

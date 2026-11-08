@@ -43,10 +43,15 @@ export function useExcursionStations(
 
   const routeLabel = computed(() => {
     const excursion = toValue(options.excursion);
-    if (!excursion.role || resolvedStations.value.length < 2) return null;
+
+    if (!excursion.role || resolvedStations.value.length < 2) {
+      return null;
+    }
+
     if (resolvedStations.value.length === 2) {
       return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
     }
+
     const stopCount = resolvedStations.value.length - 2;
     const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
     return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;
@@ -54,22 +59,26 @@ export function useExcursionStations(
 
   const effectiveDepartureTime = computed(() => {
     const excursion = toValue(options.excursion);
+
     if (excursion.legs && excursion.legs.length > 0) {
       return (
         excursion.legs.find((l) => !!l.departure_time)?.departure_time || excursion.departure_time
       );
     }
+
     return excursion.departure_time;
   });
 
   const effectiveArrivalTime = computed(() => {
     const excursion = toValue(options.excursion);
+
     if (excursion.legs && excursion.legs.length > 0) {
       return (
         [...excursion.legs].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
         excursion.arrival_time
       );
     }
+
     return excursion.arrival_time;
   });
 
@@ -80,13 +89,18 @@ export function useExcursionStations(
   });
 
   const stationsSummaryText = computed(() => {
-    if (!resolvedStations.value.length) return null;
+    if (!resolvedStations.value.length) {
+      return null;
+    }
+
     if (resolvedStations.value.length === 1) {
       return resolvedStations.value[0].title;
     }
+
     if (resolvedStations.value.length === 2) {
       return `${resolvedStations.value[0].title} → ${resolvedStations.value[1].title}`;
     }
+
     const stopCount = resolvedStations.value.length - 2;
     const stopText = stopCount === 1 ? '1 Zwischenstopp' : `${stopCount} Zwischenstopps`;
     return `${resolvedStations.value[0].title} → ${resolvedStations.value[resolvedStations.value.length - 1].title} · ${stopText}`;

@@ -67,7 +67,11 @@ export function useShoppingList(tripIdOverride?: number) {
       period: item.period ?? undefined,
     });
     const idx = items.value.findIndex((i) => i.id === item.id);
-    if (idx !== -1) items.value[idx] = updated;
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
     return updated;
   }
 
@@ -85,12 +89,19 @@ export function useShoppingList(tripIdOverride?: number) {
       period: item.period ?? undefined,
     });
     const idx = items.value.findIndex((i) => i.id === item.id);
-    if (idx !== -1) items.value[idx] = updated;
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
     return updated;
   }
 
   async function addItem(input: ShoppingFormInput): Promise<ShoppingItem | null> {
-    if (!input.label.trim()) return null;
+    if (!input.label.trim()) {
+      return null;
+    }
+
     const created = await api.post<ShoppingItem>('/shopping', {
       trip_id: tripId,
       label: input.label.trim(),
@@ -113,7 +124,10 @@ export function useShoppingList(tripIdOverride?: number) {
     fallbackPeriod?: Period | '';
     unassignedShopLabel?: string;
   }): Promise<ShoppingItem | null> {
-    if (!params.label.trim()) return null;
+    if (!params.label.trim()) {
+      return null;
+    }
+
     const assigned_to_user_id =
       params.groupBy === 'buyer'
         ? params.groupKey.startsWith('user-')
@@ -163,7 +177,11 @@ export function useShoppingList(tripIdOverride?: number) {
       period: input.period || undefined,
     });
     const idx = items.value.findIndex((i) => i.id === updated.id);
-    if (idx !== -1) items.value[idx] = updated;
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
     return updated;
   }
 

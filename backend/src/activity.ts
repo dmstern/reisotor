@@ -25,19 +25,31 @@ function writeEvent(reply: FastifyReply, event: string, data: unknown) {
 
 export function onlineUserIds(tripId: number): number[] {
   const set = connectionsByTrip.get(tripId);
-  if (!set) return [];
+
+  if (!set) {
+    return [];
+  }
+
   return [...new Set([...set].map((c) => c.userId))];
 }
 
 function broadcastPresence(tripId: number) {
   const set = connectionsByTrip.get(tripId);
-  if (!set) return;
+
+  if (!set) {
+    return;
+  }
+
   const online = onlineUserIds(tripId);
-  for (const conn of set) writeEvent(conn.reply, 'presence', { online });
+
+  for (const conn of set) {
+    writeEvent(conn.reply, 'presence', { online });
+  }
 }
 
 export function broadcastToAdmins(event: string, data: unknown) {
   const adminReplies = new Set<FastifyReply>();
+
   for (const set of connectionsByTrip.values()) {
     for (const conn of set) {
       if (isUserAdmin(conn.userId)) {
@@ -45,6 +57,7 @@ export function broadcastToAdmins(event: string, data: unknown) {
       }
     }
   }
+
   for (const reply of adminReplies) {
     writeEvent(reply, event, data);
   }
@@ -57,16 +70,22 @@ export function broadcastToAdmins(event: string, data: unknown) {
 export function subscribe(tripId: number, userId: number, reply: FastifyReply): () => void {
   const conn: SseConnection = { reply, userId };
   let set = connectionsByTrip.get(tripId);
+
   if (!set) {
     set = new Set();
     connectionsByTrip.set(tripId, set);
   }
+
   set.add(conn);
   broadcastPresence(tripId);
 
   return () => {
     set!.delete(conn);
-    if (set!.size === 0) connectionsByTrip.delete(tripId);
+
+    if (set!.size === 0) {
+      connectionsByTrip.delete(tripId);
+    }
+
     broadcastPresence(tripId);
   };
 }
@@ -96,16 +115,22 @@ const lastPositionsByTrip = new Map<number, Map<number, Position>>();
 
 export function positionsFor(tripId: number): Record<number, Position> {
   const map = lastPositionsByTrip.get(tripId);
-  if (!map) return {};
+
+  if (!map) {
+    return {};
+  }
+
   return Object.fromEntries(map);
 }
 
 export function updatePosition(tripId: number, userId: number, lat: number, lng: number) {
   let map = lastPositionsByTrip.get(tripId);
+
   if (!map) {
     map = new Map();
     lastPositionsByTrip.set(tripId, map);
   }
+
   const position: Position = { lat, lng, updatedAt: new Date().toISOString() };
   map.set(userId, position);
   broadcastPosition(tripId, userId, position);
@@ -113,20 +138,36 @@ export function updatePosition(tripId: number, userId: number, lat: number, lng:
 
 export function clearPosition(tripId: number, userId: number) {
   const map = lastPositionsByTrip.get(tripId);
-  if (!map?.delete(userId)) return;
+
+  if (!map?.delete(userId)) {
+    return;
+  }
+
   broadcastPosition(tripId, userId, null);
 }
 
 function broadcastPosition(tripId: number, userId: number, position: Position | null) {
   const set = connectionsByTrip.get(tripId);
-  if (!set) return;
-  for (const conn of set) writeEvent(conn.reply, 'position', { userId, position });
+
+  if (!set) {
+    return;
+  }
+
+  for (const conn of set) {
+    writeEvent(conn.reply, 'position', { userId, position });
+  }
 }
 
 function broadcastActivity(tripId: number, row: ActivityRow) {
   const set = connectionsByTrip.get(tripId);
-  if (!set) return;
-  for (const conn of set) writeEvent(conn.reply, 'activity', row);
+
+  if (!set) {
+    return;
+  }
+
+  for (const conn of set) {
+    writeEvent(conn.reply, 'activity', row);
+  }
 }
 
 /** Zentraler Hook für jede Mutation an einem Urlaub-bezogenen Objekt (Echtzeit-Sync/Nav-Badges/Push):
@@ -163,6 +204,7 @@ export function recordActivity(
     { name: string } | undefined;
   const actor = db.prepare('SELECT username FROM users WHERE id = ?').get(actorUserId) as
     { username: string } | undefined;
+
   if (trip && actor) {
     notifyTripMembers(tripId, actorUserId, {
       domain,

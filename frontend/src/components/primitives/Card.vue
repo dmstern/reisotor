@@ -74,26 +74,43 @@ const emit = defineEmits<{
 const internalCondensed = ref(true);
 
 const isCondensed = computed(() => {
-  if (props.condensed !== undefined) return props.condensed;
-  if (props.expanded !== undefined) return !props.expanded;
+  if (props.condensed !== undefined) {
+    return props.condensed;
+  }
+
+  if (props.expanded !== undefined) {
+    return !props.expanded;
+  }
+
   return props.expandable ? internalCondensed.value : false;
 });
 
 const isExpanded = computed(() => {
-  if (props.expanded !== undefined) return props.expanded;
-  if (props.condensed !== undefined) return !props.condensed;
+  if (props.expanded !== undefined) {
+    return props.expanded;
+  }
+
+  if (props.condensed !== undefined) {
+    return !props.condensed;
+  }
+
   return props.expandable ? !internalCondensed.value : false;
 });
 
 const effectiveBannerPosition = computed(() => {
-  if (props.bannerPosition !== 'auto') return props.bannerPosition;
+  if (props.bannerPosition !== 'auto') {
+    return props.bannerPosition;
+  }
+
   return isCondensed.value ? 'left' : 'top';
 });
 
 function handleCardClick(event: MouseEvent) {
   emit('click', event);
+
   if (props.expandable) {
     const target = event.target as HTMLElement | null;
+
     if (
       target &&
       target !== event.currentTarget &&
@@ -101,6 +118,7 @@ function handleCardClick(event: MouseEvent) {
     ) {
       return;
     }
+
     const nextCondensed = !isCondensed.value;
     internalCondensed.value = nextCondensed;
     emit('update:condensed', nextCondensed);
@@ -110,9 +128,13 @@ function handleCardClick(event: MouseEvent) {
 }
 
 function handleCardKeydown(event: KeyboardEvent) {
-  if (!props.expandable) return;
+  if (!props.expandable) {
+    return;
+  }
+
   if (event.key === 'Enter' || event.key === ' ') {
     const target = event.target as HTMLElement | null;
+
     if (
       target &&
       target !== event.currentTarget &&
@@ -120,6 +142,7 @@ function handleCardKeydown(event: KeyboardEvent) {
     ) {
       return;
     }
+
     event.preventDefault();
     handleCardClick(event as unknown as MouseEvent);
   }
@@ -127,12 +150,28 @@ function handleCardKeydown(event: KeyboardEvent) {
 
 const attrs = useAttrs();
 const isNewHighlight = computed(() => {
-  if (props.highlight) return true;
+  if (props.highlight) {
+    return true;
+  }
+
   const cls = attrs.class;
-  if (!cls) return false;
-  if (typeof cls === 'string') return cls.split(/\s+/).includes('new-highlight');
-  if (Array.isArray(cls)) return cls.includes('new-highlight');
-  if (typeof cls === 'object') return Boolean((cls as Record<string, unknown>)['new-highlight']);
+
+  if (!cls) {
+    return false;
+  }
+
+  if (typeof cls === 'string') {
+    return cls.split(/\s+/).includes('new-highlight');
+  }
+
+  if (Array.isArray(cls)) {
+    return cls.includes('new-highlight');
+  }
+
+  if (typeof cls === 'object') {
+    return Boolean((cls as Record<string, unknown>)['new-highlight']);
+  }
+
   return false;
 });
 </script>

@@ -79,16 +79,21 @@ const remaining = computed(() => (hasTarget.value ? props.target - props.spent :
 const remainingRatio = computed(() => (hasTarget.value ? remaining.value / props.target : 0));
 
 const fillPercent = computed(() => {
-  if (!hasTarget.value) return 100;
+  if (!hasTarget.value) {
+    return 100;
+  }
+
   if (resolvedMode.value === 'drain') {
     if (isOver.value) {
       // Füllstand zeigt das relative Ausmaß der Budgetüberschreitung:
       // z. B. 50 % Überschreitung = 50 % gefüllt, 100 % (oder mehr) Überschreitung = 100 % gefüllt.
       return Math.max(2, Math.min(100, overRatio.value * 100));
     }
+
     // Entleert sich mit Ausgaben (100% -> 0%)
     return Math.max(0, Math.min(100, remainingRatio.value * 100));
   }
+
   // mode === 'fill' (Fortschritt 0% -> 100%)
   const fillRatio = props.spent / props.target;
   return Math.max(0, Math.min(100, fillRatio * 100));
@@ -100,45 +105,80 @@ const effectiveColor = computed(() => {
       // Bis 20 % Überschreitung: Sanfter Übergang von Orange nach Kräftiges Rot (Danger)
       if (overRatio.value <= 0.2) {
         const redPct = Math.max(0, Math.min(100, Math.round((overRatio.value / 0.2) * 100)));
-        if (redPct <= 0) return 'var(--color-meter-orange, #ea580c)';
-        if (redPct >= 100) return 'var(--color-danger)';
+
+        if (redPct <= 0) {
+          return 'var(--color-meter-orange, #ea580c)';
+        }
+
+        if (redPct >= 100) {
+          return 'var(--color-danger)';
+        }
+
         return `color-mix(in srgb, var(--color-danger) ${redPct}%, var(--color-meter-orange, #ea580c))`;
       }
+
       // Ab 20 % bis 50 %+ Überschreitung: Sanfter Übergang von Kräftigem Rot in tiefes Dunkelrot
       const darkRedPct = Math.max(
         0,
         Math.min(100, Math.round(((overRatio.value - 0.2) / 0.3) * 100))
       );
-      if (darkRedPct <= 0) return 'var(--color-danger)';
-      if (darkRedPct >= 100) return 'var(--color-meter-dark-red, #7f1d1d)';
+
+      if (darkRedPct <= 0) {
+        return 'var(--color-danger)';
+      }
+
+      if (darkRedPct >= 100) {
+        return 'var(--color-meter-dark-red, #7f1d1d)';
+      }
+
       return `color-mix(in srgb, var(--color-meter-dark-red, #7f1d1d) ${darkRedPct}%, var(--color-danger))`;
     }
+
     if (hasTarget.value) {
       // 50 % bis 100 % Restbudget: Vollständig Grün
       if (remainingRatio.value >= 0.5) {
         return 'var(--color-success)';
       }
+
       // 15 % bis 50 % Restbudget: Sanfter Übergang von Grün nach Gelb
       if (remainingRatio.value >= 0.15) {
         const greenPct = Math.max(
           0,
           Math.min(100, Math.round(((remainingRatio.value - 0.15) / 0.35) * 100))
         );
-        if (greenPct >= 100) return 'var(--color-success)';
-        if (greenPct <= 0) return 'var(--color-meter-yellow, #eab308)';
+
+        if (greenPct >= 100) {
+          return 'var(--color-success)';
+        }
+
+        if (greenPct <= 0) {
+          return 'var(--color-meter-yellow, #eab308)';
+        }
+
         return `color-mix(in srgb, var(--color-success) ${greenPct}%, var(--color-meter-yellow, #eab308))`;
       }
+
       // 0 % bis 15 % Restbudget: Sanfter Übergang von Gelb nach Orange (bei 0 % = Orange)
       const yellowPct = Math.max(0, Math.min(100, Math.round((remainingRatio.value / 0.15) * 100)));
-      if (yellowPct >= 100) return 'var(--color-meter-yellow, #eab308)';
-      if (yellowPct <= 0) return 'var(--color-meter-orange, #ea580c)';
+
+      if (yellowPct >= 100) {
+        return 'var(--color-meter-yellow, #eab308)';
+      }
+
+      if (yellowPct <= 0) {
+        return 'var(--color-meter-orange, #ea580c)';
+      }
+
       return `color-mix(in srgb, var(--color-meter-yellow, #eab308) ${yellowPct}%, var(--color-meter-orange, #ea580c))`;
     }
+
     return props.color ?? 'var(--color-text-muted)';
   }
+
   if (isOver.value) {
     return 'var(--color-danger)';
   }
+
   return props.color ?? 'var(--color-primary-dark)';
 });
 
@@ -146,6 +186,7 @@ const trackBackground = computed(() => {
   if (isOver.value) {
     return `color-mix(in srgb, ${effectiveColor.value} 18%, transparent)`;
   }
+
   return `color-mix(in srgb, ${effectiveColor.value} 15%, transparent)`;
 });
 

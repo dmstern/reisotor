@@ -50,6 +50,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   function buildWeek(weekStartDate: Date): DayCell[] {
     const result: DayCell[] = [];
     const cursor = new Date(weekStartDate);
+
     for (let i = 0; i < 7; i++) {
       const iso = toIso(cursor);
       result.push({
@@ -61,6 +62,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
       });
       cursor.setDate(cursor.getDate() + 1);
     }
+
     return result;
   }
 
@@ -76,6 +78,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     const result: DayCell[][] = [];
     let week: DayCell[] = [];
     const cursor = new Date(gridStart);
+
     while (cursor <= gridEnd) {
       const iso = toIso(cursor);
       week.push({
@@ -85,12 +88,15 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
         weatherEntries: weatherEntriesFor(iso),
         otherMonth: cursor.getMonth() !== month,
       });
+
       if (week.length === 7) {
         result.push(week);
         week = [];
       }
+
       cursor.setDate(cursor.getDate() + 1);
     }
+
     return result;
   });
 
@@ -102,13 +108,16 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     if (granularity.value === 'month') {
       return monthWeeks.value;
     }
+
     const count = granularity.value === 'twoWeeks' ? 2 : 1;
     const result: DayCell[][] = [];
     const cursor = new Date(startOfWeek(weekAnchor.value));
+
     for (let w = 0; w < count; w++) {
       result.push(buildWeek(cursor));
       cursor.setDate(cursor.getDate() + 7);
     }
+
     return result;
   });
 
@@ -119,6 +128,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     if (granularity.value === 'month') {
       return `month-${monthAnchor.value.getFullYear()}-${monthAnchor.value.getMonth()}`;
     }
+
     return `${granularity.value}-${toIso(weekAnchor.value)}`;
   });
 
@@ -130,8 +140,15 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
       const currentYear = monthAnchor.value.getFullYear();
       const currentMonth = String(monthAnchor.value.getMonth() + 1).padStart(2, '0');
       const currentYearMonth = `${currentYear}-${currentMonth}`;
-      if (targetYearMonth > currentYearMonth) return 'next';
-      if (targetYearMonth < currentYearMonth) return 'prev';
+
+      if (targetYearMonth > currentYearMonth) {
+        return 'next';
+      }
+
+      if (targetYearMonth < currentYearMonth) {
+        return 'prev';
+      }
+
       return 'fade';
     } else {
       const currentIso = toIso(weekAnchor.value);
@@ -139,31 +156,60 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
       const end = new Date(weekAnchor.value);
       end.setDate(end.getDate() + count - 1);
       const endIso = toIso(end);
-      if (targetIso > endIso) return 'next';
-      if (targetIso < currentIso) return 'prev';
+
+      if (targetIso > endIso) {
+        return 'next';
+      }
+
+      if (targetIso < currentIso) {
+        return 'prev';
+      }
+
       return 'fade';
     }
   }
 
   const prevPageLabel = computed(() => {
-    if (granularity.value === 'month') return 'Vorheriger Monat';
-    if (granularity.value === 'twoWeeks') return 'Vorherige 2 Wochen';
+    if (granularity.value === 'month') {
+      return 'Vorheriger Monat';
+    }
+
+    if (granularity.value === 'twoWeeks') {
+      return 'Vorherige 2 Wochen';
+    }
+
     return 'Vorherige Woche';
   });
 
   const nextPageLabel = computed(() => {
-    if (granularity.value === 'month') return 'Nächster Monat';
-    if (granularity.value === 'twoWeeks') return 'Nächste 2 Wochen';
+    if (granularity.value === 'month') {
+      return 'Nächster Monat';
+    }
+
+    if (granularity.value === 'twoWeeks') {
+      return 'Nächste 2 Wochen';
+    }
+
     return 'Nächste Woche';
   });
 
   const visibleRangeLabel = computed(() => {
-    if (granularity.value === 'month') return monthLabel.value;
-    if (!visibleWeeks.value.length) return '';
+    if (granularity.value === 'month') {
+      return monthLabel.value;
+    }
+
+    if (!visibleWeeks.value.length) {
+      return '';
+    }
+
     const first = visibleWeeks.value[0][0]?.date;
     const lastWeek = visibleWeeks.value[visibleWeeks.value.length - 1];
     const last = lastWeek[lastWeek.length - 1]?.date;
-    if (!first || !last) return '';
+
+    if (!first || !last) {
+      return '';
+    }
+
     const currentYear = new Date().getFullYear();
     const firstYear = new Date(`${first}T00:00:00`).getFullYear();
     const lastYear = new Date(`${last}T00:00:00`).getFullYear();
@@ -192,6 +238,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   function prevPage() {
     slideDirection.value = 'prev';
     activeJumpTarget.value = null;
+
     if (granularity.value === 'month') {
       prevMonth();
     } else if (granularity.value === 'twoWeeks') {
@@ -208,6 +255,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   function nextPage() {
     slideDirection.value = 'next';
     activeJumpTarget.value = null;
+
     if (granularity.value === 'month') {
       nextMonth();
     } else if (granularity.value === 'twoWeeks') {
@@ -223,6 +271,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
 
   watch(granularity, (next, prev) => {
     slideDirection.value = 'fade';
+
     if (next === 'month' && prev !== 'month') {
       const weekStartIso = toIso(startOfWeek(weekAnchor.value));
       const count = prev === 'twoWeeks' ? 14 : 7;
@@ -255,21 +304,44 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   const isTodayActive = computed(() => {
     const today = toLocalDateString(new Date());
     const todayVisible = visibleWeeks.value.some((week) => week.some((day) => day.date === today));
-    if (!todayVisible) return false;
-    if (activeJumpTarget.value === 'today') return true;
-    if (activeJumpTarget.value === 'trip') return false;
+
+    if (!todayVisible) {
+      return false;
+    }
+
+    if (activeJumpTarget.value === 'today') {
+      return true;
+    }
+
+    if (activeJumpTarget.value === 'trip') {
+      return false;
+    }
+
     return selectedDate.value === today;
   });
 
   const isTripActive = computed(() => {
-    if (!trip.value?.start_date) return false;
+    if (!trip.value?.start_date) {
+      return false;
+    }
+
     const tripStartDate = trip.value.start_date;
     const tripStartVisible = visibleWeeks.value.some((week) =>
       week.some((day) => day.date === tripStartDate)
     );
-    if (!tripStartVisible) return false;
-    if (activeJumpTarget.value === 'trip') return true;
-    if (activeJumpTarget.value === 'today') return false;
+
+    if (!tripStartVisible) {
+      return false;
+    }
+
+    if (activeJumpTarget.value === 'trip') {
+      return true;
+    }
+
+    if (activeJumpTarget.value === 'today') {
+      return false;
+    }
+
     return selectedDate.value === tripStartDate;
   });
 
@@ -283,6 +355,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
 
   function goToTripDates() {
     activeJumpTarget.value = 'trip';
+
     if (trip.value?.start_date) {
       slideDirection.value = determineSlideDirection(trip.value.start_date);
       goToDate(trip.value.start_date);
@@ -300,6 +373,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   function selectDay(date: string) {
     selectedDate.value = date;
     const today = toLocalDateString(new Date());
+
     if (date === today) {
       activeJumpTarget.value = 'today';
     } else if (trip.value?.start_date && date === trip.value.start_date) {
@@ -312,6 +386,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   function initNavigation() {
     const today = toLocalDateString(new Date());
     selectedDate.value = today;
+
     if (!goToDate(today) && trip.value?.start_date) {
       goToDate(trip.value.start_date);
       selectedDate.value = trip.value.start_date;
@@ -332,7 +407,10 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   }
 
   function isTripDate(dateStr: string) {
-    if (!trip.value?.start_date || !trip.value?.end_date) return false;
+    if (!trip.value?.start_date || !trip.value?.end_date) {
+      return false;
+    }
+
     return dateStr >= trip.value.start_date && dateStr <= trip.value.end_date;
   }
 

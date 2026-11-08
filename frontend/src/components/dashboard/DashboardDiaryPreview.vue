@@ -9,15 +9,22 @@ const props = defineProps<{
 }>();
 
 const previewText = computed(() => {
-  if (!props.latestEntry) return 'Reisebericht schreiben… ✍️';
+  if (!props.latestEntry) {
+    return 'Reisebericht schreiben… ✍️';
+  }
+
   const text = props.latestEntry.title?.trim() || stripHtml(props.latestEntry.content);
   return text ? text.slice(0, 30) : 'Reisetag';
 });
 
 const previewDate = computed(() => {
-  if (!props.latestEntry?.date) return 'Tag 1';
+  if (!props.latestEntry?.date) {
+    return 'Tag 1';
+  }
+
   // Kurzes Format wie "14. Jul"
   const parts = props.latestEntry.date.split('-');
+
   if (parts.length === 3) {
     const months = [
       'Jan',
@@ -36,6 +43,7 @@ const previewDate = computed(() => {
     const mIdx = parseInt(parts[1], 10) - 1;
     return `${parseInt(parts[2], 10)}. ${months[mIdx] || parts[1]}`;
   }
+
   return props.latestEntry.date;
 });
 </script>

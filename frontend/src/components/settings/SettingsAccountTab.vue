@@ -20,6 +20,7 @@ const { openAccountTierModal } = useAccountTierModal();
 
 function scrollToUnsynced() {
   const el = document.getElementById('unsynced-items');
+
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }

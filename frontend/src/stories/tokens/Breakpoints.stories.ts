@@ -17,6 +17,7 @@ export const InteractiveViewportVisualizer: Story = {
 
       const activeBreakpointInfo = computed(() => {
         const w = activeWidth.value;
+
         if (w < BREAKPOINTS.mobile) {
           return {
             label: 'Mobil Schmal (Compact)',
@@ -27,6 +28,7 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Karten schalten auf Vertikal-Stapel um. Modals & Sheets füllen 100% Breite.',
           };
         }
+
         if (w < BREAKPOINTS.tabletSm) {
           return {
             label: 'Mobil Standard',
@@ -37,6 +39,7 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Untere TabBar + ausziehbare Bottom-Sheets. 1-spaltiger Content.',
           };
         }
+
         if (w < BREAKPOINTS.tablet) {
           return {
             label: 'Kleines Tablet / Dialoge schwebend',
@@ -47,6 +50,7 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Breites Smartphone / kleines Tablet. Modals & Dialoge schalten auf schwebende Karten um.',
           };
         }
+
         if (w < BREAKPOINTS.desktopSm) {
           return {
             label: 'Medium / Kalenderwoche',
@@ -57,6 +61,7 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Kalenderwoche schaltet auf volle 7-Tage Ansicht um. Mobil-Layout bleibt aktiv.',
           };
         }
+
         if (w < BREAKPOINTS.desktopMd) {
           return {
             label: 'Desktop Sm / Formulare & Modals',
@@ -67,6 +72,7 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Inhaltsreiche Formulare & Modals schalten auf erweiterte Desktop-Breite um.',
           };
         }
+
         if (w < BREAKPOINTS.desktop) {
           return {
             label: 'Desktop Md / Tabellen & Grids',
@@ -77,6 +83,7 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Todo-, Pack- & Einkaufslisten schalten auf mehrspaltige Tabellen-Grids um.',
           };
         }
+
         if (w < BREAKPOINTS.pageMax) {
           return {
             label: 'Desktop Standard (Breakpoint)',
@@ -87,6 +94,7 @@ export const InteractiveViewportVisualizer: Story = {
             desc: 'Top Header + feste Sidebar-Drawers + Multi-Column Kachel-Grids.',
           };
         }
+
         return {
           label: 'Ultra Wide / Multi-Column Split',
           query: `@media (min-width: ${BREAKPOINTS.pageMax}px)`,

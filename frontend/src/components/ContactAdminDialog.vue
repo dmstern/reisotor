@@ -49,9 +49,13 @@ function close() {
 }
 
 async function onSubmit() {
-  if (!message.value.trim()) return;
+  if (!message.value.trim()) {
+    return;
+  }
+
   error.value = '';
   submitting.value = true;
+
   try {
     await api.post('/auth/contact-admin', {
       name: name.value.trim() || undefined,

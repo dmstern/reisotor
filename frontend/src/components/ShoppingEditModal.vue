@@ -47,6 +47,7 @@ watch(
   () => props.item,
   (newItem) => {
     editLabelTouched.value = false;
+
     if (newItem) {
       editForm.value = {
         label: newItem.label,
@@ -65,7 +66,11 @@ function handleSubmit() {
     editLabelTouched.value = true;
     return;
   }
-  if (!props.item) return;
+
+  if (!props.item) {
+    return;
+  }
+
   emit(
     'submit',
     props.item.id,
@@ -90,7 +95,10 @@ function handleClose() {
 }
 
 function discardDraft() {
-  if (!props.item) return;
+  if (!props.item) {
+    return;
+  }
+
   editForm.value = {
     label: props.item.label,
     link: props.item.link ?? '',
@@ -103,7 +111,10 @@ function discardDraft() {
 }
 
 function handleDelete() {
-  if (!props.item) return;
+  if (!props.item) {
+    return;
+  }
+
   const id = props.item.id;
   handleClose();
   emit('delete', id);

@@ -41,6 +41,7 @@ function updateOffset() {
     document.documentElement.style.setProperty('--navbar-bottom-offset', '0px');
     return;
   }
+
   const height = navEl.value ? navEl.value.getBoundingClientRect().height : 0;
   // Die schwebende Pille hat zusätzlich zu ihrer eigenen Höhe noch einen Rand-Abstand zum
   // Viewport-Rand (var(--space-4)) - der muss mit in den reservierten Content-Abstand einfließen,
@@ -66,17 +67,31 @@ const highlightWidth = ref(0);
 const highlightVisible = ref(false);
 
 const isTravelActive = computed(() => {
-  if (!route.path.includes('/excursions')) return false;
+  if (!route.path.includes('/excursions')) {
+    return false;
+  }
+
   const tourRole = route.query.tourRole;
-  if (!tourRole) return false;
+
+  if (!tourRole) {
+    return false;
+  }
+
   const roles = (Array.isArray(tourRole) ? tourRole.join(',') : String(tourRole)).split(',');
   return roles.includes('arrival') || roles.includes('departure') || roles.includes('onward');
 });
 
 const isAccommodationActive = computed(() => {
-  if (!route.path.includes('/excursions')) return false;
+  if (!route.path.includes('/excursions')) {
+    return false;
+  }
+
   const category = route.query.category;
-  if (!category) return false;
+
+  if (!category) {
+    return false;
+  }
+
   const categories = (Array.isArray(category) ? category.join(',') : String(category)).split(',');
   return categories.includes('Unterkunft');
 });
@@ -90,16 +105,27 @@ function isLinkActive(link: NavLinkDef): boolean {
   if (link.key === 'accommodation') {
     return isAccommodationActive.value;
   }
+
   if (link.key === 'travel') {
     return isTravelActive.value;
   }
+
   if (link.key === 'excursions') {
     const travelVisible = visibleLinks.value.some((l) => l.key === 'travel');
-    if (travelVisible && isTravelActive.value) return false;
+
+    if (travelVisible && isTravelActive.value) {
+      return false;
+    }
+
     const accommodationVisible = visibleLinks.value.some((l) => l.key === 'accommodation');
-    if (accommodationVisible && isAccommodationActive.value) return false;
+
+    if (accommodationVisible && isAccommodationActive.value) {
+      return false;
+    }
+
     return route.path.includes('/excursions');
   }
+
   const targetPath = tripStore.currentTripId
     ? `/trip/${tripStore.currentTripId}${link.to}`
     : link.to;
@@ -116,6 +142,7 @@ function getLinkTarget(link: NavLinkDef) {
       query: { group: 'tours', tourRole: 'arrival,departure,onward' },
     };
   }
+
   if (link.key === 'accommodation') {
     const basePath = tripStore.currentTripId
       ? `/trip/${tripStore.currentTripId}/excursions`
@@ -125,6 +152,7 @@ function getLinkTarget(link: NavLinkDef) {
       query: { category: 'Unterkunft' },
     };
   }
+
   return tripStore.currentTripId ? `/trip/${tripStore.currentTripId}${link.to}` : link.to;
 }
 
@@ -132,10 +160,12 @@ function updateHighlight() {
   const activeEl = linksEl.value?.querySelector<HTMLElement>(
     '.link.active, .link.router-link-active:not(.custom-inactive)'
   );
+
   if (!activeEl) {
     highlightVisible.value = false;
     return;
   }
+
   highlightLeft.value = activeEl.offsetLeft;
   highlightWidth.value = activeEl.offsetWidth;
   highlightVisible.value = true;
@@ -146,7 +176,11 @@ onMounted(() => {
     updateOffset();
     updateHighlight();
   });
-  if (navEl.value) resizeObserver.observe(navEl.value);
+
+  if (navEl.value) {
+    resizeObserver.observe(navEl.value);
+  }
+
   updateOffset();
   nextTick(updateHighlight);
 });
@@ -192,8 +226,14 @@ watch([() => route.fullPath, visibleLinks], () => {
 });
 
 function hasUnseenAny(link: NavLinkDef): boolean {
-  if (link.domain) return liveSync.hasUnseen(link.domain);
-  if (link.domains) return link.domains.some((d) => liveSync.hasUnseen(d));
+  if (link.domain) {
+    return liveSync.hasUnseen(link.domain);
+  }
+
+  if (link.domains) {
+    return link.domains.some((d) => liveSync.hasUnseen(d));
+  }
+
   return false;
 }
 

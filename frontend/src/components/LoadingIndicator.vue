@@ -50,10 +50,12 @@ watch(
       clearTimeout(showTimer);
       showTimer = null;
     }
+
     if (kind == null) {
       visibleKind.value = null;
       return;
     }
+
     showTimer = setTimeout(() => {
       visibleKind.value = kind;
       showTimer = null;

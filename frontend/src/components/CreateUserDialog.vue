@@ -67,6 +67,7 @@ const AVATAR_OPTIONS = [
 function initRoleFromStorage() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_REMEMBER_ROLE) as UserRole | null;
+
     if (saved && (saved === 'restricted' || saved === 'plus' || saved === 'admin')) {
       role.value = saved;
       rememberRole.value = true;
@@ -75,6 +76,7 @@ function initRoleFromStorage() {
   } catch {
     // localStorage might be unavailable
   }
+
   role.value = 'restricted';
   rememberRole.value = false;
 }
@@ -105,10 +107,12 @@ function close() {
 
 async function submit() {
   error.value = '';
+
   if (!username.value.trim() || !password.value) {
     error.value = 'Benutzername und Passwort erforderlich.';
     return;
   }
+
   if (password.value.length < 6) {
     error.value = 'Das Passwort muss mindestens 6 Zeichen lang sein.';
     return;
@@ -125,6 +129,7 @@ async function submit() {
   }
 
   submitting.value = true;
+
   try {
     const newUser = await api.post<User>('/users', {
       username: username.value.trim(),

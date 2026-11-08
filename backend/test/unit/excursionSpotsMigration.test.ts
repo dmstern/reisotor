@@ -21,7 +21,10 @@ describe('excursion_spots spot_id-Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('überführt station_key-Stationen verlustarm auf eine echte spot_id-Spalte, Reihenfolge/Mehrfachbesuch bleiben erhalten', async () => {

@@ -88,7 +88,11 @@ export function matchingLevel(prefs: NotificationPreferences): NotificationLevel
     const preset = NOTIFICATION_LEVEL_PRESETS[level];
     const domainsMatch = NOTIFICATION_DOMAINS.every((d) => prefs[d] === preset[d]);
     const updatesMatch = (prefs.activity_updates ?? true) === (preset.activity_updates ?? true);
-    if (domainsMatch && updatesMatch) return level;
+
+    if (domainsMatch && updatesMatch) {
+      return level;
+    }
   }
+
   return null;
 }

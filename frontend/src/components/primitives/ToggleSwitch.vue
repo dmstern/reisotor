@@ -36,7 +36,10 @@ const autoId = useId();
 const switchId = computed(() => props.id || autoId);
 
 function onToggle() {
-  if (props.disabled) return;
+  if (props.disabled) {
+    return;
+  }
+
   const nextValue = !props.modelValue;
   emit('update:modelValue', nextValue);
   emit('change', nextValue);

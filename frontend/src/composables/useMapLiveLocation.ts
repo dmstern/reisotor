@@ -6,7 +6,10 @@ import { useMapOrientationStore } from '../stores/mapOrientation';
 import { useLocationSharingStore } from '../stores/locationSharing';
 
 function isIOS(): boolean {
-  if (typeof navigator === 'undefined') return false;
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
+
   const ua = navigator.userAgent;
   return (
     /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1)
@@ -16,8 +19,15 @@ function isIOS(): boolean {
 export function headingFromOrientationEvent(event: DeviceOrientationEvent): number | null {
   const webkitHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number })
     .webkitCompassHeading;
-  if (typeof webkitHeading === 'number') return webkitHeading;
-  if (event.alpha == null) return null;
+
+  if (typeof webkitHeading === 'number') {
+    return webkitHeading;
+  }
+
+  if (event.alpha == null) {
+    return null;
+  }
+
   return (360 - event.alpha) % 360;
 }
 
@@ -45,23 +55,35 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
 
   function handleOrientation(event: DeviceOrientationEvent) {
     const heading = headingFromOrientationEvent(event);
-    if (heading == null) return;
+
+    if (heading == null) {
+      return;
+    }
+
     ownHeading.value = heading;
+
     if (mapOrientation.mode === 'heading') {
       options.setMapBearing?.(heading);
     }
+
     options.onPositionUpdate?.();
   }
 
   function startCompass() {
-    if (orientationHandler || typeof window === 'undefined') return;
+    if (orientationHandler || typeof window === 'undefined') {
+      return;
+    }
+
     orientationHandler = handleOrientation;
     window.addEventListener('deviceorientationabsolute', orientationHandler as EventListener);
     window.addEventListener('deviceorientation', orientationHandler as EventListener);
   }
 
   function stopCompass() {
-    if (!orientationHandler || typeof window === 'undefined') return;
+    if (!orientationHandler || typeof window === 'undefined') {
+      return;
+    }
+
     window.removeEventListener('deviceorientationabsolute', orientationHandler as EventListener);
     window.removeEventListener('deviceorientation', orientationHandler as EventListener);
     orientationHandler = null;
@@ -69,6 +91,7 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
 
   function toggleMapOrientation() {
     mapOrientation.toggle();
+
     if (mapOrientation.mode === 'north') {
       options.setMapBearing?.(0);
     } else if (ownHeading.value != null) {
@@ -77,11 +100,16 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
   }
 
   function setMapOrientationMode(mode: 'north' | 'heading') {
-    if (mapOrientation.mode !== mode) toggleMapOrientation();
+    if (mapOrientation.mode !== mode) {
+      toggleMapOrientation();
+    }
   }
 
   function startLocationWatch() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      return;
+    }
+
     geoWatchId = navigator.geolocation.watchPosition(
       (position) => {
         ownPosition.value = { lat: position.coords.latitude, lng: position.coords.longitude };
@@ -98,7 +126,9 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
       navigator.geolocation.clearWatch(geoWatchId);
       geoWatchId = null;
     }
+
     stopCompass();
+
     if (locationSharing.activeDuration === 'off') {
       liveSync.stopSharingPosition();
     }
@@ -116,37 +146,53 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
 
   function jumpToMemberLocation(userId: number) {
     const position = liveSync.memberPositions[userId];
-    if (!position) return;
+
+    if (!position) {
+      return;
+    }
+
     options.onClearFocus?.();
     options.centerOnPoint?.([position.lat, position.lng], 16);
   }
 
   async function jumpToMyLocation() {
-    if (!ownPosition.value) return;
+    if (!ownPosition.value) {
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       const OrientationEventCtor = (
         window as unknown as {
           DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
         }
       ).DeviceOrientationEvent;
+
       if (OrientationEventCtor?.requestPermission && !orientationHandler) {
         try {
           const state = await OrientationEventCtor.requestPermission();
-          if (state === 'granted') startCompass();
+
+          if (state === 'granted') {
+            startCompass();
+          }
         } catch {}
       }
     }
+
     options.onClearFocus?.();
     options.centerOnPoint?.([ownPosition.value.lat, ownPosition.value.lng], 16);
   }
 
   function initCompassAuto() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const OrientationEventCtor = (
       window as unknown as {
         DeviceOrientationEvent?: { requestPermission?: () => Promise<string> };
       }
     ).DeviceOrientationEvent;
+
     // iOS 13+ erfordert eine explizite Nutzergeste (DeviceOrientationEvent.requestPermission()),
     // daher startet der Kompass auf iOS erst bei Klick auf "Zu meinem Standort springen"
     // (jumpToMyLocation()). Auf allen anderen Plattformen (Android, Desktop) startet der

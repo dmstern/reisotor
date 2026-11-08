@@ -7,7 +7,10 @@ const props = defineProps<{
 }>();
 
 const nextEntry = computed(() => {
-  if (!props.upcoming.length) return null;
+  if (!props.upcoming.length) {
+    return null;
+  }
+
   return props.upcoming[0];
 });
 

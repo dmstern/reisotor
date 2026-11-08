@@ -25,9 +25,13 @@ function findDocsScreenshot(baseName: string): string | null {
     path.join(process.cwd(), '..', 'docs', 'screenshots', baseName),
     path.join(process.cwd(), 'docs', 'screenshots', baseName),
   ];
+
   for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) return candidate;
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
   }
+
   return null;
 }
 
@@ -41,10 +45,12 @@ export function recordScreenshotComparison(entry: ScreenshotComparisonEntry): vo
   // Für alle Screenshots (auch identische) speichern wir das aktuelle Bild für den HTML-Report
   const currentBuffer = entry.newBuffer || entry.existingBuffer;
   const currentImagePath = path.join(IMAGES_DIR, entry.baseName);
+
   if (currentBuffer) {
     fs.writeFileSync(currentImagePath, currentBuffer);
   } else {
     const docsPath = findDocsScreenshot(entry.baseName);
+
     if (docsPath) {
       fs.copyFileSync(docsPath, currentImagePath);
     }
@@ -55,9 +61,11 @@ export function recordScreenshotComparison(entry: ScreenshotComparisonEntry): vo
     if (entry.existingBuffer) {
       fs.writeFileSync(path.join(IMAGES_DIR, `${entry.baseName}.old.png`), entry.existingBuffer);
     }
+
     if (entry.newBuffer) {
       fs.writeFileSync(path.join(IMAGES_DIR, `${entry.baseName}.new.png`), entry.newBuffer);
     }
+
     if (entry.diffBuffer) {
       fs.writeFileSync(path.join(IMAGES_DIR, `${entry.baseName}.diff.png`), entry.diffBuffer);
     }
@@ -65,7 +73,9 @@ export function recordScreenshotComparison(entry: ScreenshotComparisonEntry): vo
 }
 
 export function generateScreenshotHtmlReport(): string | null {
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return null;
+  }
 
   if (!fs.existsSync(REPORT_DIR)) {
     fs.mkdirSync(REPORT_DIR, { recursive: true });

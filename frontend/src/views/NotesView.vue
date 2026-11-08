@@ -61,8 +61,14 @@ const isNewEmptyDraft = computed(
 
 const canSaveNote = computed(() => !isContentEmpty.value && !isNoteUploadingAttachments.value);
 const noteSaveTooltip = computed(() => {
-  if (isNoteUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
-  if (isContentEmpty.value) return 'Bitte fülle zuerst den Inhalt der Notiz aus';
+  if (isNoteUploadingAttachments.value) {
+    return 'Dateianhänge werden noch hochgeladen…';
+  }
+
+  if (isContentEmpty.value) {
+    return 'Bitte fülle zuerst den Inhalt der Notiz aus';
+  }
+
   return undefined;
 });
 
@@ -70,8 +76,14 @@ const isNoteDeleteDisabled = computed(
   () => isNoteUploadingAttachments.value || isNewEmptyDraft.value
 );
 const noteDeleteTooltip = computed(() => {
-  if (isNoteUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
-  if (isNewEmptyDraft.value) return 'Neuer Entwurf ist noch leer';
+  if (isNoteUploadingAttachments.value) {
+    return 'Dateianhänge werden noch hochgeladen…';
+  }
+
+  if (isNewEmptyDraft.value) {
+    return 'Neuer Entwurf ist noch leer';
+  }
+
   return undefined;
 });
 
@@ -127,17 +139,21 @@ watch(() => liveSync.domainVersion.notes, load);
 function author(id: number) {
   return users.value.find((u) => u.id === id);
 }
+
 function likesFor(noteId: number) {
   return likes.value.filter((l) => l.note_id === noteId);
 }
+
 function likedByMe(noteId: number) {
   return likesFor(noteId).some((l) => l.user_id === auth.user?.id);
 }
+
 function commentsFor(noteId: number) {
   return comments.value
     .filter((c) => c.note_id === noteId)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
+
 function commentItemsFor(noteId: number) {
   return commentsFor(noteId).map((c) => ({
     id: c.id,
@@ -154,12 +170,16 @@ function commentItemsFor(noteId: number) {
 }
 
 function toggleComments(noteId: number) {
-  if (openComments.value.has(noteId)) openComments.value.delete(noteId);
-  else openComments.value.add(noteId);
+  if (openComments.value.has(noteId)) {
+    openComments.value.delete(noteId);
+  } else {
+    openComments.value.add(noteId);
+  }
 }
 
 async function toggleLike(noteId: number) {
   const result = await api.post<{ liked: boolean }>(`/notes/${noteId}/like`);
+
   if (result.liked) {
     likes.value.push({ id: Date.now(), note_id: noteId, user_id: auth.user!.id });
   } else {
@@ -169,15 +189,18 @@ async function toggleLike(noteId: number) {
 
 async function toggleCommentLike(commentId: number) {
   const c = comments.value.find((item) => item.id === commentId);
+
   if (c) {
     const wasLiked = Boolean(c.liked);
     c.liked = !wasLiked;
     c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
   }
+
   try {
     const result = await api.post<{ liked: boolean; like_count: number }>(
       `/notes/comments/${commentId}/like`
     );
+
     if (c) {
       c.liked = result.liked;
       c.like_count = result.like_count;
@@ -188,6 +211,7 @@ async function toggleCommentLike(commentId: number) {
       c.liked = !wasLiked;
       c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
     }
+
     throw err;
   }
 }
@@ -205,13 +229,17 @@ async function removeComment(id: number) {
 async function updateComment(id: number, content: string) {
   const updated = await api.put<NoteComment>(`/notes/comments/${id}`, { content });
   const idx = comments.value.findIndex((c) => c.id === id);
+
   if (idx !== -1) {
     comments.value[idx] = updated;
   }
 }
 
 function authorLabel(id: number | null) {
-  if (id == null) return '';
+  if (id == null) {
+    return '';
+  }
+
   const u = users.value.find((u) => u.id === id);
   return u ? `${u.avatar} ${u.username}` : '';
 }
@@ -225,6 +253,7 @@ function formatDate(iso?: string | null) {
 // der Datenbank angelegt, damit sofort Anhänge (Bilder/Dateien) hochgeladen werden können.
 async function openNew() {
   noteContentTouched.value = false;
+
   if (myDraft.value) {
     startEdit(myDraft.value);
   } else {
@@ -258,7 +287,11 @@ async function submitEdit() {
     editorRef.value?.focus();
     return;
   }
-  if (!editingNote.value || isNoteUploadingAttachments.value) return;
+
+  if (!editingNote.value || isNoteUploadingAttachments.value) {
+    return;
+  }
+
   const updated = await api.put<Note>(`/notes/${editingNote.value.id}`, {
     title: editForm.value.title || undefined,
     content: editForm.value.content,
@@ -266,7 +299,11 @@ async function submitEdit() {
     is_draft: false,
   });
   const idx = notes.value.findIndex((n) => n.id === updated.id);
-  if (idx !== -1) notes.value[idx] = updated;
+
+  if (idx !== -1) {
+    notes.value[idx] = updated;
+  }
+
   editDraft.clear();
   editingNote.value = null;
 }
@@ -286,13 +323,17 @@ async function closeEditForm() {
         is_draft: true,
       });
       const idx = notes.value.findIndex((n) => n.id === updated.id);
-      if (idx !== -1) notes.value[idx] = updated;
+
+      if (idx !== -1) {
+        notes.value[idx] = updated;
+      }
     } else {
       // Prüfen, ob Dateianhänge existieren - wenn nein, den leeren Entwurf löschen.
       try {
         const attachments = await api.get<Attachment[]>(
           `/attachments?domain=notes&entity_id=${editingNote.value.id}`
         );
+
         if (attachments.length === 0) {
           await api.delete(`/notes/${editingNote.value.id}`);
           notes.value = notes.value.filter((n) => n.id !== editingNote.value!.id);
@@ -302,12 +343,16 @@ async function closeEditForm() {
       }
     }
   }
+
   editDraft.clear();
   editingNote.value = null;
 }
 
 function discardEditDraft() {
-  if (!editingNote.value) return;
+  if (!editingNote.value) {
+    return;
+  }
+
   const isDraft = editingNote.value.is_draft;
   startEdit(editingNote.value);
   editDraft.clear();
@@ -318,7 +363,10 @@ function discardEditDraft() {
 }
 
 async function deleteEditingNote() {
-  if (!editingNote.value || isNoteUploadingAttachments.value) return;
+  if (!editingNote.value || isNoteUploadingAttachments.value) {
+    return;
+  }
+
   const id = editingNote.value.id;
   editDraft.clear();
   editingNote.value = null;
@@ -327,6 +375,7 @@ async function deleteEditingNote() {
 
 async function remove(id: number) {
   error.value = '';
+
   try {
     await api.delete(`/notes/${id}`);
     notes.value = notes.value.filter((n) => n.id !== id);

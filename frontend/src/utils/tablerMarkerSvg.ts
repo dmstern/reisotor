@@ -108,7 +108,11 @@ function normalize(svg: string, sizePx: number): string {
 
 export function tablerMarkerSvg(id: string, variant: 'outline' | 'filled', sizePx: number): string {
   const entry = RAW_SVG[id];
-  if (!entry) return '';
+
+  if (!entry) {
+    return '';
+  }
+
   const svg = (variant === 'filled' && entry.filled) || entry.outline;
   return normalize(svg, sizePx);
 }

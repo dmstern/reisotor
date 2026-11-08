@@ -16,6 +16,7 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
           sheetEl: ref(null),
           tripMapRef: ref(null),
         });
+
         return () => {};
       },
     });
@@ -77,6 +78,7 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
     spotsColBodyEl.value = body;
 
     let scrolledToTop: number | null = null;
+
     body.scrollTo = (options?: ScrollToOptions | number) => {
       if (typeof options === 'object' && options?.top !== undefined) {
         scrolledToTop = options.top;
@@ -109,6 +111,7 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
     spotsColBodyEl.value = body;
 
     let scrolledToTop: number | null = null;
+
     body.scrollTo = (options?: ScrollToOptions | number) => {
       if (typeof options === 'object' && options?.top !== undefined) {
         scrolledToTop = options.top;
@@ -137,6 +140,7 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
     spotsColBodyEl.value = body;
 
     let scrolledToTop: number | null = null;
+
     body.scrollTo = (options?: ScrollToOptions | number) => {
       if (typeof options === 'object' && options?.top !== undefined) {
         scrolledToTop = options.top;

@@ -11,7 +11,11 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>();
 const tripStore = useTripStore();
 const currentTrip = computed(() => {
   const trip = props.trip;
-  if (!trip) return null;
+
+  if (!trip) {
+    return null;
+  }
+
   return tripStore.trips.find((t) => t.id === trip.id) ?? trip;
 });
 

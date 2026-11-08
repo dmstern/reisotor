@@ -15,6 +15,7 @@ test.use({
 
 async function closeDrawerIfOpen(page: Page, label: string) {
   const closeBtn = page.locator(`.close-drawer-btn[aria-label="Schließen: ${label}"]`);
+
   if ((await closeBtn.count()) > 0 && (await closeBtn.isVisible())) {
     await closeBtn.click();
   }
@@ -36,6 +37,7 @@ test.describe('Standort-Aufzeichnung', () => {
 
     // Hinweis-Modal für Standort-Aufzeichnung bestätigen (erscheint beim ersten Klick)
     const warningModal = page.locator('.track-warning-modal');
+
     if (await warningModal.isVisible()) {
       await warningModal.getByRole('button', { name: 'Aufzeichnung starten' }).click();
     }
@@ -126,6 +128,7 @@ test.describe('Standort-Aufzeichnung', () => {
     await recordBtn.click();
 
     const warningModal = page.locator('.track-warning-modal');
+
     if (await warningModal.isVisible()) {
       await warningModal.getByRole('button', { name: 'Aufzeichnung starten' }).click();
     }

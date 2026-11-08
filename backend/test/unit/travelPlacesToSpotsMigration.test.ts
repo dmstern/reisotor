@@ -15,7 +15,10 @@ describe('travel_places -> spots Verschmelzungs-Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('überführt Orte, Etappen-Verknüpfungen und Stations-Schlüssel verlustfrei nach spots', async () => {

@@ -155,6 +155,7 @@ watch(
   () => [props.show, props.spot],
   ([show, spot]) => {
     manualRegionVisible.value = false;
+
     if (show) {
       if (spot) {
         startEditSpot(spot as Spot);
@@ -168,17 +169,20 @@ watch(
 
 function handleClose() {
   manualRegionVisible.value = false;
+
   if (editingSpot.value !== null) {
     closeEditSpotForm();
   } else {
     closeSpotForm();
   }
+
   emit('update:show', false);
   emit('update:spot', null);
 }
 
 async function handleAddSpot() {
   await addSpot();
+
   if (!showSpotForm.value) {
     emit('update:show', false);
     emit('update:spot', null);
@@ -187,6 +191,7 @@ async function handleAddSpot() {
 
 async function handleSubmitEditSpot() {
   await submitEditSpot();
+
   if (editingSpot.value === null) {
     emit('update:show', false);
     emit('update:spot', null);
@@ -195,6 +200,7 @@ async function handleSubmitEditSpot() {
 
 async function handleDeleteSpot() {
   await deleteEditingSpot();
+
   if (editingSpot.value === null) {
     emit('update:show', false);
     emit('update:spot', null);

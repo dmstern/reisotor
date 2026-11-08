@@ -60,7 +60,10 @@ const currentOption = computed(
 );
 
 function updatePosition() {
-  if (!triggerRef.value) return;
+  if (!triggerRef.value) {
+    return;
+  }
+
   const rect = triggerRef.value.getBoundingClientRect();
   const coords = computePopoverPosition(triggerRef.value, {
     menuWidth: rect.width,
@@ -76,11 +79,15 @@ function updatePosition() {
 }
 
 async function toggle() {
-  if (props.disabled) return;
+  if (props.disabled) {
+    return;
+  }
+
   if (isOpen.value) {
     isOpen.value = false;
     return;
   }
+
   updatePosition();
   isOpen.value = true;
   await nextTick();
@@ -108,6 +115,7 @@ function onNativeSelectChange(event: Event) {
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault();
+
     if (!isOpen.value) {
       toggle();
     } else {

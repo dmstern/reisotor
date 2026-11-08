@@ -49,7 +49,11 @@ export function useCalendarData() {
 
   async function loadAll() {
     const tripId = tripStore.currentTripId;
-    if (tripId == null) return;
+
+    if (tripId == null) {
+      return;
+    }
+
     const [todosRes] = await Promise.all([
       api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
       spotsStore.load(),
@@ -67,9 +71,13 @@ export function useCalendarData() {
       }))
     );
     const map = new Map<string, DailyWeather[]>();
+
     for (const result of results) {
-      if (result.status === 'fulfilled') map.set(result.value.key, result.value.days);
+      if (result.status === 'fulfilled') {
+        map.set(result.value.key, result.value.days);
+      }
     }
+
     weatherByLocation.value = map;
   }
 
@@ -106,7 +114,11 @@ export function useCalendarData() {
 
   async function toggleTodoDone(todoId: number) {
     const todo = todos.value.find((t) => t.id === todoId);
-    if (!todo) return;
+
+    if (!todo) {
+      return;
+    }
+
     const updated = await api.put<TodoItem>(`/todos/${todoId}`, {
       trip_id: tripStore.currentTripId,
       title: todo.title,
@@ -118,14 +130,19 @@ export function useCalendarData() {
       done: !todo.done,
     });
     const idx = todos.value.findIndex((t) => t.id === todoId);
-    if (idx !== -1) todos.value[idx] = updated;
+
+    if (idx !== -1) {
+      todos.value[idx] = updated;
+    }
   }
 
   // Reactive Sync Watchers
   watch(
     () => drawers.calendarOpen,
     (open) => {
-      if (open) liveSync.markSeen('schedule');
+      if (open) {
+        liveSync.markSeen('schedule');
+      }
     }
   );
 
@@ -151,11 +168,13 @@ export function useCalendarData() {
 
   async function initCalendarData() {
     liveSync.markSeen('schedule');
+
     try {
       await loadAll();
     } catch {
       // Offline-Fallback
     }
+
     loadWeather();
   }
 

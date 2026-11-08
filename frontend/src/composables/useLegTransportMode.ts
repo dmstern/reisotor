@@ -17,6 +17,7 @@ export function useLegTransportMode(options: UseLegTransportModeOptions) {
 
   const transitOptions = computed(() => {
     const current = transportType.value;
+
     if (
       current &&
       !['zu Fuß', 'Zu Fuß', 'Auto', 'Fahrrad'].includes(current) &&
@@ -24,6 +25,7 @@ export function useLegTransportMode(options: UseLegTransportModeOptions) {
     ) {
       return [...DEFAULT_TRANSIT_OPTIONS, current];
     }
+
     return DEFAULT_TRANSIT_OPTIONS;
   });
 
@@ -35,6 +37,7 @@ export function useLegTransportMode(options: UseLegTransportModeOptions) {
     }
   ) {
     transportCategory.value = cat;
+
     if (cat === 'ÖPNV') {
       transportType.value = selectedTransitType.value || 'Zug';
       callbacks?.onÖpnvSelected?.();
@@ -46,6 +49,7 @@ export function useLegTransportMode(options: UseLegTransportModeOptions) {
 
   function selectTransit(val: string) {
     selectedTransitType.value = val;
+
     if (transportCategory.value === 'ÖPNV') {
       transportType.value = val;
     }

@@ -47,6 +47,7 @@ const activePlaceholder = computed(() => {
   if (phrases.value.length > 0 && !isFocused.value && !props.modelValue) {
     return animatedPlaceholder.value;
   }
+
   return props.placeholder;
 });
 
@@ -62,7 +63,11 @@ function handleBlur(event: FocusEvent) {
 
 function onDropdownScroll(e: Event) {
   const el = e.target as HTMLElement;
-  if (!el) return;
+
+  if (!el) {
+    return;
+  }
+
   if (el.scrollHeight - el.scrollTop - el.clientHeight < 36) {
     if (props.hasMore && !props.isLoadingMore && !props.isSearching) {
       emit('loadMore');

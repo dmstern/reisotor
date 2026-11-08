@@ -13,7 +13,10 @@ describe('trips.packing_category_required Migration', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('backfills existing trips (created before this column existed) to packing_category_required = 1', async () => {

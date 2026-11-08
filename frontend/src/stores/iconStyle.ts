@@ -66,12 +66,14 @@ function sanitizePerGroup<T extends string>(
 ): Record<ConfigurableIconGroup, T> {
   const parsed = (value ?? {}) as Partial<Record<ConfigurableIconGroup, unknown>>;
   const result = {} as Record<ConfigurableIconGroup, T>;
+
   for (const { value: group } of ICON_GROUP_OPTIONS) {
     const candidate = parsed[group];
     result[group] = validOptions.some((o) => o.value === candidate)
       ? (candidate as T)
       : defaults[group];
   }
+
   return result;
 }
 
@@ -129,15 +131,25 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
   // wiederholten Aufrufen, ein zwischenzeitlich lokal geänderter Zustand soll dadurch nicht
   // überschrieben werden.
   async function load() {
-    if (loaded.value) return;
+    if (loaded.value) {
+      return;
+    }
+
     try {
       const stored = await api.get<Partial<StoredIconSettings>>('/users/me/icon-settings');
       groups.value = sanitizePerGroup(stored.groups, ICON_STYLE_OPTIONS, DEFAULT_GROUPS);
-      if (typeof stored.navColored === 'boolean') navColoredRaw.value = stored.navColored;
-      if (typeof stored.colorizeWeather === 'boolean')
+
+      if (typeof stored.navColored === 'boolean') {
+        navColoredRaw.value = stored.navColored;
+      }
+
+      if (typeof stored.colorizeWeather === 'boolean') {
         colorizeWeatherRaw.value = stored.colorizeWeather;
-      if (typeof stored.colorizeCategories === 'boolean')
+      }
+
+      if (typeof stored.colorizeCategories === 'boolean') {
         colorizeCategoriesRaw.value = stored.colorizeCategories;
+      }
     } catch {
       // Netzwerkfehler/offline: bei den lokalen Defaults bleiben, nächster load()-Aufruf (z. B.
       // nächster App-Start) versucht es erneut.
@@ -149,7 +161,10 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
   // 'formFields'/'actions' sind seit #168 nicht mehr konfigurierbar - dort immer SVG erzwingen,
   // unabhängig davon, was ggf. noch aus einem alten gespeicherten Blob im Store steht.
   function styleForGroup(group: IconGroup): IconStyle {
-    if (group === 'formFields' || group === 'actions') return FORCED_STYLE;
+    if (group === 'formFields' || group === 'actions') {
+      return FORCED_STYLE;
+    }
+
     return groups.value[group];
   }
 
@@ -160,7 +175,11 @@ export const useIconStyleStore = defineStore('iconStyle', () => {
 
   function setAllGroups(value: IconStyle) {
     const next = {} as Record<ConfigurableIconGroup, IconStyle>;
-    for (const { value: group } of ICON_GROUP_OPTIONS) next[group] = value;
+
+    for (const { value: group } of ICON_GROUP_OPTIONS) {
+      next[group] = value;
+    }
+
     groups.value = next;
     persist();
   }

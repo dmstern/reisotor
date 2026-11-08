@@ -38,15 +38,36 @@ const TYPE_ICONS: Record<string, string> = {
 };
 
 export function travelTypeIcon(type: string | null, fallback = '🎫'): string {
-  if (!type) return fallback;
-  if (TYPE_ICONS[type]) return TYPE_ICONS[type];
+  if (!type) {
+    return fallback;
+  }
+
+  if (TYPE_ICONS[type]) {
+    return TYPE_ICONS[type];
+  }
+
   const lower = type.toLowerCase();
-  if (lower === 'zu fuß' || lower === 'zu fuss') return TYPE_ICONS['zu Fuß'];
-  if (lower === 'fahrrad') return TYPE_ICONS.Fahrrad;
-  if (lower === 'straßenbahn' || lower === 'strassenbahn' || lower === 'tram')
+
+  if (lower === 'zu fuß' || lower === 'zu fuss') {
+    return TYPE_ICONS['zu Fuß'];
+  }
+
+  if (lower === 'fahrrad') {
+    return TYPE_ICONS.Fahrrad;
+  }
+
+  if (lower === 'straßenbahn' || lower === 'strassenbahn' || lower === 'tram') {
     return TYPE_ICONS.Straßenbahn;
-  if (lower === 'u-bahn' || lower === 'ubahn' || lower === 'metro') return TYPE_ICONS['U-Bahn'];
-  if (lower === 'öpnv') return TYPE_ICONS.ÖPNV;
+  }
+
+  if (lower === 'u-bahn' || lower === 'ubahn' || lower === 'metro') {
+    return TYPE_ICONS['U-Bahn'];
+  }
+
+  if (lower === 'öpnv') {
+    return TYPE_ICONS.ÖPNV;
+  }
+
   return fallback;
 }
 
@@ -82,14 +103,35 @@ export function travelTypeIconDef(
   type: string | null,
   fallback: IconDef = FALLBACK_ICON_DEF
 ): IconDef {
-  if (!type) return fallback;
-  if (TYPE_ICON_DEFS[type]) return TYPE_ICON_DEFS[type];
+  if (!type) {
+    return fallback;
+  }
+
+  if (TYPE_ICON_DEFS[type]) {
+    return TYPE_ICON_DEFS[type];
+  }
+
   const lower = type.toLowerCase();
-  if (lower === 'zu fuß' || lower === 'zu fuss') return TYPE_ICON_DEFS['zu Fuß'];
-  if (lower === 'fahrrad') return TYPE_ICON_DEFS.Fahrrad;
-  if (lower === 'straßenbahn' || lower === 'strassenbahn' || lower === 'tram')
+
+  if (lower === 'zu fuß' || lower === 'zu fuss') {
+    return TYPE_ICON_DEFS['zu Fuß'];
+  }
+
+  if (lower === 'fahrrad') {
+    return TYPE_ICON_DEFS.Fahrrad;
+  }
+
+  if (lower === 'straßenbahn' || lower === 'strassenbahn' || lower === 'tram') {
     return TYPE_ICON_DEFS.Straßenbahn;
-  if (lower === 'u-bahn' || lower === 'ubahn' || lower === 'metro') return TYPE_ICON_DEFS['U-Bahn'];
-  if (lower === 'öpnv') return TYPE_ICON_DEFS.ÖPNV;
+  }
+
+  if (lower === 'u-bahn' || lower === 'ubahn' || lower === 'metro') {
+    return TYPE_ICON_DEFS['U-Bahn'];
+  }
+
+  if (lower === 'öpnv') {
+    return TYPE_ICON_DEFS.ÖPNV;
+  }
+
   return fallback;
 }

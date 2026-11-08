@@ -31,7 +31,10 @@ export const ApiErrorModal: Story = {
           context: 'Tagebucheintrag konnte nicht gespeichert werden',
           silent: true,
         });
-        if (captured) openErrorModal(captured);
+
+        if (captured) {
+          openErrorModal(captured);
+        }
       }
 
       function triggerToastFlow() {
@@ -72,7 +75,10 @@ export const RuntimeAndSyncErrors: Story = {
         const captured = notifyError(err, {
           componentInfo: 'MapView · render',
         });
-        if (captured) openErrorModal(captured);
+
+        if (captured) {
+          openErrorModal(captured);
+        }
       }
 
       function triggerOutboxConflict() {
@@ -91,7 +97,10 @@ export const RuntimeAndSyncErrors: Story = {
           },
           err
         );
-        if (captured) openErrorModal(captured);
+
+        if (captured) {
+          openErrorModal(captured);
+        }
       }
 
       return { triggerRuntimeError, triggerOutboxConflict };

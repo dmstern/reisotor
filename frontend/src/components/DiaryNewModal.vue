@@ -117,6 +117,7 @@ function handleUploadClick() {
     openAccountTierModal('uploads');
     return;
   }
+
   fileInputRef.value?.click();
 }
 </script>

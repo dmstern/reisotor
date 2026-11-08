@@ -32,6 +32,7 @@ function handleClick(ev: MouseEvent) {
     ev.stopPropagation();
     ev.preventDefault();
   }
+
   openAccountTierModal(props.feature);
   emit('click', ev);
 }

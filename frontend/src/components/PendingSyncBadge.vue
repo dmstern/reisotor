@@ -7,6 +7,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { useConnectivityStore } from '../stores/connectivity';
 
 let connectivity: ReturnType<typeof useConnectivityStore> | null = null;
+
 try {
   connectivity = useConnectivityStore();
 } catch {

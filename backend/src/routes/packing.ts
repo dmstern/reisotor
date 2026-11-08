@@ -40,8 +40,14 @@ function categoryRequired(tripId: number): boolean {
 
 export const packingRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/packing', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return db
       .prepare(
         'SELECT * FROM packing_items WHERE trip_id = ? AND deleted_at IS NULL ORDER BY category, subcategory, label'
@@ -51,10 +57,15 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: PackingBody }>('/packing', async (req, reply) => {
     const { trip_id, category, subcategory, label, owner_id } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     if (!category?.trim() && categoryRequired(trip_id)) {
       return reply.code(400).send({ error: 'Kategorie erforderlich' });
     }
+
     const { quantity, laidOut, packed } = clampCounts(
       req.body.quantity,
       req.body.laid_out_count,
@@ -90,10 +101,17 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
     const existingItem = db
       .prepare('SELECT trip_id, category FROM packing_items WHERE id = ?')
       .get(req.params.id) as { trip_id: number; category: string | null } | undefined;
-    if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
+
+    if (!existingItem) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) {
+      return;
+    }
 
     const { category, subcategory, label, owner_id } = req.body;
+
     // Nur blockieren, wenn eine zuvor gesetzte Kategorie jetzt geleert würde - ein bereits
     // kategorieloser Gegenstand (z. B. aus der Zeit vor dieser Einstellung) darf weiterhin normal
     // aktualisiert werden (etwa nur den Pack-Status per Klick ändern), ohne dafür rückwirkend eine
@@ -105,6 +123,7 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
     ) {
       return reply.code(400).send({ error: 'Kategorie erforderlich' });
     }
+
     const { quantity, laidOut, packed } = clampCounts(
       req.body.quantity,
       req.body.laid_out_count,
@@ -126,7 +145,11 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
         owner_id ?? null,
         req.params.id
       );
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     recordActivity(
       existingItem.trip_id,
       'packing',
@@ -143,13 +166,23 @@ export const packingRoutes: FastifyPluginAsync = async (app) => {
     const existingItem = db
       .prepare('SELECT trip_id FROM packing_items WHERE id = ?')
       .get(req.params.id) as { trip_id: number } | undefined;
-    if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
+
+    if (!existingItem) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) {
+      return;
+    }
 
     const result = db
       .prepare('UPDATE packing_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL')
       .run(new Date().toISOString(), req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     recordActivity(
       existingItem.trip_id,
       'packing',

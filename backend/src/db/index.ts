@@ -18,6 +18,7 @@ db.pragma('foreign_keys = ON');
 const hasOldTripTable = db
   .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'trip'")
   .get();
+
 if (hasOldTripTable) {
   db.exec('ALTER TABLE trip RENAME TO trips');
 }
@@ -370,6 +371,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 // "Datenmodell-Änderungen (DB-Migrationen)", für den vollständigen Check.
 function ensureColumn(table: string, column: string, definition: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+
   if (!existing.some((c) => c.name === column)) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
@@ -377,6 +379,7 @@ function ensureColumn(table: string, column: string, definition: string) {
 
 function dropColumnIfExists(table: string, column: string) {
   const existing = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+
   if (existing.some((c) => c.name === column)) {
     try {
       db.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
@@ -426,6 +429,7 @@ db.exec(`
     UNIQUE(trip_id, user_id)
   );
 `);
+
 if (!hadTripMembersTable) {
   const allTripsForMembershipBackfill = db.prepare('SELECT id FROM trips').all() as {
     id: number;
@@ -437,6 +441,7 @@ if (!hadTripMembersTable) {
     'INSERT OR IGNORE INTO trip_members (trip_id, user_id, created_at) VALUES (?, ?, ?)'
   );
   const membershipBackfillNow = new Date().toISOString();
+
   for (const trip of allTripsForMembershipBackfill) {
     for (const user of allUsersForMembershipBackfill) {
       insertBackfillMembership.run(trip.id, user.id, membershipBackfillNow);
@@ -471,7 +476,10 @@ ensureColumn('trip_categories', 'default_name', 'TEXT');
   const pendingRows = db
     .prepare('SELECT id, type, name FROM trip_categories WHERE default_name IS NULL')
     .all() as { id: number; type: string; name: string }[];
-  if (pendingRows.length === 0) return;
+
+  if (pendingRows.length === 0) {
+    return;
+  }
 
   const updateStmt = db.prepare('UPDATE trip_categories SET default_name = ? WHERE id = ?');
   const tx = db.transaction(() => {
@@ -480,12 +488,15 @@ ensureColumn('trip_categories', 'default_name', 'TEXT');
       const trimmedLower = row.name.trim().toLowerCase();
       // 1. Exakter Match
       const exactMatch = standards.find((s) => s.toLowerCase() === trimmedLower);
+
       if (exactMatch) {
         updateStmt.run(exactMatch, row.id);
         continue;
       }
+
       // 2. Präfix-Match (z. B. "Flughafennnnn" beginnt mit "Flughafen", "Aktivitätsbk" beginnt mit "Aktivität")
       const prefixMatch = standards.find((s) => trimmedLower.startsWith(s.toLowerCase()));
+
       if (prefixMatch) {
         updateStmt.run(prefixMatch, row.id);
       }
@@ -562,6 +573,7 @@ ensureColumn('packing_items', 'subcategory', 'TEXT');
 ensureColumn('packing_items', 'quantity', 'INTEGER NOT NULL DEFAULT 1');
 ensureColumn('packing_items', 'laid_out_count', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('packing_items', 'packed_count', 'INTEGER NOT NULL DEFAULT 0');
+
 // Backfill + Ablösung des alten einfachen checked-Flags: bereits abgehakte Gegenstände gelten ab
 // sofort als vollständig eingepackt (und damit auch rausgelegt), statt ihren Fortschritt beim
 // Umstieg auf das neue Modell zu verlieren.
@@ -572,7 +584,9 @@ if (hasColumn('packing_items', 'checked')) {
   );
   dropColumnIfExists('packing_items', 'checked');
 }
+
 ensureColumn('trips', 'image_url', 'TEXT');
+
 // #176: travel_items' Spalten werden nicht mehr per ensureColumn gepflegt - die Tabelle wird nicht
 // mehr neu angelegt (siehe Kommentar bei der entfernten CREATE TABLE weiter oben) und nie mehr
 // beschrieben (routes/travel.ts entfällt). Eine auf einer bestehenden DB noch vorhandene
@@ -641,10 +655,12 @@ ensureColumn('spots', 'budget_expense_id', 'INTEGER REFERENCES budget_items(id)'
 // Verworfen-Status entfällt: Spots bekommen stattdessen Likes/Kommentare (spot_likes/
 // spot_comments) und werden danach sortiert/gruppiert statt nach aktiv/verworfen.
 dropColumnIfExists('spots', 'discarded');
+
 if (hasColumn('spots', 'name')) {
   db.exec('UPDATE spots SET title = name WHERE title IS NULL');
   dropColumnIfExists('spots', 'name');
 }
+
 dropColumnIfExists('spots', 'link');
 
 // trip_id auf allen Inhalts-Tabellen: ordnet jede Zeile einem Urlaub zu. ON DELETE CASCADE
@@ -668,6 +684,7 @@ for (const table of TRIP_SCOPED_TABLES) {
 // jeweils ersten/ältesten Urlaub zuordnen, damit keine verwaisten Daten entstehen.
 const firstTrip = db.prepare('SELECT id FROM trips ORDER BY id LIMIT 1').get() as
   { id: number } | undefined;
+
 if (firstTrip) {
   for (const table of TRIP_SCOPED_TABLES) {
     db.prepare(`UPDATE ${table} SET trip_id = ? WHERE trip_id IS NULL`).run(firstTrip.id);
@@ -712,9 +729,11 @@ export function ensureDefaultSharedBudget(tripId: number): number {
   const insertAllocation = db.prepare(
     'INSERT OR IGNORE INTO budget_allocations (budget_id, category, amount) VALUES (?, ?, 0)'
   );
+
   for (const category of DEFAULT_BUDGET_CATEGORIES) {
     insertAllocation.run(budgetId, category);
   }
+
   return budgetId;
 }
 
@@ -760,11 +779,14 @@ if (hasTable('budget_targets')) {
         const budgetId = insertBudget.run(target.trip_id, 'Gemeinsames Budget', null)
           .lastInsertRowid as number;
         const tripCategoryTargets = categoryTargets.filter((c) => c.trip_id === target.trip_id);
+
         for (const c of tripCategoryTargets) {
           insertAllocation.run(budgetId, c.category, c.amount);
         }
+
         const allocatedSum = tripCategoryTargets.reduce((s, c) => s + c.amount, 0);
         const remainder = target.amount - allocatedSum;
+
         if (remainder > 0) {
           insertAllocation.run(budgetId, 'Sonstiges', remainder);
         }
@@ -788,6 +810,7 @@ if (hasTable('budget_targets')) {
 // (frisch angelegte Urlaube sowie ggf. eben migrierte Urlaube ohne geteiltes Ziel).
 const allTrips = db.prepare('SELECT id FROM trips').all() as { id: number }[];
 const sharedBudgetIdByTrip = new Map<number, number>();
+
 for (const trip of allTrips) {
   sharedBudgetIdByTrip.set(trip.id, ensureDefaultSharedBudget(trip.id));
 }
@@ -802,9 +825,13 @@ const orphanedAutoExpenses = db
   )
   .all() as { id: number; trip_id: number }[];
 const linkAutoExpense = db.prepare('UPDATE budget_items SET budget_id = ? WHERE id = ?');
+
 for (const row of orphanedAutoExpenses) {
   const budgetId = sharedBudgetIdByTrip.get(row.trip_id);
-  if (budgetId) linkAutoExpense.run(budgetId, row.id);
+
+  if (budgetId) {
+    linkAutoExpense.run(budgetId, row.id);
+  }
 }
 
 // Datei-Anhänge (Tickets/Dokumente, siehe routes/attachments.ts): polymorphe Referenz analog zu
@@ -848,7 +875,10 @@ db.exec(`
  *  referenzierenden Zeilen selbst endgültig verschwinden (Papierkorb-Purge unten, Urlaub-Löschung
  *  in routes/trips.ts), sonst blieben verwaiste Dateien dauerhaft auf der Platte liegen. */
 export function purgeAttachmentsForEntities(domain: string, entityIds: number[]) {
-  if (!entityIds.length) return;
+  if (!entityIds.length) {
+    return;
+  }
+
   const placeholders = entityIds.map(() => '?').join(',');
   const rows = db
     .prepare(`SELECT filename FROM attachments WHERE domain = ? AND entity_id IN (${placeholders})`)
@@ -858,12 +888,14 @@ export function purgeAttachmentsForEntities(domain: string, entityIds: number[])
     ...entityIds
   );
   const deleteUploadStmt = db.prepare('DELETE FROM uploads WHERE filename = ?');
+
   for (const row of rows) {
     try {
       deleteUploadStmt.run(row.filename);
     } catch {
       // Ignorieren falls uploads-Tabelle noch nicht existiert
     }
+
     try {
       fs.unlinkSync(path.join(uploadsDir, row.filename));
     } catch {
@@ -942,6 +974,7 @@ if (hasTable('travel_places')) {
   const insertSpot = db.prepare(
     `INSERT INTO spots (trip_id, title, category, maps_link, lat, lng, is_home) VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
+
   for (const p of places) {
     const result = insertSpot.run(p.trip_id, p.name, p.type, p.maps_link, p.lat, p.lng, p.is_home);
     placeToSpotId.set(p.id, result.lastInsertRowid as number);
@@ -998,6 +1031,7 @@ if (hasTable('travel_places')) {
       to_maps_link, to_lat, to_lng, role, arrival_time, from_place_id, to_place_id, trip_id, deleted_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+
   for (const row of oldItems) {
     const fromPlaceId =
       row.from_place_id != null ? (placeToSpotId.get(row.from_place_id as number) ?? null) : null;
@@ -1033,6 +1067,7 @@ if (hasTable('travel_places')) {
       row.deleted_at
     );
   }
+
   db.exec('DROP TABLE travel_items_migrating');
 
   // station_keys, die bislang auf einen eigenen "travel-place-<id>"-Eintrag zeigten (vorheriger
@@ -1048,10 +1083,14 @@ if (hasTable('travel_places')) {
       )
       .all() as { id: number; station_key: string }[];
     const updateStationKey = db.prepare('UPDATE excursion_spots SET station_key = ? WHERE id = ?');
+
     for (const row of legacyStationRows) {
       const oldPlaceId = Number(row.station_key.slice('travel-place-'.length));
       const newSpotId = placeToSpotId.get(oldPlaceId);
-      if (newSpotId != null) updateStationKey.run(`spot-${newSpotId}`, row.id);
+
+      if (newSpotId != null) {
+        updateStationKey.run(`spot-${newSpotId}`, row.id);
+      }
     }
   }
 
@@ -1090,6 +1129,7 @@ if (hasTable('accommodation')) {
     .prepare('SELECT * FROM accommodation')
     .all() as LegacyAccommodationRow[];
   const accommodationToSpotId = new Map<number, number>();
+
   // Statement nur vorbereiten, wenn tatsächlich Zeilen zu übernehmen sind – accommodation existiert
   // dank CREATE TABLE IF NOT EXISTS oben auf JEDER (auch brandneuen/Test-)DB, meist aber leer; ein
   // vorbereitetes INSERT würde sonst unnötig gegen alle Zielspalten (u. a. spots.note) validiert.
@@ -1100,6 +1140,7 @@ if (hasTable('accommodation')) {
         checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id, deleted_at
       ) VALUES (?, ?, 'Unterkunft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+
     for (const a of accommodations) {
       const result = insertAccommodationSpot.run(
         a.trip_id,
@@ -1138,10 +1179,14 @@ if (hasTable('accommodation')) {
     const updateAccommodationStationKey = db.prepare(
       'UPDATE excursion_spots SET station_key = ? WHERE id = ?'
     );
+
     for (const row of legacyAccommodationStationRows) {
       const oldAccommodationId = Number(row.station_key.slice('accommodation-'.length));
       const newSpotId = accommodationToSpotId.get(oldAccommodationId);
-      if (newSpotId != null) updateAccommodationStationKey.run(`spot-${newSpotId}`, row.id);
+
+      if (newSpotId != null) {
+        updateAccommodationStationKey.run(`spot-${newSpotId}`, row.id);
+      }
     }
   }
 
@@ -1154,9 +1199,13 @@ if (hasTable('accommodation')) {
   const updateAttachmentDomain = db.prepare(
     `UPDATE attachments SET domain = 'spots', entity_id = ? WHERE id = ?`
   );
+
   for (const row of legacyAccommodationAttachmentRows) {
     const newSpotId = accommodationToSpotId.get(row.entity_id);
-    if (newSpotId != null) updateAttachmentDomain.run(newSpotId, row.id);
+
+    if (newSpotId != null) {
+      updateAttachmentDomain.run(newSpotId, row.id);
+    }
   }
 
   db.exec('DROP TABLE accommodation');
@@ -1191,14 +1240,23 @@ if (hasColumn('excursion_spots', 'station_key')) {
     if (stationKey.startsWith('spot-')) {
       return Number(stationKey.slice('spot-'.length));
     }
+
     const isFrom = stationKey.startsWith('travel-from-');
     const isTo = stationKey.startsWith('travel-to-');
-    if (!isFrom && !isTo) return null;
+
+    if (!isFrom && !isTo) {
+      return null;
+    }
+
     const travelId = Number(stationKey.slice((isFrom ? 'travel-from-' : 'travel-to-').length));
     const travelItem = db
       .prepare(`SELECT from_place_id, to_place_id FROM travel_items WHERE id = ?`)
       .get(travelId) as { from_place_id: number | null; to_place_id: number | null } | undefined;
-    if (!travelItem) return null;
+
+    if (!travelItem) {
+      return null;
+    }
+
     return (isFrom ? travelItem.from_place_id : travelItem.to_place_id) ?? null;
   }
 
@@ -1211,6 +1269,7 @@ if (hasColumn('excursion_spots', 'station_key')) {
       position INTEGER NOT NULL DEFAULT 0
     )
   `);
+
   if (legacyRows.length > 0) {
     // Nur vorbereiten, wenn tatsächlich Altzeilen existieren (gleiches Muster wie die
     // Unterkunft-Migration oben) – auf einer frischen DB ohne station_key-Spalte greift dieser
@@ -1219,15 +1278,21 @@ if (hasColumn('excursion_spots', 'station_key')) {
       'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
     );
     const spotExists = db.prepare('SELECT 1 FROM spots WHERE id = ?');
+
     for (const row of legacyRows) {
       const spotId = resolveLegacySpotId(row.station_key);
+
       // Sowohl unauflösbare (s. o.) als auch auf mittlerweile gelöschte Spots zeigende Stationen
       // (alte station_key-Strings hatten keinen SQL-FK, ein Spot-Löschen konnte sie daher als
       // Karteileiche zurücklassen) werden übersprungen statt gegen den neuen FK zu verstoßen.
-      if (spotId == null || !spotExists.get(spotId)) continue;
+      if (spotId == null || !spotExists.get(spotId)) {
+        continue;
+      }
+
       insertSpotLink.run(row.idea_id, spotId, row.position);
     }
   }
+
   db.exec('DROP TABLE excursion_spots_migrating');
 }
 
@@ -1244,16 +1309,21 @@ const ATTACHMENT_DOMAIN_BY_TABLE: Partial<Record<(typeof TRASH_TABLES)[number], 
 };
 
 export function hardDeleteTrashItems(table: (typeof TRASH_TABLES)[number], ids: number[]) {
-  if (!ids.length) return;
+  if (!ids.length) {
+    return;
+  }
 
   const attachmentDomain = ATTACHMENT_DOMAIN_BY_TABLE[table];
+
   if (attachmentDomain) {
     purgeAttachmentsForEntities(attachmentDomain, ids);
+
     if (table === 'ideas') {
       const placeholders = ids.map(() => '?').join(',');
       const legRows = db
         .prepare(`SELECT id FROM excursion_legs WHERE idea_id IN (${placeholders})`)
         .all(...ids) as { id: number }[];
+
       if (legRows.length) {
         purgeAttachmentsForEntities(
           'excursion_legs',
@@ -1277,10 +1347,12 @@ export function hardDeleteTrashItems(table: (typeof TRASH_TABLES)[number], ids: 
 // dauerhaft verwaist auf der Platte liegen.
 export function purgeOldTrash(maxAgeDays = 30) {
   const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+
   for (const table of TRASH_TABLES) {
     const staleRows = db
       .prepare(`SELECT id FROM ${table} WHERE deleted_at IS NOT NULL AND deleted_at < ?`)
       .all(cutoff) as { id: number }[];
+
     if (staleRows.length) {
       hardDeleteTrashItems(
         table,
@@ -1289,6 +1361,7 @@ export function purgeOldTrash(maxAgeDays = 30) {
     }
   }
 }
+
 purgeOldTrash();
 
 // Append-only Aktivitäts-Log (Echtzeit-Sync/Nav-Badges/Push, siehe activity.ts): eine Zeile pro
@@ -1316,6 +1389,7 @@ export function purgeOldActivity(maxAgeDays = 30) {
   const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
   db.prepare('DELETE FROM trip_activity WHERE created_at < ?').run(cutoff);
 }
+
 purgeOldActivity();
 
 // Web-Push-Abonnements (Push-Benachrichtigungen, siehe push.ts): ein Browser/Gerät je Zeile, per
@@ -1458,6 +1532,7 @@ const tripsInfo = db.prepare('PRAGMA table_info(trips)').all() as {
   notnull: number;
 }[];
 const startDateCol = tripsInfo.find((c) => c.name === 'start_date');
+
 if (startDateCol && startDateCol.notnull === 1) {
   db.exec('PRAGMA foreign_keys = OFF');
   db.exec(`
@@ -1544,6 +1619,7 @@ ensureColumn('ideas', 'done', 'INTEGER NOT NULL DEFAULT 0');
 // mehrere Tage eingeplant ist und an verschiedenen Tagen besucht/nicht besucht wurde).
 const hadScheduleItemsDone = hasColumn('schedule_items', 'done');
 ensureColumn('schedule_items', 'done', 'INTEGER NOT NULL DEFAULT 0');
+
 if (!hadScheduleItemsDone) {
   db.exec(`
     UPDATE schedule_items
@@ -1639,6 +1715,7 @@ ensureColumn('users', 'must_change_password', 'INTEGER NOT NULL DEFAULT 0');
 // bekommt die erste angelegte Person (MIN(id)) automatisch Admin-Rechte, damit die Instanz
 // nicht ohne Administrator bleibt.
 const hasAdmin = db.prepare('SELECT 1 FROM users WHERE is_admin = 1 LIMIT 1').get();
+
 if (!hasAdmin) {
   db.exec('UPDATE users SET is_admin = 1 WHERE id = (SELECT MIN(id) FROM users)');
 }
@@ -1767,6 +1844,7 @@ if (hasTable('travel_items')) {
         ).lastInsertRowid as number;
 
         let position = 0;
+
         const addStation = (
           placeId: number | null,
           location: string | null,
@@ -1780,10 +1858,15 @@ if (hasTable('travel_items')) {
               ? (insertSpot.run(row.trip_id, location, mapsLink, lat, lng)
                   .lastInsertRowid as number)
               : null);
-          if (spotId == null) return;
+
+          if (spotId == null) {
+            return;
+          }
+
           insertStation.run(ideaId, spotId, position);
           position += 1;
         };
+
         addStation(
           row.from_place_id,
           row.from_location,
@@ -1807,6 +1890,7 @@ if (hasTable('travel_items')) {
       if (row.budget_expense_id) {
         const idea = getIdeaBudgetExpense.get(ideaId) as
           { budget_expense_id: number | null } | undefined;
+
         if (idea && idea.budget_expense_id == null) {
           setIdeaBudgetExpense.run(row.budget_expense_id, ideaId);
         }
@@ -1819,15 +1903,20 @@ if (hasTable('travel_items')) {
     const travelAttachments = db
       .prepare(`SELECT id, entity_id FROM attachments WHERE domain = 'travel'`)
       .all() as { id: number; entity_id: number }[];
+
     if (travelAttachments.length > 0) {
       const findMigratedIdea = db.prepare('SELECT migrated_idea_id FROM travel_items WHERE id = ?');
       const moveAttachment = db.prepare(
         `UPDATE attachments SET domain = 'ideas', entity_id = ? WHERE id = ?`
       );
+
       for (const a of travelAttachments) {
         const ti = findMigratedIdea.get(a.entity_id) as
           { migrated_idea_id: number | null } | undefined;
-        if (ti?.migrated_idea_id != null) moveAttachment.run(ti.migrated_idea_id, a.id);
+
+        if (ti?.migrated_idea_id != null) {
+          moveAttachment.run(ti.migrated_idea_id, a.id);
+        }
       }
     }
   }
@@ -1877,6 +1966,7 @@ if (ideasWithTransport.length > 0) {
 
   for (const idea of ideasWithTransport) {
     const spots = selectSpotsStmt.all(idea.id) as { spot_id: number }[];
+
     if (spots.length >= 2) {
       const validUserId =
         idea.paid_by_user_id && checkUserExists.get(idea.paid_by_user_id)
@@ -1905,6 +1995,7 @@ if (ideasWithTransport.length > 0) {
     }
   }
 }
+
 // Manueller Reiseabschnitt für ToDos (vor/während/nach der Reise) ergänzend zum Fälligkeitsdatum (#306ecf6)
 ensureColumn('todo_items', 'period', 'TEXT');
 // Kommentar-Bearbeitung: updated_at für alle 4 Kommentar-Tabellen (spot_comments,
@@ -2112,11 +2203,14 @@ try {
     for (const entry of diaryEntriesWithImages) {
       try {
         const parsed = JSON.parse(entry.images);
+
         if (Array.isArray(parsed)) {
           for (const img of parsed) {
             const url = typeof img === 'string' ? img : img?.url;
+
             if (typeof url === 'string' && url.startsWith('/api/uploads/')) {
               const filename = url.slice('/api/uploads/'.length);
+
               if (filename) {
                 insertUploadStmt.run(filename, entry.trip_id, entry.author_id);
               }
@@ -2154,9 +2248,11 @@ export function clearDatabase(
     for (const { name } of tables) {
       database.prepare(`DELETE FROM "${name}"`).run();
     }
+
     const hasSeq = database
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence'")
       .get();
+
     if (hasSeq) {
       database.prepare('DELETE FROM sqlite_sequence').run();
     }

@@ -42,7 +42,10 @@ const isFocused = ref(false);
 const editorContainerRef = ref<HTMLElement | null>(null);
 
 const hasContent = computed(() => {
-  if (!props.modelValue) return false;
+  if (!props.modelValue) {
+    return false;
+  }
+
   const stripped = props.modelValue.replace(/<[^>]+>/g, '').trim();
   return stripped.length > 0;
 });
@@ -61,9 +64,11 @@ function onFocusIn() {
 
 function onFocusOut(event: FocusEvent) {
   const related = event.relatedTarget as Node | null;
+
   if (!editorContainerRef.value?.contains(related)) {
     isFocused.value = false;
     emit('blur');
+
     if (props.expandable && !hasContent.value) {
       isExpanded.value = false;
     }
@@ -97,10 +102,13 @@ const editor = useEditor({
   },
   onBlur: ({ event }) => {
     const relatedTarget = (event as FocusEvent)?.relatedTarget as Node | null;
+
     if (editorContainerRef.value?.contains(relatedTarget)) {
       return;
     }
+
     isFocused.value = false;
+
     if (props.expandable && !hasContent.value) {
       isExpanded.value = false;
     }
@@ -122,8 +130,13 @@ watch(
       syncingFromEditor = false;
       return;
     }
-    if (!editor.value || editor.value.getHTML() === value) return;
+
+    if (!editor.value || editor.value.getHTML() === value) {
+      return;
+    }
+
     editor.value.commands.setContent(value, { emitUpdate: false });
+
     if (!hasContent.value && !isFocused.value) {
       isExpanded.value = false;
     }

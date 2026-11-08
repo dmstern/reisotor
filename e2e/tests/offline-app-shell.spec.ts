@@ -30,18 +30,24 @@ let previewOutput = '';
 async function waitForPreviewServer(): Promise<void> {
   const deadline = Date.now() + 30_000;
   let lastError: unknown;
+
   while (Date.now() < deadline) {
     try {
       const res = await fetch(previewUrl);
-      if (res.ok) return;
+
+      if (res.ok) {
+        return;
+      }
     } catch (err) {
       // Server noch nicht bereit - weiter pollen, aber den letzten Fehler für eine aussagekräftige
       // Timeout-Meldung merken (z. B. um ECONNREFUSED von einem DNS-/Adressfamilien-Problem
       // unterscheiden zu können, statt nur "nicht erreichbar" zu wissen).
       lastError = err;
     }
+
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
+
   throw new Error(
     `vite preview auf ${previewUrl} nicht innerhalb von 30s erreichbar geworden. Letzter Fehler: ${String(lastError)}. Ausgabe:\n${previewOutput}`
   );
@@ -120,6 +126,7 @@ test.describe.serial('Offline-App-Shell (Workbox-Precaching)', () => {
 
     const context = await newContextWithReducedMotion(browser, { storageState: authFile });
     const page = await context.newPage();
+
     try {
       await page.goto(previewUrl + '/');
       await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true));

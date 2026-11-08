@@ -64,6 +64,7 @@ function tripIdForEntity(domain: AttachmentDomain, entityId: number): number | n
       .get(entityId) as { trip_id: number } | undefined;
     return row?.trip_id ?? null;
   }
+
   const row = db
     .prepare(`SELECT trip_id FROM ${DOMAIN_TABLE[domain]} WHERE id = ?`)
     .get(entityId) as { trip_id: number } | undefined;
@@ -93,12 +94,18 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
     '/attachments',
     async (req, reply) => {
       const { domain, entity_id, trip_id } = req.query;
+
       if (trip_id != null && !domain && !entity_id) {
         const tripId = Number(trip_id);
+
         if (Number.isNaN(tripId)) {
           return reply.code(400).send({ error: 'Ungültige trip_id' });
         }
-        if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+        if (!requireTripMember(reply, tripId, req.session.userId)) {
+          return;
+        }
+
         return db
           .prepare('SELECT * FROM attachments WHERE trip_id = ? ORDER BY created_at ASC')
           .all(tripId)
@@ -108,9 +115,16 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
       if (!domain || !entity_id || !isAttachmentDomain(domain)) {
         return reply.code(400).send({ error: 'domain und entity_id erforderlich' });
       }
+
       const tripId = tripIdForEntity(domain, Number(entity_id));
-      if (tripId == null) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+      if (tripId == null) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, tripId, req.session.userId)) {
+        return;
+      }
 
       return db
         .prepare(
@@ -123,24 +137,40 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Body: UploadBody }>('/attachments', async (req, reply) => {
     const { domain, entity_id, filename } = req.body ?? {};
+
     if (!domain || !entity_id || !isAttachmentDomain(domain)) {
       return reply.code(400).send({ error: 'domain und entity_id erforderlich' });
     }
+
     const tripId = tripIdForEntity(domain, entity_id);
-    if (tripId == null) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (tripId == null) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
+
     if (isUserRestricted(req.session.userId)) {
       return reply.code(403).send({ error: 'Eingeschränkter Modus - Kein Datei-Upload möglich' });
     }
 
     const match = /^data:([a-z0-9.+-]+\/[a-z0-9.+-]+);base64,(.+)$/i.exec(req.body?.data ?? '');
-    if (!match) return reply.code(400).send({ error: 'Ungültiges Dateiformat' });
+
+    if (!match) {
+      return reply.code(400).send({ error: 'Ungültiges Dateiformat' });
+    }
 
     const [, mimeType, base64] = match;
     const extension = ALLOWED_MIME_TYPES[mimeType];
-    if (!extension) return reply.code(400).send({ error: 'Nicht unterstützter Dateityp' });
+
+    if (!extension) {
+      return reply.code(400).send({ error: 'Nicht unterstützter Dateityp' });
+    }
 
     const buffer = Buffer.from(base64, 'base64');
+
     if (buffer.byteLength > MAX_ATTACHMENT_BYTES) {
       return reply.code(413).send({ error: 'Datei ist zu groß (max. 15 MB)' });
     }
@@ -176,8 +206,14 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { id: string } }>('/attachments/:id/download', async (req, reply) => {
     const existing = db.prepare('SELECT * FROM attachments WHERE id = ?').get(req.params.id) as
       AttachmentRow | undefined;
-    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) {
+      return;
+    }
 
     const safeAsciiName = existing.original_name.replace(/["\\]/g, '_');
     const encodedName = encodeURIComponent(existing.original_name);
@@ -194,8 +230,14 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/attachments/:id', async (req, reply) => {
     const existing = db.prepare('SELECT * FROM attachments WHERE id = ?').get(req.params.id) as
       AttachmentRow | undefined;
-    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) {
+      return;
+    }
 
     db.prepare('DELETE FROM attachments WHERE id = ?').run(req.params.id);
     deleteUpload(existing.filename);

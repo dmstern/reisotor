@@ -30,7 +30,10 @@ const displayLabel = computed(() => {
 });
 
 const resolvedIcon = computed<IconDef | undefined>(() => {
-  if (!props.icon) return undefined;
+  if (!props.icon) {
+    return undefined;
+  }
+
   return typeof props.icon === 'string' ? FORM_FIELD_ICONS[props.icon] : props.icon;
 });
 

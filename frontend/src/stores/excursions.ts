@@ -42,11 +42,13 @@ export const useExcursionsStore = defineStore('excursions', () => {
 
   async function load() {
     const tripId = tripStore.currentTripId;
+
     if (tripId == null) {
       excursions.value = [];
       loaded.value = false;
       return;
     }
+
     excursions.value = await api.get<Excursion[]>(`/ideas?trip_id=${tripId}`);
     loaded.value = true;
   }
@@ -69,11 +71,13 @@ export const useExcursionsStore = defineStore('excursions', () => {
   async function update(id: number, body: ExcursionFormData) {
     const updated = await api.put<Excursion>(`/ideas/${id}`, body);
     const idx = excursions.value.findIndex((e) => e.id === id);
+
     if (idx !== -1) {
       const next = [...excursions.value];
       next[idx] = updated;
       excursions.value = next;
     }
+
     await useScheduleStore().load();
     return updated;
   }
@@ -99,7 +103,11 @@ export const useExcursionsStore = defineStore('excursions', () => {
    *  bei PUT /ideas immer alle Felder, ein Weglassen hier würde sie sonst stillschweigend löschen. */
   async function setDate(id: number, date: string | null) {
     const existing = excursions.value.find((e) => e.id === id);
-    if (!existing) return;
+
+    if (!existing) {
+      return;
+    }
+
     await update(id, {
       title: existing.title,
       image_url: existing.image_url ?? undefined,
@@ -126,6 +134,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
   async function setDone(id: number, done: boolean) {
     const result = await api.post<{ done: boolean }>(`/ideas/${id}/done`, { done });
     const idx = excursions.value.findIndex((e) => e.id === id);
+
     if (idx !== -1) {
       const next = [...excursions.value];
       next[idx] = { ...next[idx], done: result.done ? 1 : 0 };

@@ -28,6 +28,7 @@ describe('fetchRegionInfo', () => {
               ]),
           });
         }
+
         return Promise.reject(new Error('unexpected URL in test: ' + url));
       })
     );
@@ -61,12 +62,14 @@ describe('fetchRegionInfo', () => {
               ]),
           });
         }
+
         if (url.includes('open.er-api.com')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ result: 'success', rates: { EUR: 0.92 } }),
           });
         }
+
         return Promise.reject(new Error('unexpected URL in test: ' + url));
       })
     );
@@ -115,6 +118,7 @@ describe('fetchRegionInfo', () => {
           json: () => Promise.resolve(mockAAData),
         });
       }
+
       return Promise.resolve({ ok: false, status: 404 });
     });
     vi.stubGlobal('fetch', fetchSpy);
@@ -148,6 +152,7 @@ describe('fetchRegionInfo', () => {
             json: () => Promise.resolve({ response: {} }),
           });
         }
+
         return Promise.resolve({ ok: false, status: 404 });
       })
     );
@@ -174,6 +179,7 @@ describe('fetchRegionInfo', () => {
               ]),
           });
         }
+
         if (url.includes('auswaertiges-amt.de')) {
           aaCalls++;
           const warning = aaCalls > 1;
@@ -192,6 +198,7 @@ describe('fetchRegionInfo', () => {
               }),
           });
         }
+
         return Promise.resolve({ ok: false, status: 404 });
       })
     );

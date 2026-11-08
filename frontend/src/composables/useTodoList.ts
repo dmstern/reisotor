@@ -31,6 +31,7 @@ export function useTodoList(tripIdOverride?: number) {
 
   let route: ReturnType<typeof useRoute> | null = null;
   let router: ReturnType<typeof useRouter> | null = null;
+
   if (getCurrentInstance()) {
     try {
       route = useRoute();
@@ -43,6 +44,7 @@ export function useTodoList(tripIdOverride?: number) {
   function clearFocusedTodo() {
     if (focusedTodoId.value != null) {
       focusedTodoId.value = null;
+
       if (route && router && route.hash.startsWith('#todo-')) {
         router.replace({ path: route.path, query: route.query, hash: '' });
       }
@@ -67,10 +69,15 @@ export function useTodoList(tripIdOverride?: number) {
   if (getCurrentInstance()) {
     onMounted(() => {
       highlightedIds.value = liveSync.markSeen('todos');
+
       if (route?.hash) {
         const hashId = hashHighlightId(route.hash, 'todo');
-        if (hashId != null) focusedTodoId.value = hashId;
+
+        if (hashId != null) {
+          focusedTodoId.value = hashId;
+        }
       }
+
       load();
     });
   }
@@ -83,8 +90,12 @@ export function useTodoList(tripIdOverride?: number) {
           focusedTodoId.value = null;
           return;
         }
+
         const hashId = hashHighlightId(newHash, 'todo');
-        if (hashId != null) focusedTodoId.value = hashId;
+
+        if (hashId != null) {
+          focusedTodoId.value = hashId;
+        }
       }
     );
   }
@@ -111,7 +122,10 @@ export function useTodoList(tripIdOverride?: number) {
   }
 
   async function addItem(input: TodoFormInput): Promise<TodoItem | null> {
-    if (!input.title.trim()) return null;
+    if (!input.title.trim()) {
+      return null;
+    }
+
     const created = await api.post<TodoItem>('/todos', toBody(input));
     items.value.push(created);
     return created;
@@ -125,7 +139,10 @@ export function useTodoList(tripIdOverride?: number) {
     period?: Period | '';
     fallbackAssignee?: string;
   }): Promise<TodoItem | null> {
-    if (!params.label.trim()) return null;
+    if (!params.label.trim()) {
+      return null;
+    }
+
     const assigned_to_user_id =
       params.groupBy === 'assignee'
         ? params.groupKey.startsWith('user-')
@@ -166,7 +183,11 @@ export function useTodoList(tripIdOverride?: number) {
       done: !item.done,
     });
     const idx = items.value.findIndex((i) => i.id === item.id);
-    if (idx !== -1) items.value[idx] = updated;
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
     return updated;
   }
 
@@ -176,7 +197,11 @@ export function useTodoList(tripIdOverride?: number) {
       done,
     });
     const idx = items.value.findIndex((i) => i.id === updated.id);
-    if (idx !== -1) items.value[idx] = updated;
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
     return updated;
   }
 

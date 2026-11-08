@@ -9,7 +9,10 @@ import type { Budget } from '../api/types';
 vi.mock('../api/client', () => ({
   api: {
     get: vi.fn().mockImplementation((url: string) => {
-      if (url.includes('/categories')) return Promise.resolve({ categories: [] });
+      if (url.includes('/categories')) {
+        return Promise.resolve({ categories: [] });
+      }
+
       return Promise.resolve([]);
     }),
     post: vi.fn().mockResolvedValue({}),

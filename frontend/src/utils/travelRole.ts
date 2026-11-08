@@ -81,5 +81,6 @@ export function getTourRoleIconDef(role?: IdeaRole | null): IconDef {
   if (role && TRAVEL_ROLE_META[role]) {
     return TRAVEL_ROLE_META[role].tabler;
   }
+
   return SECTION_ICON_DEFS.excursions;
 }

@@ -121,6 +121,7 @@ describe('TrackPlayback & Geometry Adversarial Stress Tests', () => {
       // 50 irregular GPS pings over 2 hours
       const irregularPoints: TrackPoint[] = [];
       const startTime = new Date('2026-09-26T08:00:00.000Z').getTime();
+
       for (let i = 0; i < 50; i++) {
         // non-uniform time delta between 30s and 300s
         const tOffset = i * 140_000 + (i % 3) * 20_000;
@@ -156,6 +157,7 @@ describe('TrackPlayback & Geometry Adversarial Stress Tests', () => {
           expect(pos!.lat).toBeCloseTo(irregularPoints[0].lat, 8);
           expect(pos!.lng).toBeCloseTo(irregularPoints[0].lng, 8);
         }
+
         if (progress === 1) {
           expect(pos!.lat).toBeCloseTo(irregularPoints[irregularPoints.length - 1].lat, 8);
           expect(pos!.lng).toBeCloseTo(irregularPoints[irregularPoints.length - 1].lng, 8);

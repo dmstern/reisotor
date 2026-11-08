@@ -31,7 +31,11 @@ interface CategoryBody {
 
 export function getCategoryUsageCount(tripId: number, type: string, name: string): number {
   const trimmed = name?.trim();
-  if (!trimmed) return 0;
+
+  if (!trimmed) {
+    return 0;
+  }
+
   if (type === 'expense') {
     const expenseCount =
       (
@@ -71,6 +75,7 @@ export function getCategoryUsageCount(tripId: number, type: string, name: string
       )?.cnt ?? 0
     );
   }
+
   return 0;
 }
 
@@ -87,7 +92,10 @@ export function ensureTripCategory(
   color?: string | null
 ): void {
   const trimmed = name?.trim();
-  if (!trimmed) return;
+
+  if (!trimmed) {
+    return;
+  }
 
   const existing = db
     .prepare(
@@ -112,17 +120,22 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     Querystring: { type?: string };
   }>('/trips/:tripId/categories', async (req, reply) => {
     const tripId = Number(req.params.tripId);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     const filterType = req.query.type;
 
     // 1. Gespeicherte trip_categories abrufen
     let query = 'SELECT * FROM trip_categories WHERE trip_id = ? AND deleted_at IS NULL';
     const params: unknown[] = [tripId];
+
     if (filterType) {
       query += ' AND type = ?';
       params.push(filterType);
     }
+
     query += ' ORDER BY name COLLATE NOCASE ASC';
 
     const customCategories = db.prepare(query).all(...params) as TripCategoryRow[];
@@ -141,6 +154,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
            GROUP BY category`
         )
         .all(tripId) as { category: string; cnt: number }[];
+
       for (const row of expenseItemRows) {
         expenseUsageMap.set(
           row.category.toLowerCase(),
@@ -157,6 +171,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
            GROUP BY a.category`
         )
         .all(tripId) as { category: string; cnt: number }[];
+
       for (const row of allocationRows) {
         expenseUsageMap.set(
           row.category.toLowerCase(),
@@ -174,6 +189,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
            GROUP BY category`
         )
         .all(tripId) as { category: string; cnt: number }[];
+
       for (const row of spotRows) {
         spotUsageMap.set(
           row.category.toLowerCase(),
@@ -191,6 +207,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
            GROUP BY category`
         )
         .all(tripId) as { category: string; cnt: number }[];
+
       for (const row of packingRows) {
         packingUsageMap.set(
           row.category.toLowerCase(),
@@ -201,8 +218,10 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
 
     // Nutzungszahlen an vorhandene customCategories heften
     const categoryKeySet = new Set<string>();
+
     for (const cat of customCategories) {
       categoryKeySet.add(`${cat.type}:${cat.name.toLowerCase()}`);
+
       if (cat.type === 'expense') {
         cat.usage_count = expenseUsageMap.get(cat.name.toLowerCase()) ?? 0;
       } else if (cat.type === 'spot') {
@@ -219,29 +238,40 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     function checkImplicit(type: 'expense' | 'spot' | 'packing', map: Map<string, number>) {
       for (const [nameLower, count] of map.entries()) {
         const key = `${type}:${nameLower}`;
+
         if (!categoryKeySet.has(key)) {
           let originalName = nameLower;
+
           if (type === 'expense') {
             const found = db
               .prepare(
                 'SELECT category FROM budget_items WHERE trip_id = ? AND LOWER(category) = ? LIMIT 1'
               )
               .get(tripId, nameLower) as { category: string } | undefined;
-            if (found?.category) originalName = found.category;
+
+            if (found?.category) {
+              originalName = found.category;
+            }
           } else if (type === 'spot') {
             const found = db
               .prepare(
                 'SELECT category FROM spots WHERE trip_id = ? AND LOWER(category) = ? LIMIT 1'
               )
               .get(tripId, nameLower) as { category: string } | undefined;
-            if (found?.category) originalName = found.category;
+
+            if (found?.category) {
+              originalName = found.category;
+            }
           } else if (type === 'packing') {
             const found = db
               .prepare(
                 'SELECT category FROM packing_items WHERE trip_id = ? AND LOWER(category) = ? LIMIT 1'
               )
               .get(tripId, nameLower) as { category: string } | undefined;
-            if (found?.category) originalName = found.category;
+
+            if (found?.category) {
+              originalName = found.category;
+            }
           }
 
           const standardDefault = findStandardCategory(type, originalName);
@@ -281,9 +311,11 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     if (!filterType || filterType === 'expense') {
       checkImplicit('expense', expenseUsageMap);
     }
+
     if (!filterType || filterType === 'spot') {
       checkImplicit('spot', spotUsageMap);
     }
+
     if (!filterType || filterType === 'packing') {
       checkImplicit('packing', packingUsageMap);
     }
@@ -301,9 +333,13 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     Querystring: { type?: string; name?: string };
   }>('/trips/:tripId/categories/usage-items', async (req, reply) => {
     const tripId = Number(req.params.tripId);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     const { type, name } = req.query;
+
     if (!type || !name) {
       return reply.code(400).send({ error: 'type und name sind erforderlich' });
     }
@@ -396,13 +432,18 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     Body: CategoryBody;
   }>('/trips/:tripId/categories', async (req, reply) => {
     const tripId = Number(req.params.tripId);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     const { type, name, icon, emoji, color, default_name, previous_name } = req.body;
     const trimmed = name?.trim();
+
     if (!trimmed) {
       return reply.code(400).send({ error: 'Name ist erforderlich' });
     }
+
     if (!['expense', 'spot', 'packing'].includes(type)) {
       return reply.code(400).send({ error: 'Ungültiger Kategorie-Typ' });
     }
@@ -421,6 +462,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           const budgets = db.prepare('SELECT id FROM budgets WHERE trip_id = ?').all(tripId) as {
             id: number;
           }[];
+
           for (const b of budgets) {
             const targetAlloc = db
               .prepare(
@@ -495,7 +537,10 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
   }>('/trips/:tripId/categories/:id', async (req, reply) => {
     const tripId = Number(req.params.tripId);
     const categoryId = Number(req.params.id);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     const existing = db
       .prepare('SELECT * FROM trip_categories WHERE id = ? AND trip_id = ? AND deleted_at IS NULL')
@@ -533,6 +578,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           const budgets = db.prepare('SELECT id FROM budgets WHERE trip_id = ?').all(tripId) as {
             id: number;
           }[];
+
           for (const b of budgets) {
             const targetAlloc = db
               .prepare(
@@ -596,7 +642,10 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
   }>('/trips/:tripId/categories/:id', async (req, reply) => {
     const tripId = Number(req.params.tripId);
     const categoryId = Number(req.params.id);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     const existing = db
       .prepare('SELECT * FROM trip_categories WHERE id = ? AND trip_id = ? AND deleted_at IS NULL')
@@ -646,7 +695,10 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
   }>('/trips/:tripId/categories/:id/reset', async (req, reply) => {
     const tripId = Number(req.params.tripId);
     const categoryId = Number(req.params.id);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     const existing = db
       .prepare('SELECT * FROM trip_categories WHERE id = ? AND trip_id = ? AND deleted_at IS NULL')
@@ -673,6 +725,7 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
           const budgets = db.prepare('SELECT id FROM budgets WHERE trip_id = ?').all(tripId) as {
             id: number;
           }[];
+
           for (const b of budgets) {
             const targetAlloc = db
               .prepare(
@@ -727,10 +780,14 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     Body: { type: 'expense' | 'spot' | 'packing'; name: string; is_hidden: boolean };
   }>('/trips/:tripId/categories/hide', async (req, reply) => {
     const tripId = Number(req.params.tripId);
-    if (!requireTripMember(reply, tripId, req.session.userId)) return;
+
+    if (!requireTripMember(reply, tripId, req.session.userId)) {
+      return;
+    }
 
     const { type, name, is_hidden } = req.body;
     const trimmed = name?.trim();
+
     if (!trimmed) {
       return reply.code(400).send({ error: 'Name ist erforderlich' });
     }

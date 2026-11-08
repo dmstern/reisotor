@@ -60,6 +60,7 @@ async function togglePicker(event: MouseEvent) {
     isOpen.value = false;
     return;
   }
+
   const target = event.currentTarget as HTMLElement;
   isOpen.value = true;
   pickerStyle.value = computePopoverPosition(target, {
@@ -69,6 +70,7 @@ async function togglePicker(event: MouseEvent) {
   });
   await nextTick();
   const menuEl = document.querySelector('.calendar-export-menu') as HTMLElement | null;
+
   if (menuEl) {
     pickerStyle.value = computePopoverPosition(target, {
       menuWidth: 188,

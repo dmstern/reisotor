@@ -9,8 +9,13 @@ import { fileURLToPath } from 'url';
  * Im Test-Modus (`NODE_ENV === 'test'`) wird das automatische Laden bewusst übersprungen.
  */
 export function loadEnv(customPaths?: string[]): void {
-  if (process.env.NODE_ENV === 'test' && !customPaths) return;
-  if (typeof process.loadEnvFile !== 'function') return;
+  if (process.env.NODE_ENV === 'test' && !customPaths) {
+    return;
+  }
+
+  if (typeof process.loadEnvFile !== 'function') {
+    return;
+  }
 
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const candidatePaths = customPaths ?? [
@@ -20,9 +25,14 @@ export function loadEnv(customPaths?: string[]): void {
   ];
 
   const seen = new Set<string>();
+
   for (const envPath of candidatePaths) {
-    if (seen.has(envPath)) continue;
+    if (seen.has(envPath)) {
+      continue;
+    }
+
     seen.add(envPath);
+
     if (fs.existsSync(envPath)) {
       try {
         process.loadEnvFile(envPath);

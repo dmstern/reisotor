@@ -44,7 +44,10 @@ const auth = useAuthStore();
 const { showToast } = useToast();
 
 const selectedBudget = computed(() => {
-  if (!form.value.budget_id) return null;
+  if (!form.value.budget_id) {
+    return null;
+  }
+
   return budgetStore.budgets.find((b) => String(b.id) === String(form.value.budget_id)) ?? null;
 });
 
@@ -79,18 +82,29 @@ const modalTitle = computed(() => {
   if (isEdit.value) {
     return isIncome.value ? 'Einnahme bearbeiten' : 'Ausgabe bearbeiten';
   }
+
   return isIncome.value ? 'Einnahme eintragen' : 'Ausgabe eintragen';
 });
 
 const submitLabel = computed(() => {
-  if (isEdit.value) return 'Speichern';
+  if (isEdit.value) {
+    return 'Speichern';
+  }
+
   return isIncome.value ? 'Einnahme eintragen' : 'Ausgabe eintragen';
 });
 
 const detailsCount = computed(() => {
   let count = 0;
-  if (form.value.budget_id) count++;
-  if (form.value.note) count++;
+
+  if (form.value.budget_id) {
+    count++;
+  }
+
+  if (form.value.note) {
+    count++;
+  }
+
   return count > 0 ? count : undefined;
 });
 
@@ -109,9 +123,11 @@ watch(
         let initialPaidBy = exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '';
         const b =
           exp.budget_id != null ? budgetStore.budgets.find((x) => x.id === exp.budget_id) : null;
+
         if (b?.owner_id != null) {
           initialPaidBy = String(b.owner_id);
         }
+
         form.value = {
           type: income ? 'income' : 'expense',
           title: exp.title,
@@ -150,8 +166,12 @@ watch(
 watch(
   () => form.value.budget_id,
   (budgetId) => {
-    if (!budgetId) return;
+    if (!budgetId) {
+      return;
+    }
+
     const b = budgetStore.budgets.find((x) => String(x.id) === String(budgetId));
+
     if (b?.owner_id != null) {
       form.value.paid_by_user_id = String(b.owner_id);
     }
@@ -179,9 +199,11 @@ function discardDraft() {
     let initialPaidBy = exp.paid_by_user_id != null ? String(exp.paid_by_user_id) : '';
     const b =
       exp.budget_id != null ? budgetStore.budgets.find((x) => x.id === exp.budget_id) : null;
+
     if (b?.owner_id != null) {
       initialPaidBy = String(b.owner_id);
     }
+
     form.value = {
       type: income ? 'income' : 'expense',
       title: exp.title,
@@ -218,18 +240,24 @@ function discardDraft() {
 
 async function handleSubmit() {
   const numericAmount = Math.abs(Number(form.value.amount));
+
   if (!form.value.title.trim()) {
     showToast({ message: 'Bitte einen Titel eingeben.', type: 'warning' });
     return;
   }
+
   if (!form.value.amount || isNaN(numericAmount) || numericAmount <= 0) {
     showToast({ message: 'Bitte einen Betrag größer als 0 eingeben.', type: 'warning' });
     return;
   }
-  if (isUploading.value) return;
+
+  if (isUploading.value) {
+    return;
+  }
 
   const fallbackPaidBy = budgetStore.users.length === 1 ? budgetStore.users[0].id : null;
   let paidBy: number | null = null;
+
   if (isPrivateBudget.value && selectedBudget.value?.owner_id != null) {
     paidBy = selectedBudget.value.owner_id;
   } else if (form.value.paid_by_user_id) {

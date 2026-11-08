@@ -19,9 +19,11 @@ export function requireTripMember(
   userId: number | undefined
 ): boolean {
   const id = typeof tripId === 'string' ? Number(tripId) : tripId;
+
   if (id == null || !Number.isFinite(id) || userId == null || !isTripMember(id, userId)) {
     reply.code(403).send({ error: 'Kein Zugriff auf diesen Urlaub' });
     return false;
   }
+
   return true;
 }

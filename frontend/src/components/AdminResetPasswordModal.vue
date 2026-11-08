@@ -57,11 +57,13 @@ function close() {
 
 function handleReset() {
   error.value = '';
+
   if (mode.value === 'custom') {
     if (!customPassword.value || customPassword.value.length < 6) {
       error.value = 'Das temporäre Passwort muss mindestens 6 Zeichen lang sein.';
       return;
     }
+
     emit('reset', customPassword.value);
   } else {
     emit('reset');
@@ -69,9 +71,13 @@ function handleReset() {
 }
 
 async function copyToClipboard(text?: string | null, type?: 'password' | 'link') {
-  if (!text) return;
+  if (!text) {
+    return;
+  }
+
   try {
     await navigator.clipboard?.writeText(text);
+
     if (type === 'password') {
       copiedPassword.value = true;
       setTimeout(() => {

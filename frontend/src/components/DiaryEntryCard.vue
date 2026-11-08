@@ -97,20 +97,25 @@ function spotDateMismatch(spotId: number): boolean {
 
 function formatSpotMismatchText(spotId: number): string {
   const dates = links.getSpotScheduledDates(spotId);
+
   if (dates.length === 1) {
     return formatDate(dates[0], { includeYear: false });
   }
+
   return 'abweichend';
 }
 
 function formatSpotMismatchTooltip(spot: Spot): string {
   const dates = links.getSpotScheduledDates(spot.id);
+
   if (dates.length === 1) {
     return `${spot.title} (geplant am ${formatDate(dates[0])})`;
   }
+
   if (dates.length > 1) {
     return `${spot.title} (geplant am ${dates.map((d) => formatDate(d)).join(', ')})`;
   }
+
   return spot.title;
 }
 
@@ -118,6 +123,7 @@ function excursionTooltip(ex: Excursion): string {
   if (excursionDateMismatch(ex)) {
     return `${ex.title} (geplant am ${formatDate(ex.date!)})`;
   }
+
   return ex.title;
 }
 </script>

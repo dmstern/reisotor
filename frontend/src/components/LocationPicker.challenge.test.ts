@@ -79,7 +79,9 @@ vi.mock('leaflet', () => {
           attributionControl: { setPrefix: vi.fn() },
           on: vi.fn(
             (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => {
-              if (event === 'click') mapClickHandlers.push(handler);
+              if (event === 'click') {
+                mapClickHandlers.push(handler);
+              }
             }
           ),
           remove: vi.fn(),
@@ -101,7 +103,9 @@ vi.mock('leaflet', () => {
           remove: vi.fn(),
           getLatLng: vi.fn().mockReturnValue({ lat: coords[0], lng: coords[1] }),
           on: vi.fn((event: string, handler: () => void) => {
-            if (event === 'dragend') markerDragEndHandler = handler;
+            if (event === 'dragend') {
+              markerDragEndHandler = handler;
+            }
           }),
           dragging: { enable: vi.fn() },
         };
@@ -182,6 +186,7 @@ describe('Adversarial Stress Testing: LocationPicker', () => {
 
       // Type "W", "Wi", "Wie", "Wien", "Wien " with 30ms gaps
       const keystrokes = ['W', 'Wi', 'Wie', 'Wien', 'Wien '];
+
       for (const stroke of keystrokes) {
         input.value = stroke;
         input.dispatchEvent(new Event('input'));
@@ -215,6 +220,7 @@ describe('Adversarial Stress Testing: LocationPicker', () => {
           firstSignal = init?.signal;
           return new Promise(() => {}); // never resolves initially
         }
+
         return Promise.resolve({
           ok: true,
           json: async () => [{ name: 'Query 2 Place', lat: 1, lng: 2 }],

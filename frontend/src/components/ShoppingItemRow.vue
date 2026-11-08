@@ -24,13 +24,19 @@ const emit = defineEmits<{
 }>();
 
 function userAvatar(id: number | null | undefined) {
-  if (id == null) return null;
+  if (id == null) {
+    return null;
+  }
+
   const u = props.users.find((u) => u.id === id);
   return u ? u.avatar : '👤';
 }
 
 function userName(id: number | null | undefined) {
-  if (id == null) return null;
+  if (id == null) {
+    return null;
+  }
+
   const u = props.users.find((u) => u.id === id);
   return u ? u.username : 'Ehemaliges Mitglied';
 }

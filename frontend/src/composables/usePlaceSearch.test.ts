@@ -168,12 +168,14 @@ describe('usePlaceSearch', () => {
       'fetch',
       vi.fn((url: string) => {
         requestedUrls.push(url);
+
         if (url.includes('offset=10')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve(page2),
           });
         }
+
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(page1),

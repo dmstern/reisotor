@@ -22,6 +22,7 @@ setup('authenticate', async ({ page }) => {
   const tripSelectBtn = page.locator('.trip-select', { hasText: seeded.trip.name });
 
   await expect(tripHeader.or(tripSelectBtn)).toBeVisible({ timeout: 30000 });
+
   if (await tripSelectBtn.isVisible()) {
     await tripSelectBtn.click();
   }

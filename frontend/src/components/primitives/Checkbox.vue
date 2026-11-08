@@ -35,26 +35,37 @@ const isChecked = computed(() => {
   if (props.checked !== undefined) {
     return Boolean(props.checked);
   }
+
   if (Array.isArray(props.modelValue)) {
     return props.modelValue.includes(props.value);
   }
+
   return props.modelValue === props.trueValue;
 });
 
 function onChange(event: Event) {
   const target = event.target as HTMLInputElement;
+
   if (Array.isArray(props.modelValue)) {
     const arr = [...props.modelValue];
+
     if (target.checked) {
-      if (!arr.includes(props.value)) arr.push(props.value);
+      if (!arr.includes(props.value)) {
+        arr.push(props.value);
+      }
     } else {
       const idx = arr.indexOf(props.value);
-      if (idx !== -1) arr.splice(idx, 1);
+
+      if (idx !== -1) {
+        arr.splice(idx, 1);
+      }
     }
+
     emit('update:modelValue', arr);
   } else {
     emit('update:modelValue', target.checked ? props.trueValue : props.falseValue);
   }
+
   emit('change', event);
 }
 </script>

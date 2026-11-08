@@ -43,9 +43,18 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   );
 
   const saveTooltip = computed(() => {
-    if (upload.uploading.value) return 'Bilder werden noch hochgeladen…';
-    if (isDateEmpty.value) return 'Bitte wähle ein Datum aus';
-    if (isContentEmpty.value) return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
+    if (upload.uploading.value) {
+      return 'Bilder werden noch hochgeladen…';
+    }
+
+    if (isDateEmpty.value) {
+      return 'Bitte wähle ein Datum aus';
+    }
+
+    if (isContentEmpty.value) {
+      return 'Bitte fülle zuerst den Text des Tagebucheintrags aus';
+    }
+
     return undefined;
   });
 
@@ -54,10 +63,14 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   );
 
   const saveDraftTooltip = computed(() => {
-    if (upload.uploading.value) return 'Bilder werden noch hochgeladen…';
+    if (upload.uploading.value) {
+      return 'Bilder werden noch hochgeladen…';
+    }
+
     if (!hasDiaryEntryContent(editForm.value)) {
       return 'Bitte fülle zuerst den Titel, Text oder ein Bild aus';
     }
+
     return undefined;
   });
 
@@ -68,7 +81,10 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   const isDeleteDisabled = computed(() => upload.uploading.value);
 
   const deleteTooltip = computed(() => {
-    if (upload.uploading.value) return 'Bilder werden noch hochgeladen…';
+    if (upload.uploading.value) {
+      return 'Bilder werden noch hochgeladen…';
+    }
+
     return undefined;
   });
 
@@ -96,14 +112,22 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
 
   async function submitEditEntry() {
     if (isDateEmpty.value || isContentEmpty.value) {
-      if (isDateEmpty.value) dateTouched.value = true;
+      if (isDateEmpty.value) {
+        dateTouched.value = true;
+      }
+
       if (isContentEmpty.value) {
         contentTouched.value = true;
         editorRef.value?.focus();
       }
+
       return;
     }
-    if (!editingEntry.value || upload.uploading.value) return;
+
+    if (!editingEntry.value || upload.uploading.value) {
+      return;
+    }
+
     const entryId = editingEntry.value.id;
     const body = {
       title: editForm.value.title || undefined,
@@ -127,8 +151,14 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   }
 
   async function saveDraftOnly() {
-    if (!editingEntry.value || upload.uploading.value) return;
-    if (!hasDiaryEntryContent(editForm.value)) return;
+    if (!editingEntry.value || upload.uploading.value) {
+      return;
+    }
+
+    if (!hasDiaryEntryContent(editForm.value)) {
+      return;
+    }
+
     const entryId = editingEntry.value.id;
     const now = new Date().toISOString();
     const body = {
@@ -159,7 +189,11 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   async function closeEditForm() {
     upload.abortUpload();
     const entryToSave = editingEntry.value;
-    if (!entryToSave) return;
+
+    if (!entryToSave) {
+      return;
+    }
+
     const formToSave = { ...editForm.value };
     editDraft.clear();
     editingEntry.value = null;
@@ -182,7 +216,10 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   }
 
   function discardEditDraft() {
-    if (!editingEntry.value) return;
+    if (!editingEntry.value) {
+      return;
+    }
+
     const isDraft = editingEntry.value.is_draft;
     startEdit(editingEntry.value);
     editDraft.clear();
@@ -193,7 +230,10 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   }
 
   async function deleteEditingEntry() {
-    if (!editingEntry.value || upload.uploading.value) return;
+    if (!editingEntry.value || upload.uploading.value) {
+      return;
+    }
+
     const id = editingEntry.value.id;
     editDraft.clear();
     editingEntry.value = null;

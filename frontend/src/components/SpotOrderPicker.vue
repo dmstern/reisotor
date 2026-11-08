@@ -82,9 +82,11 @@ function addSpot(id: number) {
 
 function cleanupLegsForSpots(newSpotIds: number[]) {
   const adjacentPairs = new Set<string>();
+
   for (let i = 0; i < newSpotIds.length - 1; i++) {
     adjacentPairs.add(`${newSpotIds[i]}-${newSpotIds[i + 1]}`);
   }
+
   const updated = (props.legs || [])
     .filter((leg) => adjacentPairs.has(`${leg.from_spot_id}-${leg.to_spot_id}`))
     .map((leg, idx) => ({ ...leg, position: idx }));
@@ -100,7 +102,11 @@ function removeSpotAt(index: number) {
 
 function autofillReturnPath() {
   const destIndex = plannedStations.value.findIndex((s) => s.id === props.destination);
-  if (destIndex === -1) return;
+
+  if (destIndex === -1) {
+    return;
+  }
+
   const returnSpots = plannedStations.value
     .slice(0, destIndex)
     .map((s) => s.id)
@@ -121,7 +127,10 @@ const dropIndicatorIndex = ref<number | null>(null);
 function onDragStart(event: DragEvent, index: number) {
   draggedIndex.value = index;
   event.dataTransfer?.setData('text/plain', '');
-  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
 }
 
 function onRowDragOver(event: DragEvent, index: number) {
@@ -131,11 +140,18 @@ function onRowDragOver(event: DragEvent, index: number) {
 }
 
 function onDrop() {
-  if (draggedIndex.value === null || dropIndicatorIndex.value === null) return;
+  if (draggedIndex.value === null || dropIndicatorIndex.value === null) {
+    return;
+  }
+
   let targetIndex = dropIndicatorIndex.value;
+
   // Ziel-Index bezieht sich auf das Array VOR dem Entfernen des gezogenen Eintrags – liegt die
   // Zeile davor, verschiebt das Herausnehmen alle nachfolgenden Indizes um eins nach vorn.
-  if (draggedIndex.value < targetIndex) targetIndex--;
+  if (draggedIndex.value < targetIndex) {
+    targetIndex--;
+  }
+
   if (targetIndex !== draggedIndex.value) {
     const next = [...selected.value];
     const [moved] = next.splice(draggedIndex.value, 1);
@@ -143,6 +159,7 @@ function onDrop() {
     selected.value = next;
     cleanupLegsForSpots(next);
   }
+
   draggedIndex.value = null;
   dropIndicatorIndex.value = null;
 }
@@ -162,34 +179,54 @@ function getLegBetween(fromId: number, toId: number): ExcursionLeg | undefined {
 
 function getLegDuration(fromId: number, toId: number): string | null {
   const leg = getLegBetween(fromId, toId);
-  if (!leg?.departure_time || !leg?.arrival_time) return null;
+
+  if (!leg?.departure_time || !leg?.arrival_time) {
+    return null;
+  }
+
   const mins = travelDurationMinutes(leg.departure_time, leg.arrival_time);
   return mins != null ? formatTravelDuration(mins) : null;
 }
 
 function getLayover(index: number): number | null {
-  if (index <= 0 || index >= plannedStations.value.length - 1) return null;
+  if (index <= 0 || index >= plannedStations.value.length - 1) {
+    return null;
+  }
+
   const prevSpotId = plannedStations.value[index - 1].id;
   const currSpotId = plannedStations.value[index].id;
   const nextSpotId = plannedStations.value[index + 1].id;
   const inLeg = getLegBetween(prevSpotId, currSpotId);
   const outLeg = getLegBetween(currSpotId, nextSpotId);
-  if (!inLeg?.arrival_time || !outLeg?.departure_time) return null;
+
+  if (!inLeg?.arrival_time || !outLeg?.departure_time) {
+    return null;
+  }
+
   return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
 }
 
 const currentModalFromSpot = computed(() => {
-  if (editingLegFromIndex.value == null) return null;
+  if (editingLegFromIndex.value == null) {
+    return null;
+  }
+
   return plannedStations.value[editingLegFromIndex.value]?.spot ?? null;
 });
 
 const currentModalToSpot = computed(() => {
-  if (editingLegFromIndex.value == null) return null;
+  if (editingLegFromIndex.value == null) {
+    return null;
+  }
+
   return plannedStations.value[editingLegFromIndex.value + 1]?.spot ?? null;
 });
 
 const currentModalLeg = computed(() => {
-  if (!currentModalFromSpot.value || !currentModalToSpot.value) return null;
+  if (!currentModalFromSpot.value || !currentModalToSpot.value) {
+    return null;
+  }
+
   return getLegBetween(currentModalFromSpot.value.id, currentModalToSpot.value.id) ?? null;
 });
 
@@ -203,11 +240,13 @@ function onSaveLeg(savedLeg: ExcursionLeg) {
   const idx = nextLegs.findIndex(
     (l) => l.from_spot_id === savedLeg.from_spot_id && l.to_spot_id === savedLeg.to_spot_id
   );
+
   if (idx !== -1) {
     nextLegs[idx] = savedLeg;
   } else {
     nextLegs.push(savedLeg);
   }
+
   emit('update:legs', nextLegs);
 }
 
@@ -219,7 +258,10 @@ function removeLegBetween(fromSpotId: number, toSpotId: number) {
 }
 
 function onDeleteLeg() {
-  if (!currentModalFromSpot.value || !currentModalToSpot.value) return;
+  if (!currentModalFromSpot.value || !currentModalToSpot.value) {
+    return;
+  }
+
   removeLegBetween(currentModalFromSpot.value.id, currentModalToSpot.value.id);
 }
 </script>

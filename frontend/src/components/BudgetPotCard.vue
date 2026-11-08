@@ -49,10 +49,14 @@ const totalSpentForBudget = computed(() => {
 
   return store.expenses
     .filter((e) => {
-      if (e.budget_id === props.budget.id) return true;
+      if (e.budget_id === props.budget.id) {
+        return true;
+      }
+
       if (e.budget_id == null && isOnlySharedBudget && isSharedExpense(e, store.budgets)) {
         return true;
       }
+
       return false;
     })
     .reduce((s, e) => s + e.amount, 0);
@@ -83,7 +87,10 @@ const newCategory = ref('');
 const newCategoryAmount = ref('');
 
 async function addCategory() {
-  if (!newCategory.value.trim()) return;
+  if (!newCategory.value.trim()) {
+    return;
+  }
+
   await store.saveAllocation(
     props.budget.id,
     newCategory.value.trim(),
@@ -122,7 +129,11 @@ function onHeaderClick() {
 function onTotalSectionClick(e: MouseEvent) {
   if (!isExpanded.value && hasCategories.value) {
     const target = e.target as HTMLElement | null;
-    if (target?.closest('input, button, select, textarea, label')) return;
+
+    if (target?.closest('input, button, select, textarea, label')) {
+      return;
+    }
+
     isExpanded.value = true;
   }
 }

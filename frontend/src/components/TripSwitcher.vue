@@ -47,10 +47,12 @@ const { openAccountTierModal } = useAccountTierModal();
 
 function handleCreateTrip() {
   close();
+
   if (tripCreationBlocked()) {
     openAccountTierModal('trips');
     return;
   }
+
   openCreate();
 }
 
@@ -70,7 +72,10 @@ const router = useRouter();
 const route = useRoute();
 
 function updateDropdownPosition() {
-  if (!switcherBtnRef.value) return;
+  if (!switcherBtnRef.value) {
+    return;
+  }
+
   const rect = switcherBtnRef.value.getBoundingClientRect();
   const menuWidth = dropdownRef.value?.getBoundingClientRect().width || 260;
   const padding = 8;
@@ -93,6 +98,7 @@ async function toggle() {
     close();
     return;
   }
+
   updateDropdownPosition();
   open.value = true;
   await nextTick();
@@ -135,6 +141,7 @@ onUnmounted(() => {
 function selectAndClose(id: number) {
   tripStore.selectTrip(id);
   close();
+
   if (route.params.tripId) {
     router.push({
       name: route.name ?? undefined,

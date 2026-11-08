@@ -92,9 +92,14 @@ export function useDashboardWeather(
 
   async function loadWeather() {
     const currentTrip = trip.value;
-    if (currentTrip?.lat == null || currentTrip?.lng == null) return;
+
+    if (currentTrip?.lat == null || currentTrip?.lng == null) {
+      return;
+    }
+
     weatherLoading.value = true;
     weatherError.value = null;
+
     try {
       const id =
         currentTrip.id ??
@@ -106,6 +111,7 @@ export function useDashboardWeather(
         currentTrip.lng,
         weatherProvider.model
       );
+
       if (home.value && !homeWeatherDays.value && !homeWeatherLoading.value) {
         void loadHomeWeather();
       }
@@ -117,9 +123,13 @@ export function useDashboardWeather(
   }
 
   async function loadHomeWeather() {
-    if (!home.value) return;
+    if (!home.value) {
+      return;
+    }
+
     homeWeatherLoading.value = true;
     homeWeatherError.value = null;
+
     try {
       homeWeatherDays.value = await fetchWeatherForecast(
         home.value.lat,
@@ -215,27 +225,46 @@ export function useDashboardWeather(
   }
 
   const selectedVacationDay = computed(() => {
-    if (!selectedWeatherDay.value) return null;
+    if (!selectedWeatherDay.value) {
+      return null;
+    }
+
     const found = weatherDays.value?.find((d) => d.date === selectedWeatherDay.value?.date);
-    if (found) return found;
+
+    if (found) {
+      return found;
+    }
+
     return selectedWeatherLocationType.value === 'vacation' ? selectedWeatherDay.value : null;
   });
 
   const selectedHomeDay = computed(() => {
-    if (!selectedWeatherDay.value) return null;
+    if (!selectedWeatherDay.value) {
+      return null;
+    }
+
     const found = homeWeatherDays.value?.find((d) => d.date === selectedWeatherDay.value?.date);
-    if (found) return found;
+
+    if (found) {
+      return found;
+    }
+
     return selectedWeatherLocationType.value === 'home' ? selectedWeatherDay.value : null;
   });
 
   function getDayAlert(day: DailyWeather | null): WeatherAlert | undefined {
-    if (!day) return undefined;
+    if (!day) {
+      return undefined;
+    }
+
     return detectWeatherAlerts([day])[0];
   }
 
   const vacationForecastDays = computed(() => {
-    if (!weatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
+    if (!weatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date) {
       return [];
+    }
+
     const s = trip.value.start_date;
     const e = trip.value.end_date;
     return weatherDays.value.filter((d) => d.date >= s && d.date <= e);
@@ -249,8 +278,10 @@ export function useDashboardWeather(
 
   const HOME_WEATHER_TAIL_DAYS = 3;
   const homeForecastDays = computed(() => {
-    if (!homeWeatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date)
+    if (!homeWeatherDays.value || !trip.value || !trip.value.start_date || !trip.value.end_date) {
       return [];
+    }
+
     const s = trip.value.start_date;
     const e = trip.value.end_date;
     const rangeStart = uiSettings.showHomeWeatherFullTrip
@@ -274,7 +305,9 @@ export function useDashboardWeather(
     // 1. Alle bekannten Wettertage (Historie + Live-Vorhersage)
     if (weatherDays.value) {
       for (const day of weatherDays.value) {
-        if (day?.date) map.set(day.date, day);
+        if (day?.date) {
+          map.set(day.date, day);
+        }
       }
     }
 
@@ -288,6 +321,7 @@ export function useDashboardWeather(
       const tripEnd = trip.value.end_date;
 
       let rangeStart = tripStart;
+
       if (today < tripStart) {
         const earliestWeather = weatherDays.value?.[0]?.date;
         rangeStart = earliestWeather && earliestWeather < today ? earliestWeather : today;
@@ -304,8 +338,10 @@ export function useDashboardWeather(
 
       if (diffDays >= 0 && diffDays <= 45) {
         const cur = new Date(startDateObj);
+
         while (cur <= endDateObj) {
           const dStr = toLocalDateString(cur);
+
           if (!map.has(dStr)) {
             map.set(dStr, {
               date: dStr,
@@ -315,6 +351,7 @@ export function useDashboardWeather(
               precipitationProbability: null,
             });
           }
+
           cur.setDate(cur.getDate() + 1);
         }
       }

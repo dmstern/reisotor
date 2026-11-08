@@ -203,7 +203,9 @@ describe('AttachmentPreviewModal', () => {
         },
       ],
       'onUpdate:modelValue': (val: boolean) => {
-        if (!val) closed = true;
+        if (!val) {
+          closed = true;
+        }
       },
     });
     await nextTick();
@@ -304,12 +306,14 @@ describe('AttachmentPreviewModal', () => {
     expect(content).toBeTruthy();
     // Simulate image loaded and trigger animation frame
     const img = document.querySelector('.preview-img') as HTMLImageElement;
+
     if (img) {
       Object.defineProperty(img, 'naturalWidth', { value: 800, configurable: true });
       Object.defineProperty(img, 'naturalHeight', { value: 400, configurable: true });
       img.dispatchEvent(new Event('load'));
       await nextTick();
     }
+
     expect(content?.className).toContain('preview-content');
     cleanUp();
   });

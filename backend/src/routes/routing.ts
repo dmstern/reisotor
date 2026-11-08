@@ -17,11 +17,14 @@ export const routingRoutes: FastifyPluginAsync = async (app) => {
     '/trips/:tripId/routes/directions',
     async (req, reply) => {
       const tripId = Number(req.params.tripId);
+
       if (!Number.isFinite(tripId)) {
         return reply.code(400).send({ error: 'Ungültige trip_id' });
       }
 
-      if (!requireTripMember(reply, tripId, req.session.userId)) return;
+      if (!requireTripMember(reply, tripId, req.session.userId)) {
+        return;
+      }
 
       const { from_lat, from_lng, to_lat, to_lng, transport_type, profile, preference } =
         req.body ?? {};

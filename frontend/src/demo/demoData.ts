@@ -92,6 +92,7 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
     d.setDate(d.getDate() + days);
     return d.toISOString().slice(0, 10);
   };
+
   const nowIso = baseDate.toISOString();
 
   const DEMO_USER: User = {

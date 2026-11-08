@@ -26,25 +26,57 @@ function detectStandalone(): boolean {
 
 function detectPlatform(): PwaPlatform {
   const ua = navigator.userAgent;
-  if (/iPhone|iPad|iPod/.test(ua)) return 'ios';
+
+  if (/iPhone|iPad|iPod/.test(ua)) {
+    return 'ios';
+  }
+
   // iPadOS 13+ gibt sich per User-Agent als "Macintosh" aus - ein echter Mac hat (bisher) keinen
   // Touchscreen, das unterscheidet beide Fälle zuverlässig genug für diesen Hinweis.
-  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return 'ios';
-  if (/Android/.test(ua)) return 'android';
-  if (/Windows/.test(ua)) return 'windows';
-  if (/Macintosh|Mac OS X/.test(ua)) return 'mac';
-  if (/Linux/.test(ua)) return 'linux';
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) {
+    return 'ios';
+  }
+
+  if (/Android/.test(ua)) {
+    return 'android';
+  }
+
+  if (/Windows/.test(ua)) {
+    return 'windows';
+  }
+
+  if (/Macintosh|Mac OS X/.test(ua)) {
+    return 'mac';
+  }
+
+  if (/Linux/.test(ua)) {
+    return 'linux';
+  }
+
   return 'other';
 }
 
 function detectBrowser(): PwaBrowser {
   const ua = navigator.userAgent;
+
   // Reihenfolge wichtig: Edge/Chrome-basierte iOS-Browser (EdgiOS/CriOS) enthalten selbst
   // "Safari" im UA-String, echtes Safari nicht "Chrome"/"Edg".
-  if (/Edg(A|iOS)?\//.test(ua)) return 'edge';
-  if (/FxiOS|Firefox\//.test(ua)) return 'firefox';
-  if (/CriOS|Chrome\//.test(ua)) return 'chrome';
-  if (/Safari\//.test(ua)) return 'safari';
+  if (/Edg(A|iOS)?\//.test(ua)) {
+    return 'edge';
+  }
+
+  if (/FxiOS|Firefox\//.test(ua)) {
+    return 'firefox';
+  }
+
+  if (/CriOS|Chrome\//.test(ua)) {
+    return 'chrome';
+  }
+
+  if (/Safari\//.test(ua)) {
+    return 'safari';
+  }
+
   return 'other';
 }
 
@@ -73,7 +105,10 @@ export const usePwaInstallStore = defineStore('pwaInstall', () => {
   }
 
   async function promptInstall() {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      return;
+    }
+
     const prompt = deferredPrompt;
     deferredPrompt = null;
     canPromptInstall.value = false;

@@ -25,7 +25,10 @@ export function useAttachmentHeight(options: UseAttachmentHeightOptions) {
   const isTransitionReady = ref(false);
 
   const contentStyle = computed<CSSProperties>(() => {
-    if (!contentHeight.value) return {};
+    if (!contentHeight.value) {
+      return {};
+    }
+
     return {
       height: `${contentHeight.value}px`,
     };
@@ -33,11 +36,14 @@ export function useAttachmentHeight(options: UseAttachmentHeightOptions) {
 
   function measureSlideHeight(slideEl: HTMLElement): number {
     const img = slideEl.querySelector<HTMLImageElement>('.preview-img');
+
     if (img) {
       const rect = img.getBoundingClientRect();
+
       if (rect.height > 0) {
         return rect.height;
       }
+
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
         const containerWidth = previewContentRef.value?.clientWidth || 600;
         const maxViewportH = typeof window !== 'undefined' ? window.innerHeight * 0.65 : 500;
@@ -45,29 +51,40 @@ export function useAttachmentHeight(options: UseAttachmentHeightOptions) {
         return Math.min(containerWidth * aspect, maxViewportH);
       }
     }
+
     const unsupported = slideEl.querySelector<HTMLElement>('.unsupported-wrapper');
+
     if (unsupported) {
       const rect = unsupported.getBoundingClientRect();
       return rect.height > 0 ? rect.height : 220;
     }
+
     return 0;
   }
 
   function updateContentHeight(animate = true) {
-    if (!sliderTrackRef.value || !isOpen.value) return;
+    if (!sliderTrackRef.value || !isOpen.value) {
+      return;
+    }
 
     const slides = sliderTrackRef.value.querySelectorAll<HTMLElement>('.slider-slide');
-    if (!slides.length) return;
+
+    if (!slides.length) {
+      return;
+    }
 
     let maxHeight = 0;
     slides.forEach((slide) => {
       const h = measureSlideHeight(slide);
+
       if (h > maxHeight) {
         maxHeight = h;
       }
     });
 
-    if (maxHeight <= 0) return;
+    if (maxHeight <= 0) {
+      return;
+    }
 
     const targetH = Math.max(200, Math.round(maxHeight));
 
@@ -112,12 +129,14 @@ export function useAttachmentHeight(options: UseAttachmentHeightOptions) {
         contentResizeObserver = new ResizeObserver((entries) => {
           for (const entry of entries) {
             const w = Math.round(entry.contentRect.width);
+
             if (w > 0 && w !== lastObservedWidth) {
               lastObservedWidth = w;
               updateContentHeight(isTransitionReady.value);
             }
           }
         });
+
         if (previewContentRef.value) {
           contentResizeObserver.observe(previewContentRef.value);
         }
@@ -136,6 +155,7 @@ export function useAttachmentHeight(options: UseAttachmentHeightOptions) {
     if (oldEl && contentResizeObserver) {
       contentResizeObserver.unobserve(oldEl);
     }
+
     if (el && contentResizeObserver) {
       contentResizeObserver.observe(el);
     }

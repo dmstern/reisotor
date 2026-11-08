@@ -45,13 +45,19 @@ function trackAuthorTitle(track: LocationTrack): string {
 }
 
 function trackDurationLabel(track: LocationTrack): string | null {
-  if (!track.started_at || !track.ended_at) return null;
+  if (!track.started_at || !track.ended_at) {
+    return null;
+  }
+
   const ms = Math.max(0, new Date(track.ended_at).getTime() - new Date(track.started_at).getTime());
   return formatDurationShort(ms);
 }
 
 function getTourForTrack(track: LocationTrack): Excursion | undefined {
-  if (track.excursion_id == null) return undefined;
+  if (track.excursion_id == null) {
+    return undefined;
+  }
+
   return excursionsStore.excursions.find((e) => e.id === track.excursion_id);
 }
 
@@ -66,9 +72,13 @@ function setRowRef(trackId: number, el: unknown) {
 }
 
 function scrollToActiveTrack() {
-  if (props.activeTrackId == null) return;
+  if (props.activeTrackId == null) {
+    return;
+  }
+
   const targetId = Number(props.activeTrackId);
   const el = rowRefs.get(targetId);
+
   if (el && typeof el.scrollIntoView === 'function') {
     const prefersReduced =
       typeof window !== 'undefined' &&
@@ -77,6 +87,7 @@ function scrollToActiveTrack() {
       behavior: prefersReduced ? 'auto' : 'smooth',
       block: 'nearest',
     });
+
     if (typeof document !== 'undefined' && document.activeElement === document.body) {
       const btn = el.querySelector<HTMLButtonElement>('.track-row-main');
       btn?.focus({ preventScroll: true });

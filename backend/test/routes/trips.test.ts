@@ -256,6 +256,7 @@ describe('trips routes', () => {
               json: () => Promise.resolve({ address: { country: 'Portugal', country_code: 'pt' } }),
             });
           }
+
           if (url.includes('restcountries.com')) {
             return Promise.resolve({
               ok: true,
@@ -265,6 +266,7 @@ describe('trips routes', () => {
                 ]),
             });
           }
+
           return Promise.reject(new Error('unexpected URL in test: ' + url));
         })
       );
@@ -337,6 +339,7 @@ describe('trips routes', () => {
                 Promise.resolve({ address: { country: 'Frankreich', country_code: 'fr' } }),
             });
           }
+
           if (url.includes('restcountries.com')) {
             return Promise.resolve({
               ok: true,
@@ -346,6 +349,7 @@ describe('trips routes', () => {
                 ]),
             });
           }
+
           return Promise.resolve({ ok: false, status: 503 });
         })
       );
@@ -383,6 +387,7 @@ describe('trips routes', () => {
               json: () => Promise.resolve({ address: { country: 'Norwegen', country_code: 'no' } }),
             });
           }
+
           if (url.includes('restcountries.com')) {
             return Promise.resolve({
               ok: true,
@@ -395,6 +400,7 @@ describe('trips routes', () => {
                 ]),
             });
           }
+
           return Promise.resolve({ ok: false, status: 503 });
         })
       );

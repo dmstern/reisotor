@@ -51,7 +51,11 @@ const expanded = computed(
 
 function submit() {
   const trimmed = label.value.trim();
-  if (!trimmed) return;
+
+  if (!trimmed) {
+    return;
+  }
+
   emit('submit', trimmed);
   label.value = '';
   inputRef.value?.focus();
@@ -64,7 +68,11 @@ function onBlur(event: FocusEvent) {
   // ein, noch bevor der Timeout unten greifen konnte, und das gerade fokussierte Feld verschwand samt
   // Fokus mitten in der Eingabe (siehe Bug 126).
   const next = event.relatedTarget as Node | null;
-  if (next && formRef.value?.contains(next)) return;
+
+  if (next && formRef.value?.contains(next)) {
+    return;
+  }
+
   // Leichte Verzögerung: ein Klick auf ein Zusatzfeld im "extra"-Slot (z. B. ein <select>) löst vorher
   // ein blur auf diesem Eingabefeld aus - ohne Verzögerung würde die Zeile schon einklappen, bevor
   // die Auswahl im Zusatzfeld ankommt.
@@ -73,8 +81,9 @@ function onBlur(event: FocusEvent) {
       !props.forceExpanded &&
       !label.value.trim() &&
       !formRef.value?.contains(document.activeElement)
-    )
+    ) {
       focused.value = false;
+    }
   }, 150);
 }
 </script>

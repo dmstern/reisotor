@@ -19,12 +19,14 @@ const EMOJI_PREFIX_REGEX =
 function parseNote(rawNote: string): { bullet: string; html: string } {
   const clean = rawNote.startsWith('- ') ? rawNote.slice(2).trim() : rawNote.trim();
   const match = clean.match(EMOJI_PREFIX_REGEX);
+
   if (match) {
     return {
       bullet: match[1],
       html: formatInline(clean.slice(match[0].length)),
     };
   }
+
   return {
     bullet: '•',
     html: formatInline(clean),
@@ -46,6 +48,7 @@ const otherGroups = computed(() => {
   if (highlightGroups.value.length === 0) {
     return [];
   }
+
   return allGroups.value.filter((g) => !isHighlightGroup(g.title));
 });
 
@@ -53,6 +56,7 @@ const standardGroups = computed(() => {
   if (highlightGroups.value.length > 0) {
     return [];
   }
+
   return allGroups.value;
 });
 
@@ -63,7 +67,10 @@ const cleanNotes = computed(() => {
 
 // Basis-Release-Highlights (z. B. aus v2.0.0, wenn wir auf Patch v2.0.1 sind)
 const baseSeriesName = computed(() => {
-  if (!props.baseRelease?.version) return '';
+  if (!props.baseRelease?.version) {
+    return '';
+  }
+
   const match = props.baseRelease.version.match(/^(\d+\.\d+)/);
   return match ? match[1] : props.baseRelease.version;
 });
@@ -78,11 +85,15 @@ const baseOtherGroups = computed(() => {
   if (baseHighlightGroups.value.length === 0) {
     return baseAllGroups.value;
   }
+
   return baseAllGroups.value.filter((g) => !isHighlightGroup(g.title));
 });
 
 const baseCleanNotes = computed(() => {
-  if (baseAllGroups.value.length > 0) return [];
+  if (baseAllGroups.value.length > 0) {
+    return [];
+  }
+
   const rawNotes = props.baseRelease?.notes ?? [];
   return rawNotes.map((n) => (n.startsWith('- ') ? n.slice(2).trim() : n.trim())).filter(Boolean);
 });

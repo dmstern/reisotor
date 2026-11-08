@@ -39,9 +39,11 @@ const isChecked = computed(() => {
   if (props.checked !== undefined) {
     return Boolean(props.checked);
   }
+
   if (props.modelValue !== undefined && props.value !== undefined) {
     return props.modelValue === props.value;
   }
+
   return Boolean(props.modelValue);
 });
 

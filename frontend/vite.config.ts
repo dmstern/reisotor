@@ -24,6 +24,7 @@ const isDemoMode = process.env.VITE_DEMO_MODE === 'true';
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
 
 let gitRef = 'unknown';
+
 try {
   gitRef = execSync('git describe --tags --always').toString().trim();
 } catch {
@@ -121,6 +122,7 @@ export default defineConfig({
           ) {
             return source;
           }
+
           return `@use "@/styles/breakpoints" as *;\n${source}`;
         },
       },
@@ -156,6 +158,7 @@ export default defineConfig({
         if (warning.message?.includes('externalized for browser compatibility')) {
           return;
         }
+
         defaultHandler(warning);
       },
     },

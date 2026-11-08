@@ -16,11 +16,17 @@ export interface CalcSpotsColWidthOptions {
  */
 export function loadStoredSpotsColWidth(storage?: Storage): number | null {
   const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
-  if (!store) return null;
+
+  if (!store) {
+    return null;
+  }
+
   const stored = Number(store.getItem(SPOTS_COL_WIDTH_KEY));
+
   if (Number.isFinite(stored) && stored >= MIN_SPOTS_COL_WIDTH && stored <= MAX_SPOTS_COL_WIDTH) {
     return stored;
   }
+
   return null;
 }
 
@@ -29,7 +35,11 @@ export function loadStoredSpotsColWidth(storage?: Storage): number | null {
  */
 export function saveStoredSpotsColWidth(width: number, storage?: Storage): void {
   const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : null);
-  if (!store) return;
+
+  if (!store) {
+    return;
+  }
+
   if (Number.isFinite(width) && width >= MIN_SPOTS_COL_WIDTH && width <= MAX_SPOTS_COL_WIDTH) {
     store.setItem(SPOTS_COL_WIDTH_KEY, String(Math.round(width)));
   }

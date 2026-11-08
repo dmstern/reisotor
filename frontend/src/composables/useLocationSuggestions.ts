@@ -62,25 +62,33 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
     }
 
     let places: PlaceSearchResult[] = [];
+
     try {
       let url = `/api/places/search?q=${encodeURIComponent(title)}&limit=10`;
+
       if (biasKey && bias) {
         url += `&lat=${bias.lat}&lng=${bias.lng}`;
       }
+
       const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+
       if (res.ok) {
         const data = (await res.json()) as PlaceSearchResult[];
+
         if (Array.isArray(data)) {
           places = data;
         }
       }
+
       // Fallback: Wenn Suche mit Proximity-Bias 0 Treffer liefert, nochmals ohne Bias suchen
       if (places.length === 0 && biasKey) {
         const fbRes = await fetch(`/api/places/search?q=${encodeURIComponent(title)}&limit=10`, {
           signal: AbortSignal.timeout(5000),
         });
+
         if (fbRes.ok) {
           const fbData = (await fbRes.json()) as PlaceSearchResult[];
+
           if (Array.isArray(fbData)) {
             places = fbData;
           }
@@ -91,16 +99,20 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
     }
 
     const addresses: string[] = [];
+
     for (const p of places) {
       const addr = (p.formatted_address || p.address || '').trim();
+
       if (addr && !addresses.includes(addr)) {
         addresses.push(addr);
       }
     }
 
     const categories: string[] = [];
+
     for (const p of places) {
       const cat = (p.category || '').trim();
+
       if (cat && !categories.includes(cat)) {
         categories.push(cat);
       }
@@ -118,7 +130,10 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
   }
 
   const showAddressSparkle = computed(() => {
-    if (!currentTitle.value) return false;
+    if (!currentTitle.value) {
+      return false;
+    }
+
     return (
       !options.address?.value ||
       !options.editAddressInput.value.trim() ||
@@ -127,21 +142,31 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
   });
 
   const addressSparkleTitle = computed(() => {
-    if (isFetchingAddressSuggestion.value) return 'Suche Adress-Vorschläge...';
+    if (isFetchingAddressSuggestion.value) {
+      return 'Suche Adress-Vorschläge...';
+    }
+
     const addresses = suggestionCache.value?.addresses ?? [];
+
     if (addresses.length > 0 && addressSuggestionIndex.value >= 0) {
       return `Vorschlag ${addressSuggestionIndex.value + 1} von ${addresses.length}: "${addresses[addressSuggestionIndex.value]}" (Klicken für nächsten Vorschlag)`;
     }
+
     return 'Adresse anhand des Titels automatisch vorschlagen';
   });
 
   async function cycleAddressSuggestion() {
     const title = currentTitle.value;
-    if (!title || isFetchingAddressSuggestion.value) return;
+
+    if (!title || isFetchingAddressSuggestion.value) {
+      return;
+    }
 
     isFetchingAddressSuggestion.value = true;
+
     try {
       const cache = await fetchSuggestionsForTitle(title);
+
       if (cache.addresses.length > 0) {
         addressSuggestionIndex.value = (addressSuggestionIndex.value + 1) % cache.addresses.length;
         const nextAddr = cache.addresses[addressSuggestionIndex.value];
@@ -155,7 +180,10 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
   }
 
   const showCategorySparkle = computed(() => {
-    if (!currentTitle.value || options.category?.value === undefined) return false;
+    if (!currentTitle.value || options.category?.value === undefined) {
+      return false;
+    }
+
     return (
       !options.category.value ||
       !options.editCategoryInput.value.trim() ||
@@ -164,21 +192,31 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
   });
 
   const categorySparkleTitle = computed(() => {
-    if (isFetchingCategorySuggestion.value) return 'Suche Kategorie-Vorschläge...';
+    if (isFetchingCategorySuggestion.value) {
+      return 'Suche Kategorie-Vorschläge...';
+    }
+
     const categories = suggestionCache.value?.categories ?? [];
+
     if (categories.length > 0 && categorySuggestionIndex.value >= 0) {
       return `Vorschlag ${categorySuggestionIndex.value + 1} von ${categories.length}: "${categories[categorySuggestionIndex.value]}" (Klicken für nächsten Vorschlag)`;
     }
+
     return 'Kategorie anhand des Titels automatisch vorschlagen';
   });
 
   async function cycleCategorySuggestion() {
     const title = currentTitle.value;
-    if (!title || isFetchingCategorySuggestion.value) return;
+
+    if (!title || isFetchingCategorySuggestion.value) {
+      return;
+    }
 
     isFetchingCategorySuggestion.value = true;
+
     try {
       const cache = await fetchSuggestionsForTitle(title);
+
       if (cache.categories.length > 0) {
         categorySuggestionIndex.value =
           (categorySuggestionIndex.value + 1) % cache.categories.length;
@@ -205,12 +243,14 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
       if (c && !t.toLowerCase().includes(c.toLowerCase())) {
         candidates.push(`${t} ${c}`);
       }
+
       candidates.push(t);
     }
 
     // 2. Adresse (falls vorhanden)
     if (a) {
       candidates.push(a);
+
       if (t) {
         candidates.push(`${t}, ${a}`);
       }
@@ -225,13 +265,16 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
 
   const locationSparkleTitle = computed(() => {
     const candidates = locationSearchCandidates.value;
+
     if (candidates.length === 0) {
       return 'Standort anhand von Titel oder Adresse suchen';
     }
+
     if (locationSearchCandidateIndex.value >= 0) {
       const current = candidates[locationSearchCandidateIndex.value];
       return `Suche nach "${current}" (${locationSearchCandidateIndex.value + 1}/${candidates.length}, Klicken für nächsten Suchbegriff)`;
     }
+
     return 'Standort anhand von Titel oder Adresse in die Suche übernehmen';
   });
 
@@ -241,7 +284,10 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
 
   function cycleLocationSearch() {
     const candidates = locationSearchCandidates.value;
-    if (candidates.length === 0) return;
+
+    if (candidates.length === 0) {
+      return;
+    }
 
     locationSearchCandidateIndex.value =
       (locationSearchCandidateIndex.value + 1) % candidates.length;

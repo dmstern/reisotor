@@ -11,9 +11,18 @@ const props = defineProps<{
 // 2-3: 3 Knäuel
 // 4+: Voller Korb (5 Knäuel, einer lugt oben heraus)
 const ballTier = computed(() => {
-  if (props.count <= 0) return 0;
-  if (props.count === 1) return 1;
-  if (props.count <= 3) return 2;
+  if (props.count <= 0) {
+    return 0;
+  }
+
+  if (props.count === 1) {
+    return 1;
+  }
+
+  if (props.count <= 3) {
+    return 2;
+  }
+
   return 3;
 });
 </script>

@@ -19,12 +19,23 @@ export interface TimeDurationStatus {
  * Gibt null zurück, wenn der String ungültig oder unvollständig ist.
  */
 export function parseTimeToMinutes(timeStr?: string | null): number | null {
-  if (!timeStr) return null;
+  if (!timeStr) {
+    return null;
+  }
+
   const parts = timeStr.trim().split(':');
-  if (parts.length !== 2) return null;
+
+  if (parts.length !== 2) {
+    return null;
+  }
+
   const h = Number(parts[0]);
   const m = Number(parts[1]);
-  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+    return null;
+  }
+
   return h * 60 + m;
 }
 
@@ -43,7 +54,11 @@ export function formatMinutesToTime(totalMinutes: number): string {
  */
 export function calcArrivalTime(departureStr: string, durationSeconds: number): string | null {
   const depMinutes = parseTimeToMinutes(departureStr);
-  if (depMinutes == null) return null;
+
+  if (depMinutes == null) {
+    return null;
+  }
+
   const durMinutes = Math.round(durationSeconds / 60);
   return formatMinutesToTime(depMinutes + durMinutes);
 }
@@ -53,7 +68,11 @@ export function calcArrivalTime(departureStr: string, durationSeconds: number): 
  */
 export function calcDepartureTime(arrivalStr: string, durationSeconds: number): string | null {
   const arrMinutes = parseTimeToMinutes(arrivalStr);
-  if (arrMinutes == null) return null;
+
+  if (arrMinutes == null) {
+    return null;
+  }
+
   const durMinutes = Math.round(durationSeconds / 60);
   return formatMinutesToTime(arrMinutes - durMinutes);
 }
@@ -64,7 +83,11 @@ export function calcDepartureTime(arrivalStr: string, durationSeconds: number): 
 export function calcElapsedMinutes(departureStr: string, arrivalStr: string): number | null {
   const dep = parseTimeToMinutes(departureStr);
   const arr = parseTimeToMinutes(arrivalStr);
-  if (dep == null || arr == null) return null;
+
+  if (dep == null || arr == null) {
+    return null;
+  }
+
   return (((arr - dep) % 1440) + 1440) % 1440;
 }
 
@@ -89,9 +112,11 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
     if (activeDurationSeconds.value && activeDurationSeconds.value > 0) {
       return activeDurationSeconds.value;
     }
+
     if (lockedDurationMinutes.value != null && lockedDurationMinutes.value > 0) {
       return lockedDurationMinutes.value * 60;
     }
+
     return null;
   });
 
@@ -104,10 +129,12 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
 
   const timeLinkTitle = computed(() => {
     let durStr: string | null = null;
+
     if (activeDurationSeconds.value && activeDurationSeconds.value > 0) {
       durStr = formatDuration(activeDurationSeconds.value);
     } else if (departureTime.value && arrivalTime.value) {
       const elapsed = calcElapsedMinutes(departureTime.value, arrivalTime.value);
+
       if (elapsed != null && elapsed > 0) {
         durStr = formatDuration(elapsed * 60);
       }
@@ -128,20 +155,26 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
 
   function syncTimesWithDuration(durationSeconds?: number | null) {
     const dur = durationSeconds ?? activeDurationSeconds.value;
-    if (!dur || dur <= 0) return;
+
+    if (!dur || dur <= 0) {
+      return;
+    }
 
     if (lastModifiedTimeField.value === 'arrival' && arrivalTime.value) {
       const target = calcDepartureTime(arrivalTime.value, dur);
+
       if (target) {
         departureTime.value = target;
       }
     } else if (departureTime.value) {
       const target = calcArrivalTime(departureTime.value, dur);
+
       if (target) {
         arrivalTime.value = target;
       }
     } else if (arrivalTime.value) {
       const target = calcDepartureTime(arrivalTime.value, dur);
+
       if (target) {
         departureTime.value = target;
       }
@@ -151,8 +184,10 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   function onDepartureInput() {
     lastModifiedTimeField.value = 'departure';
     const durSec = effectiveDurationSeconds.value;
+
     if (isTimeLinked.value && durSec && durSec > 0) {
       const target = calcArrivalTime(departureTime.value, durSec);
+
       if (target) {
         arrivalTime.value = target;
       }
@@ -162,8 +197,10 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   function onArrivalInput() {
     lastModifiedTimeField.value = 'arrival';
     const durSec = effectiveDurationSeconds.value;
+
     if (isTimeLinked.value && durSec && durSec > 0) {
       const target = calcDepartureTime(arrivalTime.value, durSec);
+
       if (target) {
         departureTime.value = target;
       }
@@ -178,6 +215,7 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
       } else if (departureTime.value && arrivalTime.value) {
         lockedDurationMinutes.value = calcElapsedMinutes(departureTime.value, arrivalTime.value);
       }
+
       isTimeLinked.value = true;
     } else {
       isTimeLinked.value = false;
@@ -185,7 +223,10 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   }
 
   function applySuggestedTime(field: 'departure' | 'arrival', target?: string | null) {
-    if (!target) return;
+    if (!target) {
+      return;
+    }
+
     if (field === 'departure') {
       departureTime.value = target;
       lastModifiedTimeField.value = 'arrival';
@@ -193,6 +234,7 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
       arrivalTime.value = target;
       lastModifiedTimeField.value = 'departure';
     }
+
     isTimeLinked.value = true;
   }
 
@@ -201,11 +243,16 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
     const arr = arrivalTime.value;
     const durSec = activeDurationSeconds.value;
 
-    if (!dep && !arr) return null;
+    if (!dep && !arr) {
+      return null;
+    }
 
     if (dep && arr) {
       const elapsedMins = calcElapsedMinutes(dep, arr);
-      if (elapsedMins == null) return null;
+
+      if (elapsedMins == null) {
+        return null;
+      }
 
       if (durSec != null) {
         const durMins = Math.round(durSec / 60);
@@ -248,6 +295,7 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
           canToggleLink: false,
         };
       }
+
       if (arr && !dep) {
         const target = calcDepartureTime(arr, durSec);
         return {
@@ -264,7 +312,10 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   });
 
   const alertVariantForStatus = computed<AlertVariant>(() => {
-    if (!timeDurationStatus.value) return 'neutral';
+    if (!timeDurationStatus.value) {
+      return 'neutral';
+    }
+
     switch (timeDurationStatus.value.type) {
       case 'mismatch':
         return 'warning';
@@ -279,7 +330,10 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
   });
 
   const alertIconForStatus = computed<IconDef | undefined>(() => {
-    if (!timeDurationStatus.value) return undefined;
+    if (!timeDurationStatus.value) {
+      return undefined;
+    }
+
     switch (timeDurationStatus.value.type) {
       case 'mismatch':
         return ACTION_ICONS.warning;
@@ -309,19 +363,32 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
     if (durSec && durSec > 0) {
       const durStr = formatDuration(durSec);
       let label = 'Reisedauer';
-      if (cat === 'zu Fuß') label = 'Gehzeit';
-      else if (cat === 'Auto' || cat === 'Fahrrad') label = 'Fahrzeit';
-      else if (type === 'Flugzeug' || type === 'Flug') label = 'Flugdauer';
+
+      if (cat === 'zu Fuß') {
+        label = 'Gehzeit';
+      } else if (cat === 'Auto' || cat === 'Fahrrad') {
+        label = 'Fahrzeit';
+      } else if (type === 'Flugzeug' || type === 'Flug') {
+        label = 'Flugdauer';
+      }
+
       return { label, duration: durStr };
     }
 
     if (departureTime.value && arrivalTime.value) {
       const elapsed = calcElapsedMinutes(departureTime.value, arrivalTime.value);
+
       if (elapsed != null && elapsed > 0) {
         let label = 'Reisedauer';
-        if (cat === 'zu Fuß') label = 'Gehzeit';
-        else if (cat === 'Auto' || cat === 'Fahrrad' || cat === 'ÖPNV') label = 'Fahrzeit';
-        else if (type === 'Flugzeug' || type === 'Flug') label = 'Flugdauer';
+
+        if (cat === 'zu Fuß') {
+          label = 'Gehzeit';
+        } else if (cat === 'Auto' || cat === 'Fahrrad' || cat === 'ÖPNV') {
+          label = 'Fahrzeit';
+        } else if (type === 'Flugzeug' || type === 'Flug') {
+          label = 'Flugdauer';
+        }
+
         return { label, duration: formatDuration(elapsed * 60) };
       }
     }

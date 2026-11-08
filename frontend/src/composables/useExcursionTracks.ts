@@ -34,7 +34,10 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   }
 
   function trackDurationLabel(track: LocationTrack): string {
-    if (!track.ended_at) return '';
+    if (!track.ended_at) {
+      return '';
+    }
+
     const ms = new Date(track.ended_at).getTime() - new Date(track.started_at).getTime();
     return formatDurationShort(ms);
   }
@@ -42,11 +45,16 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   function trackAuthorUser(track: LocationTrack): User | undefined {
     if (track.user_id) {
       const u = users.value.find((u) => u.id === track.user_id);
-      if (u) return u;
+
+      if (u) {
+        return u;
+      }
     }
+
     if (auth.user && auth.user.id === track.user_id) {
       return auth.user;
     }
+
     return undefined;
   }
 
@@ -69,6 +77,7 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
     if (isSheetOverlayMode.value && sheetState.value === 'full') {
       sheetState.value = 'partial';
     }
+
     drawers.openMapForTrack(trackId);
   }
 
@@ -105,7 +114,10 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   });
 
   const editTrackExcursionTitle = computed(() => {
-    if (editTrackExcursionId.value == null) return null;
+    if (editTrackExcursionId.value == null) {
+      return null;
+    }
+
     const exc = excursionsStore.excursions.find((e) => e.id === editTrackExcursionId.value);
     return exc?.title ?? null;
   });
@@ -115,9 +127,11 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
       editTrackExcursionId.value = null;
       return;
     }
+
     const tour = excursionsStore.excursions.find((e) => e.id === tourId);
     const isPrivate =
       editTrackVisibility.value === 'private' || editingTrack.value?.visibility === 'private';
+
     if (isPrivate && users.value.length > 1) {
       pendingTrackTourId.value = tourId;
       shareWarningTrackTitle.value =
@@ -132,7 +146,11 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
 
   async function onCreateTourFromTrack(title: string) {
     const trimmed = title.trim();
-    if (!trimmed) return;
+
+    if (!trimmed) {
+      return;
+    }
+
     const newExcursion = await excursionsStore.create({
       title: trimmed,
     });
@@ -148,30 +166,47 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
       if (onShareTrackToTour) {
         onShareTrackToTour(pendingShareTrack.value);
       }
+
       pendingShareTrack.value = null;
     }
+
     showTrackShareWarningModal.value = false;
   }
 
   function getTourForTrack(track: LocationTrack): Excursion | undefined {
-    if (track.excursion_id == null) return undefined;
+    if (track.excursion_id == null) {
+      return undefined;
+    }
+
     return excursionsStore.excursions.find((e) => e.id === track.excursion_id);
   }
 
   const isEditTrackTitleModified = computed(() => {
-    if (!editingTrack.value) return false;
+    if (!editingTrack.value) {
+      return false;
+    }
+
     return editTrackTitle.value.trim() !== (editingTrack.value.title ?? '').trim();
   });
   const isEditTrackStartedAtModified = computed(() => {
-    if (!editingTrack.value) return false;
+    if (!editingTrack.value) {
+      return false;
+    }
+
     return editTrackStartedAt.value !== toLocalDatetimeInputValue(editingTrack.value.started_at);
   });
   const isEditTrackVisibilityModified = computed(() => {
-    if (!editingTrack.value) return false;
+    if (!editingTrack.value) {
+      return false;
+    }
+
     return editTrackVisibility.value !== editingTrack.value.visibility;
   });
   const isEditTrackTourModified = computed(() => {
-    if (!editingTrack.value) return false;
+    if (!editingTrack.value) {
+      return false;
+    }
+
     return editTrackExcursionId.value !== (editingTrack.value.excursion_id ?? null);
   });
 
@@ -191,7 +226,10 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   }
 
   async function submitEditTrack() {
-    if (!editingTrack.value) return;
+    if (!editingTrack.value) {
+      return;
+    }
+
     const rawTitle = editTrackTitle.value.trim();
     const title = rawTitle ? rawTitle : null;
     const startedAt =
@@ -206,30 +244,46 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   }
 
   async function stopEditingTrack() {
-    if (!editingTrack.value) return;
+    if (!editingTrack.value) {
+      return;
+    }
+
     const id = editingTrack.value.id;
+
     if (trackRecording.recording && trackRecording.track?.id === id) {
       await trackRecording.stop();
     } else {
       await tracksStore.stopTrack(id);
     }
+
     const updated = tracksStore.tracks.find((t) => t.id === id);
+
     if (updated) {
       editingTrack.value = updated;
     }
   }
 
   async function deleteEditingTrack() {
-    if (!editingTrack.value) return;
+    if (!editingTrack.value) {
+      return;
+    }
+
     const confirmed = window.confirm('Möchtest du diese Aufzeichnung wirklich löschen?');
-    if (!confirmed) return;
+
+    if (!confirmed) {
+      return;
+    }
+
     const id = editingTrack.value.id;
     closeEditTrack();
     await removeTrack(id);
   }
 
   async function removeTrack(id: number) {
-    if (drawers.mapFocusTrackId === id) drawers.mapFocusTrackId = null;
+    if (drawers.mapFocusTrackId === id) {
+      drawers.mapFocusTrackId = null;
+    }
+
     await tracksStore.remove(id);
   }
 
@@ -241,7 +295,10 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   );
 
   const hasActiveRecording = computed(() => {
-    if (trackRecording.recording) return true;
+    if (trackRecording.recording) {
+      return true;
+    }
+
     return tracksStore.tracks.some((t) => !t.ended_at && t.user_id === auth.user?.id);
   });
 
@@ -252,6 +309,7 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
       const activeTrack = tracksStore.tracks.find(
         (t) => !t.ended_at && t.user_id === auth.user?.id
       );
+
       if (activeTrack) {
         await tracksStore.stopTrack(activeTrack.id);
       } else if (trackWarningDismissed.value) {

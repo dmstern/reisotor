@@ -53,20 +53,34 @@ export function useExcursionWeather(
     },
     async ([date, tripId, stations, model]) => {
       weatherSummary.value = null;
-      if (!date || !stations.length) return;
+
+      if (!date || !stations.length) {
+        return;
+      }
+
       try {
         const stationWeathers: DailyWeather[] = [];
         const fetchedKeys = new Set<string>();
 
         for (const st of stations) {
-          if (st.lat == null || st.lng == null) continue;
+          if (st.lat == null || st.lng == null) {
+            continue;
+          }
+
           const locKey = `${st.lat.toFixed(3)},${st.lng.toFixed(3)}`;
-          if (fetchedKeys.has(locKey)) continue;
+
+          if (fetchedKeys.has(locKey)) {
+            continue;
+          }
+
           fetchedKeys.add(locKey);
 
           const days = await fetchMergedWeather(tripId, st.lat, st.lng, model);
           const match = days.find((d) => d.date === date);
-          if (match) stationWeathers.push(match);
+
+          if (match) {
+            stationWeathers.push(match);
+          }
         }
 
         weatherSummary.value = summarizeWeatherRange(stationWeathers);

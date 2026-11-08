@@ -30,14 +30,17 @@ watch(
       currentDirection.value = props.direction;
       return;
     }
+
     if (props.options && props.options.length > 1 && typeof oldText === 'string') {
       const oldIndex = props.options.indexOf(oldText);
       const newIndex = props.options.indexOf(newText);
+
       if (newIndex >= 0 && oldIndex >= 0) {
         currentDirection.value = newIndex > oldIndex ? 'up' : 'down';
         return;
       }
     }
+
     currentDirection.value = 'up';
   },
   { immediate: true }
@@ -49,9 +52,11 @@ const sizerOptions = computed(() => {
   if (props.options && props.options.length > 0) {
     return props.options;
   }
+
   if (props.sizerText) {
     return [props.sizerText];
   }
+
   return [props.text];
 });
 </script>

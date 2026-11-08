@@ -24,9 +24,19 @@ import fs from 'node:fs';
 
 export function parsePrTarget(title, headRef = '') {
   const normalized = `${title} ${headRef}`.toLowerCase();
-  if (normalized.includes('/backend') || normalized.includes('backend/')) return 'backend';
-  if (normalized.includes('/frontend') || normalized.includes('frontend/')) return 'frontend';
-  if (normalized.includes('/e2e') || normalized.includes('e2e/')) return 'e2e';
+
+  if (normalized.includes('/backend') || normalized.includes('backend/')) {
+    return 'backend';
+  }
+
+  if (normalized.includes('/frontend') || normalized.includes('frontend/')) {
+    return 'frontend';
+  }
+
+  if (normalized.includes('/e2e') || normalized.includes('e2e/')) {
+    return 'e2e';
+  }
+
   return 'root';
 }
 
@@ -63,6 +73,7 @@ export function evaluateCiStatus(statusCheckRollup = []) {
   }
 
   let state = 'PASSED';
+
   if (failed > 0) {
     state = 'FAILED';
   } else if (pending > 0) {
@@ -125,7 +136,11 @@ export function sortEvaluatedPrs(evaluations) {
   return [...evaluations].sort((a, b) => {
     const verdictWeight = { GO: 1, WAIT: 2, STOP: 3 };
     const diff = (verdictWeight[a.verdict] || 9) - (verdictWeight[b.verdict] || 9);
-    if (diff !== 0) return diff;
+
+    if (diff !== 0) {
+      return diff;
+    }
+
     return a.prio - b.prio || a.number - b.number;
   });
 }
@@ -227,10 +242,12 @@ export async function run() {
 
   if (autoMerge) {
     const toMerge = evaluations.filter((e) => e.verdict === 'GO');
+
     if (toMerge.length === 0) {
       console.log('ℹ️ Keine PRs zur automatischen Freigabe/Merge bereit.');
     } else {
       console.log(`\n📦 Automatische Freigabe für ${toMerge.length} PR(s):`);
+
       for (const item of toMerge) {
         try {
           mergePr(item.number);

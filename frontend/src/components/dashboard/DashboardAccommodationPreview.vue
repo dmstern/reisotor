@@ -10,7 +10,10 @@ const props = defineProps<{
 }>();
 
 const title = computed(() => {
-  if (!props.accommodation) return 'Unterkunft planen';
+  if (!props.accommodation) {
+    return 'Unterkunft planen';
+  }
+
   return props.accommodation.title;
 });
 </script>

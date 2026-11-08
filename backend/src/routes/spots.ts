@@ -189,8 +189,14 @@ const updateScheduleDoneBySpotStmt = db.prepare(
 
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/spots', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectSpotsByTripStmt.all(req.query.trip_id);
   });
 
@@ -235,14 +241,17 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     if (maps_link) {
       if (isBookingLinkUrl(maps_link)) {
         const bookingPreview = await fetchAccommodationPreview(maps_link);
+
         if (bookingPreview) {
           if (bookingPreview.name && !previewName) {
             previewName = bookingPreview.name;
           }
+
           if (bookingPreview.imageUrl) {
             previewImage = bookingPreview.imageUrl;
             previewImages.push(bookingPreview.imageUrl);
           }
+
           if (bookingPreview.images?.length) {
             for (const img of bookingPreview.images) {
               if (!previewImages.includes(img)) {
@@ -250,25 +259,40 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
               }
             }
           }
+
           previewCategory = 'Unterkunft';
-          if (bookingPreview.address) previewAddress = bookingPreview.address;
-          if (bookingPreview.city && !previewCity) previewCity = bookingPreview.city;
-          if (bookingPreview.amount != null) previewAmount = bookingPreview.amount;
-          if (bookingPreview.currency) previewCurrency = bookingPreview.currency;
-          if (bookingPreview.lat != null && previewLat == null) previewLat = bookingPreview.lat;
-          if (bookingPreview.lng != null && previewLng == null) previewLng = bookingPreview.lng;
-          if (bookingPreview.checkin) previewCheckin = bookingPreview.checkin;
-          if (bookingPreview.checkout) previewCheckout = bookingPreview.checkout;
-          if (bookingPreview.startDate) previewStartDate = bookingPreview.startDate;
-          if (bookingPreview.endDate) previewEndDate = bookingPreview.endDate;
-          if (bookingPreview.contact) previewContact = bookingPreview.contact;
-          if (bookingPreview.sourceUrl) previewSourceUrl = bookingPreview.sourceUrl;
+
+          if (bookingPreview.address) {previewAddress = bookingPreview.address;}
+
+          if (bookingPreview.city && !previewCity) {previewCity = bookingPreview.city;}
+
+          if (bookingPreview.amount != null) {previewAmount = bookingPreview.amount;}
+
+          if (bookingPreview.currency) {previewCurrency = bookingPreview.currency;}
+
+          if (bookingPreview.lat != null && previewLat == null) {previewLat = bookingPreview.lat;}
+
+          if (bookingPreview.lng != null && previewLng == null) {previewLng = bookingPreview.lng;}
+
+          if (bookingPreview.checkin) {previewCheckin = bookingPreview.checkin;}
+
+          if (bookingPreview.checkout) {previewCheckout = bookingPreview.checkout;}
+
+          if (bookingPreview.startDate) {previewStartDate = bookingPreview.startDate;}
+
+          if (bookingPreview.endDate) {previewEndDate = bookingPreview.endDate;}
+
+          if (bookingPreview.contact) {previewContact = bookingPreview.contact;}
+
+          if (bookingPreview.sourceUrl) {previewSourceUrl = bookingPreview.sourceUrl;}
         }
       } else {
         const linkPreview = await fetchPlacePreview(maps_link);
+
         if (linkPreview.name && !previewName) {
           previewName = linkPreview.name;
         }
+
         if (linkPreview.imageUrl) {
           previewImage = linkPreview.imageUrl;
           previewImages.push(linkPreview.imageUrl);
@@ -288,11 +312,13 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         },
         10
       );
+
       for (const p of photos) {
         if (!previewImages.includes(p)) {
           previewImages.push(p);
         }
       }
+
       if (!previewImage && previewImages.length > 0) {
         previewImage = previewImages[0];
       }
@@ -321,34 +347,44 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Body: SpotBody }>('/spots', async (req, reply) => {
     const body = req.body;
     const { trip_id, title, category, note, maps_link, is_home } = body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     if (category?.trim()) {
       ensureTripCategory(trip_id, 'spot', category);
     }
+
     let { lat, lng, image_url } = body;
     image_url = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+
     if (image_url?.startsWith('/api/uploads/')) {
       associateUploadWithTrip(image_url.slice('/api/uploads/'.length), trip_id, req.session.userId);
     }
+
     if ((lat == null || lng == null) && maps_link) {
       if (isBookingLinkUrl(maps_link)) {
         const accPreview = await fetchAccommodationPreview(maps_link);
         lat = accPreview?.lat ?? undefined;
         lng = accPreview?.lng ?? undefined;
       }
+
       if (lat == null || lng == null) {
         const resolved = await resolveLatLng(maps_link);
         lat = resolved?.lat;
         lng = resolved?.lng;
       }
     }
+
     // Kein eigenes Bild hinterlegt, aber ein Standort bekannt: automatisches Vorschaubild
     // (Kartenausschnitt) statt eines leeren Platzhalters.
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+
     const { budgetExpenseId } = planBudgetExpense(trip_id, null, body);
     const isHtml = body.note_format === 'html';
     const result = db
@@ -396,18 +432,27 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Params: { id: string }; Body: SpotBody }>('/spots/:id', async (req, reply) => {
     const existing = selectSpotForUpdateStmt.get(req.params.id) as SpotRow | undefined;
-    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) {
+      return;
+    }
 
     const body = req.body;
     const { title, category, note, maps_link, is_home } = body;
+
     if (category?.trim()) {
       ensureTripCategory(existing.trip_id, 'spot', category);
     }
+
     let { lat, lng, image_url } = body;
     image_url = await localizeImageUrl(image_url, {
       skipIfRestricted: isUserRestricted(req.session.userId),
     });
+
     if (image_url?.startsWith('/api/uploads/')) {
       associateUploadWithTrip(
         image_url.slice('/api/uploads/'.length),
@@ -415,30 +460,41 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         req.session.userId
       );
     }
+
     if ((lat == null || lng == null) && maps_link) {
       if (isBookingLinkUrl(maps_link)) {
         const accPreview = await fetchAccommodationPreview(maps_link);
         lat = accPreview?.lat ?? undefined;
         lng = accPreview?.lng ?? undefined;
       }
+
       if (lat == null || lng == null) {
         const resolved = await resolveLatLng(maps_link);
         lat = resolved?.lat;
         lng = resolved?.lng;
       }
     }
+
     // Schlägt die (erneute) Auflösung fehl, obwohl weiterhin ein Maps-Link hinterlegt ist,
     // bisherige Koordinaten behalten statt sie zu löschen (siehe gleiches Muster in trips.ts).
     if ((lat == null || lng == null) && maps_link) {
       lat = lat ?? existing.lat ?? undefined;
       lng = lng ?? existing.lng ?? undefined;
     }
+
     // Wenn lat/lng im Request gar nicht übergeben wurden (undefined), bestehende Koordinaten behalten:
-    if (lat === undefined) lat = existing.lat ?? undefined;
-    if (lng === undefined) lng = existing.lng ?? undefined;
+    if (lat === undefined) {
+      lat = existing.lat ?? undefined;
+    }
+
+    if (lng === undefined) {
+      lng = existing.lng ?? undefined;
+    }
+
     if (!image_url && lat != null && lng != null) {
       image_url = tilePreviewUrl(lat, lng);
     }
+
     const { budgetExpenseId, staleIdToDelete } = planBudgetExpense(
       existing.trip_id,
       existing.budget_expense_id,
@@ -502,22 +558,31 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const spot = selectSpotTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
-      if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
+
+      if (!spot) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, spot.trip_id, req.session.userId)) {
+        return;
+      }
 
       const done = req.body.done ? 1 : 0;
+
       if (done) {
         // Zwei Wege zu einem Datum: ein direkt mit dem Spot verknüpfter Termin (normales Einplanen,
         // siehe schedule_items.spot_id, auch DiaryView.vue's "Spots zuordnen"-Picker seit #216) ODER
         // ein Termin über eine Tour, in der dieser Spot als Station steckt (z. B. routes/ideas.ts's
         // plan-spot).
         const hasDate = hasScheduleDateStmt.get(req.params.id, req.params.id);
+
         if (!hasDate) {
           return reply
             .code(400)
             .send({ error: 'Für den Status "gemacht" muss zuerst ein Datum gesetzt werden.' });
         }
       }
+
       updateSpotDoneStmt.run(done, req.params.id);
       updateScheduleDoneBySpotStmt.run(done, req.params.id);
       recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
@@ -536,15 +601,26 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/spots/:id', async (req, reply) => {
     const existing = selectSpotForDeleteStmt.get(req.params.id) as
       { trip_id: number; budget_expense_id: number | null } | undefined;
-    if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
+
+    if (!existing) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existing.trip_id, req.session.userId)) {
+      return;
+    }
 
     const now = new Date().toISOString();
     const result = softDeleteSpotStmt.run(now, req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     if (existing.budget_expense_id) {
       softDeleteBudgetItemStmt.run(now, existing.budget_expense_id);
     }
+
     recordActivity(
       existing.trip_id,
       'spots',
@@ -558,8 +634,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   // --- Likes/Kommentare (analog /ideas/likes, /ideas/comments) ---
 
   app.get<{ Querystring: { trip_id?: string } }>('/spots/likes', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return db
       .prepare(
         `SELECT spot_likes.* FROM spot_likes
@@ -570,16 +652,28 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get<{ Querystring: { trip_id?: string } }>('/spots/comments', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectSpotCommentsByTripStmt.all(req.session.userId ?? null, req.query.trip_id);
   });
 
   app.post<{ Params: { id: string } }>('/spots/:id/like', async (req, reply) => {
     const spot = selectSpotTripIdStmt.get(req.params.id) as
       { id: number; trip_id: number } | undefined;
-    if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
+
+    if (!spot) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, spot.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectSpotLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
@@ -601,8 +695,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const spot = selectSpotTripIdStmt.get(req.params.id) as
         { id: number; trip_id: number } | undefined;
-      if (!spot) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, spot.trip_id, req.session.userId)) return;
+
+      if (!spot) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, spot.trip_id, req.session.userId)) {
+        return;
+      }
 
       const result = insertSpotCommentStmt.run(
         req.params.id,
@@ -619,13 +719,21 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/spots/comments/:id', async (req, reply) => {
     const comment = selectSpotCommentWithTripStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
+
     if (comment.author_id !== req.session.userId) {
       return reply
         .code(403)
         .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar löschen' });
     }
+
     deleteSpotCommentStmt.run(req.params.id);
     return reply.code(204).send();
   });
@@ -634,16 +742,28 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     '/spots/comments/:id',
     async (req, reply) => {
       const content = req.body?.content?.trim();
-      if (!content) return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+
+      if (!content) {
+        return reply.code(400).send({ error: 'Inhalt darf nicht leer sein' });
+      }
+
       const comment = selectSpotCommentWithTripStmt.get(req.params.id) as
         { id: number; author_id: number; trip_id: number } | undefined;
-      if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+      if (!comment) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+        return;
+      }
+
       if (comment.author_id !== req.session.userId) {
         return reply
           .code(403)
           .send({ error: 'Nur die Autorin/der Autor kann diesen Kommentar bearbeiten' });
       }
+
       updateSpotCommentStmt.run(content, new Date().toISOString(), req.params.id);
       return selectSpotCommentByIdStmt.get(req.session.userId ?? null, req.params.id);
     }
@@ -652,13 +772,20 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string } }>('/spots/comments/:id/like', async (req, reply) => {
     const comment = selectSpotCommentWithTripStmt.get(req.params.id) as
       { id: number; author_id: number; trip_id: number } | undefined;
-    if (!comment) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) return;
+
+    if (!comment) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, comment.trip_id, req.session.userId)) {
+      return;
+    }
 
     const existing = selectSpotCommentLikeStmt.get(req.params.id, req.session.userId) as
       { id: number } | undefined;
 
     let liked: boolean;
+
     if (existing) {
       deleteSpotCommentLikeStmt.run(existing.id);
       liked = false;
