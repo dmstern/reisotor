@@ -132,6 +132,14 @@ describe('TripForm', () => {
     cleanUp();
   });
 
+  it('renders optional fields (dates and location) directly without a collapsible fieldset', () => {
+    const { container, cleanUp } = mountForm();
+    expect(container.querySelector('.collapsible-fieldset')).toBeNull();
+    expect(container.querySelector('.dates-row')).not.toBeNull();
+    expect(container.querySelector('.location-box')).not.toBeNull();
+    cleanUp();
+  });
+
   it('initializes coordinates from initial prop and submits them', async () => {
     let submittedData: TripFormData | null = null;
     const initialWithCoords: TripFormData = {

@@ -10,7 +10,6 @@ import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 
 import CheckboxCard from './primitives/CheckboxCard.vue';
-import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import { IconCloud } from '@tabler/icons-vue';
@@ -74,7 +73,6 @@ const manualPin = ref<{ lat: number; lng: number } | null>(
     ? { lat: props.initial.lat, lng: props.initial.lng }
     : null
 );
-const showOptional = ref(false);
 
 const nameId = useId();
 const startDateId = useId();
@@ -141,7 +139,6 @@ watch(
     form.value = initial ? { ...initial } : blankForm();
     manualPin.value =
       initial?.lat != null && initial?.lng != null ? { lat: initial.lat, lng: initial.lng } : null;
-    showOptional.value = false;
     activeTab.value = props.initialTab ?? 'general';
   }
 );
@@ -153,14 +150,13 @@ watch(
   }
 );
 
-// Öffnet die optionalen Felder automatisch, sobald der Aufrufer einen Fehlschlag meldet;
+// Wechselt zum Allgemein-Tab, sobald der Aufrufer einen Fehlschlag meldet;
 // ein danach gesetzter Pin löst automatisch einen erneuten Speicherversuch aus.
 watch(
   () => props.locationError,
   (err) => {
     if (err) {
       activeTab.value = 'general';
-      showOptional.value = true;
     }
   }
 );
@@ -212,7 +208,6 @@ function onSubmit() {
   }
   if (dateError.value) {
     activeTab.value = 'general';
-    showOptional.value = true;
     return;
   }
   const parsed = parseLatLngFromMapsLink(form.value.maps_link ?? undefined);
@@ -268,55 +263,53 @@ function onSubmit() {
         />
       </label>
 
-      <CollapsibleFieldset v-model="showOptional" label="Optionale Angaben">
-        <div class="dates-row">
-          <label :for="startDateId">
-            Start
-            <Input
-              :id="startDateId"
-              v-model="form.start_date"
-              type="date"
-              :modified="isStartDateModified"
-            />
-          </label>
-          <label :for="endDateId">
-            Ende
-            <Input
-              :id="endDateId"
-              v-model="form.end_date"
-              type="date"
-              :modified="isEndDateModified"
-            />
-          </label>
-        </div>
-        <p v-if="dateError" class="hint error">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-          {{ dateError }}
-        </p>
-
-        <Card class="location-box" :class="{ 'is-modified': isLocationModified }">
-          <span class="field-label">Ziel &amp; Standort</span>
-          <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
-          <p v-if="locationError" class="hint error">
-            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte
-            auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn manuell zu
-            setzen.
-          </p>
-          <LocationPicker
-            v-model="manualPin"
-            :address="form.destination"
-            :maps-link="form.maps_link"
-            context="trip"
-            placeholder="Reiseziel, Stadt oder Maps-Link eingeben..."
-            :modified="isLocationModified"
-            @update:address="form.destination = $event"
-            @update:maps-link="form.maps_link = $event"
-            @select="onLocationSelect"
-            @clear="onLocationClear"
-            @reset="onLocationReset"
+      <div class="dates-row">
+        <label :for="startDateId">
+          Start
+          <Input
+            :id="startDateId"
+            v-model="form.start_date"
+            type="date"
+            :modified="isStartDateModified"
           />
-        </Card>
-      </CollapsibleFieldset>
+        </label>
+        <label :for="endDateId">
+          Ende
+          <Input
+            :id="endDateId"
+            v-model="form.end_date"
+            type="date"
+            :modified="isEndDateModified"
+          />
+        </label>
+      </div>
+      <p v-if="dateError" class="hint error">
+        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
+        {{ dateError }}
+      </p>
+
+      <Card class="location-box" :class="{ 'is-modified': isLocationModified }">
+        <span class="field-label">Ziel &amp; Standort</span>
+        <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
+        <p v-if="locationError" class="hint error">
+          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte
+          auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn manuell zu
+          setzen.
+        </p>
+        <LocationPicker
+          v-model="manualPin"
+          :address="form.destination"
+          :maps-link="form.maps_link"
+          context="trip"
+          placeholder="Reiseziel, Stadt oder Maps-Link eingeben..."
+          :modified="isLocationModified"
+          @update:address="form.destination = $event"
+          @update:maps-link="form.maps_link = $event"
+          @select="onLocationSelect"
+          @clear="onLocationClear"
+          @reset="onLocationReset"
+        />
+      </Card>
     </div>
 
     <div v-if="showTabs && activeTab === 'settings'" class="tab-content settings-tab">
