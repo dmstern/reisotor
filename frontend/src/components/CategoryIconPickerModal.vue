@@ -41,11 +41,13 @@ const searchQuery = ref('');
 watch(
   () => props.modelValue,
   (isOpen) => {
-    if (isOpen) {
-      searchQuery.value = '';
-      displayMode.value = iconStyleStore.styleForGroup('categories');
-      nextTick(updateScrollFade);
+    if (!isOpen) {
+      return;
     }
+
+    searchQuery.value = '';
+    displayMode.value = iconStyleStore.styleForGroup('categories');
+    nextTick(updateScrollFade);
   }
 );
 

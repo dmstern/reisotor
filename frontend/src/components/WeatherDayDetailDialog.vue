@@ -261,11 +261,13 @@ function goToPrevDay() {
 
   const targetDay = sortedNavigationDays.value[currentIndex.value - 1];
 
-  if (targetDay) {
-    selectedDate.value = targetDay.date;
-    emit('update:date', targetDay.date);
-    emit('navigate-day', targetDay);
+  if (!targetDay) {
+    return;
   }
+
+  selectedDate.value = targetDay.date;
+  emit('update:date', targetDay.date);
+  emit('navigate-day', targetDay);
 }
 
 function goToNextDay() {
@@ -275,11 +277,13 @@ function goToNextDay() {
 
   const targetDay = sortedNavigationDays.value[currentIndex.value + 1];
 
-  if (targetDay) {
-    selectedDate.value = targetDay.date;
-    emit('update:date', targetDay.date);
-    emit('navigate-day', targetDay);
+  if (!targetDay) {
+    return;
   }
+
+  selectedDate.value = targetDay.date;
+  emit('update:date', targetDay.date);
+  emit('navigate-day', targetDay);
 }
 
 const prevDayLabel = computed(() => {

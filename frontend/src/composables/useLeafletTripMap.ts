@@ -340,14 +340,16 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
 
     const areAllOutOfBounds = focusedLatLngs.every(([lat, lng]) => isOutOfBounds(lat, lng));
 
-    if (areAllOutOfBounds) {
-      drawers.mapFocusExcursionId = null;
-      drawers.mapFocusDate = null;
-      drawers.mapFocusKey = null;
-      drawers.mapFocusTrackId = null;
-      drawers.mapFocusLocation = null;
-      drawers.mapFocusAllPhotos = false;
+    if (!areAllOutOfBounds) {
+      return;
     }
+
+    drawers.mapFocusExcursionId = null;
+    drawers.mapFocusDate = null;
+    drawers.mapFocusKey = null;
+    drawers.mapFocusTrackId = null;
+    drawers.mapFocusLocation = null;
+    drawers.mapFocusAllPhotos = false;
   }
 
   function clearFocusState() {

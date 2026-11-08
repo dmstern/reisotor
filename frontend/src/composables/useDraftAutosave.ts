@@ -84,11 +84,13 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
       const stop = watch(
         () => tripStore.currentTripId,
         (id) => {
-          if (id != null) {
-            clearTimeout(timeout);
-            stop();
-            resolve(id);
+          if (id == null) {
+            return;
           }
+
+          clearTimeout(timeout);
+          stop();
+          resolve(id);
         }
       );
     });

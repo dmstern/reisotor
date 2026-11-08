@@ -293,13 +293,15 @@ function collectJsonLdObjects(obj: unknown, target: Record<string, unknown>[]) {
     return;
   }
 
-  if (typeof obj === 'object') {
-    const rec = obj as Record<string, unknown>;
-    target.push(rec);
+  if (typeof obj !== 'object') {
+    return;
+  }
 
-    if (rec['@graph']) {
-      collectJsonLdObjects(rec['@graph'], target);
-    }
+  const rec = obj as Record<string, unknown>;
+  target.push(rec);
+
+  if (rec['@graph']) {
+    collectJsonLdObjects(rec['@graph'], target);
   }
 }
 

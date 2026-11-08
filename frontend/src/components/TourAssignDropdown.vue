@@ -86,11 +86,13 @@ function handleCreate() {
 }
 
 function onWindowKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    close();
+  if (event.key !== 'Escape') {
+    return;
   }
+
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  close();
 }
 
 watch(open, (isOpen) => {

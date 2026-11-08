@@ -25,11 +25,13 @@ function selectPreset(val: string) {
   const style = val as GlassStyle;
   const preset = getPresetGlassValues(style);
 
-  if (preset) {
-    uiSettings.glassOpacity = preset.opacity;
-    uiSettings.glassBlur = preset.blur;
-    uiSettings.glassStyle = style;
+  if (!preset) {
+    return;
   }
+
+  uiSettings.glassOpacity = preset.opacity;
+  uiSettings.glassBlur = preset.blur;
+  uiSettings.glassStyle = style;
 }
 
 const isDefault = computed(() => {

@@ -580,19 +580,21 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     categoryNavResizeObserver = null;
     categoryNavEl.value = el instanceof HTMLElement ? el : null;
 
-    if (el instanceof HTMLElement) {
-      if (typeof ResizeObserver !== 'undefined') {
-        categoryNavResizeObserver = new ResizeObserver(() => {
-          updateCategoryNavUnderline();
-          categoryNavHeight.value = el.getBoundingClientRect().height;
-          updateNavArrows();
-        });
-        categoryNavResizeObserver.observe(el);
-      }
-
-      updateNavArrows();
-      nextTick(updateCategoryNavUnderline);
+    if (!(el instanceof HTMLElement)) {
+      return;
     }
+
+    if (typeof ResizeObserver !== 'undefined') {
+      categoryNavResizeObserver = new ResizeObserver(() => {
+        updateCategoryNavUnderline();
+        categoryNavHeight.value = el.getBoundingClientRect().height;
+        updateNavArrows();
+      });
+      categoryNavResizeObserver.observe(el);
+    }
+
+    updateNavArrows();
+    nextTick(updateCategoryNavUnderline);
   }
 
   function scrollNavBy(direction: 1 | -1) {

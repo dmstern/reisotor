@@ -421,11 +421,13 @@ export async function checkVersionNotification() {
     return;
   }
 
-  if (lastNotified !== currentVersion) {
-    const detail = info.changelog?.notes?.[0];
-    await sendVersionNotification(currentVersion, detail);
-    setInstanceSetting('last_notified_version', currentVersion);
+  if (lastNotified === currentVersion) {
+    return;
   }
+
+  const detail = info.changelog?.notes?.[0];
+  await sendVersionNotification(currentVersion, detail);
+  setInstanceSetting('last_notified_version', currentVersion);
 }
 
 /** Versendet Aktivitäts-E-Mails an Mitglieder des Urlaubs, die E-Mail-Benachrichtigungen für die

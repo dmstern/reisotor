@@ -122,23 +122,25 @@ watch(
 // (≥1024px) vergrößert oder gedreht wird, nahtlos zur Hauptseite leiten und die Kalender-Schublade öffnen,
 // damit ScheduleView nicht doppelt (im Hauptinhalt UND im Drawer) gemountet wird.
 watch(isDesktop, (desktop) => {
-  if (desktop && route.name === 'calendar') {
-    let tripId = '';
-
-    if (route.params.tripId) {
-      tripId = String(route.params.tripId);
-    } else if (tripStore.currentTripId) {
-      tripId = String(tripStore.currentTripId);
-    }
-
-    if (tripId) {
-      router.replace(`/trip/${tripId}`);
-    } else {
-      router.replace({ name: 'trips' });
-    }
-
-    drawers.openCalendar();
+  if (!desktop || route.name !== 'calendar') {
+    return;
   }
+
+  let tripId = '';
+
+  if (route.params.tripId) {
+    tripId = String(route.params.tripId);
+  } else if (tripStore.currentTripId) {
+    tripId = String(tripStore.currentTripId);
+  }
+
+  if (tripId) {
+    router.replace(`/trip/${tripId}`);
+  } else {
+    router.replace({ name: 'trips' });
+  }
+
+  drawers.openCalendar();
 });
 
 // Serverseitige Session weg (z. B. Prozess-Neustart, siehe api/client.ts) - client.ts feuert

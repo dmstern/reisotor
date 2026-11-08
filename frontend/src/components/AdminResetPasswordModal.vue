@@ -30,13 +30,15 @@ const copiedLink = ref(false);
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) {
-      mode.value = 'auto';
-      customPassword.value = '';
-      error.value = '';
-      copiedPassword.value = false;
-      copiedLink.value = false;
+    if (!open) {
+      return;
     }
+
+    mode.value = 'auto';
+    customPassword.value = '';
+    error.value = '';
+    copiedPassword.value = false;
+    copiedLink.value = false;
   }
 );
 

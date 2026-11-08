@@ -115,13 +115,15 @@ const lastSearchedQuery = ref(
 watch(
   () => [props.searchContext?.name, props.searchContext?.city, props.searchContext?.category],
   () => {
-    if (!showModal.value) {
-      const q = buildDefaultImageSearchQuery(props.searchContext);
-      searchQuery.value = q;
+    if (showModal.value) {
+      return;
+    }
 
-      if (suggestions.value.length === 0) {
-        lastSearchedQuery.value = '';
-      }
+    const q = buildDefaultImageSearchQuery(props.searchContext);
+    searchQuery.value = q;
+
+    if (suggestions.value.length === 0) {
+      lastSearchedQuery.value = '';
     }
   }
 );
@@ -129,16 +131,18 @@ watch(
 watch(
   () => showModal.value,
   (isOpen) => {
-    if (isOpen) {
-      const q = buildDefaultImageSearchQuery(props.searchContext);
-      searchQuery.value = q;
-
-      if (suggestions.value.length === 0) {
-        lastSearchedQuery.value = '';
-      }
-
-      searchMessage.value = null;
+    if (!isOpen) {
+      return;
     }
+
+    const q = buildDefaultImageSearchQuery(props.searchContext);
+    searchQuery.value = q;
+
+    if (suggestions.value.length === 0) {
+      lastSearchedQuery.value = '';
+    }
+
+    searchMessage.value = null;
   }
 );
 
@@ -452,14 +456,16 @@ function resetImage() {
 }
 
 function handleModalClose(visible: boolean) {
-  if (!visible) {
-    if (isUploading.value) {
-      imageUrlInputRef.value?.abortUpload();
-    }
-
-    showModal.value = false;
-    searchMessage.value = null;
+  if (visible) {
+    return;
   }
+
+  if (isUploading.value) {
+    imageUrlInputRef.value?.abortUpload();
+  }
+
+  showModal.value = false;
+  searchMessage.value = null;
 }
 </script>
 

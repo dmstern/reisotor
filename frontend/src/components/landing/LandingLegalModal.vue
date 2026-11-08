@@ -49,27 +49,29 @@ function onKeydown(e: KeyboardEvent) {
     return;
   }
 
-  if (e.key === 'Tab') {
-    const focusables = getFocusableElements();
+  if (e.key !== 'Tab') {
+    return;
+  }
 
-    if (focusables.length === 0) {
+  const focusables = getFocusableElements();
+
+  if (focusables.length === 0) {
+    e.preventDefault();
+    return;
+  }
+
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  const active = document.activeElement as HTMLElement | null;
+
+  if (e.shiftKey) {
+    if (active === first || !modalRef.value?.contains(active)) {
+      last.focus();
       e.preventDefault();
-      return;
     }
-
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    const active = document.activeElement as HTMLElement | null;
-
-    if (e.shiftKey) {
-      if (active === first || !modalRef.value?.contains(active)) {
-        last.focus();
-        e.preventDefault();
-      }
-    } else if (active === last || !modalRef.value?.contains(active)) {
-      first.focus();
-      e.preventDefault();
-    }
+  } else if (active === last || !modalRef.value?.contains(active)) {
+    first.focus();
+    e.preventDefault();
   }
 }
 

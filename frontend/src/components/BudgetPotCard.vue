@@ -127,15 +127,17 @@ function onHeaderClick() {
 }
 
 function onTotalSectionClick(e: MouseEvent) {
-  if (!isExpanded.value && hasCategories.value) {
-    const target = e.target as HTMLElement | null;
-
-    if (target?.closest('input, button, select, textarea, label')) {
-      return;
-    }
-
-    isExpanded.value = true;
+  if (isExpanded.value || !hasCategories.value) {
+    return;
   }
+
+  const target = e.target as HTMLElement | null;
+
+  if (target?.closest('input, button, select, textarea, label')) {
+    return;
+  }
+
+  isExpanded.value = true;
 }
 </script>
 

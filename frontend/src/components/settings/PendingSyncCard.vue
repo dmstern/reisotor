@@ -240,26 +240,30 @@ function discardSingle(entry: OutboxEntry) {
   const { title } = getEntryInfo(entry);
 
   if (
-    confirm(
+    !confirm(
       `Diesen nicht synchronisierten Eintrag ("${title}") wirklich verwerfen? Lokal vorgenommene Änderungen gehen verloren.`
     )
   ) {
-    removeOutboxEntry(entry.id);
-    refreshOutbox();
-    showToast({ message: 'Eintrag verworfen.', type: 'info' });
+    return;
   }
+
+  removeOutboxEntry(entry.id);
+  refreshOutbox();
+  showToast({ message: 'Eintrag verworfen.', type: 'info' });
 }
 
 function discardAll() {
   if (
-    confirm(
+    !confirm(
       `Alle ${outboxEntries.value.length} nicht synchronisierten Einträge wirklich verwerfen? Diese Aktion kann nicht rückgängig gemacht werden.`
     )
   ) {
-    clearOutbox();
-    refreshOutbox();
-    showToast({ message: 'Alle ausstehenden Einträge wurden verworfen.', type: 'info' });
+    return;
   }
+
+  clearOutbox();
+  refreshOutbox();
+  showToast({ message: 'Alle ausstehenden Einträge wurden verworfen.', type: 'info' });
 }
 
 function openEditModal(entry: OutboxEntry) {

@@ -32,15 +32,17 @@ const success = ref(false);
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) {
-      username.value = props.initialUsername ?? '';
-      email.value = props.initialEmail ?? '';
-      message.value = props.initialMessage ?? '';
-      type.value = props.initialType ?? 'registration_help';
-      name.value = '';
-      error.value = '';
-      success.value = false;
+    if (!open) {
+      return;
     }
+
+    username.value = props.initialUsername ?? '';
+    email.value = props.initialEmail ?? '';
+    message.value = props.initialMessage ?? '';
+    type.value = props.initialType ?? 'registration_help';
+    name.value = '';
+    error.value = '';
+    success.value = false;
   }
 );
 

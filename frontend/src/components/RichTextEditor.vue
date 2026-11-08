@@ -65,13 +65,15 @@ function onFocusIn() {
 function onFocusOut(event: FocusEvent) {
   const related = event.relatedTarget as Node | null;
 
-  if (!editorContainerRef.value?.contains(related)) {
-    isFocused.value = false;
-    emit('blur');
+  if (editorContainerRef.value?.contains(related)) {
+    return;
+  }
 
-    if (props.expandable && !hasContent.value) {
-      isExpanded.value = false;
-    }
+  isFocused.value = false;
+  emit('blur');
+
+  if (props.expandable && !hasContent.value) {
+    isExpanded.value = false;
   }
 }
 

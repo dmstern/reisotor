@@ -372,11 +372,13 @@ async function savePush() {
 async function handleGenerateVapid() {
   const ok = await generateVapidKeys(pushForm.vapidSubject);
 
-  if (ok && settings.value) {
-    pushForm.vapidPublicKey = settings.value.push.vapidPublicKey;
-    pushForm.vapidPrivateKey = '';
-    pushForm.clearVapidKeys = false;
+  if (!ok || !settings.value) {
+    return;
   }
+
+  pushForm.vapidPublicKey = settings.value.push.vapidPublicKey;
+  pushForm.vapidPrivateKey = '';
+  pushForm.clearVapidKeys = false;
 }
 </script>
 

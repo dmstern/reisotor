@@ -79,19 +79,21 @@ function scrollToActiveTrack() {
   const targetId = Number(props.activeTrackId);
   const el = rowRefs.get(targetId);
 
-  if (el && typeof el.scrollIntoView === 'function') {
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    el.scrollIntoView({
-      behavior: prefersReduced ? 'auto' : 'smooth',
-      block: 'nearest',
-    });
+  if (!el || typeof el.scrollIntoView !== 'function') {
+    return;
+  }
 
-    if (typeof document !== 'undefined' && document.activeElement === document.body) {
-      const btn = el.querySelector<HTMLButtonElement>('.track-row-main');
-      btn?.focus({ preventScroll: true });
-    }
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({
+    behavior: prefersReduced ? 'auto' : 'smooth',
+    block: 'nearest',
+  });
+
+  if (typeof document !== 'undefined' && document.activeElement === document.body) {
+    const btn = el.querySelector<HTMLButtonElement>('.track-row-main');
+    btn?.focus({ preventScroll: true });
   }
 }
 

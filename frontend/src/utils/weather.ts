@@ -712,26 +712,28 @@ function parseHourlyResponse(data: OpenMeteoHourlyResponse): HourlyWeather[] {
       const hourStr = t.split('T')[1] ?? '';
       const hourNum = parseInt(hourStr.split(':')[0], 10);
 
-      if ([6, 9, 12, 15, 18, 21].includes(hourNum)) {
-        const rawTemp = data.hourly.temperature_2m?.[i];
-        const rawCode = data.hourly.weathercode?.[i];
+      if (![6, 9, 12, 15, 18, 21].includes(hourNum)) {
+        return;
+      }
 
-        // Strikte Validierung: null oder undefined darf niemals durch Math.round() zu 0° verfälscht werden!
-        if (
-          rawTemp != null &&
-          typeof rawTemp === 'number' &&
-          !Number.isNaN(rawTemp) &&
-          rawCode != null &&
-          typeof rawCode === 'number' &&
-          !Number.isNaN(rawCode)
-        ) {
-          result.push({
-            time: hourStr,
-            temp: Math.round(rawTemp),
-            weatherCode: rawCode,
-            precipitationProbability: data.hourly.precipitation_probability?.[i] ?? null,
-          });
-        }
+      const rawTemp = data.hourly.temperature_2m?.[i];
+      const rawCode = data.hourly.weathercode?.[i];
+
+      // Strikte Validierung: null oder undefined darf niemals durch Math.round() zu 0° verfälscht werden!
+      if (
+        rawTemp != null &&
+        typeof rawTemp === 'number' &&
+        !Number.isNaN(rawTemp) &&
+        rawCode != null &&
+        typeof rawCode === 'number' &&
+        !Number.isNaN(rawCode)
+      ) {
+        result.push({
+          time: hourStr,
+          temp: Math.round(rawTemp),
+          weatherCode: rawCode,
+          precipitationProbability: data.hourly.precipitation_probability?.[i] ?? null,
+        });
       }
     });
   }

@@ -452,20 +452,22 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     (overlay) => {
       clearSheetHeightOverride();
 
-      if (!overlay) {
-        if (sheetState.value === 'collapsed') {
-          sheetState.value = 'partial';
-        }
+      if (overlay) {
+        return;
+      }
 
-        const validWidth = calcValidSpotsColWidth({
-          preferredWidth: loadStoredSpotsColWidth() ?? spotsColWidth.value,
-          availableWidth: appMainWidth.value,
-          isDesktop: true,
-        });
+      if (sheetState.value === 'collapsed') {
+        sheetState.value = 'partial';
+      }
 
-        if (spotsColWidth.value !== validWidth) {
-          spotsColWidth.value = validWidth;
-        }
+      const validWidth = calcValidSpotsColWidth({
+        preferredWidth: loadStoredSpotsColWidth() ?? spotsColWidth.value,
+        availableWidth: appMainWidth.value,
+        isDesktop: true,
+      });
+
+      if (spotsColWidth.value !== validWidth) {
+        spotsColWidth.value = validWidth;
       }
     },
     { immediate: true }

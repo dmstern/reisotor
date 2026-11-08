@@ -221,15 +221,17 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     routeDisplayMode.value = val as 'exact' | 'direct';
     routeCalculationError.value = null;
 
-    if (val === 'exact') {
-      const modeKey = normalizeRoutingTransport(transportType.value);
-      const cached = routeCacheByTransport.value[modeKey];
+    if (val !== 'exact') {
+      return;
+    }
 
-      if (cached && cached.routes.length > 0) {
-        applyCachedRoute(cached);
-      } else if (hasCoordinates.value && isRoutable.value) {
-        calculateRoute();
-      }
+    const modeKey = normalizeRoutingTransport(transportType.value);
+    const cached = routeCacheByTransport.value[modeKey];
+
+    if (cached && cached.routes.length > 0) {
+      applyCachedRoute(cached);
+    } else if (hasCoordinates.value && isRoutable.value) {
+      calculateRoute();
     }
   }
 

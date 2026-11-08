@@ -198,21 +198,23 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     editDraft.clear();
     editingEntry.value = null;
 
-    if (entryToSave.is_draft && hasDiaryEntryContent(formToSave)) {
-      const now = new Date().toISOString();
-      const body = {
-        title: formToSave.title || undefined,
-        content: formToSave.content,
-        content_format: 'html',
-        images: formToSave.images,
-        excursion_ids: formToSave.excursion_ids,
-        spot_ids: formToSave.spot_ids,
-        date: formToSave.date || now.slice(0, 10),
-        is_draft: true,
-      };
-      const updated = await api.put<DiaryEntry>(`/diary/${entryToSave.id}`, body);
-      onEntryUpdated(updated);
+    if (!entryToSave.is_draft || !hasDiaryEntryContent(formToSave)) {
+      return;
     }
+
+    const now = new Date().toISOString();
+    const body = {
+      title: formToSave.title || undefined,
+      content: formToSave.content,
+      content_format: 'html',
+      images: formToSave.images,
+      excursion_ids: formToSave.excursion_ids,
+      spot_ids: formToSave.spot_ids,
+      date: formToSave.date || now.slice(0, 10),
+      is_draft: true,
+    };
+    const updated = await api.put<DiaryEntry>(`/diary/${entryToSave.id}`, body);
+    onEntryUpdated(updated);
   }
 
   function discardEditDraft() {

@@ -306,15 +306,17 @@ function onClick(event: MouseEvent) {
     return;
   }
 
-  if (!open.value) {
-    updatePlacement();
-    filterText.value = null;
-    open.value = true;
-    initHighlightedIndex();
+  if (open.value) {
+    return;
+  }
 
-    if (isExactOptionMatch.value) {
-      (event.target as HTMLInputElement)?.select();
-    }
+  updatePlacement();
+  filterText.value = null;
+  open.value = true;
+  initHighlightedIndex();
+
+  if (isExactOptionMatch.value) {
+    (event.target as HTMLInputElement)?.select();
   }
 }
 

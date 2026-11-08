@@ -39,11 +39,13 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
   const locationSearchCandidateIndex = ref(-1);
 
   watch(currentTitle, (newTitle, oldTitle) => {
-    if (newTitle !== oldTitle) {
-      suggestionCache.value = null;
-      addressSuggestionIndex.value = -1;
-      categorySuggestionIndex.value = -1;
+    if (newTitle === oldTitle) {
+      return;
     }
+
+    suggestionCache.value = null;
+    addressSuggestionIndex.value = -1;
+    categorySuggestionIndex.value = -1;
   });
 
   async function fetchSuggestionsForTitle(title: string): Promise<SuggestionCache> {

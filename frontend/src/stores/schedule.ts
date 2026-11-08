@@ -117,16 +117,20 @@ export const useScheduleStore = defineStore('schedule', () => {
       });
     }
 
-    if (done) {
-      const spotsStore = useSpotsStore();
-      const sIdx = spotsStore.spots.findIndex((s) => s.id === spotId);
-
-      if (sIdx !== -1) {
-        const nextSpots = [...spotsStore.spots];
-        nextSpots[sIdx] = { ...nextSpots[sIdx], done: 1 };
-        spotsStore.spots = nextSpots;
-      }
+    if (!done) {
+      return;
     }
+
+    const spotsStore = useSpotsStore();
+    const sIdx = spotsStore.spots.findIndex((s) => s.id === spotId);
+
+    if (sIdx === -1) {
+      return;
+    }
+
+    const nextSpots = [...spotsStore.spots];
+    nextSpots[sIdx] = { ...nextSpots[sIdx], done: 1 };
+    spotsStore.spots = nextSpots;
   }
 
   async function setDone(id: number, done: boolean) {

@@ -356,11 +356,13 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   function goToTripDates() {
     activeJumpTarget.value = 'trip';
 
-    if (trip.value?.start_date) {
-      slideDirection.value = determineSlideDirection(trip.value.start_date);
-      goToDate(trip.value.start_date);
-      selectDay(trip.value.start_date);
+    if (!trip.value?.start_date) {
+      return;
     }
+
+    slideDirection.value = determineSlideDirection(trip.value.start_date);
+    goToDate(trip.value.start_date);
+    selectDay(trip.value.start_date);
   }
 
   function jumpToDate(date: string) {
