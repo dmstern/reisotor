@@ -475,7 +475,8 @@ defineExpose({
 
 .polaroid-card:focus-within,
 .polaroid-card:has(.open),
-.polaroid-card:has(.options) {
+.polaroid-card:has(.options),
+.polaroid-card:has(.location-dropdown) {
   z-index: var(--z-popover, 1100);
 }
 
@@ -797,6 +798,11 @@ defineExpose({
     max-width: calc(100% - 24px);
     max-height: calc(100% - 80px);
     overflow-y: auto;
+  }
+
+  .polaroid-card:has(.options),
+  .polaroid-card:has(.location-dropdown) {
+    overflow-y: visible;
   }
 }
 

@@ -178,7 +178,7 @@ function selectMode(val: ThemeMode) {
 
 .theme-dropdown-wrap.is-open,
 .theme-dropdown-wrap:has(.theme-picker-menu) {
-  z-index: var(--z-dropdown, 500);
+  z-index: var(--z-popover, 1100);
 }
 
 .theme-dropdown-trigger {
@@ -281,7 +281,7 @@ function selectMode(val: ThemeMode) {
   min-width: 100%;
   box-sizing: border-box;
   margin-top: 4px;
-  z-index: var(--z-dropdown, 500);
+  z-index: var(--z-popover, 1100);
 }
 
 .theme-hidden-select {

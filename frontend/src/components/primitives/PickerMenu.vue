@@ -16,9 +16,9 @@ withDefaults(
     /** Ausrichtungs-Ursprung für die Auffalt-Animation: 'top' (Standard), 'top-left', 'top-right', 'bottom', 'bottom-left', 'bottom-right' */
     origin?: 'top' | 'top-left' | 'top-right' | 'bottom' | 'bottom-left' | 'bottom-right';
     /** Z-Index für das Menü-Fenster */
-    zIndex?: number;
+    zIndex?: number | string;
     /** Z-Index für den Backdrop */
-    backdropZIndex?: number;
+    backdropZIndex?: number | string;
     /** ARIA-Rolle für das Menü-Element */
     role?: string;
   }>(),
@@ -27,8 +27,8 @@ withDefaults(
     wide: false,
     position: 'fixed',
     origin: 'top',
-    zIndex: 501,
-    backdropZIndex: 500,
+    zIndex: undefined,
+    backdropZIndex: undefined,
     role: 'menu',
   }
 );
@@ -59,7 +59,7 @@ onUnmounted(() => {
     role="button"
     tabindex="0"
     aria-label="Menü schließen"
-    :style="{ zIndex: backdropZIndex }"
+    :style="backdropZIndex !== undefined ? { zIndex: backdropZIndex } : undefined"
     @click="emit('close')"
     @keydown.enter.prevent="emit('close')"
     @keydown.space.prevent="emit('close')"
@@ -75,7 +75,7 @@ onUnmounted(() => {
       origin ? `picker-menu--origin-${origin}` : undefined,
       $attrs.class,
     ]"
-    :style="[$attrs.style as any, { zIndex }]"
+    :style="[$attrs.style as any, zIndex !== undefined ? { zIndex } : undefined]"
     :role="role"
     @click.stop
   >
@@ -96,7 +96,7 @@ onUnmounted(() => {
 .picker-backdrop {
   position: fixed;
   inset: 0;
-  z-index: var(--z-dropdown, 500);
+  z-index: var(--z-popover, 1100);
   background: transparent;
   animation: picker-backdrop-fade 0.15s ease;
 }
@@ -125,7 +125,7 @@ onUnmounted(() => {
 
 .picker-menu {
   position: fixed;
-  z-index: calc(var(--z-dropdown, 500) + 1);
+  z-index: calc(var(--z-popover, 1100) + 1);
   min-width: 180px;
   background: var(--color-surface);
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
@@ -177,7 +177,7 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: calc(var(--z-dropdown, 500) + 1);
+  z-index: calc(var(--z-popover, 1100) + 1);
 }
 
 .picker-menu-wide {

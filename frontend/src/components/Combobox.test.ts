@@ -94,6 +94,7 @@ describe('Combobox', () => {
         cleanUp: () => {
           app.unmount();
           container.remove();
+          document.body.innerHTML = '';
         },
       };
     }
@@ -118,9 +119,9 @@ describe('Combobox', () => {
       await nextTick();
 
       // Bei "FLUG" bleibt nur "Flughafen" übrig -> wird automatisch hervorgehoben
-      const listbox = container.querySelector('.options');
+      const listbox = document.body.querySelector('.options');
       expect(listbox).not.toBeNull();
-      const optionItems = container.querySelectorAll('.options li');
+      const optionItems = document.body.querySelectorAll('.options li');
       expect(optionItems).toHaveLength(1);
       expect(optionItems[0].textContent).toContain('Flughafen');
       expect(optionItems[0].classList.contains('is-highlighted')).toBe(true);
@@ -159,14 +160,14 @@ describe('Combobox', () => {
       // Pfeil nach unten: 1. Option ("Flughafen")
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       await nextTick();
-      let items = container.querySelectorAll('.options li');
+      let items = document.body.querySelectorAll('.options li');
       expect(items[0].classList.contains('is-highlighted')).toBe(true);
       expect(items[1].classList.contains('is-highlighted')).toBe(false);
 
       // Pfeil nach unten: 2. Option ("Flugplatz")
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       await nextTick();
-      items = container.querySelectorAll('.options li');
+      items = document.body.querySelectorAll('.options li');
       expect(items[0].classList.contains('is-highlighted')).toBe(false);
       expect(items[1].classList.contains('is-highlighted')).toBe(true);
 
@@ -198,7 +199,7 @@ describe('Combobox', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
       await nextTick();
 
-      const items = container.querySelectorAll('.options li');
+      const items = document.body.querySelectorAll('.options li');
       expect(items[2].classList.contains('is-highlighted')).toBe(true);
 
       // Escape schließt das Menü
@@ -227,7 +228,7 @@ describe('Combobox', () => {
       input.dispatchEvent(new FocusEvent('focus'));
       await nextTick();
 
-      const footerBtn = container.querySelector('.footer-manage-btn');
+      const footerBtn = document.body.querySelector('.footer-manage-btn');
       expect(footerBtn).not.toBeNull();
       expect(footerBtn?.textContent).toBe('Verwalten');
 
@@ -251,9 +252,9 @@ describe('Combobox', () => {
       await nextTick();
 
       // Dropdown ist offen und zeigt ALLE 4 Optionen (trotz "Café" als aktuellem Wert)
-      const listbox = container.querySelector('.options');
+      const listbox = document.body.querySelector('.options');
       expect(listbox).not.toBeNull();
-      let optionItems = container.querySelectorAll('.options li');
+      let optionItems = document.body.querySelectorAll('.options li');
       expect(optionItems).toHaveLength(4);
 
       // "Café" ist vorselektiert / hervorgehoben (Index 2)
@@ -266,7 +267,7 @@ describe('Combobox', () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       await nextTick();
 
-      optionItems = container.querySelectorAll('.options li');
+      optionItems = document.body.querySelectorAll('.options li');
       expect(optionItems).toHaveLength(1);
       expect(optionItems[0].textContent).toContain('Restaurant');
 
@@ -293,7 +294,7 @@ describe('Combobox', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       await nextTick();
 
-      const optionItems = container.querySelectorAll('.options li');
+      const optionItems = document.body.querySelectorAll('.options li');
       expect(optionItems[3].classList.contains('is-highlighted')).toBe(true);
       expect(optionItems[3].textContent).toContain('Aktivität');
 
@@ -304,6 +305,26 @@ describe('Combobox', () => {
       await nextTick();
 
       expect(selected).toBe('Aktivität');
+
+      cleanUp();
+    });
+
+    it('teleports the dropdown menu to document.body on top level (issue #722)', async () => {
+      const { container, cleanUp } = mountCombobox({
+        modelValue: '',
+        options: ['Erste Option', 'Zweite Option'],
+      });
+
+      const input = container.querySelector<HTMLInputElement>('input')!;
+      input.dispatchEvent(new FocusEvent('focus'));
+      await nextTick();
+
+      const menuInContainer = container.querySelector('.combobox-menu');
+      const menuInBody = document.body.querySelector('.combobox-menu');
+
+      expect(menuInContainer).toBeNull();
+      expect(menuInBody).not.toBeNull();
+      expect(menuInBody?.classList.contains('is-teleported')).toBe(true);
 
       cleanUp();
     });
