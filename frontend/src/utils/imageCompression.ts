@@ -141,10 +141,10 @@ export function readExifMetadata(dataUrl: string): ImageExifMetadata | null {
 
       if (parts.length === 2) {
         const datePart = parts[0].replace(/:/g, '-');
-        const d = new Date(`${datePart}T${parts[1]}`);
+        const parsedDate = new Date(`${datePart}T${parts[1]}`);
 
-        if (!isNaN(d.getTime())) {
-          result.dateTime = d;
+        if (!isNaN(parsedDate.getTime())) {
+          result.dateTime = parsedDate;
         }
       }
     }
@@ -336,24 +336,24 @@ function parseExifDateString(dateStr: string): Date | undefined {
 
   if (parts.length === 2) {
     const datePart = parts[0].replace(/:/g, '-');
-    const d = new Date(`${datePart}T${parts[1]}`);
+    const parsedDate = new Date(`${datePart}T${parts[1]}`);
 
-    if (!isNaN(d.getTime())) {
-      return d;
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate;
     }
   }
 
   return undefined;
 }
 
-function formatDateForExif(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hours = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  const seconds = pad(d.getSeconds());
+function formatDateForExif(date: Date): string {
+  const pad = (num: number) => String(num).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
   return `${year}:${month}:${day} ${hours}:${minutes}:${seconds}`;
 }
 

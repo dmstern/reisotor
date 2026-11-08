@@ -32,14 +32,14 @@ export function calendarEventFromEntry(entry: CalendarEntry): CalendarEventInput
 
 const DEFAULT_DURATION_MINUTES = 60;
 
-function pad(n: number) {
-  return String(n).padStart(2, '0');
+function pad(num: number) {
+  return String(num).padStart(2, '0');
 }
 
 function addDays(dateIso: string, days: number): string {
-  const d = new Date(`${dateIso}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const dateObj = new Date(`${dateIso}T00:00:00`);
+  dateObj.setDate(dateObj.getDate() + days);
+  return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
 }
 
 function dateStamp(dateIso: string): string {
@@ -50,8 +50,8 @@ function dateStamp(dateIso: string): string {
 // keine Zeitzonen – Datum/Uhrzeit sind reine Strings. Ein Termin am Urlaubsort soll im jeweiligen
 // Kalender einfach zur eingegebenen Uhrzeit erscheinen, unabhängig von der Geräte-Zeitzone.
 function dateTimeStamp(dateIso: string, time: string): string {
-  const [h, m] = time.split(':');
-  return `${dateStamp(dateIso)}T${h.padStart(2, '0')}${m.padStart(2, '0')}00`;
+  const [hours, minutes] = time.split(':');
+  return `${dateStamp(dateIso)}T${hours.padStart(2, '0')}${minutes.padStart(2, '0')}00`;
 }
 
 // Nutzt die explizit eingegebene Enduhrzeit, falls vorhanden, sonst die Default-Dauer nach dem

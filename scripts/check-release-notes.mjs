@@ -115,7 +115,7 @@ export function checkNotes(options = {}) {
 
   const files = fs
     .readdirSync(pendingDir)
-    .filter((f) => f.endsWith('.md'))
+    .filter((file) => file.endsWith('.md'))
     .sort();
 
   if (files.length === 0) {

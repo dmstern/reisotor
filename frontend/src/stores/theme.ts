@@ -47,7 +47,7 @@ export const DEFAULT_THEME_MODE: ThemeMode = 'system';
 
 function loadMode(): ThemeMode {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return THEME_MODE_OPTIONS.some((o) => o.value === stored)
+  return THEME_MODE_OPTIONS.some((option) => option.value === stored)
     ? (stored as ThemeMode)
     : DEFAULT_THEME_MODE;
 }
@@ -76,8 +76,8 @@ export const useThemeStore = defineStore('theme', () => {
 
   function init() {
     apply();
-    watch(mode, (m) => {
-      localStorage.setItem(STORAGE_KEY, m);
+    watch(mode, (newMode) => {
+      localStorage.setItem(STORAGE_KEY, newMode);
       apply();
     });
 

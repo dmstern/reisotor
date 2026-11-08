@@ -268,7 +268,7 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
         'SELECT e.*, u.username as author_username, u.avatar as author_avatar FROM diary_entries e LEFT JOIN users u ON e.author_id = u.id WHERE e.trip_id = ? AND e.deleted_at IS NULL AND (e.is_draft = 0 OR e.author_id = ?) ORDER BY e.date DESC, e.created_at DESC, e.id DESC'
       )
       .all(req.query.trip_id, req.session.userId) as EntryRow[];
-    const entryIds = rows.map((r) => r.id);
+    const entryIds = rows.map((row) => row.id);
     const excursionIds = excursionIdsFor(entryIds);
     const spotIds = spotIdsFor(entryIds);
     const editorIds = editorIdsFor(entryIds);
@@ -441,7 +441,12 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const { title, content, images, excursion_ids, spot_ids, date } = req.body;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
-    const isDraft = req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : entry.is_draft;
+    let isDraft = entry.is_draft;
+
+    if (req.body.is_draft !== undefined) {
+      isDraft = req.body.is_draft ? 1 : 0;
+    }
+
     const sanitizedImages = Array.isArray(images) ? images.filter(Boolean) : [];
     db.prepare(
       'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ?, is_draft = ? WHERE id = ?'

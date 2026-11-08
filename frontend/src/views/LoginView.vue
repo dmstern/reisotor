@@ -123,13 +123,12 @@ async function onSubmit() {
       error.value = 'Zeitüberschreitung bei der Serveranfrage. Bitte versuche es erneut.';
     } else if (err instanceof TypeError) {
       error.value = 'Netzwerkfehler: Server nicht erreichbar.';
+    } else if (mode.value === 'register') {
+      error.value = 'Registrierung fehlgeschlagen';
+    } else if (mode.value === 'forgot-password') {
+      error.value = 'Anfrage fehlgeschlagen';
     } else {
-      error.value =
-        mode.value === 'register'
-          ? 'Registrierung fehlgeschlagen'
-          : mode.value === 'forgot-password'
-            ? 'Anfrage fehlgeschlagen'
-            : 'Login fehlgeschlagen';
+      error.value = 'Login fehlgeschlagen';
     }
   } finally {
     loading.value = false;

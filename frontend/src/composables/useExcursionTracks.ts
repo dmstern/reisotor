@@ -44,10 +44,10 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
 
   function trackAuthorUser(track: LocationTrack): User | undefined {
     if (track.user_id) {
-      const u = users.value.find((u) => u.id === track.user_id);
+      const authorUser = users.value.find((user) => user.id === track.user_id);
 
-      if (u) {
-        return u;
+      if (authorUser) {
+        return authorUser;
       }
     }
 
@@ -59,13 +59,13 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
   }
 
   function trackAuthorAvatar(track: LocationTrack): string {
-    const u = trackAuthorUser(track);
-    return u?.avatar || track.author_avatar || '👤';
+    const authorUser = trackAuthorUser(track);
+    return authorUser?.avatar || track.author_avatar || '👤';
   }
 
   function trackAuthorName(track: LocationTrack): string {
-    const u = trackAuthorUser(track);
-    return u?.username || track.author_username || '';
+    const authorUser = trackAuthorUser(track);
+    return authorUser?.username || track.author_username || '';
   }
 
   function trackAuthorTitle(track: LocationTrack): string {
@@ -256,7 +256,7 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
       await tracksStore.stopTrack(id);
     }
 
-    const updated = tracksStore.tracks.find((t) => t.id === id);
+    const updated = tracksStore.tracks.find((track) => track.id === id);
 
     if (updated) {
       editingTrack.value = updated;
@@ -299,7 +299,7 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
       return true;
     }
 
-    return tracksStore.tracks.some((t) => !t.ended_at && t.user_id === auth.user?.id);
+    return tracksStore.tracks.some((track) => !track.ended_at && track.user_id === auth.user?.id);
   });
 
   async function onRecordButtonClick() {
@@ -307,7 +307,7 @@ export function useExcursionTracks(options: UseExcursionTracksOptions) {
       await trackRecording.stop();
     } else {
       const activeTrack = tracksStore.tracks.find(
-        (t) => !t.ended_at && t.user_id === auth.user?.id
+        (track) => !track.ended_at && track.user_id === auth.user?.id
       );
 
       if (activeTrack) {

@@ -95,5 +95,5 @@ export function findStandardCategory(type: string, name: string): string | undef
     return undefined;
   }
 
-  return standards.find((s) => s.toLowerCase() === trimmed);
+  return standards.find((category) => category.toLowerCase() === trimmed);
 }

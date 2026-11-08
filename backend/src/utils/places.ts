@@ -332,16 +332,18 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 Stunde
 const MAX_CACHE_ENTRIES = 500;
 const placesCache = new Map<string, CacheEntry>();
 
-export function buildCacheKey(
-  q: string,
-  lat?: number,
-  lng?: number,
-  limit = 5,
-  lang = 'de'
-): string {
+export interface BuildCacheKeyOptions {
+  lat?: number;
+  lng?: number;
+  limit?: number;
+  lang?: string;
+}
+
+export function buildCacheKey(query: string, options?: BuildCacheKeyOptions): string {
+  const { lat, lng, limit = 5, lang = 'de' } = options ?? {};
   const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(3) : '';
   const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(3) : '';
-  return `${q.trim().toLowerCase()}|${latStr}|${lngStr}|${limit}|${lang}`;
+  return `${query.trim().toLowerCase()}|${latStr}|${lngStr}|${limit}|${lang}`;
 }
 
 export function getCachedPlaces(key: string): PlaceSearchResult[] | null {
@@ -833,7 +835,7 @@ export function parseLocationQuery(rawQ: string): ParsedLocationQuery {
 }
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // km
+  const EARTH_RADIUS_KM = 6371; // km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -842,8 +844,8 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  const centralAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_KM * centralAngle;
 }
 
 export function scorePlace(
@@ -859,7 +861,7 @@ export function scorePlace(
   // 1. Kategorie-Übereinstimmung
   if (parsed.category) {
     const hasTagMatch = parsed.category.tags.some(
-      (t) => t.key === place.osmKey && (!t.value || t.value === place.osmValue)
+      (tag) => tag.key === place.osmKey && (!tag.value || tag.value === place.osmValue)
     );
 
     if (hasTagMatch) {
@@ -1224,7 +1226,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
       ? Math.max(Math.floor(options.offset), 0)
       : 0;
 
-  const cacheKey = buildCacheKey(`${rawQ}|off:${offset}`, lat, lng, limit, lang);
+  const cacheKey = buildCacheKey(`${rawQ}|off:${offset}`, { lat, lng, limit, lang });
   const cached = getCachedPlaces(cacheKey);
 
   if (cached) {
@@ -1291,17 +1293,17 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   // Prüfen, ob Primärabfrage bereits die gesuchte Kategorie + Name gefunden hat (z. B. "Hotel Sacher", "Café Central")
   const hasExactCategoryInPrimary =
     parsed.category &&
-    primaryResults.some((p) => {
+    primaryResults.some((candidate) => {
       if (!parsed.category) {
         return false;
       }
 
       const tagMatch = parsed.category.tags.some(
-        (t) => t.key === p.osmKey && (!t.value || t.value === p.osmValue)
+        (tag) => tag.key === candidate.osmKey && (!tag.value || tag.value === candidate.osmValue)
       );
       const nameMatch =
         parsed.cleanedTerms.length === 0 ||
-        parsed.cleanedTerms.some((term) => p.name.toLowerCase().includes(term));
+        parsed.cleanedTerms.some((term) => candidate.name.toLowerCase().includes(term));
       return tagMatch && nameMatch;
     });
 
@@ -1409,7 +1411,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
 
   scored.sort((a, b) => b.score - a.score);
 
-  const results = scored.slice(offset, offset + limit).map((s) => s.place);
+  const results = scored.slice(offset, offset + limit).map((scoredItem) => scoredItem.place);
   setCachedPlaces(cacheKey, results);
   return results;
 }
@@ -1485,9 +1487,9 @@ export async function reverseGeocode(
 
   if (customPhoton) {
     try {
-      const u = new URL(customPhoton);
-      u.pathname = u.pathname.replace(/\/api\/?$/, '/reverse');
-      urlStr = u.toString();
+      const parsedUrl = new URL(customPhoton);
+      parsedUrl.pathname = parsedUrl.pathname.replace(/\/api\/?$/, '/reverse');
+      urlStr = parsedUrl.toString();
     } catch {
       // fallback
     }

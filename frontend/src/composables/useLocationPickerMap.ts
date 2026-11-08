@@ -1,5 +1,5 @@
 import { getCurrentInstance, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from 'vue';
-import L from 'leaflet';
+import leaflet from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { IconCompass, IconCompassFilled } from '@tabler/icons-vue';
 import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../utils/mapRoute';
@@ -30,11 +30,11 @@ export interface UseLocationPickerMapOptions {
 }
 
 export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
-  let map: L.Map | null = null;
-  let marker: L.Marker | null = null;
+  let map: leaflet.Map | null = null;
+  let marker: leaflet.Marker | null = null;
   let resizeObserver: ResizeObserver | null = null;
-  let referenceLayer: L.LayerGroup | null = null;
-  let ownLocationMarker: L.Marker | null = null;
+  let referenceLayer: leaflet.LayerGroup | null = null;
+  let ownLocationMarker: leaflet.Marker | null = null;
   let geoWatchId: number | null = null;
   const locatingSelf = ref(false);
   const locateError = ref(false);
@@ -118,7 +118,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     return { coveredTopPx: 0, coveredLeftPx: 272 };
   }
 
-  function centerOnPoint(latlng: L.LatLngExpression, zoom?: number) {
+  function centerOnPoint(latlng: leaflet.LatLngExpression, zoom?: number) {
     if (!map) {
       return;
     }
@@ -156,10 +156,12 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     if (marker) {
       marker.setLatLng([lat, lng]);
     } else {
-      marker = L.marker([lat, lng], {
-        icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#e08e45'),
-        draggable: true,
-      }).addTo(map);
+      marker = leaflet
+        .marker([lat, lng], {
+          icon: cachedEmojiPin(FORM_FIELD_ICONS.location, '#e08e45'),
+          draggable: true,
+        })
+        .addTo(map);
 
       marker.on('dragend', () => {
         if (!marker) {
@@ -192,15 +194,17 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     }
 
     if (!referenceLayer) {
-      referenceLayer = L.layerGroup().addTo(map);
+      referenceLayer = leaflet.layerGroup().addTo(map);
     }
 
     for (const point of options.referencePoints.value) {
-      L.marker([point.lat, point.lng], {
-        icon: cachedEmojiPin(point.icon ?? FORM_FIELD_ICONS.location, '#8a8a86'),
-        interactive: false,
-        opacity: 0.7,
-      }).addTo(referenceLayer);
+      leaflet
+        .marker([point.lat, point.lng], {
+          icon: cachedEmojiPin(point.icon ?? FORM_FIELD_ICONS.location, '#8a8a86'),
+          interactive: false,
+          opacity: 0.7,
+        })
+        .addTo(referenceLayer);
     }
   }
 
@@ -215,15 +219,20 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
           return;
         }
 
-        const latlng: L.LatLngExpression = [position.coords.latitude, position.coords.longitude];
+        const latlng: leaflet.LatLngExpression = [
+          position.coords.latitude,
+          position.coords.longitude,
+        ];
 
         if (ownLocationMarker) {
           ownLocationMarker.setLatLng(latlng);
         } else {
-          ownLocationMarker = L.marker(latlng, {
-            icon: pulsingEmojiPin(OWN_LOCATION_ICON, '#2f6fed'),
-            interactive: false,
-          }).addTo(map!);
+          ownLocationMarker = leaflet
+            .marker(latlng, {
+              icon: pulsingEmojiPin(OWN_LOCATION_ICON, '#2f6fed'),
+              interactive: false,
+            })
+            .addTo(map!);
         }
       },
       () => {
@@ -272,15 +281,19 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
         FALLBACK_CENTER;
       const initialZoom = options.modelValue.value ? 15 : (options.zoom?.value ?? FALLBACK_ZOOM);
 
-      map = L.map(options.mapEl.value, {
-        zoomControl: false,
-        rotateControl: false,
-      }).setView([initial.lat, initial.lng], initialZoom);
+      map = leaflet
+        .map(options.mapEl.value, {
+          zoomControl: false,
+          rotateControl: false,
+        })
+        .setView([initial.lat, initial.lng], initialZoom);
       map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap-Mitwirkende',
-        maxZoom: 19,
-      }).addTo(map);
+      leaflet
+        .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap-Mitwirkende',
+          maxZoom: 19,
+        })
+        .addTo(map);
 
       if (options.modelValue.value) {
         placeMarker(options.modelValue.value.lat, options.modelValue.value.lng);
@@ -296,7 +309,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
       startOwnLocation();
       syncMapInteractivity();
 
-      map.on('click', (e: L.LeafletMouseEvent) => {
+      map.on('click', (e: leaflet.LeafletMouseEvent) => {
         const isMobile = isMobileLayout();
         const isLockedPreview = isMobile && !isMobileMapExpanded.value;
 
@@ -369,12 +382,12 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
 
   watch(
     () => options.proximityBias?.value ?? options.center?.value,
-    (c) => {
-      if (!map || options.modelValue.value || !c) {
+    (centerCoord) => {
+      if (!map || options.modelValue.value || !centerCoord) {
         return;
       }
 
-      centerOnPoint([c.lat, c.lng], options.zoom?.value ?? FALLBACK_ZOOM);
+      centerOnPoint([centerCoord.lat, centerCoord.lng], options.zoom?.value ?? FALLBACK_ZOOM);
     }
   );
 

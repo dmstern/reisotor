@@ -19,8 +19,12 @@ const grossIncomes = computed(() => sharedExpenses.value.filter((e) => e.amount 
 const expenseCount = computed(() => grossExpenses.value.length);
 const incomeCount = computed(() => grossIncomes.value.length);
 
-const totalGrossExpenses = computed(() => grossExpenses.value.reduce((s, e) => s + e.amount, 0));
-const totalIncomes = computed(() => grossIncomes.value.reduce((s, e) => s + Math.abs(e.amount), 0));
+const totalGrossExpenses = computed(() =>
+  grossExpenses.value.reduce((sum, expense) => sum + expense.amount, 0)
+);
+const totalIncomes = computed(() =>
+  grossIncomes.value.reduce((sum, income) => sum + Math.abs(income.amount), 0)
+);
 </script>
 
 <template>

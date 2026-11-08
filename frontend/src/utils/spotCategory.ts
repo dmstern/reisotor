@@ -458,7 +458,9 @@ const OTHER_META: CategoryMeta = {
 };
 
 /** Für die Combobox: die Standardkategorien werden immer vorgeschlagen, auch ohne bestehende Spots. */
-export const SPOT_CATEGORY_SUGGESTIONS = KNOWN_CATEGORIES.map((c) => c.label!).filter(Boolean);
+export const SPOT_CATEGORY_SUGGESTIONS = KNOWN_CATEGORIES.map((category) => category.label!).filter(
+  Boolean
+);
 
 const LOOKUP = new Map<string, CategoryMeta>();
 

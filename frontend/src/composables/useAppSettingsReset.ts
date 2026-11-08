@@ -27,19 +27,19 @@ export function useAppSettingsReset() {
   const { showToast } = useToast();
 
   function navLinkLabel(key: string) {
-    return NAV_LINKS.find((l) => l.key === key)?.label ?? key;
+    return NAV_LINKS.find((link) => link.key === key)?.label ?? key;
   }
 
   function navLinkIcon(key: string) {
-    return NAV_LINKS.find((l) => l.key === key)?.icon ?? null;
+    return NAV_LINKS.find((link) => link.key === key)?.icon ?? null;
   }
 
   function dashboardTileLabel(key: string) {
-    return DASHBOARD_TILES.find((t) => t.key === key)?.label ?? key;
+    return DASHBOARD_TILES.find((tile) => tile.key === key)?.label ?? key;
   }
 
   function dashboardTileIcon(key: string) {
-    return DASHBOARD_TILES.find((t) => t.key === key)?.icon ?? null;
+    return DASHBOARD_TILES.find((tile) => tile.key === key)?.icon ?? null;
   }
 
   const isThemeDefault = computed(() => theme.mode === 'system');
@@ -79,7 +79,7 @@ export function useAppSettingsReset() {
   }
 
   const isDashboardDefault = computed(() => {
-    const defaults = DASHBOARD_TILES.map((t) => ({ key: t.key, visible: true }));
+    const defaults = DASHBOARD_TILES.map((tile) => ({ key: tile.key, visible: true }));
 
     if (dashboardConfig.entries.length !== defaults.length) {
       return false;
@@ -101,11 +101,11 @@ export function useAppSettingsReset() {
   }
 
   const isAllAppDefault = computed(() => {
-    const g = iconStyle.groups;
+    const styleGroups = iconStyle.groups;
     const isIconDefault =
-      g.navigation === 'icons' &&
-      g.categories === 'emoji' &&
-      g.weather === 'icons' &&
+      styleGroups.navigation === 'icons' &&
+      styleGroups.categories === 'emoji' &&
+      styleGroups.weather === 'icons' &&
       iconStyle.navColored &&
       iconStyle.colorizeWeather &&
       iconStyle.colorizeCategories;

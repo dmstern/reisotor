@@ -108,16 +108,16 @@ export function useTodoList(tripIdOverride?: number) {
     return { total, done };
   });
 
-  function toBody(f: TodoFormInput) {
-    const isPeriodValid = !f.due_date;
+  function toBody(form: TodoFormInput) {
+    const isPeriodValid = !form.due_date;
     return {
       trip_id: tripId,
-      title: f.title.trim(),
-      assigned_to_user_id: f.assigned_to_user_id ? Number(f.assigned_to_user_id) : undefined,
-      due_date: f.due_date || undefined,
-      period: isPeriodValid && f.period ? f.period : undefined,
-      priority: f.priority,
-      note: f.note || undefined,
+      title: form.title.trim(),
+      assigned_to_user_id: form.assigned_to_user_id ? Number(form.assigned_to_user_id) : undefined,
+      due_date: form.due_date || undefined,
+      period: isPeriodValid && form.period ? form.period : undefined,
+      priority: form.priority,
+      note: form.note || undefined,
     };
   }
 
@@ -143,21 +143,25 @@ export function useTodoList(tripIdOverride?: number) {
       return null;
     }
 
-    const assigned_to_user_id =
-      params.groupBy === 'assignee'
-        ? params.groupKey.startsWith('user-')
-          ? Number(params.groupKey.slice(5))
-          : undefined
-        : params.fallbackAssignee
-          ? Number(params.fallbackAssignee)
-          : undefined;
+    const USER_PREFIX = 'user-';
+    let assigned_to_user_id: number | undefined;
 
-    const period =
-      params.groupBy === 'period'
-        ? params.groupKey === 'before' || params.groupKey === 'during'
+    if (params.groupBy === 'assignee') {
+      if (params.groupKey.startsWith(USER_PREFIX)) {
+        assigned_to_user_id = Number(params.groupKey.slice(USER_PREFIX.length));
+      }
+    } else if (params.fallbackAssignee) {
+      assigned_to_user_id = Number(params.fallbackAssignee);
+    }
+
+    let period: Period | undefined = params.period || undefined;
+
+    if (params.groupBy === 'period') {
+      period =
+        params.groupKey === 'before' || params.groupKey === 'during'
           ? (params.groupKey as Period)
-          : undefined
-        : params.period || undefined;
+          : undefined;
+    }
 
     const created = await api.post<TodoItem>('/todos', {
       trip_id: tripId,

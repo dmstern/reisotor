@@ -26,7 +26,9 @@ function resetFont() {
 }
 
 const currentFont = computed(() => {
-  return DIARY_FONT_OPTIONS.find((o) => o.id === uiSettings.diaryFont) ?? DIARY_FONT_OPTIONS[0];
+  return (
+    DIARY_FONT_OPTIONS.find((option) => option.id === uiSettings.diaryFont) ?? DIARY_FONT_OPTIONS[0]
+  );
 });
 </script>
 

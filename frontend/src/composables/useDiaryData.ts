@@ -46,14 +46,14 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   }
 
   function author(id: number) {
-    return users.value.find((u) => u.id === id);
+    return users.value.find((user) => user.id === id);
   }
 
   function coEditorsFor(entry: DiaryEntry): User[] {
     return (entry.editor_ids ?? [])
       .filter((id) => id !== entry.author_id)
       .map((id) => author(id))
-      .filter((u): u is User => !!u);
+      .filter((user): user is User => !!user);
   }
 
   async function load() {

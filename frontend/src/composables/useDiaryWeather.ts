@@ -34,7 +34,7 @@ export function useDiaryWeather(options: UseDiaryWeatherOptions) {
   }
 
   function weatherForEntry(entry: DiaryEntry): DailyWeather | null {
-    return weatherDays.value?.find((d) => d.date === entry.date) ?? null;
+    return weatherDays.value?.find((day) => day.date === entry.date) ?? null;
   }
 
   return {

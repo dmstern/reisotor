@@ -105,7 +105,7 @@ export function getFeatureDistinctFrames(feature: ScrollyFeature, stepIdx = 0): 
   const frames: DistinctFrame[] = [];
   feature.highlights.forEach((_, hIdx) => {
     const sc = getHighlightScreenshot(feature, hIdx);
-    const existing = frames.find((f) => f.screenshotLight === sc.screenshotLight);
+    const existing = frames.find((frame) => frame.screenshotLight === sc.screenshotLight);
 
     if (existing) {
       existing.highlightIndices.push(hIdx);

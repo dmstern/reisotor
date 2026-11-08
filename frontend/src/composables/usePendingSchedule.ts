@@ -33,7 +33,7 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
       return excursionsStore.excursions.find((e) => e.id === pending.id)?.title ?? null;
     }
 
-    return spotsStore.spots.find((s) => s.id === pending.id)?.title ?? null;
+    return spotsStore.spots.find((spot) => spot.id === pending.id)?.title ?? null;
   });
 
   // Gleiches Blau-Highlighting der Tage wie beim Drag & Drop, solange der Auswahlmodus aktiv ist
@@ -63,17 +63,17 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
         await excursionsStore.setDone(pending.id, true);
       }
     } else {
-      const spot = spotsStore.spots.find((s) => s.id === pending.id);
+      const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === pending.id);
 
       if (spot && tripStore.currentTripId != null) {
         if (pending.mode === 'confirm-done') {
-          await scheduleStore.setSpotDate(
-            pending.id,
-            tripStore.currentTripId,
-            spot.title,
+          await scheduleStore.setSpotDate({
+            spotId: pending.id,
+            tripId: tripStore.currentTripId,
+            title: spot.title,
             date,
-            true
-          );
+            done: true,
+          });
           await spotsStore.setDone(pending.id, true);
         } else {
           await scheduleStore.create({

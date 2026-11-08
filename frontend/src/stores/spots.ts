@@ -49,15 +49,15 @@ export const useSpotsStore = defineStore('spots', () => {
     const hidden = tripCategoriesStore.hiddenNamesByType.get('spot') ?? new Set();
     const replaced = tripCategoriesStore.replacedDefaultNamesByType.get('spot') ?? new Set();
     const set = new Set<string>(tripCategoriesStore.activeSpotCategories);
-    spots.value.forEach((s) => {
-      if (!s.category) {
+    spots.value.forEach((spot) => {
+      if (!spot.category) {
         return;
       }
 
-      const lower = s.category.trim().toLowerCase();
+      const lower = spot.category.trim().toLowerCase();
 
       if (!hidden.has(lower) && !replaced.has(lower)) {
-        set.add(s.category.trim());
+        set.add(spot.category.trim());
       }
     });
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
@@ -91,7 +91,7 @@ export const useSpotsStore = defineStore('spots', () => {
   watch(() => liveSync.domainVersion.spots, load);
 
   function likesFor(spotId: number) {
-    return spotLikes.value.filter((l) => l.spot_id === spotId);
+    return spotLikes.value.filter((like) => like.spot_id === spotId);
   }
 
   function likeCountFor(spotId: number) {
@@ -99,12 +99,12 @@ export const useSpotsStore = defineStore('spots', () => {
   }
 
   function likedByMe(spotId: number, userId: number | undefined) {
-    return userId != null && likesFor(spotId).some((l) => l.user_id === userId);
+    return userId != null && likesFor(spotId).some((like) => like.user_id === userId);
   }
 
   function commentsFor(spotId: number) {
     return spotComments.value
-      .filter((c) => c.spot_id === spotId)
+      .filter((comment) => comment.spot_id === spotId)
       .sort((a, b) => a.created_at.localeCompare(b.created_at));
   }
 
@@ -116,7 +116,7 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function update(id: number, body: SpotFormData) {
     const updated = await api.put<Spot>(`/spots/${id}`, body);
-    const idx = spots.value.findIndex((s) => s.id === id);
+    const idx = spots.value.findIndex((spot) => spot.id === id);
 
     if (idx !== -1) {
       const next = [...spots.value];
@@ -130,7 +130,7 @@ export const useSpotsStore = defineStore('spots', () => {
   async function remove(id: number) {
     const { showToast } = useToast();
     await api.delete(`/spots/${id}`);
-    spots.value = spots.value.filter((s) => s.id !== id);
+    spots.value = spots.value.filter((spot) => spot.id !== id);
     showToast({
       message: 'Ort gelöscht. Er befindet sich nun im Papierkorb.',
       type: 'info',
@@ -148,7 +148,7 @@ export const useSpotsStore = defineStore('spots', () => {
       spotLikes.value = [...spotLikes.value, { id: Date.now(), spot_id: spotId, user_id: userId }];
     } else {
       spotLikes.value = spotLikes.value.filter(
-        (l) => !(l.spot_id === spotId && l.user_id === userId)
+        (like) => !(like.spot_id === spotId && like.user_id === userId)
       );
     }
   }
@@ -161,24 +161,26 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function removeComment(id: number) {
     await api.delete(`/spots/comments/${id}`);
-    spotComments.value = spotComments.value.filter((c) => c.id !== id);
+    spotComments.value = spotComments.value.filter((comment) => comment.id !== id);
   }
 
   async function updateComment(id: number, content: string) {
     const updated = await api.put<SpotComment>(`/spots/comments/${id}`, { content });
-    spotComments.value = spotComments.value.map((c) => (c.id === id ? updated : c));
+    spotComments.value = spotComments.value.map((comment) =>
+      comment.id === id ? updated : comment
+    );
     return updated;
   }
 
   async function toggleCommentLike(commentId: number) {
-    const c = spotComments.value.find((item) => item.id === commentId);
+    const comment = spotComments.value.find((item) => item.id === commentId);
 
-    if (!c) {
+    if (!comment) {
       return;
     }
 
-    const wasLiked = Boolean(c.liked);
-    const originalCount = c.like_count ?? 0;
+    const wasLiked = Boolean(comment.liked);
+    const originalCount = comment.like_count ?? 0;
     const optimisticLiked = !wasLiked;
     const optimisticCount = Math.max(0, originalCount + (wasLiked ? -1 : 1));
 
@@ -210,7 +212,7 @@ export const useSpotsStore = defineStore('spots', () => {
    *  statt eines vollen update(), damit ein Toggle nicht alle anderen Felder erneut mitschicken muss. */
   async function setDone(id: number, done: boolean) {
     const result = await api.post<{ done: boolean }>(`/spots/${id}/done`, { done });
-    const idx = spots.value.findIndex((s) => s.id === id);
+    const idx = spots.value.findIndex((spot) => spot.id === id);
 
     if (idx !== -1) {
       const next = [...spots.value];

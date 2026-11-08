@@ -60,7 +60,7 @@ export function dayWeatherEntries(
   accommodations: Spot[],
   weatherByLocation: Map<string, DailyWeather[]>
 ): DayWeatherEntry[] {
-  const lookup = (key: string) => weatherByLocation.get(key)?.find((d) => d.date === date);
+  const lookup = (key: string) => weatherByLocation.get(key)?.find((entry) => entry.date === date);
 
   const accommodation = accommodations.find(
     (a) =>

@@ -41,11 +41,13 @@ const searchQuery = ref('');
 watch(
   () => props.modelValue,
   (isOpen) => {
-    if (isOpen) {
-      searchQuery.value = '';
-      displayMode.value = iconStyleStore.styleForGroup('categories');
-      nextTick(updateScrollFade);
+    if (!isOpen) {
+      return;
     }
+
+    searchQuery.value = '';
+    displayMode.value = iconStyleStore.styleForGroup('categories');
+    nextTick(updateScrollFade);
   }
 );
 
@@ -55,26 +57,26 @@ const MODE_OPTIONS = [
 ];
 
 const filteredIcons = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase();
+  const query = searchQuery.value.trim().toLowerCase();
 
-  if (!q) {
+  if (!query) {
     return CATEGORY_ICON_PALETTE;
   }
 
   return CATEGORY_ICON_PALETTE.filter((opt) => {
-    if (opt.label.toLowerCase().includes(q)) {
+    if (opt.label.toLowerCase().includes(query)) {
       return true;
     }
 
-    if (opt.id.toLowerCase().includes(q)) {
+    if (opt.id.toLowerCase().includes(query)) {
       return true;
     }
 
-    if (opt.defaultEmoji.includes(q)) {
+    if (opt.defaultEmoji.includes(query)) {
       return true;
     }
 
-    if (opt.keywords && opt.keywords.some((k) => k.toLowerCase().includes(q))) {
+    if (opt.keywords && opt.keywords.some((keyword) => keyword.toLowerCase().includes(query))) {
       return true;
     }
 

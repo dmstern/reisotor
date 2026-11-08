@@ -33,7 +33,7 @@ describe('uiSettings diary font', () => {
   });
 
   it('contains all 6 expected font options including Fira Sans and Architects Daughter', () => {
-    const ids = DIARY_FONT_OPTIONS.map((o) => o.id);
+    const ids = DIARY_FONT_OPTIONS.map((option) => option.id);
     expect(ids).toEqual([
       'architects-daughter',
       'comic-neue',

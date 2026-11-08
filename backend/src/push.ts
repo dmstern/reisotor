@@ -91,9 +91,9 @@ export function getPushPreferences(userId: number): Record<PushPreferenceDomain,
   const rows = db
     .prepare('SELECT domain, enabled FROM push_preferences WHERE user_id = ?')
     .all(userId) as PushPreferenceRow[];
-  const byDomain = new Map(rows.map((r) => [r.domain, !!r.enabled]));
+  const byDomain = new Map(rows.map((row) => [row.domain, !!row.enabled]));
   return Object.fromEntries(
-    PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? true])
+    PUSH_PREFERENCE_DOMAINS.map((domain) => [domain, byDomain.get(domain) ?? true])
   ) as Record<PushPreferenceDomain, boolean>;
 }
 
@@ -122,9 +122,9 @@ export function getEmailPreferences(userId: number): Record<PushPreferenceDomain
   const rows = db
     .prepare('SELECT domain, enabled FROM email_preferences WHERE user_id = ?')
     .all(userId) as PushPreferenceRow[];
-  const byDomain = new Map(rows.map((r) => [r.domain, !!r.enabled]));
+  const byDomain = new Map(rows.map((row) => [row.domain, !!row.enabled]));
   return Object.fromEntries(
-    PUSH_PREFERENCE_DOMAINS.map((d) => [d, byDomain.get(d) ?? false])
+    PUSH_PREFERENCE_DOMAINS.map((domain) => [domain, byDomain.get(domain) ?? false])
   ) as Record<PushPreferenceDomain, boolean>;
 }
 
@@ -198,68 +198,82 @@ export const NEW_ELEMENT_ACTIONS = new Set([
  *  ('isUpdate = true') zusätzlich nach der 'activity_updates'-Präferenz (fehlende Zeile = aktiviert).
  *  Verschickt denselben JSON-Payload an jedes verbleibende Abo. Tote Abonnements räumt sich hier
  *  selbst auf. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
+export interface SendTripNotificationOptions {
+  excludeUserId?: number;
+  isUpdate?: boolean;
+}
+
 export async function sendPushToTripMembers(
   tripId: number,
   payload: Record<string, unknown>,
   domain: PushPreferenceDomain,
-  excludeUserId?: number,
-  isUpdate = false
+  options: SendTripNotificationOptions = {}
 ) {
+  const { excludeUserId, isUpdate = false } = options;
+
   if (!ensureVapidConfigured()) {
     return;
   }
 
-  const subs = (
-    isUpdate
-      ? excludeUserId != null
-        ? db
-            .prepare(
-              `SELECT push_subscriptions.* FROM push_subscriptions
-               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
-                 AND pref_domain.domain = ?
-               LEFT JOIN push_preferences pref_updates ON pref_updates.user_id = push_subscriptions.user_id
-                 AND pref_updates.domain = 'activity_updates'
-               WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
-                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)
-                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
-            )
-            .all(domain, tripId, excludeUserId)
-        : db
-            .prepare(
-              `SELECT push_subscriptions.* FROM push_subscriptions
-               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
-                 AND pref_domain.domain = ?
-               LEFT JOIN push_preferences pref_updates ON pref_updates.user_id = push_subscriptions.user_id
-                 AND pref_updates.domain = 'activity_updates'
-               WHERE trip_members.trip_id = ?
-                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)
-                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
-            )
-            .all(domain, tripId)
-      : excludeUserId != null
-        ? db
-            .prepare(
-              `SELECT push_subscriptions.* FROM push_subscriptions
-               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
-                 AND pref_domain.domain = ?
-               WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
-                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)`
-            )
-            .all(domain, tripId, excludeUserId)
-        : db
-            .prepare(
-              `SELECT push_subscriptions.* FROM push_subscriptions
-               JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
-               LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
-                 AND pref_domain.domain = ?
-               WHERE trip_members.trip_id = ?
-                 AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)`
-            )
-            .all(domain, tripId)
-  ) as PushSubscriptionRow[];
+  function getPushSubscriptions(): PushSubscriptionRow[] {
+    if (isUpdate) {
+      if (excludeUserId != null) {
+        return db
+          .prepare(
+            `SELECT push_subscriptions.* FROM push_subscriptions
+             JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+             LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+               AND pref_domain.domain = ?
+             LEFT JOIN push_preferences pref_updates ON pref_updates.user_id = push_subscriptions.user_id
+               AND pref_updates.domain = 'activity_updates'
+             WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
+               AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)
+               AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+          )
+          .all(domain, tripId, excludeUserId) as PushSubscriptionRow[];
+      }
+
+      return db
+        .prepare(
+          `SELECT push_subscriptions.* FROM push_subscriptions
+           JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+           LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+             AND pref_domain.domain = ?
+           LEFT JOIN push_preferences pref_updates ON pref_updates.user_id = push_subscriptions.user_id
+             AND pref_updates.domain = 'activity_updates'
+           WHERE trip_members.trip_id = ?
+             AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)
+             AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+        )
+        .all(domain, tripId) as PushSubscriptionRow[];
+    }
+
+    if (excludeUserId != null) {
+      return db
+        .prepare(
+          `SELECT push_subscriptions.* FROM push_subscriptions
+           JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+           LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+             AND pref_domain.domain = ?
+           WHERE trip_members.trip_id = ? AND push_subscriptions.user_id != ?
+             AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)`
+        )
+        .all(domain, tripId, excludeUserId) as PushSubscriptionRow[];
+    }
+
+    return db
+      .prepare(
+        `SELECT push_subscriptions.* FROM push_subscriptions
+         JOIN trip_members ON trip_members.user_id = push_subscriptions.user_id
+         LEFT JOIN push_preferences pref_domain ON pref_domain.user_id = push_subscriptions.user_id
+           AND pref_domain.domain = ?
+         WHERE trip_members.trip_id = ?
+           AND (pref_domain.enabled IS NULL OR pref_domain.enabled = 1)`
+      )
+      .all(domain, tripId) as PushSubscriptionRow[];
+  }
+
+  const subs = getPushSubscriptions();
 
   if (!subs.length) {
     return;
@@ -407,11 +421,13 @@ export async function checkVersionNotification() {
     return;
   }
 
-  if (lastNotified !== currentVersion) {
-    const detail = info.changelog?.notes?.[0];
-    await sendVersionNotification(currentVersion, detail);
-    setInstanceSetting('last_notified_version', currentVersion);
+  if (lastNotified === currentVersion) {
+    return;
   }
+
+  const detail = info.changelog?.notes?.[0];
+  await sendVersionNotification(currentVersion, detail);
+  setInstanceSetting('last_notified_version', currentVersion);
 }
 
 /** Versendet Aktivitäts-E-Mails an Mitglieder des Urlaubs, die E-Mail-Benachrichtigungen für die
@@ -420,82 +436,91 @@ export async function sendEmailToTripMembers(
   tripId: number,
   params: { title: string; body: string; tripId: number; tripName: string },
   domain: PushPreferenceDomain,
-  excludeUserId?: number,
-  isUpdate = false
+  options: SendTripNotificationOptions = {}
 ) {
+  const { excludeUserId, isUpdate = false } = options;
+
   if (!isEmailConfigured()) {
     return;
   }
 
-  const users = (
-    isUpdate
-      ? excludeUserId != null
-        ? db
-            .prepare(
-              `SELECT users.id, users.email, users.username FROM users
-               JOIN trip_members ON trip_members.user_id = users.id
-               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
-                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
-               LEFT JOIN email_preferences pref_updates ON pref_updates.user_id = users.id
-                 AND pref_updates.domain = 'activity_updates'
-               WHERE trip_members.trip_id = ? AND users.id != ?
-                 AND users.email IS NOT NULL AND users.email != ''
-                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
-            )
-            .all(domain, tripId, excludeUserId)
-        : db
-            .prepare(
-              `SELECT users.id, users.email, users.username FROM users
-               JOIN trip_members ON trip_members.user_id = users.id
-               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
-                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
-               LEFT JOIN email_preferences pref_updates ON pref_updates.user_id = users.id
-                 AND pref_updates.domain = 'activity_updates'
-               WHERE trip_members.trip_id = ?
-                 AND users.email IS NOT NULL AND users.email != ''
-                 AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
-            )
-            .all(domain, tripId)
-      : excludeUserId != null
-        ? db
-            .prepare(
-              `SELECT users.id, users.email, users.username FROM users
-               JOIN trip_members ON trip_members.user_id = users.id
-               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
-                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
-               WHERE trip_members.trip_id = ? AND users.id != ?
-                 AND users.email IS NOT NULL AND users.email != ''`
-            )
-            .all(domain, tripId, excludeUserId)
-        : db
-            .prepare(
-              `SELECT users.id, users.email, users.username FROM users
-               JOIN trip_members ON trip_members.user_id = users.id
-               JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
-                 AND pref_domain.domain = ? AND pref_domain.enabled = 1
-               WHERE trip_members.trip_id = ?
-                 AND users.email IS NOT NULL AND users.email != ''`
-            )
-            .all(domain, tripId)
-  ) as { id: number; email: string; username: string }[];
+  function getEmailRecipients(): { id: number; email: string; username: string }[] {
+    if (isUpdate) {
+      if (excludeUserId != null) {
+        return db
+          .prepare(
+            `SELECT users.id, users.email, users.username FROM users
+             JOIN trip_members ON trip_members.user_id = users.id
+             JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+               AND pref_domain.domain = ? AND pref_domain.enabled = 1
+             LEFT JOIN email_preferences pref_updates ON pref_updates.user_id = users.id
+               AND pref_updates.domain = 'activity_updates'
+             WHERE trip_members.trip_id = ? AND users.id != ?
+               AND users.email IS NOT NULL AND users.email != ''
+               AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+          )
+          .all(domain, tripId, excludeUserId) as { id: number; email: string; username: string }[];
+      }
+
+      return db
+        .prepare(
+          `SELECT users.id, users.email, users.username FROM users
+           JOIN trip_members ON trip_members.user_id = users.id
+           JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+             AND pref_domain.domain = ? AND pref_domain.enabled = 1
+           LEFT JOIN email_preferences pref_updates ON pref_updates.user_id = users.id
+             AND pref_updates.domain = 'activity_updates'
+           WHERE trip_members.trip_id = ?
+             AND users.email IS NOT NULL AND users.email != ''
+             AND (pref_updates.enabled IS NULL OR pref_updates.enabled = 1)`
+        )
+        .all(domain, tripId) as { id: number; email: string; username: string }[];
+    }
+
+    if (excludeUserId != null) {
+      return db
+        .prepare(
+          `SELECT users.id, users.email, users.username FROM users
+           JOIN trip_members ON trip_members.user_id = users.id
+           JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+             AND pref_domain.domain = ? AND pref_domain.enabled = 1
+           WHERE trip_members.trip_id = ? AND users.id != ?
+             AND users.email IS NOT NULL AND users.email != ''`
+        )
+        .all(domain, tripId, excludeUserId) as { id: number; email: string; username: string }[];
+    }
+
+    return db
+      .prepare(
+        `SELECT users.id, users.email, users.username FROM users
+         JOIN trip_members ON trip_members.user_id = users.id
+         JOIN email_preferences pref_domain ON pref_domain.user_id = users.id
+           AND pref_domain.domain = ? AND pref_domain.enabled = 1
+         WHERE trip_members.trip_id = ?
+           AND users.email IS NOT NULL AND users.email != ''`
+      )
+      .all(domain, tripId) as { id: number; email: string; username: string }[];
+  }
+
+  const users = getEmailRecipients();
 
   if (!users.length) {
     return;
   }
 
   await Promise.all(
-    users.map(async (u) => {
+    users.map(async (recipient) => {
       try {
         await sendActivityEmail({
-          to: u.email,
-          username: u.username,
+          to: recipient.email,
+          username: recipient.username,
           tripId,
           tripName: params.tripName,
           title: params.title,
           body: params.body,
         });
       } catch (err) {
-        console.warn(`[Mailer] Activity-Mail an ${u.email} fehlgeschlagen:`, err);
+        console.warn(`[Mailer] Activity-Mail an ${recipient.email} fehlgeschlagen:`, err);
       }
     })
   );
@@ -525,18 +550,18 @@ export async function sendEmailToAllSubscribers(
   }
 
   await Promise.all(
-    users.map(async (u) => {
+    users.map(async (recipient) => {
       try {
         await sendActivityEmail({
-          to: u.email,
-          username: u.username,
+          to: recipient.email,
+          username: recipient.username,
           title: params.title,
           body: params.body,
           actionUrl: params.actionUrl,
           actionLabel: params.actionLabel,
         });
       } catch (err) {
-        console.warn(`[Mailer] Benachrichtigungs-Mail an ${u.email} fehlgeschlagen:`, err);
+        console.warn(`[Mailer] Benachrichtigungs-Mail an ${recipient.email} fehlgeschlagen:`, err);
       }
     })
   );
@@ -557,14 +582,12 @@ export async function notifyTripMembers(
     tripId,
     { title: pushTitle, body, tripId },
     info.domain as PushPreferenceDomain,
-    excludeUserId,
-    isUpdate
+    { excludeUserId, isUpdate }
   );
   await sendEmailToTripMembers(
     tripId,
     { title: domainLabel, body, tripId, tripName: info.tripName },
     info.domain as PushPreferenceDomain,
-    excludeUserId,
-    isUpdate
+    { excludeUserId, isUpdate }
   );
 }

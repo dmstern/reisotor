@@ -173,7 +173,7 @@ export function useTourForm(options: UseTourFormOptions) {
   const selectableTracksForTour = computed(() => {
     const currentExcursionId = editingExcursion.value;
     return tracksStore.tracks.filter(
-      (t) => t.excursion_id == null || t.excursion_id === currentExcursionId
+      (track) => track.excursion_id == null || track.excursion_id === currentExcursionId
     );
   });
 
@@ -257,8 +257,10 @@ export function useTourForm(options: UseTourFormOptions) {
       spot_ids: [...excursion.spot_ids],
       role: excursion.role ?? '',
       destination_spot_id: excursion.destination_spot_id ?? null,
-      legs: excursion.legs ? excursion.legs.map((l) => ({ ...l })) : [],
-      track_ids: tracksStore.tracks.filter((t) => t.excursion_id === excursion.id).map((t) => t.id),
+      legs: excursion.legs ? excursion.legs.map((leg) => ({ ...leg })) : [],
+      track_ids: tracksStore.tracks
+        .filter((track) => track.excursion_id === excursion.id)
+        .map((track) => track.id),
     };
     editingExcursion.value = excursion.id;
   }
@@ -280,8 +282,8 @@ export function useTourForm(options: UseTourFormOptions) {
     const excId = editingExcursion.value;
     await excursionsStore.update(excId, tourPayload(editExcursionForm.value));
     const currentAssigned = tracksStore.tracks
-      .filter((t) => t.excursion_id === excId)
-      .map((t) => t.id);
+      .filter((track) => track.excursion_id === excId)
+      .map((track) => track.id);
     const nextAssigned = editExcursionForm.value.track_ids;
 
     for (const oldId of currentAssigned) {

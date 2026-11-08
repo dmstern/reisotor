@@ -88,7 +88,11 @@ async function handleEditDelete(id: number) {
           :category-required="Boolean(categoryRequired)"
           @submit="
             (payload) =>
-              quickAdd(list, payload.label, payload.category, payload.subcategory, payload.quantity)
+              quickAdd(list, payload.label, {
+                category: payload.category,
+                subcategory: payload.subcategory,
+                quantity: payload.quantity,
+              })
           "
         />
 

@@ -46,12 +46,15 @@ export interface UseDashboardTileSummariesReturn {
   nextTravelItem: ComputedRef<TravelItem | null>;
   currentOrNextAccommodation: ComputedRef<Spot | null>;
   latestDiaryEntry: ComputedRef<DiaryEntry | null>;
-  formatDate: (d: string) => string;
+  formatDate: (dateStr: string) => string;
 }
 
 export function progressOfPacking(listItems: PackingItem[]): { total: number; checked: number } {
-  const total = listItems.reduce((sum, p) => sum + p.quantity, 0);
-  const checked = listItems.reduce((sum, p) => sum + Math.min(p.packed_count, p.quantity), 0);
+  const total = listItems.reduce((sum, item) => sum + item.quantity, 0);
+  const checked = listItems.reduce(
+    (sum, item) => sum + Math.min(item.packed_count, item.quantity),
+    0
+  );
   return { total, checked };
 }
 
@@ -84,34 +87,34 @@ export function useDashboardTileSummaries(
       key: 'shared',
       title: 'Gemeinsam',
       avatar: '🤝',
-      ...progressOfPacking(options.packing.value.filter((p) => p.owner_id == null)),
+      ...progressOfPacking(options.packing.value.filter((item) => item.owner_id == null)),
     };
     const myId = options.currentUserId?.value;
-    const perUser = options.users.value.map((u) => ({
-      key: `user-${u.id}`,
-      title: u.id === myId ? 'Meine Liste' : u.username,
-      avatar: u.avatar,
-      ...progressOfPacking(options.packing.value.filter((p) => p.owner_id === u.id)),
+    const perUser = options.users.value.map((user) => ({
+      key: `user-${user.id}`,
+      title: user.id === myId ? 'Meine Liste' : user.username,
+      avatar: user.avatar,
+      ...progressOfPacking(options.packing.value.filter((item) => item.owner_id === user.id)),
     }));
     return [...perUser, shared];
   });
 
   const shoppingProgress = computed(() => {
     const total = options.shopping.value.length;
-    const checked = options.shopping.value.filter((s) => s.checked).length;
+    const checked = options.shopping.value.filter((item) => item.checked).length;
     return { total, checked };
   });
 
   const todoProgress = computed(() => {
     const total = options.todos.value.length;
-    const done = options.todos.value.filter((t) => t.done).length;
+    const done = options.todos.value.filter((item) => item.done).length;
     return { total, done };
   });
 
   const nextTravelItem = computed(
     () =>
       [...options.travelItems.value]
-        .filter((t) => t.date && t.date >= todayStr())
+        .filter((item) => item.date && item.date >= todayStr())
         .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))[0] ?? null
   );
 
@@ -139,8 +142,8 @@ export function useDashboardTileSummaries(
       )[0] ?? null
   );
 
-  function formatDate(d: string) {
-    return formatDateShared(d, { includeYear: false });
+  function formatDate(dateStr: string) {
+    return formatDateShared(dateStr, { includeYear: false });
   }
 
   return {

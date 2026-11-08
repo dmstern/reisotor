@@ -293,13 +293,15 @@ function collectJsonLdObjects(obj: unknown, target: Record<string, unknown>[]) {
     return;
   }
 
-  if (typeof obj === 'object') {
-    const rec = obj as Record<string, unknown>;
-    target.push(rec);
+  if (typeof obj !== 'object') {
+    return;
+  }
 
-    if (rec['@graph']) {
-      collectJsonLdObjects(rec['@graph'], target);
-    }
+  const rec = obj as Record<string, unknown>;
+  target.push(rec);
+
+  if (rec['@graph']) {
+    collectJsonLdObjects(rec['@graph'], target);
   }
 }
 
@@ -336,7 +338,9 @@ function isLodgingType(typeVal: unknown): boolean {
   }
 
   if (Array.isArray(typeVal)) {
-    return typeVal.some((t) => typeof t === 'string' && LODGING_TYPES.has(normalizeTypeString(t)));
+    return typeVal.some(
+      (typeItem) => typeof typeItem === 'string' && LODGING_TYPES.has(normalizeTypeString(typeItem))
+    );
   }
 
   return false;
@@ -350,10 +354,10 @@ function extractMetaTag(html: string, nameOrProperty: string): string | null {
   ];
 
   for (const reg of regexes) {
-    const m = reg.exec(html);
+    const match = reg.exec(html);
 
-    if (m?.[1]) {
-      return m[1].trim();
+    if (match?.[1]) {
+      return match[1].trim();
     }
   }
 
@@ -369,11 +373,11 @@ function extractMetaTagsAll(html: string, nameOrProperty: string): string[] {
   ];
 
   for (const reg of regexes) {
-    let m: RegExpExecArray | null;
+    let match: RegExpExecArray | null;
 
-    while ((m = reg.exec(html)) !== null) {
-      if (m[1]) {
-        results.push(m[1].trim());
+    while ((match = reg.exec(html)) !== null) {
+      if (match[1]) {
+        results.push(match[1].trim());
       }
     }
   }
@@ -403,11 +407,13 @@ function parsePostalAddress(addr: Record<string, unknown> | string | undefined):
   const street = addr.streetAddress ? String(addr.streetAddress).trim() : '';
   const postal = addr.postalCode ? String(addr.postalCode).trim() : '';
   const locality = addr.addressLocality ? String(addr.addressLocality).trim() : '';
-  const country = addr.addressCountry
-    ? typeof addr.addressCountry === 'string'
-      ? addr.addressCountry.trim()
-      : (addr.addressCountry as { name?: string })?.name?.trim() || ''
-    : '';
+  let country = '';
+
+  if (typeof addr.addressCountry === 'string') {
+    country = addr.addressCountry.trim();
+  } else if (addr.addressCountry) {
+    country = (addr.addressCountry as { name?: string })?.name?.trim() || '';
+  }
 
   if (locality) {
     city = locality;
@@ -546,10 +552,10 @@ export function extractBookingMetadataFromHtml(
         Record<string, unknown> | undefined;
 
       if (offers) {
-        const p = parsePrice(offers.price ?? offers.lowPrice);
+        const parsed = parsePrice(offers.price ?? offers.lowPrice);
 
-        if (p != null) {
-          amount = p;
+        if (parsed != null) {
+          amount = parsed;
         }
 
         if (offers.priceCurrency && typeof offers.priceCurrency === 'string') {
@@ -707,7 +713,7 @@ export function extractBookingMetadataFromHtml(
     const geoPos = extractMetaTag(html, 'geo.position') || extractMetaTag(html, 'ICBM');
 
     if (geoPos) {
-      const parts = geoPos.split(/[;,]/).map((s) => parseFloat(s.trim()));
+      const parts = geoPos.split(/[;,]/).map((str) => parseFloat(str.trim()));
 
       if (parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
         lat = parts[0];

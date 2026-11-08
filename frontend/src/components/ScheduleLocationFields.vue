@@ -16,7 +16,7 @@ const expanded = defineModel<boolean>('expanded', { default: false });
 
 const spotsStore = useSpotsStore();
 const excursionsStore = useExcursionsStore();
-const placeNames = computed(() => spotsStore.spots.map((s) => s.title));
+const placeNames = computed(() => spotsStore.spots.map((spot) => spot.title));
 </script>
 
 <template>

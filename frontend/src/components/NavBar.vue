@@ -111,13 +111,17 @@ function isLinkActive(link: NavLinkDef): boolean {
   }
 
   if (link.key === 'excursions') {
-    const travelVisible = visibleLinks.value.some((l) => l.key === 'travel');
+    const travelVisible = visibleLinks.value.some(
+      (candidateLink) => candidateLink.key === 'travel'
+    );
 
     if (travelVisible && isTravelActive.value) {
       return false;
     }
 
-    const accommodationVisible = visibleLinks.value.some((l) => l.key === 'accommodation');
+    const accommodationVisible = visibleLinks.value.some(
+      (candidateLink) => candidateLink.key === 'accommodation'
+    );
 
     if (accommodationVisible && isAccommodationActive.value) {
       return false;
@@ -209,8 +213,8 @@ const visibleLinks = computed<NavLinkDef[]>(() =>
   navConfig
     .getEffectiveEntries(isDesktop.value)
     .filter((e) => e.visible)
-    .map((e) => NAV_LINKS.find((l) => l.key === e.key))
-    .filter((l): l is NavLinkDef => !!l)
+    .map((e) => NAV_LINKS.find((def) => def.key === e.key))
+    .filter((def): def is NavLinkDef => !!def)
 );
 
 // route.fullPath (nicht nur .path) reicht auch für den seltenen Fall, dass sich nur Query/Hash
@@ -231,7 +235,7 @@ function hasUnseenAny(link: NavLinkDef): boolean {
   }
 
   if (link.domains) {
-    return link.domains.some((d) => liveSync.hasUnseen(d));
+    return link.domains.some((domain) => liveSync.hasUnseen(domain));
   }
 
   return false;

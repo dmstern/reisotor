@@ -112,12 +112,16 @@ export function useTripCategorySettings(
   const defaultSuggestions = computed<{ label: string; icon?: string; color?: string }[]>(() => {
     return activeType.value === 'expense'
       ? KNOWN_EXPENSE_CATEGORIES
-      : KNOWN_SPOT_CATEGORIES.map((s) => ({ label: s.label || '', icon: s.icon, color: s.color }));
+      : KNOWN_SPOT_CATEGORIES.map((spotCat) => ({
+          label: spotCat.label || '',
+          icon: spotCat.icon,
+          color: spotCat.color,
+        }));
   });
 
   // Kategorien aus dem Store für den aktuellen Typ
   const storedCategories = computed(() => {
-    return tripCategoriesStore.categories.filter((c) => c.type === activeType.value);
+    return tripCategoriesStore.categories.filter((category) => category.type === activeType.value);
   });
 
   const allDisplayCategories = computed<DisplayCategory[]>(() => {
@@ -125,82 +129,82 @@ export function useTripCategorySettings(
     const storedByName = new Map<string, TripCategory>();
     const storedByDefault = new Map<string, TripCategory>();
 
-    for (const c of storedCategories.value) {
-      if (!c || !c.name) {
+    for (const category of storedCategories.value) {
+      if (!category || !category.name) {
         continue;
       }
 
-      storedByName.set(c.name.trim().toLowerCase(), c);
+      storedByName.set(category.name.trim().toLowerCase(), category);
 
-      if (c.default_name) {
-        storedByDefault.set(c.default_name.trim().toLowerCase(), c);
+      if (category.default_name) {
+        storedByDefault.set(category.default_name.trim().toLowerCase(), category);
       }
     }
 
     // 1. Gespeicherte Custom Categories (die weder Standard sind noch von einer Standardkategorie abstammen)
-    for (const c of storedCategories.value) {
-      if (!c || !c.name) {
+    for (const category of storedCategories.value) {
+      if (!category || !category.name) {
         continue;
       }
 
-      const isDerivedFromStandard = Boolean(c.default_name);
+      const isDerivedFromStandard = Boolean(category.default_name);
       const matchesStandardName = defaultSuggestions.value.some(
-        (s) => s.label.trim().toLowerCase() === c.name.trim().toLowerCase()
+        (suggestion) => suggestion.label.trim().toLowerCase() === category.name.trim().toLowerCase()
       );
 
       if (!isDerivedFromStandard && !matchesStandardName) {
         list.push({
-          id: c.id,
-          name: c.name,
+          id: category.id,
+          name: category.name,
           defaultName: null,
           isCustom: true,
           isAdapted: false,
-          isHidden: Boolean(c.is_hidden),
-          icon: c.icon,
-          emoji: c.emoji,
-          color: c.color,
-          usageCount: c.usage_count ?? 0,
+          isHidden: Boolean(category.is_hidden),
+          icon: category.icon,
+          emoji: category.emoji,
+          color: category.color,
+          usageCount: category.usage_count ?? 0,
         });
       }
     }
 
     // 2. Standard-Kategorien (entweder im Original oder in angepasster Form)
-    for (const s of defaultSuggestions.value) {
-      const standardLower = s.label.trim().toLowerCase();
+    for (const suggestion of defaultSuggestions.value) {
+      const standardLower = suggestion.label.trim().toLowerCase();
       // Prio 1: Wurde diese Standardkategorie angepasst und hat default_name == standardLower?
       // Prio 2: Wurde diese Standardkategorie gespeichert mit name == standardLower?
       const stored = storedByDefault.get(standardLower) ?? storedByName.get(standardLower);
 
       if (stored) {
         const isRenamed = stored.name.trim().toLowerCase() !== standardLower;
-        const hasCustomIcon = stored.icon != null && stored.icon !== s.icon;
-        const hasCustomEmoji = stored.emoji != null && stored.emoji !== s.icon;
-        const hasCustomColor = stored.color != null && stored.color !== s.color;
+        const hasCustomIcon = stored.icon != null && stored.icon !== suggestion.icon;
+        const hasCustomEmoji = stored.emoji != null && stored.emoji !== suggestion.icon;
+        const hasCustomColor = stored.color != null && stored.color !== suggestion.color;
         const isAdapted = isRenamed || hasCustomIcon || hasCustomEmoji || hasCustomColor;
 
         list.push({
           id: stored.id,
           name: stored.name,
-          defaultName: s.label,
+          defaultName: suggestion.label,
           isCustom: false,
           isAdapted,
           isHidden: Boolean(stored.is_hidden),
           icon: stored.icon ?? null,
-          emoji: stored.emoji ?? s.icon,
-          color: stored.color ?? s.color,
+          emoji: stored.emoji ?? suggestion.icon,
+          color: stored.color ?? suggestion.color,
           usageCount: stored.usage_count ?? 0,
         });
       } else {
         list.push({
           id: undefined,
-          name: s.label,
-          defaultName: s.label,
+          name: suggestion.label,
+          defaultName: suggestion.label,
           isCustom: false,
           isAdapted: false,
           isHidden: false,
           icon: null,
-          emoji: s.icon,
-          color: s.color,
+          emoji: suggestion.icon,
+          color: suggestion.color,
           usageCount: 0,
         });
       }
@@ -217,13 +221,15 @@ export function useTripCategorySettings(
   });
 
   const filteredCategories = computed(() => {
-    const q = searchQuery.value.trim().toLowerCase();
+    const query = searchQuery.value.trim().toLowerCase();
 
-    if (!q) {
+    if (!query) {
       return allDisplayCategories.value;
     }
 
-    return allDisplayCategories.value.filter((c) => c.name.toLowerCase().includes(q));
+    return allDisplayCategories.value.filter((category) =>
+      category.name.toLowerCase().includes(query)
+    );
   });
 
   function loadUsage(categoryName: string) {

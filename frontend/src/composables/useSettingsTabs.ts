@@ -70,8 +70,10 @@ export function useSettingsTabs(isAdmin: MaybeRefOrGetter<boolean | undefined>) 
   const route = useRoute();
   const router = useRouter();
 
-  const tabs = computed(() => ALL_SETTINGS_TABS.filter((t) => !t.adminOnly || toValue(isAdmin)));
-  const tabKeys = computed(() => tabs.value.map((t) => t.key));
+  const tabs = computed(() =>
+    ALL_SETTINGS_TABS.filter((tab) => !tab.adminOnly || toValue(isAdmin))
+  );
+  const tabKeys = computed(() => tabs.value.map((tab) => tab.key));
 
   const activeTab = computed<SettingsTab>(() => {
     let tab = route.query.tab as string;

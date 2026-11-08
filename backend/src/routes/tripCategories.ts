@@ -118,13 +118,17 @@ export function getCategoryUsageCount(tripId: number, type: string, name: string
  * Registriert eine Kategorie automatisch für einen Urlaub, falls sie noch nicht existiert.
  * Wird beim Speichern von Ausgaben oder Spots mit benutzerdefinierten Kategorien aufgerufen.
  */
+export interface EnsureTripCategoryVisuals {
+  icon?: string | null;
+  emoji?: string | null;
+  color?: string | null;
+}
+
 export function ensureTripCategory(
   tripId: number,
   type: 'expense' | 'spot' | 'packing',
   name: string,
-  icon?: string | null,
-  emoji?: string | null,
-  color?: string | null
+  visuals?: EnsureTripCategoryVisuals
 ): void {
   const trimmed = name?.trim();
 
@@ -139,10 +143,13 @@ export function ensureTripCategory(
     .get(tripId, type, trimmed) as { id: number; deleted_at: string | null } | undefined;
 
   if (!existing) {
+    const icon = visuals?.icon ?? null;
+    const emoji = visuals?.emoji ?? null;
+    const color = visuals?.color ?? null;
     db.prepare(
       `INSERT OR IGNORE INTO trip_categories (trip_id, type, name, icon, emoji, color, is_hidden)
        VALUES (?, ?, ?, ?, ?, ?, 0)`
-    ).run(tripId, type, trimmed, icon ?? null, emoji ?? null, color ?? null);
+    ).run(tripId, type, trimmed, icon, emoji, color);
   } else if (existing.deleted_at) {
     db.prepare('UPDATE trip_categories SET deleted_at = NULL WHERE id = ?').run(existing.id);
   }
@@ -579,7 +586,11 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     const newIcon = icon !== undefined ? icon : existing.icon;
     const newEmoji = emoji !== undefined ? emoji : existing.emoji;
     const newColor = color !== undefined ? color : existing.color;
-    const newHidden = is_hidden !== undefined ? (is_hidden ? 1 : 0) : existing.is_hidden;
+    let newHidden = existing.is_hidden;
+
+    if (is_hidden !== undefined) {
+      newHidden = is_hidden ? 1 : 0;
+    }
 
     // Transaktion: Bei Umbenennung alle Vorkommen im Urlaub mit umbenennen
     const updateTransaction = db.transaction(() => {

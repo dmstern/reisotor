@@ -298,7 +298,7 @@ function openSpotForm() {
 
 function startEditSpot(spot: Spot | number) {
   if (typeof spot === 'number') {
-    const found = spotsStore.spots.find((s) => s.id === spot);
+    const found = spotsStore.spots.find((candidate) => candidate.id === spot);
     editingSpot.value = found ?? null;
   } else {
     editingSpot.value = spot;
@@ -321,11 +321,13 @@ watch(expandedExcursionId, (newId, oldId) => {
     setTimeout(() => recomputeTourLine(newId), 420);
   }
 
-  if (oldId != null) {
-    nextTick(() => recomputeTourLine(oldId));
-    setTimeout(() => recomputeTourLine(oldId), 320);
-    setTimeout(() => recomputeTourLine(oldId), 420);
+  if (oldId == null) {
+    return;
   }
+
+  nextTick(() => recomputeTourLine(oldId));
+  setTimeout(() => recomputeTourLine(oldId), 320);
+  setTimeout(() => recomputeTourLine(oldId), 420);
 });
 
 async function openExcursionWithScroll(excursionId: number) {
@@ -403,15 +405,17 @@ async function openExcursionWithScroll(excursionId: number) {
     return;
   }
 
-  if (!prefersReduced) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 420));
-
-    if (token !== excursionOpenSequenceToken) {
-      return;
-    }
-
-    await scrollToExcursion(excursionId, 0, 'auto');
+  if (prefersReduced) {
+    return;
   }
+
+  await new Promise<void>((resolve) => setTimeout(resolve, 420));
+
+  if (token !== excursionOpenSequenceToken) {
+    return;
+  }
+
+  await scrollToExcursion(excursionId, 0, 'auto');
 }
 
 let lastActiveSpotEl: HTMLElement | null = null;
@@ -502,19 +506,21 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
     return;
   }
 
-  if (!prefersReduced) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 260));
-
-    if (token !== spotOpenSequenceToken) {
-      return;
-    }
-
-    const finalTarget =
-      resolvedTarget && resolvedTarget.isConnected
-        ? resolvedTarget
-        : getSpotElement(spotId, expandedExcursionId.value);
-    await scrollToSpot(finalTarget ?? spotId, 0, 'auto');
+  if (prefersReduced) {
+    return;
   }
+
+  await new Promise<void>((resolve) => setTimeout(resolve, 260));
+
+  if (token !== spotOpenSequenceToken) {
+    return;
+  }
+
+  const finalTarget =
+    resolvedTarget && resolvedTarget.isConnected
+      ? resolvedTarget
+      : getSpotElement(spotId, expandedExcursionId.value);
+  await scrollToSpot(finalTarget ?? spotId, 0, 'auto');
 }
 
 function onSpotCardOpen(spot: Spot, targetEl?: HTMLElement | null) {
@@ -571,7 +577,7 @@ function onExcursionShowOnMap(excursionId: number) {
 }
 
 function onFocusSpotFromMap(spotId: number) {
-  const spot = spotsStore.spots.find((s) => s.id === spotId);
+  const spot = spotsStore.spots.find((candidate) => candidate.id === spotId);
   const isAccommodation = spot?.category === 'Unterkunft';
 
   if (groupMode.value === 'tracks' || isAccommodation) {
@@ -674,37 +680,41 @@ watch(
   (date) => {
     dayFocusHighlightedIds.value = new Set();
 
-    if (date) {
-      const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
-      const matchingSpotIds = scheduleStore.items
-        .filter((s) => s.date === date && s.spot_id != null)
-        .map((s) => s.spot_id as number);
-
-      const next = new Set<number>();
-
-      for (const e of matchingExcursions) {
-        next.add(e.id);
-      }
-
-      for (const sid of matchingSpotIds) {
-        next.add(sid);
-      }
-
-      dayFocusHighlightedIds.value = next;
-
-      nextTick(() => {
-        if (groupMode.value === 'tours' && matchingExcursions.length > 0) {
-          scrollToExcursion(matchingExcursions[0].id);
-          return;
-        }
-
-        if (matchingSpotIds.length > 0) {
-          const sid = matchingSpotIds[0];
-          const el = getSpotElement(sid, expandedExcursionId.value);
-          scrollToSpot(el ?? sid);
-        }
-      });
+    if (!date) {
+      return;
     }
+
+    const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
+    const matchingSpotIds = scheduleStore.items
+      .filter((item) => item.date === date && item.spot_id != null)
+      .map((item) => item.spot_id as number);
+
+    const next = new Set<number>();
+
+    for (const e of matchingExcursions) {
+      next.add(e.id);
+    }
+
+    for (const sid of matchingSpotIds) {
+      next.add(sid);
+    }
+
+    dayFocusHighlightedIds.value = next;
+
+    nextTick(() => {
+      if (groupMode.value === 'tours' && matchingExcursions.length > 0) {
+        scrollToExcursion(matchingExcursions[0].id);
+        return;
+      }
+
+      if (matchingSpotIds.length === 0) {
+        return;
+      }
+
+      const sid = matchingSpotIds[0];
+      const el = getSpotElement(sid, expandedExcursionId.value);
+      scrollToSpot(el ?? sid);
+    });
   }
 );
 
@@ -727,11 +737,13 @@ watch(
 
     const excursionId = hashHighlightId(newHash, 'excursion') ?? hashHighlightId(newHash, 'travel');
 
-    if (excursionId != null) {
-      await nextTick();
-      drawers.openMapForExcursion(excursionId);
-      onFocusExcursionFromMap(excursionId);
+    if (excursionId == null) {
+      return;
     }
+
+    await nextTick();
+    drawers.openMapForExcursion(excursionId);
+    onFocusExcursionFromMap(excursionId);
   }
 );
 
@@ -786,11 +798,13 @@ onMounted(async () => {
     onFocusSpotFromMap(hashId);
   }
 
-  if (excursionHashId != null) {
-    await nextTick();
-    drawers.openMapForExcursion(excursionHashId);
-    onFocusExcursionFromMap(excursionHashId);
+  if (excursionHashId == null) {
+    return;
   }
+
+  await nextTick();
+  drawers.openMapForExcursion(excursionHashId);
+  onFocusExcursionFromMap(excursionHashId);
 });
 
 onUnmounted(() => {

@@ -79,8 +79,8 @@ export function useDiaryEntityLinks() {
   }
 
   function pickerSpots(dateStr: string): Spot[] {
-    const matching = spotsStore.spots.filter((s) => spotAlreadyPlanned(s.id, dateStr));
-    const rest = spotsStore.spots.filter((s) => !spotAlreadyPlanned(s.id, dateStr));
+    const matching = spotsStore.spots.filter((spot) => spotAlreadyPlanned(spot.id, dateStr));
+    const rest = spotsStore.spots.filter((spot) => !spotAlreadyPlanned(spot.id, dateStr));
     return [...matching, ...rest];
   }
 
@@ -92,8 +92,8 @@ export function useDiaryEntityLinks() {
 
   function spotsForEntry(entry: DiaryEntry): Spot[] {
     return (entry.spot_ids ?? [])
-      .map((id) => spotsStore.spots.find((s) => s.id === id))
-      .filter((s): s is Spot => !!s);
+      .map((id) => spotsStore.spots.find((spot) => spot.id === id))
+      .filter((spot): spot is Spot => !!spot);
   }
 
   function toggleSpot(spotId: number, target: { spot_ids: number[] }) {
@@ -122,10 +122,10 @@ export function useDiaryEntityLinks() {
         }),
         ...spotIds.map(async (id) => {
           if (tripId != null && !spotAlreadyPlanned(id, date)) {
-            const spot = spotsStore.spots.find((s) => s.id === id);
+            const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === id);
 
             if (spot) {
-              await scheduleStore.setSpotDate(id, tripId, spot.title, date);
+              await scheduleStore.setSpotDate({ spotId: id, tripId, title: spot.title, date });
             }
           }
 

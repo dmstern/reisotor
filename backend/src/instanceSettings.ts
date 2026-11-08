@@ -265,8 +265,8 @@ export function getAllAdminSettings(): AdminSettingsDto {
 export function updateAdminSettings(payload: UpdateAdminSettingsPayload): AdminSettingsDto {
   const setOrDelete = (key: string, val: string | undefined) => {
     if (val !== undefined) {
-      const t = val.trim();
-      setInstanceSetting(key, t === '' ? null : t);
+      const trimmed = val.trim();
+      setInstanceSetting(key, trimmed === '' ? null : trimmed);
     }
   };
 

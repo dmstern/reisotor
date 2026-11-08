@@ -155,32 +155,34 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
 
-  if (e.key === 'Tab') {
-    if (!modalStore.isTop(modalId)) {
-      return;
-    }
+  if (e.key !== 'Tab') {
+    return;
+  }
 
-    const container = showConfirmClose.value ? confirmModalRef.value : modalRef.value;
-    const focusables = getFocusableElements(container);
+  if (!modalStore.isTop(modalId)) {
+    return;
+  }
 
-    if (focusables.length === 0) {
+  const container = showConfirmClose.value ? confirmModalRef.value : modalRef.value;
+  const focusables = getFocusableElements(container);
+
+  if (focusables.length === 0) {
+    e.preventDefault();
+    return;
+  }
+
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  const active = document.activeElement as HTMLElement | null;
+
+  if (e.shiftKey) {
+    if (active === first || !modalRef.value?.contains(active)) {
+      last.focus();
       e.preventDefault();
-      return;
     }
-
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    const active = document.activeElement as HTMLElement | null;
-
-    if (e.shiftKey) {
-      if (active === first || !modalRef.value?.contains(active)) {
-        last.focus();
-        e.preventDefault();
-      }
-    } else if (active === last || !modalRef.value?.contains(active)) {
-      first.focus();
-      e.preventDefault();
-    }
+  } else if (active === last || !modalRef.value?.contains(active)) {
+    first.focus();
+    e.preventDefault();
   }
 }
 

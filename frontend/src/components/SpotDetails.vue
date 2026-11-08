@@ -23,12 +23,12 @@ const hasDetails = computed(
   () => props.isAccommodation || !!props.spot.address || !!props.spot.link
 );
 
-function formatAccommodationDate(d: string | null) {
-  if (!d) {
+function formatAccommodationDate(dateStr: string | null) {
+  if (!dateStr) {
     return null;
   }
 
-  return formatDateShared(d);
+  return formatDateShared(dateStr);
 }
 
 const periodText = computed(() => {

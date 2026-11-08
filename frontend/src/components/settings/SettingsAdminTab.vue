@@ -185,48 +185,48 @@ const isVapidPrivateKeyConfigured = computed(() =>
 // Sync from loaded settings
 watch(
   settings,
-  (s) => {
-    if (!s) {
+  (currentSettings) => {
+    if (!currentSettings) {
       return;
     }
 
-    regForm.registrationMode = s.registration.registrationMode;
-    regForm.requireEmailVerification = s.registration.requireEmailVerification;
-    regForm.contactAdminEnabled = s.registration.contactAdminEnabled !== false;
+    regForm.registrationMode = currentSettings.registration.registrationMode;
+    regForm.requireEmailVerification = currentSettings.registration.requireEmailVerification;
+    regForm.contactAdminEnabled = currentSettings.registration.contactAdminEnabled !== false;
 
-    legalForm.operatorName = s.legal.operatorName;
-    legalForm.operatorAddress = s.legal.operatorAddress;
-    legalForm.contactEmail = s.legal.contactEmail;
-    legalForm.contactPhone = s.legal.contactPhone;
-    legalForm.hostingLocation = s.legal.hostingLocation;
-    legalForm.hostingProviderName = s.legal.hostingProviderName;
-    legalForm.hostingProviderAddress = s.legal.hostingProviderAddress;
+    legalForm.operatorName = currentSettings.legal.operatorName;
+    legalForm.operatorAddress = currentSettings.legal.operatorAddress;
+    legalForm.contactEmail = currentSettings.legal.contactEmail;
+    legalForm.contactPhone = currentSettings.legal.contactPhone;
+    legalForm.hostingLocation = currentSettings.legal.hostingLocation;
+    legalForm.hostingProviderName = currentSettings.legal.hostingProviderName;
+    legalForm.hostingProviderAddress = currentSettings.legal.hostingProviderAddress;
 
-    geoForm.photonApiUrl = s.geo.photonApiUrl;
-    geoForm.nominatimApiUrl = s.geo.nominatimApiUrl;
-    geoForm.nominatimEnabled = s.geo.nominatimEnabled;
+    geoForm.photonApiUrl = currentSettings.geo.photonApiUrl;
+    geoForm.nominatimApiUrl = currentSettings.geo.nominatimApiUrl;
+    geoForm.nominatimEnabled = currentSettings.geo.nominatimEnabled;
     geoForm.orsApiKey = '';
     geoForm.clearOrsApiKey = false;
 
-    emailForm.smtpHost = s.email.smtpHost;
-    emailForm.smtpPort = s.email.smtpPort;
-    emailForm.smtpSecure = s.email.smtpSecure;
-    emailForm.smtpUser = s.email.smtpUser;
+    emailForm.smtpHost = currentSettings.email.smtpHost;
+    emailForm.smtpPort = currentSettings.email.smtpPort;
+    emailForm.smtpSecure = currentSettings.email.smtpSecure;
+    emailForm.smtpUser = currentSettings.email.smtpUser;
     emailForm.smtpPass = '';
     emailForm.clearSmtpPass = false;
-    emailForm.smtpFrom = s.email.smtpFrom;
-    emailForm.appUrl = s.email.appUrl;
+    emailForm.smtpFrom = currentSettings.email.smtpFrom;
+    emailForm.appUrl = currentSettings.email.appUrl;
 
-    feedbackForm.githubRepo = s.feedback.githubRepo;
+    feedbackForm.githubRepo = currentSettings.feedback.githubRepo;
     feedbackForm.githubToken = '';
     feedbackForm.clearGithubToken = false;
-    feedbackForm.feedbackRelayForwarding = s.feedback.feedbackRelayForwarding;
-    feedbackForm.feedbackRelayUrl = s.feedback.feedbackRelayUrl;
+    feedbackForm.feedbackRelayForwarding = currentSettings.feedback.feedbackRelayForwarding;
+    feedbackForm.feedbackRelayUrl = currentSettings.feedback.feedbackRelayUrl;
 
-    pushForm.vapidPublicKey = s.push.vapidPublicKey;
+    pushForm.vapidPublicKey = currentSettings.push.vapidPublicKey;
     pushForm.vapidPrivateKey = '';
     pushForm.clearVapidKeys = false;
-    pushForm.vapidSubject = s.push.vapidSubject;
+    pushForm.vapidSubject = currentSettings.push.vapidSubject;
   },
   { immediate: true }
 );
@@ -372,11 +372,13 @@ async function savePush() {
 async function handleGenerateVapid() {
   const ok = await generateVapidKeys(pushForm.vapidSubject);
 
-  if (ok && settings.value) {
-    pushForm.vapidPublicKey = settings.value.push.vapidPublicKey;
-    pushForm.vapidPrivateKey = '';
-    pushForm.clearVapidKeys = false;
+  if (!ok || !settings.value) {
+    return;
   }
+
+  pushForm.vapidPublicKey = settings.value.push.vapidPublicKey;
+  pushForm.vapidPrivateKey = '';
+  pushForm.clearVapidKeys = false;
 }
 </script>
 

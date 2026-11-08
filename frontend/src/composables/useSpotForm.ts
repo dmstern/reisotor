@@ -107,7 +107,7 @@ export function extractCityFromAddress(address?: string): string | undefined {
 
   const parts = address
     .split(',')
-    .map((p) => p.trim())
+    .map((part) => part.trim())
     .filter(Boolean);
 
   if (parts.length === 0) {
@@ -417,8 +417,10 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   const spotPickerCenter = computed(() => {
-    const t = tripStore.currentTrip;
-    return t?.lat != null && t?.lng != null ? { lat: t.lat, lng: t.lng } : undefined;
+    const currentTrip = tripStore.currentTrip;
+    return currentTrip?.lat != null && currentTrip?.lng != null
+      ? { lat: currentTrip.lat, lng: currentTrip.lng }
+      : undefined;
   });
 
   const spotPreviewImage = computed(() => {
@@ -543,9 +545,13 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   function removeTourTitle(title: string) {
     if (editingSpot.value !== null) {
-      editSpotForm.value.tourTitles = editSpotForm.value.tourTitles.filter((t) => t !== title);
+      editSpotForm.value.tourTitles = editSpotForm.value.tourTitles.filter(
+        (tourTitle) => tourTitle !== title
+      );
     } else {
-      spotForm.value.tourTitles = spotForm.value.tourTitles.filter((t) => t !== title);
+      spotForm.value.tourTitles = spotForm.value.tourTitles.filter(
+        (tourTitle) => tourTitle !== title
+      );
     }
   }
 
@@ -554,7 +560,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       id: e.id,
       title: e.title,
       assigned: activeSpotForm.value.tourTitles.some(
-        (t) => t.toLowerCase() === e.title.toLowerCase()
+        (tourTitle) => tourTitle.toLowerCase() === e.title.toLowerCase()
       ),
     }));
   });
@@ -568,7 +574,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
     const titles =
       editingSpot.value !== null ? editSpotForm.value.tourTitles : spotForm.value.tourTitles;
-    const index = titles.findIndex((t) => t.toLowerCase() === tour.title.toLowerCase());
+    const index = titles.findIndex(
+      (tourTitle) => tourTitle.toLowerCase() === tour.title.toLowerCase()
+    );
 
     if (index >= 0) {
       titles.splice(index, 1);
@@ -591,7 +599,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       editingSpot.value !== null ? editSpotForm.value.tourTitles : spotForm.value.tourTitles;
 
     if (existing) {
-      if (!titles.some((t) => t.toLowerCase() === existing.title.toLowerCase())) {
+      if (!titles.some((tourTitle) => tourTitle.toLowerCase() === existing.title.toLowerCase())) {
         titles.push(existing.title);
       }
     } else {
@@ -674,26 +682,28 @@ export function useSpotForm(options: UseSpotFormOptions) {
       return;
     }
 
-    spotForm.value.scheduledDates = spotForm.value.scheduledDates.filter((d) => d !== date);
+    spotForm.value.scheduledDates = spotForm.value.scheduledDates.filter(
+      (scheduledDate) => scheduledDate !== date
+    );
   }
 
   const spotReferencePoints = computed(() =>
     spotsStore.spots
-      .filter((s) => s.lat != null && s.lng != null)
-      .map((s) => ({
-        lat: s.lat as number,
-        lng: s.lng as number,
-        icon: spotCategoryMeta(s.category).tabler,
+      .filter((spot) => spot.lat != null && spot.lng != null)
+      .map((spot) => ({
+        lat: spot.lat as number,
+        lng: spot.lng as number,
+        icon: spotCategoryMeta(spot.category).tabler,
       }))
   );
 
   const editSpotReferencePoints = computed(() =>
     spotsStore.spots
-      .filter((s) => s.id !== editingSpot.value?.id && s.lat != null && s.lng != null)
-      .map((s) => ({
-        lat: s.lat as number,
-        lng: s.lng as number,
-        icon: spotCategoryMeta(s.category).tabler,
+      .filter((spot) => spot.id !== editingSpot.value?.id && spot.lat != null && spot.lng != null)
+      .map((spot) => ({
+        lat: spot.lat as number,
+        lng: spot.lng as number,
+        icon: spotCategoryMeta(spot.category).tabler,
       }))
   );
 
@@ -865,11 +875,11 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function spotToBody(
-    f: SpotFormData,
+    formData: SpotFormData,
     manual?: { lat: number; lng: number } | null,
     fallback?: { lat?: number | null; lng?: number | null }
   ) {
-    const parsed = parseLatLngFromMapsLink(f.maps_link);
+    const parsed = parseLatLngFromMapsLink(formData.maps_link);
     let lat: number | null | undefined;
     let lng: number | null | undefined;
 
@@ -877,7 +887,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       if (manual !== null) {
         lat = manual.lat;
         lng = manual.lng;
-      } else if (!f.maps_link) {
+      } else if (!formData.maps_link) {
         lat = null;
         lng = null;
       } else {
@@ -889,32 +899,38 @@ export function useSpotForm(options: UseSpotFormOptions) {
       lng = parsed?.lng ?? fallback?.lng ?? undefined;
     }
 
+    let paidByUserId: number | undefined;
+
+    if (formData.paid_by_user_id) {
+      paidByUserId = Number(formData.paid_by_user_id);
+    } else if (formData.amount) {
+      if (users.value.length === 1) {
+        paidByUserId = users.value[0].id;
+      } else {
+        paidByUserId = auth.user?.id ?? undefined;
+      }
+    }
+
     return {
       trip_id: tripId,
-      title: f.title.trim(),
-      image_url: f.image_url || undefined,
-      category: f.category || undefined,
-      note: f.note && !isEmptyRichText(f.note) ? f.note : undefined,
+      title: formData.title.trim(),
+      image_url: formData.image_url || undefined,
+      category: formData.category || undefined,
+      note: formData.note && !isEmptyRichText(formData.note) ? formData.note : undefined,
       note_format: 'html' as const,
-      maps_link: f.maps_link || undefined,
+      maps_link: formData.maps_link || undefined,
       lat,
       lng,
-      is_home: f.is_home,
-      address: f.address || undefined,
-      start_date: f.start_date || undefined,
-      end_date: f.end_date || undefined,
-      checkin: f.checkin || undefined,
-      checkout: f.checkout || undefined,
-      contact: f.contact || undefined,
-      amount: f.amount ? Number(f.amount) : undefined,
-      paid_by_user_id: f.paid_by_user_id
-        ? Number(f.paid_by_user_id)
-        : f.amount
-          ? users.value.length === 1
-            ? users.value[0].id
-            : (auth.user?.id ?? undefined)
-          : undefined,
-      link: f.link?.trim() ? normalizeWebUrl(f.link) : null,
+      is_home: formData.is_home,
+      address: formData.address || undefined,
+      start_date: formData.start_date || undefined,
+      end_date: formData.end_date || undefined,
+      checkin: formData.checkin || undefined,
+      checkout: formData.checkout || undefined,
+      contact: formData.contact || undefined,
+      amount: formData.amount ? Number(formData.amount) : undefined,
+      paid_by_user_id: paidByUserId,
+      link: formData.link?.trim() ? normalizeWebUrl(formData.link) : null,
     };
   }
 
@@ -967,7 +983,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   async function syncSpotTours(spotId: number, desiredTitles: string[]) {
-    const desiredLower = desiredTitles.map((t) => t.toLowerCase());
+    const desiredLower = desiredTitles.map((tourTitle) => tourTitle.toLowerCase());
 
     for (const tour of excursionsStore.excursions.filter((e) => e.spot_ids.includes(spotId))) {
       if (!desiredLower.includes(tour.title.toLowerCase())) {
@@ -1025,16 +1041,18 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     await syncSpotTours(result.id, spotForm.value.tourTitles);
-    const datesToSchedule = spotForm.value.scheduledDates?.length
-      ? spotForm.value.scheduledDates
-      : spotForm.value.scheduledDate
-        ? [spotForm.value.scheduledDate]
-        : [];
+    let datesToSchedule: string[] = [];
 
-    for (const d of datesToSchedule) {
+    if (spotForm.value.scheduledDates?.length) {
+      datesToSchedule = spotForm.value.scheduledDates;
+    } else if (spotForm.value.scheduledDate) {
+      datesToSchedule = [spotForm.value.scheduledDate];
+    }
+
+    for (const schedDate of datesToSchedule) {
       await scheduleStore.create({
         trip_id: tripId,
-        date: d,
+        date: schedDate,
         title: result.title,
         spot_id: result.id,
         auto_created: 1,

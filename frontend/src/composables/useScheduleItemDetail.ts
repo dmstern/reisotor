@@ -68,7 +68,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
       return null;
     }
 
-    return spotsStore.spots.find((s) => s.id === spotId) ?? null;
+    return spotsStore.spots.find((spot) => spot.id === spotId) ?? null;
   });
 
   const viewingLinkedExcursion = computed<Excursion | null>(() => {
@@ -102,7 +102,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
       const urls: string[] = [];
 
       for (const spotId of viewingLinkedExcursion.value.spot_ids) {
-        const spot = spotsStore.spots.find((s) => s.id === spotId);
+        const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === spotId);
 
         if (spot?.image_url && !urls.includes(spot.image_url)) {
           urls.push(spot.image_url);
@@ -195,8 +195,8 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
   });
 
   function formatViewingDate(dateStr: string) {
-    const d = new Date(`${dateStr}T00:00:00`);
-    return `${weekdayShortFormatter.format(d)}, ${formatDate(dateStr)}`;
+    const parsedDate = new Date(`${dateStr}T00:00:00`);
+    return `${weekdayShortFormatter.format(parsedDate)}, ${formatDate(dateStr)}`;
   }
 
   function linkedTitleFor(entry: CalendarEntry | null): string | null {
@@ -205,7 +205,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     }
 
     if (entry.spotId != null) {
-      return spotsStore.spots.find((s) => s.id === entry.spotId)?.title ?? null;
+      return spotsStore.spots.find((spot) => spot.id === entry.spotId)?.title ?? null;
     }
 
     if (entry.ideaId != null) {
@@ -228,7 +228,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
       : '/excursions';
 
     if (entry.spotId != null) {
-      const spot = spotsStore.spots.find((s) => s.id === entry.spotId);
+      const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === entry.spotId);
       const isAccommodation = spot?.category === 'Unterkunft';
 
       const matchingTour = !isAccommodation

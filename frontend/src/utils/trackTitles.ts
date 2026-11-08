@@ -15,15 +15,15 @@ const GERMAN_WEEKDAYS = [
  * und Tageszeit (z. B. "Sonntagsspaziergang", "Morgendliche Tour am Montag").
  */
 export function formatFallbackTrackTitle(startedAt: string): string {
-  const d = new Date(startedAt);
+  const startDate = new Date(startedAt);
 
-  if (isNaN(d.getTime())) {
+  if (isNaN(startDate.getTime())) {
     return 'Aufzeichnung';
   }
 
-  const dayIndex = d.getDay();
+  const dayIndex = startDate.getDay();
   const dayName = GERMAN_WEEKDAYS[dayIndex];
-  const hour = d.getHours();
+  const hour = startDate.getHours();
 
   const isMorning = hour >= 5 && hour < 11;
   const isMidday = hour >= 11 && hour < 14;

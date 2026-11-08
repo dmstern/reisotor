@@ -61,7 +61,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   // CORS_ORIGIN erlaubt der e2e-Testsuite (/e2e), Backend+Frontend auf eigenen Ports parallel zum
   // normalen lokalen Dev-Server laufen zu lassen, ohne dessen Origin (Default: Vite auf 5173) zu
   // verändern. Kommagetrennt für mehrere Origins.
-  const devOrigins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()) ?? [
+  const devOrigins = process.env.CORS_ORIGIN?.split(',').map((origin) => origin.trim()) ?? [
     'http://localhost:5173',
   ];
   await app.register(cors, {

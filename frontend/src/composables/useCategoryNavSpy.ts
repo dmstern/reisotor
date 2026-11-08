@@ -368,7 +368,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
         return;
       }
 
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
       if (token !== activeScrollToken) {
         return;
@@ -429,7 +429,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
           return el;
         }
 
-        const grp = spotGroups.value.find((g) => g.excursion?.id === id);
+        const grp = spotGroups.value.find((group) => group.excursion?.id === id);
 
         if (grp) {
           return categoryRefs.get(grp.category) ?? null;
@@ -448,12 +448,13 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     overrideBehavior?: ScrollBehavior
   ): Promise<void> {
     return scrollToElementInBody(
-      () =>
-        target instanceof HTMLElement
-          ? target.isConnected
-            ? target
-            : null
-          : getSpotElement(target),
+      () => {
+        if (target instanceof HTMLElement) {
+          return target.isConnected ? target : null;
+        }
+
+        return getSpotElement(target);
+      },
       offsetAdjustment,
       overrideBehavior
     );
@@ -463,7 +464,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   watch(
     spotGroups,
     (groups) => {
-      if (!groups.some((g) => g.category === activeCategory.value)) {
+      if (!groups.some((group) => group.category === activeCategory.value)) {
         activeCategory.value = groups[0]?.category ?? null;
       }
     },
@@ -511,7 +512,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
           return;
         }
 
-        const active = spotGroups.value.find((g) => intersectingCategories.has(g.category));
+        const active = spotGroups.value.find((group) => intersectingCategories.has(group.category));
 
         if (active) {
           activeCategory.value = active.category;
@@ -579,19 +580,21 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     categoryNavResizeObserver = null;
     categoryNavEl.value = el instanceof HTMLElement ? el : null;
 
-    if (el instanceof HTMLElement) {
-      if (typeof ResizeObserver !== 'undefined') {
-        categoryNavResizeObserver = new ResizeObserver(() => {
-          updateCategoryNavUnderline();
-          categoryNavHeight.value = el.getBoundingClientRect().height;
-          updateNavArrows();
-        });
-        categoryNavResizeObserver.observe(el);
-      }
-
-      updateNavArrows();
-      nextTick(updateCategoryNavUnderline);
+    if (!(el instanceof HTMLElement)) {
+      return;
     }
+
+    if (typeof ResizeObserver !== 'undefined') {
+      categoryNavResizeObserver = new ResizeObserver(() => {
+        updateCategoryNavUnderline();
+        categoryNavHeight.value = el.getBoundingClientRect().height;
+        updateNavArrows();
+      });
+      categoryNavResizeObserver.observe(el);
+    }
+
+    updateNavArrows();
+    nextTick(updateCategoryNavUnderline);
   }
 
   function scrollNavBy(direction: 1 | -1) {

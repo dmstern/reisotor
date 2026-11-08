@@ -360,7 +360,7 @@ export function applyBorderWidth(widthPx: number) {
 function loadDiaryFont(): DiaryFont {
   const stored = safeLocalStorageGet(DIARY_FONT_KEY);
 
-  if (stored && DIARY_FONT_OPTIONS.some((o) => o.id === stored)) {
+  if (stored && DIARY_FONT_OPTIONS.some((option) => option.id === stored)) {
     return stored as DiaryFont;
   }
 
@@ -372,7 +372,7 @@ export function applyDiaryFont(font: DiaryFont) {
     return;
   }
 
-  const option = DIARY_FONT_OPTIONS.find((o) => o.id === font) ?? DIARY_FONT_OPTIONS[0];
+  const option = DIARY_FONT_OPTIONS.find((opt) => opt.id === font) ?? DIARY_FONT_OPTIONS[0];
   document.documentElement.style.setProperty('--font-diary', option.fontFamily);
 }
 
@@ -506,7 +506,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       const calSettingsStore = useCalendarSettingsStore();
       const homeCurrStore = useHomeCurrencyStore();
 
-      if (stored.theme && THEME_MODE_OPTIONS.some((o) => o.value === stored.theme)) {
+      if (stored.theme && THEME_MODE_OPTIONS.some((option) => option.value === stored.theme)) {
         themeStore.mode = stored.theme;
       }
 
@@ -580,7 +580,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         borderWidth.value = stored.borderWidth;
       }
 
-      if (stored.diaryFont && DIARY_FONT_OPTIONS.some((o) => o.id === stored.diaryFont)) {
+      if (stored.diaryFont && DIARY_FONT_OPTIONS.some((option) => option.id === stored.diaryFont)) {
         diaryFont.value = stored.diaryFont;
       }
 
@@ -610,14 +610,14 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       if (stored.calendarSettings) {
         if (
           stored.calendarSettings.weekStart &&
-          WEEK_START_OPTIONS.some((o) => o.value === stored.calendarSettings?.weekStart)
+          WEEK_START_OPTIONS.some((option) => option.value === stored.calendarSettings?.weekStart)
         ) {
           calSettingsStore.weekStart = stored.calendarSettings.weekStart;
         }
 
         if (
           stored.calendarSettings.dateFormat &&
-          DATE_FORMAT_OPTIONS.some((o) => o.value === stored.calendarSettings?.dateFormat)
+          DATE_FORMAT_OPTIONS.some((option) => option.value === stored.calendarSettings?.dateFormat)
         ) {
           calSettingsStore.dateFormat = stored.calendarSettings.dateFormat;
         }
@@ -625,7 +625,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
 
       if (
         stored.homeCurrency &&
-        HOME_CURRENCY_OPTIONS.some((o) => o.value === stored.homeCurrency)
+        HOME_CURRENCY_OPTIONS.some((option) => option.value === stored.homeCurrency)
       ) {
         homeCurrStore.currency = stored.homeCurrency;
       }

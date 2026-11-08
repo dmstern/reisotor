@@ -63,7 +63,7 @@ export type NotificationLevel = 'essential' | 'balanced' | 'all';
 function presetFor(domains: NotificationDomain[]): NotificationPreferences {
   const enabled = new Set(domains);
   return {
-    ...Object.fromEntries(NOTIFICATION_DOMAINS.map((d) => [d, enabled.has(d)])),
+    ...Object.fromEntries(NOTIFICATION_DOMAINS.map((domain) => [domain, enabled.has(domain)])),
     activity_updates: true,
   } as NotificationPreferences;
 }
@@ -86,7 +86,7 @@ export const NOTIFICATION_LEVEL_OPTIONS: { value: NotificationLevel; label: stri
 export function matchingLevel(prefs: NotificationPreferences): NotificationLevel | null {
   for (const level of Object.keys(NOTIFICATION_LEVEL_PRESETS) as NotificationLevel[]) {
     const preset = NOTIFICATION_LEVEL_PRESETS[level];
-    const domainsMatch = NOTIFICATION_DOMAINS.every((d) => prefs[d] === preset[d]);
+    const domainsMatch = NOTIFICATION_DOMAINS.every((domain) => prefs[domain] === preset[domain]);
     const updatesMatch = (prefs.activity_updates ?? true) === (preset.activity_updates ?? true);
 
     if (domainsMatch && updatesMatch) {

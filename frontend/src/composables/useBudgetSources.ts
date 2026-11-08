@@ -13,7 +13,7 @@ export function useBudgetSources() {
   const excursionsStore = useExcursionsStore();
 
   const accommodations = computed(() =>
-    spotsStore.spots.filter((s) => s.category === 'Unterkunft')
+    spotsStore.spots.filter((spot) => spot.category === 'Unterkunft')
   );
 
   const travelItems = computed(() =>
@@ -27,7 +27,7 @@ export function useBudgetSources() {
       return { label: 'Zur Unterkunft', path: `/excursions#spot-${accommodation.id}` };
     }
 
-    const travelItem = travelItems.value.find((t) => t.budget_expense_id === expenseId);
+    const travelItem = travelItems.value.find((item) => item.budget_expense_id === expenseId);
 
     if (travelItem) {
       return { label: 'Zur Reise', path: `/excursions#excursion-${travelItem.id}` };

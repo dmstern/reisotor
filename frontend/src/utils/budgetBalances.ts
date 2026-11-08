@@ -40,31 +40,33 @@ export function computeBalances(
   transfers: BudgetTransfer[],
   budgets: Budget[]
 ): Balance[] {
-  const n = users.length;
+  const userCount = users.length;
 
-  if (n === 0) {
+  if (userCount === 0) {
     return [];
   }
 
-  const memberIds = new Set(users.map((u) => u.id));
+  const memberIds = new Set(users.map((user) => user.id));
   const sharedExpenses = expenses.filter(
     (e) =>
       isSharedExpense(e, budgets) && e.paid_by_user_id != null && memberIds.has(e.paid_by_user_id)
   );
-  const totalSpent = sharedExpenses.reduce((s, e) => s + e.amount, 0);
-  const fairShare = totalSpent / n;
-  return users.map((u) => {
+  const totalSpent = sharedExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const fairShare = totalSpent / userCount;
+  return users.map((user) => {
     const paid = sharedExpenses
-      .filter((e) => e.paid_by_user_id === u.id)
-      .reduce((s, e) => s + e.amount, 0);
+      .filter((e) => e.paid_by_user_id === user.id)
+      .reduce((sum, e) => sum + e.amount, 0);
     const received = transfers
-      .filter((t) => t.to_user_id === u.id)
-      .reduce((s, t) => s + t.amount, 0);
-    const sent = transfers.filter((t) => t.from_user_id === u.id).reduce((s, t) => s + t.amount, 0);
+      .filter((transfer) => transfer.to_user_id === user.id)
+      .reduce((sum, transfer) => sum + transfer.amount, 0);
+    const sent = transfers
+      .filter((transfer) => transfer.from_user_id === user.id)
+      .reduce((sum, transfer) => sum + transfer.amount, 0);
     // Eine Überweisung ist eine Schuldenrückzahlung: wer sendet, baut Schulden ab (net steigt);
     // wer empfängt, hat bereits Ausgleich bekommen (net sinkt).
     const net = paid - fairShare + sent - received;
-    return { user: u, paid, fairShare, net };
+    return { user, paid, fairShare, net };
   });
 }
 

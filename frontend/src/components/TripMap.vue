@@ -83,13 +83,13 @@ const trackPlaybackProgress = ref(0);
 const openTravelId = ref<number | null>(null);
 const travelDialogOpen = ref(false);
 const openTravel = computed(
-  () => travelItems.value.find((t) => t.id === openTravelId.value) ?? null
+  () => travelItems.value.find((item) => item.id === openTravelId.value) ?? null
 );
 
-function onTravelDialogUpdate(v: boolean) {
-  travelDialogOpen.value = v;
+function onTravelDialogUpdate(isOpen: boolean) {
+  travelDialogOpen.value = isOpen;
 
-  if (!v) {
+  if (!isOpen) {
     drawers.mapFocusKey = null;
   }
 }
@@ -105,8 +105,8 @@ function payerLabelFor(userId: number | null) {
     return null;
   }
 
-  const u = users.value.find((u) => u.id === userId);
-  return u ? `${u.avatar} ${u.username}` : null;
+  const user = users.value.find((candidate) => candidate.id === userId);
+  return user ? `${user.avatar} ${user.username}` : null;
 }
 
 function trackAuthorUser(userId: number | undefined) {
@@ -114,7 +114,9 @@ function trackAuthorUser(userId: number | undefined) {
     return null;
   }
 
-  return users.value.find((u) => u.id === userId) ?? (auth.user?.id === userId ? auth.user : null);
+  return (
+    users.value.find((user) => user.id === userId) ?? (auth.user?.id === userId ? auth.user : null)
+  );
 }
 
 // 1. Photos composable

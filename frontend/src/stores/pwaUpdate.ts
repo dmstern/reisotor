@@ -176,10 +176,10 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
 
     if (targetUrl.includes('testUpdate') || targetUrl.includes('fakeUpdate')) {
       try {
-        const u = new URL(targetUrl);
-        u.searchParams.delete('testUpdate');
-        u.searchParams.delete('fakeUpdate');
-        targetUrl = u.toString();
+        const parsedUrl = new URL(targetUrl);
+        parsedUrl.searchParams.delete('testUpdate');
+        parsedUrl.searchParams.delete('fakeUpdate');
+        targetUrl = parsedUrl.toString();
       } catch {
         // Fallback falls URL-Parsing fehlschlägt
       }

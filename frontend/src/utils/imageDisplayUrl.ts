@@ -31,7 +31,7 @@ export function imageDisplayUrl(url: string | null | undefined): string | undefi
   // encodeURIComponent lässt ' ( ) ! * unkodiert - würde in unquotiertem CSS-url() brechen.
   const encoded = encodeURIComponent(url).replace(
     /[!'()*]/g,
-    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
   );
   return `/api/images/proxy?url=${encoded}`;
 }

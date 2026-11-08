@@ -145,10 +145,10 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
   }
 
   function recordDragSample(y: number) {
-    const t = performance.now();
-    dragSamples.push({ y, t });
+    const sampleTime = performance.now();
+    dragSamples.push({ y, t: sampleTime });
 
-    while (dragSamples.length > 1 && t - dragSamples[0].t > FLICK_SAMPLE_WINDOW_MS) {
+    while (dragSamples.length > 1 && sampleTime - dragSamples[0].t > FLICK_SAMPLE_WINDOW_MS) {
       dragSamples.shift();
     }
   }
@@ -207,12 +207,12 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     let closest: SheetState = 'partial';
     let bestDist = Infinity;
 
-    for (const s of SHEET_ORDER) {
-      const dist = Math.abs(sheetHeightPx(s) - heightPx);
+    for (const sheet of SHEET_ORDER) {
+      const dist = Math.abs(sheetHeightPx(sheet) - heightPx);
 
       if (dist < bestDist) {
         bestDist = dist;
-        closest = s;
+        closest = sheet;
       }
     }
 
@@ -452,20 +452,22 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     (overlay) => {
       clearSheetHeightOverride();
 
-      if (!overlay) {
-        if (sheetState.value === 'collapsed') {
-          sheetState.value = 'partial';
-        }
+      if (overlay) {
+        return;
+      }
 
-        const validWidth = calcValidSpotsColWidth({
-          preferredWidth: loadStoredSpotsColWidth() ?? spotsColWidth.value,
-          availableWidth: appMainWidth.value,
-          isDesktop: true,
-        });
+      if (sheetState.value === 'collapsed') {
+        sheetState.value = 'partial';
+      }
 
-        if (spotsColWidth.value !== validWidth) {
-          spotsColWidth.value = validWidth;
-        }
+      const validWidth = calcValidSpotsColWidth({
+        preferredWidth: loadStoredSpotsColWidth() ?? spotsColWidth.value,
+        availableWidth: appMainWidth.value,
+        isDesktop: true,
+      });
+
+      if (spotsColWidth.value !== validWidth) {
+        spotsColWidth.value = validWidth;
       }
     },
     { immediate: true }

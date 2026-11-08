@@ -120,7 +120,7 @@ describe('imageCompression EXIF metadata preservation', () => {
 
     // Mit Sharp prüfen, ob auch externe Bibliotheken die EXIF-Metadaten korrekt lesen
     const binary = atob(result.replace(/^data:image\/jpeg;base64,/, ''));
-    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
     const sharpMeta = await sharp(bytes).metadata();
     expect(sharpMeta.format).toBe('jpeg');
     expect(sharpMeta.orientation).toBe(1);

@@ -154,8 +154,12 @@ export const notesRoutes: FastifyPluginAsync = async (app) => {
     const { title, content } = req.body;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
-    const isDraft =
-      req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : existingNote.is_draft;
+    let isDraft = existingNote.is_draft;
+
+    if (req.body.is_draft !== undefined) {
+      isDraft = req.body.is_draft ? 1 : 0;
+    }
+
     const result = updateNoteStmt.run(
       title ?? null,
       isHtml ? sanitizeHtml(content) : content,

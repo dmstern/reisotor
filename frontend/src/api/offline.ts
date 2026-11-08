@@ -513,12 +513,13 @@ export async function flushOutbox(
               typeof (err as { status: unknown }).status === 'number'
                 ? (err as { status: number }).status
                 : undefined;
-            const message =
-              err instanceof Error
-                ? err.message
-                : typeof err === 'object' && err !== null && 'message' in err
-                  ? String((err as { message: unknown }).message)
-                  : 'Unbekannter Serverfehler';
+            let message = 'Unbekannter Serverfehler';
+
+            if (err instanceof Error) {
+              message = err.message;
+            } else if (typeof err === 'object' && err !== null && 'message' in err) {
+              message = String((err as { message: unknown }).message);
+            }
 
             // Unbehebbare Client-Fehler (4xx wie 400 Bad Request, 404 Not Found, 422 etc., außer
             // 408 Request Timeout und 429 Too Many Requests): der Server lehnt diese Mutation endgültig ab.

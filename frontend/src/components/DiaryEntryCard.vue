@@ -113,7 +113,7 @@ function formatSpotMismatchTooltip(spot: Spot): string {
   }
 
   if (dates.length > 1) {
-    return `${spot.title} (geplant am ${dates.map((d) => formatDate(d)).join(', ')})`;
+    return `${spot.title} (geplant am ${dates.map((entryDate) => formatDate(entryDate)).join(', ')})`;
   }
 
   return spot.title;

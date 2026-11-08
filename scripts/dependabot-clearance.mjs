@@ -160,19 +160,21 @@ export function generateClearanceMarkdown(evaluations) {
   ];
 
   for (const item of evaluations) {
-    const verdictBadge =
-      item.verdict === 'GO'
-        ? '🟢 **GO (Freigegeben)**'
-        : item.verdict === 'WAIT'
-          ? '🟡 **WAIT (Läuft)**'
-          : '🔴 **STOP (Gesperrt)**';
+    let verdictBadge = '🔴 **STOP (Gesperrt)**';
 
-    const ciBadge =
-      item.ci.state === 'PASSED'
-        ? `✅ ${item.ci.passed}/${item.ci.total}`
-        : item.ci.state === 'FAILED'
-          ? `❌ ${item.ci.failed} Fehler`
-          : `⏳ ${item.ci.pending} offen`;
+    if (item.verdict === 'GO') {
+      verdictBadge = '🟢 **GO (Freigegeben)**';
+    } else if (item.verdict === 'WAIT') {
+      verdictBadge = '🟡 **WAIT (Läuft)**';
+    }
+
+    let ciBadge = `⏳ ${item.ci.pending} offen`;
+
+    if (item.ci.state === 'PASSED') {
+      ciBadge = `✅ ${item.ci.passed}/${item.ci.total}`;
+    } else if (item.ci.state === 'FAILED') {
+      ciBadge = `❌ ${item.ci.failed} Fehler`;
+    }
 
     const prLink = item.url ? `[#${item.number}](${item.url})` : `#${item.number}`;
     lines.push(

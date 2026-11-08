@@ -98,20 +98,20 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
           'SELECT id, username, email, avatar, is_admin, is_restricted, must_change_password, is_email_verified, last_login_at, is_locked FROM users ORDER BY id'
         )
         .all() as UserRow[];
-      return rows.map((u) => {
-        const restricted = isUserRestricted(u.id);
+      return rows.map((userRow) => {
+        const restricted = isUserRestricted(userRow.id);
         return {
-          id: u.id,
-          username: u.username,
-          email: u.email ?? null,
-          avatar: u.avatar,
-          is_admin: Boolean(u.is_admin),
+          id: userRow.id,
+          username: userRow.username,
+          email: userRow.email ?? null,
+          avatar: userRow.avatar,
+          is_admin: Boolean(userRow.is_admin),
           is_restricted: restricted,
           restricted,
-          must_change_password: Boolean(u.must_change_password),
-          is_email_verified: u.is_email_verified !== 0,
-          last_login_at: u.last_login_at ?? null,
-          is_locked: Boolean(u.is_locked),
+          must_change_password: Boolean(userRow.must_change_password),
+          is_email_verified: userRow.is_email_verified !== 0,
+          last_login_at: userRow.last_login_at ?? null,
+          is_locked: Boolean(userRow.is_locked),
         };
       });
     }
@@ -126,13 +126,13 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
   // vorschlägt. Mindestens 2 Zeichen, um bei jedem Tastendruck nicht die gesamte Nutzerliste
   // zurückzugeben.
   app.get<{ Querystring: { q?: string; trip_id?: string } }>('/users/search', async (req) => {
-    const q = (req.query.q ?? '').trim();
+    const query = (req.query.q ?? '').trim();
 
-    if (q.length < 2) {
+    if (query.length < 2) {
       return [];
     }
 
-    const escaped = q.replace(/[%_\\]/g, '\\$&');
+    const escaped = query.replace(/[%_\\]/g, '\\$&');
     const like = `%${escaped}%`;
     const excludeTripId = req.query.trip_id ? Number(req.query.trip_id) : null;
     return db

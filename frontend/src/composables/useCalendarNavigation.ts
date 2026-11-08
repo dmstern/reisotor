@@ -22,12 +22,12 @@ export interface UseCalendarNavigationOptions {
   weatherEntriesFor: (date: string) => DayWeatherEntry[];
 }
 
-function startOfMonth(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-function toIso(d: Date) {
-  return toLocalDateString(d);
+function toIso(date: Date) {
+  return toLocalDateString(date);
 }
 
 /**
@@ -215,7 +215,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     const lastYear = new Date(`${last}T00:00:00`).getFullYear();
     const includeYear =
       firstYear !== currentYear || lastYear !== currentYear || firstYear !== lastYear;
-    const fmt = (d: string) => formatDate(d, { includeYear });
+    const fmt = (dateStr: string) => formatDate(dateStr, { includeYear });
     return `${fmt(first)} – ${fmt(last)}`;
   });
 
@@ -242,13 +242,13 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     if (granularity.value === 'month') {
       prevMonth();
     } else if (granularity.value === 'twoWeeks') {
-      const d = new Date(weekAnchor.value);
-      d.setDate(d.getDate() - 14);
-      weekAnchor.value = startOfWeek(d);
+      const targetDate = new Date(weekAnchor.value);
+      targetDate.setDate(targetDate.getDate() - 14);
+      weekAnchor.value = startOfWeek(targetDate);
     } else {
-      const d = new Date(weekAnchor.value);
-      d.setDate(d.getDate() - 7);
-      weekAnchor.value = startOfWeek(d);
+      const targetDate = new Date(weekAnchor.value);
+      targetDate.setDate(targetDate.getDate() - 7);
+      weekAnchor.value = startOfWeek(targetDate);
     }
   }
 
@@ -259,13 +259,13 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     if (granularity.value === 'month') {
       nextMonth();
     } else if (granularity.value === 'twoWeeks') {
-      const d = new Date(weekAnchor.value);
-      d.setDate(d.getDate() + 14);
-      weekAnchor.value = startOfWeek(d);
+      const targetDate = new Date(weekAnchor.value);
+      targetDate.setDate(targetDate.getDate() + 14);
+      weekAnchor.value = startOfWeek(targetDate);
     } else {
-      const d = new Date(weekAnchor.value);
-      d.setDate(d.getDate() + 7);
-      weekAnchor.value = startOfWeek(d);
+      const targetDate = new Date(weekAnchor.value);
+      targetDate.setDate(targetDate.getDate() + 7);
+      weekAnchor.value = startOfWeek(targetDate);
     }
   }
 
@@ -295,9 +295,9 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   });
 
   function goToDate(dateIso: string): boolean {
-    const d = new Date(`${dateIso}T00:00:00`);
-    monthAnchor.value = startOfMonth(d);
-    weekAnchor.value = startOfWeek(d);
+    const targetDate = new Date(`${dateIso}T00:00:00`);
+    monthAnchor.value = startOfMonth(targetDate);
+    weekAnchor.value = startOfWeek(targetDate);
     return true;
   }
 
@@ -356,11 +356,13 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   function goToTripDates() {
     activeJumpTarget.value = 'trip';
 
-    if (trip.value?.start_date) {
-      slideDirection.value = determineSlideDirection(trip.value.start_date);
-      goToDate(trip.value.start_date);
-      selectDay(trip.value.start_date);
+    if (!trip.value?.start_date) {
+      return;
     }
+
+    slideDirection.value = determineSlideDirection(trip.value.start_date);
+    goToDate(trip.value.start_date);
+    selectDay(trip.value.start_date);
   }
 
   function jumpToDate(date: string) {

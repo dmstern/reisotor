@@ -18,14 +18,47 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 Stunden
 const MAX_CACHE_ENTRIES = 500;
 const photoCache = new Map<string, CacheEntry>();
 
+export interface BuildPhotoCacheKeyOptions {
+  lat?: number;
+  lng?: number;
+  city?: string;
+  category?: string;
+  isBanner?: boolean;
+}
+
+export function buildPhotoCacheKey(name: string, options?: BuildPhotoCacheKeyOptions): string;
+
 export function buildPhotoCacheKey(
   name: string,
   lat?: number,
   lng?: number,
-  city?: string,
-  category?: string,
-  isBanner = false
+  ...rest: [city?: string, category?: string, isBanner?: boolean]
+): string;
+
+export function buildPhotoCacheKey(
+  name: string,
+  latOrOptions?: number | BuildPhotoCacheKeyOptions,
+  lngArg?: number,
+  ...rest: [city?: string, category?: string, isBanner?: boolean]
 ): string {
+  let lat: number | undefined;
+  let lng: number | undefined;
+  let city: string | undefined;
+  let category: string | undefined;
+  let isBanner = false;
+
+  if (typeof latOrOptions === 'object' && latOrOptions !== null) {
+    lat = latOrOptions.lat;
+    lng = latOrOptions.lng;
+    city = latOrOptions.city;
+    category = latOrOptions.category;
+    isBanner = latOrOptions.isBanner ?? false;
+  } else {
+    lat = latOrOptions;
+    lng = lngArg;
+    [city, category, isBanner = false] = rest;
+  }
+
   const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(3) : '';
   const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(3) : '';
   const cityStr = city?.trim().toLowerCase() || '';
@@ -168,9 +201,9 @@ export const AIRPORT_RELEVANCE_TERMS = [
 
 export function isAirportQuery(name: string, category?: string): boolean {
   if (category) {
-    const c = category.trim().toLowerCase();
+    const cat = category.trim().toLowerCase();
 
-    if (c === 'flughafen' || c === 'airport' || c === 'flugplatz') {
+    if (cat === 'flughafen' || cat === 'airport' || cat === 'flugplatz') {
       return true;
     }
   }
@@ -459,7 +492,7 @@ function stripWord(text: string, word: string): string {
 
   const normWord = normalizeText(word);
   const tokens = text.split(/\s+/);
-  const filtered = tokens.filter((t) => normalizeText(t) !== normWord);
+  const filtered = tokens.filter((token) => normalizeText(token) !== normWord);
   return filtered.join(' ').trim();
 }
 
@@ -504,27 +537,28 @@ function buildNameWords(
   return { nameWords, stopWords };
 }
 
-function parseBingHtml(
-  html: string,
-  rawName: string,
-  limit: number,
-  seen: Set<string>,
-  nameWords: string[],
-  isAirport = false,
-  isBanner = false
-): string[] {
+interface ParseBingHtmlOptions {
+  limit: number;
+  seen: Set<string>;
+  nameWords: string[];
+  isAirport?: boolean;
+  isBanner?: boolean;
+}
+
+function parseBingHtml(html: string, rawName: string, options: ParseBingHtmlOptions): string[] {
+  const { limit, seen, nameWords, isAirport = false, isBanner = false } = options;
   const photos: string[] = [];
 
   // 1. Bing primäre Struktur: class="iusc" style="..." m="{...}"
   const itemMatches = [...html.matchAll(/class=["']iusc["'][^>]*?m=["']({.*?})["']/gi)];
 
-  for (const m of itemMatches) {
+  for (const match of itemMatches) {
     if (photos.length >= limit) {
       break;
     }
 
     try {
-      const decoded = m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"');
+      const decoded = match[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"');
       const data = JSON.parse(decoded);
       const murl: string | undefined = data.murl;
       const turl: string | undefined = data.turl;
@@ -556,18 +590,27 @@ function parseBingHtml(
       // Bing Edge CDN (turl mit &w=1000): Hohe Verfügbarkeit und klein (~30 KB), ideal zur Schonung
       // des Serverspeichers bei Spots. Für Trip-Banner hingegen wird das Originalbild (murl) benötigt,
       // da turl (Bing OIP-Cache) hardwareseitig auf 474px Breite beschränkt ist und im Banner pixelig wirkt.
-      const cdnUrl = turl ? (turl.includes('?') ? `${turl}&w=1000` : `${turl}?w=1000`) : null;
-      const candidate = isBanner
-        ? murl && isSafeUrl(murl) && isGoodPhoto(murl)
-          ? murl
-          : cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
-            ? cdnUrl
-            : null
-        : cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
-          ? cdnUrl
-          : murl && isSafeUrl(murl) && isGoodPhoto(murl)
-            ? murl
-            : null;
+      let cdnUrl: string | null = null;
+
+      if (turl) {
+        cdnUrl = turl.includes('?') ? `${turl}&w=1000` : `${turl}?w=1000`;
+      }
+
+      const isMurlValid = Boolean(murl && isSafeUrl(murl) && isGoodPhoto(murl));
+      const isCdnUrlValid = Boolean(cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl));
+      let candidate: string | null = null;
+
+      if (isBanner) {
+        if (isMurlValid) {
+          candidate = murl ?? null;
+        } else if (isCdnUrlValid) {
+          candidate = cdnUrl;
+        }
+      } else if (isCdnUrlValid) {
+        candidate = cdnUrl;
+      } else if (isMurlValid) {
+        candidate = murl ?? null;
+      }
 
       if (candidate && !seen.has(candidate)) {
         seen.add(candidate);
@@ -591,12 +634,13 @@ function parseBingHtml(
 
       const orig = origMatches[i][1]?.replace(/&amp;/g, '&');
       const thumb = thumbMatches[i]?.[1]?.replace(/&amp;/g, '&');
-      const cand =
-        orig && isSafeUrl(orig) && isGoodPhoto(orig)
-          ? orig
-          : thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)
-            ? thumb
-            : null;
+      let cand: string | null = null;
+
+      if (orig && isSafeUrl(orig) && isGoodPhoto(orig)) {
+        cand = orig;
+      } else if (thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)) {
+        cand = thumb;
+      }
 
       if (cand && !seen.has(cand)) {
         seen.add(cand);
@@ -608,15 +652,20 @@ function parseBingHtml(
   return photos;
 }
 
+interface QueryImageOptions {
+  limit: number;
+  seen: Set<string>;
+  city?: string;
+  category?: string;
+  isBanner?: boolean;
+}
+
 async function queryBingImages(
   query: string,
   rawName: string,
-  limit: number,
-  seen: Set<string>,
-  city?: string,
-  category?: string,
-  isBanner = false
+  options: QueryImageOptions
 ): Promise<string[]> {
+  const { limit, seen, city, category, isBanner = false } = options;
   const { nameWords } = buildNameWords(rawName, city, category);
   const isAirport = isAirportQuery(rawName, category);
 
@@ -639,7 +688,13 @@ async function queryBingImages(
       }
 
       const html = await res.text();
-      const photos = parseBingHtml(html, rawName, limit, seen, nameWords, isAirport, isBanner);
+      const photos = parseBingHtml(html, rawName, {
+        limit,
+        seen,
+        nameWords,
+        isAirport,
+        isBanner,
+      });
 
       if (photos.length > 0) {
         return photos;
@@ -655,12 +710,10 @@ async function queryBingImages(
 async function queryDuckDuckGoImages(
   query: string,
   rawName: string,
-  limit: number,
-  seen: Set<string>,
-  city?: string,
-  category?: string,
-  _isBanner = false
+  options: QueryImageOptions
 ): Promise<string[]> {
+  const { limit, seen, city, category } = options;
+
   try {
     const pageUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
     const pageRes = await fetch(pageUrl, {
@@ -745,12 +798,13 @@ async function queryDuckDuckGoImages(
 
       const img = item.image;
       const thumb = item.thumbnail;
-      const candidate =
-        img && isSafeUrl(img) && isGoodPhoto(img)
-          ? img
-          : thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)
-            ? thumb
-            : null;
+      let candidate: string | null = null;
+
+      if (img && isSafeUrl(img) && isGoodPhoto(img)) {
+        candidate = img;
+      } else if (thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)) {
+        candidate = thumb;
+      }
 
       if (candidate && !seen.has(candidate)) {
         seen.add(candidate);
@@ -764,13 +818,16 @@ async function queryDuckDuckGoImages(
   }
 }
 
-async function queryCommonsImages(
-  query: string,
-  limit: number,
-  seen: Set<string>,
-  isAirport = false,
-  isBanner = false
-): Promise<string[]> {
+interface QueryCommonsOptions {
+  limit: number;
+  seen: Set<string>;
+  isAirport?: boolean;
+  isBanner?: boolean;
+}
+
+async function queryCommonsImages(query: string, options: QueryCommonsOptions): Promise<string[]> {
+  const { limit, seen, isAirport = false, isBanner = false } = options;
+
   try {
     const url = new URL('https://commons.wikimedia.org/w/api.php');
     url.searchParams.set('action', 'query');
@@ -860,11 +917,14 @@ export function buildAirportSearchQueries(rawName: string, city?: string): strin
   const targetCity = city?.trim() || '';
   const queries: string[] = [];
 
-  const add = (q: string) => {
-    const t = q.trim();
+  const add = (query: string) => {
+    const trimmed = query.trim();
 
-    if (t && !queries.some((x) => x.toLowerCase() === t.toLowerCase())) {
-      queries.push(t);
+    if (
+      trimmed &&
+      !queries.some((existingQuery) => existingQuery.toLowerCase() === trimmed.toLowerCase())
+    ) {
+      queries.push(trimmed);
     }
   };
 
@@ -912,8 +972,8 @@ export function buildSearchQueries(rawName: string, city?: string, category?: st
 
   const queries: string[] = [];
 
-  const add = (q: string) => {
-    const trimmed = q.trim();
+  const add = (query: string) => {
+    const trimmed = query.trim();
 
     if (trimmed && !queries.some((existing) => existing.toLowerCase() === trimmed.toLowerCase())) {
       queries.push(trimmed);
@@ -980,13 +1040,18 @@ export function buildSearchQueries(rawName: string, city?: string, category?: st
  * Nutzt primär den Bing-Web-Index mit Fallback auf DuckDuckGo, ist kostenfrei und stabil ohne API-Key abrufbar.
  * Unterstützt gezielte, kaskadierende Suchanfragen (Name + Stadt + Kategorie -> Name + Stadt -> Name).
  */
+export interface SearchWebPlacePhotosOptions {
+  city?: string;
+  category?: string;
+  limit?: number;
+  isBanner?: boolean;
+}
+
 export async function searchWebPlacePhotos(
   name: string,
-  city?: string,
-  category?: string,
-  limit = 10,
-  isBanner = false
+  options: SearchWebPlacePhotosOptions = {}
 ): Promise<string[]> {
+  const { city, category, limit = 10, isBanner = false } = options;
   const rawName = name?.trim();
 
   if (!rawName) {
@@ -1000,45 +1065,41 @@ export async function searchWebPlacePhotos(
 
   const queries = buildSearchQueries(rawName, cleanCity, cleanCategory);
 
-  for (const q of queries) {
+  for (const query of queries) {
     if (photos.length >= limit) {
       break;
     }
 
-    const batch = await queryBingImages(
-      q,
-      rawName,
-      limit - photos.length,
+    const batch = await queryBingImages(query, rawName, {
+      limit: limit - photos.length,
       seen,
-      cleanCity,
-      cleanCategory,
-      isBanner
-    );
+      city: cleanCity,
+      category: cleanCategory,
+      isBanner,
+    });
 
-    for (const p of batch) {
-      photos.push(p);
+    for (const photo of batch) {
+      photos.push(photo);
     }
   }
 
   // Fallback auf DuckDuckGo, falls Bing keine oder unzureichende Ergebnisse geliefert hat
   if (photos.length < limit) {
-    for (const q of queries) {
+    for (const query of queries) {
       if (photos.length >= limit) {
         break;
       }
 
-      const batch = await queryDuckDuckGoImages(
-        q,
-        rawName,
-        limit - photos.length,
+      const batch = await queryDuckDuckGoImages(query, rawName, {
+        limit: limit - photos.length,
         seen,
-        cleanCity,
-        cleanCategory,
-        isBanner
-      );
+        city: cleanCity,
+        category: cleanCategory,
+        isBanner,
+      });
 
-      for (const p of batch) {
-        photos.push(p);
+      for (const photo of batch) {
+        photos.push(photo);
       }
     }
   }
@@ -1052,7 +1113,7 @@ export async function searchWebPlacePhoto(
   category?: string,
   isBanner = false
 ): Promise<string | null> {
-  const photos = await searchWebPlacePhotos(name, city, category, 1, isBanner);
+  const photos = await searchWebPlacePhotos(name, { city, category, limit: 1, isBanner });
   return photos[0] ?? null;
 }
 
@@ -1074,7 +1135,7 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
   const category = options.category?.trim() || undefined;
   const isBanner = Boolean(options.isBanner);
 
-  const cacheKey = buildPhotoCacheKey(rawName, lat, lng, city, category, isBanner);
+  const cacheKey = buildPhotoCacheKey(rawName, { lat, lng, city, category, isBanner });
   const cached = photoCache.get(cacheKey);
 
   if (cached && Date.now() < cached.expiresAt && cached.urls.length >= limit) {
@@ -1085,12 +1146,12 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
   const seen = new Set<string>();
 
   // 1. Primär: Echte Web-Bildersuche
-  const webPhotos = await searchWebPlacePhotos(rawName, city, category, limit, isBanner);
+  const webPhotos = await searchWebPlacePhotos(rawName, { city, category, limit, isBanner });
 
-  for (const p of webPhotos) {
-    if (!seen.has(p)) {
-      seen.add(p);
-      photos.push(p);
+  for (const photo of webPhotos) {
+    if (!seen.has(photo)) {
+      seen.add(photo);
+      photos.push(photo);
     }
   }
 
@@ -1174,13 +1235,12 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
           break;
         }
 
-        const commonsPhotos = await queryCommonsImages(
-          cq,
-          limit - photos.length,
+        const commonsPhotos = await queryCommonsImages(cq, {
+          limit: limit - photos.length,
           seen,
           isAirport,
-          isBanner
-        );
+          isBanner,
+        });
 
         for (const cp of commonsPhotos) {
           photos.push(cp);

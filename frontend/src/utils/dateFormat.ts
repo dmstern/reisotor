@@ -1,7 +1,7 @@
 import { useCalendarSettingsStore } from '../stores/calendarSettings';
 
-function pad2(n: number): string {
-  return String(n).padStart(2, '0');
+function pad2(num: number): string {
+  return String(num).padStart(2, '0');
 }
 
 /** Lokaler Kalendertag (am Gerät) als 'YYYY-MM-DD' - bewusst NICHT `date.toISOString().slice(0,
@@ -9,8 +9,8 @@ function pad2(n: number): string {
  *  (z. B. Europa) einen Teil des Tages lang fälschlich auf den VORTAG verschiebt (z. B. 00:30 Uhr
  *  MESZ/UTC+2 ist bereits 22:30 UTC des Vortags). Betraf u. a. den Wochenanfang im Kalender-
  *  Monatsraster und den "Bis zur Abreise"-Countdown im Dashboard. */
-export function toLocalDateString(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+export function toLocalDateString(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
 /** Zentrale Zahlen-Datumsformatierung, ersetzt die zuvor über die App verstreuten, lokal je Datei
@@ -21,10 +21,10 @@ export function formatDate(
   { includeYear = true }: { includeYear?: boolean } = {}
 ): string {
   const calendarSettings = useCalendarSettingsStore();
-  const d = new Date(dateStr);
-  const day = pad2(d.getDate());
-  const month = pad2(d.getMonth() + 1);
-  const year = d.getFullYear();
+  const parsedDate = new Date(dateStr);
+  const day = pad2(parsedDate.getDate());
+  const month = pad2(parsedDate.getMonth() + 1);
+  const year = parsedDate.getFullYear();
 
   switch (calendarSettings.dateFormat) {
     case 'iso':
@@ -38,9 +38,9 @@ export function formatDate(
 
 /** Datum + feste Uhrzeit (Uhrzeit-Format ist nicht Teil der Datumsformat-Einstellung). */
 export function formatDateTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const hours = pad2(d.getHours());
-  const minutes = pad2(d.getMinutes());
+  const parsedDate = new Date(dateStr);
+  const hours = pad2(parsedDate.getHours());
+  const minutes = pad2(parsedDate.getMinutes());
   return `${formatDate(dateStr)} ${hours}:${minutes}`;
 }
 
@@ -121,13 +121,13 @@ export function toLocalDatetimeInputValue(dateStr?: string | null): string {
     return '';
   }
 
-  const d = new Date(dateStr);
+  const parsedDate = new Date(dateStr);
 
-  if (isNaN(d.getTime())) {
+  if (isNaN(parsedDate.getTime())) {
     return '';
   }
 
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  return `${parsedDate.getFullYear()}-${pad2(parsedDate.getMonth() + 1)}-${pad2(parsedDate.getDate())}T${pad2(parsedDate.getHours())}:${pad2(parsedDate.getMinutes())}`;
 }
 
 /** Konvertiert den Wert eines <input type="datetime-local"> ('YYYY-MM-DDTHH:mm') zurück
@@ -137,13 +137,13 @@ export function fromLocalDatetimeInputValue(val?: string | null): string | null 
     return null;
   }
 
-  const d = new Date(val);
+  const parsedDate = new Date(val);
 
-  if (isNaN(d.getTime())) {
+  if (isNaN(parsedDate.getTime())) {
     return null;
   }
 
-  return d.toISOString();
+  return parsedDate.toISOString();
 }
 
 /**
@@ -155,13 +155,13 @@ export function formatLastLogin(dateStr?: string | null, now: Date = new Date())
     return 'Nie';
   }
 
-  const d = new Date(dateStr);
+  const parsedDate = new Date(dateStr);
 
-  if (isNaN(d.getTime())) {
+  if (isNaN(parsedDate.getTime())) {
     return '—';
   }
 
-  const diffMs = now.getTime() - d.getTime();
+  const diffMs = now.getTime() - parsedDate.getTime();
 
   if (diffMs < 0) {
     return 'Gerade eben';

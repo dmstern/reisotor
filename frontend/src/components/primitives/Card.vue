@@ -108,23 +108,25 @@ const effectiveBannerPosition = computed(() => {
 function handleCardClick(event: MouseEvent) {
   emit('click', event);
 
-  if (props.expandable) {
-    const target = event.target as HTMLElement | null;
-
-    if (
-      target &&
-      target !== event.currentTarget &&
-      target.closest('button, a, input, textarea, select, [role="button"]')
-    ) {
-      return;
-    }
-
-    const nextCondensed = !isCondensed.value;
-    internalCondensed.value = nextCondensed;
-    emit('update:condensed', nextCondensed);
-    emit('update:expanded', !nextCondensed);
-    emit('toggle-expand', !nextCondensed);
+  if (!props.expandable) {
+    return;
   }
+
+  const target = event.target as HTMLElement | null;
+
+  if (
+    target &&
+    target !== event.currentTarget &&
+    target.closest('button, a, input, textarea, select, [role="button"]')
+  ) {
+    return;
+  }
+
+  const nextCondensed = !isCondensed.value;
+  internalCondensed.value = nextCondensed;
+  emit('update:condensed', nextCondensed);
+  emit('update:expanded', !nextCondensed);
+  emit('toggle-expand', !nextCondensed);
 }
 
 function handleCardKeydown(event: KeyboardEvent) {
@@ -132,20 +134,22 @@ function handleCardKeydown(event: KeyboardEvent) {
     return;
   }
 
-  if (event.key === 'Enter' || event.key === ' ') {
-    const target = event.target as HTMLElement | null;
-
-    if (
-      target &&
-      target !== event.currentTarget &&
-      target.closest('button, a, input, textarea, select, [role="button"]')
-    ) {
-      return;
-    }
-
-    event.preventDefault();
-    handleCardClick(event as unknown as MouseEvent);
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
   }
+
+  const target = event.target as HTMLElement | null;
+
+  if (
+    target &&
+    target !== event.currentTarget &&
+    target.closest('button, a, input, textarea, select, [role="button"]')
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  handleCardClick(event as unknown as MouseEvent);
 }
 
 const attrs = useAttrs();

@@ -135,11 +135,13 @@ export const useExcursionsStore = defineStore('excursions', () => {
     const result = await api.post<{ done: boolean }>(`/ideas/${id}/done`, { done });
     const idx = excursions.value.findIndex((e) => e.id === id);
 
-    if (idx !== -1) {
-      const next = [...excursions.value];
-      next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
-      excursions.value = next;
+    if (idx === -1) {
+      return;
     }
+
+    const next = [...excursions.value];
+    next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
+    excursions.value = next;
   }
 
   return { excursions, loaded, load, create, update, remove, setDate, setDone };

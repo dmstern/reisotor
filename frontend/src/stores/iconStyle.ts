@@ -69,7 +69,7 @@ function sanitizePerGroup<T extends string>(
 
   for (const { value: group } of ICON_GROUP_OPTIONS) {
     const candidate = parsed[group];
-    result[group] = validOptions.some((o) => o.value === candidate)
+    result[group] = validOptions.some((option) => option.value === candidate)
       ? (candidate as T)
       : defaults[group];
   }

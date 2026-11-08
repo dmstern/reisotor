@@ -22,7 +22,7 @@ export const DEFAULT_HOME_CURRENCY: HomeCurrency = 'EUR';
 
 function loadCurrency(): HomeCurrency {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return HOME_CURRENCY_OPTIONS.some((o) => o.value === stored)
+  return HOME_CURRENCY_OPTIONS.some((option) => option.value === stored)
     ? (stored as HomeCurrency)
     : DEFAULT_HOME_CURRENCY;
 }

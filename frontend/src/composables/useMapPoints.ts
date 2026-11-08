@@ -79,7 +79,7 @@ export function useMapPoints(options: UseMapPointsOptions) {
       return null;
     }
 
-    return spotsStore.spots.find((s) => s.id === spotId) ?? null;
+    return spotsStore.spots.find((spot) => spot.id === spotId) ?? null;
   });
 
   const focusedTrack = computed<LocationTrack | null>(() => {
@@ -87,7 +87,9 @@ export function useMapPoints(options: UseMapPointsOptions) {
       return null;
     }
 
-    const found = tracksStore.tracks.find((t) => Number(t.id) === Number(drawers.mapFocusTrackId));
+    const found = tracksStore.tracks.find(
+      (track) => Number(track.id) === Number(drawers.mapFocusTrackId)
+    );
 
     if (found) {
       return found;
@@ -144,20 +146,20 @@ export function useMapPoints(options: UseMapPointsOptions) {
       });
     }
 
-    for (const s of spotsStore.spots) {
-      if (s.lat != null && s.lng != null) {
-        const meta = spotCategoryMeta(s.category);
+    for (const spot of spotsStore.spots) {
+      if (spot.lat != null && spot.lng != null) {
+        const meta = spotCategoryMeta(spot.category);
         result.push({
-          key: `spot-${s.id}`,
+          key: `spot-${spot.id}`,
           origin: 'spot',
-          lat: s.lat,
-          lng: s.lng,
-          title: s.title,
+          lat: spot.lat,
+          lng: spot.lng,
+          title: spot.title,
           icon: meta.tabler,
           color: meta.color,
-          category: s.category ?? 'Sonstiges',
-          homeSide: !!s.is_home,
-          done: !!s.done,
+          category: spot.category ?? 'Sonstiges',
+          homeSide: !!spot.is_home,
+          done: !!spot.done,
         });
       }
     }
@@ -235,20 +237,20 @@ export function useMapPoints(options: UseMapPointsOptions) {
       return points.value;
     }
 
-    return points.value.filter((p) => {
-      if (p.origin === 'location') {
+    return points.value.filter((point) => {
+      if (point.origin === 'location') {
         return true;
       }
 
-      if (categoryFilterActive && !options.categoryFilter!.value!.includes(p.category)) {
+      if (categoryFilterActive && !options.categoryFilter!.value!.includes(point.category)) {
         return false;
       }
 
-      if (statusFilterActive && p.origin === 'spot') {
-        const spotId = Number(p.key.slice('spot-'.length));
+      if (statusFilterActive && point.origin === 'spot') {
+        const spotId = Number(point.key.slice('spot-'.length));
         const status = spotScheduledDates.value.has(spotId) ? 'planned' : 'unplanned';
         const matchesStatus = options.statusFilter!.value!.includes(status);
-        const matchesDone = options.statusFilter!.value!.includes('done') && !!p.done;
+        const matchesDone = options.statusFilter!.value!.includes('done') && !!point.done;
 
         if (!matchesStatus && !matchesDone) {
           return false;
@@ -256,21 +258,21 @@ export function useMapPoints(options: UseMapPointsOptions) {
       }
 
       if (tourRoleFilterActive) {
-        if (p.origin === 'travel') {
-          const matchesTravel = options.travelItems.value.some((t) => {
-            const tRole = t.role ?? 'arrival';
+        if (point.origin === 'travel') {
+          const matchesTravel = options.travelItems.value.some((travelItem) => {
+            const tRole = travelItem.role ?? 'arrival';
             return options.tourRoleFilter!.value!.includes(tRole);
           });
 
           if (!matchesTravel) {
             return false;
           }
-        } else if (p.origin === 'spot') {
-          const spotId = Number(p.key.slice('spot-'.length));
+        } else if (point.origin === 'spot') {
+          const spotId = Number(point.key.slice('spot-'.length));
           const spotTours = excursionsStore.excursions.filter((e) => e.spot_ids.includes(spotId));
-          const matchesTourRole = spotTours.some((t) =>
-            t.role
-              ? options.tourRoleFilter!.value!.includes(t.role)
+          const matchesTourRole = spotTours.some((tour) =>
+            tour.role
+              ? options.tourRoleFilter!.value!.includes(tour.role)
               : options.tourRoleFilter!.value!.includes('excursion')
           );
 
@@ -284,8 +286,8 @@ export function useMapPoints(options: UseMapPointsOptions) {
     });
   });
 
-  const vacationPoints = computed(() => filteredPoints.value.filter((p) => !p.homeSide));
-  const homePoints = computed(() => filteredPoints.value.filter((p) => !!p.homeSide));
+  const vacationPoints = computed(() => filteredPoints.value.filter((point) => !point.homeSide));
+  const homePoints = computed(() => filteredPoints.value.filter((point) => !!point.homeSide));
 
   const visiblePoints = computed(() => {
     if (drawers.mapFocusAllPhotos) {
@@ -296,12 +298,14 @@ export function useMapPoints(options: UseMapPointsOptions) {
 
     if (excursion) {
       const excursionKeys = excursionStationKeys(excursion.spot_ids);
-      return points.value.filter((p) => p.origin !== 'spot' || excursionKeys.includes(p.key));
+      return points.value.filter(
+        (point) => point.origin !== 'spot' || excursionKeys.includes(point.key)
+      );
     }
 
     if (drawers.mapFocusDate) {
-      const keys = new Set(focusedDateStations.value.map((s) => s.key));
-      return points.value.filter((p) => p.origin !== 'spot' || keys.has(p.key));
+      const keys = new Set(focusedDateStations.value.map((station) => station.key));
+      return points.value.filter((point) => point.origin !== 'spot' || keys.has(point.key));
     }
 
     return filteredPoints.value;
@@ -331,18 +335,18 @@ export function useMapPoints(options: UseMapPointsOptions) {
       return true;
     }
 
-    if (options.travelItems.value.some((t) => t.date === date)) {
+    if (options.travelItems.value.some((travelItem) => travelItem.date === date)) {
       return true;
     }
 
     if (
       spotsStore.spots.some(
-        (s) =>
-          s.category === 'Unterkunft' &&
-          s.start_date &&
-          s.end_date &&
-          s.start_date <= date &&
-          date <= s.end_date
+        (spot) =>
+          spot.category === 'Unterkunft' &&
+          spot.start_date &&
+          spot.end_date &&
+          spot.start_date <= date &&
+          date <= spot.end_date
       )
     ) {
       return true;
@@ -362,11 +366,11 @@ export function useMapPoints(options: UseMapPointsOptions) {
   }
 
   const totalAccommodationsCount = computed(
-    () => spotsStore.spots.filter((s) => s.category === 'Unterkunft').length
+    () => spotsStore.spots.filter((spot) => spot.category === 'Unterkunft').length
   );
 
   const accommodationPoints = computed(() =>
-    points.value.filter((p) => p.category === 'Unterkunft')
+    points.value.filter((point) => point.category === 'Unterkunft')
   );
 
   return {

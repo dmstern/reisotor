@@ -340,7 +340,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     const flushed = await flushBuffer();
 
     if (!flushed) {
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       await flushBuffer();
     }
 
@@ -427,7 +427,8 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     try {
       const tracks = await api.get<LocationTrack[]>(`/tracks?trip_id=${tripId}`);
       const openTrack = tracks.find(
-        (t) => !t.ended_at && authStore.user && t.user_id === authStore.user.id
+        (candidateTrack) =>
+          !candidateTrack.ended_at && authStore.user && candidateTrack.user_id === authStore.user.id
       );
 
       if (openTrack && !recording.value) {
@@ -490,7 +491,7 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
       api
         .get<LocationTrack[]>(`/tracks?trip_id=${state.tripId}`)
         .then((tracks) => {
-          const found = tracks.find((t) => t.id === state.trackId);
+          const found = tracks.find((candidateTrack) => candidateTrack.id === state.trackId);
 
           if (found) {
             track.value = found;
@@ -531,7 +532,10 @@ export const useTrackRecordingStore = defineStore('trackRecording', () => {
     () => tracksStore.tracks,
     (tracks) => {
       if (!recording.value && tripStore.currentTripId != null && authStore.user) {
-        const openTrack = tracks.find((t) => !t.ended_at && t.user_id === authStore.user?.id);
+        const openTrack = tracks.find(
+          (candidateTrack) =>
+            !candidateTrack.ended_at && candidateTrack.user_id === authStore.user?.id
+        );
 
         if (openTrack) {
           syncActiveTrackFromServer(tripStore.currentTripId);

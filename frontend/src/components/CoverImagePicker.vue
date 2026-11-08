@@ -115,13 +115,15 @@ const lastSearchedQuery = ref(
 watch(
   () => [props.searchContext?.name, props.searchContext?.city, props.searchContext?.category],
   () => {
-    if (!showModal.value) {
-      const q = buildDefaultImageSearchQuery(props.searchContext);
-      searchQuery.value = q;
+    if (showModal.value) {
+      return;
+    }
 
-      if (suggestions.value.length === 0) {
-        lastSearchedQuery.value = '';
-      }
+    const defaultQuery = buildDefaultImageSearchQuery(props.searchContext);
+    searchQuery.value = defaultQuery;
+
+    if (suggestions.value.length === 0) {
+      lastSearchedQuery.value = '';
     }
   }
 );
@@ -129,21 +131,23 @@ watch(
 watch(
   () => showModal.value,
   (isOpen) => {
-    if (isOpen) {
-      const q = buildDefaultImageSearchQuery(props.searchContext);
-      searchQuery.value = q;
-
-      if (suggestions.value.length === 0) {
-        lastSearchedQuery.value = '';
-      }
-
-      searchMessage.value = null;
+    if (!isOpen) {
+      return;
     }
+
+    const defaultQuery = buildDefaultImageSearchQuery(props.searchContext);
+    searchQuery.value = defaultQuery;
+
+    if (suggestions.value.length === 0) {
+      lastSearchedQuery.value = '';
+    }
+
+    searchMessage.value = null;
   }
 );
 
-watch(isUploading, (v) => {
-  emit('update:uploading', v);
+watch(isUploading, (uploading) => {
+  emit('update:uploading', uploading);
 });
 
 const isModified = computed(() => {
@@ -160,9 +164,9 @@ const isModified = computed(() => {
 
 function syncSuggestions(newSuggs?: string[]) {
   if (newSuggs && newSuggs.length > 0) {
-    for (const s of newSuggs) {
-      if (s && !suggestions.value.includes(s)) {
-        suggestions.value.push(s);
+    for (const suggestion of newSuggs) {
+      if (suggestion && !suggestions.value.includes(suggestion)) {
+        suggestions.value.push(suggestion);
       }
     }
   }
@@ -452,14 +456,16 @@ function resetImage() {
 }
 
 function handleModalClose(visible: boolean) {
-  if (!visible) {
-    if (isUploading.value) {
-      imageUrlInputRef.value?.abortUpload();
-    }
-
-    showModal.value = false;
-    searchMessage.value = null;
+  if (visible) {
+    return;
   }
+
+  if (isUploading.value) {
+    imageUrlInputRef.value?.abortUpload();
+  }
+
+  showModal.value = false;
+  searchMessage.value = null;
 }
 </script>
 

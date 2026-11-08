@@ -16,11 +16,11 @@ const nextEntry = computed(() => {
 
 // Datum ermitteln (entweder nächster Termin oder heute)
 const displayDate = computed(() => {
-  const d = nextEntry.value ? new Date(`${nextEntry.value.date}T00:00:00`) : new Date();
+  const targetDate = nextEntry.value ? new Date(`${nextEntry.value.date}T00:00:00`) : new Date();
   return {
-    dayNum: d.getDate(),
-    weekday: d.toLocaleDateString('de-DE', { weekday: 'short' }),
-    month: d.toLocaleDateString('de-DE', { month: 'short' }).toUpperCase(),
+    dayNum: targetDate.getDate(),
+    weekday: targetDate.toLocaleDateString('de-DE', { weekday: 'short' }),
+    month: targetDate.toLocaleDateString('de-DE', { month: 'short' }).toUpperCase(),
   };
 });
 </script>

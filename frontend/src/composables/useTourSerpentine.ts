@@ -71,7 +71,9 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     fromSpotId: number,
     toSpotId: number
   ): ExcursionLeg | undefined {
-    return excursion.legs?.find((l) => l.from_spot_id === fromSpotId && l.to_spot_id === toSpotId);
+    return excursion.legs?.find(
+      (leg) => leg.from_spot_id === fromSpotId && leg.to_spot_id === toSpotId
+    );
   }
 
   function getTourLayover(
@@ -113,19 +115,19 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
 
     const wrapRect = wrapEl.getBoundingClientRect();
     const spotBoxes = spotEls.map((el) => {
-      const r = el.getBoundingClientRect();
-      const x = r.left - wrapRect.left;
-      const y = r.top - wrapRect.top;
+      const rect = el.getBoundingClientRect();
+      const x = rect.left - wrapRect.left;
+      const y = rect.top - wrapRect.top;
       return {
         x,
         y,
         top: y,
-        width: r.width,
-        height: r.height,
-        cx: x + r.width / 2,
-        cy: y + r.height / 2,
-        right: x + r.width,
-        bottom: y + r.height,
+        width: rect.width,
+        height: rect.height,
+        cx: x + rect.width / 2,
+        cy: y + rect.height / 2,
+        right: x + rect.width,
+        bottom: y + rect.height,
       };
     });
 
@@ -236,7 +238,7 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
       }
 
       return {
-        d: segs.map((s) => s.d).join(' '),
+        d: segs.map((segment) => segment.d).join(' '),
         y1: segs[0].y1,
         y2: segs[segs.length - 1].y2,
       };
@@ -340,7 +342,7 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     const exc = editingCardLeg.value.excursion;
     const nextLegs = [...(exc.legs || [])];
     const idx = nextLegs.findIndex(
-      (l) => l.from_spot_id === savedLeg.from_spot_id && l.to_spot_id === savedLeg.to_spot_id
+      (leg) => leg.from_spot_id === savedLeg.from_spot_id && leg.to_spot_id === savedLeg.to_spot_id
     );
 
     if (idx !== -1) {
@@ -381,7 +383,7 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     const fromId = editingCardLeg.value.fromSpot.id;
     const toId = editingCardLeg.value.toSpot.id;
     const nextLegs = (exc.legs || []).filter(
-      (l) => !(l.from_spot_id === fromId && l.to_spot_id === toId)
+      (leg) => !(leg.from_spot_id === fromId && leg.to_spot_id === toId)
     );
     await excursionsStore.update(exc.id, {
       title: exc.title,

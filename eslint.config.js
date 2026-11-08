@@ -237,14 +237,17 @@ export default tseslint.config(
         'warn',
         {
           min: 2,
-          exceptions: ['_', 'i', 'j', 'e', 'x', 'y'],
+          exceptions: ['_', 'i', 'j', 'e', 'x', 'y', 'a', 'b', 'k', 'v', 'w', 'h'],
           properties: 'never',
         },
       ],
       '@typescript-eslint/no-magic-numbers': [
         'warn',
         {
-          ignore: [-1, 0, 1, 2],
+          ignore: [
+            -1, 0, 0.5, 1, 2, 10, 24, 60, 100, 180, 360, 1000, 1024, 200, 201, 204, 301, 302, 304,
+            400, 401, 403, 404, 409, 422, 500,
+          ],
           ignoreArrayIndexes: true,
           ignoreDefaultValues: true,
           ignoreClassFieldInitialValues: true,
@@ -257,7 +260,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.mjs', '**/*.spec.mjs'],
+    files: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      '**/*.test.mjs',
+      '**/*.spec.mjs',
+      'e2e/**/*.ts',
+      'scripts/**/*.test.*',
+      '**/*.stories.ts',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'vue/one-component-per-file': 'off',
@@ -266,6 +277,8 @@ export default tseslint.config(
       'max-depth': 'off',
       'max-params': 'off',
       'readability/prefer-early-return': 'off',
+      'id-length': 'off',
+      'no-nested-ternary': 'off',
     },
   },
   eslintConfigPrettier,

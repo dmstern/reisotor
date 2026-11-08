@@ -12,12 +12,12 @@ export interface NavConfigEntry {
 }
 
 export function defaultEntries(target: 'desktop' | 'mobile' = 'desktop'): NavConfigEntry[] {
-  return NAV_LINKS.map((l) => ({
-    key: l.key,
+  return NAV_LINKS.map((link) => ({
+    key: link.key,
     visible:
       target === 'mobile'
-        ? (l.defaultVisibleMobile ?? l.defaultVisible ?? true)
-        : (l.defaultVisible ?? true),
+        ? (link.defaultVisibleMobile ?? link.defaultVisible ?? true)
+        : (link.defaultVisible ?? true),
   }));
 }
 
@@ -71,15 +71,15 @@ export function sanitizeNavEntries(
   parsed: NavConfigEntry[],
   target: 'desktop' | 'mobile' = 'desktop'
 ): NavConfigEntry[] {
-  const known = new Set(NAV_LINKS.map((l) => l.key));
+  const known = new Set(NAV_LINKS.map((link) => link.key));
   const validExisting = parsed.filter((e) => known.has(e.key) && typeof e.visible === 'boolean');
   const existingKeys = new Set(validExisting.map((e) => e.key));
-  const missing = NAV_LINKS.filter((l) => !existingKeys.has(l.key)).map((l) => ({
-    key: l.key,
+  const missing = NAV_LINKS.filter((link) => !existingKeys.has(link.key)).map((link) => ({
+    key: link.key,
     visible:
       target === 'mobile'
-        ? (l.defaultVisibleMobile ?? l.defaultVisible ?? true)
-        : (l.defaultVisible ?? true),
+        ? (link.defaultVisibleMobile ?? link.defaultVisible ?? true)
+        : (link.defaultVisible ?? true),
   }));
   return [...validExisting, ...missing];
 }

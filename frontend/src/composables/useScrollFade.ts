@@ -48,19 +48,21 @@ export function useScrollFade(
       }
     }
 
-    if (typeof MutationObserver !== 'undefined') {
-      mutationObserver?.disconnect();
-      mutationObserver = new MutationObserver(() => {
-        updateScrollFade();
-
-        if (resizeObserver && containerRef.value) {
-          for (const child of containerRef.value.children) {
-            resizeObserver.observe(child);
-          }
-        }
-      });
-      mutationObserver.observe(el, { childList: true, subtree: true });
+    if (typeof MutationObserver === 'undefined') {
+      return;
     }
+
+    mutationObserver?.disconnect();
+    mutationObserver = new MutationObserver(() => {
+      updateScrollFade();
+
+      if (resizeObserver && containerRef.value) {
+        for (const child of containerRef.value.children) {
+          resizeObserver.observe(child);
+        }
+      }
+    });
+    mutationObserver.observe(el, { childList: true, subtree: true });
   }
 
   function detachObservers() {

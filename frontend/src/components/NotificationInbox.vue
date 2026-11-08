@@ -142,16 +142,16 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown);
 });
 
-async function selectNotification(n: NotificationItem) {
-  notifications.markRead(n.id);
+async function selectNotification(notification: NotificationItem) {
+  notifications.markRead(notification.id);
   close();
 
-  if (n.domain === 'schedule') {
+  if (notification.domain === 'schedule') {
     drawers.openCalendar();
     return;
   }
 
-  const target = notificationTarget(n);
+  const target = notificationTarget(notification);
 
   if (target) {
     router.push(target);

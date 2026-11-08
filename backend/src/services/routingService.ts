@@ -96,7 +96,7 @@ export function roundCoord(val: number): number {
  * Wird verwendet, um ORS-Limits für alternative Routen (max. ca. 100 km) einzuhalten.
  */
 export function haversineDistanceKm(from: RouteCoordinates, to: RouteCoordinates): number {
-  const R = 6371; // Erdradius in km
+  const EARTH_RADIUS_KM = 6371; // Erdradius in km
   const dLat = ((to.lat - from.lat) * Math.PI) / 180;
   const dLng = ((to.lng - from.lng) * Math.PI) / 180;
   const a =
@@ -105,8 +105,8 @@ export function haversineDistanceKm(from: RouteCoordinates, to: RouteCoordinates
       Math.cos((to.lat * Math.PI) / 180) *
       Math.sin(dLng / 2) *
       Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  const centralAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_KM * centralAngle;
 }
 
 /**
@@ -240,14 +240,14 @@ export async function getDirections(params: DirectionsParams): Promise<Direction
     }
 
     // Maximal 3 Routen übernehmen
-    const routes: RouteResult[] = data.features.slice(0, 3).map((f) => {
-      const geoCoords = f.geometry?.coordinates ?? [];
+    const routes: RouteResult[] = data.features.slice(0, 3).map((feature) => {
+      const geoCoords = feature.geometry?.coordinates ?? [];
       // Konvertiere GeoJSON [lng, lat] in Leaflet-kompatibles [lat, lng]
       const leafletCoords: [number, number][] = geoCoords.map(([lng, lat]) => [lat, lng]);
       return {
         coordinates: leafletCoords,
-        distance_meters: Math.round(f.properties?.summary?.distance ?? 0),
-        duration_seconds: Math.round(f.properties?.summary?.duration ?? 0),
+        distance_meters: Math.round(feature.properties?.summary?.distance ?? 0),
+        duration_seconds: Math.round(feature.properties?.summary?.duration ?? 0),
         profile,
       };
     });

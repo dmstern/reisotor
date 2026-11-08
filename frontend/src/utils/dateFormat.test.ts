@@ -160,8 +160,8 @@ describe('formatTripDateRange (#212)', () => {
 
 describe('toLocalDatetimeInputValue', () => {
   it('formats ISO string to YYYY-MM-DDTHH:mm format in local time', () => {
-    const d = new Date(2026, 8, 18, 14, 30); // 18.09.2026 14:30
-    expect(toLocalDatetimeInputValue(d.toISOString())).toBe('2026-09-18T14:30');
+    const testDate = new Date(2026, 8, 18, 14, 30); // 18.09.2026 14:30
+    expect(toLocalDatetimeInputValue(testDate.toISOString())).toBe('2026-09-18T14:30');
   });
 
   it('returns empty string for null, undefined or invalid input', () => {

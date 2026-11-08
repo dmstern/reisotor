@@ -55,7 +55,14 @@ export function readBuildInfo(): BuildInfo {
 
     const env =
       process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development');
-    const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? '' : '-dev';
+    let versionSuffix = '-dev';
+
+    if (env === 'staging') {
+      versionSuffix = '-staging';
+    } else if (env === 'production') {
+      versionSuffix = '';
+    }
+
     const fallbackVersion = pkg.version ? `${pkg.version}${versionSuffix}` : null;
     return { version: fallbackVersion, ref: null, builtAt: null, changelog: null };
   }

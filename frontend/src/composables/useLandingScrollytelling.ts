@@ -95,35 +95,37 @@ export function useLandingScrollytelling(
 
     const triggers = document.querySelectorAll(triggerSelector);
 
-    if (triggers.length) {
-      const triggerLine = window.innerHeight * 0.45;
-      let foundStep = -1;
-      let foundHighlight = -1;
+    if (!triggers.length) {
+      return;
+    }
 
-      for (const trigger of triggers) {
-        if ((trigger as HTMLElement).offsetParent === null) {
-          continue;
-        }
+    const triggerLine = window.innerHeight * 0.45;
+    let foundStep = -1;
+    let foundHighlight = -1;
 
-        const rect = trigger.getBoundingClientRect();
-
-        if (rect.top <= triggerLine) {
-          const s = trigger.getAttribute('data-step');
-          const h = trigger.getAttribute('data-highlight');
-
-          if (s !== null && h !== null) {
-            foundStep = parseInt(s, 10);
-            foundHighlight = parseInt(h, 10);
-          }
-        } else {
-          break;
-        }
+    for (const trigger of triggers) {
+      if ((trigger as HTMLElement).offsetParent === null) {
+        continue;
       }
 
-      if (foundStep !== -1) {
-        activeStepIndex.value = foundStep;
-        activeHighlightIndex.value = foundHighlight;
+      const rect = trigger.getBoundingClientRect();
+
+      if (rect.top <= triggerLine) {
+        const stepAttr = trigger.getAttribute('data-step');
+        const highlightAttr = trigger.getAttribute('data-highlight');
+
+        if (stepAttr !== null && highlightAttr !== null) {
+          foundStep = parseInt(stepAttr, 10);
+          foundHighlight = parseInt(highlightAttr, 10);
+        }
+      } else {
+        break;
       }
+    }
+
+    if (foundStep !== -1) {
+      activeStepIndex.value = foundStep;
+      activeHighlightIndex.value = foundHighlight;
     }
   }
 
@@ -164,24 +166,26 @@ export function useLandingScrollytelling(
       typeof CSS.supports === 'function' &&
       CSS.supports('(animation-timeline: view()) and (animation-range: 0% 100%)');
 
-    if (!supportsAnimationTimeline && typeof IntersectionObserver !== 'undefined') {
-      scrollObserver?.disconnect();
-      scrollObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('fallback-visible');
-            }
-          });
-        },
-        { threshold: 0.1 }
-      );
-
-      document.querySelectorAll(scrollSelector).forEach((el) => {
-        scrollObserver?.observe(el);
-        el.classList.add('fallback-mode');
-      });
+    if (supportsAnimationTimeline || typeof IntersectionObserver === 'undefined') {
+      return;
     }
+
+    scrollObserver?.disconnect();
+    scrollObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('fallback-visible');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    document.querySelectorAll(scrollSelector).forEach((el) => {
+      scrollObserver?.observe(el);
+      el.classList.add('fallback-mode');
+    });
   }
 
   function cleanupObservers() {
@@ -198,11 +202,13 @@ export function useLandingScrollytelling(
 
   if (getCurrentInstance()) {
     onMounted(() => {
-      if (typeof window !== 'undefined') {
-        window.addEventListener('scroll', updateScrollState, { passive: true });
-        updateScrollState();
-        initObservers();
+      if (typeof window === 'undefined') {
+        return;
       }
+
+      window.addEventListener('scroll', updateScrollState, { passive: true });
+      updateScrollState();
+      initObservers();
     });
 
     onUnmounted(() => {

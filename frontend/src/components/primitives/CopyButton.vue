@@ -89,19 +89,21 @@ async function handleCopy(event: MouseEvent) {
     }
   }
 
-  if (success) {
-    copied.value = true;
-    showToast({ message: props.toastMessage, type: 'success' });
-    emit('copy', props.text);
-
-    if (resetTimeout) {
-      clearTimeout(resetTimeout);
-    }
-
-    resetTimeout = setTimeout(() => {
-      copied.value = false;
-    }, 2000);
+  if (!success) {
+    return;
   }
+
+  copied.value = true;
+  showToast({ message: props.toastMessage, type: 'success' });
+  emit('copy', props.text);
+
+  if (resetTimeout) {
+    clearTimeout(resetTimeout);
+  }
+
+  resetTimeout = setTimeout(() => {
+    copied.value = false;
+  }, 2000);
 }
 </script>
 

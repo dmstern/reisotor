@@ -31,11 +31,11 @@ const insertUser = db.prepare(
 );
 
 for (let i = 0; i < users.length; i++) {
-  const u = users[i];
-  const hash = bcrypt.hashSync(u.password, 10);
+  const user = users[i];
+  const hash = bcrypt.hashSync(user.password, 10);
   const isAdmin = i === 0 ? 1 : 0;
   const mustChangePassword = 0;
-  insertUser.run(u.username, hash, u.avatar, isAdmin, mustChangePassword);
+  insertUser.run(user.username, hash, user.avatar, isAdmin, mustChangePassword);
 }
 
-console.log('Seed abgeschlossen. Nutzer:', users.map((u) => u.username).join(', '));
+console.log('Seed abgeschlossen. Nutzer:', users.map((user) => user.username).join(', '));

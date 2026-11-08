@@ -71,7 +71,7 @@ const quote = ref('');
 let timers: number[] = [];
 
 function clearTimers() {
-  timers.forEach((t) => window.clearTimeout(t));
+  timers.forEach((timerId) => window.clearTimeout(timerId));
   timers = [];
 }
 
@@ -107,8 +107,8 @@ function startCheck() {
   timers.push(
     window.setTimeout(
       () => {
-        results.value = pickRandom(CATEGORIES, 5).map((c) => ({
-          ...c,
+        results.value = pickRandom(CATEGORIES, 5).map((category) => ({
+          ...category,
           verdict: VERDICTS[Math.floor(Math.random() * VERDICTS.length)],
         }));
         quote.value = QUOTES[Math.floor(Math.random() * QUOTES.length)];

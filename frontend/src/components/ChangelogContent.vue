@@ -41,7 +41,7 @@ function isHighlightGroup(title: string): boolean {
 const allGroups = computed(() => props.groups ?? []);
 
 const highlightGroups = computed(() => {
-  return allGroups.value.filter((g) => isHighlightGroup(g.title));
+  return allGroups.value.filter((group) => isHighlightGroup(group.title));
 });
 
 const otherGroups = computed(() => {
@@ -49,7 +49,7 @@ const otherGroups = computed(() => {
     return [];
   }
 
-  return allGroups.value.filter((g) => !isHighlightGroup(g.title));
+  return allGroups.value.filter((group) => !isHighlightGroup(group.title));
 });
 
 const standardGroups = computed(() => {
@@ -62,7 +62,9 @@ const standardGroups = computed(() => {
 
 const cleanNotes = computed(() => {
   const rawNotes = props.notes ?? [];
-  return rawNotes.map((n) => (n.startsWith('- ') ? n.slice(2).trim() : n.trim())).filter(Boolean);
+  return rawNotes
+    .map((note) => (note.startsWith('- ') ? note.slice(2).trim() : note.trim()))
+    .filter(Boolean);
 });
 
 // Basis-Release-Highlights (z. B. aus v2.0.0, wenn wir auf Patch v2.0.1 sind)
@@ -78,7 +80,7 @@ const baseSeriesName = computed(() => {
 const baseAllGroups = computed(() => props.baseRelease?.groups ?? []);
 
 const baseHighlightGroups = computed(() => {
-  return baseAllGroups.value.filter((g) => isHighlightGroup(g.title));
+  return baseAllGroups.value.filter((group) => isHighlightGroup(group.title));
 });
 
 const baseOtherGroups = computed(() => {
@@ -86,7 +88,7 @@ const baseOtherGroups = computed(() => {
     return baseAllGroups.value;
   }
 
-  return baseAllGroups.value.filter((g) => !isHighlightGroup(g.title));
+  return baseAllGroups.value.filter((group) => !isHighlightGroup(group.title));
 });
 
 const baseCleanNotes = computed(() => {
@@ -95,7 +97,9 @@ const baseCleanNotes = computed(() => {
   }
 
   const rawNotes = props.baseRelease?.notes ?? [];
-  return rawNotes.map((n) => (n.startsWith('- ') ? n.slice(2).trim() : n.trim())).filter(Boolean);
+  return rawNotes
+    .map((note) => (note.startsWith('- ') ? note.slice(2).trim() : note.trim()))
+    .filter(Boolean);
 });
 
 const changelogGithubUrl = computed(() => {

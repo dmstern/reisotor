@@ -22,7 +22,7 @@ export function useMapTrackRecording() {
       return true;
     }
 
-    return tracksStore.tracks.some((t) => !t.ended_at && t.user_id === auth.user?.id);
+    return tracksStore.tracks.some((track) => !track.ended_at && track.user_id === auth.user?.id);
   });
 
   async function toggleRecord() {
@@ -31,7 +31,9 @@ export function useMapTrackRecording() {
       return;
     }
 
-    const unended = tracksStore.tracks.find((t) => !t.ended_at && t.user_id === auth.user?.id);
+    const unended = tracksStore.tracks.find(
+      (track) => !track.ended_at && track.user_id === auth.user?.id
+    );
 
     if (unended) {
       await tracksStore.stopTrack(unended.id);

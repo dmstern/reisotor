@@ -53,12 +53,12 @@ function openRolesModal(role?: UserRole) {
   showRolesModal.value = true;
 }
 
-async function onRoleSelect(u: User, role: UserRole) {
-  if (role === getUserRole(u)) {
+async function onRoleSelect(targetUser: User, role: UserRole) {
+  if (role === getUserRole(targetUser)) {
     return;
   }
 
-  await changeUserRole(u, role);
+  await changeUserRole(targetUser, role);
 }
 
 onMounted(() => {

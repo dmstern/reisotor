@@ -34,13 +34,24 @@ try {
 const env =
   process.env.APP_ENV ??
   (process.env.GITHUB_REF?.startsWith('refs/tags/v') ? 'production' : 'development');
-const computedFrontendVersion = isDemoMode
-  ? `${pkg.version} (Demo)`
-  : env === 'staging'
-    ? `${pkg.version}-staging`
-    : env === 'production' || buildTarget === 'landing'
-      ? pkg.version
-      : `${pkg.version}-dev`;
+
+function computeFrontendVersion(): string {
+  if (isDemoMode) {
+    return `${pkg.version} (Demo)`;
+  }
+
+  if (env === 'staging') {
+    return `${pkg.version}-staging`;
+  }
+
+  if (env === 'production' || buildTarget === 'landing') {
+    return pkg.version;
+  }
+
+  return `${pkg.version}-dev`;
+}
+
+const computedFrontendVersion = computeFrontendVersion();
 
 // Leichter Vite-Plugin zur Optimierung von @tabler/icons-vue Barrel-Imports:
 // Wandelt `import { IconBed, IconSun } from '@tabler/icons-vue'` um in direkte Subpath-Imports
@@ -60,7 +71,7 @@ function tablerIconsOptimizer() {
           (match, importsStr) => {
             const imports = importsStr
               .split(',')
-              .map((s: string) => s.trim())
+              .map((specifier: string) => specifier.trim())
               .filter(Boolean);
             return imports
               .map((name: string) => {

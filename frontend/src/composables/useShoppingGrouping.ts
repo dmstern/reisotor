@@ -60,8 +60,8 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
       return null;
     }
 
-    const u = users.value.find((u) => u.id === id);
-    return u ? u.avatar : '👤';
+    const foundUser = users.value.find((user) => user.id === id);
+    return foundUser ? foundUser.avatar : '👤';
   }
 
   function userName(id: number | null | undefined) {
@@ -69,8 +69,8 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
       return null;
     }
 
-    const u = users.value.find((u) => u.id === id);
-    return u ? u.username : 'Ehemaliges Mitglied';
+    const foundUser = users.value.find((user) => user.id === id);
+    return foundUser ? foundUser.username : 'Ehemaliges Mitglied';
   }
 
   function isChecked(item: ShoppingItem) {
@@ -96,9 +96,17 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
       }
 
       return [...groups.entries()]
-        .sort(([a], [b]) =>
-          a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')
-        )
+        .sort(([a], [b]) => {
+          if (a === UNASSIGNED_SHOP) {
+            return 1;
+          }
+
+          if (b === UNASSIGNED_SHOP) {
+            return -1;
+          }
+
+          return a.localeCompare(b, 'de');
+        })
         .map(([shop, shopItems]) => ({
           key: shop,
           label: shop,
@@ -138,12 +146,12 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
     }
 
     // buyer
-    const memberIds = new Set(users.value.map((u) => u.id));
-    const perUser: ShoppingGroup[] = users.value.map((u) => ({
-      key: `user-${u.id}`,
-      label: `${u.avatar} ${u.username}`,
+    const memberIds = new Set(users.value.map((user) => user.id));
+    const perUser: ShoppingGroup[] = users.value.map((user) => ({
+      key: `user-${user.id}`,
+      label: `${user.avatar} ${user.username}`,
       items: sortWithDoneLast(
-        visibleItems.filter((i) => i.assigned_to_user_id === u.id),
+        visibleItems.filter((i) => i.assigned_to_user_id === user.id),
         isChecked
       ),
     }));

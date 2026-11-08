@@ -191,7 +191,13 @@ describe('useSpotDoneStatus', () => {
 
     await submitUnplannedDone();
 
-    expect(setSpotDateSpy).toHaveBeenCalledWith(1, 10, 'Museum', '2026-07-10', true);
+    expect(setSpotDateSpy).toHaveBeenCalledWith({
+      spotId: 1,
+      tripId: 10,
+      title: 'Museum',
+      date: '2026-07-10',
+      done: true,
+    });
     expect(unplannedPopoverOpen.value).toBe(false);
   });
 

@@ -86,7 +86,7 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
 
   /** Alle Kategorien eines Typs (Ausgaben, Spots, Packliste) */
   function categoriesByType(type: 'expense' | 'spot' | 'packing') {
-    return computed(() => categories.value.filter((c) => c.type === type));
+    return computed(() => categories.value.filter((category) => category.type === type));
   }
 
   /** Set der ausgeblendeten Standard-Kategorienamen (lowercase) pro Typ */
@@ -96,12 +96,12 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     map.set('spot', new Set());
     map.set('packing', new Set());
 
-    for (const c of categories.value) {
-      if (c.is_hidden) {
-        map.get(c.type)?.add(c.name.trim().toLowerCase());
+    for (const category of categories.value) {
+      if (category.is_hidden) {
+        map.get(category.type)?.add(category.name.trim().toLowerCase());
 
-        if (c.default_name) {
-          map.get(c.type)?.add(c.default_name.trim().toLowerCase());
+        if (category.default_name) {
+          map.get(category.type)?.add(category.default_name.trim().toLowerCase());
         }
       }
     }
@@ -116,9 +116,12 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     map.set('spot', new Set());
     map.set('packing', new Set());
 
-    for (const c of categories.value) {
-      if (c.default_name && c.default_name.trim().toLowerCase() !== c.name.trim().toLowerCase()) {
-        map.get(c.type)?.add(c.default_name.trim().toLowerCase());
+    for (const category of categories.value) {
+      if (
+        category.default_name &&
+        category.default_name.trim().toLowerCase() !== category.name.trim().toLowerCase()
+      ) {
+        map.get(category.type)?.add(category.default_name.trim().toLowerCase());
       }
     }
 
@@ -141,9 +144,9 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     }
 
     // 2. Custom & angepasste Kategorien dieses Urlaubs
-    for (const c of categories.value) {
-      if (c.type === 'expense' && !c.is_hidden && c.name.trim()) {
-        set.add(c.name.trim());
+    for (const category of categories.value) {
+      if (category.type === 'expense' && !category.is_hidden && category.name.trim()) {
+        set.add(category.name.trim());
       }
     }
 
@@ -164,9 +167,9 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
       }
     }
 
-    for (const c of categories.value) {
-      if (c.type === 'spot' && !c.is_hidden && c.name.trim()) {
-        set.add(c.name.trim());
+    for (const category of categories.value) {
+      if (category.type === 'spot' && !category.is_hidden && category.name.trim()) {
+        set.add(category.name.trim());
       }
     }
 
@@ -177,10 +180,10 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
   function categoryMeta(name: string, type: 'expense' | 'spot'): ResolvedCategoryMeta {
     const trimmedLower = (name ?? '').trim().toLowerCase();
     const custom = categories.value.find(
-      (c) =>
-        c.type === type &&
-        (c.name.trim().toLowerCase() === trimmedLower ||
-          (c.default_name && c.default_name.trim().toLowerCase() === trimmedLower))
+      (category) =>
+        category.type === type &&
+        (category.name.trim().toLowerCase() === trimmedLower ||
+          (category.default_name && category.default_name.trim().toLowerCase() === trimmedLower))
     );
     return resolveCategoryMeta(name, type, custom);
   }
@@ -191,7 +194,10 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     // In lokale Liste einfügen oder ersetzen
     if (created && created.name) {
       const idx = categories.value.findIndex(
-        (c) => c && c.type === created.type && c.name.toLowerCase() === created.name.toLowerCase()
+        (category) =>
+          category &&
+          category.type === created.type &&
+          category.name.toLowerCase() === created.name.toLowerCase()
       );
 
       if (idx >= 0) {
@@ -213,7 +219,7 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     const updated = await api.put<TripCategory>(`/trips/${tripId}/categories/${id}`, data);
 
     if (updated) {
-      const idx = categories.value.findIndex((c) => c && c.id === id);
+      const idx = categories.value.findIndex((category) => category && category.id === id);
 
       if (idx >= 0) {
         categories.value[idx] = updated;
@@ -237,7 +243,7 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
   async function deleteCategory(tripId: number, id: number): Promise<void> {
     const { showToast } = useToast();
     await api.delete(`/trips/${tripId}/categories/${id}`);
-    categories.value = categories.value.filter((c) => c.id !== id);
+    categories.value = categories.value.filter((category) => category.id !== id);
     showToast({
       message: 'Kategorie gelöscht. Sie befindet sich nun im Papierkorb.',
       type: 'info',

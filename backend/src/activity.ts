@@ -30,7 +30,7 @@ export function onlineUserIds(tripId: number): number[] {
     return [];
   }
 
-  return [...new Set([...set].map((c) => c.userId))];
+  return [...new Set([...set].map((conn) => conn.userId))];
 }
 
 function broadcastPresence(tripId: number) {
@@ -176,13 +176,34 @@ function broadcastActivity(tripId: number, row: ActivityRow) {
  *  Push-Benachrichtigung an alle ANDEREN Mitglieder an. `domain` folgt den Nav-Item-Domänen
  *  (schedule/packing/shopping/todos/spots/ideas/budget/diary/notes/members),
  *  siehe stores/liveSync.ts im Frontend für die Gegenseite. */
+export interface RecordActivityOptions {
+  tripId: number;
+  domain: string;
+  entityId: number | null;
+  action: string;
+  actorUserId: number;
+}
+
+export function recordActivity(options: RecordActivityOptions): ActivityRow;
 export function recordActivity(
   tripId: number,
   domain: string,
   entityId: number | null,
-  action: string,
-  actorUserId: number
+  ...actionAndActor: [action: string, actorUserId: number]
+): ActivityRow;
+
+export function recordActivity(
+  tripIdOrOptions: number | RecordActivityOptions,
+  domainArg?: string,
+  entityIdArg: number | null = null,
+  ...actionAndActor: [action?: string, actorUserId?: number]
 ): ActivityRow {
+  const isOptions = typeof tripIdOrOptions === 'object';
+  const tripId = isOptions ? tripIdOrOptions.tripId : tripIdOrOptions;
+  const domain = isOptions ? tripIdOrOptions.domain : domainArg!;
+  const entityId = isOptions ? tripIdOrOptions.entityId : entityIdArg;
+  const action = isOptions ? tripIdOrOptions.action : actionAndActor[0]!;
+  const actorUserId = isOptions ? tripIdOrOptions.actorUserId : actionAndActor[1]!;
   const createdAt = new Date().toISOString();
   const result = db
     .prepare(

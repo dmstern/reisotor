@@ -160,13 +160,13 @@ function getEntryInfo(entry: OutboxEntry): { category: string; title: string } {
 
 function formatDate(iso: string): string {
   try {
-    const d = new Date(iso);
+    const date = new Date(iso);
 
-    if (isNaN(d.getTime())) {
+    if (isNaN(date.getTime())) {
       return iso;
     }
 
-    return d.toLocaleString('de-DE', {
+    return date.toLocaleString('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -210,12 +210,13 @@ async function syncSingle(entry: OutboxEntry) {
       typeof (err as { status: unknown }).status === 'number'
         ? (err as { status: number }).status
         : undefined;
-    const message =
-      err instanceof Error
-        ? err.message
-        : typeof err === 'object' && err !== null && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'Fehler beim Übertragen';
+    let message = 'Fehler beim Übertragen';
+
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === 'object' && err !== null && 'message' in err) {
+      message = String((err as { message: unknown }).message);
+    }
 
     updateOutboxEntry(entry.id, {
       lastError: {
@@ -239,26 +240,30 @@ function discardSingle(entry: OutboxEntry) {
   const { title } = getEntryInfo(entry);
 
   if (
-    confirm(
+    !confirm(
       `Diesen nicht synchronisierten Eintrag ("${title}") wirklich verwerfen? Lokal vorgenommene Änderungen gehen verloren.`
     )
   ) {
-    removeOutboxEntry(entry.id);
-    refreshOutbox();
-    showToast({ message: 'Eintrag verworfen.', type: 'info' });
+    return;
   }
+
+  removeOutboxEntry(entry.id);
+  refreshOutbox();
+  showToast({ message: 'Eintrag verworfen.', type: 'info' });
 }
 
 function discardAll() {
   if (
-    confirm(
+    !confirm(
       `Alle ${outboxEntries.value.length} nicht synchronisierten Einträge wirklich verwerfen? Diese Aktion kann nicht rückgängig gemacht werden.`
     )
   ) {
-    clearOutbox();
-    refreshOutbox();
-    showToast({ message: 'Alle ausstehenden Einträge wurden verworfen.', type: 'info' });
+    return;
   }
+
+  clearOutbox();
+  refreshOutbox();
+  showToast({ message: 'Alle ausstehenden Einträge wurden verworfen.', type: 'info' });
 }
 
 function openEditModal(entry: OutboxEntry) {

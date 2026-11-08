@@ -58,7 +58,7 @@ function formatSpotScheduled(spotId: number): string {
   }
 
   if (dates.length > 1) {
-    return `Geplant (${dates.map((d) => formatDate(d, { includeYear: false })).join(', ')})`;
+    return `Geplant (${dates.map((entryDate) => formatDate(entryDate, { includeYear: false })).join(', ')})`;
   }
 
   return '';
@@ -80,8 +80,8 @@ const mismatchedSpots = computed(() => {
   }
 
   return spotIds.value
-    .map((id) => spotsStore.spots.find((s) => s.id === id))
-    .filter((s): s is Spot => !!s && links.spotDateMismatch(s.id, props.date));
+    .map((id) => spotsStore.spots.find((spot) => spot.id === id))
+    .filter((spot): spot is Spot => !!spot && links.spotDateMismatch(spot.id, props.date));
 });
 
 const hasDateMismatch = computed(() => {

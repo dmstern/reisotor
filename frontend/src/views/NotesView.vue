@@ -101,11 +101,11 @@ const editDraft = useDraftAutosave(
 // eine gleichzeitig, siehe openNew()/closeForm() unten, die genau diesen Entwurf statt eines
 // zusätzlichen zweiten wiederverwenden.
 const myDraft = computed(
-  () => notes.value.find((n) => n.is_draft && n.created_by === auth.user?.id) ?? null
+  () => notes.value.find((note) => note.is_draft && note.created_by === auth.user?.id) ?? null
 );
 
-function hasFormContent(f: { title: string; content: string }) {
-  return f.title.trim().length > 0 || !isEmptyRichText(f.content);
+function hasFormContent(form: { title: string; content: string }) {
+  return form.title.trim().length > 0 || !isEmptyRichText(form.content);
 }
 
 async function load() {
@@ -137,35 +137,35 @@ onMounted(() => {
 watch(() => liveSync.domainVersion.notes, load);
 
 function author(id: number) {
-  return users.value.find((u) => u.id === id);
+  return users.value.find((user) => user.id === id);
 }
 
 function likesFor(noteId: number) {
-  return likes.value.filter((l) => l.note_id === noteId);
+  return likes.value.filter((like) => like.note_id === noteId);
 }
 
 function likedByMe(noteId: number) {
-  return likesFor(noteId).some((l) => l.user_id === auth.user?.id);
+  return likesFor(noteId).some((like) => like.user_id === auth.user?.id);
 }
 
 function commentsFor(noteId: number) {
   return comments.value
-    .filter((c) => c.note_id === noteId)
+    .filter((comment) => comment.note_id === noteId)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 function commentItemsFor(noteId: number) {
-  return commentsFor(noteId).map((c) => ({
-    id: c.id,
-    avatar: author(c.author_id)?.avatar ?? '❓',
-    username: author(c.author_id)?.username ?? '?',
-    content: c.content,
-    created_at: c.created_at,
-    updated_at: c.updated_at,
-    canRemove: c.author_id === auth.user?.id,
-    canEdit: c.author_id === auth.user?.id,
-    likeCount: c.like_count ?? 0,
-    liked: Boolean(c.liked),
+  return commentsFor(noteId).map((comment) => ({
+    id: comment.id,
+    avatar: author(comment.author_id)?.avatar ?? '❓',
+    username: author(comment.author_id)?.username ?? '?',
+    content: comment.content,
+    created_at: comment.created_at,
+    updated_at: comment.updated_at,
+    canRemove: comment.author_id === auth.user?.id,
+    canEdit: comment.author_id === auth.user?.id,
+    likeCount: comment.like_count ?? 0,
+    liked: Boolean(comment.liked),
   }));
 }
 
@@ -183,17 +183,19 @@ async function toggleLike(noteId: number) {
   if (result.liked) {
     likes.value.push({ id: Date.now(), note_id: noteId, user_id: auth.user!.id });
   } else {
-    likes.value = likes.value.filter((l) => !(l.note_id === noteId && l.user_id === auth.user!.id));
+    likes.value = likes.value.filter(
+      (like) => !(like.note_id === noteId && like.user_id === auth.user!.id)
+    );
   }
 }
 
 async function toggleCommentLike(commentId: number) {
-  const c = comments.value.find((item) => item.id === commentId);
+  const targetComment = comments.value.find((item) => item.id === commentId);
 
-  if (c) {
-    const wasLiked = Boolean(c.liked);
-    c.liked = !wasLiked;
-    c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+  if (targetComment) {
+    const wasLiked = Boolean(targetComment.liked);
+    targetComment.liked = !wasLiked;
+    targetComment.like_count = Math.max(0, (targetComment.like_count ?? 0) + (wasLiked ? -1 : 1));
   }
 
   try {
@@ -201,15 +203,15 @@ async function toggleCommentLike(commentId: number) {
       `/notes/comments/${commentId}/like`
     );
 
-    if (c) {
-      c.liked = result.liked;
-      c.like_count = result.like_count;
+    if (targetComment) {
+      targetComment.liked = result.liked;
+      targetComment.like_count = result.like_count;
     }
   } catch (err) {
-    if (c) {
-      const wasLiked = Boolean(c.liked);
-      c.liked = !wasLiked;
-      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+    if (targetComment) {
+      const wasLiked = Boolean(targetComment.liked);
+      targetComment.liked = !wasLiked;
+      targetComment.like_count = Math.max(0, (targetComment.like_count ?? 0) + (wasLiked ? -1 : 1));
     }
 
     throw err;
@@ -223,12 +225,12 @@ async function submitComment(noteId: number, content: string) {
 
 async function removeComment(id: number) {
   await api.delete(`/notes/comments/${id}`);
-  comments.value = comments.value.filter((c) => c.id !== id);
+  comments.value = comments.value.filter((comment) => comment.id !== id);
 }
 
 async function updateComment(id: number, content: string) {
   const updated = await api.put<NoteComment>(`/notes/comments/${id}`, { content });
-  const idx = comments.value.findIndex((c) => c.id === id);
+  const idx = comments.value.findIndex((comment) => comment.id === id);
 
   if (idx !== -1) {
     comments.value[idx] = updated;
@@ -240,8 +242,8 @@ function authorLabel(id: number | null) {
     return '';
   }
 
-  const u = users.value.find((u) => u.id === id);
-  return u ? `${u.avatar} ${u.username}` : '';
+  const member = users.value.find((candidate) => candidate.id === id);
+  return member ? `${member.avatar} ${member.username}` : '';
 }
 
 function formatDate(iso?: string | null) {
@@ -298,7 +300,7 @@ async function submitEdit() {
     content_format: 'html',
     is_draft: false,
   });
-  const idx = notes.value.findIndex((n) => n.id === updated.id);
+  const idx = notes.value.findIndex((note) => note.id === updated.id);
 
   if (idx !== -1) {
     notes.value[idx] = updated;
@@ -322,7 +324,7 @@ async function closeEditForm() {
         content_format: 'html',
         is_draft: true,
       });
-      const idx = notes.value.findIndex((n) => n.id === updated.id);
+      const idx = notes.value.findIndex((note) => note.id === updated.id);
 
       if (idx !== -1) {
         notes.value[idx] = updated;
@@ -336,7 +338,7 @@ async function closeEditForm() {
 
         if (attachments.length === 0) {
           await api.delete(`/notes/${editingNote.value.id}`);
-          notes.value = notes.value.filter((n) => n.id !== editingNote.value!.id);
+          notes.value = notes.value.filter((note) => note.id !== editingNote.value!.id);
         }
       } catch (e) {
         console.error('Fehler beim Aufräumen des leeren Entwurfs', e);
@@ -378,7 +380,7 @@ async function remove(id: number) {
 
   try {
     await api.delete(`/notes/${id}`);
-    notes.value = notes.value.filter((n) => n.id !== id);
+    notes.value = notes.value.filter((note) => note.id !== id);
     showToast({
       message: 'Notiz gelöscht. Sie befindet sich nun im Papierkorb.',
       type: 'info',

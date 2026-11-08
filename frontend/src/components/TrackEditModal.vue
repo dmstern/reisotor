@@ -82,13 +82,15 @@ const pendingTrackTourId = ref<number | null>(null);
 watch(
   () => props.track,
   (trk) => {
-    if (trk) {
-      editTrackTitle.value = trk.title ?? '';
-      editTrackStartedAt.value = toLocalDatetimeInputValue(trk.started_at);
-      editTrackVisibility.value = trk.visibility;
-      editTrackExcursionId.value = trk.excursion_id ?? null;
-      activeTrackEditTab.value = 'general';
+    if (!trk) {
+      return;
     }
+
+    editTrackTitle.value = trk.title ?? '';
+    editTrackStartedAt.value = toLocalDatetimeInputValue(trk.started_at);
+    editTrackVisibility.value = trk.visibility;
+    editTrackExcursionId.value = trk.excursion_id ?? null;
+    activeTrackEditTab.value = 'general';
   },
   { immediate: true }
 );
@@ -221,7 +223,7 @@ async function stopEditingTrack() {
     await tracksStore.stopTrack(id);
   }
 
-  const updated = tracksStore.tracks.find((t) => t.id === id);
+  const updated = tracksStore.tracks.find((item) => item.id === id);
 
   if (updated) {
     emit('update:track', updated);

@@ -88,9 +88,9 @@ export interface DemoDataSet {
 
 export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
   const addDays = (days: number): string => {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
+    const targetDate = new Date(baseDate);
+    targetDate.setDate(targetDate.getDate() + days);
+    return targetDate.toISOString().slice(0, 10);
   };
 
   const nowIso = baseDate.toISOString();

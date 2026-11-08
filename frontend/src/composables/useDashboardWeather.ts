@@ -79,11 +79,11 @@ export function useDashboardWeather(
   const weatherLoading = ref(false);
 
   const homeSpot = computed(() =>
-    spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null)
+    spotsStore.spots.find((spot) => spot.is_home && spot.lat != null && spot.lng != null)
   );
   const home = computed(() => {
-    const p = homeSpot.value;
-    return p ? { lat: p.lat as number, lng: p.lng as number } : null;
+    const spot = homeSpot.value;
+    return spot ? { lat: spot.lat as number, lng: spot.lng as number } : null;
   });
 
   const homeWeatherDays = ref<DailyWeather[] | null>(null);
@@ -175,7 +175,7 @@ export function useDashboardWeather(
 
   const weatherModelLabel = computed(
     () =>
-      WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ??
+      WEATHER_MODEL_OPTIONS.find((opt) => opt.value === weatherProvider.model)?.label ??
       weatherProvider.model
   );
 
@@ -229,7 +229,7 @@ export function useDashboardWeather(
       return null;
     }
 
-    const found = weatherDays.value?.find((d) => d.date === selectedWeatherDay.value?.date);
+    const found = weatherDays.value?.find((day) => day.date === selectedWeatherDay.value?.date);
 
     if (found) {
       return found;
@@ -243,7 +243,7 @@ export function useDashboardWeather(
       return null;
     }
 
-    const found = homeWeatherDays.value?.find((d) => d.date === selectedWeatherDay.value?.date);
+    const found = homeWeatherDays.value?.find((day) => day.date === selectedWeatherDay.value?.date);
 
     if (found) {
       return found;
@@ -265,15 +265,15 @@ export function useDashboardWeather(
       return [];
     }
 
-    const s = trip.value.start_date;
-    const e = trip.value.end_date;
-    return weatherDays.value.filter((d) => d.date >= s && d.date <= e);
+    const tripStart = trip.value.start_date;
+    const tripEnd = trip.value.end_date;
+    return weatherDays.value.filter((day) => day.date >= tripStart && day.date <= tripEnd);
   });
 
   function addDaysToDateStr(dateStr: string, days: number): string {
-    const d = new Date(`${dateStr}T00:00:00`);
-    d.setDate(d.getDate() + days);
-    return toLocalDateString(d);
+    const dateObj = new Date(`${dateStr}T00:00:00`);
+    dateObj.setDate(dateObj.getDate() + days);
+    return toLocalDateString(dateObj);
   }
 
   const HOME_WEATHER_TAIL_DAYS = 3;
@@ -282,21 +282,21 @@ export function useDashboardWeather(
       return [];
     }
 
-    const s = trip.value.start_date;
-    const e = trip.value.end_date;
+    const tripStart = trip.value.start_date;
+    const tripEnd = trip.value.end_date;
     const rangeStart = uiSettings.showHomeWeatherFullTrip
-      ? s
-      : addDaysToDateStr(e, -(HOME_WEATHER_TAIL_DAYS - 1));
-    return homeWeatherDays.value.filter((d) => d.date >= rangeStart && d.date <= e);
+      ? tripStart
+      : addDaysToDateStr(tripEnd, -(HOME_WEATHER_TAIL_DAYS - 1));
+    return homeWeatherDays.value.filter((day) => day.date >= rangeStart && day.date <= tripEnd);
   });
 
   const todayStr = () => toLocalDateString(new Date());
 
   const todayWeather = computed(
-    () => weatherDays.value?.find((d) => d.date === todayStr()) ?? null
+    () => weatherDays.value?.find((day) => day.date === todayStr()) ?? null
   );
   const todayHomeWeather = computed(
-    () => homeWeatherDays.value?.find((d) => d.date === todayStr()) ?? null
+    () => homeWeatherDays.value?.find((day) => day.date === todayStr()) ?? null
   );
 
   const allWeatherDays = computed<DailyWeather[]>(() => {
@@ -360,8 +360,8 @@ export function useDashboardWeather(
     return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
   });
 
-  function formatWeekdayDate(d: string) {
-    return formatWeekdayDateShared(d);
+  function formatWeekdayDate(dateStr: string) {
+    return formatWeekdayDateShared(dateStr);
   }
 
   return {

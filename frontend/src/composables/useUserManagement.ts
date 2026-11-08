@@ -5,20 +5,20 @@ import { useAuthStore } from '../stores/auth';
 
 export type UserRole = 'admin' | 'plus' | 'restricted';
 
-export function getUserRole(u: User): UserRole {
-  if (u.is_admin) {
+export function getUserRole(user: User): UserRole {
+  if (user.is_admin) {
     return 'admin';
   }
 
-  if (u.is_restricted) {
+  if (user.is_restricted) {
     return 'restricted';
   }
 
   return 'plus';
 }
 
-export function getUserRoleLabel(u: User | UserRole): string {
-  const role = typeof u === 'string' ? u : getUserRole(u);
+export function getUserRoleLabel(userOrRole: User | UserRole): string {
+  const role = typeof userOrRole === 'string' ? userOrRole : getUserRole(userOrRole);
 
   switch (role) {
     case 'admin':
@@ -65,18 +65,18 @@ export function useUserManagement() {
     }
   }
 
-  async function changeUserRole(u: User, role: UserRole) {
-    changingRoleId.value = u.id;
+  async function changeUserRole(targetUser: User, role: UserRole) {
+    changingRoleId.value = targetUser.id;
 
     try {
-      const updated = await api.put<User>(`/users/${u.id}/role`, { role });
-      const idx = userList.value.findIndex((item) => item.id === u.id);
+      const updated = await api.put<User>(`/users/${targetUser.id}/role`, { role });
+      const idx = userList.value.findIndex((item) => item.id === targetUser.id);
 
       if (idx !== -1) {
         userList.value[idx] = updated;
       }
 
-      if (auth.user && auth.user.id === u.id) {
+      if (auth.user && auth.user.id === targetUser.id) {
         auth.user.is_admin = updated.is_admin;
         auth.user.restricted = updated.restricted;
         auth.user.is_restricted = updated.is_restricted;
@@ -90,12 +90,14 @@ export function useUserManagement() {
     }
   }
 
-  async function toggleAdminRole(u: User) {
-    const nextIsAdmin = !u.is_admin;
+  async function toggleAdminRole(targetUser: User) {
+    const nextIsAdmin = !targetUser.is_admin;
 
     try {
-      const updated = await api.put<User>(`/users/${u.id}/admin`, { is_admin: nextIsAdmin });
-      const idx = userList.value.findIndex((item) => item.id === u.id);
+      const updated = await api.put<User>(`/users/${targetUser.id}/admin`, {
+        is_admin: nextIsAdmin,
+      });
+      const idx = userList.value.findIndex((item) => item.id === targetUser.id);
 
       if (idx !== -1) {
         userList.value[idx] = updated;
@@ -105,14 +107,14 @@ export function useUserManagement() {
     }
   }
 
-  async function toggleRestrictedRole(u: User) {
-    const nextIsRestricted = !u.is_restricted;
+  async function toggleRestrictedRole(targetUser: User) {
+    const nextIsRestricted = !targetUser.is_restricted;
 
     try {
-      const updated = await api.put<User>(`/users/${u.id}/restricted`, {
+      const updated = await api.put<User>(`/users/${targetUser.id}/restricted`, {
         is_restricted: nextIsRestricted,
       });
-      const idx = userList.value.findIndex((item) => item.id === u.id);
+      const idx = userList.value.findIndex((item) => item.id === targetUser.id);
 
       if (idx !== -1) {
         userList.value[idx] = updated;
@@ -122,18 +124,18 @@ export function useUserManagement() {
     }
   }
 
-  async function deleteUserAccount(u: User) {
-    if (u.id === auth.user?.id) {
+  async function deleteUserAccount(targetUser: User) {
+    if (targetUser.id === auth.user?.id) {
       return;
     }
 
-    if (!confirm(`Möchtest du den Nutzer "${u.username}" wirklich löschen?`)) {
+    if (!confirm(`Möchtest du den Nutzer "${targetUser.username}" wirklich löschen?`)) {
       return;
     }
 
     try {
-      await api.delete(`/users/${u.id}`);
-      userList.value = userList.value.filter((item) => item.id !== u.id);
+      await api.delete(`/users/${targetUser.id}`);
+      userList.value = userList.value.filter((item) => item.id !== targetUser.id);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Fehler beim Löschen des Nutzers');
     }
@@ -143,8 +145,8 @@ export function useUserManagement() {
     userList.value.push(newUser);
   }
 
-  function openResetPasswordDialog(u: User) {
-    resetPasswordTarget.value = u;
+  function openResetPasswordDialog(targetUser: User) {
+    resetPasswordTarget.value = targetUser;
     resetPasswordResult.value = null;
   }
 
@@ -153,18 +155,18 @@ export function useUserManagement() {
     resetPasswordResult.value = null;
   }
 
-  async function performResetPassword(u: User, temporaryPassword?: string) {
+  async function performResetPassword(targetUser: User, temporaryPassword?: string) {
     resettingPassword.value = true;
 
     try {
       const res = await api.post<AdminResetPasswordResult>(
-        `/users/${u.id}/reset-password`,
+        `/users/${targetUser.id}/reset-password`,
         temporaryPassword ? { temporaryPassword } : {},
         { noQueue: true }
       );
       resetPasswordResult.value = res;
       // In der Nutzerliste must_change_password aktualisieren
-      const idx = userList.value.findIndex((item) => item.id === u.id);
+      const idx = userList.value.findIndex((item) => item.id === targetUser.id);
 
       if (idx !== -1) {
         userList.value[idx] = { ...userList.value[idx], must_change_password: true };
@@ -179,12 +181,12 @@ export function useUserManagement() {
     }
   }
 
-  async function verifyUserEmail(u: User) {
-    verifyingEmailId.value = u.id;
+  async function verifyUserEmail(targetUser: User) {
+    verifyingEmailId.value = targetUser.id;
 
     try {
-      await api.post(`/users/${u.id}/verify-email`);
-      const idx = userList.value.findIndex((item) => item.id === u.id);
+      await api.post(`/users/${targetUser.id}/verify-email`);
+      const idx = userList.value.findIndex((item) => item.id === targetUser.id);
 
       if (idx !== -1) {
         userList.value[idx] = { ...userList.value[idx], is_email_verified: true };
@@ -196,23 +198,25 @@ export function useUserManagement() {
     }
   }
 
-  async function toggleLockUser(u: User) {
-    if (u.id === auth.user?.id) {
+  async function toggleLockUser(targetUser: User) {
+    if (targetUser.id === auth.user?.id) {
       return;
     }
 
-    const nextLocked = !u.is_locked;
+    const nextLocked = !targetUser.is_locked;
     const actionText = nextLocked ? 'sperren' : 'entsperren';
 
-    if (!confirm(`Möchtest du das Konto von "${u.username}" wirklich ${actionText}?`)) {
+    if (!confirm(`Möchtest du das Konto von "${targetUser.username}" wirklich ${actionText}?`)) {
       return;
     }
 
-    lockingUserId.value = u.id;
+    lockingUserId.value = targetUser.id;
 
     try {
-      const updated = await api.put<User>(`/users/${u.id}/lock`, { is_locked: nextLocked });
-      const idx = userList.value.findIndex((item) => item.id === u.id);
+      const updated = await api.put<User>(`/users/${targetUser.id}/lock`, {
+        is_locked: nextLocked,
+      });
+      const idx = userList.value.findIndex((item) => item.id === targetUser.id);
 
       if (idx !== -1) {
         userList.value[idx] = updated;

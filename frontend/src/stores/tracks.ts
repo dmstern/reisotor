@@ -56,7 +56,7 @@ export const useTracksStore = defineStore('tracks', () => {
 
   async function update(id: number, body: TrackUpdateData) {
     const updated = await api.put<LocationTrack>(`/tracks/${id}`, body);
-    const idx = tracks.value.findIndex((t) => t.id === id);
+    const idx = tracks.value.findIndex((track) => track.id === id);
 
     if (idx !== -1) {
       const next = [...tracks.value];
@@ -70,7 +70,7 @@ export const useTracksStore = defineStore('tracks', () => {
 
   async function remove(id: number) {
     await api.delete(`/tracks/${id}`);
-    tracks.value = tracks.value.filter((t) => t.id !== id);
+    tracks.value = tracks.value.filter((track) => track.id !== id);
     const nextPoints = { ...pointsByTrack.value };
     delete nextPoints[id];
     pointsByTrack.value = nextPoints;
@@ -84,7 +84,7 @@ export const useTracksStore = defineStore('tracks', () => {
     const updated = await api.post<LocationTrack>(`/tracks/${id}/stop`, {
       end_reason: options?.end_reason ?? 'completed',
     });
-    const idx = tracks.value.findIndex((t) => t.id === id);
+    const idx = tracks.value.findIndex((track) => track.id === id);
 
     if (idx !== -1) {
       const next = [...tracks.value];

@@ -54,8 +54,8 @@ describe('buildTravelDerivedLocations', () => {
     const result = buildTravelDerivedLocations([zugfahrt]);
 
     expect(result).toHaveLength(2);
-    const from = result.find((r) => r.key === 'travel-from-1');
-    const to = result.find((r) => r.key === 'travel-to-1');
+    const from = result.find((loc) => loc.key === 'travel-from-1');
+    const to = result.find((loc) => loc.key === 'travel-to-1');
     expect(from?.title).toBe('Zugfahrt (Abflug/Abfahrt)');
     expect(from?.icon).toBe('🚆');
     expect(to?.title).toBe('Zugfahrt (Ankunft)');
@@ -110,7 +110,7 @@ describe('buildTravelDerivedLocations', () => {
     const result = buildTravelDerivedLocations([linked, freeform]);
 
     expect(result).toHaveLength(1);
-    expect(result.some((r) => r.key === 'travel-to-2' && r.icon === '🚗')).toBe(true);
+    expect(result.some((loc) => loc.key === 'travel-to-2' && loc.icon === '🚗')).toBe(true);
   });
 
   it('ignoriert Etappen-Enden ohne Koordinaten', () => {

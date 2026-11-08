@@ -75,7 +75,9 @@ const prevDate = computed(() => {
   }
 
   if (idx === -1) {
-    const earlierDays = props.vacationDays.filter((d) => d < props.focusedDate!);
+    const earlierDays = props.vacationDays.filter(
+      (vacationDay) => vacationDay < props.focusedDate!
+    );
 
     if (earlierDays.length > 0) {
       return earlierDays[earlierDays.length - 1];
@@ -97,7 +99,7 @@ const nextDate = computed(() => {
   }
 
   if (idx === -1) {
-    const laterDays = props.vacationDays.filter((d) => d > props.focusedDate!);
+    const laterDays = props.vacationDays.filter((vacationDay) => vacationDay > props.focusedDate!);
 
     if (laterDays.length > 0) {
       return laterDays[0];

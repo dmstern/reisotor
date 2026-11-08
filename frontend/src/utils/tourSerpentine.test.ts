@@ -147,7 +147,7 @@ describe('buildTourSerpentineRows', () => {
     } as unknown as Excursion;
 
     const getTourLeg = (exc: Excursion, fromId: number, toId: number): ExcursionLeg | undefined =>
-      exc.legs?.find((l) => l.from_spot_id === fromId && l.to_spot_id === toId);
+      exc.legs?.find((leg) => leg.from_spot_id === fromId && leg.to_spot_id === toId);
 
     const rows = buildTourSerpentineRows(items, 2, excursion, getTourLeg);
 

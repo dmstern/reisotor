@@ -319,20 +319,25 @@ export async function sendActivityEmail(params: {
       ? `[Reisotor] ${params.tripName} – ${params.title}`
       : `[Reisotor] ${params.title}`;
   const endsWithPunctuation = /[.!?]$/.test(params.body.trim());
-  const textSentence = params.tripName
-    ? endsWithPunctuation
+  let textSentence: string;
+
+  if (params.tripName) {
+    textSentence = endsWithPunctuation
       ? `${params.body} (Urlaub „${params.tripName}“)`
-      : `${params.body} im Urlaub "${params.tripName}".`
-    : endsWithPunctuation
-      ? params.body
-      : `${params.body}.`;
-  const htmlSentence = params.tripName
-    ? endsWithPunctuation
+      : `${params.body} im Urlaub "${params.tripName}".`;
+  } else {
+    textSentence = endsWithPunctuation ? params.body : `${params.body}.`;
+  }
+
+  let htmlSentence: string;
+
+  if (params.tripName) {
+    htmlSentence = endsWithPunctuation
       ? `${escapeHtml(params.body)} (Urlaub <strong>${escapeHtml(params.tripName)}</strong>)`
-      : `${escapeHtml(params.body)} im Urlaub <strong>${escapeHtml(params.tripName)}</strong>.`
-    : endsWithPunctuation
-      ? escapeHtml(params.body)
-      : `${escapeHtml(params.body)}.`;
+      : `${escapeHtml(params.body)} im Urlaub <strong>${escapeHtml(params.tripName)}</strong>.`;
+  } else {
+    htmlSentence = endsWithPunctuation ? escapeHtml(params.body) : `${escapeHtml(params.body)}.`;
+  }
 
   const text = `Hallo ${params.username},
 
@@ -398,12 +403,13 @@ export async function sendAdminContactNotificationEmail(params: {
   const from = getFromAddress();
   const subject = '[Reisotor] Neue Kontaktanfrage / Anmeldeproblem';
 
-  const typeLabel =
-    params.type === 'login_help'
-      ? 'Anmeldeproblem'
-      : params.type === 'registration_help'
-        ? 'Registrierungshilfe'
-        : params.type;
+  let typeLabel = params.type;
+
+  if (params.type === 'login_help') {
+    typeLabel = 'Anmeldeproblem';
+  } else if (params.type === 'registration_help') {
+    typeLabel = 'Registrierungshilfe';
+  }
 
   const senderDetails: string[] = [];
 

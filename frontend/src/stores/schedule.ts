@@ -24,6 +24,14 @@ export interface ScheduleFormData {
   done?: number | boolean | null;
 }
 
+export interface SetSpotDateOptions {
+  spotId: number;
+  tripId: number;
+  title: string;
+  date: string;
+  done?: boolean;
+}
+
 // Eigener Store statt (wie zuvor) lokalem State in ScheduleView.vue: ein Spot/eine Tour auf einen
 // Kalendertag ziehen (SpotCard.vue/ExcursionCard.vue) legt jetzt direkt einen Termin hier an – die
 // Kalender-Schublade/-Seite muss denselben reaktiven Stand sehen, sonst taucht der frisch
@@ -76,13 +84,8 @@ export const useScheduleStore = defineStore('schedule', () => {
    *  Bestätigungs-Flow beim Markieren als "gemacht", SpotCard.vue/ScheduleView.vue) -
    *  überschreibt einen bereits bestehenden Termin statt einen zweiten anzulegen, damit ein
    *  erneutes Datum-Bestätigen nicht ungewollt einen zusätzlichen Kalendereintrag erzeugt. */
-  async function setSpotDate(
-    spotId: number,
-    tripId: number,
-    title: string,
-    date: string,
-    done: boolean = false
-  ) {
+  async function setSpotDate(options: SetSpotDateOptions) {
+    const { spotId, tripId, title, date, done = false } = options;
     const existing = items.value.find((i) => i.spot_id === spotId);
 
     if (existing) {
@@ -114,16 +117,20 @@ export const useScheduleStore = defineStore('schedule', () => {
       });
     }
 
-    if (done) {
-      const spotsStore = useSpotsStore();
-      const sIdx = spotsStore.spots.findIndex((s) => s.id === spotId);
-
-      if (sIdx !== -1) {
-        const nextSpots = [...spotsStore.spots];
-        nextSpots[sIdx] = { ...nextSpots[sIdx], done: 1 };
-        spotsStore.spots = nextSpots;
-      }
+    if (!done) {
+      return;
     }
+
+    const spotsStore = useSpotsStore();
+    const sIdx = spotsStore.spots.findIndex((spot) => spot.id === spotId);
+
+    if (sIdx === -1) {
+      return;
+    }
+
+    const nextSpots = [...spotsStore.spots];
+    nextSpots[sIdx] = { ...nextSpots[sIdx], done: 1 };
+    spotsStore.spots = nextSpots;
   }
 
   async function setDone(id: number, done: boolean) {
@@ -142,7 +149,7 @@ export const useScheduleStore = defineStore('schedule', () => {
 
     if (result.spot_id != null && result.spot_done !== undefined) {
       const spotsStore = useSpotsStore();
-      const sIdx = spotsStore.spots.findIndex((s) => s.id === result.spot_id);
+      const sIdx = spotsStore.spots.findIndex((spot) => spot.id === result.spot_id);
 
       if (sIdx !== -1) {
         const nextSpots = [...spotsStore.spots];

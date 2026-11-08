@@ -17,7 +17,7 @@ const isOpen = ref(false);
 const selectId = useId();
 
 const currentOption = computed(
-  () => THEME_MODE_OPTIONS.find((o) => o.value === theme.mode) ?? THEME_MODE_OPTIONS[2]
+  () => THEME_MODE_OPTIONS.find((option) => option.value === theme.mode) ?? THEME_MODE_OPTIONS[2]
 );
 
 function selectMode(val: ThemeMode) {
