@@ -21,26 +21,26 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
       return null;
     }
 
-    const u = users.value.find((u) => u.id === userId);
-    return u ? `${u.avatar} ${u.username}` : null;
+    const user = users.value.find((item) => item.id === userId);
+    return user ? `${user.avatar} ${user.username}` : null;
   }
 
   function author(id: number) {
-    return users.value.find((u) => u.id === id);
+    return users.value.find((user) => user.id === id);
   }
 
   function spotCommentItemsFor(spotId: number) {
-    return spotsStore.commentsFor(spotId).map((c) => ({
-      id: c.id,
-      avatar: author(c.author_id)?.avatar ?? '❓',
-      username: author(c.author_id)?.username ?? '?',
-      content: c.content,
-      created_at: c.created_at,
-      updated_at: c.updated_at,
-      canRemove: c.author_id === auth.user?.id,
-      canEdit: c.author_id === auth.user?.id,
-      likeCount: c.like_count ?? 0,
-      liked: Boolean(c.liked),
+    return spotsStore.commentsFor(spotId).map((comment) => ({
+      id: comment.id,
+      avatar: author(comment.author_id)?.avatar ?? '❓',
+      username: author(comment.author_id)?.username ?? '?',
+      content: comment.content,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      canRemove: comment.author_id === auth.user?.id,
+      canEdit: comment.author_id === auth.user?.id,
+      likeCount: comment.like_count ?? 0,
+      liked: Boolean(comment.liked),
     }));
   }
 
@@ -69,31 +69,31 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
   }
 
   function excursionLikesFor(ideaId: number) {
-    return excursionLikes.value.filter((l) => l.idea_id === ideaId);
+    return excursionLikes.value.filter((like) => like.idea_id === ideaId);
   }
 
   function excursionLikedByMe(ideaId: number) {
-    return excursionLikesFor(ideaId).some((l) => l.user_id === auth.user?.id);
+    return excursionLikesFor(ideaId).some((like) => like.user_id === auth.user?.id);
   }
 
   function excursionCommentsFor(ideaId: number) {
     return excursionComments.value
-      .filter((c) => c.idea_id === ideaId)
+      .filter((comment) => comment.idea_id === ideaId)
       .sort((a, b) => a.created_at.localeCompare(b.created_at));
   }
 
   function excursionCommentItemsFor(ideaId: number) {
-    return excursionCommentsFor(ideaId).map((c) => ({
-      id: c.id,
-      avatar: author(c.author_id)?.avatar ?? '❓',
-      username: author(c.author_id)?.username ?? '?',
-      content: c.content,
-      created_at: c.created_at,
-      updated_at: c.updated_at,
-      canRemove: c.author_id === auth.user?.id,
-      canEdit: c.author_id === auth.user?.id,
-      likeCount: c.like_count ?? 0,
-      liked: Boolean(c.liked),
+    return excursionCommentsFor(ideaId).map((comment) => ({
+      id: comment.id,
+      avatar: author(comment.author_id)?.avatar ?? '❓',
+      username: author(comment.author_id)?.username ?? '?',
+      content: comment.content,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      canRemove: comment.author_id === auth.user?.id,
+      canEdit: comment.author_id === auth.user?.id,
+      likeCount: comment.like_count ?? 0,
+      liked: Boolean(comment.liked),
     }));
   }
 
@@ -108,18 +108,18 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
       excursionLikes.value.push({ id: Date.now(), idea_id: ideaId, user_id: auth.user.id });
     } else {
       excursionLikes.value = excursionLikes.value.filter(
-        (l) => !(l.idea_id === ideaId && l.user_id === auth.user!.id)
+        (like) => !(like.idea_id === ideaId && like.user_id === auth.user!.id)
       );
     }
   }
 
   async function toggleExcursionCommentLike(commentId: number) {
-    const c = excursionComments.value.find((item) => item.id === commentId);
+    const targetComment = excursionComments.value.find((item) => item.id === commentId);
 
-    if (c) {
-      const wasLiked = Boolean(c.liked);
-      c.liked = !wasLiked;
-      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+    if (targetComment) {
+      const wasLiked = Boolean(targetComment.liked);
+      targetComment.liked = !wasLiked;
+      targetComment.like_count = Math.max(0, (targetComment.like_count ?? 0) + (wasLiked ? -1 : 1));
     }
 
     try {
@@ -127,15 +127,18 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
         `/ideas/comments/${commentId}/like`
       );
 
-      if (c) {
-        c.liked = result.liked;
-        c.like_count = result.like_count;
+      if (targetComment) {
+        targetComment.liked = result.liked;
+        targetComment.like_count = result.like_count;
       }
     } catch (err) {
-      if (c) {
-        const wasLiked = Boolean(c.liked);
-        c.liked = !wasLiked;
-        c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
+      if (targetComment) {
+        const wasLiked = Boolean(targetComment.liked);
+        targetComment.liked = !wasLiked;
+        targetComment.like_count = Math.max(
+          0,
+          (targetComment.like_count ?? 0) + (wasLiked ? -1 : 1)
+        );
       }
 
       throw err;
@@ -149,12 +152,12 @@ export function useExcursionSocial(options: UseExcursionSocialOptions) {
 
   async function removeExcursionComment(id: number) {
     await api.delete(`/ideas/comments/${id}`);
-    excursionComments.value = excursionComments.value.filter((c) => c.id !== id);
+    excursionComments.value = excursionComments.value.filter((comment) => comment.id !== id);
   }
 
   async function updateExcursionComment(id: number, content: string) {
     const updated = await api.put<ExcursionComment>(`/ideas/comments/${id}`, { content });
-    const idx = excursionComments.value.findIndex((c) => c.id === id);
+    const idx = excursionComments.value.findIndex((comment) => comment.id === id);
 
     if (idx !== -1) {
       excursionComments.value[idx] = updated;

@@ -106,8 +106,8 @@ export function useTodoGrouping(
       return null;
     }
 
-    const u = users.value.find((u) => u.id === id);
-    return u ? `${u.avatar} ${u.username}` : '👤 Ehemaliges Mitglied';
+    const foundUser = users.value.find((user) => user.id === id);
+    return foundUser ? `${foundUser.avatar} ${foundUser.username}` : '👤 Ehemaliges Mitglied';
   }
 
   function userAvatar(id: number | null | undefined) {
@@ -115,8 +115,8 @@ export function useTodoGrouping(
       return null;
     }
 
-    const u = users.value.find((u) => u.id === id);
-    return u ? u.avatar : '👤';
+    const foundUser = users.value.find((user) => user.id === id);
+    return foundUser ? foundUser.avatar : '👤';
   }
 
   function userName(id: number | null | undefined) {
@@ -124,8 +124,8 @@ export function useTodoGrouping(
       return null;
     }
 
-    const u = users.value.find((u) => u.id === id);
-    return u ? u.username : 'Ehemaliges Mitglied';
+    const foundUser = users.value.find((user) => user.id === id);
+    return foundUser ? foundUser.username : 'Ehemaliges Mitglied';
   }
 
   function sortItems(list: TodoItem[]) {
@@ -183,11 +183,11 @@ export function useTodoGrouping(
       ];
     }
 
-    const memberIds = new Set(users.value.map((u) => u.id));
-    const perUser: TodoGroup[] = users.value.map((u) => ({
-      key: `user-${u.id}`,
-      label: `${u.avatar} ${u.username}`,
-      items: sortItems(items.value.filter((i) => i.assigned_to_user_id === u.id)),
+    const memberIds = new Set(users.value.map((user) => user.id));
+    const perUser: TodoGroup[] = users.value.map((user) => ({
+      key: `user-${user.id}`,
+      label: `${user.avatar} ${user.username}`,
+      items: sortItems(items.value.filter((i) => i.assigned_to_user_id === user.id)),
     }));
     const unassigned: TodoGroup = {
       key: 'unassigned',
@@ -201,12 +201,12 @@ export function useTodoGrouping(
     return [...perUser, unassigned];
   });
 
-  function formatDate(d: string | null) {
-    if (!d) {
+  function formatDate(dateStr: string | null) {
+    if (!dateStr) {
       return null;
     }
 
-    return formatDateShared(d);
+    return formatDateShared(dateStr);
   }
 
   function isOverdue(item: TodoItem) {

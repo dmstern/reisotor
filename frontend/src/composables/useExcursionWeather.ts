@@ -36,7 +36,7 @@ export function useExcursionWeather(
 
   const mappedStations = computed(() => {
     const stations = toValue(options.resolvedStations);
-    return stations.filter((s) => s.lat != null && s.lng != null);
+    return stations.filter((station) => station.lat != null && station.lng != null);
   });
 
   const weatherSummary = ref<WeatherRangeSummary | null>(null);
@@ -76,7 +76,7 @@ export function useExcursionWeather(
           fetchedKeys.add(locKey);
 
           const days = await fetchMergedWeather(tripId, st.lat, st.lng, model);
-          const match = days.find((d) => d.date === date);
+          const match = days.find((day) => day.date === date);
 
           if (match) {
             stationWeathers.push(match);

@@ -32,7 +32,7 @@ export function useCalendarData() {
 
   const trip = computed(() => tripStore.currentTrip);
   const accommodations = computed(() =>
-    spotsStore.spots.filter((s) => s.category === 'Unterkunft')
+    spotsStore.spots.filter((spot) => spot.category === 'Unterkunft')
   );
   const todos = ref<TodoItem[]>([]);
   const travelItems = computed(() =>
@@ -41,8 +41,10 @@ export function useCalendarData() {
   const loading = ref(true);
 
   const home = computed(() => {
-    const p = spotsStore.spots.find((s) => s.is_home && s.lat != null && s.lng != null);
-    return p ? { lat: p.lat as number, lng: p.lng as number } : null;
+    const homeSpot = spotsStore.spots.find(
+      (spot) => spot.is_home && spot.lat != null && spot.lng != null
+    );
+    return homeSpot ? { lat: homeSpot.lat as number, lng: homeSpot.lng as number } : null;
   });
 
   const weatherByLocation = ref<Map<string, DailyWeather[]>>(new Map());
@@ -109,11 +111,11 @@ export function useCalendarData() {
   }
 
   function entryDone(entry: CalendarEntry): boolean {
-    return !!todos.value.find((t) => t.id === entry.todoId)?.done;
+    return !!todos.value.find((todo) => todo.id === entry.todoId)?.done;
   }
 
   async function toggleTodoDone(todoId: number) {
-    const todo = todos.value.find((t) => t.id === todoId);
+    const todo = todos.value.find((item) => item.id === todoId);
 
     if (!todo) {
       return;
@@ -129,7 +131,7 @@ export function useCalendarData() {
       note: todo.note ?? undefined,
       done: !todo.done,
     });
-    const idx = todos.value.findIndex((t) => t.id === todoId);
+    const idx = todos.value.findIndex((item) => item.id === todoId);
 
     if (idx !== -1) {
       todos.value[idx] = updated;

@@ -151,8 +151,8 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     return today;
   });
   const unplannedDoneDate = ref(defaultDate.value);
-  watch(defaultDate, (d) => {
-    unplannedDoneDate.value = d;
+  watch(defaultDate, (newDate) => {
+    unplannedDoneDate.value = newDate;
   });
 
   async function onToggleDone(event?: MouseEvent) {

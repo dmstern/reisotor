@@ -22,10 +22,10 @@ export function createEmptyDiaryForm(dateStr?: string): DiaryFormData {
   };
 }
 
-export function hasDiaryEntryContent(f: {
+export function hasDiaryEntryContent(form: {
   title: string;
   content: string;
   images: DiaryImage[];
 }): boolean {
-  return f.title.trim().length > 0 || !isEmptyRichText(f.content) || f.images.length > 0;
+  return form.title.trim().length > 0 || !isEmptyRichText(form.content) || form.images.length > 0;
 }

@@ -25,30 +25,40 @@ export interface CachedModeRoute {
   preference: 'fastest' | 'shortest';
 }
 
-export function normalizeRoutingTransport(t?: string | null): string {
-  const s = (t || '').trim().toLowerCase();
+export function normalizeRoutingTransport(transport?: string | null): string {
+  const normalized = (transport || '').trim().toLowerCase();
 
-  if (s === 'auto' || s === 'car' || s === 'driving' || s === 'driving-car') {
+  if (
+    normalized === 'auto' ||
+    normalized === 'car' ||
+    normalized === 'driving' ||
+    normalized === 'driving-car'
+  ) {
     return 'Auto';
   }
 
-  if (s === 'fahrrad' || s === 'bike' || s === 'cycling' || s === 'cycling-regular') {
+  if (
+    normalized === 'fahrrad' ||
+    normalized === 'bike' ||
+    normalized === 'cycling' ||
+    normalized === 'cycling-regular'
+  ) {
     return 'Fahrrad';
   }
 
   if (
-    s === 'zu fuß' ||
-    s === 'zu fuss' ||
-    s === 'fuss' ||
-    s === 'fuß' ||
-    s === 'foot' ||
-    s === 'walking' ||
-    s === 'foot-walking'
+    normalized === 'zu fuß' ||
+    normalized === 'zu fuss' ||
+    normalized === 'fuss' ||
+    normalized === 'fuß' ||
+    normalized === 'foot' ||
+    normalized === 'walking' ||
+    normalized === 'foot-walking'
   ) {
     return 'zu Fuß';
   }
 
-  return t || '';
+  return transport || '';
 }
 
 export function useRouteCalculation(options: UseRouteCalculationOptions) {
@@ -83,9 +93,9 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
 
     let minDur = Infinity;
     let idx = 0;
-    calculatedRoutes.value.forEach((r, i) => {
-      if (r.duration_seconds < minDur) {
-        minDur = r.duration_seconds;
+    calculatedRoutes.value.forEach((route, i) => {
+      if (route.duration_seconds < minDur) {
+        minDur = route.duration_seconds;
         idx = i;
       }
     });
@@ -99,9 +109,9 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
 
     let minDist = Infinity;
     let idx = 0;
-    calculatedRoutes.value.forEach((r, i) => {
-      if (r.distance_meters < minDist) {
-        minDist = r.distance_meters;
+    calculatedRoutes.value.forEach((route, i) => {
+      if (route.distance_meters < minDist) {
+        minDist = route.distance_meters;
         idx = i;
       }
     });
@@ -136,8 +146,13 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
       return false;
     }
 
-    const t = (transportType.value || '').toLowerCase();
-    return t === 'auto' || t === 'fahrrad' || t === 'zu fuß' || t === 'zu fuss';
+    const currentTransport = (transportType.value || '').toLowerCase();
+    return (
+      currentTransport === 'auto' ||
+      currentTransport === 'fahrrad' ||
+      currentTransport === 'zu fuß' ||
+      currentTransport === 'zu fuss'
+    );
   });
 
   function applyCachedRoute(cached: CachedModeRoute) {

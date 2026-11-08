@@ -48,7 +48,7 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
   const scheduleStore = useScheduleStore();
   const { showToast } = useToast();
 
-  const placeNames = computed(() => spotsStore.spots.map((s) => s.title));
+  const placeNames = computed(() => spotsStore.spots.map((spot) => spot.title));
 
   // --- Add Form State ---
   const newStartDate = ref('');
@@ -152,7 +152,7 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
     const { spot_id, idea_id } = parseLinkKey(key);
 
     if (spot_id != null) {
-      return spotsStore.spots.find((s) => s.id === spot_id)?.title ?? null;
+      return spotsStore.spots.find((spot) => spot.id === spot_id)?.title ?? null;
     }
 
     if (idea_id != null) {
@@ -163,26 +163,26 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
   }
 
   watch(newLinkKey, (key) => {
-    const t = key && titleForLinkKey(key);
+    const linkTitle = key && titleForLinkKey(key);
 
-    if (t && !newTitle.value.trim()) {
-      newTitle.value = t;
+    if (linkTitle && !newTitle.value.trim()) {
+      newTitle.value = linkTitle;
     }
   });
 
   watch(
     () => editForm.value.linkKey,
     (key) => {
-      const t = key && titleForLinkKey(key);
+      const linkTitle = key && titleForLinkKey(key);
 
-      if (t && !editForm.value.title.trim()) {
-        editForm.value.title = t;
+      if (linkTitle && !editForm.value.title.trim()) {
+        editForm.value.title = linkTitle;
       }
     }
   );
 
   function placeMapsLinkFor(name: string): string | null {
-    return spotsStore.spots.find((s) => s.title === name)?.maps_link ?? null;
+    return spotsStore.spots.find((spot) => spot.title === name)?.maps_link ?? null;
   }
 
   watch(newLocation, (name) => {

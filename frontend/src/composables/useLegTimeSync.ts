@@ -29,14 +29,14 @@ export function parseTimeToMinutes(timeStr?: string | null): number | null {
     return null;
   }
 
-  const h = Number(parts[0]);
-  const m = Number(parts[1]);
+  const hours = Number(parts[0]);
+  const minutes = Number(parts[1]);
 
-  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
     return null;
   }
 
-  return h * 60 + m;
+  return hours * 60 + minutes;
 }
 
 /**
@@ -44,9 +44,9 @@ export function parseTimeToMinutes(timeStr?: string | null): number | null {
  */
 export function formatMinutesToTime(totalMinutes: number): string {
   const normalized = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
-  const h = Math.floor(normalized / 60);
-  const m = normalized % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const hours = Math.floor(normalized / 60);
+  const minutes = normalized % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
 /**

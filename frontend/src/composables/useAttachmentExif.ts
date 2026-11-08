@@ -27,12 +27,12 @@ export function useAttachmentExif(options: UseAttachmentExifOptions) {
     )
   );
 
-  function formatExifDateTime(d: Date): string {
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
+  function formatExifDateTime(dateObj: Date): string {
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
     const calendarSettings = useCalendarSettingsStore();
     let dateFormatted = `${day}.${month}.${year}`;
 

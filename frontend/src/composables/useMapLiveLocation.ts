@@ -134,7 +134,9 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
     }
   }
 
-  const otherMembers = computed(() => options.users.value.filter((u) => u.id !== auth.user?.id));
+  const otherMembers = computed(() =>
+    options.users.value.filter((user) => user.id !== auth.user?.id)
+  );
 
   function isMemberOnline(userId: number) {
     return liveSync.onlineUserIds.includes(userId);

@@ -1,5 +1,5 @@
 import { type ComputedRef, type Ref } from 'vue';
-import L from 'leaflet';
+import leaflet from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
 import type { Excursion, LocationTrack, TrackPoint, TravelItem, User } from '../api/types';
@@ -50,7 +50,7 @@ export function getDefaultMapCenterAndZoom(
   return { center: [FALLBACK_CENTER.lat, FALLBACK_CENTER.lng], zoom: FALLBACK_ZOOM };
 }
 
-L.Map.mergeOptions({ rotateControl: false });
+leaflet.Map.mergeOptions({ rotateControl: false });
 
 export const TRACK_START_ICON: IconDef = {
   id: 'flag',
@@ -65,12 +65,12 @@ export const TRACK_GOAL_ICON: IconDef = {
   outline: IconTarget,
 };
 
-export function trackPlaybackIcon(): L.DivIcon {
+export function trackPlaybackIcon(): leaflet.DivIcon {
   const size = 32;
   const dotSize = 24;
   const half = size / 2;
   const color = '#9141ac';
-  return L.divIcon({
+  return leaflet.divIcon({
     html: `<div class="track-playback-marker" style="position:relative;width:${size}px;height:${size}px;">
       <div class="map-pulse-ring" style="position:absolute;left:50%;top:50%;width:${dotSize + 12}px;height:${dotSize + 12}px;
         margin:${-(dotSize + 12) / 2}px 0 0 ${-(dotSize + 12) / 2}px;border-radius:50%;background:${color};"></div>
@@ -181,13 +181,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   const liveSync = useLiveSyncStore();
   const tripStore = useTripStore();
 
-  let map: L.Map | null = null;
-  let markersLayer: L.LayerGroup | null = null;
-  let routesLayer: L.LayerGroup | null = null;
-  let positionsLayer: L.LayerGroup | null = null;
-  let tracksLayer: L.LayerGroup | null = null;
-  let trackPlaybackLayer: L.LayerGroup | null = null;
-  let playbackMarker: L.Marker | null = null;
+  let map: leaflet.Map | null = null;
+  let markersLayer: leaflet.LayerGroup | null = null;
+  let routesLayer: leaflet.LayerGroup | null = null;
+  let positionsLayer: leaflet.LayerGroup | null = null;
+  let tracksLayer: leaflet.LayerGroup | null = null;
+  let trackPlaybackLayer: leaflet.LayerGroup | null = null;
+  let playbackMarker: leaflet.Marker | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let isProgrammaticMove = false;
 
@@ -203,7 +203,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     return cachedEmojiPin(point.icon, point.color, isLarge);
   }
 
-  function centerOnPoint(latlng: L.LatLngExpression, zoom: number) {
+  function centerOnPoint(latlng: leaflet.LatLngExpression, zoom: number) {
     if (!map) {
       return;
     }
@@ -250,7 +250,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
   }
 
   function fitBoundsWithCoveredBottom(
-    bounds: L.LatLngBoundsExpression,
+    bounds: leaflet.LatLngBoundsExpression,
     customPadding?: FitBoundsPaddingOptions
   ) {
     if (!map) {
@@ -291,7 +291,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     let focusedLatLngs: [number, number][] = [];
 
     if (drawers.mapFocusAllPhotos) {
-      focusedLatLngs = options.allTripPhotoPoints.value.map((p) => [p.lat, p.lng]);
+      focusedLatLngs = options.allTripPhotoPoints.value.map((point) => [point.lat, point.lng]);
     } else if (options.focusedExcursion.value) {
       const excursionStations = resolveStations(
         excursionStationKeys(options.focusedExcursion.value.spot_ids),
@@ -299,25 +299,25 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         options.travelItems.value
       );
       focusedLatLngs = excursionStations
-        .filter((s) => s.lat != null && s.lng != null)
-        .map((s) => [s.lat as number, s.lng as number]);
+        .filter((station) => station.lat != null && station.lng != null)
+        .map((station) => [station.lat as number, station.lng as number]);
 
       if (options.excursionPhotoPoints.value.length) {
-        for (const p of options.excursionPhotoPoints.value) {
-          focusedLatLngs.push([p.lat, p.lng]);
+        for (const photoPoint of options.excursionPhotoPoints.value) {
+          focusedLatLngs.push([photoPoint.lat, photoPoint.lng]);
         }
       }
     } else if (drawers.mapFocusDate) {
       focusedLatLngs = options.focusedDateStations.value
-        .filter((s) => s.lat != null && s.lng != null)
-        .map((s) => [s.lat as number, s.lng as number]);
+        .filter((station) => station.lat != null && station.lng != null)
+        .map((station) => [station.lat as number, station.lng as number]);
     } else if (drawers.mapFocusLocation) {
       focusedLatLngs = [[drawers.mapFocusLocation.lat, drawers.mapFocusLocation.lng]];
     } else if (drawers.mapFocusKey) {
-      const p = options.points.value.find((pt) => pt.key === drawers.mapFocusKey);
+      const focusPoint = options.points.value.find((pt) => pt.key === drawers.mapFocusKey);
 
-      if (p) {
-        focusedLatLngs = [[p.lat, p.lng]];
+      if (focusPoint) {
+        focusedLatLngs = [[focusPoint.lat, focusPoint.lng]];
       }
     } else if (options.focusedTrack.value) {
       focusedLatLngs = options.focusedTrackPoints.value.map((pt) => [pt.lat, pt.lng]);
@@ -367,11 +367,11 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }
 
     clearFocusState();
-    const catPoints = options.filteredPoints.value.filter((p) => p.category === category);
-    const latLngs = catPoints.map((p): L.LatLngExpression => [p.lat, p.lng]);
+    const catPoints = options.filteredPoints.value.filter((point) => point.category === category);
+    const latLngs = catPoints.map((point): leaflet.LatLngExpression => [point.lat, point.lng]);
 
     if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
+      fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 14);
     }
@@ -383,10 +383,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }
 
     clearFocusState();
-    const latLngs = options.filteredPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+    const latLngs = options.filteredPoints.value.map((point): leaflet.LatLngExpression => [
+      point.lat,
+      point.lng,
+    ]);
 
     if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
+      fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 13);
     } else {
@@ -401,10 +404,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }
 
     clearFocusState();
-    const latLngs = options.vacationPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+    const latLngs = options.vacationPoints.value.map((point): leaflet.LatLngExpression => [
+      point.lat,
+      point.lng,
+    ]);
 
     if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
+      fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 13);
     } else {
@@ -419,13 +425,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }
 
     clearFocusState();
-    const latLngs = options.accommodationPoints.value.map((p): L.LatLngExpression => [
-      p.lat,
-      p.lng,
+    const latLngs = options.accommodationPoints.value.map((point): leaflet.LatLngExpression => [
+      point.lat,
+      point.lng,
     ]);
 
     if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
+      fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 13);
     }
@@ -437,10 +443,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }
 
     clearFocusState();
-    const latLngs = options.homePoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+    const latLngs = options.homePoints.value.map((point): leaflet.LatLngExpression => [
+      point.lat,
+      point.lng,
+    ]);
 
     if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs));
+      fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
       centerOnPoint(latLngs[0], 13);
     }
@@ -451,10 +460,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       return;
     }
 
-    const latLngs = options.allTripPhotoPoints.value.map((p): L.LatLngExpression => [p.lat, p.lng]);
+    const latLngs = options.allTripPhotoPoints.value.map((point): leaflet.LatLngExpression => [
+      point.lat,
+      point.lng,
+    ]);
 
     if (latLngs.length > 1) {
-      fitBoundsWithCoveredBottom(L.latLngBounds(latLngs), {
+      fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs), {
         paddingTop: 190,
         paddingBottom: Math.max((options.coveredBottomPx?.value ?? 0) + 48, 120),
         paddingLeft: (options.coveredLeftPx?.value ?? 0) + 90,
@@ -472,12 +484,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
 
     markersLayer.clearLayers();
 
-    const latLngs: L.LatLngExpression[] = [];
+    const latLngs: leaflet.LatLngExpression[] = [];
 
     for (const point of options.visiblePoints.value) {
-      const latlng: L.LatLngExpression = [point.lat, point.lng];
+      const latlng: leaflet.LatLngExpression = [point.lat, point.lng];
       latLngs.push(latlng);
-      const marker = L.marker(latlng, { icon: iconFor(point), title: point.title })
+      const marker = leaflet
+        .marker(latlng, { icon: iconFor(point), title: point.title })
         .addTo(markersLayer)
         .on('click', () => options.onPointClick(point));
       marker.bindTooltip(point.title, {
@@ -496,41 +509,43 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
           options.travelItems.value
         )
       : [];
-    const excursionLatLngs: L.LatLngExpression[] = excursionStations
-      .filter((s) => s.lat != null && s.lng != null)
-      .map((s): L.LatLngExpression => [s.lat as number, s.lng as number]);
+    const excursionLatLngs: leaflet.LatLngExpression[] = excursionStations
+      .filter((station) => station.lat != null && station.lng != null)
+      .map((station): leaflet.LatLngExpression => [station.lat as number, station.lng as number]);
 
     if (excursion && options.excursionPhotoPoints.value.length) {
-      for (const p of options.excursionPhotoPoints.value) {
-        excursionLatLngs.push([p.lat, p.lng]);
+      for (const photoPoint of options.excursionPhotoPoints.value) {
+        excursionLatLngs.push([photoPoint.lat, photoPoint.lng]);
       }
     }
 
-    const dateLatLngs: L.LatLngExpression[] =
+    const dateLatLngs: leaflet.LatLngExpression[] =
       !excursion && drawers.mapFocusDate
         ? options.focusedDateStations.value
-            .filter((s) => s.lat != null && s.lng != null)
-            .map((s): L.LatLngExpression => [s.lat as number, s.lng as number])
+            .filter((station) => station.lat != null && station.lng != null)
+            .map((station): leaflet.LatLngExpression => [
+              station.lat as number,
+              station.lng as number,
+            ])
         : [];
 
     const focusPoint = drawers.mapFocusKey
-      ? options.points.value.find((p) => p.key === drawers.mapFocusKey)
+      ? options.points.value.find((pt) => pt.key === drawers.mapFocusKey)
       : null;
 
     if (drawers.mapFocusAllPhotos && options.allTripPhotoPoints.value.length) {
-      const photoLatLngs = options.allTripPhotoPoints.value.map((p): L.LatLngExpression => [
-        p.lat,
-        p.lng,
-      ]);
+      const photoLatLngs = options.allTripPhotoPoints.value.map(
+        (photoPoint): leaflet.LatLngExpression => [photoPoint.lat, photoPoint.lng]
+      );
 
       if (photoLatLngs.length > 1) {
-        fitBoundsWithCoveredBottom(L.latLngBounds(photoLatLngs));
+        fitBoundsWithCoveredBottom(leaflet.latLngBounds(photoLatLngs));
       } else if (photoLatLngs.length === 1) {
         centerOnPoint(photoLatLngs[0], 14);
       }
     } else if (excursion) {
       if (excursionLatLngs.length > 1) {
-        fitBoundsWithCoveredBottom(L.latLngBounds(excursionLatLngs));
+        fitBoundsWithCoveredBottom(leaflet.latLngBounds(excursionLatLngs));
       } else if (excursionLatLngs.length === 1) {
         centerOnPoint(excursionLatLngs[0], 14);
       }
@@ -538,7 +553,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       centerOnPoint([drawers.mapFocusLocation.lat, drawers.mapFocusLocation.lng], 16);
     } else if (drawers.mapFocusDate && dateLatLngs.length) {
       if (dateLatLngs.length > 1) {
-        fitBoundsWithCoveredBottom(L.latLngBounds(dateLatLngs));
+        fitBoundsWithCoveredBottom(leaflet.latLngBounds(dateLatLngs));
       } else {
         centerOnPoint(dateLatLngs[0], 14);
       }
@@ -557,58 +572,69 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     const tourRoleFilterActive =
       options.tourRoleFilter?.value && options.tourRoleFilter.value.length > 0;
 
-    for (const t of options.travelItems.value) {
-      if (drawers.mapFocusDate && t.date !== drawers.mapFocusDate) {
+    for (const travelItem of options.travelItems.value) {
+      if (drawers.mapFocusDate && travelItem.date !== drawers.mapFocusDate) {
         continue;
       }
 
       if (tourRoleFilterActive) {
-        const tRole = t.role ?? 'arrival';
+        const itemRole = travelItem.role ?? 'arrival';
 
-        if (!options.tourRoleFilter!.value!.includes(tRole)) {
+        if (!options.tourRoleFilter!.value!.includes(itemRole)) {
           continue;
         }
       }
 
-      if (t.from_lat != null && t.from_lng != null && t.to_lat != null && t.to_lng != null) {
-        const leg = t.legs?.[0];
+      if (
+        travelItem.from_lat != null &&
+        travelItem.from_lng != null &&
+        travelItem.to_lat != null &&
+        travelItem.to_lng != null
+      ) {
+        const leg = travelItem.legs?.[0];
         const geometryCoords = parseRouteGeometry(leg?.route_geometry);
 
         if (geometryCoords) {
-          L.polyline(geometryCoords, {
-            color: getRouteColor(t.type, leg?.routing_profile),
-            weight: 4,
-            opacity: 0.85,
-          }).addTo(routesLayer);
+          leaflet
+            .polyline(geometryCoords, {
+              color: getRouteColor(travelItem.type, leg?.routing_profile),
+              weight: 4,
+              opacity: 0.85,
+            })
+            .addTo(routesLayer);
         } else {
-          L.polyline(
-            arcRoute([
-              [t.from_lat, t.from_lng],
-              [t.to_lat, t.to_lng],
-            ]),
-            {
-              color: TRAVEL_COLOR,
-              weight: 3,
-              opacity: 0.65,
-              dashArray: '6 6',
-            }
-          ).addTo(routesLayer);
+          leaflet
+            .polyline(
+              arcRoute([
+                [travelItem.from_lat, travelItem.from_lng],
+                [travelItem.to_lat, travelItem.to_lng],
+              ]),
+              {
+                color: TRAVEL_COLOR,
+                weight: 3,
+                opacity: 0.65,
+                dashArray: '6 6',
+              }
+            )
+            .addTo(routesLayer);
         }
       }
     }
 
     if (!options.focusedExcursion.value && drawers.mapFocusDate) {
-      const coords: L.LatLngExpression[] = options.focusedDateStations.value
-        .filter((s) => s.lat != null && s.lng != null)
-        .map((s): L.LatLngExpression => [s.lat as number, s.lng as number]);
+      const coords: leaflet.LatLngExpression[] = options.focusedDateStations.value
+        .filter((station) => station.lat != null && station.lng != null)
+        .map((station): leaflet.LatLngExpression => [station.lat as number, station.lng as number]);
 
       if (coords.length >= 2) {
-        L.polyline(arcRoute(coords), {
-          color: '#e08e45',
-          weight: 3,
-          opacity: 0.65,
-          dashArray: '6 6',
-        }).addTo(routesLayer);
+        leaflet
+          .polyline(arcRoute(coords), {
+            color: '#e08e45',
+            weight: 3,
+            opacity: 0.65,
+            dashArray: '6 6',
+          })
+          .addTo(routesLayer);
       }
 
       return;
@@ -650,23 +676,29 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         }
 
         const leg = excursion.legs?.find(
-          (l) => l.position === i || (l.from_spot_id === s1.id && l.to_spot_id === s2.id)
+          (excursionLeg) =>
+            excursionLeg.position === i ||
+            (excursionLeg.from_spot_id === s1.id && excursionLeg.to_spot_id === s2.id)
         );
         const geometryCoords = parseRouteGeometry(leg?.route_geometry);
 
         if (geometryCoords) {
-          L.polyline(geometryCoords, {
-            color: getRouteColor(leg?.transport_type, leg?.routing_profile),
-            weight: 4,
-            opacity: 0.85,
-          }).addTo(routesLayer);
+          leaflet
+            .polyline(geometryCoords, {
+              color: getRouteColor(leg?.transport_type, leg?.routing_profile),
+              weight: 4,
+              opacity: 0.85,
+            })
+            .addTo(routesLayer);
         } else {
-          L.polyline(arcPoints([s1.lat, s1.lng], [s2.lat, s2.lng]), {
-            color: getRouteColor(leg?.transport_type, leg?.routing_profile),
-            weight: 3,
-            opacity: 0.65,
-            dashArray: '6 6',
-          }).addTo(routesLayer);
+          leaflet
+            .polyline(arcPoints([s1.lat, s1.lng], [s2.lat, s2.lng]), {
+              color: getRouteColor(leg?.transport_type, leg?.routing_profile),
+              weight: 3,
+              opacity: 0.65,
+              dashArray: '6 6',
+            })
+            .addTo(routesLayer);
         }
       }
     }
@@ -689,15 +721,16 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       return;
     }
 
-    const coords: L.LatLngExpression[] = trackPts.map((p) => [p.lat, p.lng]);
-    L.polyline(coords, { color: '#2f6fed', weight: 4, opacity: 0.85 }).addTo(tracksLayer);
+    const coords: leaflet.LatLngExpression[] = trackPts.map((point) => [point.lat, point.lng]);
+    leaflet.polyline(coords, { color: '#2f6fed', weight: 4, opacity: 0.85 }).addTo(tracksLayer);
 
     const startPt = trackPts[0];
-    L.marker([startPt.lat, startPt.lng], {
-      icon: cachedEmojiPin(TRACK_START_ICON, '#3f8f5c'),
-      zIndexOffset: 800,
-      title: 'Start',
-    })
+    leaflet
+      .marker([startPt.lat, startPt.lng], {
+        icon: cachedEmojiPin(TRACK_START_ICON, '#3f8f5c'),
+        zIndexOffset: 800,
+        title: 'Start',
+      })
       .bindTooltip('Start', {
         direction: 'top',
         offset: [0, -28],
@@ -710,11 +743,12 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       .addTo(tracksLayer);
 
     const goalPt = trackPts[trackPts.length - 1];
-    L.marker([goalPt.lat, goalPt.lng], {
-      icon: cachedEmojiPin(TRACK_GOAL_ICON, '#c1503f'),
-      zIndexOffset: 800,
-      title: 'Ziel',
-    })
+    leaflet
+      .marker([goalPt.lat, goalPt.lng], {
+        icon: cachedEmojiPin(TRACK_GOAL_ICON, '#c1503f'),
+        zIndexOffset: 800,
+        title: 'Ziel',
+      })
       .bindTooltip('Ziel', {
         direction: 'top',
         offset: [0, -28],
@@ -726,7 +760,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       })
       .addTo(tracksLayer);
 
-    fitBoundsWithCoveredBottom(L.latLngBounds(coords));
+    fitBoundsWithCoveredBottom(leaflet.latLngBounds(coords));
     updateTrackPlaybackMarker();
   }
 
@@ -753,11 +787,13 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
 
     if (!playbackMarker) {
       trackPlaybackLayer.clearLayers();
-      playbackMarker = L.marker([pos.lat, pos.lng], {
-        icon: trackPlaybackIcon(),
-        zIndexOffset: 1200,
-        title: 'Aktuelle Position',
-      }).addTo(trackPlaybackLayer);
+      playbackMarker = leaflet
+        .marker([pos.lat, pos.lng], {
+          icon: trackPlaybackIcon(),
+          zIndexOffset: 1200,
+          title: 'Aktuelle Position',
+        })
+        .addTo(trackPlaybackLayer);
     } else {
       playbackMarker.setLatLng([pos.lat, pos.lng]);
     }
@@ -780,24 +816,28 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         options.ownHeading.value == null
           ? null
           : (options.ownHeading.value - options.currentBearing.value + 360) % 360;
-      L.marker([options.ownPosition.value.lat, options.ownPosition.value.lng], {
-        icon: compassPin(auth.user.avatar, '#2f6fed', coneRotation),
-        zIndexOffset: 1000,
-        pane: 'live-positions',
-      }).addTo(positionsLayer);
+      leaflet
+        .marker([options.ownPosition.value.lat, options.ownPosition.value.lng], {
+          icon: compassPin(auth.user.avatar, '#2f6fed', coneRotation),
+          zIndexOffset: 1000,
+          pane: 'live-positions',
+        })
+        .addTo(positionsLayer);
     }
 
     for (const [userId, position] of Object.entries(liveSync.memberPositions)) {
-      const user = options.users.value.find((u) => u.id === Number(userId));
+      const user = options.users.value.find((memberUser) => memberUser.id === Number(userId));
 
       if (!user) {
         continue;
       }
 
-      L.marker([position.lat, position.lng], {
-        icon: cachedEmojiPin(user.avatar, '#2f6fed'),
-        pane: 'live-positions',
-      }).addTo(positionsLayer);
+      leaflet
+        .marker([position.lat, position.lng], {
+          icon: cachedEmojiPin(user.avatar, '#2f6fed'),
+          pane: 'live-positions',
+        })
+        .addTo(positionsLayer);
     }
   }
 
@@ -816,7 +856,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       tripStore.currentTrip
     );
 
-    map = L.map(mapEl, {
+    map = leaflet.map(mapEl, {
       center: defaultCenter,
       zoom: defaultZoom,
       rotate: true,
@@ -828,10 +868,12 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     });
     map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
     mapEl.setAttribute('data-tiles-loading', 'true');
-    const baseTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap-Mitwirkende',
-      maxZoom: 19,
-    }).addTo(map);
+    const baseTileLayer = leaflet
+      .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap-Mitwirkende',
+        maxZoom: 19,
+      })
+      .addTo(map);
     baseTileLayer.on('loading', () => {
       mapEl.setAttribute('data-tiles-loading', 'true');
       mapEl.removeAttribute('data-tiles-loaded');
@@ -841,11 +883,11 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       mapEl.setAttribute('data-tiles-loaded', 'true');
     });
 
-    routesLayer = L.layerGroup().addTo(map);
-    markersLayer = L.layerGroup().addTo(map);
-    positionsLayer = L.layerGroup().addTo(map);
-    tracksLayer = L.layerGroup().addTo(map);
-    trackPlaybackLayer = L.layerGroup().addTo(map);
+    routesLayer = leaflet.layerGroup().addTo(map);
+    markersLayer = leaflet.layerGroup().addTo(map);
+    positionsLayer = leaflet.layerGroup().addTo(map);
+    tracksLayer = leaflet.layerGroup().addTo(map);
+    trackPlaybackLayer = leaflet.layerGroup().addTo(map);
 
     renderMarkers();
     renderRoutes();

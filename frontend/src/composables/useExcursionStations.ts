@@ -38,7 +38,7 @@ export function useExcursionStations(
   });
 
   const hasMappedStations = computed(() =>
-    resolvedStations.value.some((s) => s.lat != null && s.lng != null)
+    resolvedStations.value.some((station) => station.lat != null && station.lng != null)
   );
 
   const routeLabel = computed(() => {
@@ -62,7 +62,8 @@ export function useExcursionStations(
 
     if (excursion.legs && excursion.legs.length > 0) {
       return (
-        excursion.legs.find((l) => !!l.departure_time)?.departure_time || excursion.departure_time
+        excursion.legs.find((leg) => !!leg.departure_time)?.departure_time ||
+        excursion.departure_time
       );
     }
 
@@ -74,7 +75,7 @@ export function useExcursionStations(
 
     if (excursion.legs && excursion.legs.length > 0) {
       return (
-        [...excursion.legs].reverse().find((l) => !!l.arrival_time)?.arrival_time ||
+        [...excursion.legs].reverse().find((leg) => !!leg.arrival_time)?.arrival_time ||
         excursion.arrival_time
       );
     }
@@ -108,7 +109,7 @@ export function useExcursionStations(
 
   const linkedTracks = computed(() => {
     const excursion = toValue(options.excursion);
-    return tracksStore.tracks.filter((t) => t.excursion_id === excursion.id);
+    return tracksStore.tracks.filter((track) => track.excursion_id === excursion.id);
   });
 
   return {

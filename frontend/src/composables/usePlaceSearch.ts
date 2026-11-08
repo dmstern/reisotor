@@ -245,7 +245,7 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
         return;
       }
 
-      const existingIds = new Set(results.value.map((r) => r.id).filter(Boolean));
+      const existingIds = new Set(results.value.map((resultItem) => resultItem.id).filter(Boolean));
       const newItems: PlaceSearchResult[] = [];
 
       for (const item of data) {
@@ -254,10 +254,10 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
         }
 
         const isDup = results.value.some(
-          (r) =>
-            Math.abs(r.lat - item.lat) < 0.0005 &&
-            Math.abs(r.lng - item.lng) < 0.0005 &&
-            r.name.toLowerCase() === item.name.toLowerCase()
+          (existingResult) =>
+            Math.abs(existingResult.lat - item.lat) < 0.0005 &&
+            Math.abs(existingResult.lng - item.lng) < 0.0005 &&
+            existingResult.name.toLowerCase() === item.name.toLowerCase()
         );
 
         if (!isDup) {

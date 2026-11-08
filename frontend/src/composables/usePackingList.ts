@@ -87,35 +87,37 @@ export function usePackingList(tripIdOverride?: number) {
   watch(() => liveSync.domainVersion.packing, load);
 
   const categories = computed(() => {
-    const set = new Set(items.value.map((i) => i.category?.trim()).filter((c): c is string => !!c));
+    const set = new Set(
+      items.value.map((i) => i.category?.trim()).filter((cat): cat is string => !!cat)
+    );
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
   });
 
   const subcategories = computed(() => {
     const set = new Set(
-      items.value.map((i) => i.subcategory?.trim()).filter((c): c is string => !!c)
+      items.value.map((i) => i.subcategory?.trim()).filter((subcat): subcat is string => !!subcat)
     );
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
   });
 
   const lists = computed<PackingListGroup[]>(() => {
-    const memberIds = new Set(users.value.map((u) => u.id));
+    const memberIds = new Set(users.value.map((user) => user.id));
     const shared: PackingListGroup = {
       key: 'shared',
       title: '👥 Gemeinsame Packliste',
       ownerId: null,
       items: items.value.filter((i) => i.owner_id == null || !memberIds.has(i.owner_id)),
     };
-    const perUser: PackingListGroup[] = users.value.map((u) => ({
-      key: `user-${u.id}`,
+    const perUser: PackingListGroup[] = users.value.map((user) => ({
+      key: `user-${user.id}`,
       title:
-        u.id === auth.user?.id
-          ? `${u.avatar} Meine Packliste`
-          : `${u.avatar} Packliste von ${u.username}`,
-      ownerId: u.id,
+        user.id === auth.user?.id
+          ? `${user.avatar} Meine Packliste`
+          : `${user.avatar} Packliste von ${user.username}`,
+      ownerId: user.id,
       items: items.value.filter(
         (i) =>
-          i.owner_id === u.id ||
+          i.owner_id === user.id ||
           (users.value.length <= 1 && (i.owner_id == null || !memberIds.has(i.owner_id)))
       ),
     }));
@@ -124,8 +126,8 @@ export function usePackingList(tripIdOverride?: number) {
       return perUser;
     }
 
-    const mine = perUser.filter((l) => l.ownerId === auth.user?.id);
-    const others = perUser.filter((l) => l.ownerId !== auth.user?.id);
+    const mine = perUser.filter((group) => group.ownerId === auth.user?.id);
+    const others = perUser.filter((group) => group.ownerId !== auth.user?.id);
     return [...mine, shared, ...others];
   });
 

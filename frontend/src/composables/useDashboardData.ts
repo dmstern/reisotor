@@ -55,7 +55,7 @@ export function useDashboardData(tripIdOverride?: number): UseDashboardDataRetur
     deriveTravelItems(excursionsStore.excursions, spotsStore.spots)
   );
   const accommodations = computed(() =>
-    spotsStore.spots.filter((s) => s.category === 'Unterkunft')
+    spotsStore.spots.filter((spot) => spot.category === 'Unterkunft')
   );
   const diaryEntries = ref<DiaryEntry[]>([]);
   const notes = ref<Note[]>([]);

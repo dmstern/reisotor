@@ -111,12 +111,12 @@ export function useLandingScrollytelling(
       const rect = trigger.getBoundingClientRect();
 
       if (rect.top <= triggerLine) {
-        const s = trigger.getAttribute('data-step');
-        const h = trigger.getAttribute('data-highlight');
+        const stepAttr = trigger.getAttribute('data-step');
+        const highlightAttr = trigger.getAttribute('data-highlight');
 
-        if (s !== null && h !== null) {
-          foundStep = parseInt(s, 10);
-          foundHighlight = parseInt(h, 10);
+        if (stepAttr !== null && highlightAttr !== null) {
+          foundStep = parseInt(stepAttr, 10);
+          foundHighlight = parseInt(highlightAttr, 10);
         }
       } else {
         break;

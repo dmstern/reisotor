@@ -103,7 +103,7 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
       const remote = await api.get<{ draft_key: string; data: T; updated_at: string }[]>(
         `/drafts?trip_id=${tripId}`
       );
-      const match = remote.find((d) => d.draft_key === key);
+      const match = remote.find((draft) => draft.draft_key === key);
 
       if (match && (!best || match.updated_at > best.updated_at)) {
         best = match;

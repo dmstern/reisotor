@@ -67,11 +67,11 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
     );
     const rootRectBefore = rootRef.value.getBoundingClientRect();
     const tileOffsets = Array.from(stackTiles).map((el) => {
-      const r = el.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
       return {
-        centerX: r.left + r.width / 2 - rootRectBefore.left,
-        centerY: r.top + r.height / 2 - rootRectBefore.top,
-        width: r.width,
+        centerX: rect.left + rect.width / 2 - rootRectBefore.left,
+        centerY: rect.top + rect.height / 2 - rootRectBefore.top,
+        width: rect.width,
       };
     });
     const initialHeight = rootRectBefore.height;

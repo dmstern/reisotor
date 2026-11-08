@@ -108,7 +108,7 @@ export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherRe
 
       try {
         const days = await fetchMergedWeather(tripId, lat, lng, model);
-        dayWeather.value = days.find((d) => d.date === date) ?? null;
+        dayWeather.value = days.find((day) => day.date === date) ?? null;
       } catch {
         // best effort wie überall sonst bei Wetter
       }

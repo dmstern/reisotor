@@ -92,7 +92,7 @@ export function usePushSettings() {
   }
 
   const hasAnyEmailPreference = computed(() =>
-    NOTIFICATION_DOMAINS.some((d) => notificationPrefs.emailPreferences?.[d] === true)
+    NOTIFICATION_DOMAINS.some((domain) => notificationPrefs.emailPreferences?.[domain] === true)
   );
 
   const isPushDefault = computed(() => {
@@ -109,7 +109,7 @@ export function usePushSettings() {
     }
 
     if (hasAnyEmailPreference.value) {
-      const resetEmail = Object.fromEntries(NOTIFICATION_DOMAINS.map((d) => [d, false]));
+      const resetEmail = Object.fromEntries(NOTIFICATION_DOMAINS.map((domain) => [domain, false]));
       await notificationPrefs.updateEmail(resetEmail);
     }
   }

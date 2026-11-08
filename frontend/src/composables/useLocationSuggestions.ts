@@ -102,8 +102,8 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
 
     const addresses: string[] = [];
 
-    for (const p of places) {
-      const addr = (p.formatted_address || p.address || '').trim();
+    for (const place of places) {
+      const addr = (place.formatted_address || place.address || '').trim();
 
       if (addr && !addresses.includes(addr)) {
         addresses.push(addr);
@@ -112,8 +112,8 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
 
     const categories: string[] = [];
 
-    for (const p of places) {
-      const cat = (p.category || '').trim();
+    for (const place of places) {
+      const cat = (place.category || '').trim();
 
       if (cat && !categories.includes(cat)) {
         categories.push(cat);
@@ -234,27 +234,29 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
 
   // --- Location Search Sparkle Feature (Issue: Missing Spot Location) ---
   const locationSearchCandidates = computed(() => {
-    const t = (options.title?.value?.trim() || options.editTitleInput.value?.trim()) ?? '';
-    const c = (options.category?.value?.trim() || options.editCategoryInput.value?.trim()) ?? '';
-    const a = (options.address?.value?.trim() || options.editAddressInput.value?.trim()) ?? '';
+    const title = (options.title?.value?.trim() || options.editTitleInput.value?.trim()) ?? '';
+    const category =
+      (options.category?.value?.trim() || options.editCategoryInput.value?.trim()) ?? '';
+    const address =
+      (options.address?.value?.trim() || options.editAddressInput.value?.trim()) ?? '';
 
     const candidates: string[] = [];
 
     // 1. Titel + Kategorie (falls vorhanden und noch nicht im Titel enthalten) bzw. reiner Titel
-    if (t) {
-      if (c && !t.toLowerCase().includes(c.toLowerCase())) {
-        candidates.push(`${t} ${c}`);
+    if (title) {
+      if (category && !title.toLowerCase().includes(category.toLowerCase())) {
+        candidates.push(`${title} ${category}`);
       }
 
-      candidates.push(t);
+      candidates.push(title);
     }
 
     // 2. Adresse (falls vorhanden)
-    if (a) {
-      candidates.push(a);
+    if (address) {
+      candidates.push(address);
 
-      if (t) {
-        candidates.push(`${t}, ${a}`);
+      if (title) {
+        candidates.push(`${title}, ${address}`);
       }
     }
 
