@@ -185,14 +185,12 @@ export function useTourForm(options: UseTourFormOptions) {
         (id) => id !== trk.id
       );
       tracksToShareOnSave.value.delete(trk.id);
-    } else {
-      if (trk.visibility === 'private' && users.value.length > 1) {
-        if (onTrackPrivateWarning) {
-          onTrackPrivateWarning(trk, activeExcursionForm.value.title.trim() || 'Tour');
-        }
-      } else {
-        activeExcursionForm.value.track_ids.push(trk.id);
+    } else if (trk.visibility === 'private' && users.value.length > 1) {
+      if (onTrackPrivateWarning) {
+        onTrackPrivateWarning(trk, activeExcursionForm.value.title.trim() || 'Tour');
       }
+    } else {
+      activeExcursionForm.value.track_ids.push(trk.id);
     }
   }
 

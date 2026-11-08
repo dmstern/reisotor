@@ -367,6 +367,40 @@ function isExecutingAsMain() {
   }
 }
 
+function fixAutoFixableCves(dir, cooldownIso) {
+  const initialReport = classifyAuditReport(runNpmAudit(dir), dir);
+
+  if (initialReport.autoFixable.length === 0) {
+    console.log(`  -> Keine auto-fixable CVEs vorhanden.`);
+    return;
+  }
+
+  console.log(
+    `  -> ${initialReport.autoFixable.length} auto-fixable CVEs gefunden. Führe Stufe 1 (mit Cooldown) aus...`
+  );
+
+  try {
+    runNpmAuditFix(dir, cooldownIso);
+  } catch (err) {
+    console.warn(`  ⚠️ Warnung bei Stufe-1-Fix in ${dir}:`, err.message);
+  }
+
+  // Re-Audit nach Stufe 1
+  const intermediateReport = classifyAuditReport(runNpmAudit(dir), dir);
+
+  if (intermediateReport.autoFixable.length > 0) {
+    console.log(
+      `  -> ${intermediateReport.autoFixable.length} auto-fixable CVEs verbleiben. Führe Stufe 2 (ohne Cooldown) aus...`
+    );
+
+    try {
+      runNpmAuditFix(dir, null);
+    } catch (err) {
+      console.warn(`  ⚠️ Warnung bei Stufe-2-Fix in ${dir}:`, err.message);
+    }
+  }
+}
+
 if (isExecutingAsMain()) {
   const { mode, cooldownDays, summaryFile, strictAll } = parseArgs(process.argv.slice(2));
 
@@ -391,36 +425,7 @@ if (isExecutingAsMain()) {
 
     for (const dir of TARGET_DIRS) {
       console.log(`\n🔍 Prüfe Verzeichnis "${dir}" auf behebbare CVEs...`);
-      const initialReport = classifyAuditReport(runNpmAudit(dir), dir);
-
-      if (initialReport.autoFixable.length > 0) {
-        console.log(
-          `  -> ${initialReport.autoFixable.length} auto-fixable CVEs gefunden. Führe Stufe 1 (mit Cooldown) aus...`
-        );
-
-        try {
-          runNpmAuditFix(dir, cooldownIso);
-        } catch (e) {
-          console.warn(`  ⚠️ Warnung bei Stufe-1-Fix in ${dir}:`, e.message);
-        }
-
-        // Re-Audit nach Stufe 1
-        const intermediateReport = classifyAuditReport(runNpmAudit(dir), dir);
-
-        if (intermediateReport.autoFixable.length > 0) {
-          console.log(
-            `  -> ${intermediateReport.autoFixable.length} auto-fixable CVEs verbleiben. Führe Stufe 2 (ohne Cooldown) aus...`
-          );
-
-          try {
-            runNpmAuditFix(dir, null);
-          } catch (e) {
-            console.warn(`  ⚠️ Warnung bei Stufe-2-Fix in ${dir}:`, e.message);
-          }
-        }
-      } else {
-        console.log(`  -> Keine auto-fixable CVEs vorhanden.`);
-      }
+      fixAutoFixableCves(dir, cooldownIso);
     }
   } else if (mode === 'update') {
     const cooldownIso = computeCooldownDate(cooldownDays);

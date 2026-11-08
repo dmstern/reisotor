@@ -296,9 +296,9 @@ router.beforeEach(async (to) => {
           query: to.query,
           hash: to.hash,
         };
-      } else {
-        return { name: 'trips' };
       }
+
+      return { name: 'trips' };
     }
   }
 

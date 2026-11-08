@@ -226,9 +226,13 @@ export function isSafeUrl(urlString: string): boolean {
   if (ipType === 4) {
     const parts = hostname.split('.').map(Number);
     return !isPrivateIpv4(parts[0], parts[1]);
-  } else if (ipType === 6) {
+  }
+
+  if (ipType === 6) {
     return !isPrivateIpv6(hostname);
-  } else if (/^(0x[0-9a-f]+|\d+)$/i.test(hostname)) {
+  }
+
+  if (/^(0x[0-9a-f]+|\d+)$/i.test(hostname)) {
     return false;
   }
 

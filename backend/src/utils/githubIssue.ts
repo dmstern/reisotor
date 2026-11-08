@@ -149,7 +149,7 @@ export async function uploadFeedbackScreenshot(
 
 // Wie push.ts's VAPID-Keys: Feature ist optional, ohne gesetzten Token bleibt die App lauffähig,
 // nur ohne In-App-Feedback (siehe routes/feedback.ts).
-export const githubIssuesEnabled = !process.env.GITHUB_TOKEN ? false : true;
+export const githubIssuesEnabled = !!process.env.GITHUB_TOKEN;
 
 /** Legt ein echtes GitHub-Issue über die REST-API an. Anders als mapsLink.ts's best-effort-fetch
  *  (dort ist ein Fehlschlag ein akzeptabler stiller Fallback) wird hier der Fehler an den Aufrufer

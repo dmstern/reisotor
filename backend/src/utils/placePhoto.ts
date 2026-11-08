@@ -410,6 +410,34 @@ async function extractPhotoFromPage(
   return null;
 }
 
+async function collectPhotosFromPages(opts: {
+  lang: string;
+  pages: WikiPage[];
+  rawName: string;
+  city?: string;
+  isBanner: boolean;
+  photos: string[];
+  seen: Set<string>;
+  limit: number;
+}) {
+  for (const page of opts.pages) {
+    if (opts.photos.length >= opts.limit) {
+      break;
+    }
+
+    if (!isTitleMatch(page.title, opts.rawName, opts.city)) {
+      continue;
+    }
+
+    const found = await extractPhotoFromPage(opts.lang, page, opts.isBanner);
+
+    if (found && !opts.seen.has(found)) {
+      opts.seen.add(found);
+      opts.photos.push(found);
+    }
+  }
+}
+
 const BING_FETCH_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
@@ -1087,20 +1115,16 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
           pithumbsize: isBanner ? '2000' : '1000',
         });
 
-        for (const p of pages) {
-          if (photos.length >= limit) {
-            break;
-          }
-
-          if (isTitleMatch(p.title, rawName, city)) {
-            const found = await extractPhotoFromPage(lang, p, isBanner);
-
-            if (found && !seen.has(found)) {
-              seen.add(found);
-              photos.push(found);
-            }
-          }
-        }
+        await collectPhotosFromPages({
+          lang,
+          pages,
+          rawName,
+          city,
+          isBanner,
+          photos,
+          seen,
+          limit,
+        });
       }
     }
 
@@ -1125,20 +1149,16 @@ export async function fetchPlacePhotos(options: PlacePhotoOptions, limit = 10): 
           pithumbsize: isBanner ? '2000' : '1000',
         });
 
-        for (const p of pages) {
-          if (photos.length >= limit) {
-            break;
-          }
-
-          if (isTitleMatch(p.title, rawName, city)) {
-            const found = await extractPhotoFromPage(lang, p, isBanner);
-
-            if (found && !seen.has(found)) {
-              seen.add(found);
-              photos.push(found);
-            }
-          }
-        }
+        await collectPhotosFromPages({
+          lang,
+          pages,
+          rawName,
+          city,
+          isBanner,
+          photos,
+          seen,
+          limit,
+        });
       }
     }
 

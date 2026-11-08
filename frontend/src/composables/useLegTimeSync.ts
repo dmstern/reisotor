@@ -265,23 +265,23 @@ export function useLegTimeSync(options: UseLegTimeSyncOptions) {
             elapsedMinutes: elapsedMins,
             canToggleLink: true,
           };
-        } else {
-          return {
-            type: 'mismatch',
-            text: `Zeitfenster: ${formatDuration(elapsedMins * 60)} • Reisedauer: ${formatDuration(durSec)}`,
-            elapsedMinutes: elapsedMins,
-            diffMinutes: diffMins,
-            canToggleLink: true,
-          };
         }
-      } else {
+
         return {
-          type: 'info',
-          text: `Reisedauer: ${formatDuration(elapsedMins * 60)}`,
+          type: 'mismatch',
+          text: `Zeitfenster: ${formatDuration(elapsedMins * 60)} • Reisedauer: ${formatDuration(durSec)}`,
           elapsedMinutes: elapsedMins,
-          canToggleLink: false,
+          diffMinutes: diffMins,
+          canToggleLink: true,
         };
       }
+
+      return {
+        type: 'info',
+        text: `Reisedauer: ${formatDuration(elapsedMins * 60)}`,
+        elapsedMinutes: elapsedMins,
+        canToggleLink: false,
+      };
     }
 
     if (durSec != null) {

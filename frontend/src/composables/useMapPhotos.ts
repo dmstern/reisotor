@@ -229,48 +229,46 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
       }
 
       for (const entry of diaryEntries) {
-        if (entry.images && entry.images.length) {
-          for (const img of entry.images) {
-            const url = typeof img === 'string' ? img : img.url;
+        for (const img of entry.images ?? []) {
+          const url = typeof img === 'string' ? img : img.url;
 
-            if (!url || seenUrls.has(url)) {
-              continue;
-            }
-
-            seenUrls.add(url);
-            const original_name =
-              typeof img === 'string'
-                ? url.split('/').pop() || 'Foto'
-                : img.original_name || url.split('/').pop() || 'Foto';
-            candidates.push({
-              url,
-              original_name,
-              filename: url.split('/').pop(),
-              created_at: entry.created_at,
-              dateFallback: entry.date || entry.created_at,
-            });
+          if (!url || seenUrls.has(url)) {
+            continue;
           }
+
+          seenUrls.add(url);
+          const original_name =
+            typeof img === 'string'
+              ? url.split('/').pop() || 'Foto'
+              : img.original_name || url.split('/').pop() || 'Foto';
+          candidates.push({
+            url,
+            original_name,
+            filename: url.split('/').pop(),
+            created_at: entry.created_at,
+            dateFallback: entry.date || entry.created_at,
+          });
         }
 
-        if (entry.content && entry.content.includes('<img')) {
-          const matches = entry.content.matchAll(/<img[^>]+src=["']([^"']+)["']/gi);
+        const matches = entry.content?.includes('<img')
+          ? entry.content.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)
+          : [];
 
-          for (const match of matches) {
-            const url = match[1];
+        for (const match of matches) {
+          const url = match[1];
 
-            if (!url || seenUrls.has(url)) {
-              continue;
-            }
-
-            seenUrls.add(url);
-            candidates.push({
-              url,
-              original_name: url.split('/').pop() || 'Foto',
-              filename: url.split('/').pop(),
-              created_at: entry.created_at,
-              dateFallback: entry.date || entry.created_at,
-            });
+          if (!url || seenUrls.has(url)) {
+            continue;
           }
+
+          seenUrls.add(url);
+          candidates.push({
+            url,
+            original_name: url.split('/').pop() || 'Foto',
+            filename: url.split('/').pop(),
+            created_at: entry.created_at,
+            dateFallback: entry.date || entry.created_at,
+          });
         }
       }
 

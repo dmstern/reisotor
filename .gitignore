@@ -6,6 +6,8 @@
 .env
 
 node_modules/
+venv/
+.venv/
 
 # e2e-Testsuite (siehe /e2e): Abhaengigkeiten, wegwerfbare Test-DB, Login-Session, Testartefakte
 # und zur Laufzeit generierte Fixtures/Ad-hoc-Checks werden nie committet.

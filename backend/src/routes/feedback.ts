@@ -106,9 +106,9 @@ async function processAndUploadScreenshot(screenshot: string): Promise<ProcessSc
 
   if (uploadResult.ok) {
     return { imageUrl: uploadResult.url, screenshotError: null };
-  } else {
-    return { imageUrl: null, screenshotError: uploadResult.error };
   }
+
+  return { imageUrl: null, screenshotError: uploadResult.error };
 }
 
 export const feedbackRoutes: FastifyPluginAsync = async (app) => {

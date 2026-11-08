@@ -381,6 +381,81 @@ function extractMetaTagsAll(html: string, nameOrProperty: string): string[] {
   return results;
 }
 
+function parsePostalAddress(addr: Record<string, unknown> | string | undefined): {
+  address: string | null;
+  city: string | null;
+} {
+  if (!addr) {
+    return { address: null, city: null };
+  }
+
+  if (typeof addr === 'string') {
+    return { address: addr.trim(), city: null };
+  }
+
+  if (typeof addr !== 'object') {
+    return { address: null, city: null };
+  }
+
+  let city: string | null = null;
+  let address: string | null = null;
+
+  const street = addr.streetAddress ? String(addr.streetAddress).trim() : '';
+  const postal = addr.postalCode ? String(addr.postalCode).trim() : '';
+  const locality = addr.addressLocality ? String(addr.addressLocality).trim() : '';
+  const country = addr.addressCountry
+    ? typeof addr.addressCountry === 'string'
+      ? addr.addressCountry.trim()
+      : (addr.addressCountry as { name?: string })?.name?.trim() || ''
+    : '';
+
+  if (locality) {
+    city = locality;
+  }
+
+  if (street) {
+    const zipCityMatch = /\b\d{4,5}\s+([A-Za-zäöüÄÖÜß\s-]+?)(?:,|$)/.exec(street);
+
+    if (zipCityMatch?.[1].trim()) {
+      city = zipCityMatch[1].trim();
+    }
+  }
+
+  if (street && ((postal && street.includes(postal)) || (country && street.includes(country)))) {
+    address = street;
+  } else {
+    const parts: string[] = [];
+
+    if (street) {
+      parts.push(street);
+    }
+
+    const locParts: string[] = [];
+
+    if (postal) {
+      locParts.push(postal);
+    }
+
+    if (locality && (!street || !street.includes(locality))) {
+      locParts.push(locality);
+    }
+
+    if (locParts.length > 0) {
+      parts.push(locParts.join(' '));
+    }
+
+    if (country && (!street || !street.includes(country))) {
+      parts.push(country);
+    }
+
+    if (parts.length > 0) {
+      address = parts.join(', ');
+    }
+  }
+
+  return { address, city };
+}
+
 /** Extrahiert Metadaten aus dem geladenen HTML und der Ziel-URL. */
 export function extractBookingMetadataFromHtml(
   html: string,
@@ -415,18 +490,22 @@ export function extractBookingMetadataFromHtml(
         : [lodgingObject.image];
 
       for (const img of rawImgs) {
-        let u = typeof img === 'string' ? img : img?.url || img?.contentUrl;
+        let candidate = typeof img === 'string' ? img : img?.url || img?.contentUrl;
 
-        if (u && typeof u === 'string') {
-          if (u.startsWith('//')) {
-            u = 'https:' + u;
-          }
+        if (!candidate || typeof candidate !== 'string') {
+          continue;
+        }
 
-          if (isSafeUrl(u) && !isGenericPlaceholderImage(u)) {
-            if (!images.includes(u)) {
-              images.push(u);
-            }
-          }
+        if (candidate.startsWith('//')) {
+          candidate = 'https:' + candidate;
+        }
+
+        if (
+          isSafeUrl(candidate) &&
+          !isGenericPlaceholderImage(candidate) &&
+          !images.includes(candidate)
+        ) {
+          images.push(candidate);
         }
       }
 
@@ -437,69 +516,14 @@ export function extractBookingMetadataFromHtml(
 
     // Adresse
     if (lodgingObject.address) {
-      const addr = lodgingObject.address as Record<string, unknown> | string;
+      const parsed = parsePostalAddress(lodgingObject.address as Record<string, unknown> | string);
 
-      if (typeof addr === 'string') {
-        address = addr.trim();
-      } else if (typeof addr === 'object' && addr !== null) {
-        const street = addr.streetAddress ? String(addr.streetAddress).trim() : '';
-        const postal = addr.postalCode ? String(addr.postalCode).trim() : '';
-        const locality = addr.addressLocality ? String(addr.addressLocality).trim() : '';
-        const country = addr.addressCountry
-          ? typeof addr.addressCountry === 'string'
-            ? addr.addressCountry.trim()
-            : (addr.addressCountry as { name?: string })?.name?.trim() || ''
-          : '';
+      if (parsed.address) {
+        address = parsed.address;
+      }
 
-        if (locality) {
-          city = locality;
-        }
-
-        // Wenn streetAddress eine PLZ + Ort enthält (z. B. "Am Hafendorf, 17248 Rechlin, Deutschland"),
-        // versuchen wir den tatsächlichen Ortsnamen zu extrahieren, da Booking oft die Straße in addressLocality packt
-        if (street) {
-          const zipCityMatch = /\b\d{4,5}\s+([A-Za-zäöüÄÖÜß\s-]+?)(?:,|$)/.exec(street);
-
-          if (zipCityMatch && zipCityMatch[1].trim()) {
-            city = zipCityMatch[1].trim();
-          }
-        }
-
-        // Wenn streetAddress bereits die PLZ oder das Land enthält, ist sie bereits eine vollständige Adresse:
-        if (
-          street &&
-          ((postal && street.includes(postal)) || (country && street.includes(country)))
-        ) {
-          address = street;
-        } else {
-          const parts: string[] = [];
-
-          if (street) {
-            parts.push(street);
-          }
-
-          const locParts: string[] = [];
-
-          if (postal) {
-            locParts.push(postal);
-          }
-
-          if (locality && (!street || !street.includes(locality))) {
-            locParts.push(locality);
-          }
-
-          if (locParts.length > 0) {
-            parts.push(locParts.join(' '));
-          }
-
-          if (country && (!street || !street.includes(country))) {
-            parts.push(country);
-          }
-
-          if (parts.length > 0) {
-            address = parts.join(', ');
-          }
-        }
+      if (parsed.city) {
+        city = parsed.city;
       }
     }
 
@@ -601,52 +625,14 @@ export function extractBookingMetadataFromHtml(
           : (postalObj.address as Record<string, unknown>);
 
       if (addrData && typeof addrData === 'object') {
-        const street = addrData.streetAddress ? String(addrData.streetAddress).trim() : '';
-        const postal = addrData.postalCode ? String(addrData.postalCode).trim() : '';
-        const locality = addrData.addressLocality ? String(addrData.addressLocality).trim() : '';
-        const country = addrData.addressCountry
-          ? typeof addrData.addressCountry === 'string'
-            ? addrData.addressCountry.trim()
-            : (addrData.addressCountry as { name?: string })?.name?.trim() || ''
-          : '';
+        const parsed = parsePostalAddress(addrData);
 
-        if (locality && !city) {
-          city = locality.split(',')[0].trim();
+        if (parsed.address) {
+          address = parsed.address;
         }
 
-        if (
-          street &&
-          ((postal && street.includes(postal)) || (country && street.includes(country)))
-        ) {
-          address = street;
-        } else {
-          const parts: string[] = [];
-
-          if (street) {
-            parts.push(street);
-          }
-
-          const locParts: string[] = [];
-
-          if (postal) {
-            locParts.push(postal);
-          }
-
-          if (locality && (!street || !street.includes(locality))) {
-            locParts.push(locality);
-          }
-
-          if (locParts.length > 0) {
-            parts.push(locParts.join(' '));
-          }
-
-          if (country && (!street || !street.includes(country))) {
-            parts.push(country);
-          }
-
-          if (parts.length > 0) {
-            address = parts.join(', ');
-          }
+        if (parsed.city && !city) {
+          city = parsed.city.split(',')[0].trim();
         }
       }
     }
@@ -1027,20 +1013,14 @@ export async function fetchAccommodationPreview(
     // Preis aus Booking sr_pri_blocks extrahieren falls vorhanden (z. B. sr_pri_blocks=...__23409 -> 234.09)
     if (meta.amount == null) {
       const priParam = getParam('sr_pri_blocks');
+      const priMatch = priParam ? /__(\d+)(?:$|&)/.exec(priParam) : null;
 
-      if (priParam) {
-        const priMatch = /__(\d+)(?:$|&)/.exec(priParam);
+      if (priMatch && priMatch[1].length >= 3) {
+        const cents = parseInt(priMatch[1], 10);
 
-        if (priMatch && priMatch[1].length >= 3) {
-          const cents = parseInt(priMatch[1], 10);
-
-          if (!Number.isNaN(cents) && cents > 0) {
-            meta.amount = Math.round((cents / 100) * 100) / 100;
-
-            if (!meta.currency) {
-              meta.currency = 'EUR';
-            }
-          }
+        if (!Number.isNaN(cents) && cents > 0) {
+          meta.amount = Math.round((cents / 100) * 100) / 100;
+          meta.currency ||= 'EUR';
         }
       }
     }
