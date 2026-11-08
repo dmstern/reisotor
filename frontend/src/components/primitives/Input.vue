@@ -225,4 +225,30 @@ function onInput(event: Event) {
   width: 16px;
   height: 16px;
 }
+
+/* Spezifische Handhabung für Suchfelder (Pill-Form) */
+.input[type='search'] {
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.input--sm[type='search'] {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.input--lg[type='search'] {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.input[type='search']::-webkit-search-decoration,
+.input[type='search']::-webkit-search-cancel-button,
+.input[type='search']::-webkit-search-results-button,
+.input[type='search']::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  display: none;
+}
 </style>

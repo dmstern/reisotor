@@ -59,7 +59,7 @@ function onDropdownScroll(e: Event) {
       <Input
         :model-value="modelValue"
         class="location-picker-input"
-        type="text"
+        type="search"
         name="location-search"
         data-testid="location-search-input"
         :placeholder="placeholder"
@@ -263,8 +263,8 @@ function onDropdownScroll(e: Event) {
   padding-right: 42px;
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
 }
 
 .location-search-wrap.is-loading :deep(.location-picker-input) {
