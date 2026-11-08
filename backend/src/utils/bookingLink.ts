@@ -66,8 +66,8 @@ export function cleanAccommodationTitle(raw: string): string {
   title = title.replace(/\s*[-–—]\s*Apartments for Rent.*$/i, '');
   title = title.replace(/\s*·\s*★.*$/i, ''); // Rating-Snippets wie · ★4,9 · 2 Schlafzimmer
 
-  // Typische Trivago-Zusätze: "Hotel Adlon Kempinski, Berlin | trivago.de"
-  title = title.replace(/\s*[|–—-]\s*trivago\.[a-z.]+$/i, '');
+  // Typische Trivago-Zusätze: "Hotel Adlon Kempinski, Berlin | trivago.de" oder "Parkhotel | trivago"
+  title = title.replace(/\s*[|–—-]\s*trivago(?:\.[a-z.]+)?$/i, '');
 
   // Allgemeine Plattform-Suffixe
   title = title.replace(
@@ -403,7 +403,55 @@ export function extractBookingMetadataFromHtml(
     }
   }
 
-  // Meta-Adresse & Ort
+  // Falls keine Adresse aus einem Haupt-LodgingObject extrahiert wurde,
+  // prüfe ob ein eigenständiges PostalAddress-Objekt im JSON-LD existiert (z. B. bei Trivago):
+  if (!address) {
+    const postalObj = jsonLdBlocks.find(
+      (obj) =>
+        normalizeTypeString(String(obj['@type'])) === 'postaladdress' ||
+        (obj.address && typeof obj.address === 'object')
+    );
+    if (postalObj) {
+      const addrData =
+        normalizeTypeString(String(postalObj['@type'])) === 'postaladdress'
+          ? postalObj
+          : (postalObj.address as Record<string, unknown>);
+      if (addrData && typeof addrData === 'object') {
+        const street = addrData.streetAddress ? String(addrData.streetAddress).trim() : '';
+        const postal = addrData.postalCode ? String(addrData.postalCode).trim() : '';
+        const locality = addrData.addressLocality ? String(addrData.addressLocality).trim() : '';
+        const country = addrData.addressCountry
+          ? typeof addrData.addressCountry === 'string'
+            ? addrData.addressCountry.trim()
+            : (addrData.addressCountry as { name?: string })?.name?.trim() || ''
+          : '';
+
+        if (locality && !city) {
+          city = locality.split(',')[0].trim();
+        }
+
+        if (
+          street &&
+          ((postal && street.includes(postal)) || (country && street.includes(country)))
+        ) {
+          address = street;
+        } else {
+          const parts: string[] = [];
+          if (street) parts.push(street);
+          const locParts: string[] = [];
+          if (postal) locParts.push(postal);
+          if (locality && (!street || !street.includes(locality))) locParts.push(locality);
+          if (locParts.length > 0) parts.push(locParts.join(' '));
+          if (country && (!street || !street.includes(country))) parts.push(country);
+          if (parts.length > 0) {
+            address = parts.join(', ');
+          }
+        }
+      }
+    }
+  }
+
+  // Meta-Adresse & Ort (Fallback)
   if (!address) {
     const street =
       extractMetaTag(html, 'business:contact_data:street_address') ||
@@ -703,6 +751,16 @@ export async function fetchAccommodationPreview(
       parseDateParam(getParam('check_out')) ||
       parseDateParam(getParam('departure')) ||
       parseDateParam(getParam('to'));
+
+    // Trivago Datumsbereich (;dr-YYYYMMDD-YYYYMMDD)
+    if (!startDate || !endDate) {
+      const searchParam = getParam('search') || '';
+      const drMatch = /;?dr-(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})/i.exec(searchParam);
+      if (drMatch) {
+        if (!startDate) startDate = `${drMatch[1]}-${drMatch[2]}-${drMatch[3]}`;
+        if (!endDate) endDate = `${drMatch[4]}-${drMatch[5]}-${drMatch[6]}`;
+      }
+    }
 
     // Preis aus Booking sr_pri_blocks extrahieren falls vorhanden (z. B. sr_pri_blocks=...__23409 -> 234.09)
     if (meta.amount == null) {

@@ -327,6 +327,33 @@ describe('bookingLink', () => {
       expect(meta.address).toBe('Am Hafendorf, 17248 Rechlin, Deutschland');
       expect(meta.city).toBe('Rechlin');
     });
+
+    it('extracts address from standalone Schema.org PostalAddress JSON-LD (Trivago structure)', () => {
+      const html = `
+        <html>
+          <head>
+            <meta property="og:title" content="Parkhotel St. Leonhard | trivago" />
+            <script type="application/ld+json">
+              {
+                "@context": "https://schema.org",
+                "@type": "PostalAddress",
+                "streetAddress": "Obere-St.-Leonhard-Straße 71",
+                "postalCode": "88662",
+                "addressLocality": "Ueberlingen",
+                "addressCountry": "Germany"
+              }
+            </script>
+          </head>
+        </html>
+      `;
+      const meta = extractBookingMetadataFromHtml(
+        html,
+        'https://www.trivago.de/en-US/acd/hotels-ueberlingen-germany'
+      );
+      expect(meta.name).toBe('Parkhotel St. Leonhard');
+      expect(meta.address).toBe('Obere-St.-Leonhard-Straße 71, 88662 Ueberlingen, Germany');
+      expect(meta.city).toBe('Ueberlingen');
+    });
   });
 
   describe('fetchAccommodationPreview', () => {
@@ -464,6 +491,39 @@ describe('bookingLink', () => {
       expect(preview?.currency).toBe('EUR');
       expect(preview?.lat).toBe(53.357957);
       expect(preview?.lng).toBe(12.728514);
+    });
+
+    it('extracts dates from Trivago dr- parameter format', async () => {
+      const mockHtml = `
+        <html>
+          <head>
+            <meta property="og:title" content="Parkhotel St. Leonhard" />
+            <script type="application/ld+json">
+              {
+                "@context": "https://schema.org",
+                "@type": "PostalAddress",
+                "streetAddress": "Obere-St.-Leonhard-Straße 71",
+                "postalCode": "88662",
+                "addressLocality": "Ueberlingen",
+                "addressCountry": "Germany"
+              }
+            </script>
+          </head>
+        </html>
+      `;
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
+        text: async () => mockHtml,
+      } as unknown as Response);
+
+      const preview = await fetchAccommodationPreview(
+        'https://www.trivago.de/en-US/acd/hotels-ueberlingen-germany?search=100-118997;dr-20270401-20270404;drs-46;rc-1-2'
+      );
+
+      expect(preview).not.toBeNull();
+      expect(preview?.name).toBe('Parkhotel St. Leonhard');
+      expect(preview?.startDate).toBe('2027-04-01');
+      expect(preview?.endDate).toBe('2027-04-04');
     });
 
     it('retries with fallback user agent when AWS WAF bot challenge is returned', async () => {
