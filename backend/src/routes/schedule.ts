@@ -53,15 +53,24 @@ const softDeleteScheduleStmt = db.prepare(
 );
 
 function locationFromSpot(spotId: number | null | undefined) {
-  if (!spotId) return null;
+  if (!spotId) {
+    return null;
+  }
+
   return selectSpotLocationStmt.get(spotId) as
     { maps_link: string | null; lat: number | null; lng: number | null } | undefined;
 }
 
 export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/schedule', async (req, reply) => {
-    if (!req.query.trip_id) return reply.code(400).send({ error: 'trip_id erforderlich' });
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!req.query.trip_id) {
+      return reply.code(400).send({ error: 'trip_id erforderlich' });
+    }
+
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     return selectScheduleByTripStmt.all(req.query.trip_id);
   });
 
@@ -83,7 +92,11 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       auto_created,
       user_modified,
     } = req.body;
-    if (!requireTripMember(reply, trip_id, req.session.userId)) return;
+
+    if (!requireTripMember(reply, trip_id, req.session.userId)) {
+      return;
+    }
+
     const spot = locationFromSpot(spot_id);
     const result = insertScheduleStmt.run(
       trip_id,
@@ -103,9 +116,11 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       user_modified ? 1 : 0,
       req.body.done ? 1 : 0
     );
+
     if (spot_id && req.body.done) {
       updateSpotDoneStmt.run(1, spot_id);
     }
+
     recordActivity(
       trip_id,
       'schedule',
@@ -120,8 +135,14 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   app.put<{ Params: { id: string }; Body: ScheduleBody }>('/schedule/:id', async (req, reply) => {
     const existingItem = selectScheduleItemByIdStmt.get(req.params.id) as
       { trip_id: number; auto_created?: number; user_modified?: number; done?: number } | undefined;
-    if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
+
+    if (!existingItem) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) {
+      return;
+    }
 
     const {
       date,
@@ -165,11 +186,16 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       resolvedDone,
       req.params.id
     );
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     if (spot_id) {
       const countRow = countDoneScheduleItemsBySpotStmt.get(spot_id) as { count: number };
       updateSpotDoneStmt.run(countRow.count > 0 ? 1 : 0, spot_id);
     }
+
     recordActivity(
       existingItem.trip_id,
       'schedule',
@@ -185,13 +211,20 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
     async (req, reply) => {
       const existing = selectScheduleItemByIdStmt.get(req.params.id) as
         { id: number; trip_id: number; spot_id: number | null } | undefined;
-      if (!existing) return reply.code(404).send({ error: 'Nicht gefunden' });
-      if (!requireTripMember(reply, existing.trip_id, req.session.userId)) return;
+
+      if (!existing) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, existing.trip_id, req.session.userId)) {
+        return;
+      }
 
       const done = req.body.done ? 1 : 0;
       updateScheduleDoneStmt.run(done, req.params.id);
 
       let spotDone: boolean | undefined;
+
       if (existing.spot_id) {
         const countRow = countDoneScheduleItemsBySpotStmt.get(existing.spot_id) as {
           count: number;
@@ -211,11 +244,21 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Params: { id: string } }>('/schedule/:id', async (req, reply) => {
     const existingItem = selectScheduleTripIdStmt.get(req.params.id) as
       { trip_id: number } | undefined;
-    if (!existingItem) return reply.code(404).send({ error: 'Nicht gefunden' });
-    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) return;
+
+    if (!existingItem) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
+    if (!requireTripMember(reply, existingItem.trip_id, req.session.userId)) {
+      return;
+    }
 
     const result = softDeleteScheduleStmt.run(new Date().toISOString(), req.params.id);
-    if (result.changes === 0) return reply.code(404).send({ error: 'Nicht gefunden' });
+
+    if (result.changes === 0) {
+      return reply.code(404).send({ error: 'Nicht gefunden' });
+    }
+
     recordActivity(
       existingItem.trip_id,
       'schedule',

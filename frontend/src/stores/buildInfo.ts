@@ -21,6 +21,7 @@ export const useBuildInfoStore = defineStore('buildInfo', () => {
           loadPromise = null;
         });
     }
+
     return loadPromise;
   }
 

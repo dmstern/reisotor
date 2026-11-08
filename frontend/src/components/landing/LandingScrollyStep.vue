@@ -32,10 +32,12 @@ function isRevealed(hIdx: number): boolean {
   if (props.isActive) {
     return hIdx <= props.activeHighlightIndex;
   }
+
   // Falls die Kachel bereits passiert wurde, bleiben alle Punkte sichtbar
   if (props.activeHighlightIndex >= props.feature.highlights.length - 1) {
     return true;
   }
+
   // Wenn noch nicht erreicht, zeigen wir mindestens den ersten Punkt als Einstieg
   return hIdx === 0;
 }

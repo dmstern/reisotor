@@ -64,6 +64,7 @@ export async function fetchWithTimeout(
   const timeoutMs = init.timeoutMs ?? defaultTimeout;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const onAbort = () => controller.abort();
+
   if (init.signal) {
     if (init.signal.aborted) {
       controller.abort();
@@ -71,10 +72,12 @@ export async function fetchWithTimeout(
       init.signal.addEventListener('abort', onAbort, { once: true });
     }
   }
+
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timeout);
+
     if (init.signal) {
       init.signal.removeEventListener('abort', onAbort);
     }
@@ -91,7 +94,9 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
   // demo/demoClient.ts statt gegen ein echtes Backend. Einziger Abzweig - api/offline.ts (Cache/
   // Outbox) darum herum bleibt unverändert und läuft einfach mit (harmlos, da demoRequest() nie
   // mit einem Netzwerkfehler fehlschlägt).
-  if (DEMO_MODE) return demoRequest<T>(path, options);
+  if (DEMO_MODE) {
+    return demoRequest<T>(path, options);
+  }
 
   // Content-Type nur setzen, wenn wirklich ein Body gesendet wird – sonst parst Fastify
   // den (nicht vorhandenen) JSON-Body und lehnt mit 400 Bad Request ab (z. B. bei DELETE).
@@ -128,18 +133,24 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
   if (!res.ok) {
     let message = res.statusText;
     let body: unknown = null;
+
     try {
       body = await res.json();
       message = (body as { error?: string })?.error ?? message;
     } catch {
       // ignore, kein JSON-Body
     }
+
     if (!message || !message.trim()) {
-      if (res.status === 502) message = 'Bad Gateway (Server nicht erreichbar)';
-      else if (res.status === 503)
+      if (res.status === 502) {
+        message = 'Bad Gateway (Server nicht erreichbar)';
+      } else if (res.status === 503) {
         message = 'Service Unavailable (Server vorübergehend nicht erreichbar)';
-      else if (res.status === 504) message = 'Gateway Timeout (Server antwortet nicht)';
+      } else if (res.status === 504) {
+        message = 'Gateway Timeout (Server antwortet nicht)';
+      }
     }
+
     throw new ApiError(res.status, message, {
       method: (options.method ?? 'GET').toUpperCase(),
       path,
@@ -150,6 +161,7 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
   if (res.status === 204) {
     return undefined as T;
   }
+
   return res.json() as Promise<T>;
 }
 
@@ -164,9 +176,11 @@ function isNetworkFailure(err: unknown): boolean {
   if (err instanceof TypeError || (err instanceof DOMException && err.name === 'AbortError')) {
     return true;
   }
+
   if (err instanceof ApiError && [502, 503, 504].includes(err.status)) {
     return true;
   }
+
   return false;
 }
 
@@ -176,14 +190,21 @@ function isNetworkFailure(err: unknown): boolean {
 // konnte) aus der Liste verschwinden, obwohl es sicher auf den nächsten Sync-Versuch wartet.
 // Nicht-Array-Antworten (Einzelobjekte, /users, …) bleiben unverändert.
 function withPending<T>(path: string, data: T): T {
-  if (!Array.isArray(data)) return data;
+  if (!Array.isArray(data)) {
+    return data;
+  }
+
   return mergePendingIntoList(path, data as Array<{ id: number }>) as unknown as T;
 }
 
 async function get<T>(path: string, options?: RequestOptions): Promise<T> {
   const activity = useRequestActivityStore();
   const trackActivity = !options?.silent && !path.startsWith('/drafts');
-  if (trackActivity) activity.start('read');
+
+  if (trackActivity) {
+    activity.start('read');
+  }
+
   try {
     // isConfirmedOffline(): erst NACH einem echten Fehlschlag gesetzt (siehe api/offline.ts) - beim
     // allerersten Request eines Ladens gilt navigator.onLine also noch allein, damit der Normalfall
@@ -194,7 +215,10 @@ async function get<T>(path: string, options?: RequestOptions): Promise<T> {
         writeCache(path, data);
         return withPending(path, data);
       } catch (err) {
-        if (!isNetworkFailure(err)) throw err;
+        if (!isNetworkFailure(err)) {
+          throw err;
+        }
+
         // Netzwerk nicht erreichbar, obwohl navigator.onLine true meldet (unzuverlässig) – auf den
         // Cache zurückfallen statt den Fehler direkt hochzureichen. Merken, damit nachfolgende
         // Requests nicht jedes Mal erneut den vollen Timeout abwarten müssen (siehe
@@ -202,15 +226,22 @@ async function get<T>(path: string, options?: RequestOptions): Promise<T> {
         setConfirmedOffline(true);
       }
     }
+
     const cached = readCache<T>(path);
-    if (cached !== undefined) return withPending(path, cached);
+
+    if (cached !== undefined) {
+      return withPending(path, cached);
+    }
+
     throw new ApiError(
       0,
       'Offline und keine zwischengespeicherten Daten für diese Ansicht vorhanden',
       { method: 'GET', path }
     );
   } finally {
-    if (trackActivity) activity.finish('read');
+    if (trackActivity) {
+      activity.finish('read');
+    }
   }
 }
 
@@ -226,11 +257,13 @@ function queueMutation<T>(method: MutateMethod, path: string, body: unknown): T 
     enqueue('DELETE', path, body);
     return undefined as T;
   }
+
   if (method === 'POST') {
     const tempId = nextTempId();
     enqueue('POST', path, body, tempId);
     return { ...(body as object), id: tempId, _pending: true } as T;
   }
+
   // PUT: die id steht schon in der URL (z. B. /todos/123 oder /spots/-123) – kein eigener Platzhalter nötig, die
   // Zeile existiert (aus Sicht des Clients) bereits.
   const idMatch = /(-?\d+)(?:\?.*)?$/.exec(path);
@@ -258,9 +291,14 @@ async function mutate<T>(
 ): Promise<T> {
   const activity = useRequestActivityStore();
   const trackActivity = !options?.silent && !path.startsWith('/drafts');
-  if (trackActivity) activity.start(MUTATE_KIND[method]);
+
+  if (trackActivity) {
+    activity.start(MUTATE_KIND[method]);
+  }
+
   try {
     const queueable = !options?.noQueue && isQueueablePath(path);
+
     if (navigator.onLine && !isConfirmedOffline()) {
       try {
         return await rawRequest<T>(path, {
@@ -269,23 +307,33 @@ async function mutate<T>(
           ...options,
         });
       } catch (err) {
-        if (!isNetworkFailure(err)) throw err;
+        if (!isNetworkFailure(err)) {
+          throw err;
+        }
+
         // Wenn dieser Pfad nicht in die Outbox gehört (z. B. Routenberechnung oder Realtime-Position),
         // Fehler direkt werfen statt in die Outbox zu schieben!
-        if (!queueable) throw err;
+        if (!queueable) {
+          throw err;
+        }
+
         setConfirmedOffline(true);
         // durchfallen zur Offline-Warteschlange unten
       }
     }
+
     if (!queueable) {
       throw new ApiError(0, `Offline: ${path} kann offline nicht ausgeführt werden`, {
         method,
         path,
       });
     }
+
     return queueMutation<T>(method, path, body);
   } finally {
-    if (trackActivity) activity.finish(MUTATE_KIND[method]);
+    if (trackActivity) {
+      activity.finish(MUTATE_KIND[method]);
+    }
   }
 }
 

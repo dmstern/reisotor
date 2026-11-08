@@ -84,6 +84,7 @@ describe('TripCategorySettings', () => {
     // In der Zeilenansicht darf es keinen direkten "Kategorie löschen"-Button mehr geben
     // (Löschen ist nun im Bearbeiten-Dialog verortet)
     const rowActionsMatches = html.match(/<div class="row-actions">([\s\S]*?)<\/div>/g) || [];
+
     for (const rowActions of rowActionsMatches) {
       expect(rowActions).not.toContain('title="Kategorie löschen"');
     }

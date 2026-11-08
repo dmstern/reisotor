@@ -28,7 +28,9 @@ export function useTripCategorySettings(
   watch(
     () => toValue(initialTypeGetter),
     (val) => {
-      if (val) activeType.value = val;
+      if (val) {
+        activeType.value = val;
+      }
     }
   );
   const SCOPE_OPTIONS = [
@@ -82,7 +84,9 @@ export function useTripCategorySettings(
   watch(
     () => toValue(tripIdGetter),
     (id) => {
-      if (id && typeof window !== 'undefined') tripCategoriesStore.load(id, true);
+      if (id && typeof window !== 'undefined') {
+        tripCategoriesStore.load(id, true);
+      }
     },
     { immediate: true }
   );
@@ -95,6 +99,7 @@ export function useTripCategorySettings(
       editForm.value.icon = option.id;
       editForm.value.emoji = option.defaultEmoji;
     }
+
     showIconPicker.value = false;
   }
 
@@ -121,8 +126,12 @@ export function useTripCategorySettings(
     const storedByDefault = new Map<string, TripCategory>();
 
     for (const c of storedCategories.value) {
-      if (!c || !c.name) continue;
+      if (!c || !c.name) {
+        continue;
+      }
+
       storedByName.set(c.name.trim().toLowerCase(), c);
+
       if (c.default_name) {
         storedByDefault.set(c.default_name.trim().toLowerCase(), c);
       }
@@ -130,11 +139,15 @@ export function useTripCategorySettings(
 
     // 1. Gespeicherte Custom Categories (die weder Standard sind noch von einer Standardkategorie abstammen)
     for (const c of storedCategories.value) {
-      if (!c || !c.name) continue;
+      if (!c || !c.name) {
+        continue;
+      }
+
       const isDerivedFromStandard = Boolean(c.default_name);
       const matchesStandardName = defaultSuggestions.value.some(
         (s) => s.label.trim().toLowerCase() === c.name.trim().toLowerCase()
       );
+
       if (!isDerivedFromStandard && !matchesStandardName) {
         list.push({
           id: c.id,
@@ -195,14 +208,21 @@ export function useTripCategorySettings(
 
     // Sortierung: Aktive Kategorien zuerst (alphabetisch), ausgeblendete ans Ende
     return list.sort((a, b) => {
-      if (a.isHidden !== b.isHidden) return a.isHidden ? 1 : -1;
+      if (a.isHidden !== b.isHidden) {
+        return a.isHidden ? 1 : -1;
+      }
+
       return a.name.localeCompare(b.name, 'de');
     });
   });
 
   const filteredCategories = computed(() => {
     const q = searchQuery.value.trim().toLowerCase();
-    if (!q) return allDisplayCategories.value;
+
+    if (!q) {
+      return allDisplayCategories.value;
+    }
+
     return allDisplayCategories.value.filter((c) => c.name.toLowerCase().includes(q));
   });
 
@@ -217,6 +237,7 @@ export function useTripCategorySettings(
           editingCategory.value?.name === categoryName ||
           categoryToDelete.value?.name === categoryName ||
           categoryToReset.value?.name === categoryName;
+
         if (isStillActive) {
           usageItems.value = items;
         }
@@ -254,23 +275,36 @@ export function useTripCategorySettings(
   }
 
   async function refreshDependentStores() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     try {
       const spotsStore = useSpotsStore();
-      if (spotsStore.loaded) await spotsStore.load();
+
+      if (spotsStore.loaded) {
+        await spotsStore.load();
+      }
     } catch {
       // Ignorieren in Tests
     }
+
     try {
       const budgetStore = useBudgetStore();
-      if (budgetStore.loaded) await budgetStore.load();
+
+      if (budgetStore.loaded) {
+        await budgetStore.load();
+      }
     } catch {
       // Ignorieren in Tests
     }
   }
 
   async function saveEdit() {
-    if (!editForm.value.name.trim()) return;
+    if (!editForm.value.name.trim()) {
+      return;
+    }
+
     const tripId = toValue(tripIdGetter);
     const trimmedNewName = editForm.value.name.trim();
     const isCustom = editingCategory.value?.isCustom ?? false;
@@ -308,7 +342,10 @@ export function useTripCategorySettings(
   }
 
   async function handleCreate() {
-    if (!createForm.value.name.trim()) return;
+    if (!createForm.value.name.trim()) {
+      return;
+    }
+
     const tripId = toValue(tripIdGetter);
 
     await tripCategoriesStore.createCategory(tripId, {
@@ -329,7 +366,10 @@ export function useTripCategorySettings(
   }
 
   function confirmDeleteFromEdit() {
-    if (!editingCategory.value || !editingCategory.value.id) return;
+    if (!editingCategory.value || !editingCategory.value.id) {
+      return;
+    }
+
     const catName = editingCategory.value.name;
     const count = editForm.value.usage_count;
     categoryToDelete.value = {
@@ -338,6 +378,7 @@ export function useTripCategorySettings(
       count,
     };
     editingCategory.value = null;
+
     if (count > 0 && usageItems.value.length === 0) {
       loadUsage(catName);
     }
@@ -350,7 +391,10 @@ export function useTripCategorySettings(
   }
 
   async function executeDelete() {
-    if (!categoryToDelete.value) return;
+    if (!categoryToDelete.value) {
+      return;
+    }
+
     const tripId = toValue(tripIdGetter);
     await tripCategoriesStore.deleteCategory(tripId, categoryToDelete.value.id);
     await refreshDependentStores();
@@ -361,6 +405,7 @@ export function useTripCategorySettings(
 
   function promptReset(cat: DisplayCategory) {
     categoryToReset.value = cat;
+
     if (cat.usageCount > 0) {
       loadUsage(cat.name);
     } else {
@@ -370,10 +415,14 @@ export function useTripCategorySettings(
   }
 
   function confirmResetFromEdit() {
-    if (!editingCategory.value) return;
+    if (!editingCategory.value) {
+      return;
+    }
+
     const cat = editingCategory.value;
     categoryToReset.value = cat;
     editingCategory.value = null;
+
     if (cat.usageCount > 0 && usageItems.value.length === 0) {
       loadUsage(cat.name);
     }
@@ -390,6 +439,7 @@ export function useTripCategorySettings(
       categoryToReset.value = null;
       return;
     }
+
     const tripId = toValue(tripIdGetter);
     await tripCategoriesStore.resetCategory(tripId, categoryToReset.value.id);
 

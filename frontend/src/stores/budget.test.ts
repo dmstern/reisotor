@@ -23,9 +23,11 @@ describe('useBudgetStore computeds', () => {
   function budget(id: number, targetAmount: number | null, ownerId: number | null = null): Budget {
     return { id, trip_id: 1, name: `Topf ${id}`, owner_id: ownerId, target_amount: targetAmount };
   }
+
   function allocation(budgetId: number, category: string, amount: number): BudgetAllocation {
     return { id: Math.random(), budget_id: budgetId, category, amount };
   }
+
   function expense(
     amount: number,
     budgetId: number | null,

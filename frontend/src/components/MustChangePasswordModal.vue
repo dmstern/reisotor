@@ -26,24 +26,29 @@ const anyPasswordVisible = computed(
 
 async function onSubmit() {
   error.value = '';
+
   if (!currentPassword.value || !newPassword.value || !confirmPassword.value) {
     error.value = 'Bitte fülle alle Felder aus.';
     return;
   }
+
   if (newPassword.value.length < 6) {
     error.value = 'Das neue Passwort muss mindestens 6 Zeichen lang sein.';
     return;
   }
+
   if (newPassword.value !== confirmPassword.value) {
     error.value = 'Die Passwörter stimmen nicht überein.';
     return;
   }
+
   if (newPassword.value === currentPassword.value) {
     error.value = 'Das neue Passwort muss sich vom aktuellen Passwort unterscheiden.';
     return;
   }
 
   submitting.value = true;
+
   try {
     await api.put('/users/me/password', {
       currentPassword: currentPassword.value,

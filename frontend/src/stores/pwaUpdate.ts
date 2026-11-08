@@ -19,7 +19,9 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   const showUpdateDialog = computed({
     get: () => needRefresh.value && !updateDialogDismissed.value && uiSettings.showUpdateDialogs,
     set: (v: boolean) => {
-      if (!v) updateDialogDismissed.value = true;
+      if (!v) {
+        updateDialogDismissed.value = true;
+      }
     },
   });
 
@@ -35,23 +37,35 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   const UPDATE_CHECK_INTERVAL_MS = 60_000;
 
   function startPeriodicUpdateCheck(registration: ServiceWorkerRegistration | undefined) {
-    if (!registration) return;
+    if (!registration) {
+      return;
+    }
+
     updateCheckInterval = setInterval(() => registration.update(), UPDATE_CHECK_INTERVAL_MS);
+
     onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') registration.update();
+      if (document.visibilityState === 'visible') {
+        registration.update();
+      }
     };
+
     document.addEventListener('visibilitychange', onVisibilityChange);
   }
 
   function initVersionCheck() {
-    if (typeof localStorage === 'undefined') return;
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
     const lastSeen = localStorage.getItem(LAST_SEEN_VERSION_KEY);
+
     if (lastSeen === null) {
       localStorage.setItem(LAST_SEEN_VERSION_KEY, currentVersion);
       showReleaseNotesNotice.value = false;
       showChangelogDialog.value = false;
     } else if (lastSeen !== currentVersion) {
       showReleaseNotesNotice.value = true;
+
       if (uiSettings.showUpdateDialogs) {
         showChangelogDialog.value = true;
       }
@@ -64,14 +78,17 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
 
   function dismissChangelogDialog() {
     showChangelogDialog.value = false;
+
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(LAST_SEEN_VERSION_KEY, currentVersion);
     }
+
     showReleaseNotesNotice.value = false;
   }
 
   function dismissReleaseNotesNotice() {
     showReleaseNotesNotice.value = false;
+
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(LAST_SEEN_VERSION_KEY, currentVersion);
     }
@@ -84,6 +101,7 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   function simulateUpdateAvailable(version?: string) {
     needRefresh.value = true;
     updateDialogDismissed.value = false;
+
     if (version) {
       availableVersion.value = version;
       availableVersionRequested = true;
@@ -98,8 +116,12 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   let availableVersionRequested = false;
 
   async function loadAvailableVersion() {
-    if (availableVersionRequested) return;
+    if (availableVersionRequested) {
+      return;
+    }
+
     availableVersionRequested = true;
+
     try {
       const info = await api.get<BuildInfo>('/build-info');
       availableVersion.value = info.version ?? null;
@@ -129,7 +151,10 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   // Analog zu stores/pwaInstall.ts's init(): wird einmalig aus main.ts aufgerufen.
   function init() {
     initVersionCheck();
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return;
+    }
 
     updateSW = registerSW({
       onNeedRefresh() {
@@ -148,6 +173,7 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   function reload() {
     needRefresh.value = false;
     let targetUrl = typeof window !== 'undefined' ? window.location.href : '';
+
     if (targetUrl.includes('testUpdate') || targetUrl.includes('fakeUpdate')) {
       try {
         const u = new URL(targetUrl);
@@ -187,8 +213,13 @@ export const usePwaUpdateStore = defineStore('pwaUpdate', () => {
   }
 
   function cleanup() {
-    if (updateCheckInterval != null) clearInterval(updateCheckInterval);
-    if (onVisibilityChange) document.removeEventListener('visibilitychange', onVisibilityChange);
+    if (updateCheckInterval != null) {
+      clearInterval(updateCheckInterval);
+    }
+
+    if (onVisibilityChange) {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    }
   }
 
   return {

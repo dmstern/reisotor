@@ -21,7 +21,10 @@ withDefaults(
 );
 
 function formatAccommodationDate(d: string | null) {
-  if (!d) return null;
+  if (!d) {
+    return null;
+  }
+
   return formatDateShared(d);
 }
 </script>

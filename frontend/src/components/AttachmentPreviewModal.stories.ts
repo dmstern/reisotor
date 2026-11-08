@@ -149,9 +149,11 @@ export const Editable: Story = {
     setup() {
       const isOpen = ref(args.modelValue);
       const items = ref([...args.attachments]);
+
       function onRemove(index: number) {
         items.value.splice(index, 1);
       }
+
       return { args, isOpen, items, onRemove };
     },
     template: `

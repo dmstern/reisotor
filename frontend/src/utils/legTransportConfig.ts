@@ -78,23 +78,34 @@ export const ROUTE_PREFERENCE_OPTIONS: {
 ];
 
 export function getCategoryFromType(type?: string | null): TransportCategory {
-  if (!type) return 'zu Fuß';
+  if (!type) {
+    return 'zu Fuß';
+  }
+
   const lower = type.trim().toLowerCase();
+
   if (lower === 'zu fuß' || lower === 'zu fuss' || lower === 'fuss' || lower === 'fuß') {
     return 'zu Fuß';
   }
+
   if (lower === 'auto' || lower === 'car') {
     return 'Auto';
   }
+
   if (lower === 'fahrrad' || lower === 'rad' || lower === 'bike') {
     return 'Fahrrad';
   }
+
   return 'ÖPNV';
 }
 
 export function getDepartureLabel(type?: string | null): string {
-  if (!type) return 'Abfahrt';
+  if (!type) {
+    return 'Abfahrt';
+  }
+
   const lower = type.trim().toLowerCase();
+
   if (
     lower === 'zu fuß' ||
     lower === 'zu fuss' ||
@@ -105,9 +116,11 @@ export function getDepartureLabel(type?: string | null): string {
   ) {
     return 'Losgehen';
   }
+
   if (lower === 'flug' || lower === 'flugzeug' || lower === 'flight' || lower === 'plane') {
     return 'Abflug';
   }
+
   if (
     lower === 'fähre' ||
     lower === 'faehre' ||
@@ -118,6 +131,7 @@ export function getDepartureLabel(type?: string | null): string {
   ) {
     return 'Ablegen';
   }
+
   return 'Abfahrt';
 }
 

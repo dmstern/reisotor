@@ -28,9 +28,11 @@ export interface Box {
  *  Transition). */
 export async function boxOf(locator: Locator): Promise<Box> {
   const box = await locator.boundingBox();
+
   if (!box) {
     throw new Error(`boxOf: Element nicht sichtbar/nicht im DOM (Selector: ${locator})`);
   }
+
   return {
     ...box,
     top: box.y,
@@ -45,7 +47,11 @@ export async function expectWithinViewport(page: Page, locator: Locator): Promis
   const box = await boxOf(locator);
   const viewport = page.viewportSize();
   expect(viewport, 'page.viewportSize() ist null').not.toBeNull();
-  if (!viewport) return;
+
+  if (!viewport) {
+    return;
+  }
+
   expect(box.left, 'Element ragt links aus dem Viewport').toBeGreaterThanOrEqual(-0.5);
   expect(box.top, 'Element ragt oben aus dem Viewport').toBeGreaterThanOrEqual(-0.5);
   expect(box.right, 'Element ragt rechts aus dem Viewport').toBeLessThanOrEqual(
@@ -103,9 +109,11 @@ function samplePoints(
     right,
     bottom,
   };
+
   if (visible.width < 1 || visible.height < 1) {
     throw new Error('target-Element hat keinen sichtbaren Anteil im Viewport');
   }
+
   const inset = Math.min(2, visible.width / 4, visible.height / 4);
   const midX = visible.left + visible.width / 2;
   const midY = visible.top + visible.height / 2;
@@ -131,11 +139,18 @@ export async function expectNotCoveredBy(
   const targetHandle = await target.elementHandle();
   const blockerHandle = await blocker.elementHandle();
   expect(targetHandle, 'target-Element nicht auffindbar').not.toBeNull();
-  if (!targetHandle) return;
+
+  if (!targetHandle) {
+    return;
+  }
+
   const box = await boxOf(target);
   const viewport = page.viewportSize();
   expect(viewport, 'page.viewportSize() ist null').not.toBeNull();
-  if (!viewport) return;
+
+  if (!viewport) {
+    return;
+  }
 
   for (const point of samplePoints(box, viewport)) {
     const result = await page.evaluate(
@@ -190,27 +205,38 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     const hasOverflow = scrollWidth > clientWidth + 1; // 1px Toleranz für Subpixel-Rundung
 
     const culprits: string[] = [];
+
     if (hasOverflow) {
       const isClippedByAncestor = (el: Element): boolean => {
         let parent = el.parentElement;
+
         while (parent && parent !== doc && parent !== body) {
           const style = window.getComputedStyle(parent);
           const ox = style.overflowX;
+
           if (ox === 'hidden' || ox === 'auto' || ox === 'scroll' || ox === 'clip') {
             const pr = parent.getBoundingClientRect();
+
             if (pr.right <= clientWidth + 1.5) {
               return true;
             }
           }
+
           parent = parent.parentElement;
         }
+
         return false;
       };
 
       const candidates: Array<{ el: Element; right: number; width: number }> = [];
+
       for (const el of Array.from(document.querySelectorAll('*'))) {
-        if (el === doc || el === body) continue;
+        if (el === doc || el === body) {
+          continue;
+        }
+
         const r = el.getBoundingClientRect();
+
         if (
           r.right > clientWidth + 1.5 &&
           r.width > 0 &&
@@ -281,9 +307,13 @@ export async function expectMinTouchTarget(locator: Locator, minSize = 44): Prom
  *  Inhaltsbreite (z. B. 1080px Viewport mit 360px Schublade = 720px Restbreite) zu testen. */
 export async function setCalendarDrawerOpen(page: Page, open: boolean): Promise<void> {
   const drawer = page.locator('.drawer.left');
-  if ((await drawer.count()) === 0) return; // Auf Mobile (<1024px) existiert keine Schublade
+
+  if ((await drawer.count()) === 0) {
+    return;
+  } // Auf Mobile (<1024px) existiert keine Schublade
 
   const isOpen = await drawer.evaluate((el) => el.classList.contains('open'));
+
   if (isOpen !== open) {
     if (open) {
       // Wenn geschlossen: Klick auf den Tab zum Öffnen
@@ -292,6 +322,7 @@ export async function setCalendarDrawerOpen(page: Page, open: boolean): Promise<
       // Wenn geöffnet: Klick auf den Schließen-Button im Header des Panels
       await page.locator('.drawer.left .close-drawer-btn').click();
     }
+
     await page.waitForTimeout(350); // Pause für die Einrast-Transition der Schublade
   }
 }
@@ -310,7 +341,10 @@ export async function getAppMainContentWidth(page: Page): Promise<number> {
 export async function setCalendarDrawerWidth(page: Page, targetWidth: number): Promise<void> {
   await setCalendarDrawerOpen(page, true);
   const handle = page.locator('.drawer.left .resize-handle');
-  if ((await handle.count()) === 0 || !(await handle.isVisible())) return;
+
+  if ((await handle.count()) === 0 || !(await handle.isVisible())) {
+    return;
+  }
 
   const box = await boxOf(handle);
   const deltaX = targetWidth - box.left;
@@ -325,7 +359,10 @@ export async function setCalendarDrawerWidth(page: Page, targetWidth: number): P
  *  Ziehen des Spalten-Anfassers (.col-resize-handle). */
 export async function setSpotsColumnWidth(page: Page, targetWidth: number): Promise<void> {
   const handle = page.locator('.col-resize-handle');
-  if ((await handle.count()) === 0 || !(await handle.isVisible())) return;
+
+  if ((await handle.count()) === 0 || !(await handle.isVisible())) {
+    return;
+  }
 
   const box = await boxOf(handle);
   const deltaX = targetWidth - box.left;

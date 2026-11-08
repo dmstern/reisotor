@@ -82,7 +82,9 @@ vi.mock('leaflet', () => {
           attributionControl: { setPrefix: vi.fn(), setPosition: vi.fn() },
           on: vi.fn(
             (event: string, handler: (e: { latlng: { lat: number; lng: number } }) => void) => {
-              if (event === 'click') mapClickHandlers.push(handler);
+              if (event === 'click') {
+                mapClickHandlers.push(handler);
+              }
             }
           ),
           remove: vi.fn(),
@@ -103,7 +105,9 @@ vi.mock('leaflet', () => {
           remove: vi.fn(),
           getLatLng: vi.fn().mockReturnValue({ lat: coords[0], lng: coords[1] }),
           on: vi.fn((event: string, handler: () => void) => {
-            if (event === 'dragend') markerDragEndHandler = handler;
+            if (event === 'dragend') {
+              markerDragEndHandler = handler;
+            }
           }),
           dragging: { enable: vi.fn() },
         };

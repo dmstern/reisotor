@@ -8,12 +8,18 @@ const props = defineProps<{
 }>();
 
 const latestNote = computed(() => {
-  if (!props.notes.length) return null;
+  if (!props.notes.length) {
+    return null;
+  }
+
   return props.notes[0];
 });
 
 const previewText = computed(() => {
-  if (!latestNote.value) return 'Notiz schreiben… ✍️';
+  if (!latestNote.value) {
+    return 'Notiz schreiben… ✍️';
+  }
+
   const text = latestNote.value.title?.trim() || stripHtml(latestNote.value.content);
   return text ? text.slice(0, 35) : 'Notiz';
 });
@@ -24,6 +30,7 @@ const secondPreviewText = computed(() => {
     const text = second.title?.trim() || stripHtml(second.content);
     return text ? text.slice(0, 25) : '';
   }
+
   return '';
 });
 </script>

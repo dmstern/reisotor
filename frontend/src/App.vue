@@ -86,6 +86,7 @@ watch(
       tripStore.reset();
       budgetStore.reset();
     }
+
     if (userId) {
       tripStore.loadTrips();
       buildInfoStore.load();
@@ -127,11 +128,13 @@ watch(isDesktop, (desktop) => {
       : tripStore.currentTripId
         ? String(tripStore.currentTripId)
         : '';
+
     if (tripId) {
       router.replace(`/trip/${tripId}`);
     } else {
       router.replace({ name: 'trips' });
     }
+
     drawers.openCalendar();
   }
 });
@@ -144,10 +147,13 @@ function onSessionExpired() {
   auth.user = null;
   router.push('/login');
 }
+
 onMounted(() => {
   window.addEventListener('reisotor:session-expired', onSessionExpired);
+
   if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
     const modalStore = useModalStore();
+
     if (modalStore.activeStack.length === 0) {
       document.body.style.overflow = '';
     }
@@ -163,7 +169,9 @@ onUnmounted(() => window.removeEventListener('reisotor:session-expired', onSessi
 watch(
   () => tripStore.currentTripId,
   (tripId) => {
-    if (tripId && navigator.onLine) prefetchTripDataForOffline(tripId);
+    if (tripId && navigator.onLine) {
+      prefetchTripDataForOffline(tripId);
+    }
   },
   { immediate: true }
 );

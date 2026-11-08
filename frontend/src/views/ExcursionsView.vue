@@ -146,9 +146,11 @@ let expandSearchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function expandAndFocusSearch() {
   sheetState.value = 'full';
+
   if (expandSearchTimeout) {
     clearTimeout(expandSearchTimeout);
   }
+
   expandSearchTimeout = setTimeout(() => {
     searchFilterBarRef.value?.focusInput();
   }, 320);
@@ -264,6 +266,7 @@ function startEditExcursion(excursion: Excursion | number) {
   } else {
     editingExcursion.value = excursion;
   }
+
   showExcursionModal.value = true;
 }
 
@@ -300,6 +303,7 @@ function startEditSpot(spot: Spot | number) {
   } else {
     editingSpot.value = spot;
   }
+
   showSpotModal.value = true;
 }
 
@@ -316,6 +320,7 @@ watch(expandedExcursionId, (newId, oldId) => {
     setTimeout(() => recomputeTourLine(newId), 320);
     setTimeout(() => recomputeTourLine(newId), 420);
   }
+
   if (oldId != null) {
     nextTick(() => recomputeTourLine(oldId));
     setTimeout(() => recomputeTourLine(oldId), 320);
@@ -329,16 +334,20 @@ async function openExcursionWithScroll(excursionId: number) {
   if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursionId) {
     drawers.mapFocusExcursionId = null;
   }
+
   if (drawers.mapFocusKey != null) {
     drawers.mapFocusKey = null;
   }
 
   const previousExcursionId = expandedExcursionId.value;
+
   if (previousExcursionId === excursionId) {
     const targetEl = excursionRefs.get(excursionId);
+
     if (targetEl && isCardWellVisibleInBody(targetEl)) {
       return;
     }
+
     await scrollToExcursion(excursionId);
     return;
   }
@@ -347,13 +356,16 @@ async function openExcursionWithScroll(excursionId: number) {
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let offsetAdjustment = 0;
+
   if (previousExcursionId != null) {
     const prevEl = excursionRefs.get(previousExcursionId);
     const targetEl = excursionRefs.get(excursionId);
+
     if (prevEl && targetEl) {
       const isPrevAbove = Boolean(
         prevEl.compareDocumentPosition(targetEl) & Node.DOCUMENT_POSITION_FOLLOWING
       );
+
       if (
         isPrevAbove &&
         targetEl.getBoundingClientRect().top > prevEl.getBoundingClientRect().top + 10
@@ -362,6 +374,7 @@ async function openExcursionWithScroll(excursionId: number) {
         const prevAccordion = prevGroup?.querySelector(
           '.tour-station-accordion'
         ) as HTMLElement | null;
+
         if (prevAccordion) {
           offsetAdjustment = -prevAccordion.getBoundingClientRect().height;
         }
@@ -373,19 +386,30 @@ async function openExcursionWithScroll(excursionId: number) {
   expandedSpotId.value = null;
 
   await nextTick();
-  if (token !== excursionOpenSequenceToken) return;
+
+  if (token !== excursionOpenSequenceToken) {
+    return;
+  }
 
   const targetEl = excursionRefs.get(excursionId);
+
   if (targetEl && isCardWellVisibleInBody(targetEl, offsetAdjustment)) {
     return;
   }
 
   await scrollToExcursion(excursionId, offsetAdjustment);
-  if (token !== excursionOpenSequenceToken) return;
+
+  if (token !== excursionOpenSequenceToken) {
+    return;
+  }
 
   if (!prefersReduced) {
     await new Promise<void>((resolve) => setTimeout(resolve, 420));
-    if (token !== excursionOpenSequenceToken) return;
+
+    if (token !== excursionOpenSequenceToken) {
+      return;
+    }
+
     await scrollToExcursion(excursionId, 0, 'auto');
   }
 }
@@ -398,6 +422,7 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
   if (drawers.mapFocusKey && drawers.mapFocusKey !== `spot-${spotId}`) {
     drawers.mapFocusKey = null;
   }
+
   if (drawers.mapFocusExcursionId != null) {
     drawers.mapFocusExcursionId = null;
   }
@@ -410,6 +435,7 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
     if (resolvedTarget && isCardWellVisibleInBody(resolvedTarget)) {
       return;
     }
+
     await scrollToSpot(resolvedTarget ?? spotId);
     return;
   }
@@ -418,16 +444,19 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let offsetAdjustment = 0;
+
   if (previousSpotId != null) {
     const prevEl =
       lastActiveSpotEl && lastActiveSpotEl.isConnected
         ? lastActiveSpotEl
         : getSpotElement(previousSpotId, expandedExcursionId.value);
     const target = resolvedTarget;
+
     if (prevEl && target) {
       const isPrevAbove = Boolean(
         prevEl.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING
       );
+
       if (
         isPrevAbove &&
         target.getBoundingClientRect().top > prevEl.getBoundingClientRect().top + 10
@@ -453,7 +482,10 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
   expandedSpotId.value = spotId;
 
   await nextTick();
-  if (token !== spotOpenSequenceToken) return;
+
+  if (token !== spotOpenSequenceToken) {
+    return;
+  }
 
   const currentTarget =
     resolvedTarget && resolvedTarget.isConnected
@@ -465,11 +497,18 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
   }
 
   await scrollToSpot(currentTarget ?? spotId, offsetAdjustment);
-  if (token !== spotOpenSequenceToken) return;
+
+  if (token !== spotOpenSequenceToken) {
+    return;
+  }
 
   if (!prefersReduced) {
     await new Promise<void>((resolve) => setTimeout(resolve, 260));
-    if (token !== spotOpenSequenceToken) return;
+
+    if (token !== spotOpenSequenceToken) {
+      return;
+    }
+
     const finalTarget =
       resolvedTarget && resolvedTarget.isConnected
         ? resolvedTarget
@@ -507,6 +546,7 @@ function onCancelProgrammaticScroll() {
 function onSpotShowOnMap(spot: Spot) {
   sheetState.value = 'partial';
   drawers.openMapAt(`spot-${spot.id}`);
+
   if (isSheetOverlayMode.value) {
     nextTick(() => {
       const el =
@@ -522,6 +562,7 @@ function onExcursionShowOnMap(excursionId: number) {
   sheetState.value = 'partial';
   expandedExcursionId.value = excursionId;
   drawers.openMapForExcursion(excursionId);
+
   if (isSheetOverlayMode.value) {
     nextTick(() => {
       scrollToExcursion(excursionId);
@@ -536,7 +577,11 @@ function onFocusSpotFromMap(spotId: number) {
   if (groupMode.value === 'tracks' || isAccommodation) {
     groupMode.value = 'category';
   }
-  if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
+
+  if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
+    sheetState.value = 'partial';
+  }
+
   if (groupMode.value === 'tours' && !isAccommodation) {
     const parentExcursion =
       (drawers.mapFocusDate
@@ -546,18 +591,24 @@ function onFocusSpotFromMap(spotId: number) {
         : null) ??
       excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId) && e.date) ??
       excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
+
     if (parentExcursion) {
       expandedExcursionId.value = parentExcursion.id;
     }
   } else if (isAccommodation) {
     expandedExcursionId.value = null;
   }
+
   openSpotWithScroll(spotId);
 }
 
 function onFocusExcursionFromMap(excursionId: number) {
   groupMode.value = 'tours';
-  if (sheetState.value === 'collapsed' || sheetState.value === 'full') sheetState.value = 'partial';
+
+  if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
+    sheetState.value = 'partial';
+  }
+
   openExcursionWithScroll(excursionId);
 }
 
@@ -606,6 +657,7 @@ watch(
   ([key]) => {
     if (typeof key === 'string' && key.startsWith('spot-')) {
       const spotId = Number(key.replace('spot-', ''));
+
       if (!Number.isNaN(spotId)) {
         nextTick(() => {
           onFocusSpotFromMap(spotId);
@@ -621,6 +673,7 @@ watch(
   () => drawers.mapFocusDate,
   (date) => {
     dayFocusHighlightedIds.value = new Set();
+
     if (date) {
       const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
       const matchingSpotIds = scheduleStore.items
@@ -628,12 +681,15 @@ watch(
         .map((s) => s.spot_id as number);
 
       const next = new Set<number>();
+
       for (const e of matchingExcursions) {
         next.add(e.id);
       }
+
       for (const sid of matchingSpotIds) {
         next.add(sid);
       }
+
       dayFocusHighlightedIds.value = next;
 
       nextTick(() => {
@@ -641,6 +697,7 @@ watch(
           scrollToExcursion(matchingExcursions[0].id);
           return;
         }
+
         if (matchingSpotIds.length > 0) {
           const sid = matchingSpotIds[0];
           const el = getSpotElement(sid, expandedExcursionId.value);
@@ -655,15 +712,21 @@ watch(
 watch(
   () => route.hash,
   async (newHash) => {
-    if (!newHash) return;
+    if (!newHash) {
+      return;
+    }
+
     const spotId = hashHighlightId(newHash, 'spot');
+
     if (spotId != null) {
       await nextTick();
       drawers.openMapAt(`spot-${spotId}`);
       onFocusSpotFromMap(spotId);
       return;
     }
+
     const excursionId = hashHighlightId(newHash, 'excursion') ?? hashHighlightId(newHash, 'travel');
+
     if (excursionId != null) {
       await nextTick();
       drawers.openMapForExcursion(excursionId);
@@ -699,6 +762,7 @@ onMounted(async () => {
   const hashId = hashHighlightId(route.hash, 'spot');
   const excursionHashId =
     hashHighlightId(route.hash, 'excursion') ?? hashHighlightId(route.hash, 'travel');
+
   try {
     const [usersRes, likesRes, commentsRes] = await Promise.all([
       api.get<User[]>(`/trips/${tripId}/members`),
@@ -715,11 +779,13 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+
   if (hashId != null) {
     await nextTick();
     drawers.openMapAt(`spot-${hashId}`);
     onFocusSpotFromMap(hashId);
   }
+
   if (excursionHashId != null) {
     await nextTick();
     drawers.openMapForExcursion(excursionHashId);
@@ -732,6 +798,7 @@ onUnmounted(() => {
     clearTimeout(expandSearchTimeout);
     expandSearchTimeout = null;
   }
+
   drawers.mapFocusKey = null;
   drawers.mapFocusExcursionId = null;
   drawers.mapFocusDate = null;

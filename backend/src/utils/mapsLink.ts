@@ -27,21 +27,26 @@ const PATTERNS: RegExp[] = [
 export function parseLatLngFromText(url: string): LatLng | null {
   // Manche Apple-Maps-Links kodieren das Komma im coordinate=/ll=-Parameter als %2C.
   let text = url;
+
   try {
     text = decodeURIComponent(url);
   } catch {
     // Ungültige Prozent-Kodierung – mit dem Rohtext weiterarbeiten.
   }
+
   for (const pattern of PATTERNS) {
     const match = pattern.exec(text);
+
     if (match) {
       const lat = Number(match[1]);
       const lng = Number(match[2]);
+
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
         return { lat, lng };
       }
     }
   }
+
   return null;
 }
 
@@ -54,42 +59,87 @@ const FETCH_HEADERS = {
 const MAX_REDIRECT_HOPS = 5;
 
 function isPrivateIpv4(a: number, b: number): boolean {
-  if (a === 0) return true; // 0.0.0.0/8 (aktuelles Netzwerk)
-  if (a === 10) return true; // 10.0.0.0/8 (privat)
-  if (a === 127) return true; // 127.0.0.0/8 (Loopback)
-  if (a === 169 && b === 254) return true; // 169.254.0.0/16 (Link-Local, Cloud-Metadaten)
-  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12 (privat)
-  if (a === 192 && b === 168) return true; // 192.168.0.0/16 (privat)
-  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 (Carrier-Grade NAT / Shared Space)
-  if (a === 198 && (b === 18 || b === 19)) return true; // 198.18.0.0/15 (Benchmarking)
-  if (a >= 224) return true; // 224.0.0.0/4 (Multicast), 240.0.0.0/4 (reserviert), 255.255.255.255 (Broadcast)
+  if (a === 0) {
+    return true;
+  } // 0.0.0.0/8 (aktuelles Netzwerk)
+
+  if (a === 10) {
+    return true;
+  } // 10.0.0.0/8 (privat)
+
+  if (a === 127) {
+    return true;
+  } // 127.0.0.0/8 (Loopback)
+
+  if (a === 169 && b === 254) {
+    return true;
+  } // 169.254.0.0/16 (Link-Local, Cloud-Metadaten)
+
+  if (a === 172 && b >= 16 && b <= 31) {
+    return true;
+  } // 172.16.0.0/12 (privat)
+
+  if (a === 192 && b === 168) {
+    return true;
+  } // 192.168.0.0/16 (privat)
+
+  if (a === 100 && b >= 64 && b <= 127) {
+    return true;
+  } // 100.64.0.0/10 (Carrier-Grade NAT / Shared Space)
+
+  if (a === 198 && (b === 18 || b === 19)) {
+    return true;
+  } // 198.18.0.0/15 (Benchmarking)
+
+  if (a >= 224) {
+    return true;
+  } // 224.0.0.0/4 (Multicast), 240.0.0.0/4 (reserviert), 255.255.255.255 (Broadcast)
+
   return false;
 }
 
 function isPrivateIpv6(hostname: string): boolean {
-  if (hostname === '::' || hostname === '::1') return true;
-  if (hostname.startsWith('fe80:')) return true; // Link-Local
-  if (hostname.startsWith('fc') || hostname.startsWith('fd')) return true; // Unique Local (fc00::/7)
-  if (hostname.startsWith('fec0:')) return true; // Site-Local (veraltet)
+  if (hostname === '::' || hostname === '::1') {
+    return true;
+  }
+
+  if (hostname.startsWith('fe80:')) {
+    return true;
+  } // Link-Local
+
+  if (hostname.startsWith('fc') || hostname.startsWith('fd')) {
+    return true;
+  } // Unique Local (fc00::/7)
+
+  if (hostname.startsWith('fec0:')) {
+    return true;
+  } // Site-Local (veraltet)
 
   // IPv4-mapped IPv6 (::ffff:x.x.x.x oder Hex-Format ::ffff:xxxx:xxxx)
   if (hostname.startsWith('::ffff:')) {
     const rest = hostname.slice(7);
+
     if (rest.includes('.')) {
       const parts = rest.split('.').map(Number);
+
       if (parts.length === 4 && parts.every((p) => Number.isInteger(p) && p >= 0 && p <= 255)) {
         return isPrivateIpv4(parts[0], parts[1]);
       }
+
       return true;
     }
+
     const hexParts = rest.split(':');
+
     if (hexParts.length === 2) {
       const h1 = parseInt(hexParts[0], 16);
       const h2 = parseInt(hexParts[1], 16);
+
       if (!Number.isNaN(h1) && !Number.isNaN(h2)) {
         return isPrivateIpv4((h1 >> 8) & 0xff, h1 & 0xff);
       }
     }
+
     return true;
   }
 
@@ -126,17 +176,23 @@ const BLOCKED_HOSTNAMES = new Set([
  *  Unbekannte/ungültige Formate gelten vorsichtshalber als privat. */
 export function isPrivateIp(ip: string): boolean {
   const type = isIP(ip);
+
   if (type === 4) {
     const parts = ip.split('.').map(Number);
     return isPrivateIpv4(parts[0], parts[1]);
   }
-  if (type === 6) return isPrivateIpv6(ip.toLowerCase());
+
+  if (type === 6) {
+    return isPrivateIpv6(ip.toLowerCase());
+  }
+
   return true;
 }
 
 /** Prüft, ob eine URL sicher für serverseitige Fetch-Anfragen ist (SSRF-Schutz). */
 export function isSafeUrl(urlString: string): boolean {
   let parsed: URL;
+
   try {
     parsed = new URL(urlString);
   } catch {
@@ -166,6 +222,7 @@ export function isSafeUrl(urlString: string): boolean {
   }
 
   const ipType = isIP(hostname);
+
   if (ipType === 4) {
     const parts = hostname.split('.').map(Number);
     return !isPrivateIpv4(parts[0], parts[1]);
@@ -189,9 +246,14 @@ export function isSafeUrl(urlString: string): boolean {
  *  Hop (SSRF-Schutz). */
 async function resolveViaRedirectHeaders(url: string): Promise<LatLng | null> {
   let current = url;
+
   for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
-    if (!isSafeUrl(current)) return null;
+    if (!isSafeUrl(current)) {
+      return null;
+    }
+
     let res: Response;
+
     try {
       res = await fetch(current, {
         redirect: 'manual',
@@ -201,13 +263,23 @@ async function resolveViaRedirectHeaders(url: string): Promise<LatLng | null> {
     } catch {
       return null;
     }
+
     const location = res.headers.get('location');
-    if (!location) return null;
+
+    if (!location) {
+      return null;
+    }
+
     const resolved = new URL(location, current).toString();
     const direct = parseLatLngFromText(resolved);
-    if (direct) return direct;
+
+    if (direct) {
+      return direct;
+    }
+
     current = resolved;
   }
+
   return null;
 }
 
@@ -232,17 +304,30 @@ function isGoogleMapsHost(hostname: string): boolean {
  *  Maps-Kurzlink-Hosts (maps.app.goo.gl, goo.gl, google.*) beschränkt, um SSRF über externe
  *  Redirect-Server auszuschließen. Netzwerkfehler/Timeout führen zu `null` statt einem Fehler. */
 export async function resolveLatLng(url: string | null | undefined): Promise<LatLng | null> {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
+
   const direct = parseLatLngFromText(url);
-  if (direct) return direct;
+
+  if (direct) {
+    return direct;
+  }
 
   const strippedUrl = url.replace(/([?&])g_st=[^&]*&?/, '$1').replace(/[?&]$/, '');
-  if (!isSafeUrl(strippedUrl)) return null;
+
+  if (!isSafeUrl(strippedUrl)) {
+    return null;
+  }
 
   const viaHeaders = await resolveViaRedirectHeaders(strippedUrl);
-  if (viaHeaders) return viaHeaders;
+
+  if (viaHeaders) {
+    return viaHeaders;
+  }
 
   let parsed: URL;
+
   try {
     parsed = new URL(strippedUrl);
   } catch {
@@ -260,7 +345,11 @@ export async function resolveLatLng(url: string | null | undefined): Promise<Lat
       signal: AbortSignal.timeout(5000),
       headers: FETCH_HEADERS,
     });
-    if (!isSafeUrl(res.url)) return null;
+
+    if (!isSafeUrl(res.url)) {
+      return null;
+    }
+
     return parseLatLngFromText(res.url);
   } catch {
     return null;
@@ -277,19 +366,28 @@ export interface PlacePreview {
 // schon die finale URL kennt.
 function extractPlaceNameFromUrl(url: string): string | null {
   const match = /\/maps\/place\/([^/@]+)/.exec(url);
-  if (!match) return null;
+
+  if (!match) {
+    return null;
+  }
+
   let name = match[1];
+
   try {
     name = decodeURIComponent(name);
   } catch {
     // Ungültige Prozent-Kodierung - mit dem Rohwert weiterarbeiten.
   }
+
   name = name.replace(/\+/g, ' ').trim();
   return name || null;
 }
 
 export function isGenericPlaceholderImage(url: string): boolean {
-  if (!url) return true;
+  if (!url) {
+    return true;
+  }
+
   const lower = url.toLowerCase();
   return (
     lower.includes('maps_512dp') ||
@@ -316,13 +414,25 @@ function extractOgImage(html: string): string | null {
   const match =
     /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(html) ??
     /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i.exec(html);
-  if (!match) return null;
+
+  if (!match) {
+    return null;
+  }
+
   let url = match[1].trim();
+
   if (url.startsWith('//')) {
     url = 'https:' + url;
   }
-  if (!isSafeUrl(url)) return null;
-  if (isGenericPlaceholderImage(url)) return null;
+
+  if (!isSafeUrl(url)) {
+    return null;
+  }
+
+  if (isGenericPlaceholderImage(url)) {
+    return null;
+  }
+
   return url;
 }
 
@@ -334,14 +444,25 @@ function extractOgImage(html: string): string | null {
  *  Vorschau normal nutzbar. Keine Kategorie-Erkennung: dafür gibt es ohne kostenpflichtige
  *  Places-API kein verlässliches Signal. */
 export async function fetchPlacePreview(url: string | null | undefined): Promise<PlacePreview> {
-  if (!url) return { name: null, imageUrl: null };
+  if (!url) {
+    return { name: null, imageUrl: null };
+  }
+
   const strippedUrl = url.replace(/([?&])g_st=[^&]*&?/, '$1').replace(/[?&]$/, '');
-  if (!isSafeUrl(strippedUrl)) return { name: null, imageUrl: null };
+
+  if (!isSafeUrl(strippedUrl)) {
+    return { name: null, imageUrl: null };
+  }
 
   let current = strippedUrl;
+
   for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
-    if (!isSafeUrl(current)) return { name: null, imageUrl: null };
+    if (!isSafeUrl(current)) {
+      return { name: null, imageUrl: null };
+    }
+
     let res: Response;
+
     try {
       res = await fetch(current, {
         redirect: 'manual',
@@ -353,12 +474,14 @@ export async function fetchPlacePreview(url: string | null | undefined): Promise
     }
 
     const location = res.headers?.get?.('location');
+
     if (location && (res.status == null || (res.status >= 300 && res.status < 400))) {
       try {
         current = new URL(location, current).toString();
       } catch {
         return { name: null, imageUrl: null };
       }
+
       continue;
     }
 

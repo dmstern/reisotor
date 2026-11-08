@@ -25,8 +25,14 @@ const props = withDefaults(
 const tripCategoriesStore = useTripCategoriesStore();
 
 const meta = computed(() => {
-  if (props.customMeta) return props.customMeta;
-  if (!props.category) return null;
+  if (props.customMeta) {
+    return props.customMeta;
+  }
+
+  if (!props.category) {
+    return null;
+  }
+
   return tripCategoriesStore.categoryMeta(props.category, props.type);
 });
 </script>

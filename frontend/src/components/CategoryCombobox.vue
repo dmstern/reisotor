@@ -53,12 +53,16 @@ function onManageCategories() {
 }
 
 const computedOptions = computed(() => {
-  if (props.options) return props.options;
+  if (props.options) {
+    return props.options;
+  }
+
   if (props.type === 'expense') {
     return budgetStore.expenseCategories.length > 0
       ? budgetStore.expenseCategories
       : tripCategoriesStore.activeExpenseCategories;
   }
+
   return spotsStore.spotCategories.length > 0
     ? spotsStore.spotCategories
     : tripCategoriesStore.activeSpotCategories;
@@ -73,7 +77,10 @@ function colorFor(category: string) {
 }
 
 const computedPlaceholder = computed(() => {
-  if (props.placeholder) return props.placeholder;
+  if (props.placeholder) {
+    return props.placeholder;
+  }
+
   return props.type === 'expense'
     ? 'Kategorie (z. B. Essen & Trinken, Unterkunft)'
     : 'Kategorie (z. B. Restaurant – oder eigene erstellen)';

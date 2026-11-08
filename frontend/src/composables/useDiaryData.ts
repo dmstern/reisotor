@@ -58,6 +58,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
 
   async function load() {
     const currentTripId = unref(tripId);
+
     try {
       const [entriesRes, likesRes, commentsRes, usersRes] = await Promise.all([
         api.get<DiaryEntry[]>(`/diary?trip_id=${currentTripId}`),
@@ -76,6 +77,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
         editor_ids: Array.isArray(e.editor_ids) ? e.editor_ids : [],
       }));
       users.value = usersRes;
+
       if (onSocialLoaded) {
         onSocialLoaded(likesRes, commentsRes);
       }
@@ -106,7 +108,10 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   }
 
   async function removeImageFromEntry(entry: DiaryEntry, index: number) {
-    if (auth.user?.restricted) return;
+    if (auth.user?.restricted) {
+      return;
+    }
+
     const removed = entry.images[index];
     entry.images.splice(index, 1);
     const body = {
@@ -119,10 +124,15 @@ export function useDiaryData(options: UseDiaryDataOptions) {
       date: entry.date ?? entry.created_at?.slice(0, 10),
       is_draft: Boolean(entry.is_draft),
     };
+
     try {
       const updated = await api.put<DiaryEntry>(`/diary/${entry.id}`, body);
       const idx = entries.value.findIndex((e) => e.id === updated.id);
-      if (idx !== -1) entries.value[idx] = updated;
+
+      if (idx !== -1) {
+        entries.value[idx] = updated;
+      }
+
       sortEntries();
     } catch (err) {
       entry.images.splice(index, 0, removed);

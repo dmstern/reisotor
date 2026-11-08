@@ -47,12 +47,19 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
 
   function isMobileLayout(): boolean {
     const wrapWidth = options.mapEl.value?.parentElement?.clientWidth;
-    if (wrapWidth && wrapWidth > 0) return wrapWidth <= 580;
+
+    if (wrapWidth && wrapWidth > 0) {
+      return wrapWidth <= 580;
+    }
+
     return typeof window !== 'undefined' && window.innerWidth <= 580;
   }
 
   function syncMapInteractivity() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     const isMobile = isMobileLayout();
     const isLockedPreview = isMobile && !isMobileMapExpanded.value;
 
@@ -76,6 +83,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     syncMapInteractivity();
     nextTick(() => {
       map?.invalidateSize();
+
       if (options.modelValue.value) {
         centerOnPoint([options.modelValue.value.lat, options.modelValue.value.lng]);
       }
@@ -86,11 +94,14 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     if (!options.isDetailsVisible.value) {
       return { coveredTopPx: 0, coveredLeftPx: 0 };
     }
+
     const isMobile = isMobileLayout();
+
     if (isMobile) {
       // Auf Mobile ist die Polaroid-Card im gestapelten Layout und überdeckt die Karte nicht mehr
       return { coveredTopPx: 0, coveredLeftPx: 0 };
     }
+
     if (options.polaroidCardEl.value && options.mapEl.value) {
       const cardRect = options.polaroidCardEl.value.getBoundingClientRect();
       const mapRect = options.mapEl.value.getBoundingClientRect();
@@ -108,9 +119,13 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   }
 
   function centerOnPoint(latlng: L.LatLngExpression, zoom?: number) {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     const targetZoom = zoom ?? (map.getZoom ? map.getZoom() : 15) ?? 15;
     const { coveredTopPx, coveredLeftPx } = getCoveredOffsets();
+
     if (
       (!coveredTopPx && !coveredLeftPx) ||
       typeof map.project !== 'function' ||
@@ -119,6 +134,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
       map.setView(latlng, targetZoom, { animate: false });
       return;
     }
+
     // Direkte Projektions-Rechnung analog zu TripMap.vue:
     // Der Zielpunkt soll nicht im geometrischen Container-Zentrum liegen, sondern im Zentrum
     // der tatsächlich sichtbaren Fläche:
@@ -133,7 +149,10 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   }
 
   function placeMarker(lat: number, lng: number) {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     if (marker) {
       marker.setLatLng([lat, lng]);
     } else {
@@ -143,7 +162,10 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
       }).addTo(map);
 
       marker.on('dragend', () => {
-        if (!marker) return;
+        if (!marker) {
+          return;
+        }
+
         const latlng = marker.getLatLng();
         options.onManualCoordsSet({ lat: latlng.lat, lng: latlng.lng });
       });
@@ -159,10 +181,20 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   }
 
   function renderReferencePoints() {
-    if (!map) return;
+    if (!map) {
+      return;
+    }
+
     referenceLayer?.clearLayers();
-    if (!options.referencePoints?.value?.length) return;
-    if (!referenceLayer) referenceLayer = L.layerGroup().addTo(map);
+
+    if (!options.referencePoints?.value?.length) {
+      return;
+    }
+
+    if (!referenceLayer) {
+      referenceLayer = L.layerGroup().addTo(map);
+    }
+
     for (const point of options.referencePoints.value) {
       L.marker([point.lat, point.lng], {
         icon: cachedEmojiPin(point.icon ?? FORM_FIELD_ICONS.location, '#8a8a86'),
@@ -173,11 +205,18 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   }
 
   function startOwnLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      return;
+    }
+
     geoWatchId = navigator.geolocation.watchPosition(
       (position) => {
-        if (!map) return;
+        if (!map) {
+          return;
+        }
+
         const latlng: L.LatLngExpression = [position.coords.latitude, position.coords.longitude];
+
         if (ownLocationMarker) {
           ownLocationMarker.setLatLng(latlng);
         } else {
@@ -195,7 +234,10 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   }
 
   function useOwnLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      return;
+    }
+
     locatingSelf.value = true;
     locateError.value = false;
     navigator.geolocation.getCurrentPosition(
@@ -218,7 +260,10 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   if (getCurrentInstance()) {
     onMounted(async () => {
       await nextTick();
-      if (!options.mapEl.value) return;
+
+      if (!options.mapEl.value) {
+        return;
+      }
 
       const initial =
         options.modelValue.value ??
@@ -246,6 +291,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
       ) {
         centerOnPoint([initial.lat, initial.lng], initialZoom);
       }
+
       renderReferencePoints();
       startOwnLocation();
       syncMapInteractivity();
@@ -253,16 +299,19 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
       map.on('click', (e: L.LeafletMouseEvent) => {
         const isMobile = isMobileLayout();
         const isLockedPreview = isMobile && !isMobileMapExpanded.value;
+
         if (isLockedPreview) {
           toggleMobileMapExpanded();
           return;
         }
+
         options.onManualCoordsSet({ lat: e.latlng.lat, lng: e.latlng.lng });
       });
 
       resizeObserver = new ResizeObserver(() => {
         map?.invalidateSize();
         syncMapInteractivity();
+
         if (options.modelValue.value) {
           centerOnPoint([options.modelValue.value.lat, options.modelValue.value.lng]);
         }
@@ -273,7 +322,11 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     onUnmounted(() => {
       resizeObserver?.disconnect();
       resizeObserver = null;
-      if (geoWatchId != null) navigator.geolocation.clearWatch(geoWatchId);
+
+      if (geoWatchId != null) {
+        navigator.geolocation.clearWatch(geoWatchId);
+      }
+
       map?.remove();
       map = null;
     });
@@ -284,11 +337,13 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     (val) => {
       if (val) {
         placeMarker(val.lat, val.lng);
+
         if (map && !isInternalCoordChange) {
           nextTick(() => {
             centerOnPoint([val.lat, val.lng], map?.getZoom() || 15);
           });
         }
+
         isInternalCoordChange = false;
       } else {
         removeMarker();
@@ -307,6 +362,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
       if (!detailsVisible) {
         isMobileMapExpanded.value = false;
       }
+
       syncMapInteractivity();
     }
   );
@@ -314,7 +370,10 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
   watch(
     () => options.proximityBias?.value ?? options.center?.value,
     (c) => {
-      if (!map || options.modelValue.value || !c) return;
+      if (!map || options.modelValue.value || !c) {
+        return;
+      }
+
       centerOnPoint([c.lat, c.lng], options.zoom?.value ?? FALLBACK_ZOOM);
     }
   );

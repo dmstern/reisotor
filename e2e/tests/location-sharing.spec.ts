@@ -22,6 +22,7 @@ test.use({
 // statt sich auf einen zufällig "sauberen" Ausgangszustand zu verlassen.
 async function closeDrawerIfOpen(page: Page, label: string) {
   const closeBtn = page.locator(`.close-drawer-btn[aria-label="Schließen: ${label}"]`);
+
   if ((await closeBtn.count()) > 0 && (await closeBtn.isVisible())) {
     await closeBtn.click();
   }

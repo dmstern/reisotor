@@ -449,8 +449,10 @@ export const EXPENSE_CATEGORY_SUGGESTIONS = KNOWN_EXPENSE_CATEGORIES.map((c) => 
 );
 
 const LOOKUP = new Map<string, KnownExpenseCategoryDef>();
+
 for (const cat of KNOWN_EXPENSE_CATEGORIES) {
   LOOKUP.set(cat.label.toLowerCase(), cat);
+
   if (cat.aliases) {
     for (const alias of cat.aliases) {
       LOOKUP.set(alias.toLowerCase(), cat);
@@ -471,9 +473,11 @@ const CUSTOM_CATEGORY_PALETTE = [
 
 function hashCategoryColor(category: string): string {
   let hash = 0;
+
   for (let i = 0; i < category.length; i++) {
     hash = (hash * 31 + category.charCodeAt(i)) | 0;
   }
+
   return CUSTOM_CATEGORY_PALETTE[Math.abs(hash) % CUSTOM_CATEGORY_PALETTE.length];
 }
 
@@ -483,11 +487,18 @@ function hashCategoryColor(category: string): string {
  * bei unbekanntem Freitext wird deterministisch eine Farbe errechnet und ein neutrales Icon verwendet.
  */
 export function expenseCategoryMeta(category: string | null | undefined): ExpenseCategoryMeta {
-  if (!category) return OTHER_EXPENSE_META;
+  if (!category) {
+    return OTHER_EXPENSE_META;
+  }
+
   const trimmed = category.trim().toLowerCase();
-  if (!trimmed) return OTHER_EXPENSE_META;
+
+  if (!trimmed) {
+    return OTHER_EXPENSE_META;
+  }
 
   const known = LOOKUP.get(trimmed);
+
   if (known) {
     return {
       label: category,

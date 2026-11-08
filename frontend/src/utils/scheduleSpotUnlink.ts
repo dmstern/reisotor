@@ -31,23 +31,30 @@ export function isAutoCreatedUnmodifiedScheduleItem(
   if (item.title.trim().toLowerCase() !== spotTitle.trim().toLowerCase()) {
     return false;
   }
+
   if (item.time && item.time.trim() !== '') {
     return false;
   }
+
   if (item.end_time && item.end_time.trim() !== '') {
     return false;
   }
+
   if (item.end_date && item.end_date !== item.date) {
     return false;
   }
+
   if (item.note && item.note.replace(/<[^>]*>/g, '').trim() !== '') {
     return false;
   }
+
   if (item.location && item.location.trim() !== '') {
     return false;
   }
+
   if (item.maps_link && item.maps_link.trim() !== '') {
     return false;
   }
+
   return true;
 }

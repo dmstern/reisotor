@@ -46,10 +46,13 @@ function getRelayUrl(): string | null {
   ) {
     return null;
   }
+
   const configured = getEffectiveSetting('feedback_relay_url', 'FEEDBACK_RELAY_URL');
+
   if (configured !== '') {
     return configured.trim() || null;
   }
+
   return DEFAULT_RELAY_URL;
 }
 
@@ -62,24 +65,30 @@ interface ProcessScreenshotResult {
 
 async function processAndUploadScreenshot(screenshot: string): Promise<ProcessScreenshotResult> {
   const match = /^data:([a-z0-9.+-]+\/[a-z0-9.+-]+);base64,(.+)$/i.exec(screenshot);
-  if (!match)
+
+  if (!match) {
     return {
       imageUrl: null,
       screenshotError: null,
       errorStatus: 400,
       errorMessage: 'Ungültiges Bildformat',
     };
+  }
+
   const [, mimeType, base64] = match;
   const extension = ALLOWED_SCREENSHOT_TYPES[mimeType];
-  if (!extension)
+
+  if (!extension) {
     return {
       imageUrl: null,
       screenshotError: null,
       errorStatus: 400,
       errorMessage: 'Nicht unterstützter Bildtyp',
     };
+  }
 
   const buffer = Buffer.from(base64, 'base64');
+
   if (buffer.byteLength > MAX_SCREENSHOT_BYTES) {
     return {
       imageUrl: null,
@@ -94,6 +103,7 @@ async function processAndUploadScreenshot(screenshot: string): Promise<ProcessSc
     extension,
     `${randomUUID()}.${extension}`
   );
+
   if (uploadResult.ok) {
     return { imageUrl: uploadResult.url, screenshotError: null };
   } else {
@@ -112,10 +122,12 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
 
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
     const rateLimit = checkFeedbackRateLimit(clientIp);
+
     if (!rateLimit.allowed) {
       if (rateLimit.retryAfterSeconds) {
         reply.header('Retry-After', String(rateLimit.retryAfterSeconds));
       }
+
       return reply.code(429).send({
         error:
           'Zu viele Feedback-Meldungen von dieser IP-Adresse. Bitte versuche es später erneut.',
@@ -123,29 +135,37 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const { type, title, description, screenshot, email, version } = req.body ?? {};
+
     if (type !== 'bug' && type !== 'feature') {
       return reply.code(400).send({ error: 'Ungültiger Meldungstyp' });
     }
+
     if (!title?.trim() || !description?.trim()) {
       return reply.code(400).send({ error: 'Titel und Beschreibung erforderlich' });
     }
+
     if (title.length > MAX_TITLE_LENGTH || description.length > MAX_DESCRIPTION_LENGTH) {
       return reply.code(400).send({ error: 'Titel oder Beschreibung ist zu lang' });
     }
+
     if (email && (typeof email !== 'string' || email.length > MAX_EMAIL_LENGTH)) {
       return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
     }
+
     if (version && (typeof version !== 'string' || version.length > 50)) {
       return reply.code(400).send({ error: 'Ungültige Versionsangabe' });
     }
 
     let imageUrl: string | null = null;
     let screenshotError: string | null = null;
+
     if (screenshot) {
       const uploadRes = await processAndUploadScreenshot(screenshot);
+
       if (uploadRes.errorStatus) {
         return reply.code(uploadRes.errorStatus).send({ error: uploadRes.errorMessage });
       }
+
       imageUrl = uploadRes.imageUrl;
       screenshotError = uploadRes.screenshotError;
     }
@@ -192,15 +212,19 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: [requireAuth] },
     async (req, reply) => {
       const { type, title, description, screenshot, email } = req.body ?? {};
+
       if (type !== 'bug' && type !== 'feature') {
         return reply.code(400).send({ error: 'Ungültiger Meldungstyp' });
       }
+
       if (!title?.trim() || !description?.trim()) {
         return reply.code(400).send({ error: 'Titel und Beschreibung erforderlich' });
       }
+
       if (title.length > MAX_TITLE_LENGTH || description.length > MAX_DESCRIPTION_LENGTH) {
         return reply.code(400).send({ error: 'Titel oder Beschreibung ist zu lang' });
       }
+
       if (email && (typeof email !== 'string' || email.length > MAX_EMAIL_LENGTH)) {
         return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
       }
@@ -211,8 +235,10 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
 
       // Wenn kein lokales GITHUB_TOKEN konfiguriert ist, transparent an den Relay weiterleiten (#526)
       const githubToken = getEffectiveSetting('github_token', 'GITHUB_TOKEN').trim();
+
       if (!githubToken) {
         const relayUrl = getRelayUrl();
+
         if (!relayUrl) {
           return reply.code(503).send({
             error: `Auf diesem Server ist kein GitHub-Zugang (GITHUB_TOKEN) und kein Feedback-Relay eingerichtet. Bei selbstgehosteten Instanzen können Fehler und Feedback direkt auf GitHub gemeldet werden: https://github.com/${getGithubRepo()}/issues`,
@@ -243,6 +269,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
             issue_number?: number;
             issue_url?: string;
           };
+
           if (!relayRes.ok) {
             const errorMsg = data?.error || `Relay antwortete mit Status ${relayRes.status}`;
             return reply
@@ -266,11 +293,14 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
       // Lokaler Modus: Direkte GitHub-Issue-Erstellung mit eigenem Token
       let imageUrl: string | null = null;
       let screenshotError: string | null = null;
+
       if (screenshot) {
         const uploadRes = await processAndUploadScreenshot(screenshot);
+
         if (uploadRes.errorStatus) {
           return reply.code(uploadRes.errorStatus).send({ error: uploadRes.errorMessage });
         }
+
         imageUrl = uploadRes.imageUrl;
         screenshotError = uploadRes.screenshotError;
       }

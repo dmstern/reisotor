@@ -152,13 +152,22 @@ export function useAccountSettings() {
   async function changeUsername() {
     usernameError.value = '';
     usernameSaved.value = false;
-    if (!usernameForm.value.username.trim()) return;
+
+    if (!usernameForm.value.username.trim()) {
+      return;
+    }
+
     usernameSaving.value = true;
+
     try {
       const updated = await api.put<User>('/users/me/username', {
         username: usernameForm.value.username.trim(),
       });
-      if (auth.user) auth.user.username = updated.username;
+
+      if (auth.user) {
+        auth.user.username = updated.username;
+      }
+
       usernameSaved.value = true;
     } catch (err) {
       usernameError.value =
@@ -173,11 +182,14 @@ export function useAccountSettings() {
     emailSuccess.value = '';
     emailSaved.value = false;
     const trimmed = emailForm.value.email.trim();
+
     if (!trimmed) {
       emailError.value = 'Bitte gib eine E-Mail-Adresse ein';
       return;
     }
+
     emailSaving.value = true;
+
     try {
       const res = await api.put<{
         requiresVerification?: boolean;
@@ -190,10 +202,15 @@ export function useAccountSettings() {
       if (auth.user) {
         if (res.requiresVerification) {
           auth.user.pending_email = res.pendingEmail ?? trimmed;
-          if (res.email) auth.user.email = res.email;
+
+          if (res.email) {
+            auth.user.email = res.email;
+          }
+
           if (res.is_email_verified !== undefined) {
             auth.user.is_email_verified = res.is_email_verified;
           }
+
           emailSuccess.value =
             res.message ||
             'Bestätigungslink wurde an deine neue Adresse gesendet. Bitte prüfe dein Postfach.';
@@ -216,11 +233,14 @@ export function useAccountSettings() {
   async function cancelPendingEmail() {
     emailError.value = '';
     emailCancelling.value = true;
+
     try {
       await api.delete('/users/me/email-pending');
+
       if (auth.user) {
         auth.user.pending_email = null;
       }
+
       emailSuccess.value = 'Ausstehende E-Mail-Änderung abgebrochen.';
     } catch (err) {
       emailError.value = err instanceof ApiError ? err.message : 'Konnte nicht abgebrochen werden';
@@ -232,6 +252,7 @@ export function useAccountSettings() {
   async function resendVerificationEmail() {
     emailError.value = '';
     emailResending.value = true;
+
     try {
       const res = await api.post<{ message?: string }>('/users/me/resend-verification-email');
       emailSuccess.value = res.message || 'Neuer Bestätigungslink wurde versendet.';
@@ -246,9 +267,14 @@ export function useAccountSettings() {
   async function selectAvatar(avatar: string) {
     avatarSaving.value = true;
     avatarSaved.value = false;
+
     try {
       const updated = await api.put<User>('/users/me/avatar', { avatar });
-      if (auth.user) auth.user.avatar = updated.avatar;
+
+      if (auth.user) {
+        auth.user.avatar = updated.avatar;
+      }
+
       avatarSaved.value = true;
     } finally {
       avatarSaving.value = false;
@@ -258,11 +284,14 @@ export function useAccountSettings() {
   async function changePassword() {
     passwordError.value = '';
     passwordSaved.value = false;
+
     if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
       passwordError.value = 'Neue Passwörter stimmen nicht überein';
       return;
     }
+
     passwordSaving.value = true;
+
     try {
       await api.put('/users/me/password', {
         currentPassword: passwordForm.value.currentPassword,

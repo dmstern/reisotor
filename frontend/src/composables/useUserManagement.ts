@@ -6,13 +6,20 @@ import { useAuthStore } from '../stores/auth';
 export type UserRole = 'admin' | 'plus' | 'restricted';
 
 export function getUserRole(u: User): UserRole {
-  if (u.is_admin) return 'admin';
-  if (u.is_restricted) return 'restricted';
+  if (u.is_admin) {
+    return 'admin';
+  }
+
+  if (u.is_restricted) {
+    return 'restricted';
+  }
+
   return 'plus';
 }
 
 export function getUserRoleLabel(u: User | UserRole): string {
   const role = typeof u === 'string' ? u : getUserRole(u);
+
   switch (role) {
     case 'admin':
       return 'Admin';
@@ -38,14 +45,21 @@ export function useUserManagement() {
   const lockingUserId = ref<number | null>(null);
 
   async function loadUserList() {
-    if (!auth.user?.is_admin) return;
+    if (!auth.user?.is_admin) {
+      return;
+    }
+
     loadingUsers.value = true;
     userListError.value = '';
+
     try {
       userList.value = await api.get<User[]>('/users');
     } catch (err) {
-      if (err instanceof ApiError) userListError.value = err.message;
-      else userListError.value = 'Fehler beim Laden der Nutzerliste.';
+      if (err instanceof ApiError) {
+        userListError.value = err.message;
+      } else {
+        userListError.value = 'Fehler beim Laden der Nutzerliste.';
+      }
     } finally {
       loadingUsers.value = false;
     }
@@ -53,15 +67,21 @@ export function useUserManagement() {
 
   async function changeUserRole(u: User, role: UserRole) {
     changingRoleId.value = u.id;
+
     try {
       const updated = await api.put<User>(`/users/${u.id}/role`, { role });
       const idx = userList.value.findIndex((item) => item.id === u.id);
-      if (idx !== -1) userList.value[idx] = updated;
+
+      if (idx !== -1) {
+        userList.value[idx] = updated;
+      }
+
       if (auth.user && auth.user.id === u.id) {
         auth.user.is_admin = updated.is_admin;
         auth.user.restricted = updated.restricted;
         auth.user.is_restricted = updated.is_restricted;
       }
+
       return updated;
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern der Rolle');
@@ -72,10 +92,14 @@ export function useUserManagement() {
 
   async function toggleAdminRole(u: User) {
     const nextIsAdmin = !u.is_admin;
+
     try {
       const updated = await api.put<User>(`/users/${u.id}/admin`, { is_admin: nextIsAdmin });
       const idx = userList.value.findIndex((item) => item.id === u.id);
-      if (idx !== -1) userList.value[idx] = updated;
+
+      if (idx !== -1) {
+        userList.value[idx] = updated;
+      }
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern der Admin-Rechte');
     }
@@ -83,20 +107,30 @@ export function useUserManagement() {
 
   async function toggleRestrictedRole(u: User) {
     const nextIsRestricted = !u.is_restricted;
+
     try {
       const updated = await api.put<User>(`/users/${u.id}/restricted`, {
         is_restricted: nextIsRestricted,
       });
       const idx = userList.value.findIndex((item) => item.id === u.id);
-      if (idx !== -1) userList.value[idx] = updated;
+
+      if (idx !== -1) {
+        userList.value[idx] = updated;
+      }
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Fehler beim Ändern des Kontostatus');
     }
   }
 
   async function deleteUserAccount(u: User) {
-    if (u.id === auth.user?.id) return;
-    if (!confirm(`Möchtest du den Nutzer "${u.username}" wirklich löschen?`)) return;
+    if (u.id === auth.user?.id) {
+      return;
+    }
+
+    if (!confirm(`Möchtest du den Nutzer "${u.username}" wirklich löschen?`)) {
+      return;
+    }
+
     try {
       await api.delete(`/users/${u.id}`);
       userList.value = userList.value.filter((item) => item.id !== u.id);
@@ -121,6 +155,7 @@ export function useUserManagement() {
 
   async function performResetPassword(u: User, temporaryPassword?: string) {
     resettingPassword.value = true;
+
     try {
       const res = await api.post<AdminResetPasswordResult>(
         `/users/${u.id}/reset-password`,
@@ -130,9 +165,11 @@ export function useUserManagement() {
       resetPasswordResult.value = res;
       // In der Nutzerliste must_change_password aktualisieren
       const idx = userList.value.findIndex((item) => item.id === u.id);
+
       if (idx !== -1) {
         userList.value[idx] = { ...userList.value[idx], must_change_password: true };
       }
+
       return res;
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Fehler beim Zurücksetzen des Passworts');
@@ -144,9 +181,11 @@ export function useUserManagement() {
 
   async function verifyUserEmail(u: User) {
     verifyingEmailId.value = u.id;
+
     try {
       await api.post(`/users/${u.id}/verify-email`);
       const idx = userList.value.findIndex((item) => item.id === u.id);
+
       if (idx !== -1) {
         userList.value[idx] = { ...userList.value[idx], is_email_verified: true };
       }
@@ -158,15 +197,27 @@ export function useUserManagement() {
   }
 
   async function toggleLockUser(u: User) {
-    if (u.id === auth.user?.id) return;
+    if (u.id === auth.user?.id) {
+      return;
+    }
+
     const nextLocked = !u.is_locked;
     const actionText = nextLocked ? 'sperren' : 'entsperren';
-    if (!confirm(`Möchtest du das Konto von "${u.username}" wirklich ${actionText}?`)) return;
+
+    if (!confirm(`Möchtest du das Konto von "${u.username}" wirklich ${actionText}?`)) {
+      return;
+    }
+
     lockingUserId.value = u.id;
+
     try {
       const updated = await api.put<User>(`/users/${u.id}/lock`, { is_locked: nextLocked });
       const idx = userList.value.findIndex((item) => item.id === u.id);
-      if (idx !== -1) userList.value[idx] = updated;
+
+      if (idx !== -1) {
+        userList.value[idx] = updated;
+      }
+
       return updated;
     } catch (err) {
       alert(

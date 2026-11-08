@@ -82,7 +82,10 @@ function onNavigate() {
 }
 
 const beforeCategoryMeta = computed(() => {
-  if (!editingCategory.value) return undefined;
+  if (!editingCategory.value) {
+    return undefined;
+  }
+
   const meta = tripCategoriesStore.categoryMeta(editingCategory.value.name, activeType.value);
   const iconId = editingCategory.value.icon || meta.tabler.id;
   const emojiVal = editingCategory.value.emoji || meta.icon;
@@ -95,7 +98,10 @@ const beforeCategoryMeta = computed(() => {
 });
 
 const afterCategoryMeta = computed(() => {
-  if (!editingCategory.value) return undefined;
+  if (!editingCategory.value) {
+    return undefined;
+  }
+
   const iconId = editForm.value.icon || 'category';
   const emojiVal = editForm.value.emoji || '🏷️';
   return {

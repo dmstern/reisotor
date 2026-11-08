@@ -44,9 +44,11 @@ vi.mock('../api/client', () => ({
           hostingLocation: 'Frankfurt',
         });
       }
+
       if (url === '/users/me/app-settings') {
         return Promise.resolve({});
       }
+
       return Promise.resolve({});
     }),
     put: vi.fn().mockResolvedValue({}),
@@ -108,7 +110,9 @@ describe('SettingsView loading state', () => {
 
   it('renders ViewLoadingState while initial settings and build info are loading', async () => {
     const uiSettings = useUiSettingsStore();
+
     let resolveUiLoad: () => void = () => {};
+
     const pendingPromise = new Promise<void>((resolve) => {
       resolveUiLoad = resolve;
     });

@@ -34,13 +34,27 @@ const GEO_OR_MAPS_SCHEME_REGEX = /^(?:geo:|maps:\/\/)/i;
  * OpenStreetMap, geo: URI, or known shortlink).
  */
 export function isMapsLink(input: string | null | undefined): boolean {
-  if (!input) return false;
-  const trimmed = input.trim();
-  if (!trimmed) return false;
+  if (!input) {
+    return false;
+  }
 
-  if (GEO_OR_MAPS_SCHEME_REGEX.test(trimmed)) return true;
-  if (MAPS_DOMAIN_OR_SCHEME_REGEX.test(trimmed)) return true;
-  if (MAPS_SHORTLINK_REGEX.test(trimmed)) return true;
+  const trimmed = input.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  if (GEO_OR_MAPS_SCHEME_REGEX.test(trimmed)) {
+    return true;
+  }
+
+  if (MAPS_DOMAIN_OR_SCHEME_REGEX.test(trimmed)) {
+    return true;
+  }
+
+  if (MAPS_SHORTLINK_REGEX.test(trimmed)) {
+    return true;
+  }
 
   // Also verify if coordinates can be extracted directly (e.g. embed links, custom formats)
   return parseLatLngFromMapsLink(trimmed) !== null;
@@ -60,12 +74,14 @@ export function classifyLocationInput(
   }
 
   const trimmed = input.trim();
+
   if (!trimmed) {
     return { type: 'empty' };
   }
 
   // 1. Try extracting coordinates directly via parseLatLngFromMapsLink
   const coords = parseLatLngFromMapsLink(trimmed);
+
   if (coords) {
     return {
       type: 'maps_link',

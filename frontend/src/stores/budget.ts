@@ -61,6 +61,7 @@ export const useBudgetStore = defineStore('budget', () => {
   // fremden Trip-Kontexts stehen bleiben konnten.
   async function load() {
     const tripId = tripStore.currentTripId;
+
     if (tripId == null) {
       users.value = [];
       expenses.value = [];
@@ -70,6 +71,7 @@ export const useBudgetStore = defineStore('budget', () => {
       loaded.value = false;
       return;
     }
+
     try {
       const [u, e, b, a, tr] = await Promise.all([
         api.get<User[]>(`/trips/${tripId}/members`),
@@ -110,13 +112,21 @@ export const useBudgetStore = defineStore('budget', () => {
   }
 
   function userName(id: number | null) {
-    if (id == null) return 'Gemeinsam';
+    if (id == null) {
+      return 'Gemeinsam';
+    }
+
     return users.value.find((u) => u.id === id)?.username ?? '?';
   }
+
   function userAvatar(id: number | null) {
-    if (id == null) return '🤝';
+    if (id == null) {
+      return '🤝';
+    }
+
     return users.value.find((u) => u.id === id)?.avatar ?? '❓';
   }
+
   function budgetLabel(budget: Budget) {
     return budget.owner_id == null
       ? '🤝 Gemeinsam'
@@ -127,6 +137,7 @@ export const useBudgetStore = defineStore('budget', () => {
   function allocationsFor(budgetId: number) {
     return allocations.value.filter((a) => a.budget_id === budgetId);
   }
+
   function budgetTarget(budget: Budget) {
     return effectiveBudgetTarget(budget, allocations.value);
   }
@@ -152,16 +163,31 @@ export const useBudgetStore = defineStore('budget', () => {
     const normCategory = category.trim().toLowerCase();
     return expenses.value
       .filter((e) => {
-        if ((e.category ?? '').trim().toLowerCase() !== normCategory) return false;
+        if ((e.category ?? '').trim().toLowerCase() !== normCategory) {
+          return false;
+        }
+
         if (budget.owner_id == null) {
-          if (!isSharedExpense(e, budgets.value)) return false;
+          if (!isSharedExpense(e, budgets.value)) {
+            return false;
+          }
+
           // Wenn eine Ausgabe explizit einem Budget zugeordnet ist, fließt sie vorrangig
           // in genau diesen Topf. Nur wenn budget_id null ist, greift der automatische Kategorie-Fallback.
-          if (e.budget_id != null) return e.budget_id === budget.id;
+          if (e.budget_id != null) {
+            return e.budget_id === budget.id;
+          }
+
           return true;
         } else {
-          if (isSharedExpense(e, budgets.value)) return false;
-          if (e.budget_id != null) return e.budget_id === budget.id;
+          if (isSharedExpense(e, budgets.value)) {
+            return false;
+          }
+
+          if (e.budget_id != null) {
+            return e.budget_id === budget.id;
+          }
+
           return e.paid_by_user_id === budget.owner_id;
         }
       })
@@ -172,13 +198,19 @@ export const useBudgetStore = defineStore('budget', () => {
     const hidden = tripCategoriesStore.hiddenNamesByType.get('expense') ?? new Set();
     const replaced = tripCategoriesStore.replacedDefaultNamesByType.get('expense') ?? new Set();
     const set = new Set<string>(tripCategoriesStore.activeExpenseCategories);
+
     const addIfActive = (cat?: string | null) => {
-      if (!cat) return;
+      if (!cat) {
+        return;
+      }
+
       const lower = cat.trim().toLowerCase();
+
       if (!hidden.has(lower) && !replaced.has(lower)) {
         set.add(cat.trim());
       }
     };
+
     allocations.value.forEach((a) => addIfActive(a.category));
     expenses.value.forEach((e) => addIfActive(e.category));
     return [...set].sort((a, b) => a.localeCompare(b, 'de'));
@@ -192,28 +224,41 @@ export const useBudgetStore = defineStore('budget', () => {
 
     for (const a of allocations.value) {
       const b = budgets.value.find((b) => b.id === a.budget_id);
-      if (!b) continue;
+
+      if (!b) {
+        continue;
+      }
+
       const scope = b.owner_id == null ? 'shared' : `user:${b.owner_id}`;
       let catCounts = countsByScope.get(scope);
+
       if (!catCounts) {
         catCounts = new Map<string, number>();
         countsByScope.set(scope, catCounts);
       }
+
       const cat = a.category.trim().toLowerCase();
       catCounts.set(cat, (catCounts.get(cat) ?? 0) + 1);
     }
 
     const duplicates = new Set<string>();
+
     for (const a of allocations.value) {
       const b = budgets.value.find((b) => b.id === a.budget_id);
-      if (!b) continue;
+
+      if (!b) {
+        continue;
+      }
+
       const scope = b.owner_id == null ? 'shared' : `user:${b.owner_id}`;
       const catCounts = countsByScope.get(scope);
       const cat = a.category.trim().toLowerCase();
+
       if (catCounts && (catCounts.get(cat) ?? 0) > 1) {
         duplicates.add(`${b.id}:${cat}`);
       }
     }
+
     return duplicates;
   });
 
@@ -236,11 +281,13 @@ export const useBudgetStore = defineStore('budget', () => {
   async function updateBudget(id: number, input: BudgetFormInput) {
     const updated = await api.put<Budget>(`/budget/budgets/${id}`, input);
     const idx = budgets.value.findIndex((b) => b.id === id);
+
     if (idx !== -1) {
       const next = [...budgets.value];
       next[idx] = updated;
       budgets.value = next;
     }
+
     return updated;
   }
 
@@ -257,6 +304,7 @@ export const useBudgetStore = defineStore('budget', () => {
       amount,
     });
     const idx = allocations.value.findIndex((a) => a.id === updated.id);
+
     if (idx !== -1) {
       const next = [...allocations.value];
       next[idx] = updated;
@@ -264,6 +312,7 @@ export const useBudgetStore = defineStore('budget', () => {
     } else {
       allocations.value = [...allocations.value, updated];
     }
+
     return updated;
   }
 
@@ -290,11 +339,13 @@ export const useBudgetStore = defineStore('budget', () => {
   async function updateExpense(id: number, body: ExpenseInput) {
     const updated = await api.put<BudgetExpense>(`/budget/${id}`, body);
     const idx = expenses.value.findIndex((e) => e.id === updated.id);
+
     if (idx !== -1) {
       const next = [...expenses.value];
       next[idx] = updated;
       expenses.value = next;
     }
+
     return updated;
   }
 
@@ -316,11 +367,13 @@ export const useBudgetStore = defineStore('budget', () => {
   ) {
     const updated = await api.put<BudgetTransfer>(`/budget/transfers/${id}`, body);
     const idx = transfers.value.findIndex((t) => t.id === updated.id);
+
     if (idx !== -1) {
       const next = [...transfers.value];
       next[idx] = updated;
       transfers.value = next;
     }
+
     return updated;
   }
 

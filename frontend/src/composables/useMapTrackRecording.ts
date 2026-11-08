@@ -18,7 +18,10 @@ export function useMapTrackRecording() {
   );
 
   const isMapRecordingActive = computed(() => {
-    if (trackRecording.recording) return true;
+    if (trackRecording.recording) {
+      return true;
+    }
+
     return tracksStore.tracks.some((t) => !t.ended_at && t.user_id === auth.user?.id);
   });
 
@@ -27,11 +30,14 @@ export function useMapTrackRecording() {
       await trackRecording.stop();
       return;
     }
+
     const unended = tracksStore.tracks.find((t) => !t.ended_at && t.user_id === auth.user?.id);
+
     if (unended) {
       await tracksStore.stopTrack(unended.id);
       return;
     }
+
     if (trackWarningDismissed.value) {
       await trackRecording.start({
         visibility: 'private',

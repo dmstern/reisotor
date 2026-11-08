@@ -27,9 +27,15 @@ export interface CachedModeRoute {
 
 export function normalizeRoutingTransport(t?: string | null): string {
   const s = (t || '').trim().toLowerCase();
-  if (s === 'auto' || s === 'car' || s === 'driving' || s === 'driving-car') return 'Auto';
-  if (s === 'fahrrad' || s === 'bike' || s === 'cycling' || s === 'cycling-regular')
+
+  if (s === 'auto' || s === 'car' || s === 'driving' || s === 'driving-car') {
+    return 'Auto';
+  }
+
+  if (s === 'fahrrad' || s === 'bike' || s === 'cycling' || s === 'cycling-regular') {
     return 'Fahrrad';
+  }
+
   if (
     s === 'zu fuß' ||
     s === 'zu fuss' ||
@@ -41,6 +47,7 @@ export function normalizeRoutingTransport(t?: string | null): string {
   ) {
     return 'zu Fuß';
   }
+
   return t || '';
 }
 
@@ -70,7 +77,10 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   let activeCalcRequestId = 0;
 
   const fastestRouteIndex = computed(() => {
-    if (!calculatedRoutes.value.length) return -1;
+    if (!calculatedRoutes.value.length) {
+      return -1;
+    }
+
     let minDur = Infinity;
     let idx = 0;
     calculatedRoutes.value.forEach((r, i) => {
@@ -83,7 +93,10 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   });
 
   const shortestRouteIndex = computed(() => {
-    if (!calculatedRoutes.value.length) return -1;
+    if (!calculatedRoutes.value.length) {
+      return -1;
+    }
+
     let minDist = Infinity;
     let idx = 0;
     calculatedRoutes.value.forEach((r, i) => {
@@ -119,7 +132,10 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   });
 
   const isRoutable = computed(() => {
-    if (!hasCoordinates.value) return false;
+    if (!hasCoordinates.value) {
+      return false;
+    }
+
     const t = (transportType.value || '').toLowerCase();
     return t === 'auto' || t === 'fahrrad' || t === 'zu fuß' || t === 'zu fuss';
   });
@@ -148,7 +164,10 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   }
 
   function selectRoute(idx: number) {
-    if (!calculatedRoutes.value[idx]) return;
+    if (!calculatedRoutes.value[idx]) {
+      return;
+    }
+
     selectedRouteIndex.value = idx;
     const selected = calculatedRoutes.value[idx];
     calculatedDistanceMeters.value = selected.distance_meters;
@@ -164,6 +183,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     routeDisplayMode.value = 'exact';
 
     const modeKey = normalizeRoutingTransport(transportType.value);
+
     if (modeKey) {
       routeCacheByTransport.value[modeKey] = {
         routes: calculatedRoutes.value,
@@ -183,11 +203,14 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     const pref = val as 'fastest' | 'shortest';
     routePreference.value = pref;
     const modeKey = normalizeRoutingTransport(transportType.value);
+
     if (modeKey && routeCacheByTransport.value[modeKey]) {
       routeCacheByTransport.value[modeKey].preference = pref;
     }
+
     if (calculatedRoutes.value.length > 1) {
       const targetIdx = pref === 'shortest' ? shortestRouteIndex.value : fastestRouteIndex.value;
+
       if (targetIdx >= 0) {
         selectRoute(targetIdx);
       }
@@ -197,9 +220,11 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   function onRouteModeChange(val: string) {
     routeDisplayMode.value = val as 'exact' | 'direct';
     routeCalculationError.value = null;
+
     if (val === 'exact') {
       const modeKey = normalizeRoutingTransport(transportType.value);
       const cached = routeCacheByTransport.value[modeKey];
+
       if (cached && cached.routes.length > 0) {
         applyCachedRoute(cached);
       } else if (hasCoordinates.value && isRoutable.value) {
@@ -242,6 +267,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
         profile: profile ?? null,
       };
       const parsedCoords = parseRouteGeometry(geometry);
+
       if (parsedCoords) {
         calculatedRoutes.value = [
           {
@@ -256,9 +282,11 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
         calculatedRoutes.value = [];
         selectedRouteIndex.value = 0;
       }
+
       routeDisplayMode.value = 'exact';
 
       const modeKey = normalizeRoutingTransport(transportType.value);
+
       if (modeKey) {
         routeCacheByTransport.value[modeKey] = {
           routes: calculatedRoutes.value,
@@ -281,7 +309,10 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   async function calculateRoute(): Promise<boolean> {
     const from = fromCoords.value;
     const to = toCoords.value;
-    if (!from || !to || !hasCoordinates.value) return false;
+
+    if (!from || !to || !hasCoordinates.value) {
+      return false;
+    }
 
     const reqId = ++activeCalcRequestId;
     isCalculatingRoute.value = true;
@@ -289,6 +320,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
 
     try {
       const id = tripId.value;
+
       if (!id) {
         routeCalculationError.value = 'Keine Reise-ID vorhanden';
         return false;
@@ -307,7 +339,9 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
         { timeoutMs: 25_000, noQueue: true }
       );
 
-      if (reqId !== activeCalcRequestId) return false;
+      if (reqId !== activeCalcRequestId) {
+        return false;
+      }
 
       if (!res.supported || !res.routes?.length) {
         routeCalculationError.value = res.reason || 'Keine Route gefunden';
@@ -319,7 +353,10 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
       selectRoute(suggestedIdx);
       return true;
     } catch (err: unknown) {
-      if (reqId !== activeCalcRequestId) return false;
+      if (reqId !== activeCalcRequestId) {
+        return false;
+      }
+
       routeCalculationError.value =
         err instanceof Error ? err.message : 'Fehler beim Abrufen der Route';
       return false;
@@ -334,13 +371,20 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   watch(
     () => transportType.value,
     async (newType, oldType) => {
-      if (!newType || newType === oldType) return;
+      if (!newType || newType === oldType) {
+        return;
+      }
+
       const modeKey = normalizeRoutingTransport(newType);
-      if (!modeKey || !isRoutable.value) return;
+
+      if (!modeKey || !isRoutable.value) {
+        return;
+      }
 
       // Wenn Exakte Route aktiv ist, sofort aus Cache bedienen oder automatisch neu abfragen
       if (hasExactRoute.value && routeDisplayMode.value === 'exact') {
         const cached = routeCacheByTransport.value[modeKey];
+
         if (cached && cached.routes.length > 0) {
           applyCachedRoute(cached);
         } else {

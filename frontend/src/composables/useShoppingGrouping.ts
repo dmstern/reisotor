@@ -36,6 +36,7 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
   const groupByOptions = computed<Array<{ value: ShoppingGroupBy; label: string; icon: IconDef }>>(
     () => {
       const opts = [];
+
       if (users.value.length > 1) {
         opts.push({
           value: 'buyer' as const,
@@ -43,6 +44,7 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
           icon: FORM_FIELD_ICONS.person,
         });
       }
+
       opts.push({ value: 'shop' as const, label: 'nach Shop', icon: FORM_FIELD_ICONS.shop });
       opts.push({
         value: 'period' as const,
@@ -54,13 +56,19 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
   );
 
   function userAvatar(id: number | null | undefined) {
-    if (id == null) return null;
+    if (id == null) {
+      return null;
+    }
+
     const u = users.value.find((u) => u.id === id);
     return u ? u.avatar : '👤';
   }
 
   function userName(id: number | null | undefined) {
-    if (id == null) return null;
+    if (id == null) {
+      return null;
+    }
+
     const u = users.value.find((u) => u.id === id);
     return u ? u.username : 'Ehemaliges Mitglied';
   }
@@ -76,11 +84,17 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
 
     if (groupBy.value === 'shop') {
       const groups = new Map<string, ShoppingItem[]>();
+
       for (const item of visibleItems) {
         const key = item.shop?.trim() || UNASSIGNED_SHOP;
-        if (!groups.has(key)) groups.set(key, []);
+
+        if (!groups.has(key)) {
+          groups.set(key, []);
+        }
+
         groups.get(key)!.push(item);
       }
+
       return [...groups.entries()]
         .sort(([a], [b]) =>
           a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')
@@ -92,6 +106,7 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
           items: sortWithDoneLast(shopItems, isChecked),
         }));
     }
+
     if (groupBy.value === 'period') {
       const groups: ShoppingGroup[] = [
         {
@@ -121,6 +136,7 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
       ];
       return groups;
     }
+
     // buyer
     const memberIds = new Set(users.value.map((u) => u.id));
     const perUser: ShoppingGroup[] = users.value.map((u) => ({

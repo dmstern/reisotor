@@ -21,6 +21,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur Administrator:innen dürfen Systemeinstellungen einsehen' });
     }
+
     return { settings: getAllAdminSettings() };
   });
 
@@ -31,12 +32,14 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur Administrator:innen dürfen Systemeinstellungen ändern' });
     }
+
     const updated = updateAdminSettings(req.body ?? {});
 
     // Cache/Instanzen bei Bedarf zurücksetzen
     if (req.body?.email) {
       resetTransporter();
     }
+
     if (req.body?.push) {
       ensureVapidConfigured();
     }
@@ -53,6 +56,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Push-Schlüssel generieren' });
       }
+
       const result = generateAndSaveVapidKeys(req.body?.subject);
       ensureVapidConfigured();
       return result;
@@ -68,9 +72,11 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Versions-Pushs versenden' });
       }
+
       if (!ensureVapidConfigured()) {
         return reply.code(400).send({ error: 'Push ist auf diesem Server nicht konfiguriert' });
       }
+
       const info = readBuildInfo();
       const version = req.body?.version?.trim() || info.version || 'Update';
       const detail = req.body?.detail?.trim() || info.changelog?.notes?.[0];
@@ -86,11 +92,13 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur Administrator:innen dürfen Test-E-Mails versenden' });
     }
+
     if (!isEmailConfigured()) {
       return reply.code(400).send({ error: 'SMTP-Server ist nicht konfiguriert' });
     }
 
     let targetEmail = req.body?.to?.trim();
+
     if (targetEmail) {
       if (!EMAIL_PATTERN.test(targetEmail)) {
         return reply.code(400).send({
@@ -101,6 +109,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       const user = db.prepare('SELECT email FROM users WHERE id = ?').get(req.session.userId) as
         { email: string | null } | undefined;
       targetEmail = user?.email?.trim();
+
       if (!targetEmail || !EMAIL_PATTERN.test(targetEmail)) {
         return reply.code(400).send({
           error:
@@ -110,12 +119,15 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const result = await sendTestEmail({ to: targetEmail });
+
     if (!result.success) {
       let errorDetail = result.error || 'Verbindung zum SMTP-Server fehlgeschlagen';
+
       if (errorDetail.toLowerCase().includes('timeout')) {
         errorDetail +=
           ' (Tipp: Viele Cloud-Hoster wie Netcup oder Hetzner blockieren Port 587/465. Versuche Port 2525 oder prüfe die externe Firewall deines Hosters)';
       }
+
       return reply.code(502).send({
         error: `Fehler beim Versenden der Test-E-Mail: ${errorDetail}`,
       });
@@ -197,10 +209,13 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
           .code(403)
           .send({ error: 'Nur Administrator:innen dürfen Admin-Nachrichten bearbeiten' });
       }
+
       const { status } = req.body ?? {};
+
       if (!status || !['unread', 'read', 'resolved'].includes(status)) {
         return reply.code(400).send({ error: 'Ungültiger Status' });
       }
+
       db.prepare('UPDATE admin_messages SET status = ? WHERE id = ?').run(
         status,
         Number(req.params.id)
@@ -226,6 +241,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         .code(403)
         .send({ error: 'Nur Administrator:innen dürfen Admin-Nachrichten löschen' });
     }
+
     db.prepare('DELETE FROM admin_messages WHERE id = ?').run(Number(req.params.id));
 
     const unreadCount = (

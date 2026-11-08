@@ -275,10 +275,18 @@ test('nothing overflows the mobile viewport on the budget view', async ({ page }
   // sie nicht seitlich herausragen, nicht dass die komplette Karte auf einen Screen passt.
   async function checkNoHorizontalOverflow(locator: Locator) {
     const box = await locator.boundingBox();
-    if (!box) throw new Error('Element nicht sichtbar/nicht im DOM');
+
+    if (!box) {
+      throw new Error('Element nicht sichtbar/nicht im DOM');
+    }
+
     const viewport = page.viewportSize();
     expect(viewport, 'page.viewportSize() ist null').not.toBeNull();
-    if (!viewport) return;
+
+    if (!viewport) {
+      return;
+    }
+
     expect(box.x, 'Element ragt links aus dem Viewport').toBeGreaterThanOrEqual(-0.5);
     expect(box.x + box.width, 'Element ragt rechts aus dem Viewport').toBeLessThanOrEqual(
       viewport.width + 0.5
@@ -290,6 +298,7 @@ test('nothing overflows the mobile viewport on the budget view', async ({ page }
   // Pot-Karten können je nach Datenmenge (Seed-Daten haben z. B. 6 Standardkategorien) höher als
   // der Viewport sein - wie bei den Listen-Karten unten zählt hier nur die horizontale Breite.
   const firstPotCard = page.locator('.pot-card').first();
+
   if (await firstPotCard.count()) {
     await checkNoHorizontalOverflow(firstPotCard);
   }

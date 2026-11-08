@@ -24,10 +24,15 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
 
   const pendingScheduleLabel = computed(() => {
     const pending = drawers.pendingSchedule;
-    if (!pending) return null;
+
+    if (!pending) {
+      return null;
+    }
+
     if (pending.kind === 'excursion') {
       return excursionsStore.excursions.find((e) => e.id === pending.id)?.title ?? null;
     }
+
     return spotsStore.spots.find((s) => s.id === pending.id)?.title ?? null;
   });
 
@@ -40,7 +45,10 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
   onBeforeUnmount(() => document.body.classList.remove('is-dragging-calendar'));
 
   function returnToCard(kind: 'excursion' | 'spot', id: number) {
-    if (!options.standalone) return;
+    if (!options.standalone) {
+      return;
+    }
+
     router.push(`/excursions#${kind}-${id}`);
   }
 
@@ -50,9 +58,13 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
   ) {
     if (pending.kind === 'excursion') {
       await excursionsStore.setDate(pending.id, date);
-      if (pending.mode === 'confirm-done') await excursionsStore.setDone(pending.id, true);
+
+      if (pending.mode === 'confirm-done') {
+        await excursionsStore.setDone(pending.id, true);
+      }
     } else {
       const spot = spotsStore.spots.find((s) => s.id === pending.id);
+
       if (spot && tripStore.currentTripId != null) {
         if (pending.mode === 'confirm-done') {
           await scheduleStore.setSpotDate(
@@ -75,20 +87,28 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
         }
       }
     }
+
     drawers.clearPendingSchedule();
     returnToCard(pending.kind, pending.id);
   }
 
   function cancelPendingSchedule() {
     const pending = drawers.pendingSchedule;
-    if (!pending) return;
+
+    if (!pending) {
+      return;
+    }
+
     drawers.clearPendingSchedule();
     returnToCard(pending.kind, pending.id);
   }
 
   function onEscape(event: KeyboardEvent) {
-    if (event.key === 'Escape' && drawers.pendingSchedule) cancelPendingSchedule();
+    if (event.key === 'Escape' && drawers.pendingSchedule) {
+      cancelPendingSchedule();
+    }
   }
+
   onMounted(() => document.addEventListener('keydown', onEscape));
   onBeforeUnmount(() => document.removeEventListener('keydown', onEscape));
 

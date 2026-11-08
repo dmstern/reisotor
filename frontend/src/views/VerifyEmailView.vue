@@ -22,6 +22,7 @@ const landingUrl = __LANDING_URL__;
 
 onMounted(async () => {
   const token = (route.query.token as string | undefined)?.trim();
+
   if (!token) {
     loading.value = false;
     error.value = 'In diesem Link fehlt der Bestätigungs-Token.';

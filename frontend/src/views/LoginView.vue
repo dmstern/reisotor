@@ -73,6 +73,7 @@ function openContactDialog() {
     const userDetail = username.value.trim() ? ` als "${username.value.trim()}"` : '';
     contactInitialMessage.value = `Hallo, ich möchte mich${userDetail} auf dieser Instanz registrieren. Da kein Mailserver eingerichtet ist, bitte ich um Freischaltung bzw. Erstellung meines Accounts.`;
   }
+
   showContactDialog.value = true;
 }
 
@@ -83,9 +84,11 @@ async function onSubmit() {
   isUnverifiedOrNoMailError.value = false;
   successMessage.value = '';
   loading.value = true;
+
   try {
     if (mode.value === 'register') {
       const res = await auth.register(username.value, email.value, password.value);
+
       if (res?.requiresVerification) {
         successMessage.value =
           res.message || 'Registrierung erfolgreich! Bitte bestätige deine E-Mail-Adresse.';
@@ -93,6 +96,7 @@ async function onSubmit() {
         loading.value = false;
         return;
       }
+
       await router.push('/');
     } else if (mode.value === 'forgot-password') {
       const res = await api.post<{ message: string }>('/auth/forgot-password', {
@@ -108,6 +112,7 @@ async function onSubmit() {
     if (err instanceof ApiError) {
       error.value = err.message;
       const data = err.data as { unverifiedEmail?: boolean; noMailServer?: boolean } | undefined;
+
       if (data?.unverifiedEmail || data?.noMailServer) {
         isUnverifiedOrNoMailError.value = true;
         contactInitialMessage.value = data?.noMailServer

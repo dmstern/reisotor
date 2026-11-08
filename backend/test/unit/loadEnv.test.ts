@@ -16,6 +16,7 @@ describe('loadEnv', () => {
     for (const key of envKeysToClean) {
       delete process.env[key];
     }
+
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 

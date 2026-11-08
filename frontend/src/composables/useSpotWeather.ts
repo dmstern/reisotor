@@ -36,11 +36,13 @@ export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherRe
   const scheduledDatesForSpot = computed(() => {
     const spot = toValue(options.spot);
     const dates = new Set<string>();
+
     for (const item of scheduleStore.items) {
       if (item.spot_id === spot.id && item.date) {
         if (item.end_date && item.end_date > item.date) {
           const cur = new Date(`${item.date}T00:00:00`);
           const end = new Date(`${item.end_date}T00:00:00`);
+
           while (cur <= end) {
             dates.add(toLocalDateString(cur));
             cur.setDate(cur.getDate() + 1);
@@ -50,23 +52,36 @@ export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherRe
         }
       }
     }
+
     for (const excursion of excursionsStore.excursions) {
       if (excursion.date && excursion.spot_ids.includes(spot.id)) {
         dates.add(excursion.date);
       }
     }
+
     return dates;
   });
 
   const scheduledDaysCount = computed(() => scheduledDatesForSpot.value.size);
 
   const weatherDate = computed(() => {
-    if (scheduledDaysCount.value > 1) return null;
+    if (scheduledDaysCount.value > 1) {
+      return null;
+    }
+
     const scheduledDate = toValue(options.scheduledDate);
-    if (scheduledDate) return scheduledDate;
+
+    if (scheduledDate) {
+      return scheduledDate;
+    }
+
     const spot = toValue(options.spot);
     const expanded = toValue(options.expanded);
-    if (spot.done || !expanded) return null;
+
+    if (spot.done || !expanded) {
+      return null;
+    }
+
     return toLocalDateString(new Date());
   });
 
@@ -86,7 +101,11 @@ export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherRe
     },
     async ([date, lat, lng, tripId, model]) => {
       dayWeather.value = null;
-      if (!date || lat == null || lng == null) return;
+
+      if (!date || lat == null || lng == null) {
+        return;
+      }
+
       try {
         const days = await fetchMergedWeather(tripId, lat, lng, model);
         dayWeather.value = days.find((d) => d.date === date) ?? null;

@@ -31,17 +31,20 @@ export function resolveScheduleItemIcons(
     const spot = maps?.spotMap
       ? maps.spotMap.get(item.spot_id)
       : spots.find((s) => s.id === item.spot_id);
+
     if (spot) {
       const meta = spotCategoryMeta(spot.category);
       return { icon: meta.icon, iconDef: meta.tabler };
     }
   }
+
   if (item.idea_id != null) {
     const excursion =
       preloadedExcursion ??
       (maps?.excursionMap
         ? maps.excursionMap.get(item.idea_id)
         : excursions.find((e) => e.id === item.idea_id));
+
     if (excursion) {
       const stations = resolveStations(
         excursionStationKeys(excursion.spot_ids),
@@ -50,11 +53,13 @@ export function resolveScheduleItemIcons(
         maps?.spotMap,
         maps?.travelMap
       );
+
       if (stations.length === 1) {
         return { icon: stations[0].icon, iconDef: stations[0].tabler };
       }
     }
   }
+
   return { icon: undefined, iconDef: undefined };
 }
 
@@ -137,7 +142,10 @@ export function scheduleItemToEntry(
 // Urlaub-Stammdaten erscheinen automatisch als (nicht editierbare) Kalender-Items der Kategorie
 // "Urlaub" – synthetisch aus den Trip-Stammdaten erzeugt, nicht in schedule_items gespeichert (Batch 3).
 export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
-  if (!trip || !trip.start_date) return [];
+  if (!trip || !trip.start_date) {
+    return [];
+  }
+
   const entries: CalendarEntry[] = [
     {
       key: 'trip-start',
@@ -157,6 +165,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       done: false,
     },
   ];
+
   if (trip.end_date && trip.end_date !== trip.start_date) {
     entries.push({
       key: 'trip-end',
@@ -176,6 +185,7 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
       done: false,
     });
   }
+
   return entries;
 }
 
@@ -212,11 +222,23 @@ export function buildAllEntries(
 ): CalendarEntry[] {
   // Erstelle Maps für O(1) Lookups bei der Iteration über alle Kalender-Termine
   const spotMap = new Map<number, Spot>();
-  for (const s of spots) spotMap.set(s.id, s);
+
+  for (const s of spots) {
+    spotMap.set(s.id, s);
+  }
+
   const excursionMap = new Map<number, Excursion>();
-  for (const e of excursions) excursionMap.set(e.id, e);
+
+  for (const e of excursions) {
+    excursionMap.set(e.id, e);
+  }
+
   const travelMap = new Map<number, TravelItem>();
-  for (const t of travelItems) travelMap.set(t.id, t);
+
+  for (const t of travelItems) {
+    travelMap.set(t.id, t);
+  }
+
   const maps: CalendarLookupMaps = { spotMap, excursionMap, travelMap };
 
   return [

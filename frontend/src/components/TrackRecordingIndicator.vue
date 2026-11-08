@@ -16,7 +16,10 @@ const elapsedMs = ref(0);
 let timer: ReturnType<typeof setInterval> | null = null;
 
 function updateElapsed() {
-  if (!trackRecording.track) return;
+  if (!trackRecording.track) {
+    return;
+  }
+
   elapsedMs.value = Date.now() - new Date(trackRecording.track.started_at).getTime();
 }
 
@@ -27,7 +30,10 @@ function startTicking() {
 }
 
 function stopTicking() {
-  if (timer != null) clearInterval(timer);
+  if (timer != null) {
+    clearInterval(timer);
+  }
+
   timer = null;
 }
 
@@ -40,8 +46,11 @@ function stopTicking() {
 watch(
   () => [trackRecording.recording, trackRecording.paused] as const,
   ([recording, paused]) => {
-    if (recording && !paused) startTicking();
-    else stopTicking();
+    if (recording && !paused) {
+      startTicking();
+    } else {
+      stopTicking();
+    }
   },
   { immediate: true }
 );

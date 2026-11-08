@@ -61,29 +61,35 @@ const navigationDays = computed<DailyWeather[]>(() => {
   if (props.vacationDays && props.vacationDays.length > 0) {
     return props.vacationDays;
   }
+
   if (props.days && props.days.length > 0) {
     return props.days;
   }
+
   if (props.homeDays && props.homeDays.length > 0) {
     return props.homeDays;
   }
+
   const single = props.day ?? props.vacationDay ?? props.homeDay;
   return single ? [single] : [];
 });
 
 const sortedNavigationDays = computed(() => {
   const map = new Map<string, DailyWeather>();
+
   for (const d of navigationDays.value) {
     if (d?.date && !map.has(d.date)) {
       map.set(d.date, d);
     }
   }
+
   const cur =
     selectedDate.value ||
     props.date ||
     props.day?.date ||
     props.vacationDay?.date ||
     props.homeDay?.date;
+
   if (cur && !map.has(cur)) {
     const single = props.day ?? props.vacationDay ?? props.homeDay;
     map.set(
@@ -99,6 +105,7 @@ const sortedNavigationDays = computed(() => {
           }
     );
   }
+
   return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
 });
 
@@ -184,29 +191,44 @@ const currentDate = computed(
 const currentVacationDay = computed<DailyWeather | null>(() => {
   if (props.vacationDays?.length) {
     const found = props.vacationDays.find((d) => d.date === currentDate.value);
-    if (found) return found;
+
+    if (found) {
+      return found;
+    }
   }
+
   if (props.days?.length) {
     const found = props.days.find((d) => d.date === currentDate.value);
-    if (found) return found;
+
+    if (found) {
+      return found;
+    }
   }
+
   if (props.vacationDay && props.vacationDay.date === currentDate.value) {
     return props.vacationDay;
   }
+
   if (props.day && props.day.date === currentDate.value) {
     return props.day;
   }
+
   return null;
 });
 
 const currentHomeDay = computed<DailyWeather | null>(() => {
   if (props.homeDays?.length) {
     const found = props.homeDays.find((d) => d.date === currentDate.value);
-    if (found) return found;
+
+    if (found) {
+      return found;
+    }
   }
+
   if (props.homeDay && props.homeDay.date === currentDate.value) {
     return props.homeDay;
   }
+
   return null;
 });
 
@@ -214,11 +236,15 @@ const currentDay = computed<DailyWeather | null>(() => {
   if (activeLocation.value === 'home') {
     return currentHomeDay.value;
   }
+
   return currentVacationDay.value;
 });
 
 const currentIndex = computed(() => {
-  if (!currentDate.value || !sortedNavigationDays.value.length) return -1;
+  if (!currentDate.value || !sortedNavigationDays.value.length) {
+    return -1;
+  }
+
   return sortedNavigationDays.value.findIndex((d) => d.date === currentDate.value);
 });
 
@@ -229,8 +255,12 @@ const canGoNext = computed(
 );
 
 function goToPrevDay() {
-  if (!canGoPrev.value) return;
+  if (!canGoPrev.value) {
+    return;
+  }
+
   const targetDay = sortedNavigationDays.value[currentIndex.value - 1];
+
   if (targetDay) {
     selectedDate.value = targetDay.date;
     emit('update:date', targetDay.date);
@@ -239,8 +269,12 @@ function goToPrevDay() {
 }
 
 function goToNextDay() {
-  if (!canGoNext.value) return;
+  if (!canGoNext.value) {
+    return;
+  }
+
   const targetDay = sortedNavigationDays.value[currentIndex.value + 1];
+
   if (targetDay) {
     selectedDate.value = targetDay.date;
     emit('update:date', targetDay.date);
@@ -249,13 +283,19 @@ function goToNextDay() {
 }
 
 const prevDayLabel = computed(() => {
-  if (!canGoPrev.value) return 'Vorheriger Tag';
+  if (!canGoPrev.value) {
+    return 'Vorheriger Tag';
+  }
+
   const prev = sortedNavigationDays.value[currentIndex.value - 1];
   return prev ? `Vorheriger Tag (${formatDate(prev.date)})` : 'Vorheriger Tag';
 });
 
 const nextDayLabel = computed(() => {
-  if (!canGoNext.value) return 'Nächster Tag';
+  if (!canGoNext.value) {
+    return 'Nächster Tag';
+  }
+
   const next = sortedNavigationDays.value[currentIndex.value + 1];
   return next ? `Nächster Tag (${formatDate(next.date)})` : 'Nächster Tag';
 });
@@ -269,9 +309,15 @@ const nextDayTitle = computed(() =>
 );
 
 function handleKeydown(e: KeyboardEvent) {
-  if (!props.modelValue) return;
+  if (!props.modelValue) {
+    return;
+  }
+
   const tag = (e.target as HTMLElement | null)?.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+    return;
+  }
 
   if (e.key === 'ArrowLeft') {
     if (canGoPrev.value) {
@@ -303,8 +349,14 @@ onUnmounted(() => {
 });
 
 const derivedDayFromHourly = computed<DailyWeather | null>(() => {
-  if (currentDay.value) return currentDay.value;
-  if (!hourlyList.value.length || !currentDate.value) return null;
+  if (currentDay.value) {
+    return currentDay.value;
+  }
+
+  if (!hourlyList.value.length || !currentDate.value) {
+    return null;
+  }
+
   const temps = hourlyList.value.map((h) => h.temp).filter((t): t is number => t != null);
   const rainProbs = hourlyList.value
     .map((h) => h.precipitationProbability)
@@ -328,7 +380,10 @@ const displayDay = computed(() => currentDay.value ?? derivedDayFromHourly.value
 const dayAlerts = computed(() => (displayDay.value ? detectWeatherAlerts([displayDay.value]) : []));
 
 const isDayUnknown = computed(() => {
-  if (!displayDay.value) return true;
+  if (!displayDay.value) {
+    return true;
+  }
+
   const isUnknownCode =
     displayDay.value.weatherCode == null ||
     weatherCodeMeta(displayDay.value.weatherCode).label === 'Unbekannt';
@@ -339,7 +394,10 @@ const isDayUnknown = computed(() => {
 const weatherUnknownExplanation = computed(() => getWeatherUnknownExplanation(currentDate.value));
 
 const isPastDay = computed(() => {
-  if (!currentDate.value) return false;
+  if (!currentDate.value) {
+    return false;
+  }
+
   return currentDate.value < toLocalDateString(new Date());
 });
 
@@ -347,10 +405,13 @@ const hourlyEmptyText = computed(() => {
   if (isPastDay.value) {
     return 'Für diesen vergangenen Tag sind keine stündlichen Verlaufsdaten verfügbar.';
   }
+
   const today = toLocalDateString(new Date());
+
   if (currentDate.value && currentDate.value > today) {
     return 'Kein stündlicher Verlauf verfügbar (Tag liegt zu weit in der Zukunft).';
   }
+
   return 'Kein stündlicher Verlauf verfügbar.';
 });
 
@@ -374,12 +435,16 @@ watch(
       hourlyList.value = [];
       return;
     }
+
     const cacheKey = `${lat},${lng},${date},${model}`;
+
     if (hourlyCache.has(cacheKey)) {
       hourlyList.value = hourlyCache.get(cacheKey)!;
       return;
     }
+
     loading.value = true;
+
     try {
       const data = await fetchHourlyForecast(lat, lng, date, model);
       hourlyCache.set(cacheKey, data);

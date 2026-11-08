@@ -23,6 +23,7 @@ if (isForced) {
     console.error('Fehler: Datenbank leeren ist in der Produktionsumgebung gesperrt.');
     process.exit(1);
   }
+
   console.log('Force-Flag erkannt: Bereinige bestehende Datenbank vor dem Demo-Seed...');
   clearDatabase(db, { clearUploads: true });
 }
@@ -58,6 +59,7 @@ const users = [
 const insertUser = db.prepare(
   'INSERT OR IGNORE INTO users (username, password_hash, avatar, is_admin, must_change_password) VALUES (?, ?, ?, ?, ?)'
 );
+
 for (let i = 0; i < users.length; i++) {
   const u = users[i];
   insertUser.run(u.username, bcrypt.hashSync(u.password, 10), u.avatar, i === 0 ? 1 : 0, 0);
@@ -69,6 +71,7 @@ for (let i = 0; i < users.length; i++) {
     u.username
   );
 }
+
 const [user1, user2, user3] = users.map(
   (u) => db.prepare('SELECT id FROM users WHERE username = ?').get(u.username) as { id: number }
 );
@@ -106,6 +109,7 @@ const insertMembership = db.prepare(
 );
 const membershipNow = isScreenshotMode ? '2026-08-01T10:00:00.000Z' : new Date().toISOString();
 const allUsers = db.prepare('SELECT id FROM users').all() as { id: number }[];
+
 for (const u of allUsers) {
   insertMembership.run(tripId, u.id, membershipNow);
 }
@@ -163,6 +167,7 @@ const allocations: Record<string, number> = {
 const updateAllocation = db.prepare(
   'UPDATE budget_allocations SET amount = ? WHERE budget_id = ? AND category = ?'
 );
+
 for (const [category, amount] of Object.entries(allocations)) {
   updateAllocation.run(amount, sharedBudgetId, category);
 }

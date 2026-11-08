@@ -59,19 +59,35 @@ export interface SearchPlacesOptions {
 }
 
 export function mapOsmToCategory(osmKey?: string, osmValue?: string): string {
-  if (!osmKey || !osmValue) return '';
+  if (!osmKey || !osmValue) {
+    return '';
+  }
 
   if (osmKey === 'tourism') {
     if (['hotel', 'motel', 'hostel', 'guest_house', 'chalet', 'apartment'].includes(osmValue)) {
       return 'Unterkunft';
     }
+
     if (['camp_site', 'caravan_site'].includes(osmValue)) {
       return 'Campingplatz';
     }
-    if (osmValue === 'museum') return 'Museum';
-    if (osmValue === 'viewpoint') return 'Aussichtspunkt';
-    if (['zoo', 'theme_park'].includes(osmValue)) return 'Zoo & Tierpark';
-    if (osmValue === 'attraction') return 'Sehenswürdigkeit';
+
+    if (osmValue === 'museum') {
+      return 'Museum';
+    }
+
+    if (osmValue === 'viewpoint') {
+      return 'Aussichtspunkt';
+    }
+
+    if (['zoo', 'theme_park'].includes(osmValue)) {
+      return 'Zoo & Tierpark';
+    }
+
+    if (osmValue === 'attraction') {
+      return 'Sehenswürdigkeit';
+    }
+
     return 'Ausflugsziel';
   }
 
@@ -81,32 +97,86 @@ export function mapOsmToCategory(osmKey?: string, osmValue?: string): string {
     ) {
       return 'Agentur';
     }
+
     return 'Unternehmen';
   }
 
   if (osmKey === 'healthcare') {
-    if (['hospital', 'clinic'].includes(osmValue)) return 'Krankenhaus & Klinik';
+    if (['hospital', 'clinic'].includes(osmValue)) {
+      return 'Krankenhaus & Klinik';
+    }
+
     return 'Gesundheit';
   }
 
   if (osmKey === 'amenity') {
-    if (['restaurant', 'fast_food', 'food_court'].includes(osmValue)) return 'Restaurant';
-    if (osmValue === 'cafe') return 'Café';
-    if (osmValue === 'ice_cream') return 'Eiscafé';
-    if (osmValue === 'nightclub') return 'Club';
-    if (osmValue === 'bar') return 'Bar';
-    if (['pub', 'biergarten'].includes(osmValue)) return 'Kneipe';
-    if (osmValue === 'cinema') return 'Kino';
-    if (osmValue === 'library') return 'Bibliothek & Buchhandlung';
-    if (osmValue === 'hospital') return 'Krankenhaus & Klinik';
-    if (osmValue === 'pharmacy') return 'Apotheke';
-    if (['dentist', 'doctors', 'clinic'].includes(osmValue)) return 'Gesundheit';
-    if (['fuel', 'charging_station'].includes(osmValue)) return 'Tankstelle';
-    if (['bank', 'atm'].includes(osmValue)) return 'Geldautomat & Bank';
-    if (osmValue === 'place_of_worship') return 'Kirche & Tempel';
-    if (['theatre', 'arts_centre'].includes(osmValue)) return 'Theater & Bühne';
-    if (['parking', 'parking_space', 'parking_entrance'].includes(osmValue)) return 'Parkplatz';
-    if (osmValue === 'bus_station') return 'Busbahnhof';
+    if (['restaurant', 'fast_food', 'food_court'].includes(osmValue)) {
+      return 'Restaurant';
+    }
+
+    if (osmValue === 'cafe') {
+      return 'Café';
+    }
+
+    if (osmValue === 'ice_cream') {
+      return 'Eiscafé';
+    }
+
+    if (osmValue === 'nightclub') {
+      return 'Club';
+    }
+
+    if (osmValue === 'bar') {
+      return 'Bar';
+    }
+
+    if (['pub', 'biergarten'].includes(osmValue)) {
+      return 'Kneipe';
+    }
+
+    if (osmValue === 'cinema') {
+      return 'Kino';
+    }
+
+    if (osmValue === 'library') {
+      return 'Bibliothek & Buchhandlung';
+    }
+
+    if (osmValue === 'hospital') {
+      return 'Krankenhaus & Klinik';
+    }
+
+    if (osmValue === 'pharmacy') {
+      return 'Apotheke';
+    }
+
+    if (['dentist', 'doctors', 'clinic'].includes(osmValue)) {
+      return 'Gesundheit';
+    }
+
+    if (['fuel', 'charging_station'].includes(osmValue)) {
+      return 'Tankstelle';
+    }
+
+    if (['bank', 'atm'].includes(osmValue)) {
+      return 'Geldautomat & Bank';
+    }
+
+    if (osmValue === 'place_of_worship') {
+      return 'Kirche & Tempel';
+    }
+
+    if (['theatre', 'arts_centre'].includes(osmValue)) {
+      return 'Theater & Bühne';
+    }
+
+    if (['parking', 'parking_space', 'parking_entrance'].includes(osmValue)) {
+      return 'Parkplatz';
+    }
+
+    if (osmValue === 'bus_station') {
+      return 'Busbahnhof';
+    }
   }
 
   if (osmKey === 'craft' && ['brewery'].includes(osmValue)) {
@@ -121,41 +191,82 @@ export function mapOsmToCategory(osmKey?: string, osmValue?: string): string {
     ) {
       return 'Sehenswürdigkeit';
     }
-    if (osmValue === 'church') return 'Kirche & Tempel';
+
+    if (osmValue === 'church') {
+      return 'Kirche & Tempel';
+    }
+
     return 'Sehenswürdigkeit';
   }
 
   if (osmKey === 'leisure') {
-    if (['park', 'garden'].includes(osmValue)) return 'Park & Garten';
-    if (osmValue === 'playground') return 'Spielplatz';
+    if (['park', 'garden'].includes(osmValue)) {
+      return 'Park & Garten';
+    }
+
+    if (osmValue === 'playground') {
+      return 'Spielplatz';
+    }
+
     if (['sports_centre', 'pitch', 'fitness_centre', 'stadium'].includes(osmValue)) {
       return 'Sport & Fitness';
     }
-    if (osmValue === 'nature_reserve') return 'Natur';
-    if (osmValue === 'beach_resort') return 'Strand';
-    if (['water_park', 'miniature_golf'].includes(osmValue)) return 'Aktivität';
-    if (['spa', 'sauna'].includes(osmValue)) return 'Wellness & Therme';
+
+    if (osmValue === 'nature_reserve') {
+      return 'Natur';
+    }
+
+    if (osmValue === 'beach_resort') {
+      return 'Strand';
+    }
+
+    if (['water_park', 'miniature_golf'].includes(osmValue)) {
+      return 'Aktivität';
+    }
+
+    if (['spa', 'sauna'].includes(osmValue)) {
+      return 'Wellness & Therme';
+    }
   }
 
   if (osmKey === 'shop') {
-    if (['supermarket', 'convenience', 'grocery'].includes(osmValue)) return 'Supermarkt';
-    if (['bakery', 'pastry'].includes(osmValue)) return 'Bäckerei';
-    if (['books', 'bookstore'].includes(osmValue)) return 'Bibliothek & Buchhandlung';
+    if (['supermarket', 'convenience', 'grocery'].includes(osmValue)) {
+      return 'Supermarkt';
+    }
+
+    if (['bakery', 'pastry'].includes(osmValue)) {
+      return 'Bäckerei';
+    }
+
+    if (['books', 'bookstore'].includes(osmValue)) {
+      return 'Bibliothek & Buchhandlung';
+    }
+
     return 'Shop';
   }
 
   if (osmKey === 'natural') {
-    if (osmValue === 'beach') return 'Strand';
-    if (['peak', 'volcano', 'cliff'].includes(osmValue)) return 'Aussichtspunkt';
-    if (['wood', 'tree', 'scrub', 'water'].includes(osmValue)) return 'Natur';
+    if (osmValue === 'beach') {
+      return 'Strand';
+    }
+
+    if (['peak', 'volcano', 'cliff'].includes(osmValue)) {
+      return 'Aussichtspunkt';
+    }
+
+    if (['wood', 'tree', 'scrub', 'water'].includes(osmValue)) {
+      return 'Natur';
+    }
   }
 
   if (osmKey === 'aeroway' && ['aerodrome', 'terminal', 'gate'].includes(osmValue)) {
     return 'Flughafen';
   }
+
   if (osmKey === 'railway' && ['station', 'halt', 'subway_entrance'].includes(osmValue)) {
     return 'Bahnhof';
   }
+
   if (osmKey === 'highway' && ['bus_stop'].includes(osmValue)) {
     return 'Busbahnhof';
   }
@@ -175,11 +286,19 @@ export function formatAddress(props: PhotonFeatureProperties): string {
     .filter(Boolean)
     .join(' ');
   const parts: string[] = [];
-  if (streetLine) parts.push(streetLine);
-  if (cityLine) parts.push(cityLine);
+
+  if (streetLine) {
+    parts.push(streetLine);
+  }
+
+  if (cityLine) {
+    parts.push(cityLine);
+  }
+
   if (props.country && !cityLine.includes(props.country)) {
     parts.push(props.country);
   }
+
   return parts.join(', ');
 }
 
@@ -187,10 +306,13 @@ export function derivePlaceName(props: PhotonFeatureProperties): string {
   if (props.name?.trim()) {
     return props.name.trim();
   }
+
   const streetLine = [props.street, props.housenumber].filter(Boolean).join(' ');
+
   if (streetLine) {
     return streetLine;
   }
+
   return (
     props.city ||
     props.district ||
@@ -224,11 +346,16 @@ export function buildCacheKey(
 
 export function getCachedPlaces(key: string): PlaceSearchResult[] | null {
   const entry = placesCache.get(key);
-  if (!entry) return null;
+
+  if (!entry) {
+    return null;
+  }
+
   if (Date.now() > entry.expiresAt) {
     placesCache.delete(key);
     return null;
   }
+
   // LRU Refresh: Löschen und wieder ans Ende einfügen
   placesCache.delete(key);
   placesCache.set(key, entry);
@@ -238,10 +365,12 @@ export function getCachedPlaces(key: string): PlaceSearchResult[] | null {
 export function setCachedPlaces(key: string, data: PlaceSearchResult[]): void {
   if (placesCache.size >= MAX_CACHE_ENTRIES) {
     const oldestKey = placesCache.keys().next().value;
+
     if (oldestKey !== undefined) {
       placesCache.delete(oldestKey);
     }
   }
+
   placesCache.set(key, {
     expiresAt: Date.now() + CACHE_TTL_MS,
     data,
@@ -664,6 +793,7 @@ export function parseLocationQuery(rawQ: string): ParsedLocationQuery {
 
   for (const word of words) {
     const entry = CATEGORY_KEYWORDS[word];
+
     if (entry) {
       detectedCategory = {
         keyword: word,
@@ -675,13 +805,16 @@ export function parseLocationQuery(rawQ: string): ParsedLocationQuery {
   }
 
   const cleanedTerms: string[] = [];
+
   for (const word of words) {
     if (detectedCategory && word === detectedCategory.keyword) {
       continue;
     }
+
     if (STOP_WORDS.has(word)) {
       continue;
     }
+
     cleanedTerms.push(word);
   }
 
@@ -728,6 +861,7 @@ export function scorePlace(
     const hasTagMatch = parsed.category.tags.some(
       (t) => t.key === place.osmKey && (!t.value || t.value === place.osmValue)
     );
+
     if (hasTagMatch) {
       score += 60;
     } else if (
@@ -741,6 +875,7 @@ export function scorePlace(
   // 2. Namens- & Adressübereinstimmung für die Kernbegriffe
   const terms = parsed.cleanedTerms;
   let matchedTermsCount = 0;
+
   for (const term of terms) {
     if (nameLower.includes(term)) {
       matchedTermsCount++;
@@ -750,6 +885,7 @@ export function scorePlace(
       score += 10;
     }
   }
+
   if (terms.length > 0 && matchedTermsCount === terms.length) {
     score += 30; // Volltreffer: alle Kernsuchbegriffe gefunden
   }
@@ -779,10 +915,16 @@ export function scorePlace(
     Number.isFinite(place.lng)
   ) {
     const distKm = haversineDistance(targetLat, targetLng, place.lat, place.lng);
-    if (distKm < 5) score += 30;
-    else if (distKm < 20) score += 20;
-    else if (distKm < 50) score += 10;
-    else if (distKm < 100) score += 5;
+
+    if (distKm < 5) {
+      score += 30;
+    } else if (distKm < 20) {
+      score += 20;
+    } else if (distKm < 50) {
+      score += 10;
+    } else if (distKm < 100) {
+      score += 5;
+    }
   }
 
   return score;
@@ -794,6 +936,7 @@ function parsePhotonFeatures(data: PhotonResponse): PlaceSearchResult[] {
   }
 
   const results: PlaceSearchResult[] = [];
+
   for (const feature of data.features) {
     if (
       !feature.geometry ||
@@ -805,6 +948,7 @@ function parsePhotonFeatures(data: PhotonResponse): PlaceSearchResult[] {
     }
 
     const [lon, featLat] = feature.geometry.coordinates;
+
     if (
       typeof lon !== 'number' ||
       typeof featLat !== 'number' ||
@@ -857,6 +1001,7 @@ async function fetchPhotonPlaces(
   options: FetchPhotonOptions = {}
 ): Promise<PlaceSearchResult[]> {
   let url: URL;
+
   try {
     url = new URL(baseUrl);
   } catch {
@@ -870,6 +1015,7 @@ async function fetchPhotonPlaces(
   if (options.lat != null && Number.isFinite(options.lat)) {
     url.searchParams.set('lat', String(options.lat));
   }
+
   if (options.lng != null && Number.isFinite(options.lng)) {
     // CRITICAL: Photon requires 'lon', NOT 'lng'. Photon returns 400 if 'lng' is sent.
     url.searchParams.set('lon', String(options.lng));
@@ -933,16 +1079,28 @@ interface NominatimPlace {
 
 function formatNominatimAddress(item: NominatimPlace): string {
   const addr = item.address;
-  if (!addr) return item.display_name || '';
+
+  if (!addr) {
+    return item.display_name || '';
+  }
+
   const streetLine = [addr.road, addr.house_number].filter(Boolean).join(' ');
   const cityPart = addr.city || addr.town || addr.village || addr.suburb || addr.municipality;
   const cityLine = [addr.postcode, cityPart].filter(Boolean).join(' ');
   const parts: string[] = [];
-  if (streetLine) parts.push(streetLine);
-  if (cityLine) parts.push(cityLine);
+
+  if (streetLine) {
+    parts.push(streetLine);
+  }
+
+  if (cityLine) {
+    parts.push(cityLine);
+  }
+
   if (addr.country && !cityLine.includes(addr.country)) {
     parts.push(addr.country);
   }
+
   return parts.length > 0 ? parts.join(', ') : item.display_name;
 }
 
@@ -967,6 +1125,7 @@ async function fetchNominatimPlaces(
       'https://nominatim.openstreetmap.org/search'
     ) || 'https://nominatim.openstreetmap.org/search';
   let url: URL;
+
   try {
     url = new URL(baseUrl);
   } catch {
@@ -977,6 +1136,7 @@ async function fetchNominatimPlaces(
   url.searchParams.set('format', 'jsonv2');
   url.searchParams.set('addressdetails', '1');
   url.searchParams.set('limit', String(options.limit ?? 10));
+
   if (options.lang) {
     url.searchParams.set('accept-language', options.lang);
   }
@@ -995,14 +1155,17 @@ async function fetchNominatimPlaces(
     }
 
     const data = (await res.json()) as NominatimPlace[];
+
     if (!Array.isArray(data)) {
       return [];
     }
 
     const results: PlaceSearchResult[] = [];
+
     for (const item of data) {
       const latNum = Number(item.lat);
       const lngNum = Number(item.lon);
+
       if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
         continue;
       }
@@ -1043,6 +1206,7 @@ async function fetchNominatimPlaces(
 
 export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceSearchResult[]> {
   const rawQ = options.q?.trim();
+
   if (!rawQ) {
     return [];
   }
@@ -1062,6 +1226,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
 
   const cacheKey = buildCacheKey(`${rawQ}|off:${offset}`, lat, lng, limit, lang);
   const cached = getCachedPlaces(cacheKey);
+
   if (cached) {
     return cached;
   }
@@ -1074,6 +1239,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
 
   // 1. Primäre Photon-Abfrage (mit bereinigter Suchanfrage)
   let primaryUrl: URL;
+
   try {
     primaryUrl = new URL(baseUrl);
   } catch {
@@ -1087,12 +1253,14 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   if (lat != null) {
     primaryUrl.searchParams.set('lat', String(lat));
   }
+
   if (lng != null) {
     // CRITICAL: Photon requires 'lon', NOT 'lng'. Photon returns 400 if 'lng' is sent.
     primaryUrl.searchParams.set('lon', String(lng));
   }
 
   let primaryResponse: Response;
+
   try {
     primaryResponse = await fetch(primaryUrl.toString(), {
       signal: AbortSignal.timeout(5000),
@@ -1110,6 +1278,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   }
 
   let primaryData: PhotonResponse;
+
   try {
     primaryData = (await primaryResponse.json()) as PhotonResponse;
   } catch {
@@ -1123,7 +1292,10 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   const hasExactCategoryInPrimary =
     parsed.category &&
     primaryResults.some((p) => {
-      if (!parsed.category) return false;
+      if (!parsed.category) {
+        return false;
+      }
+
       const tagMatch = parsed.category.tags.some(
         (t) => t.key === p.osmKey && (!t.value || t.value === p.osmValue)
       );
@@ -1173,6 +1345,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
     }
 
     const settled = await Promise.allSettled(secondaryTasks);
+
     for (const res of settled) {
       if (res.status === 'fulfilled' && Array.isArray(res.value)) {
         allCandidates.push(...res.value);
@@ -1213,6 +1386,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
         const n2 = place.name.toLowerCase().trim();
         return n1 === n2 || n1.includes(n2) || n2.includes(n1);
       }
+
       return false;
     });
 
@@ -1223,6 +1397,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
     if (place.id) {
       seenIds.add(place.id);
     }
+
     deduplicated.push(place);
   }
 
@@ -1276,8 +1451,12 @@ export function clearReverseCache(): void {
 export function setCachedReverse(key: string, data: ReverseGeocodeResult | null): void {
   if (reverseCache.size >= MAX_CACHE_ENTRIES) {
     const oldestKey = reverseCache.keys().next().value;
-    if (oldestKey !== undefined) reverseCache.delete(oldestKey);
+
+    if (oldestKey !== undefined) {
+      reverseCache.delete(oldestKey);
+    }
   }
+
   reverseCache.set(key, {
     expiresAt: Date.now() + CACHE_TTL_MS,
     data,
@@ -1288,6 +1467,7 @@ export async function reverseGeocode(
   options: ReverseGeocodeOptions
 ): Promise<ReverseGeocodeResult | null> {
   const { lat, lng } = options;
+
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return null;
   }
@@ -1295,12 +1475,14 @@ export async function reverseGeocode(
   const lang = options.lang?.trim() || 'de';
   const cacheKey = `rev|${lat.toFixed(4)}|${lng.toFixed(4)}|${lang}`;
   const cached = reverseCache.get(cacheKey);
+
   if (cached && Date.now() < cached.expiresAt) {
     return cached.data;
   }
 
   let urlStr = 'https://photon.komoot.io/reverse';
   const customPhoton = getEffectiveSetting('photon_api_url', 'PHOTON_API_URL');
+
   if (customPhoton) {
     try {
       const u = new URL(customPhoton);
@@ -1312,6 +1494,7 @@ export async function reverseGeocode(
   }
 
   let url: URL;
+
   try {
     url = new URL(urlStr);
   } catch {
@@ -1320,6 +1503,7 @@ export async function reverseGeocode(
 
   url.searchParams.set('lat', String(lat));
   url.searchParams.set('lon', String(lng));
+
   if (lang) {
     url.searchParams.set('lang', lang);
   }
@@ -1338,6 +1522,7 @@ export async function reverseGeocode(
     }
 
     const data = (await res.json()) as PhotonResponse;
+
     if (!data?.features || !Array.isArray(data.features) || data.features.length === 0) {
       setCachedReverse(cacheKey, null);
       return null;

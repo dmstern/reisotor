@@ -129,11 +129,13 @@ describe('feedback routes', () => {
         if (url.includes('/git/ref/heads/feedback-screenshots')) {
           return Promise.resolve({ ok: true, status: 200 });
         }
+
         if (url.includes('/contents/feedback-screenshots/')) {
           expect(init?.method).toBe('PUT');
           expect(JSON.parse(init!.body as string).branch).toBe('feedback-screenshots');
           return Promise.resolve({ ok: true, status: 201 });
         }
+
         sentBody = JSON.parse(init!.body as string);
         return Promise.resolve({
           ok: true,
@@ -173,6 +175,7 @@ describe('feedback routes', () => {
         if (url.includes('/git/ref/heads/feedback-screenshots')) {
           return Promise.resolve({ ok: false, status: 500 });
         }
+
         sentBody = JSON.parse(init!.body as string);
         return Promise.resolve({
           ok: true,
@@ -225,6 +228,7 @@ describe('feedback routes', () => {
     const savedForwarding = process.env.FEEDBACK_RELAY_FORWARDING;
     delete process.env.GITHUB_TOKEN;
     process.env.FEEDBACK_RELAY_FORWARDING = 'false';
+
     try {
       const cookie = await register('feedback-user-no-token', 'notoken@example.com');
       const res = await app.inject({
@@ -239,6 +243,7 @@ describe('feedback routes', () => {
       expect(res.json().error).toContain('https://github.com/someone/somerepo/issues');
     } finally {
       process.env.GITHUB_TOKEN = savedToken;
+
       if (savedForwarding !== undefined) {
         process.env.FEEDBACK_RELAY_FORWARDING = savedForwarding;
       } else {
@@ -349,6 +354,7 @@ describe('feedback routes', () => {
     it('returns 404 when FEEDBACK_RELAY_ENABLED is not true', async () => {
       const saved = process.env.FEEDBACK_RELAY_ENABLED;
       delete process.env.FEEDBACK_RELAY_ENABLED;
+
       try {
         const res = await app.inject({
           method: 'POST',
@@ -357,7 +363,9 @@ describe('feedback routes', () => {
         });
         expect(res.statusCode).toBe(404);
       } finally {
-        if (saved !== undefined) process.env.FEEDBACK_RELAY_ENABLED = saved;
+        if (saved !== undefined) {
+          process.env.FEEDBACK_RELAY_ENABLED = saved;
+        }
       }
     });
 
@@ -380,6 +388,7 @@ describe('feedback routes', () => {
 
       try {
         const payload = { type: 'bug', title: 'Rate Test', description: 'Test' };
+
         for (let i = 0; i < 5; i++) {
           const res = await app.inject({
             method: 'POST',
@@ -428,6 +437,7 @@ describe('feedback routes', () => {
                 }),
             });
           }
+
           return Promise.resolve({ ok: true });
         })
       );

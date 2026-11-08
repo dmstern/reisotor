@@ -19,19 +19,26 @@ export function useScrollArrows(
 
   function updateScrollArrows() {
     const el = containerRef.value;
+
     if (!el) {
       canScrollLeft.value = false;
       canScrollRight.value = false;
       return;
     }
+
     canScrollLeft.value = el.scrollLeft > tolerance;
     canScrollRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - tolerance;
   }
 
   function scrollBy(direction: 1 | -1) {
     const el = containerRef.value;
-    if (!el) return;
+
+    if (!el) {
+      return;
+    }
+
     const distance = direction * Math.round(el.clientWidth * scrollRatio);
+
     if (typeof el.scrollBy === 'function') {
       el.scrollBy({
         left: distance,
@@ -47,10 +54,12 @@ export function useScrollArrows(
   if (getCurrentInstance()) {
     onMounted(() => {
       nextTick(updateScrollArrows);
+
       if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(() => {
           updateScrollArrows();
         });
+
         if (containerRef.value) {
           resizeObserver.observe(containerRef.value);
         }

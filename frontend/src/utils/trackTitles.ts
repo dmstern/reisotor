@@ -16,6 +16,7 @@ const GERMAN_WEEKDAYS = [
  */
 export function formatFallbackTrackTitle(startedAt: string): string {
   const d = new Date(startedAt);
+
   if (isNaN(d.getTime())) {
     return 'Aufzeichnung';
   }
@@ -31,27 +32,63 @@ export function formatFallbackTrackTitle(startedAt: string): string {
 
   // Sonntag
   if (dayIndex === 0) {
-    if (isMorning) return 'Sonntagsspaziergang';
-    if (isMidday) return 'Sonntagsrunde';
-    if (isAfternoon) return 'Sonntagstour';
-    if (isEvening) return 'Sonntagabend-Runde';
+    if (isMorning) {
+      return 'Sonntagsspaziergang';
+    }
+
+    if (isMidday) {
+      return 'Sonntagsrunde';
+    }
+
+    if (isAfternoon) {
+      return 'Sonntagstour';
+    }
+
+    if (isEvening) {
+      return 'Sonntagabend-Runde';
+    }
+
     return 'Nächtliche Sonntagsrunde';
   }
 
   // Samstag
   if (dayIndex === 6) {
-    if (isMorning) return 'Morgendliche Samstagsrunde';
-    if (isMidday) return 'Samstagsrunde';
-    if (isAfternoon) return 'Wochenend-Ausflug';
-    if (isEvening) return 'Samstagabend-Runde';
+    if (isMorning) {
+      return 'Morgendliche Samstagsrunde';
+    }
+
+    if (isMidday) {
+      return 'Samstagsrunde';
+    }
+
+    if (isAfternoon) {
+      return 'Wochenend-Ausflug';
+    }
+
+    if (isEvening) {
+      return 'Samstagabend-Runde';
+    }
+
     return 'Samstagsrunde';
   }
 
   // Wochentage (Montag bis Freitag)
-  if (isMorning) return `Morgendliche Tour am ${dayName}`;
-  if (isMidday) return `Mittagsrunde am ${dayName}`;
-  if (isAfternoon) return `Nachmittagstour am ${dayName}`;
-  if (isEvening) return `Feierabendrunde am ${dayName}`;
+  if (isMorning) {
+    return `Morgendliche Tour am ${dayName}`;
+  }
+
+  if (isMidday) {
+    return `Mittagsrunde am ${dayName}`;
+  }
+
+  if (isAfternoon) {
+    return `Nachmittagstour am ${dayName}`;
+  }
+
+  if (isEvening) {
+    return `Feierabendrunde am ${dayName}`;
+  }
+
   return `Nachttour am ${dayName}`;
 }
 
@@ -64,5 +101,6 @@ export function getTrackTitle(track: LocationTrack): string {
   if (track.title && track.title.trim()) {
     return track.title.trim();
   }
+
   return formatFallbackTrackTitle(track.started_at);
 }

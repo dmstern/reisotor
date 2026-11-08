@@ -9,6 +9,7 @@ const port = Number(process.env.PORT ?? 3000);
 const app = await buildApp();
 
 const legalConfig = getLegalConfig();
+
 if (!legalConfig.hasOperatorInfo) {
   app.log.warn(
     '[Legal] Betreiberangaben unvollständig oder nicht konfiguriert (LEGAL_OPERATOR_NAME, LEGAL_OPERATOR_ADDRESS, LEGAL_CONTACT_EMAIL). Das Impressum wird mit einem Warnhinweis ausgeliefert.'

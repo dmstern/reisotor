@@ -9,17 +9,25 @@ export interface ImageSearchContext {
 }
 
 export function buildDefaultImageSearchQuery(context?: ImageSearchContext): string {
-  if (!context) return '';
+  if (!context) {
+    return '';
+  }
+
   const parts: string[] = [];
   const rawName = context.name?.trim();
+
   if (rawName) {
     parts.push(rawName);
   }
+
   const rawCity = context.city?.trim();
+
   if (rawCity && (!rawName || !rawName.toLowerCase().includes(rawCity.toLowerCase()))) {
     parts.push(rawCity);
   }
+
   const rawCategory = context.category?.trim();
+
   if (
     rawCategory &&
     (!rawName || !rawName.toLowerCase().includes(rawCategory.toLowerCase())) &&
@@ -27,6 +35,7 @@ export function buildDefaultImageSearchQuery(context?: ImageSearchContext): stri
   ) {
     parts.push(rawCategory);
   }
+
   return parts.join(' ');
 }
 </script>
@@ -109,6 +118,7 @@ watch(
     if (!showModal.value) {
       const q = buildDefaultImageSearchQuery(props.searchContext);
       searchQuery.value = q;
+
       if (suggestions.value.length === 0) {
         lastSearchedQuery.value = '';
       }
@@ -122,9 +132,11 @@ watch(
     if (isOpen) {
       const q = buildDefaultImageSearchQuery(props.searchContext);
       searchQuery.value = q;
+
       if (suggestions.value.length === 0) {
         lastSearchedQuery.value = '';
       }
+
       searchMessage.value = null;
     }
   }
@@ -135,10 +147,14 @@ watch(isUploading, (v) => {
 });
 
 const isModified = computed(() => {
-  if (props.modified) return true;
+  if (props.modified) {
+    return true;
+  }
+
   if (props.initialValue !== undefined) {
     return (props.modelValue || '').trim() !== (props.initialValue || '').trim();
   }
+
   return false;
 });
 
@@ -150,6 +166,7 @@ function syncSuggestions(newSuggs?: string[]) {
       }
     }
   }
+
   if (props.modelValue && suggestions.value.includes(props.modelValue)) {
     currentIndex.value = suggestions.value.indexOf(props.modelValue);
   }
@@ -159,6 +176,7 @@ watch(
   () => props.initialSuggestions,
   (val) => {
     syncSuggestions(val);
+
     if (!val || val.length === 0) {
       lastSearchedQuery.value = '';
     }
@@ -182,8 +200,14 @@ watch(
 );
 
 const effectivePreview = computed(() => {
-  if (props.modelValue) return imageDisplayUrl(props.modelValue) ?? null;
-  if (props.previewImage) return imageDisplayUrl(props.previewImage) ?? null;
+  if (props.modelValue) {
+    return imageDisplayUrl(props.modelValue) ?? null;
+  }
+
+  if (props.previewImage) {
+    return imageDisplayUrl(props.previewImage) ?? null;
+  }
+
   return null;
 });
 
@@ -192,45 +216,61 @@ const canBrowse = computed(() => {
 });
 
 const suggestionStatusText = computed(() => {
-  if (suggestions.value.length === 0) return '';
+  if (suggestions.value.length === 0) {
+    return '';
+  }
+
   if (currentIndex.value >= 0) {
     return `Vorschlag ${currentIndex.value + 1} von ${suggestions.value.length}`;
   }
+
   return `${suggestions.value.length} Vorschläge`;
 });
 
 function buildPreviewSearchParams(termOverride?: string): URLSearchParams {
   const term = (termOverride !== undefined ? termOverride : searchQuery.value).trim();
   const params = new URLSearchParams();
+
   if (term) {
     params.set('name', term);
   }
+
   if (props.searchContext?.city) {
     params.set('city', props.searchContext.city);
   }
+
   if (props.searchContext?.category) {
     params.set('category', props.searchContext.category);
   }
+
   if (props.searchContext?.lat != null) {
     params.set('lat', String(props.searchContext.lat));
   }
+
   if (props.searchContext?.lng != null) {
     params.set('lng', String(props.searchContext.lng));
   }
+
   if (props.variant) {
     params.set('variant', props.variant);
   }
+
   if (!term || term === (props.searchContext?.name ?? '')) {
     if (props.searchContext?.maps_link) {
       params.set('maps_link', props.searchContext.maps_link);
     }
   }
+
   return params;
 }
 
 async function executeSearch(queryOverride?: string, action: 'query' | 'next' = 'query') {
-  if (isSearching.value || isUploading.value) return;
+  if (isSearching.value || isUploading.value) {
+    return;
+  }
+
   const term = (queryOverride !== undefined ? queryOverride : searchQuery.value).trim();
+
   if (!term && !props.searchContext?.maps_link) {
     searchMessage.value = 'Bitte gib einen Suchbegriff ein.';
     return;
@@ -274,9 +314,11 @@ async function executeSearch(queryOverride?: string, action: 'query' | 'next' = 
 
 async function fetchSuggestionsFromApi(termOverride?: string): Promise<number> {
   const term = (termOverride !== undefined ? termOverride : searchQuery.value).trim();
+
   if (!term && (!props.searchContext || !props.searchContext.maps_link)) {
     return 0;
   }
+
   const params = buildPreviewSearchParams(termOverride);
 
   const res = await api.get<{ name: string | null; imageUrl: string | null; images?: string[] }>(
@@ -284,20 +326,26 @@ async function fetchSuggestionsFromApi(termOverride?: string): Promise<number> {
   );
   const newImages = res.images || (res.imageUrl ? [res.imageUrl] : []);
   let added = 0;
+
   for (const img of newImages) {
     if (img && !suggestions.value.includes(img)) {
       suggestions.value.push(img);
       added++;
     }
   }
+
   return added;
 }
 
 async function nextSuggestion() {
-  if (isSearching.value || isUploading.value) return;
+  if (isSearching.value || isUploading.value) {
+    return;
+  }
+
   searchMessage.value = null;
 
   const currentTerm = searchQuery.value.trim();
+
   if (currentTerm !== lastSearchedQuery.value) {
     await executeSearch(currentTerm, 'next');
     return;
@@ -305,8 +353,10 @@ async function nextSuggestion() {
 
   if (suggestions.value.length === 0 || currentIndex.value >= suggestions.value.length - 1) {
     isSearchingAction.value = 'next';
+
     try {
       const added = await fetchSuggestionsFromApi(currentTerm);
+
       if (added > 0 && currentIndex.value < suggestions.value.length - 1) {
         currentIndex.value++;
         emit('update:modelValue', suggestions.value[currentIndex.value]);
@@ -334,6 +384,7 @@ async function nextSuggestion() {
       } else {
         searchMessage.value = 'Keine weiteren Vorschläge gefunden.';
       }
+
       return;
     }
   }
@@ -343,10 +394,14 @@ async function nextSuggestion() {
 }
 
 async function prevSuggestion() {
-  if (isSearching.value || isUploading.value) return;
+  if (isSearching.value || isUploading.value) {
+    return;
+  }
+
   searchMessage.value = null;
 
   const currentTerm = searchQuery.value.trim();
+
   if (currentTerm !== lastSearchedQuery.value) {
     await executeSearch(currentTerm, 'query');
     return;
@@ -359,23 +414,31 @@ async function prevSuggestion() {
 }
 
 function removeImage() {
-  if (isUploading.value) return;
+  if (isUploading.value) {
+    return;
+  }
+
   emit('update:modelValue', '');
   showModal.value = false;
   searchMessage.value = null;
 }
 
 function resetImage() {
-  if (isUploading.value) return;
+  if (isUploading.value) {
+    return;
+  }
+
   const resetTo = props.initialValue ?? '';
   emit('update:modelValue', resetTo);
   emit('reset');
   searchMessage.value = null;
   searchQuery.value = props.searchContext?.name ?? '';
   lastSearchedQuery.value = props.searchContext?.name ?? '';
+
   if (props.initialSuggestions && props.initialSuggestions.length > 0) {
     suggestions.value = [...props.initialSuggestions];
   }
+
   if (resetTo && suggestions.value.includes(resetTo)) {
     currentIndex.value = suggestions.value.indexOf(resetTo);
   } else if (suggestions.value.length > 0 && resetTo) {
@@ -393,6 +456,7 @@ function handleModalClose(visible: boolean) {
     if (isUploading.value) {
       imageUrlInputRef.value?.abortUpload();
     }
+
     showModal.value = false;
     searchMessage.value = null;
   }

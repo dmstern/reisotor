@@ -29,9 +29,18 @@ const props = defineProps<{
 const emit = defineEmits<{ select: [key: string] }>();
 
 const effectiveFadeBg = computed(() => {
-  if (props.fadeBg === 'surface') return 'var(--color-surface)';
-  if (props.fadeBg === 'bg') return 'var(--color-bg)';
-  if (props.fadeBg) return props.fadeBg;
+  if (props.fadeBg === 'surface') {
+    return 'var(--color-surface)';
+  }
+
+  if (props.fadeBg === 'bg') {
+    return 'var(--color-bg)';
+  }
+
+  if (props.fadeBg) {
+    return props.fadeBg;
+  }
+
   return undefined;
 });
 
@@ -42,7 +51,11 @@ let resizeObserver: ResizeObserver | null = null;
 
 function updateUnderline() {
   const activeEl = tabBarEl.value?.querySelector<HTMLElement>('.tab.active');
-  if (!activeEl) return;
+
+  if (!activeEl) {
+    return;
+  }
+
   underlineLeft.value = activeEl.offsetLeft;
   underlineWidth.value = activeEl.offsetWidth;
 }
@@ -55,12 +68,18 @@ function updateUnderline() {
 // Skalierung nicht immer exakt auf demselben Wert, obwohl visuell schon ganz durchgescrollt.
 const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
+
 function updateScrollArrows() {
   const el = tabBarEl.value;
-  if (!el) return;
+
+  if (!el) {
+    return;
+  }
+
   canScrollLeft.value = el.scrollLeft > 1;
   canScrollRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
 }
+
 function smoothScrollTo(el: HTMLElement, targetLeft: number) {
   if (typeof el.scrollTo === 'function') {
     el.scrollTo({ left: targetLeft, behavior: 'smooth' });
@@ -71,8 +90,13 @@ function smoothScrollTo(el: HTMLElement, targetLeft: number) {
 
 function scrollBy(direction: 1 | -1) {
   const el = tabBarEl.value;
-  if (!el) return;
+
+  if (!el) {
+    return;
+  }
+
   const delta = direction * Math.round(el.clientWidth * 0.7);
+
   if (typeof el.scrollBy === 'function') {
     el.scrollBy({ left: delta, behavior: 'smooth' });
   } else {
@@ -83,13 +107,18 @@ function scrollBy(direction: 1 | -1) {
 function scrollActiveTabIntoView() {
   const activeEl = tabBarEl.value?.querySelector<HTMLElement>('.tab.active');
   const bar = tabBarEl.value;
-  if (!activeEl || !bar) return;
+
+  if (!activeEl || !bar) {
+    return;
+  }
+
   const btnLeft = activeEl.offsetLeft;
   const btnRight = btnLeft + activeEl.offsetWidth;
   const viewLeft = bar.scrollLeft;
   const viewRight = viewLeft + bar.clientWidth;
   const leftOffset = btnLeft > 0 ? 36 : 0;
   const rightOffset = btnRight < bar.scrollWidth - 1 ? 36 : 0;
+
   if (btnLeft - leftOffset < viewLeft) {
     smoothScrollTo(bar, Math.max(0, btnLeft - leftOffset));
   } else if (btnRight + rightOffset > viewRight) {
@@ -107,7 +136,10 @@ onMounted(() => {
     updateUnderline();
     updateScrollArrows();
   });
-  if (tabBarEl.value) resizeObserver.observe(tabBarEl.value);
+
+  if (tabBarEl.value) {
+    resizeObserver.observe(tabBarEl.value);
+  }
 });
 
 onUnmounted(() => resizeObserver?.disconnect());

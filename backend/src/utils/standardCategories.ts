@@ -90,6 +90,10 @@ export const STANDARD_CATEGORIES_BY_TYPE: Record<string, string[]> = {
 export function findStandardCategory(type: string, name: string): string | undefined {
   const standards = STANDARD_CATEGORIES_BY_TYPE[type] || [];
   const trimmed = name?.trim().toLowerCase();
-  if (!trimmed) return undefined;
+
+  if (!trimmed) {
+    return undefined;
+  }
+
   return standards.find((s) => s.toLowerCase() === trimmed);
 }

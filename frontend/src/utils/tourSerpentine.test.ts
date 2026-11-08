@@ -154,6 +154,7 @@ describe('buildTourSerpentineRows', () => {
     // Row 0: Spot 1 -> Leg(10) -> Spot 2, RowBreak(Leg 11)
     const horizLegCell = rows[0].cells[1];
     expect(horizLegCell.type).toBe('leg-horizontal');
+
     if (horizLegCell.type === 'leg-horizontal') {
       expect(horizLegCell.leg?.transport_type).toBe('Zug');
     }

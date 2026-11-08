@@ -48,14 +48,19 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
 
   async function load(tripId?: number, force = false) {
     const targetId = tripId ?? tripStore.currentTripId;
+
     if (targetId == null) {
       categories.value = [];
       loadedTripId.value = null;
       return;
     }
-    if (!force && loadedTripId.value === targetId) return;
+
+    if (!force && loadedTripId.value === targetId) {
+      return;
+    }
 
     loading.value = true;
+
     try {
       const res = await api.get<{ categories: TripCategory[] }>(`/trips/${targetId}/categories`);
       categories.value = res.categories ?? [];
@@ -94,11 +99,13 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     for (const c of categories.value) {
       if (c.is_hidden) {
         map.get(c.type)?.add(c.name.trim().toLowerCase());
+
         if (c.default_name) {
           map.get(c.type)?.add(c.default_name.trim().toLowerCase());
         }
       }
     }
+
     return map;
   });
 
@@ -114,6 +121,7 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
         map.get(c.type)?.add(c.default_name.trim().toLowerCase());
       }
     }
+
     return map;
   });
 
@@ -126,6 +134,7 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     // 1. Standard-Vorschläge (außer ausgeblendete und durch Umbenennung ersetzte)
     for (const def of EXPENSE_CATEGORY_SUGGESTIONS) {
       const lower = def.trim().toLowerCase();
+
       if (!hidden.has(lower) && !replaced.has(lower)) {
         set.add(def);
       }
@@ -149,6 +158,7 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
 
     for (const def of SPOT_CATEGORY_SUGGESTIONS) {
       const lower = def.trim().toLowerCase();
+
       if (!hidden.has(lower) && !replaced.has(lower)) {
         set.add(def);
       }
@@ -177,17 +187,20 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
 
   async function createCategory(tripId: number, data: CategoryInput): Promise<TripCategory> {
     const created = await api.post<TripCategory>(`/trips/${tripId}/categories`, data);
+
     // In lokale Liste einfügen oder ersetzen
     if (created && created.name) {
       const idx = categories.value.findIndex(
         (c) => c && c.type === created.type && c.name.toLowerCase() === created.name.toLowerCase()
       );
+
       if (idx >= 0) {
         categories.value[idx] = created;
       } else {
         categories.value.push(created);
       }
     }
+
     await load(tripId, true);
     return created;
   }
@@ -198,12 +211,15 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
     data: Partial<CategoryInput & { is_hidden: boolean | number }>
   ): Promise<TripCategory> {
     const updated = await api.put<TripCategory>(`/trips/${tripId}/categories/${id}`, data);
+
     if (updated) {
       const idx = categories.value.findIndex((c) => c && c.id === id);
+
       if (idx >= 0) {
         categories.value[idx] = updated;
       }
     }
+
     await load(tripId, true);
     return updated;
   }
@@ -254,9 +270,11 @@ export const useTripCategoriesStore = defineStore('tripCategories', () => {
         allocations?: CategoryUsageItem[];
       }>(`/trips/${tripId}/categories/usage-items?type=${type}&name=${encodeURIComponent(name)}`);
       const list = [...(res.items || [])];
+
       if (res.allocations?.length) {
         list.push(...res.allocations);
       }
+
       return list;
     } catch {
       return [];

@@ -20,38 +20,58 @@ const copied = ref(false);
 
 const errorTypeLabel = computed(() => {
   const err = activeError.value;
-  if (!err) return '';
+
+  if (!err) {
+    return '';
+  }
+
   if (err.kind === 'api') {
     return `API-Fehler${err.status ? ` (HTTP ${err.status})` : ''}`;
   }
+
   if (err.kind === 'sync') {
     return `Offline-Sync-Konflikt${err.status ? ` (HTTP ${err.status})` : ''}`;
   }
+
   return `Laufzeitfehler (${err.errorName})`;
 });
 
 const contextLabel = computed(() => {
   const err = activeError.value;
-  if (!err) return '—';
+
+  if (!err) {
+    return '—';
+  }
+
   const parts: string[] = [];
+
   if (err.method || err.path) {
     parts.push([err.method, err.path].filter(Boolean).join(' '));
   }
+
   if (err.componentInfo) {
     parts.push(err.componentInfo);
   }
+
   if (err.route) {
     parts.push(`Route: ${err.route}`);
   }
+
   return parts.length > 0 ? parts.join(' · ') : '—';
 });
 
 const formattedTimeAndVersion = computed(() => {
   const err = activeError.value;
-  if (!err) return '—';
+
+  if (!err) {
+    return '—';
+  }
+
   let timeStr = err.timestamp;
+
   try {
     const d = new Date(err.timestamp);
+
     if (!Number.isNaN(d.getTime())) {
       timeStr = d.toLocaleString('de-DE', {
         dateStyle: 'short',
@@ -61,41 +81,61 @@ const formattedTimeAndVersion = computed(() => {
   } catch {
     // fallback to ISO string
   }
+
   return err.appVersion ? `${timeStr} · ${err.appVersion}` : timeStr;
 });
 
 const technicalDetailsText = computed(() => {
   const err = activeError.value;
-  if (!err) return '';
+
+  if (!err) {
+    return '';
+  }
+
   const lines: string[] = [`${err.errorName}: ${err.rawMessage}`];
+
   if (err.method || err.path) {
     lines.push(`Endpoint: ${[err.method, err.path].filter(Boolean).join(' ')}`);
   }
+
   if (err.status != null) {
     lines.push(`Status: HTTP ${err.status}`);
   }
+
   if (err.route) {
     lines.push(`Route: ${err.route}`);
   }
+
   if (err.componentInfo) {
     lines.push(`Component/Hook: ${err.componentInfo}`);
   }
+
   lines.push(`Online: ${err.online ? 'Ja' : 'Nein'}`);
+
   if (err.stack) {
     lines.push('', err.stack.trim());
   }
+
   return lines.join('\n');
 });
 
 const feedbackInitialTitle = computed(() => {
   const err = activeError.value;
-  if (!err) return '';
+
+  if (!err) {
+    return '';
+  }
+
   return err.summary.slice(0, 200);
 });
 
 const feedbackInitialDescription = computed(() => {
   const err = activeError.value;
-  if (!err) return '';
+
+  if (!err) {
+    return '';
+  }
+
   const diag = formatDiagnosticMarkdown(err as CapturedError);
   return [
     '**Was hast du gerade gemacht, als der Fehler auftrat?**',
@@ -111,8 +151,13 @@ const feedbackInitialDescription = computed(() => {
 
 async function copyDiagnostics() {
   const err = activeError.value;
-  if (!err) return;
+
+  if (!err) {
+    return;
+  }
+
   const text = formatDiagnosticMarkdown(err as CapturedError);
+
   try {
     await navigator.clipboard.writeText(text);
     copied.value = true;

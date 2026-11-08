@@ -18,9 +18,11 @@ function mountComponent(
   const pinia = createPinia();
   setActivePinia(pinia);
   const authStore = useAuthStore(pinia);
+
   if (initialUser) {
     authStore.user = initialUser as User;
   }
+
   const container = document.createElement('div');
   document.body.appendChild(container);
   const app = createApp({

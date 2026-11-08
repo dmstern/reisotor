@@ -29,13 +29,17 @@ export const TARGET_DIRS = ['.', 'backend', 'frontend', 'e2e'];
  */
 export function computeCooldownDate(days, now = new Date()) {
   const d = Number(days);
+
   if (!Number.isFinite(d) || d <= 0) {
     throw new RangeError(`Cooldown days must be a positive finite number, got: ${days}`);
   }
+
   const baseTime = now instanceof Date ? now.getTime() : new Date(now).getTime();
+
   if (!Number.isFinite(baseTime)) {
     throw new TypeError(`Invalid date provided for now: ${now}`);
   }
+
   const targetTime = baseTime - d * 24 * 60 * 60 * 1000;
   return new Date(targetTime).toISOString();
 }
@@ -50,10 +54,16 @@ export function validatePackageJsonPolicies(pkgJson, filePath = 'package.json') 
 
   for (const section of sections) {
     const deps = pkgJson?.[section];
-    if (!deps || typeof deps !== 'object') continue;
+
+    if (!deps || typeof deps !== 'object') {
+      continue;
+    }
 
     for (const [dep, rawSpec] of Object.entries(deps)) {
-      if (typeof rawSpec !== 'string') continue;
+      if (typeof rawSpec !== 'string') {
+        continue;
+      }
+
       const spec = rawSpec.trim();
 
       if (
@@ -161,9 +171,11 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
     lines.push('');
     lines.push('| Datei | Paket | Version / Specifier | Grund |');
     lines.push('|---|---|---|---|');
+
     for (const v of policyViolations) {
       lines.push(`| \`${v.file}\` | \`${v.dependency}\` | \`${v.specifier}\` | ${v.reason} |`);
     }
+
     lines.push('');
   } else {
     lines.push(
@@ -197,6 +209,7 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
       `| \`${r.dir}\` | ${c.total || 0} | ${c.low || 0} | ${c.moderate || 0} | ${c.high || 0} | ${c.critical || 0} | ${autoBadge} | ${manualBadge} |`
     );
   }
+
   lines.push('');
 
   // Auto-Fixable CVEs
@@ -205,6 +218,7 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
     lines.push('');
     lines.push('| Verzeichnis | Paket | Severity | Direkt | Behebung |');
     lines.push('|---|---|---|---|---|');
+
     for (const r of results) {
       for (const a of r.autoFixable) {
         lines.push(
@@ -212,6 +226,7 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
         );
       }
     }
+
     lines.push('');
   }
 
@@ -226,6 +241,7 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
     lines.push('');
     lines.push('| Verzeichnis | Paket | Severity | Direkt | Erforderliches Upgrade / Grund |');
     lines.push('|---|---|---|---|---|');
+
     for (const r of results) {
       for (const m of r.manualBreaking) {
         lines.push(
@@ -233,6 +249,7 @@ export function formatSecurityMarkdown(results, policyViolations = [], mode = 'c
         );
       }
     }
+
     lines.push('');
   }
 
@@ -259,6 +276,7 @@ export function runNpmAudit(dir) {
         // Fallback unten
       }
     }
+
     throw new Error(`Failed to run npm audit in ${dir}: ${error.message}`);
   }
 }
@@ -268,9 +286,11 @@ export function runNpmAudit(dir) {
  */
 export function runNpmAuditFix(dir, cooldownIso = null) {
   const args = ['audit', 'fix', '--legacy-peer-deps'];
+
   if (cooldownIso) {
     args.push(`--before=${cooldownIso}`);
   }
+
   const cmd = `npm ${args.join(' ')}`;
   execSync(cmd, {
     cwd: path.resolve(dir),
@@ -284,9 +304,11 @@ export function runNpmAuditFix(dir, cooldownIso = null) {
  */
 export function runNpmUpdate(dir, cooldownIso = null) {
   const args = ['update', '--legacy-peer-deps'];
+
   if (cooldownIso) {
     args.push(`--before=${cooldownIso}`);
   }
+
   const cmd = `npm ${args.join(' ')}`;
   execSync(cmd, {
     cwd: path.resolve(dir),
@@ -302,15 +324,21 @@ export function parseArgs(rawArgs) {
   let strictAll = false;
 
   for (const arg of rawArgs) {
-    if (arg === '--check') mode = 'check';
-    else if (arg === '--fix') mode = 'fix';
-    else if (arg === '--update') mode = 'update';
-    else if (arg === '--strict-all') strictAll = true;
-    else if (arg.startsWith('--cooldown-days=')) {
+    if (arg === '--check') {
+      mode = 'check';
+    } else if (arg === '--fix') {
+      mode = 'fix';
+    } else if (arg === '--update') {
+      mode = 'update';
+    } else if (arg === '--strict-all') {
+      strictAll = true;
+    } else if (arg.startsWith('--cooldown-days=')) {
       const parsed = Number(arg.split('=')[1]);
+
       if (!Number.isFinite(parsed) || parsed <= 0) {
         throw new RangeError(`Cooldown days must be a positive finite number, got: ${arg}`);
       }
+
       cooldownDays = parsed;
     } else if (arg.startsWith('--summary-file=')) {
       summaryFile = arg.split('=')[1];
@@ -326,7 +354,10 @@ export function parseArgs(rawArgs) {
 
 // Hauptlogik für CLI-Ausführung
 function isExecutingAsMain() {
-  if (!process.argv[1]) return false;
+  if (!process.argv[1]) {
+    return false;
+  }
+
   try {
     const entryPath = fs.realpathSync(path.resolve(process.argv[1]));
     const currentPath = fs.realpathSync(fileURLToPath(import.meta.url));
@@ -343,8 +374,10 @@ if (isExecutingAsMain()) {
 
   // 1. Policy-Validierung aller package.json-Dateien
   const policyViolations = [];
+
   for (const dir of TARGET_DIRS) {
     const pkgPath = path.resolve(dir, 'package.json');
+
     if (fs.existsSync(pkgPath)) {
       const content = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
       const violations = validatePackageJsonPolicies(content, path.join(dir, 'package.json'));
@@ -364,6 +397,7 @@ if (isExecutingAsMain()) {
         console.log(
           `  -> ${initialReport.autoFixable.length} auto-fixable CVEs gefunden. Führe Stufe 1 (mit Cooldown) aus...`
         );
+
         try {
           runNpmAuditFix(dir, cooldownIso);
         } catch (e) {
@@ -372,10 +406,12 @@ if (isExecutingAsMain()) {
 
         // Re-Audit nach Stufe 1
         const intermediateReport = classifyAuditReport(runNpmAudit(dir), dir);
+
         if (intermediateReport.autoFixable.length > 0) {
           console.log(
             `  -> ${intermediateReport.autoFixable.length} auto-fixable CVEs verbleiben. Führe Stufe 2 (ohne Cooldown) aus...`
           );
+
           try {
             runNpmAuditFix(dir, null);
           } catch (e) {
@@ -389,8 +425,10 @@ if (isExecutingAsMain()) {
   } else if (mode === 'update') {
     const cooldownIso = computeCooldownDate(cooldownDays);
     console.log(`⏳ Aktualisiere Abhängigkeiten (Cooldown-Grenze: ${cooldownIso})...`);
+
     for (const dir of TARGET_DIRS) {
       console.log(`\n📦 npm update in "${dir}"...`);
+
       try {
         runNpmUpdate(dir, cooldownIso);
       } catch (e) {
@@ -425,6 +463,7 @@ if (isExecutingAsMain()) {
 
   if (strictAll) {
     const hasAnyVuln = results.some((r) => (r.counts.total || 0) > 0);
+
     if (hasAnyVuln) {
       console.error('\n❌ FEHLER: Sicherheitslücken gefunden (--strict-all aktiv).');
       process.exit(1);
@@ -433,6 +472,7 @@ if (isExecutingAsMain()) {
     const hasHighOrCriticalAuto = results.some((r) =>
       r.autoFixable.some((v) => v.severity === 'high' || v.severity === 'critical')
     );
+
     if (hasHighOrCriticalAuto) {
       console.error(
         '\n❌ FEHLER: Es existieren noch automatisch behebbare High- oder Critical-Sicherheitslücken! Bitte führe "npm run security:fix" aus.'

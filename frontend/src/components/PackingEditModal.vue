@@ -68,9 +68,17 @@ watch(
 );
 
 function handleSubmit() {
-  if (!editForm.value.label.trim()) return;
-  if (props.categoryRequired && !editForm.value.category?.trim()) return;
-  if (!props.item) return;
+  if (!editForm.value.label.trim()) {
+    return;
+  }
+
+  if (props.categoryRequired && !editForm.value.category?.trim()) {
+    return;
+  }
+
+  if (!props.item) {
+    return;
+  }
 
   emit(
     'submit',
@@ -89,7 +97,10 @@ function handleClose() {
 }
 
 function discardDraft() {
-  if (!props.item) return;
+  if (!props.item) {
+    return;
+  }
+
   editForm.value = {
     label: props.item.label,
     category: props.item.category ?? (props.categoryRequired ? 'Sonstiges' : ''),
@@ -102,7 +113,10 @@ function discardDraft() {
 }
 
 function handleDelete() {
-  if (!props.item) return;
+  if (!props.item) {
+    return;
+  }
+
   const id = props.item.id;
   handleClose();
   emit('delete', id);

@@ -24,6 +24,7 @@ import ScheduleView from '../views/ScheduleView.vue';
 function waitForElement(selector: string, timeoutMs = 3000): Promise<boolean> {
   return new Promise((resolve) => {
     const start = performance.now();
+
     function check() {
       if (document.querySelector(selector)) {
         resolve(true);
@@ -33,6 +34,7 @@ function waitForElement(selector: string, timeoutMs = 3000): Promise<boolean> {
         requestAnimationFrame(check);
       }
     }
+
     check();
   });
 }
@@ -56,8 +58,12 @@ const router = createRouter({
   async scrollBehavior(to) {
     if (to.hash) {
       const found = await waitForElement(to.hash);
-      if (found) return { el: to.hash, behavior: 'smooth' };
+
+      if (found) {
+        return { el: to.hash, behavior: 'smooth' };
+      }
     }
+
     if (to.path.includes('/excursions') || to.path.includes('/spots')) {
       return { top: 0, left: 0 };
     }
@@ -243,9 +249,11 @@ router.beforeEach(async (to) => {
   if (to.name === 'login' && auth.user) {
     const tripStore = useTripStore();
     await tripStore.ensureLoaded();
+
     if (tripStore.currentTripId != null) {
       return { path: `/trip/${tripStore.currentTripId}` };
     }
+
     return { name: 'trips' };
   }
 
@@ -258,6 +266,7 @@ router.beforeEach(async (to) => {
     to.name === 'verify-email' ||
     to.name === 'privacy' ||
     to.name === 'imprint';
+
   if (auth.user && !isGlobalRoute) {
     const tripStore = useTripStore();
     await tripStore.ensureLoaded();
@@ -265,6 +274,7 @@ router.beforeEach(async (to) => {
     // 1. Wenn eine :tripId in den Parametern übergeben wurde
     if (to.params.tripId) {
       const paramTripId = Number(to.params.tripId);
+
       if (!Number.isFinite(paramTripId) || !tripStore.hasTrip(paramTripId)) {
         useToast().showToast({
           message: 'Kein Zugriff auf diesen Urlaub oder nicht gefunden',
@@ -279,6 +289,7 @@ router.beforeEach(async (to) => {
     } else {
       // 2. Legacy-Routen ohne :tripId (z. B. /, /listen, /excursions, ...)
       const subpath = to.path === '/' ? '' : to.path;
+
       if (tripStore.currentTripId != null) {
         return {
           path: `/trip/${tripStore.currentTripId}${subpath}`,
@@ -306,8 +317,10 @@ router.beforeEach(async (to) => {
 router.afterEach(() => {
   isNavigating.value = false;
   navigatingTo.value = null;
+
   if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
     const modalStore = useModalStore();
+
     if (modalStore.activeStack.length === 0) {
       document.body.style.overflow = '';
     }

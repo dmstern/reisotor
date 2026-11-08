@@ -64,9 +64,11 @@ function toggleFilterMenu(event?: MouseEvent) {
       (event?.currentTarget as HTMLElement) ||
       (filterBtnRef.value as ComponentPublicInstance)?.$el ||
       (filterBtnRef.value as HTMLElement);
+
     if (target) {
       filterMenuStyle.value = computePopoverPosition(target, { menuWidth: 240, align: 'right' });
     }
+
     filterMenuOpen.value = true;
   } else {
     filterMenuOpen.value = false;
@@ -92,33 +94,39 @@ const totalActiveCount = computed(() => activeFilterCount.value + (isSortActive.
 function toggleCategory(cat: string) {
   const current = [...(props.categoryFilter || [])];
   const idx = current.indexOf(cat);
+
   if (idx >= 0) {
     current.splice(idx, 1);
   } else {
     current.push(cat);
   }
+
   emit('update:categoryFilter', current);
 }
 
 function toggleStatus(st: 'planned' | 'unplanned' | 'done') {
   const current = [...(props.statusFilter || [])];
   const idx = current.indexOf(st);
+
   if (idx >= 0) {
     current.splice(idx, 1);
   } else {
     current.push(st);
   }
+
   emit('update:statusFilter', current);
 }
 
 function toggleTourRole(role: TourRoleFilterOption) {
   const current = [...(props.tourRoleFilter || [])];
   const idx = current.indexOf(role);
+
   if (idx >= 0) {
     current.splice(idx, 1);
   } else {
     current.push(role);
   }
+
   emit('update:tourRoleFilter', current);
 }
 

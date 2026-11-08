@@ -255,9 +255,11 @@ describe('imageCompression EXIF metadata preservation', () => {
       const header = new Uint8Array(16);
       header[3] = 16;
       header.set([0x66, 0x74, 0x79, 0x70], 4); // 'ftyp'
+
       for (let i = 0; i < 4; i++) {
         header[8 + i] = brand.charCodeAt(i);
       }
+
       return new Blob([header], { type: 'application/octet-stream' });
     }
 

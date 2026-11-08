@@ -8,9 +8,11 @@ import { MEDIA_QUERIES } from '../tokens/breakpoints';
 export function useIsDesktop() {
   const query = window.matchMedia(MEDIA_QUERIES.desktop);
   const isDesktop = ref(query.matches);
+
   function onChange(event: MediaQueryListEvent) {
     isDesktop.value = event.matches;
   }
+
   query.addEventListener('change', onChange);
   onUnmounted(() => query.removeEventListener('change', onChange));
   return isDesktop;

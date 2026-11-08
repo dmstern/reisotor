@@ -50,8 +50,12 @@ export const useSpotsStore = defineStore('spots', () => {
     const replaced = tripCategoriesStore.replacedDefaultNamesByType.get('spot') ?? new Set();
     const set = new Set<string>(tripCategoriesStore.activeSpotCategories);
     spots.value.forEach((s) => {
-      if (!s.category) return;
+      if (!s.category) {
+        return;
+      }
+
       const lower = s.category.trim().toLowerCase();
+
       if (!hidden.has(lower) && !replaced.has(lower)) {
         set.add(s.category.trim());
       }
@@ -61,6 +65,7 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function load() {
     const tripId = tripStore.currentTripId;
+
     if (tripId == null) {
       spots.value = [];
       spotLikes.value = [];
@@ -68,6 +73,7 @@ export const useSpotsStore = defineStore('spots', () => {
       loaded.value = false;
       return;
     }
+
     const [spotsRes, likesRes, commentsRes] = await Promise.all([
       api.get<Spot[]>(`/spots?trip_id=${tripId}`),
       api.get<SpotLike[]>(`/spots/likes?trip_id=${tripId}`),
@@ -87,12 +93,15 @@ export const useSpotsStore = defineStore('spots', () => {
   function likesFor(spotId: number) {
     return spotLikes.value.filter((l) => l.spot_id === spotId);
   }
+
   function likeCountFor(spotId: number) {
     return likesFor(spotId).length;
   }
+
   function likedByMe(spotId: number, userId: number | undefined) {
     return userId != null && likesFor(spotId).some((l) => l.user_id === userId);
   }
+
   function commentsFor(spotId: number) {
     return spotComments.value
       .filter((c) => c.spot_id === spotId)
@@ -108,11 +117,13 @@ export const useSpotsStore = defineStore('spots', () => {
   async function update(id: number, body: SpotFormData) {
     const updated = await api.put<Spot>(`/spots/${id}`, body);
     const idx = spots.value.findIndex((s) => s.id === id);
+
     if (idx !== -1) {
       const next = [...spots.value];
       next[idx] = updated;
       spots.value = next;
     }
+
     return updated;
   }
 
@@ -132,6 +143,7 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function toggleLike(spotId: number, userId: number) {
     const result = await api.post<{ liked: boolean }>(`/spots/${spotId}/like`);
+
     if (result.liked) {
       spotLikes.value = [...spotLikes.value, { id: Date.now(), spot_id: spotId, user_id: userId }];
     } else {
@@ -160,7 +172,10 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function toggleCommentLike(commentId: number) {
     const c = spotComments.value.find((item) => item.id === commentId);
-    if (!c) return;
+
+    if (!c) {
+      return;
+    }
 
     const wasLiked = Boolean(c.liked);
     const originalCount = c.like_count ?? 0;
@@ -196,11 +211,13 @@ export const useSpotsStore = defineStore('spots', () => {
   async function setDone(id: number, done: boolean) {
     const result = await api.post<{ done: boolean }>(`/spots/${id}/done`, { done });
     const idx = spots.value.findIndex((s) => s.id === id);
+
     if (idx !== -1) {
       const next = [...spots.value];
       next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
       spots.value = next;
     }
+
     const scheduleStore = useScheduleStore();
     let hasScheduleChanges = false;
     const nextSchedule = scheduleStore.items.map((item) => {
@@ -208,8 +225,10 @@ export const useSpotsStore = defineStore('spots', () => {
         hasScheduleChanges = true;
         return { ...item, done: result.done ? 1 : 0 };
       }
+
       return item;
     });
+
     if (hasScheduleChanges) {
       scheduleStore.items = nextSchedule;
     }

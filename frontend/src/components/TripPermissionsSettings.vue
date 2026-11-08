@@ -47,9 +47,13 @@ const memberCapReached = computed(
 const { openAccountTierModal } = useAccountTierModal();
 
 async function loadMembers() {
-  if (!props.tripId) return;
+  if (!props.tripId) {
+    return;
+  }
+
   initialLoading.value = true;
   error.value = '';
+
   try {
     members.value = await api.get<User[]>(`/trips/${props.tripId}/members`);
   } catch (err) {
@@ -84,12 +88,14 @@ onUnmounted(() => {
 watch(query, (q) => {
   clearTimeout(searchTimeout);
   const trimmed = q.trim();
+
   if (trimmed.length < 2) {
     results.value = [];
     searching.value = false;
     hasSearched.value = false;
     return;
   }
+
   searching.value = true;
   hasSearched.value = false;
   searchTimeout = setTimeout(async () => {
@@ -97,6 +103,7 @@ watch(query, (q) => {
       searching.value = false;
       return;
     }
+
     try {
       results.value = await api.get<User[]>(
         `/users/search?q=${encodeURIComponent(trimmed)}&trip_id=${props.tripId}`
@@ -111,13 +118,18 @@ watch(query, (q) => {
 });
 
 async function invite(user: User) {
-  if (!props.tripId) return;
+  if (!props.tripId) {
+    return;
+  }
+
   if (memberCapReached.value) {
     openAccountTierModal('members');
     return;
   }
+
   error.value = '';
   loading.value = true;
+
   try {
     await api.post(`/trips/${props.tripId}/members`, { user_id: user.id });
     members.value.push(user);
@@ -132,13 +144,21 @@ async function invite(user: User) {
 }
 
 async function removeMember(user: User) {
-  if (!props.tripId) return;
+  if (!props.tripId) {
+    return;
+  }
+
   if (user.id === authStore.user?.id) {
     error.value = 'Du kannst dich nicht selbst aus dem Urlaub entfernen.';
     return;
   }
+
   const confirmed = window.confirm(`"${user.username}" wirklich aus diesem Urlaub entfernen?`);
-  if (!confirmed) return;
+
+  if (!confirmed) {
+    return;
+  }
+
   try {
     await api.delete(`/trips/${props.tripId}/members/${user.id}`);
     members.value = members.value.filter((u) => u.id !== user.id);

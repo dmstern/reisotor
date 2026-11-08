@@ -16,11 +16,13 @@ const pinia = createPinia();
 setActivePinia(pinia);
 useThemeStore().init();
 useUiSettingsStore().init();
+
 try {
   migrateLocalData();
 } catch (e) {
   console.warn('Fehler bei lokaler Datenmigration:', e);
 }
+
 // So früh wie möglich, damit das beforeinstallprompt-Event (siehe stores/pwaInstall.ts) sicher
 // abgefangen wird, auch wenn es der Browser schon direkt beim Laden feuert.
 usePwaInstallStore().init();
@@ -48,6 +50,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 window.addEventListener('reisotor:outbox-rejected', (event) => {
   const detail = (event as CustomEvent<{ entry: OutboxEntry; error: unknown }>).detail;
+
   if (detail?.entry) {
     notifyOutboxRejected(detail.entry, detail.error);
   }
@@ -55,6 +58,7 @@ window.addEventListener('reisotor:outbox-rejected', (event) => {
 
 window.addEventListener('reisotor:outbox-failed', (event) => {
   const detail = (event as CustomEvent<{ entry: OutboxEntry; error: unknown }>).detail;
+
   if (detail?.entry) {
     notifyOutboxFailed(detail.entry, detail.error);
   }
@@ -67,9 +71,11 @@ app.mount('#app');
 // eigenen SplashScreen.vue, solange Trips/Live-Sync laden - beide reichen sich damit nahtlos die
 // Hand statt einer Lücke dazwischen).
 const splash = document.getElementById('splash');
+
 if (splash) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isWebdriver = Boolean(navigator.webdriver);
+
   if (reducedMotion || isWebdriver) {
     // Bei prefers-reduced-motion: reduce oder in automatisierten E2E-Tests (navigator.webdriver)
     // die CSS-Transition überspringen und den Splash sofort entfernen. transitionend feuert in
@@ -98,6 +104,7 @@ if (splash) {
 // Einkaufsliste, Kategorie-/Status-Filter, …) vorkommen.
 document.addEventListener('click', (event) => {
   const target = (event.target as HTMLElement).closest?.('input[type="checkbox"], .state-toggle');
+
   if (target instanceof HTMLElement) {
     requestAnimationFrame(() => target.blur());
   }

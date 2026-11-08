@@ -61,18 +61,22 @@ describe('buildInfo routes', () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.json();
+
     if (body.changelog) {
       expect(body.changelog).toHaveProperty('version');
       expect(body.changelog).toHaveProperty('notes');
       expect(Array.isArray(body.changelog.notes)).toBe(true);
+
       if (body.changelog.groups) {
         expect(Array.isArray(body.changelog.groups)).toBe(true);
+
         for (const group of body.changelog.groups) {
           expect(group).toHaveProperty('title');
           expect(group).toHaveProperty('notes');
           expect(Array.isArray(group.notes)).toBe(true);
         }
       }
+
       if (body.changelog.baseRelease) {
         expect(body.changelog.baseRelease).toHaveProperty('version');
         expect(body.changelog.baseRelease).toHaveProperty('notes');

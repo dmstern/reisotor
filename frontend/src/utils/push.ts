@@ -7,7 +7,11 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   const output = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i);
+
+  for (let i = 0; i < rawData.length; i++) {
+    output[i] = rawData.charCodeAt(i);
+  }
+
   return output;
 }
 
@@ -16,13 +20,20 @@ export function isPushSupported(): boolean {
 }
 
 export async function getExistingSubscription(): Promise<PushSubscription | null> {
-  if (!isPushSupported()) return null;
+  if (!isPushSupported()) {
+    return null;
+  }
+
   try {
     const registration = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
     ]);
-    if (!registration) return null;
+
+    if (!registration) {
+      return null;
+    }
+
     return (await registration.pushManager?.getSubscription()) ?? null;
   } catch {
     return null;
@@ -33,18 +44,23 @@ export async function getExistingSubscription(): Promise<PushSubscription | null
  *  ans Backend (routes/push.ts) – wirft, falls die Berechtigung verweigert wird oder Push serverseitig
  *  nicht konfiguriert ist (kein VAPID-Schlüssel, siehe push.ts), der Aufrufer zeigt das als Fehler an. */
 export async function subscribeToPush(): Promise<void> {
-  if (!isPushSupported())
+  if (!isPushSupported()) {
     throw new Error('Push-Benachrichtigungen werden von diesem Browser nicht unterstützt');
+  }
 
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted')
+
+  if (permission !== 'granted') {
     throw new Error('Berechtigung für Benachrichtigungen wurde nicht erteilt');
+  }
 
   const res = await api.get<{ publicKey?: string }>('/push/vapid-public-key');
   const publicKey = res?.publicKey;
+
   if (!publicKey) {
     throw new Error('Push-Dienst ist nicht konfiguriert');
   }
+
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
@@ -57,7 +73,11 @@ export async function subscribeToPush(): Promise<void> {
 
 export async function unsubscribeFromPush(): Promise<void> {
   const subscription = await getExistingSubscription();
-  if (!subscription) return;
+
+  if (!subscription) {
+    return;
+  }
+
   const endpoint = subscription.endpoint;
   await subscription.unsubscribe();
   await api.delete(`/push/subscribe?endpoint=${encodeURIComponent(endpoint)}`).catch(() => {

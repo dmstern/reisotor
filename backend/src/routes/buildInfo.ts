@@ -42,6 +42,7 @@ export function readBuildInfo(): BuildInfo {
     let pkg: { version?: string } = {};
     const localPkg = path.join(process.cwd(), 'package.json');
     const parentPkg = path.join(process.cwd(), '..', 'package.json');
+
     try {
       if (existsSync(localPkg)) {
         pkg = JSON.parse(readFileSync(localPkg, 'utf-8'));
@@ -51,6 +52,7 @@ export function readBuildInfo(): BuildInfo {
     } catch {
       pkg = {};
     }
+
     const env =
       process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development');
     const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? '' : '-dev';

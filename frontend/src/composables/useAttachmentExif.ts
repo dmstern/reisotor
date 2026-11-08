@@ -35,11 +35,13 @@ export function useAttachmentExif(options: UseAttachmentExifOptions) {
     const minutes = String(d.getMinutes()).padStart(2, '0');
     const calendarSettings = useCalendarSettingsStore();
     let dateFormatted = `${day}.${month}.${year}`;
+
     if (calendarSettings.dateFormat === 'iso') {
       dateFormatted = `${year}-${month}-${day}`;
     } else if (calendarSettings.dateFormat === 'us') {
       dateFormatted = `${month}/${day}/${year}`;
     }
+
     return `${dateFormatted}, ${hours}:${minutes}\u00A0Uhr`;
   }
 
@@ -48,13 +50,17 @@ export function useAttachmentExif(options: UseAttachmentExifOptions) {
       currentMetadata.value = null;
       return;
     }
+
     if (attachment.metadata !== undefined) {
       currentMetadata.value = attachment.metadata;
       return;
     }
+
     isLoadingMetadata.value = true;
+
     try {
       const meta = await extractExifFromUrl(attachment.url);
+
       if (currentAttachment.value?.url === attachment.url) {
         currentMetadata.value = meta;
       }
@@ -79,6 +85,7 @@ export function useAttachmentExif(options: UseAttachmentExifOptions) {
     if (currentMetadata.value?.latitude == null || currentMetadata.value?.longitude == null) {
       return;
     }
+
     const lat = currentMetadata.value.latitude;
     const lng = currentMetadata.value.longitude;
     const title = currentAttachment.value?.original_name || 'Foto-Standort';
@@ -88,6 +95,7 @@ export function useAttachmentExif(options: UseAttachmentExifOptions) {
       initialIndex: currentIndex.value,
     };
     let dateBadge: string | undefined;
+
     if (currentMetadata.value?.dateTime) {
       dateBadge = formatDate(toLocalDateString(currentMetadata.value.dateTime), {
         includeYear: false,
@@ -95,6 +103,7 @@ export function useAttachmentExif(options: UseAttachmentExifOptions) {
     } else if (currentAttachment.value?.created_at) {
       dateBadge = formatDate(currentAttachment.value.created_at, { includeYear: false });
     }
+
     onCloseModal?.();
     drawers.openMapAtLocation(lat, lng, title, imageUrl, gallery, dateBadge);
   }

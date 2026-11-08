@@ -46,9 +46,11 @@ describe('TripPermissionsSettings', () => {
       if (path === '/trips/10/members') {
         return mockMembers;
       }
+
       if (path.startsWith('/users/search')) {
         return [{ id: 3, username: 'charlie', email: 'charlie@example.com', avatar: '🧑' }];
       }
+
       return [];
     });
   });

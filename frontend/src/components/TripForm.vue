@@ -82,6 +82,7 @@ const dateError = computed(() => {
   if (form.value.start_date && form.value.end_date && form.value.start_date > form.value.end_date) {
     return 'Das Enddatum darf nicht vor dem Startdatum liegen.';
   }
+
   return '';
 });
 
@@ -89,13 +90,22 @@ function areCoordsEqual(
   a: { lat: number; lng: number } | null | undefined,
   b: { lat: number; lng: number } | null | undefined
 ): boolean {
-  if (!a && !b) return true;
-  if (!a || !b) return false;
+  if (!a && !b) {
+    return true;
+  }
+
+  if (!a || !b) {
+    return false;
+  }
+
   return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
 }
 
 const isLocationModified = computed(() => {
-  if (!props.initial) return false;
+  if (!props.initial) {
+    return false;
+  }
+
   const initialPin =
     props.initial.lat != null && props.initial.lng != null
       ? { lat: props.initial.lat, lng: props.initial.lng }
@@ -109,27 +119,42 @@ const isLocationModified = computed(() => {
 });
 
 const isNameModified = computed(() => {
-  if (!props.initial) return false;
+  if (!props.initial) {
+    return false;
+  }
+
   return (form.value.name || '').trim() !== (props.initial.name || '').trim();
 });
 
 const isStartDateModified = computed(() => {
-  if (!props.initial) return false;
+  if (!props.initial) {
+    return false;
+  }
+
   return (form.value.start_date || '') !== (props.initial.start_date || '');
 });
 
 const isEndDateModified = computed(() => {
-  if (!props.initial) return false;
+  if (!props.initial) {
+    return false;
+  }
+
   return (form.value.end_date || '') !== (props.initial.end_date || '');
 });
 
 const isImageModified = computed(() => {
-  if (!props.initial) return false;
+  if (!props.initial) {
+    return false;
+  }
+
   return (form.value.image_url || '').trim() !== (props.initial.image_url || '').trim();
 });
 
 const isWeatherModelModified = computed(() => {
-  if (!props.initial) return false;
+  if (!props.initial) {
+    return false;
+  }
+
   return (form.value.weather_model || '') !== (props.initial.weather_model || '');
 });
 
@@ -146,7 +171,9 @@ watch(
 watch(
   () => props.initialTab,
   (tab) => {
-    if (tab) activeTab.value = tab;
+    if (tab) {
+      activeTab.value = tab;
+    }
   }
 );
 
@@ -165,11 +192,17 @@ watch(
 // Koordinate – zur besseren Nachvollziehbarkeit, welcher Standort tatsächlich für z. B. die
 // Wetterabfrage verwendet wird.
 watch(manualPin, (pin) => {
-  if (!pin) return;
+  if (!pin) {
+    return;
+  }
+
   if (!form.value.maps_link) {
     form.value.maps_link = buildOsmLink(pin.lat, pin.lng);
   }
-  if (props.locationError) onSubmit();
+
+  if (props.locationError) {
+    onSubmit();
+  }
 });
 
 function onLocationSelect(place: PlaceSearchResult) {
@@ -190,6 +223,7 @@ function onLocationReset() {
     onLocationClear();
     return;
   }
+
   form.value.destination = props.initial.destination ?? '';
   form.value.maps_link = props.initial.maps_link ?? '';
   manualPin.value =
@@ -201,15 +235,20 @@ function onLocationReset() {
 const isUploadingCoverImage = ref(false);
 
 function onSubmit() {
-  if (isUploadingCoverImage.value) return;
+  if (isUploadingCoverImage.value) {
+    return;
+  }
+
   if (!form.value.name.trim()) {
     activeTab.value = 'general';
     return;
   }
+
   if (dateError.value) {
     activeTab.value = 'general';
     return;
   }
+
   const parsed = parseLatLngFromMapsLink(form.value.maps_link ?? undefined);
   emit('submit', {
     name: form.value.name.trim(),

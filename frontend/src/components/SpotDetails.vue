@@ -20,14 +20,21 @@ const props = defineProps<{
 const hasDetails = computed(() => props.isAccommodation || !!props.spot.address);
 
 function formatAccommodationDate(d: string | null) {
-  if (!d) return null;
+  if (!d) {
+    return null;
+  }
+
   return formatDateShared(d);
 }
 
 const periodText = computed(() => {
   const start = formatAccommodationDate(props.spot.start_date);
   const end = formatAccommodationDate(props.spot.end_date);
-  if (start && end) return `${start} – ${end}`;
+
+  if (start && end) {
+    return `${start} – ${end}`;
+  }
+
   return start || end || '';
 });
 
@@ -35,6 +42,7 @@ const checkinCheckoutText = computed(() => {
   if (props.spot.checkin && props.spot.checkout) {
     return `${props.spot.checkin} · ${props.spot.checkout}`;
   }
+
   return props.spot.checkin || props.spot.checkout || '';
 });
 </script>

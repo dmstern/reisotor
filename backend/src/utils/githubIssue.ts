@@ -35,7 +35,11 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
     `https://api.github.com/repos/${repo}/git/ref/heads/${SCREENSHOT_BRANCH}`,
     { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
   );
-  if (refRes.ok) return { ok: true };
+
+  if (refRes.ok) {
+    return { ok: true };
+  }
+
   if (refRes.status !== 404) {
     return { ok: false, error: `GitHub-Branch-Abfrage fehlgeschlagen (Status ${refRes.status}).` };
   }
@@ -44,21 +48,25 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
     headers: githubApiHeaders(),
     signal: AbortSignal.timeout(10_000),
   });
+
   if (!repoRes.ok) {
     return { ok: false, error: `GitHub-Repo-Abfrage fehlgeschlagen (Status ${repoRes.status}).` };
   }
+
   const { default_branch: defaultBranch } = (await repoRes.json()) as { default_branch: string };
 
   const defaultRefRes = await fetch(
     `https://api.github.com/repos/${repo}/git/ref/heads/${defaultBranch}`,
     { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
   );
+
   if (!defaultRefRes.ok) {
     return {
       ok: false,
       error: `GitHub-Default-Branch-Abfrage fehlgeschlagen (Status ${defaultRefRes.status}).`,
     };
   }
+
   const { object } = (await defaultRefRes.json()) as { object: { sha: string } };
 
   const createRefRes = await fetch(`https://api.github.com/repos/${repo}/git/refs`, {
@@ -67,6 +75,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
     body: JSON.stringify({ ref: `refs/heads/${SCREENSHOT_BRANCH}`, sha: object.sha }),
     signal: AbortSignal.timeout(10_000),
   });
+
   // 422 = Branch wurde zwischenzeitlich von einer parallelen Anfrage angelegt - kein echter Fehler.
   if (!createRefRes.ok && createRefRes.status !== 422) {
     return {
@@ -74,6 +83,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
       error: `GitHub-Branch-Anlage fehlgeschlagen (Status ${createRefRes.status}).`,
     };
   }
+
   return { ok: true };
 }
 
@@ -92,6 +102,7 @@ export async function uploadFeedbackScreenshot(
 ): Promise<UploadScreenshotResult> {
   const token = getGithubToken();
   const repo = getGithubRepo();
+
   if (!token) {
     return {
       ok: false,
@@ -100,10 +111,14 @@ export async function uploadFeedbackScreenshot(
   }
 
   const branchResult = await ensureScreenshotBranch();
-  if (!branchResult.ok) return branchResult;
+
+  if (!branchResult.ok) {
+    return branchResult;
+  }
 
   const path = `feedback-screenshots/${filename}`;
   let res: Response;
+
   try {
     res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
       method: 'PUT',
@@ -147,6 +162,7 @@ export const githubIssuesEnabled = !process.env.GITHUB_TOKEN ? false : true;
 export async function createGithubIssue(input: CreateIssueInput): Promise<CreateIssueResult> {
   const token = getGithubToken();
   const repo = getGithubRepo();
+
   if (!token) {
     return {
       ok: false,
@@ -156,6 +172,7 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
   }
 
   let res: Response;
+
   try {
     res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
       method: 'POST',
@@ -179,6 +196,7 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
 
   if (!res.ok) {
     let detail = `Status ${res.status}`;
+
     if (res.status === 401) {
       detail = 'Status 401 – Der hinterlegte GitHub-Token ist ungültig oder abgelaufen';
     } else if (res.status === 403) {
@@ -186,6 +204,7 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
     } else if (res.status === 404) {
       detail = `Status 404 – GitHub-Repository '${repo}' nicht gefunden`;
     }
+
     return {
       ok: false,
       status: 502,

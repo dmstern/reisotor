@@ -26,20 +26,26 @@ function sanitizeExifObj(rawObj: piexif.ExifDict): piexif.ExifDict {
   };
 
   const ifds = ['0th', 'Exif', 'GPS', 'Interop'] as const;
+
   for (const ifd of ifds) {
     const sourceIfd = rawObj[ifd] as Record<string, unknown> | undefined;
-    if (!sourceIfd) continue;
+
+    if (!sourceIfd) {
+      continue;
+    }
 
     const validTags = (piexif.TAGS as Record<string, Record<string, unknown>>)[ifd] || {};
     const targetIfd = sanitized[ifd] as Record<number, unknown>;
 
     for (const [tagStr, val] of Object.entries(sourceIfd)) {
       const tag = Number(tagStr);
+
       // MakerNote (37500) ist herstellerspezifisch und führt bei Fremdkameras oft zu Pack-Fehlern;
       // für Datums- und Geoinformationen ist es nicht erforderlich.
       if (ifd === 'Exif' && tag === piexif.ExifIFD.MakerNote) {
         continue;
       }
+
       if (tag in validTags) {
         targetIfd[tag] = val;
       }
@@ -93,6 +99,7 @@ export function transferExif(
       if (cleanExif.Exif[piexif.ExifIFD.PixelXDimension] !== undefined) {
         cleanExif.Exif[piexif.ExifIFD.PixelXDimension] = dimensions.width;
       }
+
       if (cleanExif.Exif[piexif.ExifIFD.PixelYDimension] !== undefined) {
         cleanExif.Exif[piexif.ExifIFD.PixelYDimension] = dimensions.height;
       }
@@ -131,9 +138,11 @@ export function readExifMetadata(dataUrl: string): ImageExifMetadata | null {
 
     if (typeof dateStr === 'string') {
       const parts = dateStr.trim().split(' ');
+
       if (parts.length === 2) {
         const datePart = parts[0].replace(/:/g, '-');
         const d = new Date(`${datePart}T${parts[1]}`);
+
         if (!isNaN(d.getTime())) {
           result.dateTime = d;
         }
@@ -142,21 +151,25 @@ export function readExifMetadata(dataUrl: string): ImageExifMetadata | null {
 
     // GPS-Koordinaten auslesen
     const gps = rawExif.GPS;
+
     if (gps) {
       const latDms = gps[piexif.GPSIFD.GPSLatitude];
       const latRef = gps[piexif.GPSIFD.GPSLatitudeRef];
+
       if (Array.isArray(latDms) && typeof latRef === 'string') {
         result.latitude = piexif.GPSHelper.dmsRationalToDeg(latDms, latRef);
       }
 
       const lngDms = gps[piexif.GPSIFD.GPSLongitude];
       const lngRef = gps[piexif.GPSIFD.GPSLongitudeRef];
+
       if (Array.isArray(lngDms) && typeof lngRef === 'string') {
         result.longitude = piexif.GPSHelper.dmsRationalToDeg(lngDms, lngRef);
       }
 
       const alt = gps[piexif.GPSIFD.GPSAltitude];
       const altRef = gps[piexif.GPSIFD.GPSAltitudeRef];
+
       if (Array.isArray(alt) && alt.length === 2 && alt[1] !== 0) {
         const altVal = alt[0] / alt[1];
         result.altitude = altRef === 1 ? -altVal : altVal;
@@ -171,6 +184,7 @@ export function readExifMetadata(dataUrl: string): ImageExifMetadata | null {
     ) {
       return result;
     }
+
     return null;
   } catch {
     return null;
@@ -197,7 +211,10 @@ const exifCache = new Map<string, Promise<ImageExifMetadata | null>>();
  * beim Durchblättern von Anhängen zu vermeiden.
  */
 export async function extractExifFromUrl(url: string): Promise<ImageExifMetadata | null> {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
+
   if (
     typeof window !== 'undefined' &&
     (window as unknown as { __REISOTOR_EXIF_MAP__?: Record<string, ImageExifMetadata> })
@@ -206,6 +223,7 @@ export async function extractExifFromUrl(url: string): Promise<ImageExifMetadata
     return (window as unknown as { __REISOTOR_EXIF_MAP__?: Record<string, ImageExifMetadata> })
       .__REISOTOR_EXIF_MAP__![url];
   }
+
   if (exifCache.has(url)) {
     return exifCache.get(url)!;
   }
@@ -215,13 +233,20 @@ export async function extractExifFromUrl(url: string): Promise<ImageExifMetadata
       if (url.startsWith('data:image/jp')) {
         return readExifMetadata(url);
       }
+
       if (url.startsWith('data:')) {
         return null;
       }
+
       const res = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) return null;
+
+      if (!res.ok) {
+        return null;
+      }
+
       const blob = await res.blob();
       const contentType = blob.type || res.headers.get('content-type') || '';
+
       if (
         !contentType.includes('jpeg') &&
         !contentType.includes('jpg') &&
@@ -230,8 +255,10 @@ export async function extractExifFromUrl(url: string): Promise<ImageExifMetadata
         if (isHeicFile({ type: contentType, name: url } as File) || (await isHeicBlob(blob))) {
           return extractMetadataFromHeic(blob);
         }
+
         return null;
       }
+
       const dataUrl = await readAsDataUrl(blob);
       return readExifMetadata(dataUrl);
     } catch (err) {
@@ -255,9 +282,11 @@ export function isHeicFile(file: File | Blob): boolean {
   if (file.type && /image\/(heic|heif)/i.test(file.type)) {
     return true;
   }
+
   if ('name' in file && typeof file.name === 'string') {
     return /\.(heic|heif)$/i.test(file.name);
   }
+
   return false;
 }
 
@@ -266,12 +295,20 @@ export function isHeicFile(file: File | Blob): boolean {
  * ob ein Blob eine HEIC/HEIF-Datei ist (auch wenn MIME-Type oder Dateiendung fehlen).
  */
 export async function isHeicBlob(blob: Blob): Promise<boolean> {
-  if (isHeicFile(blob)) return true;
+  if (isHeicFile(blob)) {
+    return true;
+  }
+
   try {
     const slice = blob.slice(0, 16);
     const buffer = await slice.arrayBuffer();
-    if (buffer.byteLength < 12) return false;
+
+    if (buffer.byteLength < 12) {
+      return false;
+    }
+
     const view = new DataView(buffer);
+
     // Box-Typ 'ftyp' bei Offset 4: 0x66 0x74 0x79 0x70
     if (
       view.getUint8(4) === 0x66 &&
@@ -290,18 +327,22 @@ export async function isHeicBlob(blob: Blob): Promise<boolean> {
   } catch {
     return false;
   }
+
   return false;
 }
 
 function parseExifDateString(dateStr: string): Date | undefined {
   const parts = dateStr.trim().split(' ');
+
   if (parts.length === 2) {
     const datePart = parts[0].replace(/:/g, '-');
     const d = new Date(`${datePart}T${parts[1]}`);
+
     if (!isNaN(d.getTime())) {
       return d;
     }
   }
+
   return undefined;
 }
 
@@ -326,15 +367,20 @@ export async function extractMetadataFromHeic(
     const ExifReader = (await import('exifreader')).default;
     const arrayBuffer = await file.arrayBuffer();
     const tags = ExifReader.load(arrayBuffer);
-    if (!tags) return null;
+
+    if (!tags) {
+      return null;
+    }
 
     const result: ImageExifMetadata = {};
 
     // 1. Aufnahmedatum
     const dateTag = tags['DateTimeOriginal'] || tags['DateTimeDigitized'] || tags['DateTime'];
     const dateStr = dateTag?.description;
+
     if (typeof dateStr === 'string') {
       const parsedDate = parseExifDateString(dateStr);
+
       if (parsedDate) {
         result.dateTime = parsedDate;
       }
@@ -344,6 +390,7 @@ export async function extractMetadataFromHeic(
     if (tags['GPSLatitude'] && tags['GPSLatitude'].description !== undefined) {
       const rawLat = tags['GPSLatitude'].description;
       let lat = typeof rawLat === 'number' ? rawLat : parseFloat(String(rawLat));
+
       if (!isNaN(lat)) {
         const latRefTag = tags['GPSLatitudeRef'];
         const latRef = (
@@ -353,9 +400,11 @@ export async function extractMetadataFromHeic(
         )
           .toString()
           .toUpperCase();
+
         if (latRef.includes('S') && lat > 0) {
           lat = -lat;
         }
+
         result.latitude = lat;
       }
     }
@@ -364,6 +413,7 @@ export async function extractMetadataFromHeic(
     if (tags['GPSLongitude'] && tags['GPSLongitude'].description !== undefined) {
       const rawLng = tags['GPSLongitude'].description;
       let lng = typeof rawLng === 'number' ? rawLng : parseFloat(String(rawLng));
+
       if (!isNaN(lng)) {
         const lngRefTag = tags['GPSLongitudeRef'];
         const lngRef = (
@@ -373,9 +423,11 @@ export async function extractMetadataFromHeic(
         )
           .toString()
           .toUpperCase();
+
         if (lngRef.includes('W') && lng > 0) {
           lng = -lng;
         }
+
         result.longitude = lng;
       }
     }
@@ -384,6 +436,7 @@ export async function extractMetadataFromHeic(
     if (tags['GPSAltitude'] && tags['GPSAltitude'].description !== undefined) {
       const rawAlt = tags['GPSAltitude'].description;
       const altVal = typeof rawAlt === 'number' ? rawAlt : parseFloat(String(rawAlt));
+
       if (!isNaN(altVal)) {
         const altRefTag = tags['GPSAltitudeRef'];
         const altRef = Array.isArray(altRefTag?.value)
@@ -402,6 +455,7 @@ export async function extractMetadataFromHeic(
     ) {
       return result;
     }
+
     return null;
   } catch (err) {
     console.warn('HEIC EXIF-Metadaten konnten nicht ausgelesen werden:', err);
@@ -431,6 +485,7 @@ export function injectMetadataIntoJpeg(
 
   try {
     let rawExif: piexif.ExifDict;
+
     try {
       rawExif = piexif.load(jpegDataUrl);
     } catch {
@@ -439,9 +494,17 @@ export function injectMetadataIntoJpeg(
 
     const cleanExif = sanitizeExifObj(rawExif);
 
-    if (!cleanExif['0th']) cleanExif['0th'] = {};
-    if (!cleanExif.Exif) cleanExif.Exif = {};
-    if (!cleanExif.GPS) cleanExif.GPS = {};
+    if (!cleanExif['0th']) {
+      cleanExif['0th'] = {};
+    }
+
+    if (!cleanExif.Exif) {
+      cleanExif.Exif = {};
+    }
+
+    if (!cleanExif.GPS) {
+      cleanExif.GPS = {};
+    }
 
     cleanExif['0th'][piexif.ImageIFD.Orientation] = 1;
     delete cleanExif['0th'][piexif.ImageIFD.ImageWidth];
@@ -496,6 +559,7 @@ function getImageDimensions(dataUrl: string): Promise<{ width: number; height: n
       resolve({ width: 0, height: 0 });
       return;
     }
+
     const img = new Image();
     img.onload = () =>
       resolve({
@@ -524,8 +588,10 @@ export async function convertHeicToJpeg(
 
   const { convertHeic, LibheifDecoder } = await import('@keeratita/heic-converter');
   let decoder;
+
   try {
     const heicWasmUrl = (await import('@keeratita/heic-converter/wasm?url')).default;
+
     if (heicWasmUrl) {
       decoder = new LibheifDecoder({
         locateFile: () => heicWasmUrl,
@@ -573,10 +639,12 @@ function convertViaCanvas(
       canvas.height = Math.round(img.height * scale);
 
       const ctx = canvas.getContext('2d');
+
       if (!ctx) {
         reject(new Error('Canvas-Kontext nicht verfügbar'));
         return;
       }
+
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       resolve({
         dataUrl: canvas.toDataURL('image/jpeg', quality),
@@ -584,10 +652,12 @@ function convertViaCanvas(
         height: canvas.height,
       });
     };
+
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
       reject(new Error('Bild konnte nicht gelesen werden'));
     };
+
     img.src = objectUrl;
   });
 }

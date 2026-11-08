@@ -26,7 +26,11 @@ export function getAppUrl(): string {
 
 function getFromAddress(): string {
   const customFrom = getEffectiveSetting('smtp_from', 'SMTP_FROM').trim();
-  if (customFrom) return customFrom;
+
+  if (customFrom) {
+    return customFrom;
+  }
+
   const user = getEffectiveSetting('smtp_user', 'SMTP_USER').trim();
   return `"Reisotor" <${user || 'noreply@reisotor.local'}>`;
 }
@@ -35,6 +39,7 @@ function getTransporter(): Transporter | null {
   if (!isEmailConfigured()) {
     return null;
   }
+
   if (!transporterInstance) {
     const host = getEffectiveSetting('smtp_host', 'SMTP_HOST').trim();
     const port = Number(getEffectiveSetting('smtp_port', 'SMTP_PORT', '587')) || 587;
@@ -67,6 +72,7 @@ function getTransporter(): Transporter | null {
       socketTimeout: 10000,
     });
   }
+
   return transporterInstance;
 }
 
@@ -92,6 +98,7 @@ export async function sendPasswordResetEmail(params: {
   const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(params.token)}`;
 
   const transporter = getTransporter();
+
   if (!transporter) {
     console.info(
       `[Mailer] SMTP nicht konfiguriert. Passwort-Reset-Link für ${params.to}: ${resetUrl}`
@@ -156,6 +163,7 @@ export async function sendVerificationEmail(params: {
   const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(params.token)}`;
 
   const transporter = getTransporter();
+
   if (!transporter) {
     const actionLabel = params.isChange ? 'E-Mail-Änderungslink' : 'E-Mail-Bestätigungslink';
     console.warn(
@@ -243,6 +251,7 @@ dein Reisotor-Team`;
 
 export async function sendTestEmail(params: { to: string }): Promise<SendMailResult> {
   const transporter = getTransporter();
+
   if (!transporter) {
     return { success: false, actionUrl: '', error: 'SMTP ist nicht konfiguriert' };
   }
@@ -298,6 +307,7 @@ export async function sendActivityEmail(params: {
     params.actionUrl ?? (params.tripId ? `${baseUrl}/trip/${params.tripId}` : baseUrl);
   const actionLabel = params.actionLabel ?? (params.tripId ? 'Urlaub aufrufen' : 'Reisotor öffnen');
   const transporter = getTransporter();
+
   if (!transporter) {
     return { success: true, actionUrl: targetUrl, simulated: true };
   }
@@ -372,6 +382,7 @@ export async function sendAdminContactNotificationEmail(params: {
   const adminUrl = `${baseUrl}/settings?tab=admin#admin-messages`;
 
   const transporter = getTransporter();
+
   if (!transporter) {
     console.info(
       `[Mailer] SMTP nicht konfiguriert. Admin-Benachrichtigung für ${params.to} nicht versendet.`
@@ -395,10 +406,22 @@ export async function sendAdminContactNotificationEmail(params: {
         : params.type;
 
   const senderDetails: string[] = [];
-  if (typeLabel) senderDetails.push(`Kategorie: ${typeLabel}`);
-  if (params.senderName) senderDetails.push(`Name: ${params.senderName}`);
-  if (params.senderUsername) senderDetails.push(`Benutzername: ${params.senderUsername}`);
-  if (params.senderEmail) senderDetails.push(`E-Mail: ${params.senderEmail}`);
+
+  if (typeLabel) {
+    senderDetails.push(`Kategorie: ${typeLabel}`);
+  }
+
+  if (params.senderName) {
+    senderDetails.push(`Name: ${params.senderName}`);
+  }
+
+  if (params.senderUsername) {
+    senderDetails.push(`Benutzername: ${params.senderUsername}`);
+  }
+
+  if (params.senderEmail) {
+    senderDetails.push(`E-Mail: ${params.senderEmail}`);
+  }
 
   const detailsText = senderDetails.length > 0 ? senderDetails.join('\n') + '\n\n' : '';
   const text = `Hallo ${params.adminUsername},
@@ -415,21 +438,25 @@ Viele Grüße,
 dein Reisotor-System`;
 
   const detailsRows: string[] = [];
+
   if (typeLabel) {
     detailsRows.push(
       `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Kategorie:</td><td style="padding: 4px 0;">${escapeHtml(typeLabel)}</td></tr>`
     );
   }
+
   if (params.senderName) {
     detailsRows.push(
       `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Name:</td><td style="padding: 4px 0;">${escapeHtml(params.senderName)}</td></tr>`
     );
   }
+
   if (params.senderUsername) {
     detailsRows.push(
       `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">Benutzername:</td><td style="padding: 4px 0;">${escapeHtml(params.senderUsername)}</td></tr>`
     );
   }
+
   if (params.senderEmail) {
     detailsRows.push(
       `<tr><td style="padding: 4px 12px 4px 0; color: #666; font-weight: bold;">E-Mail:</td><td style="padding: 4px 0;"><a href="mailto:${escapeHtml(params.senderEmail)}" style="color: #9141ac;">${escapeHtml(params.senderEmail)}</a></td></tr>`
@@ -485,7 +512,10 @@ export const DEFAULT_FALLBACK_LOGO_URL =
 
 export function getLogoUrl(): string {
   const customLogo = getEffectiveSetting('email_logo_url', 'EMAIL_LOGO_URL').trim();
-  if (customLogo) return customLogo;
+
+  if (customLogo) {
+    return customLogo;
+  }
 
   const baseUrl = getAppUrl();
   const isLocalOrPrivate =
@@ -497,6 +527,7 @@ export function getLogoUrl(): string {
   if (isLocalOrPrivate) {
     return DEFAULT_FALLBACK_LOGO_URL;
   }
+
   return `${baseUrl}/icons/icon-192.png`;
 }
 

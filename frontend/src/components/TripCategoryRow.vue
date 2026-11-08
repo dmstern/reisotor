@@ -35,6 +35,7 @@ const usageLabel = computed(() => {
   if (props.activeType === 'expense') {
     return props.category.usageCount === 1 ? 'Ausgabe' : 'Ausgaben';
   }
+
   return props.category.usageCount === 1 ? 'Spot' : 'Spots';
 });
 </script>

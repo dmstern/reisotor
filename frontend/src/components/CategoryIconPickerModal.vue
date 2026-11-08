@@ -56,13 +56,28 @@ const MODE_OPTIONS = [
 
 const filteredIcons = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return CATEGORY_ICON_PALETTE;
+
+  if (!q) {
+    return CATEGORY_ICON_PALETTE;
+  }
 
   return CATEGORY_ICON_PALETTE.filter((opt) => {
-    if (opt.label.toLowerCase().includes(q)) return true;
-    if (opt.id.toLowerCase().includes(q)) return true;
-    if (opt.defaultEmoji.includes(q)) return true;
-    if (opt.keywords && opt.keywords.some((k) => k.toLowerCase().includes(q))) return true;
+    if (opt.label.toLowerCase().includes(q)) {
+      return true;
+    }
+
+    if (opt.id.toLowerCase().includes(q)) {
+      return true;
+    }
+
+    if (opt.defaultEmoji.includes(q)) {
+      return true;
+    }
+
+    if (opt.keywords && opt.keywords.some((k) => k.toLowerCase().includes(q))) {
+      return true;
+    }
+
     return false;
   });
 });

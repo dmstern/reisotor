@@ -65,11 +65,16 @@ watch(
 );
 
 function handleSubmit() {
-  if (!newForm.value.title.trim()) return;
+  if (!newForm.value.title.trim()) {
+    return;
+  }
+
   emit('submit', { ...newForm.value });
+
   if (newForm.value.assigned_to_user_id !== props.lastAssignee) {
     emit('update:lastAssignee', newForm.value.assigned_to_user_id);
   }
+
   newForm.value = emptyForm();
   newDraft.clear();
 }

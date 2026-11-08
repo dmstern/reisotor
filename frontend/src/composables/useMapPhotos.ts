@@ -33,9 +33,11 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
     if (activePreviewAttachments.value.length) {
       return activePreviewAttachments.value;
     }
+
     if (drawers.mapFocusLocation?.gallery?.attachments?.length) {
       return drawers.mapFocusLocation.gallery.attachments as AttachmentPreviewItem[];
     }
+
     if (drawers.mapFocusLocation?.imageUrl) {
       return [
         {
@@ -44,9 +46,11 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
         },
       ];
     }
+
     if (drawers.mapFocusAllPhotos && allTripPhotoPoints.value.length) {
       return (allTripPhotoPoints.value[0]?.gallery?.attachments as AttachmentPreviewItem[]) ?? [];
     }
+
     return [];
   });
 
@@ -57,8 +61,13 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
       photoPreviewOpen.value = true;
       return;
     }
+
     activePreviewAttachments.value = [];
-    if (!photoPreviewAttachments.value.length) return;
+
+    if (!photoPreviewAttachments.value.length) {
+      return;
+    }
+
     photoPreviewIndex.value = drawers.mapFocusLocation?.gallery?.initialIndex ?? 0;
     photoPreviewOpen.value = true;
   }
@@ -86,17 +95,24 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
               .catch(() => [])
           ),
       ]);
-      if (drawers.mapFocusExcursionId !== excursionId) return;
+
+      if (drawers.mapFocusExcursionId !== excursionId) {
+        return;
+      }
 
       const allAttachments = [...tourAttachments, ...legsAttachmentsArrays.flat()];
       const seenIds = new Set<number>();
       const uniqueAttachments = allAttachments.filter((a) => {
-        if (seenIds.has(a.id)) return false;
+        if (seenIds.has(a.id)) {
+          return false;
+        }
+
         seenIds.add(a.id);
         return true;
       });
 
       const imageAttachments = uniqueAttachments.filter((a) => isImageAttachment(a));
+
       if (!imageAttachments.length) {
         excursionPhotoPoints.value = [];
         return;
@@ -117,9 +133,11 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
         imageAttachments.map(async (att, index) => {
           try {
             const meta = await extractExifFromUrl(att.url);
+
             if (meta?.latitude != null && meta?.longitude != null) {
               galleryItems[index].metadata = meta;
               let dateBadge: string | undefined;
+
               if (meta.dateTime) {
                 dateBadge = formatDateShared(toLocalDateString(meta.dateTime), {
                   includeYear: false,
@@ -127,6 +145,7 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
               } else if (att.created_at) {
                 dateBadge = formatDateShared(att.created_at, { includeYear: false });
               }
+
               pointsWithExif.push({
                 key: `excursion-photo-${att.id}`,
                 origin: 'location',
@@ -161,13 +180,18 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
   }
 
   async function loadAllTripPhotos(force = false) {
-    if (allTripPhotosLoaded.value && !force) return;
+    if (allTripPhotosLoaded.value && !force) {
+      return;
+    }
+
     const tripId = tripStore.currentTripId;
+
     if (tripId == null) {
       allTripPhotoPoints.value = [];
       allTripPhotosLoaded.value = true;
       return;
     }
+
     try {
       const [attachments, diaryEntries] = await Promise.all([
         api.get<Attachment[]>(`/attachments?trip_id=${tripId}`).catch(() => []),
@@ -208,7 +232,11 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
         if (entry.images && entry.images.length) {
           for (const img of entry.images) {
             const url = typeof img === 'string' ? img : img.url;
-            if (!url || seenUrls.has(url)) continue;
+
+            if (!url || seenUrls.has(url)) {
+              continue;
+            }
+
             seenUrls.add(url);
             const original_name =
               typeof img === 'string'
@@ -223,11 +251,17 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
             });
           }
         }
+
         if (entry.content && entry.content.includes('<img')) {
           const matches = entry.content.matchAll(/<img[^>]+src=["']([^"']+)["']/gi);
+
           for (const match of matches) {
             const url = match[1];
-            if (!url || seenUrls.has(url)) continue;
+
+            if (!url || seenUrls.has(url)) {
+              continue;
+            }
+
             seenUrls.add(url);
             candidates.push({
               url,
@@ -256,6 +290,7 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
         candidates.map(async (item) => {
           try {
             const meta = await extractExifFromUrl(item.url);
+
             if (meta?.latitude != null && meta?.longitude != null) {
               const timestamp = meta.dateTime
                 ? meta.dateTime.getTime()
@@ -284,11 +319,13 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
 
       allTripPhotoPoints.value = itemsWithMeta.map(({ item, meta }, index) => {
         let dateBadge: string | undefined;
+
         if (meta.dateTime) {
           dateBadge = formatDateShared(toLocalDateString(meta.dateTime), { includeYear: false });
         } else if (item.dateFallback) {
           dateBadge = formatDateShared(item.dateFallback, { includeYear: false });
         }
+
         return {
           key: `all-photo-${item.id ?? index}-${item.url.slice(-12)}`,
           origin: 'location',
@@ -306,6 +343,7 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
           },
         };
       });
+
       if (drawers.mapFocusAllPhotos) {
         options.onPhotosUpdated?.();
       }
@@ -332,6 +370,7 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
   function onAttachmentsChanged(e: Event) {
     loadAllTripPhotos(true);
     const custom = e as CustomEvent<{ domain: string; entityId: number }>;
+
     if (
       custom.detail &&
       drawers.mapFocusExcursionId != null &&

@@ -21,11 +21,13 @@ export function useScrollFade(
 
   function updateScrollFade() {
     const el = containerRef.value;
+
     if (!el) {
       canScrollUp.value = false;
       canScrollDown.value = false;
       return;
     }
+
     canScrollUp.value = el.scrollTop > tolerance;
     canScrollDown.value = el.scrollTop + el.clientHeight < el.scrollHeight - tolerance;
   }
@@ -40,6 +42,7 @@ export function useScrollFade(
         updateScrollFade();
       });
       resizeObserver.observe(el);
+
       for (const child of el.children) {
         resizeObserver.observe(child);
       }
@@ -49,6 +52,7 @@ export function useScrollFade(
       mutationObserver?.disconnect();
       mutationObserver = new MutationObserver(() => {
         updateScrollFade();
+
         if (resizeObserver && containerRef.value) {
           for (const child of containerRef.value.children) {
             resizeObserver.observe(child);
@@ -68,8 +72,14 @@ export function useScrollFade(
 
   if (getCurrentInstance()) {
     watch(containerRef, (newEl, oldEl) => {
-      if (oldEl) detachObservers();
-      if (newEl) attachObservers(newEl);
+      if (oldEl) {
+        detachObservers();
+      }
+
+      if (newEl) {
+        attachObservers(newEl);
+      }
+
       nextTick(updateScrollFade);
     });
 
@@ -77,7 +87,9 @@ export function useScrollFade(
       if (containerRef.value) {
         attachObservers(containerRef.value);
       }
+
       nextTick(updateScrollFade);
+
       if (typeof window !== 'undefined') {
         window.addEventListener('resize', updateScrollFade, { passive: true });
       }
@@ -85,6 +97,7 @@ export function useScrollFade(
 
     onUnmounted(() => {
       detachObservers();
+
       if (typeof window !== 'undefined') {
         window.removeEventListener('resize', updateScrollFade);
       }

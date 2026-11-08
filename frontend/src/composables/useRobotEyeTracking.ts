@@ -72,6 +72,7 @@ export function useRobotEyeTracking(
     // Vektor-Länge kappen, damit die Pupillen in den Bildschirmecken (rx=1, ry=1 -> Länge 1.41)
     // nicht aus der runden Linse (Radius-Limit) herausrutschen!
     const dist = Math.sqrt(rx * rx + ry * ry);
+
     if (dist > 1) {
       rx /= dist;
       ry /= dist;

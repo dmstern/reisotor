@@ -13,6 +13,7 @@ export function useAdminSettings() {
   async function loadSettings(): Promise<void> {
     loading.value = true;
     errorMessage.value = null;
+
     try {
       const res = await api.get<{ settings: AdminSettings }>('/admin/settings');
       settings.value = res.settings;
@@ -30,6 +31,7 @@ export function useAdminSettings() {
   ): Promise<boolean> {
     savingSection.value = sectionKey;
     errorMessage.value = null;
+
     try {
       const res = await api.put<{ settings: AdminSettings }>('/admin/settings', payload);
       settings.value = res.settings;
@@ -50,18 +52,22 @@ export function useAdminSettings() {
   async function generateVapidKeys(subject?: string): Promise<boolean> {
     generatingVapid.value = true;
     errorMessage.value = null;
+
     try {
       const res = await api.post<{ publicKey: string; isPrivateKeySet: boolean }>(
         '/admin/settings/vapid-generate',
         { subject }
       );
+
       if (settings.value) {
         settings.value.push.vapidPublicKey = res.publicKey;
         settings.value.push.isVapidPrivateKeySet = res.isPrivateKeySet;
+
         if (subject) {
           settings.value.push.vapidSubject = subject;
         }
       }
+
       saveSuccess.value['push'] = true;
       setTimeout(() => {
         saveSuccess.value['push'] = false;

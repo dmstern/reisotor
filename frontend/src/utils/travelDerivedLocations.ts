@@ -33,14 +33,27 @@ export function buildTravelDerivedLocations(travelItems: TravelItem[]): TravelDe
   const result: TravelDerivedLocation[] = [];
 
   const seenLatLng = new Set<string>();
+
   function addFallbackSide(t: TravelItem, side: 'from' | 'to') {
     const placeId = side === 'from' ? t.from_place_id : t.to_place_id;
-    if (placeId != null) return; // verknüpfter Ort ist bereits ein normaler Spot
+
+    if (placeId != null) {
+      return;
+    } // verknüpfter Ort ist bereits ein normaler Spot
+
     const lat = side === 'from' ? t.from_lat : t.to_lat;
     const lng = side === 'from' ? t.from_lng : t.to_lng;
-    if (lat == null || lng == null) return;
+
+    if (lat == null || lng == null) {
+      return;
+    }
+
     const identity = latLngIdentity(lat, lng);
-    if (seenLatLng.has(identity)) return;
+
+    if (seenLatLng.has(identity)) {
+      return;
+    }
+
     seenLatLng.add(identity);
     result.push({
       key: `travel-${side}-${t.id}`,

@@ -140,19 +140,25 @@ export function getPresetGlassValues(style: GlassStyle) {
   } else if (style === 'opaque') {
     return { opacity: 100, blur: 0 };
   }
+
   return null;
 }
 
 export function computeGlassCssValues(style: GlassStyle, opacity: number, blur: number) {
   const preset = getPresetGlassValues(style);
+
   if (preset) {
     return { opacity: preset.opacity / 100, blur: preset.blur };
   }
+
   return { opacity: opacity / 100, blur };
 }
 
 function safeLocalStorageGet(key: string): string | null {
-  if (typeof localStorage === 'undefined') return null;
+  if (typeof localStorage === 'undefined') {
+    return null;
+  }
+
   try {
     return localStorage.getItem(key);
   } catch {
@@ -161,7 +167,10 @@ function safeLocalStorageGet(key: string): string | null {
 }
 
 function safeLocalStorageSet(key: string, value: string): void {
-  if (typeof localStorage === 'undefined') return;
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+
   try {
     localStorage.setItem(key, value);
   } catch {
@@ -189,63 +198,97 @@ function loadShowHomeWeatherFullTrip(): boolean {
 
 function loadToastTimeout(): number {
   const stored = safeLocalStorageGet(TOAST_TIMEOUT_KEY);
+
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 2 && parsed <= 15) return parsed;
+
+    if (!isNaN(parsed) && parsed >= 2 && parsed <= 15) {
+      return parsed;
+    }
   }
+
   return DEFAULT_TOAST_TIMEOUT;
 }
 
 function loadGlassStyle(): GlassStyle {
   const stored = safeLocalStorageGet(GLASS_STYLE_KEY);
+
   if (stored === 'glass' || stored === 'frosted' || stored === 'opaque' || stored === 'custom') {
     return stored as GlassStyle;
   }
+
   return 'glass';
 }
 
 function loadGlassOpacity(): number {
   const style = loadGlassStyle();
+
   if (style !== 'custom') {
     const preset = getPresetGlassValues(style);
-    if (preset) return preset.opacity;
+
+    if (preset) {
+      return preset.opacity;
+    }
   }
+
   const stored = safeLocalStorageGet(GLASS_OPACITY_KEY);
+
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 20 && parsed <= 100) return parsed;
+
+    if (!isNaN(parsed) && parsed >= 20 && parsed <= 100) {
+      return parsed;
+    }
   }
+
   return 42;
 }
 
 function loadGlassBlur(): number {
   const style = loadGlassStyle();
+
   if (style !== 'custom') {
     const preset = getPresetGlassValues(style);
-    if (preset) return preset.blur;
+
+    if (preset) {
+      return preset.blur;
+    }
   }
+
   const stored = safeLocalStorageGet(GLASS_BLUR_KEY);
+
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 30) return parsed;
+
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 30) {
+      return parsed;
+    }
   }
+
   return 6;
 }
 
 function loadPrimaryColor(): string {
   const stored = safeLocalStorageGet(PRIMARY_COLOR_KEY);
+
   if (stored && /^#[0-9a-fA-F]{6}$/.test(stored)) {
     return stored;
   }
+
   return DEFAULT_PRIMARY_COLOR;
 }
 
 function loadBorderWidth(): number {
   const stored = safeLocalStorageGet(BORDER_WIDTH_KEY);
+
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 10) return parsed;
+
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 10) {
+      return parsed;
+    }
   }
+
   return DEFAULT_BORDER_WIDTH;
 }
 
@@ -262,14 +305,20 @@ function loadHideCompletedShopping(): boolean {
 }
 
 export function applyGlassStyle(style: GlassStyle, opacity: number, blur: number) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
+
   const { opacity: op, blur: bl } = computeGlassCssValues(style, opacity, blur);
   document.documentElement.style.setProperty('--glass-opacity', op.toFixed(2));
   document.documentElement.style.setProperty('--glass-blur', `${bl}px`);
 }
 
 export function applyPrimaryColor(colorHex: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
+
   const isValid = /^#[0-9a-fA-F]{6}$/.test(colorHex);
   const effectiveColor = isValid ? colorHex : DEFAULT_PRIMARY_COLOR;
 
@@ -285,6 +334,7 @@ export function applyPrimaryColor(colorHex: string) {
   // <meta name="theme-color"> aktualisieren, damit auf Android in der PWA Status- und
   // Navigationsleiste die gewählte Akzentfarbe (z. B. Türkis) widerspiegeln (#668).
   const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
+
   if (metaThemeColors.length > 0) {
     metaThemeColors.forEach((meta) => meta.setAttribute('content', effectiveColor));
   } else {
@@ -296,20 +346,28 @@ export function applyPrimaryColor(colorHex: string) {
 }
 
 export function applyBorderWidth(widthPx: number) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
+
   document.documentElement.style.setProperty('--ui-border-width', `${widthPx}px`);
 }
 
 function loadDiaryFont(): DiaryFont {
   const stored = safeLocalStorageGet(DIARY_FONT_KEY);
+
   if (stored && DIARY_FONT_OPTIONS.some((o) => o.id === stored)) {
     return stored as DiaryFont;
   }
+
   return DEFAULT_DIARY_FONT;
 }
 
 export function applyDiaryFont(font: DiaryFont) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
+
   const option = DIARY_FONT_OPTIONS.find((o) => o.id === font) ?? DIARY_FONT_OPTIONS[0];
   document.documentElement.style.setProperty('--font-diary', option.fontFamily);
 }
@@ -381,7 +439,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   }
 
   function persist() {
-    if (isInternalSync) return;
+    if (isInternalSync) {
+      return;
+    }
+
     const themeStore = useThemeStore();
     const navPosStore = useNavPositionStore();
     const navCfgStore = useNavConfigStore();
@@ -426,7 +487,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   }
 
   async function load(force = false) {
-    if (loaded.value && !force) return;
+    if (loaded.value && !force) {
+      return;
+    }
+
     try {
       const stored = await api.get<Partial<StoredAppSettings>>('/users/me/app-settings');
       isInternalSync = true;
@@ -441,18 +505,23 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       if (stored.theme && THEME_MODE_OPTIONS.some((o) => o.value === stored.theme)) {
         themeStore.mode = stored.theme;
       }
+
       if (typeof stored.showActivityToasts === 'boolean') {
         showActivityToasts.value = stored.showActivityToasts;
       }
+
       if (typeof stored.showUpdateDialogs === 'boolean') {
         showUpdateDialogs.value = stored.showUpdateDialogs;
       }
+
       if (typeof stored.showVacationCountdown === 'boolean') {
         showVacationCountdown.value = stored.showVacationCountdown;
       }
+
       if (typeof stored.showHomeWeatherFullTrip === 'boolean') {
         showHomeWeatherFullTrip.value = stored.showHomeWeatherFullTrip;
       }
+
       if (
         typeof stored.toastTimeout === 'number' &&
         stored.toastTimeout >= 2 &&
@@ -460,6 +529,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       ) {
         toastTimeout.value = stored.toastTimeout;
       }
+
       if (
         stored.glassStyle === 'glass' ||
         stored.glassStyle === 'frosted' ||
@@ -468,8 +538,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       ) {
         glassStyle.value = stored.glassStyle;
       }
+
       if (glassStyle.value !== 'custom') {
         const preset = getPresetGlassValues(glassStyle.value);
+
         if (preset) {
           glassOpacity.value = preset.opacity;
           glassBlur.value = preset.blur;
@@ -482,6 +554,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         ) {
           glassOpacity.value = stored.glassOpacity;
         }
+
         if (
           typeof stored.glassBlur === 'number' &&
           stored.glassBlur >= 0 &&
@@ -490,9 +563,11 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           glassBlur.value = stored.glassBlur;
         }
       }
+
       if (stored.primaryColor && /^#[0-9a-fA-F]{6}$/.test(stored.primaryColor)) {
         primaryColor.value = stored.primaryColor;
       }
+
       if (
         typeof stored.borderWidth === 'number' &&
         stored.borderWidth >= 0 &&
@@ -500,27 +575,34 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       ) {
         borderWidth.value = stored.borderWidth;
       }
+
       if (stored.diaryFont && DIARY_FONT_OPTIONS.some((o) => o.id === stored.diaryFont)) {
         diaryFont.value = stored.diaryFont;
       }
+
       if (stored.navPosition) {
         // Desktop ist immer fest 'top' im Header gedockt. Nur mobile Position wird ggf. übernommen.
         if (stored.navPosition.mobile === 'top' || stored.navPosition.mobile === 'bottom') {
           navPosStore.mobile = stored.navPosition.mobile;
         }
       }
+
       if (Array.isArray(stored.navConfig)) {
         navCfgStore.entries = sanitizeNavEntries(stored.navConfig, 'desktop');
       }
+
       if (typeof stored.customMobileNav === 'boolean') {
         navCfgStore.customMobile = stored.customMobileNav;
       }
+
       if (Array.isArray(stored.navConfigMobile)) {
         navCfgStore.mobileEntries = sanitizeNavEntries(stored.navConfigMobile, 'mobile');
       }
+
       if (Array.isArray(stored.dashboardConfig)) {
         dashCfgStore.entries = sanitizeDashboardEntries(stored.dashboardConfig);
       }
+
       if (stored.calendarSettings) {
         if (
           stored.calendarSettings.weekStart &&
@@ -528,6 +610,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         ) {
           calSettingsStore.weekStart = stored.calendarSettings.weekStart;
         }
+
         if (
           stored.calendarSettings.dateFormat &&
           DATE_FORMAT_OPTIONS.some((o) => o.value === stored.calendarSettings?.dateFormat)
@@ -535,18 +618,22 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           calSettingsStore.dateFormat = stored.calendarSettings.dateFormat;
         }
       }
+
       if (
         stored.homeCurrency &&
         HOME_CURRENCY_OPTIONS.some((o) => o.value === stored.homeCurrency)
       ) {
         homeCurrStore.currency = stored.homeCurrency;
       }
+
       if (typeof stored.hideCompletedPacking === 'boolean') {
         hideCompletedPacking.value = stored.hideCompletedPacking;
       }
+
       if (typeof stored.hideCompletedTodos === 'boolean') {
         hideCompletedTodos.value = stored.hideCompletedTodos;
       }
+
       if (typeof stored.hideCompletedShopping === 'boolean') {
         hideCompletedShopping.value = stored.hideCompletedShopping;
       }

@@ -9,26 +9,51 @@ const props = defineProps<{
 
 const transportEmoji = computed(() => {
   const type = props.nextItem?.type?.toLowerCase() || '';
-  if (type.includes('flug') || type.includes('flight') || type.includes('plane')) return '✈️';
-  if (type.includes('zug') || type.includes('bahn') || type.includes('train')) return '🚆';
-  if (type.includes('auto') || type.includes('car') || type.includes('bus')) return '🚗';
-  if (type.includes('fähr') || type.includes('schiff') || type.includes('boat')) return '🚢';
+
+  if (type.includes('flug') || type.includes('flight') || type.includes('plane')) {
+    return '✈️';
+  }
+
+  if (type.includes('zug') || type.includes('bahn') || type.includes('train')) {
+    return '🚆';
+  }
+
+  if (type.includes('auto') || type.includes('car') || type.includes('bus')) {
+    return '🚗';
+  }
+
+  if (type.includes('fähr') || type.includes('schiff') || type.includes('boat')) {
+    return '🚢';
+  }
+
   return '🎫';
 });
 
 const origin = computed(() => {
-  if (props.nextItem?.from_location) return props.nextItem.from_location.slice(0, 10);
+  if (props.nextItem?.from_location) {
+    return props.nextItem.from_location.slice(0, 10);
+  }
+
   return 'Start';
 });
 
 const destination = computed(() => {
-  if (props.nextItem?.to_location) return props.nextItem.to_location.slice(0, 10);
-  if (props.nextItem?.title) return props.nextItem.title.slice(0, 10);
+  if (props.nextItem?.to_location) {
+    return props.nextItem.to_location.slice(0, 10);
+  }
+
+  if (props.nextItem?.title) {
+    return props.nextItem.title.slice(0, 10);
+  }
+
   return 'Ziel';
 });
 
 const timeStr = computed(() => {
-  if (props.nextItem?.departure_time) return props.nextItem.departure_time;
+  if (props.nextItem?.departure_time) {
+    return props.nextItem.departure_time;
+  }
+
   return '08:00';
 });
 </script>

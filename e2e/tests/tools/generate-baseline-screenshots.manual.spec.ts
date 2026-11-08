@@ -86,6 +86,7 @@ const ALIAS_COPY_MAP: Record<string, string> = {
 function checkAndCopyAlias(screenshotPath: string) {
   const baseName = path.basename(screenshotPath);
   const aliasName = ALIAS_COPY_MAP[baseName];
+
   if (aliasName) {
     const aliasPath = path.join(path.dirname(screenshotPath), aliasName);
     fs.copyFileSync(screenshotPath, aliasPath);
@@ -96,6 +97,7 @@ function checkAndCopyAlias(screenshotPath: string) {
 function syncToLandingIfMapped(screenshotPath: string) {
   const baseName = path.basename(screenshotPath);
   const targetLandingName = LANDING_SYNC_MAP[baseName];
+
   if (targetLandingName) {
     const landingPath = path.join(
       process.cwd(),
@@ -124,12 +126,14 @@ function getBaselineBuffer(
   if (fs.existsSync(screenshotPath)) {
     return { buffer: fs.readFileSync(screenshotPath), source: 'disk' };
   }
+
   try {
     if (!cachedGitRepoRoot) {
       cachedGitRepoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
         encoding: 'utf-8',
       }).trim();
     }
+
     const relPath = path.relative(cachedGitRepoRoot, screenshotPath);
     const buffer = execFileSync('git', ['show', `HEAD:${relPath}`], {
       maxBuffer: 30 * 1024 * 1024,
@@ -165,7 +169,10 @@ async function saveScreenshotIfChanged(
         style.display !== 'none'
       );
     });
-    if (visibleContainers.length === 0) return { hasMap: false };
+
+    if (visibleContainers.length === 0) {
+      return { hasMap: false };
+    }
 
     for (const container of visibleContainers) {
       if (container.hasAttribute('data-tiles-loading')) {
@@ -174,15 +181,18 @@ async function saveScreenshotIfChanged(
           error: 'Leaflet-Kartenkacheln laden noch (data-tiles-loading)!',
         };
       }
+
       const tiles = Array.from(
         container.querySelectorAll<HTMLImageElement>('.leaflet-tile-pane img.leaflet-tile')
       );
+
       if (tiles.length === 0) {
         return {
           hasMap: true,
           error: 'Sichtbare Leaflet-Karte hat 0 Kacheln (Kartenmaterial nicht gerendert)!',
         };
       }
+
       const hasIncomplete = tiles.some(
         (img) =>
           !img.complete ||
@@ -190,6 +200,7 @@ async function saveScreenshotIfChanged(
           !img.classList.contains('leaflet-tile-loaded') ||
           parseFloat(window.getComputedStyle(img).opacity || '0') < 0.9
       );
+
       if (hasIncomplete) {
         return {
           hasMap: true,
@@ -291,6 +302,7 @@ async function saveScreenshotIfChanged(
             fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
             fs.writeFileSync(screenshotPath, newBuffer);
           }
+
           console.log(`[Unchanged: ${numDiffPixels} px diff] ${path.basename(screenshotPath)}`);
           result = { status: 'unchanged', diffPixels: numDiffPixels };
         }
@@ -346,6 +358,7 @@ async function setupScreenshotMocks(page: Page) {
         json.image_url = '/demo/lissabon.jpg';
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -362,15 +375,18 @@ async function setupScreenshotMocks(page: Page) {
   await page.route('**/api/todos*', async (route) => {
     const response = await route.fetch();
     const json = await response.json();
+
     if (Array.isArray(json)) {
       for (const item of json) {
         const match = SCREENSHOT_TODOS.find((t) => item.title.includes(t.title.slice(0, 15)));
+
         if (match) {
           item.due_date = match.due_date;
           item.done = match.done;
         }
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -378,9 +394,11 @@ async function setupScreenshotMocks(page: Page) {
   await page.route('**/api/schedule*', async (route) => {
     const response = await route.fetch();
     const json = await response.json();
+
     if (Array.isArray(json)) {
       for (const item of json) {
         const match = SCREENSHOT_SCHEDULE.find((s) => item.title.includes(s.title.slice(0, 15)));
+
         if (match) {
           item.date = match.date;
           item.time = match.time;
@@ -388,6 +406,7 @@ async function setupScreenshotMocks(page: Page) {
         }
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -396,21 +415,29 @@ async function setupScreenshotMocks(page: Page) {
     const url = route.request().url();
     const response = await route.fetch();
     const json = await response.json();
+
     if (url.includes('/transfers') && Array.isArray(json)) {
       for (const item of json) {
         const match = SCREENSHOT_BUDGET_TRANSFERS.find((t) =>
           item.note?.includes(t.note?.slice(0, 10) ?? '')
         );
-        if (match) item.date = match.date;
+
+        if (match) {
+          item.date = match.date;
+        }
       }
     } else if (Array.isArray(json)) {
       for (const item of json) {
         const match = SCREENSHOT_BUDGET_EXPENSES.find((e) =>
           item.title.includes(e.title.slice(0, 12))
         );
-        if (match) item.date = match.date;
+
+        if (match) {
+          item.date = match.date;
+        }
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -419,6 +446,7 @@ async function setupScreenshotMocks(page: Page) {
     const url = route.request().url();
     const response = await route.fetch();
     const json = await response.json();
+
     if (url.includes('/comments') && Array.isArray(json)) {
       for (const item of json) {
         item.created_at = '2026-08-14T21:15:00.000Z';
@@ -428,12 +456,14 @@ async function setupScreenshotMocks(page: Page) {
         const match = SCREENSHOT_DIARY.find((d) =>
           item.title?.includes(d.title?.slice(0, 10) ?? '')
         );
+
         if (match) {
           item.date = match.date;
           item.created_at = match.created_at;
         }
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -442,6 +472,7 @@ async function setupScreenshotMocks(page: Page) {
     const url = route.request().url();
     const response = await route.fetch();
     const json = await response.json();
+
     if (url.includes('/comments') && Array.isArray(json)) {
       for (const item of json) {
         item.created_at = '2026-08-05T12:00:00.000Z';
@@ -451,6 +482,7 @@ async function setupScreenshotMocks(page: Page) {
         const match = SCREENSHOT_NOTES.find((n) =>
           item.title?.includes(n.title?.slice(0, 10) ?? '')
         );
+
         if (match) {
           item.created_at = match.created_at;
           item.updated_at = match.updated_at;
@@ -459,6 +491,7 @@ async function setupScreenshotMocks(page: Page) {
         }
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -467,6 +500,7 @@ async function setupScreenshotMocks(page: Page) {
     const url = route.request().url();
     const response = await route.fetch();
     const json = await response.json();
+
     if (url.includes('/comments') && Array.isArray(json)) {
       for (const item of json) {
         item.created_at = '2026-08-06T14:15:00.000Z';
@@ -479,6 +513,7 @@ async function setupScreenshotMocks(page: Page) {
         }
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -487,11 +522,13 @@ async function setupScreenshotMocks(page: Page) {
     const url = route.request().url();
     const response = await route.fetch();
     const json = await response.json();
+
     if (url.includes('/comments') && Array.isArray(json)) {
       for (const item of json) {
         item.created_at = '2026-08-06T16:00:00.000Z';
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -499,12 +536,14 @@ async function setupScreenshotMocks(page: Page) {
   await page.route('**/api/**/tracks*', async (route) => {
     const response = await route.fetch();
     const json = await response.json();
+
     if (Array.isArray(json)) {
       for (const item of json) {
         item.started_at = '2026-08-15T18:30:00.000Z';
         item.ended_at = '2026-08-15T19:45:00.000Z';
       }
     }
+
     await route.fulfill({ json });
   });
 
@@ -543,6 +582,7 @@ async function setupScreenshotMocks(page: Page) {
   // 12. Mock attachments for map-photos view
   await page.route('**/api/attachments*', async (route) => {
     const url = route.request().url();
+
     if (url.includes('trip_id=')) {
       await route.fulfill({
         status: 200,
@@ -587,6 +627,7 @@ async function setupScreenshotMocks(page: Page) {
       });
       return;
     }
+
     const response = await route.fetch();
     await route.fulfill({ response });
   });
@@ -766,9 +807,11 @@ const DIALOGS: DialogSpec[] = [
       await card.waitFor({ state: 'visible', timeout: 15000 });
       await card.scrollIntoViewIfNeeded();
       const editBtn = card.locator('.tour-edit-btn');
+
       if (!(await editBtn.isVisible().catch(() => false))) {
         await card.click();
       }
+
       await editBtn.waitFor({ state: 'visible', timeout: 5000 });
       await editBtn.click();
     },
@@ -784,9 +827,11 @@ const DIALOGS: DialogSpec[] = [
         .first();
       await card.waitFor({ state: 'visible', timeout: 15000 });
       const legPill = page.locator('.tour-leg-pill[aria-label*="Hotel Alfama"]').first();
+
       if (!(await legPill.isVisible().catch(() => false))) {
         await card.click();
       }
+
       await legPill.waitFor({ state: 'visible', timeout: 10000 });
       await legPill.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
       await page.waitForTimeout(200);
@@ -985,6 +1030,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         await saveScreenshotIfChanged(page, screenshotPath, { fullPage: false });
       }
     }
+
     await context.close();
   });
 
@@ -1009,6 +1055,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             } else {
               localStorage.setItem('reisotor-drawer-calendar-open', 'false');
             }
+
             if (
               isDesktop &&
               (slug === 'spots' || slug === 'tour' || slug === 'tracks' || slug === 'map-photos')
@@ -1016,6 +1063,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
               localStorage.setItem('reisotor-spots-col-width', '960');
             } else if (!isDesktop) {
               localStorage.setItem('reisotor-spots-col-width', '380');
+
               if (slug === 'map-photos') {
                 localStorage.setItem('reisotor-spots-sheet-state', 'collapsed');
               }
@@ -1033,6 +1081,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         // Ensure Calendar drawer is closed on non-calendar desktop views if it was already open
         if (vp.name === 'desktop' && view.slug !== 'calendar') {
           const calendarTab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+
           if (
             (await calendarTab.count()) > 0 &&
             (await calendarTab.getAttribute('aria-expanded')) === 'true'
@@ -1045,6 +1094,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         // Ensure Calendar drawer is open on desktop calendar screenshot and wait for content
         if (vp.name === 'desktop' && view.slug === 'calendar') {
           const calendarTab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+
           if (
             (await calendarTab.count()) > 0 &&
             (await calendarTab.getAttribute('aria-expanded')) !== 'true'
@@ -1052,6 +1102,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             await calendarTab.click();
             await page.waitForTimeout(300);
           }
+
           await page.locator('.drawer-panel').waitFor({ state: 'visible', timeout: 15_000 });
           await page.locator('.todo-page').waitFor({ state: 'visible', timeout: 15_000 });
         }
@@ -1089,6 +1140,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
           const focusBtn = page
             .locator('.fit-btn.focus-btn, button[aria-label*="Kartenausschnitt & Ausrichtung"]')
             .first();
+
           if (await focusBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
             await focusBtn.click();
             const photoItem = page.locator(
@@ -1097,6 +1149,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             await photoItem.waitFor({ state: 'visible', timeout: 5000 });
             await photoItem.click();
           }
+
           await page
             .locator('.photo-map-pin')
             .first()
@@ -1109,9 +1162,11 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         if (view.slug === 'tour') {
           const tourCard = page.locator('.tour-group-card').filter({ hasText: 'Panoramatour' });
           const showOnMapBtn = tourCard.locator('.show-on-map-btn');
+
           if (await showOnMapBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
             await showOnMapBtn.click();
           }
+
           await page
             .locator('.tour-station-line path')
             .first()
@@ -1162,6 +1217,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
             } else {
               localStorage.setItem('reisotor-drawer-calendar-open', 'false');
             }
+
             if (isDesktop) {
               localStorage.setItem('reisotor-spots-col-width', '960');
             } else {
@@ -1181,6 +1237,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
         // Ensure Calendar drawer state on desktop
         if (vp.name === 'desktop') {
           const calendarTab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+
           if (dlg.slug === 'dialog-schedule') {
             if (
               (await calendarTab.count()) > 0 &&
@@ -1235,6 +1292,7 @@ test.describe('Generate Clean Production Baseline Screenshots (Full HD)', () => 
     test.setTimeout(180000);
     await page.clock.setFixedTime(new Date(SCREENSHOT_REFERENCE_DATE));
     await forceFontDisplayBlock(page);
+
     for (const vp of VIEWPORTS) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto('/landing.html');

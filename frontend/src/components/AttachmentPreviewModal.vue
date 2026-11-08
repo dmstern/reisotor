@@ -84,7 +84,10 @@ watch(
 );
 
 function download(attachment: AttachmentPreviewItem | null) {
-  if (!attachment) return;
+  if (!attachment) {
+    return;
+  }
+
   const downloadUrl =
     DEMO_MODE || attachment.url.startsWith('data:') || !attachment.id
       ? attachment.url
@@ -104,6 +107,7 @@ function onRemoveCurrent() {
   const currentLen = props.attachments.length;
   const removeIdx = currentIndex.value;
   emit('remove', removeIdx);
+
   if (currentLen <= 1) {
     emit('update:modelValue', false);
   } else if (removeIdx >= currentLen - 1) {

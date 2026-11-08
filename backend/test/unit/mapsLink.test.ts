@@ -121,18 +121,21 @@ describe('resolveLatLng', () => {
   it('resolves via the Location header chain alone, without ever fetching the final page', async () => {
     const fetchMock = vi.fn((url: string, options: { redirect?: string }) => {
       expect(options.redirect).toBe('manual');
+
       if (url === 'https://maps.app.goo.gl/abc123') {
         // Erster Hop: Zwischen-Redirect ohne Koordinate in der Ziel-URL.
         return Promise.resolve(
           mockResponse({ location: 'https://www.google.com/maps/consent?continue=xyz' })
         );
       }
+
       if (url === 'https://www.google.com/maps/consent?continue=xyz') {
         // Zweiter Hop: die eigentliche Ziel-URL, Koordinate direkt im Location-Header.
         return Promise.resolve(
           mockResponse({ location: 'https://www.google.com/maps/@48.2082,16.3738,15z' })
         );
       }
+
       return Promise.reject(new Error('unexpected URL in test: ' + url));
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -151,6 +154,7 @@ describe('resolveLatLng', () => {
         // muss hier aufgeben, statt endlos weiterzusuchen.
         return Promise.resolve(mockResponse({ location: null }));
       }
+
       // Fallback-Pfad: die volle, bereits aufgelöste Ziel-URL tragen Koordinaten.
       return Promise.resolve(
         mockResponse({ url: 'https://www.google.com/maps/@40.7128,-74.006,15z' })
@@ -173,6 +177,7 @@ describe('resolveLatLng', () => {
           mockResponse({ location: `https://example.com/hop-${manualCalls}` })
         );
       }
+
       return Promise.resolve(mockResponse({ url: 'https://example.com/final-without-coords' }));
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -293,9 +298,11 @@ describe('fetchPlacePreview', () => {
           text: () => Promise.resolve(''),
         });
       }
+
       if (url.includes('127.0.0.1')) {
         throw new Error('SSRF vulnerability: fetch was called on loopback address!');
       }
+
       return Promise.resolve({
         url,
         headers: { get: () => null },

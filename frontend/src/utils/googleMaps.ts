@@ -24,24 +24,32 @@ const PATTERNS: RegExp[] = [
  *  (goo.gl/maps, maps.app.goo.gl, maps.apple/p/...) lassen sich ohne Server-seitiges Auflösen
  *  des Redirects nicht parsen und liefern null. */
 export function parseLatLngFromMapsLink(url: string | null | undefined): LatLng | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
+
   // Manche Apple-Maps-Links kodieren das Komma im coordinate=/ll=-Parameter als %2C.
   let text = url;
+
   try {
     text = decodeURIComponent(url);
   } catch {
     // Ungültige Prozent-Kodierung – mit dem Rohtext weiterarbeiten.
   }
+
   for (const pattern of PATTERNS) {
     const match = pattern.exec(text);
+
     if (match) {
       const lat = Number(match[1]);
       const lng = Number(match[2]);
+
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
         return { lat, lng };
       }
     }
   }
+
   return null;
 }
 

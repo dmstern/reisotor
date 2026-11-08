@@ -32,10 +32,15 @@ export function useExcursionDoneStatus(
   const defaultDate = computed(() => {
     const trip = tripStore.currentTrip;
     const today = toLocalDateString(new Date());
+
     if (trip && trip.start_date && trip.end_date) {
-      if (today >= trip.start_date && today <= trip.end_date) return today;
+      if (today >= trip.start_date && today <= trip.end_date) {
+        return today;
+      }
+
       return trip.start_date;
     }
+
     return today;
   });
 
@@ -46,22 +51,27 @@ export function useExcursionDoneStatus(
 
   async function onToggleDone(event?: MouseEvent) {
     const excursion = toValue(options.excursion);
+
     if (excursion.done) {
       await excursionsStore.setDone(excursion.id, false);
     } else if (excursion.date) {
       await excursionsStore.setDone(excursion.id, true);
     } else {
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+
       if (triggerEl) {
         unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
           menuWidth: 260,
           menuHeight: 180,
         });
       }
+
       unplannedPopoverOpen.value = true;
       await nextTick();
+
       if (typeof document !== 'undefined') {
         const menuEl = document.querySelector('.tour-unplanned-popover') as HTMLElement | null;
+
         if (menuEl && triggerEl) {
           const rect = menuEl.getBoundingClientRect();
           unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
@@ -75,7 +85,11 @@ export function useExcursionDoneStatus(
 
   async function submitUnplannedDone() {
     const excursion = toValue(options.excursion);
-    if (!unplannedDoneDate.value) return;
+
+    if (!unplannedDoneDate.value) {
+      return;
+    }
+
     await excursionsStore.setDate(excursion.id, unplannedDoneDate.value);
     await excursionsStore.setDone(excursion.id, true);
     unplannedPopoverOpen.value = false;

@@ -26,20 +26,24 @@ const landingUrl = __LANDING_URL__;
 
 async function onSubmit() {
   error.value = '';
+
   if (!token.value) {
     error.value = 'Kein gültiger Token im Link gefunden.';
     return;
   }
+
   if (newPassword.value.length < 6) {
     error.value = 'Das Passwort muss mindestens 6 Zeichen lang sein.';
     return;
   }
+
   if (newPassword.value !== confirmPassword.value) {
     error.value = 'Die Passwörter stimmen nicht überein.';
     return;
   }
 
   loading.value = true;
+
   try {
     await api.post('/auth/reset-password', {
       token: token.value,

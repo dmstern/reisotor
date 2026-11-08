@@ -61,21 +61,38 @@ export function useMapPoints(options: UseMapPointsOptions) {
   const auth = useAuthStore();
 
   const focusedExcursion = computed<Excursion | null>(() => {
-    if (drawers.mapFocusExcursionId == null) return null;
+    if (drawers.mapFocusExcursionId == null) {
+      return null;
+    }
+
     return excursionsStore.excursions.find((e) => e.id === drawers.mapFocusExcursionId) ?? null;
   });
 
   const focusedSpot = computed<Spot | null>(() => {
-    if (!drawers.mapFocusKey?.startsWith('spot-')) return null;
+    if (!drawers.mapFocusKey?.startsWith('spot-')) {
+      return null;
+    }
+
     const spotId = Number(drawers.mapFocusKey.replace('spot-', ''));
-    if (Number.isNaN(spotId)) return null;
+
+    if (Number.isNaN(spotId)) {
+      return null;
+    }
+
     return spotsStore.spots.find((s) => s.id === spotId) ?? null;
   });
 
   const focusedTrack = computed<LocationTrack | null>(() => {
-    if (drawers.mapFocusTrackId == null) return null;
+    if (drawers.mapFocusTrackId == null) {
+      return null;
+    }
+
     const found = tracksStore.tracks.find((t) => Number(t.id) === Number(drawers.mapFocusTrackId));
-    if (found) return found;
+
+    if (found) {
+      return found;
+    }
+
     return {
       id: drawers.mapFocusTrackId,
       trip_id: Number(tripStore.currentTripId) || 0,
@@ -89,12 +106,18 @@ export function useMapPoints(options: UseMapPointsOptions) {
   });
 
   const focusedTrackPoints = computed<TrackPoint[]>(() => {
-    if (!focusedTrack.value) return [];
+    if (!focusedTrack.value) {
+      return [];
+    }
+
     return tracksStore.getPointsForTrack(focusedTrack.value.id);
   });
 
   const focusedDateStations = computed<ExcursionStation[]>(() => {
-    if (focusedExcursion.value || !drawers.mapFocusDate) return [];
+    if (focusedExcursion.value || !drawers.mapFocusDate) {
+      return [];
+    }
+
     return buildDayStations(
       drawers.mapFocusDate,
       options.scheduleItems.value,
@@ -106,6 +129,7 @@ export function useMapPoints(options: UseMapPointsOptions) {
 
   const points = computed<MapPoint[]>(() => {
     const result: MapPoint[] = [];
+
     for (const loc of buildTravelDerivedLocations(options.travelItems.value)) {
       result.push({
         key: loc.key,
@@ -119,6 +143,7 @@ export function useMapPoints(options: UseMapPointsOptions) {
         color: TRAVEL_COLOR,
       });
     }
+
     for (const s of spotsStore.spots) {
       if (s.lat != null && s.lng != null) {
         const meta = spotCategoryMeta(s.category);
@@ -136,6 +161,7 @@ export function useMapPoints(options: UseMapPointsOptions) {
         });
       }
     }
+
     if (drawers.mapFocusLocation) {
       result.push({
         key: 'photo-location',
@@ -150,33 +176,51 @@ export function useMapPoints(options: UseMapPointsOptions) {
         category: 'Foto',
       });
     }
+
     if (focusedExcursion.value && options.excursionPhotoPoints.value.length) {
       for (const pt of options.excursionPhotoPoints.value) {
         result.push(pt);
       }
     }
+
     if (drawers.mapFocusAllPhotos && options.allTripPhotoPoints.value.length) {
       for (const pt of options.allTripPhotoPoints.value) {
         result.push(pt);
       }
     }
+
     return result;
   });
 
   const spotScheduledDates = computed(() => {
     const map = new Map<number, string>();
+
     for (const item of options.scheduleItems.value) {
-      if (item.spot_id == null) continue;
+      if (item.spot_id == null) {
+        continue;
+      }
+
       const existing = map.get(item.spot_id);
-      if (!existing || item.date < existing) map.set(item.spot_id, item.date);
-    }
-    for (const excursion of excursionsStore.excursions) {
-      if (!excursion.date) continue;
-      for (const spotId of excursion.spot_ids) {
-        const existing = map.get(spotId);
-        if (!existing || excursion.date < existing) map.set(spotId, excursion.date);
+
+      if (!existing || item.date < existing) {
+        map.set(item.spot_id, item.date);
       }
     }
+
+    for (const excursion of excursionsStore.excursions) {
+      if (!excursion.date) {
+        continue;
+      }
+
+      for (const spotId of excursion.spot_ids) {
+        const existing = map.get(spotId);
+
+        if (!existing || excursion.date < existing) {
+          map.set(spotId, excursion.date);
+        }
+      }
+    }
+
     return map;
   });
 
@@ -186,26 +230,41 @@ export function useMapPoints(options: UseMapPointsOptions) {
     const statusFilterActive = options.statusFilter?.value && options.statusFilter.value.length > 0;
     const tourRoleFilterActive =
       options.tourRoleFilter?.value && options.tourRoleFilter.value.length > 0;
-    if (!categoryFilterActive && !statusFilterActive && !tourRoleFilterActive) return points.value;
+
+    if (!categoryFilterActive && !statusFilterActive && !tourRoleFilterActive) {
+      return points.value;
+    }
 
     return points.value.filter((p) => {
-      if (p.origin === 'location') return true;
-      if (categoryFilterActive && !options.categoryFilter!.value!.includes(p.category))
+      if (p.origin === 'location') {
+        return true;
+      }
+
+      if (categoryFilterActive && !options.categoryFilter!.value!.includes(p.category)) {
         return false;
+      }
+
       if (statusFilterActive && p.origin === 'spot') {
         const spotId = Number(p.key.slice('spot-'.length));
         const status = spotScheduledDates.value.has(spotId) ? 'planned' : 'unplanned';
         const matchesStatus = options.statusFilter!.value!.includes(status);
         const matchesDone = options.statusFilter!.value!.includes('done') && !!p.done;
-        if (!matchesStatus && !matchesDone) return false;
+
+        if (!matchesStatus && !matchesDone) {
+          return false;
+        }
       }
+
       if (tourRoleFilterActive) {
         if (p.origin === 'travel') {
           const matchesTravel = options.travelItems.value.some((t) => {
             const tRole = t.role ?? 'arrival';
             return options.tourRoleFilter!.value!.includes(tRole);
           });
-          if (!matchesTravel) return false;
+
+          if (!matchesTravel) {
+            return false;
+          }
         } else if (p.origin === 'spot') {
           const spotId = Number(p.key.slice('spot-'.length));
           const spotTours = excursionsStore.excursions.filter((e) => e.spot_ids.includes(spotId));
@@ -214,9 +273,13 @@ export function useMapPoints(options: UseMapPointsOptions) {
               ? options.tourRoleFilter!.value!.includes(t.role)
               : options.tourRoleFilter!.value!.includes('excursion')
           );
-          if (!matchesTourRole) return false;
+
+          if (!matchesTourRole) {
+            return false;
+          }
         }
       }
+
       return true;
     });
   });
@@ -228,34 +291,50 @@ export function useMapPoints(options: UseMapPointsOptions) {
     if (drawers.mapFocusAllPhotos) {
       return options.allTripPhotoPoints.value;
     }
+
     const excursion = focusedExcursion.value;
+
     if (excursion) {
       const excursionKeys = excursionStationKeys(excursion.spot_ids);
       return points.value.filter((p) => p.origin !== 'spot' || excursionKeys.includes(p.key));
     }
+
     if (drawers.mapFocusDate) {
       const keys = new Set(focusedDateStations.value.map((s) => s.key));
       return points.value.filter((p) => p.origin !== 'spot' || keys.has(p.key));
     }
+
     return filteredPoints.value;
   });
 
   const vacationDays = computed<string[]>(() => {
     const trip = tripStore.currentTrip;
-    if (!trip || !trip.start_date || !trip.end_date) return [];
+
+    if (!trip || !trip.start_date || !trip.end_date) {
+      return [];
+    }
+
     const days: string[] = [];
     const cursor = new Date(trip.start_date);
     const end = new Date(trip.end_date);
+
     while (cursor <= end) {
       days.push(toLocalDateString(cursor));
       cursor.setDate(cursor.getDate() + 1);
     }
+
     return days;
   });
 
   function dayHasContent(date: string): boolean {
-    if (excursionsStore.excursions.some((e) => e.date === date)) return true;
-    if (options.travelItems.value.some((t) => t.date === date)) return true;
+    if (excursionsStore.excursions.some((e) => e.date === date)) {
+      return true;
+    }
+
+    if (options.travelItems.value.some((t) => t.date === date)) {
+      return true;
+    }
+
     if (
       spotsStore.spots.some(
         (s) =>
@@ -265,8 +344,10 @@ export function useMapPoints(options: UseMapPointsOptions) {
           s.start_date <= date &&
           date <= s.end_date
       )
-    )
+    ) {
       return true;
+    }
+
     return options.scheduleItems.value.some(
       (i) => i.lat != null && i.lng != null && i.date <= date && date <= (i.end_date ?? i.date)
     );

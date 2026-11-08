@@ -26,13 +26,17 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
     loading.value = true;
     error.value = '';
     emailError.value = '';
+
     try {
       const [pushPrefs, mailPrefs] = await Promise.all([
         api.get<NotificationPreferences>('/push/preferences'),
         api.get<Record<string, boolean>>('/notifications/email-preferences').catch(() => null),
       ]);
       preferences.value = pushPrefs;
-      if (mailPrefs) emailPreferences.value = mailPrefs;
+
+      if (mailPrefs) {
+        emailPreferences.value = mailPrefs;
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Präferenzen konnten nicht geladen werden';
     } finally {
@@ -43,7 +47,11 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
   async function update(partial: Partial<NotificationPreferences>) {
     error.value = '';
     const previous = preferences.value;
-    if (previous) preferences.value = { ...previous, ...partial };
+
+    if (previous) {
+      preferences.value = { ...previous, ...partial };
+    }
+
     try {
       preferences.value = await api.put<NotificationPreferences>('/push/preferences', partial);
     } catch (err) {
@@ -56,13 +64,19 @@ export const useNotificationPreferencesStore = defineStore('notificationPreferen
   async function updateEmail(partial: Partial<Record<string, boolean>>) {
     emailError.value = '';
     const previous = emailPreferences.value;
+
     if (previous) {
       const merged = { ...previous };
+
       for (const [k, v] of Object.entries(partial)) {
-        if (v !== undefined) merged[k] = v;
+        if (v !== undefined) {
+          merged[k] = v;
+        }
       }
+
       emailPreferences.value = merged;
     }
+
     try {
       emailPreferences.value = await api.put<Record<string, boolean>>(
         '/notifications/email-preferences',

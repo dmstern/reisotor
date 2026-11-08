@@ -87,9 +87,19 @@ const isSortByActive = computed(
 
 const activeCount = computed(() => {
   let count = 0;
-  if (isHideCompletedActive.value) count += 1;
-  if (isGroupByActive.value) count += 1;
-  if (isSortByActive.value) count += 1;
+
+  if (isHideCompletedActive.value) {
+    count += 1;
+  }
+
+  if (isGroupByActive.value) {
+    count += 1;
+  }
+
+  if (isSortByActive.value) {
+    count += 1;
+  }
+
   return count;
 });
 
@@ -109,6 +119,7 @@ function toggleMenu(event?: MouseEvent) {
         viewportPadding: 8,
       });
     }
+
     open.value = true;
   } else {
     open.value = false;
@@ -131,12 +142,15 @@ function resetDefaults() {
   if (props.defaultGroupBy !== undefined) {
     emit('update:groupBy', props.defaultGroupBy);
   }
+
   if (props.defaultSortBy !== undefined) {
     emit('update:sortBy', props.defaultSortBy);
   }
+
   if (props.hideCompleted !== undefined) {
     emit('update:hideCompleted', false);
   }
+
   emit('reset');
 }
 </script>

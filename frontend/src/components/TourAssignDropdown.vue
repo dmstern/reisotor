@@ -44,8 +44,12 @@ async function toggle(event?: MouseEvent) {
     close();
     return;
   }
+
   const triggerEl = buttonRef.value ?? (event?.currentTarget as HTMLElement | undefined) ?? null;
-  if (!triggerEl) return;
+
+  if (!triggerEl) {
+    return;
+  }
 
   popupStyle.value = computePopoverPosition(triggerEl, {
     menuWidth: 240,
@@ -55,6 +59,7 @@ async function toggle(event?: MouseEvent) {
   open.value = true;
 
   await nextTick();
+
   if (popupRef.value && triggerEl) {
     const rect = popupRef.value.getBoundingClientRect();
     popupStyle.value = computePopoverPosition(triggerEl, {
@@ -71,7 +76,11 @@ function handleToggle(id: number) {
 
 function handleCreate() {
   const t = newTourTitle.value.trim();
-  if (!t) return;
+
+  if (!t) {
+    return;
+  }
+
   emit('create-tour', t);
   newTourTitle.value = '';
 }

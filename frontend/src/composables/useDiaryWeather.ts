@@ -16,7 +16,11 @@ export function useDiaryWeather(options: UseDiaryWeatherOptions) {
   async function loadDiaryWeather() {
     const currentTrip = unref(trip);
     const currentTripId = unref(tripId);
-    if (currentTrip?.lat == null || currentTrip?.lng == null) return;
+
+    if (currentTrip?.lat == null || currentTrip?.lng == null) {
+      return;
+    }
+
     try {
       weatherDays.value = await fetchMergedWeather(
         currentTripId,

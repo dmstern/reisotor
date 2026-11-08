@@ -250,7 +250,9 @@ describe('Modal', () => {
       title: 'Test',
       confirmClose: false,
       'onUpdate:modelValue': (v: boolean) => {
-        if (!v) closed = true;
+        if (!v) {
+          closed = true;
+        }
       },
     });
     await nextTick();
@@ -272,7 +274,9 @@ describe('Modal', () => {
       confirmClose: true,
       confirmCloseTitle: 'Ungespeicherte Änderungen verwerfen?',
       'onUpdate:modelValue': (v: boolean) => {
-        if (!v) closed = true;
+        if (!v) {
+          closed = true;
+        }
       },
     });
     await nextTick();
@@ -299,7 +303,9 @@ describe('Modal', () => {
       title: 'Test',
       confirmClose: true,
       'onUpdate:modelValue': (v: boolean) => {
-        if (!v) closed = true;
+        if (!v) {
+          closed = true;
+        }
       },
     });
     await nextTick();
@@ -328,7 +334,9 @@ describe('Modal', () => {
       title: 'Test',
       confirmClose: true,
       'onUpdate:modelValue': (v: boolean) => {
-        if (!v) closed = true;
+        if (!v) {
+          closed = true;
+        }
       },
       onDiscard: () => {
         discarded = true;

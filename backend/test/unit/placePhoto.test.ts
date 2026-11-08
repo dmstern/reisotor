@@ -261,6 +261,7 @@ describe('placePhoto utility', () => {
                 }),
             });
           }
+
           return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
         })
       );
@@ -285,6 +286,7 @@ describe('placePhoto utility', () => {
               json: () => Promise.resolve({ query: { pages: {} } }),
             });
           }
+
           if (url.includes('action=query') && url.includes('generator=search')) {
             return Promise.resolve({
               ok: true,
@@ -308,6 +310,7 @@ describe('placePhoto utility', () => {
                 }),
             });
           }
+
           return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
         })
       );
@@ -352,6 +355,7 @@ describe('placePhoto utility', () => {
                 }),
             });
           }
+
           if (url.includes('prop=imageinfo')) {
             return Promise.resolve({
               ok: true,
@@ -372,6 +376,7 @@ describe('placePhoto utility', () => {
                 }),
             });
           }
+
           return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
         })
       );
@@ -469,6 +474,7 @@ describe('placePhoto utility', () => {
               ),
           });
         }
+
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
       });
       vi.stubGlobal('fetch', fetchMock);
@@ -481,6 +487,7 @@ describe('placePhoto utility', () => {
       let calledUrl = '';
       const fetchMock = vi.fn((url: string) => {
         calledUrl = url;
+
         if (url.includes('bing.com')) {
           return Promise.resolve({
             ok: true,
@@ -490,6 +497,7 @@ describe('placePhoto utility', () => {
               ),
           });
         }
+
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
       });
       vi.stubGlobal('fetch', fetchMock);
@@ -516,6 +524,7 @@ describe('placePhoto utility', () => {
               ),
           });
         }
+
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
       });
       vi.stubGlobal('fetch', fetchMock);
@@ -541,6 +550,7 @@ describe('placePhoto utility', () => {
         if (url.includes('bing.com') || url.includes('duckduckgo.com')) {
           return Promise.resolve({ ok: true, text: () => Promise.resolve('') });
         }
+
         if (url.includes('wikipedia.org') && url.includes('generator=search')) {
           requestedWikiUrl = url;
           return Promise.resolve({
@@ -563,6 +573,7 @@ describe('placePhoto utility', () => {
               }),
           });
         }
+
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
       vi.stubGlobal('fetch', fetchMock);
@@ -605,12 +616,14 @@ describe('placePhoto utility', () => {
             text: () => Promise.resolve('<html><body>Keine Ergebnisse</body></html>'),
           });
         }
+
         if (url.includes('duckduckgo.com/?q=')) {
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve('<html><script>vqd="4-123456789"</script></html>'),
           });
         }
+
         if (url.includes('duckduckgo.com/i.js')) {
           return Promise.resolve({
             ok: true,
@@ -627,6 +640,7 @@ describe('placePhoto utility', () => {
               }),
           });
         }
+
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
       });
       vi.stubGlobal('fetch', fetchMock);
@@ -647,12 +661,14 @@ describe('placePhoto utility', () => {
             text: () => Promise.resolve(''),
           });
         }
+
         if (url.includes('wikipedia.org')) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({ query: { pages: {} } }),
           });
         }
+
         if (url.includes('commons.wikimedia.org')) {
           return Promise.resolve({
             ok: true,
@@ -675,6 +691,7 @@ describe('placePhoto utility', () => {
               }),
           });
         }
+
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       });
       vi.stubGlobal('fetch', fetchMock);
@@ -720,6 +737,7 @@ describe('placePhoto utility', () => {
               ),
           });
         }
+
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ query: { pages: {} } }) });
       });
       vi.stubGlobal('fetch', fetchMock);

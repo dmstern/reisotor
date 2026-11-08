@@ -38,7 +38,10 @@ describe('computeDepartureCountdown', () => {
     const now = new Date(2026, 7, 14, 23, 59, 0);
     const result = computeDepartureCountdown('2026-08-14', now);
     expect(result.phase).toBe('hours');
-    if (result.phase === 'hours') expect(result.hours).toBeGreaterThanOrEqual(1);
+
+    if (result.phase === 'hours') {
+      expect(result.hours).toBeGreaterThanOrEqual(1);
+    }
   });
 });
 

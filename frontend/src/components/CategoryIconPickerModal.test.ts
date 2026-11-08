@@ -123,7 +123,9 @@ describe('CategoryIconPickerModal', () => {
     const { cleanUp } = mountComponent(CategoryIconPickerModal, {
       modelValue: true,
       'onUpdate:modelValue': (val: boolean) => {
-        if (!val) closed = true;
+        if (!val) {
+          closed = true;
+        }
       },
       onSelect: (opt: CategoryIconOption) => {
         selectedOption = opt;

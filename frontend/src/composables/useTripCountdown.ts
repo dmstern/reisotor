@@ -40,7 +40,9 @@ export function useTripCountdown(
     });
 
     onUnmounted(() => {
-      if (nowTimer != null) clearInterval(nowTimer);
+      if (nowTimer != null) {
+        clearInterval(nowTimer);
+      }
     });
   }
 
@@ -53,8 +55,14 @@ export function useTripCountdown(
   );
 
   const isTripOver = computed(() => {
-    if (vacationPhase.value?.phase === 'over') return true;
-    if (trip.value?.end_date && trip.value.end_date < todayStr()) return true;
+    if (vacationPhase.value?.phase === 'over') {
+      return true;
+    }
+
+    if (trip.value?.end_date && trip.value.end_date < todayStr()) {
+      return true;
+    }
+
     return false;
   });
 

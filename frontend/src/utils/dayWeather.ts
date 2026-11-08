@@ -30,13 +30,21 @@ export function collectWeatherLocations(
   accommodations: Spot[]
 ): WeatherLocation[] {
   const locations: WeatherLocation[] = [];
-  if (home) locations.push({ key: 'home', lat: home.lat, lng: home.lng });
-  if (trip?.lat != null && trip?.lng != null)
-    locations.push({ key: 'destination', lat: trip.lat, lng: trip.lng });
-  for (const a of accommodations) {
-    if (a.lat != null && a.lng != null)
-      locations.push({ key: `accommodation-${a.id}`, lat: a.lat, lng: a.lng });
+
+  if (home) {
+    locations.push({ key: 'home', lat: home.lat, lng: home.lng });
   }
+
+  if (trip?.lat != null && trip?.lng != null) {
+    locations.push({ key: 'destination', lat: trip.lat, lng: trip.lng });
+  }
+
+  for (const a of accommodations) {
+    if (a.lat != null && a.lng != null) {
+      locations.push({ key: `accommodation-${a.id}`, lat: a.lat, lng: a.lng });
+    }
+  }
+
   return locations;
 }
 
@@ -85,6 +93,7 @@ export function dayWeatherEntries(
           ]
         : [];
     }
+
     const weather = trip ? lookup('destination') : undefined;
     return weather
       ? [
@@ -101,10 +110,14 @@ export function dayWeatherEntries(
 
   const entries: DayWeatherEntry[] = [];
   const home = lookup('home');
-  if (home)
+
+  if (home) {
     entries.push({ key: 'home', label: 'Zuhause', icon: '🏠', tabler: HOME_ICON, weather: home });
+  }
+
   const destination = lookup('destination');
-  if (destination)
+
+  if (destination) {
     entries.push({
       key: 'destination',
       label: 'Urlaubsort',
@@ -112,5 +125,7 @@ export function dayWeatherEntries(
       tabler: VACATION_PLACE_ICON,
       weather: destination,
     });
+  }
+
   return entries;
 }

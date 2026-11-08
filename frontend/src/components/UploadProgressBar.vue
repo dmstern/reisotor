@@ -37,15 +37,21 @@ const percent = computed(() => {
   if (props.progressPercent !== undefined) {
     return Math.min(100, Math.max(0, props.progressPercent));
   }
-  if (!props.total || props.total <= 0) return 0;
+
+  if (!props.total || props.total <= 0) {
+    return 0;
+  }
+
   return Math.min(100, Math.max(0, (props.current / props.total) * 100));
 });
 
 const statusLabel = computed(() => {
   const rounded = Math.round(percent.value);
+
   if (props.total > 1) {
     return `Lade ${props.current} von ${props.total} Dateien hoch… (${rounded}%)`;
   }
+
   return `Lade Datei hoch… (${rounded}%)`;
 });
 </script>

@@ -19,9 +19,11 @@ test('Spot-Formular: Bild lässt sich direkt hochladen statt nur per URL zu verl
   const modal = page.locator('.modal', { hasText: 'Neuer Spot' });
   await modal.waitFor({ state: 'visible' });
   const manualBtn = modal.locator('.manual-details-btn');
+
   if (await manualBtn.isVisible()) {
     await manualBtn.click();
   }
+
   await modal.locator('.banner-edit-btn').click();
   const imageSubModal = page.locator('.modal', { hasText: 'Spot-Bild bearbeiten' });
   await imageSubModal.waitFor({ state: 'visible' });

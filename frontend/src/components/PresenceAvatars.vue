@@ -21,15 +21,19 @@ let fetchSeq = 0;
 
 async function loadMembers(tripId: number | null, tripChanged = false) {
   const seq = ++fetchSeq;
+
   if (tripId == null) {
     members.value = [];
     return;
   }
+
   if (tripChanged) {
     members.value = [];
   }
+
   try {
     const res = await api.get<User[]>(`/trips/${tripId}/members`);
+
     if (seq === fetchSeq && tripStore.currentTripId === tripId) {
       members.value = res;
     }

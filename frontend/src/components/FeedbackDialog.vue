@@ -43,16 +43,21 @@ const result = ref<FeedbackResult | null>(null);
 const gitHubIssueUrl = computed(() => {
   const baseUrl = buildInfoStore.buildInfo?.repoUrl ?? 'https://github.com/dmstern/reisotor';
   const params = new URLSearchParams();
+
   if (form.value.title.trim()) {
     params.set('title', form.value.title.trim());
   }
+
   let body = form.value.description.trim();
+
   if (contactEmail.value.trim()) {
     body += `\n\n---\nKontakt: ${contactEmail.value.trim()}`;
   }
+
   if (body) {
     params.set('body', body);
   }
+
   return `${baseUrl}/issues/new?${params.toString()}`;
 });
 
@@ -62,7 +67,10 @@ const gitHubIssueUrl = computed(() => {
 watch(
   () => props.modelValue,
   (open) => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
+
     buildInfoStore.load();
     form.value = {
       type: props.initialType ?? 'bug',
@@ -81,7 +89,11 @@ async function onScreenshotSelected(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   input.value = '';
-  if (!file) return;
+
+  if (!file) {
+    return;
+  }
+
   screenshot.value = await compressImage(file);
   screenshotName.value = isHeicFile(file)
     ? file.name.replace(/\.(heic|heif)$/i, '.jpg')
@@ -95,8 +107,13 @@ function removeScreenshot() {
 
 async function submit() {
   error.value = '';
-  if (!form.value.title.trim() || !form.value.description.trim()) return;
+
+  if (!form.value.title.trim() || !form.value.description.trim()) {
+    return;
+  }
+
   submitting.value = true;
+
   try {
     result.value = await api.post<FeedbackResult>('/feedback', {
       type: form.value.type,

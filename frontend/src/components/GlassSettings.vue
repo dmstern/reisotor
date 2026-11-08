@@ -24,6 +24,7 @@ const GLASS_OPTIONS = [
 function selectPreset(val: string) {
   const style = val as GlassStyle;
   const preset = getPresetGlassValues(style);
+
   if (preset) {
     uiSettings.glassOpacity = preset.opacity;
     uiSettings.glassBlur = preset.blur;

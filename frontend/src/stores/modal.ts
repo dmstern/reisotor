@@ -17,17 +17,23 @@ export const useModalStore = defineStore('modal', () => {
   function unregister(id: string) {
     delete zIndices.value[id];
     const idx = activeStack.value.indexOf(id);
+
     if (idx !== -1) {
       activeStack.value.splice(idx, 1);
     }
+
     if (activeStack.value.length === 0) {
       zIndexCounter = 100;
     }
+
     updateBodyScroll();
   }
 
   function updateBodyScroll() {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined') {
+      return;
+    }
+
     if (activeStack.value.length > 0) {
       document.body.style.overflow = 'hidden';
     } else {

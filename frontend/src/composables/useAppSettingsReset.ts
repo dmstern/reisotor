@@ -43,16 +43,27 @@ export function useAppSettingsReset() {
   }
 
   const isThemeDefault = computed(() => theme.mode === 'system');
+
   function resetTheme() {
     theme.reset();
   }
 
   const isNavDefault = computed(() => {
-    if (!navConfig.customMobile) return false;
+    if (!navConfig.customMobile) {
+      return false;
+    }
+
     const desktopDefaults = defaultEntries('desktop');
     const mobileDefaults = defaultEntries('mobile');
-    if (navConfig.entries.length !== desktopDefaults.length) return false;
-    if (navConfig.mobileEntries.length !== mobileDefaults.length) return false;
+
+    if (navConfig.entries.length !== desktopDefaults.length) {
+      return false;
+    }
+
+    if (navConfig.mobileEntries.length !== mobileDefaults.length) {
+      return false;
+    }
+
     return (
       navConfig.entries.every(
         (e, i) => e.key === desktopDefaults[i].key && e.visible === desktopDefaults[i].visible
@@ -62,22 +73,29 @@ export function useAppSettingsReset() {
       )
     );
   });
+
   function resetNav() {
     navConfig.reset();
   }
 
   const isDashboardDefault = computed(() => {
     const defaults = DASHBOARD_TILES.map((t) => ({ key: t.key, visible: true }));
-    if (dashboardConfig.entries.length !== defaults.length) return false;
+
+    if (dashboardConfig.entries.length !== defaults.length) {
+      return false;
+    }
+
     return dashboardConfig.entries.every(
       (e, i) => e.key === defaults[i].key && e.visible === defaults[i].visible
     );
   });
+
   function resetDashboard() {
     dashboardConfig.reset();
   }
 
   const isVacationCountdownDefault = computed(() => !uiSettings.showVacationCountdown);
+
   function resetVacationCountdown() {
     uiSettings.showVacationCountdown = false;
   }
@@ -120,11 +138,13 @@ export function useAppSettingsReset() {
     uiSettings.primaryColor = DEFAULT_PRIMARY_COLOR;
     uiSettings.borderWidth = DEFAULT_BORDER_WIDTH;
     const glassPreset = getPresetGlassValues('glass');
+
     if (glassPreset) {
       uiSettings.glassOpacity = glassPreset.opacity;
       uiSettings.glassBlur = glassPreset.blur;
       uiSettings.glassStyle = 'glass';
     }
+
     iconStyle.resetToDefaults();
     uiSettings.diaryFont = DEFAULT_DIARY_FONT;
     resetNav();
@@ -140,16 +160,19 @@ export function useAppSettingsReset() {
   const isCalendarDefault = computed(
     () => calendarSettings.weekStart === 'monday' && calendarSettings.dateFormat === 'de'
   );
+
   function resetCalendar() {
     calendarSettings.reset();
   }
 
   const isWeatherDefault = computed(() => !uiSettings.showHomeWeatherFullTrip);
+
   function resetWeather() {
     uiSettings.showHomeWeatherFullTrip = false;
   }
 
   const isHomeCurrencyDefault = computed(() => homeCurrency.currency === 'EUR');
+
   function resetHomeCurrency() {
     homeCurrency.reset();
   }
@@ -160,6 +183,7 @@ export function useAppSettingsReset() {
       uiSettings.toastTimeout === 5 &&
       uiSettings.showUpdateDialogs === true
   );
+
   function resetToasts() {
     uiSettings.showActivityToasts = true;
     uiSettings.toastTimeout = 5;

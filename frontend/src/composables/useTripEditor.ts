@@ -71,11 +71,13 @@ export function useTripEditor() {
 
   function closeForm() {
     showForm.value = false;
+
     if (editingTrip.value) {
       editDraft.clear();
     } else {
       newDraft.clear();
     }
+
     editingTrip.value = null;
     pendingFixTripId.value = null;
     tripFormLocationError.value = false;
@@ -97,6 +99,7 @@ export function useTripEditor() {
       tripFormLocationError.value = true;
       return;
     }
+
     // Analog zu Unterkunft-/Reise-/Ausflüge-Sicht: signalisiert TripMap.vue (Marker-Refresh) und
     // ScheduleView.vue (Kalender-Wetter-Refresh), dass sich ein Ort geändert haben könnte.
     drawers.touchLocations();
@@ -105,14 +108,23 @@ export function useTripEditor() {
 
   async function onDelete(trip?: Trip) {
     const target = trip ?? editingTrip.value;
-    if (!target) return;
+
+    if (!target) {
+      return;
+    }
+
     const confirmed = window.confirm(
       `Urlaub "${target.name}" wirklich löschen? Alle zugehörigen Daten (Kalender, Packliste, Touren, Unterkunft, Budget, ...) werden unwiderruflich gelöscht.`
     );
-    if (!confirmed) return;
+
+    if (!confirmed) {
+      return;
+    }
+
     if (editingTrip.value?.id === target.id) {
       closeForm();
     }
+
     await tripStore.deleteTrip(target.id);
   }
 

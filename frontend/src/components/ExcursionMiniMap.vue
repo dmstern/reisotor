@@ -24,13 +24,20 @@ let routesLayer: L.LayerGroup | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 function render() {
-  if (!map || !markersLayer || !routesLayer) return;
+  if (!map || !markersLayer || !routesLayer) {
+    return;
+  }
+
   markersLayer.clearLayers();
   routesLayer.clearLayers();
 
   const coords: L.LatLngExpression[] = [];
+
   for (const station of props.stations) {
-    if (station.lat == null || station.lng == null) continue;
+    if (station.lat == null || station.lng == null) {
+      continue;
+    }
+
     const latlng: L.LatLngExpression = [station.lat, station.lng];
     coords.push(latlng);
     L.marker(latlng, { icon: cachedEmojiPin(station.tabler, station.color) }).addTo(markersLayer);
@@ -39,7 +46,10 @@ function render() {
   for (let i = 0; i < props.stations.length - 1; i++) {
     const s1 = props.stations[i];
     const s2 = props.stations[i + 1];
-    if (s1.lat == null || s1.lng == null || s2.lat == null || s2.lng == null) continue;
+
+    if (s1.lat == null || s1.lng == null || s2.lat == null || s2.lng == null) {
+      continue;
+    }
 
     const leg = props.legs?.find(
       (l) => l.position === i || (l.from_spot_id === s1.id && l.to_spot_id === s2.id)
@@ -71,7 +81,11 @@ function render() {
 
 onMounted(async () => {
   await nextTick();
-  if (!mapEl.value) return;
+
+  if (!mapEl.value) {
+    return;
+  }
+
   map = L.map(mapEl.value, {
     zoomControl: false,
     attributionControl: false,

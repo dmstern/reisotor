@@ -25,6 +25,7 @@ export function formatDate(
   const day = pad2(d.getDate());
   const month = pad2(d.getMonth() + 1);
   const year = d.getFullYear();
+
   switch (calendarSettings.dateFormat) {
     case 'iso':
       return includeYear ? `${year}-${month}-${day}` : `${month}-${day}`;
@@ -90,12 +91,15 @@ export function formatTripDateRange(
   if (!startDateStr && !endDateStr) {
     return 'Datum noch offen';
   }
+
   if (startDateStr && !endDateStr) {
     return formatDate(startDateStr);
   }
+
   if (!startDateStr && endDateStr) {
     return formatDate(endDateStr);
   }
+
   const today = toLocalDateString(now);
   const currentYear = now.getFullYear();
   const startYear = parseInt(startDateStr!.slice(0, 4), 10);
@@ -113,18 +117,32 @@ export function formatTripDateRange(
 /** Konvertiert einen ISO-Timestamp in das für <input type="datetime-local"> erforderliche Format
  *  'YYYY-MM-DDTHH:mm' (in lokaler Zeit des Browsers). */
 export function toLocalDatetimeInputValue(dateStr?: string | null): string {
-  if (!dateStr) return '';
+  if (!dateStr) {
+    return '';
+  }
+
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
+
+  if (isNaN(d.getTime())) {
+    return '';
+  }
+
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
 /** Konvertiert den Wert eines <input type="datetime-local"> ('YYYY-MM-DDTHH:mm') zurück
  *  in einen ISO-String. Gibt null zurück, wenn der String ungültig oder leer ist. */
 export function fromLocalDatetimeInputValue(val?: string | null): string | null {
-  if (!val) return null;
+  if (!val) {
+    return null;
+  }
+
   const d = new Date(val);
-  if (isNaN(d.getTime())) return null;
+
+  if (isNaN(d.getTime())) {
+    return null;
+  }
+
   return d.toISOString();
 }
 
@@ -133,33 +151,58 @@ export function fromLocalDatetimeInputValue(val?: string | null): string | null 
  * Gibt "Nie" zurück, wenn kein Datum vorliegt.
  */
 export function formatLastLogin(dateStr?: string | null, now: Date = new Date()): string {
-  if (!dateStr) return 'Nie';
+  if (!dateStr) {
+    return 'Nie';
+  }
+
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '—';
+
+  if (isNaN(d.getTime())) {
+    return '—';
+  }
 
   const diffMs = now.getTime() - d.getTime();
+
   if (diffMs < 0) {
     return 'Gerade eben';
   }
 
   const diffMinutes = Math.floor(diffMs / 60000);
-  if (diffMinutes < 1) return 'Gerade eben';
-  if (diffMinutes < 60) return `vor ${diffMinutes} Min.`;
+
+  if (diffMinutes < 1) {
+    return 'Gerade eben';
+  }
+
+  if (diffMinutes < 60) {
+    return `vor ${diffMinutes} Min.`;
+  }
 
   const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return diffHours === 1 ? 'vor 1 Std.' : `vor ${diffHours} Std.`;
+
+  if (diffHours < 24) {
+    return diffHours === 1 ? 'vor 1 Std.' : `vor ${diffHours} Std.`;
+  }
 
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return 'Gestern';
-  if (diffDays < 7) return `vor ${diffDays} Tagen`;
+
+  if (diffDays === 1) {
+    return 'Gestern';
+  }
+
+  if (diffDays < 7) {
+    return `vor ${diffDays} Tagen`;
+  }
+
   if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
     return weeks === 1 ? 'vor 1 Woche' : `vor ${weeks} Wochen`;
   }
+
   if (diffDays < 365) {
     const months = Math.floor(diffDays / 30);
     return months === 1 ? 'vor 1 Monat' : `vor ${months} Monaten`;
   }
+
   const years = Math.floor(diffDays / 365);
   return years === 1 ? 'vor 1 Jahr' : `vor ${years} Jahren`;
 }

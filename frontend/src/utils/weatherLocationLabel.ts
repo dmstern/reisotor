@@ -9,15 +9,27 @@ export function formatDestinationLocationLabel(
   tripName?: string | null
 ): string {
   const dest = destination?.trim();
-  if (dest) return `in ${dest}`;
+
+  if (dest) {
+    return `in ${dest}`;
+  }
+
   const name = tripName?.trim();
-  if (name) return `am Reiseziel (${name})`;
+
+  if (name) {
+    return `am Reiseziel (${name})`;
+  }
+
   return 'am Reiseziel';
 }
 
 export function formatHomeLocationLabel(homeTitle?: string | null): string {
   const title = homeTitle?.trim();
-  if (!title || title.toLowerCase() === 'zuhause') return 'zuhause';
+
+  if (!title || title.toLowerCase() === 'zuhause') {
+    return 'zuhause';
+  }
+
   return `in ${title}`;
 }
 

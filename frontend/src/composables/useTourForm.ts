@@ -93,11 +93,18 @@ export function useTourForm(options: UseTourFormOptions) {
   );
 
   const excursionSaveTooltip = computed(() => {
-    if (isExcursionUploadingAttachments.value) return 'Dateianhänge werden noch hochgeladen…';
-    if (!activeExcursionForm.value.title.trim())
+    if (isExcursionUploadingAttachments.value) {
+      return 'Dateianhänge werden noch hochgeladen…';
+    }
+
+    if (!activeExcursionForm.value.title.trim()) {
       return 'Bitte gib zuerst einen Titel für die Tour ein';
-    if (isExcursionRoleInvalid.value)
+    }
+
+    if (isExcursionRoleInvalid.value) {
       return 'Für Anreise/Abreise/Weiterreise werden mindestens 2 Stationen benötigt';
+    }
+
     return undefined;
   });
 
@@ -109,12 +116,18 @@ export function useTourForm(options: UseTourFormOptions) {
   );
 
   const initialEditingExcursion = computed(() => {
-    if (editingExcursion.value == null) return null;
+    if (editingExcursion.value == null) {
+      return null;
+    }
+
     return excursionsStore.excursions.find((e) => e.id === editingExcursion.value) ?? null;
   });
 
   const isEditTourTitleModified = computed(() => {
-    if (!initialEditingExcursion.value) return false;
+    if (!initialEditingExcursion.value) {
+      return false;
+    }
+
     return (
       (editExcursionForm.value.title || '').trim() !==
       (initialEditingExcursion.value.title || '').trim()
@@ -122,12 +135,18 @@ export function useTourForm(options: UseTourFormOptions) {
   });
 
   const isEditTourDateModified = computed(() => {
-    if (!initialEditingExcursion.value) return false;
+    if (!initialEditingExcursion.value) {
+      return false;
+    }
+
     return (editExcursionForm.value.date || '') !== (initialEditingExcursion.value.date || '');
   });
 
   const isEditTourNoteModified = computed(() => {
-    if (!initialEditingExcursion.value) return false;
+    if (!initialEditingExcursion.value) {
+      return false;
+    }
+
     return (
       (editExcursionForm.value.note || '').trim() !==
       (initialEditingExcursion.value.note || '').trim()
@@ -135,7 +154,10 @@ export function useTourForm(options: UseTourFormOptions) {
   });
 
   const isEditTourRoleModified = computed(() => {
-    if (!initialEditingExcursion.value) return false;
+    if (!initialEditingExcursion.value) {
+      return false;
+    }
+
     return (
       (editExcursionForm.value.role || '').trim() !==
       (initialEditingExcursion.value.role || '').trim()
@@ -157,6 +179,7 @@ export function useTourForm(options: UseTourFormOptions) {
 
   function onToggleTourTrack(trk: LocationTrack) {
     const isAssigned = activeExcursionForm.value.track_ids.includes(trk.id);
+
     if (isAssigned) {
       activeExcursionForm.value.track_ids = activeExcursionForm.value.track_ids.filter(
         (id) => id !== trk.id
@@ -202,10 +225,15 @@ export function useTourForm(options: UseTourFormOptions) {
 
   async function addExcursion() {
     if (!excursionForm.value.title.trim() || isExcursionRoleInvalid.value) {
-      if (!excursionForm.value.title.trim()) excursionTitleTouched.value = true;
+      if (!excursionForm.value.title.trim()) {
+        excursionTitleTouched.value = true;
+      }
+
       return;
     }
+
     const created = await excursionsStore.create(tourPayload(excursionForm.value));
+
     for (const trackId of excursionForm.value.track_ids) {
       const shouldShare = tracksToShareOnSave.value.has(trackId);
       await tracksStore.update(trackId, {
@@ -213,6 +241,7 @@ export function useTourForm(options: UseTourFormOptions) {
         ...(shouldShare ? { visibility: 'shared' } : {}),
       });
     }
+
     tracksToShareOnSave.value.clear();
     closeExcursionForm();
   }
@@ -243,9 +272,13 @@ export function useTourForm(options: UseTourFormOptions) {
       !editExcursionForm.value.title.trim() ||
       isExcursionRoleInvalid.value
     ) {
-      if (!editExcursionForm.value.title.trim()) excursionTitleTouched.value = true;
+      if (!editExcursionForm.value.title.trim()) {
+        excursionTitleTouched.value = true;
+      }
+
       return;
     }
+
     const excId = editingExcursion.value;
     await excursionsStore.update(excId, tourPayload(editExcursionForm.value));
     const currentAssigned = tracksStore.tracks
@@ -258,6 +291,7 @@ export function useTourForm(options: UseTourFormOptions) {
         await tracksStore.update(oldId, { excursion_id: null });
       }
     }
+
     for (const newId of nextAssigned) {
       if (!currentAssigned.includes(newId)) {
         const shouldShare = tracksToShareOnSave.value.has(newId);
@@ -267,6 +301,7 @@ export function useTourForm(options: UseTourFormOptions) {
         });
       }
     }
+
     tracksToShareOnSave.value.clear();
     editExcursionDraft.clear();
     editingExcursion.value = null;
@@ -280,22 +315,33 @@ export function useTourForm(options: UseTourFormOptions) {
   }
 
   function discardEditExcursionDraft() {
-    if (!initialEditingExcursion.value) return;
+    if (!initialEditingExcursion.value) {
+      return;
+    }
+
     startEditExcursion(initialEditingExcursion.value);
     editExcursionDraft.clear();
     showToast({ message: 'Änderungen verworfen.', type: 'info' });
   }
 
   async function deleteEditingExcursion() {
-    if (editingExcursion.value === null || isExcursionUploadingAttachments.value) return;
+    if (editingExcursion.value === null || isExcursionUploadingAttachments.value) {
+      return;
+    }
+
     const id = editingExcursion.value;
     const excursion = excursionsStore.excursions.find((e) => e.id === id);
+
     if (excursion?.date) {
       const confirmed = window.confirm(
         'Diese Tour ist bereits im Kalender eingeplant. Wirklich löschen? Die zugeordneten Spots bleiben erhalten und werden nicht mitgelöscht.'
       );
-      if (!confirmed) return;
+
+      if (!confirmed) {
+        return;
+      }
     }
+
     await excursionsStore.remove(id);
     closeEditExcursionForm();
   }
@@ -319,7 +365,11 @@ export function useTourForm(options: UseTourFormOptions) {
 
   async function addSpotToExcursion(excursionId: number, spotId: number) {
     const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-    if (!excursion || excursion.spot_ids.includes(spotId)) return;
+
+    if (!excursion || excursion.spot_ids.includes(spotId)) {
+      return;
+    }
+
     await excursionsStore.update(excursionId, {
       title: excursion.title,
       image_url: excursion.image_url ?? undefined,
@@ -333,8 +383,11 @@ export function useTourForm(options: UseTourFormOptions) {
     const excursion = excursionForGroupTitle
       ? excursionForGroupTitle(title)
       : (excursionsStore.excursions.find((e) => e.title === title) ?? null);
+
     if (excursion) {
-      if (!excursion.spot_ids.includes(spotId)) await addSpotToExcursion(excursion.id, spotId);
+      if (!excursion.spot_ids.includes(spotId)) {
+        await addSpotToExcursion(excursion.id, spotId);
+      }
     } else {
       await excursionsStore.create({ title, spot_ids: [spotId] });
     }

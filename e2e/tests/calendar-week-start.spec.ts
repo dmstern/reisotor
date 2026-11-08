@@ -18,6 +18,7 @@ test.use({ timezoneId: 'Europe/Berlin' });
 // stattdessen wieder SCHLIESSEN. aria-expanded prüfen statt anzunehmen, dass sie geschlossen startet.
 async function openCalendarDrawer(page: import('@playwright/test').Page) {
   const tab = page.locator('.drawer-tab[aria-label*="Kalender"]');
+
   if ((await tab.count()) > 0 && (await tab.getAttribute('aria-expanded')) === 'false') {
     await tab.click();
   }

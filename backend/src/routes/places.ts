@@ -30,6 +30,7 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req, reply) => {
       const rawQ = req.query.q;
+
       if (!rawQ || typeof rawQ !== 'string' || !rawQ.trim()) {
         return reply.code(400).send({ error: 'Suchbegriff erforderlich' });
       }
@@ -38,12 +39,24 @@ export const placesRoutes: FastifyPluginAsync = async (app) => {
       const rawLat = req.query.lat != null ? Number(req.query.lat) : undefined;
       const rawLng = req.query.lng != null ? Number(req.query.lng) : undefined;
       let limit = req.query.limit != null ? Number(req.query.limit) : 10;
-      if (!Number.isFinite(limit) || limit < 1) limit = 10;
-      if (limit > 10) limit = 10;
+
+      if (!Number.isFinite(limit) || limit < 1) {
+        limit = 10;
+      }
+
+      if (limit > 10) {
+        limit = 10;
+      }
 
       let offset = req.query.offset != null ? Number(req.query.offset) : 0;
-      if (!Number.isFinite(offset) || offset < 0) offset = 0;
-      if (offset > 100) offset = 100;
+
+      if (!Number.isFinite(offset) || offset < 0) {
+        offset = 0;
+      }
+
+      if (offset > 100) {
+        offset = 100;
+      }
 
       const lat = rawLat != null && Number.isFinite(rawLat) ? rawLat : undefined;
       const lng = rawLng != null && Number.isFinite(rawLng) ? rawLng : undefined;

@@ -12,10 +12,12 @@ let lastCleanup = Date.now();
 function cleanupExpired(now: number) {
   for (const [key, entry] of rateLimitMap.entries()) {
     entry.timestamps = entry.timestamps.filter((ts) => now - ts < entry.windowMs);
+
     if (entry.timestamps.length === 0) {
       rateLimitMap.delete(key);
     }
   }
+
   lastCleanup = now;
 }
 
@@ -40,6 +42,7 @@ export function checkFeedbackRateLimit(
   }
 
   let entry = rateLimitMap.get(key);
+
   if (!entry) {
     entry = { timestamps: [], windowMs };
     rateLimitMap.set(key, entry);

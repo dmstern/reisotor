@@ -45,15 +45,18 @@ export class SqliteSessionStore implements SessionStore {
     try {
       const row = db.prepare('SELECT sess, expires FROM sessions WHERE sid = ?').get(sessionId) as
         SessionRow | undefined;
+
       if (!row) {
         callback(null, null);
         return;
       }
+
       if (row.expires != null && row.expires <= Date.now()) {
         db.prepare('DELETE FROM sessions WHERE sid = ?').run(sessionId);
         callback(null, null);
         return;
       }
+
       callback(null, JSON.parse(row.sess));
     } catch (err) {
       callback(err);
@@ -69,14 +72,17 @@ export class SqliteSessionStore implements SessionStore {
     try {
       const row = db.prepare('SELECT sess, expires FROM sessions WHERE sid = ?').get(sessionId) as
         SessionRow | undefined;
+
       if (!row) {
         callback(createSessionMissingError());
         return;
       }
+
       const storedSession = JSON.parse(row.sess) as Session & {
         __fastifySessionMetadata?: { generation?: string };
       };
       const actualGeneration = storedSession?.__fastifySessionMetadata?.generation ?? sessionId;
+
       if (actualGeneration !== expectedGeneration) {
         callback(createSessionMissingError());
         return;

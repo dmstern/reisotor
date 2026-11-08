@@ -14,7 +14,10 @@ interface DraftRow {
 // Mitglieder sichtbar.
 export const draftsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/drafts', async (req, reply) => {
-    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
+    if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+      return;
+    }
+
     const rows = db
       .prepare('SELECT draft_key, data, updated_at FROM drafts WHERE user_id = ? AND trip_id = ?')
       .all(req.session.userId, req.query.trip_id) as DraftRow[];
@@ -29,8 +32,15 @@ export const draftsRoutes: FastifyPluginAsync = async (app) => {
     '/drafts',
     async (req, reply) => {
       const { trip_id, draft_key, data } = req.body ?? {};
-      if (!requireTripMember(reply, trip_id, req.session.userId)) return;
-      if (!draft_key) return reply.code(400).send({ error: 'draft_key erforderlich' });
+
+      if (!requireTripMember(reply, trip_id, req.session.userId)) {
+        return;
+      }
+
+      if (!draft_key) {
+        return reply.code(400).send({ error: 'draft_key erforderlich' });
+      }
+
       const now = new Date().toISOString();
       db.prepare(
         `INSERT INTO drafts (user_id, trip_id, draft_key, data, updated_at) VALUES (?, ?, ?, ?, ?)
@@ -43,8 +53,14 @@ export const draftsRoutes: FastifyPluginAsync = async (app) => {
   app.delete<{ Querystring: { trip_id?: string; draft_key?: string } }>(
     '/drafts',
     async (req, reply) => {
-      if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) return;
-      if (!req.query.draft_key) return reply.code(400).send({ error: 'draft_key erforderlich' });
+      if (!requireTripMember(reply, req.query.trip_id, req.session.userId)) {
+        return;
+      }
+
+      if (!req.query.draft_key) {
+        return reply.code(400).send({ error: 'draft_key erforderlich' });
+      }
+
       db.prepare('DELETE FROM drafts WHERE user_id = ? AND trip_id = ? AND draft_key = ?').run(
         req.session.userId,
         req.query.trip_id,

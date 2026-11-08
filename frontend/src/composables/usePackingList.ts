@@ -126,7 +126,10 @@ export function usePackingList(tripIdOverride?: number) {
   watch(
     lists,
     (ls) => {
-      if (!categoryRequired.value) return;
+      if (!categoryRequired.value) {
+        return;
+      }
+
       for (const list of ls) {
         if (quickAddCategories.value[list.key] === undefined) {
           quickAddCategories.value[list.key] = DEFAULT_PACKING_CATEGORY;
@@ -141,20 +144,32 @@ export function usePackingList(tripIdOverride?: number) {
       ? listItems.filter((i) => !isFullyPacked(i))
       : listItems;
     const catMap = new Map<string, PackingItem[]>();
+
     for (const item of visibleItems) {
       const key = item.category?.trim() || DEFAULT_PACKING_CATEGORY;
-      if (!catMap.has(key)) catMap.set(key, []);
+
+      if (!catMap.has(key)) {
+        catMap.set(key, []);
+      }
+
       catMap.get(key)!.push(item);
     }
+
     return [...catMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b, 'de'))
       .map(([category, catItems]) => {
         const subMap = new Map<string, PackingItem[]>();
+
         for (const item of catItems) {
           const subKey = item.subcategory?.trim() || '';
-          if (!subMap.has(subKey)) subMap.set(subKey, []);
+
+          if (!subMap.has(subKey)) {
+            subMap.set(subKey, []);
+          }
+
           subMap.get(subKey)!.push(item);
         }
+
         const subgroups = [...subMap.entries()]
           .sort(([a], [b]) => a.localeCompare(b, 'de'))
           .map(([subcategory, subItems]) => ({
@@ -186,7 +201,11 @@ export function usePackingList(tripIdOverride?: number) {
       owner_id: item.owner_id,
     });
     const idx = items.value.findIndex((i) => i.id === item.id);
-    if (idx !== -1) items.value[idx] = updated;
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
     return updated;
   }
 
@@ -197,11 +216,18 @@ export function usePackingList(tripIdOverride?: number) {
     subcategoryOverride?: string,
     quantityOverride?: number
   ): Promise<PackingItem | null> {
-    if (!label.trim()) return null;
+    if (!label.trim()) {
+      return null;
+    }
+
     const category = (
       categoryOverride !== undefined ? categoryOverride : (quickAddCategories.value[list.key] ?? '')
     ).trim();
-    if (categoryRequired.value && !category) return null;
+
+    if (categoryRequired.value && !category) {
+      return null;
+    }
+
     const subcategory = (
       subcategoryOverride !== undefined
         ? subcategoryOverride
@@ -233,8 +259,14 @@ export function usePackingList(tripIdOverride?: number) {
     laidOutCount: number,
     packedCount: number
   ): Promise<PackingItem | null> {
-    if (!form.label.trim()) return null;
-    if (categoryRequired.value && !form.category?.trim()) return null;
+    if (!form.label.trim()) {
+      return null;
+    }
+
+    if (categoryRequired.value && !form.category?.trim()) {
+      return null;
+    }
+
     const owner_id = form.ownerId === 'shared' ? null : Number(form.ownerId);
     const updated = await api.put<PackingItem>(`/packing/${id}`, {
       label: form.label.trim(),
@@ -246,7 +278,11 @@ export function usePackingList(tripIdOverride?: number) {
       owner_id,
     });
     const idx = items.value.findIndex((i) => i.id === updated.id);
-    if (idx !== -1) items.value[idx] = updated;
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
     return updated;
   }
 

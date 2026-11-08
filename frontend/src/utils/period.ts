@@ -15,8 +15,17 @@ export function computePeriod(
   dueDate: string | null | undefined,
   trip: { start_date?: string | null; end_date?: string | null } | null | undefined
 ): Period | null {
-  if (!dueDate || !trip || !trip.start_date) return null;
-  if (dueDate < trip.start_date) return 'before';
-  if (trip.end_date && dueDate <= trip.end_date) return 'during';
+  if (!dueDate || !trip || !trip.start_date) {
+    return null;
+  }
+
+  if (dueDate < trip.start_date) {
+    return 'before';
+  }
+
+  if (trip.end_date && dueDate <= trip.end_date) {
+    return 'during';
+  }
+
   return null;
 }

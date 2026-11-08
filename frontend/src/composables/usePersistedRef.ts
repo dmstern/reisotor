@@ -16,6 +16,7 @@ export function usePersistedRef<T>(key: MaybeRefOrGetter<string>, defaultValue: 
     (newKey, oldKey) => {
       if (newKey !== oldKey) {
         isInternalUpdate = true;
+
         try {
           value.value = newKey ? loadInitial(newKey, defaultValue) : defaultValue;
         } finally {
@@ -28,8 +29,12 @@ export function usePersistedRef<T>(key: MaybeRefOrGetter<string>, defaultValue: 
   watch(
     value,
     (v) => {
-      if (isInternalUpdate) return;
+      if (isInternalUpdate) {
+        return;
+      }
+
       const k = toValue(key);
+
       if (k && typeof localStorage !== 'undefined') {
         try {
           localStorage.setItem(k, JSON.stringify(v));
@@ -45,10 +50,17 @@ export function usePersistedRef<T>(key: MaybeRefOrGetter<string>, defaultValue: 
 }
 
 function loadInitial<T>(key: string, defaultValue: T): T {
-  if (typeof localStorage === 'undefined') return defaultValue;
+  if (typeof localStorage === 'undefined') {
+    return defaultValue;
+  }
+
   try {
     const stored = localStorage.getItem(key);
-    if (stored == null) return defaultValue;
+
+    if (stored == null) {
+      return defaultValue;
+    }
+
     return JSON.parse(stored) as T;
   } catch {
     return defaultValue;

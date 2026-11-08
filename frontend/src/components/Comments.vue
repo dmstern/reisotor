@@ -37,7 +37,11 @@ const editInputRef = ref<{ $el?: HTMLInputElement } | HTMLInputElement | null>(n
 
 function submit() {
   const content = draft.value.trim();
-  if (!content) return;
+
+  if (!content) {
+    return;
+  }
+
   emit('submit', content);
   draft.value = '';
 }
@@ -59,14 +63,21 @@ function cancelEdit() {
 
 function submitEdit(id: number) {
   const content = editDraft.value.trim();
-  if (!content) return;
+
+  if (!content) {
+    return;
+  }
+
   emit('update', id, content);
   editingId.value = null;
   editDraft.value = '';
 }
 
 function formatCommentDate(dateStr?: string): string {
-  if (!dateStr) return '';
+  if (!dateStr) {
+    return '';
+  }
+
   try {
     return formatDateTime(dateStr);
   } catch {

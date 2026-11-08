@@ -9,7 +9,10 @@ describe('excursion_legs Migration & Backfill', () => {
 
   afterEach(() => {
     delete process.env.DB_PATH;
-    if (dbPath) rmSync(path.dirname(dbPath), { recursive: true, force: true });
+
+    if (dbPath) {
+      rmSync(path.dirname(dbPath), { recursive: true, force: true });
+    }
   });
 
   it('erzeugt excursion_legs und migriert bestehende Touren mit Transport-Feldern', async () => {

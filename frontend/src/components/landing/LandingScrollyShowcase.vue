@@ -26,7 +26,11 @@ const effectiveHighlightIndex = computed(() => props.activeHighlightIndex ?? 0);
 
 const currentShowcase = computed(() => {
   const f = props.features[effectiveStepIndex.value];
-  if (!f) return null;
+
+  if (!f) {
+    return null;
+  }
+
   return getHighlightScreenshot(f, effectiveHighlightIndex.value);
 });
 

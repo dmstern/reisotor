@@ -64,6 +64,7 @@ const calendarMargin = computed(() => {
 const isNarrowLayout = computed(() => props.sheetOverlayMode ?? !isDesktop.value);
 
 const teleportReady = ref(false);
+
 function updateTeleportReady() {
   teleportReady.value =
     typeof document !== 'undefined' && !!document.getElementById('map-focus-dock');
@@ -87,7 +88,10 @@ const openTravel = computed(
 
 function onTravelDialogUpdate(v: boolean) {
   travelDialogOpen.value = v;
-  if (!v) drawers.mapFocusKey = null;
+
+  if (!v) {
+    drawers.mapFocusKey = null;
+  }
 }
 
 function editOpenTravel() {
@@ -97,13 +101,19 @@ function editOpenTravel() {
 }
 
 function payerLabelFor(userId: number | null) {
-  if (userId == null) return null;
+  if (userId == null) {
+    return null;
+  }
+
   const u = users.value.find((u) => u.id === userId);
   return u ? `${u.avatar} ${u.username}` : null;
 }
 
 function trackAuthorUser(userId: number | undefined) {
-  if (userId == null) return null;
+  if (userId == null) {
+    return null;
+  }
+
   return users.value.find((u) => u.id === userId) ?? (auth.user?.id === userId ? auth.user : null);
 }
 
@@ -201,6 +211,7 @@ defineExpose({ focusCategory });
 function handlePointClick(point: MapPoint) {
   if (point.origin === 'location') {
     drawers.mapFocusKey = point.key;
+
     if (point.gallery) {
       openPhotoPreview(
         point.gallery.attachments as AttachmentPreviewItem[],
@@ -209,9 +220,12 @@ function handlePointClick(point: MapPoint) {
     } else {
       openPhotoPreview();
     }
+
     return;
   }
+
   drawers.mapFocusLocation = null;
+
   if (point.origin === 'spot') {
     const spotId = Number(point.key.slice('spot-'.length));
     drawers.mapFocusKey = point.key;
@@ -226,9 +240,11 @@ function handlePointClick(point: MapPoint) {
 
 async function focusAllPhotos() {
   drawers.openMapForAllPhotos();
+
   if (!allTripPhotosLoaded.value) {
     await loadAllTripPhotos();
   }
+
   leafletTripMap.fitAllPhotos();
 }
 
@@ -245,6 +261,7 @@ function clearFocus() {
   } else if (drawers.mapFocusKey) {
     drawers.mapFocusKey = null;
   }
+
   if (drawers.mapFocusAllPhotos) {
     drawers.mapFocusAllPhotos = false;
   }
@@ -258,7 +275,11 @@ function clearTrackFocus() {
 
 async function loadAll() {
   const tripId = tripStore.currentTripId;
-  if (tripId == null) return;
+
+  if (tripId == null) {
+    return;
+  }
+
   const [items] = await Promise.all([
     api.get<ScheduleItem[]>(`/schedule?trip_id=${tripId}`),
     loadAllTripPhotos(),
@@ -268,6 +289,7 @@ async function loadAll() {
 
 onMounted(async () => {
   updateTeleportReady();
+
   if (!teleportReady.value) {
     nextTick(updateTeleportReady);
   }
@@ -363,9 +385,11 @@ watch(
   () => {
     leafletTripMap.renderMarkers();
     leafletTripMap.renderRoutes();
+
     if (focusedTrackPoints.value.length >= 2) {
       leafletTripMap.renderTracks();
     }
+
     if (drawers.mapFocusAllPhotos) {
       leafletTripMap.fitAllPhotos();
     }
@@ -385,6 +409,7 @@ watch(
   () => [props.coveredBottomPx, props.coveredLeftPx],
   () => {
     leafletTripMap.renderMarkers();
+
     if (focusedTrackPoints.value.length >= 2) {
       leafletTripMap.renderTracks();
     }
@@ -395,6 +420,7 @@ watch(
   () => excursionsStore.excursions,
   () => {
     leafletTripMap.renderRoutes();
+
     if (drawers.mapFocusExcursionId != null) {
       loadExcursionPhotoPoints(drawers.mapFocusExcursionId);
     }
@@ -422,10 +448,12 @@ watch(
   async (track) => {
     trackPlaybackProgress.value = 0;
     leafletTripMap.renderTracks();
+
     if (track && !tracksStore.getPointsForTrack(track.id).length) {
       try {
         const pts = await tracksStore.loadPoints(track.id);
         leafletTripMap.renderTracks();
+
         if (!pts.length) {
           setTimeout(async () => {
             if (focusedTrack.value?.id === track.id) {

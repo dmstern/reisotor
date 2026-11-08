@@ -62,6 +62,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
       window.removeEventListener('mousemove', activeMouseMoveHandler);
       activeMouseMoveHandler = null;
     }
+
     if (activeMouseUpHandler && typeof window !== 'undefined') {
       window.removeEventListener('mouseup', activeMouseUpHandler);
       activeMouseUpHandler = null;
@@ -89,13 +90,19 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
   }
 
   function slideTowards(direction: 'next' | 'prev' | 'cancel') {
-    if (isAnimating.value) return;
+    if (isAnimating.value) {
+      return;
+    }
+
     clearAnimTimer();
 
     const reducedMotion = isReducedMotion();
 
     if (direction === 'cancel') {
-      if (dragOffset.value === 0) return;
+      if (dragOffset.value === 0) {
+        return;
+      }
+
       isAnimating.value = true;
       dragOffset.value = 0;
       targetOffsetPercent.value = -100;
@@ -116,31 +123,43 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
 
     animationTimer = setTimeout(() => {
       const len = items.value.length;
+
       if (len > 0) {
         if (direction === 'next') {
           currentIndex.value = (currentIndex.value + 1) % len;
         } else {
           currentIndex.value = (currentIndex.value - 1 + len) % len;
         }
+
         onIndexChange?.(currentIndex.value);
       }
+
       targetOffsetPercent.value = -100;
       isAnimating.value = false;
     }, duration);
   }
 
   function prev() {
-    if (items.value.length <= 1 || isAnimating.value) return;
+    if (items.value.length <= 1 || isAnimating.value) {
+      return;
+    }
+
     slideTowards('prev');
   }
 
   function next() {
-    if (items.value.length <= 1 || isAnimating.value) return;
+    if (items.value.length <= 1 || isAnimating.value) {
+      return;
+    }
+
     slideTowards('next');
   }
 
   function onKeydown(e: KeyboardEvent) {
-    if (!isOpen.value || items.value.length <= 1 || isAnimating.value) return;
+    if (!isOpen.value || items.value.length <= 1 || isAnimating.value) {
+      return;
+    }
+
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
       prev();
@@ -162,6 +181,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
       } else {
         currentIndex.value = 0;
       }
+
       if (typeof window !== 'undefined') {
         window.addEventListener('keydown', onKeydown);
       }
@@ -169,6 +189,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
       if (typeof window !== 'undefined') {
         window.removeEventListener('keydown', onKeydown);
       }
+
       resetAnimationState();
     }
   });
@@ -177,6 +198,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
     () => items.value.length,
     (newLen) => {
       resetAnimationState();
+
       if (newLen === 0) {
         onClose?.();
       } else if (currentIndex.value >= newLen) {
@@ -198,13 +220,19 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
   );
 
   const prevAttachment = computed<AttachmentPreviewItem | null>(() => {
-    if (items.value.length <= 1) return null;
+    if (items.value.length <= 1) {
+      return null;
+    }
+
     const idx = (currentIndex.value - 1 + items.value.length) % items.value.length;
     return items.value[idx] ?? null;
   });
 
   const nextAttachment = computed<AttachmentPreviewItem | null>(() => {
-    if (items.value.length <= 1) return null;
+    if (items.value.length <= 1) {
+      return null;
+    }
+
     const idx = (currentIndex.value + 1) % items.value.length;
     return items.value[idx] ?? null;
   });
@@ -219,6 +247,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
         },
       ];
     }
+
     return [
       {
         slot: 'prev',
@@ -267,9 +296,17 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
   });
 
   function onTouchStart(e: TouchEvent) {
-    if (items.value.length <= 1 || isAnimating.value) return;
-    if (e.touches.length !== 1) return;
-    if ((e.target as HTMLElement)?.closest('.nav-btn, button, a')) return;
+    if (items.value.length <= 1 || isAnimating.value) {
+      return;
+    }
+
+    if (e.touches.length !== 1) {
+      return;
+    }
+
+    if ((e.target as HTMLElement)?.closest('.nav-btn, button, a')) {
+      return;
+    }
 
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
@@ -279,7 +316,10 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
   }
 
   function onTouchMove(e: TouchEvent) {
-    if (!isDragging.value || isAnimating.value) return;
+    if (!isDragging.value || isAnimating.value) {
+      return;
+    }
+
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
     const deltaX = currentX - touchStartX;
@@ -288,6 +328,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
     if (isHorizontalGesture === null) {
       const absX = Math.abs(deltaX);
       const absY = Math.abs(deltaY);
+
       if (absX > 6 || absY > 6) {
         if (absX > absY) {
           isHorizontalGesture = true;
@@ -305,16 +346,21 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
       if (e.cancelable) {
         e.preventDefault();
       }
+
       dragOffset.value = deltaX;
     }
   }
 
   function onTouchEnd() {
-    if (!isDragging.value) return;
+    if (!isDragging.value) {
+      return;
+    }
+
     isDragging.value = false;
 
     if (isHorizontalGesture) {
       const SWIPE_THRESHOLD = 45;
+
       if (dragOffset.value < -SWIPE_THRESHOLD) {
         slideTowards('next');
       } else if (dragOffset.value > SWIPE_THRESHOLD) {
@@ -325,6 +371,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
     } else {
       dragOffset.value = 0;
     }
+
     isHorizontalGesture = null;
   }
 
@@ -333,13 +380,22 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
       isDragging.value = false;
       slideTowards('cancel');
     }
+
     isHorizontalGesture = null;
   }
 
   function onMouseDown(e: MouseEvent) {
-    if (items.value.length <= 1 || isAnimating.value) return;
-    if (e.button !== 0) return;
-    if ((e.target as HTMLElement)?.closest('.nav-btn, button, a')) return;
+    if (items.value.length <= 1 || isAnimating.value) {
+      return;
+    }
+
+    if (e.button !== 0) {
+      return;
+    }
+
+    if ((e.target as HTMLElement)?.closest('.nav-btn, button, a')) {
+      return;
+    }
 
     e.preventDefault();
     removeActiveMouseDragListeners();
@@ -349,16 +405,24 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
     dragOffset.value = 0;
 
     activeMouseMoveHandler = (moveEvent: MouseEvent) => {
-      if (!isDragging.value) return;
+      if (!isDragging.value) {
+        return;
+      }
+
       dragOffset.value = moveEvent.clientX - startX;
     };
 
     activeMouseUpHandler = () => {
       removeActiveMouseDragListeners();
-      if (!isDragging.value) return;
+
+      if (!isDragging.value) {
+        return;
+      }
+
       isDragging.value = false;
 
       const SWIPE_THRESHOLD = 50;
+
       if (dragOffset.value < -SWIPE_THRESHOLD) {
         slideTowards('next');
       } else if (dragOffset.value > SWIPE_THRESHOLD) {

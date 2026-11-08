@@ -122,6 +122,7 @@ function setupPlacesMock(page: Page, options: MockPlacesOptions = {}) {
 
     const lowerQ = q.toLowerCase();
     let matched: PlaceResult[] = [];
+
     for (const [key, results] of Object.entries(MOCK_PLACES)) {
       if (lowerQ.includes(key)) {
         matched = results;
@@ -143,9 +144,11 @@ function setupPlacesMock(page: Page, options: MockPlacesOptions = {}) {
 async function openNewSpotModal(page: Page) {
   await page.goto('/excursions?group=spots');
   const spotsTab = page.locator('.segmented-option', { hasText: 'Spots' });
+
   if (await spotsTab.isVisible()) {
     await spotsTab.click();
   }
+
   const addBtn = page.getByRole('button', { name: 'Neuer Spot' });
   await expect(addBtn).toBeVisible();
   const draftsLoaded = page
@@ -162,6 +165,7 @@ async function openNewSpotModal(page: Page) {
 
   // If a draft was restored, discard it to ensure pristine state
   const discardBtn = modal.locator('.draft-discard-btn');
+
   if (await discardBtn.isVisible()) {
     await discardBtn.click();
     await expect(discardBtn).toBeHidden();
@@ -170,8 +174,10 @@ async function openNewSpotModal(page: Page) {
 
   // If Standort section is collapsed, expand it
   const locationBtn = modal.getByRole('button', { name: 'Standort', exact: true });
+
   if (await locationBtn.isVisible()) {
     const isExpanded = await locationBtn.getAttribute('aria-expanded');
+
     if (isExpanded === 'false') {
       await locationBtn.click();
     }
@@ -243,7 +249,11 @@ async function clickMiniMap(picker: Locator, xRatio = 0.5, yRatio = 0.5) {
   await expect(mapEl).toBeVisible();
   await mapEl.scrollIntoViewIfNeeded();
   const box = await mapEl.boundingBox();
-  if (!box) throw new Error('Location picker map has no bounding box');
+
+  if (!box) {
+    throw new Error('Location picker map has no bounding box');
+  }
+
   await mapEl.click({
     position: {
       x: Math.round(box.width * xRatio),
@@ -383,6 +393,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
         const lastReq = requests[requests.length - 1];
         expect(lastReq.q?.toLowerCase()).toContain('central');
+
         // If proximity bias is supplied from the active trip, lat/lng params should be present
         if (lastReq.lat) {
           expect(Number(lastReq.lat)).toBeGreaterThan(0);
@@ -400,10 +411,12 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
         await input.fill('Central');
 
         const loader = picker.locator('.spinner.input-spinner, .location-search-wrap.is-loading');
+
         // Visual indicator must be displayed during delayed network fetch
         if (await loader.count()) {
           await expect(loader.first()).toBeVisible();
         }
+
         await expect(getDropdown(page)).toBeVisible({ timeout: 5000 });
       });
 
@@ -620,8 +633,10 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
         const editModal = page.locator('.modal');
         const locationBtn = editModal.getByRole('button', { name: 'Standort', exact: true });
+
         if (await locationBtn.isVisible()) {
           const isExpanded = await locationBtn.getAttribute('aria-expanded');
+
           if (isExpanded === 'false') {
             await locationBtn.click();
           }
@@ -869,6 +884,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       // The UI must not crash or display an unhandled error alert
       const dropdown = getDropdown(page);
+
       if (await dropdown.isVisible()) {
         await expect(getDropdownOptions(page)).toHaveCount(0);
       }
@@ -903,6 +919,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       // Verify that no script execution or broken markup occurs
       const dropdown = getDropdown(page);
+
       if (await dropdown.isVisible()) {
         const text = await dropdown.innerText();
         expect(text).not.toContain('<script>');
@@ -1036,16 +1053,20 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
       const titleDisplay = modal.locator('.status-title');
       const titleInput = modal.locator('input[placeholder*="Titel"], input[name="title"]');
       let currentTitle = '';
+
       if (await titleDisplay.isVisible()) {
         currentTitle = (await titleDisplay.textContent())?.trim() || '';
       } else if (await titleInput.isVisible()) {
         currentTitle = await titleInput.inputValue();
       }
+
       const uniqueTitle = currentTitle || `Café Central Visit ${Date.now()}`;
+
       if (!currentTitle) {
         if (await modal.locator('.manual-details-btn').isVisible()) {
           await modal.locator('.manual-details-btn').click();
         }
+
         await titleInput.fill(uniqueTitle);
       }
 
@@ -1066,6 +1087,7 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       // Switch category to "Unterkunft"
       const categoryCombobox = modal.locator('.category-combobox input, select');
+
       if (await categoryCombobox.isVisible()) {
         await categoryCombobox.fill('Unterkunft');
         await page.keyboard.press('Enter');
@@ -1164,8 +1186,10 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
 
       const editModal = page.locator('.modal');
       const locationBtn = editModal.getByRole('button', { name: 'Standort', exact: true });
+
       if (await locationBtn.isVisible()) {
         const isExpanded = await locationBtn.getAttribute('aria-expanded');
+
         if (isExpanded === 'false') {
           await locationBtn.click();
         }
