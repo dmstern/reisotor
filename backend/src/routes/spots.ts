@@ -242,89 +242,85 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     let previewContact: string | null = null;
     let previewSourceUrl: string | null = null;
 
-    if (maps_link) {
-      if (isBookingLinkUrl(maps_link)) {
-        const bookingPreview = await fetchAccommodationPreview(maps_link);
+    if (maps_link && isBookingLinkUrl(maps_link)) {
+      const bookingPreview = await fetchAccommodationPreview(maps_link);
 
-        if (bookingPreview) {
-          if (bookingPreview.name && !previewName) {
-            previewName = bookingPreview.name;
-          }
-
-          if (bookingPreview.imageUrl) {
-            previewImage = bookingPreview.imageUrl;
-            previewImages.push(bookingPreview.imageUrl);
-          }
-
-          if (bookingPreview.images?.length) {
-            for (const img of bookingPreview.images) {
-              if (!previewImages.includes(img)) {
-                previewImages.push(img);
-              }
-            }
-          }
-
-          previewCategory = 'Unterkunft';
-
-          if (bookingPreview.address) {
-            previewAddress = bookingPreview.address;
-          }
-
-          if (bookingPreview.city && !previewCity) {
-            previewCity = bookingPreview.city;
-          }
-
-          if (bookingPreview.amount != null) {
-            previewAmount = bookingPreview.amount;
-          }
-
-          if (bookingPreview.currency) {
-            previewCurrency = bookingPreview.currency;
-          }
-
-          if (bookingPreview.lat != null && previewLat == null) {
-            previewLat = bookingPreview.lat;
-          }
-
-          if (bookingPreview.lng != null && previewLng == null) {
-            previewLng = bookingPreview.lng;
-          }
-
-          if (bookingPreview.checkin) {
-            previewCheckin = bookingPreview.checkin;
-          }
-
-          if (bookingPreview.checkout) {
-            previewCheckout = bookingPreview.checkout;
-          }
-
-          if (bookingPreview.startDate) {
-            previewStartDate = bookingPreview.startDate;
-          }
-
-          if (bookingPreview.endDate) {
-            previewEndDate = bookingPreview.endDate;
-          }
-
-          if (bookingPreview.contact) {
-            previewContact = bookingPreview.contact;
-          }
-
-          if (bookingPreview.sourceUrl) {
-            previewSourceUrl = bookingPreview.sourceUrl;
-          }
-        }
-      } else {
-        const linkPreview = await fetchPlacePreview(maps_link);
-
-        if (linkPreview.name && !previewName) {
-          previewName = linkPreview.name;
+      if (bookingPreview) {
+        if (bookingPreview.name && !previewName) {
+          previewName = bookingPreview.name;
         }
 
-        if (linkPreview.imageUrl) {
-          previewImage = linkPreview.imageUrl;
-          previewImages.push(linkPreview.imageUrl);
+        if (bookingPreview.imageUrl) {
+          previewImage = bookingPreview.imageUrl;
+          previewImages.push(bookingPreview.imageUrl);
         }
+
+        for (const img of bookingPreview.images ?? []) {
+          if (!previewImages.includes(img)) {
+            previewImages.push(img);
+          }
+        }
+
+        previewCategory = 'Unterkunft';
+
+        if (bookingPreview.address) {
+          previewAddress = bookingPreview.address;
+        }
+
+        if (bookingPreview.city && !previewCity) {
+          previewCity = bookingPreview.city;
+        }
+
+        if (bookingPreview.amount != null) {
+          previewAmount = bookingPreview.amount;
+        }
+
+        if (bookingPreview.currency) {
+          previewCurrency = bookingPreview.currency;
+        }
+
+        if (bookingPreview.lat != null && previewLat == null) {
+          previewLat = bookingPreview.lat;
+        }
+
+        if (bookingPreview.lng != null && previewLng == null) {
+          previewLng = bookingPreview.lng;
+        }
+
+        if (bookingPreview.checkin) {
+          previewCheckin = bookingPreview.checkin;
+        }
+
+        if (bookingPreview.checkout) {
+          previewCheckout = bookingPreview.checkout;
+        }
+
+        if (bookingPreview.startDate) {
+          previewStartDate = bookingPreview.startDate;
+        }
+
+        if (bookingPreview.endDate) {
+          previewEndDate = bookingPreview.endDate;
+        }
+
+        if (bookingPreview.contact) {
+          previewContact = bookingPreview.contact;
+        }
+
+        if (bookingPreview.sourceUrl) {
+          previewSourceUrl = bookingPreview.sourceUrl;
+        }
+      }
+    } else if (maps_link) {
+      const linkPreview = await fetchPlacePreview(maps_link);
+
+      if (linkPreview.name && !previewName) {
+        previewName = linkPreview.name;
+      }
+
+      if (linkPreview.imageUrl) {
+        previewImage = linkPreview.imageUrl;
+        previewImages.push(linkPreview.imageUrl);
       }
     }
 
