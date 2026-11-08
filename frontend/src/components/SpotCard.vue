@@ -5,6 +5,7 @@ import { IconFlag, IconFlagFilled } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import { useDrawersStore } from '../stores/drawers';
 import CategoryChip from './CategoryChip.vue';
+import EditButton from './EditButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
@@ -143,7 +144,6 @@ const cardRotation = computed(() => {
       :creator-label="creatorLabel"
       :is-accommodation="isAccommodation"
       :heading-tag="headingTag"
-      @edit="emit('edit', spot)"
     />
 
     <div class="body">
@@ -162,8 +162,21 @@ const cardRotation = computed(() => {
             :expanded="expanded"
             @edit="emit('edit', spot)"
           />
-          <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
+          <CategoryChip
+            :category="spot.category"
+            :icon-only="expanded ? false : iconOnlyCategory"
+          />
           <PendingSyncBadge v-if="spot._pending" />
+          <Transition name="fade">
+            <EditButton
+              v-if="expanded"
+              small
+              shape="circle"
+              variant="surface"
+              class="spot-edit-btn"
+              @click="emit('edit', spot)"
+            />
+          </Transition>
         </div>
       </div>
 
@@ -437,29 +450,42 @@ const cardRotation = computed(() => {
 }
 
 .spot-card.expanded:has(
-    .image.is-expanded:hover:not(:has(.overlay-edit-btn:hover, a:hover)),
-    .card-badge-group:hover:not(:has(.spot-location-badge:hover))
+    .image.is-expanded:hover:not(:has(a:hover)),
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
   )
   .body {
   transform: translateY(-2px);
   opacity: 0.84;
 }
 
-.spot-card.expanded:has(.card-badge-group:hover) :deep(.image.is-expanded) {
+.spot-card.expanded:has(
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+  )
+  :deep(.image.is-expanded) {
   box-shadow:
     inset 0 0 0 2px var(--color-primary),
     0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
-.spot-card.expanded:has(.card-badge-group:hover) :deep(.spot-collapse-pill) {
+.spot-card.expanded:has(
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+  )
+  :deep(.spot-collapse-pill) {
   background: var(--color-primary);
   border-color: rgba(255, 255, 255, 0.65);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transform: translateY(-1px);
 }
 
-.spot-card.expanded:has(.card-badge-group:hover) :deep(.spot-collapse-chevron) {
+.spot-card.expanded:has(
+    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+  )
+  :deep(.spot-collapse-chevron) {
   transform: translateY(-2px);
+}
+
+.spot-edit-btn {
+  flex-shrink: 0;
 }
 
 .spot-card:not(.expanded) .body {
