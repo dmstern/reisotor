@@ -46,14 +46,16 @@ describe('spots route coordinate preservation', () => {
         lat: 38.72,
         lng: -9.12,
         address: 'Rua de São Pedro 12',
+        link: 'https://www.booking.com/hotel/pt/alfama.html',
       },
     });
     expect(createRes.statusCode).toBe(201);
     const created = createRes.json();
     expect(created.lat).toBe(38.72);
     expect(created.lng).toBe(-9.12);
+    expect(created.link).toBe('https://www.booking.com/hotel/pt/alfama.html');
 
-    // 2. Edit spot: change title/address, but DO NOT provide lat/lng/maps_link
+    // 2. Edit spot: change title/address/link, but DO NOT provide lat/lng/maps_link
     const updateRes = await app.inject({
       method: 'PUT',
       url: `/api/spots/${created.id}`,
@@ -63,12 +65,13 @@ describe('spots route coordinate preservation', () => {
         title: 'Hotel Alfama Renoviert',
         category: 'Unterkunft',
         address: 'Rua dos Caminhos de Ferro 40',
+        link: 'https://www.airbnb.de/rooms/998877',
         // lat, lng, maps_link omitted/undefined!
       },
     });
     expect(updateRes.statusCode).toBe(200);
 
-    // 3. Verify coordinates were not wiped
+    // 3. Verify coordinates were not wiped and link was updated
     const getRes = await app.inject({
       method: 'GET',
       url: `/api/spots?trip_id=${tripId}`,
@@ -78,6 +81,7 @@ describe('spots route coordinate preservation', () => {
     const spot = spots.find((s: { id: number }) => s.id === created.id);
     expect(spot.title).toBe('Hotel Alfama Renoviert');
     expect(spot.address).toBe('Rua dos Caminhos de Ferro 40');
+    expect(spot.link).toBe('https://www.airbnb.de/rooms/998877');
     expect(spot.lat).toBe(38.72);
     expect(spot.lng).toBe(-9.12);
   });
@@ -268,9 +272,11 @@ describe('spots route coordinate preservation', () => {
         })
       );
 
+      const testLink =
+        'https://www.booking.com/hotel/at/grand-hotel-wien.html?checkin=2026-09-10&checkout=2026-09-15&aid=123&utm_source=test';
       const res = await app.inject({
         method: 'GET',
-        url: '/api/spots/preview?maps_link=https://www.booking.com/hotel/at/grand-hotel-wien.html?checkin=2026-09-10&checkout=2026-09-15',
+        url: `/api/spots/preview?maps_link=${encodeURIComponent(testLink)}`,
         headers: { cookie },
       });
 
@@ -289,6 +295,9 @@ describe('spots route coordinate preservation', () => {
       expect(data.checkout).toBe('11:00');
       expect(data.startDate).toBe('2026-09-10');
       expect(data.endDate).toBe('2026-09-15');
+      expect(data.sourceUrl).toBe(
+        'https://www.booking.com/hotel/at/grand-hotel-wien.html?checkin=2026-09-10&checkout=2026-09-15'
+      );
       expect(data.contact).toBe('+43 1 515800');
     });
   });

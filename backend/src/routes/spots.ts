@@ -36,6 +36,7 @@ interface SpotBody {
   contact?: string;
   amount?: number;
   paid_by_user_id?: number | null;
+  link?: string | null;
 }
 
 interface SpotRow {
@@ -45,6 +46,7 @@ interface SpotRow {
   lng: number | null;
   category: string | null;
   budget_expense_id: number | null;
+  link?: string | null;
 }
 
 interface CommentBody {
@@ -108,7 +110,7 @@ const selectSpotsByTripStmt = db.prepare(
 );
 const selectSpotByIdStmt = db.prepare('SELECT * FROM spots WHERE id = ?');
 const selectSpotForUpdateStmt = db.prepare(
-  'SELECT id, trip_id, lat, lng, budget_expense_id FROM spots WHERE id = ?'
+  'SELECT id, trip_id, lat, lng, budget_expense_id, link FROM spots WHERE id = ?'
 );
 const selectSpotTripIdStmt = db.prepare('SELECT id, trip_id FROM spots WHERE id = ?');
 const selectSpotForDeleteStmt = db.prepare(
@@ -228,6 +230,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     let previewStartDate: string | null = null;
     let previewEndDate: string | null = null;
     let previewContact: string | null = null;
+    let previewSourceUrl: string | null = null;
 
     if (maps_link) {
       if (isBookingLinkUrl(maps_link)) {
@@ -259,6 +262,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
           if (bookingPreview.startDate) previewStartDate = bookingPreview.startDate;
           if (bookingPreview.endDate) previewEndDate = bookingPreview.endDate;
           if (bookingPreview.contact) previewContact = bookingPreview.contact;
+          if (bookingPreview.sourceUrl) previewSourceUrl = bookingPreview.sourceUrl;
         }
       } else {
         const linkPreview = await fetchPlacePreview(maps_link);
@@ -310,6 +314,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       startDate: previewStartDate,
       endDate: previewEndDate,
       contact: previewContact,
+      sourceUrl: previewSourceUrl,
     };
   });
 
@@ -350,9 +355,10 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       .prepare(
         `INSERT INTO spots (
            trip_id, title, image_url, category, note, note_format, maps_link, lat, lng, created_by, is_home,
-           address, start_date, end_date, checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id
+           address, start_date, end_date, checkin, checkout, contact, amount, paid_by_user_id, budget_expense_id,
+           link
          )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         trip_id,
@@ -374,7 +380,8 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         body.contact ?? null,
         body.amount ?? null,
         body.paid_by_user_id ?? null,
-        budgetExpenseId
+        budgetExpenseId,
+        body.link ?? null
       );
     recordActivity(
       trip_id,
@@ -442,7 +449,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     db.prepare(
       `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, note_format = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?,
          address = ?, start_date = ?, end_date = ?, checkin = ?, checkout = ?, contact = ?, amount = ?,
-         paid_by_user_id = ?, budget_expense_id = ?
+         paid_by_user_id = ?, budget_expense_id = ?, link = ?
        WHERE id = ?`
     ).run(
       title,
@@ -463,6 +470,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       body.amount ?? null,
       body.paid_by_user_id ?? null,
       budgetExpenseId,
+      body.link !== undefined ? body.link : (existing.link ?? null),
       req.params.id
     );
 

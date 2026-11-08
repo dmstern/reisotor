@@ -18,6 +18,7 @@ import {
   isVacationCategory,
 } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { normalizeWebUrl } from '../utils/linkLabel';
 import { isEmptyRichText } from '../utils/richText';
 import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 import { isBookingLink } from '../utils/locationInputClassifier';
@@ -40,6 +41,7 @@ export interface SpotFormData {
   contact: string;
   amount: string;
   paid_by_user_id: string;
+  link: string;
   tourTitles: string[];
   scheduledDates: string[];
   scheduledDate?: string;
@@ -76,6 +78,7 @@ export function emptySpotForm(): SpotFormData {
     contact: '',
     amount: '',
     paid_by_user_id: '',
+    link: '',
     tourTitles: [] as string[],
     scheduledDates: [] as string[],
     scheduledDate: '',
@@ -245,6 +248,11 @@ export function useSpotForm(options: UseSpotFormOptions) {
     const initialPaid =
       editingSpot.value.paid_by_user_id != null ? String(editingSpot.value.paid_by_user_id) : '';
     return (editSpotForm.value.paid_by_user_id || '').trim() !== initialPaid.trim();
+  });
+
+  const isEditSpotLinkModified = computed(() => {
+    if (!editingSpot.value) return false;
+    return (editSpotForm.value.link || '').trim() !== (editingSpot.value.link || '').trim();
   });
 
   const isEditSpotDirty = computed(
@@ -628,6 +636,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
         startDate?: string | null;
         endDate?: string | null;
         contact?: string | null;
+        sourceUrl?: string | null;
       }>(`/spots/preview?${params.toString()}`);
       if (reqId !== previewRequestId) return;
       if (preview.images && preview.images.length > 0) {
@@ -636,6 +645,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
         spotPreviewImages.value = [preview.imageUrl];
       }
       const isBooking = isBookingLink(mapsLink);
+      if (isBooking) {
+        form.value.link = preview.sourceUrl || mapsLink;
+      }
       if (preview.name && (!form.value.title.trim() || isBooking)) {
         form.value.title = preview.name;
       }
@@ -750,6 +762,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
             ? users.value[0].id
             : (auth.user?.id ?? undefined)
           : undefined,
+      link: f.link ? normalizeWebUrl(f.link) : undefined,
     };
   }
 
@@ -961,6 +974,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       contact: spot.contact ?? '',
       amount: spot.amount != null ? String(spot.amount) : '',
       paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
+      link: spot.link ?? '',
       tourTitles: tourTitlesFor(spot.id),
       scheduledDates: [],
       scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
@@ -1123,5 +1137,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     isEditSpotContactModified,
     isEditSpotAmountModified,
     isEditSpotPaidByModified,
+    isEditSpotLinkModified,
   };
 }

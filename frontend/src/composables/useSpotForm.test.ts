@@ -146,6 +146,7 @@ describe('useSpotForm - openSpotForm', () => {
       startDate: '2026-09-10',
       endDate: '2026-09-15',
       contact: '+43 1 515800',
+      sourceUrl: 'https://www.booking.com/hotel/at/grand-hotel-wien.html',
       lat: 48.2014,
       lng: 16.3712,
     });
@@ -171,6 +172,7 @@ describe('useSpotForm - openSpotForm', () => {
     expect(spotForm.value.start_date).toBe('2026-09-10');
     expect(spotForm.value.end_date).toBe('2026-09-15');
     expect(spotForm.value.contact).toBe('+43 1 515800');
+    expect(spotForm.value.link).toBe('https://www.booking.com/hotel/at/grand-hotel-wien.html');
     expect(spotManualPin.value).toEqual({ lat: 48.2014, lng: 16.3712 });
   });
 

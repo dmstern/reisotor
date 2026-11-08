@@ -544,6 +544,7 @@ export interface Spot {
   amount: number | null;
   paid_by_user_id: number | null;
   budget_expense_id: number | null;
+  link?: string | null;
   /** Unabhängig von der aus schedule_items abgeleiteten geplant/ungeplant-Anzeige: explizit als
    *  tatsächlich besucht markiert, auch für spontane, nie geplante Besuche nutzbar (siehe
    *  stores/spots.ts's setDone()). */

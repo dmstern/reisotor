@@ -93,6 +93,71 @@ export function cleanAccommodationTitle(raw: string): string {
   return title.trim();
 }
 
+const TRACKING_QUERY_PARAMS = new Set([
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'fbclid',
+  'gclid',
+  'msclkid',
+  'ref',
+  'referrer',
+  // Booking.com Tracking & Session-Parameter
+  'aid',
+  'label',
+  'sid',
+  'srepoch',
+  'srpvid',
+  'ucfs',
+  'hapos',
+  'hpos',
+  'matching_block_id',
+  'sb_price_type',
+  'sr_order',
+  'sr_pri_blocks',
+  'type',
+  // Airbnb Tracking-Parameter
+  'source_impression_id',
+  'previous_page_section_name',
+  'federated_search_id',
+  'search_id',
+  'section_id',
+  // Trivago Tracking-Parameter
+  'pceid',
+  'psrid',
+]);
+
+/**
+ * Bereinigt eine Buchungs- oder Web-URL von überflüssigen Marketing- und Tracking-Parametern,
+ * behält jedoch Reisedaten, Zimmer-IDs und Orts-IDs bei.
+ */
+export function cleanBookingUrl(rawUrl: string): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  let normalized = trimmed;
+  if (!/^[a-z]+:\/\//i.test(normalized)) {
+    normalized = 'https://' + normalized;
+  }
+  try {
+    const url = new URL(normalized);
+    const keysToDelete: string[] = [];
+    url.searchParams.forEach((_, key) => {
+      const lower = key.toLowerCase();
+      if (TRACKING_QUERY_PARAMS.has(lower) || lower.startsWith('utm_')) {
+        keysToDelete.push(key);
+      }
+    });
+    for (const k of keysToDelete) {
+      url.searchParams.delete(k);
+    }
+    return url.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
 /** Extrahiert Datumsangaben im Format YYYY-MM-DD oder YYYYMMDD aus Query-Parametern. */
 export function parseDateParam(val: string | null | undefined): string | null {
   if (!val) return null;
@@ -817,6 +882,6 @@ export async function fetchAccommodationPreview(
     startDate,
     endDate,
     contact: meta.contact ?? null,
-    sourceUrl: trimmed,
+    sourceUrl: cleanBookingUrl(trimmed),
   };
 }

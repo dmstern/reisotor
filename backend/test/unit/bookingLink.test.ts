@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   isBookingLinkUrl,
   cleanAccommodationTitle,
+  cleanBookingUrl,
   parseDateParam,
   parsePrice,
   extractJsonLdBlocks,
@@ -106,6 +107,41 @@ describe('bookingLink', () => {
       expect(cleanAccommodationTitle('ferienpark ma1-4ritz')).toBe('ferienpark müritz');
       expect(cleanAccommodationTitle('hotel ba-1-4ren')).toBe('hotel bären');
       expect(cleanAccommodationTitle('gasthof scho1-4nblick')).toBe('gasthof schönblick');
+    });
+  });
+
+  describe('cleanBookingUrl', () => {
+    it('removes marketing and tracking parameters while preserving booking details', () => {
+      const dirtyBookingUrl =
+        'https://www.booking.com/hotel/de/ferienpark.html?aid=304142&label=mkt123&sid=832bdf&checkin=2026-12-11&checkout=2026-12-14&group_adults=2&utm_source=google&srepoch=1794149';
+      const cleaned = cleanBookingUrl(dirtyBookingUrl);
+      const url = new URL(cleaned);
+
+      expect(url.searchParams.get('checkin')).toBe('2026-12-11');
+      expect(url.searchParams.get('checkout')).toBe('2026-12-14');
+      expect(url.searchParams.get('group_adults')).toBe('2');
+      expect(url.searchParams.has('aid')).toBe(false);
+      expect(url.searchParams.has('label')).toBe(false);
+      expect(url.searchParams.has('sid')).toBe(false);
+      expect(url.searchParams.has('utm_source')).toBe(false);
+      expect(url.searchParams.has('srepoch')).toBe(false);
+    });
+
+    it('cleans Airbnb tracking parameters', () => {
+      const dirtyAirbnb =
+        'https://www.airbnb.de/rooms/12345?check_in=2026-12-11&check_out=2026-12-13&source_impression_id=p3_xyz&previous_page_section_name=1000';
+      const cleaned = cleanBookingUrl(dirtyAirbnb);
+      const url = new URL(cleaned);
+
+      expect(url.searchParams.get('check_in')).toBe('2026-12-11');
+      expect(url.searchParams.get('check_out')).toBe('2026-12-13');
+      expect(url.searchParams.has('source_impression_id')).toBe(false);
+      expect(url.searchParams.has('previous_page_section_name')).toBe(false);
+    });
+
+    it('handles schemeless URLs and preserves path', () => {
+      const cleaned = cleanBookingUrl('booking.com/hotel/at/sacher.html?utm_medium=cpc');
+      expect(cleaned).toBe('https://booking.com/hotel/at/sacher.html');
     });
   });
 

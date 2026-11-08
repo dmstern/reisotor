@@ -93,4 +93,37 @@ describe('SpotDetails', () => {
     expect(html).toContain('bezahlt von Sarah');
     expect(html).toContain('Kosten kopieren');
   });
+
+  it('renders booking link with label Buchung for accommodation', async () => {
+    const html = await mountComponent({
+      spot: {
+        ...baseSpot,
+        category: 'Unterkunft',
+        link: 'https://www.booking.com/hotel/de/ferienpark.html?checkin=2026-12-11',
+      },
+      expanded: true,
+      isAccommodation: true,
+    });
+    expect(html).toContain('Buchung');
+    expect(html).toContain('booking.com…');
+    expect(html).toContain('https://www.booking.com/hotel/de/ferienpark.html?checkin=2026-12-11');
+    expect(html).toContain('Buchungs-Link kopieren');
+  });
+
+  it('renders website link with label Website for non-accommodation spots', async () => {
+    const html = await mountComponent({
+      spot: {
+        ...baseSpot,
+        category: 'Sehenswürdigkeit',
+        address: null,
+        link: 'https://www.louvre.fr/tickets',
+      },
+      expanded: true,
+      isAccommodation: false,
+    });
+    expect(html).toContain('Website');
+    expect(html).toContain('louvre.fr…');
+    expect(html).toContain('https://www.louvre.fr/tickets');
+    expect(html).toContain('Link kopieren');
+  });
 });
