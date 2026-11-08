@@ -113,7 +113,12 @@ export default defineConfig({
       scss: {
         api: 'modern-compiler',
         additionalData: (source: string, file: string) => {
-          if (file.endsWith('_breakpoints.scss') || file.endsWith('breakpoints.scss')) {
+          if (
+            file.endsWith('_breakpoints.scss') ||
+            file.endsWith('breakpoints.scss') ||
+            file.endsWith('_touch.scss') ||
+            file.endsWith('touch.scss')
+          ) {
             return source;
           }
           return `@use "@/styles/breakpoints" as *;\n${source}`;

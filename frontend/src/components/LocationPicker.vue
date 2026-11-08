@@ -730,6 +730,11 @@ defineExpose({
   min-height: 440px;
 }
 
+.has-polaroid-media .location-picker-map {
+  height: 475px;
+  min-height: 475px;
+}
+
 .mobile-map-expand-btn {
   display: none;
 }

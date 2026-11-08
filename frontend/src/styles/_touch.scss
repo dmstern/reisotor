@@ -1,0 +1,74 @@
+// =============================================================================
+// Touch Target & Hitbox Mixins (WCAG 2.5.5 / Issue #686 / Issue #697)
+//
+// Single Source of Truth für barrierefreie Mindest-Bedienflächen (Touch-Targets)
+// auf Mobil- und Touch-Geräten (Default: 44x44px gemäß DESIGN.md §7.1 / WCAG 2.5.5).
+// =============================================================================
+
+/// Erweitert die Klick-/Touch-Hitbox eines kompakten interaktiven Elements
+/// (Standard: 44x44px gemäß WCAG 2.5.5 / DESIGN.md §7.1) über ein unsichtbares Pseudo-Element.
+/// Das Element selbst behält seine visuelle Größe (z. B. 20x20px), während die
+/// effektive Berührungsfläche vergrößert wird.
+///
+/// @param {Length} $size [44px] - Mindestgröße der Hitbox (Breite & Höhe)
+/// @param {String} $pseudo ['after'] - Verwendetes Pseudo-Element ('after' oder 'before')
+/// @param {Boolean} $only-touch [true] - Wenn true, nur auf Touchscreens (@media (pointer: coarse)) aktiv
+@mixin touch-target($size: 44px, $pseudo: 'after', $only-touch: true) {
+  position: relative;
+
+  @if $only-touch {
+    @media (pointer: coarse) {
+      &::#{$pseudo} {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: $size;
+        height: $size;
+        min-width: $size;
+        min-height: $size;
+        @content;
+      }
+    }
+  } @else {
+    &::#{$pseudo} {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: $size;
+      height: $size;
+      min-width: $size;
+      min-height: $size;
+      @content;
+    }
+  }
+}
+
+/// Alias für touch-target
+@mixin bigger-touch-area($size: 44px, $pseudo: 'after', $only-touch: true) {
+  @include touch-target($size, $pseudo, $only-touch) {
+    @content;
+  }
+}
+
+/// Stellt sicher, dass das Element selbst mindestens $size groß ist.
+/// Nützlich für reguläre Buttons, Chips oder Listenelemente.
+///
+/// @param {Length} $size [44px] - Mindestgröße (Breite & Höhe)
+/// @param {Boolean} $only-touch [true] - Wenn true, nur auf Touchscreens (@media (pointer: coarse))
+@mixin min-touch-target($size: 44px, $only-touch: true) {
+  @if $only-touch {
+    @media (pointer: coarse) {
+      min-width: $size;
+      min-height: $size;
+      @content;
+    }
+  } @else {
+    min-width: $size;
+    min-height: $size;
+    @content;
+  }
+}

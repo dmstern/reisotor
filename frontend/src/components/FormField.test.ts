@@ -73,4 +73,33 @@ describe('FormField component', () => {
     expect(html).toContain('is-modified');
     expect(html).toContain('modified-dot');
   });
+
+  it('renders custom labelClass when provided', async () => {
+    const app = createApp({
+      render: () => h(FormField, { label: 'Titel', labelClass: 'custom-label-cls' }),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('form-field-label');
+    expect(html).toContain('custom-label-cls');
+  });
+
+  it('renders extra slot content in form field header', async () => {
+    const app = createApp({
+      render: () =>
+        h(
+          FormField,
+          { label: 'Adresse' },
+          {
+            default: () => h('input'),
+            extra: () => h('span', { class: 'status-badge' }, 'Pin gesetzt'),
+          }
+        ),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('form-field-header');
+    expect(html).toContain('status-badge');
+    expect(html).toContain('Pin gesetzt');
+  });
 });
