@@ -1,7 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { db, ensureDefaultSharedBudget } from '../db/index.js';
 import { fetchPlacePreview, resolveLatLng, tilePreviewUrl } from '../utils/mapsLink.js';
-import { isBookingLinkUrl, fetchAccommodationPreview } from '../utils/bookingLink.js';
+import {
+  isBookingLinkUrl,
+  fetchAccommodationPreview,
+  cleanBookingUrl,
+} from '../utils/bookingLink.js';
 import { fetchPlacePhotos } from '../utils/placePhoto.js';
 import { localizeImageUrl } from '../utils/remoteImage.js';
 import { associateUploadWithTrip } from '../uploadRegistry.js';
@@ -262,29 +266,53 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
           previewCategory = 'Unterkunft';
 
-          if (bookingPreview.address) {previewAddress = bookingPreview.address;}
+          if (bookingPreview.address) {
+            previewAddress = bookingPreview.address;
+          }
 
-          if (bookingPreview.city && !previewCity) {previewCity = bookingPreview.city;}
+          if (bookingPreview.city && !previewCity) {
+            previewCity = bookingPreview.city;
+          }
 
-          if (bookingPreview.amount != null) {previewAmount = bookingPreview.amount;}
+          if (bookingPreview.amount != null) {
+            previewAmount = bookingPreview.amount;
+          }
 
-          if (bookingPreview.currency) {previewCurrency = bookingPreview.currency;}
+          if (bookingPreview.currency) {
+            previewCurrency = bookingPreview.currency;
+          }
 
-          if (bookingPreview.lat != null && previewLat == null) {previewLat = bookingPreview.lat;}
+          if (bookingPreview.lat != null && previewLat == null) {
+            previewLat = bookingPreview.lat;
+          }
 
-          if (bookingPreview.lng != null && previewLng == null) {previewLng = bookingPreview.lng;}
+          if (bookingPreview.lng != null && previewLng == null) {
+            previewLng = bookingPreview.lng;
+          }
 
-          if (bookingPreview.checkin) {previewCheckin = bookingPreview.checkin;}
+          if (bookingPreview.checkin) {
+            previewCheckin = bookingPreview.checkin;
+          }
 
-          if (bookingPreview.checkout) {previewCheckout = bookingPreview.checkout;}
+          if (bookingPreview.checkout) {
+            previewCheckout = bookingPreview.checkout;
+          }
 
-          if (bookingPreview.startDate) {previewStartDate = bookingPreview.startDate;}
+          if (bookingPreview.startDate) {
+            previewStartDate = bookingPreview.startDate;
+          }
 
-          if (bookingPreview.endDate) {previewEndDate = bookingPreview.endDate;}
+          if (bookingPreview.endDate) {
+            previewEndDate = bookingPreview.endDate;
+          }
 
-          if (bookingPreview.contact) {previewContact = bookingPreview.contact;}
+          if (bookingPreview.contact) {
+            previewContact = bookingPreview.contact;
+          }
 
-          if (bookingPreview.sourceUrl) {previewSourceUrl = bookingPreview.sourceUrl;}
+          if (bookingPreview.sourceUrl) {
+            previewSourceUrl = bookingPreview.sourceUrl;
+          }
         }
       } else {
         const linkPreview = await fetchPlacePreview(maps_link);
@@ -387,6 +415,8 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
     const { budgetExpenseId } = planBudgetExpense(trip_id, null, body);
     const isHtml = body.note_format === 'html';
+    const rawLink = body.link?.trim() || (isBookingLinkUrl(maps_link) ? maps_link?.trim() : null);
+    const spotLink = rawLink ? cleanBookingUrl(rawLink) : null;
     const result = db
       .prepare(
         `INSERT INTO spots (
@@ -417,7 +447,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         body.amount ?? null,
         body.paid_by_user_id ?? null,
         budgetExpenseId,
-        body.link ?? null
+        spotLink
       );
     recordActivity(
       trip_id,
@@ -501,6 +531,11 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       body
     );
     const isHtml = body.note_format === 'html';
+    let spotLink: string | null = existing.link ?? null;
+
+    if (body.link !== undefined) {
+      spotLink = body.link?.trim() ? cleanBookingUrl(body.link.trim()) : null;
+    }
 
     db.prepare(
       `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, note_format = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?,
@@ -526,7 +561,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       body.amount ?? null,
       body.paid_by_user_id ?? null,
       budgetExpenseId,
-      body.link !== undefined ? body.link : (existing.link ?? null),
+      spotLink,
       req.params.id
     );
 

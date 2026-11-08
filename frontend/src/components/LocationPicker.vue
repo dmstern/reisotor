@@ -315,7 +315,9 @@ const computedPlaceholder = computed(() => {
 });
 
 const computedPlaceholderPhrases = computed(() => {
-  if (props.placeholder) {return [props.placeholder];}
+  if (props.placeholder) {
+    return [props.placeholder];
+  }
 
   if (props.context === 'trip') {
     return DEFAULT_TRIP_PLACEHOLDER_PHRASES;

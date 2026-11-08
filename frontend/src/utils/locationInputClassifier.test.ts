@@ -233,6 +233,10 @@ describe('locationInputClassifier', () => {
         type: 'booking_link',
         url: 'https://airbnb.de/rooms/99999',
       });
+      expect(classifyLocationInput('pension-tirol.at/unterkunft/zimmer-1')).toEqual({
+        type: 'booking_link',
+        url: 'https://pension-tirol.at/unterkunft/zimmer-1',
+      });
     });
 
     it('isBookingLink helper correctly identifies booking domains and paths', () => {
@@ -242,6 +246,7 @@ describe('locationInputClassifier', () => {
       expect(isBookingLink('https://hotels.com/ho123/')).toBe(true);
       expect(isBookingLink('https://fewo-direkt.de/ferienwohnung/1')).toBe(true);
       expect(isBookingLink('https://alpen.at/ferienwohnung/bergblick')).toBe(true);
+      expect(isBookingLink('pension-tirol.at/unterkunft/zimmer-1')).toBe(true);
       expect(isBookingLink('https://example.com/not-a-hotel')).toBe(false);
       expect(isBookingLink('Wien')).toBe(false);
       expect(isBookingLink(null)).toBe(false);

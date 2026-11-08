@@ -20,11 +20,15 @@ export function linkLabel(href: string, fallback: string = href): string {
  * Stellt fehlendes "https://" voran, falls kein Protokoll angegeben wurde.
  */
 export function normalizeWebUrl(input: string | null | undefined): string {
-  if (!input) {return '';}
+  if (!input) {
+    return '';
+  }
 
   const trimmed = input.trim();
 
-  if (!trimmed) {return '';}
+  if (!trimmed) {
+    return '';
+  }
 
   if (/^[a-z]+:\/\//i.test(trimmed)) {
     return trimmed;

@@ -47,7 +47,9 @@ export function useAnimatedPlaceholder(
   const betweenDelay = options.betweenDelay ?? 350;
 
   const getFallback = (): string => {
-    if (typeof options.fallback === 'function') {return options.fallback() || '';}
+    if (typeof options.fallback === 'function') {
+      return options.fallback() || '';
+    }
 
     if (options.fallback && typeof options.fallback === 'object' && 'value' in options.fallback) {
       return options.fallback.value || '';
@@ -57,7 +59,9 @@ export function useAnimatedPlaceholder(
   };
 
   const isDisabled = (): boolean => {
-    if (typeof options.disabled === 'function') {return Boolean(options.disabled());}
+    if (typeof options.disabled === 'function') {
+      return Boolean(options.disabled());
+    }
 
     if (options.disabled && typeof options.disabled === 'object' && 'value' in options.disabled) {
       return Boolean(options.disabled.value);
@@ -99,7 +103,9 @@ export function useAnimatedPlaceholder(
   const step = () => {
     clearActiveTimer();
 
-    if (!isMounted) {return;}
+    if (!isMounted) {
+      return;
+    }
 
     if (isDisabled()) {
       currentPlaceholder.value = getFallback();

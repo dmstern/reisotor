@@ -914,7 +914,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
             ? users.value[0].id
             : (auth.user?.id ?? undefined)
           : undefined,
-      link: f.link ? normalizeWebUrl(f.link) : undefined,
+      link: f.link?.trim() ? normalizeWebUrl(f.link) : null,
     };
   }
 

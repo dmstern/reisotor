@@ -38,22 +38,30 @@ const BOOKING_DOMAINS_REGEX =
   /^(?:https?:\/\/)?(?:www\.)?(?:[a-z0-9-]+\.)*(?:booking\.com|airbnb\.[a-z.]+|abnb\.me|trivago\.[a-z.]+|fewo-direkt\.de|vrbo\.com|expedia\.[a-z.]+|hotels\.com|agoda\.com|hostelworld\.com|tripadvisor\.[a-z.]+|kayak\.[a-z.]+|momondo\.[a-z.]+|holidu\.[a-z.]+|hrs\.[a-z.]+|accor\.[a-z.]+|marriott\.[a-z.]+|hilton\.[a-z.]+|hyatt\.[a-z.]+|ihg\.[a-z.]+|bestwestern\.[a-z.]+)(?::\d+)?(?:\/.*)?$/i;
 
 const ACCOMMODATION_PATH_REGEX =
-  /^https?:\/\/[^/]+\/(?:hotel|hotels|rooms|room|accommodations|accommodation|unterkunft|ferienwohnung|chalet|resort|hostel|pension)\//i;
+  /^(?:https?:\/\/)?[^/]+\/(?:hotel|hotels|rooms|room|accommodations|accommodation|unterkunft|ferienwohnung|chalet|resort|hostel|pension)\//i;
 
 /**
  * Checks whether an input string represents a known booking or accommodation website link
  * (e.g. Booking.com, Airbnb, Trivago, Expedia, VRBO, or accommodation paths).
  */
 export function isBookingLink(input: string | null | undefined): boolean {
-  if (!input) {return false;}
+  if (!input) {
+    return false;
+  }
 
   const trimmed = input.trim();
 
-  if (!trimmed) {return false;}
+  if (!trimmed) {
+    return false;
+  }
 
-  if (BOOKING_DOMAINS_REGEX.test(trimmed)) {return true;}
+  if (BOOKING_DOMAINS_REGEX.test(trimmed)) {
+    return true;
+  }
 
-  if (ACCOMMODATION_PATH_REGEX.test(trimmed)) {return true;}
+  if (ACCOMMODATION_PATH_REGEX.test(trimmed)) {
+    return true;
+  }
 
   return false;
 }

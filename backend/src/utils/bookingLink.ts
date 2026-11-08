@@ -28,11 +28,15 @@ const ACCOMMODATION_PATH_REGEX =
 
 /** Prüft, ob ein URL-String zu einer bekannten Buchungsplattform oder Unterkunftsseite gehört. */
 export function isBookingLinkUrl(urlString: string | null | undefined): boolean {
-  if (!urlString) {return false;}
+  if (!urlString) {
+    return false;
+  }
 
   const trimmed = urlString.trim();
 
-  if (!trimmed) {return false;}
+  if (!trimmed) {
+    return false;
+  }
 
   let urlToTest = trimmed;
 
@@ -44,9 +48,13 @@ export function isBookingLinkUrl(urlString: string | null | undefined): boolean 
     const parsed = new URL(urlToTest);
     const host = parsed.hostname.toLowerCase();
 
-    if (BOOKING_DOMAINS_REGEX.test(host)) {return true;}
+    if (BOOKING_DOMAINS_REGEX.test(host)) {
+      return true;
+    }
 
-    if (ACCOMMODATION_PATH_REGEX.test(parsed.pathname)) {return true;}
+    if (ACCOMMODATION_PATH_REGEX.test(parsed.pathname)) {
+      return true;
+    }
   } catch {
     return false;
   }
@@ -58,7 +66,9 @@ export function isBookingLinkUrl(urlString: string | null | undefined): boolean 
 export function cleanAccommodationTitle(raw: string): string {
   let title = raw.trim();
 
-  if (!title) {return '';}
+  if (!title) {
+    return '';
+  }
 
   // Typische Booking.com-Zusätze: "Hotel Sacher Wien, Wien – Aktualisierte Preise für 2026"
   title = title.replace(/\s*[-–—]\s*Aktualisierte Preise.*$/i, '');
@@ -141,7 +151,9 @@ const TRACKING_QUERY_PARAMS = new Set([
  * behält jedoch Reisedaten, Zimmer-IDs und Orts-IDs bei.
  */
 export function cleanBookingUrl(rawUrl: string): string {
-  if (!rawUrl || typeof rawUrl !== 'string') {return '';}
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return '';
+  }
 
   const trimmed = rawUrl.trim();
   let normalized = trimmed;
@@ -173,7 +185,9 @@ export function cleanBookingUrl(rawUrl: string): string {
 
 /** Extrahiert Datumsangaben im Format YYYY-MM-DD oder YYYYMMDD aus Query-Parametern. */
 export function parseDateParam(val: string | null | undefined): string | null {
-  if (!val) {return null;}
+  if (!val) {
+    return null;
+  }
 
   const trimmed = val.trim();
 
@@ -192,22 +206,30 @@ export function parseDateParam(val: string | null | undefined): string | null {
 
 /** Extrahiert einen numerischen Betrag aus einem Preiswert (String oder Zahl). */
 export function parsePrice(val: unknown): number | null {
-  if (val == null) {return null;}
+  if (val == null) {
+    return null;
+  }
 
   if (typeof val === 'number') {
     return Number.isFinite(val) && val > 0 ? val : null;
   }
 
-  if (typeof val !== 'string') {return null;}
+  if (typeof val !== 'string') {
+    return null;
+  }
 
   let str = val.trim();
 
-  if (!str) {return null;}
+  if (!str) {
+    return null;
+  }
 
   // Währungssymbole und Buchstaben entfernen
   str = str.replace(/[^0-9.,]/g, '');
 
-  if (!str) {return null;}
+  if (!str) {
+    return null;
+  }
 
   // Format 1.250,50 vs 1,250.50
   if (str.includes('.') && str.includes(',')) {
@@ -226,7 +248,9 @@ export function parsePrice(val: unknown): number | null {
 
 /** Formatiert eine Zeitangabe (z. B. "15:00:00" -> "15:00"). */
 function formatTime(val: unknown): string | null {
-  if (!val || typeof val !== 'string') {return null;}
+  if (!val || typeof val !== 'string') {
+    return null;
+  }
 
   const match = /(\d{1,2}:\d{2})/.exec(val);
   return match ? match[1] : val.trim().slice(0, 10);
@@ -241,7 +265,9 @@ export function extractJsonLdBlocks(html: string): Record<string, unknown>[] {
   while ((match = scriptRegex.exec(html)) !== null) {
     const rawJson = match[1]?.trim();
 
-    if (!rawJson) {continue;}
+    if (!rawJson) {
+      continue;
+    }
 
     try {
       const parsed: unknown = JSON.parse(rawJson);
@@ -255,10 +281,14 @@ export function extractJsonLdBlocks(html: string): Record<string, unknown>[] {
 }
 
 function collectJsonLdObjects(obj: unknown, target: Record<string, unknown>[]) {
-  if (!obj) {return;}
+  if (!obj) {
+    return;
+  }
 
   if (Array.isArray(obj)) {
-    for (const item of obj) {collectJsonLdObjects(item, target);}
+    for (const item of obj) {
+      collectJsonLdObjects(item, target);
+    }
 
     return;
   }
@@ -297,7 +327,9 @@ function normalizeTypeString(val: string): string {
 }
 
 function isLodgingType(typeVal: unknown): boolean {
-  if (!typeVal) {return false;}
+  if (!typeVal) {
+    return false;
+  }
 
   if (typeof typeVal === 'string') {
     return LODGING_TYPES.has(normalizeTypeString(typeVal));
@@ -340,7 +372,9 @@ function extractMetaTagsAll(html: string, nameOrProperty: string): string[] {
     let m: RegExpExecArray | null;
 
     while ((m = reg.exec(html)) !== null) {
-      if (m[1]) {results.push(m[1].trim());}
+      if (m[1]) {
+        results.push(m[1].trim());
+      }
     }
   }
 
@@ -384,10 +418,14 @@ export function extractBookingMetadataFromHtml(
         let u = typeof img === 'string' ? img : img?.url || img?.contentUrl;
 
         if (u && typeof u === 'string') {
-          if (u.startsWith('//')) {u = 'https:' + u;}
+          if (u.startsWith('//')) {
+            u = 'https:' + u;
+          }
 
           if (isSafeUrl(u) && !isGenericPlaceholderImage(u)) {
-            if (!images.includes(u)) {images.push(u);}
+            if (!images.includes(u)) {
+              images.push(u);
+            }
           }
         }
       }
@@ -436,17 +474,27 @@ export function extractBookingMetadataFromHtml(
         } else {
           const parts: string[] = [];
 
-          if (street) {parts.push(street);}
+          if (street) {
+            parts.push(street);
+          }
 
           const locParts: string[] = [];
 
-          if (postal) {locParts.push(postal);}
+          if (postal) {
+            locParts.push(postal);
+          }
 
-          if (locality && (!street || !street.includes(locality))) {locParts.push(locality);}
+          if (locality && (!street || !street.includes(locality))) {
+            locParts.push(locality);
+          }
 
-          if (locParts.length > 0) {parts.push(locParts.join(' '));}
+          if (locParts.length > 0) {
+            parts.push(locParts.join(' '));
+          }
 
-          if (country && (!street || !street.includes(country))) {parts.push(country);}
+          if (country && (!street || !street.includes(country))) {
+            parts.push(country);
+          }
 
           if (parts.length > 0) {
             address = parts.join(', ');
@@ -476,7 +524,9 @@ export function extractBookingMetadataFromHtml(
       if (offers) {
         const p = parsePrice(offers.price ?? offers.lowPrice);
 
-        if (p != null) {amount = p;}
+        if (p != null) {
+          amount = p;
+        }
 
         if (offers.priceCurrency && typeof offers.priceCurrency === 'string') {
           currency = offers.priceCurrency.trim();
@@ -520,12 +570,18 @@ export function extractBookingMetadataFromHtml(
   for (const img of ogImages) {
     let cleanImg = img;
 
-    if (cleanImg.startsWith('//')) {cleanImg = 'https:' + cleanImg;}
+    if (cleanImg.startsWith('//')) {
+      cleanImg = 'https:' + cleanImg;
+    }
 
     if (isSafeUrl(cleanImg) && !isGenericPlaceholderImage(cleanImg)) {
-      if (!images.includes(cleanImg)) {images.push(cleanImg);}
+      if (!images.includes(cleanImg)) {
+        images.push(cleanImg);
+      }
 
-      if (!imageUrl) {imageUrl = cleanImg;}
+      if (!imageUrl) {
+        imageUrl = cleanImg;
+      }
     }
   }
 
@@ -566,17 +622,27 @@ export function extractBookingMetadataFromHtml(
         } else {
           const parts: string[] = [];
 
-          if (street) {parts.push(street);}
+          if (street) {
+            parts.push(street);
+          }
 
           const locParts: string[] = [];
 
-          if (postal) {locParts.push(postal);}
+          if (postal) {
+            locParts.push(postal);
+          }
 
-          if (locality && (!street || !street.includes(locality))) {locParts.push(locality);}
+          if (locality && (!street || !street.includes(locality))) {
+            locParts.push(locality);
+          }
 
-          if (locParts.length > 0) {parts.push(locParts.join(' '));}
+          if (locParts.length > 0) {
+            parts.push(locParts.join(' '));
+          }
 
-          if (country && (!street || !street.includes(country))) {parts.push(country);}
+          if (country && (!street || !street.includes(country))) {
+            parts.push(country);
+          }
 
           if (parts.length > 0) {
             address = parts.join(', ');
@@ -604,21 +670,31 @@ export function extractBookingMetadataFromHtml(
 
     const parts: string[] = [];
 
-    if (street) {parts.push(street);}
+    if (street) {
+      parts.push(street);
+    }
 
     const locParts: string[] = [];
 
-    if (postal) {locParts.push(postal);}
+    if (postal) {
+      locParts.push(postal);
+    }
 
     if (locality) {
       locParts.push(locality);
 
-      if (!city) {city = locality;}
+      if (!city) {
+        city = locality;
+      }
     }
 
-    if (locParts.length > 0) {parts.push(locParts.join(' '));}
+    if (locParts.length > 0) {
+      parts.push(locParts.join(' '));
+    }
 
-    if (country) {parts.push(country);}
+    if (country) {
+      parts.push(country);
+    }
 
     if (parts.length > 0) {
       address = parts.join(', ');
@@ -713,13 +789,17 @@ export function extractBookingMetadataFromHtml(
   if (!checkin) {
     const ciMatch = /Check-in[^<>\n]{0,60}?(?:ab|von)\s*(\d{1,2}:\d{2})/i.exec(html);
 
-    if (ciMatch) {checkin = formatTime(ciMatch[1]);}
+    if (ciMatch) {
+      checkin = formatTime(ciMatch[1]);
+    }
   }
 
   if (!checkout) {
     const coMatch = /Check-out[^<>\n]{0,60}?(?:bis)\s*(\d{1,2}:\d{2})/i.exec(html);
 
-    if (coMatch) {checkout = formatTime(coMatch[1]);}
+    if (coMatch) {
+      checkout = formatTime(coMatch[1]);
+    }
   }
 
   // Meta-Preise
@@ -786,7 +866,9 @@ const PREVIEW_UA = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhi
 const MAX_REDIRECT_HOPS = 5;
 
 function isBotChallenge(html: string): boolean {
-  if (!html || html.length > 80000) {return false;}
+  if (!html || html.length > 80000) {
+    return false;
+  }
 
   return (
     html.includes('awsWafCookieDomainList') ||
@@ -812,7 +894,9 @@ async function fetchWithFollowRedirects(
   };
 
   for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
-    if (!isSafeUrl(current)) {return null;}
+    if (!isSafeUrl(current)) {
+      return null;
+    }
 
     let res: Response;
 
@@ -854,7 +938,9 @@ async function fetchWithFollowRedirects(
 export async function fetchAccommodationPreview(
   url: string | null | undefined
 ): Promise<AccommodationPreview | null> {
-  if (!url) {return null;}
+  if (!url) {
+    return null;
+  }
 
   const trimmed = url.trim();
   let normalizedUrl = trimmed;
@@ -863,7 +949,9 @@ export async function fetchAccommodationPreview(
     normalizedUrl = 'https://' + normalizedUrl;
   }
 
-  if (!isSafeUrl(normalizedUrl)) {return null;}
+  if (!isSafeUrl(normalizedUrl)) {
+    return null;
+  }
 
   let isBookingDomain = false;
 
@@ -926,9 +1014,13 @@ export async function fetchAccommodationPreview(
       const drMatch = /;?dr-(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})/i.exec(searchParam);
 
       if (drMatch) {
-        if (!startDate) {startDate = `${drMatch[1]}-${drMatch[2]}-${drMatch[3]}`;}
+        if (!startDate) {
+          startDate = `${drMatch[1]}-${drMatch[2]}-${drMatch[3]}`;
+        }
 
-        if (!endDate) {endDate = `${drMatch[4]}-${drMatch[5]}-${drMatch[6]}`;}
+        if (!endDate) {
+          endDate = `${drMatch[4]}-${drMatch[5]}-${drMatch[6]}`;
+        }
       }
     }
 
@@ -945,7 +1037,9 @@ export async function fetchAccommodationPreview(
           if (!Number.isNaN(cents) && cents > 0) {
             meta.amount = Math.round((cents / 100) * 100) / 100;
 
-            if (!meta.currency) {meta.currency = 'EUR';}
+            if (!meta.currency) {
+              meta.currency = 'EUR';
+            }
           }
         }
       }

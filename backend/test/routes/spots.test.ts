@@ -84,6 +84,39 @@ describe('spots route coordinate preservation', () => {
     expect(spot.link).toBe('https://www.airbnb.de/rooms/998877');
     expect(spot.lat).toBe(38.72);
     expect(spot.lng).toBe(-9.12);
+
+    // 4. Edit spot: clear link explicitly
+    const clearLinkRes = await app.inject({
+      method: 'PUT',
+      url: `/api/spots/${created.id}`,
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Hotel Alfama Ohne Link',
+        link: null,
+      },
+    });
+    expect(clearLinkRes.statusCode).toBe(200);
+    const clearedSpot = clearLinkRes.json();
+    expect(clearedSpot.link).toBeNull();
+  });
+
+  it('auto-populates cleaned link when maps_link is a booking link and link is omitted (issue #607)', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Booking Spot Test',
+        category: 'Unterkunft',
+        maps_link:
+          'https://www.booking.com/hotel/at/sacher.html?aid=123456&label=gen173nr&checkin=2026-09-01',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    const created = res.json();
+    expect(created.link).toBe('https://www.booking.com/hotel/at/sacher.html?checkin=2026-09-01');
   });
 
   it('allows explicitly clearing coordinates by passing null', async () => {
