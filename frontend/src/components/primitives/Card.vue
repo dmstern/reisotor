@@ -259,9 +259,12 @@ const isNewHighlight = computed(() => {
 <style>
 .card {
   position: relative;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 100%),
-    var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -269,10 +272,10 @@ const isNewHighlight = computed(() => {
   box-shadow: var(--shadow-card);
   transition:
     padding 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.2s ease,
+    background-color 0.2s ease,
     border-color 0.2s ease,
-    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card:focus-within {
@@ -505,9 +508,7 @@ const isNewHighlight = computed(() => {
   transform: translateY(-3px) scale(1.012);
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-card-hover);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 100%),
-    var(--color-surface);
+  background-color: color-mix(in srgb, white 2.5%, var(--color-surface));
   z-index: 5;
 }
 
@@ -515,8 +516,7 @@ const isNewHighlight = computed(() => {
 .card--interactive:not(.card--expanded):active {
   transform: translateY(1px) scale(0.988);
   box-shadow: var(--shadow-card-active);
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0) 100%), var(--color-surface);
+  background-color: color-mix(in srgb, black 2%, var(--color-surface));
 }
 
 .card--expandable.card--expanded {

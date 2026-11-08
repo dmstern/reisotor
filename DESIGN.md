@@ -295,9 +295,12 @@ Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
 **Moderne 3D-Effekte für Interaktionselemente (Issue #701)**:
 Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Switches und Tasten besitzen app-weit einen soliden, haptischen 3D-Look mit Kantenlicht- und Tiefeneffekten:
 
-- **Erhobene Steuerelemente (`Button.vue`, `Select.vue`, `Dropdown.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`)**:
+- **Erhobene Steuerelemente (`Button.vue`, `Select.vue`, `Dropdown.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`, `DoneToggle.vue`)**:
   - Besitzen ein feines Kantenlicht oben (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit dezentem Umgebungs- und Kontaktschatten (`--shadow-control`).
   - Ein subtiler vertikaler Farbverlauf (`linear-gradient(180deg, color-mix(in srgb, white 5%..10%, ...) 0%, ... 100%)`) simuliert einfallendes Licht von oben und verleiht den Steuerelementen physisches Volumen.
+  - Sekundäre Destruktiv-Buttons (`variant="danger" secondary`, z. B. Löschen-Buttons in Dialog-Footern) teilen dasselbe taktile 3D-Volumen mit roter Kontur und `--shadow-control`, um auf gleicher physischer Ebene wie Abbrechen und Speichern zu stehen.
+  - In-Card Toggles und Chevron-Pills (`DoneToggle`, `.spot-expand-pill`) besitzen dieselbe taktile Basishöhe (`--shadow-control`) und heben sich beim Hover sanft ab.
+  - **Transition-Architektur**: Um ruckartige Farbsprünge beim Hovern zu vermeiden (CSS kann `linear-gradient` nicht interpolieren), liegt der Glanzverlauf als konstanter Layer (`background-image`), während Hover- und Aktivzustände `background-color`, `box-shadow`, `border-color` und `transform` stufenlos interpolieren.
   - Beim Hovern heben sie sich sanft an (`translate: 0 -1px`, `--shadow-control-hover`).
   - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985)`, `--shadow-control-active`), sodass sich Interaktionen greifbar und solide anfühlen.
 - **Versenkte Eingabefelder (`Input.vue`, `Textarea.vue`)**:

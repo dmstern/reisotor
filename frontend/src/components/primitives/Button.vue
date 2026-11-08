@@ -195,7 +195,7 @@ provide(
   cursor: pointer;
   box-shadow: none;
   transition:
-    background 0.15s ease,
+    background-color 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
@@ -265,38 +265,39 @@ a.btn.is-loading {
 }
 
 .btn--primary {
-  background: linear-gradient(
+  background-color: var(--color-primary);
+  background-image: linear-gradient(
     180deg,
-    color-mix(in srgb, white 9%, var(--color-primary)) 0%,
-    var(--color-primary) 100%
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0) 100%
   );
   color: var(--color-primary-contrast, white);
   border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.12),
     0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 12%, var(--color-primary-dark)) 0%,
-    var(--color-primary-dark) 100%
-  );
+  background-color: var(--color-primary-dark);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
     0 3px 8px rgba(0, 0, 0, 0.16),
     0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.btn--primary:active:not(:disabled) {
+  background-color: var(--color-primary-dark);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
+    0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
 /* Secondary Button mit elegantem 3D-Look */
 .btn--secondary {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 6%, var(--color-surface)) 0%,
-    var(--color-hover) 100%
-  );
+  background-color: var(--color-surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
   color: var(--color-primary);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   box-shadow: var(--shadow-control);
@@ -309,50 +310,63 @@ a.btn.is-loading {
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 8%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
+  background-color: var(--color-hover);
   box-shadow: var(--shadow-control-hover);
 }
 
+.btn--secondary:active:not(:disabled) {
+  background-color: var(--color-hover);
+  box-shadow: var(--shadow-control-active);
+}
+
 .btn--danger {
-  background: linear-gradient(
+  background-color: var(--color-danger);
+  background-image: linear-gradient(
     180deg,
-    color-mix(in srgb, white 9%, var(--color-danger)) 0%,
-    var(--color-danger) 100%
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0) 100%
   );
   color: white;
   border: var(--ui-border-width, 1px) solid var(--color-button-edge);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.14),
     0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 12%, var(--color-danger-dark, #b91c1c)) 0%,
-    var(--color-danger-dark, #b91c1c) 100%
-  );
+  background-color: var(--color-danger-dark, #b91c1c);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
     0 3px 8px rgba(0, 0, 0, 0.18),
     0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.btn--danger:active:not(:disabled) {
+  background-color: var(--color-danger-dark, #b91c1c);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
+    0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
 .btn--danger.btn--secondary {
-  background: transparent;
+  background-color: var(--color-surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
   color: var(--color-danger);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-danger);
   box-shadow: var(--shadow-control);
 }
 
 .btn--danger.btn--secondary:hover:not(:disabled) {
-  background: var(--color-danger-tint);
+  background-color: var(--color-danger-tint);
+  border-color: var(--color-danger-dark, #b91c1c);
+  color: var(--color-danger-dark, #b91c1c);
   box-shadow: var(--shadow-control-hover);
+}
+
+.btn--danger.btn--secondary:active:not(:disabled) {
+  background-color: var(--color-danger-tint);
+  box-shadow: var(--shadow-control-active);
 }
 
 .btn--card-action {
@@ -365,10 +379,11 @@ a.btn.is-loading {
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: linear-gradient(
+  background-color: var(--color-primary-tint);
+  background-image: linear-gradient(
     180deg,
-    color-mix(in srgb, white 10%, var(--color-primary-tint)) 0%,
-    var(--color-primary-tint) 100%
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0) 100%
   );
   color: var(--color-primary-dark);
   font-size: var(--font-size-sm);
@@ -379,7 +394,7 @@ a.btn.is-loading {
   cursor: pointer;
   box-shadow: var(--shadow-control);
   transition:
-    background 0.15s ease,
+    background-color 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease,
@@ -388,14 +403,14 @@ a.btn.is-loading {
 }
 
 .btn--card-action:hover:not(:disabled) {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 10%, var(--color-primary)) 0%,
-    var(--color-primary) 100%
-  );
-  color: var(--color-primary-contrast, white);
+  background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
   border-color: var(--color-primary);
   box-shadow: var(--shadow-control-hover);
+}
+
+.btn--card-action:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-surface));
+  box-shadow: var(--shadow-control-active);
 }
 
 .btn--ghost {

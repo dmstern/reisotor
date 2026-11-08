@@ -541,7 +541,8 @@ const {
   background: var(--excursion-theme-color);
   border-color: var(--excursion-theme-color);
   color: #ffffff;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1px);
 }
 
 .excursion-card:not(.expanded):hover .disclosure-chevron {
@@ -554,7 +555,8 @@ const {
   background: var(--excursion-theme-color);
   border-color: var(--excursion-theme-color);
   color: #ffffff;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1px);
 }
 
 .excursion-card.expanded

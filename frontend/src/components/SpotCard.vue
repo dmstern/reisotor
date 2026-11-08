@@ -597,26 +597,30 @@ const cardRotation = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  height: 22px;
+  height: 24px;
+  min-width: 24px;
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  border: 1px solid var(--color-border-strong);
   color: var(--color-text-muted);
+  box-shadow: var(--shadow-control);
   font-size: var(--font-size-xs);
   font-weight: 600;
   line-height: 1;
   user-select: none;
   transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .spot-expand-pill.is-compact {
-  width: 22px;
+  width: 24px;
+  height: 24px;
   padding: 0;
 }
 
@@ -628,11 +632,18 @@ const cardRotation = computed(() => {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.spot-card:not(.expanded):hover .spot-expand-pill {
-  background: var(--color-primary-tint);
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+.spot-card:not(.expanded):hover .spot-expand-pill,
+.spot-expand-pill:hover {
+  background-color: var(--color-primary-tint);
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
   color: var(--color-primary-dark);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1px);
+}
+
+.spot-expand-pill:active {
+  transform: translateY(0.5px) scale(0.96);
+  box-shadow: var(--shadow-control-active);
 }
 
 .spot-card:not(.expanded):hover .spot-expand-chevron {
@@ -731,26 +742,18 @@ const cardRotation = computed(() => {
   gap: var(--space-1);
   font-size: var(--font-size-xs);
   font-weight: 500;
-  color: var(--color-text-muted);
   cursor: pointer;
   padding: 6px var(--space-2);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  transition: all var(--transition-fast);
-}
-
-.spot-destination-toggle:hover {
-  background: var(--color-hover);
-  color: var(--color-text);
-  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-control);
 }
 
 .spot-destination-toggle.is-active {
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   border-color: var(--color-primary);
-  background: var(--color-primary-tint);
+  background-color: var(--color-primary-tint);
+  box-shadow: var(--shadow-control);
 }
 
 .spot-destination-toggle {
