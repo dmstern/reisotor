@@ -195,14 +195,6 @@ async function openNewTripModal(page: Page) {
   const modal = page.locator('.modal', { hasText: /Neue[rn] Urlaub/ });
   await expect(modal).toBeVisible();
 
-  const optionalBtn = modal.getByRole('button', { name: 'Optionale Angaben' });
-  if (await optionalBtn.isVisible()) {
-    const isExpanded = await optionalBtn.getAttribute('aria-expanded');
-    if (isExpanded === 'false') {
-      await optionalBtn.click();
-    }
-  }
-
   const picker = modal.locator('.location-picker');
   await expect(picker).toBeVisible();
 
