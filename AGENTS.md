@@ -120,6 +120,11 @@ Für alle Änderungen gelten folgende Software-Design-Prinzipien als verbindlich
   - Für SCSS/CSS immer die zentralen Breakpoint-Mixins aus `src/styles/_breakpoints.scss` (automatisch per Vite verfügbar) nutzen (`@include media-up(...)`, `@include media-down(...)`, `@include container-down(...)`, `@include container-app-main-down(...)` etc.).
   - Für TS/JS-Laufzeitabfragen (`window.matchMedia` etc.) immer `BREAKPOINTS` aus `src/tokens/breakpoints.ts` importieren.
   - Standard-Breakpoints: `mobile-compact` (360px), `mobile-sm` (420px), `mobile` (480px), `tablet-sm` (600px), `tablet` (700px), `desktop-sm` (800px), `desktop-md` (900px), `desktop` (1024px), `page-max` (1400px), `wqhd` (2200px), `4k` (3200px). Siehe `DESIGN.md`.
+- **Code-Style-Richtlinien (Issue #712):**
+  - **Keine Magic Numbers:** Numerische Werte mit fachlicher Bedeutung (Schwellenwerte, Timeouts, Statuscodes, Berechnungsfaktoren etc.) immer als benannte `const`-Konstanten deklarieren (z. B. `const DEFAULT_DEBOUNCE_MS = 300`). Ausnahmen: Standard-Indizes (`-1, 0, 1, 2`) und offensichtliche Basisfaktoren. Lint-Regel: `@typescript-eslint/no-magic-numbers` (Warnung, in Tests deaktiviert).
+  - **Keine kryptischen Ein-Zeichen-Abkürzungen:** Variablennamen müssen absolut intentionsklar sein (z. B. `comment` statt `c`, `user` statt `u`, `file` statt `f`, `note` statt `n`). Standardausnahmen: `_` für ungenutzte Parameter, `i`/`j` für Zählschleifen, `e` für Event/Error, `x`/`y` für 2D-Koordinaten. Lint-Regel: `id-length` (Warnung, `properties: 'never'`).
+  - **Keine einzeiligen `if`-Statements:** Jeder Kontrollfluss (`if`, `else`, `for`, `while`) MUSS geschweifte Klammern (`{ ... }`) haben. Einzeiler wie `if (condition) return;` sind unzulässig. Lint-Regel: `curly: ['error', 'all']`.
+  - **Leerzeilen vor und nach Blöcken:** Zur optischen Lesbarkeit gehört vor und nach Blöcken (`if`, `for`, `try`, Funktionen etc.) eine Leerzeile — außer der Block steht direkt am Anfang eines übergeordneten Blocks. Lint-Regel: `padding-line-between-statements` (Fehler, autofixbar).
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 
