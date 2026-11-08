@@ -669,8 +669,10 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
 /* Anpassung der Leaflet Zoom-Buttons an den Reisotor Styleguide */
 :deep(.leaflet-bar) {
-  border: 1px solid var(--color-border) !important;
-  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--color-border-strong) !important;
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-sm) !important;
   border-radius: var(--radius-md-squircle) !important;
   corner-shape: squircle;
   overflow: hidden;
@@ -683,16 +685,26 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
 :deep(.leaflet-bar a) {
   background-color: var(--color-surface) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
   color: var(--color-text) !important;
   border-bottom: 1px solid var(--color-border) !important;
   width: 44px !important;
   height: 44px !important;
   line-height: 44px !important;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 :deep(.leaflet-bar a:hover) {
   background-color: var(--color-hover) !important;
-  color: var(--color-text) !important;
+  color: var(--color-primary-dark) !important;
+}
+
+:deep(.leaflet-bar a:active) {
+  background-color: var(--color-hover) !important;
+  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.16) !important;
 }
 
 :deep(.leaflet-bar a:last-child) {
@@ -702,6 +714,8 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 :deep(.leaflet-bar a.leaflet-disabled) {
   color: var(--color-text-muted) !important;
   background-color: var(--color-surface) !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 
 :deep(.leaflet-top) {

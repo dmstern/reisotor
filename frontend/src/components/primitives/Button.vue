@@ -426,35 +426,46 @@ a.btn.is-loading {
 }
 
 .btn--floating {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 6%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
+  background-color: var(--color-surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
   color: var(--color-text);
-  border: 2px solid rgba(0, 0, 0, 0.22);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
     var(--shadow-sm);
 }
 
 .btn--floating:hover:not(:disabled) {
-  background: var(--color-hover);
+  background-color: var(--color-hover);
+  border-color: var(--color-primary-dark);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight-strong),
     var(--shadow-md);
 }
 
+.btn--floating:active:not(:disabled) {
+  background-color: var(--color-hover);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.16),
+    var(--shadow-sm);
+}
+
 .btn--surface {
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
   color: var(--color-text);
   border: var(--ui-border-width, 1px) solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-control);
 }
 
 .btn--surface:hover:not(:disabled) {
-  background: var(--color-hover);
-  box-shadow: var(--shadow-md);
+  background-color: var(--color-hover);
+  box-shadow: var(--shadow-control-hover);
+}
+
+.btn--surface:active:not(:disabled) {
+  background-color: var(--color-hover);
+  box-shadow: var(--shadow-control-active);
 }
 
 /* Aktiver Zustand für alle Button-Varianten (#audit) */
@@ -491,9 +502,33 @@ a.btn.is-loading {
 
 .btn--floating.is-active,
 .btn--floating.active {
-  background: var(--color-primary);
+  background-color: var(--color-primary);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
   color: var(--color-primary-contrast, white);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    var(--shadow-sm);
+}
+
+.btn--floating.is-active:hover:not(:disabled),
+.btn--floating.active:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    var(--shadow-md);
+}
+
+.btn--floating.is-active:active:not(:disabled),
+.btn--floating.active:active:not(:disabled) {
+  background-color: var(--color-primary-dark);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
+    var(--shadow-sm);
 }
 
 .btn--sm {

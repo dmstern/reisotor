@@ -29,9 +29,10 @@ const props = withDefaults(
      * Darstellungsvariante:
      * - 'card': Moderne, taktile Kachel mit weichem Hintergrund, Rand und Hover-Feedback
      * - 'row': Flache Zeile ohne Hintergrund für kompakte Dialoge oder dichte Listen
-     * - 'muted': Dezente hinterlegte Fläche
+     * - 'muted': Dezente hinterlegte Fläche mit taktilem 3D-Feedback
+     * - 'popover': Taktile Kachel optimiert für dichte Dialoge, Modals und Popover-Menüs
      */
-    variant?: 'card' | 'row' | 'muted';
+    variant?: 'card' | 'row' | 'muted' | 'popover';
   }>(),
   {
     trueValue: true,
@@ -181,14 +182,55 @@ function onChange(event: Event) {
   border-color: var(--color-primary);
 }
 
-/* Muted-Variante */
-.checkbox-card--muted {
+/* Muted- & Popover-Variante: Taktile Kachel für dichte Dialoge, Modals und Popover-Menüs */
+.checkbox-card--muted,
+.checkbox-card--popover {
   padding: var(--space-3);
   margin: var(--space-2) 0;
-  background: var(--color-hover);
-  border: var(--ui-border-width, 1px) solid transparent;
+  background-color: var(--color-hover);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
+  box-shadow: var(--shadow-control);
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.checkbox-card--muted:hover:not(.is-disabled),
+.checkbox-card--popover:hover:not(.is-disabled) {
+  background-color: color-mix(in srgb, var(--color-primary-tint) 20%, var(--color-hover));
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-control-hover);
+  transform: translateY(-1.5px);
+}
+
+.checkbox-card--muted:active:not(.is-disabled),
+.checkbox-card--popover:active:not(.is-disabled) {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: var(--shadow-control-active);
+  background-color: color-mix(in srgb, black 3%, var(--color-hover));
+}
+
+.checkbox-card--muted.is-checked,
+.checkbox-card--popover.is-checked {
+  background-color: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  box-shadow: var(--shadow-control);
+}
+
+.checkbox-card--muted.is-checked:hover:not(.is-disabled),
+.checkbox-card--popover.is-checked:hover:not(.is-disabled) {
+  background-color: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-control-hover);
 }
 
 /* Row-Variante für kompakte Einbettung in Modals oder dichte Listen */

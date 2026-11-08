@@ -8,7 +8,7 @@ const meta: Meta<typeof CheckboxCard> = {
   component: CheckboxCard,
   tags: ['autodocs'],
   argTypes: {
-    variant: { control: 'select', options: ['card', 'row', 'muted'] },
+    variant: { control: 'select', options: ['card', 'row', 'muted', 'popover'] },
     disabled: { control: 'boolean' },
     label: { control: 'text' },
     description: { control: 'text' },
@@ -85,6 +85,46 @@ export const RowVariant: Story = {
     variant: 'row',
     label: 'Kompakte Zeile für enge Dialoge',
     description: 'Minimalistische Darstellung ohne Kachel-Hintergrund.',
+  },
+  render: (args) => ({
+    components: { CheckboxCard },
+    setup() {
+      const checked = ref(false);
+      return { args, checked };
+    },
+    template: `
+      <div style="max-width: 440px;">
+        <CheckboxCard v-bind="args" v-model="checked" />
+      </div>
+    `,
+  }),
+};
+
+export const MutedVariant: Story = {
+  args: {
+    variant: 'muted',
+    label: 'Diesen Hinweis nicht mehr anzeigen',
+    description: 'Dezente hinterlegte Fläche mit taktilem 3D-Kantenlicht und Klick-Feedback.',
+  },
+  render: (args) => ({
+    components: { CheckboxCard },
+    setup() {
+      const checked = ref(false);
+      return { args, checked };
+    },
+    template: `
+      <div style="max-width: 440px;">
+        <CheckboxCard v-bind="args" v-model="checked" />
+      </div>
+    `,
+  }),
+};
+
+export const PopoverVariant: Story = {
+  args: {
+    variant: 'popover',
+    label: 'Kompakte Popover-Option',
+    description: 'Taktile Kachel optimiert für dichte Dialoge, Modals und Popover-Menüs.',
   },
   render: (args) => ({
     components: { CheckboxCard },
