@@ -160,25 +160,32 @@ export const useSpotsStore = defineStore('spots', () => {
 
   async function toggleCommentLike(commentId: number) {
     const c = spotComments.value.find((item) => item.id === commentId);
-    if (c) {
-      const wasLiked = Boolean(c.liked);
-      c.liked = !wasLiked;
-      c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
-    }
+    if (!c) return;
+
+    const wasLiked = Boolean(c.liked);
+    const originalCount = c.like_count ?? 0;
+    const optimisticLiked = !wasLiked;
+    const optimisticCount = Math.max(0, originalCount + (wasLiked ? -1 : 1));
+
+    spotComments.value = spotComments.value.map((item) =>
+      item.id === commentId
+        ? { ...item, liked: optimisticLiked, like_count: optimisticCount }
+        : item
+    );
+
     try {
       const result = await api.post<{ liked: boolean; like_count: number }>(
         `/spots/comments/${commentId}/like`
       );
-      if (c) {
-        c.liked = result.liked;
-        c.like_count = result.like_count;
-      }
+      spotComments.value = spotComments.value.map((item) =>
+        item.id === commentId
+          ? { ...item, liked: result.liked, like_count: result.like_count }
+          : item
+      );
     } catch (err) {
-      if (c) {
-        const wasLiked = Boolean(c.liked);
-        c.liked = !wasLiked;
-        c.like_count = Math.max(0, (c.like_count ?? 0) + (wasLiked ? -1 : 1));
-      }
+      spotComments.value = spotComments.value.map((item) =>
+        item.id === commentId ? { ...item, liked: wasLiked, like_count: originalCount } : item
+      );
       throw err;
     }
   }
