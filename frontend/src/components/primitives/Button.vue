@@ -191,7 +191,7 @@ provide(
   font-size: var(--font-size-md);
   font-family: inherit;
   font-weight: 600;
-  border-radius: var(--radius-md-squircle);
+  border-radius: var(--radius-btn-squircle, var(--radius-btn, 12px));
   corner-shape: squircle;
   cursor: pointer;
   box-shadow: none;
