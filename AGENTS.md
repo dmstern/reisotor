@@ -35,7 +35,7 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
   - Sollen mehrere Aufgaben gleichzeitig bearbeitet werden, ist die Nutzung separater Git Worktrees der verbindliche Best-Practice-Weg (in Antigravity direkt per UI-Dropdown **„New Worktree“** / `Ctrl+.` unter dem Chat-Eingabefeld, alternativ per CLI `git worktree add ../reisotor-<task> -b <task-branch>`). Dies verhindert Lock-Konflikte (`.git/index.lock`), Dateikollisionen und Wartezeiten vollständig.
   - **Schneller Worktree-Start:** Nach dem Auschecken eines Worktrees genügt `npm run dev:fresh` (oder `npm run setup:worktree`), um `node_modules` per Symlink aus dem Hauptordner zu teilen, `.env` zu synchronisieren, die Test-DB mit Demo-Daten anzulegen und den Server direkt zu starten.
 - **Clean Exit, Commit- & PR-Pflicht:**
-  - Jede Session MUSS nach erfolgreicher Arbeit, Prüfung der Release-Notes (siehe Abschnitt unten), Formatierung (`npx -y prettier --write <dateien>`), Typecheck, fokussierten Tests sowie dem **automatischen Review-Gate per Subagent** (ab `complexity:mid`, siehe Abschnitt unten) die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
+  - Jede Session MUSS nach erfolgreicher Arbeit, Prüfung der Release-Notes (siehe Abschnitt unten), Formatierung (`npx -y prettier --write <dateien>`), Typecheck, fokussierten Tests, sauberem semantischem Commit der Implementierung sowie dem anschließenden **automatischen Review-Gate per Subagent** (ab `complexity:mid`, siehe Abschnitt unten) den finalen Stand (inkl. etwaiger Review-Fixes) **stets sauber committet** hinterlassen (`git commit -m "feat/fix/chore: ..."`).
   - Wurde auf einem neuen Feature-Branch gearbeitet und existiert noch kein PR (`gh pr view 2>/dev/null`), MUSS der Branch gepusht (`git push -u origin <branch>`) und **automatisch ein Pull Request angelegt** werden (`gh pr create`).
   - Der Worktree darf am Ende einer Session NIEMALS mit uncommitteten Änderungen, ungetrackten Testdateien oder unformatiertem Code hinterlassen werden, damit nachfolgende Sessions sofort eine saubere Ausgangsbasis vorfinden.
 
@@ -249,7 +249,7 @@ Um den Zyklus aus Anforderungs-Refinement, Implementierung und Review maximal zu
    - Sobald die Implementierung steht und committet ist, spawnt der Hauptagent **automatisch und unaufgefordert** einen Subagenten (`invoke_subagent`).
    - **Kontext-Isolation:** Der Subagent startet in einer komplett frischen Konversation ohne Vorwissen/Vorurteile über vorherige Implementierungs-Diskussionen.
    - **Prüf-Scope:**
-     - Analysiert den gesamten Diff gegen den Basis-Branch (`git diff origin/main...HEAD`).
+     - Analysiert den gesamten Diff gegen den Basis-Branch (`git diff origin/main`, um committete wie auch uncommittete Arbeitsstände einzubeziehen, bzw. `git diff origin/main...HEAD`).
      - Prüft auf:
        - **Bugs & Edge-Cases:** Null/Undefined-Sicherheit, Race Conditions, reaktive Vue-Fallen, asynchrone Fehler, Off-by-one.
        - **Architektur & Design:** Einhaltung von Clean Code, SoC, SRP, DRY, KISS und den `AGENTS.md`-Konventionen (z. B. Breakpoints, Tabler-Icons statt Emojis, Primitives statt dupliziertem CSS).
@@ -257,7 +257,7 @@ Um den Zyklus aus Anforderungs-Refinement, Implementierung und Review maximal zu
      - Führt bei Bedarf die betroffenen Unit-Tests mit `--bail 1` isoliert aus.
    - **Urteil:** Liefert eine prägnante Tabelle mit Findings (priorisiert nach _Kritisch / Wichtig / Suggestion_) oder erteilt die Freigabe (`LGTM`).
 3. **Abschluss & Auto-Fixing:**
-   - **Bei Findings:** Der Hauptagent behebt berechtigte Mängel direkt, committet den Fix (`fix: address review findings`) und dokumentiert die Nachbesserung transparent.
+   - **Bei Findings:** Der Hauptagent behebt berechtigte Mängel direkt, committet den Fix (`fix: address review findings`) und dokumentiert die Nachbesserung transparent. (Token-Schutz: In der Regel genügt ein einziger Review-Durchlauf; nur bei fundamentalen Architektur-Nachbesserungen wird ad-hoc ein erneuter Durchlauf gestartet).
    - **Bei Freigabe:** Der Hauptagent legt den PR an (`gh pr create`) oder aktualisiert ihn und vermerkt das erfolgreiche Review in der PR-Beschreibung (`## 🔍 Automatisches Code-Review: ✅ Bestanden (Fresh-Eyes Subagent)`).
 
 ### 2. Standard-Prompt für den Review-Subagenten
@@ -266,9 +266,9 @@ Wenn der Haupt-Agent `invoke_subagent` aufruft, nutzt er folgendes standardisier
 
 - **`TypeName`:** `"self"`
 - **`Role`:** `"Independent Code Reviewer"`
-- **`Model`:** `"inherit"` (oder `"pro"` bei 🔴 `complexity:high`)
+- **`Model`:** `"pro"` ab 🟡 `complexity:mid` (oder `"inherit"`, falls der Haupt-Agent bereits auf Argon/Pro läuft)
 - **`Prompt`:**
-  > „Du bist ein unabhängiger Senior-Code-Reviewer mit frischem Blick. Analysiere den Branch im Vergleich zu \`origin/main\` (\`git diff origin/main...HEAD\`).
+  > „Du bist ein unabhängiger Senior-Code-Reviewer mit frischem Blick. Analysiere den Branch im Vergleich zu \`origin/main\` (\`git diff origin/main\`).
   > Prüfe kritisch:
   >
   > 1. Logikfehler, Race Conditions, Null/Undefined-Edge-Cases oder Reaktivitäts-Lecks in Vue/Pinia/Fastify.
