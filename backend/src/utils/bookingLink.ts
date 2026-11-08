@@ -83,6 +83,13 @@ export function cleanAccommodationTitle(raw: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>');
 
+  // Booking.com URL-Slug Transliteration für Umlaute (z. B. ma1-4ritz -> müritz, a1-4 -> ü)
+  title = title
+    .replace(/\b([a-z]+)a1-4([a-z]+)\b/gi, '$1ü$2')
+    .replace(/([a-z]+)a-1-4([a-z]+)/gi, '$1ä$2')
+    .replace(/([a-z]+)o-?1-4([a-z]+)/gi, '$1ö$2')
+    .replace(/\ba1-4/gi, 'ü');
+
   return title.trim();
 }
 
@@ -289,24 +296,45 @@ export function extractBookingMetadataFromHtml(
       if (typeof addr === 'string') {
         address = addr.trim();
       } else if (typeof addr === 'object' && addr !== null) {
-        const parts: string[] = [];
-        if (addr.streetAddress) parts.push(String(addr.streetAddress).trim());
-        const localityParts: string[] = [];
-        if (addr.postalCode) localityParts.push(String(addr.postalCode).trim());
-        if (addr.addressLocality) {
-          localityParts.push(String(addr.addressLocality).trim());
-          city = String(addr.addressLocality).trim();
+        const street = addr.streetAddress ? String(addr.streetAddress).trim() : '';
+        const postal = addr.postalCode ? String(addr.postalCode).trim() : '';
+        const locality = addr.addressLocality ? String(addr.addressLocality).trim() : '';
+        const country = addr.addressCountry
+          ? typeof addr.addressCountry === 'string'
+            ? addr.addressCountry.trim()
+            : (addr.addressCountry as { name?: string })?.name?.trim() || ''
+          : '';
+
+        if (locality) {
+          city = locality;
         }
-        if (localityParts.length > 0) parts.push(localityParts.join(' '));
-        if (addr.addressCountry) {
-          const c =
-            typeof addr.addressCountry === 'string'
-              ? addr.addressCountry
-              : (addr.addressCountry as { name?: string })?.name;
-          if (c) parts.push(String(c).trim());
+
+        // Wenn streetAddress eine PLZ + Ort enthält (z. B. "Am Hafendorf, 17248 Rechlin, Deutschland"),
+        // versuchen wir den tatsächlichen Ortsnamen zu extrahieren, da Booking oft die Straße in addressLocality packt
+        if (street) {
+          const zipCityMatch = /\b\d{4,5}\s+([A-Za-zäöüÄÖÜß\s-]+?)(?:,|$)/.exec(street);
+          if (zipCityMatch && zipCityMatch[1].trim()) {
+            city = zipCityMatch[1].trim();
+          }
         }
-        if (parts.length > 0) {
-          address = parts.join(', ');
+
+        // Wenn streetAddress bereits die PLZ oder das Land enthält, ist sie bereits eine vollständige Adresse:
+        if (
+          street &&
+          ((postal && street.includes(postal)) || (country && street.includes(country)))
+        ) {
+          address = street;
+        } else {
+          const parts: string[] = [];
+          if (street) parts.push(street);
+          const locParts: string[] = [];
+          if (postal) locParts.push(postal);
+          if (locality && (!street || !street.includes(locality))) locParts.push(locality);
+          if (locParts.length > 0) parts.push(locParts.join(' '));
+          if (country && (!street || !street.includes(country))) parts.push(country);
+          if (parts.length > 0) {
+            address = parts.join(', ');
+          }
         }
       }
     }
@@ -432,14 +460,26 @@ export function extractBookingMetadataFromHtml(
     }
   }
 
-  // HTML Data-Attributes / Regex für Koordinaten (z. B. Booking.com data-atlas-latlng)
+  // HTML Data-Attributes / Regex für Koordinaten (z. B. Booking.com data-atlas-latlng oder "Auf der Karte anzeigen")
   if (lat == null || lng == null) {
     const bookingCoordsMatch =
-      /data-atlas-latlng=["'](-?\d+\.\d+),(-?\d+\.\d+)["']/i.exec(html) ||
-      /b_map_center_latitude\s*=\s*['"]?(-?\d+\.\d+)['"]?[\s\S]*?b_map_center_longitude\s*=\s*['"]?(-?\d+\.\d+)['"]?/i.exec(
+      /data-atlas-latlng=["'](-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)["']/i.exec(html) ||
+      /data-lat=["'](-?\d+\.\d+)["'][\s\S]*?data-lng=["'](-?\d+\.\d+)["']/i.exec(html) ||
+      /booking\.env\.b_map_center_latitude\s*=\s*['"]?(-?\d+\.\d+)['"]?[\s\S]*?booking\.env\.b_map_center_longitude\s*=\s*['"]?(-?\d+\.\d+)['"]?/i.exec(
         html
       ) ||
-      /"lat"\s*:\s*(-?\d+\.\d+)\s*,\s*"lng"\s*:\s*(-?\d+\.\d+)/i.exec(html);
+      /b_map_center_latitude\s*:\s*['"]?(-?\d+\.\d+)['"]?[\s\S]*?b_map_center_longitude\s*:\s*['"]?(-?\d+\.\d+)['"]?/i.exec(
+        html
+      ) ||
+      /"latitude"\s*:\s*(-?\d+\.\d+)\s*,\s*"longitude"\s*:\s*(-?\d+\.\d+)/i.exec(html) ||
+      /"lat"\s*:\s*(-?\d+\.\d+)\s*,\s*"lng"\s*:\s*(-?\d+\.\d+)/i.exec(html) ||
+      /maps\.google\.[a-z.]+(?:\/maps)?\?[^"']*?[?&](?:q|ll|center|markers)=(-?\d+\.\d+),(-?\d+\.\d+)/i.exec(
+        html
+      ) ||
+      /maps\.googleapis\.com\/maps\/api\/staticmap\?[^"']*?[?&](?:center|markers)=(-?\d+\.\d+),(-?\d+\.\d+)/i.exec(
+        html
+      ) ||
+      /openstreetmap\.org[^\s"']*?[?&]mlat=(-?\d+\.\d+)[?&]mlon=(-?\d+\.\d+)/i.exec(html);
 
     if (bookingCoordsMatch) {
       const parsedLat = parseFloat(bookingCoordsMatch[1]);
@@ -449,6 +489,37 @@ export function extractBookingMetadataFromHtml(
         lng = parsedLng;
       }
     }
+  }
+
+  // Fallback: data-atlas-bbox (z. B. auf Booking-Karten)
+  if (lat == null || lng == null) {
+    const bboxMatch =
+      /data-atlas-bbox=["'](-?\d+\.\d+),(-?\d+\.\d+),(-?\d+\.\d+),(-?\d+\.\d+)["']/i.exec(html);
+    if (bboxMatch) {
+      const lat1 = parseFloat(bboxMatch[1]);
+      const lng1 = parseFloat(bboxMatch[2]);
+      const lat2 = parseFloat(bboxMatch[3]);
+      const lng2 = parseFloat(bboxMatch[4]);
+      if (
+        Number.isFinite(lat1) &&
+        Number.isFinite(lat2) &&
+        Number.isFinite(lng1) &&
+        Number.isFinite(lng2)
+      ) {
+        lat = (lat1 + lat2) / 2;
+        lng = (lng1 + lng2) / 2;
+      }
+    }
+  }
+
+  // Checkin / Checkout Zeiten aus HTML-Text / FAQ extrahieren falls noch nicht gesetzt
+  if (!checkin) {
+    const ciMatch = /Check-in[^<>\n]{0,60}?(?:ab|von)\s*(\d{1,2}:\d{2})/i.exec(html);
+    if (ciMatch) checkin = formatTime(ciMatch[1]);
+  }
+  if (!checkout) {
+    const coMatch = /Check-out[^<>\n]{0,60}?(?:bis)\s*(\d{1,2}:\d{2})/i.exec(html);
+    if (coMatch) checkout = formatTime(coMatch[1]);
   }
 
   // Meta-Preise
@@ -504,30 +575,34 @@ export function extractBookingMetadataFromHtml(
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-const FETCH_HEADERS = {
-  'User-Agent': BROWSER_UA,
-  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
-};
+const PREVIEW_UA = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
 
 const MAX_REDIRECT_HOPS = 5;
 
-/** Lädt eine Unterkunfts-URL ab, folgt Redirects sicher und extrahiert strukturierte Metadaten. */
-export async function fetchAccommodationPreview(
-  url: string | null | undefined
-): Promise<AccommodationPreview | null> {
-  if (!url) return null;
-  const trimmed = url.trim();
-  let normalizedUrl = trimmed;
-  if (!/^[a-z]+:\/\//i.test(normalizedUrl)) {
-    normalizedUrl = 'https://' + normalizedUrl;
-  }
+function isBotChallenge(html: string): boolean {
+  if (!html || html.length > 80000) return false;
+  return (
+    html.includes('awsWafCookieDomainList') ||
+    html.includes('challenge.js') ||
+    html.includes('cf-browser-verification') ||
+    html.includes('challenge-running') ||
+    html.includes('Just a moment...')
+  );
+}
 
-  if (!isSafeUrl(normalizedUrl)) return null;
-
-  let current = normalizedUrl;
+async function fetchWithFollowRedirects(
+  initialUrl: string,
+  userAgent: string
+): Promise<{ html: string; finalUrl: string } | null> {
+  let current = initialUrl;
   let finalHtml = '';
-  let finalUrl = normalizedUrl;
+  let finalUrl = initialUrl;
+
+  const headers = {
+    'User-Agent': userAgent,
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+  };
 
   for (let hop = 0; hop < MAX_REDIRECT_HOPS; hop++) {
     if (!isSafeUrl(current)) return null;
@@ -536,10 +611,9 @@ export async function fetchAccommodationPreview(
       res = await fetch(current, {
         redirect: 'manual',
         signal: AbortSignal.timeout(6000),
-        headers: FETCH_HEADERS,
+        headers,
       });
     } catch {
-      // Bei Netzwerkfehler: Best-Effort Fallback basierend auf der URL selbst
       break;
     }
 
@@ -562,27 +636,88 @@ export async function fetchAccommodationPreview(
     }
   }
 
+  return { html: finalHtml, finalUrl };
+}
+
+/** Lädt eine Unterkunfts-URL ab, folgt Redirects sicher und extrahiert strukturierte Metadaten. */
+export async function fetchAccommodationPreview(
+  url: string | null | undefined
+): Promise<AccommodationPreview | null> {
+  if (!url) return null;
+  const trimmed = url.trim();
+  let normalizedUrl = trimmed;
+  if (!/^[a-z]+:\/\//i.test(normalizedUrl)) {
+    normalizedUrl = 'https://' + normalizedUrl;
+  }
+
+  if (!isSafeUrl(normalizedUrl)) return null;
+
+  let isBookingDomain = false;
+  try {
+    const host = new URL(normalizedUrl).hostname.toLowerCase();
+    isBookingDomain = host.includes('booking.com') || host.includes('bstatic.com');
+  } catch {
+    // ignore
+  }
+
+  // Booking.com blockiert Standard-Browser-User-Agents mit AWS WAF, erlaubt aber Social Preview Bots
+  const primaryUa = isBookingDomain ? PREVIEW_UA : BROWSER_UA;
+  const secondaryUa = isBookingDomain ? BROWSER_UA : PREVIEW_UA;
+
+  const fetchResult = await fetchWithFollowRedirects(normalizedUrl, primaryUa);
+  let finalHtml = fetchResult?.html || '';
+  let finalUrl = fetchResult?.finalUrl || normalizedUrl;
+
+  // Wenn der primäre Abruf durch eine WAF / Bot-Challenge abgefangen wurde oder leer war:
+  if (!finalHtml || isBotChallenge(finalHtml)) {
+    const retryResult = await fetchWithFollowRedirects(normalizedUrl, secondaryUa);
+    if (retryResult?.html && !isBotChallenge(retryResult.html)) {
+      finalHtml = retryResult.html;
+      finalUrl = retryResult.finalUrl;
+    }
+  }
+
   // Metadaten aus HTML extrahieren (falls Abruf erfolgreich)
   const meta = finalHtml ? extractBookingMetadataFromHtml(finalHtml, finalUrl) : {};
 
-  // Checkin-/Checkout-Daten aus URL-Query-Parametern extrahieren
+  // Checkin-/Checkout-Daten & Preise aus URL-Query-Parametern extrahieren (sowohl aus Original- als auch Ziel-URL)
   let startDate: string | null = null;
   let endDate: string | null = null;
   try {
-    const parsed = new URL(finalUrl);
+    const origUrl = new URL(normalizedUrl);
+    const finalParsed = finalUrl !== normalizedUrl ? new URL(finalUrl) : null;
+
+    const getParam = (name: string) =>
+      origUrl.searchParams.get(name) || finalParsed?.searchParams.get(name);
+
     startDate =
-      parseDateParam(parsed.searchParams.get('checkin')) ||
-      parseDateParam(parsed.searchParams.get('checkIn')) ||
-      parseDateParam(parsed.searchParams.get('check_in')) ||
-      parseDateParam(parsed.searchParams.get('arrival')) ||
-      parseDateParam(parsed.searchParams.get('from'));
+      parseDateParam(getParam('checkin')) ||
+      parseDateParam(getParam('checkIn')) ||
+      parseDateParam(getParam('check_in')) ||
+      parseDateParam(getParam('arrival')) ||
+      parseDateParam(getParam('from'));
 
     endDate =
-      parseDateParam(parsed.searchParams.get('checkout')) ||
-      parseDateParam(parsed.searchParams.get('checkOut')) ||
-      parseDateParam(parsed.searchParams.get('check_out')) ||
-      parseDateParam(parsed.searchParams.get('departure')) ||
-      parseDateParam(parsed.searchParams.get('to'));
+      parseDateParam(getParam('checkout')) ||
+      parseDateParam(getParam('checkOut')) ||
+      parseDateParam(getParam('check_out')) ||
+      parseDateParam(getParam('departure')) ||
+      parseDateParam(getParam('to'));
+
+    // Preis aus Booking sr_pri_blocks extrahieren falls vorhanden (z. B. sr_pri_blocks=...__23409 -> 234.09)
+    if (meta.amount == null) {
+      const priParam = getParam('sr_pri_blocks');
+      if (priParam) {
+        const priMatch = /__(\d+)(?:$|&)/.exec(priParam);
+        if (priMatch && priMatch[1].length >= 3) {
+          const cents = parseInt(priMatch[1], 10);
+          if (!Number.isNaN(cents) && cents > 0) {
+            meta.amount = Math.round((cents / 100) * 100) / 100;
+            if (!meta.currency) meta.currency = 'EUR';
+          }
+        }
+      }
+    }
   } catch {
     // Ignoriere URL-Fehler
   }

@@ -101,6 +101,12 @@ describe('bookingLink', () => {
         'Bed & Breakfast "Alpenblick\'s"'
       );
     });
+
+    it('transliterates Booking.com slug umlauts (issue #607)', () => {
+      expect(cleanAccommodationTitle('ferienpark ma1-4ritz')).toBe('ferienpark müritz');
+      expect(cleanAccommodationTitle('hotel ba-1-4ren')).toBe('hotel bären');
+      expect(cleanAccommodationTitle('gasthof scho1-4nblick')).toBe('gasthof schönblick');
+    });
   });
 
   describe('parseDateParam', () => {
@@ -267,6 +273,60 @@ describe('bookingLink', () => {
       );
       expect(meta.name).toBe('grand hotel wien');
     });
+
+    it('extracts coordinates from Booking.com data-atlas-latlng and map triggers (issue #607)', () => {
+      const html = `
+        <html>
+          <head>
+            <title>Ferienpark Müritz</title>
+          </head>
+          <body>
+            <a data-atlas-latlng="53.357957,12.728514" title="Ferienpark Müritz - Lage prüfen" id="map_trigger_header_pin" href="#map_opened">
+              Karte anzeigen
+            </a>
+            <p>Check-in in der Unterkunft ist ab 16:00, und der Check-out ist bis 10:00.</p>
+          </body>
+        </html>
+      `;
+      const meta = extractBookingMetadataFromHtml(
+        html,
+        'https://www.booking.com/hotel/de/ferienpark-ma1-4ritz.de.html'
+      );
+      expect(meta.name).toBe('Ferienpark Müritz');
+      expect(meta.lat).toBe(53.357957);
+      expect(meta.lng).toBe(12.728514);
+      expect(meta.checkin).toBe('16:00');
+      expect(meta.checkout).toBe('10:00');
+    });
+
+    it('avoids duplicating street address parts when streetAddress is already complete', () => {
+      const html = `
+        <html>
+          <head>
+            <script type="application/ld+json">
+              {
+                "@context": "http://schema.org",
+                "@type": "Hotel",
+                "name": "Ferienpark Müritz",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "Am Hafendorf, 17248 Rechlin, Deutschland",
+                  "addressLocality": "Am Hafendorf",
+                  "postalCode": "17248",
+                  "addressCountry": "Deutschland"
+                }
+              }
+            </script>
+          </head>
+        </html>
+      `;
+      const meta = extractBookingMetadataFromHtml(
+        html,
+        'https://www.booking.com/hotel/de/ferienpark-ma1-4ritz.de.html'
+      );
+      expect(meta.address).toBe('Am Hafendorf, 17248 Rechlin, Deutschland');
+      expect(meta.city).toBe('Rechlin');
+    });
   });
 
   describe('fetchAccommodationPreview', () => {
@@ -376,6 +436,67 @@ describe('bookingLink', () => {
 
       const preview2 = await fetchAccommodationPreview('http://127.0.0.1/hotel');
       expect(preview2).toBeNull();
+    });
+
+    it('extracts price from Booking sr_pri_blocks query parameter (issue #607)', async () => {
+      const mockHtml = `
+        <html>
+          <head>
+            <meta property="og:title" content="Ferienpark Müritz" />
+            <a data-atlas-latlng="53.357957,12.728514" id="map_trigger_header_pin">Karte</a>
+          </head>
+        </html>
+      `;
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
+        text: async () => mockHtml,
+      } as unknown as Response);
+
+      const preview = await fetchAccommodationPreview(
+        'https://www.booking.com/hotel/de/ferienpark.html?checkin=2026-12-11&checkout=2026-12-14&sr_pri_blocks=57600623_372486079_2_0_0__23409'
+      );
+
+      expect(preview).not.toBeNull();
+      expect(preview?.name).toBe('Ferienpark Müritz');
+      expect(preview?.startDate).toBe('2026-12-11');
+      expect(preview?.endDate).toBe('2026-12-14');
+      expect(preview?.amount).toBe(234.09);
+      expect(preview?.currency).toBe('EUR');
+      expect(preview?.lat).toBe(53.357957);
+      expect(preview?.lng).toBe(12.728514);
+    });
+
+    it('retries with fallback user agent when AWS WAF bot challenge is returned', async () => {
+      global.fetch = vi.fn((_url: string, init?: RequestInit) => {
+        const ua = (init?.headers as Record<string, string>)?.['User-Agent'];
+        if (ua?.includes('Chrome')) {
+          // Simulator: Browser UA wird mit WAF-Challenge blockiert
+          return Promise.resolve({
+            status: 200,
+            text: async () =>
+              '<html><script>window.awsWafCookieDomainList=["booking.com"];</script></html>',
+          } as unknown as Response);
+        }
+        // Preview Bot UA erhält volles HTML
+        return Promise.resolve({
+          status: 200,
+          text: async () => `
+            <html>
+              <head><meta property="og:title" content="Ferienpark Müritz" /></head>
+              <body><a data-atlas-latlng="53.357957,12.728514">Karte</a></body>
+            </html>
+          `,
+        } as unknown as Response);
+      }) as unknown as typeof fetch;
+
+      const preview = await fetchAccommodationPreview(
+        'https://www.booking.com/hotel/de/ferienpark.html'
+      );
+
+      expect(preview).not.toBeNull();
+      expect(preview?.name).toBe('Ferienpark Müritz');
+      expect(preview?.lat).toBe(53.357957);
+      expect(preview?.lng).toBe(12.728514);
     });
   });
 });
