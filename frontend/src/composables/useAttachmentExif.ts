@@ -105,7 +105,7 @@ export function useAttachmentExif(options: UseAttachmentExifOptions) {
     }
 
     onCloseModal?.();
-    drawers.openMapAtLocation(lat, lng, title, imageUrl, gallery, dateBadge);
+    drawers.openMapAtLocation(lat, lng, { title, imageUrl, gallery, dateBadge });
   }
 
   return {

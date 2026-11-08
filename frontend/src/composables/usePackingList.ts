@@ -37,6 +37,12 @@ export interface PackingEditFormInput {
 
 export const DEFAULT_PACKING_CATEGORY = 'Sonstiges';
 
+export interface QuickAddPackingOverrides {
+  category?: string;
+  subcategory?: string;
+  quantity?: number;
+}
+
 export function usePackingList(tripIdOverride?: number) {
   const auth = useAuthStore();
   const tripStore = useTripStore();
@@ -212,16 +218,16 @@ export function usePackingList(tripIdOverride?: number) {
   async function quickAdd(
     list: PackingListGroup,
     label: string,
-    categoryOverride?: string,
-    subcategoryOverride?: string,
-    quantityOverride?: number
+    overrides?: QuickAddPackingOverrides
   ): Promise<PackingItem | null> {
     if (!label.trim()) {
       return null;
     }
 
     const category = (
-      categoryOverride !== undefined ? categoryOverride : (quickAddCategories.value[list.key] ?? '')
+      overrides?.category !== undefined
+        ? overrides.category
+        : (quickAddCategories.value[list.key] ?? '')
     ).trim();
 
     if (categoryRequired.value && !category) {
@@ -229,15 +235,16 @@ export function usePackingList(tripIdOverride?: number) {
     }
 
     const subcategory = (
-      subcategoryOverride !== undefined
-        ? subcategoryOverride
+      overrides?.subcategory !== undefined
+        ? overrides.subcategory
         : (quickAddSubcategories.value[list.key] ?? '')
     ).trim();
     const quantity = Math.max(
       1,
       Math.round(
-        (quantityOverride !== undefined ? quantityOverride : quickAddQuantities.value[list.key]) ||
-          1
+        (overrides?.quantity !== undefined
+          ? overrides.quantity
+          : quickAddQuantities.value[list.key]) || 1
       )
     );
     const created = await api.post<PackingItem>('/packing', {

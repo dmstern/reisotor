@@ -329,13 +329,15 @@ function scheduleDatesForIdeas(ideaIds: number[]): Map<number, string> {
 // Formular (ExcursionsView.vue) als auch das Ziehen auf einen Kalendertag (excursionsStore.
 // setDate) laufen über denselben PUT/POST /ideas-Endpunkt und landen daher hier – EIN Mechanismus
 // statt zweier, wie es vor der Einführung des separaten "Ein-Spot-Ausflug"-Hacks für Spots war.
-function setIdeaScheduleDate(
-  ideaId: number,
-  tripId: number,
-  title: string,
-  date: string | null | undefined,
-  userId?: number
-) {
+interface SetIdeaScheduleDateOptions {
+  ideaId: number;
+  tripId: number;
+  title: string;
+  date: string | null | undefined;
+  userId?: number;
+}
+
+function setIdeaScheduleDate({ ideaId, tripId, title, date, userId }: SetIdeaScheduleDateOptions) {
   const existing = selectScheduleByIdeaStmt.get(ideaId) as { id: number } | undefined;
 
   if (date) {
@@ -370,13 +372,21 @@ function serializeIdea(
   return { ...row, spot_ids: spotIds, legs, date };
 }
 
-function syncExcursionLegs(
-  ideaId: number,
-  tripId: number,
-  legs: ExcursionLegInput[] | undefined,
-  tourTitle: string,
-  tourDate?: string | null
-) {
+interface SyncExcursionLegsOptions {
+  ideaId: number;
+  tripId: number;
+  legs: ExcursionLegInput[] | undefined;
+  tourTitle: string;
+  tourDate?: string | null;
+}
+
+function syncExcursionLegs({
+  ideaId,
+  tripId,
+  legs,
+  tourTitle,
+  tourDate,
+}: SyncExcursionLegsOptions) {
   const existingLegs = selectLegsByIdeaStmt.all(ideaId) as ExcursionLegRow[];
   const existingBudgetIds = new Set(
     existingLegs.map((l) => l.budget_expense_id).filter((id): id is number => id != null)
@@ -414,14 +424,14 @@ function syncExcursionLegs(
             ? `${leg.transport_type || 'Transport'}: ${fromTitle} → ${toTitle}`
             : tourTitle;
 
-        const { budgetExpenseId: plannedId } = planIdeaBudgetExpense(
+        const { budgetExpenseId: plannedId } = planIdeaBudgetExpense({
           tripId,
-          matchingExistingBudgetId,
-          legBudgetTitle,
-          tourDate,
-          leg.amount,
-          leg.paid_by_user_id
-        );
+          existingBudgetExpenseId: matchingExistingBudgetId,
+          title: legBudgetTitle,
+          date: tourDate,
+          amount: leg.amount,
+          paidByUserId: leg.paid_by_user_id,
+        });
         budgetExpenseId = plannedId;
 
         if (budgetExpenseId) {
@@ -518,14 +528,23 @@ function syncExcursionLegs(
  *  (sonst SQLITE_CONSTRAINT_FOREIGNKEY). Nur Touren mit amount+paid_by_user_id bekommen überhaupt
  *  eine Ausgabe - eine normale Tour ohne diese Felder bleibt unangetastet (budgetExpenseId bleibt
  *  null, kein Aufruf nötig, Aufrufer prüft das selbst). */
-function planIdeaBudgetExpense(
-  tripId: number,
-  existingBudgetExpenseId: number | null,
-  title: string,
-  date: string | null | undefined,
-  amount: number | null | undefined,
-  paidByUserId: number | null | undefined
-) {
+interface PlanIdeaBudgetExpenseOptions {
+  tripId: number;
+  existingBudgetExpenseId: number | null;
+  title: string;
+  date: string | null | undefined;
+  amount: number | null | undefined;
+  paidByUserId: number | null | undefined;
+}
+
+function planIdeaBudgetExpense({
+  tripId,
+  existingBudgetExpenseId,
+  title,
+  date,
+  amount,
+  paidByUserId,
+}: PlanIdeaBudgetExpenseOptions) {
   const hasAmount = amount != null && amount > 0 && paidByUserId != null;
 
   if (!hasAmount) {
@@ -618,14 +637,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const isHtml = req.body.note_format === 'html';
-    const { budgetExpenseId } = planIdeaBudgetExpense(
-      trip_id,
-      null,
+    const { budgetExpenseId } = planIdeaBudgetExpense({
+      tripId: trip_id,
+      existingBudgetExpenseId: null,
       title,
       date,
       amount,
-      paid_by_user_id
-    );
+      paidByUserId: paid_by_user_id,
+    });
 
     const hasLegs = Array.isArray(legs) && legs.length > 0;
     const effectiveDepTime = hasLegs
@@ -672,8 +691,8 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     );
     const ideaId = result.lastInsertRowid as number;
     syncExcursionSpots(ideaId, spot_ids ?? []);
-    syncExcursionLegs(ideaId, trip_id, legs, title, date);
-    setIdeaScheduleDate(ideaId, trip_id, title, date, req.session.userId);
+    syncExcursionLegs({ ideaId, tripId: trip_id, legs, tourTitle: title, tourDate: date });
+    setIdeaScheduleDate({ ideaId, tripId: trip_id, title, date, userId: req.session.userId });
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
@@ -720,14 +739,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const isHtml = req.body.note_format === 'html';
-    const { budgetExpenseId, staleIdToDelete } = planIdeaBudgetExpense(
-      existingIdea.trip_id,
-      existingIdea.budget_expense_id,
+    const { budgetExpenseId, staleIdToDelete } = planIdeaBudgetExpense({
+      tripId: existingIdea.trip_id,
+      existingBudgetExpenseId: existingIdea.budget_expense_id,
       title,
       date,
       amount,
-      paid_by_user_id
-    );
+      paidByUserId: paid_by_user_id,
+    });
 
     const hasLegs = Array.isArray(legs) && legs.length > 0;
     const effectiveDepTime = hasLegs
@@ -786,9 +805,21 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
 
     const ideaId = Number(req.params.id);
     syncExcursionSpots(ideaId, spot_ids ?? []);
-    syncExcursionLegs(ideaId, existingIdea.trip_id, legs, title, date);
+    syncExcursionLegs({
+      ideaId,
+      tripId: existingIdea.trip_id,
+      legs,
+      tourTitle: title,
+      tourDate: date,
+    });
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
-    setIdeaScheduleDate(ideaId, row.trip_id as number, title, date, req.session.userId);
+    setIdeaScheduleDate({
+      ideaId,
+      tripId: row.trip_id as number,
+      title,
+      date,
+      userId: req.session.userId,
+    });
     recordActivity(existingIdea.trip_id, 'ideas', ideaId, 'updated', req.session.userId!);
     const savedLegs = legsFor([ideaId]).get(ideaId) ?? [];
     return serializeIdea(row, spot_ids ?? [], savedLegs, date ?? null);
@@ -943,7 +974,13 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     const result = insertIdeaForSpotStmt.run(trip_id, spot.title, req.session.userId);
     const ideaId = result.lastInsertRowid as number;
     syncExcursionSpots(ideaId, [spot_id]);
-    setIdeaScheduleDate(ideaId, trip_id, spot.title, date, req.session.userId);
+    setIdeaScheduleDate({
+      ideaId,
+      tripId: trip_id,
+      title: spot.title,
+      date,
+      userId: req.session.userId,
+    });
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;

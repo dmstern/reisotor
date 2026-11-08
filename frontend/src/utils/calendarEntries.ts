@@ -23,10 +23,10 @@ export function resolveScheduleItemIcons(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  travelItems: TravelItem[],
-  maps?: CalendarLookupMaps,
-  preloadedExcursion?: Excursion
+  ...rest: [travelItems?: TravelItem[], maps?: CalendarLookupMaps, preloadedExcursion?: Excursion]
 ): { icon: string | undefined; iconDef: IconDef | undefined } {
+  const [travelItems = [], maps, preloadedExcursion] = rest;
+
   if (item.spot_id != null) {
     const spot = maps?.spotMap
       ? maps.spotMap.get(item.spot_id)
@@ -86,13 +86,48 @@ export function resolveScheduleItemIconDef(
   return resolveScheduleItemIcons(item, spots, excursions, travelItems).iconDef;
 }
 
+export interface ScheduleItemToEntryOptions {
+  spots: Spot[];
+  excursions: Excursion[];
+  travelItems?: TravelItem[];
+  maps?: CalendarLookupMaps;
+}
+
+export function scheduleItemToEntry(
+  item: ScheduleItem,
+  options: ScheduleItemToEntryOptions
+): CalendarEntry;
+
 export function scheduleItemToEntry(
   item: ScheduleItem,
   spots: Spot[],
   excursions: Excursion[],
-  travelItems: TravelItem[],
-  maps?: CalendarLookupMaps
+  ...rest: [travelItems?: TravelItem[], maps?: CalendarLookupMaps]
+): CalendarEntry;
+
+export function scheduleItemToEntry(
+  item: ScheduleItem,
+  spotsOrOptions: Spot[] | ScheduleItemToEntryOptions,
+  excursionsArg?: Excursion[],
+  ...rest: [travelItems?: TravelItem[], maps?: CalendarLookupMaps]
 ): CalendarEntry {
+  let spots: Spot[];
+  let excursions: Excursion[];
+  let travelItems: TravelItem[];
+  let maps: CalendarLookupMaps | undefined;
+
+  if (!Array.isArray(spotsOrOptions)) {
+    spots = spotsOrOptions.spots;
+    excursions = spotsOrOptions.excursions;
+    travelItems = spotsOrOptions.travelItems ?? [];
+    maps = spotsOrOptions.maps;
+  } else {
+    spots = spotsOrOptions;
+    excursions = excursionsArg ?? [];
+    travelItems = rest[0] ?? [];
+    maps = rest[1];
+  }
+
   const linked = item.spot_id != null || item.idea_id != null;
   const linkedExcursion =
     item.idea_id != null
@@ -212,14 +247,53 @@ export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
     }));
 }
 
+export interface BuildAllEntriesOptions {
+  items: ScheduleItem[];
+  trip: Trip | null;
+  todos: TodoItem[];
+  travelItems: TravelItem[];
+  excursions: Excursion[];
+  spots: Spot[];
+}
+
+export function buildAllEntries(options: BuildAllEntriesOptions): CalendarEntry[];
+
 export function buildAllEntries(
   items: ScheduleItem[],
   trip: Trip | null,
   todos: TodoItem[],
-  travelItems: TravelItem[],
-  excursions: Excursion[],
-  spots: Spot[]
+  ...rest: [travelItems: TravelItem[], excursions: Excursion[], spots: Spot[]]
+): CalendarEntry[];
+
+export function buildAllEntries(
+  itemsOrOptions: ScheduleItem[] | BuildAllEntriesOptions,
+  tripArg?: Trip | null,
+  todosArg?: TodoItem[],
+  ...rest: [travelItems?: TravelItem[], excursions?: Excursion[], spots?: Spot[]]
 ): CalendarEntry[] {
+  let items: ScheduleItem[];
+  let trip: Trip | null;
+  let todos: TodoItem[];
+  let travelItems: TravelItem[];
+  let excursions: Excursion[];
+  let spots: Spot[];
+
+  if (!Array.isArray(itemsOrOptions)) {
+    items = itemsOrOptions.items;
+    trip = itemsOrOptions.trip;
+    todos = itemsOrOptions.todos;
+    travelItems = itemsOrOptions.travelItems;
+    excursions = itemsOrOptions.excursions;
+    spots = itemsOrOptions.spots;
+  } else {
+    items = itemsOrOptions;
+    trip = tripArg ?? null;
+    todos = todosArg ?? [];
+    travelItems = rest[0] ?? [];
+    excursions = rest[1] ?? [];
+    spots = rest[2] ?? [];
+  }
+
   // Erstelle Maps für O(1) Lookups bei der Iteration über alle Kalender-Termine
   const spotMap = new Map<number, Spot>();
 

@@ -63,9 +63,10 @@ export function resolveStation(
   key: string,
   spots: Spot[],
   travelItems: TravelItem[],
-  spotMap?: Map<number, Spot>,
-  travelMap?: Map<number, TravelItem>
+  ...maps: [spotMap?: Map<number, Spot>, travelMap?: Map<number, TravelItem>]
 ): ExcursionStation | null {
+  const [spotMap, travelMap] = maps;
+
   if (key.startsWith('spot-')) {
     const id = Number(key.slice('spot-'.length));
     const spot = spotMap ? spotMap.get(id) : spots.find((s) => s.id === id);
@@ -123,9 +124,9 @@ export function resolveStations(
   keys: string[],
   spots: Spot[],
   travelItems: TravelItem[],
-  spotMap?: Map<number, Spot>,
-  travelMap?: Map<number, TravelItem>
+  ...maps: [spotMap?: Map<number, Spot>, travelMap?: Map<number, TravelItem>]
 ): ExcursionStation[] {
+  const [spotMap, travelMap] = maps;
   return keys
     .map((key) => resolveStation(key, spots, travelItems, spotMap, travelMap))
     .filter((s): s is ExcursionStation => !!s);

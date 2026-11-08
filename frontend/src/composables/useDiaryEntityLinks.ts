@@ -125,7 +125,7 @@ export function useDiaryEntityLinks() {
             const spot = spotsStore.spots.find((s) => s.id === id);
 
             if (spot) {
-              await scheduleStore.setSpotDate(id, tripId, spot.title, date);
+              await scheduleStore.setSpotDate({ spotId: id, tripId, title: spot.title, date });
             }
           }
 

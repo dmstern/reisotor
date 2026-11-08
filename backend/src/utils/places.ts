@@ -332,13 +332,15 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 Stunde
 const MAX_CACHE_ENTRIES = 500;
 const placesCache = new Map<string, CacheEntry>();
 
-export function buildCacheKey(
-  q: string,
-  lat?: number,
-  lng?: number,
-  limit = 5,
-  lang = 'de'
-): string {
+export interface BuildCacheKeyOptions {
+  lat?: number;
+  lng?: number;
+  limit?: number;
+  lang?: string;
+}
+
+export function buildCacheKey(q: string, options?: BuildCacheKeyOptions): string {
+  const { lat, lng, limit = 5, lang = 'de' } = options ?? {};
   const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(3) : '';
   const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(3) : '';
   return `${q.trim().toLowerCase()}|${latStr}|${lngStr}|${limit}|${lang}`;
@@ -1224,7 +1226,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
       ? Math.max(Math.floor(options.offset), 0)
       : 0;
 
-  const cacheKey = buildCacheKey(`${rawQ}|off:${offset}`, lat, lng, limit, lang);
+  const cacheKey = buildCacheKey(`${rawQ}|off:${offset}`, { lat, lng, limit, lang });
   const cached = getCachedPlaces(cacheKey);
 
   if (cached) {

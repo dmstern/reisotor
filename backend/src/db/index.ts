@@ -1847,13 +1847,14 @@ if (hasTable('travel_items')) {
 
         let position = 0;
 
-        const addStation = (
-          placeId: number | null,
-          location: string | null,
-          mapsLink: string | null,
-          lat: number | null,
-          lng: number | null
-        ) => {
+        const addStation = (station: {
+          placeId: number | null;
+          location: string | null;
+          mapsLink: string | null;
+          lat: number | null;
+          lng: number | null;
+        }) => {
+          const { placeId, location, mapsLink, lat, lng } = station;
           const spotId =
             placeId ??
             (location
@@ -1869,14 +1870,20 @@ if (hasTable('travel_items')) {
           position += 1;
         };
 
-        addStation(
-          row.from_place_id,
-          row.from_location,
-          row.from_maps_link,
-          row.from_lat,
-          row.from_lng
-        );
-        addStation(row.to_place_id, row.to_location, row.to_maps_link, row.to_lat, row.to_lng);
+        addStation({
+          placeId: row.from_place_id,
+          location: row.from_location,
+          mapsLink: row.from_maps_link,
+          lat: row.from_lat,
+          lng: row.from_lng,
+        });
+        addStation({
+          placeId: row.to_place_id,
+          location: row.to_location,
+          mapsLink: row.to_maps_link,
+          lat: row.to_lat,
+          lng: row.to_lng,
+        });
 
         markMigrated.run(ideaId, row.id);
       }

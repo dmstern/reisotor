@@ -67,13 +67,13 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
 
       if (spot && tripStore.currentTripId != null) {
         if (pending.mode === 'confirm-done') {
-          await scheduleStore.setSpotDate(
-            pending.id,
-            tripStore.currentTripId,
-            spot.title,
+          await scheduleStore.setSpotDate({
+            spotId: pending.id,
+            tripId: tripStore.currentTripId,
+            title: spot.title,
             date,
-            true
-          );
+            done: true,
+          });
           await spotsStore.setDone(pending.id, true);
         } else {
           await scheduleStore.create({

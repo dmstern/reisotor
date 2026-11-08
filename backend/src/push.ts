@@ -198,13 +198,19 @@ export const NEW_ELEMENT_ACTIONS = new Set([
  *  ('isUpdate = true') zusätzlich nach der 'activity_updates'-Präferenz (fehlende Zeile = aktiviert).
  *  Verschickt denselben JSON-Payload an jedes verbleibende Abo. Tote Abonnements räumt sich hier
  *  selbst auf. Best-effort - wirft nie, ruft nie process.exit o. Ä. */
+export interface SendTripNotificationOptions {
+  excludeUserId?: number;
+  isUpdate?: boolean;
+}
+
 export async function sendPushToTripMembers(
   tripId: number,
   payload: Record<string, unknown>,
   domain: PushPreferenceDomain,
-  excludeUserId?: number,
-  isUpdate = false
+  options: SendTripNotificationOptions = {}
 ) {
+  const { excludeUserId, isUpdate = false } = options;
+
   if (!ensureVapidConfigured()) {
     return;
   }
@@ -420,9 +426,10 @@ export async function sendEmailToTripMembers(
   tripId: number,
   params: { title: string; body: string; tripId: number; tripName: string },
   domain: PushPreferenceDomain,
-  excludeUserId?: number,
-  isUpdate = false
+  options: SendTripNotificationOptions = {}
 ) {
+  const { excludeUserId, isUpdate = false } = options;
+
   if (!isEmailConfigured()) {
     return;
   }
@@ -557,14 +564,12 @@ export async function notifyTripMembers(
     tripId,
     { title: pushTitle, body, tripId },
     info.domain as PushPreferenceDomain,
-    excludeUserId,
-    isUpdate
+    { excludeUserId, isUpdate }
   );
   await sendEmailToTripMembers(
     tripId,
     { title: domainLabel, body, tripId, tripName: info.tripName },
     info.domain as PushPreferenceDomain,
-    excludeUserId,
-    isUpdate
+    { excludeUserId, isUpdate }
   );
 }

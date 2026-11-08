@@ -14,13 +14,49 @@ import { travelTypeIcon, travelTypeIconDef } from './travelTypeIcon';
  *  focusedDateExcursions/focusedDateStations). Sortiert wie ScheduleView.vue's eigene Tagesliste
  *  (entriesForDate: `(a.time ?? '').localeCompare(b.time ?? '')`, untertitierte Einträge zuerst),
  *  damit "🗺️ Tag auf Karte anzeigen" dieselbe Reihenfolge zeigt wie der Kalender selbst. */
+export interface BuildDayStationsOptions {
+  date: string;
+  scheduleItems: ScheduleItem[];
+  excursions: Excursion[];
+  travelItems: TravelItem[];
+  spots: Spot[];
+}
+
+export function buildDayStations(options: BuildDayStationsOptions): ExcursionStation[];
+
 export function buildDayStations(
   date: string,
   scheduleItems: ScheduleItem[],
   excursions: Excursion[],
-  travelItems: TravelItem[],
-  spots: Spot[]
+  ...rest: [travelItems: TravelItem[], spots: Spot[]]
+): ExcursionStation[];
+
+export function buildDayStations(
+  dateOrOptions: string | BuildDayStationsOptions,
+  scheduleItemsArg?: ScheduleItem[],
+  excursionsArg?: Excursion[],
+  ...rest: [travelItems?: TravelItem[], spots?: Spot[]]
 ): ExcursionStation[] {
+  let date: string;
+  let scheduleItems: ScheduleItem[];
+  let excursions: Excursion[];
+  let travelItems: TravelItem[];
+  let spots: Spot[];
+
+  if (typeof dateOrOptions === 'object') {
+    date = dateOrOptions.date;
+    scheduleItems = dateOrOptions.scheduleItems;
+    excursions = dateOrOptions.excursions;
+    travelItems = dateOrOptions.travelItems;
+    spots = dateOrOptions.spots;
+  } else {
+    date = dateOrOptions;
+    scheduleItems = scheduleItemsArg ?? [];
+    excursions = excursionsArg ?? [];
+    travelItems = rest[0] ?? [];
+    spots = rest[1] ?? [];
+  }
+
   const timed: { time: string | null; station: ExcursionStation }[] = [];
 
   for (const item of scheduleItems) {

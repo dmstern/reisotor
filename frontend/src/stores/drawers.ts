@@ -79,6 +79,13 @@ export interface MapFocusGallery {
   initialIndex: number;
 }
 
+export interface OpenMapAtLocationOptions {
+  title?: string;
+  imageUrl?: string;
+  gallery?: MapFocusGallery;
+  dateBadge?: string;
+}
+
 export const useDrawersStore = defineStore('drawers', () => {
   const calendarOpen = ref(loadOpen(CALENDAR_OPEN_KEY));
   const mapFocusKey = ref<string | null>(null);
@@ -248,14 +255,8 @@ export const useDrawersStore = defineStore('drawers', () => {
   // Zeigt einen konkreten geografischen Ort (z. B. EXIF-Aufnahmeort eines Fotos) auf der Karte.
   // Optional kann die zugehörige Anhang-Galerie mitgegeben werden, damit ein Klick auf den Foto-Pin
   // auf der Karte die Galerie am selben Bild wieder öffnet.
-  function openMapAtLocation(
-    lat: number,
-    lng: number,
-    title?: string,
-    imageUrl?: string,
-    gallery?: MapFocusGallery,
-    dateBadge?: string
-  ) {
+  function openMapAtLocation(lat: number, lng: number, options?: OpenMapAtLocationOptions) {
+    const { title, imageUrl, gallery, dateBadge } = options ?? {};
     mapFocusLocation.value = { lat, lng, title, imageUrl, gallery, dateBadge };
     mapFocusKey.value = 'photo-location';
     mapFocusExcursionId.value = null;
