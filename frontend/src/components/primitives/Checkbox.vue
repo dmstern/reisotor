@@ -75,8 +75,9 @@ function onChange(event: Event) {
   />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .checkbox {
+  @include touch-target($pseudo: 'before', $expand: true);
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
@@ -109,21 +110,6 @@ function onChange(event: Event) {
 .checkbox--lg {
   width: 28px;
   height: 28px;
-}
-
-/* 44x44px Touch-Hitbox auf Touch-Geräten */
-@media (pointer: coarse) {
-  .checkbox::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    min-width: 44px;
-    min-height: 44px;
-    width: 100%;
-    height: 100%;
-  }
 }
 
 .checkbox:hover:not(:disabled) {

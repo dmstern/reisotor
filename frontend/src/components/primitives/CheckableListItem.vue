@@ -56,7 +56,7 @@ withDefaults(
   </component>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .checkable-list-item,
 .row {
   display: flex;
@@ -156,28 +156,13 @@ withDefaults(
 :deep(input[type='checkbox']),
 :deep(.ui-checkbox),
 :deep(.state-toggle) {
+  @include touch-target($pseudo: 'before');
   position: relative;
   width: 24px;
   height: 24px;
   min-width: 24px;
   min-height: 24px;
   border-width: 2px;
-}
-
-@media (pointer: coarse) {
-  :deep(input[type='checkbox'])::before,
-  :deep(.ui-checkbox)::before,
-  :deep(.state-toggle)::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 .checkable-list-item:focus-visible,

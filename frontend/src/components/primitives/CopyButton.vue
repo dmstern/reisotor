@@ -115,8 +115,14 @@ async function handleCopy(event: MouseEvent) {
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .copy-btn {
+  @include touch-target($size: 36px, $pseudo: 'before', $only-touch: false, $expand: true) {
+    @media (pointer: coarse) {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -139,27 +145,6 @@ async function handleCopy(event: MouseEvent) {
     border-color 0.15s ease,
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
   user-select: none;
-}
-
-/* Touch-Target-Erweiterung (WCAG 2.5.8 / 2.5.5):
-   Vergrößert die klickbare/tippbare Trefferfläche, ohne das Layout zu sprengen */
-.copy-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  min-width: 36px;
-  min-height: 36px;
-  width: 100%;
-  height: 100%;
-}
-
-@media (pointer: coarse) {
-  .copy-btn::before {
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 /* Größen */

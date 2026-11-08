@@ -360,6 +360,7 @@ function clearFilters() {
 }
 
 .search-clear-btn {
+  @include touch-target;
   position: absolute;
   right: 8px;
   top: 50%;
@@ -378,16 +379,6 @@ function clearFilters() {
   z-index: 1;
 }
 
-.search-clear-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 44px;
-  height: 44px;
-  transform: translate(-50%, -50%);
-}
-
 .search-clear-btn:hover {
   color: var(--color-text);
   background: var(--color-hover);
@@ -404,27 +395,12 @@ function clearFilters() {
 }
 
 .bar-icon-btn {
+  @include touch-target;
   position: relative;
   width: var(--input-width, 46px);
   height: var(--input-height, 46px);
   min-width: var(--input-width, 46px);
   min-height: var(--input-height, 46px);
-}
-
-.bar-icon-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 44px;
-  height: 44px;
-  transform: translate(-50%, -50%);
-}
-
-@media (pointer: fine) {
-  .bar-icon-btn::after {
-    display: none;
-  }
 }
 
 /* Responsiver Fallback auf schmalen Viewports und Containern (<= 360px) (#684) */

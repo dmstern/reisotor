@@ -53,7 +53,7 @@ const emit = defineEmits<{
   </Button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .icon-btn {
   position: relative;
   width: var(--input-width, 46px);
@@ -82,17 +82,8 @@ const emit = defineEmits<{
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
-@media (pointer: coarse) {
-  .icon-btn.btn--sm::after {
-    content: '';
-    position: absolute;
-    inset: 50% auto auto 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    min-width: 44px;
-    min-height: 44px;
-  }
+.icon-btn.btn--sm {
+  @include touch-target($expand: true);
 }
 
 .btn--ghost:not(.btn--circle),

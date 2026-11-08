@@ -130,7 +130,7 @@ defineExpose({
   </span>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .info-popover-wrap {
   display: inline-flex;
   align-items: center;
@@ -138,6 +138,7 @@ defineExpose({
 }
 
 .info-popover-btn {
+  @include touch-target($pseudo: 'before');
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -158,13 +159,6 @@ defineExpose({
     background-color 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease;
-}
-
-/* 44x44px Touch-Hitbox */
-.info-popover-btn::before {
-  content: '';
-  position: absolute;
-  inset: -7px;
 }
 
 .info-popover-btn:hover,

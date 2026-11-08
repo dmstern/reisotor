@@ -36,7 +36,7 @@ defineEmits<{
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .color-swatch-picker {
   display: flex;
   flex-wrap: wrap;
@@ -44,6 +44,7 @@ defineEmits<{
 }
 
 .swatch-btn {
+  @include touch-target;
   position: relative;
   width: 26px;
   height: 26px;
@@ -57,26 +58,6 @@ defineEmits<{
     transform var(--transition-fast),
     border-color var(--transition-fast),
     box-shadow var(--transition-fast);
-}
-
-.swatch-btn::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-}
-
-@media (pointer: coarse) {
-  .swatch-btn::after {
-    top: 50%;
-    left: 50%;
-    right: auto;
-    bottom: auto;
-    transform: translate(-50%, -50%);
-    min-width: 44px;
-    min-height: 44px;
-    width: 100%;
-    height: 100%;
-  }
 }
 
 .swatch-btn:hover {

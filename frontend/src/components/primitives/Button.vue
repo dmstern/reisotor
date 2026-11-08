@@ -177,7 +177,7 @@ provide(
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .btn {
   position: relative;
   display: inline-flex;
@@ -454,17 +454,8 @@ a.btn.is-loading {
   font-size: 1.5rem;
 }
 
-@media (pointer: coarse) {
-  .btn--sm::after,
-  .btn--card-action::after {
-    content: '';
-    position: absolute;
-    inset: 50% auto auto 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    min-width: 44px;
-    min-height: 44px;
-  }
+.btn--sm,
+.btn--card-action {
+  @include touch-target($expand: true);
 }
 </style>

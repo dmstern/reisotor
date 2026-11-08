@@ -208,7 +208,7 @@ function handleMainClick(e: MouseEvent) {
   </CheckableListItem>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .item-main {
   flex: 1;
   min-width: 0;
@@ -232,6 +232,7 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .state-toggle {
+  @include touch-target($pseudo: 'before');
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
@@ -253,20 +254,6 @@ function handleMainClick(e: MouseEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-@media (pointer: coarse) {
-  .state-toggle::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 .state-toggle:hover {
@@ -488,6 +475,7 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-minus {
+  @include touch-target($pseudo: 'before');
   position: relative;
   appearance: none;
   -webkit-appearance: none;
@@ -516,20 +504,6 @@ function handleMainClick(e: MouseEvent) {
     color 0.15s ease,
     background-color 0.15s ease,
     transform 0.1s ease;
-}
-
-@media (pointer: coarse) {
-  .tally-minus::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 .tally-minus:hover {
