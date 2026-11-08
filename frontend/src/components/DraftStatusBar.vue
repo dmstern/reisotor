@@ -80,7 +80,7 @@ const emit = defineEmits<{
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .draft-status {
   display: flex;
   align-items: center;
@@ -104,6 +104,7 @@ const emit = defineEmits<{
 }
 
 .draft-discard-btn {
+  @include touch-target($pseudo: 'before');
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -127,20 +128,6 @@ const emit = defineEmits<{
     border-color 0.15s ease,
     transform 0.1s ease;
   user-select: none;
-}
-
-@media (pointer: coarse) {
-  .draft-discard-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 .draft-discard-btn:hover {

@@ -215,7 +215,7 @@ watch(
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .focus-banner {
   position: absolute;
   top: var(--fit-btn-top-inset, var(--space-3));
@@ -401,6 +401,7 @@ watch(
 }
 
 .focus-nav-btn {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -434,23 +435,6 @@ watch(
 .focus-nav-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
-}
-
-@media (pointer: coarse) {
-  .focus-nav-btn {
-    position: relative;
-  }
-
-  .focus-nav-btn::after {
-    content: '';
-    position: absolute;
-    inset: 50% auto auto 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 .focus-date-label {

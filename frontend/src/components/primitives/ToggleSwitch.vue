@@ -68,8 +68,9 @@ function onToggle() {
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .toggle-switch {
+  @include touch-target($pseudo: 'before', $expand: true);
   appearance: none;
   -webkit-appearance: none;
   position: relative;
@@ -102,21 +103,6 @@ function onToggle() {
 .toggle-switch--lg {
   width: 52px;
   height: 28px;
-}
-
-/* Touch-Ziel: Mindestens 44x44px für mobile Bedienung */
-@media (pointer: coarse) {
-  .toggle-switch::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    min-width: 44px;
-    min-height: 44px;
-    width: 100%;
-    height: 100%;
-  }
 }
 
 .toggle-switch:hover:not(:disabled) {

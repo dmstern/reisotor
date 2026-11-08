@@ -611,6 +611,10 @@ defineExpose({
 
 .coords-clear-inline-btn {
   @include touch-target;
+  @include min-touch-target(24px) {
+    width: 24px;
+    height: 24px;
+  }
   background: none;
   border: none;
   padding: 0;
@@ -640,15 +644,6 @@ defineExpose({
 .coords-clear-inline-btn:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 1px);
-}
-
-@media (pointer: coarse) {
-  .coords-clear-inline-btn {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    min-height: 24px;
-  }
 }
 
 .coords-missing-wrap {

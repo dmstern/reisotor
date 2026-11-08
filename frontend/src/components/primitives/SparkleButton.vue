@@ -49,8 +49,9 @@ const emit = defineEmits<{
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .sparkle-suggest-btn {
+  @include touch-target($pseudo: 'before');
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -72,13 +73,6 @@ const emit = defineEmits<{
     border-color 0.15s ease,
     background-color 0.15s ease;
   z-index: 2;
-}
-
-/* Unsichtbare Berührungsflächenerweiterung für Touchscreens (44x44px bei 30x30px Box) */
-.sparkle-suggest-btn::before {
-  content: '';
-  position: absolute;
-  inset: -7px;
 }
 
 .address-sparkle-btn,
