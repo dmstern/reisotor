@@ -94,15 +94,7 @@ function onInput(event: Event) {
 
 .textarea:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
-  box-shadow:
-    inset 0 1.5px 3px rgba(43, 42, 40, 0.14),
-    0 1px 0 var(--shadow-control-highlight);
-}
-
-[data-theme='dark'] .textarea:hover:not(:disabled) {
-  box-shadow:
-    inset 0 1.5px 3px rgba(0, 0, 0, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-control-inset-hover);
 }
 
 .textarea:focus,

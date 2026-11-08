@@ -218,6 +218,7 @@ provide(
 
 .btn:active:not(:disabled):not(.is-disabled) {
   transform: translateY(1px) scale(0.985);
+  translate: 0 0;
   box-shadow: var(--shadow-control-active);
 }
 

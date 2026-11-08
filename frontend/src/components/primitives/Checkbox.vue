@@ -88,9 +88,7 @@ function onChange(event: Event) {
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  box-shadow:
-    inset 0 1.5px 2px rgba(43, 42, 40, 0.1),
-    0 1px 0 var(--shadow-control-highlight);
+  box-shadow: var(--shadow-control-choice);
   cursor: pointer;
   position: relative;
   box-sizing: border-box;
@@ -98,12 +96,6 @@ function onChange(event: Event) {
     background 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease;
-}
-
-[data-theme='dark'] .checkbox {
-  box-shadow:
-    inset 0 1.5px 2px rgba(0, 0, 0, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .checkbox--sm {

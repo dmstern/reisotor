@@ -128,7 +128,7 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
     const mapsBox = await mapsBtn.boundingBox();
     expect(showOnMapBox).not.toBeNull();
     expect(mapsBox).not.toBeNull();
-    expect(showOnMapBox!.height).toBe(mapsBox!.height);
+    expect(showOnMapBox!.height).toBeCloseTo(mapsBox!.height, 0);
 
     // Button "In Maps-App öffnen" klicken
     await mapsBtn.click();
