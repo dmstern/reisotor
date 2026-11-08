@@ -354,6 +354,24 @@
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
 
+  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+  --shadow-control-highlight: rgba(255, 255, 255, 0.65);
+  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
+  --shadow-control:
+    inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(43, 42, 40, 0.08),
+    0 2px 4px rgba(43, 42, 40, 0.04);
+  --shadow-control-hover:
+    inset 0 1px 0 var(--shadow-control-highlight-strong), 0 3px 8px rgba(43, 42, 40, 0.12),
+    0 1px 3px rgba(43, 42, 40, 0.06);
+  --shadow-control-active:
+    inset 0 1.5px 3px rgba(43, 42, 40, 0.16), 0 1px 1px rgba(43, 42, 40, 0.04);
+  --shadow-control-inset:
+    inset 0 1.5px 3px rgba(43, 42, 40, 0.09), inset 0 0 1px rgba(43, 42, 40, 0.04),
+    0 1px 0 var(--shadow-control-highlight);
+  --shadow-dropdown-menu:
+    0 12px 32px rgba(43, 42, 40, 0.16), 0 2px 8px rgba(43, 42, 40, 0.08),
+    inset 0 1px 0 var(--shadow-control-highlight);
+
   /* Extrem dezentes Rausch-Muster (SVG feTurbulence als Daten-URI) für einen angenehm griffigen statt
      komplett flachen/plastikigen Flächen-Eindruck auf denselben taktilen Pillen-Elementen -
      background-blend-mode:overlay statt eigener Deckkraft, damit es sich automatisch in beide Themes
@@ -510,6 +528,23 @@
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
     --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
+
+    /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+    --shadow-control-highlight: rgba(255, 255, 255, 0.12);
+    --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
+    --shadow-control:
+      inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(0, 0, 0, 0.35),
+      0 2px 5px rgba(0, 0, 0, 0.25);
+    --shadow-control-hover:
+      inset 0 1px 0 var(--shadow-control-highlight-strong), 0 3px 8px rgba(0, 0, 0, 0.45),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-control-active: inset 0 1.5px 3px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+    --shadow-control-inset:
+      inset 0 1.5px 3px rgba(0, 0, 0, 0.4), inset 0 0 1px rgba(0, 0, 0, 0.25),
+      0 1px 0 rgba(255, 255, 255, 0.05);
+    --shadow-dropdown-menu:
+      0 14px 36px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 var(--shadow-control-highlight);
     --shadow-floating-island:
       0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -579,6 +614,23 @@
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
   --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
+
+  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+  --shadow-control-highlight: rgba(255, 255, 255, 0.12);
+  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
+  --shadow-control:
+    inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 2px 5px rgba(0, 0, 0, 0.25);
+  --shadow-control-hover:
+    inset 0 1px 0 var(--shadow-control-highlight-strong), 0 3px 8px rgba(0, 0, 0, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-control-active: inset 0 1.5px 3px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --shadow-control-inset:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.4), inset 0 0 1px rgba(0, 0, 0, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-dropdown-menu:
+    0 14px 36px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 var(--shadow-control-highlight);
   --shadow-floating-island:
     0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -644,6 +696,24 @@
   --shadow-island: var(--shadow-floating-island);
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
+
+  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+  --shadow-control-highlight: rgba(255, 255, 255, 0.65);
+  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
+  --shadow-control:
+    inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(43, 42, 40, 0.08),
+    0 2px 4px rgba(43, 42, 40, 0.04);
+  --shadow-control-hover:
+    inset 0 1px 0 var(--shadow-control-highlight-strong), 0 3px 8px rgba(43, 42, 40, 0.12),
+    0 1px 3px rgba(43, 42, 40, 0.06);
+  --shadow-control-active:
+    inset 0 1.5px 3px rgba(43, 42, 40, 0.16), 0 1px 1px rgba(43, 42, 40, 0.04);
+  --shadow-control-inset:
+    inset 0 1.5px 3px rgba(43, 42, 40, 0.09), inset 0 0 1px rgba(43, 42, 40, 0.04),
+    0 1px 0 var(--shadow-control-highlight);
+  --shadow-dropdown-menu:
+    0 12px 32px rgba(43, 42, 40, 0.16), 0 2px 8px rgba(43, 42, 40, 0.08),
+    inset 0 1px 0 var(--shadow-control-highlight);
   color-scheme: light;
 }
 

@@ -292,7 +292,22 @@ Desktop-Panel hatte `box-shadow: none` (Rest eines älteren Layouts) und wirkte 
 sichtbarem Öffnen/Schließen wie eine flache Nachbarspalte statt einer darüberliegenden Schublade.
 Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
 
-**Formularfelder & Dropdowns (Input, Select, Dropdown, Combobox, Textarea)**: Eingabefelder, Selects, Dropdowns und Comboboxen besitzen im Initialzustand **keinen** Schlagschatten (`box-shadow: none`). Erst bei Hover (`:hover`) und im Active-/Fokus-Zustand (`:focus`, `:active`, geöffnetes Dropdown-Menü) erhalten sie einen sanften Schlagschatten (`box-shadow: var(--shadow-sm)`). Der Schatten wird per Transition (`box-shadow 0.15s ease`) sowohl beim Hovern als auch beim Verlassen/Blur weich animiert.
+**Moderne 3D-Effekte für Interaktionselemente (Issue #701)**:
+Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Switches und Tasten besitzen app-weit einen soliden, haptischen 3D-Look mit Kantenlicht- und Tiefeneffekten:
+
+- **Erhobene Steuerelemente (`Button.vue`, `Select.vue`, `Dropdown.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`)**:
+  - Besitzen ein feines Kantenlicht oben (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit dezentem Umgebungs- und Kontaktschatten (`--shadow-control`).
+  - Ein subtiler vertikaler Farbverlauf (`linear-gradient(180deg, color-mix(in srgb, white 5%..10%, ...) 0%, ... 100%)`) simuliert einfallendes Licht von oben und verleiht den Steuerelementen physisches Volumen.
+  - Beim Hovern heben sie sich sanft an (`translate: 0 -1px`, `--shadow-control-hover`).
+  - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985)`, `--shadow-control-active`), sodass sich Interaktionen greifbar und solide anfühlen.
+- **Versenkte Eingabefelder (`Input.vue`, `Textarea.vue`)**:
+  - Wirken wie eingelassene Schächte durch eine sanfte innere Kante (`--shadow-control-inset`: oberer Inset-Schatten plus feiner unterer Lichtsaum), statt flach auf der Oberfläche zu kleben.
+  - Bei Fokus verbindet sich der Inset-Effekt nahtlos mit dem Reisotor-Fokusring (`--focus-ring-halo`).
+- **Umschalter & Toggles (`ToggleSwitch.vue`, `SegmentedToggle.vue`)**:
+  - Die Führungsrinne/der Track ist eingelassen (`--shadow-inset` / oberer Inset-Schatten mit Kantenlichtsaum).
+  - Der Thumb/Schieber ist als haptischer 3D-Körper mit Lichtkante oben (`inset 0 1px 0 #fff`) und weichem Kontaktschatten (`--shadow-pill-raised`) gestaltet.
+- **Dropdown-Menüs & Popovers (`PickerMenu.vue`, `Combobox.vue`)**:
+  - Nutzen `--shadow-dropdown-menu` mit tieferem Schwebeschatten und Lichtkante oben für eine schwebende, solide Menü-Platte.
 
 ## Animationen
 
