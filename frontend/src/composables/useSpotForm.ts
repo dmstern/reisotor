@@ -671,10 +671,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
       }
       if (preview.lat != null && preview.lng != null) {
         const pin = { lat: preview.lat, lng: preview.lng };
+        spotManualPin.value = pin;
         if (editingSpot.value !== null) {
           editSpotManualPin.value = pin;
-        } else {
-          spotManualPin.value = pin;
         }
       }
     } catch {

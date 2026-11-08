@@ -54,31 +54,24 @@ export function cleanAccommodationTitle(raw: string): string {
   if (!title) return '';
 
   // Typische Booking.com-Zusätze: "Hotel Sacher Wien, Wien – Aktualisierte Preise für 2026"
-  title = title.replace(/\s*–\s*Aktualisierte Preise.*$/i, '');
-  title = title.replace(/\s*–\s*Updated \d{4} Prices.*$/i, '');
+  title = title.replace(/\s*[-–—]\s*Aktualisierte Preise.*$/i, '');
+  title = title.replace(/\s*[-–—]\s*Updated \d{4} Prices.*$/i, '');
   title = title.replace(/\s*\([^)]*Preise[^)]*\)/gi, '');
   title = title.replace(/\s*\([^)]*Prices[^)]*\)/gi, '');
-  title = title.replace(/\s*\|\s*Booking\.com$/i, '');
-  title = title.replace(/\s*-\s*Booking\.com$/i, '');
+  title = title.replace(/\s*[|–—-]\s*Booking\.com$/i, '');
 
   // Typische Airbnb-Zusätze: "Loft in Lisbon - Wohnungen zur Miete in Lisbon - Airbnb"
-  title = title.replace(/\s*-\s*Airbnb$/i, '');
-  title = title.replace(/\s*\|\s*Airbnb$/i, '');
-  title = title.replace(/\s*-\s*Wohnungen zur Miete.*$/i, '');
-  title = title.replace(/\s*-\s*Apartments for Rent.*$/i, '');
+  title = title.replace(/\s*[|–—-]\s*Airbnb$/i, '');
+  title = title.replace(/\s*[-–—]\s*Wohnungen zur Miete.*$/i, '');
+  title = title.replace(/\s*[-–—]\s*Apartments for Rent.*$/i, '');
   title = title.replace(/\s*·\s*★.*$/i, ''); // Rating-Snippets wie · ★4,9 · 2 Schlafzimmer
 
   // Typische Trivago-Zusätze: "Hotel Adlon Kempinski, Berlin | trivago.de"
-  title = title.replace(/\s*\|\s*trivago\.[a-z.]+$/i, '');
-  title = title.replace(/\s*-\s*trivago\.[a-z.]+$/i, '');
+  title = title.replace(/\s*[|–—-]\s*trivago\.[a-z.]+$/i, '');
 
   // Allgemeine Plattform-Suffixe
   title = title.replace(
-    /\s*\|\s*(?:Expedia|Hotels\.com|Agoda|Tripadvisor|Fewo-direkt|Vrbo).*$/i,
-    ''
-  );
-  title = title.replace(
-    /\s*-\s*(?:Expedia|Hotels\.com|Agoda|Tripadvisor|Fewo-direkt|Vrbo).*$/i,
+    /\s*[|–—-]\s*(?:Expedia|Hotels\.com|Agoda|Tripadvisor|Fewo-direkt|Vrbo).*$/i,
     ''
   );
 
@@ -122,9 +115,13 @@ export function parsePrice(val: unknown): number | null {
   str = str.replace(/[^0-9.,]/g, '');
   if (!str) return null;
 
-  // Format 1.250,50 -> 1250.50
+  // Format 1.250,50 vs 1,250.50
   if (str.includes('.') && str.includes(',')) {
-    str = str.replace(/\./g, '').replace(',', '.');
+    if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      str = str.replace(/,/g, '');
+    }
   } else if (str.includes(',')) {
     str = str.replace(',', '.');
   }
@@ -191,13 +188,20 @@ const LODGING_TYPES = new Set([
   'localbusiness',
 ]);
 
+function normalizeTypeString(val: string): string {
+  return val
+    .replace(/^https?:\/\/schema\.org\//i, '')
+    .replace(/^schema:/i, '')
+    .toLowerCase();
+}
+
 function isLodgingType(typeVal: unknown): boolean {
   if (!typeVal) return false;
   if (typeof typeVal === 'string') {
-    return LODGING_TYPES.has(typeVal.toLowerCase());
+    return LODGING_TYPES.has(normalizeTypeString(typeVal));
   }
   if (Array.isArray(typeVal)) {
-    return typeVal.some((t) => typeof t === 'string' && LODGING_TYPES.has(t.toLowerCase()));
+    return typeVal.some((t) => typeof t === 'string' && LODGING_TYPES.has(normalizeTypeString(t)));
   }
   return false;
 }
@@ -266,9 +270,12 @@ export function extractBookingMetadataFromHtml(
         ? lodgingObject.image
         : [lodgingObject.image];
       for (const img of rawImgs) {
-        const u = typeof img === 'string' ? img : img?.url || img?.contentUrl;
-        if (u && typeof u === 'string' && isSafeUrl(u) && !isGenericPlaceholderImage(u)) {
-          if (!images.includes(u)) images.push(u);
+        let u = typeof img === 'string' ? img : img?.url || img?.contentUrl;
+        if (u && typeof u === 'string') {
+          if (u.startsWith('//')) u = 'https:' + u;
+          if (isSafeUrl(u) && !isGenericPlaceholderImage(u)) {
+            if (!images.includes(u)) images.push(u);
+          }
         }
       }
       if (images.length > 0 && !imageUrl) {
@@ -565,12 +572,14 @@ export async function fetchAccommodationPreview(
     const parsed = new URL(finalUrl);
     startDate =
       parseDateParam(parsed.searchParams.get('checkin')) ||
+      parseDateParam(parsed.searchParams.get('checkIn')) ||
       parseDateParam(parsed.searchParams.get('check_in')) ||
       parseDateParam(parsed.searchParams.get('arrival')) ||
       parseDateParam(parsed.searchParams.get('from'));
 
     endDate =
       parseDateParam(parsed.searchParams.get('checkout')) ||
+      parseDateParam(parsed.searchParams.get('checkOut')) ||
       parseDateParam(parsed.searchParams.get('check_out')) ||
       parseDateParam(parsed.searchParams.get('departure')) ||
       parseDateParam(parsed.searchParams.get('to'));

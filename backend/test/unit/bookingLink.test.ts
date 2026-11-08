@@ -69,6 +69,12 @@ describe('bookingLink', () => {
       expect(
         cleanAccommodationTitle('Hotel Sacher Wien, Wien – Aktualisierte Preise für 2026')
       ).toBe('Hotel Sacher Wien, Wien');
+      expect(cleanAccommodationTitle('Hotel Sacher - Aktualisierte Preise für 2026')).toBe(
+        'Hotel Sacher'
+      );
+      expect(cleanAccommodationTitle('Hotel Sacher — Aktualisierte Preise für 2026')).toBe(
+        'Hotel Sacher'
+      );
       expect(cleanAccommodationTitle('Grand Hotel | Booking.com')).toBe('Grand Hotel');
       expect(cleanAccommodationTitle('Boutique Hotel (Preise & Verfügbarkeit) - Booking.com')).toBe(
         'Boutique Hotel'
@@ -123,6 +129,8 @@ describe('bookingLink', () => {
       expect(parsePrice('€ 149,00')).toBe(149);
       expect(parsePrice('1.250,50 €')).toBe(1250.5);
       expect(parsePrice('$120.99')).toBe(120.99);
+      expect(parsePrice('$1,250.50')).toBe(1250.5);
+      expect(parsePrice('1,500.00')).toBe(1500);
       expect(parsePrice('180')).toBe(180);
     });
 
@@ -173,9 +181,9 @@ describe('bookingLink', () => {
             <script type="application/ld+json">
               {
                 "@context": "https://schema.org",
-                "@type": "Hotel",
+                "@type": "https://schema.org/Hotel",
                 "name": "Hotel Sacher Wien – Aktualisierte Preise für 2026",
-                "image": "https://images.example.com/sacher.jpg",
+                "image": "//images.example.com/sacher.jpg",
                 "address": {
                   "@type": "PostalAddress",
                   "streetAddress": "Philharmoniker Str. 4",
@@ -283,12 +291,12 @@ describe('bookingLink', () => {
 
       global.fetch = vi.fn().mockResolvedValue({
         status: 200,
-        url: 'https://www.booking.com/hotel/at/alpenchalet.html?checkin=2026-07-01&checkout=2026-07-08',
+        url: 'https://www.booking.com/hotel/at/alpenchalet.html?checkIn=2026-07-01&checkOut=2026-07-08',
         text: async () => mockHtml,
       } as unknown as Response);
 
       const preview = await fetchAccommodationPreview(
-        'https://www.booking.com/hotel/at/alpenchalet.html?checkin=2026-07-01&checkout=2026-07-08'
+        'https://www.booking.com/hotel/at/alpenchalet.html?checkIn=2026-07-01&checkOut=2026-07-08'
       );
 
       expect(preview).not.toBeNull();
@@ -300,6 +308,66 @@ describe('bookingLink', () => {
       expect(preview?.startDate).toBe('2026-07-01');
       expect(preview?.endDate).toBe('2026-07-08');
       expect(preview?.amount).toBe(240);
+    });
+
+    it('falls back to geocoding when coordinates are missing in HTML', async () => {
+      const mockHtmlWithoutCoords = `
+        <html>
+          <head>
+            <meta property="og:title" content="Pension Sonnenhof" />
+            <meta property="og:street-address" content="Hauptstraße 15" />
+            <meta property="og:locality" content="Salzburg" />
+          </head>
+        </html>
+      `;
+
+      global.fetch = vi.fn((url: string) => {
+        if (String(url).includes('booking.com')) {
+          return Promise.resolve({
+            status: 200,
+            url: 'https://www.booking.com/hotel/at/sonnenhof.html',
+            text: async () => mockHtmlWithoutCoords,
+          });
+        }
+        if (
+          String(url).includes('nominatim') ||
+          String(url).includes('photon') ||
+          String(url).includes('places')
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              type: 'FeatureCollection',
+              features: [
+                {
+                  type: 'Feature',
+                  geometry: {
+                    type: 'Point',
+                    coordinates: [13.055, 47.8095],
+                  },
+                  properties: {
+                    name: 'Pension Sonnenhof',
+                    street: 'Hauptstraße',
+                    housenumber: '15',
+                    city: 'Salzburg',
+                    country: 'Österreich',
+                  },
+                },
+              ],
+            }),
+          });
+        }
+        return Promise.resolve({ ok: true, text: async () => '' });
+      }) as unknown as typeof fetch;
+
+      const preview = await fetchAccommodationPreview(
+        'https://www.booking.com/hotel/at/sonnenhof.html'
+      );
+
+      expect(preview).not.toBeNull();
+      expect(preview?.name).toBe('Pension Sonnenhof');
+      expect(preview?.lat).toBe(47.8095);
+      expect(preview?.lng).toBe(13.055);
     });
 
     it('rejects unsafe URLs (SSRF protection)', async () => {

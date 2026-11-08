@@ -173,4 +173,57 @@ describe('useSpotForm - openSpotForm', () => {
     expect(spotForm.value.contact).toBe('+43 1 515800');
     expect(spotManualPin.value).toEqual({ lat: 48.2014, lng: 16.3712 });
   });
+
+  it('updates both spotManualPin and editSpotManualPin when editing an existing spot (issue #607)', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Adlon Berlin',
+      imageUrl: 'https://images.example.com/adlon.jpg',
+      category: 'Unterkunft',
+      address: 'Unter den Linden 77, 10117 Berlin',
+      amount: 450,
+      lat: 52.516,
+      lng: 13.38,
+    });
+
+    const { startEditSpot, editSpotForm, spotManualPin, editSpotManualPin, onSpotMapsLinkUpdate } =
+      useSpotForm({
+        tripId: 1,
+        users: ref([]),
+        spotScheduledDates: ref(new Map()),
+      });
+
+    startEditSpot({
+      id: 5,
+      trip_id: 1,
+      title: 'Alte Unterkunft',
+      category: 'Unterkunft',
+      is_home: 0,
+      image_url: null,
+      note: null,
+      note_format: 'text',
+      maps_link: null,
+      lat: null,
+      lng: null,
+      created_by: 1,
+      address: null,
+      start_date: null,
+      end_date: null,
+      checkin: null,
+      checkout: null,
+      contact: null,
+      amount: null,
+      paid_by_user_id: null,
+      budget_expense_id: null,
+      done: 0,
+    });
+
+    onSpotMapsLinkUpdate('https://www.trivago.de/de/srl/hotel-adlon-berlin');
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(editSpotForm.value.title).toBe('Adlon Berlin');
+    expect(spotManualPin.value).toEqual({ lat: 52.516, lng: 13.38 });
+    expect(editSpotManualPin.value).toEqual({ lat: 52.516, lng: 13.38 });
+  });
 });
