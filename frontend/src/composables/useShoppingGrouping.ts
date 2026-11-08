@@ -96,9 +96,17 @@ export function useShoppingGrouping(items: Ref<ShoppingItem[]>, users: Ref<User[
       }
 
       return [...groups.entries()]
-        .sort(([a], [b]) =>
-          a === UNASSIGNED_SHOP ? 1 : b === UNASSIGNED_SHOP ? -1 : a.localeCompare(b, 'de')
-        )
+        .sort(([a], [b]) => {
+          if (a === UNASSIGNED_SHOP) {
+            return 1;
+          }
+
+          if (b === UNASSIGNED_SHOP) {
+            return -1;
+          }
+
+          return a.localeCompare(b, 'de');
+        })
         .map(([shop, shopItems]) => ({
           key: shop,
           label: shop,

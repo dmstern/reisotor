@@ -441,7 +441,12 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const { title, content, images, excursion_ids, spot_ids, date } = req.body;
     const isHtml = req.body.content_format === 'html';
     const now = new Date().toISOString();
-    const isDraft = req.body.is_draft !== undefined ? (req.body.is_draft ? 1 : 0) : entry.is_draft;
+    let isDraft = entry.is_draft;
+
+    if (req.body.is_draft !== undefined) {
+      isDraft = req.body.is_draft ? 1 : 0;
+    }
+
     const sanitizedImages = Array.isArray(images) ? images.filter(Boolean) : [];
     db.prepare(
       'UPDATE diary_entries SET title = ?, content = ?, content_format = ?, images = ?, date = ?, updated_at = ?, is_draft = ? WHERE id = ?'

@@ -84,12 +84,15 @@ export function useTripEditor() {
   }
 
   async function onSubmit(data: TripFormData) {
-    const result =
-      pendingFixTripId.value != null
-        ? await tripStore.updateTrip(pendingFixTripId.value, data)
-        : editingTrip.value
-          ? await tripStore.updateTrip(editingTrip.value.id, data)
-          : await tripStore.createTrip(data);
+    let result;
+
+    if (pendingFixTripId.value != null) {
+      result = await tripStore.updateTrip(pendingFixTripId.value, data);
+    } else if (editingTrip.value) {
+      result = await tripStore.updateTrip(editingTrip.value.id, data);
+    } else {
+      result = await tripStore.createTrip(data);
+    }
 
     // Serverseitige Auflösung (backend/src/utils/mapsLink.ts) ebenfalls fehlgeschlagen, z. B. weil
     // Google einen Maps-Kurzlink per Bot-Erkennung blockt – Dialog offen lassen, TripForm zeigt einen

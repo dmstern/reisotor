@@ -413,6 +413,12 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     const isHtml = body.note_format === 'html';
     const rawLink = body.link?.trim() || (isBookingLinkUrl(maps_link) ? maps_link?.trim() : null);
     const spotLink = rawLink ? cleanBookingUrl(rawLink) : null;
+    let processedNote: string | null = null;
+
+    if (note) {
+      processedNote = isHtml ? sanitizeHtml(note) : note;
+    }
+
     const result = db
       .prepare(
         `INSERT INTO spots (
@@ -427,7 +433,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         title,
         image_url ?? null,
         category ?? null,
-        note ? (isHtml ? sanitizeHtml(note) : note) : null,
+        processedNote,
         isHtml ? 'html' : 'legacy',
         maps_link ?? null,
         lat ?? null,
@@ -533,6 +539,12 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       spotLink = body.link?.trim() ? cleanBookingUrl(body.link.trim()) : null;
     }
 
+    let processedNote: string | null = null;
+
+    if (note) {
+      processedNote = isHtml ? sanitizeHtml(note) : note;
+    }
+
     db.prepare(
       `UPDATE spots SET title = ?, image_url = ?, category = ?, note = ?, note_format = ?, maps_link = ?, lat = ?, lng = ?, is_home = ?,
          address = ?, start_date = ?, end_date = ?, checkin = ?, checkout = ?, contact = ?, amount = ?,
@@ -542,7 +554,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       title,
       image_url ?? null,
       category ?? null,
-      note ? (isHtml ? sanitizeHtml(note) : note) : null,
+      processedNote,
       isHtml ? 'html' : 'legacy',
       maps_link ?? null,
       lat ?? null,

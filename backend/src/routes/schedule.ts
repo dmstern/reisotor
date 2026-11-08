@@ -162,11 +162,23 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       done,
     } = req.body;
     const spot = locationFromSpot(spot_id);
-    const resolvedUserModified =
-      user_modified !== undefined ? (user_modified ? 1 : 0) : (existingItem.user_modified ?? 1);
-    const resolvedAutoCreated =
-      auto_created !== undefined ? (auto_created ? 1 : 0) : (existingItem.auto_created ?? 0);
-    const resolvedDone = done !== undefined ? (done ? 1 : 0) : (existingItem.done ?? 0);
+    let resolvedUserModified = existingItem.user_modified ?? 1;
+
+    if (user_modified !== undefined) {
+      resolvedUserModified = user_modified ? 1 : 0;
+    }
+
+    let resolvedAutoCreated = existingItem.auto_created ?? 0;
+
+    if (auto_created !== undefined) {
+      resolvedAutoCreated = auto_created ? 1 : 0;
+    }
+
+    let resolvedDone = existingItem.done ?? 0;
+
+    if (done !== undefined) {
+      resolvedDone = done ? 1 : 0;
+    }
 
     const result = updateScheduleStmt.run(
       date,

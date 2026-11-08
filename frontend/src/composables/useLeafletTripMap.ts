@@ -612,21 +612,25 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       return;
     }
 
-    const excursionsToDraw = options.focusedExcursion.value
-      ? options.focusedExcursion.value.role
-        ? []
-        : [options.focusedExcursion.value]
-      : excursionsStore.excursions.filter((e) => {
-          if (e.role) {
-            return false;
-          }
+    let excursionsToDraw: Excursion[] = [];
 
-          if (tourRoleFilterActive && !options.tourRoleFilter!.value!.includes('excursion')) {
-            return false;
-          }
+    if (options.focusedExcursion.value) {
+      if (!options.focusedExcursion.value.role) {
+        excursionsToDraw = [options.focusedExcursion.value];
+      }
+    } else {
+      excursionsToDraw = excursionsStore.excursions.filter((e) => {
+        if (e.role) {
+          return false;
+        }
 
-          return true;
-        });
+        if (tourRoleFilterActive && !options.tourRoleFilter!.value!.includes('excursion')) {
+          return false;
+        }
+
+        return true;
+      });
+    }
 
     for (const excursion of excursionsToDraw) {
       const stations = resolveStations(

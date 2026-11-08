@@ -669,11 +669,17 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       );
     }
 
+    let processedNote: string | null = null;
+
+    if (note) {
+      processedNote = isHtml ? sanitizeHtml(note) : note;
+    }
+
     const result = insertIdeaStmt.run(
       trip_id,
       title,
       localImageUrl ?? null,
-      note ? (isHtml ? sanitizeHtml(note) : note) : null,
+      processedNote,
       isHtml ? 'html' : 'legacy',
       req.session.userId,
       role ?? null,
@@ -771,10 +777,16 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       );
     }
 
+    let processedNote: string | null = null;
+
+    if (note) {
+      processedNote = isHtml ? sanitizeHtml(note) : note;
+    }
+
     const result = updateIdeaStmt.run(
       title,
       localImageUrl ?? null,
-      note ? (isHtml ? sanitizeHtml(note) : note) : null,
+      processedNote,
       isHtml ? 'html' : 'legacy',
       role ?? null,
       req.body.destination_spot_id ?? null,

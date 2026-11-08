@@ -129,12 +129,16 @@ export function scheduleItemToEntry(
   }
 
   const linked = item.spot_id != null || item.idea_id != null;
-  const linkedExcursion =
-    item.idea_id != null
-      ? maps?.excursionMap
-        ? maps.excursionMap.get(item.idea_id)
-        : excursions.find((e) => e.id === item.idea_id)
-      : undefined;
+  let linkedExcursion: Excursion | undefined;
+
+  if (item.idea_id != null) {
+    if (maps?.excursionMap) {
+      linkedExcursion = maps.excursionMap.get(item.idea_id);
+    } else {
+      linkedExcursion = excursions.find((e) => e.id === item.idea_id);
+    }
+  }
+
   const icons = resolveScheduleItemIcons(
     item,
     spots,
@@ -143,6 +147,14 @@ export function scheduleItemToEntry(
     maps,
     linkedExcursion
   );
+
+  let resolvedCategory = item.category;
+
+  if (linkedExcursion?.role) {
+    resolvedCategory = 'travel';
+  } else if (linked) {
+    resolvedCategory = 'excursion';
+  }
 
   return {
     key: `s-${item.id}`,
@@ -163,7 +175,7 @@ export function scheduleItemToEntry(
     // (siehe entfernte buildTravelEntries()): jede Tour hat GENAU einen Kalender-Eintrag, sonst
     // erschien eine terminierte Reise-Etappe früher doppelt (einmal als Ausflug-, einmal als
     // Reise-Eintrag).
-    category: linkedExcursion?.role ? 'travel' : linked ? 'excursion' : item.category,
+    category: resolvedCategory,
     icon: icons.icon,
     iconDef: icons.iconDef,
     ideaId: item.idea_id,

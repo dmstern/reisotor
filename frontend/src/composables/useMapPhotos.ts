@@ -290,11 +290,14 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
             const meta = await extractExifFromUrl(item.url);
 
             if (meta?.latitude != null && meta?.longitude != null) {
-              const timestamp = meta.dateTime
-                ? meta.dateTime.getTime()
-                : item.dateFallback
-                  ? new Date(item.dateFallback).getTime()
-                  : 0;
+              let timestamp = 0;
+
+              if (meta.dateTime) {
+                timestamp = meta.dateTime.getTime();
+              } else if (item.dateFallback) {
+                timestamp = new Date(item.dateFallback).getTime();
+              }
+
               itemsWithMeta.push({ item, meta, timestamp });
             }
           } catch {

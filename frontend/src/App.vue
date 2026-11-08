@@ -123,11 +123,13 @@ watch(
 // damit ScheduleView nicht doppelt (im Hauptinhalt UND im Drawer) gemountet wird.
 watch(isDesktop, (desktop) => {
   if (desktop && route.name === 'calendar') {
-    const tripId = route.params.tripId
-      ? String(route.params.tripId)
-      : tripStore.currentTripId
-        ? String(tripStore.currentTripId)
-        : '';
+    let tripId = '';
+
+    if (route.params.tripId) {
+      tripId = String(route.params.tripId);
+    } else if (tripStore.currentTripId) {
+      tripId = String(tripStore.currentTripId);
+    }
 
     if (tripId) {
       router.replace(`/trip/${tripId}`);

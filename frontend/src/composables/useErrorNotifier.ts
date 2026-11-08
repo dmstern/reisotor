@@ -155,12 +155,13 @@ function buildSummary(
 }
 
 export function formatDiagnosticMarkdown(err: CapturedError): string {
-  const typeLabel =
-    err.kind === 'api'
-      ? `API-Fehler${err.status ? ` (HTTP ${err.status})` : ''}`
-      : err.kind === 'sync'
-        ? `Offline-Sync-Konflikt${err.status ? ` (HTTP ${err.status})` : ''}`
-        : `Laufzeitfehler (${err.errorName})`;
+  let typeLabel = `Laufzeitfehler (${err.errorName})`;
+
+  if (err.kind === 'api') {
+    typeLabel = `API-Fehler${err.status ? ` (HTTP ${err.status})` : ''}`;
+  } else if (err.kind === 'sync') {
+    typeLabel = `Offline-Sync-Konflikt${err.status ? ` (HTTP ${err.status})` : ''}`;
+  }
 
   const lines: string[] = [
     `### Fehlerdiagnose`,
@@ -247,23 +248,27 @@ export function useErrorNotifier() {
 
     const kind: 'api' | 'runtime' | 'sync' = opts.kind ?? (isApi ? 'api' : 'runtime');
 
-    const errorName =
-      err instanceof Error
-        ? err.name || (isApi ? 'ApiError' : 'Error')
-        : isApi
-          ? 'ApiError'
-          : typeof err === 'object' && err !== null && 'name' in err
-            ? String((err as { name: unknown }).name)
-            : 'Error';
+    let errorName = 'Error';
 
-    const rawMessage =
-      err instanceof Error
-        ? err.message
-        : typeof err === 'string'
-          ? err
-          : typeof err === 'object' && err !== null && 'message' in err
-            ? String((err as { message: unknown }).message)
-            : JSON.stringify(err) || 'Unbekannter Fehler';
+    if (err instanceof Error) {
+      errorName = err.name || (isApi ? 'ApiError' : 'Error');
+    } else if (isApi) {
+      errorName = 'ApiError';
+    } else if (typeof err === 'object' && err !== null && 'name' in err) {
+      errorName = String((err as { name: unknown }).name);
+    }
+
+    let rawMessage = 'Unbekannter Fehler';
+
+    if (err instanceof Error) {
+      rawMessage = err.message;
+    } else if (typeof err === 'string') {
+      rawMessage = err;
+    } else if (typeof err === 'object' && err !== null && 'message' in err) {
+      rawMessage = String((err as { message: unknown }).message);
+    } else {
+      rawMessage = JSON.stringify(err) || 'Unbekannter Fehler';
+    }
 
     const stack = err instanceof Error ? err.stack : undefined;
 

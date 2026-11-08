@@ -23,7 +23,14 @@ try {
 const env =
   process.env.APP_ENV ??
   (process.env.GITHUB_REF?.startsWith('refs/tags/v') ? 'production' : 'development');
-const versionSuffix = env === 'staging' ? '-staging' : env === 'production' ? '' : '-dev';
+let versionSuffix = '-dev';
+
+if (env === 'staging') {
+  versionSuffix = '-staging';
+} else if (env === 'production') {
+  versionSuffix = '';
+}
+
 const computedVersion = `${pkg.version}${versionSuffix}`;
 
 const SLUG_TITLES = {

@@ -590,18 +590,27 @@ function parseBingHtml(html: string, rawName: string, options: ParseBingHtmlOpti
       // Bing Edge CDN (turl mit &w=1000): Hohe Verfügbarkeit und klein (~30 KB), ideal zur Schonung
       // des Serverspeichers bei Spots. Für Trip-Banner hingegen wird das Originalbild (murl) benötigt,
       // da turl (Bing OIP-Cache) hardwareseitig auf 474px Breite beschränkt ist und im Banner pixelig wirkt.
-      const cdnUrl = turl ? (turl.includes('?') ? `${turl}&w=1000` : `${turl}?w=1000`) : null;
-      const candidate = isBanner
-        ? murl && isSafeUrl(murl) && isGoodPhoto(murl)
-          ? murl
-          : cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
-            ? cdnUrl
-            : null
-        : cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl)
-          ? cdnUrl
-          : murl && isSafeUrl(murl) && isGoodPhoto(murl)
-            ? murl
-            : null;
+      let cdnUrl: string | null = null;
+
+      if (turl) {
+        cdnUrl = turl.includes('?') ? `${turl}&w=1000` : `${turl}?w=1000`;
+      }
+
+      const isMurlValid = Boolean(murl && isSafeUrl(murl) && isGoodPhoto(murl));
+      const isCdnUrlValid = Boolean(cdnUrl && isSafeUrl(cdnUrl) && isGoodPhoto(cdnUrl));
+      let candidate: string | null = null;
+
+      if (isBanner) {
+        if (isMurlValid) {
+          candidate = murl ?? null;
+        } else if (isCdnUrlValid) {
+          candidate = cdnUrl;
+        }
+      } else if (isCdnUrlValid) {
+        candidate = cdnUrl;
+      } else if (isMurlValid) {
+        candidate = murl ?? null;
+      }
 
       if (candidate && !seen.has(candidate)) {
         seen.add(candidate);
@@ -625,12 +634,13 @@ function parseBingHtml(html: string, rawName: string, options: ParseBingHtmlOpti
 
       const orig = origMatches[i][1]?.replace(/&amp;/g, '&');
       const thumb = thumbMatches[i]?.[1]?.replace(/&amp;/g, '&');
-      const cand =
-        orig && isSafeUrl(orig) && isGoodPhoto(orig)
-          ? orig
-          : thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)
-            ? thumb
-            : null;
+      let cand: string | null = null;
+
+      if (orig && isSafeUrl(orig) && isGoodPhoto(orig)) {
+        cand = orig;
+      } else if (thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)) {
+        cand = thumb;
+      }
 
       if (cand && !seen.has(cand)) {
         seen.add(cand);
@@ -788,12 +798,13 @@ async function queryDuckDuckGoImages(
 
       const img = item.image;
       const thumb = item.thumbnail;
-      const candidate =
-        img && isSafeUrl(img) && isGoodPhoto(img)
-          ? img
-          : thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)
-            ? thumb
-            : null;
+      let candidate: string | null = null;
+
+      if (img && isSafeUrl(img) && isGoodPhoto(img)) {
+        candidate = img;
+      } else if (thumb && isSafeUrl(thumb) && isGoodPhoto(thumb)) {
+        candidate = thumb;
+      }
 
       if (candidate && !seen.has(candidate)) {
         seen.add(candidate);

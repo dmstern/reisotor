@@ -128,28 +128,32 @@ export function useShoppingList(tripIdOverride?: number) {
       return null;
     }
 
-    const assigned_to_user_id =
-      params.groupBy === 'buyer'
-        ? params.groupKey.startsWith('user-')
-          ? Number(params.groupKey.slice(5))
-          : undefined
-        : params.fallbackBuyer
-          ? Number(params.fallbackBuyer)
-          : undefined;
+    const USER_PREFIX = 'user-';
+    let assigned_to_user_id: number | undefined;
 
-    const shop =
-      params.groupBy === 'shop'
-        ? params.groupKey === (params.unassignedShopLabel ?? 'Ohne Shop')
-          ? undefined
-          : params.groupKey
-        : params.fallbackShop || undefined;
+    if (params.groupBy === 'buyer') {
+      if (params.groupKey.startsWith(USER_PREFIX)) {
+        assigned_to_user_id = Number(params.groupKey.slice(USER_PREFIX.length));
+      }
+    } else if (params.fallbackBuyer) {
+      assigned_to_user_id = Number(params.fallbackBuyer);
+    }
 
-    const period =
-      params.groupBy === 'period'
-        ? params.groupKey === 'before' || params.groupKey === 'during'
+    let shop: string | undefined = params.fallbackShop || undefined;
+
+    if (params.groupBy === 'shop') {
+      const unassignedLabel = params.unassignedShopLabel ?? 'Ohne Shop';
+      shop = params.groupKey === unassignedLabel ? undefined : params.groupKey;
+    }
+
+    let period: Period | undefined = params.fallbackPeriod || undefined;
+
+    if (params.groupBy === 'period') {
+      period =
+        params.groupKey === 'before' || params.groupKey === 'during'
           ? (params.groupKey as Period)
-          : undefined
-        : params.fallbackPeriod || undefined;
+          : undefined;
+    }
 
     const created = await api.post<ShoppingItem>('/shopping', {
       trip_id: tripId,

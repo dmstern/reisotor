@@ -448,12 +448,13 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     overrideBehavior?: ScrollBehavior
   ): Promise<void> {
     return scrollToElementInBody(
-      () =>
-        target instanceof HTMLElement
-          ? target.isConnected
-            ? target
-            : null
-          : getSpotElement(target),
+      () => {
+        if (target instanceof HTMLElement) {
+          return target.isConnected ? target : null;
+        }
+
+        return getSpotElement(target);
+      },
       offsetAdjustment,
       overrideBehavior
     );

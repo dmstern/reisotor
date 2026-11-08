@@ -143,21 +143,25 @@ export function useTodoList(tripIdOverride?: number) {
       return null;
     }
 
-    const assigned_to_user_id =
-      params.groupBy === 'assignee'
-        ? params.groupKey.startsWith('user-')
-          ? Number(params.groupKey.slice(5))
-          : undefined
-        : params.fallbackAssignee
-          ? Number(params.fallbackAssignee)
-          : undefined;
+    const USER_PREFIX = 'user-';
+    let assigned_to_user_id: number | undefined;
 
-    const period =
-      params.groupBy === 'period'
-        ? params.groupKey === 'before' || params.groupKey === 'during'
+    if (params.groupBy === 'assignee') {
+      if (params.groupKey.startsWith(USER_PREFIX)) {
+        assigned_to_user_id = Number(params.groupKey.slice(USER_PREFIX.length));
+      }
+    } else if (params.fallbackAssignee) {
+      assigned_to_user_id = Number(params.fallbackAssignee);
+    }
+
+    let period: Period | undefined = params.period || undefined;
+
+    if (params.groupBy === 'period') {
+      period =
+        params.groupKey === 'before' || params.groupKey === 'during'
           ? (params.groupKey as Period)
-          : undefined
-        : params.period || undefined;
+          : undefined;
+    }
 
     const created = await api.post<TodoItem>('/todos', {
       trip_id: tripId,

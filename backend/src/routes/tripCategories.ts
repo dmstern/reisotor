@@ -586,7 +586,11 @@ export const tripCategoriesRoutes: FastifyPluginAsync = async (app) => {
     const newIcon = icon !== undefined ? icon : existing.icon;
     const newEmoji = emoji !== undefined ? emoji : existing.emoji;
     const newColor = color !== undefined ? color : existing.color;
-    const newHidden = is_hidden !== undefined ? (is_hidden ? 1 : 0) : existing.is_hidden;
+    let newHidden = existing.is_hidden;
+
+    if (is_hidden !== undefined) {
+      newHidden = is_hidden ? 1 : 0;
+    }
 
     // Transaktion: Bei Umbenennung alle Vorkommen im Urlaub mit umbenennen
     const updateTransaction = db.transaction(() => {

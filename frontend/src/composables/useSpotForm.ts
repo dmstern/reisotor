@@ -889,6 +889,18 @@ export function useSpotForm(options: UseSpotFormOptions) {
       lng = parsed?.lng ?? fallback?.lng ?? undefined;
     }
 
+    let paidByUserId: number | undefined;
+
+    if (f.paid_by_user_id) {
+      paidByUserId = Number(f.paid_by_user_id);
+    } else if (f.amount) {
+      if (users.value.length === 1) {
+        paidByUserId = users.value[0].id;
+      } else {
+        paidByUserId = auth.user?.id ?? undefined;
+      }
+    }
+
     return {
       trip_id: tripId,
       title: f.title.trim(),
@@ -907,13 +919,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       checkout: f.checkout || undefined,
       contact: f.contact || undefined,
       amount: f.amount ? Number(f.amount) : undefined,
-      paid_by_user_id: f.paid_by_user_id
-        ? Number(f.paid_by_user_id)
-        : f.amount
-          ? users.value.length === 1
-            ? users.value[0].id
-            : (auth.user?.id ?? undefined)
-          : undefined,
+      paid_by_user_id: paidByUserId,
       link: f.link?.trim() ? normalizeWebUrl(f.link) : null,
     };
   }
@@ -1025,11 +1031,13 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     await syncSpotTours(result.id, spotForm.value.tourTitles);
-    const datesToSchedule = spotForm.value.scheduledDates?.length
-      ? spotForm.value.scheduledDates
-      : spotForm.value.scheduledDate
-        ? [spotForm.value.scheduledDate]
-        : [];
+    let datesToSchedule: string[] = [];
+
+    if (spotForm.value.scheduledDates?.length) {
+      datesToSchedule = spotForm.value.scheduledDates;
+    } else if (spotForm.value.scheduledDate) {
+      datesToSchedule = [spotForm.value.scheduledDate];
+    }
 
     for (const d of datesToSchedule) {
       await scheduleStore.create({

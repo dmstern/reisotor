@@ -580,6 +580,14 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       }
 
       const duration_seconds = Math.round((distance_meters / (speedKmh * 1000)) * 3600);
+      let profile = 'driving-car';
+
+      if (transport_type === 'Fahrrad') {
+        profile = 'cycling-regular';
+      } else if (transport_type === 'zu Fuß') {
+        profile = 'foot-walking';
+      }
+
       return {
         supported: true,
         routes: [
@@ -594,12 +602,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
             ],
             distance_meters,
             duration_seconds,
-            profile:
-              transport_type === 'Fahrrad'
-                ? 'cycling-regular'
-                : transport_type === 'zu Fuß'
-                  ? 'foot-walking'
-                  : 'driving-car',
+            profile,
           },
         ],
       } as unknown as T;
@@ -779,20 +782,19 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   }
 
   // --- Likes toggling (/spots/:id/like, /ideas/:id/like, /notes/:id/like, /diary/:id/like) ---
+  const domainFkKeys: Record<string, string> = {
+    ideas: 'idea_id',
+    diary: 'entry_id',
+    notes: 'note_id',
+  };
+
   const likeMatch = /^\/(spots|ideas|notes|diary)\/(-?\d+)\/like$/.exec(basePath);
 
   if (likeMatch && method === 'POST') {
     const domain = likeMatch[1];
     const targetId = Number(likeMatch[2]);
     const likesKey = `/${domain === 'ideas' ? 'ideas' : domain}/likes`;
-    const fkKey =
-      domain === 'ideas'
-        ? 'idea_id'
-        : domain === 'diary'
-          ? 'entry_id'
-          : domain === 'notes'
-            ? 'note_id'
-            : 'spot_id';
+    const fkKey = domainFkKeys[domain] ?? 'spot_id';
 
     if (!(likesKey in store)) {
       store[likesKey] = [];
@@ -820,14 +822,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const domain = commentMatch[1];
     const targetId = Number(commentMatch[2]);
     const commentsKey = `/${domain}/comments`;
-    const fkKey =
-      domain === 'ideas'
-        ? 'idea_id'
-        : domain === 'diary'
-          ? 'entry_id'
-          : domain === 'notes'
-            ? 'note_id'
-            : 'spot_id';
+    const fkKey = domainFkKeys[domain] ?? 'spot_id';
 
     if (!(commentsKey in store)) {
       store[commentsKey] = [];
@@ -1153,33 +1148,34 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           editorIds.push(currentDemoUser.id);
         }
 
+        function resolveArray<V>(first: unknown, second: unknown): V[] {
+          if (Array.isArray(first)) {
+            return first as V[];
+          }
+
+          if (Array.isArray(second)) {
+            return second as V[];
+          }
+
+          return [];
+        }
+
+        let isDraft = (existing.is_draft as number) ?? 0;
+
+        if (body?.is_draft !== undefined) {
+          isDraft = body.is_draft ? 1 : 0;
+        }
+
         const updated = {
           ...existing,
           ...(body ?? {}),
           id,
           updated_at: now,
           editor_ids: editorIds,
-          excursion_ids: Array.isArray(body?.excursion_ids)
-            ? body.excursion_ids
-            : Array.isArray(existing.excursion_ids)
-              ? existing.excursion_ids
-              : [],
-          spot_ids: Array.isArray(body?.spot_ids)
-            ? body.spot_ids
-            : Array.isArray(existing.spot_ids)
-              ? existing.spot_ids
-              : [],
-          images: Array.isArray(body?.images)
-            ? body.images
-            : Array.isArray(existing.images)
-              ? existing.images
-              : [],
-          is_draft:
-            body?.is_draft !== undefined
-              ? body.is_draft
-                ? 1
-                : 0
-              : ((existing.is_draft as number) ?? 0),
+          excursion_ids: resolveArray(body?.excursion_ids, existing.excursion_ids),
+          spot_ids: resolveArray(body?.spot_ids, existing.spot_ids),
+          images: resolveArray(body?.images, existing.images),
+          is_draft: isDraft,
         };
         store['/diary'] = store['/diary'].map((item) =>
           (item as { id: number }).id === id ? updated : item

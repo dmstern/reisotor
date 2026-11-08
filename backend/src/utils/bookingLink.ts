@@ -403,11 +403,13 @@ function parsePostalAddress(addr: Record<string, unknown> | string | undefined):
   const street = addr.streetAddress ? String(addr.streetAddress).trim() : '';
   const postal = addr.postalCode ? String(addr.postalCode).trim() : '';
   const locality = addr.addressLocality ? String(addr.addressLocality).trim() : '';
-  const country = addr.addressCountry
-    ? typeof addr.addressCountry === 'string'
-      ? addr.addressCountry.trim()
-      : (addr.addressCountry as { name?: string })?.name?.trim() || ''
-    : '';
+  let country = '';
+
+  if (typeof addr.addressCountry === 'string') {
+    country = addr.addressCountry.trim();
+  } else if (addr.addressCountry) {
+    country = (addr.addressCountry as { name?: string })?.name?.trim() || '';
+  }
 
   if (locality) {
     city = locality;

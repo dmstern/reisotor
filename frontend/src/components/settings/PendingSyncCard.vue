@@ -210,12 +210,13 @@ async function syncSingle(entry: OutboxEntry) {
       typeof (err as { status: unknown }).status === 'number'
         ? (err as { status: number }).status
         : undefined;
-    const message =
-      err instanceof Error
-        ? err.message
-        : typeof err === 'object' && err !== null && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'Fehler beim Übertragen';
+    let message = 'Fehler beim Übertragen';
+
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === 'object' && err !== null && 'message' in err) {
+      message = String((err as { message: unknown }).message);
+    }
 
     updateOutboxEntry(entry.id, {
       lastError: {
