@@ -245,8 +245,8 @@ export default tseslint.config(
         'warn',
         {
           ignore: [
-            -1, 0, 1, 2, 10, 24, 60, 100, 180, 360, 1000, 1024, 200, 201, 204, 301, 302, 304, 400,
-            401, 403, 404, 409, 422, 500,
+            -1, 0, 0.5, 1, 2, 10, 24, 60, 100, 180, 360, 1000, 1024, 200, 201, 204, 301, 302, 304,
+            400, 401, 403, 404, 409, 422, 500,
           ],
           ignoreArrayIndexes: true,
           ignoreDefaultValues: true,
@@ -267,6 +267,7 @@ export default tseslint.config(
       '**/*.spec.mjs',
       'e2e/**/*.ts',
       'scripts/**/*.test.*',
+      '**/*.stories.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
