@@ -14,3 +14,5 @@ storybook-static
 **/storybook-static
 venv
 venv/**
+.venv
+.venv/**

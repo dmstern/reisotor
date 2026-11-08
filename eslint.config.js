@@ -147,6 +147,8 @@ export default tseslint.config(
       '**/storybook-static/**',
       '**/tests/scratch/**',
       '.claude',
+      '**/venv/**',
+      '**/.venv/**',
     ],
   },
   ...tseslint.configs.recommended,
