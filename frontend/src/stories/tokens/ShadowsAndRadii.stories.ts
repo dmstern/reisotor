@@ -15,7 +15,12 @@ export const ShadowsAndRadiiSystem: Story = {
         {
           var: '--radius-sm-squircle',
           px: '10px / 17.5px (Squircle)',
-          usage: 'Kompakte Buttons, Chips, Badges & Inputs',
+          usage: 'Kompakte Controls, Chips, Badges & Inputs',
+        },
+        {
+          var: '--radius-btn-squircle',
+          px: '12px / 21px (Squircle)',
+          usage: 'Standard-Buttons (Button.vue)',
         },
         {
           var: '--radius-md-squircle',
