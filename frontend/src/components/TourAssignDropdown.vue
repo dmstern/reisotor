@@ -372,6 +372,13 @@ onUnmounted(() => {
   background: var(--color-bg);
 }
 
+.create-tour-input:focus,
+.create-tour-input:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+}
+
 .create-btn {
   display: inline-flex;
   align-items: center;

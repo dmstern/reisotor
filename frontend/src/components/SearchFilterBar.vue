@@ -142,7 +142,7 @@ function clearFilters() {
       <input
         ref="searchInputRef"
         :value="searchQuery"
-        type="text"
+        type="search"
         class="search-input"
         :placeholder="searchPlaceholder"
         aria-label="Suchen"
@@ -333,8 +333,8 @@ function clearFilters() {
   height: var(--input-height, 46px);
   min-height: var(--input-height, 46px);
   padding: 0 36px 0 38px;
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
   background: var(--color-surface);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   color: var(--color-text);
@@ -347,13 +347,20 @@ function clearFilters() {
     box-shadow 0.15s ease;
 }
 
+.search-input::-webkit-search-decoration,
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-results-button,
+.search-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  display: none;
+}
+
 .search-input:hover {
   box-shadow: var(--shadow-sm);
 }
 
 .search-input:focus,
 .search-input:focus-visible {
-  border-color: var(--color-primary);
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));

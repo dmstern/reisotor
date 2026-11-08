@@ -227,8 +227,10 @@ function openMembers(trip: Trip) {
 }
 
 .trip-select:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
+  border-radius: var(--radius-xs-squircle);
 }
 
 .row-actions {

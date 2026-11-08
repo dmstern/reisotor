@@ -209,7 +209,7 @@ function selectMode(val: ThemeMode) {
     transform 0.1s ease;
 }
 
-.theme-dropdown-trigger:hover {
+.theme-dropdown-trigger:hover:not(:focus-visible):not(.is-open) {
   background-color: var(--color-hover);
   border-color: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -217,10 +217,9 @@ function selectMode(val: ThemeMode) {
 
 .theme-dropdown-trigger:focus-visible,
 .theme-dropdown-trigger.is-open {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .theme-dropdown-trigger:active {

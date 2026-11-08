@@ -250,22 +250,6 @@ async function submit() {
   color: var(--color-text-heading);
 }
 
-.input {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 0.95rem;
-}
-
-.input:focus {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
-}
-
 .hint {
   font-size: 0.78rem;
   color: var(--color-text-muted);

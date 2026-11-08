@@ -59,7 +59,7 @@ function onDropdownScroll(e: Event) {
       <Input
         :model-value="modelValue"
         class="location-picker-input"
-        type="text"
+        type="search"
         name="location-search"
         data-testid="location-search-input"
         :placeholder="placeholder"

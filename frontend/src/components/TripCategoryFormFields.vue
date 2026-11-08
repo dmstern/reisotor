@@ -154,10 +154,10 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  min-height: 44px;
+  min-height: var(--input-height, 46px);
   background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md-squircle);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: pointer;
   font-size: var(--font-size-sm);
@@ -171,15 +171,16 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
     box-shadow var(--transition-fast);
 }
 
-.icon-selector-btn:hover {
+.icon-selector-btn:hover:not(:focus-visible) {
   border-color: var(--color-primary);
   background: var(--color-hover);
   box-shadow: var(--shadow-sm);
 }
 
 .icon-selector-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .icon-name {
