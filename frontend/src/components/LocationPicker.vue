@@ -12,6 +12,10 @@ import { usePlaceSearch, type PlaceSearchResult } from '../composables/usePlaceS
 import { useLocationDetails } from '../composables/useLocationDetails';
 import { useLocationSuggestions } from '../composables/useLocationSuggestions';
 import { useLocationPickerMap, OWN_LOCATION_ICON } from '../composables/useLocationPickerMap';
+import {
+  DEFAULT_SPOT_PLACEHOLDER_PHRASES,
+  DEFAULT_TRIP_PLACEHOLDER_PHRASES,
+} from '../composables/useAnimatedPlaceholder';
 
 export type { PlaceSearchResult } from '../composables/usePlaceSearch';
 
@@ -302,6 +306,21 @@ const computedPlaceholder = computed(() => {
     : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
 });
 
+const computedPlaceholderPhrases = computed(() => {
+  if (props.placeholder) return [props.placeholder];
+  if (props.context === 'trip') {
+    return DEFAULT_TRIP_PLACEHOLDER_PHRASES;
+  }
+  if (details.hasLocation.value) {
+    return [
+      'Anderen Ort oder Adresse suchen...',
+      'Anderen Maps-Link einfügen...',
+      'Anderen Booking- oder Airbnb-Link einfügen...',
+    ];
+  }
+  return DEFAULT_SPOT_PLACEHOLDER_PHRASES;
+});
+
 function clear() {
   search.clearSearch();
   titleSearch.clearSearch();
@@ -507,6 +526,7 @@ defineExpose({
         :results="results"
         :active-index="activeIndex"
         :placeholder="computedPlaceholder"
+        :placeholder-phrases="computedPlaceholderPhrases"
         :is-details-visible="isDetailsVisible"
         @update:model-value="handleInput"
         @select="selectPlace"

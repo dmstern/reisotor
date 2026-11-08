@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import AppIcon from './AppIcon.vue';
@@ -8,6 +9,7 @@ import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import InfoPopover from './primitives/InfoPopover.vue';
 import CategoryChip from './CategoryChip.vue';
 import type { PlaceSearchResult } from '../composables/usePlaceSearch';
+import { useAnimatedPlaceholder } from '../composables/useAnimatedPlaceholder';
 
 const props = defineProps<{
   modelValue: string;
@@ -16,6 +18,7 @@ const props = defineProps<{
   results: PlaceSearchResult[];
   activeIndex: number;
   placeholder?: string;
+  placeholderPhrases?: string[];
   isDetailsVisible: boolean;
   hasMore?: boolean;
   isLoadingMore?: boolean;
@@ -30,6 +33,32 @@ const emit = defineEmits<{
   (e: 'openManualDetails'): void;
   (e: 'loadMore'): void;
 }>();
+
+const isFocused = ref(false);
+
+const phrases = computed(() => props.placeholderPhrases || []);
+
+const { placeholder: animatedPlaceholder } = useAnimatedPlaceholder(phrases, {
+  fallback: () => props.placeholder,
+  disabled: () => Boolean(props.modelValue) || isFocused.value || phrases.value.length === 0,
+});
+
+const activePlaceholder = computed(() => {
+  if (phrases.value.length > 0 && !isFocused.value && !props.modelValue) {
+    return animatedPlaceholder.value;
+  }
+  return props.placeholder;
+});
+
+function handleFocus(event: FocusEvent) {
+  isFocused.value = true;
+  emit('focus', event);
+}
+
+function handleBlur(event: FocusEvent) {
+  isFocused.value = false;
+  emit('blur', event);
+}
 
 function onDropdownScroll(e: Event) {
   const el = e.target as HTMLElement;
@@ -62,24 +91,24 @@ function onDropdownScroll(e: Event) {
         type="search"
         name="location-search"
         data-testid="location-search-input"
-        :placeholder="placeholder"
+        :placeholder="activePlaceholder"
         aria-label="Ort suchen oder Maps-Link einfügen"
         autocomplete="off"
         @update:model-value="emit('update:modelValue', $event)"
         @keydown="emit('keydown', $event)"
-        @focus="emit('focus', $event)"
-        @blur="emit('blur', $event)"
+        @focus="handleFocus"
+        @blur="handleBlur"
       />
       <div class="search-right-actions">
         <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
           <LoadingSpinner size="sm" class="spinner input-spinner" />
         </div>
         <InfoPopover
-          title="Suchtipps & Maps-Links"
+          title="Suchtipps, Maps- & Buchungs-Links"
           aria-label="Suchtipps und Maps-Links anzeigen"
           align="right"
           placement="bottom"
-          :menu-width="260"
+          :menu-width="290"
           class="search-info-popover"
         >
           <p>
@@ -90,8 +119,22 @@ function onDropdownScroll(e: Event) {
             <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple Maps
             oder OpenStreetMap (OSM) hier hinein.
           </p>
+          <p>
+            <strong>Buchungs-Links:</strong> Füge einen Link von Booking.com, Airbnb oder Trivago
+            ein – Name, Fotos, Adresse, Preis und Reisedaten werden automatisch übernommen.
+          </p>
           <p class="popover-tip">
-            📍 Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu platzieren.
+            <AppIcon
+              :icon="FORM_FIELD_ICONS.location"
+              :size="14"
+              group="formFields"
+              class="popover-tip-icon"
+              aria-hidden="true"
+            />
+            <span
+              >Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
+              platzieren.</span
+            >
           </p>
         </InfoPopover>
       </div>
@@ -434,5 +477,20 @@ function onDropdownScroll(e: Event) {
 .load-more-spinner,
 .load-more-icon {
   flex-shrink: 0;
+}
+
+.popover-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.popover-tip-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-primary);
 }
 </style>
