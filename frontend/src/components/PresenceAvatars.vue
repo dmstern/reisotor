@@ -66,7 +66,7 @@ watch(
   }
 );
 
-const otherMembers = computed(() => members.value.filter((u) => u.id !== auth.user?.id));
+const otherMembers = computed(() => members.value.filter((member) => member.id !== auth.user?.id));
 
 function isOnline(user: User) {
   return liveSync.onlineUserIds.includes(user.id);

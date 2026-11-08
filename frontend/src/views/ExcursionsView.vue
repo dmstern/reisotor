@@ -298,7 +298,7 @@ function openSpotForm() {
 
 function startEditSpot(spot: Spot | number) {
   if (typeof spot === 'number') {
-    const found = spotsStore.spots.find((s) => s.id === spot);
+    const found = spotsStore.spots.find((candidate) => candidate.id === spot);
     editingSpot.value = found ?? null;
   } else {
     editingSpot.value = spot;
@@ -577,7 +577,7 @@ function onExcursionShowOnMap(excursionId: number) {
 }
 
 function onFocusSpotFromMap(spotId: number) {
-  const spot = spotsStore.spots.find((s) => s.id === spotId);
+  const spot = spotsStore.spots.find((candidate) => candidate.id === spotId);
   const isAccommodation = spot?.category === 'Unterkunft';
 
   if (groupMode.value === 'tracks' || isAccommodation) {
@@ -686,8 +686,8 @@ watch(
 
     const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
     const matchingSpotIds = scheduleStore.items
-      .filter((s) => s.date === date && s.spot_id != null)
-      .map((s) => s.spot_id as number);
+      .filter((item) => item.date === date && item.spot_id != null)
+      .map((item) => item.spot_id as number);
 
     const next = new Set<number>();
 

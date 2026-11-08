@@ -46,9 +46,9 @@ function submit() {
   draft.value = '';
 }
 
-function startEdit(c: CommentItem) {
-  editingId.value = c.id;
-  editDraft.value = c.content;
+function startEdit(comment: CommentItem) {
+  editingId.value = comment.id;
+  editDraft.value = comment.content;
   nextTick(() => {
     const raw = editInputRef.value;
     const el = (raw && '$el' in raw && raw.$el ? raw.$el : raw) as HTMLInputElement | null;

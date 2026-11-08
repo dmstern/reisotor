@@ -71,7 +71,7 @@ function tablerIconsOptimizer() {
           (match, importsStr) => {
             const imports = importsStr
               .split(',')
-              .map((s: string) => s.trim())
+              .map((specifier: string) => specifier.trim())
               .filter(Boolean);
             return imports
               .map((name: string) => {

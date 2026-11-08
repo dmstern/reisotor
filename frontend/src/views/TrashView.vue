@@ -31,7 +31,7 @@ const route = useRoute();
 const tripStore = useTripStore();
 const tripId = computed(() => Number(route.params.tripId) || (tripStore.currentTripId as number));
 const currentTrip = computed(
-  () => tripStore.trips.find((t) => t.id === tripId.value) || tripStore.currentTrip
+  () => tripStore.trips.find((trip) => trip.id === tripId.value) || tripStore.currentTrip
 );
 const entries = ref<TrashEntry[]>([]);
 const users = ref<User[]>([]);
@@ -60,7 +60,7 @@ const TYPE_ICON: Record<string, IconDef> = {
 };
 
 function userLabel(id: unknown) {
-  const user = users.value.find((u) => u.id === id);
+  const user = users.value.find((candidate) => candidate.id === id);
   return user ? `${user.avatar} ${user.username}` : '?';
 }
 
@@ -70,7 +70,7 @@ function truncate(text: string, max = 80) {
 }
 
 function titleFor(entry: TrashEntry): string {
-  const d = entry.data;
+  const itemData = entry.data;
 
   switch (entry.type) {
     case 'schedule_item':
@@ -79,21 +79,21 @@ function titleFor(entry: TrashEntry): string {
     case 'travel_item':
     case 'budget_item':
     case 'todo':
-      return (d.title as string) || '(ohne Titel)';
+      return (itemData.title as string) || '(ohne Titel)';
     case 'location_track':
-      return (d.title as string) || 'Standort-Aufzeichnung';
+      return (itemData.title as string) || 'Standort-Aufzeichnung';
     case 'packing_item':
     case 'shopping_item':
-      return (d.label as string) || '(ohne Titel)';
+      return (itemData.label as string) || '(ohne Titel)';
     case 'trip_category':
-      return (d.name as string) || '(ohne Name)';
+      return (itemData.name as string) || '(ohne Name)';
     case 'budget_transfer':
-      return `${(d.amount as number).toFixed(2)}\u00A0€ · ${userLabel(d.from_user_id)} → ${userLabel(d.to_user_id)}`;
+      return `${(itemData.amount as number).toFixed(2)}\u00A0€ · ${userLabel(itemData.from_user_id)} → ${userLabel(itemData.to_user_id)}`;
     case 'note':
 
     case 'diary_entry': {
-      const title = (d.title as string | null)?.trim();
-      const plain = stripHtml(d.content as string | null | undefined);
+      const title = (itemData.title as string | null)?.trim();
+      const plain = stripHtml(itemData.content as string | null | undefined);
       return title || (plain ? truncate(plain) : '(ohne Titel)');
     }
 

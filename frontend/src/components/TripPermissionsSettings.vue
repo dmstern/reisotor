@@ -25,7 +25,9 @@ const props = defineProps<{
 
 const tripStore = useTripStore();
 const authStore = useAuthStore();
-const trip = computed(() => tripStore.trips.find((t) => t.id === props.tripId) ?? props.trip);
+const trip = computed(
+  () => tripStore.trips.find((candidate) => candidate.id === props.tripId) ?? props.trip
+);
 
 const members = ref<User[]>([]);
 const query = ref('');
@@ -85,9 +87,9 @@ onUnmounted(() => {
 
 // Debounced statt bei jedem Tastendruck sofort zu suchen (Backend verlangt ohnehin erst ab
 // 2 Zeichen ein Ergebnis, siehe routes/users.ts's GET /users/search).
-watch(query, (q) => {
+watch(query, (searchVal) => {
   clearTimeout(searchTimeout);
-  const trimmed = q.trim();
+  const trimmed = searchVal.trim();
 
   if (trimmed.length < 2) {
     results.value = [];
@@ -133,7 +135,7 @@ async function invite(user: User) {
   try {
     await api.post(`/trips/${props.tripId}/members`, { user_id: user.id });
     members.value.push(user);
-    results.value = results.value.filter((u) => u.id !== user.id);
+    results.value = results.value.filter((candidate) => candidate.id !== user.id);
     query.value = '';
     await tripStore.loadTrips();
   } catch (err) {
@@ -161,7 +163,7 @@ async function removeMember(user: User) {
 
   try {
     await api.delete(`/trips/${props.tripId}/members/${user.id}`);
-    members.value = members.value.filter((u) => u.id !== user.id);
+    members.value = members.value.filter((candidate) => candidate.id !== user.id);
     await tripStore.loadTrips();
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Entfernen fehlgeschlagen';

@@ -64,8 +64,8 @@ const COLOR_OPTIONS = [
 // SegmentedToggle blendet die Pille dann komplett aus (siehe dortiger activeIndex-Kommentar),
 // statt fälschlich eine der beiden Optionen als "aktiv" zu zeigen.
 const allGroupsValue = computed(() => {
-  const values = ICON_GROUP_OPTIONS.map((g) => iconStyle.groups[g.value]);
-  return values.every((v) => v === values[0]) ? values[0] : '';
+  const values = ICON_GROUP_OPTIONS.map((groupOpt) => iconStyle.groups[groupOpt.value]);
+  return values.every((val) => val === values[0]) ? values[0] : '';
 });
 
 function isColorized(group: ConfigurableIconGroup): boolean {
@@ -93,11 +93,11 @@ function setColorized(group: ConfigurableIconGroup, value: string) {
 }
 
 const isDefault = computed(() => {
-  const g = iconStyle.groups;
+  const currentGroups = iconStyle.groups;
   return (
-    g.navigation === 'icons' &&
-    g.categories === 'emoji' &&
-    g.weather === 'icons' &&
+    currentGroups.navigation === 'icons' &&
+    currentGroups.categories === 'emoji' &&
+    currentGroups.weather === 'icons' &&
     iconStyle.navColored &&
     iconStyle.colorizeWeather &&
     iconStyle.colorizeCategories

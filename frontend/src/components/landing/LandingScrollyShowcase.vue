@@ -25,13 +25,13 @@ const effectiveStepIndex = computed(() => props.activeStepIndex ?? props.activeI
 const effectiveHighlightIndex = computed(() => props.activeHighlightIndex ?? 0);
 
 const currentShowcase = computed(() => {
-  const f = props.features[effectiveStepIndex.value];
+  const feature = props.features[effectiveStepIndex.value];
 
-  if (!f) {
+  if (!feature) {
     return null;
   }
 
-  return getHighlightScreenshot(f, effectiveHighlightIndex.value);
+  return getHighlightScreenshot(feature, effectiveHighlightIndex.value);
 });
 
 const currentRoutePill = computed(() => {
@@ -41,14 +41,14 @@ const currentRoutePill = computed(() => {
 });
 
 const allDistinctFrames = computed(() => {
-  return props.features.flatMap((f, idx) => getFeatureDistinctFrames(f, idx));
+  return props.features.flatMap((feature, idx) => getFeatureDistinctFrames(feature, idx));
 });
 
 const activeFrameIndex = computed(() => {
   const step = effectiveStepIndex.value;
   const highlight = effectiveHighlightIndex.value;
   const idx = allDistinctFrames.value.findIndex(
-    (f) => f.stepIndex === step && f.highlightIndices.includes(highlight)
+    (frame) => frame.stepIndex === step && frame.highlightIndices.includes(highlight)
   );
   return idx !== -1 ? idx : 0;
 });

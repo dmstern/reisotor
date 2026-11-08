@@ -56,8 +56,8 @@ function creatorLabel(userId: number | null | undefined): string | null {
     return null;
   }
 
-  const u = props.users.find((user) => user.id === userId);
-  return u?.username ?? null;
+  const creator = props.users.find((user) => user.id === userId);
+  return creator?.username ?? null;
 }
 </script>
 

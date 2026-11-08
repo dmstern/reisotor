@@ -25,7 +25,7 @@ const showMembers = ref(false);
 const membersTripId = ref<number | null>(null);
 const membersTrip = computed(() =>
   membersTripId.value != null
-    ? (tripStore.trips.find((t) => t.id === membersTripId.value) ?? null)
+    ? (tripStore.trips.find((trip) => trip.id === membersTripId.value) ?? null)
     : null
 );
 const {
@@ -41,7 +41,7 @@ const {
 // Issue #96: restricted-Nutzer:innen dürfen nur einen selbst angelegten Urlaub haben - bereits
 // eingeladene Urlaube zählen nicht mit (siehe registrationConfig.ts's countTripsCreatedBy).
 const tripCreationBlocked = () =>
-  !!auth.user?.restricted && tripStore.trips.some((t) => t.created_by_me !== false);
+  !!auth.user?.restricted && tripStore.trips.some((trip) => trip.created_by_me !== false);
 const { openAccountTierModal } = useAccountTierModal();
 
 function handleCreateTrip() {

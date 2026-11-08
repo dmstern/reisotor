@@ -119,8 +119,8 @@ watch(
       return;
     }
 
-    const q = buildDefaultImageSearchQuery(props.searchContext);
-    searchQuery.value = q;
+    const defaultQuery = buildDefaultImageSearchQuery(props.searchContext);
+    searchQuery.value = defaultQuery;
 
     if (suggestions.value.length === 0) {
       lastSearchedQuery.value = '';
@@ -135,8 +135,8 @@ watch(
       return;
     }
 
-    const q = buildDefaultImageSearchQuery(props.searchContext);
-    searchQuery.value = q;
+    const defaultQuery = buildDefaultImageSearchQuery(props.searchContext);
+    searchQuery.value = defaultQuery;
 
     if (suggestions.value.length === 0) {
       lastSearchedQuery.value = '';
@@ -146,8 +146,8 @@ watch(
   }
 );
 
-watch(isUploading, (v) => {
-  emit('update:uploading', v);
+watch(isUploading, (uploading) => {
+  emit('update:uploading', uploading);
 });
 
 const isModified = computed(() => {
@@ -164,9 +164,9 @@ const isModified = computed(() => {
 
 function syncSuggestions(newSuggs?: string[]) {
   if (newSuggs && newSuggs.length > 0) {
-    for (const s of newSuggs) {
-      if (s && !suggestions.value.includes(s)) {
-        suggestions.value.push(s);
+    for (const suggestion of newSuggs) {
+      if (suggestion && !suggestions.value.includes(suggestion)) {
+        suggestions.value.push(suggestion);
       }
     }
   }

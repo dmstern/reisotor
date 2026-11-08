@@ -16,7 +16,7 @@ const currentTrip = computed(() => {
     return null;
   }
 
-  return tripStore.trips.find((t) => t.id === trip.id) ?? trip;
+  return tripStore.trips.find((candidate) => candidate.id === trip.id) ?? trip;
 });
 
 function close() {

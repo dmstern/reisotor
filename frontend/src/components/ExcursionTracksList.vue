@@ -31,13 +31,13 @@ function trackTitle(track: LocationTrack): string {
 }
 
 function trackAuthorAvatar(track: LocationTrack): string {
-  const u = props.users.find((user) => user.id === track.user_id);
-  return u?.avatar || '👤';
+  const author = props.users.find((user) => user.id === track.user_id);
+  return author?.avatar || '👤';
 }
 
 function trackAuthorName(track: LocationTrack): string {
-  const u = props.users.find((user) => user.id === track.user_id);
-  return u?.username || 'Mitreisende:r';
+  const author = props.users.find((user) => user.id === track.user_id);
+  return author?.username || 'Mitreisende:r';
 }
 
 function trackAuthorTitle(track: LocationTrack): string {

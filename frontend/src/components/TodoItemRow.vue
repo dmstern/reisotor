@@ -33,8 +33,8 @@ function userAvatar(id: number | null | undefined) {
     return null;
   }
 
-  const u = props.users.find((u) => u.id === id);
-  return u ? u.avatar : '👤';
+  const user = props.users.find((candidate) => candidate.id === id);
+  return user ? user.avatar : '👤';
 }
 
 function userName(id: number | null | undefined) {
@@ -42,8 +42,8 @@ function userName(id: number | null | undefined) {
     return null;
   }
 
-  const u = props.users.find((u) => u.id === id);
-  return u ? u.username : 'Ehemaliges Mitglied';
+  const user = props.users.find((candidate) => candidate.id === id);
+  return user ? user.username : 'Ehemaliges Mitglied';
 }
 </script>
 

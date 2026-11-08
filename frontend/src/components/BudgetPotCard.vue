@@ -37,7 +37,10 @@ const effectiveTarget = computed(() => store.budgetTarget(props.budget));
 // Topf zuordnet).
 const totalSpentForBudget = computed(() => {
   if (allocations.value.length > 0) {
-    return allocations.value.reduce((s, a) => s + store.spentFor(props.budget, a.category), 0);
+    return allocations.value.reduce(
+      (sum, alloc) => sum + store.spentFor(props.budget, alloc.category),
+      0
+    );
   }
 
   const sharedBudgets = store.budgets.filter((b) => b.owner_id == null);
@@ -59,7 +62,7 @@ const totalSpentForBudget = computed(() => {
 
       return false;
     })
-    .reduce((s, e) => s + e.amount, 0);
+    .reduce((sum, expense) => sum + expense.amount, 0);
 });
 
 const targetInput = ref<string>(

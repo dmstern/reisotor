@@ -36,7 +36,9 @@ const groups = computed(() => {
 
 const notes = computed(() => {
   const rawNotes = buildInfoStore.buildInfo?.changelog?.notes ?? [];
-  return rawNotes.map((n) => (n.startsWith('- ') ? n.slice(2).trim() : n.trim())).filter(Boolean);
+  return rawNotes
+    .map((note) => (note.startsWith('- ') ? note.slice(2).trim() : note.trim()))
+    .filter(Boolean);
 });
 
 const baseRelease = computed(() => {

@@ -190,8 +190,8 @@ const trackBackground = computed(() => {
   return `color-mix(in srgb, ${effectiveColor.value} 15%, transparent)`;
 });
 
-function fmt(n: number) {
-  return props.format === 'count' ? String(n) : `${n.toFixed(2)}\u00A0€`;
+function fmt(value: number) {
+  return props.format === 'count' ? String(value) : `${value.toFixed(2)}\u00A0€`;
 }
 </script>
 

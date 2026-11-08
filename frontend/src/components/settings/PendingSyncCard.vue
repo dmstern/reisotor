@@ -160,13 +160,13 @@ function getEntryInfo(entry: OutboxEntry): { category: string; title: string } {
 
 function formatDate(iso: string): string {
   try {
-    const d = new Date(iso);
+    const date = new Date(iso);
 
-    if (isNaN(d.getTime())) {
+    if (isNaN(date.getTime())) {
       return iso;
     }
 
-    return d.toLocaleString('de-DE', {
+    return date.toLocaleString('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import L from 'leaflet';
+import leaflet from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Spot, RouteResult } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
@@ -34,9 +34,9 @@ const emit = defineEmits<{
 }>();
 
 const mapEl = ref<HTMLDivElement | null>(null);
-let map: L.Map | null = null;
-let markersLayer: L.LayerGroup | null = null;
-let routesLayer: L.LayerGroup | null = null;
+let map: leaflet.Map | null = null;
+let markersLayer: leaflet.LayerGroup | null = null;
+let routesLayer: leaflet.LayerGroup | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
@@ -93,19 +93,21 @@ async function render() {
   markersLayer.clearLayers();
   routesLayer.clearLayers();
 
-  const boundsPoints: L.LatLngExpression[] = [];
+  const boundsPoints: leaflet.LatLngExpression[] = [];
 
   // Start-Spot Marker
   if (props.fromSpot?.lat != null && props.fromSpot?.lng != null) {
     const latlng: [number, number] = [props.fromSpot.lat, props.fromSpot.lng];
     boundsPoints.push(latlng);
     const cat = spotCategoryMeta(props.fromSpot.category);
-    const m = L.marker(latlng, {
-      icon: cachedEmojiPin(cat.tabler, cat.color),
-    }).addTo(markersLayer);
+    const marker = leaflet
+      .marker(latlng, {
+        icon: cachedEmojiPin(cat.tabler, cat.color),
+      })
+      .addTo(markersLayer);
 
     if (props.fromSpot.title) {
-      m.bindTooltip(`Start: ${props.fromSpot.title}`, { direction: 'top', offset: [0, -28] });
+      marker.bindTooltip(`Start: ${props.fromSpot.title}`, { direction: 'top', offset: [0, -28] });
     }
   }
 
@@ -114,12 +116,14 @@ async function render() {
     const latlng: [number, number] = [props.toSpot.lat, props.toSpot.lng];
     boundsPoints.push(latlng);
     const cat = spotCategoryMeta(props.toSpot.category);
-    const m = L.marker(latlng, {
-      icon: cachedEmojiPin(cat.tabler, cat.color),
-    }).addTo(markersLayer);
+    const marker = leaflet
+      .marker(latlng, {
+        icon: cachedEmojiPin(cat.tabler, cat.color),
+      })
+      .addTo(markersLayer);
 
     if (props.toSpot.title) {
-      m.bindTooltip(`Ziel: ${props.toSpot.title}`, { direction: 'top', offset: [0, -28] });
+      marker.bindTooltip(`Ziel: ${props.toSpot.title}`, { direction: 'top', offset: [0, -28] });
     }
   }
 
@@ -129,17 +133,19 @@ async function render() {
 
   if (isExactMode && props.routes && props.routes.length > 0) {
     // 1. Zuerst alternative (nicht ausgewählte) Routen dezent im Hintergrund zeichnen
-    props.routes.forEach((r, idx) => {
+    props.routes.forEach((route, idx) => {
       if (idx === props.selectedRouteIndex) {
         return;
       }
 
-      const poly = L.polyline(r.coordinates, {
-        color: '#94a3b8',
-        weight: 4,
-        opacity: 0.65,
-        className: 'alternative-route-polyline',
-      }).addTo(routesLayer!);
+      const poly = leaflet
+        .polyline(route.coordinates, {
+          color: '#94a3b8',
+          weight: 4,
+          opacity: 0.65,
+          className: 'alternative-route-polyline',
+        })
+        .addTo(routesLayer!);
 
       // Klick auf eine Alternativ-Linie auf der Karte wählt diese Route aus
       poly.on('click', () => {
@@ -152,12 +158,14 @@ async function render() {
     const selected = props.routes[props.selectedRouteIndex];
 
     if (selected) {
-      const activePoly = L.polyline(selected.coordinates, {
-        color: getRouteColor(props.transportType, selected.profile),
-        weight: 5,
-        opacity: 0.95,
-        className: 'active-route-polyline',
-      }).addTo(routesLayer!);
+      const activePoly = leaflet
+        .polyline(selected.coordinates, {
+          color: getRouteColor(props.transportType, selected.profile),
+          weight: 5,
+          opacity: 0.95,
+          className: 'active-route-polyline',
+        })
+        .addTo(routesLayer!);
       activePoly.bringToFront();
 
       if (selected.coordinates.length) {
@@ -174,25 +182,27 @@ async function render() {
     const s1: [number, number] = [props.fromSpot.lat, props.fromSpot.lng];
     const s2: [number, number] = [props.toSpot.lat, props.toSpot.lng];
     const arc = arcPoints(s1, s2);
-    L.polyline(arc, {
-      color: getRouteColor(props.transportType),
-      weight: 3,
-      opacity: 0.65,
-      dashArray: '6 6',
-      className: 'direct-line-polyline',
-    }).addTo(routesLayer);
+    leaflet
+      .polyline(arc, {
+        color: getRouteColor(props.transportType),
+        weight: 3,
+        opacity: 0.65,
+        dashArray: '6 6',
+        className: 'direct-line-polyline',
+      })
+      .addTo(routesLayer);
     boundsPoints.push(...arc);
   }
 
   // Gesamte Bounding Box ermitteln
-  let fullBounds: L.LatLngBounds | null = null;
+  let fullBounds: leaflet.LatLngBounds | null = null;
 
   if (boundsPoints.length > 0) {
-    fullBounds = L.latLngBounds(boundsPoints);
+    fullBounds = leaflet.latLngBounds(boundsPoints);
   }
 
   if (selectedRouteCoords.length > 0) {
-    const routeBounds = L.latLngBounds(selectedRouteCoords);
+    const routeBounds = leaflet.latLngBounds(selectedRouteCoords);
     fullBounds = fullBounds ? fullBounds.extend(routeBounds) : routeBounds;
   }
 
@@ -244,14 +254,16 @@ onMounted(async () => {
     return;
   }
 
-  map = L.map(mapEl.value, {
+  map = leaflet.map(mapEl.value, {
     zoomControl: false,
     attributionControl: false,
     rotateControl: false,
   });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-  routesLayer = L.layerGroup().addTo(map);
-  markersLayer = L.layerGroup().addTo(map);
+  leaflet
+    .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 })
+    .addTo(map);
+  routesLayer = leaflet.layerGroup().addTo(map);
+  markersLayer = leaflet.layerGroup().addTo(map);
 
   render();
 

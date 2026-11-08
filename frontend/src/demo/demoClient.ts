@@ -136,7 +136,7 @@ function syncDemoIdeaSchedule(
   tripId?: number
 ) {
   const schedule = store['/schedule'] as Record<string, unknown>[];
-  const existingIdx = schedule.findIndex((s) => s.idea_id === ideaId);
+  const existingIdx = schedule.findIndex((item) => item.idea_id === ideaId);
 
   if (date) {
     if (existingIdx !== -1) {
@@ -255,7 +255,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (path === '/users/me/avatar' && method === 'PUT') {
     const avatar = String(body?.avatar ?? '👤');
     currentDemoUser.avatar = avatar;
-    const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
+    const meInList = currentDemoUsers.find((user) => user.id === currentDemoUser.id);
 
     if (meInList) {
       meInList.avatar = avatar;
@@ -267,7 +267,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (path === '/users/me/username' && method === 'PUT') {
     const username = String(body?.username ?? currentDemoUser.username);
     currentDemoUser.username = username;
-    const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
+    const meInList = currentDemoUsers.find((user) => user.id === currentDemoUser.id);
 
     if (meInList) {
       meInList.username = username;
@@ -281,7 +281,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     currentDemoUser.email = email;
     currentDemoUser.is_email_verified = true;
     currentDemoUser.pending_email = null;
-    const meInList = currentDemoUsers.find((u) => u.id === currentDemoUser.id);
+    const meInList = currentDemoUsers.find((user) => user.id === currentDemoUser.id);
 
     if (meInList) {
       meInList.email = email;
@@ -380,7 +380,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       created_at: string;
     }>;
     const filtered = all.filter(
-      (c) => c.trip_id === tripId && (!filterType || c.type === filterType)
+      (category) => category.trip_id === tripId && (!filterType || category.type === filterType)
     );
     return { categories: structuredClone(filtered) } as unknown as T;
   }
@@ -417,7 +417,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const idx = (
       store['/trip_categories'] as Array<{ id: number; type: string; name: string }>
     ).findIndex(
-      (c) => c.type === created.type && c.name.toLowerCase() === created.name.toLowerCase()
+      (category) =>
+        category.type === created.type && category.name.toLowerCase() === created.name.toLowerCase()
     );
 
     if (idx >= 0) {
@@ -435,7 +436,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (tripCategoryItemMatch && method === 'PUT') {
     const catId = Number(tripCategoryItemMatch[2]);
     const list = (store['/trip_categories'] || []) as Array<{ id: number }>;
-    const existing = list.find((c) => c.id === catId);
+    const existing = list.find((category) => category.id === catId);
 
     if (existing) {
       Object.assign(existing, body ?? {});
@@ -454,7 +455,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
     if (store['/trip_categories']) {
       store['/trip_categories'] = (store['/trip_categories'] as Array<{ id: number }>).filter(
-        (c) => c.id !== catId
+        (category) => category.id !== catId
       );
       persist();
     }
@@ -469,7 +470,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
     if (store['/trip_categories']) {
       store['/trip_categories'] = (store['/trip_categories'] as Array<{ id: number }>).filter(
-        (c) => c.id !== catId
+        (category) => category.id !== catId
       );
       persist();
     }
@@ -506,8 +507,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
         created_at?: string;
       }>;
       const found = list.find(
-        (c) =>
-          c.trip_id === tripId && c.type === type && c.name.toLowerCase() === name.toLowerCase()
+        (category) =>
+          category.trip_id === tripId &&
+          category.type === type &&
+          category.name.toLowerCase() === name.toLowerCase()
       );
       const hiddenVal = is_hidden ? 1 : 0;
 
@@ -568,8 +571,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           Math.cos((to_lat * Math.PI) / 180) *
           Math.sin(dLng / 2) *
           Math.sin(dLng / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distKm = 6371 * c;
+      const centralAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distKm = 6371 * centralAngle;
       const distance_meters = Math.round(distKm * 1000 * 1.2);
       let speedKmh = 60;
 
@@ -615,50 +618,50 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     }
 
     if (method === 'PUT') {
-      const p = body as Record<string, Record<string, unknown>>;
+      const payload = body as Record<string, Record<string, unknown>>;
 
-      if (p.registration) {
-        Object.assign(demoAdminSettings.registration, p.registration);
+      if (payload.registration) {
+        Object.assign(demoAdminSettings.registration, payload.registration);
       }
 
-      if (p.legal) {
-        Object.assign(demoAdminSettings.legal, p.legal);
+      if (payload.legal) {
+        Object.assign(demoAdminSettings.legal, payload.legal);
       }
 
-      if (p.geo) {
-        Object.assign(demoAdminSettings.geo, p.geo);
+      if (payload.geo) {
+        Object.assign(demoAdminSettings.geo, payload.geo);
 
-        if (p.geo.clearOrsApiKey) {
+        if (payload.geo.clearOrsApiKey) {
           demoAdminSettings.geo.isOrsApiKeySet = false;
-        } else if (p.geo.orsApiKey) {
+        } else if (payload.geo.orsApiKey) {
           demoAdminSettings.geo.isOrsApiKeySet = true;
         }
       }
 
-      if (p.email) {
-        Object.assign(demoAdminSettings.email, p.email);
+      if (payload.email) {
+        Object.assign(demoAdminSettings.email, payload.email);
 
-        if (p.email.clearSmtpPass) {
+        if (payload.email.clearSmtpPass) {
           demoAdminSettings.email.isSmtpPassSet = false;
-        } else if (p.email.smtpPass) {
+        } else if (payload.email.smtpPass) {
           demoAdminSettings.email.isSmtpPassSet = true;
         }
       }
 
-      if (p.feedback) {
-        Object.assign(demoAdminSettings.feedback, p.feedback);
+      if (payload.feedback) {
+        Object.assign(demoAdminSettings.feedback, payload.feedback);
 
-        if (p.feedback.clearGithubToken) {
+        if (payload.feedback.clearGithubToken) {
           demoAdminSettings.feedback.isGithubTokenSet = false;
-        } else if (p.feedback.githubToken) {
+        } else if (payload.feedback.githubToken) {
           demoAdminSettings.feedback.isGithubTokenSet = true;
         }
       }
 
-      if (p.push) {
-        Object.assign(demoAdminSettings.push, p.push);
+      if (payload.push) {
+        Object.assign(demoAdminSettings.push, payload.push);
 
-        if (p.push.clearVapidKeys) {
+        if (payload.push.clearVapidKeys) {
           demoAdminSettings.push.vapidPublicKey = '';
           demoAdminSettings.push.isVapidPrivateKeySet = false;
         }
@@ -700,7 +703,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (adminMatch && method === 'PUT') {
     const targetId = Number(adminMatch[1]);
-    const user = currentDemoUsers.find((u) => u.id === targetId);
+    const user = currentDemoUsers.find((candidateUser) => candidateUser.id === targetId);
 
     if (user) {
       user.is_admin = Boolean(body?.is_admin);
@@ -712,7 +715,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (roleMatch && method === 'PUT') {
     const targetId = Number(roleMatch[1]);
-    const user = currentDemoUsers.find((u) => u.id === targetId);
+    const user = currentDemoUsers.find((candidateUser) => candidateUser.id === targetId);
 
     if (user) {
       const role = (body?.role as string) ?? 'plus';
@@ -727,7 +730,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (resetPasswordMatch && method === 'POST') {
     const targetId = Number(resetPasswordMatch[1]);
-    const user = currentDemoUsers.find((u) => u.id === targetId);
+    const user = currentDemoUsers.find((candidateUser) => candidateUser.id === targetId);
     const tempPw =
       (body?.temporaryPassword as string)?.trim() || `Demo-${Math.random().toString(36).slice(-6)}`;
     return {
@@ -743,7 +746,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (verifyEmailMatch && method === 'POST') {
     const targetId = Number(verifyEmailMatch[1]);
-    const user = currentDemoUsers.find((u) => u.id === targetId);
+    const user = currentDemoUsers.find((candidateUser) => candidateUser.id === targetId);
 
     if (user) {
       user.is_email_verified = true;
@@ -755,7 +758,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (lockMatch && method === 'PUT') {
     const targetId = Number(lockMatch[1]);
-    const user = currentDemoUsers.find((u) => u.id === targetId);
+    const user = currentDemoUsers.find((candidateUser) => candidateUser.id === targetId);
 
     if (user) {
       user.is_locked = Boolean(body?.is_locked);
@@ -767,7 +770,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (deleteUserMatch && method === 'DELETE') {
     const targetId = Number(deleteUserMatch[1]);
-    const idx = currentDemoUsers.findIndex((u) => u.id === targetId);
+    const idx = currentDemoUsers.findIndex((candidateUser) => candidateUser.id === targetId);
 
     if (idx !== -1) {
       currentDemoUsers.splice(idx, 1);
@@ -777,8 +780,12 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   }
 
   if (path.startsWith('/users/search')) {
-    const q = (new URLSearchParams(path.split('?')[1] ?? '').get('q') ?? '').toLowerCase();
-    return currentDemoUsers.filter((u) => u.username.toLowerCase().includes(q)) as unknown as T;
+    const searchQuery = (
+      new URLSearchParams(path.split('?')[1] ?? '').get('q') ?? ''
+    ).toLowerCase();
+    return currentDemoUsers.filter((candidateUser) =>
+      candidateUser.username.toLowerCase().includes(searchQuery)
+    ) as unknown as T;
   }
 
   // --- Likes toggling (/spots/:id/like, /ideas/:id/like, /notes/:id/like, /diary/:id/like) ---
@@ -847,8 +854,9 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const domain = commentLikeMatch[1];
     const commentId = Number(commentLikeMatch[2]);
     const commentsKey = `/${domain}/comments`;
-    const comment = store[commentsKey]?.find((c) => (c as { id: number }).id === commentId) as
-      { id: number; liked?: boolean; like_count?: number } | undefined;
+    const comment = store[commentsKey]?.find(
+      (candidateComment) => (candidateComment as { id: number }).id === commentId
+    ) as { id: number; liked?: boolean; like_count?: number } | undefined;
 
     if (!comment) {
       throw new Error('Not found');
@@ -907,7 +915,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
   if (trackStopMatch && method === 'POST') {
     const trackId = Number(trackStopMatch[1]);
-    const found = store['/tracks']?.find((t) => (t as { id: number }).id === trackId);
+    const found = store['/tracks']?.find((track) => (track as { id: number }).id === trackId);
 
     if (found) {
       found.ended_at = new Date().toISOString();
@@ -928,22 +936,22 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
     if (method === 'GET') {
       return store['/tracks/points'].filter(
-        (p) => (p as { track_id: number }).track_id === trackId
+        (point) => (point as { track_id: number }).track_id === trackId
       ) as unknown as T;
     }
 
     if (method === 'POST') {
       const rawPoints = Array.isArray(body?.points) ? body.points : [];
-      const createdPoints = rawPoints.map((p) => ({
+      const createdPoints = rawPoints.map((point) => ({
         id: nextId++,
         track_id: trackId,
-        lat: Number((p as { lat: number }).lat),
-        lng: Number((p as { lng: number }).lng),
+        lat: Number((point as { lat: number }).lat),
+        lng: Number((point as { lng: number }).lng),
         recorded_at: String(
-          (p as { recorded_at?: string }).recorded_at ?? new Date().toISOString()
+          (point as { recorded_at?: string }).recorded_at ?? new Date().toISOString()
         ),
-        accuracy: (p as { accuracy?: number }).accuracy ?? null,
-        altitude: (p as { altitude?: number | null }).altitude ?? null,
+        accuracy: (point as { accuracy?: number }).accuracy ?? null,
+        altitude: (point as { altitude?: number | null }).altitude ?? null,
       }));
       store['/tracks/points'].push(...createdPoints);
       persist();
@@ -993,7 +1001,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       // Filtern nach trip_id (oder verknüpfter Eltern-ID für Sub-Collections)
       if (collection === '/spots/likes' || collection === '/spots/comments') {
         const tripSpotIds = new Set(
-          store['/spots']?.filter((s) => s.trip_id === queryTripId).map((s) => s.id)
+          store['/spots']?.filter((spot) => spot.trip_id === queryTripId).map((spot) => spot.id)
         );
         return structuredClone(
           rawList.filter((item) => tripSpotIds.has(item.spot_id as number))
@@ -1011,7 +1019,9 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
       if (collection === '/diary/likes' || collection === '/diary/comments') {
         const tripEntryIds = new Set(
-          store['/diary']?.filter((d) => d.trip_id === queryTripId).map((d) => d.id)
+          store['/diary']
+            ?.filter((diaryEntry) => diaryEntry.trip_id === queryTripId)
+            .map((diaryEntry) => diaryEntry.id)
         );
         return structuredClone(
           rawList.filter((item) => tripEntryIds.has(item.entry_id as number))
@@ -1020,7 +1030,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
       if (collection === '/notes/comments') {
         const tripNoteIds = new Set(
-          store['/notes']?.filter((n) => n.trip_id === queryTripId).map((n) => n.id)
+          store['/notes']?.filter((note) => note.trip_id === queryTripId).map((note) => note.id)
         );
         return structuredClone(
           rawList.filter((item) => tripNoteIds.has(item.note_id as number))
@@ -1241,7 +1251,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const id = idFromPath(path);
 
     if (collection === '/schedule' && id != null) {
-      const schedItem = store['/schedule']?.find((s) => s.id === id) as
+      const schedItem = store['/schedule']?.find((sched) => sched.id === id) as
         { idea_id?: number | null } | undefined;
 
       if (schedItem?.idea_id != null) {

@@ -33,7 +33,7 @@ const filter = ref<'all' | 'unread'>('all');
 
 const filteredMessages = computed(() => {
   if (filter.value === 'unread') {
-    return messages.value.filter((m) => m.status === 'unread');
+    return messages.value.filter((message) => message.status === 'unread');
   }
 
   return messages.value;
@@ -62,7 +62,7 @@ async function updateStatus(msg: AdminMessage, newStatus: 'unread' | 'read' | 'r
   try {
     await api.put(`/admin/messages/${msg.id}/status`, { status: newStatus });
     msg.status = newStatus;
-    unreadCount.value = messages.value.filter((m) => m.status === 'unread').length;
+    unreadCount.value = messages.value.filter((message) => message.status === 'unread').length;
     adminMessagesStore.setUnreadCount(unreadCount.value);
   } catch (err) {
     actionError.value =
@@ -82,8 +82,8 @@ async function deleteMessage(msg: AdminMessage) {
 
   try {
     await api.delete(`/admin/messages/${msg.id}`);
-    messages.value = messages.value.filter((m) => m.id !== msg.id);
-    unreadCount.value = messages.value.filter((m) => m.status === 'unread').length;
+    messages.value = messages.value.filter((message) => message.id !== msg.id);
+    unreadCount.value = messages.value.filter((message) => message.status === 'unread').length;
     adminMessagesStore.setUnreadCount(unreadCount.value);
   } catch (err) {
     actionError.value = err instanceof ApiError ? err.message : 'Fehler beim Löschen der Nachricht';

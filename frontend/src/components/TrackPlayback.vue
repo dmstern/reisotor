@@ -134,9 +134,9 @@ function onScrub(event: Event) {
   emit('update:progress', val);
 }
 
-function setSpeed(s: PlaybackSpeed) {
-  if (SPEEDS.includes(s)) {
-    speed.value = s;
+function setSpeed(newSpeed: PlaybackSpeed) {
+  if (SPEEDS.includes(newSpeed)) {
+    speed.value = newSpeed;
   }
 }
 
@@ -147,8 +147,8 @@ function toggleSpeedPopover() {
   showSpeedPopover.value = !showSpeedPopover.value;
 }
 
-function selectSpeed(s: PlaybackSpeed) {
-  setSpeed(s);
+function selectSpeed(newSpeed: PlaybackSpeed) {
+  setSpeed(newSpeed);
   showSpeedPopover.value = false;
 }
 
@@ -264,7 +264,7 @@ function formatTimeDisplay(ms: number, forceHours = false): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  const pad = (n: number) => n.toString().padStart(2, '0');
+  const pad = (num: number) => num.toString().padStart(2, '0');
 
   if (forceHours || hours > 0) {
     return `${hours}:${pad(minutes)}:${pad(seconds)}`;
@@ -288,8 +288,8 @@ function formatTimeOfDay(iso?: string | null): string {
     return '';
   }
 
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : timeOfDayFormatter.format(d);
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? '' : timeOfDayFormatter.format(date);
 }
 
 const startTimeOfDay = computed(() => {
@@ -349,9 +349,9 @@ const trackDateLabel = computed(() => {
     return '';
   }
 
-  const d = new Date(iso);
+  const date = new Date(iso);
 
-  if (Number.isNaN(d.getTime())) {
+  if (Number.isNaN(date.getTime())) {
     return '';
   }
 
@@ -359,7 +359,7 @@ const trackDateLabel = computed(() => {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(d);
+  }).format(date);
 });
 
 const displayTitle = computed(() => props.title || props.track?.title || 'Aufzeichnung');

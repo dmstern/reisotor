@@ -75,13 +75,13 @@ function handleToggle(id: number) {
 }
 
 function handleCreate() {
-  const t = newTourTitle.value.trim();
+  const title = newTourTitle.value.trim();
 
-  if (!t) {
+  if (!title) {
     return;
   }
 
-  emit('create-tour', t);
+  emit('create-tour', title);
   newTourTitle.value = '';
 }
 

@@ -50,7 +50,7 @@ const selected = computed<number[]>({
 const plannedStations = computed(() =>
   props.modelValue
     .map((spotId) => {
-      const spot = props.spots.find((s) => s.id === spotId);
+      const spot = props.spots.find((candidate) => candidate.id === spotId);
       return spot
         ? {
             id: spotId,
@@ -62,7 +62,10 @@ const plannedStations = computed(() =>
         : null;
     })
     .filter(
-      (s): s is { id: number; spot: Spot; title: string; icon: string; tabler: IconDef } => !!s
+      (
+        station
+      ): station is { id: number; spot: Spot; title: string; icon: string; tabler: IconDef } =>
+        !!station
     )
 );
 
@@ -101,7 +104,7 @@ function removeSpotAt(index: number) {
 }
 
 function autofillReturnPath() {
-  const destIndex = plannedStations.value.findIndex((s) => s.id === props.destination);
+  const destIndex = plannedStations.value.findIndex((station) => station.id === props.destination);
 
   if (destIndex === -1) {
     return;
@@ -109,7 +112,7 @@ function autofillReturnPath() {
 
   const returnSpots = plannedStations.value
     .slice(0, destIndex)
-    .map((s) => s.id)
+    .map((station) => station.id)
     .reverse();
   selected.value = [...selected.value, ...returnSpots];
 }
@@ -174,7 +177,7 @@ const editingLegFromIndex = ref<number | null>(null);
 const showLegModal = ref(false);
 
 function getLegBetween(fromId: number, toId: number): ExcursionLeg | undefined {
-  return props.legs.find((l) => l.from_spot_id === fromId && l.to_spot_id === toId);
+  return props.legs.find((leg) => leg.from_spot_id === fromId && leg.to_spot_id === toId);
 }
 
 function getLegDuration(fromId: number, toId: number): string | null {
@@ -238,7 +241,7 @@ function openLegModal(index: number) {
 function onSaveLeg(savedLeg: ExcursionLeg) {
   const nextLegs = [...props.legs];
   const idx = nextLegs.findIndex(
-    (l) => l.from_spot_id === savedLeg.from_spot_id && l.to_spot_id === savedLeg.to_spot_id
+    (leg) => leg.from_spot_id === savedLeg.from_spot_id && leg.to_spot_id === savedLeg.to_spot_id
   );
 
   if (idx !== -1) {
@@ -252,7 +255,7 @@ function onSaveLeg(savedLeg: ExcursionLeg) {
 
 function removeLegBetween(fromSpotId: number, toSpotId: number) {
   const nextLegs = props.legs.filter(
-    (l) => !(l.from_spot_id === fromSpotId && l.to_spot_id === toSpotId)
+    (leg) => !(leg.from_spot_id === fromSpotId && leg.to_spot_id === toSpotId)
   );
   emit('update:legs', nextLegs);
 }

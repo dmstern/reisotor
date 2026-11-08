@@ -22,7 +22,7 @@ const isDefault = computed(() => {
 
 const currentPresetValue = computed(() => {
   const widthStr = String(uiSettings.borderWidth);
-  return BORDER_PRESET_OPTIONS.some((o) => o.value === widthStr) ? widthStr : '';
+  return BORDER_PRESET_OPTIONS.some((option) => option.value === widthStr) ? widthStr : '';
 });
 </script>
 

@@ -70,10 +70,10 @@ const formattedTimeAndVersion = computed(() => {
   let timeStr = err.timestamp;
 
   try {
-    const d = new Date(err.timestamp);
+    const date = new Date(err.timestamp);
 
-    if (!Number.isNaN(d.getTime())) {
-      timeStr = d.toLocaleString('de-DE', {
+    if (!Number.isNaN(date.getTime())) {
+      timeStr = date.toLocaleString('de-DE', {
         dateStyle: 'short',
         timeStyle: 'medium',
       });

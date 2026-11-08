@@ -95,7 +95,7 @@ const isExactOptionMatch = computed(() => {
     return false;
   }
 
-  return props.options.some((o) => o.toLowerCase() === current);
+  return props.options.some((option) => option.toLowerCase() === current);
 });
 
 const filteredOptions = computed(() => {
@@ -105,13 +105,13 @@ const filteredOptions = computed(() => {
     return props.options;
   }
 
-  const q = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+  const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
 
-  if (!q) {
+  if (!query) {
     return props.options;
   }
 
-  return props.options.filter((o) => o.toLowerCase().includes(q));
+  return props.options.filter((option) => option.toLowerCase().includes(query));
 });
 
 function scrollHighlightedIntoView() {
@@ -133,8 +133,8 @@ function initHighlightedIndex() {
   if (filteredOptions.value.length === 1) {
     highlightedIndex.value = 0;
   } else {
-    const q = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
-    const idx = filteredOptions.value.findIndex((o) => o.toLowerCase() === q);
+    const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+    const idx = filteredOptions.value.findIndex((option) => option.toLowerCase() === query);
     highlightedIndex.value = idx >= 0 ? idx : -1;
   }
 }
@@ -143,8 +143,8 @@ watch(filteredOptions, (newOpts) => {
   if (newOpts.length === 1) {
     highlightedIndex.value = 0;
   } else {
-    const q = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
-    const idx = newOpts.findIndex((o) => o.toLowerCase() === q);
+    const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+    const idx = newOpts.findIndex((option) => option.toLowerCase() === query);
     highlightedIndex.value = idx >= 0 ? idx : -1;
   }
 
@@ -227,7 +227,7 @@ function onKeydown(event: KeyboardEvent) {
     }
   } else if (event.key === 'Enter') {
     if (open.value) {
-      const q = (props.modelValue ?? '').trim().toLowerCase();
+      const query = (props.modelValue ?? '').trim().toLowerCase();
 
       // 1. Per Pfeiltaste navigierte/hervorgehobene Option
       if (highlightedIndex.value >= 0 && highlightedIndex.value < filteredOptions.value.length) {
@@ -246,7 +246,7 @@ function onKeydown(event: KeyboardEvent) {
       }
 
       // 3. Exakter Treffer (case-insensitive) unter den Optionen
-      const exactMatch = filteredOptions.value.find((o) => o.toLowerCase() === q);
+      const exactMatch = filteredOptions.value.find((option) => option.toLowerCase() === query);
 
       if (exactMatch) {
         event.preventDefault();

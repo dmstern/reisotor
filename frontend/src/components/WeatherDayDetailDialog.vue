@@ -77,9 +77,9 @@ const navigationDays = computed<DailyWeather[]>(() => {
 const sortedNavigationDays = computed(() => {
   const map = new Map<string, DailyWeather>();
 
-  for (const d of navigationDays.value) {
-    if (d?.date && !map.has(d.date)) {
-      map.set(d.date, d);
+  for (const day of navigationDays.value) {
+    if (day?.date && !map.has(day.date)) {
+      map.set(day.date, day);
     }
   }
 
@@ -190,7 +190,7 @@ const currentDate = computed(
 
 const currentVacationDay = computed<DailyWeather | null>(() => {
   if (props.vacationDays?.length) {
-    const found = props.vacationDays.find((d) => d.date === currentDate.value);
+    const found = props.vacationDays.find((day) => day.date === currentDate.value);
 
     if (found) {
       return found;
@@ -198,7 +198,7 @@ const currentVacationDay = computed<DailyWeather | null>(() => {
   }
 
   if (props.days?.length) {
-    const found = props.days.find((d) => d.date === currentDate.value);
+    const found = props.days.find((day) => day.date === currentDate.value);
 
     if (found) {
       return found;
@@ -218,7 +218,7 @@ const currentVacationDay = computed<DailyWeather | null>(() => {
 
 const currentHomeDay = computed<DailyWeather | null>(() => {
   if (props.homeDays?.length) {
-    const found = props.homeDays.find((d) => d.date === currentDate.value);
+    const found = props.homeDays.find((day) => day.date === currentDate.value);
 
     if (found) {
       return found;
@@ -245,7 +245,7 @@ const currentIndex = computed(() => {
     return -1;
   }
 
-  return sortedNavigationDays.value.findIndex((d) => d.date === currentDate.value);
+  return sortedNavigationDays.value.findIndex((day) => day.date === currentDate.value);
 });
 
 const hasMultipleDays = computed(() => sortedNavigationDays.value.length > 1);
@@ -361,10 +361,10 @@ const derivedDayFromHourly = computed<DailyWeather | null>(() => {
     return null;
   }
 
-  const temps = hourlyList.value.map((h) => h.temp).filter((t): t is number => t != null);
+  const temps = hourlyList.value.map((h) => h.temp).filter((temp): temp is number => temp != null);
   const rainProbs = hourlyList.value
     .map((h) => h.precipitationProbability)
-    .filter((p): p is number => p != null);
+    .filter((prob): prob is number => prob != null);
   const midday =
     hourlyList.value.find(
       (h) => (h.time === '12:00' || h.time === '15:00') && h.weatherCode != null
@@ -421,7 +421,7 @@ const hourlyEmptyText = computed(() => {
 
 const weatherModelLabel = computed(
   () =>
-    WEATHER_MODEL_OPTIONS.find((o) => o.value === weatherProvider.model)?.label ??
+    WEATHER_MODEL_OPTIONS.find((option) => option.value === weatherProvider.model)?.label ??
     weatherProvider.model
 );
 

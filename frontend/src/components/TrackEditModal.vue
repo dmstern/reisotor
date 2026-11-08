@@ -223,7 +223,7 @@ async function stopEditingTrack() {
     await tracksStore.stopTrack(id);
   }
 
-  const updated = tracksStore.tracks.find((t) => t.id === id);
+  const updated = tracksStore.tracks.find((item) => item.id === id);
 
   if (updated) {
     emit('update:track', updated);

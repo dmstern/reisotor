@@ -142,7 +142,9 @@ watch(
       } else {
         const isInitialIncome = (props.initialType ?? 'expense') === 'income';
         const defaultPaidBy =
-          !isInitialIncome && auth.user?.id && budgetStore.users.some((u) => u.id === auth.user?.id)
+          !isInitialIncome &&
+          auth.user?.id &&
+          budgetStore.users.some((member) => member.id === auth.user?.id)
             ? String(auth.user.id)
             : '';
 
@@ -219,7 +221,9 @@ function discardDraft() {
   } else {
     const isInitialIncome = (props.initialType ?? 'expense') === 'income';
     const defaultPaidBy =
-      !isInitialIncome && auth.user?.id && budgetStore.users.some((u) => u.id === auth.user?.id)
+      !isInitialIncome &&
+      auth.user?.id &&
+      budgetStore.users.some((member) => member.id === auth.user?.id)
         ? String(auth.user.id)
         : '';
     form.value = {
