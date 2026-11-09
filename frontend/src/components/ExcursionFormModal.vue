@@ -235,9 +235,13 @@ function trackDurationLabel(track: LocationTrack): string | null {
       >
         <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
         Anreise/Abreise/Weiterreise werden mindestens Start- und Zielstation benötigt.
+        <template v-if="spotsStore.spots.length < 2">
+          Lege zuerst mindestens zwei Orte (z. B. Zuhause und deine Unterkunft) an, um sie hier als
+          Stationen zuzuordnen.
+        </template>
       </p>
       <CollapsibleFieldset
-        v-if="spotsStore.spots.length"
+        v-if="spotsStore.spots.length || activeExcursionForm.role"
         :model-value="
           editingExcursion !== null ? showEditExcursionSpotsSection : showExcursionSpotsSection
         "

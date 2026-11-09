@@ -171,6 +171,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
   const spotManualPin = ref<{ lat: number; lng: number } | null>(null);
   const spotLocationError = ref(false);
   const spotPendingFixId = ref<number | null>(null);
+  const showSpotLocationSection = ref(false);
+  const showEditSpotLocationSection = ref(false);
+  const showSpotScheduleSection = ref(false);
 
   const editingSpot = ref<Spot | null>(null);
   const isSpotUploadingAttachments = ref(false);
@@ -346,11 +349,10 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   function openSpotForm(initialCategory?: string) {
     spotTitleTouched.value = false;
-    showSpotForm.value = true;
-
-    if (initialCategory) {
-      spotForm.value.category = initialCategory;
-    }
+    const category = initialCategory ?? '';
+    spotForm.value.category = category;
+    spotForm.value.is_home = isHomeCategory(category);
+    showSpotLocationSection.value = category === 'Unterkunft' || isHomeCategory(category);
 
     if (
       (!Array.isArray(spotForm.value.scheduledDates) ||
@@ -364,6 +366,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
     showSpotScheduleSection.value =
       spotForm.value.tourTitles.length > 0 || spotForm.value.scheduledDates.length > 0;
+    showSpotForm.value = true;
   }
 
   const editSpotScheduledItems = computed(() => {
@@ -468,10 +471,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotForm.value.image_url = '';
     }
   }
-
-  const showSpotLocationSection = ref(false);
-  const showEditSpotLocationSection = ref(false);
-  const showSpotScheduleSection = ref(false);
 
   watch(editingSpot, (val) => {
     if (val) {

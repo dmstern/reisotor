@@ -206,7 +206,7 @@ export function useTourForm(options: UseTourFormOptions) {
       excursionForm.value.title = initialTitle;
     }
 
-    showExcursionSpotsSection.value = false;
+    showExcursionSpotsSection.value = Boolean(initialRole);
     showExcursionTracksSection.value = false;
     tracksToShareOnSave.value.clear();
     showExcursionForm.value = true;

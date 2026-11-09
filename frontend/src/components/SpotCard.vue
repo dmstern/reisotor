@@ -536,7 +536,7 @@ const cardRotation = computed(() => {
   transition: color 0.2s ease;
 }
 
-.spot-card:not(.expanded):hover .card-title {
+.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .card-title {
   color: var(--color-primary-dark);
 }
 
@@ -678,7 +678,7 @@ const cardRotation = computed(() => {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.spot-card:not(.expanded):hover .spot-expand-pill,
+.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
 .spot-expand-pill:hover {
   background-color: var(--color-primary-tint);
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
@@ -692,7 +692,7 @@ const cardRotation = computed(() => {
   box-shadow: var(--shadow-control-active);
 }
 
-.spot-card:not(.expanded):hover .spot-expand-chevron {
+.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-chevron {
   transform: translateY(1.5px);
 }
 

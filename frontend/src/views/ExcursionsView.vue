@@ -296,6 +296,18 @@ const defaultTravelTitle = computed<string | undefined>(() => {
   return undefined;
 });
 
+const emptyTravelCtaLabel = computed<string>(() => {
+  if (defaultTravelRole.value === 'arrival') {
+    return 'Anreise anlegen';
+  }
+
+  if (defaultTravelRole.value === 'departure') {
+    return 'Abreise anlegen';
+  }
+
+  return 'Weiterreise anlegen';
+});
+
 const TRAVEL_BUTTON_LABELS = ['Neue Fahrt', 'Neuer Flug', 'Neuer Zug'];
 const TRAVEL_LABEL_CYCLE_MS = 3500;
 const travelLabelIndex = ref(0);
@@ -1644,7 +1656,7 @@ onUnmounted(() => {
                 @click="openExcursionForm(defaultTravelRole, defaultTravelTitle)"
               >
                 <AppIcon :icon="SECTION_ICON_DEFS.travel" :size="15" group="actions" />
-                <span>Anreise anlegen</span>
+                <span>{{ emptyTravelCtaLabel }}</span>
               </Button>
 
               <Button
