@@ -70,6 +70,7 @@ export interface CategoryMeta {
   color: string;
   tabler: IconDef;
   aliases?: string[];
+  titlePlaceholder?: string;
 }
 
 export const KNOWN_CATEGORIES: CategoryMeta[] = [
@@ -77,6 +78,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Restaurant',
     icon: '🍽️',
     color: '#e34948',
+    titlePlaceholder: 'Name des Restaurants...',
     tabler: {
       id: 'tools-kitchen-2',
       emoji: '🍽️',
@@ -102,6 +104,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Café',
     icon: '☕',
     color: '#c9891f',
+    titlePlaceholder: 'Name des Cafés...',
     tabler: { id: 'coffee', emoji: '☕', outline: IconCoffee },
     aliases: ['café', 'cafe', 'kaffee', 'coffee'],
   },
@@ -109,6 +112,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Ausflugsziel',
     icon: '🎯',
     color: '#008300',
+    titlePlaceholder: 'Name des Ausflugsziels...',
     tabler: { id: 'target', emoji: '🎯', outline: IconTarget },
     aliases: ['ausflugsziel', 'ausflug', 'attraktion', 'target'],
   },
@@ -116,6 +120,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Shop',
     icon: '🛍️',
     color: '#e87ba4',
+    titlePlaceholder: 'Name des Shops...',
     tabler: { id: 'shopping-bag', emoji: '🛍️', outline: IconShoppingBag },
     aliases: [
       'shop',
@@ -132,6 +137,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Museum',
     icon: '🏛️',
     color: '#7a5c3e',
+    titlePlaceholder: 'Name des Museums...',
     tabler: { id: 'building-bank', emoji: '🏛️', outline: IconBuildingBank },
     aliases: ['museum', 'kultur & sehenswürdigkeiten', 'museen', 'galerie', 'ausstellung'],
   },
@@ -139,6 +145,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Aktivität',
     icon: '🎉',
     color: '#0aa3a3',
+    titlePlaceholder: 'Name der Aktivität...',
     tabler: { id: 'confetti', emoji: '🎉', outline: IconConfetti, filled: IconConfettiFilled },
     aliases: ['aktivität', 'aktivitäten & spaß', 'aktivitäten', 'spaß', 'freizeit', 'tour'],
   },
@@ -146,6 +153,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Sehenswürdigkeit',
     icon: '🏰',
     color: '#9333ea',
+    titlePlaceholder: 'Name der Sehenswürdigkeit...',
     tabler: { id: 'building-castle', emoji: '🏰', outline: IconBuildingCastle },
     aliases: ['sehenswürdigkeit', 'sehenswürdigkeiten', 'schloss', 'burg', 'denkmal', 'monument'],
   },
@@ -153,6 +161,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Strand',
     icon: '🏖️',
     color: '#1ba8c4',
+    titlePlaceholder: 'Name des Strands...',
     tabler: { id: 'beach', emoji: '🏖️', outline: IconBeach },
     aliases: ['strand', 'strand & wasser', 'beach', 'meer', 'küste', 'bucht'],
   },
@@ -160,6 +169,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Natur',
     icon: '🌳',
     color: '#2f9e44',
+    titlePlaceholder: 'Name des Natur-Spots...',
     tabler: { id: 'trees', emoji: '🌳', outline: IconTrees },
     aliases: ['natur', 'natur & nationalparks', 'wald', 'nationalpark', 'park'],
   },
@@ -167,6 +177,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Aussichtspunkt',
     icon: '🌄',
     color: '#e0763b',
+    titlePlaceholder: 'Name des Aussichtspunkts...',
     tabler: { id: 'mountain', emoji: '🌄', outline: IconMountain, filled: IconMountainFilled },
     aliases: ['aussichtspunkt', 'aussicht', 'panorama', 'viewpoint', 'view', 'gipfel'],
   },
@@ -174,6 +185,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Wanderweg',
     icon: '🥾',
     color: '#6b7a3a',
+    titlePlaceholder: 'Name des Wanderwegs...',
     tabler: { id: 'walk', emoji: '🥾', outline: IconWalk },
     aliases: ['wanderweg', 'wandern', 'hike', 'hiking', 'trekking', 'trail'],
   },
@@ -181,6 +193,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Bar',
     icon: '🍸',
     color: '#9333ea',
+    titlePlaceholder: 'Name der Bar...',
     tabler: { id: 'glass-cocktail', emoji: '🍸', outline: IconGlassCocktail },
     aliases: ['bar', 'bars', 'cocktailbar', 'lounge', 'cocktail', 'rooftop-bar'],
   },
@@ -188,6 +201,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Kneipe',
     icon: '🍺',
     color: '#d97706',
+    titlePlaceholder: 'Name der Kneipe...',
     tabler: { id: 'beer', emoji: '🍺', outline: IconBeer, filled: IconBeerFilled },
     aliases: [
       'kneipe',
@@ -207,6 +221,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Club',
     icon: '🪩',
     color: '#ec4899',
+    titlePlaceholder: 'Name des Clubs...',
     tabler: { id: 'disc', emoji: '🪩', outline: IconDisc },
     aliases: ['club', 'nightclub', 'disco', 'diskothek', 'tanzlokal', 'nachtclub'],
   },
@@ -214,6 +229,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Nachtleben',
     icon: '🌙',
     color: '#7a3ea1',
+    titlePlaceholder: 'Name der Location...',
     tabler: { id: 'music', emoji: '🌙', outline: IconMusic },
     aliases: ['nachtleben', 'party', 'nightlife'],
   },
@@ -221,6 +237,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Supermarkt',
     icon: '🛒',
     color: '#2a78d6',
+    titlePlaceholder: 'Name des Supermarkts...',
     tabler: {
       id: 'shopping-cart',
       emoji: '🛒',
@@ -233,6 +250,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Bäckerei',
     icon: '🥐',
     color: '#c17817',
+    titlePlaceholder: 'Name der Bäckerei...',
     tabler: { id: 'bread', emoji: '🥐', outline: IconBread, filled: IconBreadFilled },
     aliases: ['bäckerei', 'bäcker', 'frühstück', 'bakery'],
   },
@@ -240,6 +258,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Apotheke',
     icon: '💊',
     color: '#dc3545',
+    titlePlaceholder: 'Name der Apotheke...',
     tabler: { id: 'pill', emoji: '💊', outline: IconPill, filled: IconPillFilled },
     aliases: ['apotheke', 'gesundheit & apotheke', 'gesundheit', 'medikamente', 'pharmacy'],
   },
@@ -247,6 +266,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Tankstelle',
     icon: '⛽',
     color: '#5a6b7a',
+    titlePlaceholder: 'Name der Tankstelle...',
     tabler: {
       id: 'gas-station',
       emoji: '⛽',
@@ -262,6 +282,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Flughafen',
     icon: '✈️',
     color: '#4a3aa7',
+    titlePlaceholder: 'Name des Flughafens...',
     tabler: {
       id: 'plane-departure',
       emoji: '✈️',
@@ -274,6 +295,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Bahnhof',
     icon: '🚆',
     color: '#4a3aa7',
+    titlePlaceholder: 'Name des Bahnhofs...',
     tabler: { id: 'train', emoji: '🚆', outline: IconTrain, filled: IconTrainFilled },
     aliases: ['bahnhof', 'transport', 'zug', 'bahn', 'station', 'metro', 'u-bahn', 's-bahn'],
   },
@@ -281,6 +303,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Busbahnhof',
     icon: '🚌',
     color: '#4a3aa7',
+    titlePlaceholder: 'Name des Busbahnhofs...',
     tabler: { id: 'bus', emoji: '🚌', outline: IconBus, filled: IconBusFilled },
     aliases: ['busbahnhof', 'bus', 'fernbus', 'shuttle'],
   },
@@ -288,6 +311,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Hafen',
     icon: '⛴️',
     color: '#4a3aa7',
+    titlePlaceholder: 'Name des Hafens...',
     tabler: { id: 'anchor', emoji: '⛴️', outline: IconAnchor },
     aliases: ['hafen', 'fähre', 'ferry', 'pier', 'marina', 'port'],
   },
@@ -295,6 +319,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Raststätte',
     icon: '🛣️',
     color: '#4a3aa7',
+    titlePlaceholder: 'Name der Raststätte...',
     tabler: { id: 'road', emoji: '🛣️', outline: IconRoad },
     aliases: ['raststätte', 'maut & vignetten', 'autobahn', 'rastplatz'],
   },
@@ -302,6 +327,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Zuhause',
     icon: '🏠',
     color: '#4a3aa7',
+    titlePlaceholder: 'Name des Heimatorts...',
     tabler: { id: 'home', emoji: '🏠', outline: IconHome, filled: IconHomeFilled },
     aliases: ['zuhause', 'heimat', 'wohnung', 'home'],
   },
@@ -311,6 +337,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Unterkunft',
     icon: '🛏️',
     color: '#1baf7a',
+    titlePlaceholder: 'Name der Unterkunft...',
     tabler: { id: 'bed', emoji: '🛏️', outline: IconBed, filled: IconBedFilled },
     aliases: ['hotel', 'hostel', 'ferienwohnung', 'airbnb', 'pension', 'resort'],
   },
@@ -318,6 +345,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Park & Garten',
     icon: '🌷',
     color: '#22c55e',
+    titlePlaceholder: 'Name des Parks...',
     tabler: { id: 'flower', emoji: '🌷', outline: IconFlower },
     aliases: ['park', 'garten', 'schlosspark', 'botanischer garten', 'stadtpark'],
   },
@@ -325,6 +353,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Zoo & Tierpark',
     icon: '🦁',
     color: '#ea580c',
+    titlePlaceholder: 'Name des Zoos...',
     tabler: { id: 'paw', emoji: '🦁', outline: IconPaw, filled: IconPawFilled },
     aliases: ['zoo', 'tierpark', 'aquarium', 'safari', 'wildpark'],
   },
@@ -332,6 +361,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Spielplatz',
     icon: '🛝',
     color: '#f59e0b',
+    titlePlaceholder: 'Name des Spielplatzes...',
     tabler: { id: 'mood-kid', emoji: '🛝', outline: IconMoodKid },
     aliases: ['spielplatz', 'playground'],
   },
@@ -339,6 +369,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Kirche & Tempel',
     icon: '⛪',
     color: '#64748b',
+    titlePlaceholder: 'Name der Kirche...',
     tabler: { id: 'building-church', emoji: '⛪', outline: IconBuildingChurch },
     aliases: ['kirche', 'tempel', 'dom', 'kathedrale', 'moschee', 'synagoge', 'kloster'],
   },
@@ -346,6 +377,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Theater & Bühne',
     icon: '🎭',
     color: '#d946ef',
+    titlePlaceholder: 'Name des Theaters...',
     tabler: { id: 'masks-theater', emoji: '🎭', outline: IconMasksTheater },
     aliases: ['theater', 'oper', 'bühne', 'kino', 'musical'],
   },
@@ -353,6 +385,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Sport & Fitness',
     icon: '⚽',
     color: '#10b981',
+    titlePlaceholder: 'Name der Sportstätte...',
     tabler: { id: 'ball-football', emoji: '⚽', outline: IconBallFootball },
     aliases: ['sport', 'fitness', 'stadion', 'sportplatz', 'kletterhalle'],
   },
@@ -360,6 +393,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Wellness & Therme',
     icon: '💆',
     color: '#14b8a6',
+    titlePlaceholder: 'Name der Therme...',
     tabler: { id: 'massage', emoji: '💆', outline: IconMassage },
     aliases: ['wellness', 'spa', 'therme', 'sauna', 'bad'],
   },
@@ -367,6 +401,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Campingplatz',
     icon: '⛺',
     color: '#15803d',
+    titlePlaceholder: 'Name des Campingplatzes...',
     tabler: { id: 'tent', emoji: '⛺', outline: IconTent },
     aliases: ['camping', 'campingplatz', 'zeltplatz', 'glamping'],
   },
@@ -374,6 +409,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Parkplatz',
     icon: '🅿️',
     color: '#2563eb',
+    titlePlaceholder: 'Name des Parkplatzes...',
     tabler: { id: 'parking', emoji: '🅿️', outline: IconParking },
     aliases: ['parkplatz', 'parkhaus', 'parkschein'],
   },
@@ -381,6 +417,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Geldautomat & Bank',
     icon: '🏧',
     color: '#059669',
+    titlePlaceholder: 'Name der Bank...',
     tabler: { id: 'cash', emoji: '🏧', outline: IconCash },
     aliases: ['atm', 'geldautomat', 'bank', 'wechselstube'],
   },
@@ -388,6 +425,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Agentur',
     icon: '💻',
     color: '#0284c7',
+    titlePlaceholder: 'Name der Agentur...',
     tabler: { id: 'device-laptop', emoji: '💻', outline: IconDeviceLaptop },
     aliases: [
       'agentur',
@@ -403,6 +441,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Unternehmen',
     icon: '💼',
     color: '#475569',
+    titlePlaceholder: 'Name des Unternehmens...',
     tabler: { id: 'briefcase', emoji: '💼', outline: IconBriefcase },
     aliases: ['unternehmen', 'büro', 'firma', 'office', 'company', 'arbeitsplatz', 'betrieb'],
   },
@@ -410,6 +449,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Kino',
     icon: '🎬',
     color: '#e11d48',
+    titlePlaceholder: 'Name des Kinos...',
     tabler: { id: 'movie', emoji: '🎬', outline: IconMovie },
     aliases: ['kino', 'cinema', 'filmpalast', 'movie', 'lichtspiele'],
   },
@@ -417,6 +457,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Eiscafé',
     icon: '🍨',
     color: '#06b6d4',
+    titlePlaceholder: 'Name des Eiscafés...',
     tabler: { id: 'ice-cream', emoji: '🍨', outline: IconIceCream },
     aliases: ['eiscafé', 'eiscafe', 'eisdiele', 'gelateria', 'eis', 'ice cream', 'ice_cream'],
   },
@@ -424,6 +465,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Bibliothek & Buchhandlung',
     icon: '📚',
     color: '#854d0e',
+    titlePlaceholder: 'Name der Bibliothek...',
     tabler: { id: 'book', emoji: '📚', outline: IconBook },
     aliases: [
       'bibliothek',
@@ -439,6 +481,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Krankenhaus & Klinik',
     icon: '🏥',
     color: '#dc2626',
+    titlePlaceholder: 'Name des Krankenhauses...',
     tabler: { id: 'building-hospital', emoji: '🏥', outline: IconBuildingHospital },
     aliases: ['krankenhaus', 'klinik', 'spital', 'hospital', 'clinic', 'notaufnahme'],
   },
@@ -446,6 +489,7 @@ export const KNOWN_CATEGORIES: CategoryMeta[] = [
     label: 'Gesundheit',
     icon: '🩺',
     color: '#0ea5e9',
+    titlePlaceholder: 'Name der Praxis...',
     tabler: { id: 'stethoscope', emoji: '🩺', outline: IconStethoscope },
     aliases: ['gesundheit', 'arzt', 'ärzte', 'zahnarzt', 'praxis', 'doctor', 'dentist'],
   },
@@ -599,4 +643,142 @@ export function isVacationCategory(category: string | null | undefined): boolean
   }
 
   return !isHomeCategory(category) && !isTransitCategory(category);
+}
+
+export const DEFAULT_SPOT_TITLE_PLACEHOLDER = 'Name des Spots...';
+
+const SPECIFIC_PLACEHOLDERS: Record<string, string> = {
+  // Unterkunft & Wohnen
+  hotel: 'Name des Hotels...',
+  hostel: 'Name des Hostels...',
+  ferienwohnung: 'Name der Ferienwohnung...',
+  pension: 'Name der Pension...',
+  resort: 'Name des Resorts...',
+  wohnung: 'Name der Wohnung...',
+  haus: 'Name des Hauses...',
+
+  // Gastronomie, Bars & Kneipen
+  pub: 'Name des Pubs...',
+  pubs: 'Name des Pubs...',
+  biergarten: 'Name des Biergartens...',
+  brauhaus: 'Name des Brauhauses...',
+  brauerei: 'Name der Brauerei...',
+  wirtshaus: 'Name des Wirtshauses...',
+  gasthaus: 'Name des Gasthauses...',
+  schenke: 'Name der Schenke...',
+  tavern: 'Name der Taverne...',
+  cocktailbar: 'Name der Cocktailbar...',
+  lounge: 'Name der Lounge...',
+  imbiss: 'Name des Imbisses...',
+  bäcker: 'Name der Bäckerei...',
+  eisdiele: 'Name der Eisdiele...',
+  gelateria: 'Name der Gelateria...',
+
+  // Nachtleben & Kultur
+  disco: 'Name der Disco...',
+  diskothek: 'Name der Diskothek...',
+  nachtclub: 'Name des Nachtclubs...',
+  oper: 'Name der Oper...',
+  musical: 'Name des Musicals...',
+  galerie: 'Name der Galerie...',
+  ausstellung: 'Name der Ausstellung...',
+  schloss: 'Name des Schlosses...',
+  burg: 'Name der Burg...',
+  denkmal: 'Name des Denkmals...',
+  monument: 'Name des Denkmals...',
+  tempel: 'Name des Tempels...',
+  dom: 'Name des Doms...',
+  kathedrale: 'Name der Kathedrale...',
+  moschee: 'Name der Moschee...',
+  synagoge: 'Name der Synagoge...',
+  kloster: 'Name des Klosters...',
+
+  // Natur, Ausflug & Freizeit
+  bucht: 'Name der Bucht...',
+  meer: 'Name des Strands...',
+  nationalpark: 'Name des Nationalparks...',
+  park: 'Name des Parks...',
+  garten: 'Name des Gartens...',
+  wald: 'Name des Waldes...',
+  gipfel: 'Name des Gipfels...',
+  trail: 'Name des Trails...',
+  tierpark: 'Name des Tierparks...',
+  aquarium: 'Name des Aquariums...',
+  wildpark: 'Name des Wildparks...',
+  safari: 'Name des Safariparks...',
+  spa: 'Name des Spas...',
+  therme: 'Name der Therme...',
+  sauna: 'Name der Sauna...',
+  zeltplatz: 'Name des Zeltplatzes...',
+  stadion: 'Name des Stadions...',
+  fitnessstudio: 'Name des Fitnessstudios...',
+  kletterhalle: 'Name der Kletterhalle...',
+
+  // Shopping & Services
+  laden: 'Name des Ladens...',
+  geschäft: 'Name des Geschäfts...',
+  boutique: 'Name der Boutique...',
+  buchhandlung: 'Name der Buchhandlung...',
+  buchladen: 'Name des Buchladens...',
+  bücherei: 'Name der Bücherei...',
+  bank: 'Name der Bank...',
+  geldautomat: 'Name des Geldautomaten...',
+  atm: 'Name des Geldautomaten...',
+  wechselstube: 'Name der Wechselstube...',
+  parkhaus: 'Name des Parkhauses...',
+
+  // Transport & Reise
+  airport: 'Name des Flughafens...',
+  zug: 'Name des Bahnhofs...',
+  bahn: 'Name des Bahnhofs...',
+  station: 'Name der Station...',
+  'u-bahn': 'Name der U-Bahn-Station...',
+  's-bahn': 'Name der S-Bahn-Station...',
+  metro: 'Name der Metro-Station...',
+  fernbus: 'Name des Busbahnhofs...',
+  fähre: 'Name der Fähre...',
+  ferry: 'Name der Fähre...',
+  pier: 'Name des Piers...',
+  marina: 'Name der Marina...',
+  port: 'Name des Hafens...',
+  rastplatz: 'Name des Rastplatzes...',
+
+  // Gesundheit & Arbeit
+  klinik: 'Name der Klinik...',
+  spital: 'Name des Spitals...',
+  arzt: 'Name des Arztes...',
+  zahnarzt: 'Name des Zahnarztes...',
+  praxis: 'Name der Praxis...',
+  firma: 'Name der Firma...',
+  büro: 'Name des Büros...',
+};
+
+/**
+ * Liefert einen kontextuellen Platzhalter für das Titel-Eingabefeld eines Spots basierend auf der Kategorie.
+ * Erkennt bekannte Standard-Kategorien sowie spezifische Synonyme (z. B. "Name der Kneipe...", "Name des Restaurants...", "Name des Strands...").
+ */
+export function spotTitlePlaceholder(category: string | null | undefined): string {
+  if (!category) {
+    return DEFAULT_SPOT_TITLE_PLACEHOLDER;
+  }
+
+  const trimmed = category.trim().toLowerCase();
+
+  if (!trimmed) {
+    return DEFAULT_SPOT_TITLE_PLACEHOLDER;
+  }
+
+  const specific = SPECIFIC_PLACEHOLDERS[trimmed];
+
+  if (specific) {
+    return specific;
+  }
+
+  const known = LOOKUP.get(trimmed);
+
+  if (known?.titlePlaceholder) {
+    return known.titlePlaceholder;
+  }
+
+  return DEFAULT_SPOT_TITLE_PLACEHOLDER;
 }

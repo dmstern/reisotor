@@ -6,6 +6,8 @@ import {
   isHomeCategory,
   isTransitCategory,
   isVacationCategory,
+  spotTitlePlaceholder,
+  DEFAULT_SPOT_TITLE_PLACEHOLDER,
 } from './spotCategory';
 
 describe('spotCategory', () => {
@@ -101,5 +103,44 @@ describe('spotCategory', () => {
     expect(isVacationCategory('Zuhause')).toBe(false);
     expect(isVacationCategory('Flughafen')).toBe(false);
     expect(isVacationCategory('Bahnhof')).toBe(false);
+  });
+
+  it('provides matching title placeholders for various spot categories and synonyms', () => {
+    // User requested examples
+    expect(spotTitlePlaceholder('Kneipe')).toBe('Name der Kneipe...');
+    expect(spotTitlePlaceholder('Restaurant')).toBe('Name des Restaurants...');
+    expect(spotTitlePlaceholder('Strand')).toBe('Name des Strands...');
+    expect(spotTitlePlaceholder('Unterkunft')).toBe('Name der Unterkunft...');
+
+    // Synonyms & specific cases
+    expect(spotTitlePlaceholder('Pub')).toBe('Name des Pubs...');
+    expect(spotTitlePlaceholder('Biergarten')).toBe('Name des Biergartens...');
+    expect(spotTitlePlaceholder('Hotel')).toBe('Name des Hotels...');
+    expect(spotTitlePlaceholder('Ferienwohnung')).toBe('Name der Ferienwohnung...');
+    expect(spotTitlePlaceholder('Café')).toBe('Name des Cafés...');
+    expect(spotTitlePlaceholder('Bar')).toBe('Name der Bar...');
+    expect(spotTitlePlaceholder('Club')).toBe('Name des Clubs...');
+    expect(spotTitlePlaceholder('Museum')).toBe('Name des Museums...');
+    expect(spotTitlePlaceholder('Schloss')).toBe('Name des Schlosses...');
+    expect(spotTitlePlaceholder('Wanderweg')).toBe('Name des Wanderwegs...');
+    expect(spotTitlePlaceholder('Aussichtspunkt')).toBe('Name des Aussichtspunkts...');
+    expect(spotTitlePlaceholder('Flughafen')).toBe('Name des Flughafens...');
+    expect(spotTitlePlaceholder('Bahnhof')).toBe('Name des Bahnhofs...');
+    expect(spotTitlePlaceholder('Zuhause')).toBe('Name des Heimatorts...');
+    expect(spotTitlePlaceholder('Supermarkt')).toBe('Name des Supermarkts...');
+    expect(spotTitlePlaceholder('Bäckerei')).toBe('Name der Bäckerei...');
+    expect(spotTitlePlaceholder('Apotheke')).toBe('Name der Apotheke...');
+    expect(spotTitlePlaceholder('Tankstelle')).toBe('Name der Tankstelle...');
+    expect(spotTitlePlaceholder('Campingplatz')).toBe('Name des Campingplatzes...');
+    expect(spotTitlePlaceholder('Kino')).toBe('Name des Kinos...');
+    expect(spotTitlePlaceholder('Eiscafé')).toBe('Name des Eiscafés...');
+
+    // Fallbacks
+    expect(spotTitlePlaceholder('')).toBe(DEFAULT_SPOT_TITLE_PLACEHOLDER);
+    expect(spotTitlePlaceholder(null)).toBe(DEFAULT_SPOT_TITLE_PLACEHOLDER);
+    expect(spotTitlePlaceholder(undefined)).toBe(DEFAULT_SPOT_TITLE_PLACEHOLDER);
+    expect(spotTitlePlaceholder('Unbekannte Spezialkategorie')).toBe(
+      DEFAULT_SPOT_TITLE_PLACEHOLDER
+    );
   });
 });

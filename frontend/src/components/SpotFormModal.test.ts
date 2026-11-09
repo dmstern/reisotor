@@ -333,6 +333,40 @@ describe('SpotFormModal', () => {
     cleanUp();
   });
 
+  it('adapts title placeholder to specific categories like Kneipe or Restaurant', async () => {
+    const { cleanUp: cleanUpKneipe } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Kneipe',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const kneipeTitleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(kneipeTitleInput.placeholder).toBe('Name der Kneipe...');
+    cleanUpKneipe();
+
+    const { cleanUp: cleanUpRestaurant } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Restaurant',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const restaurantTitleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(restaurantTitleInput.placeholder).toBe('Name des Restaurants...');
+    cleanUpRestaurant();
+  });
+
   it('displays an inline warning banner when an accommodation is marked as home', async () => {
     const { cleanUp } = mountModal({
       show: true,

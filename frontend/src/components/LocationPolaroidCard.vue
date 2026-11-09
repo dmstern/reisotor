@@ -10,6 +10,7 @@ import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import SpotLocationBadge from './SpotLocationBadge.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 import FormField from './FormField.vue';
+import { spotTitlePlaceholder } from '../utils/spotCategory';
 import type { PlaceSearchResult } from '../composables/usePlaceSearch';
 
 const props = withDefaults(
@@ -124,13 +125,7 @@ const addressInputId = useId();
 const addressDropdownId = useId();
 
 const titlePlaceholder = computed(() => {
-  const currentCategory = (props.editCategoryInput || props.category || '').trim().toLowerCase();
-
-  if (currentCategory === 'unterkunft') {
-    return 'Name der Unterkunft...';
-  }
-
-  return 'Name des Spots...';
+  return spotTitlePlaceholder(props.editCategoryInput || props.category);
 });
 
 defineExpose({
