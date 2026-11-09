@@ -31,6 +31,7 @@
 
     &:focus-within,
     &.is-focused {
+      border-bottom-width: 1.5px;
       outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
       outline-offset: var(--focus-ring-offset, 2px);
       box-shadow:
@@ -47,6 +48,7 @@
 
       &:focus-within,
       &.is-focused {
+        border-bottom-width: 1.5px;
         border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
@@ -69,6 +71,7 @@
 
       &:focus-within,
       &.is-focused {
+        border-bottom-width: 1.5px;
         border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
@@ -85,6 +88,7 @@
     &:focus,
     &:focus-visible,
     &:active:not(:disabled) {
+      border-bottom-width: 1.5px;
       outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
       outline-offset: var(--focus-ring-offset, 2px);
       box-shadow:
@@ -102,6 +106,7 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
+        border-bottom-width: 1.5px;
         border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
@@ -125,6 +130,7 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
+        border-bottom-width: 1.5px;
         border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
