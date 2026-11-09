@@ -54,12 +54,6 @@ const newPeriod = usePersistedRef<Period | ''>(
 );
 const editingItem = ref<ShoppingItem | null>(null);
 
-async function handleReassign(item: ShoppingItem, event: Event) {
-  const value = (event.target as HTMLSelectElement).value;
-  const assigned_to_user_id = value ? Number(value) : null;
-  await reassignItem(item, assigned_to_user_id);
-}
-
 async function quickAddToGroup(group: Group, label: string) {
   await submitQuickAdd({
     groupKey: group.key,
@@ -119,7 +113,7 @@ async function quickAddToGroup(group: Group, label: string) {
               :is-highlighted="highlightedIds.has(item.id)"
               :has-meta="hasItemMeta(item)"
               @toggle="toggle"
-              @reassign="handleReassign"
+              @reassign="reassignItem"
               @edit="(it) => (editingItem = it)"
             />
             <EmptyState v-if="!group.items.length" :key="`${group.key}-empty`" tag="li">

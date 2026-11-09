@@ -35,6 +35,7 @@ const {
   addItem: submitNewTodo,
   quickAddToGroup: submitQuickAdd,
   toggleDone,
+  reassign: reassignTodo,
   submitEdit: updateTodo,
   remove,
 } = useTodoList();
@@ -131,6 +132,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
               :has-meta="hasTodoMeta(item)"
               @toggle-done="toggleDone"
               @click="clearFocusedTodo"
+              @reassign="reassignTodo"
               @edit="startEdit"
             />
             <EmptyState v-if="!group.items.length" :key="`${group.key}-empty`" tag="li">

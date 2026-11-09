@@ -4,6 +4,7 @@ import CheckableListItem from './primitives/CheckableListItem.vue';
 import Checkbox from './primitives/Checkbox.vue';
 import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
+import AssigneeMenu from './AssigneeMenu.vue';
 import EditButton from './EditButton.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -26,25 +27,8 @@ const emit = defineEmits<{
   (e: 'toggle-done', item: TodoItem): void;
   (e: 'click'): void;
   (e: 'edit', item: TodoItem): void;
+  (e: 'reassign', item: TodoItem, assignedUserId: number | null): void;
 }>();
-
-function userAvatar(id: number | null | undefined) {
-  if (id == null) {
-    return null;
-  }
-
-  const user = props.users.find((candidate) => candidate.id === id);
-  return user ? user.avatar : '👤';
-}
-
-function userName(id: number | null | undefined) {
-  if (id == null) {
-    return null;
-  }
-
-  const user = props.users.find((candidate) => candidate.id === id);
-  return user ? user.username : 'Ehemaliges Mitglied';
-}
 </script>
 
 <template>
@@ -107,13 +91,13 @@ function userName(id: number | null | undefined) {
     </div>
 
     <template #actions>
-      <span
-        v-if="users.length > 1 && groupBy !== 'assignee' && userAvatar(item.assigned_to_user_id)"
-        class="assignee-avatar-pill"
-        :title="`Zugewiesen an: ${userName(item.assigned_to_user_id)}`"
-      >
-        {{ userAvatar(item.assigned_to_user_id) }}
-      </span>
+      <AssigneeMenu
+        v-if="users.length > 1 && groupBy !== 'assignee' && item.assigned_to_user_id != null"
+        :users="users"
+        :assigned-user-id="item.assigned_to_user_id"
+        role-label="Zugewiesen an"
+        @select="(userId) => emit('reassign', item, userId)"
+      />
       <EditButton small @click="emit('edit', item)" />
     </template>
   </CheckableListItem>
@@ -220,20 +204,5 @@ function userName(id: number | null | undefined) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.assignee-avatar-pill {
-  width: 36px;
-  height: 36px;
-  min-width: 34px;
-  min-height: 34px;
-  border-radius: var(--radius-full);
-  background: var(--color-hover);
-  border: 1.5px solid var(--color-border-strong);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-sm);
-  flex-shrink: 0;
 }
 </style>
