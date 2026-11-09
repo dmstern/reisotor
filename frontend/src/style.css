@@ -198,9 +198,9 @@
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
   --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
-  --color-surface-glass-border: rgb(255 255 255 / calc(var(--glass-opacity) * 0.8));
+  --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
   --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
-  --color-border: #ffffff;
+  --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #66625b;
   --color-primary: #9141ac;
@@ -785,9 +785,9 @@
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
   --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
-  --color-surface-glass-border: rgb(255 255 255 / calc(var(--glass-opacity) * 0.8));
+  --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
   --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
-  --color-border: #ffffff;
+  --color-border: #e8e2d9;
   --color-text: #2b2a28;
   --color-text-muted: #66625b;
   --color-primary: #9141ac;
