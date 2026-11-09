@@ -432,7 +432,7 @@ a.btn.is-loading {
 .btn--ghost.btn--circle:hover:not(:disabled) {
   background-color: var(--color-hover);
   background-image: var(--gradient-control-3d);
-  border-color: var(--color-border-strong);
+  background-origin: border-box;
   box-shadow: var(--shadow-control-hover);
 }
 
@@ -444,7 +444,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-text);
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid transparent;
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
     var(--shadow-sm);
@@ -452,7 +452,6 @@ a.btn.is-loading {
 
 .btn--floating:hover:not(:disabled) {
   background-color: var(--color-hover);
-  border-color: var(--color-primary-dark);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight-strong),
     var(--shadow-md);
@@ -469,7 +468,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-text);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid transparent;
   box-shadow: var(--shadow-control);
 }
 
