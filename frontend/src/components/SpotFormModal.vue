@@ -28,7 +28,6 @@ import {
 } from '../utils/spotCategory';
 import { normalizeWebUrl } from '../utils/linkLabel';
 import { useSpotForm } from '../composables/useSpotForm';
-import SpotHomeRegionWarningModal from './SpotHomeRegionWarningModal.vue';
 
 const props = defineProps<{
   show: boolean;
@@ -141,7 +140,6 @@ const scheduledCount = computed(() =>
 );
 
 const manualRegionVisible = ref(false);
-const showHomeRegionWarningModal = ref(false);
 
 const showSpotRegionSection = computed(() => {
   const cat = activeSpotForm.value.category;
@@ -155,25 +153,10 @@ const showSpotRegionSection = computed(() => {
 });
 
 function onRegionToggle(val: boolean) {
-  if (!val && isVacationCategory(activeSpotForm.value.category)) {
-    showHomeRegionWarningModal.value = true;
-    return;
-  }
-
   activeSpotForm.value.is_home = !val;
 }
 
 function enableSpotRegionManual() {
-  if (isVacationCategory(activeSpotForm.value.category)) {
-    showHomeRegionWarningModal.value = true;
-    return;
-  }
-
-  manualRegionVisible.value = true;
-  activeSpotForm.value.is_home = true;
-}
-
-function confirmSetHomeRegion() {
   manualRegionVisible.value = true;
   activeSpotForm.value.is_home = true;
 }
@@ -355,8 +338,9 @@ function handleOpenScheduledItem(item: ScheduleItem) {
         >
           <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
           <span>
-            Ort liegt an der Heimat-Seite und wird auf der Karte separat außerhalb des Reiseziels
-            geführt.
+            Orte der Kategorie „{{ activeSpotForm.category || 'Unterkunft' }}“ liegen üblicherweise
+            am Reiseziel. Als Heimatort wird dieser Ort auf der Karte separat außerhalb der
+            Urlaubsregion geführt.
           </span>
         </p>
       </div>
@@ -688,12 +672,6 @@ function handleOpenScheduledItem(item: ScheduleItem) {
         </Button>
       </div>
     </form>
-
-    <SpotHomeRegionWarningModal
-      v-model="showHomeRegionWarningModal"
-      :category="activeSpotForm.category"
-      @confirm="confirmSetHomeRegion"
-    />
   </Modal>
 </template>
 

@@ -333,7 +333,7 @@ describe('SpotFormModal', () => {
     cleanUp();
   });
 
-  it('shows warning modal and requires confirmation when trying to mark an accommodation as home', async () => {
+  it('displays an inline warning banner when an accommodation is marked as home', async () => {
     const { cleanUp } = mountModal({
       show: true,
       spot: null,
@@ -349,40 +349,27 @@ describe('SpotFormModal', () => {
     overrideBtn.click();
     await nextTick();
 
-    // Warning modal should appear
-    expect(document.body.textContent).toContain('Als Heimatort festlegen?');
-    expect(document.body.textContent).toContain('Unterkunft');
-    expect(document.body.textContent).toContain('liegen üblicherweise an deinem Reiseziel');
+    // Switch should now be visible and set to home (aria-checked="false" for vacation toggle)
+    const switchEl = document.querySelector('#spotRegionToggle') as HTMLButtonElement;
+    expect(switchEl).not.toBeNull();
+    expect(switchEl.getAttribute('aria-checked')).toBe('false');
 
-    // Clicking cancel leaves it in vacation region
-    const cancelBtn = Array.from(
-      document.querySelectorAll<HTMLButtonElement>('.home-region-warning-modal button')
-    ).find((b) => b.textContent?.trim() === 'Abbrechen');
-    expect(cancelBtn).toBeDefined();
-    cancelBtn?.click();
+    // Inline warning banner should be displayed
+    const warningText = document.querySelector('.spot-region-warning-text');
+    expect(warningText).not.toBeNull();
+    expect(warningText?.textContent).toContain(
+      'Orte der Kategorie „Unterkunft“ liegen üblicherweise am Reiseziel'
+    );
+    expect(warningText?.textContent).toContain(
+      'Als Heimatort wird dieser Ort auf der Karte separat außerhalb der Urlaubsregion geführt.'
+    );
+
+    // Toggling back to vacation removes warning
+    switchEl.click();
     await nextTick();
+    expect(switchEl.getAttribute('aria-checked')).toBe('true');
+    expect(document.querySelector('.spot-region-warning-text')).toBeNull();
 
-    // Switch should not be revealed as home
-    const switchEl = document.querySelector('#spotRegionToggle');
-    expect(switchEl).toBeNull();
-
-    // Now click again and confirm
-    const overrideBtn2 = document.querySelector('.spot-region-override-btn') as HTMLButtonElement;
-    overrideBtn2.click();
-    await nextTick();
-
-    const confirmBtn = Array.from(
-      document.querySelectorAll<HTMLButtonElement>('.home-region-warning-modal button')
-    ).find((b) => b.textContent?.includes('Ja, als Heimatort festlegen'));
-    expect(confirmBtn).toBeDefined();
-    confirmBtn?.click();
-    await nextTick();
-
-    // Switch should now be visible and set to home (aria-checked="false" for vacation)
-    const switchEl2 = document.querySelector('#spotRegionToggle');
-    expect(switchEl2).not.toBeNull();
-    expect(switchEl2?.getAttribute('aria-checked')).toBe('false');
-    expect(document.body.textContent).toContain('Ort liegt an der Heimat-Seite');
     cleanUp();
   });
 });
