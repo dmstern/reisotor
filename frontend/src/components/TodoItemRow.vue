@@ -92,7 +92,7 @@ const emit = defineEmits<{
 
     <template #actions>
       <AssigneeMenu
-        v-if="users.length > 1 && groupBy !== 'assignee' && item.assigned_to_user_id != null"
+        v-if="users.length > 1 && groupBy !== 'assignee'"
         :users="users"
         :assigned-user-id="item.assigned_to_user_id"
         role-label="Zugewiesen an"
