@@ -208,7 +208,7 @@ function discardDraft() {
 }
 
 .inline-submit-btn {
-  --inline-submit-size: 32px;
+  --inline-submit-size: var(--input-height-sm, 38px);
   position: absolute;
   right: calc((var(--input-height, 46px) - var(--inline-submit-size)) / 2);
   top: 0;
