@@ -683,7 +683,7 @@ defineOptions({
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border: 1.5px solid var(--color-border-strong);
+  border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-dropdown-menu);

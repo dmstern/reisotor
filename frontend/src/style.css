@@ -276,6 +276,8 @@
      auf jedem --color-primary/--color-danger-Ton gleich funktioniert) zeichnet die Kante dagegen auch
      auf farbigem Grund sichtbar nach. */
   --color-border-strong: #d5cabc;
+  /* Rahmenfarbe aller Eingabefelder inkl. input-ähnlicher Wrapper (QuickAddRow, Combobox, Editor) */
+  --input-border-color: var(--color-border-strong);
   --color-button-edge: rgba(0, 0, 0, 0.16);
   /* Eigener Ton für "an diesem Tag ist etwas geplant" (TripMap.vue's Tage-Streifen) - bewusst NICHT
      --color-accent, das app-weit bereits fest für "Echtzeit-Update von jemand anderem"/"wartet auf

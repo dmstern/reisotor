@@ -17,14 +17,14 @@
 @mixin control-field-inset($focus-within: false) {
   box-shadow: none;
   background: var(--color-surface);
-  border: 1.5px solid var(--color-border-strong);
+  border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition: var(--transition-control);
 
   @if $focus-within {
     &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
-      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--input-border-color));
       box-shadow: var(--shadow-control-inset-hover);
     }
 
@@ -46,7 +46,7 @@
 
       &:focus-within,
       &.is-focused {
-        border-color: var(--color-border-strong);
+        border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
       }
@@ -68,7 +68,7 @@
 
       &:focus-within,
       &.is-focused {
-        border-color: var(--color-border-strong) !important;
+        border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
         box-shadow:
@@ -77,7 +77,7 @@
     }
   } @else {
     &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--input-border-color));
       box-shadow: var(--shadow-control-inset-hover);
     }
 
@@ -101,7 +101,7 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
-        border-color: var(--color-border-strong);
+        border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
       }
@@ -124,7 +124,7 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
-        border-color: var(--color-border-strong) !important;
+        border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
         box-shadow:
@@ -159,7 +159,7 @@
     var(--control-grad-top) 0%,
     var(--control-grad-bottom) 100%
   );
-  border: 1.5px solid var(--color-border-strong);
+  border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition: var(--transition-control);
@@ -202,7 +202,7 @@
     &:focus,
     &:focus-visible,
     #{$active-selector} {
-      border-color: var(--color-border-strong);
+      border-color: var(--input-border-color);
       outline: var(--focus-ring-width, 3px) solid var(--color-danger);
       outline-color: var(--color-danger);
     }
@@ -229,7 +229,7 @@
     &:focus,
     &:focus-visible,
     #{$active-selector} {
-      border-color: var(--color-border-strong) !important;
+      border-color: var(--input-border-color) !important;
       outline: var(--focus-ring-width, 3px) solid var(--color-accent);
       outline-color: var(--color-accent);
       box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);

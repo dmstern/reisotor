@@ -164,13 +164,12 @@ function onBlur(event: FocusEvent) {
   width: 100%;
   min-height: var(--input-height, 46px);
   background: var(--color-hover);
-  border: 1.5px solid var(--color-border);
   box-sizing: border-box;
 }
 
 .quick-add-row.expanded .input-container {
   background: var(--color-surface);
-  border-color: var(--color-border-strong);
+  border-color: var(--input-border-color);
   box-shadow: var(--shadow-control-inset);
 }
 
