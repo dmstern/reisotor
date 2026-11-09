@@ -459,7 +459,6 @@ const isNewHighlight = computed(() => {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .card--polaroid {
     background-color: #2a2825;
-    border-color: rgba(255, 255, 255, 0.12);
     box-shadow: var(--shadow-card-polaroid);
   }
 
