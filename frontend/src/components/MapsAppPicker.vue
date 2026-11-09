@@ -2,7 +2,7 @@
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -104,13 +104,13 @@ onUnmounted(() => {
     </Button>
     <Teleport to="body">
       <PickerMenu v-if="open" class="maps-picker-menu" :style="menuStyle" @close="close">
-        <DropdownItem
+        <DropdownMenuItem
           :href="genericMapsUrl"
           :icon="ACTION_ICONS.deviceMobile"
           label="Standard-Karten-App"
           @click="close"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :href="googleMapsUrl"
           target="_blank"
           rel="noopener"
@@ -118,7 +118,7 @@ onUnmounted(() => {
           label="Google Maps"
           @click="close"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :href="appleMapsUrl"
           target="_blank"
           rel="noopener"
@@ -126,7 +126,7 @@ onUnmounted(() => {
           label="Apple Maps"
           @click="close"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :href="osmUrl"
           target="_blank"
           rel="noopener"
@@ -134,7 +134,7 @@ onUnmounted(() => {
           label="OpenStreetMap"
           @click="close"
         />
-        <DropdownItem
+        <DropdownMenuItem
           v-if="props.mapsLink"
           :href="props.mapsLink"
           target="_blank"

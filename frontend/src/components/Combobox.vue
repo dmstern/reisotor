@@ -5,8 +5,9 @@ import AppIcon from './AppIcon.vue';
 import Input from './primitives/Input.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
-// Combobox.vue: Custom Dropdown-/Freitext-Auswahlfeld mit einheitlichem Styling.
-// Unterstützt sowohl v-model-Freitext als auch Dropdown-Ausstattung (Optionsliste + Caret-Icon).
+// Combobox.vue: Suchbares Autocomplete-/Freitext-Eingabefeld mit Filterliste (Issue #721).
+// Unterstützt v-model-Freitext, Dropdown-Ausstattung (Optionsliste + Caret-Icon) und Tastaturnavigation.
+// Abgrenzung: Für feste Einzelauswahl ohne Freitext -> Select.vue; für Aktions-/Flyout-Menüs -> DropdownMenu.vue.
 
 const props = withDefaults(
   defineProps<{

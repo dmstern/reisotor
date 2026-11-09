@@ -6,7 +6,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
@@ -188,7 +188,7 @@ function resetDefaults() {
             <span>Anzeige</span>
           </div>
           <div class="popover-options-list">
-            <DropdownItem
+            <DropdownMenuItem
               multiselect
               :label="hideCompletedLabel"
               :checked="hideCompleted"
@@ -204,7 +204,7 @@ function resetDefaults() {
             <span>Gruppieren nach</span>
           </div>
           <div class="popover-options-list">
-            <DropdownItem
+            <DropdownMenuItem
               v-for="opt in groupByOptions"
               :key="opt.value"
               :label="opt.label"
@@ -225,7 +225,7 @@ function resetDefaults() {
             <span>Sortieren nach</span>
           </div>
           <div class="popover-options-list">
-            <DropdownItem
+            <DropdownMenuItem
               v-for="opt in sortByOptions"
               :key="opt.value"
               :label="opt.label"

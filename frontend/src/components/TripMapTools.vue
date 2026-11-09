@@ -7,7 +7,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import IconButton from './primitives/IconButton.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
 
 interface Props {
@@ -121,7 +121,7 @@ const {
         :style="focusMenuStyle"
         @close="focusMenuOpen = false"
       >
-        <DropdownItem
+        <DropdownMenuItem
           :disabled="!filteredPointsCount"
           :title="
             !filteredPointsCount
@@ -132,7 +132,7 @@ const {
           label="Alle eingetragenen Orte anzeigen"
           @click="selectFocus(() => emit('fit-all'))"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :disabled="!vacationPointsCount"
           :title="
             !vacationPointsCount ? 'Kein Urlaubsort eingetragen' : 'Auf den Urlaubsort fokussieren'
@@ -141,7 +141,7 @@ const {
           label="Nur Urlaubsort"
           @click="selectFocus(() => emit('fit-vacation'))"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :disabled="!homePointsCount"
           :title="
             !homePointsCount ? 'Keine Heimatorte eingetragen' : 'Auf die Heimatorte fokussieren'
@@ -150,7 +150,7 @@ const {
           label="Nur Heimatorte"
           @click="selectFocus(() => emit('fit-home'))"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :disabled="!accommodationPointsCount"
           :title="
             !accommodationPointsCount
@@ -165,7 +165,7 @@ const {
           label="Nur Unterkünfte"
           @click="selectFocus(() => emit('fit-accommodations'))"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :disabled="allTripPhotosLoaded && !allTripPhotoPointsCount"
           :title="
             !allTripPhotosLoaded
@@ -183,7 +183,7 @@ const {
 
         <hr class="picker-divider" />
 
-        <DropdownItem
+        <DropdownMenuItem
           :disabled="!hasOwnPosition"
           :title="
             !hasOwnPosition
@@ -194,8 +194,8 @@ const {
         >
           <span class="picker-item-emoji" aria-hidden="true">{{ userAvatar || '📍' }}</span>
           Zu meinem Standort springen
-        </DropdownItem>
-        <DropdownItem
+        </DropdownMenuItem>
+        <DropdownMenuItem
           v-for="member in activeMembersWithPosition"
           :key="member.id"
           :title="`${member.username} teilt gerade den Standort`"
@@ -210,17 +210,17 @@ const {
             <span v-if="isMemberOnline(member.id)" class="online-dot" aria-hidden="true" />
           </span>
           Zu Standort von {{ member.username }} springen
-        </DropdownItem>
+        </DropdownMenuItem>
 
         <hr class="picker-divider" />
 
-        <DropdownItem
+        <DropdownMenuItem
           :active="mapOrientationMode === 'north'"
           :icon="MAP_TOOL_ICONS.orientationNorth"
           label="Norden oben"
           @click="selectFocus(() => emit('set-orientation-mode', 'north'))"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :active="mapOrientationMode === 'heading'"
           :icon="MAP_TOOL_ICONS.orientationHeading"
           label="Fahrtrichtung oben"
@@ -230,27 +230,27 @@ const {
     </template>
     <template v-if="shareMenuOpen">
       <PickerMenu :style="shareMenuStyle" @close="shareMenuOpen = false">
-        <DropdownItem
+        <DropdownMenuItem
           :active="locationSharing.activeDuration === 'off'"
           :icon="ACTION_ICONS.off"
           label="Nicht teilen"
           @click="chooseShareDuration('off')"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :active="locationSharing.activeDuration === 'day'"
           :icon="FORM_FIELD_ICONS.date"
           icon-group="formFields"
           label="Für einen Tag"
           @click="chooseShareDuration('day')"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :active="locationSharing.activeDuration === 'week'"
           :icon="FORM_FIELD_ICONS.period"
           icon-group="formFields"
           label="Für eine Woche"
           @click="chooseShareDuration('week')"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :active="locationSharing.activeDuration === 'forever'"
           :icon="ACTION_ICONS.forever"
           label="Dauerhaft"

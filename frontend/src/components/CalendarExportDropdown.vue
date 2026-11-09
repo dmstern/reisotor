@@ -4,7 +4,7 @@ import type { CalendarEntry } from '../api/types';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import {
@@ -108,8 +108,8 @@ function downloadIcs() {
         origin="top-right"
         @close="isOpen = false"
       >
-        <DropdownItem :icon="ACTION_ICONS.apple" label="Apple/iPhone" @click="downloadIcs" />
-        <DropdownItem
+        <DropdownMenuItem :icon="ACTION_ICONS.apple" label="Apple/iPhone" @click="downloadIcs" />
+        <DropdownMenuItem
           :href="googleCalendarHref(eventData)"
           target="_blank"
           rel="noopener"
@@ -117,7 +117,7 @@ function downloadIcs() {
           label="Google Kalender"
           @click="isOpen = false"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :href="outlookCalendarHref(eventData)"
           target="_blank"
           rel="noopener"
@@ -126,7 +126,7 @@ function downloadIcs() {
           label="Outlook"
           @click="isOpen = false"
         />
-        <DropdownItem :icon="ACTION_ICONS.android" label="Android" @click="downloadIcs" />
+        <DropdownMenuItem :icon="ACTION_ICONS.android" label="Android" @click="downloadIcs" />
       </PickerMenu>
     </Teleport>
   </div>

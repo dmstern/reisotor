@@ -5,6 +5,9 @@ import type { IconGroup } from '../../stores/iconStyle';
 import AppIcon from '../AppIcon.vue';
 import Checkbox from './Checkbox.vue';
 
+// DropdownMenuItem-Primitive: Wiederverwendbarer Menüeintrag für PickerMenu.vue / DropdownMenu.vue (Issue #721).
+// Unterstützt Buttons, Links (<a>) und Multiselect-Checkbox-Zeilen mit konsistentem Hover-, Fokus- und Active-Styling.
+
 const inputId = useId();
 
 const props = withDefaults(

@@ -27,7 +27,7 @@ export const TRACK_VISIBILITY_OPTIONS: VisibilityOption[] = [
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
 const props = withDefaults(
@@ -193,7 +193,7 @@ defineOptions({
         aria-label="Sichtbarkeit"
         @close="close"
       >
-        <DropdownItem
+        <DropdownMenuItem
           v-for="opt in TRACK_VISIBILITY_OPTIONS"
           :key="opt.value"
           :label="opt.label"
