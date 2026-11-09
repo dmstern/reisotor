@@ -27,6 +27,7 @@ import { useSpotForm } from '../composables/useSpotForm';
 const props = defineProps<{
   show: boolean;
   spot?: Spot | null;
+  defaultCategory?: string;
   tripId: number;
   users: User[];
   spotScheduledDates: Map<number, string>;
@@ -160,7 +161,7 @@ watch(
       if (spot) {
         startEditSpot(spot as Spot);
       } else {
-        openSpotForm();
+        openSpotForm(props.defaultCategory);
       }
     }
   },

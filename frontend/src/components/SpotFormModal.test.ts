@@ -305,4 +305,21 @@ describe('SpotFormModal', () => {
     expect(document.querySelector('.assign-chip--schedule')).toBeNull();
     cleanUp();
   });
+
+  it('pre-selects accommodation category and reveals accommodation fields when defaultCategory is passed', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Unterkunft',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    // Accommodation specific fields such as Check-in-Datum should be visible
+    expect(document.body.textContent).toContain('Check-in-Datum');
+    expect(document.body.textContent).toContain('Check-out-Datum');
+    cleanUp();
+  });
 });

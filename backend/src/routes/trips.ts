@@ -30,6 +30,7 @@ interface TripBody {
   image_url?: string;
   packing_category_required?: boolean;
   weather_model?: string;
+  create_default_entries?: boolean;
 }
 
 export const tripsRoutes: FastifyPluginAsync = async (app) => {
@@ -140,6 +141,61 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
       new Date().toISOString()
     );
     ensureDefaultSharedBudget(tripId);
+
+    if (req.body.create_default_entries === true) {
+      const insertIdeaStmt = db.prepare(
+        "INSERT INTO ideas (trip_id, title, role, note_format, created_by) VALUES (?, ?, ?, 'html', ?)"
+      );
+      const insertScheduleIdeaStmt = db.prepare(
+        'INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)'
+      );
+      const insertSpotStmt = db.prepare(
+        "INSERT INTO spots (trip_id, title, category, is_home, note_format, created_by) VALUES (?, ?, ?, 1, 'html', ?)"
+      );
+
+      // Anreise-Tour
+      const arrivalResult = insertIdeaStmt.run(tripId, 'Anreise', 'arrival', req.session.userId);
+      const arrivalId = arrivalResult.lastInsertRowid as number;
+      recordActivity(tripId, 'ideas', arrivalId, 'created', req.session.userId!);
+
+      if (start_date) {
+        const scheduleResult = insertScheduleIdeaStmt.run(tripId, start_date, 'Anreise', arrivalId);
+        recordActivity(
+          tripId,
+          'schedule',
+          scheduleResult.lastInsertRowid as number,
+          'created',
+          req.session.userId!
+        );
+      }
+
+      // Abreise-Tour
+      const departureResult = insertIdeaStmt.run(
+        tripId,
+        'Abreise',
+        'departure',
+        req.session.userId
+      );
+      const departureId = departureResult.lastInsertRowid as number;
+      recordActivity(tripId, 'ideas', departureId, 'created', req.session.userId!);
+
+      if (end_date) {
+        const scheduleResult = insertScheduleIdeaStmt.run(tripId, end_date, 'Abreise', departureId);
+        recordActivity(
+          tripId,
+          'schedule',
+          scheduleResult.lastInsertRowid as number,
+          'created',
+          req.session.userId!
+        );
+      }
+
+      // Zuhause-Spot
+      const homeResult = insertSpotStmt.run(tripId, 'Zuhause', 'Zuhause', req.session.userId);
+      const homeId = homeResult.lastInsertRowid as number;
+      recordActivity(tripId, 'spots', homeId, 'created', req.session.userId!);
+    }
+
     reply.code(201);
     const newTrip = db.prepare('SELECT * FROM trips WHERE id = ?').get(tripId) as { id: number };
     return enrichTrip(newTrip, req.session.userId);

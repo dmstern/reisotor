@@ -22,6 +22,7 @@ export function useTripEditor() {
     image_url: '',
     packing_category_required: true,
     weather_model: 'ecmwf_ifs025',
+    create_default_entries: true,
   });
 
   const tripForm = ref<TripFormData>(emptyTripForm());

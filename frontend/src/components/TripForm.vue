@@ -64,6 +64,7 @@ function blankForm(): TripFormData {
     image_url: '',
     packing_category_required: true,
     weather_model: 'ecmwf_ifs025',
+    create_default_entries: true,
   };
 }
 
@@ -261,6 +262,9 @@ function onSubmit() {
     image_url: form.value.image_url || undefined,
     packing_category_required: form.value.packing_category_required ?? true,
     weather_model: form.value.weather_model || 'ecmwf_ifs025',
+    create_default_entries: !props.initial
+      ? (form.value.create_default_entries ?? true)
+      : undefined,
   });
 }
 </script>
@@ -349,6 +353,15 @@ function onSubmit() {
           @reset="onLocationReset"
         />
       </Card>
+
+      <CheckboxCard
+        v-if="!showTabs"
+        id="trip-create-default-entries"
+        v-model="form.create_default_entries"
+        :icon="SECTION_ICON_DEFS.excursions"
+        label="Standard-Touren (An-/Abreise) und Zuhause anlegen"
+        description="Erstellt automatisch An- und Abreise passend zu den Urlaubsdaten sowie einen Startpunkt Zuhause"
+      />
     </div>
 
     <div v-if="showTabs && activeTab === 'settings'" class="tab-content settings-tab">

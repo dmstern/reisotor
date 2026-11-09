@@ -344,9 +344,13 @@ export function useSpotForm(options: UseSpotFormOptions) {
     return undefined;
   });
 
-  function openSpotForm() {
+  function openSpotForm(initialCategory?: string) {
     spotTitleTouched.value = false;
     showSpotForm.value = true;
+
+    if (initialCategory) {
+      spotForm.value.category = initialCategory;
+    }
 
     if (
       (!Array.isArray(spotForm.value.scheduledDates) ||

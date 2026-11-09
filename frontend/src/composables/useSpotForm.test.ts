@@ -71,6 +71,19 @@ describe('useSpotForm - openSpotForm', () => {
     expect(showSpotScheduleSection.value).toBe(true);
   });
 
+  it('sets category when initialCategory is passed to openSpotForm', () => {
+    const { spotForm, openSpotForm, showSpotForm } = useSpotForm({
+      tripId: 1,
+      users: ref([]),
+      spotScheduledDates: ref(new Map()),
+    });
+
+    openSpotForm('Unterkunft');
+
+    expect(showSpotForm.value).toBe(true);
+    expect(spotForm.value.category).toBe('Unterkunft');
+  });
+
   it('updates is_home when category changes between home and vacation categories', async () => {
     const { spotForm, showSpotLocationSection } = useSpotForm({
       tripId: 1,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, toRef, watch } from 'vue';
-import type { Excursion, LocationTrack, User } from '../api/types';
+import type { Excursion, IdeaRole, LocationTrack, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
@@ -27,6 +27,8 @@ import { useTourForm } from '../composables/useTourForm';
 const props = defineProps<{
   show: boolean;
   excursion?: Excursion | null;
+  defaultRole?: IdeaRole | '';
+  defaultTitle?: string;
   users: User[];
   excursionForGroupTitle?: (title: string) => Excursion | null;
 }>();
@@ -98,7 +100,7 @@ watch(
       if (exc) {
         startEditExcursion(exc as Excursion);
       } else {
-        openExcursionForm();
+        openExcursionForm(props.defaultRole, props.defaultTitle);
       }
     }
   },

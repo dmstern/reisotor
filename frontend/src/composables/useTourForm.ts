@@ -194,9 +194,18 @@ export function useTourForm(options: UseTourFormOptions) {
     }
   }
 
-  function openExcursionForm() {
+  function openExcursionForm(initialRole?: IdeaRole | '', initialTitle?: string) {
     excursionTitleTouched.value = false;
     excursionForm.value = emptyExcursionForm();
+
+    if (initialRole) {
+      excursionForm.value.role = initialRole;
+    }
+
+    if (initialTitle) {
+      excursionForm.value.title = initialTitle;
+    }
+
     showExcursionSpotsSection.value = false;
     showExcursionTracksSection.value = false;
     tracksToShareOnSave.value.clear();
