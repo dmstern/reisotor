@@ -332,4 +332,57 @@ describe('SpotFormModal', () => {
     expect(titleInput.placeholder).toBe('Name der Unterkunft...');
     cleanUp();
   });
+
+  it('shows warning modal and requires confirmation when trying to mark an accommodation as home', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Unterkunft',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const overrideBtn = document.querySelector('.spot-region-override-btn') as HTMLButtonElement;
+    expect(overrideBtn).not.toBeNull();
+    overrideBtn.click();
+    await nextTick();
+
+    // Warning modal should appear
+    expect(document.body.textContent).toContain('Als Heimatort festlegen?');
+    expect(document.body.textContent).toContain('Unterkunft');
+    expect(document.body.textContent).toContain('liegen üblicherweise an deinem Reiseziel');
+
+    // Clicking cancel leaves it in vacation region
+    const cancelBtn = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.home-region-warning-modal button')
+    ).find((b) => b.textContent?.trim() === 'Abbrechen');
+    expect(cancelBtn).toBeDefined();
+    cancelBtn?.click();
+    await nextTick();
+
+    // Switch should not be revealed as home
+    const switchEl = document.querySelector('#spotRegionToggle');
+    expect(switchEl).toBeNull();
+
+    // Now click again and confirm
+    const overrideBtn2 = document.querySelector('.spot-region-override-btn') as HTMLButtonElement;
+    overrideBtn2.click();
+    await nextTick();
+
+    const confirmBtn = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.home-region-warning-modal button')
+    ).find((b) => b.textContent?.includes('Ja, als Heimatort festlegen'));
+    expect(confirmBtn).toBeDefined();
+    confirmBtn?.click();
+    await nextTick();
+
+    // Switch should now be visible and set to home (aria-checked="false" for vacation)
+    const switchEl2 = document.querySelector('#spotRegionToggle');
+    expect(switchEl2).not.toBeNull();
+    expect(switchEl2?.getAttribute('aria-checked')).toBe('false');
+    expect(document.body.textContent).toContain('Ort liegt an der Heimat-Seite');
+    cleanUp();
+  });
 });

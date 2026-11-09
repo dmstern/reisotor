@@ -20,9 +20,15 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
-import { spotCategoryMeta, isTransitCategory, isHomeCategory } from '../utils/spotCategory';
+import {
+  spotCategoryMeta,
+  isTransitCategory,
+  isHomeCategory,
+  isVacationCategory,
+} from '../utils/spotCategory';
 import { normalizeWebUrl } from '../utils/linkLabel';
 import { useSpotForm } from '../composables/useSpotForm';
+import SpotHomeRegionWarningModal from './SpotHomeRegionWarningModal.vue';
 
 const props = defineProps<{
   show: boolean;
@@ -135,6 +141,7 @@ const scheduledCount = computed(() =>
 );
 
 const manualRegionVisible = ref(false);
+const showHomeRegionWarningModal = ref(false);
 
 const showSpotRegionSection = computed(() => {
   const cat = activeSpotForm.value.category;
@@ -147,7 +154,26 @@ const showSpotRegionSection = computed(() => {
   );
 });
 
+function onRegionToggle(val: boolean) {
+  if (!val && isVacationCategory(activeSpotForm.value.category)) {
+    showHomeRegionWarningModal.value = true;
+    return;
+  }
+
+  activeSpotForm.value.is_home = !val;
+}
+
 function enableSpotRegionManual() {
+  if (isVacationCategory(activeSpotForm.value.category)) {
+    showHomeRegionWarningModal.value = true;
+    return;
+  }
+
+  manualRegionVisible.value = true;
+  activeSpotForm.value.is_home = true;
+}
+
+function confirmSetHomeRegion() {
   manualRegionVisible.value = true;
   activeSpotForm.value.is_home = true;
 }
@@ -320,9 +346,19 @@ function handleOpenScheduledItem(item: ScheduleItem) {
             aria-label="Teil der Urlaubsregion"
             aria-describedby="spotRegionHint"
             :model-value="!activeSpotForm.is_home"
-            @update:model-value="(val: boolean) => (activeSpotForm.is_home = !val)"
+            @update:model-value="onRegionToggle"
           />
         </div>
+        <p
+          v-if="activeSpotForm.is_home && isVacationCategory(activeSpotForm.category)"
+          class="spot-region-warning-text"
+        >
+          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+          <span>
+            Ort liegt an der Heimat-Seite und wird auf der Karte separat außerhalb des Reiseziels
+            geführt.
+          </span>
+        </p>
       </div>
       <div v-else class="spot-region-override-row">
         <button
@@ -652,6 +688,12 @@ function handleOpenScheduledItem(item: ScheduleItem) {
         </Button>
       </div>
     </form>
+
+    <SpotHomeRegionWarningModal
+      v-model="showHomeRegionWarningModal"
+      :category="activeSpotForm.category"
+      @confirm="confirmSetHomeRegion"
+    />
   </Modal>
 </template>
 
@@ -773,6 +815,16 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 .spot-region-override-btn:hover {
   color: var(--color-primary);
   background-color: var(--color-hover);
+}
+
+.spot-region-warning-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-warning, #d97706);
 }
 
 .spot-region-override-btn:focus-visible {
