@@ -8,7 +8,6 @@ import { useCalendarSettingsStore } from '../stores/calendarSettings';
 import {
   useUiSettingsStore,
   DEFAULT_PRIMARY_COLOR,
-  DEFAULT_BORDER_WIDTH,
   DEFAULT_DIARY_FONT,
   getPresetGlassValues,
 } from '../stores/uiSettings';
@@ -113,7 +112,6 @@ export function useAppSettingsReset() {
     return (
       isThemeDefault.value &&
       uiSettings.primaryColor.toLowerCase() === DEFAULT_PRIMARY_COLOR.toLowerCase() &&
-      uiSettings.borderWidth === DEFAULT_BORDER_WIDTH &&
       uiSettings.glassStyle === 'glass' &&
       uiSettings.glassOpacity === 42 &&
       uiSettings.glassBlur === 6 &&
@@ -136,7 +134,6 @@ export function useAppSettingsReset() {
 
     theme.reset();
     uiSettings.primaryColor = DEFAULT_PRIMARY_COLOR;
-    uiSettings.borderWidth = DEFAULT_BORDER_WIDTH;
     const glassPreset = getPresetGlassValues('glass');
 
     if (glassPreset) {

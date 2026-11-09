@@ -415,4 +415,64 @@ describe('Modal', () => {
     expect(discardBtn).not.toBeNull();
     cleanUp();
   });
+
+  it('traps Tab focus correctly between confirmation dialog buttons', async () => {
+    const { cleanUp } = mountTestApp(Modal, {
+      modelValue: true,
+      title: 'Test',
+      confirmClose: true,
+    });
+    await nextTick();
+
+    const closeBtn = document.querySelector('.close-btn') as HTMLButtonElement;
+    closeBtn.click();
+    await nextTick();
+
+    const buttons = Array.from(
+      document.querySelectorAll('.confirm-close-actions button')
+    ) as HTMLButtonElement[];
+    expect(buttons.length).toBe(2);
+
+    Object.defineProperty(buttons[0], 'offsetWidth', { value: 100, configurable: true });
+    Object.defineProperty(buttons[1], 'offsetWidth', { value: 100, configurable: true });
+
+    const [firstBtn, lastBtn] = buttons;
+    firstBtn.focus();
+    expect(document.activeElement).toBe(firstBtn);
+
+    // Pressing Tab when focused on first button should NOT be canceled so focus advances to next button
+    const tabEvent1 = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(tabEvent1);
+    expect(tabEvent1.defaultPrevented).toBe(false);
+
+    // When focused on last button, pressing Tab should wrap around to firstBtn
+    lastBtn.focus();
+    expect(document.activeElement).toBe(lastBtn);
+
+    const tabEvent2 = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(tabEvent2);
+    expect(tabEvent2.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(firstBtn);
+
+    // When focused on first button, pressing Shift+Tab should wrap around to lastBtn
+    const shiftTabEvent = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(shiftTabEvent);
+    expect(shiftTabEvent.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(lastBtn);
+
+    cleanUp();
+  });
 });

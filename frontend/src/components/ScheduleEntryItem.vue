@@ -84,7 +84,7 @@ const categoryMeta = computed(
     </div>
 
     <div class="item-actions">
-      <CalendarExportDropdown :entry="entry" />
+      <CalendarExportDropdown :entry="entry" variant="ghost" />
     </div>
   </li>
 </template>

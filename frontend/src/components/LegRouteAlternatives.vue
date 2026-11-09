@@ -163,7 +163,7 @@ const singleRouteDistance = computed(() => {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   box-shadow: none;
   text-align: left;
   cursor: pointer;
@@ -265,7 +265,7 @@ const singleRouteDistance = computed(() => {
 
 .route-alt-card--single {
   cursor: default;
-  border: var(--ui-border-width, 1px) solid var(--color-primary);
+  border: var(--border-width) solid var(--color-primary);
   background: var(--color-primary-tint);
   box-shadow: none;
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;

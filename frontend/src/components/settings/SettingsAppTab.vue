@@ -5,7 +5,6 @@ import CheckboxCard from '../primitives/CheckboxCard.vue';
 import Accordion from '../primitives/Accordion.vue';
 import ThemeModeSelect from '../ThemeModeSelect.vue';
 import AccentColorSettings from '../AccentColorSettings.vue';
-import BorderWidthSettings from '../BorderWidthSettings.vue';
 import GlassSettings from '../GlassSettings.vue';
 import IconStyleSettings from '../IconStyleSettings.vue';
 import DiaryFontSettings from '../DiaryFontSettings.vue';
@@ -63,8 +62,6 @@ const {
     </Card>
 
     <AccentColorSettings />
-
-    <BorderWidthSettings />
 
     <GlassSettings />
 

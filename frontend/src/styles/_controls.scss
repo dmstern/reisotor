@@ -17,19 +17,22 @@
 @mixin control-field-inset($focus-within: false) {
   box-shadow: none;
   background: var(--color-surface);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid var(--input-border-color);
+  border-bottom: 2px solid var(--color-primary);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition: var(--transition-control);
 
   @if $focus-within {
     &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
-      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--input-border-color));
+      border-bottom-color: var(--color-primary);
       box-shadow: var(--shadow-control-inset-hover);
     }
 
     &:focus-within,
     &.is-focused {
+      border-bottom: 1.5px solid var(--input-border-color);
       outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
       outline-offset: var(--focus-ring-offset, 2px);
       box-shadow:
@@ -46,7 +49,8 @@
 
       &:focus-within,
       &.is-focused {
-        border-color: var(--color-border-strong);
+        border-bottom-width: 1.5px;
+        border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
       }
@@ -68,7 +72,8 @@
 
       &:focus-within,
       &.is-focused {
-        border-color: var(--color-border-strong) !important;
+        border-bottom-width: 1.5px;
+        border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
         box-shadow:
@@ -77,13 +82,15 @@
     }
   } @else {
     &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--input-border-color));
+      border-bottom-color: var(--color-primary);
       box-shadow: var(--shadow-control-inset-hover);
     }
 
     &:focus,
     &:focus-visible,
     &:active:not(:disabled) {
+      border-bottom: 1.5px solid var(--input-border-color);
       outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
       outline-offset: var(--focus-ring-offset, 2px);
       box-shadow:
@@ -101,7 +108,8 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
-        border-color: var(--color-border-strong);
+        border-bottom-width: 1.5px;
+        border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
       }
@@ -124,7 +132,8 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
-        border-color: var(--color-border-strong) !important;
+        border-bottom-width: 1.5px;
+        border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
         box-shadow:
@@ -143,23 +152,23 @@
 
 /// Kapselt das Verhalten progressiver Auswahl-Controls (Select, DropdownMenu).
 ///
-/// Im Ruhezustand flach.
-/// Bei Hover: leichter 3D-Glanz + Anhebung (translate: 0 -1px).
+/// Im Ruhezustand mit dezentem 3D-Lichtglanz und Schatten (shadow-control).
+/// Bei Hover: leichter zusätzlicher 3D-Glanz + Anhebung (translate: 0 -1px).
 /// Bei Fokus & Active/Open: 3D-Lichtglanz + Vertiefung / Ring.
 /// Bei Invalid/Modified: Fokusring ohne doppelten Rahmen (Single-Ring-Garantie).
 ///
 /// @param {String} $active-selector ['&:active:not(:disabled)'] - Selektor für den Active-/Open-Zustand
 @mixin control-3d-progressive($active-selector: '&:active:not(:disabled)') {
-  --control-grad-top: transparent;
-  --control-grad-bottom: transparent;
-  box-shadow: none;
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
+  box-shadow: var(--shadow-control);
   background-color: var(--color-surface);
   background-image: linear-gradient(
     180deg,
     var(--control-grad-top) 0%,
     var(--control-grad-bottom) 100%
   );
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition: var(--transition-control);
@@ -202,7 +211,7 @@
     &:focus,
     &:focus-visible,
     #{$active-selector} {
-      border-color: var(--color-border-strong);
+      border-color: var(--input-border-color);
       outline: var(--focus-ring-width, 3px) solid var(--color-danger);
       outline-color: var(--color-danger);
     }
@@ -229,7 +238,7 @@
     &:focus,
     &:focus-visible,
     #{$active-selector} {
-      border-color: var(--color-border-strong) !important;
+      border-color: var(--input-border-color) !important;
       outline: var(--focus-ring-width, 3px) solid var(--color-accent);
       outline-color: var(--color-accent);
       box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);

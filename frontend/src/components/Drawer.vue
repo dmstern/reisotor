@@ -427,7 +427,7 @@ onBeforeUnmount(() => {
   background: var(--color-surface);
   --scroll-fade-bg: var(--color-surface);
   --tab-bar-fade-bg: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   box-shadow: var(--shadow-md);
   corner-shape: squircle;
   z-index: 12;
@@ -617,7 +617,7 @@ onBeforeUnmount(() => {
     box-shadow: var(--shadow-md);
     border-radius: var(--radius-md-squircle);
     corner-shape: squircle;
-    border: var(--ui-border-width, 1px) solid var(--color-border);
+    border: var(--border-width) solid var(--color-border);
     width: var(--drawer-width);
     transition:
       width 0.25s ease,
@@ -677,7 +677,7 @@ onBeforeUnmount(() => {
     transform: none;
     border-radius: var(--radius-md-squircle);
     corner-shape: squircle;
-    border: var(--ui-border-width, 1px) solid var(--color-border);
+    border: var(--border-width) solid var(--color-border);
     z-index: 16;
   }
 

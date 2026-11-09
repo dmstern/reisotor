@@ -4,6 +4,7 @@ import CheckableListItem from './primitives/CheckableListItem.vue';
 import Checkbox from './primitives/Checkbox.vue';
 import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
+import AssigneeMenu from './AssigneeMenu.vue';
 import EditButton from './EditButton.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -19,27 +20,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'toggle', item: ShoppingItem): void;
-  (e: 'reassign', item: ShoppingItem, event: Event): void;
+  (e: 'reassign', item: ShoppingItem, assignedUserId: number | null): void;
   (e: 'edit', item: ShoppingItem): void;
 }>();
-
-function userAvatar(id: number | null | undefined) {
-  if (id == null) {
-    return null;
-  }
-
-  const user = props.users.find((candidate) => candidate.id === id);
-  return user ? user.avatar : '👤';
-}
-
-function userName(id: number | null | undefined) {
-  if (id == null) {
-    return null;
-  }
-
-  const user = props.users.find((candidate) => candidate.id === id);
-  return user ? user.username : 'Ehemaliges Mitglied';
-}
 </script>
 
 <template>
@@ -85,34 +68,13 @@ function userName(id: number | null | undefined) {
     </div>
 
     <template #actions>
-      <div
-        v-if="users.length > 1 && groupBy !== 'buyer' && userAvatar(item.assigned_to_user_id)"
-        class="buyer-avatar-picker"
-        :title="`Käufer:in: ${userName(item.assigned_to_user_id)}`"
-      >
-        <span class="avatar-display" aria-hidden="true">
-          {{ userAvatar(item.assigned_to_user_id) }}
-        </span>
-        <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
-        <select
-          class="buyer-native-select"
-          aria-label="Käufer:in"
-          :value="item.assigned_to_user_id ?? ''"
-          @change="emit('reassign', item, $event)"
-        >
-          <option value="">Nicht zugewiesen</option>
-          <option
-            v-if="item.assigned_to_user_id && !users.some((u) => u.id === item.assigned_to_user_id)"
-            :value="String(item.assigned_to_user_id)"
-            disabled
-          >
-            Ehemaliges Mitglied
-          </option>
-          <option v-for="u in users" :key="u.id" :value="String(u.id)">
-            {{ u.avatar }} {{ u.username }}
-          </option>
-        </select>
-      </div>
+      <AssigneeMenu
+        v-if="users.length > 1 && groupBy !== 'buyer'"
+        :users="users"
+        :assigned-user-id="item.assigned_to_user_id"
+        role-label="Käufer:in"
+        @select="(userId) => emit('reassign', item, userId)"
+      />
       <EditButton small @click="emit('edit', item)" />
     </template>
   </CheckableListItem>
@@ -236,49 +198,5 @@ function userName(id: number | null | undefined) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.buyer-avatar-picker {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  min-width: 34px;
-  min-height: 34px;
-  border-radius: var(--radius-pill);
-  background: var(--color-hover);
-  border: 1.5px solid var(--color-border);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.buyer-avatar-picker:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
-}
-
-.buyer-avatar-picker:has(.buyer-native-select:focus-visible) {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-.avatar-display {
-  font-size: var(--font-size-sm);
-  pointer-events: none;
-}
-
-.buyer-native-select {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
 }
 </style>

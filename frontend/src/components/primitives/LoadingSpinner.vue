@@ -19,7 +19,7 @@ withDefaults(
 <style scoped>
 .spinner {
   display: inline-block;
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--color-border-strong);
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.7s linear infinite;

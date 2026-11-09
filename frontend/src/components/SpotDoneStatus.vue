@@ -351,7 +351,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   padding: 6px var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: 500;

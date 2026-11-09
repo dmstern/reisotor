@@ -164,14 +164,17 @@ function onBlur(event: FocusEvent) {
   width: 100%;
   min-height: var(--input-height, 46px);
   background: var(--color-hover);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border);
   box-sizing: border-box;
 }
 
 .quick-add-row.expanded .input-container {
   background: var(--color-surface);
-  border-color: var(--color-border-strong);
+  border-color: var(--input-border-color);
   box-shadow: var(--shadow-control-inset);
+
+  &:focus-within {
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+  }
 }
 
 .leading-icon {
@@ -203,9 +206,16 @@ function onBlur(event: FocusEvent) {
   line-height: 1.4;
   color: var(--color-text);
   outline: none;
+  box-shadow: none;
   min-height: 0;
   height: 100%;
   box-sizing: border-box;
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 }
 
 .label-input::placeholder {
@@ -221,9 +231,7 @@ function onBlur(event: FocusEvent) {
 .submit-btn {
   position: absolute;
   /* Abstand rechts = Abstand oben/unten (Button zentriert in der Eingabekapsel abzgl. Rahmen) */
-  right: calc(
-    (var(--input-height, 46px) - 2 * max(1.5px, var(--ui-border-width, 1.5px)) - 36px) / 2
-  );
+  right: calc((var(--input-height, 46px) - 2 * 1.5px - 36px) / 2);
   top: 0;
   bottom: 0;
   margin-block: auto;

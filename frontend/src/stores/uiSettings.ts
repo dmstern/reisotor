@@ -27,7 +27,6 @@ const GLASS_STYLE_KEY = 'reisotor-glass-style';
 const GLASS_OPACITY_KEY = 'reisotor-glass-opacity';
 const GLASS_BLUR_KEY = 'reisotor-glass-blur';
 const PRIMARY_COLOR_KEY = 'reisotor-primary-color';
-const BORDER_WIDTH_KEY = 'reisotor-border-width';
 const HIDE_COMPLETED_PACKING_KEY = 'reisotor-hide-completed-packing';
 const HIDE_COMPLETED_TODOS_KEY = 'reisotor-hide-completed-todos';
 const HIDE_COMPLETED_SHOPPING_KEY = 'reisotor-hide-completed-shopping';
@@ -120,7 +119,6 @@ export const PRIMARY_COLOR_PRESETS = [
 ];
 
 export const DEFAULT_PRIMARY_COLOR = '#9141AC';
-export const DEFAULT_BORDER_WIDTH = 1;
 export const DEFAULT_TOAST_TIMEOUT = 5; // Sekunden
 
 export const TOAST_TIMEOUT_OPTIONS = [
@@ -282,20 +280,6 @@ function loadPrimaryColor(): string {
   return DEFAULT_PRIMARY_COLOR;
 }
 
-function loadBorderWidth(): number {
-  const stored = safeLocalStorageGet(BORDER_WIDTH_KEY);
-
-  if (stored !== null) {
-    const parsed = parseInt(stored, 10);
-
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 10) {
-      return parsed;
-    }
-  }
-
-  return DEFAULT_BORDER_WIDTH;
-}
-
 function loadHideCompletedPacking(): boolean {
   return safeLocalStorageGet(HIDE_COMPLETED_PACKING_KEY) === 'true';
 }
@@ -349,14 +333,6 @@ export function applyPrimaryColor(colorHex: string) {
   }
 }
 
-export function applyBorderWidth(widthPx: number) {
-  if (typeof document === 'undefined') {
-    return;
-  }
-
-  document.documentElement.style.setProperty('--ui-border-width', `${widthPx}px`);
-}
-
 function loadDiaryFont(): DiaryFont {
   const stored = safeLocalStorageGet(DIARY_FONT_KEY);
 
@@ -387,7 +363,6 @@ export interface StoredAppSettings {
   glassOpacity?: number;
   glassBlur?: number;
   primaryColor?: string;
-  borderWidth?: number;
   diaryFont?: DiaryFont;
   navPosition?: {
     desktop?: NavPosition;
@@ -426,7 +401,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const glassBlur = ref<number>(loadGlassBlur());
 
   const primaryColor = ref<string>(loadPrimaryColor());
-  const borderWidth = ref<number>(loadBorderWidth());
   const diaryFont = ref<DiaryFont>(loadDiaryFont());
   const loaded = ref(false);
   let isInternalSync = false;
@@ -434,7 +408,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   function apply() {
     applyGlassStyle(glassStyle.value, glassOpacity.value, glassBlur.value);
     applyPrimaryColor(primaryColor.value);
-    applyBorderWidth(borderWidth.value);
     applyDiaryFont(diaryFont.value);
   }
 
@@ -467,7 +440,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
           glassOpacity: glassOpacity.value,
           glassBlur: glassBlur.value,
           primaryColor: primaryColor.value,
-          borderWidth: borderWidth.value,
           diaryFont: diaryFont.value,
           navPosition: {
             desktop: 'top',
@@ -570,14 +542,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
 
       if (stored.primaryColor && /^#[0-9a-fA-F]{6}$/.test(stored.primaryColor)) {
         primaryColor.value = stored.primaryColor;
-      }
-
-      if (
-        typeof stored.borderWidth === 'number' &&
-        stored.borderWidth >= 0 &&
-        stored.borderWidth <= 10
-      ) {
-        borderWidth.value = stored.borderWidth;
       }
 
       if (stored.diaryFont && DIARY_FONT_OPTIONS.some((option) => option.id === stored.diaryFont)) {
@@ -710,11 +674,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     apply();
     persist();
   });
-  watch(borderWidth, (v) => {
-    safeLocalStorageSet(BORDER_WIDTH_KEY, String(v));
-    apply();
-    persist();
-  });
   watch(diaryFont, (v) => {
     safeLocalStorageSet(DIARY_FONT_KEY, v);
     apply();
@@ -786,7 +745,6 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     glassOpacity,
     glassBlur,
     primaryColor,
-    borderWidth,
     diaryFont,
     loaded,
     load,

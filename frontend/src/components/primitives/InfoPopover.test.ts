@@ -23,7 +23,7 @@ describe('InfoPopover', () => {
     app.use(pinia);
 
     const html = await renderToString(app);
-    expect(html).toContain('class="info-popover-btn"');
+    expect(html).toContain('info-popover-btn');
     expect(html).toContain('title="Erklärung zum Bereich"');
     expect(html).toContain('aria-label="Hilfe zum Bereich"');
     expect(html).toContain('aria-expanded="false"');

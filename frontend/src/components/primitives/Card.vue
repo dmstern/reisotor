@@ -304,7 +304,7 @@ const isNewHighlight = computed(() => {
   position: relative;
   background-color: var(--color-surface);
   background-image: var(--gradient-surface-3d);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: var(--space-4);
@@ -387,7 +387,6 @@ const isNewHighlight = computed(() => {
 .card--polaroid {
   background-color: #ffffff;
   background-image: var(--gradient-surface-3d);
-  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-card-polaroid);
@@ -442,7 +441,6 @@ const isNewHighlight = computed(() => {
 
 :root[data-theme='dark'] .card--polaroid {
   background-color: #2a2825;
-  border-color: rgba(255, 255, 255, 0.12);
   box-shadow: var(--shadow-card-polaroid);
 }
 
@@ -461,7 +459,6 @@ const isNewHighlight = computed(() => {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .card--polaroid {
     background-color: #2a2825;
-    border-color: rgba(255, 255, 255, 0.12);
     box-shadow: var(--shadow-card-polaroid);
   }
 

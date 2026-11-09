@@ -18,9 +18,8 @@ const _props = withDefaults(
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
      * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
-     * - 'surface': Runder oder Squircle-Button mit Oberflächen-Hintergrund (--color-surface) und dezentem Rahmen
      */
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating' | 'surface';
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
@@ -193,6 +192,8 @@ provide(
   font-weight: 600;
   border-radius: var(--radius-btn-squircle, var(--radius-btn, 12px));
   corner-shape: squircle;
+  /* Verlauf bis unter den (transparenten) Rand ziehen, sonst kachelt er dort und zeigt unten einen hellen Streifen */
+  background-origin: border-box;
   cursor: pointer;
   box-shadow: none;
   transition:
@@ -273,7 +274,7 @@ a.btn.is-loading {
     rgba(255, 255, 255, 0) 100%
   );
   color: var(--color-primary-contrast, white);
-  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
+  border: 1.5px solid transparent; /* 3D-Look braucht keinen Rahmen; Geometrie bleibt für .is-active stabil */
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.12),
@@ -300,7 +301,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-primary);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid transparent;
   box-shadow: var(--shadow-control);
 }
 
@@ -328,7 +329,7 @@ a.btn.is-loading {
     rgba(255, 255, 255, 0) 100%
   );
   color: white;
-  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
+  border: 1.5px solid transparent; /* 3D-Look braucht keinen Rahmen; Geometrie bleibt für .is-active stabil */
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.14),
@@ -354,7 +355,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-danger);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-danger);
+  border: 1.5px solid var(--color-danger);
   box-shadow: var(--shadow-control);
 }
 
@@ -377,9 +378,10 @@ a.btn.is-loading {
   padding: 6px 12px;
   min-height: var(--input-height-sm, 38px);
   box-sizing: border-box;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  background-origin: border-box;
   background-color: var(--color-primary-tint);
   background-image: linear-gradient(
     180deg,
@@ -429,7 +431,7 @@ a.btn.is-loading {
 .btn--ghost.btn--circle:hover:not(:disabled) {
   background-color: var(--color-hover);
   background-image: var(--gradient-control-3d);
-  border-color: var(--color-border-strong);
+  background-origin: border-box;
   box-shadow: var(--shadow-control-hover);
 }
 
@@ -441,7 +443,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-text);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid transparent;
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
     var(--shadow-sm);
@@ -449,7 +451,6 @@ a.btn.is-loading {
 
 .btn--floating:hover:not(:disabled) {
   background-color: var(--color-hover);
-  border-color: var(--color-primary-dark);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight-strong),
     var(--shadow-md);
@@ -462,47 +463,24 @@ a.btn.is-loading {
     var(--shadow-sm);
 }
 
-.btn--surface {
-  background-color: var(--color-surface);
-  background-image: var(--gradient-control-3d);
-  color: var(--color-text);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
-  box-shadow: var(--shadow-control);
-}
-
-.btn--surface:hover:not(:disabled) {
-  background-color: var(--color-hover);
-  box-shadow: var(--shadow-control-hover);
-}
-
-.btn--surface:active:not(:disabled) {
-  background-color: var(--color-hover);
-  box-shadow: var(--shadow-control-active);
-}
-
 /* Aktiver Zustand für alle Button-Varianten (#audit) */
 .btn.is-active,
 .btn--secondary.is-active,
-.btn--ghost.is-active,
-.btn--surface.is-active {
+.btn--ghost.is-active {
   background: var(--color-primary-tint);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-primary);
+  border: 1.5px solid var(--color-primary);
   color: var(--color-primary-dark);
-  box-shadow:
-    0 0 0 1px var(--color-primary),
-    var(--shadow-sm);
+  /* Nur symmetrischer Ring: ein Versatz-Schatten (--shadow-sm: 0 2px 6px) verdunkelt sonst unten/seitlich */
+  box-shadow: 0 0 0 1px var(--color-primary);
   font-weight: 700;
 }
 
 .btn.is-active:hover:not(:disabled),
 .btn--secondary.is-active:hover:not(:disabled),
-.btn--ghost.is-active:hover:not(:disabled),
-.btn--surface.is-active:hover:not(:disabled) {
+.btn--ghost.is-active:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
   border-color: var(--color-primary-dark);
-  box-shadow:
-    0 0 0 1px var(--color-primary-dark),
-    var(--shadow-md);
+  box-shadow: 0 0 0 1px var(--color-primary-dark);
 }
 
 .btn--primary.is-active {

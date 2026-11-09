@@ -13,7 +13,7 @@ withDefaults(
     ariaLabel?: string;
     icon?: IconDef;
     shape?: 'squircle' | 'circle';
-    variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'floating' | 'surface';
+    variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'floating';
   }>(),
   {
     icon: () => ACTION_ICONS.edit,

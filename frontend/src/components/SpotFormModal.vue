@@ -718,7 +718,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   margin-bottom: var(--space-3);
   padding: var(--space-2) var(--space-3);
   background: var(--color-hover);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
 }

@@ -109,7 +109,7 @@ const currentFont = computed(() => {
   text-align: left;
   padding: var(--space-3);
   background: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -162,12 +162,12 @@ const currentFont = computed(() => {
   padding: var(--space-3);
   background: var(--color-bg);
   border-radius: var(--radius-md-squircle);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
 }
 
 .diary-preview-card {
   background: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   padding: var(--space-3);
   transition: font-family 0.2s ease;

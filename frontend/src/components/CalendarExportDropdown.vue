@@ -18,7 +18,7 @@ import { computePopoverPosition } from '../utils/popoverPosition';
 const props = withDefaults(
   defineProps<{
     entry: CalendarEntry;
-    variant?: 'secondary' | 'card-action';
+    variant?: 'secondary' | 'card-action' | 'ghost';
     size?: 'sm' | 'md';
     label?: string;
     showLabel?: boolean;
@@ -92,7 +92,7 @@ function downloadIcs() {
       :variant="variant"
       :size="size"
       class="calendar-btn"
-      :class="{ 'always-show-label': showLabel }"
+      :class="[`calendar-btn--${size}`, { 'always-show-label': showLabel }]"
       :title="title"
       :aria-label="ariaLabel"
       @click.stop="togglePicker($event)"
@@ -146,6 +146,20 @@ function downloadIcs() {
   white-space: nowrap;
 }
 
+/* Ohne Label ist der Button quadratisch (Kantenlänge = Eingabefeld-Höhe der jeweiligen Größe). */
+.calendar-btn:not(.always-show-label) {
+  padding: 0;
+  aspect-ratio: 1;
+}
+
+.calendar-btn--sm:not(.always-show-label) {
+  width: var(--input-width-sm, 38px);
+}
+
+.calendar-btn--md:not(.always-show-label) {
+  width: var(--input-width, 46px);
+}
+
 .calendar-btn-label {
   display: none;
 }
@@ -155,7 +169,9 @@ function downloadIcs() {
 }
 
 @container day-detail (min-width: 440px) {
-  .calendar-btn {
+  .calendar-btn:not(.always-show-label) {
+    width: auto;
+    aspect-ratio: auto;
     padding: var(--space-1) var(--space-2);
   }
 

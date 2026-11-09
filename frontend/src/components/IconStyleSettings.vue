@@ -213,7 +213,7 @@ const isDefault = computed(() => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -253,7 +253,7 @@ const isDefault = computed(() => {
 .all-groups-row {
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-2);
-  border-bottom: var(--ui-border-width, 1px) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
 .all-groups-row .group-override-label {
@@ -275,7 +275,7 @@ const isDefault = computed(() => {
 }
 
 .group-item:not(:last-child) {
-  border-bottom: var(--ui-border-width, 1px) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
 .group-color-row {

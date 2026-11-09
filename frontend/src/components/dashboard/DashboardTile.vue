@@ -88,7 +88,7 @@ const isLink = computed(() => !!props.to);
   height: 44px;
   border-radius: var(--radius-full);
   corner-shape: round;
-  border: var(--ui-border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
   display: flex;
   align-items: center;

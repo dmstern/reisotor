@@ -50,7 +50,7 @@ withDefaults(
   white-space: nowrap;
   background: var(--color-hover);
   color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   margin: 0;
 }
 

@@ -484,7 +484,7 @@ defineExpose({
   padding: var(--space-2) var(--space-3);
   min-height: var(--input-height-sm, 38px);
   width: 100%;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);

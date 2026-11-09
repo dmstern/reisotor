@@ -195,6 +195,26 @@ export function useTodoList(tripIdOverride?: number) {
     return updated;
   }
 
+  async function reassign(item: TodoItem, assigned_to_user_id: number | null) {
+    const updated = await api.put<TodoItem>(`/todos/${item.id}`, {
+      trip_id: tripId,
+      title: item.title,
+      assigned_to_user_id,
+      due_date: item.due_date ?? undefined,
+      period: item.period ?? undefined,
+      priority: item.priority,
+      note: item.note ?? undefined,
+      done: !!item.done,
+    });
+    const idx = items.value.findIndex((i) => i.id === item.id);
+
+    if (idx !== -1) {
+      items.value[idx] = updated;
+    }
+
+    return updated;
+  }
+
   async function submitEdit(id: number, input: TodoFormInput, done: boolean): Promise<TodoItem> {
     const updated = await api.put<TodoItem>(`/todos/${id}`, {
       ...toBody(input),
@@ -235,6 +255,7 @@ export function useTodoList(tripIdOverride?: number) {
     addItem,
     quickAddToGroup,
     toggleDone,
+    reassign,
     submitEdit,
     remove,
     toBody,

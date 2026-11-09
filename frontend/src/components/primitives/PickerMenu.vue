@@ -128,7 +128,7 @@ onUnmounted(() => {
   z-index: calc(var(--z-popover, 1100) + 1);
   min-width: 180px;
   background: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-dropdown-menu);
