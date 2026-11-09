@@ -1584,10 +1584,21 @@ onUnmounted(() => {
                 </button>
                 <span>, um sie wieder zu sehen.</span>
               </p>
-              <p v-else-if="grp.excursion && !grp.items.length" class="empty">
-                Noch keine Spots zugeordnet – bearbeite diese Tour, um Stationen hinzuzufügen, oder
-                wähle sie beim Bearbeiten eines Spots über „Tour zuordnen“.
-              </p>
+              <div v-else-if="grp.excursion && !grp.items.length" class="empty tour-empty-group">
+                <p class="tour-empty-text">
+                  Noch keine Spots zugeordnet – bearbeite diese Tour, um Stationen hinzuzufügen,
+                  oder wähle sie beim Bearbeiten eines Spots über „Tour zuordnen“.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  class="tour-empty-action-btn"
+                  @click="startEditExcursion(grp.excursion)"
+                >
+                  <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                  <span>Tour bearbeiten</span>
+                </Button>
+              </div>
             </section>
             <div v-if="!spotGroups.length" class="empty-state-wrap">
               <EmptyState
@@ -2348,6 +2359,17 @@ onUnmounted(() => {
 
 .category-group.is-tour-group .empty {
   padding: var(--space-2) var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.tour-empty-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.tour-empty-text {
   margin: 0;
 }
 

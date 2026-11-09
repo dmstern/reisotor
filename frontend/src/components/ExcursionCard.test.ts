@@ -64,7 +64,7 @@ describe('ExcursionCard', () => {
     return renderToString(app);
   }
 
-  it('rendert den eingeklappten Zustand im reinen Anzeigemodus ohne interaktive Aktions-Buttons', async () => {
+  it('rendert den eingeklappten Zustand mit Titel, Badges und Edit-Button', async () => {
     const html = await mountComponent({
       excursion: mockExcursion,
       creatorLabel: 'Daniel',
@@ -84,6 +84,7 @@ describe('ExcursionCard', () => {
     expect(html).toContain('tour-status-meta');
     expect(html).toContain('is-readonly');
     expect(html).toContain('card-disclosure-pill');
+    expect(html).toContain('tour-edit-btn');
     expect(html).not.toContain('Einklappen');
     expect(html).not.toContain('card-title-meta');
     expect(html).not.toContain('calendar-drag-handle');

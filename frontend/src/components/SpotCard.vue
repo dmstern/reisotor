@@ -110,10 +110,14 @@ function getCardDomElement(event?: MouseEvent): HTMLElement | null {
 }
 
 function onCardClick(event?: MouseEvent) {
-  if (props.expanded) {
-    const target = event?.target as HTMLElement | null;
+  const target = event?.target as HTMLElement | null;
 
-    if (target && (!target.closest('.image, .card-badge-group') || target.closest('a, button'))) {
+  if (target?.closest('.spot-edit-btn, a, button')) {
+    return;
+  }
+
+  if (props.expanded) {
+    if (target && !target.closest('.image, .card-badge-group')) {
       return;
     }
 
@@ -186,16 +190,13 @@ const cardRotation = computed(() => {
             :icon-only="expanded ? false : iconOnlyCategory"
           />
           <PendingSyncBadge v-if="spot._pending" />
-          <Transition name="fade">
-            <EditButton
-              v-if="expanded"
-              small
-              shape="circle"
-              variant="surface"
-              class="spot-edit-btn"
-              @click="emit('edit', spot)"
-            />
-          </Transition>
+          <EditButton
+            small
+            shape="circle"
+            variant="surface"
+            class="spot-edit-btn"
+            @click="emit('edit', spot)"
+          />
         </div>
       </div>
 

@@ -68,9 +68,9 @@ describe('SpotCard', () => {
     expect(html).toContain('social-row');
     expect(html).toContain('is-readonly');
     expect(html).toContain('spot-expand-pill');
+    expect(html).toContain('spot-edit-btn');
     expect(html).not.toContain('spot-collapse-pill');
     expect(html).not.toContain('like-btn');
-    expect(html).not.toContain('spot-edit-btn');
   });
 
   it('renders expanded state with map actions, details, and cover overlay', async () => {
