@@ -208,16 +208,17 @@ function discardDraft() {
 }
 
 .inline-submit-btn {
+  --inline-submit-size: 32px;
   position: absolute;
-  right: 6px;
+  right: calc((var(--input-height, 46px) - var(--inline-submit-size)) / 2);
   top: 0;
   bottom: 0;
   margin-block: auto;
   translate: none;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+  width: var(--inline-submit-size);
+  height: var(--inline-submit-size);
+  min-width: var(--inline-submit-size);
+  min-height: var(--inline-submit-size);
   padding: 0;
   display: inline-flex;
   align-items: center;
