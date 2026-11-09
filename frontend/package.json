@@ -34,7 +34,7 @@
     "dompurify": "^3.4.13",
     "exifreader": "^4.45.1",
     "leaflet": "^1.9.4",
-    "leaflet-rotate": "^0.2.8",
+    "leaflet-rotate": "^0.4.0",
     "piexifjs": "^1.0.6",
     "pinia": "^4.1.0",
     "vue": "^3.5.12",
