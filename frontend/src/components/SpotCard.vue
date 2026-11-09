@@ -636,7 +636,7 @@ const cardRotation = computed(() => {
   min-width: 24px;
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-strong);
+  border: none;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   font-weight: 600;
@@ -661,7 +661,6 @@ const cardRotation = computed(() => {
 .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
 .spot-expand-pill:hover {
   background-color: var(--color-primary-tint);
-  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
   color: var(--color-primary-dark);
   box-shadow: var(--shadow-control-hover);
   translate: 0 -1px;
