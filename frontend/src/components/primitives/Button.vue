@@ -377,7 +377,7 @@ a.btn.is-loading {
   padding: 6px 12px;
   min-height: var(--input-height-sm, 38px);
   box-sizing: border-box;
-  border: 1.5px solid var(--color-border-strong);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background-color: var(--color-primary-tint);
