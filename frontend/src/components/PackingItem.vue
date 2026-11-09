@@ -253,7 +253,7 @@ function handleMainClick(e: MouseEvent) {
   min-height: 24px;
   margin: 0;
   padding: 0;
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);

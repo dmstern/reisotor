@@ -160,7 +160,6 @@ defineExpose({
   min-width: 240px;
   max-width: min(340px, 85vw);
   padding: var(--space-3, 12px);
-  border-color: var(--color-border);
 }
 
 :global(.info-popover-content) {
