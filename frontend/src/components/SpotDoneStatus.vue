@@ -339,6 +339,9 @@ function handleItemJump(item: ScheduledSpotItem) {
 
 .date-check-item {
   @include control-3d-raised;
+  /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
+  background-image: none;
+  box-shadow: none;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -358,6 +361,12 @@ function handleItemJump(item: ScheduledSpotItem) {
   width: auto;
 }
 
+.date-check-item:hover:not(:disabled),
+.date-check-item:focus-visible {
+  background-image: var(--gradient-control-3d);
+  box-shadow: var(--shadow-control-hover);
+}
+
 .date-check-item:hover {
   background-color: var(--color-hover);
   border-color: var(--color-primary-dark);
@@ -371,7 +380,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   background-color: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
-  box-shadow: var(--shadow-control);
+  box-shadow: none;
 }
 
 .date-check-item.checked:hover {

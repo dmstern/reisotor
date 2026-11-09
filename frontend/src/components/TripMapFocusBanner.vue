@@ -150,99 +150,101 @@ watch(
 </script>
 
 <template>
-  <div v-if="isVisible" class="focus-banner" :class="{ 'is-expanded': isFocusBannerExpanded }">
-    <button
-      class="focus-banner-toggle-btn"
-      :class="{ 'is-clickable': isPhotoFocus }"
-      :aria-expanded="isFocusBannerExpanded"
-      :aria-label="
-        isPhotoFocus
-          ? 'Foto in Galerie öffnen'
-          : isFocusBannerExpanded
-            ? 'Fokus-Banner einklappen'
-            : 'Fokus-Banner ausklappen'
-      "
-      @click="handleToggleClick"
-    >
-      <img
-        v-if="!focusedExcursion && !focusedSpot && !focusedAllPhotos && focusedLocation?.imageUrl"
-        :src="imageDisplayUrl(focusedLocation.imageUrl)"
-        alt=""
-        class="focus-banner-thumb"
-      />
-      <AppIcon
-        v-else
-        :icon="
-          focusedExcursion
-            ? getTourRoleIconDef(focusedExcursion.role)
-            : focusedSpot
-              ? spotCategoryMeta(focusedSpot.category).tabler
-              : focusedAllPhotos
-                ? MAP_TOOL_ICONS.photos
-                : focusedLocation
-                  ? FORM_FIELD_ICONS.image
-                  : FORM_FIELD_ICONS.period
+  <Transition name="focus-banner-fade">
+    <div v-if="isVisible" class="focus-banner" :class="{ 'is-expanded': isFocusBannerExpanded }">
+      <button
+        class="focus-banner-toggle-btn"
+        :class="{ 'is-clickable': isPhotoFocus }"
+        :aria-expanded="isFocusBannerExpanded"
+        :aria-label="
+          isPhotoFocus
+            ? 'Foto in Galerie öffnen'
+            : isFocusBannerExpanded
+              ? 'Fokus-Banner einklappen'
+              : 'Fokus-Banner ausklappen'
         "
-        :size="18"
-        :group="focusedExcursion || focusedSpot ? 'categories' : 'formFields'"
-      />
-    </button>
-    <div class="focus-banner-content">
-      <button
-        v-if="focusedLocation"
-        type="button"
-        class="focus-title-btn"
-        title="Foto in Galerie öffnen"
-        @click="emit('open-photo-preview')"
+        @click="handleToggleClick"
       >
-        {{ focusedLocation.title || 'Foto-Standort' }}
+        <img
+          v-if="!focusedExcursion && !focusedSpot && !focusedAllPhotos && focusedLocation?.imageUrl"
+          :src="imageDisplayUrl(focusedLocation.imageUrl)"
+          alt=""
+          class="focus-banner-thumb"
+        />
+        <AppIcon
+          v-else
+          :icon="
+            focusedExcursion
+              ? getTourRoleIconDef(focusedExcursion.role)
+              : focusedSpot
+                ? spotCategoryMeta(focusedSpot.category).tabler
+                : focusedAllPhotos
+                  ? MAP_TOOL_ICONS.photos
+                  : focusedLocation
+                    ? FORM_FIELD_ICONS.image
+                    : FORM_FIELD_ICONS.period
+          "
+          :size="18"
+          :group="focusedExcursion || focusedSpot ? 'categories' : 'formFields'"
+        />
       </button>
-      <button
-        v-else-if="focusedAllPhotos"
-        type="button"
-        class="focus-title-btn"
-        title="Fotos in Galerie öffnen"
-        @click="emit('open-photo-preview')"
-      >
-        {{
-          allTripPhotoPointsCount === 1
-            ? '1 Foto mit Standort'
-            : `Alle Fotos mit Standort (${allTripPhotoPointsCount || 0})`
-        }}
-      </button>
-      <div v-else-if="focusedDate" class="focus-date-nav">
+      <div class="focus-banner-content">
         <button
-          v-if="hasMultipleDays"
+          v-if="focusedLocation"
           type="button"
-          class="focus-nav-btn"
-          :disabled="!hasPrevDate"
-          aria-label="Vorheriger Tag"
-          title="Vorheriger Tag"
-          @click.stop="goToPrevDate"
+          class="focus-title-btn"
+          title="Foto in Galerie öffnen"
+          @click="emit('open-photo-preview')"
         >
-          <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
+          {{ focusedLocation.title || 'Foto-Standort' }}
         </button>
-        <span class="focus-date-label">{{ formattedDateString }}</span>
         <button
-          v-if="hasMultipleDays"
+          v-else-if="focusedAllPhotos"
           type="button"
-          class="focus-nav-btn"
-          :disabled="!hasNextDate"
-          aria-label="Nächster Tag"
-          title="Nächster Tag"
-          @click.stop="goToNextDate"
+          class="focus-title-btn"
+          title="Fotos in Galerie öffnen"
+          @click="emit('open-photo-preview')"
         >
-          <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
+          {{
+            allTripPhotoPointsCount === 1
+              ? '1 Foto mit Standort'
+              : `Alle Fotos mit Standort (${allTripPhotoPointsCount || 0})`
+          }}
         </button>
+        <div v-else-if="focusedDate" class="focus-date-nav">
+          <button
+            v-if="hasMultipleDays"
+            type="button"
+            class="focus-nav-btn"
+            :disabled="!hasPrevDate"
+            aria-label="Vorheriger Tag"
+            title="Vorheriger Tag"
+            @click.stop="goToPrevDate"
+          >
+            <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
+          </button>
+          <span class="focus-date-label">{{ formattedDateString }}</span>
+          <button
+            v-if="hasMultipleDays"
+            type="button"
+            class="focus-nav-btn"
+            :disabled="!hasNextDate"
+            aria-label="Nächster Tag"
+            title="Nächster Tag"
+            @click.stop="goToNextDate"
+          >
+            <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
+          </button>
+        </div>
+        <span v-else>{{
+          focusedExcursion ? focusedExcursion.title : focusedSpot ? focusedSpot.title : ''
+        }}</span>
+        <Button variant="card-action" class="focus-close-btn" @click="emit('clear')">
+          <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
+        </Button>
       </div>
-      <span v-else>{{
-        focusedExcursion ? focusedExcursion.title : focusedSpot ? focusedSpot.title : ''
-      }}</span>
-      <Button variant="card-action" class="focus-close-btn" @click="emit('clear')">
-        <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
-      </Button>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style lang="scss" scoped>
@@ -275,6 +277,19 @@ watch(
     max-width 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.focus-banner-fade-enter-active,
+.focus-banner-fade-leave-active {
+  transition:
+    opacity var(--duration-normal, 0.25s) ease,
+    transform var(--duration-normal, 0.25s) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.focus-banner-fade-enter-from,
+.focus-banner-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
 }
 
 .focus-banner.is-expanded {

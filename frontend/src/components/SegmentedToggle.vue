@@ -74,6 +74,27 @@ function updateThumb() {
   thumbVisible.value = true;
 }
 
+// Positioniert die Pille sofort am angeklickten Button (statt erst nach dem Re-Render des Eltern-
+// Views), damit der Wechsel von jeder Option zu jeder anderen als Gleiten startet - auch dann, wenn
+// der Eltern-View beim Umschalten (z. B. Spots -> Touren) schwere Inhalte neu rendert.
+function onSelect(option: { value: string; disabled?: boolean }, event: MouseEvent) {
+  if (props.disabled || option.disabled) {
+    return;
+  }
+
+  const target = event.currentTarget as HTMLElement | null;
+
+  if (target) {
+    thumbLeft.value = target.offsetLeft;
+    thumbTop.value = target.offsetTop;
+    thumbWidth.value = target.offsetWidth;
+    thumbHeight.value = target.offsetHeight;
+    thumbVisible.value = true;
+  }
+
+  emit('update:modelValue', option.value);
+}
+
 onMounted(() => {
   updateThumb();
 
@@ -139,7 +160,7 @@ watch(
       :title="option.label"
       :aria-label="option.label"
       :disabled="disabled || option.disabled"
-      @click="!disabled && !option.disabled && emit('update:modelValue', option.value)"
+      @click="onSelect(option, $event)"
     >
       <AppIcon
         v-if="option.icon"

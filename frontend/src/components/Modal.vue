@@ -416,6 +416,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
               <IconButton
                 variant="ghost"
                 class="close-btn"
+                shape="circle"
                 :icon="ACTION_ICONS.close"
                 size="sm"
                 title="Schließen"

@@ -138,6 +138,13 @@ const {
   tourPartialFilteredPrefix,
 } = filter;
 
+const SEARCH_PLACEHOLDER_BY_MODE = {
+  category: 'Spots suchen...',
+  tours: 'Touren suchen...',
+  tracks: 'Tracks suchen...',
+} as const;
+const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER_BY_MODE[groupMode.value]);
+
 const searchFilterBarRef = ref<InstanceType<typeof SearchFilterBar> | null>(null);
 
 const activeSearchAndFilterCount = computed(() => {
@@ -1351,7 +1358,7 @@ onUnmounted(() => {
                   v-model:status-filter="statusFilter"
                   v-model:tour-role-filter="tourRoleFilter"
                   :category-options="filterCategoryOptions"
-                  search-placeholder="Spots oder Touren suchen..."
+                  :search-placeholder="searchPlaceholder"
                 />
 
                 <div
@@ -1362,6 +1369,7 @@ onUnmounted(() => {
                     <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
                     <IconButton
                       variant="ghost"
+                      shape="circle"
                       size="sm"
                       :icon="ACTION_ICONS.close"
                       aria-label="Filter entfernen"
@@ -1374,6 +1382,7 @@ onUnmounted(() => {
                     {{ STATUS_FILTER_LABEL[status] }}
                     <IconButton
                       variant="ghost"
+                      shape="circle"
                       size="sm"
                       :icon="ACTION_ICONS.close"
                       aria-label="Filter entfernen"
@@ -1386,6 +1395,7 @@ onUnmounted(() => {
                     {{ tourRoleLabel(role) }}
                     <IconButton
                       variant="ghost"
+                      shape="circle"
                       size="sm"
                       :icon="ACTION_ICONS.close"
                       aria-label="Filter entfernen"
@@ -2570,19 +2580,14 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.filter-chip button {
-  background: none;
-  border: none;
-  padding: var(--space-1);
+.filter-chip .icon-btn.btn--sm {
+  /* Rund und kompakt, damit der Schließen-Button bündig in der Pillen-Form des Chips sitzt */
+  width: 24px;
+  height: 24px;
   min-width: 24px;
   min-height: 24px;
+  padding: 0;
   color: inherit;
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .category-heading {

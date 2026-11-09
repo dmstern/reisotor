@@ -220,7 +220,10 @@ function onBlur(event: FocusEvent) {
 
 .submit-btn {
   position: absolute;
-  right: 5px;
+  /* Abstand rechts = Abstand oben/unten (Button zentriert in der Eingabekapsel abzgl. Rahmen) */
+  right: calc(
+    (var(--input-height, 46px) - 2 * max(1.5px, var(--ui-border-width, 1.5px)) - 36px) / 2
+  );
   top: 0;
   bottom: 0;
   margin-block: auto;

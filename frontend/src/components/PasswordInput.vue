@@ -46,13 +46,14 @@ const visible = defineModel<boolean>('visible', { default: false });
   padding-right: 40px;
 }
 
-.toggle-visibility {
+/* Erhöhte Spezifität (.password-field …), damit IconButtons `position: relative` die absolute
+   Positionierung nicht überschreibt. Abstand rechts = Abstand oben/unten (Button zentriert im Input). */
+.password-field .toggle-visibility {
   position: absolute;
-  right: 4px;
   top: 0;
   bottom: 0;
+  right: calc((var(--input-height, 46px) - var(--input-height-sm, 38px)) / 2);
   margin-block: auto;
-  height: 32px;
   translate: none;
   transform: none;
   color: var(--color-text-muted);

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, type ComponentPublicInstance } from 'vue';
 import type { Spot } from '../api/types';
-import { IconFlag, IconFlagFilled } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
 import { useDrawersStore } from '../stores/drawers';
 import CategoryChip from './CategoryChip.vue';
@@ -16,6 +15,7 @@ import SocialRow from './SocialRow.vue';
 import AppIcon from './AppIcon.vue';
 import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
+import ToggleSwitch from './primitives/ToggleSwitch.vue';
 import Badge from './primitives/Badge.vue';
 import Card from './primitives/Card.vue';
 import SpotCoverImage from './SpotCoverImage.vue';
@@ -60,13 +60,6 @@ const props = withDefaults(
 );
 
 const isAccommodation = computed(() => props.spot.category === 'Unterkunft');
-
-const DESTINATION_ICON: IconDef = {
-  id: 'flag',
-  emoji: '🏁',
-  outline: IconFlag,
-  filled: IconFlagFilled,
-};
 
 const emit = defineEmits<{
   (e: 'edit', spot: Spot): void;
@@ -257,29 +250,24 @@ const cardRotation = computed(() => {
         <div class="actions-accordion" :class="{ 'is-expanded': expanded }">
           <div class="actions-accordion-inner accordion-stagger">
             <div class="card-actions">
-              <Button
+              <label
                 v-if="
                   expanded &&
                   excursionContext &&
                   (!excursionContext.hasDestination || excursionContext.isDestination)
                 "
                 key="btn-destination"
-                variant="secondary"
-                size="sm"
                 class="spot-destination-toggle"
-                :class="{ 'is-active': excursionContext.isDestination }"
-                :active="excursionContext.isDestination"
                 title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
-                @click.stop="$emit('toggle-destination')"
+                @click.stop
               >
-                <AppIcon
-                  :icon="DESTINATION_ICON"
-                  :size="14"
-                  group="formFields"
-                  :filled="excursionContext.isDestination"
+                <ToggleSwitch
+                  :model-value="excursionContext.isDestination"
+                  size="sm"
+                  @change="$emit('toggle-destination')"
                 />
                 Ziel der Tour
-              </Button>
+              </label>
               <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
               <SpotDoneStatus
                 v-if="!isAccommodation"
@@ -776,43 +764,12 @@ const cardRotation = computed(() => {
 }
 
 .spot-destination-toggle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   font-size: var(--font-size-xs);
   font-weight: 500;
   cursor: pointer;
-  padding: 6px var(--space-2);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-control);
-}
-
-.spot-destination-toggle.is-active {
-  color: var(--color-primary-dark);
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-tint);
-  box-shadow: var(--shadow-control);
-}
-
-.spot-destination-toggle {
-  position: relative;
-}
-
-.spot-destination-toggle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  inset-inline: 0;
-  height: 44px;
-  min-height: 44px;
-}
-
-@media (pointer: fine) {
-  .spot-destination-toggle::after {
-    display: none;
-  }
 }
 
 .actions-accordion {
