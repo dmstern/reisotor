@@ -79,6 +79,10 @@ describe('SpotFormModal', () => {
     expect(document.body.textContent).not.toContain('Urlaubsort');
     // Subtle action to set home location if needed
     expect(document.body.textContent).toContain('Als Heimatort festlegen');
+    const titleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(titleInput.placeholder).toBe('Name des Spots...');
     cleanUp();
   });
 
@@ -303,6 +307,103 @@ describe('SpotFormModal', () => {
     await nextTick();
 
     expect(document.querySelector('.assign-chip--schedule')).toBeNull();
+    cleanUp();
+  });
+
+  it('pre-selects accommodation category and reveals accommodation fields when defaultCategory is passed', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Unterkunft',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    // Accommodation specific fields such as Check-in-Datum should be visible
+    expect(document.body.textContent).toContain('Check-in-Datum');
+    expect(document.body.textContent).toContain('Check-out-Datum');
+
+    // Title placeholder should adapt to accommodation
+    const titleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(titleInput.placeholder).toBe('Name der Unterkunft...');
+    cleanUp();
+  });
+
+  it('adapts title placeholder to specific categories like Kneipe or Restaurant', async () => {
+    const { cleanUp: cleanUpKneipe } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Kneipe',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const kneipeTitleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(kneipeTitleInput.placeholder).toBe('Name der Kneipe...');
+    cleanUpKneipe();
+
+    const { cleanUp: cleanUpRestaurant } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Restaurant',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const restaurantTitleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(restaurantTitleInput.placeholder).toBe('Name des Restaurants...');
+    cleanUpRestaurant();
+  });
+
+  it('displays an inline warning banner when an accommodation is marked as home', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      defaultCategory: 'Unterkunft',
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const overrideBtn = document.querySelector('.spot-region-override-btn') as HTMLButtonElement;
+    expect(overrideBtn).not.toBeNull();
+    overrideBtn.click();
+    await nextTick();
+
+    // Switch should now be visible and set to home (aria-checked="false" for vacation toggle)
+    const switchEl = document.querySelector('#spotRegionToggle') as HTMLButtonElement;
+    expect(switchEl).not.toBeNull();
+    expect(switchEl.getAttribute('aria-checked')).toBe('false');
+
+    // Inline warning banner should be displayed
+    const warningText = document.querySelector('.spot-region-warning-text');
+    expect(warningText).not.toBeNull();
+    expect(warningText?.textContent).toContain(
+      'Orte der Kategorie „Unterkunft“ liegen üblicherweise am Reiseziel'
+    );
+    expect(warningText?.textContent).toContain(
+      'Als Heimatort wird dieser Ort auf der Karte separat außerhalb der Urlaubsregion geführt.'
+    );
+
+    // Toggling back to vacation removes warning
+    switchEl.click();
+    await nextTick();
+    expect(switchEl.getAttribute('aria-checked')).toBe('true');
+    expect(document.querySelector('.spot-region-warning-text')).toBeNull();
+
     cleanUp();
   });
 });

@@ -194,10 +194,19 @@ export function useTourForm(options: UseTourFormOptions) {
     }
   }
 
-  function openExcursionForm() {
+  function openExcursionForm(initialRole?: IdeaRole | '', initialTitle?: string) {
     excursionTitleTouched.value = false;
     excursionForm.value = emptyExcursionForm();
-    showExcursionSpotsSection.value = false;
+
+    if (initialRole) {
+      excursionForm.value.role = initialRole;
+    }
+
+    if (initialTitle) {
+      excursionForm.value.title = initialTitle;
+    }
+
+    showExcursionSpotsSection.value = Boolean(initialRole);
     showExcursionTracksSection.value = false;
     tracksToShareOnSave.value.clear();
     showExcursionForm.value = true;

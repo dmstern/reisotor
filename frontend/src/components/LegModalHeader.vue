@@ -11,7 +11,7 @@ defineProps<{
 
 <template>
   <span class="leg-modal-title">
-    <span>Teilstrecke:</span>
+    <span>Weg:</span>
     <span class="leg-modal-spot">
       <AppIcon
         v-if="fromSpot"

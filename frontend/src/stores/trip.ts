@@ -15,6 +15,7 @@ export interface TripFormData {
   image_url?: string;
   packing_category_required?: boolean;
   weather_model?: string;
+  create_default_entries?: boolean;
 }
 
 export const useTripStore = defineStore('trip', () => {

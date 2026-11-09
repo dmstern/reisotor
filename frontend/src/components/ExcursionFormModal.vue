@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, toRef, watch } from 'vue';
-import type { Excursion, LocationTrack, User } from '../api/types';
+import type { Excursion, IdeaRole, LocationTrack, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
@@ -27,6 +27,8 @@ import { useTourForm } from '../composables/useTourForm';
 const props = defineProps<{
   show: boolean;
   excursion?: Excursion | null;
+  defaultRole?: IdeaRole | '';
+  defaultTitle?: string;
   users: User[];
   excursionForGroupTitle?: (title: string) => Excursion | null;
 }>();
@@ -98,7 +100,7 @@ watch(
       if (exc) {
         startEditExcursion(exc as Excursion);
       } else {
-        openExcursionForm();
+        openExcursionForm(props.defaultRole, props.defaultTitle);
       }
     }
   },
@@ -233,9 +235,13 @@ function trackDurationLabel(track: LocationTrack): string | null {
       >
         <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
         Anreise/Abreise/Weiterreise werden mindestens Start- und Zielstation benötigt.
+        <template v-if="spotsStore.spots.length < 2">
+          Lege zuerst mindestens zwei Orte (z. B. Zuhause und deine Unterkunft) an, um sie hier als
+          Stationen zuzuordnen.
+        </template>
       </p>
       <CollapsibleFieldset
-        v-if="spotsStore.spots.length"
+        v-if="spotsStore.spots.length || activeExcursionForm.role"
         :model-value="
           editingExcursion !== null ? showEditExcursionSpotsSection : showExcursionSpotsSection
         "

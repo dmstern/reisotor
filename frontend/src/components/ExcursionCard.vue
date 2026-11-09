@@ -53,9 +53,13 @@ const emit = defineEmits<{
 const drawers = useDrawersStore();
 
 function onCardClick(event?: MouseEvent) {
-  if (props.expanded) {
-    const target = event?.target as HTMLElement | null;
+  const target = event?.target as HTMLElement | null;
 
+  if (target?.closest('.tour-edit-btn, a, button')) {
+    return;
+  }
+
+  if (props.expanded) {
     if (target && !target.closest('.card-header-row')) {
       return;
     }
@@ -127,16 +131,13 @@ const {
             <div class="card-badge-group">
               <TourRoleBadge :role="excursion.role" />
               <PendingSyncBadge v-if="excursion._pending" />
-              <Transition name="fade">
-                <EditButton
-                  v-if="expanded"
-                  small
-                  shape="circle"
-                  variant="surface"
-                  class="tour-edit-btn"
-                  @click="emit('edit', excursion)"
-                />
-              </Transition>
+              <EditButton
+                small
+                shape="circle"
+                variant="surface"
+                class="tour-edit-btn"
+                @click="emit('edit', excursion)"
+              />
               <span v-if="!expanded" class="card-disclosure-pill" aria-hidden="true">
                 <AppIcon
                   :icon="ACTION_ICONS.chevronDown"
@@ -332,22 +333,22 @@ const {
   z-index: 3;
 }
 
-.excursion-card:not(.expanded):hover {
+.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) {
   transform: none;
   background: var(--color-hover) !important;
   box-shadow: none !important;
 }
 
-.excursion-card:not(.expanded):hover::before {
+.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover))::before {
   opacity: 1;
   transform: scaleY(1);
 }
 
-.excursion-card:not(.expanded):hover .card-title {
+.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-title {
   color: var(--excursion-theme-dark);
 }
 
-.excursion-card:not(.expanded):active {
+.excursion-card:not(.expanded):active:not(:has(.tour-edit-btn:hover)) {
   transform: none;
   background: color-mix(in srgb, var(--color-hover) 80%, var(--color-border)) !important;
 }
@@ -574,7 +575,7 @@ const {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.excursion-card:not(.expanded):hover .card-disclosure-pill {
+.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-disclosure-pill {
   background: var(--excursion-theme-color);
   border-color: var(--excursion-theme-color);
   color: #ffffff;
@@ -582,7 +583,7 @@ const {
   transform: translateY(-1px);
 }
 
-.excursion-card:not(.expanded):hover .disclosure-chevron {
+.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .disclosure-chevron {
   transform: translateY(2px);
 }
 

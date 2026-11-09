@@ -400,7 +400,7 @@ export function getExtendedFieldsConfig(transportType?: string | null): Extended
         luggage: 'Gepäck & Fahrradmitnahme',
         ticketLink: 'Ticket-Link / Online-Ticket',
         amount: 'Ticketkosten (€)',
-        note: 'Notiz zur Teilstrecke',
+        note: 'Notiz zur Bahnfahrt',
       },
       placeholders: {
         checkin: 'z. B. Gleis 7 A-C, 10 Min. vorher am Bahnsteig',
@@ -430,7 +430,7 @@ export function getExtendedFieldsConfig(transportType?: string | null): Extended
       luggage: 'Gepäck',
       ticketLink: 'Buchungslink / Ticket-URL',
       amount: 'Ticketkosten (€)',
-      note: 'Notiz zur Teilstrecke',
+      note: 'Notiz zum Weg',
     },
     placeholders: {
       checkin: 'z. B. Treffpunkt oder Haltestelle',
@@ -438,7 +438,7 @@ export function getExtendedFieldsConfig(transportType?: string | null): Extended
       luggage: 'z. B. Taschen, Koffer',
       ticketLink: 'https://...',
       amount: 'z. B. 25.00',
-      note: 'Wichtige Hinweise zur Teilstrecke',
+      note: 'Wichtige Hinweise zum Weg',
     },
     icons: {
       checkin: 'location',

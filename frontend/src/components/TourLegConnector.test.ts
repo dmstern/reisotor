@@ -71,7 +71,7 @@ describe('TourLegConnector', () => {
 
     expect(html).toContain('tour-leg-connector');
     expect(html).toContain('tour-leg-add-btn');
-    expect(html).toContain('Teilstrecke');
+    expect(html).toContain('Weg');
   });
 
   it('renders row-break connector with existing leg details', async () => {
@@ -104,6 +104,6 @@ describe('TourLegConnector', () => {
     expect(html).toContain('align-left');
     expect(html).toContain('single-col');
     expect(html).toContain('tour-leg-add-btn');
-    expect(html).toContain('Teilstrecke erfassen');
+    expect(html).toContain('Weg-Details eintragen');
   });
 });

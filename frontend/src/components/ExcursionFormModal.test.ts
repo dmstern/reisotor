@@ -101,4 +101,22 @@ describe('ExcursionFormModal', () => {
     expect(document.body.textContent).not.toContain('Neue Tour');
     cleanUp();
   });
+
+  it('pre-fills role and title when defaultRole and defaultTitle are passed', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      excursion: null,
+      defaultRole: 'arrival',
+      defaultTitle: 'Anreise',
+      users: [dummyUser],
+    });
+    await nextTick();
+
+    const titleInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+    expect(titleInput.value).toBe('Anreise');
+
+    const roleSelect = document.querySelector('select') as HTMLSelectElement;
+    expect(roleSelect.value).toBe('arrival');
+    cleanUp();
+  });
 });

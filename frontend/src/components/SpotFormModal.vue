@@ -20,13 +20,19 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
-import { spotCategoryMeta, isTransitCategory, isHomeCategory } from '../utils/spotCategory';
+import {
+  spotCategoryMeta,
+  isTransitCategory,
+  isHomeCategory,
+  isVacationCategory,
+} from '../utils/spotCategory';
 import { normalizeWebUrl } from '../utils/linkLabel';
 import { useSpotForm } from '../composables/useSpotForm';
 
 const props = defineProps<{
   show: boolean;
   spot?: Spot | null;
+  defaultCategory?: string;
   tripId: number;
   users: User[];
   spotScheduledDates: Map<number, string>;
@@ -146,6 +152,10 @@ const showSpotRegionSection = computed(() => {
   );
 });
 
+function onRegionToggle(val: boolean) {
+  activeSpotForm.value.is_home = !val;
+}
+
 function enableSpotRegionManual() {
   manualRegionVisible.value = true;
   activeSpotForm.value.is_home = true;
@@ -160,7 +170,7 @@ watch(
       if (spot) {
         startEditSpot(spot as Spot);
       } else {
-        openSpotForm();
+        openSpotForm(props.defaultCategory);
       }
     }
   },
@@ -319,9 +329,20 @@ function handleOpenScheduledItem(item: ScheduleItem) {
             aria-label="Teil der Urlaubsregion"
             aria-describedby="spotRegionHint"
             :model-value="!activeSpotForm.is_home"
-            @update:model-value="(val: boolean) => (activeSpotForm.is_home = !val)"
+            @update:model-value="onRegionToggle"
           />
         </div>
+        <p
+          v-if="activeSpotForm.is_home && isVacationCategory(activeSpotForm.category)"
+          class="spot-region-warning-text"
+        >
+          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+          <span>
+            Orte der Kategorie „{{ activeSpotForm.category || 'Unterkunft' }}“ liegen üblicherweise
+            am Reiseziel. Als Heimatort wird dieser Ort auf der Karte separat außerhalb der
+            Urlaubsregion geführt.
+          </span>
+        </p>
       </div>
       <div v-else class="spot-region-override-row">
         <button
@@ -772,6 +793,16 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 .spot-region-override-btn:hover {
   color: var(--color-primary);
   background-color: var(--color-hover);
+}
+
+.spot-region-warning-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--color-warning, #d97706);
 }
 
 .spot-region-override-btn:focus-visible {

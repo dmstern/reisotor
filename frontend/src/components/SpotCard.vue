@@ -110,10 +110,14 @@ function getCardDomElement(event?: MouseEvent): HTMLElement | null {
 }
 
 function onCardClick(event?: MouseEvent) {
-  if (props.expanded) {
-    const target = event?.target as HTMLElement | null;
+  const target = event?.target as HTMLElement | null;
 
-    if (target && (!target.closest('.image, .card-badge-group') || target.closest('a, button'))) {
+  if (target?.closest('.spot-edit-btn, a, button')) {
+    return;
+  }
+
+  if (props.expanded) {
+    if (target && !target.closest('.image, .card-badge-group')) {
       return;
     }
 
@@ -186,16 +190,13 @@ const cardRotation = computed(() => {
             :icon-only="expanded ? false : iconOnlyCategory"
           />
           <PendingSyncBadge v-if="spot._pending" />
-          <Transition name="fade">
-            <EditButton
-              v-if="expanded"
-              small
-              shape="circle"
-              variant="surface"
-              class="spot-edit-btn"
-              @click="emit('edit', spot)"
-            />
-          </Transition>
+          <EditButton
+            small
+            shape="circle"
+            variant="surface"
+            class="spot-edit-btn"
+            @click="emit('edit', spot)"
+          />
         </div>
       </div>
 
@@ -535,7 +536,7 @@ const cardRotation = computed(() => {
   transition: color 0.2s ease;
 }
 
-.spot-card:not(.expanded):hover .card-title {
+.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .card-title {
   color: var(--color-primary-dark);
 }
 
@@ -677,7 +678,7 @@ const cardRotation = computed(() => {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.spot-card:not(.expanded):hover .spot-expand-pill,
+.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
 .spot-expand-pill:hover {
   background-color: var(--color-primary-tint);
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
@@ -691,7 +692,7 @@ const cardRotation = computed(() => {
   box-shadow: var(--shadow-control-active);
 }
 
-.spot-card:not(.expanded):hover .spot-expand-chevron {
+.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-chevron {
   transform: translateY(1.5px);
 }
 

@@ -2,8 +2,16 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api/client';
-import type { Excursion, ExcursionComment, ExcursionLike, Spot, User } from '../api/types';
+import type {
+  Excursion,
+  ExcursionComment,
+  ExcursionLike,
+  IdeaRole,
+  Spot,
+  User,
+} from '../api/types';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
+import { spotCategoryMeta } from '../utils/spotCategory';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
@@ -250,12 +258,178 @@ const {
   updateExcursionComment,
 } = social;
 
+// Contextual Actions & Buttons (Issue #698)
+const isAccommodationFilterActive = computed(() => {
+  return (
+    groupMode.value === 'category' &&
+    categoryFilter.value.length === 1 &&
+    categoryFilter.value[0] === 'Unterkunft'
+  );
+});
+
+const isTravelFilterActive = computed(() => {
+  return (
+    groupMode.value === 'tours' &&
+    tourRoleFilter.value.length > 0 &&
+    !tourRoleFilter.value.includes('excursion')
+  );
+});
+
+const defaultTravelRole = computed<IdeaRole>(() => {
+  if (tourRoleFilter.value.length === 1 && tourRoleFilter.value[0] !== 'excursion') {
+    return tourRoleFilter.value[0] as IdeaRole;
+  }
+
+  const hasArrival = excursionsStore.excursions.some((e) => e.role === 'arrival');
+  return hasArrival ? 'onward' : 'arrival';
+});
+
+const defaultTravelTitle = computed<string | undefined>(() => {
+  if (defaultTravelRole.value === 'arrival') {
+    return 'Anreise';
+  }
+
+  if (defaultTravelRole.value === 'departure') {
+    return 'Abreise';
+  }
+
+  return undefined;
+});
+
+const emptyTravelCtaLabel = computed<string>(() => {
+  if (defaultTravelRole.value === 'arrival') {
+    return 'Anreise anlegen';
+  }
+
+  if (defaultTravelRole.value === 'departure') {
+    return 'Abreise anlegen';
+  }
+
+  return 'Weiterreise anlegen';
+});
+
+const TRAVEL_BUTTON_LABELS = ['Neue Fahrt', 'Neuer Flug', 'Neuer Zug'];
+const TRAVEL_LABEL_CYCLE_MS = 3500;
+const travelLabelIndex = ref(0);
+let travelLabelInterval: ReturnType<typeof setInterval> | null = null;
+
+watch(
+  isTravelFilterActive,
+  (active) => {
+    if (active) {
+      if (!travelLabelInterval) {
+        travelLabelInterval = setInterval(() => {
+          travelLabelIndex.value = (travelLabelIndex.value + 1) % TRAVEL_BUTTON_LABELS.length;
+        }, TRAVEL_LABEL_CYCLE_MS);
+      }
+    } else {
+      if (travelLabelInterval) {
+        clearInterval(travelLabelInterval);
+        travelLabelInterval = null;
+      }
+
+      travelLabelIndex.value = 0;
+    }
+  },
+  { immediate: true }
+);
+
+onUnmounted(() => {
+  if (travelLabelInterval) {
+    clearInterval(travelLabelInterval);
+    travelLabelInterval = null;
+  }
+});
+
+const currentAddButtonText = computed(() => {
+  if (groupMode.value === 'tracks') {
+    return hasActiveRecording.value ? 'Beenden' : 'Aufzeichnen';
+  }
+
+  if (isAccommodationFilterActive.value) {
+    return 'Neue Unterkunft';
+  }
+
+  if (isTravelFilterActive.value) {
+    return TRAVEL_BUTTON_LABELS[travelLabelIndex.value];
+  }
+
+  if (groupMode.value === 'tours') {
+    return 'Neue Tour';
+  }
+
+  return 'Neuer Spot';
+});
+
+const currentAddButtonAriaLabel = computed(() => {
+  if (groupMode.value === 'tracks') {
+    return hasActiveRecording.value ? 'Aufzeichnung beenden' : 'Weg aufzeichnen';
+  }
+
+  if (isAccommodationFilterActive.value) {
+    return 'Neue Unterkunft';
+  }
+
+  if (isTravelFilterActive.value) {
+    return 'Neue Reise anlegen';
+  }
+
+  if (groupMode.value === 'tours') {
+    return 'Neue Tour';
+  }
+
+  return 'Neuer Spot';
+});
+
+const currentAddButtonIcon = computed(() => {
+  if (groupMode.value === 'tracks') {
+    return hasActiveRecording.value ? ACTION_ICONS.recordStop : ACTION_ICONS.recordStart;
+  }
+
+  if (isAccommodationFilterActive.value) {
+    return spotCategoryMeta('Unterkunft').tabler;
+  }
+
+  if (isTravelFilterActive.value) {
+    return SECTION_ICON_DEFS.travel;
+  }
+
+  if (groupMode.value === 'tours') {
+    return ACTION_ICONS.mapPlus;
+  }
+
+  return ACTION_ICONS.mapPinPlus;
+});
+
+const currentAddButtonIconGroup = computed(() => {
+  if (isAccommodationFilterActive.value) {
+    return 'categories' as const;
+  }
+
+  return 'actions' as const;
+});
+
+const animatedTextOptions = [
+  'Neuer Spot',
+  'Neue Tour',
+  'Aufzeichnen',
+  'Beenden',
+  'Neue Unterkunft',
+  ...TRAVEL_BUTTON_LABELS,
+];
+
 // 7. Tour Form Modal State & Helpers
 const showExcursionModal = ref(false);
 const editingExcursion = ref<Excursion | null>(null);
+const activeExcursionRole = ref<IdeaRole | ''>('');
+const activeExcursionTitle = ref<string | undefined>(undefined);
 
-function openExcursionForm() {
+function openExcursionForm(initialRole?: IdeaRole | '', initialTitle?: string) {
   editingExcursion.value = null;
+  activeExcursionRole.value =
+    initialRole ?? (isTravelFilterActive.value ? defaultTravelRole.value : '');
+  activeExcursionTitle.value =
+    initialTitle ?? (isTravelFilterActive.value ? defaultTravelTitle.value : undefined);
   showExcursionModal.value = true;
 }
 
@@ -290,9 +464,12 @@ async function toggleExcursionDestination(excursion: Excursion, spotId: number) 
 // 8. Spot Form Modal State
 const showSpotModal = ref(false);
 const editingSpot = ref<Spot | null>(null);
+const defaultSpotCategory = ref<string | undefined>(undefined);
 
-function openSpotForm() {
+function openSpotForm(initialCategory?: string) {
   editingSpot.value = null;
+  defaultSpotCategory.value =
+    initialCategory ?? (isAccommodationFilterActive.value ? 'Unterkunft' : undefined);
   showSpotModal.value = true;
 }
 
@@ -305,6 +482,22 @@ function startEditSpot(spot: Spot | number) {
   }
 
   showSpotModal.value = true;
+}
+
+function onAddButtonClick() {
+  if (groupMode.value === 'tracks') {
+    onRecordButtonClick();
+  } else if (groupMode.value === 'tours') {
+    if (isTravelFilterActive.value) {
+      openExcursionForm(defaultTravelRole.value, defaultTravelTitle.value);
+    } else {
+      openExcursionForm();
+    }
+  } else if (isAccommodationFilterActive.value) {
+    openSpotForm('Unterkunft');
+  } else {
+    openSpotForm();
+  }
 }
 
 // Card Expansion & Map Cross-Focus Orchestration
@@ -949,48 +1142,14 @@ onUnmounted(() => {
               class="add-button"
               :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
               :variant="groupMode === 'tracks' && hasActiveRecording ? 'danger' : 'primary'"
-              :aria-label="
-                groupMode === 'tracks'
-                  ? hasActiveRecording
-                    ? 'Aufzeichnung beenden'
-                    : 'Weg aufzeichnen'
-                  : groupMode === 'tours'
-                    ? 'Neue Tour'
-                    : 'Neuer Spot'
-              "
-              @click="
-                groupMode === 'tracks'
-                  ? onRecordButtonClick()
-                  : groupMode === 'tours'
-                    ? openExcursionForm()
-                    : openSpotForm()
-              "
+              :aria-label="currentAddButtonAriaLabel"
+              @click="onAddButtonClick"
             >
-              <AppIcon
-                :icon="
-                  groupMode === 'tracks'
-                    ? hasActiveRecording
-                      ? ACTION_ICONS.recordStop
-                      : ACTION_ICONS.recordStart
-                    : groupMode === 'tours'
-                      ? ACTION_ICONS.mapPlus
-                      : ACTION_ICONS.mapPinPlus
-                "
-                :size="16"
-                group="actions"
-              />
+              <AppIcon :icon="currentAddButtonIcon" :size="16" :group="currentAddButtonIconGroup" />
               <span class="add-button__label">
                 <AnimatedText
-                  :text="
-                    groupMode === 'tracks'
-                      ? hasActiveRecording
-                        ? 'Beenden'
-                        : 'Aufzeichnen'
-                      : groupMode === 'tours'
-                        ? 'Neue Tour'
-                        : 'Neuer Spot'
-                  "
-                  :options="['Neuer Spot', 'Neue Tour', 'Aufzeichnen', 'Beenden']"
+                  :text="currentAddButtonText"
+                  :options="animatedTextOptions"
                   :direction="groupMode === 'tours' ? 'up' : 'down'"
                 />
               </span>
@@ -1110,48 +1269,18 @@ onUnmounted(() => {
                 class="add-button"
                 :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
                 :variant="groupMode === 'tracks' && hasActiveRecording ? 'danger' : 'primary'"
-                :aria-label="
-                  groupMode === 'tracks'
-                    ? hasActiveRecording
-                      ? 'Aufzeichnung beenden'
-                      : 'Weg aufzeichnen'
-                    : groupMode === 'tours'
-                      ? 'Neue Tour'
-                      : 'Neuer Spot'
-                "
-                @click="
-                  groupMode === 'tracks'
-                    ? onRecordButtonClick()
-                    : groupMode === 'tours'
-                      ? openExcursionForm()
-                      : openSpotForm()
-                "
+                :aria-label="currentAddButtonAriaLabel"
+                @click="onAddButtonClick"
               >
                 <AppIcon
-                  :icon="
-                    groupMode === 'tracks'
-                      ? hasActiveRecording
-                        ? ACTION_ICONS.recordStop
-                        : ACTION_ICONS.recordStart
-                      : groupMode === 'tours'
-                        ? ACTION_ICONS.mapPlus
-                        : ACTION_ICONS.mapPinPlus
-                  "
+                  :icon="currentAddButtonIcon"
                   :size="16"
-                  group="actions"
+                  :group="currentAddButtonIconGroup"
                 />
                 <span class="add-button__label">
                   <AnimatedText
-                    :text="
-                      groupMode === 'tracks'
-                        ? hasActiveRecording
-                          ? 'Beenden'
-                          : 'Aufzeichnen'
-                        : groupMode === 'tours'
-                          ? 'Neue Tour'
-                          : 'Neuer Spot'
-                    "
-                    :options="['Neuer Spot', 'Neue Tour', 'Aufzeichnen', 'Beenden']"
+                    :text="currentAddButtonText"
+                    :options="animatedTextOptions"
                     :direction="groupMode === 'tours' ? 'up' : 'down'"
                   />
                 </span>
@@ -1197,6 +1326,8 @@ onUnmounted(() => {
           <ExcursionFormModal
             v-model:show="showExcursionModal"
             v-model:excursion="editingExcursion"
+            :default-role="activeExcursionRole"
+            :default-title="activeExcursionTitle"
             :users="users"
             :excursion-for-group-title="excursionForGroupTitle"
           />
@@ -1271,6 +1402,7 @@ onUnmounted(() => {
           <SpotFormModal
             v-model:show="showSpotModal"
             v-model:spot="editingSpot"
+            :default-category="defaultSpotCategory"
             :trip-id="tripId"
             :users="users"
             :spot-scheduled-dates="spotScheduledDates"
@@ -1464,13 +1596,35 @@ onUnmounted(() => {
                 </button>
                 <span>, um sie wieder zu sehen.</span>
               </p>
-              <p v-else-if="grp.excursion && !grp.items.length" class="empty">
-                Noch keine Spots zugeordnet – bearbeite diese Tour, um Stationen hinzuzufügen, oder
-                wähle sie beim Bearbeiten eines Spots über „Tour zuordnen“.
-              </p>
+              <div v-else-if="grp.excursion && !grp.items.length" class="empty tour-empty-group">
+                <p class="tour-empty-text">
+                  Noch keine Spots zugeordnet – bearbeite diese Tour, um Stationen hinzuzufügen,
+                  oder wähle sie beim Bearbeiten eines Spots über „Tour zuordnen“.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  class="tour-empty-action-btn"
+                  @click="startEditExcursion(grp.excursion)"
+                >
+                  <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                  <span>Tour bearbeiten</span>
+                </Button>
+              </div>
             </section>
             <div v-if="!spotGroups.length" class="empty-state-wrap">
-              <EmptyState>
+              <EmptyState
+                v-if="isAccommodationFilterActive && !searchQuery.trim() && !statusFilter.length"
+              >
+                Noch keine Unterkunft eingetragen. Trage hier dein Hotel, deine Ferienwohnung oder
+                deinen Campingplatz ein.
+              </EmptyState>
+              <EmptyState
+                v-else-if="isTravelFilterActive && !searchQuery.trim() && !statusFilter.length"
+              >
+                Noch keine Reise eingetragen. Hinterlege deine Anreise, Flüge oder Zugverbindungen.
+              </EmptyState>
+              <EmptyState v-else>
                 <template v-if="hasActiveFilters">
                   Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen Filter
                   oder Suchbegriffe gefunden.
@@ -1478,6 +1632,33 @@ onUnmounted(() => {
                 <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
                 <template v-else> Noch keine Spots angelegt. </template>
               </EmptyState>
+
+              <Button
+                v-if="isAccommodationFilterActive && !searchQuery.trim() && !statusFilter.length"
+                variant="primary"
+                size="sm"
+                class="empty-cta-btn"
+                @click="openSpotForm('Unterkunft')"
+              >
+                <AppIcon
+                  :icon="spotCategoryMeta('Unterkunft').tabler"
+                  :size="15"
+                  group="categories"
+                />
+                <span>Unterkunft eintragen</span>
+              </Button>
+
+              <Button
+                v-else-if="isTravelFilterActive && !searchQuery.trim() && !statusFilter.length"
+                variant="primary"
+                size="sm"
+                class="empty-cta-btn"
+                @click="openExcursionForm(defaultTravelRole, defaultTravelTitle)"
+              >
+                <AppIcon :icon="SECTION_ICON_DEFS.travel" :size="15" group="actions" />
+                <span>{{ emptyTravelCtaLabel }}</span>
+              </Button>
+
               <Button
                 v-if="hasActiveFilters"
                 variant="secondary"
@@ -2190,6 +2371,17 @@ onUnmounted(() => {
 
 .category-group.is-tour-group .empty {
   padding: var(--space-2) var(--space-3) var(--space-4);
+  margin: 0;
+}
+
+.tour-empty-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.tour-empty-text {
   margin: 0;
 }
 

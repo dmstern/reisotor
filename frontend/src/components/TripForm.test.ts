@@ -266,4 +266,36 @@ describe('TripForm', () => {
     expect(actionsRow).toBeNull();
     cleanUp();
   });
+
+  it('renders default entries checkbox on new trips and submits create_default_entries', async () => {
+    let submittedData: TripFormData | null = null;
+    const { container, cleanUp } = mountForm({
+      onSubmit: (data: TripFormData) => {
+        submittedData = data;
+      },
+    });
+
+    const checkbox = container.querySelector('#trip-create-default-entries') as HTMLInputElement;
+    expect(checkbox).not.toBeNull();
+    expect(checkbox.checked).toBe(true);
+
+    const nameInput = container.querySelector('input[type="text"]') as HTMLInputElement;
+    nameInput.value = 'Neuer Urlaub';
+    nameInput.dispatchEvent(new Event('input'));
+
+    const form = container.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    expect(submittedData).toBeDefined();
+    expect((submittedData as TripFormData | null)?.create_default_entries).toBe(true);
+    cleanUp();
+  });
+
+  it('does not render default entries checkbox when editing an existing trip', () => {
+    const { container, cleanUp } = mountForm({ initial: sampleInitial, tripId: 1 });
+    const checkbox = container.querySelector('#trip-create-default-entries');
+    expect(checkbox).toBeNull();
+    cleanUp();
+  });
 });

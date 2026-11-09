@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue';
+import { computed, ref, useId } from 'vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import AppIcon from './AppIcon.vue';
@@ -10,6 +10,7 @@ import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import SpotLocationBadge from './SpotLocationBadge.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 import FormField from './FormField.vue';
+import { spotTitlePlaceholder } from '../utils/spotCategory';
 import type { PlaceSearchResult } from '../composables/usePlaceSearch';
 
 const props = withDefaults(
@@ -123,6 +124,10 @@ const categoryInputId = useId();
 const addressInputId = useId();
 const addressDropdownId = useId();
 
+const titlePlaceholder = computed(() => {
+  return spotTitlePlaceholder(props.editCategoryInput || props.category);
+});
+
 defineExpose({
   cardEl,
 });
@@ -178,7 +183,7 @@ defineExpose({
                 class="polaroid-field-input inline-edit-input"
                 name="title"
                 data-testid="spot-title-input"
-                placeholder="Name des Spots..."
+                :placeholder="titlePlaceholder"
                 autocomplete="off"
                 data-protonpass-ignore="true"
                 data-1p-ignore="true"
