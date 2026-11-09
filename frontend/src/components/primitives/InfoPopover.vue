@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import { computePopoverPosition } from '../../utils/popoverPosition';
 import AppIcon from '../AppIcon.vue';
+import Button from './Button.vue';
 import PickerMenu from './PickerMenu.vue';
 
 // InfoPopover-Primitive: Kapselt ein dezentes Info-Icon mit aufklappendem Erklär-Popover (Issue #239).
@@ -44,15 +45,17 @@ const emit = defineEmits<{
 }>();
 
 const open = ref(false);
-const triggerRef = ref<HTMLElement | null>(null);
+const triggerRef = ref<InstanceType<typeof Button> | null>(null);
 const menuStyle = ref({ top: '0px', left: '0px' });
 
 function updatePosition() {
-  if (!triggerRef.value) {
+  const triggerElement = triggerRef.value?.$el as HTMLElement | undefined;
+
+  if (!triggerElement) {
     return;
   }
 
-  menuStyle.value = computePopoverPosition(triggerRef.value, {
+  menuStyle.value = computePopoverPosition(triggerElement, {
     menuWidth: props.menuWidth,
     placement: props.placement,
     align: props.align,
@@ -100,9 +103,12 @@ defineExpose({
 
 <template>
   <span class="info-popover-wrap">
-    <button
+    <Button
       ref="triggerRef"
-      type="button"
+      variant="ghost"
+      shape="circle"
+      size="sm"
+      :active="open"
       class="info-popover-btn"
       :title="title"
       :aria-label="ariaLabel || title"
@@ -113,7 +119,7 @@ defineExpose({
       <slot name="icon">
         <AppIcon :icon="ACTION_ICONS.info" :size="iconSize" group="actions" />
       </slot>
-    </button>
+    </Button>
 
     <Teleport to="body">
       <template v-if="open">
@@ -140,71 +146,14 @@ defineExpose({
   line-height: 1;
 }
 
-.info-popover-btn {
-  @include touch-target($pseudo: 'before');
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-hover);
-  background-image: var(--gradient-control-3d);
+.info-popover-btn.btn {
+  --info-popover-btn-size: 30px;
+  width: var(--info-popover-btn-size);
+  height: var(--info-popover-btn-size);
+  min-width: var(--info-popover-btn-size);
+  min-height: var(--info-popover-btn-size);
   color: var(--color-text-muted);
-  box-shadow: var(--shadow-control);
   font-size: var(--font-size-sm);
-  line-height: 1;
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  corner-shape: round;
-  user-select: none;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
-}
-
-.info-popover-btn:hover {
-  background-color: var(--color-surface);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-control-hover);
-  translate: 0 -1px;
-}
-
-.info-popover-btn:active {
-  transform: translateY(1px) scale(0.96);
-  translate: 0 0;
-  box-shadow: var(--shadow-control-active);
-  background-color: var(--color-surface);
-}
-
-.info-popover-btn[aria-expanded='true'] {
-  background-color: var(--color-primary-tint);
-  border-color: var(--color-primary);
-  color: var(--color-primary-dark);
-  box-shadow: var(--shadow-control-active);
-}
-
-.info-popover-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo), var(--shadow-control);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .info-popover-btn {
-    transition: none !important;
-    transform: none !important;
-    translate: none !important;
-  }
 }
 
 :global(.info-popover-menu.picker-menu) {

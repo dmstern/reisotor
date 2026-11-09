@@ -237,9 +237,8 @@ function onEditClick(closePopover?: () => void) {
   padding-right: 4px;
 }
 
-.spot-location-info-popover :deep(.info-popover-btn) {
-  width: 20px;
-  height: 20px;
+.spot-location-info-popover :deep(.info-popover-btn.btn) {
+  --info-popover-btn-size: 20px;
   color: var(--color-warning-dark);
   opacity: 0.85;
 }
