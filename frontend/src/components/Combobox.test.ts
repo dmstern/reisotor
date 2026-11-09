@@ -378,7 +378,7 @@ describe('Combobox', () => {
       // X-Button ist vorhanden
       const clearBtn = container.querySelector<HTMLButtonElement>('.combobox-clear-btn');
       expect(clearBtn).not.toBeNull();
-      expect(clearBtn?.getAttribute('aria-label')).toBe('Eingabe löschen');
+      expect(clearBtn?.getAttribute('aria-label')).toBe('Eingabe leeren');
 
       // Klick auf X-Button
       clearBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
