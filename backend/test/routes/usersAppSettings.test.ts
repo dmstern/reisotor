@@ -40,7 +40,6 @@ describe('User App Settings API', () => {
     const payload = {
       theme: 'dark',
       primaryColor: '#2563eb',
-      borderWidth: 2,
       glassStyle: 'frosted',
       glassOpacity: 80,
       glassBlur: 24,

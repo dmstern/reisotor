@@ -525,7 +525,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   background: var(--color-surface);
   --scroll-fade-bg: var(--color-surface);
   --tab-bar-fade-bg: var(--color-surface);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
   padding: var(--space-4);

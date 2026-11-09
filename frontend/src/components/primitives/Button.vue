@@ -273,7 +273,7 @@ a.btn.is-loading {
     rgba(255, 255, 255, 0) 100%
   );
   color: var(--color-primary-contrast, white);
-  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
+  border: 1.5px solid transparent; /* 3D-Look braucht keinen Rahmen; Geometrie bleibt für .is-active stabil */
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.12),
@@ -300,7 +300,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-primary);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid transparent;
   box-shadow: var(--shadow-control);
 }
 
@@ -328,7 +328,7 @@ a.btn.is-loading {
     rgba(255, 255, 255, 0) 100%
   );
   color: white;
-  border: var(--ui-border-width, 1px) solid var(--color-button-edge);
+  border: 1.5px solid transparent; /* 3D-Look braucht keinen Rahmen; Geometrie bleibt für .is-active stabil */
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.14),
@@ -354,7 +354,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-danger);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-danger);
+  border: 1.5px solid var(--color-danger);
   box-shadow: var(--shadow-control);
 }
 
@@ -377,7 +377,7 @@ a.btn.is-loading {
   padding: 6px 12px;
   min-height: var(--input-height-sm, 38px);
   box-sizing: border-box;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background-color: var(--color-primary-tint);
@@ -441,7 +441,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-text);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border: 1.5px solid var(--color-border-strong);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
     var(--shadow-sm);
@@ -466,7 +466,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-text);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   box-shadow: var(--shadow-control);
 }
 
@@ -486,7 +486,7 @@ a.btn.is-loading {
 .btn--ghost.is-active,
 .btn--surface.is-active {
   background: var(--color-primary-tint);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-primary);
+  border: 1.5px solid var(--color-primary);
   color: var(--color-primary-dark);
   box-shadow:
     0 0 0 1px var(--color-primary),

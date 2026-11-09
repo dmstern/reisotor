@@ -91,7 +91,7 @@ function onChange(event: Event) {
   flex-shrink: 0;
   margin: 0;
   padding: 0;
-  border: max(2px, var(--ui-border-width, 2px)) solid var(--color-border);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
   box-shadow: var(--shadow-control-choice);

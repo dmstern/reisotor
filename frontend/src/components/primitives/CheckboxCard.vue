@@ -146,7 +146,7 @@ function onChange(event: Event) {
   /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
   background-image: none;
   box-shadow: none;
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   transition:
@@ -183,7 +183,7 @@ function onChange(event: Event) {
   /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
   background-image: none;
   box-shadow: none;
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   transition:
@@ -240,7 +240,7 @@ function onChange(event: Event) {
 .checkbox-card__control :deep(.checkbox) {
   width: 24px;
   height: 24px;
-  border-width: max(2px, var(--ui-border-width, 2px));
+  border-width: 2px;
 }
 
 .checkbox-card__body {

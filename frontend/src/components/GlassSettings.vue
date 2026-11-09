@@ -200,7 +200,7 @@ const previewStyle = computed(() => {
   background: var(--color-hover);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
 }
 
 .slider-row {

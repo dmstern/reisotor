@@ -134,7 +134,7 @@ async function handleActionClick(toast: ToastItem) {
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-surface, #ffffff);
   color: var(--color-text, #1e293b);
-  border: var(--ui-border-width, 1px) solid var(--color-border, #e2e8f0);
+  border: var(--border-width) solid var(--color-border, #e2e8f0);
   border-radius: var(--radius-lg-squircle, 16px);
   corner-shape: squircle;
   box-shadow: var(

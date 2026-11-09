@@ -304,7 +304,7 @@ const isNewHighlight = computed(() => {
   position: relative;
   background-color: var(--color-surface);
   background-image: var(--gradient-surface-3d);
-  border: var(--ui-border-width, 1px) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: var(--space-4);
