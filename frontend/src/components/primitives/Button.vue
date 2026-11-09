@@ -488,9 +488,8 @@ a.btn.is-loading {
   background: var(--color-primary-tint);
   border: 1.5px solid var(--color-primary);
   color: var(--color-primary-dark);
-  box-shadow:
-    0 0 0 1px var(--color-primary),
-    var(--shadow-sm);
+  /* Nur symmetrischer Ring: ein Versatz-Schatten (--shadow-sm: 0 2px 6px) verdunkelt sonst unten/seitlich */
+  box-shadow: 0 0 0 1px var(--color-primary);
   font-weight: 700;
 }
 
@@ -500,9 +499,7 @@ a.btn.is-loading {
 .btn--surface.is-active:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
   border-color: var(--color-primary-dark);
-  box-shadow:
-    0 0 0 1px var(--color-primary-dark),
-    var(--shadow-md);
+  box-shadow: 0 0 0 1px var(--color-primary-dark);
 }
 
 .btn--primary.is-active {
