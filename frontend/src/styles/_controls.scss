@@ -1,0 +1,270 @@
+// =============================================================================
+// Control Tokens & Mixins (Issue #729)
+//
+// Single Source of Truth für 3D-Beleuchtung, Inset-Felder und Fokusringe.
+// Korrespondiert mit den 3D- und Schatten-Tokens in `style.css` und DESIGN.md §2.
+// =============================================================================
+
+/// Kapselt das Aussehen und Interaktionsverhalten versenkter Eingabefelder
+/// (Input, Textarea, RichTextEditor, QuickAddRow).
+///
+/// Im Ruhezustand flach/dezent umrahmt.
+/// Bei Hover: sanfte Inset-Rinne (shadow-control-inset-hover).
+/// Bei Fokus: 3D-Eingabeschacht (shadow-control-inset) + Fokusring.
+/// Bei Invalid/Modified: Fokusring ohne doppelten Rahmen (Single-Ring-Garantie).
+///
+/// @param {Boolean} $focus-within [false] - Ob :focus-within und .is-focused statt :focus verwendet werden sollen (für Container)
+@mixin control-field-inset($focus-within: false) {
+  box-shadow: none;
+  background: var(--color-surface);
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  transition: var(--transition-control);
+
+  @if $focus-within {
+    &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
+      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+      box-shadow: var(--shadow-control-inset-hover);
+    }
+
+    &:focus-within,
+    &.is-focused {
+      outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+      outline-offset: var(--focus-ring-offset, 2px);
+      box-shadow:
+        var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+    }
+
+    &--invalid,
+    &.is-invalid {
+      border-color: var(--color-danger);
+
+      &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
+        border-color: var(--color-danger);
+      }
+
+      &:focus-within,
+      &.is-focused {
+        border-color: var(--color-border-strong);
+        outline: var(--focus-ring-width, 3px) solid var(--color-danger);
+        outline-color: var(--color-danger);
+      }
+    }
+
+    &--modified,
+    &.is-modified {
+      border-color: var(--color-accent);
+      box-shadow:
+        0 0 0 1px var(--color-accent),
+        var(--shadow-control-inset);
+
+      &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
+        border-color: var(--color-accent);
+        box-shadow:
+          0 0 0 1px var(--color-accent),
+          var(--shadow-control-inset-hover);
+      }
+
+      &:focus-within,
+      &.is-focused {
+        border-color: var(--color-border-strong) !important;
+        outline: var(--focus-ring-width, 3px) solid var(--color-accent);
+        outline-color: var(--color-accent);
+        box-shadow:
+          var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+      }
+    }
+  } @else {
+    &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+      border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+      box-shadow: var(--shadow-control-inset-hover);
+    }
+
+    &:focus,
+    &:focus-visible,
+    &:active:not(:disabled) {
+      outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+      outline-offset: var(--focus-ring-offset, 2px);
+      box-shadow:
+        var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+    }
+
+    &--invalid,
+    &.is-invalid {
+      border-color: var(--color-danger);
+
+      &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+        border-color: var(--color-danger);
+      }
+
+      &:focus,
+      &:focus-visible,
+      &:active:not(:disabled) {
+        border-color: var(--color-border-strong);
+        outline: var(--focus-ring-width, 3px) solid var(--color-danger);
+        outline-color: var(--color-danger);
+      }
+    }
+
+    &--modified,
+    &.is-modified {
+      border-color: var(--color-accent);
+      box-shadow:
+        0 0 0 1px var(--color-accent),
+        var(--shadow-control-inset);
+
+      &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+        border-color: var(--color-accent);
+        box-shadow:
+          0 0 0 1px var(--color-accent),
+          var(--shadow-control-inset-hover);
+      }
+
+      &:focus,
+      &:focus-visible,
+      &:active:not(:disabled) {
+        border-color: var(--color-border-strong) !important;
+        outline: var(--focus-ring-width, 3px) solid var(--color-accent);
+        outline-color: var(--color-accent);
+        box-shadow:
+          var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+      }
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--color-hover);
+    box-shadow: none;
+  }
+}
+
+/// Kapselt das Verhalten progressiver Auswahl-Controls (Select, DropdownMenu).
+///
+/// Im Ruhezustand flach.
+/// Bei Hover: leichter 3D-Glanz + Anhebung (translate: 0 -1px).
+/// Bei Fokus & Active/Open: 3D-Lichtglanz + Vertiefung / Ring.
+/// Bei Invalid/Modified: Fokusring ohne doppelten Rahmen (Single-Ring-Garantie).
+///
+/// @param {String} $active-selector ['&:active:not(:disabled)'] - Selektor für den Active-/Open-Zustand
+@mixin control-3d-progressive($active-selector: '&:active:not(:disabled)') {
+  --control-grad-top: transparent;
+  --control-grad-bottom: transparent;
+  box-shadow: none;
+  background-color: var(--color-surface);
+  background-image: linear-gradient(
+    180deg,
+    var(--control-grad-top) 0%,
+    var(--control-grad-bottom) 100%
+  );
+  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  transition: var(--transition-control);
+
+  &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+    translate: 0 -1px;
+    background-color: var(--color-hover);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-control-hover);
+    --control-grad-top: var(--gradient-control-top);
+    --control-grad-bottom: var(--gradient-control-bottom);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+    --control-grad-top: var(--gradient-control-top);
+    --control-grad-bottom: var(--gradient-control-bottom);
+  }
+
+  #{$active-selector} {
+    transform: translateY(1px) scale(0.99);
+    translate: 0 0;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-control-active);
+    --control-grad-top: var(--gradient-control-top);
+    --control-grad-bottom: var(--gradient-control-bottom);
+  }
+
+  &--invalid,
+  &.is-invalid {
+    border-color: var(--color-danger);
+
+    &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+      border-color: var(--color-danger);
+    }
+
+    &:focus,
+    &:focus-visible,
+    #{$active-selector} {
+      border-color: var(--color-border-strong);
+      outline: var(--focus-ring-width, 3px) solid var(--color-danger);
+      outline-color: var(--color-danger);
+    }
+  }
+
+  &--modified,
+  &.is-modified {
+    border-color: var(--color-accent);
+    box-shadow:
+      0 0 0 1px var(--color-accent),
+      var(--shadow-control);
+    --control-grad-top: var(--gradient-control-top);
+    --control-grad-bottom: var(--gradient-control-bottom);
+
+    &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+      border-color: var(--color-accent);
+      box-shadow:
+        0 0 0 1px var(--color-accent),
+        var(--shadow-control-hover);
+      --control-grad-top: var(--gradient-control-top);
+      --control-grad-bottom: var(--gradient-control-bottom);
+    }
+
+    &:focus,
+    &:focus-visible,
+    #{$active-selector} {
+      border-color: var(--color-border-strong) !important;
+      outline: var(--focus-ring-width, 3px) solid var(--color-accent);
+      outline-color: var(--color-accent);
+      box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+      --control-grad-top: var(--gradient-control-top);
+      --control-grad-bottom: var(--gradient-control-bottom);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--color-hover);
+    box-shadow: none;
+  }
+}
+
+/// Kapselt initial erhabene 3D-Steuerelemente (Spot-Disclosure-Pills, Termin-Checks, Drawer-Tab).
+///
+/// Initial: 3D-Gradient + shadow-control.
+/// Hover: Lift (-1px) + shadow-control-hover.
+/// Active: Press (translateY(1px) scale(0.985)) + shadow-control-active.
+@mixin control-3d-raised {
+  background-color: var(--color-surface);
+  background-image: var(--gradient-control-3d);
+  box-shadow: var(--shadow-control);
+  transition: var(--transition-control);
+
+  &:hover:not(:disabled) {
+    box-shadow: var(--shadow-control-hover);
+    translate: 0 -1px;
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: var(--shadow-control-active);
+    transform: translateY(1px) scale(0.985);
+    translate: 0 0;
+  }
+}

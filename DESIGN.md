@@ -333,6 +333,21 @@ Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Swit
   - Muted- & Popover-Kacheln (`CheckboxCard` mit `variant="muted"` oder `variant="popover"`, sowie `.date-check-item` im Besuche-abhaken-Popover) nutzen `--shadow-control`, Kantenlicht und `var(--gradient-control-3d)` und federn beim Klick haptisch ein (`transform: translateY(1px) scale(0.985..0.99)`).
   - Polaroid-Fotokarten (`variant="polaroid"`, z. B. in `SpotCard.vue`) besitzen maßgeschneiderte Kantenreflexionen und tiefe Vintage-Schlagschatten (`--shadow-card-polaroid`, `--shadow-card-polaroid-hover`, `--shadow-card-polaroid-active`) und interpolieren bei Hover auf `var(--gradient-surface-3d-hover)`.
 
+### Architektur-Regel für Formularfelder & 3D-Controls (Issue #729)
+
+Um CSS-Duplikate, Drift und doppelte Fokusrahmen im Error-/Modified-Zustand zu verhindern, gilt folgende verbindliche Konsistenz-Regel:
+
+1. **Fachkomponenten nutzen zwingend die UI-Primitives:**
+   - Einzeilige Eingabefelder (inklusive Suche & Mengenangaben): `<Input>` (`shape="squircle" | "pill"`, `size="sm" | "md" | "lg"`). Niemals rohe `<input>`-Elemente mit nachgebauten Styles verwenden.
+   - Mehrzeilige Freitextfelder: `<Textarea>`.
+   - Native OS-Auswahlfelder: `<Select>`.
+   - Aktions- & Auswahl-Flyouts (inkl. Block-Dropdowns wie `ThemeModeSelect.vue` oder `TrackVisibilitySelect.vue`): `<DropdownMenu>` (`block`, `size`, `ariaLabel`, `ariaHaspopup`).
+   - Keine `:deep(...)`-Überschreibungen von Rahmen, Schatten, Backgrounds, Hover- oder Fokus-Styles in Fachkomponenten (wie z. B. in `PackingAddRow.vue` oder `Combobox.vue`).
+2. **Zusammengesetzte Spezial-Container nutzen die zentralen SCSS-Mixins:**
+   - Spezial-Container, die technisch kein `<input>`-Tag sein können (`QuickAddRow.vue`s `.input-container`, `RichTextEditor.vue`s `.richtext-editor`), binden ausschließlich `@include control-field-inset($focus-within: true);` aus `src/styles/_controls.scss` ein.
+   - Spezial-Pills und taktile Kacheln (`SpotCard.vue`s `.spot-expand-pill`, `SpotDoneStatus.vue`s `.date-check-item`, `Drawer.vue`s `.drawer-tab`) nutzen `@include control-3d-raised;`.
+   - Alle drei Mixins sind über `_breakpoints.scss` in jeder `<style lang="scss" scoped>`-Komponente automatisch verfügbar.
+
 ## Animationen
 
 - **Alle Laufzeit-Style-Änderungen müssen animiert sein (Grundregel)**:
@@ -533,6 +548,7 @@ Zentrale Single Source of Truth für responsive Viewports und Container (Issue #
 
 - **SCSS Mixins & Variablen:** `frontend/src/styles/_breakpoints.scss` (in allen Vue-Komponenten via Vite automatisch verfügbar, kein manueller Import nötig).
 - **Touch-Target & Hitbox Mixins:** `frontend/src/styles/_touch.scss` (`@include touch-target($size: 44px)` / `@include bigger-touch-area` für Pseudo-Element-Hitboxen sowie `@include min-touch-target`), via `_breakpoints.scss` automatisch verfügbar.
+- **3D- & Control-Mixins (Issue #729):** `frontend/src/styles/_controls.scss` (`@include control-field-inset`, `@include control-3d-progressive`, `@include control-3d-raised`), via `_breakpoints.scss` automatisch verfügbar.
 - **TypeScript Tokens:** `frontend/src/tokens/breakpoints.ts` (`BREAKPOINTS`, `BREAKPOINTS_PX`, `MEDIA_QUERIES`) für `matchMedia`, ResizeObserver, Storybook und JS-Logik.
 - **CSS Custom Properties:** `--breakpoint-*` auf `:root` in `frontend/src/style.css` zur Dokumentation und CSS-Referenzierung.
 

@@ -597,40 +597,29 @@ defineOptions({
   z-index: var(--z-popover, 1100);
 }
 
-.combobox :deep(.combobox-input),
-.combobox :deep(input) {
+.combobox :deep(.combobox-input) {
   width: 100%;
-  min-height: var(--input-height, 46px);
-  border-width: max(1.5px, var(--ui-border-width, 1.5px));
   padding-right: 36px;
 }
 
-.combobox :deep(.combobox-input:focus),
-.combobox :deep(.combobox-input:focus-visible),
+.combobox.open :deep(.combobox-input),
 .combobox:focus-within :deep(.combobox-input) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
-.combobox :deep(.combobox-input.input--invalid:focus),
-.combobox :deep(.combobox-input.input--invalid:focus-visible),
+.combobox.open :deep(.combobox-input.input--invalid),
 .combobox:focus-within :deep(.combobox-input.input--invalid) {
   border-color: var(--color-border-strong);
   outline-color: var(--color-danger);
 }
 
-.combobox--sm :deep(.combobox-input),
-.combobox--sm :deep(input) {
-  min-height: var(--input-height-sm, 38px);
-  font-size: var(--font-size-sm);
+.combobox--sm :deep(.combobox-input) {
   padding-right: 28px;
 }
 
-.combobox--lg :deep(.combobox-input),
-.combobox--lg :deep(input) {
-  min-height: var(--input-height-lg, 52px);
-  font-size: var(--font-size-md);
+.combobox--lg :deep(.combobox-input) {
   padding-right: 42px;
 }
 
@@ -655,18 +644,15 @@ defineOptions({
   left: 14px;
 }
 
-.combobox.has-leading-icon :deep(.combobox-input),
-.combobox.has-leading-icon :deep(input) {
+.combobox.has-leading-icon :deep(.combobox-input) {
   padding-left: 36px;
 }
 
-.combobox--sm.has-leading-icon :deep(.combobox-input),
-.combobox--sm.has-leading-icon :deep(input) {
+.combobox--sm.has-leading-icon :deep(.combobox-input) {
   padding-left: 28px;
 }
 
-.combobox--lg.has-leading-icon :deep(.combobox-input),
-.combobox--lg.has-leading-icon :deep(input) {
+.combobox--lg.has-leading-icon :deep(.combobox-input) {
   padding-left: 42px;
 }
 

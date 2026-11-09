@@ -103,4 +103,34 @@ describe('DropdownMenu', () => {
 
     cleanUp();
   });
+
+  it('supports block prop, custom aria attributes, and forwards keydown', async () => {
+    let keydownEvent: KeyboardEvent | null = null;
+    const { container, cleanUp } = mountDropdownMenu({
+      label: 'Block Dropdown',
+      block: true,
+      ariaLabel: 'Benutzerdefinierte Beschreibung',
+      ariaHaspopup: 'listbox',
+      triggerClass: 'my-custom-trigger',
+      onKeydown: (e: KeyboardEvent) => {
+        keydownEvent = e;
+      },
+    });
+
+    const root = container.querySelector('.dropdown');
+    expect(root?.classList.contains('dropdown--block')).toBe(true);
+
+    const button = container.querySelector<HTMLButtonElement>('button.dropdown__button')!;
+    expect(button.getAttribute('aria-label')).toBe('Benutzerdefinierte Beschreibung');
+    expect(button.getAttribute('aria-haspopup')).toBe('listbox');
+    expect(button.classList.contains('my-custom-trigger')).toBe(true);
+
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await nextTick();
+
+    expect(keydownEvent).not.toBeNull();
+    expect((keydownEvent as KeyboardEvent | null)?.key).toBe('ArrowDown');
+
+    cleanUp();
+  });
 });

@@ -183,33 +183,8 @@ function discardDraft() {
   margin: 0;
 }
 
-.quick-add-qty input,
-.quick-add-qty :deep(input) {
+.quick-add-qty :deep(.input) {
   width: 56px;
-  height: 36px;
-  min-height: 36px;
-  padding: 4px 8px;
-  font-size: 0.85rem;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-sizing: border-box;
-  transition: var(--transition-control);
-}
-
-.quick-add-qty input:hover:not(:focus),
-.quick-add-qty :deep(input:hover:not(:focus)) {
-  box-shadow: var(--shadow-control-inset-hover);
-}
-
-.quick-add-qty input:focus,
-.quick-add-qty :deep(input:focus),
-.quick-add-qty input:focus-visible,
-.quick-add-qty :deep(input:focus-visible) {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+  text-align: center;
 }
 </style>

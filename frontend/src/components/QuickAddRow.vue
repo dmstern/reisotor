@@ -136,7 +136,7 @@ function onBlur(event: FocusEvent) {
   </form>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .quick-add-row {
   position: relative;
   z-index: 1;
@@ -157,6 +157,7 @@ function onBlur(event: FocusEvent) {
 }
 
 .input-container {
+  @include control-field-inset($focus-within: true);
   position: relative;
   display: flex;
   align-items: center;
@@ -164,33 +165,13 @@ function onBlur(event: FocusEvent) {
   min-height: var(--input-height, 46px);
   background: var(--color-hover);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   box-sizing: border-box;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.input-container:hover:not(:focus-within) {
-  border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-control-inset-hover);
 }
 
 .quick-add-row.expanded .input-container {
   background: var(--color-surface);
   border-color: var(--color-border-strong);
   box-shadow: var(--shadow-control-inset);
-}
-
-.input-container:focus-within,
-.input-container:focus-visible {
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo), var(--shadow-control-inset);
 }
 
 .leading-icon {

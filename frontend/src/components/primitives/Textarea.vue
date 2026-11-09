@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Textarea-Primitive für mehrzeilige Eingabefelder – kapselt Squircle-Styling,
-// Padding, Schriftart, Fokus- und Deaktiviert-Zustände.
+// Padding, Schriftart, Fokus- und Deaktiviert-Zustände via _controls.scss.
 
 withDefaults(
   defineProps<{
@@ -70,15 +70,11 @@ function onInput(event: Event) {
   ></textarea>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .textarea {
+  @include control-field-inset;
   padding: 9px 12px;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: none;
   font-family: inherit;
   font-size: var(--font-size-md);
   line-height: 1.5;
@@ -86,63 +82,5 @@ function onInput(event: Event) {
   min-width: 0;
   max-width: 100%;
   resize: vertical;
-  transition: var(--transition-control);
-}
-
-.textarea:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
-  box-shadow: var(--shadow-control-inset-hover);
-}
-
-.textarea:focus,
-.textarea:focus-visible,
-.textarea:active:not(:disabled) {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
-}
-
-.textarea:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--color-hover);
-  box-shadow: none;
-}
-
-.textarea--invalid {
-  border-color: var(--color-danger);
-}
-
-.textarea--invalid:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: var(--color-danger);
-}
-
-.textarea--invalid:focus,
-.textarea--invalid:focus-visible,
-.textarea--invalid:active:not(:disabled) {
-  border-color: var(--color-border-strong);
-  outline-color: var(--color-danger);
-}
-
-.textarea--modified {
-  border-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-control-inset);
-}
-
-.textarea--modified:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-control-inset-hover);
-}
-
-.textarea--modified:focus,
-.textarea--modified:focus-visible,
-.textarea--modified:active:not(:disabled) {
-  border-color: var(--color-border-strong) !important;
-  outline-color: var(--color-accent);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 </style>

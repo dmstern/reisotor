@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 // Input-Primitive für einzeilige Eingabefelder (Text, Zahl, Datum, Zeit, URL, E-Mail, …) – siehe Issue #239.
-// Primitive-Styles kapseln Standard-Squircle-Styling, Maße, Fokus- und Deaktiviert-Zustände.
+// Primitive-Styles kapseln Standard-Squircle-Styling, Maße, Fokus- und Deaktiviert-Zustände via _controls.scss.
 
 withDefaults(
   defineProps<{
@@ -38,6 +40,8 @@ withDefaults(
     maxlength?: number;
     /** Input-Größe: 'sm' (kompakt), 'md' (Standard 44px), 'lg' (groß). */
     size?: 'sm' | 'md' | 'lg';
+    /** Formgebung: 'squircle' (Standard) oder 'pill' (abgerundet für Suchfelder). */
+    shape?: 'squircle' | 'pill';
     /** Fehler-/Ungültig-Zustand. */
     invalid?: boolean;
     /** Geändert-Zustand (orange Markierung). */
@@ -62,6 +66,7 @@ withDefaults(
     required: false,
     readonly: false,
     size: 'md',
+    shape: 'squircle',
     invalid: false,
     modified: false,
   }
@@ -76,15 +81,23 @@ const emit = defineEmits<{
   (e: 'keyup', event: KeyboardEvent): void;
 }>();
 
+const inputRef = ref<HTMLInputElement | null>(null);
+
 function onInput(event: Event) {
   const target = event.target as HTMLInputElement;
   emit('update:modelValue', target.value);
 }
+
+defineExpose({
+  focus: () => inputRef.value?.focus(),
+  el: inputRef,
+});
 </script>
 
 <template>
   <input
     :id="id"
+    ref="inputRef"
     :name="name"
     :type="type"
     :value="modelValue ?? ''"
@@ -104,6 +117,7 @@ function onInput(event: Event) {
     class="input"
     :class="[
       size !== 'md' ? `input--${size}` : undefined,
+      shape === 'pill' ? 'input--pill' : undefined,
       invalid ? 'input--invalid' : undefined,
       modified ? 'input--modified' : undefined,
     ]"
@@ -116,80 +130,18 @@ function onInput(event: Event) {
   />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .input {
-  /* Basis-Styles für Input-Primitive mit 3D-Look (#701 & #729) */
+  /* Basis-Styles für Input-Primitive mit 3D-Look via _controls.scss (#701 & #729) */
+  @include control-field-inset;
   padding: 9px 12px;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: none;
   min-width: 0;
   max-width: 100%;
   min-height: var(--input-height, 46px);
   box-sizing: border-box;
   font-family: inherit;
   font-size: var(--font-size-md);
-  transition: var(--transition-control);
-}
-
-.input:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
-  box-shadow: var(--shadow-control-inset-hover);
-}
-
-.input:focus,
-.input:focus-visible,
-.input:active:not(:disabled) {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
-}
-
-.input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--color-hover);
-  box-shadow: none;
-}
-
-.input--invalid {
-  border-color: var(--color-danger);
-}
-
-.input--invalid:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: var(--color-danger);
-}
-
-.input--invalid:focus,
-.input--invalid:focus-visible,
-.input--invalid:active:not(:disabled) {
-  border-color: var(--color-border-strong);
-  outline-color: var(--color-danger);
-}
-
-.input--modified {
-  border-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-control-inset);
-}
-
-.input--modified:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-control-inset-hover);
-}
-
-.input--modified:focus,
-.input--modified:focus-visible,
-.input--modified:active:not(:disabled) {
-  border-color: var(--color-border-strong) !important;
-  outline-color: var(--color-accent);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
 .input--sm {
@@ -241,6 +193,7 @@ function onInput(event: Event) {
 }
 
 /* Spezifische Handhabung für Suchfelder (Pill-Form) */
+.input--pill,
 .input[type='search'] {
   border-radius: var(--radius-pill);
   corner-shape: round;
@@ -248,11 +201,13 @@ function onInput(event: Event) {
   padding-right: 14px;
 }
 
+.input--pill.input--sm,
 .input--sm[type='search'] {
   padding-left: 12px;
   padding-right: 12px;
 }
 
+.input--pill.input--lg,
 .input--lg[type='search'] {
   padding-left: 18px;
   padding-right: 18px;

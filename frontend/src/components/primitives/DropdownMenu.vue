@@ -17,6 +17,10 @@ const props = withDefaults(
     disabled?: boolean;
     open?: boolean;
     size?: 'sm' | 'md' | 'lg';
+    block?: boolean;
+    ariaLabel?: string;
+    ariaHaspopup?: 'menu' | 'listbox' | boolean;
+    triggerClass?: string;
     teleport?: boolean;
     align?: 'left' | 'right';
   }>(),
@@ -26,6 +30,10 @@ const props = withDefaults(
     disabled: false,
     open: false,
     size: 'md',
+    block: false,
+    ariaLabel: undefined,
+    ariaHaspopup: 'menu',
+    triggerClass: undefined,
     teleport: true,
     align: 'left',
   }
@@ -33,6 +41,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'toggle'): void;
+  (e: 'keydown', event: KeyboardEvent): void;
 }>();
 
 const DEFAULT_MENU_HEIGHT_PX = 160;
@@ -112,13 +121,26 @@ const portalStyle = computed(() => {
     zIndex: 'var(--z-popover, 1100)',
   };
 });
+
+defineExpose({
+  focus: () => {
+    const el =
+      (buttonRef.value as ComponentPublicInstance | null)?.$el ??
+      (buttonRef.value as HTMLElement | null);
+    el?.focus?.();
+  },
+  el: buttonRef,
+});
 </script>
 
 <template>
   <div
     ref="dropdownRef"
     class="dropdown"
-    :class="[{ 'dropdown--open': open }, size !== 'md' ? `dropdown--${size}` : undefined]"
+    :class="[
+      { 'dropdown--open': open, 'dropdown--block': block },
+      size !== 'md' ? `dropdown--${size}` : undefined,
+    ]"
   >
     <slot name="trigger" :open="open" :toggle="() => emit('toggle')">
       <Button
@@ -126,10 +148,13 @@ const portalStyle = computed(() => {
         variant="ghost"
         :size="size"
         class="dropdown__button dropdown__field"
-        :class="{ 'dropdown__button--active': open }"
+        :class="[{ 'dropdown__button--active': open, 'btn--block': block }, triggerClass]"
         :disabled="disabled"
         :aria-expanded="open"
+        :aria-label="ariaLabel"
+        :aria-haspopup="ariaHaspopup"
         @click="emit('toggle')"
+        @keydown="emit('keydown', $event)"
       >
         <AppIcon v-if="icon" :icon="icon" group="actions" :size="16" />
         <span class="dropdown__label">
@@ -137,7 +162,7 @@ const portalStyle = computed(() => {
         </span>
         <AppIcon
           :icon="ACTION_ICONS.chevronDown"
-          :size="14"
+          :size="size === 'sm' ? 12 : 14"
           group="actions"
           class="dropdown__caret"
           :class="{ 'is-open': open }"
@@ -157,10 +182,15 @@ const portalStyle = computed(() => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .dropdown {
   position: relative;
   display: inline-block;
+}
+
+.dropdown--block {
+  display: block;
+  width: 100%;
 }
 
 .dropdown--open,
@@ -179,19 +209,10 @@ const portalStyle = computed(() => {
 }
 
 .dropdown__button.dropdown__field {
-  --control-grad-top: transparent;
-  --control-grad-bottom: transparent;
-  box-shadow: none;
-  background-color: var(--color-surface);
-  background-image: linear-gradient(
-    180deg,
-    var(--control-grad-top) 0%,
-    var(--control-grad-bottom) 100%
+  @include control-3d-progressive(
+    '&.dropdown__button--active, &:active:not(:disabled), .dropdown--open &'
   );
   padding: 9px 12px;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-md);
@@ -206,7 +227,11 @@ const portalStyle = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  transition: var(--transition-control);
+}
+
+.dropdown--block .dropdown__button.dropdown__field {
+  width: 100%;
+  justify-content: space-between;
 }
 
 .dropdown--sm .dropdown__button.dropdown__field,
@@ -223,43 +248,6 @@ const portalStyle = computed(() => {
   height: var(--input-height-lg, 52px);
   min-height: var(--input-height-lg, 52px);
   font-size: var(--font-size-md);
-}
-
-.dropdown__button.dropdown__field:hover:not(:disabled):not(:focus-visible):not(
-    .dropdown__button--active
-  ) {
-  translate: 0 -1px;
-  background-color: var(--color-hover);
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-control-hover);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.dropdown__button.dropdown__field:active:not(:disabled),
-.dropdown--open .dropdown__button.dropdown__field,
-.dropdown__button.dropdown__field[aria-expanded='true'],
-.dropdown__button.dropdown__field.dropdown__button--active {
-  transform: translateY(1px);
-  translate: 0 0;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-control-active);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.dropdown__button.dropdown__field:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.dropdown__button.dropdown__field:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
 }
 
 .dropdown__button.dropdown__field :deep(.app-icon) {

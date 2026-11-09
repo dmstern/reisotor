@@ -373,7 +373,7 @@ const cardRotation = computed(() => {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .spot-card {
   --spot-cover-height: 120px;
   --spot-card-pad: var(--space-2);
@@ -638,6 +638,7 @@ const cardRotation = computed(() => {
 }
 
 .spot-expand-pill {
+  @include control-3d-raised;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -646,21 +647,12 @@ const cardRotation = computed(() => {
   min-width: 24px;
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
-  background-color: var(--color-surface);
-  background-image: var(--gradient-control-3d);
   border: 1px solid var(--color-border-strong);
   color: var(--color-text-muted);
-  box-shadow: var(--shadow-control);
   font-size: var(--font-size-xs);
   font-weight: 600;
   line-height: 1;
   user-select: none;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .spot-expand-pill.is-compact {
@@ -683,11 +675,12 @@ const cardRotation = computed(() => {
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
   color: var(--color-primary-dark);
   box-shadow: var(--shadow-control-hover);
-  transform: translateY(-1px);
+  translate: 0 -1px;
 }
 
 .spot-expand-pill:active {
   transform: translateY(0.5px) scale(0.96);
+  translate: 0 0;
   box-shadow: var(--shadow-control-active);
 }
 

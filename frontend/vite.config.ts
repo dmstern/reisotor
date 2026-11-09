@@ -129,7 +129,9 @@ export default defineConfig({
             file.endsWith('_breakpoints.scss') ||
             file.endsWith('breakpoints.scss') ||
             file.endsWith('_touch.scss') ||
-            file.endsWith('touch.scss')
+            file.endsWith('touch.scss') ||
+            file.endsWith('_controls.scss') ||
+            file.endsWith('controls.scss')
           ) {
             return source;
           }

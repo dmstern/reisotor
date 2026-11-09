@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Select-Primitive: Formularfeld für Einzelauswahl aus fester Optionsliste via nativem <select> (Issue #239, #721).
-// Kapselt Squircle-Styling, Pfeil-Icon, Höhenkonsistenz mit Text-Inputs und Theme-Unterstützung.
+// Kapselt Squircle-Styling, Pfeil-Icon, Höhenkonsistenz mit Text-Inputs und Theme-Unterstützung via _controls.scss.
 // Nutzt auf mobilen Geräten (iOS/Android) den nativen OS-Picker.
 // Abgrenzung: Für freie Texteingabe mit Vorschlägen -> Combobox.vue; für Aktions-/Flyout-Menüs -> DropdownMenu.vue.
 
@@ -67,16 +67,10 @@ function onChange(event: Event) {
   </select>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .select {
-  --control-grad-top: transparent;
-  --control-grad-bottom: transparent;
-  box-shadow: none;
+  @include control-3d-progressive;
   padding: 9px 12px;
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background-color: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-md);
@@ -101,7 +95,6 @@ function onChange(event: Event) {
     16px 16px,
     100% 100%;
   padding-right: 36px;
-  transition: var(--transition-control);
 }
 
 [data-theme='dark'] .select {
@@ -116,82 +109,6 @@ function onChange(event: Event) {
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a8a29a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"),
       linear-gradient(180deg, var(--control-grad-top) 0%, var(--control-grad-bottom) 100%);
   }
-}
-
-.select:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  translate: 0 -1px;
-  background-color: var(--color-hover);
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-control-hover);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.select:focus-visible,
-.select:focus {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.select:active:not(:disabled) {
-  transform: translateY(1px) scale(0.99);
-  translate: 0 0;
-  box-shadow: var(--shadow-control-active);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background-color: var(--color-hover);
-  box-shadow: none;
-}
-
-.select--invalid {
-  border-color: var(--color-danger);
-}
-
-.select--invalid:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: var(--color-danger);
-}
-
-.select--invalid:focus,
-.select--invalid:focus-visible,
-.select--invalid:active:not(:disabled) {
-  border-color: var(--color-border-strong);
-  outline-color: var(--color-danger);
-}
-
-.select--modified {
-  border-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-control);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.select--modified:hover:not(:disabled):not(:focus):not(:focus-visible) {
-  border-color: var(--color-accent);
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    var(--shadow-control-hover);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-}
-
-.select--modified:focus,
-.select--modified:focus-visible,
-.select--modified:active:not(:disabled) {
-  border-color: var(--color-border-strong) !important;
-  outline-color: var(--color-accent);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
 }
 
 .select--sm {
