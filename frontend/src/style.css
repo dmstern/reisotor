@@ -409,7 +409,7 @@
     outline-color 0.15s ease, --control-grad-top 0.15s ease, --control-grad-bottom 0.15s ease,
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1), translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
   --shadow-control-highlight: rgba(255, 255, 255, 0.65);
-  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.65);
+  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
   --shadow-control:
     inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(43, 42, 40, 0.08),
     0 2px 4px rgba(43, 42, 40, 0.04);
@@ -617,7 +617,7 @@
     --gradient-control-top: rgba(255, 255, 255, 0.08);
     --gradient-control-bottom: rgba(0, 0, 0, 0.12);
     --shadow-control-highlight: rgba(255, 255, 255, 0.12);
-    --shadow-control-highlight-strong: rgba(255, 255, 255, 0.12);
+    --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
     --shadow-control:
       inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(0, 0, 0, 0.35),
       0 2px 5px rgba(0, 0, 0, 0.25);
@@ -736,7 +736,7 @@
   --gradient-control-top: rgba(255, 255, 255, 0.08);
   --gradient-control-bottom: rgba(0, 0, 0, 0.12);
   --shadow-control-highlight: rgba(255, 255, 255, 0.12);
-  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.12);
+  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
   --shadow-control:
     inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(0, 0, 0, 0.35),
     0 2px 5px rgba(0, 0, 0, 0.25);
@@ -850,7 +850,7 @@
   --gradient-control-top: rgba(255, 255, 255, 0.85);
   --gradient-control-bottom: rgba(43, 42, 40, 0.055);
   --shadow-control-highlight: rgba(255, 255, 255, 0.65);
-  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.65);
+  --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
   --shadow-control:
     inset 0 1px 0 var(--shadow-control-highlight), 0 1px 2px rgba(43, 42, 40, 0.08),
     0 2px 4px rgba(43, 42, 40, 0.04);
