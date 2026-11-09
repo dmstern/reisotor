@@ -444,7 +444,7 @@ a.btn.is-loading {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   color: var(--color-text);
-  border: 1.5px solid var(--color-border-strong);
+  border: 1.5px solid var(--color-border);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
     var(--shadow-sm);
