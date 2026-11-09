@@ -196,6 +196,12 @@ function discardDraft() {
   background: var(--color-surface);
   color: var(--color-text);
   box-sizing: border-box;
+  transition: var(--transition-control);
+}
+
+.quick-add-qty input:hover:not(:focus),
+.quick-add-qty :deep(input:hover:not(:focus)) {
+  box-shadow: var(--shadow-control-inset-hover);
 }
 
 .quick-add-qty input:focus,
@@ -204,6 +210,6 @@ function discardDraft() {
 .quick-add-qty :deep(input:focus-visible) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 </style>

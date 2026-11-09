@@ -237,6 +237,15 @@ defineOptions({
 }
 
 .track-visibility-trigger {
+  --control-grad-top: transparent;
+  --control-grad-bottom: transparent;
+  box-shadow: none;
+  background-color: var(--color-surface);
+  background-image: linear-gradient(
+    180deg,
+    var(--control-grad-top) 0%,
+    var(--control-grad-bottom) 100%
+  );
   width: 100%;
   display: flex;
   align-items: center;
@@ -248,13 +257,7 @@ defineOptions({
   border: var(--ui-border-width, 1px) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 5%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
   color: var(--color-text);
-  box-shadow: var(--shadow-control);
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 500;
@@ -262,12 +265,7 @@ defineOptions({
   box-sizing: border-box;
   user-select: none;
   text-align: left;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
+  transition: var(--transition-control);
 }
 
 .size-sm .track-visibility-trigger {
@@ -279,24 +277,30 @@ defineOptions({
 
 .track-visibility-trigger:hover:not(:disabled):not(:focus-visible):not(.is-open) {
   translate: 0 -1px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 8%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
+  background-color: var(--color-hover);
   border-color: var(--color-primary);
   box-shadow: var(--shadow-control-hover);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
 }
 
-.track-visibility-trigger:active:not(:disabled),
 .track-visibility-trigger:focus-visible,
 .track-visibility-trigger.is-open {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   border-color: var(--color-primary);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
+}
+
+.track-visibility-trigger:active:not(:disabled) {
   transform: translateY(1px) scale(0.99);
   translate: 0 0;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-control-active);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
 }
 
 .track-visibility-trigger.is-disabled {

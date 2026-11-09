@@ -597,10 +597,6 @@ defineOptions({
   z-index: var(--z-popover, 1100);
 }
 
-.combobox:hover :deep(.combobox-input:not(:disabled):not(:focus):not(:focus-visible)) {
-  box-shadow: var(--shadow-sm);
-}
-
 .combobox :deep(.combobox-input),
 .combobox :deep(input) {
   width: 100%;
@@ -614,7 +610,7 @@ defineOptions({
 .combobox:focus-within :deep(.combobox-input) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
 .combobox--sm :deep(.combobox-input),

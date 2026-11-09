@@ -118,27 +118,24 @@ function onInput(event: Event) {
 
 <style scoped>
 .input {
-  /* Basis-Styles für Input-Primitive mit 3D-Look (#701) */
+  /* Basis-Styles für Input-Primitive mit 3D-Look (#701 & #729) */
   padding: 9px 12px;
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-control-inset);
+  box-shadow: none;
   min-width: 0;
   max-width: 100%;
   min-height: var(--input-height, 46px);
   box-sizing: border-box;
   font-family: inherit;
   font-size: var(--font-size-md);
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: var(--transition-control);
 }
 
-.input:hover:not(:disabled) {
+.input:hover:not(:disabled):not(:focus):not(:focus-visible) {
   border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
   box-shadow: var(--shadow-control-inset-hover);
 }
@@ -169,7 +166,9 @@ function onInput(event: Event) {
 
 .input--modified {
   border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 1px var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-control-inset);
 }
 
 .input--modified:hover:not(:disabled),
@@ -177,7 +176,7 @@ function onInput(event: Event) {
 .input--modified:focus-visible,
 .input--modified:active:not(:disabled) {
   outline-color: var(--color-accent);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-sm);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
 .input--sm {

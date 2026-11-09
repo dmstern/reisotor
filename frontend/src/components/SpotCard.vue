@@ -647,7 +647,7 @@ const cardRotation = computed(() => {
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   border: 1px solid var(--color-border-strong);
   color: var(--color-text-muted);
   box-shadow: var(--shadow-control);

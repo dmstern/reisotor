@@ -305,16 +305,19 @@ defineExpose({
   corner-shape: squircle;
   background: var(--color-surface);
   overflow: hidden;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: var(--transition-control);
+}
+
+.richtext-editor:hover:not(.is-focused):not(:focus-within) {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+  box-shadow: var(--shadow-control-inset-hover);
 }
 
 .richtext-editor.is-focused,
 .richtext-editor:focus-within {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
 .richtext-editor.is-invalid {

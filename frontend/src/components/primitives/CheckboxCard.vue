@@ -143,7 +143,7 @@ function onChange(event: Event) {
   padding: var(--space-3) var(--space-4);
   margin: var(--space-3) 0;
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -189,7 +189,7 @@ function onChange(event: Event) {
   padding: var(--space-3);
   margin: var(--space-2) 0;
   background-color: var(--color-hover);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;

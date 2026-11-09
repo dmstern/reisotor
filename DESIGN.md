@@ -292,25 +292,33 @@ Desktop-Panel hatte `box-shadow: none` (Rest eines älteren Layouts) und wirkte 
 sichtbarem Öffnen/Schließen wie eine flache Nachbarspalte statt einer darüberliegenden Schublade.
 Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
 
-**Moderne 3D-Effekte für Interaktionselemente (Issue #701 & #720)**:
-Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Switches und Tasten besitzen app-weit einen soliden, haptischen 3D-Look mit Kantenlicht- und Tiefeneffekten:
+**Moderne 3D-Effekte für Interaktionselemente (Issue #701, #720 & #729)**:
+Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Switches, Schubladen-Anfasser und Tasten besitzen app-weit einen soliden, haptischen 3D-Look mit Kantenlicht- und Tiefeneffekten.
 
+- **Theme-abhängige 3D-Gradient-Tokens (Single Source of Truth)**:
+  - `--gradient-surface-3d` / `--gradient-surface-3d-hover`: Für Karten und größere Flächen. Im Light Mode dunkelt der Verlauf nach unten dezent ab (`rgba(255, 255, 255, 0.75)` auf `rgba(43, 42, 40, 0.045)`), damit weiße Karten auf weißem Hintergrund plastisch und haptisch wirken; im Dark Mode invertiert der Verlauf entsprechend zu dezentem Licht von oben (`rgba(255, 255, 255, 0.045)` auf `rgba(0, 0, 0, 0.08)`).
+  - `--gradient-control-3d`: Für erhabene Steuerelemente (`Button.vue`, `CheckboxCard.vue`, `DoneToggle.vue`, `InfoPopover.vue`, `TripMapTools.vue`, `Drawer.vue`s `.drawer-tab`).
+  - Animierbare Gradient-Stopps via `@property --control-grad-top` und `@property --control-grad-bottom`: Erlauben es dynamischen Controls (`Select.vue`, `DropdownMenu.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`), den 3D-Glanzverlauf stufenlos ohne harten Umsprung per CSS-Transition ein- und auszublenden (`--transition-control`).
+- **Initialer 3D-Look vs. Progressive Verwandlung bei Interaktion**:
+  - **Buttons, Toggles, Checkboxen, Radios und Karten** besitzen initial ihren erhabenen bzw. vertieften 3D-Look, um als greifbare Objekte im Raum erkennbar zu sein.
+  - **Formular-Eingabefelder und Auswahl-Trigger (`Input.vue`, `Textarea.vue`, `Select.vue`, `DropdownMenu.vue`, `Combobox.vue`, `SearchFilterBar.vue`, `RichTextEditor.vue`)** sind im Ruhezustand bewusst flach gehalten (`box-shadow: none`), um ruhige, unaufdringliche Formulare zu gewährleisten. Erst bei Nutzerinteraktion (Hover, Fokus, Texteingabe, Klick/Geöffnet) entfalten sie animiert ihren 3D-Effekt: Textfelder vertiefen sich tastbar zum Schacht (`--shadow-control-inset-hover` bzw. Focus-Halo + `--shadow-control-inset`), während Selects und Dropdown-Trigger ihren 3D-Glanzverlauf und Erhebungsschatten (`--shadow-control-hover` / `--shadow-control-active`) stufenlos einblenden.
 - **Erhobene Steuerelemente (`Button.vue`, `Select.vue`, `DropdownMenu.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`, `DoneToggle.vue`, `InfoPopover.vue`)**:
   - Besitzen ein feines Kantenlicht oben (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit dezentem Umgebungs- und Kontaktschatten (`--shadow-control`).
-  - Ein subtiler vertikaler Farbverlauf (`linear-gradient(180deg, color-mix(in srgb, white 5%..10%, ...) 0%, ... 100%)`) simuliert einfallendes Licht von oben und verleiht den Steuerelementen physisches Volumen.
+  - Ein subtiler vertikaler Farbverlauf (`var(--gradient-control-3d)`) simuliert einfallendes Licht von oben und verleiht den Steuerelementen physisches Volumen.
   - Sekundäre Destruktiv-Buttons (`variant="danger" secondary`, z. B. Löschen-Buttons in Dialog-Footern) teilen dasselbe taktile 3D-Volumen mit roter Kontur und `--shadow-control`, um auf gleicher physischer Ebene wie Abbrechen und Speichern zu stehen.
   - In-Card Toggles, Chevron-Pills und Info-Trigger (`DoneToggle`, `.spot-expand-pill`, `.info-popover-btn`) besitzen dieselbe taktile Basishöhe (`--shadow-control`) und heben sich beim Hover sanft ab.
-  - **Transition-Architektur**: Um ruckartige Farbsprünge beim Hovern zu vermeiden (CSS kann `linear-gradient` nicht interpolieren), liegt der Glanzverlauf als konstanter Layer (`background-image`), während Hover- und Aktivzustände `background-color`, `box-shadow`, `border-color` und `transform` stufenlos interpolieren.
   - Beim Hovern heben sie sich sanft an (`translate: 0 -1px`, `--shadow-control-hover`).
-  - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985)`, `--shadow-control-active`), sodass sich Interaktionen greifbar und solide anfühlen.
+  - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985..0.99)`, `--shadow-control-active`), sodass sich Interaktionen greifbar und solide anfühlen.
+- **Drawer-Resizer (`ResizeHandle.vue`) & Schubladen-Tabs (`Drawer.vue`)**:
+  - `ResizeHandle.vue`: Die Greifzone `.resize-grip` blendet bei Hover/Drag eine sanft eingelassene Führungsrinne (`--shadow-inset`) ein. Darin liegt als Pseudo-Element `::after` eine zylindrische 3D-Griffpille mit 90°-Lichtgradienten (`var(--gradient-control-top)` / `var(--gradient-control-bottom)`), oberem Kantenlichtsaum und Schwebeschatten. Bei Hover/Drag expandiert die Pille spürbar in der Höhe und skaliert elastisch mit Primärfarbakzent.
+  - `.drawer-tab`: Besitzt ebenfalls den haptischen 3D-Look mit `var(--gradient-control-3d)` und `--shadow-control`, der sich bei Hover zu `--shadow-control-hover` anhebt.
 - **Floating Map-Buttons (`TripMapTools.vue`, `TripMap.vue`)**:
-  - Die schwebenden Kartenwerkzeuge (`.fit-btn`, Zoom-Buttons `.leaflet-bar a`, `variant="floating"`) besitzen ein oberes Glanzlicht (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit `--shadow-sm`.
+  - Die schwebenden Kartenwerkzeuge (`.fit-btn`, Zoom-Buttons `.leaflet-bar a`, `variant="floating"`) besitzen ein oberes Glanzlicht (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit `--shadow-sm` und `var(--gradient-control-3d)`.
   - Beim Hovern heben sie sich mit `--shadow-md` und `translate: 0 -1px` sanft an.
   - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985)`, `box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.16), var(--shadow-sm)`).
   - Aktive Werkzeuge (Standort-Freigabe, Aufzeichnung) teilen dieselbe taktile Tiefe mit Primärfarbverlauf und Inset-Licht.
-- **Versenkte Eingabefelder (`Input.vue`, `Textarea.vue`)**:
-  - Wirken wie eingelassene Schächte durch eine sanfte innere Kante (`--shadow-control-inset`: oberer Inset-Schatten plus feiner unterer Lichtsaum), statt flach auf der Oberfläche zu kleben.
-  - Bei Fokus verbindet sich der Inset-Effekt nahtlos mit dem Reisotor-Fokusring (`--focus-ring-halo`).
+- **Versenkte Eingabefelder (`Input.vue`, `Textarea.vue`, `RichTextEditor.vue`, `SearchFilterBar.vue`)**:
+  - Im Ruhezustand flach (`box-shadow: none`), verwandeln sich bei Hover in eine leicht vertiefte Rinne (`--shadow-control-inset-hover`) und bei Fokus in einen präzisen 3D-Schacht (`--shadow-control-inset` kombiniert mit `--focus-ring-halo`).
 - **Umschalter & Toggles (`ToggleSwitch.vue`, `SegmentedToggle.vue`)**:
   - Die Führungsrinne/der Track ist eingelassen (`--shadow-inset` / oberer Inset-Schatten mit Kantenlichtsaum).
   - Der Thumb/Schieber ist als haptischer 3D-Körper mit Lichtkante oben (`inset 0 1px 0 #fff`) und weichem Kontaktschatten (`--shadow-pill-raised`) gestaltet.
@@ -318,14 +326,17 @@ Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Swit
   - Nutzen `--shadow-dropdown-menu` mit tieferem Schwebeschatten und Lichtkante oben für eine schwebende, solide Menü-Platte.
 - **Karten & Surfaces (`Card.vue`, `CheckboxCard.vue`, `SpotCard.vue`, `ExcursionCard.vue`)**:
   - Besitzen als solide Oberflächen ein feines Kantenlicht oben und mehrstufige Kontaktschatten (`--shadow-card`).
-  - Ein extrem subtiler Oberflächen-Verlauf (`linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 100%)`) verleiht der Fläche Plastizität ohne die Hintergrundfarbe zu verfälschen.
+  - Ein extrem subtiler Oberflächen-Verlauf (`var(--gradient-surface-3d)`) verleiht der Fläche Plastizität ohne die Hintergrundfarbe zu verfälschen.
   - Anklickbare/interaktive Karten (`.card--interactive`, `.card--expandable`, `CheckboxCard`) sind im Ruhezustand bereits leicht erhaben (`--shadow-card-interactive`).
   - Beim Hovern heben sie sich mit dynamischem Schwebeschatten und verstärktem Kantenlicht an (`transform: translateY(-3px) scale(1.012)`, `--shadow-card-hover`).
   - Beim Klick (`:active`) federn sie spürbar ein (`transform: translateY(1px) scale(0.988)`, `--shadow-card-active`), was Klicks und Touch-Interaktionen ein befriedigendes physisches Feedback gibt.
-  - Muted- & Popover-Kacheln (`CheckboxCard` mit `variant="muted"` oder `variant="popover"`, sowie `.date-check-item` im Besuche-abhaken-Popover) nutzen `--shadow-control`, Kantenlicht und Glanzverlauf und federn beim Klick haptisch ein (`transform: translateY(1px) scale(0.985..0.99)`).
-  - Polaroid-Fotokarten (`variant="polaroid"`, z. B. in `SpotCard.vue`) besitzen maßgeschneiderte Kantenreflexionen und tiefe Vintage-Schlagschatten (`--shadow-card-polaroid`, `--shadow-card-polaroid-hover`, `--shadow-card-polaroid-active`).
+  - Muted- & Popover-Kacheln (`CheckboxCard` mit `variant="muted"` oder `variant="popover"`, sowie `.date-check-item` im Besuche-abhaken-Popover) nutzen `--shadow-control`, Kantenlicht und `var(--gradient-control-3d)` und federn beim Klick haptisch ein (`transform: translateY(1px) scale(0.985..0.99)`).
+  - Polaroid-Fotokarten (`variant="polaroid"`, z. B. in `SpotCard.vue`) besitzen maßgeschneiderte Kantenreflexionen und tiefe Vintage-Schlagschatten (`--shadow-card-polaroid`, `--shadow-card-polaroid-hover`, `--shadow-card-polaroid-active`) und interpolieren bei Hover auf `var(--gradient-surface-3d-hover)`.
 
 ## Animationen
+
+- **Alle Laufzeit-Style-Änderungen müssen animiert sein (Grundregel)**:
+  Jede optische Zustandsänderung zur Laufzeit – egal ob durch direkte Nutzerinteraktion (Hover, Fokus, Klick, Texteingabe, Drag/Resize) oder durch System-/Daten-Änderungen (Daten geladen, Validierungs-/Modified-Zustand, Asynchron-Status) – muss über weiche CSS-Transitions oder Keyframes animiert werden und darf niemals abrupt umspringen. Für Steuerelemente bündelt `--transition-control` alle relevanten Properties (`box-shadow`, `border-color`, `background-color`, `transform`, `translate` sowie Farbverläufe via `@property --control-grad-top` und `--control-grad-bottom`).
 
 Kein zentrales `--transition-*`-Token bisher, aber ein klarer de-facto Standard über drei
 Größenordnungen hinweg – neue Übergänge an einer dieser drei orientieren, nicht frei erfinden:

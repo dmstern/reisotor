@@ -308,8 +308,9 @@ onBeforeUnmount(() => {
   padding: var(--space-2) 3px;
   border: 1px solid var(--color-border);
   corner-shape: squircle;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-control-3d);
+  box-shadow: var(--shadow-control);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -322,13 +323,17 @@ onBeforeUnmount(() => {
     right 0.25s ease,
     width 0.15s ease,
     min-height 0.15s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
-.drawer-tab:hover {
+.drawer-tab:hover:not(:disabled) {
   width: 46px;
   min-height: 84px;
   color: var(--color-primary-dark);
+  box-shadow: var(--shadow-control-hover);
 }
 
 .drawer-tab:focus-visible {

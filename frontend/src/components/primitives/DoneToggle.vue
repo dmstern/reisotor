@@ -107,7 +107,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   gap: 6px;
   min-height: 36px;
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   border: 1px solid var(--color-border);
   border-radius: 999px;
   corner-shape: round;

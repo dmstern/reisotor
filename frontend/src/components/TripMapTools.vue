@@ -280,7 +280,7 @@ const {
   border-radius: var(--radius-full);
   corner-shape: round;
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),

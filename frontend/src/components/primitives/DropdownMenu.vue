@@ -178,17 +178,20 @@ const portalStyle = computed(() => {
 }
 
 .dropdown__button.dropdown__field {
+  --control-grad-top: transparent;
+  --control-grad-bottom: transparent;
+  box-shadow: none;
+  background-color: var(--color-surface);
+  background-image: linear-gradient(
+    180deg,
+    var(--control-grad-top) 0%,
+    var(--control-grad-bottom) 100%
+  );
   padding: 9px 12px;
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 5%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
   color: var(--color-text);
-  box-shadow: var(--shadow-control);
   font-family: inherit;
   font-size: var(--font-size-md);
   font-weight: 500;
@@ -202,12 +205,7 @@ const portalStyle = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
+  transition: var(--transition-control);
 }
 
 .dropdown--sm .dropdown__button.dropdown__field,
@@ -228,13 +226,11 @@ const portalStyle = computed(() => {
 
 .dropdown__button.dropdown__field:hover:not(:disabled) {
   translate: 0 -1px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 8%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
+  background-color: var(--color-hover);
   border-color: var(--color-primary);
   box-shadow: var(--shadow-control-hover);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
 }
 
 .dropdown__button.dropdown__field:active:not(:disabled),
@@ -244,12 +240,16 @@ const portalStyle = computed(() => {
   translate: 0 0;
   border-color: var(--color-primary);
   box-shadow: var(--shadow-control-active);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
 }
 
 .dropdown__button.dropdown__field:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
 }
 
 .dropdown__button.dropdown__field:disabled {

@@ -349,7 +349,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   corner-shape: squircle;
   border: var(--ui-border-width, 1px) solid var(--color-border);
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   box-shadow: var(--shadow-control);
   color: var(--color-text);
   font-size: var(--font-size-sm);

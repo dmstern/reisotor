@@ -173,13 +173,15 @@ function onBlur(event: FocusEvent) {
     box-shadow 0.15s ease;
 }
 
-.input-container:hover {
+.input-container:hover:not(:focus-within) {
   border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-control-inset-hover);
 }
 
 .quick-add-row.expanded .input-container {
   background: var(--color-surface);
   border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-control-inset);
 }
 
 .input-container:focus-within,
@@ -188,7 +190,7 @@ function onBlur(event: FocusEvent) {
   border-color: var(--color-border-strong);
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
+  box-shadow: var(--focus-ring-halo), var(--shadow-control-inset);
 }
 
 .leading-icon {

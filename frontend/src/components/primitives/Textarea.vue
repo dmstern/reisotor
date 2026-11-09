@@ -78,7 +78,7 @@ function onInput(event: Event) {
   corner-shape: squircle;
   background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-control-inset);
+  box-shadow: none;
   font-family: inherit;
   font-size: var(--font-size-md);
   line-height: 1.5;
@@ -86,13 +86,10 @@ function onInput(event: Event) {
   min-width: 0;
   max-width: 100%;
   resize: vertical;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: var(--transition-control);
 }
 
-.textarea:hover:not(:disabled) {
+.textarea:hover:not(:disabled):not(:focus):not(:focus-visible) {
   border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
   box-shadow: var(--shadow-control-inset-hover);
 }
@@ -123,7 +120,9 @@ function onInput(event: Event) {
 
 .textarea--modified {
   border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 1px var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-control-inset);
 }
 
 .textarea--modified:hover:not(:disabled),
@@ -131,6 +130,6 @@ function onInput(event: Event) {
 .textarea--modified:focus-visible,
 .textarea--modified:active:not(:disabled) {
   outline-color: var(--color-accent);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-sm);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 </style>
