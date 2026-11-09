@@ -285,7 +285,7 @@ defineExpose({
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 /* display:flex + flex-shrink:0 + max-height (statt einfach nur overflow:hidden ohne Höhenangabe):
    innerhalb eines full-height-Modal-Formulars (Modal.vue, :slotted(form) { flex:1; overflow-y:auto })
    ist dieser Editor sonst selbst ein schrumpfbares Flex-Item - durch overflow:hidden bekommt es lt.
@@ -295,38 +295,13 @@ defineExpose({
    stattdessen die Gesamthöhe - der eigentliche Scrollbereich für lange Texte ist .content-scroll
    unten, nicht dieser äußere Rahmen. */
 .richtext-editor {
+  @include control-field-inset($focus-within: true);
   position: relative;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   max-height: min(55vh, 480px);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
   overflow: hidden;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.richtext-editor.is-focused,
-.richtext-editor:focus-within {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
-}
-
-.richtext-editor.is-invalid {
-  border-color: var(--color-danger, #ef4444);
-}
-
-.richtext-editor.is-invalid.is-focused,
-.richtext-editor.is-invalid:focus-within {
-  border-color: var(--color-danger, #ef4444);
-  outline: var(--focus-ring-width, 3px) solid var(--color-danger, #ef4444);
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 /* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort

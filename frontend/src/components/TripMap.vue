@@ -685,7 +685,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
 :deep(.leaflet-bar a) {
   background-color: var(--color-surface) !important;
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d) !important;
   color: var(--color-text) !important;
   border-bottom: 1px solid var(--color-border) !important;
   width: 44px !important;

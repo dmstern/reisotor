@@ -298,7 +298,7 @@ a.btn.is-loading {
 /* Secondary Button mit elegantem 3D-Look */
 .btn--secondary {
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   color: var(--color-primary);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   box-shadow: var(--shadow-control);
@@ -352,7 +352,7 @@ a.btn.is-loading {
 
 .btn--danger.btn--secondary {
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   color: var(--color-danger);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-danger);
   box-shadow: var(--shadow-control);
@@ -427,7 +427,7 @@ a.btn.is-loading {
 
 .btn--floating {
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   color: var(--color-text);
   border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
   box-shadow:
@@ -452,7 +452,7 @@ a.btn.is-loading {
 
 .btn--surface {
   background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
+  background-image: var(--gradient-control-3d);
   color: var(--color-text);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   box-shadow: var(--shadow-control);

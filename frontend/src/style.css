@@ -157,6 +157,30 @@
   src: url('/fonts/short-stack-400.woff2') format('woff2');
 }
 
+@property --control-grad-top {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --control-grad-bottom {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --surface-grad-top {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --surface-grad-bottom {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
 :root {
   color-scheme: light;
   interpolate-size: allow-keywords;
@@ -356,7 +380,34 @@
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
 
-  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701 & #729) */
+  --gradient-surface-top: rgba(255, 255, 255, 0.75);
+  --gradient-surface-bottom: rgba(43, 42, 40, 0.045);
+  --surface-grad-top: var(--gradient-surface-top);
+  --surface-grad-bottom: var(--gradient-surface-bottom);
+  --gradient-surface-3d: linear-gradient(
+    180deg,
+    var(--surface-grad-top) 0%,
+    var(--surface-grad-bottom) 100%
+  );
+  --gradient-surface-hover-top: rgba(255, 255, 255, 0.9);
+  --gradient-surface-hover-bottom: rgba(43, 42, 40, 0.065);
+  --gradient-surface-3d-hover: linear-gradient(
+    180deg,
+    var(--gradient-surface-hover-top) 0%,
+    var(--gradient-surface-hover-bottom) 100%
+  );
+  --gradient-control-top: rgba(255, 255, 255, 0.85);
+  --gradient-control-bottom: rgba(43, 42, 40, 0.055);
+  --gradient-control-3d: linear-gradient(
+    180deg,
+    var(--gradient-control-top) 0%,
+    var(--gradient-control-bottom) 100%
+  );
+  --transition-control:
+    border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease,
+    outline-color 0.15s ease, --control-grad-top 0.15s ease, --control-grad-bottom 0.15s ease,
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1), translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
   --shadow-control-highlight: rgba(255, 255, 255, 0.65);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
   --shadow-control:
@@ -556,7 +607,15 @@
     --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
 
-    /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+    /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701 & #729) */
+    --gradient-surface-top: rgba(255, 255, 255, 0.045);
+    --gradient-surface-bottom: rgba(0, 0, 0, 0.08);
+    --surface-grad-top: var(--gradient-surface-top);
+    --surface-grad-bottom: var(--gradient-surface-bottom);
+    --gradient-surface-hover-top: rgba(255, 255, 255, 0.08);
+    --gradient-surface-hover-bottom: rgba(0, 0, 0, 0.1);
+    --gradient-control-top: rgba(255, 255, 255, 0.08);
+    --gradient-control-bottom: rgba(0, 0, 0, 0.12);
     --shadow-control-highlight: rgba(255, 255, 255, 0.12);
     --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
     --shadow-control:
@@ -667,7 +726,15 @@
   --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-pill-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
 
-  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701 & #729) */
+  --gradient-surface-top: rgba(255, 255, 255, 0.045);
+  --gradient-surface-bottom: rgba(0, 0, 0, 0.08);
+  --surface-grad-top: var(--gradient-surface-top);
+  --surface-grad-bottom: var(--gradient-surface-bottom);
+  --gradient-surface-hover-top: rgba(255, 255, 255, 0.08);
+  --gradient-surface-hover-bottom: rgba(0, 0, 0, 0.1);
+  --gradient-control-top: rgba(255, 255, 255, 0.08);
+  --gradient-control-bottom: rgba(0, 0, 0, 0.12);
   --shadow-control-highlight: rgba(255, 255, 255, 0.12);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
   --shadow-control:
@@ -773,7 +840,15 @@
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);
 
-  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701) */
+  /* 3D-Effekte & Licht/Schatten für Interaktionselemente (Issue #701 & #729) */
+  --gradient-surface-top: rgba(255, 255, 255, 0.75);
+  --gradient-surface-bottom: rgba(43, 42, 40, 0.045);
+  --surface-grad-top: var(--gradient-surface-top);
+  --surface-grad-bottom: var(--gradient-surface-bottom);
+  --gradient-surface-hover-top: rgba(255, 255, 255, 0.9);
+  --gradient-surface-hover-bottom: rgba(43, 42, 40, 0.065);
+  --gradient-control-top: rgba(255, 255, 255, 0.85);
+  --gradient-control-bottom: rgba(43, 42, 40, 0.055);
   --shadow-control-highlight: rgba(255, 255, 255, 0.65);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
   --shadow-control:

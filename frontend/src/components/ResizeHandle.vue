@@ -44,28 +44,59 @@ defineEmits<{
   justify-content: center;
   cursor: col-resize;
   touch-action: none;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s ease;
+  border-radius: var(--radius-pill);
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .resize-grip:hover,
 .resize-grip:active,
 .resize-grip.resizing {
-  background: var(--color-hover);
+  background-color: color-mix(in srgb, var(--color-hover) 75%, transparent);
+  box-shadow: var(--shadow-inset);
 }
 
 .resize-grip::after {
   content: '';
-  width: 4px;
-  height: var(--input-default-height);
+  width: 6px;
+  height: var(--input-default-height, 46px);
+  box-sizing: border-box;
   border-radius: var(--radius-pill);
-  background: var(--color-border);
-  transition: background 0.15s ease;
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  background-image: linear-gradient(
+    90deg,
+    var(--gradient-control-top) 0%,
+    var(--gradient-control-bottom) 100%
+  );
+  box-shadow:
+    inset 1px 1px 0 var(--shadow-control-highlight),
+    var(--shadow-control);
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    height 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.resize-grip:hover::after,
+.resize-grip:hover::after {
+  height: 54px;
+  transform: scaleX(1.12);
+  background-color: var(--color-primary-tint);
+  border-color: var(--color-primary);
+  box-shadow:
+    inset 1px 1px 0 var(--shadow-control-highlight-strong),
+    var(--shadow-control-hover);
+}
+
 .resize-grip:active::after,
 .resize-grip.resizing::after {
-  background: var(--color-primary);
+  height: 50px;
+  transform: scaleX(1.05) scaleY(0.96);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-control-active);
 }
 </style>

@@ -2,6 +2,7 @@
 import { ref, computed, useId } from 'vue';
 import { useThemeStore, THEME_MODE_OPTIONS, type ThemeMode } from '../stores/theme';
 import AppIcon from './AppIcon.vue';
+import DropdownMenu from './primitives/DropdownMenu.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -9,7 +10,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 // icon: kompakter runder Button wie der bisherige Toggle (AppHeader.vue, LoginView.vue) - das
 // eigentliche <select> liegt unsichtbar über dem Icon und fängt den Klick ab, damit sich der
 // gewohnte Header-Platzbedarf nicht ändert. block: modernes, taktiles Dropdown im
-// Reisotor-Design-System (SettingsView.vue) mit Vektor-Icons, animiertem Pfeil und PickerMenu.
+// Reisotor-Design-System (SettingsView.vue) via DropdownMenu-Primitive und PickerMenu.
 withDefaults(defineProps<{ variant?: 'icon' | 'block' }>(), { variant: 'icon' });
 
 const theme = useThemeStore();
@@ -47,62 +48,55 @@ function selectMode(val: ThemeMode) {
       <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
       <label :for="selectId" class="block-label">Erscheinungsbild</label>
       <div class="theme-dropdown-wrap" :class="{ 'is-open': isOpen }">
-        <button
-          type="button"
-          class="theme-dropdown-trigger"
-          :class="{ 'is-open': isOpen }"
-          :aria-expanded="isOpen"
-          aria-haspopup="listbox"
+        <DropdownMenu
+          block
+          size="md"
+          :open="isOpen"
           aria-label="Erscheinungsbild auswählen"
-          @click="isOpen = !isOpen"
+          aria-haspopup="listbox"
+          trigger-class="theme-dropdown-trigger"
+          @toggle="isOpen = !isOpen"
           @keydown.down.prevent="isOpen = true"
           @keydown.up.prevent="isOpen = true"
         >
-          <div class="theme-trigger-content">
-            <AppIcon
-              :icon="currentOption.tabler"
-              group="navigation"
-              :active="true"
-              :size="18"
-              class="theme-trigger-icon"
-              aria-hidden="true"
-            />
-            <span class="theme-trigger-label">{{ currentOption.label }}</span>
-          </div>
-          <AppIcon
-            :icon="ACTION_ICONS.chevronDown"
-            group="actions"
-            :size="14"
-            class="theme-trigger-caret"
-            :class="{ 'is-open': isOpen }"
-            aria-hidden="true"
-          />
-        </button>
+          <template #label>
+            <div class="theme-trigger-content">
+              <AppIcon
+                :icon="currentOption.tabler"
+                group="navigation"
+                :active="true"
+                :size="18"
+                class="theme-trigger-icon"
+                aria-hidden="true"
+              />
+              <span class="theme-trigger-label">{{ currentOption.label }}</span>
+            </div>
+          </template>
 
-        <PickerMenu
-          v-if="isOpen"
-          position="absolute"
-          origin="top-left"
-          class="theme-picker-menu"
-          role="listbox"
-          @close="isOpen = false"
-        >
-          <DropdownMenuItem
-            v-for="option in THEME_MODE_OPTIONS"
-            :key="option.value"
-            :label="option.label"
-            :icon="option.tabler"
-            icon-group="navigation"
-            :icon-size="16"
-            :active="theme.mode === option.value"
-            :trailing-icon="theme.mode === option.value ? ACTION_ICONS.done : undefined"
-            trailing-icon-group="actions"
-            :trailing-icon-size="14"
-            role="option"
-            :aria-selected="theme.mode === option.value"
-            @click="selectMode(option.value)"
-          />
-        </PickerMenu>
+          <PickerMenu
+            position="absolute"
+            origin="top-left"
+            class="theme-picker-menu"
+            role="listbox"
+            @close="isOpen = false"
+          >
+            <DropdownMenuItem
+              v-for="option in THEME_MODE_OPTIONS"
+              :key="option.value"
+              :label="option.label"
+              :icon="option.tabler"
+              icon-group="navigation"
+              :icon-size="16"
+              :active="theme.mode === option.value"
+              :trailing-icon="theme.mode === option.value ? ACTION_ICONS.done : undefined"
+              trailing-icon-group="actions"
+              :trailing-icon-size="14"
+              role="option"
+              :aria-selected="theme.mode === option.value"
+              @click="selectMode(option.value)"
+            />
+          </PickerMenu>
+        </DropdownMenu>
 
         <!-- Barrierefreiheits- und Test-Kompatibilität (synchrone Bindung) -->
         <select
@@ -181,64 +175,6 @@ function selectMode(val: ThemeMode) {
   z-index: var(--z-popover, 1100);
 }
 
-.theme-dropdown-trigger {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 0 var(--space-3);
-  height: var(--input-height, var(--input-default-height));
-  min-height: var(--input-height, var(--input-default-height));
-  border: var(--ui-border-width, 1px) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 5%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
-  color: var(--color-text);
-  box-shadow: var(--shadow-control);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  box-sizing: border-box;
-  user-select: none;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
-}
-
-.theme-dropdown-trigger:hover:not(:focus-visible):not(.is-open) {
-  translate: 0 -1px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 8%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-control-hover);
-}
-
-.theme-dropdown-trigger:focus-visible,
-.theme-dropdown-trigger.is-open {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  border-color: var(--color-primary);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
-}
-
-.theme-dropdown-trigger:active {
-  transform: translateY(1px) scale(0.99);
-  translate: 0 0;
-  box-shadow: var(--shadow-control-active);
-}
-
 .theme-trigger-content {
   display: flex;
   align-items: center;
@@ -256,24 +192,6 @@ function selectMode(val: ThemeMode) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.theme-trigger-caret {
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  transition:
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    color 0.15s ease;
-  margin-left: auto;
-}
-
-.theme-dropdown-trigger:hover .theme-trigger-caret,
-.theme-dropdown-trigger.is-open .theme-trigger-caret {
-  color: var(--color-primary);
-}
-
-.theme-trigger-caret.is-open {
-  transform: rotate(180deg);
 }
 
 .theme-picker-menu {

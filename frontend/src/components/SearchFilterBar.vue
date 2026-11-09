@@ -3,6 +3,7 @@ import { ref, computed, type ComponentPublicInstance } from 'vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
+import Input from './primitives/Input.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -45,7 +46,7 @@ const emit = defineEmits<{
   (e: 'update:tourRoleFilter', value: TourRoleFilterOption[]): void;
 }>();
 
-const searchInputRef = ref<HTMLInputElement | null>(null);
+const searchInputRef = ref<InstanceType<typeof Input> | null>(null);
 
 function focusInput() {
   searchInputRef.value?.focus();
@@ -147,14 +148,15 @@ function clearFilters() {
     <!-- Suchleiste -->
     <div class="search-input-wrapper">
       <AppIcon :icon="ACTION_ICONS.search" :size="15" group="actions" class="search-icon" />
-      <input
+      <Input
         ref="searchInputRef"
-        :value="searchQuery"
+        :model-value="searchQuery"
         type="search"
+        shape="pill"
         class="search-input"
         :placeholder="searchPlaceholder"
         aria-label="Suchen"
-        @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:searchQuery', $event)"
       />
       <button
         v-if="searchQuery"
@@ -337,41 +339,9 @@ function clearFilters() {
 
 .search-input {
   width: 100%;
-  min-width: 0;
-  height: var(--input-height, 46px);
-  min-height: var(--input-height, 46px);
   padding: 0 36px 0 38px;
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  background: var(--color-surface);
-  border: max(1.5px, var(--ui-border-width, 1.5px)) solid var(--color-border-strong);
-  color: var(--color-text);
   font-size: var(--font-size-sm);
   text-overflow: ellipsis;
-  box-shadow: none;
-  box-sizing: border-box;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.search-input::-webkit-search-decoration,
-.search-input::-webkit-search-cancel-button,
-.search-input::-webkit-search-results-button,
-.search-input::-webkit-search-results-decoration {
-  -webkit-appearance: none;
-  display: none;
-}
-
-.search-input:hover {
-  box-shadow: var(--shadow-sm);
-}
-
-.search-input:focus,
-.search-input:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .search-clear-btn {

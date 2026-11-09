@@ -283,7 +283,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   </Teleport>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .unplanned-popover-content,
 .dates-popover-content {
   display: flex;
@@ -338,6 +338,7 @@ function handleItemJump(item: ScheduledSpotItem) {
 }
 
 .date-check-item {
+  @include control-3d-raised;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -348,9 +349,6 @@ function handleItemJump(item: ScheduledSpotItem) {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   border: var(--ui-border-width, 1px) solid var(--color-border);
-  background-color: var(--color-surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(0, 0, 0, 0.02) 100%);
-  box-shadow: var(--shadow-control);
   color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -358,36 +356,19 @@ function handleItemJump(item: ScheduledSpotItem) {
   text-align: left;
   user-select: none;
   width: auto;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
 .date-check-item:hover {
   background-color: var(--color-hover);
   border-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-control-hover);
-  translate: 0 -1px;
 }
 
 .date-check-item:active {
-  transform: translateY(1px) scale(0.985);
-  translate: 0 0;
   background-color: var(--color-hover);
-  box-shadow: var(--shadow-control-active);
 }
 
 .date-check-item.checked {
   background-color: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
   box-shadow: var(--shadow-control);
@@ -397,14 +378,11 @@ function handleItemJump(item: ScheduledSpotItem) {
   background-color: color-mix(in srgb, var(--color-primary-tint) 80%, var(--color-surface));
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-control-hover);
-  translate: 0 -1px;
 }
 
 .date-check-item.checked:active {
   background-color: color-mix(in srgb, var(--color-primary-tint) 55%, var(--color-surface));
   box-shadow: var(--shadow-control-active);
-  transform: translateY(1px) scale(0.985);
-  translate: 0 0;
 }
 
 .date-check-info {

@@ -303,11 +303,7 @@ const isNewHighlight = computed(() => {
 .card {
   position: relative;
   background-color: var(--color-surface);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background-image: var(--gradient-surface-3d);
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -316,6 +312,8 @@ const isNewHighlight = computed(() => {
   transition:
     padding 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     background-color 0.2s ease,
+    --surface-grad-top 0.2s ease,
+    --surface-grad-bottom 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -377,6 +375,7 @@ const isNewHighlight = computed(() => {
 }
 
 .card--flat {
+  background-image: none;
   box-shadow: none;
   border-color: var(--color-border);
 }
@@ -386,8 +385,8 @@ const isNewHighlight = computed(() => {
 }
 
 .card--polaroid {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%), #ffffff;
+  background-color: #ffffff;
+  background-image: var(--gradient-surface-3d);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -399,7 +398,9 @@ const isNewHighlight = computed(() => {
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.2s ease,
-    background 0.2s ease;
+    background-color 0.2s ease,
+    --surface-grad-top 0.2s ease,
+    --surface-grad-bottom 0.2s ease;
 }
 
 /* Subtile Fächer-Drehung für Geschwister-Polaroids ohne explizites --card-rotate (z. B. in Storybook/Listen) */
@@ -422,15 +423,16 @@ const isNewHighlight = computed(() => {
 .card--polaroid:not(.card--expanded):not(.expanded):hover {
   transform: translateY(-4px) rotate(calc(var(--card-rotate, -0.75deg) * 0.4)) scale(1.02);
   box-shadow: var(--shadow-card-polaroid-hover);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%), #ffffff;
+  --surface-grad-top: var(--gradient-surface-hover-top);
+  --surface-grad-bottom: var(--gradient-surface-hover-bottom);
   z-index: 5;
 }
 
 .card--polaroid:not(.card--expanded):not(.expanded):active {
   transform: translateY(1px) rotate(var(--card-rotate, -0.75deg)) scale(0.985);
   box-shadow: var(--shadow-card-polaroid-active);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0) 100%), #ffffff;
+  --surface-grad-top: rgba(0, 0, 0, 0.04);
+  --surface-grad-bottom: transparent;
 }
 
 .card--polaroid.card--expanded,
@@ -439,55 +441,56 @@ const isNewHighlight = computed(() => {
 }
 
 :root[data-theme='dark'] .card--polaroid {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%), #2a2825;
+  background-color: #2a2825;
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: var(--shadow-card-polaroid);
 }
 
 :root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):hover {
   box-shadow: var(--shadow-card-polaroid-hover);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%), #2e2b28;
+  background-color: #2e2b28;
 }
 
 :root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):active {
   box-shadow: var(--shadow-card-polaroid-active);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0) 100%), #252320;
+  --surface-grad-top: rgba(0, 0, 0, 0.06);
+  --surface-grad-bottom: transparent;
+  background-color: #252320;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .card--polaroid {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%), #2a2825;
+    background-color: #2a2825;
     border-color: rgba(255, 255, 255, 0.12);
     box-shadow: var(--shadow-card-polaroid);
   }
 
   :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):hover {
     box-shadow: var(--shadow-card-polaroid-hover);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%), #2e2b28;
+    background-color: #2e2b28;
   }
 
   :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):active {
     box-shadow: var(--shadow-card-polaroid-active);
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0) 100%), #252320;
+    --surface-grad-top: rgba(0, 0, 0, 0.06);
+    --surface-grad-bottom: transparent;
+    background-color: #252320;
   }
 }
 
 .card--tile {
   position: relative;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 100%),
-    var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
     0 2px 6px var(--tile-shadow, var(--shadow-sm));
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.2s ease;
+    background-color 0.2s ease,
+    --surface-grad-top 0.2s ease,
+    --surface-grad-bottom 0.2s ease;
   margin-top: 18px;
 }
 
@@ -496,9 +499,8 @@ const isNewHighlight = computed(() => {
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight-strong),
     0 10px 28px var(--tile-shadow, var(--shadow-md));
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%),
-    var(--color-surface);
+  --surface-grad-top: var(--gradient-surface-hover-top);
+  --surface-grad-bottom: var(--gradient-surface-hover-bottom);
   z-index: 5;
 }
 

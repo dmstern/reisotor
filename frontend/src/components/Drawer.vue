@@ -299,6 +299,7 @@ onBeforeUnmount(() => {
    Schubladen-Inhalte), diese mobile Darstellung bleibt hier trotzdem als generisches, für sich
    responsives Verhalten der Komponente erhalten. */
 .drawer-tab {
+  @include control-3d-raised;
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
@@ -308,8 +309,6 @@ onBeforeUnmount(() => {
   padding: var(--space-2) 3px;
   border: 1px solid var(--color-border);
   corner-shape: squircle;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -322,13 +321,24 @@ onBeforeUnmount(() => {
     right 0.25s ease,
     width 0.15s ease,
     min-height 0.15s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
-.drawer-tab:hover {
+.drawer-tab:hover:not(:disabled) {
   width: 46px;
   min-height: 84px;
   color: var(--color-primary-dark);
+  box-shadow: var(--shadow-control-hover);
+  translate: 0 0;
+}
+
+.drawer-tab:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.985);
+  translate: 0 0;
+  box-shadow: var(--shadow-control-active);
 }
 
 .drawer-tab:focus-visible {

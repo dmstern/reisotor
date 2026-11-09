@@ -188,11 +188,8 @@ watch(
   left: 4px;
   bottom: 4px;
   width: calc((100% - 8px - (var(--count) - 1) * 2px) / var(--count));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 7%, var(--color-surface)) 0%,
-    var(--color-surface) 100%
-  );
+  background-color: var(--color-surface);
+  background-image: var(--gradient-control-3d);
   border-radius: var(--radius-pill);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
