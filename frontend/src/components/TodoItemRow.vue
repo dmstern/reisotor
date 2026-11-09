@@ -229,7 +229,7 @@ function userName(id: number | null | undefined) {
   min-height: 34px;
   border-radius: var(--radius-full);
   background: var(--color-hover);
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-strong);
   display: inline-flex;
   align-items: center;
   justify-content: center;
