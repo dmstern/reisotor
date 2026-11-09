@@ -126,6 +126,7 @@ const portalStyle = computed(() => {
         variant="ghost"
         :size="size"
         class="dropdown__button dropdown__field"
+        :class="{ 'dropdown__button--active': open }"
         :disabled="disabled"
         :aria-expanded="open"
         @click="emit('toggle')"
@@ -224,7 +225,9 @@ const portalStyle = computed(() => {
   font-size: var(--font-size-md);
 }
 
-.dropdown__button.dropdown__field:hover:not(:disabled) {
+.dropdown__button.dropdown__field:hover:not(:disabled):not(:focus-visible):not(
+    .dropdown__button--active
+  ) {
   translate: 0 -1px;
   background-color: var(--color-hover);
   border-color: var(--color-primary);
@@ -235,7 +238,8 @@ const portalStyle = computed(() => {
 
 .dropdown__button.dropdown__field:active:not(:disabled),
 .dropdown--open .dropdown__button.dropdown__field,
-.dropdown__button.dropdown__field[aria-expanded='true'] {
+.dropdown__button.dropdown__field[aria-expanded='true'],
+.dropdown__button.dropdown__field.dropdown__button--active {
   transform: translateY(1px);
   translate: 0 0;
   border-color: var(--color-primary);

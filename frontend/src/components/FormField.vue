@@ -137,12 +137,13 @@ const id = computed(() => props.id || autoId);
   flex-shrink: 0;
 }
 
-.form-field.is-modified :deep(.input),
-.form-field.is-modified :deep(.select),
-.form-field.is-modified :deep(.textarea),
-.form-field.is-modified :deep(input:not([type='checkbox']):not([type='radio'])),
-.form-field.is-modified :deep(select),
-.form-field.is-modified :deep(textarea) {
+.form-field.is-modified :deep(.input:not(:focus):not(:focus-visible)),
+.form-field.is-modified :deep(.select:not(:focus):not(:focus-visible)),
+.form-field.is-modified :deep(.textarea:not(:focus):not(:focus-visible)),
+.form-field.is-modified
+  :deep(input:not([type='checkbox']):not([type='radio']):not(:focus):not(:focus-visible)),
+.form-field.is-modified :deep(select:not(:focus):not(:focus-visible)),
+.form-field.is-modified :deep(textarea:not(:focus):not(:focus-visible)) {
   border-color: var(--color-accent) !important;
   box-shadow: 0 0 0 1px var(--color-accent);
 }

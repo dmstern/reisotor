@@ -381,13 +381,20 @@ onUnmounted(() => {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-bg);
+  box-shadow: none;
+  transition: var(--transition-control);
+}
+
+.create-tour-input:hover:not(:focus):not(:focus-visible) {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border-strong));
+  box-shadow: var(--shadow-control-inset-hover);
 }
 
 .create-tour-input:focus,
 .create-tour-input:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
 .create-btn {

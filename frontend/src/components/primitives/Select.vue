@@ -155,20 +155,39 @@ function onChange(event: Event) {
   border-color: var(--color-danger);
 }
 
+.select--invalid:hover:not(:disabled):not(:focus):not(:focus-visible) {
+  border-color: var(--color-danger);
+}
+
 .select--invalid:focus,
-.select--invalid:focus-visible {
+.select--invalid:focus-visible,
+.select--invalid:active:not(:disabled) {
+  border-color: var(--color-border-strong);
   outline-color: var(--color-danger);
 }
 
 .select--modified {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 1px var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-control);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
 }
 
-.select--modified:hover:not(:disabled),
+.select--modified:hover:not(:disabled):not(:focus):not(:focus-visible) {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-control-hover);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
+}
+
 .select--modified:focus,
 .select--modified:focus-visible,
 .select--modified:active:not(:disabled) {
+  border-color: var(--color-border-strong) !important;
   outline-color: var(--color-accent);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
   --control-grad-top: var(--gradient-control-top);

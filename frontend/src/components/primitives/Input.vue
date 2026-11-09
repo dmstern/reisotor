@@ -159,22 +159,35 @@ function onInput(event: Event) {
   border-color: var(--color-danger);
 }
 
+.input--invalid:hover:not(:disabled):not(:focus):not(:focus-visible) {
+  border-color: var(--color-danger);
+}
+
 .input--invalid:focus,
-.input--invalid:focus-visible {
+.input--invalid:focus-visible,
+.input--invalid:active:not(:disabled) {
+  border-color: var(--color-border-strong);
   outline-color: var(--color-danger);
 }
 
 .input--modified {
-  border-color: var(--color-accent) !important;
+  border-color: var(--color-accent);
   box-shadow:
     0 0 0 1px var(--color-accent),
     var(--shadow-control-inset);
 }
 
-.input--modified:hover:not(:disabled),
+.input--modified:hover:not(:disabled):not(:focus):not(:focus-visible) {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    var(--shadow-control-inset-hover);
+}
+
 .input--modified:focus,
 .input--modified:focus-visible,
 .input--modified:active:not(:disabled) {
+  border-color: var(--color-border-strong) !important;
   outline-color: var(--color-accent);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }

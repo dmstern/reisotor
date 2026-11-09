@@ -613,6 +613,13 @@ defineOptions({
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
+.combobox :deep(.combobox-input.input--invalid:focus),
+.combobox :deep(.combobox-input.input--invalid:focus-visible),
+.combobox:focus-within :deep(.combobox-input.input--invalid) {
+  border-color: var(--color-border-strong);
+  outline-color: var(--color-danger);
+}
+
 .combobox--sm :deep(.combobox-input),
 .combobox--sm :deep(input) {
   min-height: var(--input-height-sm, 38px);

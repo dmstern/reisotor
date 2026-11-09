@@ -383,11 +383,6 @@ function handleItemJump(item: ScheduledSpotItem) {
 
 .date-check-item.checked {
   background-color: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
   box-shadow: var(--shadow-control);

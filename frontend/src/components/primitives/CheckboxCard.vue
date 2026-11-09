@@ -170,11 +170,6 @@ function onChange(event: Event) {
 
 .checkbox-card--card.is-checked {
   background-color: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
 }
 
@@ -219,11 +214,6 @@ function onChange(event: Event) {
 .checkbox-card--muted.is-checked,
 .checkbox-card--popover.is-checked {
   background-color: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
   box-shadow: var(--shadow-control);
 }

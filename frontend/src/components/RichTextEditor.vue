@@ -324,12 +324,16 @@ defineExpose({
   border-color: var(--color-danger, #ef4444);
 }
 
+.richtext-editor.is-invalid:hover:not(.is-focused):not(:focus-within) {
+  border-color: var(--color-danger, #ef4444);
+}
+
 .richtext-editor.is-invalid.is-focused,
 .richtext-editor.is-invalid:focus-within {
-  border-color: var(--color-danger, #ef4444);
+  border-color: var(--color-border-strong);
   outline: var(--focus-ring-width, 3px) solid var(--color-danger, #ef4444);
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
 }
 
 /* Desktop hat spürbar mehr Platz als das mobile 55vh/480px-Limit hergibt (#88) - Editor darf dort
