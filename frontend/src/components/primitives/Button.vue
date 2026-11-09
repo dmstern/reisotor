@@ -425,6 +425,18 @@ a.btn.is-loading {
   background: var(--color-hover);
 }
 
+/* Ghost + Circle: erst bei Hover/Active entsteht der 3D-Look (Rahmen, Verlauf, Schatten) */
+.btn--ghost.btn--circle:hover:not(:disabled) {
+  background-color: var(--color-hover);
+  background-image: var(--gradient-control-3d);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-control-hover);
+}
+
+.btn--ghost.btn--circle:active:not(:disabled) {
+  box-shadow: var(--shadow-control-active);
+}
+
 .btn--floating {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);

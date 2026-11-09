@@ -164,7 +164,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await expect(group.locator('.tour-partial-filter-hint')).toHaveCount(0);
 
     // 1. Sucheingabe: Nach spotATitle filtern -> spotB wird ausgeblendet
-    const searchInput = page.getByPlaceholder('Spots oder Touren suchen...');
+    const searchInput = page.getByPlaceholder('Touren suchen...');
     await searchInput.fill(spotATitle);
 
     await expect(group.locator('.spot-card', { hasText: spotATitle })).toBeVisible();

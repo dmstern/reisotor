@@ -269,6 +269,7 @@ const cardRotation = computed(() => {
                 class="spot-destination-toggle"
                 :class="{ 'is-active': excursionContext.isDestination }"
                 :active="excursionContext.isDestination"
+                :aria-pressed="excursionContext.isDestination"
                 title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
                 @click.stop="$emit('toggle-destination')"
               >

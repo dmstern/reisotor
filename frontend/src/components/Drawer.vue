@@ -219,7 +219,8 @@ onBeforeUnmount(() => {
       <div v-if="open" class="drawer-header-actions">
         <IconButton
           class="maximize-btn"
-          variant="secondary"
+          variant="ghost"
+          shape="circle"
           size="sm"
           :icon="ACTION_ICONS.minimize"
           v-if="maximized"
@@ -230,7 +231,8 @@ onBeforeUnmount(() => {
         />
         <IconButton
           class="maximize-btn"
-          variant="secondary"
+          variant="ghost"
+          shape="circle"
           size="sm"
           :icon="ACTION_ICONS.maximize"
           v-else
@@ -241,7 +243,8 @@ onBeforeUnmount(() => {
         />
         <IconButton
           class="close-drawer-btn"
-          variant="secondary"
+          variant="ghost"
+          shape="circle"
           size="sm"
           :icon="ACTION_ICONS.close"
           :aria-label="'Schließen: ' + label"
