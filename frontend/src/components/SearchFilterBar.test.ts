@@ -45,6 +45,7 @@ describe('SearchFilterBar', () => {
 
     const buttons = container.querySelectorAll('.search-filter-bar button.bar-icon-btn');
     expect(buttons.length).toBe(1);
+    expect(buttons[0].querySelector('.tabler-icon-adjustments')).not.toBeNull();
     cleanUp();
   });
 
