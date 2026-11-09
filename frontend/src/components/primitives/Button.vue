@@ -18,9 +18,8 @@ const _props = withDefaults(
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
      * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
-     * - 'surface': Runder oder Squircle-Button mit Oberflächen-Hintergrund (--color-surface) und dezentem Rahmen
      */
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating' | 'surface';
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
@@ -464,29 +463,10 @@ a.btn.is-loading {
     var(--shadow-sm);
 }
 
-.btn--surface {
-  background-color: var(--color-surface);
-  background-image: var(--gradient-control-3d);
-  color: var(--color-text);
-  border: var(--border-width) solid transparent;
-  box-shadow: var(--shadow-control);
-}
-
-.btn--surface:hover:not(:disabled) {
-  background-color: var(--color-hover);
-  box-shadow: var(--shadow-control-hover);
-}
-
-.btn--surface:active:not(:disabled) {
-  background-color: var(--color-hover);
-  box-shadow: var(--shadow-control-active);
-}
-
 /* Aktiver Zustand für alle Button-Varianten (#audit) */
 .btn.is-active,
 .btn--secondary.is-active,
-.btn--ghost.is-active,
-.btn--surface.is-active {
+.btn--ghost.is-active {
   background: var(--color-primary-tint);
   border: 1.5px solid var(--color-primary);
   color: var(--color-primary-dark);
@@ -497,8 +477,7 @@ a.btn.is-loading {
 
 .btn.is-active:hover:not(:disabled),
 .btn--secondary.is-active:hover:not(:disabled),
-.btn--ghost.is-active:hover:not(:disabled),
-.btn--surface.is-active:hover:not(:disabled) {
+.btn--ghost.is-active:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
   border-color: var(--color-primary-dark);
   box-shadow: 0 0 0 1px var(--color-primary-dark);

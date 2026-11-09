@@ -134,7 +134,7 @@ const {
               <EditButton
                 small
                 shape="circle"
-                variant="surface"
+                variant="secondary"
                 class="tour-edit-btn"
                 @click="emit('edit', excursion)"
               />

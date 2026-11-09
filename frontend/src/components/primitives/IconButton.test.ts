@@ -35,17 +35,6 @@ describe('IconButton primitive', () => {
     expect(html).toContain('btn--circle');
   });
 
-  it('renders with circle shape and surface variant when specified', async () => {
-    const app = createTestApp(IconButton, {
-      icon: ACTION_ICONS.edit,
-      shape: 'circle',
-      variant: 'surface',
-    });
-    const html = await renderToString(app);
-    expect(html).toContain('btn--circle');
-    expect(html).toContain('btn--surface');
-  });
-
   it('preserves additional classes passed to IconButton', async () => {
     const app = createTestApp(IconButton, { icon: ACTION_ICONS.close, class: 'close-btn' });
     const html = await renderToString(app);

@@ -186,7 +186,7 @@ const cardRotation = computed(() => {
           <EditButton
             small
             shape="circle"
-            variant="surface"
+            variant="secondary"
             class="spot-edit-btn"
             @click="emit('edit', spot)"
           />
