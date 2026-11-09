@@ -493,7 +493,12 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal, 1000);
-  padding: var(--space-4);
+  /* Safe-Area-Insets (PWA auf iOS mit Dynamic Island / Notch): Ausreichend Abstand reservieren,
+     damit Dialog-Header und Schließen-Button nicht im unscharfen Statusleisten-Nebel verschwinden. */
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px))
+    calc(var(--space-4) + env(safe-area-inset-right, 0px))
+    calc(var(--space-4) + env(safe-area-inset-bottom, 0px))
+    calc(var(--space-4) + env(safe-area-inset-left, 0px));
 }
 
 .modal-fade-enter-active,
@@ -531,7 +536,8 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   padding: var(--space-4);
   max-width: 480px;
   width: 100%;
-  max-height: 90vh;
+  max-height: min(90vh, 100%);
+  max-height: min(90dvh, 100%);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -543,7 +549,10 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 @include media-down('tablet-sm') {
   .overlay {
-    padding: 12px;
+    padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
   }
 
   .modal {

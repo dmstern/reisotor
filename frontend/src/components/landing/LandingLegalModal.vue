@@ -157,13 +157,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-4);
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px))
+    calc(var(--space-4) + env(safe-area-inset-right, 0px))
+    calc(var(--space-4) + env(safe-area-inset-bottom, 0px))
+    calc(var(--space-4) + env(safe-area-inset-left, 0px));
   overflow-y: auto;
 }
 
 @media (max-width: 600px) {
   .landing-legal-overlay {
-    padding: var(--space-2);
+    padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+    padding-right: calc(var(--space-2) + env(safe-area-inset-right, 0px));
+    padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(var(--space-2) + env(safe-area-inset-left, 0px));
   }
 }
 
@@ -175,7 +181,8 @@ onUnmounted(() => {
   box-shadow: var(--shadow-lg);
   max-width: 860px;
   width: 100%;
-  max-height: 88vh;
+  max-height: min(88vh, 100%);
+  max-height: min(88dvh, 100%);
   display: flex;
   flex-direction: column;
   position: relative;
