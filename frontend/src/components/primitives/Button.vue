@@ -193,6 +193,8 @@ provide(
   font-weight: 600;
   border-radius: var(--radius-btn-squircle, var(--radius-btn, 12px));
   corner-shape: squircle;
+  /* Verlauf bis unter den (transparenten) Rand ziehen, sonst kachelt er dort und zeigt unten einen hellen Streifen */
+  background-origin: border-box;
   cursor: pointer;
   box-shadow: none;
   transition:
@@ -380,6 +382,7 @@ a.btn.is-loading {
   border: 1.5px solid transparent;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  background-origin: border-box;
   background-color: var(--color-primary-tint);
   background-image: linear-gradient(
     180deg,
