@@ -143,11 +143,12 @@ function onChange(event: Event) {
   padding: var(--space-3) var(--space-4);
   margin: var(--space-3) 0;
   background-color: var(--color-surface);
-  background-image: var(--gradient-control-3d);
+  /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
+  background-image: none;
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-card-interactive);
+  box-shadow: none;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -155,7 +156,9 @@ function onChange(event: Event) {
     background-color 0.2s ease;
 }
 
-.checkbox-card--card:hover:not(.is-disabled) {
+.checkbox-card--card:hover:not(.is-disabled),
+.checkbox-card--card:focus-within:not(.is-disabled) {
+  background-image: var(--gradient-control-3d);
   background-color: color-mix(in srgb, white 2.5%, var(--color-surface));
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-card-hover);
@@ -184,11 +187,12 @@ function onChange(event: Event) {
   padding: var(--space-3);
   margin: var(--space-2) 0;
   background-color: var(--color-hover);
-  background-image: var(--gradient-control-3d);
+  /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
+  background-image: none;
   border: var(--ui-border-width, 1px) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-control);
+  box-shadow: none;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -197,7 +201,10 @@ function onChange(event: Event) {
 }
 
 .checkbox-card--muted:hover:not(.is-disabled),
-.checkbox-card--popover:hover:not(.is-disabled) {
+.checkbox-card--popover:hover:not(.is-disabled),
+.checkbox-card--muted:focus-within:not(.is-disabled),
+.checkbox-card--popover:focus-within:not(.is-disabled) {
+  background-image: var(--gradient-control-3d);
   background-color: color-mix(in srgb, var(--color-primary-tint) 20%, var(--color-hover));
   border-color: var(--color-primary);
   box-shadow: var(--shadow-control-hover);
@@ -215,7 +222,7 @@ function onChange(event: Event) {
 .checkbox-card--popover.is-checked {
   background-color: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
-  box-shadow: var(--shadow-control);
+  box-shadow: none;
 }
 
 .checkbox-card--muted.is-checked:hover:not(.is-disabled),
