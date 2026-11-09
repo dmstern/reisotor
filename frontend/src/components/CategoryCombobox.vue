@@ -89,6 +89,7 @@ const computedPlaceholder = computed(() => {
 defineExpose({
   close: () => comboboxRef.value?.close(),
   focus: () => comboboxRef.value?.focus(),
+  clear: () => comboboxRef.value?.clear(),
 });
 
 defineOptions({

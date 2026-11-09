@@ -61,6 +61,8 @@ const menuRef = ref<HTMLElement | null>(null);
 const highlightedIndex = ref(-1);
 const filterText = ref<string | null>(null);
 
+const hasClearButton = computed(() => !props.disabled && Boolean(props.modelValue));
+
 const menuCoords = ref<{
   top?: string;
   bottom?: string;
@@ -186,24 +188,14 @@ watch(open, (isOpen) => {
   }
 });
 
-const isExactOptionMatch = computed(() => {
-  const current = (props.modelValue ?? '').trim().toLowerCase();
-
-  if (!current) {
-    return false;
-  }
-
-  return props.options.some((option) => option.toLowerCase() === current);
-});
-
 const filteredOptions = computed(() => {
-  // Wenn der Nutzer noch keinen eigenen Suchtext getippt hat und der aktuelle Wert einer Option entspricht:
-  // alle Optionen anzeigen, damit bequem eine andere ausgewählt werden kann.
-  if (filterText.value === null && isExactOptionMatch.value) {
+  // Wenn der Nutzer noch keinen eigenen Suchtext getippt hat:
+  // immer alle Optionen anzeigen, damit bequem per Klick eine andere gewählt werden kann.
+  if (filterText.value === null) {
     return props.options;
   }
 
-  const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+  const query = filterText.value.trim().toLowerCase();
 
   if (!query) {
     return props.options;
@@ -228,22 +220,28 @@ function scrollHighlightedIntoView() {
 }
 
 function initHighlightedIndex() {
-  if (filteredOptions.value.length === 1) {
+  const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+  const idx = filteredOptions.value.findIndex((option) => option.toLowerCase() === query);
+
+  if (idx >= 0) {
+    highlightedIndex.value = idx;
+  } else if (filteredOptions.value.length === 1 && filterText.value !== null) {
     highlightedIndex.value = 0;
   } else {
-    const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
-    const idx = filteredOptions.value.findIndex((option) => option.toLowerCase() === query);
-    highlightedIndex.value = idx >= 0 ? idx : -1;
+    highlightedIndex.value = -1;
   }
 }
 
 watch(filteredOptions, (newOpts) => {
-  if (newOpts.length === 1) {
+  const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
+  const idx = newOpts.findIndex((option) => option.toLowerCase() === query);
+
+  if (idx >= 0) {
+    highlightedIndex.value = idx;
+  } else if (newOpts.length === 1 && filterText.value !== null) {
     highlightedIndex.value = 0;
   } else {
-    const query = (filterText.value ?? props.modelValue ?? '').trim().toLowerCase();
-    const idx = newOpts.findIndex((option) => option.toLowerCase() === query);
-    highlightedIndex.value = idx >= 0 ? idx : -1;
+    highlightedIndex.value = -1;
   }
 
   if (open.value) {
@@ -395,19 +393,23 @@ function onFocus(event: FocusEvent) {
   open.value = true;
   initHighlightedIndex();
 
-  if (isExactOptionMatch.value) {
-    (event.target as HTMLInputElement)?.select();
+  if (props.modelValue) {
+    const inputEl = event.target as HTMLInputElement;
+
+    inputEl?.select();
+
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        inputEl?.select();
+      });
+    }
   }
 
   emit('focus', event);
 }
 
 function onClick(event: MouseEvent) {
-  if (props.disabled) {
-    return;
-  }
-
-  if (open.value) {
+  if (props.disabled || open.value) {
     return;
   }
 
@@ -416,9 +418,25 @@ function onClick(event: MouseEvent) {
   open.value = true;
   initHighlightedIndex();
 
-  if (isExactOptionMatch.value) {
+  if (props.modelValue) {
     (event.target as HTMLInputElement)?.select();
   }
+}
+
+function clearInput(event?: Event) {
+  event?.stopPropagation();
+  filterText.value = null;
+  emit('update:modelValue', '');
+  highlightedIndex.value = -1;
+
+  nextTick(() => {
+    inputRef.value?.$el?.focus();
+
+    if (!open.value) {
+      open.value = true;
+      updatePlacement();
+    }
+  });
 }
 
 defineExpose({
@@ -428,6 +446,9 @@ defineExpose({
   },
   focus: () => {
     inputRef.value?.$el?.focus();
+  },
+  clear: () => {
+    clearInput();
   },
 });
 
@@ -473,7 +494,12 @@ defineOptions({
     ref="comboboxRef"
     class="combobox"
     :class="[
-      { open, 'flip-up': flipUp, 'has-leading-icon': hasLeadingIcon },
+      {
+        open,
+        'flip-up': flipUp,
+        'has-leading-icon': hasLeadingIcon,
+        'has-clear-button': hasClearButton,
+      },
       size !== 'md' ? `combobox--${size}` : undefined,
     ]"
   >
@@ -518,6 +544,22 @@ defineOptions({
       @focus="onFocus"
       @blur="onBlur"
     />
+    <button
+      v-if="hasClearButton"
+      type="button"
+      class="combobox-clear-btn"
+      title="Eingabe löschen"
+      aria-label="Eingabe löschen"
+      tabindex="-1"
+      @mousedown.prevent="clearInput"
+      @click="clearInput"
+    >
+      <AppIcon
+        :icon="ACTION_ICONS.close"
+        :size="size === 'sm' ? 11 : size === 'lg' ? 14 : 12"
+        group="actions"
+      />
+    </button>
     <AppIcon
       :icon="ACTION_ICONS.chevronDown"
       :size="size === 'sm' ? 12 : 14"
@@ -654,6 +696,62 @@ defineOptions({
 
 .combobox--lg.has-leading-icon :deep(.combobox-input) {
   padding-left: 42px;
+}
+
+.combobox.has-clear-button :deep(.combobox-input) {
+  padding-right: 56px;
+}
+
+.combobox--sm.has-clear-button :deep(.combobox-input) {
+  padding-right: 46px;
+}
+
+.combobox--lg.has-clear-button :deep(.combobox-input) {
+  padding-right: 64px;
+}
+
+.combobox-clear-btn {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  z-index: 2;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.combobox-clear-btn:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+
+.combobox-clear-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+}
+
+.combobox--sm .combobox-clear-btn {
+  right: 24px;
+  width: 18px;
+  height: 18px;
+}
+
+.combobox--lg .combobox-clear-btn {
+  right: 36px;
+  width: 24px;
+  height: 24px;
 }
 
 .combobox-caret {

@@ -104,7 +104,7 @@ describe('Combobox', () => {
       let updatedValue = '';
 
       const { container, cleanUp } = mountCombobox({
-        modelValue: 'FLUG',
+        modelValue: '',
         options: ['Flughafen', 'Unterkunft', 'Restaurant'],
         'onUpdate:modelValue': (val: string) => {
           updatedValue = val;
@@ -116,6 +116,10 @@ describe('Combobox', () => {
 
       const input = container.querySelector<HTMLInputElement>('input')!;
       input.dispatchEvent(new FocusEvent('focus'));
+      await nextTick();
+
+      input.value = 'FLUG';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
       await nextTick();
 
       // Bei "FLUG" bleibt nur "Flughafen" übrig -> wird automatisch hervorgehoben
@@ -327,6 +331,81 @@ describe('Combobox', () => {
       expect(menuInBody?.classList.contains('is-teleported')).toBe(true);
 
       cleanUp();
+    });
+
+    it('zeigt alle Optionen an, selbst wenn der bestehende Wert nicht in options enthalten ist (z. B. "Sonstiges")', async () => {
+      const options = ['Kleidung', 'Dokumente', 'Elektronik'];
+      let currentValue = 'Sonstiges';
+
+      const { container, cleanUp } = mountCombobox({
+        modelValue: currentValue,
+        options,
+        'onUpdate:modelValue': (val: string) => {
+          currentValue = val;
+        },
+      });
+
+      const input = container.querySelector<HTMLInputElement>('input')!;
+      input.dispatchEvent(new FocusEvent('focus'));
+      await nextTick();
+
+      // Dropdown ist offen und zeigt ALLE 3 Optionen, obwohl "Sonstiges" nicht in options vorkommt
+      const listbox = document.body.querySelector('.options');
+      expect(listbox).not.toBeNull();
+      const optionItems = document.body.querySelectorAll('.options li');
+      expect(optionItems).toHaveLength(3);
+
+      // Klick auf "Dokumente" wählt die Option direkt mit einfachem Klick aus
+      (optionItems[1] as HTMLElement).dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      await nextTick();
+
+      expect(currentValue).toBe('Dokumente');
+
+      cleanUp();
+    });
+
+    it('rendert den X-Button wenn modelValue vorhanden ist und löscht bei Klick den Text', async () => {
+      let currentValue = 'Sonstiges';
+
+      const { container, cleanUp } = mountCombobox({
+        modelValue: currentValue,
+        options: ['Kleidung', 'Dokumente'],
+        'onUpdate:modelValue': (val: string) => {
+          currentValue = val;
+        },
+      });
+
+      // X-Button ist vorhanden
+      const clearBtn = container.querySelector<HTMLButtonElement>('.combobox-clear-btn');
+      expect(clearBtn).not.toBeNull();
+      expect(clearBtn?.getAttribute('aria-label')).toBe('Eingabe löschen');
+
+      // Klick auf X-Button
+      clearBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await nextTick();
+
+      expect(currentValue).toBe('');
+
+      cleanUp();
+    });
+
+    it('blendet den X-Button aus wenn modelValue leer ist oder disabled ist', async () => {
+      const { container: c1, cleanUp: clean1 } = mountCombobox({
+        modelValue: '',
+        options: ['Kleidung'],
+      });
+
+      expect(c1.querySelector('.combobox-clear-btn')).toBeNull();
+      clean1();
+
+      const { container: c2, cleanUp: clean2 } = mountCombobox({
+        modelValue: 'Sonstiges',
+        disabled: true,
+        options: ['Kleidung'],
+      });
+
+      expect(c2.querySelector('.combobox-clear-btn')).toBeNull();
+      clean2();
     });
   });
 });
