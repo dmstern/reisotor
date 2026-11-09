@@ -207,7 +207,7 @@ defineExpose({
   }
 }
 
-:global(.info-popover-menu) {
+:global(.info-popover-menu.picker-menu) {
   min-width: 240px;
   max-width: min(340px, 85vw);
   padding: var(--space-3, 12px);
