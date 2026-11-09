@@ -171,6 +171,10 @@ function onBlur(event: FocusEvent) {
   background: var(--color-surface);
   border-color: var(--input-border-color);
   box-shadow: var(--shadow-control-inset);
+
+  &:focus-within {
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+  }
 }
 
 .leading-icon {
@@ -202,9 +206,16 @@ function onBlur(event: FocusEvent) {
   line-height: 1.4;
   color: var(--color-text);
   outline: none;
+  box-shadow: none;
   min-height: 0;
   height: 100%;
   box-sizing: border-box;
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 }
 
 .label-input::placeholder {
