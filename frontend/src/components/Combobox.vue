@@ -22,8 +22,16 @@ const props = withDefaults(
     invalid?: boolean;
     id?: string;
     name?: string;
+    teleport?: boolean;
   }>(),
-  { modelValue: '', size: 'md', disabled: false, required: false, invalid: false }
+  {
+    modelValue: '',
+    size: 'md',
+    disabled: false,
+    required: false,
+    invalid: false,
+    teleport: true,
+  }
 );
 
 const emit = defineEmits<{
@@ -33,14 +41,31 @@ const emit = defineEmits<{
   (e: 'focus', event: FocusEvent): void;
 }>();
 
+const DEFAULT_MAX_DROPDOWN_HEIGHT = 240;
+const MIN_DROPDOWN_HEIGHT = 80;
+const MIN_SPACE_BELOW_FOR_DROPDOWN = 200;
+const DROPDOWN_OFFSET_PX = 2;
+const VIEWPORT_PADDING_PX = 8;
+const VIEWPORT_FALLBACK_WIDTH = 1024;
+const VIEWPORT_FALLBACK_HEIGHT = 768;
+const BLUR_CLOSE_DELAY_MS = 150;
+
 const open = ref(false);
 const flipUp = ref(false);
 const maxMenuHeight = ref<number | undefined>(undefined);
 const comboboxRef = ref<HTMLElement | null>(null);
 const inputRef = ref<InstanceType<typeof Input> | null>(null);
 const listboxRef = ref<HTMLElement | null>(null);
+const menuRef = ref<HTMLElement | null>(null);
 const highlightedIndex = ref(-1);
 const filterText = ref<string | null>(null);
+
+const menuCoords = ref<{
+  top?: string;
+  bottom?: string;
+  left?: string;
+  width?: string;
+}>({});
 
 const generatedId = useId();
 const listboxId = computed(() =>
@@ -56,18 +81,82 @@ function updatePlacement() {
   const viewportHeight =
     typeof window !== 'undefined'
       ? window.innerHeight || document.documentElement.clientHeight
-      : 768;
-  const spaceBelow = viewportHeight - rect.bottom - 8;
-  const spaceAbove = rect.top - 8;
+      : VIEWPORT_FALLBACK_HEIGHT;
+  const viewportWidth =
+    typeof window !== 'undefined'
+      ? window.innerWidth || document.documentElement.clientWidth
+      : VIEWPORT_FALLBACK_WIDTH;
+
+  if (rect.bottom < 0 || rect.top > viewportHeight) {
+    open.value = false;
+    return;
+  }
+
+  const spaceBelow = viewportHeight - rect.bottom - DROPDOWN_OFFSET_PX - VIEWPORT_PADDING_PX;
+  const spaceAbove = rect.top - DROPDOWN_OFFSET_PX - VIEWPORT_PADDING_PX;
 
   // Wenn unten weniger als 200px Platz ist und oben mehr Raum als unten frei ist: nach oben flippen
-  if (spaceBelow < 200 && spaceAbove > spaceBelow) {
-    flipUp.value = true;
-    maxMenuHeight.value = Math.min(240, Math.max(80, Math.floor(spaceAbove)));
+  const shouldFlip = spaceBelow < MIN_SPACE_BELOW_FOR_DROPDOWN && spaceAbove > spaceBelow;
+  flipUp.value = shouldFlip;
+
+  const availableHeight = shouldFlip ? spaceAbove : spaceBelow;
+  maxMenuHeight.value = Math.min(
+    DEFAULT_MAX_DROPDOWN_HEIGHT,
+    Math.max(MIN_DROPDOWN_HEIGHT, Math.floor(availableHeight))
+  );
+
+  const left = Math.max(
+    VIEWPORT_PADDING_PX,
+    Math.min(rect.left, viewportWidth - rect.width - VIEWPORT_PADDING_PX)
+  );
+  const width = Math.min(rect.width, viewportWidth - 2 * VIEWPORT_PADDING_PX);
+
+  if (shouldFlip) {
+    menuCoords.value = {
+      bottom: `${Math.round(viewportHeight - rect.top + DROPDOWN_OFFSET_PX)}px`,
+      top: undefined,
+      left: `${Math.round(left)}px`,
+      width: `${Math.round(width)}px`,
+    };
   } else {
-    flipUp.value = false;
-    maxMenuHeight.value = Math.min(240, Math.max(80, Math.floor(spaceBelow)));
+    menuCoords.value = {
+      top: `${Math.round(rect.bottom + DROPDOWN_OFFSET_PX)}px`,
+      bottom: undefined,
+      left: `${Math.round(left)}px`,
+      width: `${Math.round(width)}px`,
+    };
   }
+}
+
+const menuStyle = computed(() => {
+  if (!props.teleport) {
+    return maxMenuHeight.value ? { maxHeight: `${maxMenuHeight.value}px` } : {};
+  }
+
+  return {
+    position: 'fixed' as const,
+    top: menuCoords.value.top,
+    bottom: menuCoords.value.bottom,
+    left: menuCoords.value.left,
+    width: menuCoords.value.width,
+    maxHeight: maxMenuHeight.value ? `${maxMenuHeight.value}px` : undefined,
+    zIndex: 'var(--z-popover, 1100)',
+  };
+});
+
+function onDocumentClick(event: MouseEvent) {
+  const target = event.target as Node | null;
+
+  if (!target) {
+    return;
+  }
+
+  if (comboboxRef.value?.contains(target) || menuRef.value?.contains(target)) {
+    return;
+  }
+
+  open.value = false;
+  highlightedIndex.value = -1;
 }
 
 watch(open, (isOpen) => {
@@ -78,13 +167,21 @@ watch(open, (isOpen) => {
       updatePlacement();
       scrollHighlightedIntoView();
     });
-    window.addEventListener('resize', updatePlacement, { passive: true });
-    window.addEventListener('scroll', updatePlacement, { passive: true, capture: true });
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', updatePlacement, { passive: true });
+      window.addEventListener('scroll', updatePlacement, { passive: true, capture: true });
+      document.addEventListener('mousedown', onDocumentClick, true);
+    }
   } else {
     filterText.value = null;
     highlightedIndex.value = -1;
-    window.removeEventListener('resize', updatePlacement);
-    window.removeEventListener('scroll', updatePlacement, { capture: true });
+
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', updatePlacement);
+      window.removeEventListener('scroll', updatePlacement, { capture: true });
+      document.removeEventListener('mousedown', onDocumentClick, true);
+    }
   }
 });
 
@@ -161,13 +258,6 @@ watch(
     }
   }
 );
-
-onBeforeUnmount(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', updatePlacement);
-    window.removeEventListener('scroll', updatePlacement, { capture: true });
-  }
-});
 
 function selectOption(option: string) {
   filterText.value = null;
@@ -276,17 +366,27 @@ function onBlur(event: FocusEvent) {
   window.setTimeout(() => {
     if (
       typeof document !== 'undefined' &&
-      comboboxRef.value &&
-      comboboxRef.value.contains(document.activeElement)
+      ((comboboxRef.value && comboboxRef.value.contains(document.activeElement)) ||
+        (menuRef.value && menuRef.value.contains(document.activeElement)))
     ) {
       return;
     }
 
     open.value = false;
     highlightedIndex.value = -1;
-  }, 150);
+  }, BLUR_CLOSE_DELAY_MS);
   emit('blur', event);
 }
+
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.removeEventListener('resize', updatePlacement);
+  window.removeEventListener('scroll', updatePlacement, { capture: true });
+  document.removeEventListener('mousedown', onDocumentClick, true);
+});
 
 function onFocus(event: FocusEvent) {
   updatePlacement();
@@ -424,57 +524,61 @@ defineOptions({
       class="combobox-caret"
       :class="{ open }"
     />
-    <Transition name="dropdown-unfold">
-      <div
-        v-if="open && (filteredOptions.length || $slots.footer)"
-        class="combobox-menu"
-        :style="maxMenuHeight ? { maxHeight: `${maxMenuHeight}px` } : undefined"
-      >
-        <ul
-          v-if="filteredOptions.length"
-          :id="listboxId"
-          ref="listboxRef"
-          class="options"
-          role="listbox"
+    <Teleport to="body" :disabled="!teleport">
+      <Transition name="dropdown-unfold">
+        <div
+          v-if="open && (filteredOptions.length || $slots.footer)"
+          ref="menuRef"
+          class="combobox-menu"
+          :class="{ 'flip-up': flipUp, 'is-teleported': teleport }"
+          :style="menuStyle"
         >
-          <li
-            v-for="(option, idx) in filteredOptions"
-            :id="`${listboxId}-option-${idx}`"
-            :key="option"
-            role="option"
-            :aria-selected="option === modelValue"
-            class="combobox-option"
-            :class="{
-              'is-highlighted': highlightedIndex === idx,
-              'is-selected': option === modelValue,
-            }"
-            tabindex="-1"
-            @mouseenter="highlightedIndex = idx"
-            @focus="highlightedIndex = idx"
-            @mousedown.prevent="selectOption(option)"
+          <ul
+            v-if="filteredOptions.length"
+            :id="listboxId"
+            ref="listboxRef"
+            class="options"
+            role="listbox"
           >
-            <span
-              v-if="iconDefFor?.(option) || iconFor?.(option) || colorFor?.(option)"
-              class="option-icon"
-              :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
+            <li
+              v-for="(option, idx) in filteredOptions"
+              :id="`${listboxId}-option-${idx}`"
+              :key="option"
+              role="option"
+              :aria-selected="option === modelValue"
+              class="combobox-option"
+              :class="{
+                'is-highlighted': highlightedIndex === idx,
+                'is-selected': option === modelValue,
+              }"
+              tabindex="-1"
+              @mouseenter="highlightedIndex = idx"
+              @focus="highlightedIndex = idx"
+              @mousedown.prevent="selectOption(option)"
             >
-              <AppIcon
-                v-if="iconDefFor?.(option)"
-                :icon="iconDefFor(option)!"
-                :size="16"
-                group="categories"
-              />
-              <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
-            </span>
-            <span class="option-label">{{ option }}</span>
-          </li>
-        </ul>
-        <div v-else-if="$slots.footer" class="combobox-empty">Keine Vorschläge</div>
-        <div v-if="$slots.footer" class="combobox-footer">
-          <slot name="footer" />
+              <span
+                v-if="iconDefFor?.(option) || iconFor?.(option) || colorFor?.(option)"
+                class="option-icon"
+                :style="colorFor?.(option) ? { color: colorFor(option) } : {}"
+              >
+                <AppIcon
+                  v-if="iconDefFor?.(option)"
+                  :icon="iconDefFor(option)!"
+                  :size="16"
+                  group="categories"
+                />
+                <span v-else-if="iconFor?.(option)">{{ iconFor(option) }}</span>
+              </span>
+              <span class="option-label">{{ option }}</span>
+            </li>
+          </ul>
+          <div v-else-if="$slots.footer" class="combobox-empty">Keine Vorschläge</div>
+          <div v-if="$slots.footer" class="combobox-footer">
+            <slot name="footer" />
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -596,9 +700,14 @@ defineOptions({
   transform-origin: top center;
   max-height: 240px;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.combobox.flip-up .combobox-menu {
+.combobox-menu.flip-up {
+  transform-origin: bottom center;
+}
+
+.combobox.flip-up .combobox-menu:not(.is-teleported) {
   top: auto;
   bottom: calc(100% + 2px);
   transform-origin: bottom center;
@@ -615,10 +724,12 @@ defineOptions({
   }
 }
 
+.combobox-menu.flip-up.dropdown-unfold-enter-active,
 .combobox.flip-up .dropdown-unfold-enter-active {
   animation-name: dropdown-unfold-up;
 }
 
+.combobox-menu.flip-up.dropdown-unfold-leave-active,
 .combobox.flip-up .dropdown-unfold-leave-active {
   animation-name: dropdown-unfold-up;
   animation-direction: reverse;

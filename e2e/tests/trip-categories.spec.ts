@@ -73,7 +73,7 @@ test.describe('Trip Categories Management', () => {
     await categoryInput.fill('Tauchen');
 
     // Verify dropdown suggestion includes updatedCategory
-    await expect(expenseModal.getByRole('option', { name: updatedCategory })).toBeVisible();
+    await expect(page.getByRole('option', { name: updatedCategory })).toBeVisible();
 
     // Close expense modal and confirm discarding draft
     await expenseModal.getByRole('button', { name: 'Schließen' }).click();

@@ -86,6 +86,7 @@ describe('CategoryCombobox', () => {
         cleanUp: () => {
           app.unmount();
           container.remove();
+          document.body.innerHTML = '';
         },
       };
     }
@@ -105,7 +106,7 @@ describe('CategoryCombobox', () => {
       input.dispatchEvent(new FocusEvent('focus'));
       await nextTick();
 
-      const manageBtn = container.querySelector<HTMLButtonElement>(
+      const manageBtn = document.body.querySelector<HTMLButtonElement>(
         '[data-testid="category-combobox-manage-btn"]'
       );
       expect(manageBtn).not.toBeNull();
@@ -136,9 +137,10 @@ describe('CategoryCombobox', () => {
       input.dispatchEvent(new FocusEvent('focus'));
       await nextTick();
 
-      const manageBtn = container.querySelector<HTMLButtonElement>(
+      const manageBtn = document.body.querySelector<HTMLButtonElement>(
         '[data-testid="category-combobox-manage-btn"]'
       );
+      manageBtn?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       manageBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       await nextTick();
 
@@ -162,7 +164,7 @@ describe('CategoryCombobox', () => {
       input.dispatchEvent(new FocusEvent('focus'));
       await nextTick();
 
-      const manageBtn = container.querySelector('[data-testid="category-combobox-manage-btn"]');
+      const manageBtn = document.body.querySelector('[data-testid="category-combobox-manage-btn"]');
       expect(manageBtn).toBeNull();
 
       cleanUp();

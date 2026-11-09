@@ -386,7 +386,7 @@ test('displays category icon in combobox input and dropdown options', async ({ p
 
   // Auf Feld fokussieren -> Dropdown-Optionen mit Icons erscheinen
   await categoryInput.focus();
-  const options = modal.locator('.options li');
+  const options = page.locator('.options li');
   await expect(options.first()).toBeVisible();
   await expect(options.first().locator('.option-icon')).toBeVisible();
 
