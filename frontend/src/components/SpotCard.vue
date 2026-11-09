@@ -15,7 +15,7 @@ import SocialRow from './SocialRow.vue';
 import AppIcon from './AppIcon.vue';
 import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
-import DoneToggle from './primitives/DoneToggle.vue';
+import ToggleSwitch from './primitives/ToggleSwitch.vue';
 import Badge from './primitives/Badge.vue';
 import Card from './primitives/Card.vue';
 import SpotCoverImage from './SpotCoverImage.vue';
@@ -250,7 +250,7 @@ const cardRotation = computed(() => {
         <div class="actions-accordion" :class="{ 'is-expanded': expanded }">
           <div class="actions-accordion-inner accordion-stagger">
             <div class="card-actions">
-              <DoneToggle
+              <label
                 v-if="
                   expanded &&
                   excursionContext &&
@@ -258,12 +258,16 @@ const cardRotation = computed(() => {
                 "
                 key="btn-destination"
                 class="spot-destination-toggle"
-                :done="excursionContext.isDestination"
                 title="Als Ziel der Tour markieren (für Hin-/Rückweg-Farbverlauf)"
-                @click="$emit('toggle-destination')"
+                @click.stop
               >
+                <ToggleSwitch
+                  :model-value="excursionContext.isDestination"
+                  size="sm"
+                  @change="$emit('toggle-destination')"
+                />
                 Ziel der Tour
-              </DoneToggle>
+              </label>
               <!-- Verschmolzener Status-Button (Geplant-Status + Gemacht-Checkbox) -->
               <SpotDoneStatus
                 v-if="!isAccommodation"
@@ -757,6 +761,15 @@ const cardRotation = computed(() => {
 
 .map-action-warning-icon {
   color: var(--color-warning);
+}
+
+.spot-destination-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .actions-accordion {
