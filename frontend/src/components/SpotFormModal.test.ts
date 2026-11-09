@@ -79,6 +79,10 @@ describe('SpotFormModal', () => {
     expect(document.body.textContent).not.toContain('Urlaubsort');
     // Subtle action to set home location if needed
     expect(document.body.textContent).toContain('Als Heimatort festlegen');
+    const titleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(titleInput.placeholder).toBe('Name des Spots...');
     cleanUp();
   });
 
@@ -320,6 +324,12 @@ describe('SpotFormModal', () => {
     // Accommodation specific fields such as Check-in-Datum should be visible
     expect(document.body.textContent).toContain('Check-in-Datum');
     expect(document.body.textContent).toContain('Check-out-Datum');
+
+    // Title placeholder should adapt to accommodation
+    const titleInput = document.querySelector(
+      '[data-testid="spot-title-input"]'
+    ) as HTMLInputElement;
+    expect(titleInput.placeholder).toBe('Name der Unterkunft...');
     cleanUp();
   });
 });
