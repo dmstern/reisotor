@@ -337,7 +337,8 @@ function clearFilters() {
   z-index: 1;
 }
 
-.search-input {
+/* Höhere Spezifität nötig: Input.vue setzt für shape="pill" eigenes seitliches Padding, das sonst den Platz für die Lupe überschreibt. */
+.search-input-wrapper .search-input {
   width: 100%;
   padding: 0 36px 0 38px;
   font-size: var(--font-size-sm);
@@ -394,7 +395,7 @@ function clearFilters() {
     gap: 6px;
   }
 
-  .search-input {
+  .search-input-wrapper .search-input {
     height: var(--input-height-sm, 38px);
     min-height: var(--input-height-sm, 38px);
     padding: 0 32px 0 34px;
@@ -413,7 +414,7 @@ function clearFilters() {
     gap: 6px;
   }
 
-  .search-input {
+  .search-input-wrapper .search-input {
     height: var(--input-height-sm, 38px);
     min-height: var(--input-height-sm, 38px);
     padding: 0 32px 0 34px;
