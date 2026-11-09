@@ -6,7 +6,9 @@ import { computePopoverPosition } from '../../utils/popoverPosition';
 import AppIcon from '../AppIcon.vue';
 import Button from './Button.vue';
 
-// Dropdown-Primitive: Kapselt Dropdown-Trigger-Container, .dropdown__field und .dropdown__button (Issue #391).
+// DropdownMenu-Primitive: Kapselt Aktions-Menü / Flyout-Trigger-Container, .dropdown__field und .dropdown__button (Issue #391, #721).
+// Dient als Flyout-Trigger für Aktions- und Options-Menüs (im Zusammenspiel mit PickerMenu.vue / DropdownMenuItem.vue) –
+// zur klaren Abgrenzung von Select.vue (Formularfeld Einzelauswahl) und Combobox.vue (Autocomplete-Filterfeld).
 // Entspricht BEM-System: .dropdown (Block), .dropdown__field und .dropdown__button (Elemente).
 const props = withDefaults(
   defineProps<{

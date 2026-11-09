@@ -2,20 +2,20 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import Dropdown from './Dropdown.vue';
+import DropdownMenu from './DropdownMenu.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 
-describe('Dropdown', () => {
+describe('DropdownMenu', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     setActivePinia(createPinia());
   });
 
-  function mountDropdown(props: any = {}, slots: any = {}) {
+  function mountDropdownMenu(props: any = {}, slots: any = {}) {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const app = createApp({
-      render: () => h(Dropdown, props, slots),
+      render: () => h(DropdownMenu, props, slots),
     });
     app.use(createPinia());
     const vm = app.mount(container);
@@ -32,7 +32,7 @@ describe('Dropdown', () => {
   }
 
   it('renders trigger button with label and chevron icon', () => {
-    const { container, cleanUp } = mountDropdown({
+    const { container, cleanUp } = mountDropdownMenu({
       label: 'Filter wählen',
       icon: ACTION_ICONS.filter,
     });
@@ -47,7 +47,7 @@ describe('Dropdown', () => {
 
   it('emits toggle event when trigger button is clicked', async () => {
     let toggled = false;
-    const { container, cleanUp } = mountDropdown({
+    const { container, cleanUp } = mountDropdownMenu({
       label: 'Optionen',
       onToggle: () => {
         toggled = true;
@@ -64,7 +64,7 @@ describe('Dropdown', () => {
   });
 
   it('teleports menu content to document.body on top level when open (issue #722)', async () => {
-    const { container, cleanUp } = mountDropdown(
+    const { container, cleanUp } = mountDropdownMenu(
       {
         label: 'Aktionen',
         open: true,
@@ -87,7 +87,7 @@ describe('Dropdown', () => {
   });
 
   it('renders menu in place when teleport is explicitly disabled', async () => {
-    const { container, cleanUp } = mountDropdown(
+    const { container, cleanUp } = mountDropdownMenu(
       {
         label: 'Aktionen',
         open: true,

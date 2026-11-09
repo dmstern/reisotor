@@ -1,6 +1,8 @@
 <script setup lang="ts">
-// Select-Primitive für Dropdown-Auswahlfelder – kapselt Squircle-Styling, Pfeil-Icon,
-// Höhenkonsistenz mit Text-Inputs und Theme-Unterstützung (Issue #239).
+// Select-Primitive: Formularfeld für Einzelauswahl aus fester Optionsliste via nativem <select> (Issue #239, #721).
+// Kapselt Squircle-Styling, Pfeil-Icon, Höhenkonsistenz mit Text-Inputs und Theme-Unterstützung.
+// Nutzt auf mobilen Geräten (iOS/Android) den nativen OS-Picker.
+// Abgrenzung: Für freie Texteingabe mit Vorschlägen -> Combobox.vue; für Aktions-/Flyout-Menüs -> DropdownMenu.vue.
 
 withDefaults(
   defineProps<{

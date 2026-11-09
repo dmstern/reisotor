@@ -3,7 +3,7 @@ import { ref, computed, useId } from 'vue';
 import { useThemeStore, THEME_MODE_OPTIONS, type ThemeMode } from '../stores/theme';
 import AppIcon from './AppIcon.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // icon: kompakter runder Button wie der bisherige Toggle (AppHeader.vue, LoginView.vue) - das
@@ -87,7 +87,7 @@ function selectMode(val: ThemeMode) {
           role="listbox"
           @close="isOpen = false"
         >
-          <DropdownItem
+          <DropdownMenuItem
             v-for="option in THEME_MODE_OPTIONS"
             :key="option.value"
             :label="option.label"

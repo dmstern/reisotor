@@ -9,7 +9,7 @@ import TripForm from './TripForm.vue';
 import EditButton from './EditButton.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PremiumBadge from './PremiumBadge.vue';
 import { useAccountTierModal } from '../composables/useAccountTierModal';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -199,7 +199,7 @@ function selectAndClose(id: number) {
             class="trip-row"
             :class="{ active: trip.id === tripStore.currentTripId }"
           >
-            <DropdownItem
+            <DropdownMenuItem
               :label="trip.name"
               :active="trip.id === tripStore.currentTripId"
               class="trip-select"

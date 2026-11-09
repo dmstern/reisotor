@@ -3,7 +3,7 @@ import { ref, computed, type ComponentPublicInstance } from 'vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
-import DropdownItem from './primitives/DropdownItem.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -205,7 +205,7 @@ function clearFilters() {
             <!-- Sortierung -->
             <div class="popover-section-header">Sortieren nach</div>
             <div class="popover-options-list">
-              <DropdownItem
+              <DropdownMenuItem
                 label="Nach Datum"
                 :active="sortMode === 'date'"
                 :trailing-icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
@@ -213,7 +213,7 @@ function clearFilters() {
                 :trailing-icon-size="14"
                 @click="selectSort('date')"
               />
-              <DropdownItem
+              <DropdownMenuItem
                 label="Alphabetisch"
                 :active="sortMode === 'alpha'"
                 :trailing-icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
@@ -221,7 +221,7 @@ function clearFilters() {
                 :trailing-icon-size="14"
                 @click="selectSort('alpha')"
               />
-              <DropdownItem
+              <DropdownMenuItem
                 label="Nach Likes"
                 :active="sortMode === 'likes'"
                 :trailing-icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
@@ -237,7 +237,7 @@ function clearFilters() {
             <template v-if="categoryOptions.length">
               <div class="popover-group-title">Spots</div>
               <div class="popover-options-list">
-                <DropdownItem
+                <DropdownMenuItem
                   v-for="cat in categoryOptions"
                   :key="cat"
                   class="category-option"
@@ -253,7 +253,7 @@ function clearFilters() {
 
             <div class="popover-group-title">Status</div>
             <div class="popover-options-list">
-              <DropdownItem
+              <DropdownMenuItem
                 multiselect
                 :icon="FORM_FIELD_ICONS.date"
                 icon-group="formFields"
@@ -262,7 +262,7 @@ function clearFilters() {
                 @update:checked="toggleStatus('planned')"
               />
 
-              <DropdownItem
+              <DropdownMenuItem
                 multiselect
                 :icon="FORM_FIELD_ICONS.note"
                 icon-group="formFields"
@@ -271,7 +271,7 @@ function clearFilters() {
                 @update:checked="toggleStatus('unplanned')"
               />
 
-              <DropdownItem
+              <DropdownMenuItem
                 multiselect
                 :icon="ACTION_ICONS.done"
                 label="Gemacht"
@@ -282,7 +282,7 @@ function clearFilters() {
 
             <div class="popover-group-title">Touren</div>
             <div class="popover-options-list">
-              <DropdownItem
+              <DropdownMenuItem
                 v-for="role in TOUR_ROLE_OPTIONS"
                 :key="role"
                 multiselect

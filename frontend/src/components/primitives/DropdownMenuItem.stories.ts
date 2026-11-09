@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
-import DropdownItem from './DropdownItem.vue';
+import DropdownMenuItem from './DropdownMenuItem.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../../utils/formFieldIcons';
 import { STRESS_STRINGS, STRESS_CONTAINERS } from '../../stories/stressFixtures';
 
-const meta: Meta<typeof DropdownItem> = {
-  title: 'Primitives/DropdownItem',
-  component: DropdownItem,
+const meta: Meta<typeof DropdownMenuItem> = {
+  title: 'Primitives/DropdownMenuItem',
+  component: DropdownMenuItem,
   tags: ['autodocs'],
   argTypes: {
     active: { control: 'boolean' },
@@ -25,7 +25,7 @@ const meta: Meta<typeof DropdownItem> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof DropdownItem>;
+type Story = StoryObj<typeof DropdownMenuItem>;
 
 export const Default: Story = {
   args: { label: 'Eintrag bearbeiten', icon: ACTION_ICONS.edit },
@@ -66,23 +66,23 @@ export const WithTrailingIcon: Story = {
 
 export const StressTest: Story = {
   render: (args) => ({
-    components: { DropdownItem },
+    components: { DropdownMenuItem },
     setup() {
       return { args, STRESS_STRINGS, STRESS_CONTAINERS, ACTION_ICONS };
     },
     template: `
       <div :style="STRESS_CONTAINERS.narrow" style="display: flex; flex-direction: column; gap: 4px;">
-        <DropdownItem
+        <DropdownMenuItem
           :label="STRESS_STRINGS.longWord"
           :icon="ACTION_ICONS.edit"
         />
-        <DropdownItem
+        <DropdownMenuItem
           :label="STRESS_STRINGS.longSentence"
           :icon="ACTION_ICONS.done"
           :trailingIcon="ACTION_ICONS.done"
           active
         />
-        <DropdownItem
+        <DropdownMenuItem
           :label="STRESS_STRINGS.specialChars"
           :icon="ACTION_ICONS.apple"
         />

@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
-import Dropdown from './Dropdown.vue';
+import DropdownMenu from './DropdownMenu.vue';
 import PickerMenu from './PickerMenu.vue';
-import DropdownItem from './DropdownItem.vue';
+import DropdownMenuItem from './DropdownMenuItem.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import { ref } from 'vue';
 
-const meta: Meta<typeof Dropdown> = {
-  title: 'Primitives/Dropdown',
-  component: Dropdown,
+const meta: Meta<typeof DropdownMenu> = {
+  title: 'Primitives/DropdownMenu',
+  component: DropdownMenu,
   tags: ['autodocs'],
   argTypes: {
     label: { control: 'text' },
@@ -22,11 +22,11 @@ const meta: Meta<typeof Dropdown> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Dropdown>;
+type Story = StoryObj<typeof DropdownMenu>;
 
 export const Default: Story = {
   render: (args) => ({
-    components: { Dropdown, PickerMenu, DropdownItem },
+    components: { DropdownMenu, PickerMenu, DropdownMenuItem },
     setup() {
       const open = ref(false);
       const selected = ref('Option A');
@@ -39,7 +39,7 @@ export const Default: Story = {
       return { args, open, selected, select, ACTION_ICONS };
     },
     template: `
-      <Dropdown
+      <DropdownMenu
         v-bind="args"
         :label="selected"
         :open="open"
@@ -47,11 +47,11 @@ export const Default: Story = {
         @toggle="open = !open"
       >
         <PickerMenu v-if="open" position="absolute" @close="open = false">
-          <DropdownItem label="Option A" :active="selected === 'Option A'" @click="select('Option A')" />
-          <DropdownItem label="Option B" :active="selected === 'Option B'" @click="select('Option B')" />
-          <DropdownItem label="Option C" :active="selected === 'Option C'" @click="select('Option C')" />
+          <DropdownMenuItem label="Option A" :active="selected === 'Option A'" @click="select('Option A')" />
+          <DropdownMenuItem label="Option B" :active="selected === 'Option B'" @click="select('Option B')" />
+          <DropdownMenuItem label="Option C" :active="selected === 'Option C'" @click="select('Option C')" />
         </PickerMenu>
-      </Dropdown>
+      </DropdownMenu>
     `,
   }),
 };

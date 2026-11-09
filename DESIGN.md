@@ -21,7 +21,7 @@ eine custom Combobox.vue" – beide sind für ihn einfach "ein Dropdown" und mü
 gleich hoch sein und gleich aussehen. Das gilt für jede der unten dokumentierten Kategorien:
 
 - **UI-Primitives & Komponenten**: Wiederkehrende Oberflächen-, Layout- und Interaktionsbausteine
-  (`Button.vue`, `IconButton.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownItem.vue`,
+  (`Button.vue`, `IconButton.vue`, `Card.vue`, `Input.vue`, `PickerMenu.vue`, `DropdownMenuItem.vue`,
   `Badge.vue`, `DetailRow.vue`, `EmptyState.vue`, etc. unter `components/primitives/`) teilen dieselbe
   visuelle Sprache (Schatten, Padding, Squircle-Rundung, Zustände) und werden zentral über diese Primitives
   konsistent gehalten. (Die architektonische Kapselungsgrenze zu `style.css` ist verbindlich in `AGENTS.md` geregelt.)
@@ -295,7 +295,7 @@ Gilt für jeden neuen "erhobenen" Zustand, nicht nur offensichtliche Overlays.
 **Moderne 3D-Effekte für Interaktionselemente (Issue #701 & #720)**:
 Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Switches und Tasten besitzen app-weit einen soliden, haptischen 3D-Look mit Kantenlicht- und Tiefeneffekten:
 
-- **Erhobene Steuerelemente (`Button.vue`, `Select.vue`, `Dropdown.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`, `DoneToggle.vue`, `InfoPopover.vue`)**:
+- **Erhobene Steuerelemente (`Button.vue`, `Select.vue`, `DropdownMenu.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`, `DoneToggle.vue`, `InfoPopover.vue`)**:
   - Besitzen ein feines Kantenlicht oben (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit dezentem Umgebungs- und Kontaktschatten (`--shadow-control`).
   - Ein subtiler vertikaler Farbverlauf (`linear-gradient(180deg, color-mix(in srgb, white 5%..10%, ...) 0%, ... 100%)`) simuliert einfallendes Licht von oben und verleiht den Steuerelementen physisches Volumen.
   - Sekundäre Destruktiv-Buttons (`variant="danger" secondary`, z. B. Löschen-Buttons in Dialog-Footern) teilen dasselbe taktile 3D-Volumen mit roter Kontur und `--shadow-control`, um auf gleicher physischer Ebene wie Abbrechen und Speichern zu stehen.
@@ -744,10 +744,10 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   Disabled-State, `size` (`sm`, `md`, `lg`), `invalid`-Zustand (`aria-invalid`, rote Umrandung),
   Schlagschatten (`var(--shadow-sm)`) nur bei Hover/Active per sanfter Transition (auch bei Blur)
   sowie den Chromium-Höhenausgleich für Datums-/Zeitauswahlen.
-- **`Select.vue`**: Dropdown-Auswahlfeld-Primitive. Kapselt Squircle-Styling, Höhenkonsistenz mit `Input.vue`
+- **`Select.vue`**: Formularfeld-Primitive für Einzelauswahl aus einer festen Optionsliste (`<select>`, `v-model`, nutzt auf iOS/Android den nativen OS-Picker). Kapselt Squircle-Styling, Höhenkonsistenz mit `Input.vue`
   (`min-height: 44px`), initial schattenlos (`box-shadow: none`) mit sanft animiertem Schlagschatten
   bei Hover/Active/Fokus, benutzerdefiniertes Pfeil-Icon (automatisch hell/dunkel je nach Theme), Fokus-Ringe,
-  `size` (`sm`, `md`, `lg`) sowie `invalid`-Zustand.
+  `size` (`sm`, `md`, `lg`) sowie `invalid`-Zustand. _(Zur Abgrenzung: Für Freitext mit Vorschlagsliste `Combobox.vue` verwenden; für Aktions-/Flyout-Menüs `DropdownMenu.vue`)._
 - **`Textarea.vue`**: Mehrzeiliges Texteingabefeld-Primitive für längere Texte (z. B. Feedback). Kapselt Squircle-Styling,
   initial schattenlos mit animiertem Schlagschatten bei Hover/Active/Fokus, Fokus-Ringe, Resize-Verhalten (`vertical`)
   und Fehlerzustände.
@@ -770,8 +770,8 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   - **Karten- & Kalender-Fokus (`mapFocused` Prop / `.is-map-focused`)**: umrandet fokussierte Spots und Touren in Brand-Farbe (`var(--color-primary)`) mit 2-stufigem Ambient Glow und Eintritts-Puls-Animation (`cardMapFocusPulse`), synchron zum Fokus-Banner auf der Karte.
 - **`Badge.vue` & Indikatoren**: `.badge` als leichtgewichtiger Chip für Zustände (`.badge--primary`,
   `.badge--success`, `.badge--danger`, `.badge--accent`), sowie 🔒 Privat (nur für 1 Person) vs. 🤝 Geteilt (für alle Mitreisenden).
-- **`Dropdown.vue`**: Dropdown-Trigger-Container-Primitive. Kapselt `.dropdown`, `.dropdown__button` und `.dropdown__field` gemäß BEM-System mit Slot für Menüs (`PickerMenu.vue`).
-- **`PickerMenu.vue` & `DropdownItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management und Backdrop.
+- **`DropdownMenu.vue`**: Aktions-Menü / Flyout-Trigger-Container-Primitive. Kapselt `.dropdown`, `.dropdown__button` und `.dropdown__field` gemäß BEM-System mit Slot für Menüs (`PickerMenu.vue`). Dient als Auslöser für Aktions- und Flyout-Menüs (Export, Teilen, Werkzeuge, Filter), nicht für reine Formular-Dateneingaben.
+- **`PickerMenu.vue` & `DropdownMenuItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management, Tastaturnavigation und Backdrop. Unterstützt Links (`href`), Aktions-Buttons und Checkbox-Mehrfachauswahl (`multiselect`).
 - **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`), Kalender-Fokus in Brand-Farbe mit Ambient Glow (`row.is-focused`) sowie Echtzeit-Highlighting in Grün mit Ambient Glow (`row.new-highlight`), Sparkle-Badge (`.list-item-sparkle` ✨) und Glanzanimation (`rowGlanceSweep`).
 - **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
 - **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
