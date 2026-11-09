@@ -226,7 +226,7 @@ watch(
 const modalTitle = computed(() => {
   const fromName = props.fromSpot?.title || 'Start';
   const toName = props.toSpot?.title || 'Ziel';
-  return `Teilstrecke: ${fromName} → ${toName}`;
+  return `Weg: ${fromName} → ${toName}`;
 });
 
 function onSave() {

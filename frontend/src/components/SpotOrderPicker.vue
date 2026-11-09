@@ -397,8 +397,8 @@ function onDeleteLeg() {
               v-if="getLegBetween(station.id, plannedStations[index + 1].id)"
               type="button"
               class="remove-btn leg-remove-btn"
-              title="Teilstrecke entfernen"
-              aria-label="Teilstrecke entfernen"
+              title="Weg-Details entfernen"
+              aria-label="Weg-Details entfernen"
               @click.stop="removeLegBetween(station.id, plannedStations[index + 1].id)"
             >
               <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />

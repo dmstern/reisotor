@@ -39,7 +39,7 @@ describe('LegModalHeader', () => {
 
     const titleEl = document.querySelector('.leg-modal-title');
     expect(titleEl).not.toBeNull();
-    expect(titleEl?.textContent).toContain('Teilstrecke:');
+    expect(titleEl?.textContent).toContain('Weg:');
     expect(titleEl?.textContent).toContain('Berlin Hbf');
     expect(titleEl?.textContent).toContain('München Hbf');
     expect(titleEl?.textContent).toContain('→');

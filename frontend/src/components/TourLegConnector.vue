@@ -33,7 +33,7 @@ const emit = defineEmits<{
       tabindex="0"
       role="button"
       :title="getLegTooltip(leg, fromSpot, toSpot)"
-      :aria-label="`Teilstrecke von ${fromSpot.title} nach ${toSpot.title} bearbeiten`"
+      :aria-label="`Weg von ${fromSpot.title} nach ${toSpot.title} bearbeiten`"
       @click.stop="emit('click')"
       @keydown.enter.self="emit('click')"
       @keydown.space.self.prevent="emit('click')"
@@ -62,12 +62,12 @@ const emit = defineEmits<{
       v-else
       type="button"
       class="tour-leg-add-btn is-horizontal-leg"
-      title="Teilstrecke erfassen"
-      :aria-label="`Teilstrecke zwischen ${fromSpot.title} und ${toSpot.title} erfassen`"
+      title="Weg-Details eintragen"
+      :aria-label="`Weg-Details zwischen ${fromSpot.title} und ${toSpot.title} eintragen`"
       @click.stop="emit('click')"
     >
       <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
-      <span class="leg-add-text">Teilstrecke</span>
+      <span class="leg-add-text">Weg</span>
     </button>
   </div>
 
@@ -85,7 +85,7 @@ const emit = defineEmits<{
         tabindex="0"
         role="button"
         :title="getLegTooltip(leg, fromSpot, toSpot)"
-        :aria-label="`Teilstrecke von ${fromSpot.title} nach ${toSpot.title} bearbeiten`"
+        :aria-label="`Weg von ${fromSpot.title} nach ${toSpot.title} bearbeiten`"
         @click.stop="emit('click')"
         @keydown.enter.self="emit('click')"
         @keydown.space.self.prevent="emit('click')"
@@ -117,12 +117,12 @@ const emit = defineEmits<{
         <button
           type="button"
           class="tour-leg-add-btn is-row-break"
-          title="Teilstrecke erfassen"
-          :aria-label="`Teilstrecke zwischen ${fromSpot.title} und ${toSpot.title} erfassen`"
+          title="Weg-Details eintragen"
+          :aria-label="`Weg-Details zwischen ${fromSpot.title} und ${toSpot.title} eintragen`"
           @click.stop="emit('click')"
         >
           <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
-          <span class="leg-add-text">Teilstrecke erfassen</span>
+          <span class="leg-add-text">Weg-Details eintragen</span>
         </button>
       </div>
     </div>

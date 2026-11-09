@@ -88,7 +88,7 @@ describe('LegTransportModal', () => {
 
     const titleEl = document.querySelector('h2, .modal-title, .title');
     expect(titleEl).not.toBeNull();
-    expect(titleEl?.textContent).toContain('Teilstrecke:');
+    expect(titleEl?.textContent).toContain('Weg:');
     expect(titleEl?.textContent).toContain('Frankfurt Hbf');
     expect(titleEl?.textContent).toContain('Lisboa Oriente');
     expect(titleEl?.textContent).toContain('→');
@@ -110,7 +110,7 @@ describe('LegTransportModal', () => {
     await nextTick();
 
     const titleEl = document.querySelector('h2, .modal-title, .title');
-    expect(titleEl?.textContent).toContain('Teilstrecke:');
+    expect(titleEl?.textContent).toContain('Weg:');
     expect(titleEl?.textContent).toContain('Frankfurt Hbf');
     expect(titleEl?.textContent).toContain('Lisboa Oriente');
     expect(titleEl?.textContent).toContain('→');

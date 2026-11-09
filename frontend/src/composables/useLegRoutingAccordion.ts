@@ -36,7 +36,7 @@ export function useLegRoutingAccordion(options: UseLegRoutingAccordionOptions) {
     }
 
     if (!hasCoordinates.value) {
-      return 'Für diese Teilstrecke liegen keine Koordinaten für Start oder Ziel vor.';
+      return 'Für diesen Weg liegen keine Koordinaten für Start oder Ziel vor.';
     }
 
     return undefined;
