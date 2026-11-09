@@ -655,6 +655,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   gap: var(--space-2);
   margin-top: var(--space-4);
   padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
   border-top: 1px solid var(--color-border);
 }
 
