@@ -137,6 +137,29 @@ function getFocusableElements(container: HTMLElement | null = modalRef.value): H
   );
 }
 
+function trapFocus(e: KeyboardEvent, container: HTMLElement | null) {
+  const focusables = getFocusableElements(container);
+
+  if (focusables.length === 0) {
+    e.preventDefault();
+    return;
+  }
+
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  const active = document.activeElement as HTMLElement | null;
+
+  if (e.shiftKey) {
+    if (active === first || !container?.contains(active)) {
+      last.focus();
+      e.preventDefault();
+    }
+  } else if (active === last || !container?.contains(active)) {
+    first.focus();
+    e.preventDefault();
+  }
+}
+
 function handleKeydown(e: KeyboardEvent) {
   if (!props.modelValue) {
     return;
@@ -155,35 +178,12 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
 
-  if (e.key !== 'Tab') {
-    return;
-  }
-
-  if (!modalStore.isTop(modalId)) {
+  if (e.key !== 'Tab' || !modalStore.isTop(modalId)) {
     return;
   }
 
   const container = showConfirmClose.value ? confirmModalRef.value : modalRef.value;
-  const focusables = getFocusableElements(container);
-
-  if (focusables.length === 0) {
-    e.preventDefault();
-    return;
-  }
-
-  const first = focusables[0];
-  const last = focusables[focusables.length - 1];
-  const active = document.activeElement as HTMLElement | null;
-
-  if (e.shiftKey) {
-    if (active === first || !modalRef.value?.contains(active)) {
-      last.focus();
-      e.preventDefault();
-    }
-  } else if (active === last || !modalRef.value?.contains(active)) {
-    first.focus();
-    e.preventDefault();
-  }
+  trapFocus(e, container);
 }
 
 let isRegistered = false;
