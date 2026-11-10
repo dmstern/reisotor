@@ -199,6 +199,26 @@
   --color-surface: #ffffff;
   --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
   --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
+  --color-surface-glass-hover: rgb(255 255 255 / min(0.78, calc(var(--glass-opacity) + 0.24)));
+  --color-surface-glass-active: rgb(255 255 255 / min(0.88, calc(var(--glass-opacity) + 0.36)));
+  --color-surface-glass-hover-border: color-mix(
+    in srgb,
+    var(--color-primary) 28%,
+    rgb(255 255 255 / 0.85)
+  );
+  --color-surface-glass-active-border: color-mix(
+    in srgb,
+    var(--color-primary) 55%,
+    rgb(255 255 255 / 0.9)
+  );
+  --color-glass-control-hover: rgb(255 255 255 / 0.45);
+  --color-glass-control-active: rgb(255 255 255 / 0.65);
+  --color-glass-control-hover-border: rgb(255 255 255 / 0.65);
+  --color-glass-control-active-border: color-mix(
+    in srgb,
+    var(--color-primary) 40%,
+    rgb(255 255 255 / 0.8)
+  );
   --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
@@ -371,6 +391,31 @@
   --shadow-floating-island:
     0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --shadow-floating-island-hover:
+    0 8px 24px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.7), inset 0 -1px 0.5px rgba(255, 255, 255, 0.2);
+  --shadow-floating-island-active:
+    0 2px 8px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-glass-control-hover:
+    0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.75);
+  --shadow-glass-control-active: inset 0 1.5px 2px rgba(0, 0, 0, 0.12);
+  --gradient-glass-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  --gradient-glass-active: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  --transition-glass:
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-image 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.15s ease, outline-color 0.15s ease, transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.16s cubic-bezier(0.16, 1, 0.3, 1);
   --shadow-island: var(--shadow-floating-island);
 
   /* Zweites, "weicheres" Schatten-Paar für taktile Pillen-Elemente (aktuell: SegmentedToggle.vue,
@@ -551,6 +596,26 @@
     --color-surface: #232220;
     --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
     --color-surface-glass-border: rgb(13 13 12 / calc(var(--glass-opacity) * 0.8));
+    --color-surface-glass-hover: rgb(55 53 50 / min(0.85, calc(var(--glass-opacity) + 0.26)));
+    --color-surface-glass-active: rgb(68 66 62 / min(0.92, calc(var(--glass-opacity) + 0.38)));
+    --color-surface-glass-hover-border: color-mix(
+      in srgb,
+      var(--color-primary) 38%,
+      rgba(255, 255, 255, 0.28)
+    );
+    --color-surface-glass-active-border: color-mix(
+      in srgb,
+      var(--color-primary) 65%,
+      rgba(255, 255, 255, 0.35)
+    );
+    --color-glass-control-hover: rgba(255, 255, 255, 0.12);
+    --color-glass-control-active: rgba(255, 255, 255, 0.18);
+    --color-glass-control-hover-border: rgba(255, 255, 255, 0.22);
+    --color-glass-control-active-border: color-mix(
+      in srgb,
+      var(--color-primary) 45%,
+      rgba(255, 255, 255, 0.3)
+    );
     --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
     --color-border: #0d0d0c;
     --color-text: #f2efe9;
@@ -665,6 +730,26 @@
     --shadow-floating-island:
       0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
       inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --shadow-floating-island-hover:
+      0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.32),
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.3), inset 0 -1px 0.5px rgba(255, 255, 255, 0.08);
+    --shadow-floating-island-active:
+      0 2px 8px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.25),
+      inset 0 1.5px 3px rgba(0, 0, 0, 0.35);
+    --shadow-glass-control-hover:
+      0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.25);
+    --shadow-glass-control-active: inset 0 1.5px 3px rgba(0, 0, 0, 0.4);
+    --gradient-glass-highlight: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    --gradient-glass-active: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.15) 0%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
     --shadow-island: var(--shadow-floating-island);
     color-scheme: dark;
   }
@@ -675,6 +760,26 @@
   --color-surface: #232220;
   --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
   --color-surface-glass-border: rgb(13 13 12 / calc(var(--glass-opacity) * 0.8));
+  --color-surface-glass-hover: rgb(55 53 50 / min(0.85, calc(var(--glass-opacity) + 0.26)));
+  --color-surface-glass-active: rgb(68 66 62 / min(0.92, calc(var(--glass-opacity) + 0.38)));
+  --color-surface-glass-hover-border: color-mix(
+    in srgb,
+    var(--color-primary) 38%,
+    rgba(255, 255, 255, 0.28)
+  );
+  --color-surface-glass-active-border: color-mix(
+    in srgb,
+    var(--color-primary) 65%,
+    rgba(255, 255, 255, 0.35)
+  );
+  --color-glass-control-hover: rgba(255, 255, 255, 0.12);
+  --color-glass-control-active: rgba(255, 255, 255, 0.18);
+  --color-glass-control-hover-border: rgba(255, 255, 255, 0.22);
+  --color-glass-control-active-border: color-mix(
+    in srgb,
+    var(--color-primary) 45%,
+    rgba(255, 255, 255, 0.3)
+  );
   --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #0d0d0c;
   --color-text: #f2efe9;
@@ -785,6 +890,26 @@
   --shadow-floating-island:
     0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --shadow-floating-island-hover:
+    0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.3), inset 0 -1px 0.5px rgba(255, 255, 255, 0.08);
+  --shadow-floating-island-active:
+    0 2px 8px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.25),
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.35);
+  --shadow-glass-control-hover:
+    0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.25);
+  --shadow-glass-control-active: inset 0 1.5px 3px rgba(0, 0, 0, 0.4);
+  --gradient-glass-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  --gradient-glass-active: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
   --shadow-island: var(--shadow-floating-island);
   color-scheme: dark;
 }
@@ -794,6 +919,26 @@
   --color-surface: #ffffff;
   --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
   --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
+  --color-surface-glass-hover: rgb(255 255 255 / min(0.78, calc(var(--glass-opacity) + 0.24)));
+  --color-surface-glass-active: rgb(255 255 255 / min(0.88, calc(var(--glass-opacity) + 0.36)));
+  --color-surface-glass-hover-border: color-mix(
+    in srgb,
+    var(--color-primary) 28%,
+    rgb(255 255 255 / 0.85)
+  );
+  --color-surface-glass-active-border: color-mix(
+    in srgb,
+    var(--color-primary) 55%,
+    rgb(255 255 255 / 0.9)
+  );
+  --color-glass-control-hover: rgb(255 255 255 / 0.45);
+  --color-glass-control-active: rgb(255 255 255 / 0.65);
+  --color-glass-control-hover-border: rgb(255 255 255 / 0.65);
+  --color-glass-control-active-border: color-mix(
+    in srgb,
+    var(--color-primary) 40%,
+    rgb(255 255 255 / 0.8)
+  );
   --backdrop-blur-md: blur(var(--glass-blur)) saturate(180%);
   --color-border: #e8e2d9;
   --color-text: #2b2a28;
@@ -846,6 +991,31 @@
   --shadow-floating-island:
     0 4px 16px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --shadow-floating-island-hover:
+    0 8px 24px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.7), inset 0 -1px 0.5px rgba(255, 255, 255, 0.2);
+  --shadow-floating-island-active:
+    0 2px 8px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-glass-control-hover:
+    0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.75);
+  --shadow-glass-control-active: inset 0 1.5px 2px rgba(0, 0, 0, 0.12);
+  --gradient-glass-highlight: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  --gradient-glass-active: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  --transition-glass:
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-image 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.15s ease, outline-color 0.15s ease, transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.16s cubic-bezier(0.16, 1, 0.3, 1);
   --shadow-island: var(--shadow-floating-island);
   --shadow-inset: inset 0 1px 2px rgba(43, 42, 40, 0.1);
   --shadow-pill-raised: 0 1px 2px rgba(43, 42, 40, 0.08), 0 2px 6px rgba(43, 42, 40, 0.08);

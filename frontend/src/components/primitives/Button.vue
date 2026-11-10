@@ -18,8 +18,9 @@ const _props = withDefaults(
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
      * - 'floating': Runder, schwebender Glass-Aktionsbutton (Liquid-Glass-Style analog zu Header Pill und NavBar Pill)
+     * - 'glass': Transluzenter Glass-Button (speziell für Bedienelemente innerhalb von Glass-Pills und Toolbars)
      */
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
+    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating' | 'glass';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
@@ -444,26 +445,45 @@ a.btn.is-loading {
   box-shadow: var(--shadow-control-active);
 }
 
-/* Floating Buttons: Glass-Style analog zu Header Pill und NavBar Pill */
+/* Floating Buttons: Liquid-Glass-Style mit 3D-Lichtbrechung und Schwebeschatten (#701, #729) */
 .btn--floating {
-  background-color: var(--color-surface-glass);
+  @include control-glass-interactive('floating');
+}
+
+.btn--floating.is-active,
+.btn--floating.active {
+  background-color: var(--color-primary);
   background-image: none;
   backdrop-filter: var(--backdrop-blur-md);
-  color: var(--color-text);
-  border: 1px solid var(--color-surface-glass-border);
+  color: var(--color-primary-contrast, white);
+  border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-floating-island);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-floating-island-hover);
+    translate: 0 -1.5px;
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-floating-island-active);
+    transform: translateY(1px) scale(0.985);
+    translate: 0 0;
+  }
 }
 
-.btn--floating:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--color-hover) 80%, var(--color-surface-glass));
-  border-color: var(--color-border-strong);
+/* Glass Buttons: Transluzente Glaskapsel für Bedienelemente innerhalb von Glass-Pills/Headern/Toolbars */
+.btn--glass {
+  @include control-glass-interactive('embedded');
+}
+
+.btn--glass.is-active,
+.btn--glass.active {
+  background-color: var(--color-primary-tint);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
   color: var(--color-primary-dark);
-  box-shadow: var(--shadow-floating-island);
-}
-
-.btn--floating:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--color-hover) 90%, var(--color-surface-glass));
-  box-shadow: var(--shadow-floating-island);
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.4);
 }
 
 /* Aktiver Zustand für alle Button-Varianten (#audit) */
@@ -491,28 +511,6 @@ a.btn.is-loading {
   box-shadow:
     inset 0 2px 4px rgba(0, 0, 0, 0.2),
     var(--shadow-sm);
-}
-
-.btn--floating.is-active,
-.btn--floating.active {
-  background-color: var(--color-primary);
-  background-image: none;
-  backdrop-filter: var(--backdrop-blur-md);
-  color: var(--color-primary-contrast, white);
-  border-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-floating-island);
-}
-
-.btn--floating.is-active:hover:not(:disabled),
-.btn--floating.active:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-floating-island);
-}
-
-.btn--floating.is-active:active:not(:disabled),
-.btn--floating.active:active:not(:disabled) {
-  background-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-floating-island);
 }
 
 .btn--sm {

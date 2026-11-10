@@ -8,8 +8,8 @@ import Button from './Button.vue';
 defineProps<{
   /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
   icon?: IconDef;
-  /** Variante: 'ghost', 'secondary', 'danger', 'primary', 'card-action', 'floating' */
-  variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'floating';
+  /** Variante: 'ghost', 'secondary', 'danger', 'primary', 'card-action', 'floating', 'glass' */
+  variant?: 'ghost' | 'secondary' | 'danger' | 'primary' | 'card-action' | 'floating' | 'glass';
   /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
   secondary?: boolean;
   /** Größe des Buttons: 'sm' (38px), 'md' (46px), 'lg' (52px). */

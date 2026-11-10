@@ -180,7 +180,7 @@ function dismissPwaInstall() {
   <div class="notification-inbox">
     <div class="bell-btn-wrap">
       <IconButton
-        variant="ghost"
+        variant="glass"
         shape="circle"
         :icon="BELL_ICON"
         title="Benachrichtigungen"

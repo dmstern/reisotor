@@ -78,6 +78,16 @@ describe('Button primitive', () => {
     expect(html).toContain('Map');
   });
 
+  it('renders btn--glass when variant="glass" is passed', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'glass', shape: 'circle' }, () => 'Bell'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--glass');
+    expect(html).toContain('btn--circle');
+    expect(html).toContain('Bell');
+  });
+
   it('renders btn--pill when shape="pill" is passed without forcing icon-only mode', async () => {
     const app = createApp({
       render: () => h(Button, { shape: 'pill', size: 'sm' }, () => 'Ändern'),
