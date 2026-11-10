@@ -502,6 +502,8 @@ function handleModalClose(visible: boolean) {
             v-if="isModified"
             type="button"
             variant="ghost"
+            size="sm"
+            shape="pill"
             class="banner-reset-btn"
             title="Änderungen am Bild zurücksetzen"
             @click.stop="resetImage"
@@ -509,7 +511,14 @@ function handleModalClose(visible: boolean) {
             <AppIcon :icon="ACTION_ICONS.restore" :size="13" group="actions" />
             {{ variant === 'polaroid' ? '' : 'Zurücksetzen' }}
           </Button>
-          <Button type="button" variant="ghost" class="banner-edit-btn" @click="showModal = true">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            shape="pill"
+            class="banner-edit-btn"
+            @click="showModal = true"
+          >
             <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
             {{
               variant === 'polaroid'
@@ -703,8 +712,7 @@ function handleModalClose(visible: boolean) {
 
 .form-image-banner--polaroid .banner-edit-btn,
 .form-image-banner--polaroid .banner-reset-btn {
-  font-size: 0.76rem;
-  padding: 3px 8px;
+  font-size: var(--font-size-xs);
   backdrop-filter: blur(6px);
   background: color-mix(in srgb, var(--color-surface) 85%, transparent) !important;
 }
@@ -809,15 +817,8 @@ function handleModalClose(visible: boolean) {
 .banner-reset-btn {
   background: var(--color-surface) !important;
   color: var(--color-accent) !important;
-  font-size: 0.82rem;
-  padding: 4px 8px;
   border: 1px solid var(--color-accent);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   box-shadow: var(--shadow-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
 }
 
 .banner-reset-btn:hover {
@@ -827,15 +828,8 @@ function handleModalClose(visible: boolean) {
 .banner-edit-btn {
   background: var(--color-surface) !important;
   color: var(--color-text) !important;
-  font-size: 0.82rem;
-  padding: 4px 8px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   box-shadow: var(--shadow-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
 }
 
 .banner-edit-btn:hover {

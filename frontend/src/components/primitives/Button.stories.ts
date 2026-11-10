@@ -15,6 +15,10 @@ const meta: Meta<typeof Button> = {
       control: 'select',
       options: ['sm', 'md', 'lg'],
     },
+    shape: {
+      control: 'select',
+      options: ['squircle', 'circle', 'pill'],
+    },
     disabled: {
       control: 'boolean',
     },

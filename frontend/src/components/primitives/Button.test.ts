@@ -78,6 +78,17 @@ describe('Button primitive', () => {
     expect(html).toContain('Map');
   });
 
+  it('renders btn--pill when shape="pill" is passed without forcing icon-only mode', async () => {
+    const app = createApp({
+      render: () => h(Button, { shape: 'pill', size: 'sm' }, () => 'Ändern'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--pill');
+    expect(html).toContain('btn--sm');
+    expect(html).toContain('Ändern');
+    expect(html).not.toContain('btn--icon-only');
+  });
+
   it('renders filled icon variant when button is active and icon has filled variant', async () => {
     setActivePinia(createPinia());
     const app = createApp({
