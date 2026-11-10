@@ -99,6 +99,7 @@ describe('ExcursionDoneStatus', () => {
     expect(html).toContain('done-toggle--split');
     expect(html).toContain('done-toggle-btn--check');
     expect(html).toContain('done-toggle-btn--action');
+    expect(html).toContain('done-toggle-jump-icon');
     expect(html).toContain('Geplant für');
     expect(html).toContain('15.07');
     expect(html).toContain('Zum 15.07 im Kalender springen');
