@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type ComponentPublicInstance } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { IconDef } from '../utils/icon';
 import type { IconGroup } from '../stores/iconStyle';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -8,7 +8,12 @@ import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
-import { computePopoverPosition } from '../utils/popoverPosition';
+import { observePopoverPosition, type PopoverPositionResult } from '../utils/popoverPosition';
+
+const DEFAULT_SETTINGS_MENU_WIDTH_PX = 220;
+const DEFAULT_SETTINGS_MENU_HEIGHT_PX = 240;
+const SETTINGS_MENU_OFFSET_PX = 6;
+const SETTINGS_MENU_VIEWPORT_PADDING_PX = 8;
 
 export interface ListOption {
   value: string;
@@ -69,7 +74,13 @@ const emit = defineEmits<{
 
 const open = ref(false);
 const btnRef = ref<HTMLElement | ComponentPublicInstance | null>(null);
-const menuStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
+const menuRef = ref<InstanceType<typeof PickerMenu> | ComponentPublicInstance | null>(null);
+const menuStyle = ref<PopoverPositionResult>({
+  top: '0px',
+  left: '0px',
+  maxHeight: 'calc(100dvh - 16px)',
+});
+let stopObserveSettingsMenu: (() => void) | null = null;
 
 const isHideCompletedActive = computed(() => props.hideCompleted === true);
 const isGroupByActive = computed(
@@ -103,28 +114,58 @@ const activeCount = computed(() => {
   return count;
 });
 
+function resolveTriggerEl(fallbackTarget?: HTMLElement | null): HTMLElement | null {
+  return (
+    fallbackTarget ||
+    ((btnRef.value as ComponentPublicInstance | null)?.$el as HTMLElement | null) ||
+    (btnRef.value as HTMLElement | null)
+  );
+}
+
+function resolveMenuEl(): HTMLElement | null {
+  const menuInstance = menuRef.value as
+    (ComponentPublicInstance & { el?: HTMLElement | null }) | null;
+  return menuInstance?.el ?? (menuInstance?.$el as HTMLElement | null) ?? null;
+}
+
+function startSettingsMenuObserver(fallbackTarget?: HTMLElement | null) {
+  stopObserveSettingsMenu?.();
+  stopObserveSettingsMenu = observePopoverPosition({
+    getTrigger: () => resolveTriggerEl(fallbackTarget),
+    getMenu: resolveMenuEl,
+    menuWidth: DEFAULT_SETTINGS_MENU_WIDTH_PX,
+    menuHeight: DEFAULT_SETTINGS_MENU_HEIGHT_PX,
+    align: 'right',
+    offset: SETTINGS_MENU_OFFSET_PX,
+    viewportPadding: SETTINGS_MENU_VIEWPORT_PADDING_PX,
+    onUpdate: (coords) => {
+      menuStyle.value = coords;
+    },
+  });
+}
+
 function toggleMenu(event?: MouseEvent) {
   if (!open.value) {
-    const target =
-      (event?.currentTarget as HTMLElement) ||
-      ((btnRef.value as ComponentPublicInstance)?.$el as HTMLElement) ||
-      (btnRef.value as HTMLElement);
-
-    if (target) {
-      menuStyle.value = computePopoverPosition(target, {
-        menuWidth: 220,
-        menuHeight: 200,
-        align: 'right',
-        offset: 6,
-        viewportPadding: 8,
-      });
-    }
-
+    const target = (event?.currentTarget as HTMLElement | null) ?? null;
+    startSettingsMenuObserver(target);
     open.value = true;
+    nextTick(() => startSettingsMenuObserver(target));
   } else {
     open.value = false;
   }
 }
+
+watch(open, (isOpen) => {
+  if (!isOpen) {
+    stopObserveSettingsMenu?.();
+    stopObserveSettingsMenu = null;
+  }
+});
+
+onBeforeUnmount(() => {
+  stopObserveSettingsMenu?.();
+  stopObserveSettingsMenu = null;
+});
 
 function selectGroupBy(val: string) {
   emit('update:groupBy', val);
@@ -176,6 +217,7 @@ function resetDefaults() {
     <Teleport to="body">
       <PickerMenu
         v-if="open"
+        ref="menuRef"
         class="list-settings-popover-menu"
         origin="top-right"
         :style="menuStyle"
@@ -277,8 +319,11 @@ function resetDefaults() {
 :global(.list-settings-popover-menu) {
   min-width: 210px;
   max-width: 280px;
-  max-height: calc(100vh - 70px);
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .popover-section-header {
@@ -315,9 +360,13 @@ function resetDefaults() {
 }
 
 .popover-footer {
-  margin-top: var(--space-2);
-  padding-top: var(--space-1);
+  position: sticky;
+  bottom: calc(-1 * var(--space-2));
+  margin: var(--space-2) calc(-1 * var(--space-2)) calc(-1 * var(--space-2));
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  background: var(--color-surface);
   border-top: 1px solid var(--color-border);
+  z-index: 2;
 }
 
 .reset-settings-btn {

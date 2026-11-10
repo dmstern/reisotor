@@ -9,12 +9,15 @@ interface Props {
   inertWhenClosed?: boolean;
   /** Ob Kindelemente beim Einblenden zeitlich versetzt auffächern sollen */
   stagger?: boolean;
+  /** Optionale Zusatzklasse(n) für den inneren Grid-Container (.accordion-inner) */
+  innerClass?: string;
 }
 
 withDefaults(defineProps<Props>(), {
   expanded: false,
   inertWhenClosed: true,
   stagger: false,
+  innerClass: undefined,
 });
 </script>
 
@@ -24,59 +27,89 @@ withDefaults(defineProps<Props>(), {
     :class="{ 'is-expanded': expanded }"
     :inert="inertWhenClosed && !expanded ? true : undefined"
   >
-    <div class="accordion-inner" :class="{ 'accordion-stagger': stagger }">
+    <div class="accordion-inner" :class="[{ 'accordion-stagger': stagger }, innerClass]">
       <slot />
     </div>
   </div>
 </template>
 
 <style scoped>
-/* App-weites Akkordion-Muster mit sanfter Grid-Höhenanimation (0fr -> 1fr) */
+/* App-weites Akkordion-Muster mit sanfter Grid-Höhenanimation (0fr -> 1fr),
+   zentral gesteuert über die CSS-Variablen in style.css */
 .accordion {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transition: var(
+    --transition-accordion-close,
+    grid-template-rows 0.26s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease
+  );
 }
 
 .accordion.is-expanded {
   grid-template-rows: 1fr;
+  opacity: 1;
+  transition: var(
+    --transition-accordion-open,
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.25s ease
+  );
 }
 
 .accordion:not(.is-expanded) {
   overflow: hidden;
 }
 
+@keyframes accordion-reveal-overflow {
+  from,
+  99% {
+    overflow: hidden;
+  }
+  to {
+    overflow: visible;
+  }
+}
+
 .accordion-inner {
   min-height: 0;
   overflow: hidden;
   visibility: hidden;
-  transition: visibility 0s 0.35s;
+  transition: visibility 0s var(--duration-accordion-close, 0.26s);
 }
 
 .accordion.is-expanded > .accordion-inner {
-  overflow: visible;
   visibility: visible;
-  transition:
-    overflow 0s 0.35s allow-discrete,
-    visibility 0s 0s;
+  animation: accordion-reveal-overflow var(--duration-accordion-open, 0.35s) forwards;
+  transition: visibility 0s 0s;
 }
 
 /* Gestaffeltes Auffächern von Kindelementen im Akkordion (Stagger-Effekt) */
-:deep(.accordion-stagger > *),
+.accordion > .accordion-inner.accordion-stagger > :deep(*),
 .accordion :deep(.staggered-item) {
   transition:
-    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.2s ease 0s,
+    transform 0.2s ease 0s,
+    background-color var(--transition-fast, 0.15s ease),
+    color var(--transition-fast, 0.15s ease);
   opacity: 0;
-  transform: translateY(-16px) scale(0.98);
-  transition-delay: calc((var(--stagger-total, 10) - var(--stagger-idx, 0) - 1) * 25ms);
+  transform: translateY(-10px) scale(0.98);
 }
 
-.accordion.is-expanded :deep(.accordion-stagger > *),
+.accordion.is-expanded > .accordion-inner.accordion-stagger > :deep(*),
 .accordion.is-expanded :deep(.staggered-item) {
+  transition:
+    opacity var(--duration-accordion-open, 0.35s)
+      var(--ease-accordion-stagger, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform var(--duration-accordion-open, 0.35s)
+      var(--ease-accordion-stagger, cubic-bezier(0.16, 1, 0.3, 1)),
+    background-color var(--transition-fast, 0.15s ease),
+    color var(--transition-fast, 0.15s ease);
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx, 0) * 45ms);
+  transition-delay:
+    calc(var(--stagger-idx, 0) * var(--stagger-step-open, 35ms)),
+    calc(var(--stagger-idx, 0) * var(--stagger-step-open, 35ms)), 0s, 0s;
 }
 
 /* Nth-child Fallback für Listen ohne explizites inline --stagger-idx */
@@ -142,15 +175,22 @@ withDefaults(defineProps<Props>(), {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .accordion {
+  .accordion,
+  .accordion.is-expanded {
     transition: none;
   }
-  .accordion-inner,
+  .accordion-inner {
+    transition: none;
+  }
   .accordion.is-expanded > .accordion-inner {
+    animation: none;
+    overflow: visible;
     transition: none;
   }
-  :deep(.accordion-stagger > *),
-  .accordion :deep(.staggered-item) {
+  .accordion > .accordion-inner.accordion-stagger > :deep(*),
+  .accordion.is-expanded > .accordion-inner.accordion-stagger > :deep(*),
+  .accordion :deep(.staggered-item),
+  .accordion.is-expanded :deep(.staggered-item) {
     transition: none;
     transform: none;
     opacity: 1;

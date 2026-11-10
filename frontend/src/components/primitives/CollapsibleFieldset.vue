@@ -202,7 +202,7 @@ function toggle() {
 
 .caret {
   flex-shrink: 0;
-  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+  transition: var(--transition-caret, transform 0.24s cubic-bezier(0.34, 1.4, 0.64, 1));
 }
 
 .caret.open {
@@ -215,9 +215,11 @@ function toggle() {
 .collapsible-anim-wrapper {
   display: grid;
   grid-template-rows: 0fr;
-  transition:
-    grid-template-rows 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 0.22s ease;
+  transition: var(
+    --transition-accordion-close,
+    grid-template-rows 0.26s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.2s ease
+  );
   opacity: 0;
   visibility: hidden;
 }
@@ -230,6 +232,11 @@ function toggle() {
   grid-template-rows: 1fr;
   opacity: 1;
   visibility: visible;
+  transition: var(
+    --transition-accordion-open,
+    grid-template-rows 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.25s ease
+  );
 }
 
 .collapsible-anim-inner {
@@ -245,7 +252,7 @@ function toggle() {
 
 .collapsible-anim-wrapper.is-open .collapsible-anim-inner {
   overflow: visible;
-  transition: overflow 0s 0.28s allow-discrete;
+  transition: overflow 0s var(--duration-accordion-open, 0.35s) allow-discrete;
 }
 
 .collapsible-content {

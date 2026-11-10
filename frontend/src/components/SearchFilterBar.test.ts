@@ -49,7 +49,7 @@ describe('SearchFilterBar', () => {
     cleanUp();
   });
 
-  it('opens combined popover with sorting and filter sections', async () => {
+  it('opens combined popover with collapsible sorting and filter sections', async () => {
     const { container, cleanUp } = mountBar({
       categoryOptions: ['Kultur', 'Natur'],
     });
@@ -62,16 +62,49 @@ describe('SearchFilterBar', () => {
     const picker = document.querySelector('.filter-popover-menu');
     expect(picker).not.toBeNull();
 
-    const headers = document.querySelectorAll('.popover-section-header');
-    const headerTexts = Array.from(headers).map((h) => h.textContent);
-    expect(headerTexts).toContain('Sortieren nach');
-    expect(headerTexts).toContain('Filtern nach');
+    const headers = document.querySelectorAll<HTMLButtonElement>('.popover-section-toggle');
+    const headerTitles = Array.from(headers).map(
+      (header) => header.querySelector('.popover-section-title')?.textContent
+    );
+    expect(headerTitles).toEqual(['Sortieren nach', 'Spots', 'Status', 'Touren']);
 
-    // Sortieroptionen vorhanden
-    const items = Array.from(document.querySelectorAll('.dropdown-item')).map((i) => i.textContent);
-    expect(items.some((t) => t?.includes('Nach Datum'))).toBe(true);
-    expect(items.some((t) => t?.includes('Alphabetisch'))).toBe(true);
-    expect(items.some((t) => t?.includes('Kultur'))).toBe(true);
+    // Smart-Default: "Sortieren nach" startet offen, Filter-Sektionen ohne aktive Filter starten eingeklappt
+    expect(headers[0].getAttribute('aria-expanded')).toBe('true');
+    expect(headers[1].getAttribute('aria-expanded')).toBe('false');
+    expect(headers[2].getAttribute('aria-expanded')).toBe('false');
+    expect(headers[3].getAttribute('aria-expanded')).toBe('false');
+
+    // Klick auf "Spots"-Header klappt die Sektion auf
+    headers[1].click();
+    await nextTick();
+    expect(headers[1].getAttribute('aria-expanded')).toBe('true');
+
+    // Sortier- und Kategorieoptionen im DOM vorhanden
+    const items = Array.from(document.querySelectorAll('.dropdown-item')).map(
+      (item) => item.textContent
+    );
+    expect(items.some((text) => text?.includes('Nach Datum'))).toBe(true);
+    expect(items.some((text) => text?.includes('Alphabetisch'))).toBe(true);
+    expect(items.some((text) => text?.includes('Kultur'))).toBe(true);
+    cleanUp();
+  });
+
+  it('auto-expands filter sections that have active filters on open', async () => {
+    const { container, cleanUp } = mountBar({
+      categoryOptions: ['Kultur', 'Natur'],
+      categoryFilter: ['Kultur'],
+      statusFilter: ['done'],
+    });
+
+    const filterBtn = container.querySelector<HTMLButtonElement>('.bar-icon-btn');
+    filterBtn?.click();
+    await nextTick();
+
+    const headers = document.querySelectorAll<HTMLButtonElement>('.popover-section-toggle');
+    expect(headers[0].getAttribute('aria-expanded')).toBe('true'); // Sortieren nach
+    expect(headers[1].getAttribute('aria-expanded')).toBe('true'); // Spots (1 aktiv)
+    expect(headers[2].getAttribute('aria-expanded')).toBe('true'); // Status (1 aktiv)
+    expect(headers[3].getAttribute('aria-expanded')).toBe('false'); // Touren (0 aktiv)
     cleanUp();
   });
 

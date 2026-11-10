@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 defineOptions({
   inheritAttrs: false,
@@ -37,6 +37,12 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
+const menuRef = ref<HTMLElement | null>(null);
+
+defineExpose({
+  el: menuRef,
+});
+
 function onWindowKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     emit('close');
@@ -65,6 +71,7 @@ onUnmounted(() => {
     @keydown.space.prevent="emit('close')"
   />
   <div
+    ref="menuRef"
     v-bind="$attrs"
     class="picker-menu"
     :class="[
@@ -127,6 +134,11 @@ onUnmounted(() => {
   position: fixed;
   z-index: calc(var(--z-popover, 1100) + 1);
   min-width: 180px;
+  max-block-size: calc(100vh - 16px);
+  max-block-size: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);

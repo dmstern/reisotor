@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { IconDef } from '../../utils/icon';
 import { ACTION_ICONS } from '../../utils/actionIcons';
-import { computePopoverPosition } from '../../utils/popoverPosition';
+import { observePopoverPosition } from '../../utils/popoverPosition';
 import AppIcon from '../AppIcon.vue';
 import Button from './Button.vue';
 
@@ -44,68 +44,91 @@ const emit = defineEmits<{
   (e: 'keydown', event: KeyboardEvent): void;
 }>();
 
+const DEFAULT_MENU_WIDTH_PX = 180;
 const DEFAULT_MENU_HEIGHT_PX = 160;
 const DROPDOWN_OFFSET_PX = 4;
 
 const dropdownRef = ref<HTMLElement | null>(null);
 const buttonRef = ref<InstanceType<typeof Button> | HTMLElement | null>(null);
+const portalRef = ref<HTMLElement | null>(null);
 const menuCoords = ref<{ top: string; left: string; minWidth: string }>({
   top: '0px',
   left: '0px',
   minWidth: '0px',
 });
+let stopObservePosition: (() => void) | null = null;
 
-function updatePosition() {
-  const el =
+function resolveTriggerEl(): HTMLElement | null {
+  return (
     (buttonRef.value as ComponentPublicInstance | null)?.$el ??
     (buttonRef.value as HTMLElement | null) ??
     dropdownRef.value?.querySelector('.dropdown__button') ??
-    dropdownRef.value;
+    dropdownRef.value
+  );
+}
 
-  if (!el || typeof el.getBoundingClientRect !== 'function') {
-    return;
+function resolveMenuEl(): HTMLElement | null {
+  if (!portalRef.value) {
+    return null;
   }
 
-  const rect = el.getBoundingClientRect();
-  const coords = computePopoverPosition(el, {
-    menuWidth: Math.max(180, Math.round(rect.width)),
+  return (
+    portalRef.value.querySelector<HTMLElement>('.picker-menu') ??
+    (portalRef.value.firstElementChild as HTMLElement | null) ??
+    portalRef.value
+  );
+}
+
+function startPositionObserver() {
+  stopObservePosition?.();
+
+  const triggerEl = resolveTriggerEl();
+  const rectWidth =
+    triggerEl && typeof triggerEl.getBoundingClientRect === 'function'
+      ? Math.round(triggerEl.getBoundingClientRect().width)
+      : 0;
+
+  stopObservePosition = observePopoverPosition({
+    getTrigger: resolveTriggerEl,
+    getMenu: resolveMenuEl,
+    menuWidth: Math.max(DEFAULT_MENU_WIDTH_PX, rectWidth),
     menuHeight: DEFAULT_MENU_HEIGHT_PX,
-    placement: 'bottom',
+    placement: 'auto',
     offset: DROPDOWN_OFFSET_PX,
     align: props.align,
-  });
+    onUpdate: (coords) => {
+      const currentTrigger = resolveTriggerEl();
+      const currentTriggerWidth =
+        currentTrigger && typeof currentTrigger.getBoundingClientRect === 'function'
+          ? Math.round(currentTrigger.getBoundingClientRect().width)
+          : rectWidth;
 
-  menuCoords.value = {
-    ...coords,
-    minWidth: `${Math.round(rect.width)}px`,
-  };
+      menuCoords.value = {
+        top: coords.top,
+        left: coords.left,
+        minWidth: `${currentTriggerWidth}px`,
+      };
+    },
+  });
 }
 
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen && props.teleport) {
-      updatePosition();
-      nextTick(() => updatePosition());
-
-      if (typeof window !== 'undefined') {
-        window.addEventListener('resize', updatePosition, { passive: true });
-        window.addEventListener('scroll', updatePosition, { passive: true, capture: true });
-      }
-    } else if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, { capture: true });
+      startPositionObserver();
+      nextTick(() => startPositionObserver());
+    } else {
+      stopObservePosition?.();
+      stopObservePosition = null;
     }
-  }
+  },
+  { immediate: true }
 );
 
 onBeforeUnmount(() => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.removeEventListener('resize', updatePosition);
-  window.removeEventListener('scroll', updatePosition, { capture: true });
+  stopObservePosition?.();
+  stopObservePosition = null;
 });
 
 const portalStyle = computed(() => {
@@ -172,6 +195,7 @@ defineExpose({
     <Teleport to="body" :disabled="!teleport">
       <div
         v-if="open"
+        ref="portalRef"
         class="dropdown__portal"
         :class="{ 'is-teleported': teleport }"
         :style="portalStyle"
