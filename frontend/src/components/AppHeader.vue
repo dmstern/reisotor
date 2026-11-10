@@ -479,6 +479,10 @@ const profileTitle = computed(() => {
   min-height: 36px;
 }
 
+.header-actions :deep(.btn--ghost.btn--circle) {
+  @include control-glass-interactive('embedded');
+}
+
 .header-actions :deep(.bell-btn)::after,
 .header-actions :deep(.recording-pill-btn)::after {
   content: '';
@@ -491,6 +495,7 @@ const profileTitle = computed(() => {
 }
 
 .header-calendar-btn {
+  @include control-glass-interactive('embedded');
   display: flex;
   align-items: center;
   justify-content: center;
@@ -499,15 +504,8 @@ const profileTitle = computed(() => {
   min-width: 36px;
   min-height: 36px;
   border-radius: var(--radius-pill);
-  background: transparent;
   color: var(--color-text-muted);
   text-decoration: none;
-  border: 1px solid transparent;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    transform 0.15s ease;
   position: relative;
   box-sizing: border-box;
 }
@@ -520,17 +518,6 @@ const profileTitle = computed(() => {
   width: 44px;
   height: 44px;
   transform: translate(-50%, -50%);
-}
-
-.header-calendar-btn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-  border-color: var(--color-border);
-}
-
-.header-calendar-btn:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
 }
 
 .header-calendar-btn.active {

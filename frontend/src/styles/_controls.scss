@@ -268,3 +268,113 @@
     translate: 0 0;
   }
 }
+
+/// Kapselt das 3D-Glas-Interaktionsverhalten (Hover, Active, Focus) für halbtransparente
+/// Glas-Elemente (Liquid Glass).
+///
+/// Unterstützt zwei Modi:
+/// - 'floating': Für frei schwebende Glas-Buttons (z. B. .btn--floating, Kartentools, LocationPicker).
+///               Besitzt initial den schwebenden Glass-Look mit --shadow-floating-island,
+///               hebt sich bei Hover 3D-artig an (--shadow-floating-island-hover, translate: 0 -1.5px, Lichtkante)
+///               und federt bei Klick elastisch ein.
+/// - 'embedded': Für interaktive Buttons innerhalb von Glas-Containern (z. B. .bell-btn im Header,
+///               Toolbar-Icons in Glas-Pills). Ruht dezent/transparent und blendet bei Hover
+///               eine transluzente 3D-Glaskapsel mit feinem Lichtsaum ein.
+///
+/// @param {'floating' | 'embedded'} $mode ['floating'] - Variante: frei schwebend ('floating') oder innerhalb einer Glas-Pill ('embedded')
+/// @param {String} $active-selector ['&:active:not(:disabled)'] - Selektor für den Active-Zustand
+@mixin control-glass-interactive($mode: 'floating', $active-selector: '&:active:not(:disabled)') {
+  position: relative;
+  transition: var(--transition-glass);
+
+  @if $mode == 'floating' {
+    background-color: var(--color-surface-glass);
+    background-image: none;
+    backdrop-filter: var(--backdrop-blur-md);
+    color: var(--color-text);
+    border: 1px solid var(--color-surface-glass-border);
+    box-shadow: var(--shadow-floating-island);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-surface-glass-hover);
+      background-image: var(--gradient-glass-highlight);
+      border-color: var(--color-surface-glass-hover-border);
+      color: var(--color-primary-dark);
+      box-shadow: var(--shadow-floating-island-hover);
+      translate: 0 -1.5px;
+    }
+
+    &:focus-visible {
+      outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+      outline-offset: var(--focus-ring-offset, 2px);
+      box-shadow:
+        var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-floating-island-hover);
+      translate: 0 -1px;
+    }
+
+    #{$active-selector} {
+      background-color: var(--color-surface-glass-active);
+      background-image: var(--gradient-glass-active);
+      border-color: var(--color-surface-glass-active-border);
+      box-shadow: var(--shadow-floating-island-active);
+      transform: translateY(1px) scale(0.985);
+      translate: 0 0;
+    }
+  } @else if $mode == 'embedded' {
+    background-color: transparent;
+    background-image: none;
+    color: var(--color-text);
+    border: 1px solid transparent;
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-glass-control-hover);
+      background-image: var(--gradient-glass-highlight);
+      border-color: var(--color-glass-control-hover-border);
+      color: var(--color-primary-dark);
+      box-shadow: var(--shadow-glass-control-hover);
+      translate: 0 -0.5px;
+    }
+
+    &:focus-visible {
+      outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+      outline-offset: var(--focus-ring-offset, 2px);
+      box-shadow:
+        var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-glass-control-hover);
+    }
+
+    #{$active-selector} {
+      background-color: var(--color-glass-control-active);
+      background-image: var(--gradient-glass-active);
+      border-color: var(--color-glass-control-active-border);
+      box-shadow: var(--shadow-glass-control-active);
+      transform: translateY(0.5px) scale(0.96);
+      translate: 0 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      color 0.15s ease !important;
+    translate: none !important;
+    transform: none !important;
+  }
+}
+
+/// Alias für frei schwebende Glas-Buttons (analog zu control-3d-raised).
+@mixin control-glass-floating($active-selector: '&:active:not(:disabled)') {
+  @include control-glass-interactive('floating', $active-selector);
+}
+
+/// Alias für interaktive Buttons innerhalb von Glas-Containern / Pills.
+@mixin control-glass-embedded($active-selector: '&:active:not(:disabled)') {
+  @include control-glass-interactive('embedded', $active-selector);
+}
+
+/// Generischer Alias für Glas-Hover-Effekte.
+@mixin glass-interactive($mode: 'floating', $active-selector: '&:active:not(:disabled)') {
+  @include control-glass-interactive($mode, $active-selector);
+}
