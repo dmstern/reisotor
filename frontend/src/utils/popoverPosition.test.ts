@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { computePopoverPosition } from './popoverPosition';
+import { computePopoverPosition, observePopoverPosition } from './popoverPosition';
 
 describe('computePopoverPosition', () => {
   beforeEach(() => {
     vi.stubGlobal('window', {
       innerWidth: 1024,
       innerHeight: 768,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     });
   });
 
@@ -27,6 +29,7 @@ describe('computePopoverPosition', () => {
     expect(result).toEqual({
       top: '246px', // 240 + 6
       left: '100px',
+      maxHeight: '752px', // 768 - 16
     });
   });
 
@@ -42,12 +45,30 @@ describe('computePopoverPosition', () => {
 
     // Viewport height: 768.
     // spaceBelow: 768 - 720 - 6 - 8 = 34px < 100px.
-    // spaceAbove: 680 - 6 - 8 = 666px > 34px.
+    // spaceAbove: 680 - 6 - 8 = 666px >= 100px.
     const result = computePopoverPosition(rect, { menuWidth: 200, menuHeight: 100, offset: 6 });
     expect(result).toEqual({
       top: '574px', // 680 - 6 - 100
       left: '100px',
+      maxHeight: '752px',
     });
+  });
+
+  it('shifts tall menu upwards so bottom edge stays inside viewport when neither side fits completely', () => {
+    const rect = {
+      left: 100,
+      right: 200,
+      top: 260,
+      bottom: 300,
+      width: 100,
+      height: 40,
+    };
+
+    // Viewport height: 768, menuHeight: 600, padding: 8
+    // Starts at 300 + 6 = 306, clamped to 768 - 600 - 8 = 160px
+    const result = computePopoverPosition(rect, { menuWidth: 240, menuHeight: 600, offset: 6 });
+    expect(result.top).toBe('160px');
+    expect(result.maxHeight).toBe('752px');
   });
 
   it('clamps to viewport right edge with padding', () => {
@@ -127,6 +148,8 @@ describe('computePopoverPosition', () => {
     vi.stubGlobal('window', {
       innerWidth: 1024,
       innerHeight: 200,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     });
     const rect = {
       left: 100,
@@ -165,5 +188,64 @@ describe('computePopoverPosition', () => {
     // Flips above: 350 - 5 - 100 = 245
     expect(result.top).toBe('245px');
     expect(result.left).toBe('50px');
+    expect(result.maxHeight).toBe('384px');
+  });
+
+  it('observes menu dimensions and updates coordinates dynamically', () => {
+    const triggerEl = {
+      getBoundingClientRect: () => ({
+        left: 200,
+        right: 240,
+        top: 300,
+        bottom: 340,
+        width: 40,
+        height: 40,
+      }),
+    } as unknown as HTMLElement;
+
+    let currentMenuHeight = 200;
+    const menuEl = {
+      getBoundingClientRect: () => ({
+        left: 0,
+        right: 240,
+        top: 0,
+        bottom: currentMenuHeight,
+        width: 240,
+        height: currentMenuHeight,
+      }),
+    } as unknown as HTMLElement;
+
+    let resizeCallback: (() => void) | null = null;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: () => void) {
+          resizeCallback = cb;
+        }
+        observe() {}
+        disconnect() {}
+      }
+    );
+
+    const updates: Array<{ top: string; left: string; maxHeight: string }> = [];
+    const cleanup = observePopoverPosition({
+      getTrigger: () => triggerEl,
+      getMenu: () => menuEl,
+      align: 'right',
+      offset: 6,
+      onUpdate: (coords) => updates.push(coords),
+    });
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].top).toBe('346px'); // 340 + 6 (fits below in 768px viewport)
+
+    // Menu grows to 550px (e.g. sections expanded) -> overflows bottom at 346 + 550 = 896 > 760
+    currentMenuHeight = 550;
+    resizeCallback!();
+
+    expect(updates).toHaveLength(2);
+    expect(updates[1].top).toBe('210px'); // Clamped to 768 - 550 - 8 = 210px
+
+    cleanup();
   });
 });

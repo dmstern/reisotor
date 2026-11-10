@@ -46,6 +46,7 @@ test.describe('Spots-Liste: "Gemacht"-Status-Filter', () => {
 
     await page.waitForSelector('.search-filter-bar');
     await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
+    await page.locator('.popover-section-toggle', { hasText: 'Status' }).click();
     const gemachtOption = page.locator('.dropdown-item', { hasText: 'Gemacht' });
     await gemachtOption.evaluate((el: HTMLElement) => el.click());
     await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
@@ -82,6 +83,7 @@ test.describe('Spots-Karte: Kategorie-Filter wird zuverlässig auf die Marker an
 
     await page.waitForSelector('.search-filter-bar');
     await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
+    await page.locator('.popover-section-toggle', { hasText: 'Spots' }).click();
     // Erste Kategorie-Checkbox aus dem Menü wählen - welche das genau ist, ist für diesen Test
     // irrelevant, nur dass danach WENIGER Marker als vorher sichtbar sind.
     const firstCatOption = page.locator('.category-option').first();
