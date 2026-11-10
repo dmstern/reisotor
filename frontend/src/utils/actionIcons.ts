@@ -103,6 +103,8 @@ import {
   IconChevronRight,
   IconChevronDown,
   IconChevronUp,
+  IconFoldDown,
+  IconFoldUp,
   IconInfoCircle,
   IconInfoCircleFilled,
   IconDeviceMobile,
@@ -223,6 +225,8 @@ export type ActionIconKey =
   | 'scrollRight'
   | 'chevronDown'
   | 'chevronUp'
+  | 'foldDown'
+  | 'foldUp'
   | 'info'
   | 'installApp'
   | 'sparkles'
@@ -419,6 +423,8 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   // CSS-Rotation an der jeweiligen Aufrufstelle statt separater Icon-Varianten pro Winkel.
   chevronDown: { id: 'chevron-down', emoji: '🔽', outline: IconChevronDown },
   chevronUp: { id: 'chevron-up', emoji: '🔼', outline: IconChevronUp },
+  foldDown: { id: 'fold-down', emoji: '🔽', outline: IconFoldDown },
+  foldUp: { id: 'fold-up', emoji: '🔼', outline: IconFoldUp },
   info: { id: 'info-circle', emoji: 'ℹ️', outline: IconInfoCircle, filled: IconInfoCircleFilled },
   installApp: { id: 'device-mobile', emoji: '📲', outline: IconDeviceMobile },
   sparkles: { id: 'sparkles', emoji: '✨', outline: IconSparkles },
