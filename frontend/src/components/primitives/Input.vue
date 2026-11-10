@@ -148,6 +148,15 @@ defineExpose({
   padding: 6px 10px;
   min-height: var(--input-height-sm, 38px);
   font-size: var(--font-size-sm);
+
+  /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */
+  @include media-down('desktop-sm') {
+    font-size: var(--font-size-md);
+  }
+
+  @media (pointer: coarse) {
+    font-size: var(--font-size-md);
+  }
 }
 
 .input--lg {
