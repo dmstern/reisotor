@@ -988,6 +988,24 @@ textarea {
   font-size: var(--font-size-md);
 }
 
+/* iOS/WebKit Auto-Zoom-Prävention (#729 / Mobile-UX): Liegt die berechnete Schriftgröße
+   eines interaktiven Formularfelds auf Mobilgeräten oder Touchscreens unter 16px (1rem),
+   zoomt Safari/WebKit die PWA beim Fokussieren automatisch heran und stellt den Zoom beim
+   Blur nicht wieder zurück. Diese globale Absicherung garantiert auf Mobil- und Touch-Geräten
+   mindestens 16px (1rem) für alle Texteingaben, Selects und Textareas. */
+@media (max-width: 800px), (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not(
+      [type='button']
+    ):not([type='submit']):not([type='reset']):not([type='file']):not([type='image']),
+  select,
+  textarea,
+  .input,
+  .select,
+  .textarea {
+    font-size: max(16px, 1rem);
+  }
+}
+
 button {
   cursor: pointer;
   font-family: inherit;

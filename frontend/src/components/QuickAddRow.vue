@@ -344,6 +344,15 @@ function onBlur(event: FocusEvent) {
   width: auto;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+
+  /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */
+  @include media-down('desktop-sm') {
+    font-size: var(--font-size-md);
+  }
+
+  @media (pointer: coarse) {
+    font-size: var(--font-size-md);
+  }
 }
 
 .extra-fields :deep(.combobox) {
@@ -361,6 +370,15 @@ function onBlur(event: FocusEvent) {
   width: 100%;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+
+  /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */
+  @include media-down('desktop-sm') {
+    font-size: var(--font-size-md);
+  }
+
+  @media (pointer: coarse) {
+    font-size: var(--font-size-md);
+  }
 }
 
 .extra-fields :deep(.combobox-caret) {
