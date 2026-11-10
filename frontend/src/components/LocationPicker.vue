@@ -803,11 +803,6 @@ defineExpose({
     width: 100%;
   }
 
-  .map-wrap.has-polaroid :deep(.location-picker-input) {
-    box-shadow: none;
-    border: 1px solid var(--color-border);
-  }
-
   .has-polaroid .location-picker-map {
     height: 135px;
     min-height: 135px;

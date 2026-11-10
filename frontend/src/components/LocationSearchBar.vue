@@ -309,8 +309,6 @@ function onDropdownScroll(e: Event) {
   box-sizing: border-box;
   padding-left: 38px;
   padding-right: 42px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-md);
   border-radius: var(--radius-pill);
   corner-shape: round;
 }

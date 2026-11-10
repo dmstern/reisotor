@@ -487,7 +487,7 @@ defineExpose({
   border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: var(--color-surface);
+  background: var(--color-input-bg);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   cursor: pointer;

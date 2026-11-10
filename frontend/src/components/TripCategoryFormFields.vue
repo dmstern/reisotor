@@ -155,7 +155,7 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   min-height: var(--input-height, 46px);
-  background: var(--color-surface);
+  background: var(--color-input-bg);
   border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;

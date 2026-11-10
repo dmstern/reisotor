@@ -16,9 +16,8 @@
 /// @param {Boolean} $focus-within [false] - Ob :focus-within und .is-focused statt :focus verwendet werden sollen (für Container)
 @mixin control-field-inset($focus-within: false) {
   box-shadow: none;
-  background: var(--color-surface);
+  background: var(--color-input-bg);
   border: 1.5px solid var(--input-border-color);
-  border-bottom: 2px solid var(--color-primary);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition: var(--transition-control);
@@ -26,13 +25,11 @@
   @if $focus-within {
     &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
       border-color: color-mix(in srgb, var(--color-primary) 35%, var(--input-border-color));
-      border-bottom-color: var(--color-primary);
       box-shadow: var(--shadow-control-inset-hover);
     }
 
     &:focus-within,
     &.is-focused {
-      border-bottom: 1.5px solid var(--input-border-color);
       outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
       outline-offset: var(--focus-ring-offset, 2px);
       box-shadow:
@@ -49,7 +46,6 @@
 
       &:focus-within,
       &.is-focused {
-        border-bottom-width: 1.5px;
         border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
@@ -72,7 +68,6 @@
 
       &:focus-within,
       &.is-focused {
-        border-bottom-width: 1.5px;
         border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
@@ -83,14 +78,12 @@
   } @else {
     &:hover:not(:disabled):not(:focus):not(:focus-visible) {
       border-color: color-mix(in srgb, var(--color-primary) 35%, var(--input-border-color));
-      border-bottom-color: var(--color-primary);
       box-shadow: var(--shadow-control-inset-hover);
     }
 
     &:focus,
     &:focus-visible,
     &:active:not(:disabled) {
-      border-bottom: 1.5px solid var(--input-border-color);
       outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
       outline-offset: var(--focus-ring-offset, 2px);
       box-shadow:
@@ -108,7 +101,6 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
-        border-bottom-width: 1.5px;
         border-color: var(--input-border-color);
         outline: var(--focus-ring-width, 3px) solid var(--color-danger);
         outline-color: var(--color-danger);
@@ -132,7 +124,6 @@
       &:focus,
       &:focus-visible,
       &:active:not(:disabled) {
-        border-bottom-width: 1.5px;
         border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-accent);
         outline-color: var(--color-accent);
