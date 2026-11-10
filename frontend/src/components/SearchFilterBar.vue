@@ -177,7 +177,7 @@ function clearFilters() {
         variant="secondary"
         shape="circle"
         :active="totalActiveCount > 0"
-        :icon="ACTION_ICONS.filter"
+        :icon="ACTION_ICONS.filterSettings"
         :title="
           totalActiveCount > 0
             ? `Filtern & Sortieren (${totalActiveCount} aktiv)`
