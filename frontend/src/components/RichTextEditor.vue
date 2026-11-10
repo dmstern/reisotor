@@ -52,9 +52,12 @@ const hasContent = computed(() => {
 
 function expandAndFocus() {
   isExpanded.value = true;
-  isFocused.value = true;
   nextTick(() => {
-    editor.value?.commands.focus('end');
+    if (editor.value) {
+      editor.value.commands.focus('end');
+    }
+
+    isFocused.value = true;
   });
 }
 
@@ -175,105 +178,114 @@ defineExpose({
     @focusin="onFocusIn"
     @focusout="onFocusOut"
   >
-    <!-- Die Toolbar wird nur angezeigt, wenn der Editor aktiv fokussiert ist.
-         @mousedown.prevent verhindert Fokusverlust beim Klick auf Formatierungs-Buttons. -->
-    <div v-show="isFocused" class="toolbar" @mousedown.prevent>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('bold') }"
-        title="Fett"
-        aria-label="Fett"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleBold().run()"
-      >
-        <strong>F</strong>
-      </button>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('italic') }"
-        title="Kursiv"
-        aria-label="Kursiv"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleItalic().run()"
-      >
-        <em>K</em>
-      </button>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('strike') }"
-        title="Durchgestrichen"
-        aria-label="Durchgestrichen"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleStrike().run()"
-      >
-        <s>D</s>
-      </button>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('heading', { level: 2 }) }"
-        title="Überschrift"
-        aria-label="Überschrift"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
-      >
-        H
-      </button>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('bulletList') }"
-        title="Aufzählung"
-        aria-label="Aufzählung"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleBulletList().run()"
-      >
-        •
-      </button>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('orderedList') }"
-        title="Nummerierte Liste"
-        aria-label="Nummerierte Liste"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleOrderedList().run()"
-      >
-        1.
-      </button>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('blockquote') }"
-        title="Zitat"
-        aria-label="Zitat"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleBlockquote().run()"
-      >
-        "
-      </button>
-      <button
-        type="button"
-        class="toolbar-btn"
-        :class="{ active: isActive('code') }"
-        title="Code"
-        aria-label="Code"
-        :disabled="!editor"
-        @mousedown.prevent
-        @click="editor?.chain().focus().toggleCode().run()"
-      >
-        ⌨︎
-      </button>
+    <!-- Die Toolbar wird animiert ein- und ausgeblendet, wenn der Editor fokussiert wird bzw. den Fokus verliert.
+         @mousedown.prevent verhindert Fokusverlust beim Klick auf Formatierungs-Buttons oder freie Bereiche. -->
+    <div
+      class="toolbar-wrapper"
+      :class="{ 'is-open': isFocused }"
+      :inert="!isFocused"
+      @mousedown.prevent
+    >
+      <div class="toolbar-inner">
+        <div class="toolbar">
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('bold') }"
+            title="Fett"
+            aria-label="Fett"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleBold().run()"
+          >
+            <strong>F</strong>
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('italic') }"
+            title="Kursiv"
+            aria-label="Kursiv"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleItalic().run()"
+          >
+            <em>K</em>
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('strike') }"
+            title="Durchgestrichen"
+            aria-label="Durchgestrichen"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleStrike().run()"
+          >
+            <s>D</s>
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('heading', { level: 2 }) }"
+            title="Überschrift"
+            aria-label="Überschrift"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
+          >
+            H
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('bulletList') }"
+            title="Aufzählung"
+            aria-label="Aufzählung"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleBulletList().run()"
+          >
+            •
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('orderedList') }"
+            title="Nummerierte Liste"
+            aria-label="Nummerierte Liste"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleOrderedList().run()"
+          >
+            1.
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('blockquote') }"
+            title="Zitat"
+            aria-label="Zitat"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleBlockquote().run()"
+          >
+            "
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
+            :class="{ active: isActive('code') }"
+            title="Code"
+            aria-label="Code"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleCode().run()"
+          >
+            ⌨︎
+          </button>
+        </div>
+      </div>
     </div>
     <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
     <div class="content-scroll" @click="focusEditor">
@@ -320,6 +332,33 @@ defineExpose({
   }
 }
 
+.toolbar-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  flex-shrink: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.18s ease,
+    visibility 0s linear 0.22s;
+}
+
+.toolbar-wrapper.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease,
+    visibility 0s linear 0s;
+}
+
+.toolbar-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -330,6 +369,13 @@ defineExpose({
   flex-shrink: 0;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-hover);
+  transform: translateY(-4px);
+  transition: transform 0.18s ease;
+}
+
+.toolbar-wrapper.is-open .toolbar {
+  transform: translateY(0);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .toolbar-btn {
@@ -515,5 +561,13 @@ defineExpose({
 .collapsed-placeholder {
   color: var(--color-text-muted);
   user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar-wrapper,
+  .toolbar {
+    transition: none !important;
+    transform: none !important;
+  }
 }
 </style>

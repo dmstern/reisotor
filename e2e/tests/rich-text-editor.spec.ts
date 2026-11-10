@@ -63,29 +63,35 @@ test('toolbar is only visible when editor is focused', async ({ page }) => {
   const modal = page.locator('.modal');
   await expect(modal).toBeVisible();
 
+  const toolbarWrapper = modal.locator('.richtext-editor .toolbar-wrapper');
   const toolbar = modal.locator('.richtext-editor .toolbar');
   const editor = modal.locator('.richtext-content[contenteditable="true"]');
 
-  // Initially: editor is not focused, toolbar must be hidden
+  // Initially: editor is not focused, toolbar must be hidden and wrapper closed
   await expect(toolbar).toBeHidden();
+  await expect(toolbarWrapper).not.toHaveClass(/is-open/);
 
-  // Click into editor: editor gains focus, toolbar must be visible
+  // Click into editor: editor gains focus, toolbar must be visible and smoothly animate open
   await editor.click();
   await expect(editor).toBeFocused();
+  await expect(toolbarWrapper).toHaveClass(/is-open/);
   await expect(toolbar).toBeVisible();
 
-  // Click outside (title input): editor loses focus, toolbar must hide again
+  // Click outside (title input): editor loses focus, toolbar must hide again smoothly
   await modal.locator('input[placeholder*="Titel"], input[name="title"]').click();
   await expect(editor).not.toBeFocused();
+  await expect(toolbarWrapper).not.toHaveClass(/is-open/);
   await expect(toolbar).toBeHidden();
 
   // Click back into editor: toolbar visible again
   await editor.click();
   await expect(editor).toBeFocused();
+  await expect(toolbarWrapper).toHaveClass(/is-open/);
   await expect(toolbar).toBeVisible();
 
   // Clicking a toolbar button keeps focus and keeps toolbar visible
   await modal.getByRole('button', { name: 'Fett', exact: true }).click();
   await expect(editor).toBeFocused();
+  await expect(toolbarWrapper).toHaveClass(/is-open/);
   await expect(toolbar).toBeVisible();
 });
