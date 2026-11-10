@@ -205,7 +205,7 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
     if (query.category) {
       categoryFilter.value = String(query.category).split(',').filter(Boolean);
 
-      if (query.group !== 'tours') {
+      if (query.group !== 'tours' && query.group !== 'tracks') {
         groupMode.value = 'category';
       }
     } else {

@@ -201,6 +201,11 @@ describe('useExcursionsFilter', () => {
     route.query = { group: 'category' };
     filter.applyRouteQuery();
     expect(filter.groupMode.value).toBe('category');
+
+    route.query = { group: 'tracks', category: 'Unterkunft' };
+    filter.applyRouteQuery();
+    expect(filter.groupMode.value).toBe('tracks');
+    expect(filter.categoryFilter.value).toEqual(['Unterkunft']);
   });
 
   it('bezieht Datumsangaben aus Touren in spotScheduledDates ein und filtert danach als geplant', () => {
