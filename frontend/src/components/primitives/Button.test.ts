@@ -68,6 +68,16 @@ describe('Button primitive', () => {
     expect(html).toContain('Auf Karte');
   });
 
+  it('renders btn--floating and btn--circle when variant="floating" and shape="circle" are passed', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'floating', shape: 'circle' }, () => 'Map'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--floating');
+    expect(html).toContain('btn--circle');
+    expect(html).toContain('Map');
+  });
+
   it('renders filled icon variant when button is active and icon has filled variant', async () => {
     setActivePinia(createPinia());
     const app = createApp({

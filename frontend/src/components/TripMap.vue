@@ -667,16 +667,15 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   }
 }
 
-/* Anpassung der Leaflet Zoom-Buttons an den Reisotor Styleguide */
+/* Anpassung der Leaflet Zoom-Buttons an den Reisotor Styleguide (Glass-Style) */
 :deep(.leaflet-bar) {
-  border: 1px solid var(--color-border-strong) !important;
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-sm) !important;
+  border: 1px solid var(--color-surface-glass-border) !important;
+  background: var(--color-surface-glass) !important;
+  backdrop-filter: var(--backdrop-blur-md);
+  box-shadow: var(--shadow-floating-island) !important;
   border-radius: var(--radius-md-squircle) !important;
   corner-shape: squircle;
   overflow: hidden;
-  background-color: var(--color-surface) !important;
 }
 
 :deep(.leaflet-control-zoom) {
@@ -684,35 +683,34 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 }
 
 :deep(.leaflet-bar a) {
-  background-color: var(--color-surface) !important;
-  background-image: var(--gradient-control-3d) !important;
+  background-color: transparent !important;
+  background-image: none !important;
   color: var(--color-text) !important;
-  border-bottom: 1px solid var(--color-border) !important;
+  border-bottom: 1px solid var(--color-surface-glass-border) !important;
   width: 44px !important;
   height: 44px !important;
   line-height: 44px !important;
   transition:
     background-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
+    color 0.15s ease;
 }
 
 :deep(.leaflet-bar a:hover) {
-  background-color: var(--color-hover) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--color-hover) 80%,
+    var(--color-surface-glass)
+  ) !important;
   color: var(--color-primary-dark) !important;
 }
 
 :deep(.leaflet-bar a:active) {
-  background-color: var(--color-hover) !important;
-  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.16) !important;
-}
-
-:deep(.leaflet-bar a:first-child) {
-  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
-}
-
-:deep(.leaflet-bar a:first-child:hover) {
-  box-shadow: inset 0 1px 0 var(--shadow-control-highlight-strong);
+  background-color: color-mix(
+    in srgb,
+    var(--color-hover) 90%,
+    var(--color-surface-glass)
+  ) !important;
+  box-shadow: none !important;
 }
 
 :deep(.leaflet-bar a:last-child) {
@@ -721,7 +719,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
 :deep(.leaflet-bar a.leaflet-disabled) {
   color: var(--color-text-muted) !important;
-  background-color: var(--color-surface) !important;
+  background-color: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
 }

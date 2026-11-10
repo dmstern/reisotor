@@ -288,8 +288,8 @@ function onRemoveCurrent() {
     z-index: 10;
     background: var(--color-surface-glass);
     backdrop-filter: var(--backdrop-blur-md);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-floating-island);
+    border: 1px solid var(--color-surface-glass-border);
   }
 
   .nav-btn.prev-btn {

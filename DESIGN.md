@@ -297,7 +297,7 @@ Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Swit
 
 - **Theme-abhängige 3D-Gradient-Tokens (Single Source of Truth)**:
   - `--gradient-surface-3d` / `--gradient-surface-3d-hover`: Für Karten und größere Flächen. Im Light Mode dunkelt der Verlauf nach unten dezent ab (`rgba(255, 255, 255, 0.75)` auf `rgba(43, 42, 40, 0.045)`), damit weiße Karten auf weißem Hintergrund plastisch und haptisch wirken; im Dark Mode invertiert der Verlauf entsprechend zu dezentem Licht von oben (`rgba(255, 255, 255, 0.045)` auf `rgba(0, 0, 0, 0.08)`).
-  - `--gradient-control-3d`: Für erhabene Steuerelemente (`Button.vue`, `CheckboxCard.vue`, `DoneToggle.vue`, `InfoPopover.vue`, `TripMapTools.vue`, `Drawer.vue`s `.drawer-tab`).
+  - `--gradient-control-3d`: Für erhabene Steuerelemente (`Button.vue`, `CheckboxCard.vue`, `DoneToggle.vue`, `InfoPopover.vue`, `Drawer.vue`s `.drawer-tab`).
   - Animierbare Gradient-Stopps via `@property --control-grad-top` und `@property --control-grad-bottom`: Erlauben es dynamischen Controls (`Select.vue`, `DropdownMenu.vue`, `ThemeModeSelect.vue`, `TrackVisibilitySelect.vue`), den 3D-Glanzverlauf stufenlos ohne harten Umsprung per CSS-Transition ein- und auszublenden (`--transition-control`).
 - **Initialer 3D-Look vs. Progressive Verwandlung bei Interaktion**:
   - **Buttons, Toggles, Checkboxen, Radios und Karten** besitzen initial ihren erhabenen bzw. vertieften 3D-Look, um als greifbare Objekte im Raum erkennbar zu sein.
@@ -312,11 +312,12 @@ Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Swit
 - **Drawer-Resizer (`ResizeHandle.vue`) & Schubladen-Tabs (`Drawer.vue`)**:
   - `ResizeHandle.vue`: Die Greifzone `.resize-grip` blendet bei Hover/Drag eine sanft eingelassene Führungsrinne (`--shadow-inset`) ein. Darin liegt als Pseudo-Element `::after` eine zylindrische 3D-Griffpille mit 90°-Lichtgradienten (`var(--gradient-control-top)` / `var(--gradient-control-bottom)`), oberem Kantenlichtsaum und Schwebeschatten. Bei Hover/Drag expandiert die Pille spürbar in der Höhe und skaliert elastisch mit Primärfarbakzent.
   - `.drawer-tab`: Besitzt ebenfalls den haptischen 3D-Look mit `var(--gradient-control-3d)` und `--shadow-control`, der sich bei Hover zu `--shadow-control-hover` anhebt.
-- **Floating Map-Buttons (`TripMapTools.vue`, `TripMap.vue`)**:
-  - Die schwebenden Kartenwerkzeuge (`.fit-btn`, Zoom-Buttons `.leaflet-bar a`, `variant="floating"`) besitzen ein oberes Glanzlicht (`inset 0 1px 0 var(--shadow-control-highlight)`), kombiniert mit `--shadow-sm` und `var(--gradient-control-3d)`.
-  - Beim Hovern heben sie sich mit `--shadow-md` und `translate: 0 -1px` sanft an.
-  - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985)`, `box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.16), var(--shadow-sm)`).
-  - Aktive Werkzeuge (Standort-Freigabe, Aufzeichnung) teilen dieselbe taktile Tiefe mit Primärfarbverlauf und Inset-Licht.
+- **Floating Buttons (`variant="floating"`, `TripMapTools.vue`, `TripMap.vue`, `LocationPicker.vue`)**:
+  - Frei schwebende Aktionsbuttons nutzen anstelle des 3D-Looks konsequent den **Liquid-Glass-Style** analog zu Header-Pill und schwebender NavBar (`var(--color-surface-glass)`, `var(--color-surface-glass-border)`, `backdrop-filter: var(--backdrop-blur-md)` und `var(--shadow-floating-island)`).
+  - Sie fügen sich so organisch in das schwebende Glas-Erscheinungsbild der App ein, während der plastische 3D-Look flächigen Elementen wie Cards, Dialogen, Panels und Drawers vorbehalten bleibt.
+  - Beim Hovern heben sie sich dezent an (`translate: 0 -1px`, dezent aufgehellter/abgedunkelter Glass-Hover-Tint).
+  - Beim Klick (`:active`) federn sie haptisch ein (`transform: translateY(1px) scale(0.985)`).
+  - Aktive Werkzeuge (Standort-Freigabe, Aufzeichnung) leuchten in satter Primärfarbe mit `var(--shadow-floating-island)` ohne 3D-Gradienten.
 - **Versenkte Eingabefelder (`Input.vue`, `Textarea.vue`, `RichTextEditor.vue`, `SearchFilterBar.vue`)**:
   - Im Ruhezustand flach (`box-shadow: none`), verwandeln sich bei Hover in eine leicht vertiefte Rinne (`--shadow-control-inset-hover`) und bei Fokus in einen präzisen 3D-Schacht (`--shadow-control-inset` kombiniert mit `--focus-ring-halo`).
 - **Umschalter & Toggles (`ToggleSwitch.vue`, `SegmentedToggle.vue`)**:

@@ -17,7 +17,7 @@ const _props = withDefaults(
      * - 'danger': Gefahrenbutton (gefüllt mit --color-danger + Schatten)
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
-     * - 'floating': Runder, schwebender Aktionsbutton (Oberflächen-Hintergrund, dunklerer Rand, Schatten)
+     * - 'floating': Runder, schwebender Glass-Aktionsbutton (Liquid-Glass-Style analog zu Header Pill und NavBar Pill)
      */
     variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
@@ -439,28 +439,26 @@ a.btn.is-loading {
   box-shadow: var(--shadow-control-active);
 }
 
+/* Floating Buttons: Glass-Style analog zu Header Pill und NavBar Pill */
 .btn--floating {
-  background-color: var(--color-surface);
-  background-image: var(--gradient-control-3d);
+  background-color: var(--color-surface-glass);
+  background-image: none;
+  backdrop-filter: var(--backdrop-blur-md);
   color: var(--color-text);
-  border: 1.5px solid transparent;
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-sm);
+  border: 1px solid var(--color-surface-glass-border);
+  box-shadow: var(--shadow-floating-island);
 }
 
 .btn--floating:hover:not(:disabled) {
-  background-color: var(--color-hover);
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight-strong),
-    var(--shadow-md);
+  background-color: color-mix(in srgb, var(--color-hover) 80%, var(--color-surface-glass));
+  border-color: var(--color-border-strong);
+  color: var(--color-primary-dark);
+  box-shadow: var(--shadow-floating-island);
 }
 
 .btn--floating:active:not(:disabled) {
-  background-color: var(--color-hover);
-  box-shadow:
-    inset 0 1.5px 3px rgba(0, 0, 0, 0.16),
-    var(--shadow-sm);
+  background-color: color-mix(in srgb, var(--color-hover) 90%, var(--color-surface-glass));
+  box-shadow: var(--shadow-floating-island);
 }
 
 /* Aktiver Zustand für alle Button-Varianten (#audit) */
@@ -493,32 +491,23 @@ a.btn.is-loading {
 .btn--floating.is-active,
 .btn--floating.active {
   background-color: var(--color-primary);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.16) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background-image: none;
+  backdrop-filter: var(--backdrop-blur-md);
   color: var(--color-primary-contrast, white);
   border-color: var(--color-primary-dark);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    var(--shadow-sm);
+  box-shadow: var(--shadow-floating-island);
 }
 
 .btn--floating.is-active:hover:not(:disabled),
 .btn--floating.active:hover:not(:disabled) {
   background-color: var(--color-primary-dark);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    var(--shadow-md);
+  box-shadow: var(--shadow-floating-island);
 }
 
 .btn--floating.is-active:active:not(:disabled),
 .btn--floating.active:active:not(:disabled) {
   background-color: var(--color-primary-dark);
-  box-shadow:
-    inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
-    var(--shadow-sm);
+  box-shadow: var(--shadow-floating-island);
 }
 
 .btn--sm {
