@@ -22,6 +22,7 @@ import { NAV_LINK_COLORS } from '../utils/widgetColors';
 import { DEMO_MODE } from '../demo/isDemoMode';
 
 import { useHeaderNavFits } from '../composables/useHeaderNavFits';
+import { useHeaderAutohide } from '../composables/useHeaderAutohide';
 import { navigatingTo } from '../router';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 
@@ -69,11 +70,18 @@ function onCalendarClick(event: MouseEvent) {
 // NavBar.vue klebt direkt darunter per position:sticky mit einem fest verdrahteten "top"-Wert
 // und muss deshalb die tatsächliche Höhe kennen (analog zu NavBar.vue's eigenem
 // --navbar-offset-Muster).
+const DEFAULT_HEADER_HEIGHT_PX = 56;
 const headerEl = ref<HTMLElement | null>(null);
+const { isHidden } = useHeaderAutohide({
+  headerElement: headerEl,
+  isDesktop,
+});
 let resizeObserver: ResizeObserver | null = null;
 
 function updateHeaderHeight() {
-  const height = headerEl.value ? headerEl.value.getBoundingClientRect().height : 56;
+  const height = headerEl.value
+    ? headerEl.value.getBoundingClientRect().height
+    : DEFAULT_HEADER_HEIGHT_PX;
   document.documentElement.style.setProperty('--app-header-height', `${height}px`);
 }
 
@@ -109,7 +117,7 @@ const profileTitle = computed(() => {
 </script>
 
 <template>
-  <header ref="headerEl" class="app-header">
+  <header ref="headerEl" class="app-header" :class="{ 'is-hidden': isHidden }">
     <DemoModeBanner v-if="DEMO_MODE" />
     <LoadingIndicator />
     <div class="header-row">
@@ -198,7 +206,7 @@ const profileTitle = computed(() => {
   </header>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .app-header {
   position: sticky;
   top: 0;
@@ -213,6 +221,32 @@ const profileTitle = computed(() => {
   box-shadow: none;
   box-sizing: border-box;
   pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+
+  &.is-hidden {
+    transform: translateY(calc(-100% - var(--space-2)));
+    pointer-events: none !important;
+
+    * {
+      pointer-events: none !important;
+    }
+  }
+
+  &:focus-within {
+    transform: translateY(0) !important;
+  }
+
+  @include media-up('desktop') {
+    transform: none !important;
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header {
+    transition: none !important;
+  }
 }
 
 .header-row {
