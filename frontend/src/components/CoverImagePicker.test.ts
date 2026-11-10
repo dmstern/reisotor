@@ -313,6 +313,52 @@ describe('CoverImagePicker component', () => {
     cleanUp();
   });
 
+  it('switches search button variant dynamically between secondary and primary when query changes', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      name: 'Louvre',
+      imageUrl: 'https://example.com/louvre.jpg',
+      images: ['https://example.com/louvre.jpg'],
+    });
+
+    const { container, cleanUp } = mountComponent({
+      modelValue: '',
+      searchContext: { name: 'Eiffel Tower' },
+      initialSuggestions: ['https://example.com/eiffel.jpg'],
+    });
+
+    const editBtn = container.querySelector('.banner-edit-btn') as HTMLButtonElement;
+    editBtn.click();
+    await nextTick();
+
+    const searchBtn = Array.from(document.querySelectorAll('.browse-search-row button')).find((b) =>
+      b.textContent?.includes('Suchen')
+    ) as HTMLButtonElement;
+    expect(searchBtn).toBeDefined();
+
+    // With initial suggestions matching the default search query, the button is secondary
+    expect(searchBtn.classList.contains('btn--secondary')).toBe(true);
+    expect(searchBtn.classList.contains('btn--primary')).toBe(false);
+
+    // When the user edits the search query, the button becomes primary
+    const searchInput = document.querySelector('.browse-search-input') as HTMLInputElement;
+    searchInput.value = 'Louvre';
+    searchInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    expect(searchBtn.classList.contains('btn--primary')).toBe(true);
+    expect(searchBtn.classList.contains('btn--secondary')).toBe(false);
+
+    // After running the search, it reverts back to secondary
+    searchBtn.click();
+    await nextTick();
+    await nextTick();
+
+    expect(searchBtn.classList.contains('btn--secondary')).toBe(true);
+    expect(searchBtn.classList.contains('btn--primary')).toBe(false);
+
+    cleanUp();
+  });
+
   it('triggers custom search when search query changed and user clicks next suggestion', async () => {
     const onUpdateModelValue = vi.fn();
     vi.mocked(api.get).mockResolvedValueOnce({

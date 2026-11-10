@@ -231,6 +231,16 @@ const suggestionStatusText = computed(() => {
   return `${suggestions.value.length} Vorschläge`;
 });
 
+const isSearchButtonPrimary = computed(() => {
+  const trimmed = searchQuery.value.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  return trimmed !== lastSearchedQuery.value.trim();
+});
+
 function buildPreviewSearchParams(termOverride?: string): URLSearchParams {
   const term = (termOverride !== undefined ? termOverride : searchQuery.value).trim();
   const params = new URLSearchParams();
@@ -574,7 +584,7 @@ function handleModalClose(visible: boolean) {
             />
             <Button
               type="button"
-              variant="secondary"
+              :variant="isSearchButtonPrimary ? 'primary' : 'secondary'"
               size="sm"
               :icon="isSearchingAction === 'query' ? undefined : ACTION_ICONS.search"
               :disabled="!searchQuery.trim() || isSearching || isUploading"
