@@ -26,8 +26,8 @@ const _props = withDefaults(
     size?: 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
     icon?: IconDef;
-    /** Form-Variante: 'squircle' (Standard) oder 'circle' (kreisrund). */
-    shape?: 'squircle' | 'circle';
+    /** Form-Variante: 'squircle' (Standard), 'circle' (kreisrund) oder 'pill' (Pille/Stadium). */
+    shape?: 'squircle' | 'circle' | 'pill';
     /** Ob der Button als aktiv/ausgewählt markiert ist (z. B. ausgewählter Avatar). */
     active?: boolean;
     /** Native Button-Type (Standard: 'button'). */
@@ -264,6 +264,11 @@ a.btn.is-loading {
   min-height: var(--input-height, 46px);
   aspect-ratio: 1 / 1;
   box-sizing: border-box;
+}
+
+.btn--pill {
+  border-radius: var(--radius-pill);
+  corner-shape: round;
 }
 
 .btn--primary {
