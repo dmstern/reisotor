@@ -78,6 +78,7 @@ function onChange(event: Event) {
   height: var(--input-height, 46px);
   min-height: var(--input-height, 46px);
   box-sizing: border-box;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   cursor: pointer;
