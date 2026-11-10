@@ -13,7 +13,6 @@ export interface ExcursionFormData {
   date: string;
   spot_ids: number[];
   role: IdeaRole | '';
-  destination_spot_id: number | null;
   legs: ExcursionLeg[];
   track_ids: number[];
 }
@@ -26,7 +25,6 @@ export function emptyExcursionForm(): ExcursionFormData {
     date: '',
     spot_ids: [] as number[],
     role: '' as IdeaRole | '',
-    destination_spot_id: null as number | null,
     legs: [] as ExcursionLeg[],
     track_ids: [] as number[],
   };
@@ -41,7 +39,6 @@ export function tourPayload(form: ExcursionFormData) {
     date: form.date || undefined,
     spot_ids: form.spot_ids,
     role: form.role ? form.role : null,
-    destination_spot_id: form.destination_spot_id,
     legs: form.legs,
   };
 }
@@ -265,7 +262,6 @@ export function useTourForm(options: UseTourFormOptions) {
       date: excursion.date ?? '',
       spot_ids: [...excursion.spot_ids],
       role: excursion.role ?? '',
-      destination_spot_id: excursion.destination_spot_id ?? null,
       legs: excursion.legs ? excursion.legs.map((leg) => ({ ...leg })) : [],
       track_ids: tracksStore.tracks
         .filter((track) => track.excursion_id === excursion.id)
@@ -355,23 +351,6 @@ export function useTourForm(options: UseTourFormOptions) {
     closeEditExcursionForm();
   }
 
-  async function toggleExcursionDestination(excursion: Excursion, spotId: number) {
-    const newDest = excursion.destination_spot_id === spotId ? null : spotId;
-    const payload = {
-      trip_id: excursion.trip_id,
-      title: excursion.title,
-      image_url: excursion.image_url ?? undefined,
-      note: excursion.note ?? undefined,
-      note_format: 'html' as const,
-      date: excursion.date ?? undefined,
-      spot_ids: excursion.spot_ids,
-      role: excursion.role ?? null,
-      destination_spot_id: newDest,
-      legs: excursion.legs,
-    };
-    await excursionsStore.update(excursion.id, payload);
-  }
-
   async function addSpotToExcursion(excursionId: number, spotId: number) {
     const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
 
@@ -437,7 +416,6 @@ export function useTourForm(options: UseTourFormOptions) {
     closeEditExcursionForm,
     discardEditExcursionDraft,
     deleteEditingExcursion,
-    toggleExcursionDestination,
     addSpotToExcursion,
     assignSpotToTourTitle,
   };

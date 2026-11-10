@@ -881,4 +881,26 @@ describe('todo_items.period Migration & Persistenz', () => {
     };
     expect(row.link).toBe('https://www.booking.com/hotel/de/sonne.html');
   });
+
+  it('entfernt destination_spot_id von ideas bei einer legacy DB', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-dest-spot-test-'));
+    dbPath = path.join(dir, 'test.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL);
+      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, destination_spot_id INTEGER);
+      INSERT INTO trips (id, name) VALUES (1, 'Urlaub');
+      INSERT INTO spots (id, trip_id, title) VALUES (1, 1, 'Strand');
+      INSERT INTO ideas (id, trip_id, title, destination_spot_id) VALUES (1, 1, 'Tour', 1);
+    `);
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    const columns = db.prepare('PRAGMA table_info(ideas)').all() as { name: string }[];
+    expect(columns.some((c) => c.name === 'destination_spot_id')).toBe(false);
+  });
 });
