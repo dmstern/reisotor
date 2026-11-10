@@ -331,6 +331,18 @@
   /* Standard-Transition für Mikro-Interaktionen (0.15s ease, siehe DESIGN.md) */
   --transition-fast: 0.15s ease;
 
+  /* Zentrale Tokens für Auf-/Zuklapp-Animationen (Accordion.vue, CollapsibleFieldset.vue, Popover-Sektionen) */
+  --duration-accordion-open: 0.35s;
+  --duration-accordion-close: 0.26s;
+  --ease-accordion: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-accordion-stagger: cubic-bezier(0.16, 1, 0.3, 1);
+  --stagger-step-open: 35ms;
+  --transition-accordion-open:
+    grid-template-rows var(--duration-accordion-open) var(--ease-accordion), opacity 0.25s ease;
+  --transition-accordion-close:
+    grid-template-rows var(--duration-accordion-close) var(--ease-accordion), opacity 0.2s ease;
+  --transition-caret: transform 0.24s cubic-bezier(0.34, 1.4, 0.64, 1);
+
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 16px;

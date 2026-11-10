@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onBeforeUnmount, type ComponentPublicInstance } from 'vue';
 import AppIcon from './AppIcon.vue';
+import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
@@ -340,38 +341,32 @@ function clearFilters() {
                   :class="{ 'is-open': openSections.sort }"
                 />
               </button>
-              <div
-                class="popover-section-body"
-                :class="{ 'is-collapsed': !openSections.sort }"
-                :inert="!openSections.sort || undefined"
-              >
-                <div class="popover-options-list">
-                  <DropdownMenuItem
-                    label="Nach Datum"
-                    :active="sortMode === 'date'"
-                    :trailing-icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
-                    trailing-icon-group="actions"
-                    :trailing-icon-size="14"
-                    @click="selectSort('date')"
-                  />
-                  <DropdownMenuItem
-                    label="Alphabetisch"
-                    :active="sortMode === 'alpha'"
-                    :trailing-icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
-                    trailing-icon-group="actions"
-                    :trailing-icon-size="14"
-                    @click="selectSort('alpha')"
-                  />
-                  <DropdownMenuItem
-                    label="Nach Likes"
-                    :active="sortMode === 'likes'"
-                    :trailing-icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
-                    trailing-icon-group="actions"
-                    :trailing-icon-size="14"
-                    @click="selectSort('likes')"
-                  />
-                </div>
-              </div>
+              <Accordion :expanded="openSections.sort" stagger inner-class="popover-options-list">
+                <DropdownMenuItem
+                  label="Nach Datum"
+                  :active="sortMode === 'date'"
+                  :trailing-icon="sortMode === 'date' ? ACTION_ICONS.done : undefined"
+                  trailing-icon-group="actions"
+                  :trailing-icon-size="14"
+                  @click="selectSort('date')"
+                />
+                <DropdownMenuItem
+                  label="Alphabetisch"
+                  :active="sortMode === 'alpha'"
+                  :trailing-icon="sortMode === 'alpha' ? ACTION_ICONS.done : undefined"
+                  trailing-icon-group="actions"
+                  :trailing-icon-size="14"
+                  @click="selectSort('alpha')"
+                />
+                <DropdownMenuItem
+                  label="Nach Likes"
+                  :active="sortMode === 'likes'"
+                  :trailing-icon="sortMode === 'likes' ? ACTION_ICONS.done : undefined"
+                  trailing-icon-group="actions"
+                  :trailing-icon-size="14"
+                  @click="selectSort('likes')"
+                />
+              </Accordion>
             </div>
 
             <!-- Sektion 2: Spots (Kategorien) -->
@@ -404,25 +399,19 @@ function clearFilters() {
                   :class="{ 'is-open': openSections.spots }"
                 />
               </button>
-              <div
-                class="popover-section-body"
-                :class="{ 'is-collapsed': !openSections.spots }"
-                :inert="!openSections.spots || undefined"
-              >
-                <div class="popover-options-list">
-                  <DropdownMenuItem
-                    v-for="cat in categoryOptions"
-                    :key="cat"
-                    class="category-option"
-                    multiselect
-                    :icon="groupIconDef(cat)"
-                    icon-group="categories"
-                    :label="cat"
-                    :checked="categoryFilter.includes(cat)"
-                    @update:checked="toggleCategory(cat)"
-                  />
-                </div>
-              </div>
+              <Accordion :expanded="openSections.spots" stagger inner-class="popover-options-list">
+                <DropdownMenuItem
+                  v-for="cat in categoryOptions"
+                  :key="cat"
+                  class="category-option"
+                  multiselect
+                  :icon="groupIconDef(cat)"
+                  icon-group="categories"
+                  :label="cat"
+                  :checked="categoryFilter.includes(cat)"
+                  @update:checked="toggleCategory(cat)"
+                />
+              </Accordion>
             </div>
 
             <!-- Sektion 3: Status -->
@@ -455,39 +444,33 @@ function clearFilters() {
                   :class="{ 'is-open': openSections.status }"
                 />
               </button>
-              <div
-                class="popover-section-body"
-                :class="{ 'is-collapsed': !openSections.status }"
-                :inert="!openSections.status || undefined"
-              >
-                <div class="popover-options-list">
-                  <DropdownMenuItem
-                    multiselect
-                    :icon="FORM_FIELD_ICONS.date"
-                    icon-group="formFields"
-                    label="Geplant"
-                    :checked="statusFilter.includes('planned')"
-                    @update:checked="toggleStatus('planned')"
-                  />
+              <Accordion :expanded="openSections.status" stagger inner-class="popover-options-list">
+                <DropdownMenuItem
+                  multiselect
+                  :icon="FORM_FIELD_ICONS.date"
+                  icon-group="formFields"
+                  label="Geplant"
+                  :checked="statusFilter.includes('planned')"
+                  @update:checked="toggleStatus('planned')"
+                />
 
-                  <DropdownMenuItem
-                    multiselect
-                    :icon="FORM_FIELD_ICONS.note"
-                    icon-group="formFields"
-                    label="Ungeplant"
-                    :checked="statusFilter.includes('unplanned')"
-                    @update:checked="toggleStatus('unplanned')"
-                  />
+                <DropdownMenuItem
+                  multiselect
+                  :icon="FORM_FIELD_ICONS.note"
+                  icon-group="formFields"
+                  label="Ungeplant"
+                  :checked="statusFilter.includes('unplanned')"
+                  @update:checked="toggleStatus('unplanned')"
+                />
 
-                  <DropdownMenuItem
-                    multiselect
-                    :icon="ACTION_ICONS.done"
-                    label="Gemacht"
-                    :checked="statusFilter.includes('done')"
-                    @update:checked="toggleStatus('done')"
-                  />
-                </div>
-              </div>
+                <DropdownMenuItem
+                  multiselect
+                  :icon="ACTION_ICONS.done"
+                  label="Gemacht"
+                  :checked="statusFilter.includes('done')"
+                  @update:checked="toggleStatus('done')"
+                />
+              </Accordion>
             </div>
 
             <!-- Sektion 4: Touren -->
@@ -520,24 +503,18 @@ function clearFilters() {
                   :class="{ 'is-open': openSections.tours }"
                 />
               </button>
-              <div
-                class="popover-section-body"
-                :class="{ 'is-collapsed': !openSections.tours }"
-                :inert="!openSections.tours || undefined"
-              >
-                <div class="popover-options-list">
-                  <DropdownMenuItem
-                    v-for="role in TOUR_ROLE_OPTIONS"
-                    :key="role"
-                    multiselect
-                    :icon="TOUR_ROLE_META[role].tabler"
-                    icon-group="categories"
-                    :label="TOUR_ROLE_META[role].label"
-                    :checked="tourRoleFilter.includes(role)"
-                    @update:checked="toggleTourRole(role)"
-                  />
-                </div>
-              </div>
+              <Accordion :expanded="openSections.tours" stagger inner-class="popover-options-list">
+                <DropdownMenuItem
+                  v-for="role in TOUR_ROLE_OPTIONS"
+                  :key="role"
+                  multiselect
+                  :icon="TOUR_ROLE_META[role].tabler"
+                  icon-group="categories"
+                  :label="TOUR_ROLE_META[role].label"
+                  :checked="tourRoleFilter.includes(role)"
+                  @update:checked="toggleTourRole(role)"
+                />
+              </Accordion>
             </div>
 
             <div v-if="totalActiveCount > 0" class="popover-footer">
@@ -793,36 +770,20 @@ button.popover-section-header.popover-section-toggle:focus-visible {
 .section-chevron {
   flex-shrink: 0;
   opacity: 0.7;
-  transition: transform 0.2s ease;
+  transition: var(--transition-caret, transform 0.24s cubic-bezier(0.34, 1.4, 0.64, 1));
 }
 
 .section-chevron.is-open {
   transform: rotate(180deg);
 }
 
-.popover-section-body {
-  block-size: auto;
-  overflow: clip;
-  opacity: 1;
-  transition:
-    block-size 0.2s ease-out,
-    opacity 0.15s ease;
-}
-
-.popover-section-body.is-collapsed {
-  block-size: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .popover-section-body,
   .section-chevron {
     transition: none !important;
   }
 }
 
-.popover-options-list {
+:deep(.popover-options-list) {
   display: flex;
   flex-direction: column;
   gap: 1px;

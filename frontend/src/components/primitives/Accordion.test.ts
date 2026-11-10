@@ -59,10 +59,10 @@ describe('Accordion primitive', () => {
     expect(html).not.toContain('inert');
   });
 
-  it('applies accordion-stagger class when stagger is true', async () => {
+  it('applies accordion-stagger and innerClass when provided', async () => {
     const app = createTestApp(
       Accordion,
-      { stagger: true },
+      { stagger: true, innerClass: 'custom-inner-list' },
       {
         default: () => h('div', 'Stagger item'),
       }
@@ -70,6 +70,7 @@ describe('Accordion primitive', () => {
     const html = await renderToString(app);
     expect(html).toContain('accordion-stagger');
     expect(html).toContain('accordion-inner');
+    expect(html).toContain('custom-inner-list');
   });
 
   it('supports nesting an accordion inside an expanded accordion without leaking is-expanded state', async () => {
