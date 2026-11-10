@@ -94,12 +94,15 @@ const id = computed(() => props.id || autoId);
 
 .form-field-label {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.3;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .form-field-icon {

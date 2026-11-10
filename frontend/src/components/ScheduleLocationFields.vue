@@ -26,45 +26,30 @@ const placeNames = computed(() => spotsStore.spots.map((spot) => spot.title));
     :icon="FORM_FIELD_ICONS.location"
     icon-group="formFields"
   >
-    <div class="row">
-      <FormField icon="location" label="Spot / Tour verknüpfen" v-slot="{ id }">
-        <Select :id="id" v-model="linkKey">
-          <option value="">Kein Spot/keine Tour verknüpft</option>
-          <optgroup label="Spots" v-if="spotsStore.spots.length">
-            <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
-              {{ s.title }}
-            </option>
-          </optgroup>
-          <optgroup label="Touren" v-if="excursionsStore.excursions.length">
-            <option
-              v-for="e in excursionsStore.excursions"
-              :key="`idea:${e.id}`"
-              :value="`idea:${e.id}`"
-            >
-              {{ e.title }}
-            </option>
-          </optgroup>
-        </Select>
-      </FormField>
-      <FormField v-if="!linkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
-        <Combobox :id="id" v-model="location" :options="placeNames" placeholder="Ort" />
-      </FormField>
-    </div>
+    <FormField icon="location" label="Spot / Tour verknüpfen" v-slot="{ id }">
+      <Select :id="id" v-model="linkKey">
+        <option value="">Kein Spot/keine Tour verknüpft</option>
+        <optgroup label="Spots" v-if="spotsStore.spots.length">
+          <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
+            {{ s.title }}
+          </option>
+        </optgroup>
+        <optgroup label="Touren" v-if="excursionsStore.excursions.length">
+          <option
+            v-for="e in excursionsStore.excursions"
+            :key="`idea:${e.id}`"
+            :value="`idea:${e.id}`"
+          >
+            {{ e.title }}
+          </option>
+        </optgroup>
+      </Select>
+    </FormField>
+    <FormField v-if="!linkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
+      <Combobox :id="id" v-model="location" :options="placeNames" placeholder="Ort" />
+    </FormField>
     <FormField v-if="!linkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
       <Input :id="id" v-model="mapsLink" type="url" placeholder="Maps-Link (Google/Apple)" />
     </FormField>
   </CollapsibleFieldset>
 </template>
-
-<style scoped>
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.row > * {
-  flex: 1;
-  min-width: 140px;
-}
-</style>

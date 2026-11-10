@@ -95,12 +95,20 @@ const emit = defineEmits<{
      eine eigene volle Zeile. In Flex-Column-Formularen ist das ein No-op (dort schon von Natur aus
      zeilenfüllend). */
   flex-basis: 100%;
+  min-width: 0;
 }
 
 .draft-status-message {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
+}
+
+.draft-status-message span {
+  min-width: 0;
+  word-break: break-word;
 }
 
 .draft-discard-btn {

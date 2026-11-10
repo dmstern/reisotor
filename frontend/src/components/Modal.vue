@@ -599,6 +599,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   /* padding (6px) reserviert Platz für den Fokus-Rahmen (outline-offset 2px +
      outline-Breite 3px = 5px, siehe input:focus-visible in style.css) von Feldern ganz am Rand

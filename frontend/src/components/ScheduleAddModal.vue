@@ -149,8 +149,8 @@ const {
 }
 
 .edit-form .row > * {
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 140px;
+  min-width: 0;
 }
 
 .actions-row {
