@@ -278,6 +278,8 @@
   --color-border-strong: #d5cabc;
   /* Rahmenfarbe aller Eingabefelder inkl. input-ähnlicher Wrapper (QuickAddRow, Combobox, Editor) */
   --input-border-color: var(--color-border-strong);
+  /* Hintergrundfarbe aller Eingabefelder inkl. Selects und Inset-Controls */
+  --color-input-bg: #faf8f5;
   --color-button-edge: rgba(0, 0, 0, 0.16);
   /* Eigener Ton für "an diesem Tag ist etwas geplant" (TripMap.vue's Tage-Streifen) - bewusst NICHT
      --color-accent, das app-weit bereits fest für "Echtzeit-Update von jemand anderem"/"wartet auf
@@ -600,6 +602,8 @@
     --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
     --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
     --color-border-strong: #4a453c;
+    --input-border-color: var(--color-border-strong);
+    --color-input-bg: #141311;
     --color-button-edge: rgba(0, 0, 0, 0.35);
 
     --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
@@ -719,6 +723,8 @@
   --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
   --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
   --color-border-strong: #4a453c;
+  --input-border-color: var(--color-border-strong);
+  --color-input-bg: #141311;
   --color-button-edge: rgba(0, 0, 0, 0.35);
 
   --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
@@ -824,6 +830,8 @@
   --color-travel-tint: rgba(27, 175, 122, 0.1);
   --color-travel-border: rgba(27, 175, 122, 0.35);
   --color-border-strong: #d5cabc;
+  --input-border-color: var(--color-border-strong);
+  --color-input-bg: #faf8f5;
   --color-button-edge: rgba(0, 0, 0, 0.16);
   --color-scheduled: #1e96d1;
   --color-scheduled-dark: #0f70a0;

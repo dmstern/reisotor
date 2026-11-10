@@ -168,7 +168,7 @@ function onBlur(event: FocusEvent) {
 }
 
 .quick-add-row.expanded .input-container {
-  background: var(--color-surface);
+  background: var(--color-input-bg);
   border-color: var(--input-border-color);
   box-shadow: var(--shadow-control-inset);
 

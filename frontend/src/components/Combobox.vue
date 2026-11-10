@@ -653,7 +653,7 @@ defineOptions({
 
 .combobox.open :deep(.combobox-input.input--invalid),
 .combobox:focus-within :deep(.combobox-input.input--invalid) {
-  border-color: var(--color-border-strong);
+  border-color: var(--input-border-color);
   outline-color: var(--color-danger);
 }
 
