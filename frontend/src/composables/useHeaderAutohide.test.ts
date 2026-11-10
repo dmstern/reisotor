@@ -3,9 +3,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ref } from 'vue';
 import {
   useHeaderAutohide,
+  DEFAULT_HEADER_HEIGHT_PX,
   DEFAULT_SCROLL_DOWN_THRESHOLD_PX,
   DEFAULT_SCROLL_UP_THRESHOLD_PX,
-  DEFAULT_TOP_REVEAL_THRESHOLD_PX,
+  TOP_SCROLL_REST_EPSILON_PX,
 } from './useHeaderAutohide';
 
 describe('useHeaderAutohide', () => {
@@ -23,108 +24,184 @@ describe('useHeaderAutohide', () => {
     vi.restoreAllMocks();
   });
 
-  it('initialisiert mit isHidden = false', () => {
-    const { isHidden } = useHeaderAutohide();
+  it('initialisiert mit isHidden = false, isScrollingTop = false und topScrollOffset = 0', () => {
+    const { isHidden, isScrollingTop, topScrollOffset } = useHeaderAutohide();
+
     expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(false);
+    expect(topScrollOffset.value).toBe(0);
   });
 
-  it('bleibt am oberen Rand (unterhalb topRevealThreshold) sichtbar', () => {
-    const { isHidden, updateScroll } = useHeaderAutohide();
+  it('scrollt am oberen Rand 1:1 mit dem Inhalt mit (isScrollingTop = true, topScrollOffset = scrollY)', () => {
+    const { isHidden, isScrollingTop, topScrollOffset, updateScroll } = useHeaderAutohide();
 
+    // Scroll um 20px nach unten (innerhalb der Standard-Header-Höhe 56px)
     updateScroll(20);
     expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(true);
+    expect(topScrollOffset.value).toBe(20);
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
+    // Weiter nach unten auf 45px
+    updateScroll(45);
     expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(true);
+    expect(topScrollOffset.value).toBe(45);
+
+    // Leichtes Zurückscrollen nach oben (auf 15px) wandert 1:1 mit zurück
+    updateScroll(15);
+    expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(true);
+    expect(topScrollOffset.value).toBe(15);
+
+    // Ganz am oberen Rand (0px) schaltet in den Ruhezustand
+    updateScroll(0);
+    expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(false);
+    expect(topScrollOffset.value).toBe(0);
   });
 
-  it('versteckt den Header beim Runterscrollen jenseits des Schwellenwerts', () => {
-    const { isHidden, updateScroll } = useHeaderAutohide();
+  it('versteckt den Header, sobald die Header-Höhe komplett durchscrollt wurde', () => {
+    const { isHidden, isScrollingTop, topScrollOffset, updateScroll } = useHeaderAutohide({
+      headerHeight: 100,
+    });
 
-    // Start am oberen Rand
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
+    // Innerhalb der Header-Höhe wandert der Header mit
+    updateScroll(80);
     expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(true);
+    expect(topScrollOffset.value).toBe(80);
 
-    // Weniger als Schwellenwert weiter runterscrollen
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + DEFAULT_SCROLL_DOWN_THRESHOLD_PX - 5);
-    expect(isHidden.value).toBe(false);
-
-    // Weiter runterscrollen (Kumuliert >= DEFAULT_SCROLL_DOWN_THRESHOLD_PX)
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + DEFAULT_SCROLL_DOWN_THRESHOLD_PX + 5);
+    // Sobald >= 100px erreicht werden, schaltet er in den versteckten Zustand
+    updateScroll(100);
     expect(isHidden.value).toBe(true);
+    expect(isScrollingTop.value).toBe(false);
+    expect(topScrollOffset.value).toBe(0);
   });
 
-  it('blendet den Header beim leichten Hochscrollen sofort wieder ein', () => {
+  it('verwendet die dynamisch gemessene Höhe von headerElement', () => {
+    const mockEl = document.createElement('header');
+    vi.spyOn(mockEl, 'getBoundingClientRect').mockReturnValue({
+      height: 110,
+      width: 400,
+      top: 0,
+      bottom: 110,
+      left: 0,
+      right: 400,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    const headerElement = ref(mockEl);
+    const { isHidden, isScrollingTop, topScrollOffset, updateScroll } = useHeaderAutohide({
+      headerElement,
+    });
+
+    // Bei 90px (< 110px) scrollt der Header noch mit
+    updateScroll(90);
+    expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(true);
+    expect(topScrollOffset.value).toBe(90);
+
+    // Bei 110px ist er komplett verschwunden
+    updateScroll(110);
+    expect(isHidden.value).toBe(true);
+    expect(isScrollingTop.value).toBe(false);
+  });
+
+  it('blendet den Header jenseits der Kopfzeile beim Hochscrollen sanft ein', () => {
+    const { isHidden, isScrollingTop, updateScroll } = useHeaderAutohide();
+
+    // Weit nach unten scrollen
+    updateScroll(DEFAULT_HEADER_HEIGHT_PX + 10);
+    updateScroll(200);
+    expect(isHidden.value).toBe(true);
+    expect(isScrollingTop.value).toBe(false);
+
+    // Leicht hochscrollen (Delta >= DEFAULT_SCROLL_UP_THRESHOLD_PX)
+    updateScroll(200 - DEFAULT_SCROLL_UP_THRESHOLD_PX);
+    expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(false);
+  });
+
+  it('blendet den Header beim erneuten Runterscrollen wieder aus', () => {
     const { isHidden, updateScroll } = useHeaderAutohide();
 
-    // Runterscrollen und verstecken
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 50);
+    updateScroll(200);
     expect(isHidden.value).toBe(true);
 
-    // Leicht hochscrollen (z. B. um DEFAULT_SCROLL_UP_THRESHOLD_PX)
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 50 - DEFAULT_SCROLL_UP_THRESHOLD_PX);
+    // Hochscrollen -> blendet ein
+    updateScroll(190);
     expect(isHidden.value).toBe(false);
+
+    // Weniger als Schwellenwert runterscrollen
+    updateScroll(190 + DEFAULT_SCROLL_DOWN_THRESHOLD_PX - 5);
+    expect(isHidden.value).toBe(false);
+
+    // Voller Schwellenwert runterscrollen -> blendet wieder aus
+    updateScroll(190 + DEFAULT_SCROLL_DOWN_THRESHOLD_PX);
+    expect(isHidden.value).toBe(true);
   });
 
   it('kumuliert mehrere kleine Scroll-Schritte in die gleiche Richtung', () => {
     const { isHidden, updateScroll } = useHeaderAutohide();
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
-    expect(isHidden.value).toBe(false);
-
-    // Drei kleine Schritte à 6px nach unten (Summe: 18px >= 15px)
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 6);
-    expect(isHidden.value).toBe(false);
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 12);
-    expect(isHidden.value).toBe(false);
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 18);
+    updateScroll(200);
     expect(isHidden.value).toBe(true);
+
+    // Zwei kleine Schritte à 5px nach oben (Summe: 10px >= DEFAULT_SCROLL_UP_THRESHOLD_PX = 8px)
+    updateScroll(195);
+    expect(isHidden.value).toBe(true);
+    updateScroll(190);
+    expect(isHidden.value).toBe(false);
   });
 
   it('setzt den Akkumulator beim Richtungswechsel zurück', () => {
     const { isHidden, updateScroll } = useHeaderAutohide();
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
-    // 10px runter (< 15px Schwellenwert)
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 10);
-    expect(isHidden.value).toBe(false);
-
-    // Richtungswechsel: 2px hoch
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 8);
-    expect(isHidden.value).toBe(false);
-
-    // Erneut 8px runter (Gesamt ab Wechsel nur 8px < 15px)
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX + 16);
-    expect(isHidden.value).toBe(false);
-  });
-
-  it('blendet den Header sofort wieder ein, wenn der Seitenanfang erreicht wird', () => {
-    const { isHidden, updateScroll } = useHeaderAutohide();
-
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
     updateScroll(200);
     expect(isHidden.value).toBe(true);
 
+    // 5px hoch (< 8px Schwellenwert)
+    updateScroll(195);
+    expect(isHidden.value).toBe(true);
+
+    // Richtungswechsel: 2px runter
+    updateScroll(197);
+    expect(isHidden.value).toBe(true);
+
+    // Erneut 5px hoch (Gesamt ab Wechsel nur 5px < 8px)
+    updateScroll(192);
+    expect(isHidden.value).toBe(true);
+  });
+
+  it('blendet den Header sofort wieder ein und setzt zurück, wenn der Seitenanfang erreicht wird', () => {
+    const { isHidden, isScrollingTop, topScrollOffset, updateScroll } = useHeaderAutohide();
+
+    updateScroll(300);
+    expect(isHidden.value).toBe(true);
+
     // Sprung an den Anfang
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX - 10);
+    updateScroll(TOP_SCROLL_REST_EPSILON_PX);
     expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(false);
+    expect(topScrollOffset.value).toBe(0);
   });
 
   it('bleibt auf Desktop dauerhaft sichtbar', () => {
     const isDesktop = ref(true);
-    const { isHidden, updateScroll } = useHeaderAutohide({ isDesktop });
+    const { isHidden, isScrollingTop, updateScroll } = useHeaderAutohide({ isDesktop });
 
     updateScroll(100);
     updateScroll(200);
     expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(false);
   });
 
   it('blendet wieder ein, wenn von Mobil auf Desktop umgeschaltet wird', () => {
     const isDesktop = ref(false);
     const { isHidden, updateScroll } = useHeaderAutohide({ isDesktop });
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
     updateScroll(150);
     expect(isHidden.value).toBe(true);
 
@@ -140,7 +217,6 @@ describe('useHeaderAutohide', () => {
     const headerElement = ref(mockEl);
     const { isHidden, updateScroll } = useHeaderAutohide({ headerElement });
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
     updateScroll(120);
     expect(isHidden.value).toBe(false);
   });
@@ -154,33 +230,31 @@ describe('useHeaderAutohide', () => {
     const headerElement = ref(mockEl);
     const { isHidden, updateScroll } = useHeaderAutohide({ headerElement });
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
     updateScroll(120);
     expect(isHidden.value).toBe(false);
   });
 
-  it('blendet den Header über reveal() wieder ein', () => {
-    const { isHidden, reveal, updateScroll } = useHeaderAutohide();
+  it('blendet den Header über reveal() wieder ein und setzt Offsets zurück', () => {
+    const { isHidden, isScrollingTop, topScrollOffset, reveal, updateScroll } = useHeaderAutohide();
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
-    updateScroll(120);
-    expect(isHidden.value).toBe(true);
+    updateScroll(20);
+    expect(isScrollingTop.value).toBe(true);
 
     reveal();
     expect(isHidden.value).toBe(false);
+    expect(isScrollingTop.value).toBe(false);
+    expect(topScrollOffset.value).toBe(0);
   });
 
   it('ignoriert Rubber-Banding-Überschreitung am unteren Seitenrand', () => {
     const { isHidden, updateScroll } = useHeaderAutohide();
 
-    updateScroll(DEFAULT_TOP_REVEAL_THRESHOLD_PX);
     updateScroll(100);
     expect(isHidden.value).toBe(true);
 
     // scrollHeight = 2000, innerHeight = 800 => maxScrollY = 1200
     // Overscroll über das Dokumentende hinaus
     updateScroll(1250);
-    // Sollte nicht crashen und keine Fehlinterpretation auslösen
     expect(isHidden.value).toBe(true);
   });
 });

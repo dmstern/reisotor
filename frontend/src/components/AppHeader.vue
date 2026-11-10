@@ -72,10 +72,21 @@ function onCalendarClick(event: MouseEvent) {
 // --navbar-offset-Muster).
 const DEFAULT_HEADER_HEIGHT_PX = 56;
 const headerEl = ref<HTMLElement | null>(null);
-const { isHidden } = useHeaderAutohide({
+const { isHidden, isScrollingTop, topScrollOffset } = useHeaderAutohide({
   headerElement: headerEl,
   isDesktop,
 });
+
+const headerStyle = computed(() => {
+  if (isScrollingTop.value && topScrollOffset.value > 0) {
+    return {
+      transform: `translateY(-${topScrollOffset.value}px)`,
+    };
+  }
+
+  return undefined;
+});
+
 let resizeObserver: ResizeObserver | null = null;
 
 function updateHeaderHeight() {
@@ -117,7 +128,15 @@ const profileTitle = computed(() => {
 </script>
 
 <template>
-  <header ref="headerEl" class="app-header" :class="{ 'is-hidden': isHidden }">
+  <header
+    ref="headerEl"
+    class="app-header"
+    :class="{
+      'is-hidden': isHidden,
+      'is-scrolling-top': isScrollingTop,
+    }"
+    :style="headerStyle"
+  >
     <DemoModeBanner v-if="DEMO_MODE" />
     <LoadingIndicator />
     <div class="header-row">
@@ -221,8 +240,12 @@ const profileTitle = computed(() => {
   box-shadow: none;
   box-sizing: border-box;
   pointer-events: none;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
+
+  &.is-scrolling-top {
+    transition: none !important;
+  }
 
   &.is-hidden {
     transform: translateY(calc(-100% - var(--space-2)));
@@ -239,7 +262,7 @@ const profileTitle = computed(() => {
 
   @include media-up('desktop') {
     transform: none !important;
-    transition: none;
+    transition: none !important;
   }
 }
 
