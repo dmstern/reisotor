@@ -5,6 +5,7 @@ import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Button from './primitives/Button.vue';
+import Badge from './primitives/Badge.vue';
 import TabBar from './TabBar.vue';
 import TourAssignDropdown from './TourAssignDropdown.vue';
 import ItemVisibilitySettings from './ItemVisibilitySettings.vue';
@@ -328,19 +329,20 @@ async function deleteEditingTrack() {
               @toggle-tour="onToggleTrackTour"
               @create-tour="onCreateTourFromTrack"
             />
-            <span v-if="editTrackExcursionTitle" class="track-tour-selected-badge">
+            <Badge
+              v-if="editTrackExcursionTitle"
+              variant="primary"
+              size="md"
+              closable
+              close-button-class="remove-tour-btn"
+              close-title="Zuordnung entfernen"
+              close-aria-label="Zuordnung entfernen"
+              class="track-tour-selected-badge"
+              @close="editTrackExcursionId = null"
+            >
               <AppIcon :icon="SECTION_ICON_DEFS.excursions" :size="13" group="navigation" />
               {{ editTrackExcursionTitle }}
-              <button
-                type="button"
-                class="remove-tour-btn"
-                title="Zuordnung entfernen"
-                aria-label="Zuordnung entfernen"
-                @click="editTrackExcursionId = null"
-              >
-                <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-              </button>
-            </span>
+            </Badge>
           </div>
         </FormField>
       </div>
@@ -497,21 +499,6 @@ async function deleteEditingTrack() {
   border-radius: var(--radius-pill);
   font-size: var(--font-size-sm);
   font-weight: 500;
-}
-
-.remove-tour-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--color-text-muted);
-}
-
-.remove-tour-btn:hover {
-  color: var(--color-text);
 }
 
 .actions-row {

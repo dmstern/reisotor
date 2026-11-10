@@ -21,12 +21,22 @@ const meta: Meta<typeof Badge> = {
     interactive: {
       control: 'boolean',
     },
+    closable: {
+      control: 'boolean',
+    },
+    closeTitle: {
+      control: 'text',
+    },
+    closeAriaLabel: {
+      control: 'text',
+    },
   },
   args: {
     variant: 'default',
     size: 'sm',
     as: 'span',
     interactive: false,
+    closable: false,
   },
 };
 
@@ -40,6 +50,21 @@ export const Default: Story = {
       return { args };
     },
     template: `<Badge v-bind="args">Standard Badge</Badge>`,
+  }),
+};
+
+export const Closable: Story = {
+  args: {
+    variant: 'primary',
+    closable: true,
+    closeTitle: 'Filter entfernen',
+  },
+  render: (args) => ({
+    components: { Badge },
+    setup() {
+      return { args };
+    },
+    template: `<Badge v-bind="args">Entfernbarer Filter</Badge>`,
   }),
 };
 
