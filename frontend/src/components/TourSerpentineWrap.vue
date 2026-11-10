@@ -36,7 +36,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'openLegModal', fromSpot: Spot, toSpot: Spot): void;
-  (e: 'toggleDestination', spotId: number): void;
   (e: 'editSpot', spot: Spot): void;
   (e: 'toggleSpotLike', spotId: number): void;
   (e: 'submitSpotComment', payload: { spotId: number; content: string }): void;
@@ -80,19 +79,8 @@ function creatorLabel(userId: number | null | undefined): string | null {
     >
       <defs>
         <linearGradient
-          v-if="tourLine.hinwegPath"
-          :id="`tour-gradient-hin-${excursion.id}`"
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="1"
-        >
-          <stop offset="0%" stop-color="var(--tour-theme-color, var(--color-primary))" />
-          <stop offset="100%" stop-color="var(--color-primary)" />
-        </linearGradient>
-        <linearGradient
-          v-if="tourLine.rueckwegPath"
-          :id="`tour-gradient-rueck-${excursion.id}`"
+          v-if="tourLine.path"
+          :id="`tour-gradient-${excursion.id}`"
           x1="0"
           y1="0"
           x2="0"
@@ -104,19 +92,10 @@ function creatorLabel(userId: number | null | undefined): string | null {
       </defs>
 
       <path
-        v-if="tourLine.hinwegPath"
-        :d="tourLine.hinwegPath.d"
+        v-if="tourLine.path"
+        :d="tourLine.path.d"
         fill="none"
-        :style="{ stroke: `url(#tour-gradient-hin-${excursion.id})` }"
-        stroke-width="3"
-        stroke-dasharray="6,6"
-        stroke-linecap="round"
-      />
-      <path
-        v-if="tourLine.rueckwegPath"
-        :d="tourLine.rueckwegPath.d"
-        fill="none"
-        :style="{ stroke: `url(#tour-gradient-rueck-${excursion.id})` }"
+        :style="{ stroke: `url(#tour-gradient-${excursion.id})` }"
         stroke-width="3"
         stroke-dasharray="6,6"
         stroke-linecap="round"
@@ -173,12 +152,6 @@ function creatorLabel(userId: number | null | undefined): string | null {
                   },
                 ]"
                 :spot="cell.spot"
-                :excursion-context="{
-                  id: excursion.id,
-                  isDestination: excursion.destination_spot_id === cell.spot.id,
-                  hasDestination: excursion.destination_spot_id != null,
-                }"
-                @toggle-destination="emit('toggleDestination', cell.spot.id)"
                 :highlighted="
                   highlightedIds.has(cell.spot.id) || dayFocusHighlightedIds.has(cell.spot.id)
                 "

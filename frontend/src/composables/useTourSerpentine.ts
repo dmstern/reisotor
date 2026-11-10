@@ -26,8 +26,7 @@ import { useExcursionsStore } from '../stores/excursions';
 export interface TourLineData {
   width: number;
   height: number;
-  hinwegPath: { d: string; y1: number; y2: number } | null;
-  rueckwegPath: { d: string; y1: number; y2: number } | null;
+  path: { d: string; y1: number; y2: number } | null;
   dots: { x: number; y: number; isEnd: boolean }[];
 }
 
@@ -132,16 +131,7 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     });
 
     const dots: { x: number; y: number; isEnd: boolean }[] = [];
-    const hinwegSegments: { d: string; y1: number; y2: number }[] = [];
-    const rueckwegSegments: { d: string; y1: number; y2: number }[] = [];
-
-    const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
-    let destinationIndex = -1;
-
-    if (excursion && excursion.destination_spot_id != null) {
-      const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
-      destinationIndex = domSpotIds.indexOf(excursion.destination_spot_id);
-    }
+    const segments: { d: string; y1: number; y2: number }[] = [];
 
     for (let i = 0; i < spotBoxes.length - 1; i++) {
       const a = spotBoxes[i];
@@ -161,17 +151,11 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
         const cp1Y = startY;
         const cp2X = endX - dx * 0.45;
         const cp2Y = endY;
-        const segment = {
+        segments.push({
           d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
           y1: startY,
           y2: endY,
-        };
-
-        if (destinationIndex !== -1 && i >= destinationIndex) {
-          rueckwegSegments.push(segment);
-        } else {
-          hinwegSegments.push(segment);
-        }
+        });
 
         dots.push({ x: endX, y: endY, isEnd: true });
       } else {
@@ -186,21 +170,17 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
         const cp1Y = startY + dy * 0.45;
         const cp2X = endX;
         const cp2Y = endY - dy * 0.45;
-        const segment = {
+        segments.push({
           d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
           y1: startY,
           y2: endY,
-        };
-
-        if (destinationIndex !== -1 && i >= destinationIndex) {
-          rueckwegSegments.push(segment);
-        } else {
-          hinwegSegments.push(segment);
-        }
+        });
 
         dots.push({ x: endX, y: endY, isEnd: true });
       }
     }
+
+    const excursion = excursionsStore.excursions.find((e) => e.id === excursionId);
 
     if (excursion && spotBoxes.length > 0) {
       const domSpotIds = spotEls.map((el) => Number(el.dataset.spotId));
@@ -215,17 +195,11 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
         }
 
         const loop = computeTourLoopPath(a, b, spotBoxes, wrapEl.clientWidth);
-        const segment = {
+        segments.push({
           d: loop.d,
           y1: loop.dots[0].y,
           y2: loop.dots[1].y,
-        };
-
-        if (destinationIndex !== -1 && fromIdx >= destinationIndex) {
-          rueckwegSegments.push(segment);
-        } else {
-          hinwegSegments.push(segment);
-        }
+        });
 
         dots.push({ x: loop.dots[0].x, y: loop.dots[0].y, isEnd: false });
         dots.push({ x: loop.dots[1].x, y: loop.dots[1].y, isEnd: true });
@@ -247,8 +221,7 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     tourLines.set(excursionId, {
       width: wrapEl.scrollWidth,
       height: wrapEl.scrollHeight,
-      hinwegPath: combineSegments(hinwegSegments),
-      rueckwegPath: combineSegments(rueckwegSegments),
+      path: combineSegments(segments),
       dots,
     });
   }

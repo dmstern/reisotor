@@ -409,7 +409,6 @@ export interface Excursion {
   // (Anreise/Abreise/Weiterreise). role gesetzt => mindestens zwei spot_ids (Von/Nach), alle anderen
   // Felder bleiben bei einer normalen Tour null.
   role: IdeaRole | null;
-  destination_spot_id: number | null;
   transport_type: string | null;
   departure_time: string | null;
   arrival_time: string | null;

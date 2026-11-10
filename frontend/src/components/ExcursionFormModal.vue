@@ -266,7 +266,6 @@ function trackDurationLabel(track: LocationTrack): string | null {
         <SpotOrderPicker
           v-model="activeExcursionForm.spot_ids"
           v-model:legs="activeExcursionForm.legs"
-          v-model:destination="activeExcursionForm.destination_spot_id"
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
           :users="users"

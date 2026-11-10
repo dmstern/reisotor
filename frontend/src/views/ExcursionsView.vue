@@ -451,23 +451,6 @@ function startEditExcursion(excursion: Excursion | number) {
   showExcursionModal.value = true;
 }
 
-async function toggleExcursionDestination(excursion: Excursion, spotId: number) {
-  const newDest = excursion.destination_spot_id === spotId ? null : spotId;
-  const payload = {
-    trip_id: excursion.trip_id,
-    title: excursion.title,
-    image_url: excursion.image_url ?? undefined,
-    note: excursion.note ?? undefined,
-    note_format: 'html' as const,
-    date: excursion.date ?? undefined,
-    spot_ids: excursion.spot_ids,
-    role: excursion.role ?? null,
-    destination_spot_id: newDest,
-    legs: excursion.legs,
-  };
-  await excursionsStore.update(excursion.id, payload);
-}
-
 // 8. Spot Form Modal State
 const showSpotModal = ref(false);
 const editingSpot = ref<Spot | null>(null);
@@ -1527,9 +1510,6 @@ onUnmounted(() => {
                     :set-tour-wrap-ref="(el) => setTourWrapRef(grp.excursion!.id, el)"
                     @open-leg-modal="
                       (fromSpot, toSpot) => openCardLegModal(grp.excursion!, fromSpot, toSpot)
-                    "
-                    @toggle-destination="
-                      (spotId) => toggleExcursionDestination(grp.excursion!, spotId)
                     "
                     @edit-spot="(spot) => startEditSpot(spot.id)"
                     @toggle-spot-like="toggleSpotLike"

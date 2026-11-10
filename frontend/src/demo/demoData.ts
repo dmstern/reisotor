@@ -410,7 +410,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       seat: null,
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     },
     {
       id: 2,
@@ -434,7 +433,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       seat: '12A, 12B',
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     },
     {
       id: 3,
@@ -550,7 +548,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       seat: null,
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     },
     {
       id: 4,
@@ -574,7 +571,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       seat: null,
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     },
     {
       id: 5,
@@ -598,7 +594,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       seat: null,
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     },
     {
       id: 6,
@@ -622,7 +617,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       seat: '14C, 14D',
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     },
   ];
 

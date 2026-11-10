@@ -136,7 +136,6 @@ describe('scheduleItemToEntry', () => {
       seat: null,
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     };
     const item = makeScheduleItem({ idea_id: 3, title: 'Sightseeing' });
     const entry = scheduleItemToEntry(item, [spot], [excursion], []);
@@ -168,7 +167,6 @@ describe('scheduleItemToEntry', () => {
       seat: null,
       ticket_link: null,
       budget_expense_id: null,
-      destination_spot_id: null,
     };
     const item = makeScheduleItem({ idea_id: 4, date: '2026-08-01', title: 'Hinflug' });
     const entry = scheduleItemToEntry(item, [], [excursion], []);
