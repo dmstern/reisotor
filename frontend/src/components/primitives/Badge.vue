@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import AppIcon from '../AppIcon.vue';
+import { ACTION_ICONS } from '../../utils/actionIcons';
+
 withDefaults(
   defineProps<{
     variant?:
@@ -13,14 +16,30 @@ withDefaults(
     size?: 'sm' | 'md';
     as?: string;
     interactive?: boolean;
+    /** Wenn true, wird ein Schließen-/Entfernen-Button gerendert */
+    closable?: boolean;
+    /** Zugänglichkeits-Label für den Schließen-Button */
+    closeAriaLabel?: string;
+    /** Titel / Tooltip für den Schließen-Button */
+    closeTitle?: string;
+    /** Zusätzliche CSS-Klassen für den Schließen-Button (z. B. für bestehende Selektoren) */
+    closeButtonClass?: string;
   }>(),
   {
     variant: 'default',
     size: 'sm',
     as: 'span',
     interactive: false,
+    closable: false,
+    closeAriaLabel: 'Entfernen',
+    closeTitle: 'Entfernen',
+    closeButtonClass: '',
   }
 );
+
+const emit = defineEmits<{
+  (e: 'close', event: MouseEvent): void;
+}>();
 </script>
 
 <template>
@@ -30,15 +49,29 @@ withDefaults(
     :class="[
       `badge--${variant}`,
       `badge--size-${size}`,
-      { 'badge--interactive': interactive || as === 'button' },
+      {
+        'badge--interactive': interactive || as === 'button',
+        'badge--closable': closable,
+      },
     ]"
     :type="as === 'button' ? 'button' : undefined"
   >
     <slot />
+    <button
+      v-if="closable"
+      type="button"
+      class="badge__close-btn"
+      :class="closeButtonClass"
+      :aria-label="closeAriaLabel"
+      :title="closeTitle"
+      @click.stop="emit('close', $event)"
+    >
+      <AppIcon :icon="ACTION_ICONS.close" :size="size === 'md' ? 13 : 11" group="actions" />
+    </button>
   </component>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .badge {
   display: inline-flex;
   align-items: center;
@@ -62,6 +95,14 @@ withDefaults(
 .badge--size-md {
   padding: 4px 10px;
   font-size: var(--font-size-sm);
+}
+
+.badge--closable.badge--size-sm {
+  padding-right: 3px;
+}
+
+.badge--closable.badge--size-md {
+  padding-right: 4px;
 }
 
 .badge--primary {
@@ -129,5 +170,63 @@ withDefaults(
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+}
+
+.badge__close-btn {
+  @include touch-target($expand: true);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.8;
+  margin-left: 2px;
+  flex-shrink: 0;
+  transition:
+    background-color var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+
+  &:hover {
+    opacity: 1;
+    background-color: color-mix(in srgb, currentColor 16%, transparent);
+  }
+
+  &:active {
+    opacity: 1;
+    transform: scale(0.92);
+    background-color: color-mix(in srgb, currentColor 24%, transparent);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+    outline-offset: 1px;
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  }
+}
+
+.badge--size-sm .badge__close-btn {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+}
+
+.badge--size-md .badge__close-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge__close-btn {
+    transition: none;
+  }
 }
 </style>

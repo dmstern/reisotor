@@ -1365,44 +1365,47 @@ onUnmounted(() => {
                   class="filter-chips"
                   v-if="categoryFilter.length || statusFilter.length || tourRoleFilter.length"
                 >
-                  <span v-for="cat in categoryFilter" :key="cat" class="filter-chip">
+                  <Badge
+                    v-for="cat in categoryFilter"
+                    :key="cat"
+                    variant="primary"
+                    size="sm"
+                    closable
+                    close-aria-label="Filter entfernen"
+                    close-title="Filter entfernen"
+                    class="filter-chip"
+                    @close="removeCategoryFilter(cat)"
+                  >
                     <AppIcon :icon="groupIconDef(cat)" :size="13" group="categories" /> {{ cat }}
-                    <IconButton
-                      variant="ghost"
-                      shape="circle"
-                      size="sm"
-                      :icon="ACTION_ICONS.close"
-                      aria-label="Filter entfernen"
-                      title="Filter entfernen"
-                      @click="removeCategoryFilter(cat)"
-                    />
-                  </span>
-                  <span v-for="status in statusFilter" :key="status" class="filter-chip">
+                  </Badge>
+                  <Badge
+                    v-for="status in statusFilter"
+                    :key="status"
+                    variant="primary"
+                    size="sm"
+                    closable
+                    close-aria-label="Filter entfernen"
+                    close-title="Filter entfernen"
+                    class="filter-chip"
+                    @close="removeStatusFilter(status)"
+                  >
                     <AppIcon :icon="STATUS_FILTER_ICON[status]" :size="13" group="actions" />
                     {{ STATUS_FILTER_LABEL[status] }}
-                    <IconButton
-                      variant="ghost"
-                      shape="circle"
-                      size="sm"
-                      :icon="ACTION_ICONS.close"
-                      aria-label="Filter entfernen"
-                      title="Filter entfernen"
-                      @click="removeStatusFilter(status)"
-                    />
-                  </span>
-                  <span v-for="role in tourRoleFilter" :key="role" class="filter-chip">
+                  </Badge>
+                  <Badge
+                    v-for="role in tourRoleFilter"
+                    :key="role"
+                    variant="primary"
+                    size="sm"
+                    closable
+                    close-title="Filter entfernen"
+                    close-aria-label="Filter entfernen"
+                    class="filter-chip"
+                    @close="removeTourRoleFilter(role)"
+                  >
                     <AppIcon :icon="tourRoleIconDef(role)" :size="13" group="categories" />
                     {{ tourRoleLabel(role) }}
-                    <IconButton
-                      variant="ghost"
-                      shape="circle"
-                      size="sm"
-                      :icon="ACTION_ICONS.close"
-                      aria-label="Filter entfernen"
-                      title="Filter entfernen"
-                      @click="removeTourRoleFilter(role)"
-                    />
-                  </span>
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -2568,26 +2571,7 @@ onUnmounted(() => {
 }
 
 .filter-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  background: var(--color-primary-tint);
   border: 1px solid var(--color-primary);
-  color: var(--color-primary-dark);
-  border-radius: var(--radius-pill);
-  padding: 3px var(--space-1) 3px var(--space-3);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-}
-
-.filter-chip .icon-btn.btn--sm {
-  /* Rund und kompakt, damit der Schließen-Button bündig in der Pillen-Form des Chips sitzt */
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
-  padding: 0;
-  color: inherit;
 }
 
 .category-heading {

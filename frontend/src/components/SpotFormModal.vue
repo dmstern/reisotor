@@ -3,6 +3,7 @@ import { computed, ref, toRef, watch } from 'vue';
 import type { ScheduleItem, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
+import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
@@ -539,11 +540,18 @@ function handleOpenScheduledItem(item: ScheduleItem) {
         <!-- Danach: Gemeinsame Chips für ausgewählte Touren (orange) & Termine (grau) -->
         <div v-if="activeSpotForm.tourTitles.length || scheduledCount" class="assign-chips">
           <!-- Tour-Chips (orange) & Reise-Chips (grün) -->
-          <span
+          <Badge
             v-for="title in activeSpotForm.tourTitles"
             :key="'tour-' + title"
             class="assign-chip tour-chip"
             :class="isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour'"
+            variant="custom"
+            size="md"
+            closable
+            close-button-class="assign-chip-remove"
+            :close-aria-label="`Von '${title}' entfernen`"
+            close-title="Entfernen"
+            @close="removeTourTitle(title)"
           >
             <span class="assign-chip-action">
               <AppIcon
@@ -560,24 +568,22 @@ function handleOpenScheduledItem(item: ScheduleItem) {
                 >
               </span>
             </span>
-            <button
-              type="button"
-              class="assign-chip-remove"
-              :aria-label="`Von '${title}' entfernen`"
-              title="Entfernen"
-              @click="removeTourTitle(title)"
-            >
-              <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-            </button>
-          </span>
+          </Badge>
 
           <!-- Termin-Chips: grau (--color-calendar-appointment) -->
           <template v-if="editingSpot !== null">
-            <span
+            <Badge
               v-for="item in editSpotScheduledItems"
               :key="'sched-' + item.id"
               class="assign-chip assign-chip--schedule"
               :class="{ 'is-done': !!item.done }"
+              variant="custom"
+              size="md"
+              closable
+              close-button-class="assign-chip-remove"
+              :close-aria-label="`Termin am ${formatDate(item.date)} entfernen`"
+              close-title="Termin entfernen"
+              @close="removeScheduledItemFromSpot(item)"
             >
               <button
                 type="button"
@@ -600,38 +606,27 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               >
                 <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
               </button>
-              <button
-                type="button"
-                class="assign-chip-remove"
-                :aria-label="`Termin am ${formatDate(item.date)} entfernen`"
-                title="Termin entfernen"
-                @click="removeScheduledItemFromSpot(item)"
-              >
-                <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-              </button>
-            </span>
+            </Badge>
           </template>
 
           <template v-else>
-            <span
+            <Badge
               v-for="date in spotForm.scheduledDates"
               :key="'new-sched-' + date"
               class="assign-chip assign-chip--schedule"
+              variant="custom"
+              size="md"
+              closable
+              close-button-class="assign-chip-remove"
+              :close-aria-label="`Termin am ${formatDate(date)} entfernen`"
+              close-title="Termin entfernen"
+              @close="removeScheduledDateFromNewSpot(date)"
             >
               <span class="assign-chip-action">
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
                 <span class="assign-chip-label">{{ formatDate(date) }}</span>
               </span>
-              <button
-                type="button"
-                class="assign-chip-remove"
-                :aria-label="`Termin am ${formatDate(date)} entfernen`"
-                title="Termin entfernen"
-                @click="removeScheduledDateFromNewSpot(date)"
-              >
-                <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-              </button>
-            </span>
+            </Badge>
           </template>
         </div>
       </CollapsibleFieldset>
@@ -887,13 +882,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 }
 
 .assign-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: var(--radius-pill);
-  corner-shape: round;
   min-height: 32px;
-  padding: 4px 8px 4px 12px;
   font-size: var(--font-size-sm);
   font-weight: 500;
   border: 1.5px solid;
@@ -971,27 +960,6 @@ button.assign-chip-action:hover {
   align-items: center;
 }
 
-.assign-chip-remove {
-  background: none;
-  border: none;
-  padding: 3px;
-  margin-left: 2px;
-  color: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  line-height: 1;
-  opacity: 0.7;
-  transition: opacity 0.15s ease;
-}
-
-.assign-chip-remove:hover {
-  opacity: 1;
-}
-
-.assign-chip-remove:focus-visible,
 .assign-chip-done-toggle:focus-visible,
 button.assign-chip-action:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
@@ -1024,8 +992,7 @@ button.assign-chip-action:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .assign-chip-done-toggle,
-  .assign-chip-remove {
+  .assign-chip-done-toggle {
     transition: none;
   }
 }
