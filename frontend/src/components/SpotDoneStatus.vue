@@ -68,11 +68,43 @@ const { scheduledDaysCount, dayWeather, plannedDateLabel } = useSpotWeather({
   expanded: () => props.expanded,
 });
 
+const isSplit = computed(() => props.expanded && totalItemsCount.value === 1);
+const hasDropdown = computed(() => props.expanded && totalItemsCount.value > 1);
+
+const checkAriaLabel = computed(() =>
+  isSpotDone.value ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'
+);
+const actionAriaLabel = computed(() =>
+  plannedDateLabel.value ? `${plannedDateLabel.value} im Kalender öffnen` : undefined
+);
+const actionTitle = computed(() =>
+  plannedDateLabel.value ? `Zum ${plannedDateLabel.value} im Kalender springen` : undefined
+);
+const dropdownTitle = computed(() =>
+  hasDropdown.value ? 'Besuche für einzelne Tage verwalten' : undefined
+);
+
 function handleDoneClick(event: MouseEvent) {
   if (props.expanded) {
     onToggleDone(event);
   } else {
     emit('card-click', event);
+  }
+}
+
+function handleSingleItemToggle() {
+  const singleItem = scheduledItemsForSpot.value[0];
+
+  if (singleItem) {
+    void toggleScheduledItemDone(singleItem);
+  }
+}
+
+function handleCalendarJump(event: MouseEvent) {
+  event.stopPropagation();
+
+  if (targetCalendarDate.value) {
+    openCalendarAtDate(targetCalendarDate.value);
   }
 }
 
@@ -107,9 +139,21 @@ function handleItemJump(item: ScheduledSpotItem) {
     :done="isSpotDone"
     :partially-done="isSpotPartiallyDone"
     :planned="!!(scheduledDate || totalItemsCount > 0)"
+    :split="isSplit"
+    :jumpable="isSplit"
+    :dropdown="hasDropdown"
+    :dropdown-open="datesPopoverOpen"
+    :check-aria-label="checkAriaLabel"
+    :check-title="checkAriaLabel"
+    :action-aria-label="actionAriaLabel"
+    :action-title="actionTitle"
     :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-    :title="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+    :title="
+      dropdownTitle || (isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren')
+    "
     @click="handleDoneClick"
+    @click-check="handleSingleItemToggle"
+    @click-action="handleCalendarJump"
   >
     <template v-if="totalItemsCount > 1">
       <template v-if="allItemsDone">
@@ -130,7 +174,15 @@ function handleItemJump(item: ScheduledSpotItem) {
     <template v-else-if="isSpotDone">
       <template v-if="plannedDateLabel">
         <span class="done-toggle-prefix">Besucht am </span>
-        <span class="done-toggle-date">{{ plannedDateLabel }}</span>
+        <span class="done-toggle-date">
+          <AppIcon
+            :icon="FORM_FIELD_ICONS.date"
+            :size="12"
+            group="formFields"
+            class="done-toggle-calendar-icon"
+          />
+          {{ plannedDateLabel }}
+        </span>
       </template>
       <template v-else>Besucht</template>
       <span
@@ -143,7 +195,15 @@ function handleItemJump(item: ScheduledSpotItem) {
     </template>
     <template v-else-if="plannedDateLabel">
       <span class="done-toggle-prefix">Geplant für </span>
-      <span class="done-toggle-date">{{ plannedDateLabel }}</span>
+      <span class="done-toggle-date">
+        <AppIcon
+          :icon="FORM_FIELD_ICONS.date"
+          :size="12"
+          group="formFields"
+          class="done-toggle-calendar-icon"
+        />
+        {{ plannedDateLabel }}
+      </span>
       <span
         v-if="dayWeather && dayWeather.tempMax != null && scheduledDaysCount <= 1"
         class="done-toggle-weather"

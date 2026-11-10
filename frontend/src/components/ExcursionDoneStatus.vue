@@ -61,6 +61,7 @@ const {
     :done="!!excursion.done"
     :planned="!!excursion.date"
     :split="isSplit"
+    :jumpable="isSplit"
     :check-aria-label="
       excursion.done ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'
     "

@@ -114,6 +114,7 @@ export const PartiallyCompleted: Story = {
 export const SplitInteractive: Story = {
   args: {
     split: true,
+    jumpable: true,
     planned: true,
     checkTitle: 'Als gemacht markieren',
     actionTitle: 'Zum 05.11. im Kalender springen',
@@ -132,5 +133,21 @@ export const SplitInteractive: Story = {
         </span>
       </DoneToggle>
     `,
+  }),
+};
+
+export const DropdownMultiDay: Story = {
+  args: {
+    planned: true,
+    dropdown: true,
+    dropdownOpen: false,
+    title: 'Besuche für einzelne Tage verwalten',
+  },
+  render: (args) => ({
+    components: { DoneToggle },
+    setup() {
+      return { args };
+    },
+    template: `<DoneToggle v-bind="args">Geplant an 3 Tagen</DoneToggle>`,
   }),
 };

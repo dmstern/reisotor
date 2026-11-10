@@ -72,7 +72,7 @@ describe('SpotDoneStatus', () => {
     expect(html).toContain('12.06');
   });
 
-  it('opens dates popover when clicked and triggers drawers.openCalendar via jump button', async () => {
+  it('renders split button when spot has 1 planned date and expanded=true, jumping directly to calendar', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const { useDrawersStore } = await import('../stores/drawers');
@@ -103,17 +103,59 @@ describe('SpotDoneStatus', () => {
     app.use(pinia);
     app.mount(el);
 
-    const toggleBtn = el.querySelector<HTMLButtonElement>('.done-toggle');
-    expect(toggleBtn).not.toBeNull();
-    toggleBtn?.click();
+    // 1 Termin im expanded Zustand: Ist ein Split-Button mit Checkbox und Kalender-Aktion
+    const splitContainer = el.querySelector<HTMLElement>('.done-toggle--split');
+    expect(splitContainer).not.toBeNull();
 
-    await new Promise((r) => setTimeout(r, 20));
+    const actionBtn = el.querySelector<HTMLButtonElement>('.done-toggle-btn--action');
+    expect(actionBtn).not.toBeNull();
+    expect(actionBtn?.textContent).toContain('12.06');
+    expect(el.querySelector('.done-toggle-jump-icon')).not.toBeNull();
 
-    const jumpBtn = document.body.querySelector<HTMLButtonElement>('.date-calendar-jump-btn');
-    expect(jumpBtn).not.toBeNull();
-    jumpBtn?.click();
-
+    actionBtn?.click();
     expect(openCalendarSpy).toHaveBeenCalledWith('2026-06-12');
+
+    app.unmount();
+    el.remove();
+  });
+
+  it('directly toggles done state via check button when 1 date is planned without opening popover', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const scheduleStore = useScheduleStore();
+    const setDoneSpy = vi.spyOn(scheduleStore, 'setDone').mockResolvedValue(undefined as never);
+
+    scheduleStore.items = [
+      {
+        id: 101,
+        trip_id: 1,
+        spot_id: 1,
+        date: '2026-06-12',
+        completed: 0,
+      } as unknown as ScheduleItem,
+    ];
+
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const app = createApp({
+      render: () =>
+        h(SpotDoneStatus, {
+          spot: mockSpot,
+          scheduledDate: '2026-06-12',
+          expanded: true,
+        }),
+    });
+    app.use(pinia);
+    app.mount(el);
+
+    const checkBtn = el.querySelector<HTMLButtonElement>('.done-toggle-btn--check');
+    expect(checkBtn).not.toBeNull();
+    checkBtn?.click();
+
+    expect(setDoneSpy).toHaveBeenCalledWith(101, true);
+    // Popover wurde nicht geöffnet
+    expect(document.body.querySelector('.spot-dates-popover')).toBeNull();
+
     app.unmount();
     el.remove();
   });

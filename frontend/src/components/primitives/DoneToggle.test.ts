@@ -81,4 +81,41 @@ describe('DoneToggle primitive', () => {
     expect(html).toContain('title="Zum 05.11. im Kalender springen"');
     expect(html).toContain('05.11.');
   });
+
+  it('renders jump icon when split=true and jumpable=true', async () => {
+    const html = await mountComponent(
+      {
+        split: true,
+        jumpable: true,
+        planned: true,
+      },
+      '12.05.'
+    );
+    expect(html).toContain('done-toggle-jump-icon');
+  });
+
+  it('renders dropdown chevron and disclosure ARIA attributes when dropdown=true', async () => {
+    const closedHtml = await mountComponent(
+      {
+        dropdown: true,
+        dropdownOpen: false,
+      },
+      'Geplant an 2 Tagen'
+    );
+    expect(closedHtml).toContain('done-toggle-chevron');
+    expect(closedHtml).toContain('aria-haspopup="menu"');
+    expect(closedHtml).toContain('aria-expanded="false"');
+    expect(closedHtml).not.toContain('aria-pressed');
+    expect(closedHtml).not.toContain('is-open');
+
+    const openHtml = await mountComponent(
+      {
+        dropdown: true,
+        dropdownOpen: true,
+      },
+      'Geplant an 2 Tagen'
+    );
+    expect(openHtml).toContain('aria-expanded="true"');
+    expect(openHtml).toContain('is-open');
+  });
 });

@@ -16,6 +16,9 @@ const props = withDefaults(
     title?: string;
     showIcon?: boolean;
     split?: boolean;
+    dropdown?: boolean;
+    dropdownOpen?: boolean;
+    jumpable?: boolean;
     checkAriaLabel?: string;
     checkTitle?: string;
     actionAriaLabel?: string;
@@ -27,6 +30,9 @@ const props = withDefaults(
     planned: false,
     showIcon: true,
     split: false,
+    dropdown: false,
+    dropdownOpen: false,
+    jumpable: false,
   }
 );
 
@@ -68,6 +74,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     <button
       type="button"
       class="done-toggle-btn done-toggle-btn--action"
+      :class="{ 'done-toggle-btn--jumpable': jumpable }"
       :aria-label="actionAriaLabel"
       :title="actionTitle"
       @click.stop="$emit('click-action', $event)"
@@ -75,6 +82,14 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
       <span class="status-text">
         <slot />
       </span>
+      <AppIcon
+        v-if="jumpable"
+        :icon="ACTION_ICONS.scrollRight"
+        :size="12"
+        group="actions"
+        class="done-toggle-jump-icon"
+        aria-hidden="true"
+      />
     </button>
   </div>
   <button
@@ -86,8 +101,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
       planned: planned && !isDoneOrPartial,
       'status-done': isDoneOrPartial,
       active: done,
+      'has-dropdown': dropdown,
+      'is-dropdown-open': dropdownOpen,
     }"
-    :aria-pressed="done"
+    :aria-pressed="dropdown ? undefined : done"
+    :aria-haspopup="dropdown ? 'menu' : undefined"
+    :aria-expanded="dropdown ? dropdownOpen : undefined"
     :aria-label="ariaLabel"
     :title="title"
     @click.stop="$emit('click', $event)"
@@ -96,6 +115,15 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     <span class="status-text">
       <slot />
     </span>
+    <AppIcon
+      v-if="dropdown"
+      :icon="ACTION_ICONS.chevronDown"
+      :size="12"
+      group="actions"
+      class="done-toggle-chevron"
+      :class="{ 'is-open': dropdownOpen }"
+      aria-hidden="true"
+    />
   </button>
 </template>
 
@@ -262,6 +290,38 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
   text-underline-offset: 2px;
+}
+
+.done-toggle-jump-icon {
+  margin-left: 2px;
+  opacity: 0.7;
+  flex-shrink: 0;
+  transition:
+    transform 0.15s cubic-bezier(0.2, 0.8, 0.4, 1),
+    opacity 0.15s ease;
+}
+
+.done-toggle-btn--action:hover .done-toggle-jump-icon {
+  transform: translateX(2px);
+  opacity: 1;
+}
+
+.done-toggle-chevron {
+  margin-left: 2px;
+  opacity: 0.75;
+  flex-shrink: 0;
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.4, 1),
+    opacity 0.15s ease;
+}
+
+.done-toggle:hover .done-toggle-chevron {
+  opacity: 1;
+}
+
+.done-toggle-chevron.is-open,
+.done-toggle.is-dropdown-open .done-toggle-chevron {
+  transform: rotate(180deg);
 }
 
 .done-toggle-btn:focus-visible {
