@@ -474,6 +474,10 @@ async function deleteEditingTrack() {
   gap: var(--space-2);
 }
 
+.track-tour-selected-badge {
+  max-width: 100%;
+}
+
 .track-title-field {
   position: relative;
   display: flex;

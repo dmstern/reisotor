@@ -137,6 +137,7 @@ onUnmounted(() => {
   max-block-size: calc(100vh - 16px);
   max-block-size: calc(100dvh - 16px);
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   background: var(--color-surface);

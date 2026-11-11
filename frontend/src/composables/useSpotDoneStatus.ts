@@ -17,6 +17,12 @@ import { useDrawersStore } from '../stores/drawers';
 import { toLocalDateString } from '../utils/dateFormat';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
+const DATES_POPOVER_WIDTH_PX = 320;
+const DATES_POPOVER_HEIGHT_PX = 240;
+const UNPLANNED_POPOVER_WIDTH_PX = 290;
+const UNPLANNED_POPOVER_HEIGHT_PX = 180;
+const POPOVER_VIEWPORT_PADDING_PX = 16;
+
 export interface ScheduledSpotItem {
   id: string | number;
   date: string;
@@ -160,11 +166,15 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
 
     if (totalItemsCount.value >= 1) {
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+      const initialWidth =
+        typeof window !== 'undefined'
+          ? Math.min(DATES_POPOVER_WIDTH_PX, window.innerWidth - POPOVER_VIEWPORT_PADDING_PX)
+          : DATES_POPOVER_WIDTH_PX;
 
       if (triggerEl) {
         datesPopoverStyle.value = computePopoverPosition(triggerEl, {
-          menuWidth: 290,
-          menuHeight: 240,
+          menuWidth: initialWidth,
+          menuHeight: DATES_POPOVER_HEIGHT_PX,
         });
       }
 
@@ -186,11 +196,15 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
       }
 
       const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
+      const initialWidth =
+        typeof window !== 'undefined'
+          ? Math.min(UNPLANNED_POPOVER_WIDTH_PX, window.innerWidth - POPOVER_VIEWPORT_PADDING_PX)
+          : UNPLANNED_POPOVER_WIDTH_PX;
 
       if (triggerEl) {
         unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
-          menuWidth: 260,
-          menuHeight: 180,
+          menuWidth: initialWidth,
+          menuHeight: UNPLANNED_POPOVER_HEIGHT_PX,
         });
       }
 

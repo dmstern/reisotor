@@ -11,7 +11,6 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
 import Alert from './primitives/Alert.vue';
-import Button from './primitives/Button.vue';
 import Checkbox from './primitives/Checkbox.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 
@@ -57,6 +56,24 @@ function formatSpotScheduled(spotId: number): string {
     return `Geplant am ${formatDate(dates[0])}`;
   }
 
+  if (dates.length === 2) {
+    return `Geplant (${formatDate(dates[0], { includeYear: false })}, ${formatDate(dates[1], { includeYear: false })})`;
+  }
+
+  if (dates.length > 2) {
+    return `Geplant (${formatDate(dates[0], { includeYear: false })}, ${formatDate(dates[1], { includeYear: false })}, +${dates.length - 2})`;
+  }
+
+  return '';
+}
+
+function formatSpotScheduledFull(spotId: number): string {
+  const dates = links.getSpotScheduledDates(spotId);
+
+  if (dates.length === 1) {
+    return `Geplant am ${formatDate(dates[0])}`;
+  }
+
   if (dates.length > 1) {
     return `Geplant (${dates.map((entryDate) => formatDate(entryDate, { includeYear: false })).join(', ')})`;
   }
@@ -87,19 +104,6 @@ const mismatchedSpots = computed(() => {
 const hasDateMismatch = computed(() => {
   return mismatchedExcursions.value.length > 0 || mismatchedSpots.value.length > 0;
 });
-
-function toggleSpot(spotId: number) {
-  const current = [...spotIds.value];
-  const idx = current.indexOf(spotId);
-
-  if (idx === -1) {
-    current.push(spotId);
-  } else {
-    current.splice(idx, 1);
-  }
-
-  spotIds.value = current;
-}
 </script>
 
 <template>
@@ -117,20 +121,27 @@ function toggleSpot(spotId: number) {
         :for="`diary-excursion-${ex.id}`"
         v-for="ex in excursions"
         :key="ex.id"
-        class="excursion-option"
+        class="diary-picker-option excursion-option"
       >
         <Checkbox :id="`diary-excursion-${ex.id}`" :value="ex.id" v-model="excursionIds" />
-        <span class="excursion-option-title">{{ ex.title }}</span>
-        <span v-if="ex.date === date" class="excursion-option-badge recommended">
-          <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
-          diesem Tag geplant
-        </span>
-        <span
-          v-else-if="links.excursionDateMismatch(ex, date)"
-          class="excursion-option-badge warning"
-        >
-          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" /> Geplant am
-          {{ formatDate(ex.date!) }}
+        <span class="diary-picker-option-content">
+          <span class="diary-picker-option-title excursion-option-title">
+            <span class="diary-picker-option-name">{{ ex.title }}</span>
+          </span>
+          <span
+            v-if="ex.date === date"
+            class="diary-picker-badge excursion-option-badge recommended"
+          >
+            <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" />
+            <span class="diary-picker-badge-text">Empfohlen – an diesem Tag geplant</span>
+          </span>
+          <span
+            v-else-if="links.excursionDateMismatch(ex, date)"
+            class="diary-picker-badge excursion-option-badge warning"
+          >
+            <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+            <span class="diary-picker-badge-text">Geplant am {{ formatDate(ex.date!) }}</span>
+          </span>
         </span>
       </label>
     </CollapsibleFieldset>
@@ -143,42 +154,36 @@ function toggleSpot(spotId: number) {
       :icon="FORM_FIELD_ICONS.location"
       icon-group="formFields"
     >
-      <Button
+      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+      <label
         v-for="spot in spots"
         :key="spot.id"
-        type="button"
-        class="excursion-option spot-option-btn"
-        @click="toggleSpot(spot.id)"
+        :for="`diary-spot-${spot.id}`"
+        class="diary-picker-option excursion-option spot-option-item spot-option-btn"
       >
-        <span class="excursion-option-title">
-          <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" />
-          {{ spot.title }}
+        <Checkbox :id="`diary-spot-${spot.id}`" :value="spot.id" v-model="spotIds" />
+        <span class="diary-picker-option-content">
+          <span class="diary-picker-option-title excursion-option-title">
+            <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" />
+            <span class="diary-picker-option-name">{{ spot.title }}</span>
+          </span>
+          <span
+            v-if="links.spotAlreadyPlanned(spot.id, date)"
+            class="diary-picker-badge excursion-option-badge recommended"
+          >
+            <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" />
+            <span class="diary-picker-badge-text">Empfohlen – an diesem Tag geplant</span>
+          </span>
+          <span
+            v-else-if="links.spotDateMismatch(spot.id, date)"
+            class="diary-picker-badge excursion-option-badge warning"
+            :title="formatSpotScheduledFull(spot.id)"
+          >
+            <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+            <span class="diary-picker-badge-text">{{ formatSpotScheduled(spot.id) }}</span>
+          </span>
         </span>
-        <span
-          v-if="spotIds.includes(spot.id) && links.spotDateMismatch(spot.id, date)"
-          class="excursion-option-badge warning"
-        >
-          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
-          {{ formatSpotScheduled(spot.id) }}
-        </span>
-        <span v-else-if="spotIds.includes(spot.id)" class="excursion-option-badge">
-          <AppIcon :icon="ACTION_ICONS.done" :size="13" group="actions" /> hinzugefügt
-        </span>
-        <span
-          v-else-if="links.spotAlreadyPlanned(spot.id, date)"
-          class="excursion-option-badge recommended"
-        >
-          <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" /> Empfohlen – an
-          diesem Tag geplant
-        </span>
-        <span
-          v-else-if="links.spotDateMismatch(spot.id, date)"
-          class="excursion-option-badge warning"
-        >
-          <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
-          {{ formatSpotScheduled(spot.id) }}
-        </span>
-      </Button>
+      </label>
     </CollapsibleFieldset>
 
     <Alert
@@ -198,7 +203,7 @@ function toggleSpot(spotId: number) {
             <strong>{{ ex.title }}</strong> (geplant am {{ formatDate(ex.date!) }})
           </li>
           <li v-for="spot in mismatchedSpots" :key="`spot-${spot.id}`">
-            <strong>{{ spot.title }}</strong> ({{ formatSpotScheduled(spot.id) }})
+            <strong>{{ spot.title }}</strong> ({{ formatSpotScheduledFull(spot.id) }})
           </li>
         </ul>
       </div>
@@ -213,22 +218,61 @@ function toggleSpot(spotId: number) {
   gap: var(--space-2);
 }
 
-.excursion-option {
+.diary-picker-option {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  row-gap: var(--space-1);
-  column-gap: var(--space-2);
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+  user-select: none;
   font-size: var(--font-size-sm);
   font-weight: 400;
-  width: 100%;
-  cursor: pointer;
+  transition: background-color var(--transition-fast);
 }
 
-.excursion-option-title {
+.diary-picker-option:hover {
+  background-color: var(--color-hover);
+}
+
+.diary-picker-option:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.diary-picker-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+@container (min-width: 480px) {
+  .diary-picker-option-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+}
+
+.diary-picker-option-title {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: 1.4;
+  min-height: 24px;
+}
+
+.diary-picker-option-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -236,52 +280,33 @@ function toggleSpot(spotId: number) {
   white-space: nowrap;
 }
 
-.spot-option-btn {
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  color: var(--color-text);
-  min-height: 36px;
-}
-
-.spot-option-btn:hover {
-  background: var(--color-hover);
-}
-
-.spot-option-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.spot-option-btn:active {
-  box-shadow: none;
-}
-
-.excursion-option-badge {
+.diary-picker-badge {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   font-size: var(--font-size-xs);
-  color: var(--color-success);
-  white-space: nowrap;
+  max-width: 100%;
+  box-sizing: border-box;
   flex-shrink: 0;
+  width: fit-content;
 }
 
-.excursion-option-badge.recommended {
+.diary-picker-badge-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diary-picker-badge.recommended {
   background: var(--color-primary-tint);
+  color: var(--color-text);
   padding: 2px var(--space-2);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
 }
 
-.excursion-option-badge.warning {
+.diary-picker-badge.warning {
   background: var(--color-warning-tint);
   color: var(--color-warning-dark);
   padding: 2px var(--space-2);
@@ -311,11 +336,5 @@ function toggleSpot(spotId: number) {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-
-@container (max-width: 360px) {
-  label.excursion-option .excursion-option-badge {
-    margin-left: calc(20px + var(--space-2));
-  }
 }
 </style>
