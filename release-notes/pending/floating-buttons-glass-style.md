@@ -1,3 +1,3 @@
-### Design & Benutzeroberfläche
+### Design und Bedienung
 
-- 🪟 **Floating Buttons im Liquid-Glass-Look**: Frei schwebende Aktionsbuttons (wie die Werkzeug-Buttons auf der Karte für Fokus, Standort-Freigabe und Track-Aufzeichnung sowie Floating-Buttons in Karten und Modals) wurden auf den Glass-Style umgestellt. Sie nutzen nun wie die Header Pill und die NavBar Pill eine transluzente Glas-Oberfläche (`var(--color-surface-glass)`), Unschärfefilter (`backdrop-filter`) und Schwebeschatten (`--shadow-floating-island`), während der plastische 3D-Look flächigen Elementen wie Cards, Dialogen, Panels und Drawers vorbehalten bleibt.
+- 🪟 **Schwebende Buttons im Glas-Design**: Frei schwebende Aktionsbuttons (wie die Werkzeug-Buttons auf der Karte für Fokus, Standort-Freigabe und Strecken-Aufzeichnung sowie schwebende Buttons in Karten und Dialogen) erscheinen nun wie die Navigations- und Kopfleiste in einer halbtransparenten Glas-Optik mit sanftem Weichzeichner, während der plastische 3D-Look flächigen Elementen wie Karten, Dialogen und Seitenleisten vorbehalten bleibt.

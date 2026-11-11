@@ -37,15 +37,15 @@ const SLUG_TITLES = {
   highlights: 'Highlights',
   trips: 'Reisen und Urlaube',
   map: 'Karte und Navigation',
-  'spots-tours': 'Spots und Touren',
+  'spots-tours': 'Spots, Touren und Unterkünfte',
   budget: 'Budget und Kasse',
   calendar: 'Kalender und Planung',
-  lists: 'Listen und Notizen',
+  lists: 'Listen, Notizen und Tagebuch',
   weather: 'Wetter',
   admin: 'Verwaltung und Benutzerkonten',
   design: 'Design und Bedienung',
   privacy: 'Datenschutz und Sicherheit',
-  'settings-sync': 'Einstellungen und Synchronisation',
+  'settings-sync': 'Einstellungen, Benachrichtigungen und Synchronisation',
   'demo-feedback': 'Demo und Feedback',
   improvements: 'Weitere Verbesserungen und Fehlerbehebungen',
 };
@@ -67,9 +67,21 @@ const GROUP_PRIORITY = [
   'improvements',
 ];
 
+const TITLE_TO_SLUG = Object.fromEntries(
+  Object.entries(SLUG_TITLES).map(([slug, title]) => [title, slug])
+);
+
+const CANONICAL_TITLES = Object.values(SLUG_TITLES);
+
 function slugToTitle(slug) {
   if (SLUG_TITLES[slug]) {
     return SLUG_TITLES[slug];
+  }
+
+  const prefixSlug = GROUP_PRIORITY.find((key) => slug.startsWith(`${key}--`));
+
+  if (prefixSlug && SLUG_TITLES[prefixSlug]) {
+    return SLUG_TITLES[prefixSlug];
   }
 
   return slug
@@ -78,16 +90,66 @@ function slugToTitle(slug) {
     .join(' ');
 }
 
-function readPendingReleaseNotes() {
-  const pendingDir = path.join(repoRootDir, 'release-notes', 'pending');
+function getGroupPriorityIndex(title) {
+  const slug = TITLE_TO_SLUG[title];
+
+  if (slug) {
+    return GROUP_PRIORITY.indexOf(slug);
+  }
+
+  return -1;
+}
+
+function collectFragmentNotes(content, defaultTitle, groupedNotesMap) {
+  const lines = content.split('\n');
+  let currentTitle = defaultTitle;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const headingMatch = /^#{1,6}\s+(.+)$/.exec(line);
+
+    if (headingMatch) {
+      currentTitle = headingMatch[1].trim();
+      continue;
+    }
+
+    if (!line.startsWith('- ')) {
+      continue;
+    }
+
+    const note = line.slice(2).trim();
+
+    if (!groupedNotesMap.has(currentTitle)) {
+      groupedNotesMap.set(currentTitle, []);
+    }
+
+    groupedNotesMap.get(currentTitle).push(note);
+  }
+}
+
+function readPendingReleaseNotes(customPendingDir) {
+  const pendingDir = customPendingDir ?? path.join(repoRootDir, 'release-notes', 'pending');
 
   try {
-    const fragmentFiles = readdirSync(pendingDir).filter((file) => file.endsWith('.md'));
-    fragmentFiles.sort((a, b) => {
-      const slugA = a.replace(/\.md$/, '');
-      const slugB = b.replace(/\.md$/, '');
-      const prioA = GROUP_PRIORITY.indexOf(slugA);
-      const prioB = GROUP_PRIORITY.indexOf(slugB);
+    const fragmentFiles = readdirSync(pendingDir)
+      .filter((file) => file.endsWith('.md'))
+      .sort((a, b) => a.localeCompare(b));
+
+    const groupedNotesMap = new Map();
+
+    for (const file of fragmentFiles) {
+      const slug = file.replace(/\.md$/, '');
+      const content = readFileSync(path.join(pendingDir, file), 'utf-8');
+      collectFragmentNotes(content, slugToTitle(slug), groupedNotesMap);
+    }
+
+    const groups = Array.from(groupedNotesMap.entries())
+      .filter(([, notes]) => notes.length > 0)
+      .map(([title, notes]) => ({ title, notes }));
+
+    groups.sort((a, b) => {
+      const prioA = getGroupPriorityIndex(a.title);
+      const prioB = getGroupPriorityIndex(b.title);
 
       if (prioA !== -1 && prioB !== -1) {
         return prioA - prioB;
@@ -101,39 +163,10 @@ function readPendingReleaseNotes() {
         return 1;
       }
 
-      return a.localeCompare(b);
+      return a.title.localeCompare(b.title);
     });
 
-    const groups = [];
-    const allNotes = [];
-
-    for (const file of fragmentFiles) {
-      const slug = file.replace(/\.md$/, '');
-      const content = readFileSync(path.join(pendingDir, file), 'utf-8');
-      const lines = content.split('\n');
-
-      let title = '';
-      const headingLine = lines.find((line) => /^#{1,6}\s+/.test(line.trim()));
-
-      if (headingLine) {
-        title = headingLine
-          .trim()
-          .replace(/^#{1,6}\s+/, '')
-          .trim();
-      } else {
-        title = slugToTitle(slug);
-      }
-
-      const notes = lines
-        .map((line) => line.trim())
-        .filter((line) => line.startsWith('- '))
-        .map((line) => line.slice(2).trim());
-
-      if (notes.length > 0) {
-        groups.push({ title, notes });
-        allNotes.push(...notes);
-      }
-    }
+    const allNotes = groups.flatMap((group) => group.notes);
 
     return { groups, notes: allNotes };
   } catch {
@@ -281,7 +314,17 @@ function determineChangelog() {
   return entry;
 }
 
-export { parseChangelogSection, readAllChangelogEntries, findBaseRelease, determineChangelog };
+export {
+  SLUG_TITLES,
+  GROUP_PRIORITY,
+  CANONICAL_TITLES,
+  slugToTitle,
+  readPendingReleaseNotes,
+  parseChangelogSection,
+  readAllChangelogEntries,
+  findBaseRelease,
+  determineChangelog,
+};
 
 // Nur direkt ausführen, wenn die Datei als Skript aufgerufen wird
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
