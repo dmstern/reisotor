@@ -201,6 +201,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  max-width: 100%;
 }
 
 .tour-assign-btn {
@@ -214,6 +215,7 @@ onUnmounted(() => {
   padding: 0 12px;
   height: 34px;
   min-height: 34px;
+  max-width: 100%;
   font-size: var(--font-size-sm);
   line-height: 1.2;
   font-weight: 500;
@@ -229,6 +231,13 @@ onUnmounted(() => {
     border-color 0.18s ease,
     color 0.18s ease,
     box-shadow 0.2s ease;
+}
+
+.tour-assign-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tour-assign-btn.is-compact {

@@ -217,6 +217,8 @@ function toggle() {
 .collapsible-anim-wrapper {
   display: grid;
   grid-template-rows: 0fr;
+  min-width: 0;
+  max-width: 100%;
   transition: var(
     --transition-accordion-close,
     grid-template-rows 0.26s cubic-bezier(0.32, 0.72, 0, 1),
@@ -243,6 +245,8 @@ function toggle() {
 
 .collapsible-anim-inner {
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   /* 4px Padding + -4px Margin reservieren Platz für Fokus-Rahmen von Kind-Elementen (z. B. Input-Felder
      mit 2px outline + 1px outline-offset = 3px), damit diese an den Rändern nicht durch overflow: hidden
@@ -262,6 +266,8 @@ function toggle() {
   flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -85,6 +85,8 @@ const emit = defineEmits<{
   color: var(--color-text-muted);
   border: 1px solid var(--color-border-strong);
   margin: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .badge--size-sm {

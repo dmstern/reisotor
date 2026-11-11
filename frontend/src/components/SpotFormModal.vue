@@ -553,7 +553,10 @@ function handleOpenScheduledItem(item: ScheduleItem) {
             close-title="Entfernen"
             @close="removeTourTitle(title)"
           >
-            <span class="assign-chip-action">
+            <span
+              class="assign-chip-action"
+              :title="title + (getTourDate(title) ? ` · ${formatDate(getTourDate(title)!)}` : '')"
+            >
               <AppIcon
                 :icon="
                   isTourTravel(title) ? SECTION_ICON_DEFS.travel : SECTION_ICON_DEFS.excursions
@@ -809,6 +812,8 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .schedule-actions-row {
@@ -816,6 +821,8 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .add-schedule-btn {
@@ -825,6 +832,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   padding: 0 12px;
   height: 34px;
   min-height: 34px;
+  max-width: 100%;
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-size: var(--font-size-sm);
@@ -840,6 +848,13 @@ function handleOpenScheduledItem(item: ScheduleItem) {
     background 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease;
+}
+
+.add-schedule-btn span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .add-schedule-btn:hover {
@@ -879,10 +894,14 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .assign-chip {
   min-height: 32px;
+  max-width: 100%;
+  box-sizing: border-box;
   font-size: var(--font-size-sm);
   font-weight: 500;
   border: 1.5px solid;
@@ -945,6 +964,9 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   color: inherit;
   font: inherit;
   font-weight: inherit;
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
 }
 
 button.assign-chip-action {
@@ -956,8 +978,12 @@ button.assign-chip-action:hover {
 }
 
 .assign-chip-label {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .assign-chip-done-toggle:focus-visible,
