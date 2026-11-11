@@ -273,10 +273,26 @@ Sobald es in einer Agent-Session um die Analyse, Planung, Umsetzung oder das Rev
 
 **Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für rein interne Änderungen (Tests, CI, Demo-Daten, Refactorings ohne sichtbare Verhaltensänderung).
 
-- **Blick in `release-notes/pending/` & Token-Disziplin:**
-  - Zuerst kurz die Dateinamen in `release-notes/pending/` prüfen.
-  - **Sind die pending Release Notes leer** (z. B. nach einem frischen Release): Sobald eine funktionale Neuerung/Änderung (`feat:`) hinzukommt, MUSS zwingend ein neues Fragment angelegt werden.
-  - **Existieren bereits Dateien:** Falls eine Datei thematisch passt (z. B. `*budget*` bei Budget-Änderungen), nur diese eine Datei gezielt lesen und ergänzen, statt ein neues Fragment zu erstellen.
+- **1 Fragment-Datei pro PR/Feature (Schutz vor Merge-Konflikten):**
+  - Jeder PR bzw. jedes unabhängige Feature legt eine eigene Datei `release-notes/pending/<feature-slug>.md` an, damit parallele Branches und Worktrees niemals dieselbe Sammeldatei editieren und keine Git-Merge-Konflikte entstehen.
+  - Wird im selben Branch/Folge-PR an einem bereits in `release-notes/pending/` beschriebenen unveröffentlichten Feature weitergearbeitet, wird dessen bestehende Fragment-Datei aktualisiert statt einen zweiten Korrektur-Eintrag anzulegen.
+- **Feste Kanon-Kategorien für `### `-Überschriften (Verbot eigener Überschriften!):**
+  Beim Build (`generate-build-info.mjs`) und Release (`release.yml`) werden alle Fragment-Dateien automatisch anhand ihrer `### `-Überschrift geclustert, zusammengeführt und nach Priorität sortiert. Eine Fragment-Datei kann auch mehrere `### `-Abschnitte enthalten, falls ein PR mehrere Bereiche berührt.
+  Als `### `-Überschrift dürfen im laufenden Entwicklungsbetrieb **ausschließlich** die folgenden 13 Fachkategorien verwendet werden (eigene Kreationen werden von `npm run check:release-notes` blockiert):
+  - `### Reisen und Urlaube`
+  - `### Karte und Navigation`
+  - `### Spots, Touren und Unterkünfte`
+  - `### Budget und Kasse`
+  - `### Kalender und Planung`
+  - `### Listen, Notizen und Tagebuch`
+  - `### Wetter`
+  - `### Verwaltung und Benutzerkonten`
+  - `### Design und Bedienung`
+  - `### Datenschutz und Sicherheit`
+  - `### Einstellungen, Benachrichtigungen und Synchronisation`
+  - `### Demo und Feedback`
+  - `### Weitere Verbesserungen und Fehlerbehebungen`
+  - _(Sonderkategorie `### Highlights`: Ist technisch als 14. Kategorie erlaubt, wird aber **nicht** von einzelnen PR-Agenten vergeben, sondern erst kurz vor dem Release im Rahmen der Release-Kuratierung ausgewählt, da erst im Gesamtbild feststeht, welche Neuerungen herausstechen und `### Highlights` im UI alle übrigen Kategorien in ein `<CollapsibleFieldset>` einklappt.)_
 - **Entscheidungskriterien (Upgrade-Perspektive der Endnutzer:innen gegenüber dem letzten Release `$LAST_TAG`):**
   Vor dem Anlegen oder Bearbeiten eines Eintrags kurz prüfen, ob die betroffene Funktion im letzten Release (`LAST_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")`) überhaupt schon existierte (z. B. per `git log $LAST_TAG -- <pfad>` oder `git grep <begriff> $LAST_TAG`):
   1. **Feature gab es im letzten Release noch NICHT:**
@@ -284,7 +300,7 @@ Sobald es in einer Agent-Session um die Analyse, Planung, Umsetzung oder das Rev
      - **Wurde bereits nach dem letzten Release auf `main` eingeführt und wird jetzt nur nachgebessert/verfeinert:** -> **KEIN neuer Eintrag** (höchstens das existierende Fragment in `pending/` präzisieren; keine fragmentierten Pseudo-Korrekturen für unveröffentlichte Zwischenstände anhäufen).
   2. **Feature gab es BEREITS im letzten Release:**
      - **Wurde jetzt verbessert, erweitert oder ein Fehler behoben:** -> **Eintrag MUSS angelegt werden** (als Verbesserung, Erweiterung oder Bugfix: `- 💡 **Verbesserung**: ...` bzw. `- 🐛 **Bugfix**: ...`), da Endnutzer:innen beim Upgrade von der Vorversion genau diesen Unterschied erleben.
-- **Format:** Datei beginnt mit `### Themen-Überschrift`, dann `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen, keine Komponentennamen/PR-Nummern). Jeder Stichpunkt MUSS mit passendem Emoji + fettgedrucktem Stichwort beginnen.
+- **Format & Sprach-Hygiene (Endnutzer-Perspektive):** Datei beginnt mit einer der kanonischen `### <Kategorie-Überschrift>`en, gefolgt von `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen). Striktes Verbot von Code-Backticks (`` `...` ``), CSS-Variablen (`--color-...`), Dateinamen/Komponenten-Namen (`FormField`, `.vue`) und Issue-/PR-Nummern (`#123`).
 - **Validierung:** Vor jedem Commit mit Release-Notes `npm run check:release-notes` ausführen.
 
 **Saubere, semantische Commits:** Änderungen dürfen **niemals** am Ende über verschiedene Themen hinweg in einem einzigen riesigen Commit ("alles in einem Rutsch") zusammengefasst werden. Stattdessen immer semantisch zusammenhängend committen: Ein Feature oder Bugfix darf und soll Backend-, Store-, UI- und Test-Änderungen in einem gemeinsamen Commit bündeln, sofern sie direkt zusammengehören. Unabhängige Features, unterschiedliche Domänen (z. B. Budgets, Karte, Listen) oder interne Aufgaben (Agent-Konfigurationen, Tooling, Docs) müssen jedoch in getrennten Commits festgehalten werden, um eine saubere, Feature für Feature nachvollzieh- und revertierbare Git-Historie zu gewährleisten. Jeder Commit muss für sich formatiert (`npm run format`), typgeprüft und lauffähig sein.

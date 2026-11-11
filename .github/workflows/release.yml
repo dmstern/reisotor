@@ -85,9 +85,11 @@ jobs:
         env:
           BUMP: ${{ inputs.bump == 'auto' && steps.detect.outputs.bump || inputs.bump }}
         run: |
-          node <<'EOF'
-          const fs = require('fs');
-          const path = require('path');
+          node --input-type=module <<'EOF'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { readPendingReleaseNotes } from './backend/scripts/generate-build-info.mjs';
+
           const bump = process.env.BUMP;
 
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
@@ -100,81 +102,18 @@ jobs:
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 
           // Seit dem letzten Release gesammelte Endnutzer-Stichpunkte (siehe AGENTS.md,
-          // "Release-Notes-Fragmente") nach Themenbereichen gruppiert zu einem Changelog-Eintrag
-          // zusammenfassen. Jede Datei kann mit einer "### "-Überschrift beginnen.
+          // "Release-Notes-Fragmente") nach kanonischen Themenbereichen gruppiert und dedupliziert
+          // zu einem Changelog-Eintrag zusammenfassen.
           const pendingDir = 'release-notes/pending';
           const fragmentFiles = fs.readdirSync(pendingDir).filter((f) => f.endsWith('.md'));
-
-          const SLUG_TITLES = {
-            highlights: 'Highlights',
-            trips: 'Reisen und Urlaube',
-            map: 'Karte und Navigation',
-            'spots-tours': 'Spots und Touren',
-            budget: 'Budget und Kasse',
-            calendar: 'Kalender und Planung',
-            lists: 'Listen und Notizen',
-            weather: 'Wetter',
-            admin: 'Verwaltung und Benutzerkonten',
-            design: 'Design und Bedienung',
-            privacy: 'Datenschutz und Sicherheit',
-            'settings-sync': 'Einstellungen und Synchronisation',
-            'demo-feedback': 'Demo und Feedback',
-            improvements: 'Weitere Verbesserungen und Fehlerbehebungen',
-          };
-          const GROUP_PRIORITY = [
-            'highlights',
-            'trips',
-            'map',
-            'spots-tours',
-            'budget',
-            'calendar',
-            'lists',
-            'weather',
-            'admin',
-            'design',
-            'privacy',
-            'settings-sync',
-            'demo-feedback',
-            'improvements',
-          ];
-
-          fragmentFiles.sort((a, b) => {
-            const slugA = a.replace(/\.md$/, '');
-            const slugB = b.replace(/\.md$/, '');
-            const prioA = GROUP_PRIORITY.indexOf(slugA);
-            const prioB = GROUP_PRIORITY.indexOf(slugB);
-            if (prioA !== -1 && prioB !== -1) return prioA - prioB;
-            if (prioA !== -1) return -1;
-            if (prioB !== -1) return 1;
-            return a.localeCompare(b);
-          });
-
-          const groups = [];
-          for (const f of fragmentFiles) {
-            const slug = f.replace(/\.md$/, '');
-            const content = fs.readFileSync(path.join(pendingDir, f), 'utf-8');
-            const lines = content.split('\n');
-            let title = '';
-            const headingLine = lines.find((l) => /^#{1,6}\s+/.test(l.trim()));
-            if (headingLine) {
-              title = headingLine.trim().replace(/^#{1,6}\s+/, '').trim();
-            } else {
-              title = SLUG_TITLES[slug] || slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            }
-            const notes = lines
-              .map((line) => line.trim())
-              .filter((line) => line.startsWith('- '));
-            if (notes.length > 0) {
-              groups.push({ title, notes });
-            }
-          }
+          const { groups } = readPendingReleaseNotes(pendingDir);
 
           let body = '';
           if (groups.length === 0) {
             body = '- 🛠️ **Verbesserungen unter der Haube**.';
           } else {
             body = groups
-              .map((g) => `### ${g.title}\n\n${g.notes.join('\n')}`)
+              .map((g) => `### ${g.title}\n\n${g.notes.map((n) => `- ${n}`).join('\n')}`)
               .join('\n\n');
           }
 
