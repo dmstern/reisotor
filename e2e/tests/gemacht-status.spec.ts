@@ -323,9 +323,7 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const spotButton = modal.locator('.spot-option-btn', { hasText: spotTitle });
     await expect(spotButton.locator('.excursion-option-badge.recommended')).toHaveCount(0);
     await spotButton.click();
-    await expect(
-      spotButton.locator('.excursion-option-badge', { hasText: 'hinzugefügt' })
-    ).toBeVisible();
+    await expect(spotButton.locator('input[type="checkbox"]')).toBeChecked();
 
     await modal.locator('button[type="submit"]').click();
     await expect(modal).toBeHidden();

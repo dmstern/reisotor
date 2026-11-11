@@ -344,12 +344,28 @@ function handleItemJump(item: ScheduledSpotItem) {
 </template>
 
 <style scoped lang="scss">
+.spot-unplanned-popover {
+  width: min(300px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+}
+
+.spot-dates-popover {
+  width: min(340px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+}
+
 .unplanned-popover-content,
 .dates-popover-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-1);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .popover-title-row {
@@ -369,6 +385,9 @@ function handleItemJump(item: ScheduledSpotItem) {
 
 .popover-date-input {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .popover-buttons {
@@ -386,15 +405,20 @@ function handleItemJump(item: ScheduledSpotItem) {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 2px;
+  overscroll-behavior: contain;
 }
 
 .date-check-row {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .date-check-item {
@@ -402,7 +426,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
   background-image: none;
   box-shadow: none;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   justify-content: flex-start;
@@ -419,6 +443,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   text-align: left;
   user-select: none;
   width: auto;
+  box-sizing: border-box;
 }
 
 .date-check-item:hover:not(:disabled),
@@ -458,6 +483,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1 1 auto;
   text-align: left;
 }
 
@@ -472,7 +498,7 @@ function handleItemJump(item: ScheduledSpotItem) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 140px;
+  max-width: 100%;
 }
 
 .date-check-item.checked .date-check-title {
@@ -484,6 +510,9 @@ function handleItemJump(item: ScheduledSpotItem) {
   margin-left: auto;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-left: var(--space-1);
 }
 
 .date-calendar-jump-btn {

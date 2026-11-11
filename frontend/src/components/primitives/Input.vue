@@ -165,13 +165,22 @@ defineExpose({
   font-size: var(--font-size-md);
 }
 
-/* Spezifische Handhabung für Datums-/Zeiteingaben (Chromium-Picker-Höhenausgleich) */
+/* Spezifische Handhabung für Datums-/Zeiteingaben (Chromium-Picker-Höhenausgleich & WebKit/iOS) */
 .input[type='date'],
 .input[type='time'],
 .input[type='datetime-local'],
 .input[type='month'],
 .input[type='week'] {
   height: var(--input-height, 46px);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.input[type='date']::-webkit-date-and-time-value,
+.input[type='time']::-webkit-date-and-time-value,
+.input[type='datetime-local']::-webkit-date-and-time-value {
+  text-align: inherit;
 }
 
 .input--sm[type='date'],

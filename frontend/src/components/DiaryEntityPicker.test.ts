@@ -62,9 +62,10 @@ describe('DiaryEntityPicker', () => {
     expect(html).toContain('Empfohlen – an diesem Tag geplant');
   });
 
-  it('zeigt Badge hinzugefügt, wenn Spot in spotIds ist', async () => {
+  it('markiert Checkbox des Spots als aktiv, wenn Spot in spotIds ist', async () => {
     const html = await render({ spotIds: [10] });
-    expect(html).toContain('hinzugefügt');
+    expect(html).toContain('id="diary-spot-10"');
+    expect(html).toContain('checked');
   });
 
   it('hebt Tour an abweichendem Datum mit Warn-Badge hervor', async () => {
