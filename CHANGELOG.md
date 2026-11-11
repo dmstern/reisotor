@@ -5,6 +5,66 @@ Format lose an [Keep a Changelog](https://keepachangelog.com/) angelehnt, Versio
 [Semantic Versioning](https://semver.org/). Neue Einträge werden beim Erstellen eines Releases
 (`.github/workflows/release.yml`) oben ergänzt.
 
+## [2.1.0] - 2026-11-11
+
+### Highlights
+
+- ✨ **Buchungs-Links automatisch erkennen**: Links von Buchungsportalen wie Booking.com, Airbnb, Trivago und weiteren Portalen können nun direkt in die Suchleiste von Spots eingefügt werden. Name, Titelbild, Adresse, Preis, Zeitraum, Check-in/-out-Zeiten und Kartenkoordinaten werden automatisch ermittelt und als Unterkunft hinterlegt.
+- ✨ **E-Mail-Benachrichtigungen**: Neuigkeiten und Aktivitäten in Urlauben können nun wahlweise auch per E-Mail empfangen werden – in den Detail-Einstellungen lässt sich pro Bereich flexibel zwischen Push, E-Mail, beidem oder keinem wählen.
+- 📍 **Modernisierte Polaroid-Karte mit direkter Ortssuche**: Beim Anlegen von Spots und Urlauben sind Name, Kategorie und Adresse auf der Polaroid-Karte sofort sichtbar. Schon beim Eintippen des Namens oder der Adresse werden passende Orte vorgeschlagen und inklusive Koordinaten und Kategorie direkt übernommen; eine dezente Kartensperre auf Smartphones verhindert zudem unbeabsichtigtes Verschieben beim Scrollen.
+- 🖐️ **Taktile 3D-Effekte & Micro-Interactions**: Buttons, Umschalter, Checkboxen, Karten, schwebende Karten-Werkzeuge sowie die Anfasser zum Verbreitern der Seitenleisten besitzen nun im hellen wie im dunklen Modus einen abgestimmten 3D-Look mit sanftem Kantenlicht und spürbarem Druck-Feedback beim Anklicken. Textfelder, Auswahlfelder und Aufklappmenüs bleiben im Ruhezustand angenehm ruhig und flach und entfalten ihre räumliche Tiefe weich animiert erst beim Überfahren, Fokussieren oder Eintippen.
+
+### Reisen und Urlaube
+
+- ✨ **Standard-Touren & Zuhause beim Anlegen**: Beim Erstellen eines neuen Urlaubs können Anreise, Abreise und der Heimat-Startpunkt „Zuhause“ direkt automatisch angelegt werden.
+- 📋 **Reise-Daten & Standort direkt sichtbar**: Die optionalen Angaben im Dialog zum Anlegen und Bearbeiten von Urlauben (Reisezeitraum sowie Ziel und Standort) werden nun direkt angezeigt, sodass Reisedaten sofort auffindbar sind.
+
+### Karte und Navigation
+
+- 🐛 **Ansichtswechsel zu Tracks**: Das Umschalten auf die Track-Ansicht im Auswahl-Schalter springt bei aktivem Kategoriefilter nicht mehr unerwartet zurück auf die Spot-Ansicht.
+- 📱 **Automatisches Ausblenden des Headers auf Mobilgeräten**: Beim Herunterscrollen wandert die obere Leiste auf Smartphones zunächst 1:1 mit dem Seiteninhalt nach oben aus dem Bild, bevor sie bei weiterem Scrollen im Hintergrund bleibt. Beim leichten Hochscrollen oder am Seitenanfang gleitet die Kopfzeile sanft und weich wieder ins Bild.
+- 📱 **Breitere mobile Navigation**: Die schwebende Navigationsleiste auf Smartphones nutzt den verfügbaren Bildschirmplatz zu den Rändern besser aus, sodass bis zu 6 Menüpunkte ohne horizontales Scrollen Platz finden. Bei weniger Punkten schrumpft die Leiste weiterhin exakt auf die benötigte Breite zusammen.
+- 🛏️ **Unterkunft standardmäßig mobil sichtbar**: Der Menüpunkt „Unterkunft“ ist nun auch auf Smartphones standardmäßig in der Hauptnavigation aktiv (zusammen 6 Menüpunkte).
+- 💡 **Filter & Sortierung im Karten-Drawer**: Suchleiste und Filter-Buttons im Spots-Drawer besitzen nun eine einheitliche Höhe und sind in einem kompakten Menü mit einzeln ausklappbaren Bereichen für Sortierung, Kategorien, Status und Touren zusammengefasst.
+- 💡 **Schlankere Mobilansicht im Drawer**: Im halb geöffneten Karten-Drawer verbrauchen Steuerungen deutlich weniger Platz, indem Überschrift, Aktionen und die mit klaren Pfeil-Symbolen versehenen Ein-/Ausklapp-Buttons platzsparend in einer gemeinsamen Leiste gebündelt sind; die Spots und die Karte sind dadurch direkt sichtbar und maximal aufgeräumt.
+- 📅 **Tages-Navigation im Karten-Fokus**: Liegt der Fokus der Karte auf einem Reisetag, kann über Vor- und Zurück-Pfeile direkt im Fokus-Banner auf der Karte zwischen den Reisetagen gewechselt werden.
+
+### Spots, Touren und Unterkünfte
+
+- 💡 **Schlaue Urlaubsregion-Erkennung**: Der Umschalter zwischen Urlaubsort und Heimatseite wurde durch eine automatische Erkennung anhand der Spot-Kategorie ersetzt. Typische Urlaubsziele (wie Unterkünfte, Restaurants, Strände oder Sehenswürdigkeiten) zählen standardmäßig direkt zur Urlaubsregion, während „Zuhause“ automatisch als Heimatort vorbelegt wird.
+- 🎛️ **Klarer Schalter für Transit-Orte**: Bei Reise- und Umsteigepunkten (z. B. Flughäfen oder Bahnhöfen) steht nun ein dezenter Schalter „Teil der Urlaubsregion“ zur Verfügung, mit dem sich heimische Abflugsorte klar von Zielen am Urlaubsort unterscheiden lassen.
+- ✏️ **Einheitliche Position und Optik für Bearbeiten-Buttons & Kategorie-Badges**: Der Bearbeiten-Button und die Badges sitzen nun auf Spot- und Tour-Karten einheitlich oben rechts in der Badge-Gruppe – analog zu Terminen, Tagebucheinträgen und Listen –, teilen sich das kreisrunde Oberflächen-Design und die Einklappen-Pille sitzt im aufgeklappten Zustand einheitlich unten rechts. Ausgeklappte Spot-Karten zeigen ihr Kategorie-Badge nun wie Touren mit vollem Text-Label statt nur als reines Symbol.
+- 💡 **Aufgeräumte Touren-Ansicht**: In der Touren-Ansicht werden nur noch geplante Touren und deren Stationen angezeigt. Spots ohne Tour werden nicht mehr am Listenende aufgeführt, was die Ansicht übersichtlicher macht.
+- 💡 **Aufgeräumte Spot-Aktionen & Verbindungslinie**: Das Zuordnen von Spots zu Touren erfolgt nun fokussiert im Tour- oder Spot-Formular. Zudem wurden der separate Schalter „Ziel der Tour“ auf ausgeklappten Spot-Karten und die zugehörige Checkbox im Tour-Formular entfernt, da Stationen bereits durch ihre Reihenfolge klar definiert sind und die geschwungene Verbindungslinie nun als einheitlicher Pfad gezeichnet wird.
+- 💡 **Kontextuelle Anlege-Buttons & dynamische Platzhalter**: Wenn nach Unterkünften oder Reisen gefiltert wird, passt sich der Hauptbutton im Header automatisch an („Neue Unterkunft“ bzw. animiert „Neue Fahrt“ / „Neuer Flug“ / „Neuer Zug“) und öffnet den Dialog direkt passend vorbefüllt. Zudem passt sich der Platzhalter im Titel-Eingabefeld dynamisch an die gewählte Kategorie an (z. B. „Name der Kneipe…“, „Name des Restaurants…“, „Name des Strands…“ oder „Name der Unterkunft…“).
+- 🛡️ **Hinweis für Heimatorte**: Wenn bei einem typischen Urlaubsort (wie einer Unterkunft) die Option „Heimatort“ gewählt wird, erklärt ein deutlicher Hinweis direkt am Schalter die Auswirkungen (Verortung außerhalb der Urlaubsregion auf der Karte).
+- 🎯 **Fokussierte Leerzustände**: Bei aktiven Filtern ohne Einträge erleichtern aussagekräftige Hinweistexte und direkte Schnellstart-Buttons das Eintragen der ersten Unterkunft oder Anreise.
+- ✏️ **Direktes Bearbeiten auf Karten & leeren Touren**: Touren und Spots bieten ihren Bearbeiten-Button (Stift-Icon) nun auch direkt im zugeklappten Zustand an. Bei Touren ohne zugeordnete Stationen ermöglicht ein zusätzlicher Button „Tour bearbeiten“ direkt unter dem Hinweistext das sofortige Hinzufügen von Stationen.
+- 💡 **Fokussierter Status-Button auf Spot-Karten**: Der permanente „Einplanen“-Button mit Zieh-Anfasser auf den Spot-Karten wurde entfernt, sodass sich Einplanen und Besuchsstatus übersichtlich auf den kompakten Status-Button bzw. das Spot-Formular konzentrieren. Bereits ab dem ersten Termin öffnet ein Klick auf den Status-Button das Menü „Besuche abhaken“ mit eindeutigem Kontext (Tour vs. Kalender-Termin und passendem Sprungziel).
+- ⚡ **Schnellere Datumsauswahl & mobiler Umbruch beim Einplanen**: Beim Klick auf „Datum hinzufügen“ im Spot-Formular wird das gewählte Datum nun sofort als Termin-Chip angelegt, ohne zwischengeschaltete Bestätigungs-Buttons. Auf schmalen Bildschirmen brechen Datums- und Tour-Chips sowie die Felder im Besuchs-Menü zudem sauber und ohne Überlaufen um.
+
+### Kalender und Planung
+
+- 🐛 **Kein horizontaler Overflow im Termin-Dialog**: Die Felder für Ortsangaben (Spot-/Tour-Auswahl, Freitext-Ort und Karten-Link) sind nun vertikal gestaffelt, sodass der Dialog auch auf schmalen Smartphone-Bildschirmen nicht mehr horizontal scrollt oder Inhalte abschneidet.
+- 🎯 **Klarere Spot-/Tour-Verknüpfung bei Terminen**: Im Kalender-Dialog „Termin anlegen“ ist die Verknüpfung von Spots und Touren unter Ortsangaben nun eindeutig beschriftet.
+
+### Listen, Notizen und Tagebuch
+
+- 💡 **Sanft animierte Formatierungsleiste**: Die Formatierungs-Werkzeugleiste in Notiz- und Textfeldern fährt beim Fokussieren und Verlassen nun butterweich ein und aus, sodass das Formular ruhig bleibt und keine Layout-Sprünge entstehen.
+- 📱 **Tagebuch-Auswahllisten für Spots & Touren optimiert**: Im Tagebucheintrag-Dialog werden Spots nun konsistent wie Touren mit einem Auswahlkästchen ausgewählt. Das Layout passt sich auf mobilen Bildschirmen zweizeilig an, sodass Tour- und Spot-Namen übersichtlich gekürzt werden und Datums-Hinweise oder Warnungen nicht mehr über den Bildschirmrand ragen.
+
+### Design und Bedienung
+
+- 🪄 **Dropdown- und Auswahllisten auf oberster Ebene**: Ausklappbare Auswahlmenüs und Vorschlagslisten (wie die Kategorieauswahl in der Polaroid-Karte im Spot-Dialog) werden nun über der Oberfläche freistehend auf oberster Ebene dargestellt. Dadurch behalten Karten und Dialoge ihre ursprüngliche Größe, ohne unerwünschte Scrollbalken zu erzeugen, und Menü-Optionen werden durch keine übergeordneten Bereiche mehr abgeschnitten.
+- 🪟 **Schwebende Buttons im Glas-Design**: Frei schwebende Aktionsbuttons (wie die Werkzeug-Buttons auf der Karte für Fokus, Standort-Freigabe und Strecken-Aufzeichnung sowie schwebende Buttons in Karten und Dialogen) erscheinen nun wie die Navigations- und Kopfleiste in einer halbtransparenten Glas-Optik mit sanftem Weichzeichner, während der plastische 3D-Look flächigen Elementen wie Karten, Dialogen und Seitenleisten vorbehalten bleibt.
+- 💡 **Größere Schriften & Buttons**: Texte, Schaltflächen, Auswahlfelder, Auswahlkästchen und Menüs wurden für Smartphone und Desktop spürbar großzügiger und lesefreundlicher gestaltet, sodass sich alle Funktionen auch unterwegs ohne Heranzoomen sicher antippen lassen.
+- 🐛 **Kein unerwünschter Auto-Zoom auf Mobilgeräten**: Beim Antippen von kompakten Eingabe- und Auswahlfeldern (z. B. in Schnell-Eingabezeilen) zoomt die Web-App auf Smartphones nicht mehr automatisch heran, sodass die Benutzeroberfläche stabil und die volle Seitenbreite erhalten bleibt.
+- 🎯 **Klare Fokus-Rahmen**: Bei der Bedienung per Tastatur sowie in aktiven Eingabefeldern sorgt ein einheitlicher, kräftiger Fokus-Rahmen jederzeit für optimale Orientierung.
+
+### Einstellungen, Benachrichtigungen und Synchronisation
+
+- 💡 **Präziser Benachrichtigungs-Umschalter**: Die Hervorhebungs-Pille im Benachrichtigungs-Umschalter richtet sich nun exakt an der gewählten Option aus. Zudem bleibt der Umschalter auch bei deaktivierten Benachrichtigungen („Aus“) dauerhaft sichtbar, während die darunterliegenden Detailoptionen sanft abgeblendet werden.
+
 ## [2.0.1] - 2026-11-01
 
 ### Versionshinweise
