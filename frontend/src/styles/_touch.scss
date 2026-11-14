@@ -5,6 +5,23 @@
 // auf Mobil- und Touch-Geräten (Default: 44x44px gemäß DESIGN.md §7.1 / WCAG 2.5.5).
 // =============================================================================
 
+/// Führt den CSS-Block nur auf Geräten aus, die echtes Hover unterstützen (Maus, Trackpad).
+/// Verhindert fehlerhafte Hover-Trigger beim Scrollen auf Touch-Geräten (Issue #756).
+@mixin can-hover {
+  @media (hover: hover) {
+    @content;
+  }
+}
+
+/// Shorthand für &:hover innerhalb von @media (hover: hover).
+@mixin hover {
+  @media (hover: hover) {
+    &:hover {
+      @content;
+    }
+  }
+}
+
 /// Erweitert die Klick-/Touch-Hitbox eines kompakten interaktiven Elements
 /// (Standard: 44x44px gemäß WCAG 2.5.5 / DESIGN.md §7.1) über ein unsichtbares Pseudo-Element.
 /// Das Element selbst behält seine visuelle Größe (z. B. 20x20px), während die

@@ -738,20 +738,17 @@ function handleClick(e: Event) {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
 }
 
-/* Hover- & Fächer-Effekt: Sanftes Auffächern bei interaktiven Stapeln oder gesteuert */
-.polaroid-stack.is-interactive:hover .polaroid-tile,
+/* Fächer-Effekt: Gesteuertes Auffächern (.is-fanned) */
 .polaroid-stack.is-fanned .polaroid-tile {
   transform: var(--tile-fanned-transform, var(--tile-base-transform));
 }
 
-.polaroid-stack.is-interactive:hover .polaroid-tile:first-child,
 .polaroid-stack.is-fanned .polaroid-tile:first-child {
   box-shadow:
     0 6px 14px rgba(0, 0, 0, 0.2),
     0 2px 5px rgba(0, 0, 0, 0.12);
 }
 
-:root[data-theme='dark'] .polaroid-stack.is-interactive:hover .polaroid-tile:first-child,
 :root[data-theme='dark'] .polaroid-stack.is-fanned .polaroid-tile:first-child {
   box-shadow:
     0 6px 16px rgba(0, 0, 0, 0.55),
@@ -759,11 +756,39 @@ function handleClick(e: Event) {
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .polaroid-stack.is-interactive:hover .polaroid-tile:first-child,
   :root:not([data-theme='light']) .polaroid-stack.is-fanned .polaroid-tile:first-child {
     box-shadow:
       0 6px 16px rgba(0, 0, 0, 0.55),
       0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Hover-Effekt: Sanftes Auffächern nur auf echten Hover-Geräten (#756) */
+@media (hover: hover) {
+  .polaroid-stack.is-interactive:hover .polaroid-tile {
+    transform: var(--tile-fanned-transform, var(--tile-base-transform));
+  }
+
+  .polaroid-stack.is-interactive:hover .polaroid-tile:first-child {
+    box-shadow:
+      0 6px 14px rgba(0, 0, 0, 0.2),
+      0 2px 5px rgba(0, 0, 0, 0.12);
+  }
+
+  :root[data-theme='dark'] .polaroid-stack.is-interactive:hover .polaroid-tile:first-child {
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.55),
+      0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light'])
+      .polaroid-stack.is-interactive:hover
+      .polaroid-tile:first-child {
+      box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.55),
+        0 2px 5px rgba(0, 0, 0, 0.3);
+    }
   }
 }
 

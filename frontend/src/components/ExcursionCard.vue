@@ -274,7 +274,7 @@ const {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 /* Vollflächiger Listeneintrag statt schwebender Karte: fügt sich nahtlos in die Drawer-Breite ein,
    getrennt durch horizontale Trennlinien am umgebenden .category-group. */
 .card.excursion-card,
@@ -333,19 +333,21 @@ const {
   z-index: 3;
 }
 
-.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) {
-  transform: none;
-  background: var(--color-hover) !important;
-  box-shadow: none !important;
-}
+@include can-hover {
+  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) {
+    transform: none;
+    background: var(--color-hover) !important;
+    box-shadow: none !important;
+  }
 
-.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover))::before {
-  opacity: 1;
-  transform: scaleY(1);
-}
+  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover))::before {
+    opacity: 1;
+    transform: scaleY(1);
+  }
 
-.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-title {
-  color: var(--excursion-theme-dark);
+  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-title {
+    color: var(--excursion-theme-dark);
+  }
 }
 
 .excursion-card:not(.expanded):active:not(:has(.tour-edit-btn:hover)) {
@@ -438,37 +440,40 @@ const {
   margin-bottom: var(--space-1);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: color-mix(in srgb, var(--excursion-theme-color) 8%, var(--color-surface));
+  background-color: color-mix(in srgb, var(--excursion-theme-color) 8%, var(--color-surface));
+  background-image: var(--gradient-control-3d);
   border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-xs);
+    var(--shadow-control);
   transition:
-    background 0.2s ease,
+    background-color 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.excursion-card.expanded .card-header-row:hover:not(:has(.tour-edit-btn:hover)) {
-  background: color-mix(in srgb, var(--excursion-theme-color) 16%, var(--color-surface));
-  border-color: var(--excursion-theme-color);
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight-strong),
-    var(--shadow-sm);
-  transform: translateY(-1px);
+@include can-hover {
+  .excursion-card.expanded .card-header-row:hover:not(:has(.tour-edit-btn:hover)) {
+    background-color: color-mix(in srgb, var(--excursion-theme-color) 16%, var(--color-surface));
+    border-color: var(--excursion-theme-color);
+    box-shadow:
+      inset 0 1px 0 var(--shadow-control-highlight-strong),
+      var(--shadow-control-hover);
+    transform: translateY(-1px);
+  }
+
+  .excursion-card.expanded:has(.card-header-row:hover:not(:has(.tour-edit-btn:hover)))
+    .body
+    > :not(.card-header-row) {
+    transform: translateY(-2px);
+    opacity: 0.82;
+  }
 }
 
 .excursion-card.expanded .card-header-row:active:not(:has(.tour-edit-btn:hover)) {
   transform: translateY(1px) scale(0.995);
   box-shadow: var(--shadow-control-active);
-}
-
-.excursion-card.expanded:has(.card-header-row:hover:not(:has(.tour-edit-btn:hover)))
-  .body
-  > :not(.card-header-row) {
-  transform: translateY(-2px);
-  opacity: 0.82;
 }
 
 .card-title-block {
@@ -575,32 +580,34 @@ const {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-disclosure-pill {
-  background: var(--excursion-theme-color);
-  border-color: var(--excursion-theme-color);
-  color: #ffffff;
-  box-shadow: var(--shadow-control-hover);
-  transform: translateY(-1px);
-}
+@include can-hover {
+  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-disclosure-pill {
+    background: var(--excursion-theme-color);
+    border-color: var(--excursion-theme-color);
+    color: #ffffff;
+    box-shadow: var(--shadow-control-hover);
+    transform: translateY(-1px);
+  }
 
-.excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .disclosure-chevron {
-  transform: translateY(2px);
-}
+  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .disclosure-chevron {
+    transform: translateY(2px);
+  }
 
-.excursion-card.expanded
-  .card-header-row:hover:not(:has(.tour-edit-btn:hover))
-  .card-disclosure-pill {
-  background: var(--excursion-theme-color);
-  border-color: var(--excursion-theme-color);
-  color: #ffffff;
-  box-shadow: var(--shadow-control-hover);
-  transform: translateY(-1px);
-}
+  .excursion-card.expanded
+    .card-header-row:hover:not(:has(.tour-edit-btn:hover))
+    .card-disclosure-pill {
+    background: var(--excursion-theme-color);
+    border-color: var(--excursion-theme-color);
+    color: #ffffff;
+    box-shadow: var(--shadow-control-hover);
+    transform: translateY(-1px);
+  }
 
-.excursion-card.expanded
-  .card-header-row:hover:not(:has(.tour-edit-btn:hover))
-  .disclosure-chevron {
-  transform: translateY(-2px);
+  .excursion-card.expanded
+    .card-header-row:hover:not(:has(.tour-edit-btn:hover))
+    .disclosure-chevron {
+    transform: translateY(-2px);
+  }
 }
 
 .card-actions-wrapper {
@@ -702,12 +709,14 @@ const {
 }
 
 /* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
-.excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile) {
-  transform: var(--tile-fanned-transform);
-}
+@include can-hover {
+  .excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile) {
+    transform: var(--tile-fanned-transform);
+  }
 
-.excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
-  box-shadow: var(--shadow-md);
+  .excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+    box-shadow: var(--shadow-md);
+  }
 }
 
 .tour-attachments-wrap {

@@ -178,7 +178,15 @@ function toggle() {
 }
 
 .collapsible-toggle:hover:not(:disabled) {
-  background: var(--color-hover) !important;
+  background-color: var(--color-hover) !important;
+  background-image: var(--gradient-control-3d) !important;
+  box-shadow: var(--shadow-control-hover) !important;
+}
+
+.collapsible-toggle:active:not(:disabled) {
+  background-color: var(--color-hover) !important;
+  background-image: var(--gradient-control-3d) !important;
+  box-shadow: var(--shadow-control-active) !important;
 }
 
 .collapsible-toggle:disabled {
