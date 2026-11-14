@@ -240,5 +240,104 @@ describe('routingService unit tests', () => {
       expect(res.supported).toBe(true);
       expect(res.routes).toHaveLength(1);
     });
+
+    it('erweitert Snapping-Radius auf -1 bei ORS-Fehler 2010 (z. B. Ziel >350m von Straße)', async () => {
+      const mockCarRoute = {
+        features: [
+          {
+            geometry: {
+              coordinates: [
+                [13.49052, 52.5356],
+                [13.63186, 52.42003],
+              ],
+            },
+            properties: { summary: { distance: 21500, duration: 2100 } },
+          },
+        ],
+      };
+
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          text: async () =>
+            JSON.stringify({
+              error: {
+                code: 2010,
+                message:
+                  'Could not find routable point within a radius of 350.0 meters of specified coordinate 1: 13.6318600 52.4200300.',
+              },
+            }),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockCarRoute,
+        } as unknown as Response);
+
+      const res = await getDirections({
+        from: { lat: 52.535603, lng: 13.4905235 },
+        to: { lat: 52.4200284, lng: 13.6318564 },
+        transportType: 'Auto',
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const firstBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+      expect(firstBody.radiuses).toBeUndefined();
+
+      const secondBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body as string);
+      expect(secondBody.radiuses).toEqual([-1, -1]);
+      expect(secondBody.alternative_routes).toBeDefined();
+
+      expect(res.supported).toBe(true);
+      expect(res.routes).toHaveLength(1);
+      expect(res.routes[0].distance_meters).toBe(21500);
+    });
+
+    it('liefert klare deutsche Fehlermeldung und Roh-Details, falls auch erweiterter Radius 2010 meldet', async () => {
+      const ors2010Body = JSON.stringify({
+        error: {
+          code: 2010,
+          message:
+            'Could not find routable point within a radius of 350.0 meters of specified coordinate 1: 13.6318600 52.4200300.',
+        },
+      });
+
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          text: async () => ors2010Body,
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          text: async () => JSON.stringify({ error: { code: 2099, message: null } }),
+        } as unknown as Response)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          text: async () => JSON.stringify({ error: { code: 2099, message: null } }),
+        } as unknown as Response);
+
+      const res = await getDirections({
+        from: { lat: 52.535603, lng: 13.4905235 },
+        to: { lat: 52.4200284, lng: 13.6318564 },
+        transportType: 'Auto',
+      });
+
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+      expect(res.supported).toBe(false);
+      expect(res.reason).toBe(
+        'Für „Auto“ wurde in der Nähe von Start oder Ziel keine befahrbare Straße gefunden.'
+      );
+      expect(res.details).toContain('OpenRouteService HTTP 404');
+      expect(res.details).toContain('2010');
+    });
   });
 });
