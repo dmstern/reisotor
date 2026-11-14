@@ -162,4 +162,66 @@ describe('routing routes (POST /api/trips/:tripId/routes/directions)', () => {
     const sentBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
     expect(sentBody.preference).toBe('shortest');
   });
+
+  describe('POST /api/trips/:tripId/routes/batch-summary', () => {
+    it('verweigert unauthentifizierten Zugriff mit 401', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/trips/${tripId}/routes/batch-summary`,
+        payload: { items: [] },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('lehnt ungültige Payloads mit 400 ab', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/trips/${tripId}/routes/batch-summary`,
+        headers: { cookie },
+        payload: { items: 'not-an-array' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toContain('items muss ein Array sein');
+    });
+
+    it('liefert Batch-Ergebnisse inkl. Fallback bei fehlendem ORS-Key', async () => {
+      delete process.env.ORS_API_KEY;
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/trips/${tripId}/routes/batch-summary`,
+        headers: { cookie },
+        payload: {
+          items: [
+            {
+              key: 'spot-1',
+              from_lat: 48.85,
+              from_lng: 2.35,
+              to_lat: 48.9,
+              to_lng: 2.4,
+              profile: 'driving-car',
+            },
+            {
+              key: 'spot-same',
+              from_lat: 38.71,
+              from_lng: -9.14,
+              to_lat: 38.71,
+              to_lng: -9.14,
+              profile: 'foot-walking',
+            },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const json = res.json();
+      expect(json.results['spot-same']).toEqual({
+        distance_meters: 0,
+        duration_seconds: 0,
+        profile: 'foot-walking',
+        is_fallback: false,
+      });
+      expect(json.results['spot-1'].is_fallback).toBe(true);
+      expect(json.results['spot-1'].distance_meters).toBeGreaterThan(4000);
+    });
+  });
 });

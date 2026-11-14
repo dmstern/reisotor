@@ -62,6 +62,7 @@ import {
 import { useTourSerpentine } from '../composables/useTourSerpentine';
 import { useExcursionTracks } from '../composables/useExcursionTracks';
 import { useExcursionSocial } from '../composables/useExcursionSocial';
+import { useAccommodationDistances } from '../composables/useAccommodationDistances';
 
 const auth = useAuthStore();
 const tripStore = useTripStore();
@@ -108,10 +109,48 @@ const {
 } = layout;
 
 // 2. Filtering, Searching, Sorting & Grouping
+// spotScheduledDates vorab aus Schedule/Excursion ableiten für useAccommodationDistances
+const spotScheduledDatesPreview = computed(() => {
+  const map = new Map<number, string>();
+
+  for (const item of scheduleStore.items) {
+    if (item.spot_id != null && (!map.has(item.spot_id) || item.date < map.get(item.spot_id)!)) {
+      map.set(item.spot_id, item.date);
+    }
+  }
+
+  for (const excursion of excursionsStore.excursions) {
+    if (excursion.date) {
+      for (const id of excursion.spot_ids) {
+        if (!map.has(id) || excursion.date < map.get(id)!) {
+          map.set(id, excursion.date);
+        }
+      }
+    }
+  }
+
+  for (const entry of diaryStore.entries) {
+    if (entry.date) {
+      for (const id of entry.spot_ids ?? []) {
+        if (!map.has(id) || entry.date < map.get(id)!) {
+          map.set(id, entry.date);
+        }
+      }
+    }
+  }
+
+  return map;
+});
+
+const { spotAccommodationDistances } = useAccommodationDistances({
+  spotScheduledDates: spotScheduledDatesPreview,
+});
+
 const filter = useExcursionsFilter({
   route,
   router,
   highlightedIds,
+  spotAccommodationDistances,
 });
 const {
   sortMode,
@@ -1546,6 +1585,7 @@ onUnmounted(() => {
                     :get-tour-layover="getTourLayover"
                     :set-spot-ref="setSpotRef"
                     :set-tour-wrap-ref="(el) => setTourWrapRef(grp.excursion!.id, el)"
+                    :spot-accommodation-distances="spotAccommodationDistances"
                     @open-leg-modal="
                       (fromSpot, toSpot) => openCardLegModal(grp.excursion!, fromSpot, toSpot)
                     "
@@ -1584,6 +1624,9 @@ onUnmounted(() => {
                         :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
                         :comments="spotCommentItemsFor(item.spot.id)"
                         :has-multiple-members="users.length > 1"
+                        :accommodation-distance="
+                          spotAccommodationDistances.get(item.spot.id) ?? null
+                        "
                         @edit="startEditSpot"
                         @toggle-like="toggleSpotLike(item.spot.id)"
                         @submit-comment="(content) => submitSpotComment(item.spot.id, content)"

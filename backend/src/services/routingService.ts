@@ -14,11 +14,127 @@ export interface DirectionsParams {
   preference?: 'fastest' | 'shortest';
 }
 
-export interface RouteResult {
-  coordinates: [number, number][]; // [lat, lng] für Leaflet
+export interface RouteSummaryResult {
   distance_meters: number;
-  duration_seconds: number;
-  profile: string;
+  duration_seconds: number | null;
+  profile: 'foot-walking' | 'cycling-regular' | 'driving-car';
+  is_fallback: boolean;
+}
+
+export interface BatchRouteRequestItem {
+  key: string;
+  from: RouteCoordinates;
+  to: RouteCoordinates;
+  profile?: 'foot-walking' | 'cycling-regular' | 'driving-car';
+}
+
+/**
+ * Ermittelt kompakte Routen-Zusammenfassungen (Distanz + Dauer) für eine Liste von Start-Ziel-Paaren.
+ * Nutzt primär den SQLite routing_cache; für Cache-Misses wird getDirections aufgerufen.
+ * Kann kein Straßen-Routing ermittelt werden (oder fehlt der ORS_API_KEY), wird die Haversine-Luftlinie
+ * mit is_fallback: true zurückgegeben.
+ */
+export async function getBatchRouteSummaries(
+  items: BatchRouteRequestItem[]
+): Promise<Record<string, RouteSummaryResult>> {
+  const results: Record<string, RouteSummaryResult> = {};
+  const missingQueue: BatchRouteRequestItem[] = [];
+
+  for (const item of items) {
+    const profile = item.profile ?? 'driving-car';
+    const fromLat = roundCoord(item.from.lat);
+    const fromLng = roundCoord(item.from.lng);
+    const toLat = roundCoord(item.to.lat);
+    const toLng = roundCoord(item.to.lng);
+
+    // Identische Koordinaten -> 0 Meter Distanz
+    if (fromLat === toLat && fromLng === toLng) {
+      results[item.key] = {
+        distance_meters: 0,
+        duration_seconds: 0,
+        profile,
+        is_fallback: false,
+      };
+      continue;
+    }
+
+    const cacheProfile = `${profile}:fastest`;
+    let cached = selectCacheStmt.get(cacheProfile, fromLat, fromLng, toLat, toLng) as
+      { response_json: string } | undefined;
+
+    if (!cached) {
+      cached = selectCacheStmt.get(profile, fromLat, fromLng, toLat, toLng) as
+        { response_json: string } | undefined;
+    }
+
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached.response_json) as DirectionsResponse;
+
+        if (parsed.supported && parsed.routes?.length > 0) {
+          results[item.key] = {
+            distance_meters: parsed.routes[0].distance_meters,
+            duration_seconds: parsed.routes[0].duration_seconds,
+            profile,
+            is_fallback: false,
+          };
+          continue;
+        }
+      } catch {
+        // Cache-Eintrag korrupt -> neu anfragen
+      }
+    }
+
+    missingQueue.push(item);
+  }
+
+  if (missingQueue.length === 0) {
+    return results;
+  }
+
+  // Max. 3 gleichzeitige Anfragen an getDirections, um Rate-Limits zu schonen
+  const CONCURRENCY = 3;
+
+  for (let i = 0; i < missingQueue.length; i += CONCURRENCY) {
+    const chunk = missingQueue.slice(i, i + CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (item) => {
+        const profile = item.profile ?? 'driving-car';
+
+        try {
+          const directions = await getDirections({
+            from: item.from,
+            to: item.to,
+            profile,
+            preference: 'fastest',
+          });
+
+          if (directions.supported && directions.routes?.length > 0) {
+            results[item.key] = {
+              distance_meters: directions.routes[0].distance_meters,
+              duration_seconds: directions.routes[0].duration_seconds,
+              profile,
+              is_fallback: false,
+            };
+            return;
+          }
+        } catch {
+          // Fehler bei getDirections -> Fallback greift unten
+        }
+
+        // Fallback: Haversine-Luftlinie
+        const airKm = haversineDistanceKm(item.from, item.to);
+        results[item.key] = {
+          distance_meters: Math.round(airKm * 1000),
+          duration_seconds: null,
+          profile,
+          is_fallback: true,
+        };
+      })
+    );
+  }
+
+  return results;
 }
 
 export interface DirectionsResponse {

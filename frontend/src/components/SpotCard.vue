@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, type ComponentPublicInstance } from 'vue';
 import type { Spot } from '../api/types';
-import type { IconDef } from '../utils/icon';
 import { useDrawersStore } from '../stores/drawers';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
@@ -22,7 +21,12 @@ import SpotDetails from './SpotDetails.vue';
 import SpotDoneStatus from './SpotDoneStatus.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration } from '../utils/travelDuration';
+import {
+  formatSpotDistance,
+  type SpotAccommodationDistanceInfo,
+} from '../utils/spotAccommodationDistance';
 
 const props = withDefaults(
   defineProps<{
@@ -51,6 +55,8 @@ const props = withDefaults(
     iconOnlyCategory?: boolean;
     /** Semantisches HTML-Überschriften-Tag für den Card-Titel (Standard: 'h4') */
     headingTag?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+    /** Berechnete Distanz zur zugehörigen Unterkunft */
+    accommodationDistance?: SpotAccommodationDistanceInfo | null;
   }>(),
   {
     headingTag: 'h4',
@@ -228,6 +234,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
         :is-accommodation="isAccommodation"
         :payer-label="payerLabel"
         :has-multiple-members="hasMultipleMembers"
+        :accommodation-distance="accommodationDistance"
       />
 
       <div class="card-actions-wrapper" :class="{ 'is-expanded': expanded }">
@@ -286,6 +293,36 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
             <span class="spot-layover-text"
               >{{ formatTravelDuration(layoverMinutes) }} Umstieg</span
             >
+          </Badge>
+
+          <Badge
+            v-if="!isAccommodation && accommodationDistance && !expanded"
+            variant="default"
+            size="sm"
+            class="spot-distance-badge"
+            :title="
+              accommodationDistance.durationSeconds != null
+                ? `Entfernung zu ${accommodationDistance.accommodationTitle}: ${formatSpotDistance(accommodationDistance.distanceMeters, accommodationDistance.isFallback)} (ca. ${formatTravelDuration(Math.max(1, Math.round(accommodationDistance.durationSeconds / 60)))} mit ${accommodationDistance.profile === 'foot-walking' ? 'dem Fußweg' : 'dem Auto'})`
+                : `Entfernung zu ${accommodationDistance.accommodationTitle}: ${formatSpotDistance(accommodationDistance.distanceMeters, accommodationDistance.isFallback)}`
+            "
+          >
+            <AppIcon
+              :icon="
+                travelTypeIconDef(
+                  accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto'
+                )
+              "
+              :size="12"
+              group="categories"
+            />
+            <span class="spot-distance-text">
+              {{
+                formatSpotDistance(
+                  accommodationDistance.distanceMeters,
+                  accommodationDistance.isFallback
+                )
+              }}
+            </span>
           </Badge>
         </div>
 

@@ -6,6 +6,12 @@ import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { linkLabel } from '../utils/linkLabel';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
+import { formatTravelDuration } from '../utils/travelDuration';
+import {
+  formatSpotDistance,
+  type SpotAccommodationDistanceInfo,
+} from '../utils/spotAccommodationDistance';
 import AppIcon from './AppIcon.vue';
 import DetailRow from './primitives/DetailRow.vue';
 import CopyButton from './primitives/CopyButton.vue';
@@ -17,10 +23,15 @@ const props = defineProps<{
   isAccommodation: boolean;
   payerLabel?: string | null;
   hasMultipleMembers?: boolean;
+  accommodationDistance?: SpotAccommodationDistanceInfo | null;
 }>();
 
 const hasDetails = computed(
-  () => props.isAccommodation || !!props.spot.address || !!props.spot.link
+  () =>
+    props.isAccommodation ||
+    !!props.spot.address ||
+    !!props.spot.link ||
+    !!props.accommodationDistance
 );
 
 function formatAccommodationDate(dateStr: string | null) {
@@ -149,6 +160,35 @@ const checkinCheckoutText = computed(() => {
               : 'Link in die Zwischenablage kopiert.'
           "
         />
+      </DetailRow>
+      <DetailRow v-if="!isAccommodation && accommodationDistance" label="Entfernung">
+        <AppIcon
+          :icon="
+            travelTypeIconDef(accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto')
+          "
+          :size="14"
+          group="categories"
+        />
+        <span>
+          {{
+            formatSpotDistance(
+              accommodationDistance.distanceMeters,
+              accommodationDistance.isFallback
+            )
+          }}
+          <template v-if="accommodationDistance.durationSeconds != null">
+            · ca.
+            {{
+              formatTravelDuration(
+                Math.max(1, Math.round(accommodationDistance.durationSeconds / 60))
+              )
+            }}
+          </template>
+          <template v-else-if="accommodationDistance.isFallback"> · Luftlinie </template>
+          <span class="spot-accommodation-name">
+            (von {{ accommodationDistance.accommodationTitle }})
+          </span>
+        </span>
       </DetailRow>
     </div>
   </div>
