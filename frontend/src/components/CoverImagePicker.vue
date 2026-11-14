@@ -511,7 +511,7 @@ function handleModalClose(visible: boolean) {
           <Button
             v-if="isModified"
             type="button"
-            variant="ghost"
+            variant="floating"
             size="sm"
             shape="pill"
             class="banner-reset-btn"
@@ -523,7 +523,7 @@ function handleModalClose(visible: boolean) {
           </Button>
           <Button
             type="button"
-            variant="ghost"
+            variant="floating"
             size="sm"
             shape="pill"
             class="banner-edit-btn"
@@ -723,8 +723,6 @@ function handleModalClose(visible: boolean) {
 .form-image-banner--polaroid .banner-edit-btn,
 .form-image-banner--polaroid .banner-reset-btn {
   font-size: var(--font-size-xs);
-  backdrop-filter: blur(6px);
-  background: color-mix(in srgb, var(--color-surface) 85%, transparent) !important;
 }
 
 .banner-loading-overlay {
@@ -825,25 +823,7 @@ function handleModalClose(visible: boolean) {
 }
 
 .banner-reset-btn {
-  background: var(--color-surface) !important;
-  color: var(--color-accent) !important;
-  border: 1px solid var(--color-accent);
-  box-shadow: var(--shadow-sm);
-}
-
-.banner-reset-btn:hover {
-  background: var(--color-hover) !important;
-}
-
-.banner-edit-btn {
-  background: var(--color-surface) !important;
-  color: var(--color-text) !important;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.banner-edit-btn:hover {
-  background: var(--color-hover) !important;
+  color: var(--color-accent);
 }
 
 .image-submodal {

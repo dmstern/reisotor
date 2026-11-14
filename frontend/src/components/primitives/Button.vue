@@ -389,11 +389,7 @@ a.btn.is-loading {
   corner-shape: squircle;
   background-origin: border-box;
   background-color: var(--color-primary-tint);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background-image: none;
   color: var(--color-primary-dark);
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -401,7 +397,7 @@ a.btn.is-loading {
   white-space: nowrap;
   line-height: 1.3;
   cursor: pointer;
-  box-shadow: var(--shadow-control);
+  box-shadow: none;
   transition:
     background-color 0.15s ease,
     color 0.15s ease,
@@ -412,13 +408,18 @@ a.btn.is-loading {
 }
 
 .btn--card-action:hover:not(:disabled) {
+  translate: 0 -1px;
   background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
+  background-image: var(--gradient-control-3d);
   border-color: var(--color-primary);
   box-shadow: var(--shadow-control-hover);
 }
 
 .btn--card-action:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  translate: 0 0;
   background-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-surface));
+  background-image: var(--gradient-control-3d);
   box-shadow: var(--shadow-control-active);
 }
 
@@ -429,19 +430,17 @@ a.btn.is-loading {
   box-shadow: none;
 }
 
+/* Ghost: erst bei Hover/Active entsteht der 3D-Look mit sanftem Wölbungsverlauf (Rahmen, Verlauf, Schatten) */
 .btn--ghost:hover:not(:disabled) {
-  background: var(--color-hover);
-}
-
-/* Ghost + Circle: erst bei Hover/Active entsteht der 3D-Look (Rahmen, Verlauf, Schatten) */
-.btn--ghost.btn--circle:hover:not(:disabled) {
   background-color: var(--color-hover);
   background-image: var(--gradient-control-3d);
   background-origin: border-box;
   box-shadow: var(--shadow-control-hover);
 }
 
-.btn--ghost.btn--circle:active:not(:disabled) {
+.btn--ghost:active:not(:disabled) {
+  background-color: var(--color-hover);
+  background-image: var(--gradient-control-3d);
   box-shadow: var(--shadow-control-active);
 }
 

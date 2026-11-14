@@ -440,13 +440,14 @@ const {
   margin-bottom: var(--space-1);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background: color-mix(in srgb, var(--excursion-theme-color) 8%, var(--color-surface));
+  background-color: color-mix(in srgb, var(--excursion-theme-color) 8%, var(--color-surface));
+  background-image: var(--gradient-control-3d);
   border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-xs);
+    var(--shadow-control);
   transition:
-    background 0.2s ease,
+    background-color 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -454,11 +455,11 @@ const {
 
 @include can-hover {
   .excursion-card.expanded .card-header-row:hover:not(:has(.tour-edit-btn:hover)) {
-    background: color-mix(in srgb, var(--excursion-theme-color) 16%, var(--color-surface));
+    background-color: color-mix(in srgb, var(--excursion-theme-color) 16%, var(--color-surface));
     border-color: var(--excursion-theme-color);
     box-shadow:
       inset 0 1px 0 var(--shadow-control-highlight-strong),
-      var(--shadow-sm);
+      var(--shadow-control-hover);
     transform: translateY(-1px);
   }
 
