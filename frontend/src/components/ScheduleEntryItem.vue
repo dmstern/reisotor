@@ -111,10 +111,12 @@ const categoryMeta = computed(
   cursor: pointer;
 }
 
-.item.clickable:hover {
-  background: var(--color-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+@media (hover: hover) {
+  .item.clickable:hover {
+    background: var(--color-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 .item.clickable:focus-visible {

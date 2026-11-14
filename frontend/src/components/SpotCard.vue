@@ -358,8 +358,10 @@ const cardRotation = computed(() => {
   width: 100%;
 }
 
-.spot-card:hover {
-  z-index: var(--z-card-elevated);
+@include can-hover {
+  .spot-card:hover {
+    z-index: var(--z-card-elevated);
+  }
 }
 
 .spot-card:not(.expanded) {
@@ -436,39 +438,41 @@ const cardRotation = computed(() => {
   box-sizing: border-box;
 }
 
-.spot-card.expanded:has(
-    .image.is-expanded:hover:not(:has(a:hover)),
-    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
-  )
-  .body {
-  transform: translateY(-2px);
-  opacity: 0.84;
-}
+@include can-hover {
+  .spot-card.expanded:has(
+      .image.is-expanded:hover:not(:has(a:hover)),
+      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+    )
+    .body {
+    transform: translateY(-2px);
+    opacity: 0.84;
+  }
 
-.spot-card.expanded:has(
-    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
-  )
-  :deep(.image.is-expanded) {
-  box-shadow:
-    inset 0 0 0 2px var(--color-primary),
-    0 4px 12px rgba(0, 0, 0, 0.18);
-}
+  .spot-card.expanded:has(
+      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+    )
+    :deep(.image.is-expanded) {
+    box-shadow:
+      inset 0 0 0 2px var(--color-primary),
+      0 4px 12px rgba(0, 0, 0, 0.18);
+  }
 
-.spot-card.expanded:has(
-    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
-  )
-  :deep(.spot-collapse-pill) {
-  background: var(--color-primary);
-  border-color: rgba(255, 255, 255, 0.65);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transform: translateY(-1px);
-}
+  .spot-card.expanded:has(
+      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+    )
+    :deep(.spot-collapse-pill) {
+    background: var(--color-primary);
+    border-color: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
 
-.spot-card.expanded:has(
-    .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
-  )
-  :deep(.spot-collapse-chevron) {
-  transform: translateY(-2px);
+  .spot-card.expanded:has(
+      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+    )
+    :deep(.spot-collapse-chevron) {
+    transform: translateY(-2px);
+  }
 }
 
 .spot-edit-btn {
@@ -503,8 +507,10 @@ const cardRotation = computed(() => {
   transition: color 0.2s ease;
 }
 
-.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .card-title {
-  color: var(--color-primary-dark);
+@include can-hover {
+  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .card-title {
+    color: var(--color-primary-dark);
+  }
 }
 
 .spot-note-container {
@@ -637,22 +643,24 @@ const cardRotation = computed(() => {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
-.spot-expand-pill:hover {
-  background-color: var(--color-primary-tint);
-  color: var(--color-primary-dark);
-  box-shadow: var(--shadow-control-hover);
-  translate: 0 -1px;
+@include can-hover {
+  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
+  .spot-expand-pill:hover {
+    background-color: var(--color-primary-tint);
+    color: var(--color-primary-dark);
+    box-shadow: var(--shadow-control-hover);
+    translate: 0 -1px;
+  }
+
+  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-chevron {
+    transform: translateY(1.5px);
+  }
 }
 
 .spot-expand-pill:active {
   transform: translateY(0.5px) scale(0.96);
   translate: 0 0;
   box-shadow: var(--shadow-control-active);
-}
-
-.spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-chevron {
-  transform: translateY(1.5px);
 }
 
 .spot-layover-badge {
