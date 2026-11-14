@@ -393,7 +393,6 @@ const isNewHighlight = computed(() => {
   corner-shape: squircle;
   box-shadow: var(--shadow-card-polaroid);
   padding: 8px 8px 14px 8px;
-  transform: rotate(var(--card-rotate, -0.75deg));
   transform-origin: center center;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -404,26 +403,9 @@ const isNewHighlight = computed(() => {
     --surface-grad-bottom 0.2s ease;
 }
 
-/* Subtile Fächer-Drehung für Geschwister-Polaroids ohne explizites --card-rotate (z. B. in Storybook/Listen) */
-.card--polaroid:nth-child(2n) {
-  --card-rotate: 0.75deg;
-}
-.card--polaroid:nth-child(3n) {
-  --card-rotate: -0.6deg;
-}
-.card--polaroid:nth-child(4n) {
-  --card-rotate: 0.95deg;
-}
-.card--polaroid:nth-child(5n) {
-  --card-rotate: -1.1deg;
-}
-.card--polaroid:nth-child(6n) {
-  --card-rotate: 0.65deg;
-}
-
 @media (hover: hover) {
   .card--polaroid:not(.card--expanded):not(.expanded):hover {
-    transform: translateY(-4px) rotate(var(--card-rotate, -0.75deg)) scale(1.02);
+    transform: translateY(-4px) scale(1.02);
     box-shadow: var(--shadow-card-polaroid-hover);
     --surface-grad-top: var(--gradient-surface-hover-top);
     --surface-grad-bottom: var(--gradient-surface-hover-bottom);
@@ -432,7 +414,7 @@ const isNewHighlight = computed(() => {
 }
 
 .card--polaroid:not(.card--expanded):not(.expanded):active {
-  transform: translateY(1px) rotate(var(--card-rotate, -0.75deg)) scale(0.985);
+  transform: translateY(1px) scale(0.985);
   box-shadow: var(--shadow-card-polaroid-active);
   --surface-grad-top: rgba(0, 0, 0, 0.04);
   --surface-grad-bottom: transparent;
@@ -440,7 +422,7 @@ const isNewHighlight = computed(() => {
 
 .card--polaroid.card--expanded,
 .card--polaroid.expanded {
-  transform: translateY(0) rotate(0deg) scale(1);
+  transform: translateY(0) scale(1);
 }
 
 :root[data-theme='dark'] .card--polaroid {

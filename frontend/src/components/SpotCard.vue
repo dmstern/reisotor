@@ -126,18 +126,6 @@ function onShowOnMap() {
 }
 
 const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.id}`);
-
-// Subtile, deterministische Drehung für den authentischen Polaroid-Look (z. B. -1.1° bis +0.95°)
-// Bleibt stabil pro Spot-ID, damit die Kärtchen beim Sortieren/Filtern nicht hin- und herwackeln.
-const ROTATION_ANGLES = [-0.85, 0.75, -0.6, 0.95, -1.1, 0.65];
-const cardRotation = computed(() => {
-  if (props.expanded) {
-    return '0deg';
-  }
-
-  const angle = ROTATION_ANGLES[Math.abs(props.spot.id) % ROTATION_ANGLES.length];
-  return `${angle}deg`;
-});
 </script>
 
 <template>
@@ -148,7 +136,6 @@ const cardRotation = computed(() => {
     :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
     :highlight="highlighted"
     :map-focused="isMapFocused"
-    :style="{ '--card-rotate': cardRotation }"
     @click="onCardClick"
   >
     <SpotCoverImage
@@ -371,7 +358,7 @@ const cardRotation = computed(() => {
 
 .spot-card.expanded {
   border-color: var(--color-primary);
-  transform: translateY(0) rotate(0deg) scale(1);
+  transform: translateY(0) scale(1);
   cursor: default;
 }
 
